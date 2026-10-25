@@ -3171,6 +3171,20 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The flight recorder keeps each rival's state (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder.RecordRivalState` writes `rivalState` per rival per sample (state bits incl. AI /
+breaking off / restricted, BoostMultiplier, the AI boost driver's status as an index into `rivalBoostStatuses`, the
+objective phase, course-vs-nose degrees); `regatta_rival_report.py --hull <hull>` summarises it. Reads the AI through
+`TryGetComponent`, never the `VesselStatus.AIPilot` getter.
+**Verified without the editor:** `unity_refcompile` (player-dev), `regatta_rival_report.py --self-test`.
+**Verify in editor:**
+1. Race Regatta with an AI Rhino on the grid; after Play stops, the new `flight_Regatta_*.json` has `rivalState`,
+   `rivalStateColumns`, `rivalStateBits` and a `rivalBoostStatuses` list that names the Rhino's ramp statuses.
+2. `python3 Tools/Build/regatta_rival_report.py --dir <the Flights folder> --hull rhino` prints a "breaking off ...,
+   boosted ...; <status shares>" line under that race. If the Rhino again holds 50 u/s, that line says why.
+3. The Console stays clean while recording (no new errors or warnings).
+
 ### 🔴 The Dolphin AI's Regatta line set from Yash's one Dolphin race (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** the Dolphin's race line `LaneShare` 0.60 → 0.785 (`race_lines_learned.json` → `author_race_lines.py` →
