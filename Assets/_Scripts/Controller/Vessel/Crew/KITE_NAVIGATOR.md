@@ -518,12 +518,15 @@ seats.
 1. **Prism parity for one human online.** `KiteNavigator.cs`, with the effects split into `KiteNavigatorEffects.cs`
    (Follow-ups), and `WrasseCrewBodies.cs`, which gets the hull owner's pop, blast and Mass-seed RPCs. A seeded-cluster
    test. Check in MPPM: two players, one flies the Wrasse, and both see the same prisms go.
-2. **Land `cece/sharp-tesla-j0kd7z`** (`T-20261017-efca`): the seat on `ICrewSeat`; `CrewSeat.PollSwap` returns the
+2. **Land `cece/sharp-tesla-j0kd7z`** (`T-20261017-efca`; merged as #1407 on 2026-10-21, but without the Wrasse's
+   move onto `ICrewSeat`, which that merge withdrew: whether it still happens is open, `Docs/REFACTOR_BACKLOG.md` S64): the seat on `ICrewSeat`; `CrewSeat.PollSwap` returns the
    picked seat (keys pick, the D-pad steps, as here and on the Orca); the double tap into `CrewPictureInPicture`;
    `CrewSeatChoice` into `CrewSeat`.
 3. **Occupancy:** `CrewSeatOccupancy` on the Player prefab (its Netcode hash changes: check the in-flight branches
    first); `Player.cs` `RequestSeat_ServerRpc`; `PilotSwap.cs` `TryValidateSeatServer` (same team, a crew hull, the seat
-   free, AI-held or offered); `ICrewSeat` gains `SeatCount`, `Occupant(i)` and `IsSimulatedHere`.
+   free, AI-held or offered); `ICrewSeat` gains `SeatCount`, `Occupant(i)` and `IsSimulatedHere`. (Built otherwise on
+   2026-10-23, see "Where it stands": `Player.NetStation`, `CrewStations.Classify` and `ICrewStations`, so `ICrewSeat`
+   did not grow.)
 4. **Authority:** `KiteNavigator.ShouldRun` becomes "this machine simulates the navigator seat"; effects go through the
    occupant, boosts and rams to the hull owner; `WrasseCrewBodies` reads the occupant's pose.
 5. **The gesture owner:** `InputController.cs` asks `CrewSeat.TryConsumeSwap`; `PilotSwapIndicator.cs` shows the other
