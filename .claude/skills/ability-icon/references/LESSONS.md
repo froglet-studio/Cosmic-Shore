@@ -76,3 +76,23 @@ abilities are more locked in. lets get their icons polished."
     read as an arrow; at 12 px the arc under the tail reads as a slide.
 18. The weakest of this round: the Sparrow's Turret Stance (a pawn at 40 px) and the Squirrel's Crystal Joust
     (a gem with a cut - the joust itself is not in it). Ask about those first.
+
+## 2026-10-25 - one icon: the Squirrel's Crystal Joust
+
+Garrett: "your before pictures are not accurate or exhaustive." "lets focus on one icon for one vessel." "lets get
+one thing right. then move on."
+
+19. **A BEFORE is the card as the HUD draws it, in every state, in every place the sprite shows** - not the
+    sprite on a square. `card.py` draws the lockup card from `AbilityLockupStyle.asset`'s own numbers (two
+    trapezoids, the slant edge, the flower cell, the 60 px icon box) with the state tint (the joust flash) and
+    the sheet now uses it; the one-icon sheet also shows the other surface the sprite was on (the Jousts
+    metric icon in the arcade launch panel) and the fleet glyph the new icon is built on. It still says
+    "drawn offline" on it: the Editor is the truth, and the flower is an approximation.
+20. **One icon per round when the owner says so.** Three candidates on the card (the fleet's joust glyph with
+    the crystal at the impact; the cleaved gem; the hull through the gem) beat eight redrawn icons nobody
+    asked for. The joust glyph won because the Jousts OBJECTIVE and the Crystal Joust ABILITY are one act,
+    and one act wears one pictogram (`objective_jousts.png`, the objective set's `jousts()`).
+21. **Measure a failing gate before guessing.** The component gate wanted the spark to be one mass with the
+    gem (start the marks inside it); the gap gate then named four narrow wedges between each spark and the
+    lance arm beside it - found by dumping the tight-gap mask's quadrants, fixed by steepening the sparks.
+    Two blind tweaks had already missed.

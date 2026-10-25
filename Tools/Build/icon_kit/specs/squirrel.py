@@ -1,8 +1,9 @@
 """The Squirrel's ability-row icons (Resources/ElementalAbilityMaps/Squirrel.asset), angular, one object each.
 
-  Charge  Crystal Joust  the crystal split by the joust: a brilliant-cut gem cleaved along a diagonal, the lower
-                         half knocked away (before: a SKULL placeholder, HuntIcon-PLACEHOLDER.png, which is also
-                         the Jousts metric icon in ModeControlsLibrary.asset - rebound there too)
+  Charge  Crystal Joust  the fleet's joust pictogram (two lances meeting, the spark) with the crystal at the
+                         meeting point (before: a SKULL placeholder, HuntIcon-PLACEHOLDER.png, which is also the
+                         Jousts metric icon in ModeControlsLibrary.asset - rebound there too; round 2's cleaved
+                         gem was a gem with a cut, the joust itself not in it)
   Mass    Boost Ring     KEPT - the artist's cross-section of eight prisms (BoostRingCrossSectionIcon.png) already
                          reads and is the omni card's shielded ring's twin; nothing here redraws it
   Space   Steal          KEPT - GENERATED in code (SquirrelVesselHUDView.EnsureGeneratedAbilityIcons: the reach
@@ -15,6 +16,8 @@
 
 The core (drift) icons live in Core/ so the family gate compares the elemental icons only.
 """
+import math
+
 from canvas import band, fill, rect, rotate, scale, stroke, translate
 from motifs import hull, speed_wedge, trail_band
 
@@ -28,11 +31,17 @@ CLEAVE = [(4, 96), (124, 30)]
 
 
 def crystal_joust():
-    gem = fill(CRYSTAL)
-    above = fill([CLEAVE[0], CLEAVE[1], (128, 0), (0, 0)])
-    upper = gem & above
-    lower = fill(translate(CRYSTAL, 7, 6)) & ~fill(translate([CLEAVE[0], CLEAVE[1], (128, 0), (0, 0)], 7, 6))
-    return (upper | lower) & ~stroke(CLEAVE, 8) & ~stroke(translate(CLEAVE, 7, 6), 4)
+    """Candidate A of 2026-10-25: the fleet's own JOUST pictogram (objective_jousts.png - two lances meeting, the
+    spark) with the CRYSTAL at the meeting point. The Jousts objective and the Crystal Joust ability are one act,
+    so they wear one mark; the Jousts metric icon in ModeControlsLibrary is rebound to this sprite too."""
+    gem = fill(scale(CRYSTAL, 0.5, 0.5, 64, 64))
+    lances = stroke([(14, 28), (40, 64), (14, 100)], 12) | stroke([(114, 28), (88, 64), (114, 100)], 12)
+    m = lances | gem
+    # The spark: four marks that START on the gem's edge, so gem and spark are one mass (and one component).
+    for ang in (62, 118, 242, 298):   # steep, so each spark clears the lance arm beside it (gate: gap)
+        a = math.radians(ang)
+        m |= stroke([(64 + 12 * math.cos(a), 64 + 12 * math.sin(a)), (64 + 44 * math.cos(a), 64 + 44 * math.sin(a))], 7)
+    return m
 
 
 def skimming():

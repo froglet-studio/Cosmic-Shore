@@ -50,8 +50,10 @@ python3 Tools/Build/icon_kit/verify.py <pngs>             # measure ANY icon, ha
 A hull is a spec, `Tools/Build/icon_kit/specs/<hull>.py`: `HULL` and `ICONS = [dict(name, element,
 act, draw)]`, where `draw()` composes masks from `canvas.py` (the engine) and `motifs.py` (the
 vocabulary) in icon px (0..128, y down) and returns a mask or `[(mask, alpha), ...]` (0.5 = a ghost).
-The sheet lands in `Docs/Icons/sheets/<hull>.png`: BEFORE (as HEAD committed it) and AFTER at
-128 / 60 / 40 on a lockup-like plate in the element's colour. **Read the sheet** (the Read tool on
+The sheet lands in `Docs/Icons/sheets/<hull>.png`: BEFORE (as HEAD committed it, or the sprite a new
+icon replaces) and AFTER, each as the CARD the lockup draws (`card.py`, from `AbilityLockupStyle.asset`'s
+numbers: the two trapezoids, the flower cell, the 60 px icon box) plus the raw icon at 60 and 40. A one-icon
+round adds the states (the joust flash, a spent ring) and every other surface the sprite is on. **Read the sheet** (the Read tool on
 the PNG) before writing; the gates are a floor, not a judgement - Urchin Slip's three circles passed
 every gate and named nothing.
 
@@ -67,7 +69,8 @@ every gate and named nothing.
    argued in `verify.py` with a negative control, never skipped for one icon.
 4. **Write** and commit the spec, the PNGs, the sheet, and the stand-down in the old generator
    (§5) together. Never hand-edit a PNG or a `.meta`.
-5. **The owner looks** (Garrett reviews the sheet; a flight test when the row is on a HUD change).
+5. **The owner looks** (Garrett reviews the sheet - when he asks for ONE icon, show three candidates on the
+   card and pick one, nothing else changes; a flight test when the row is on a HUD change).
    Fold what he says into `LESSONS.md` and, if it is a rule, `ICON_LANGUAGE.md` - before the next
    hull. One hull per round (the `/vessel-model` loop).
 
