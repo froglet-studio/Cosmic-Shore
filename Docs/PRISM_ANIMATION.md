@@ -2944,7 +2944,9 @@ pose, the flight, the kind — so it is §1's ordinary shape: one stamp per pris
 off `_PrismClock`, one batched retirement. It rides the slice's carrier unchanged
 (`PrismRenderService.SpawnSliceDebrisBatch`, the `Slice` override set, its `_SliceTiming` and
 `_SliceDrift` channels) with its own mesh and material, so it added no ECS component and no render-service
-code. No per-frame CPU write to any burst, no §1 exception, no residency swap (born on the dense mesh).
+code. No per-frame CPU write to any burst, no §1 exception, no residency swap (born on the dense mesh). (Round 15's
+SUCTION kind is the one exception since: its live sink, one `_SliceCentre` float4 per live suction per frame through
+`PrismRenderService.RefreshSliceDebrisSinkBatch` — see the round-15 entry above.)
 
 **The mesh is the slice's, UNWELDED.** `HighPolyPrismMesh.GetUnwelded(10)`: the identical solid, 1,200
 triangles, every triangle owning its own three vertices, plus TEXCOORD2 = the triangle's centroid in

@@ -21,7 +21,8 @@
 // WHY A STAMP AND NOT A GLOBAL (the prism-morph admission test, question 1). Everything is known at
 // the instant of the event — the pose, the velocity, the kind, the colours — so this is §1's ordinary
 // shape: one stamp per prism, the GPU runs the course off _PrismClock, one scheduled retirement. No
-// per-frame CPU write to any burst, ever. It rides the slice's batch spawner and stamp channels
+// per-frame CPU write to any burst but a SUCTION's live sink (round 15: _SliceCentre, one float4 per live suction
+// per frame — the §1 moving-target exception the SuctionGraph's _Location already is). It rides the slice's batch spawner and stamp channels
 // (PrismCollisionBurst.cs), born ON the dense mesh, so there is no residency swap and nothing to hide.
 //
 // WHY THE DENSE MESH, AND WHY UNWELDED. Each burst draws HighPolyPrismMesh.GetUnwelded — the identical

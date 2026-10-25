@@ -40,10 +40,12 @@ namespace CosmicShore.Utility
     /// </list>
     ///
     /// <para><b>It rides the slice's carrier unchanged</b> — <see cref="PrismRenderService.SpawnSliceDebrisBatch"/>
-    /// and the slice's stamp channels, with its own mesh and material — so it added no ECS component, no
-    /// prototype and no render-service code. Same shape as <see cref="PrismSlice"/>: requests queue during the
-    /// frame, ONE batch spawns them, ONE batched destroy retires each expired batch, nothing writes to a live
-    /// entity.</para>
+    /// and the slice's stamp channels, with its own mesh and material — so it added no ECS component and no
+    /// prototype. Same shape as <see cref="PrismSlice"/>: requests queue during the frame, ONE batch spawns them, ONE
+    /// batched destroy retires each expired batch. Nothing writes to a live entity but a SUCTION's sink (round 15):
+    /// one float4 per live suction per frame through the one render-service method it added,
+    /// <see cref="PrismRenderService.RefreshSliceDebrisSinkBatch"/> — the §1 moving-target exception the
+    /// SuctionGraph's implosion already makes, never per-frame progress.</para>
     ///
     /// <para><b>It never costs an interaction its visual.</b> Every refusal — the config off or missing, the
     /// budget full, the render service down — returns false, and the caller draws the ordinary effect.
@@ -530,6 +532,9 @@ namespace CosmicShore.Utility
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
             if (target == null || mesh == null || life <= 0f) return false;
+            // The suction runs before PrismDebris.TryRequestImplosion, so it owns that path's fix: a consumed prism's
+            // rotation drifts off unit length and Matrix4x4.TRS refuses it (Bug Ledger E-16d65ffecb).
+            rotation = Quaternion.Normalize(rotation);
             bool accepted = level0 ? CanAcceptSuction0(cfg) : CanAccept(cfg) && FitsTriangles(cfg, TrianglesOf(mesh));
             if (!accepted || !PrismDebris.TryGetExplosionLayer(out _)) return false;
 
