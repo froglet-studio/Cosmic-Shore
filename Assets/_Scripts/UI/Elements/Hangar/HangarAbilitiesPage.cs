@@ -17,8 +17,8 @@ namespace CosmicShore.UI
     /// (Docs/MENU_REDESIGN_B.md section 46).
     ///
     /// <para><b>The pad belongs to the menu here</b> (section 63). The Hangar is a screen, and the pad controls
-    /// the abilities use most have menu jobs on it: LT / RT page the screens, LB / RB step the tabs and A presses
-    /// whatever the pad has selected. Polling them fired an ability on a press meant for the menu (RT on a Sparrow
+    /// the abilities use most have menu jobs on it: LT / RT page the screens from the tab bar (section 64), LB / RB
+    /// step the tabs and A presses whatever the pad has selected. Polling them fired an ability on a press meant for the menu (RT on a Sparrow
     /// paged to the Ark AND fired Pulsefire), so a pad keycap is a label of the in-match control and is never
     /// polled - every pad control alike, so the page does not depend on which ones the menu leaves free today.
     /// The keyboard keys the abilities use have no menu job, so they still play their ability.</para>

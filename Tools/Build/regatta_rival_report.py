@@ -9,7 +9,10 @@ rings (`ringList`). So every stored flight is also a race of up to seven AIs in 
 - **circling**: time spent within ORBIT_RANGE of the ring it is trying to thread, past ORBIT_GRACE, without threading it (the orbit the
   offline drive sims cannot show, `rhino_drive_sim.py` "no orbit break-off");
 - **stalls**: a ring the AI spent more than STALL_SECONDS on, and which ring index it was (a course-specific mouth);
-- its flying speed (from position steps; the recorder does not store rivals' speed separately).
+- its flying speed (from position steps; the recorder does not store rivals' speed separately);
+- **what the AI was doing** (flights recorded since 2026-10-25, `rivalState`): the share of the race it was breaking off
+  an orbit, translation-restricted or boosted above x1, and its boost driver's statuses by share of the race
+  (`rivalBoostStatuses`; e.g. a Rhino "cruising - waiting for a straight that pays the wind-up back" all race).
 
 It changes nothing; it is the editor measurement the Regatta AI roadmap asks for (REGATTA_AI_ROADMAP.md §3), read from
 races already flown. The flights live on origin/bugledger/<user> under BugLedger/shared/reports/<user>/flights/.
@@ -89,6 +92,38 @@ def analyse(track, rings, target):
             "speed": round(statistics.median(speeds), 0) if speeds else 0.0}
 
 
+def rival_states(flight):
+    """{rival index: summary} from `rivalState` (HumanFlightRecorder.RecordRivalState), or {} for an older flight: the share
+    of samples breaking off, restricted and boosted (BoostMultiplier > 1.01), and each boost-driver status's share."""
+    rows = flight.get("rivalState") or []
+    cols = flight.get("rivalStateColumns") or []
+    if not rows or not cols:
+        return {}
+    bits = flight.get("rivalStateBits") or {}
+    names = flight.get("rivalBoostStatuses") or []
+    w = len(cols)
+    si, bi, ti = cols.index("state"), cols.index("boost"), cols.index("boostStatus")
+    acc = {}
+    for row in rows:
+        for j in range(len(row) // w):
+            v = row[j * w:(j + 1) * w]
+            a = acc.setdefault(j, {"n": 0, "breakingOff": 0, "restricted": 0, "boosted": 0, "statuses": {}})
+            a["n"] += 1
+            st = int(v[si])
+            a["breakingOff"] += bool(st & bits.get("breakingOff", 128))
+            a["restricted"] += bool(st & bits.get("restricted", 256))
+            a["boosted"] += v[bi] > 1.01
+            k = int(v[ti])
+            label = names[k] if 0 <= k < len(names) else "(no AI boost driver)"
+            a["statuses"][label] = a["statuses"].get(label, 0) + 1
+    out = {}
+    for j, a in acc.items():
+        n = max(1, a["n"])
+        out[j] = {"breakingOff": a["breakingOff"] / n, "restricted": a["restricted"] / n, "boosted": a["boosted"] / n,
+                  "statuses": sorted(((c / n, s) for s, c in a["statuses"].items()), reverse=True)}
+    return out
+
+
 def load(paths, since=None):
     out = []
     for p in paths:
@@ -105,11 +140,13 @@ def load(paths, since=None):
         xi, yi, zi = cols.index("x"), cols.index("y"), cols.index("z")
         rings = [(r[xi], r[yi], r[zi]) for r in f["ringList"]]
         target = int(f.get("raceTarget") or 3 * len(rings))
-        for h, tr in rival_tracks(f):
+        states = rival_states(f)
+        for j, (h, tr) in enumerate(rival_tracks(f)):
             a = analyse(tr, rings, target)
             if a:
                 a.update(hull=h.lower(), difficulty=f.get("rivalDifficulty") or "?", intensity=f.get("intensity"),
-                         target=target, file=os.path.basename(p), date=str(f.get("date", ""))[:10])
+                         target=target, file=os.path.basename(p), date=str(f.get("date", ""))[:10],
+                         state=states.get(j))
                 out.append(a)
     return out
 
@@ -141,6 +178,10 @@ def report(races, hull=None):
             print(f"  {x['date']} I{x['intensity']} {x['difficulty']:6} rings {x['rings']:2d}/{x['target']} in "
                   f"{x['seconds']:5.1f} s, {x['speed']:4.0f} u/s, circling {x['circling']:5.1f} s, stuck {x['stuck']:5.1f} s, "
                   f"stalls {x['stalls']}  {x['file']}")
+            st = x.get("state")
+            if st:
+                print(f"      breaking off {st['breakingOff']:.0%}, restricted {st['restricted']:.0%}, boosted {st['boosted']:.0%}; "
+                      + "; ".join(f"{share:.0%} {label}" for share, label in st["statuses"][:3]))
 
 
 def self_test():
@@ -159,6 +200,15 @@ def self_test():
     b = analyse(straight, [(x * 300.0, 0, 0) for x in range(10)], 9)
     if b["circling"] > 0 or b["stalls"]: bad.append("a clean straight run counted circling or a stall")
     if abs(b["speed"] - 300) > 1: bad.append(f"speed {b['speed']}")
+    # rivalState: one rival, 4 samples - 2 waiting (status 0), 1 ramping x3 (status 1), 1 breaking off with no driver status
+    fl = {"rivalStateColumns": ["state", "boost", "boostStatus", "phase", "courseNose"],
+          "rivalStateBits": {"ai": 64, "breakingOff": 128, "restricted": 256},
+          "rivalBoostStatuses": ["Rhino: cruising", "Rhino: ramping (# u/s)"],
+          "rivalState": [[64, 1, 0, 1, 0], [64, 1, 0, 1, 0], [65, 3, 1, 1, 2], [192, 1, -1, 1, 40]]}
+    rs = rival_states(fl).get(0)
+    if not rs or rs["breakingOff"] != 0.25 or rs["boosted"] != 0.25 or rs["statuses"][0] != (0.5, "Rhino: cruising"):
+        bad.append(f"rivalState summary {rs}")
+    if rival_states({}) != {}: bad.append("an older flight without rivalState must read as none")
     print("regatta_rival_report self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 

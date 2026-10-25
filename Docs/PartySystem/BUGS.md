@@ -2223,6 +2223,15 @@ unloaded one is the negative control). **Hand test:** in the editor, Play, party
 The second Play's `net_logs.py` log shows `HostingParty->InParty` more than a second apart (a real Relay
 creation), no "lobby not found", and no "Relay session not ready".
 
+**Also seen (2026-10-25, Bug Ledger `E-c2a4d444b8`, Yash; `E-81100c14a5`, Yash and Andrew).** Stopping Play while
+the game is still starting an online session logs `SessionException: Failed to start the network manager` (the
+SDK's `NetworkManagerSession.OnStopCompleted`: the NetworkManager shut down before its start finished) or
+`Cannot start when Singleton is not set` (the start began after the NetworkManager was gone). Both surface
+unobserved through `UniTaskExtensions.AsMainThread`, so the caller that started the session (boot's solo host,
+`MultiplayerSetup`, the presence or party create) is fire-and-forget at that moment and the 1,500-character stack
+excerpt does not name it. A teardown race, not a gameplay fault: the fix is for the starting caller to observe
+Play stopping (cancel, or catch `NetworkManagerStartFailed` while `IsQuitting`) - the same shape as B38.
+
 ## B34 — `ObjectDisposedException` on a `$lobby` channel after Play stops 🟡 (root-caused 2026-10-17; the leak itself is B33)
 
 **Seen in.** Bug Ledger `E-c523697cae`, on every tester's branch (`bugledger/yskha`, `gradi`, `mrglo`,

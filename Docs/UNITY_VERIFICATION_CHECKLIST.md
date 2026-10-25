@@ -3171,6 +3171,20 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The flight recorder keeps each rival's state (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder.RecordRivalState` writes `rivalState` per rival per sample (state bits incl. AI /
+breaking off / restricted, BoostMultiplier, the AI boost driver's status as an index into `rivalBoostStatuses`, the
+objective phase, course-vs-nose degrees); `regatta_rival_report.py --hull <hull>` summarises it. Reads the AI through
+`TryGetComponent`, never the `VesselStatus.AIPilot` getter.
+**Verified without the editor:** `unity_refcompile` (player-dev), `regatta_rival_report.py --self-test`.
+**Verify in editor:**
+1. Race Regatta with an AI Rhino on the grid; after Play stops, the new `flight_Regatta_*.json` has `rivalState`,
+   `rivalStateColumns`, `rivalStateBits` and a `rivalBoostStatuses` list that names the Rhino's ramp statuses.
+2. `python3 Tools/Build/regatta_rival_report.py --dir <the Flights folder> --hull rhino` prints a "breaking off ...,
+   boosted ...; <status shares>" line under that race. If the Rhino again holds 50 u/s, that line says why.
+3. The Console stays clean while recording (no new errors or warnings).
+
 ### 🔴 The Dolphin AI's Regatta line set from Yash's one Dolphin race (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** the Dolphin's race line `LaneShare` 0.60 → 0.785 (`race_lines_learned.json` → `author_race_lines.py` →
@@ -14078,6 +14092,27 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
 4. Leave the Hangar or switch tab: the demo stops (no stage effects behind Home). Open Arcade / Toy Box from the Hangar:
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
+
+## 🔴 2026-10-25 — LT / RT page the screens only from the top tab bar (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §64. Changed `ScreenSwitcher`, `MenuSpotlight` (keyboard held on the guide's path), `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity`
+(top nav: Submit entries, keycaps out of pad navigation), `NavBarPadFocusTests` (new). What ran instead of
+`/verify-unity`: see the PR's Verification section.
+1. Menu_Main with a pad, Hangar, the pad on a vessel tile (e.g. Sparrow): LT / RT do nothing (no screen change).
+2. D-pad up from the Hangar: the pad lands on a top tab and its sky-blue focus ring shows (never on the LT / RT
+   keycaps). RT now pages to the Ark, and the ring moves to ARK with the underline; RT again pages to Home; LT back.
+   PORT is still skipped.
+3. On the bar, D-pad left / right moves the ring between tabs; A on a tab opens that screen and the ring stays on the
+   bar. D-pad down enters the screen; LT / RT stop paging again.
+4. Home: with the pad on the HOME tab, A does not open the Arcade; D-pad down to the hub row, A opens what is selected.
+   With nothing selected on Home, A still opens the Arcade.
+5. Open the Arcade (or Settings) and press D-pad up repeatedly: the pad never leaves the window onto a tab. Inside a hub
+   window, LT / RT still slide between Toy Box / Arcade / Arena / Mission.
+6. Mouse: clicking a tab, or the LT / RT keycaps, still pages exactly once (PORT plays its Denied sting once). Hovering
+   a tab still lifts its word; no ring appears for a click.
+7. First-login guide (a fresh profile, or replay the guide), keyboard only, no pad connected: the arrow keys never leave
+   the spotlit control (nor reach a top tab), and Enter presses the spotlit control. With the mouse only, no focus ring
+   appears anywhere until a key is pressed.
 
 ## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
