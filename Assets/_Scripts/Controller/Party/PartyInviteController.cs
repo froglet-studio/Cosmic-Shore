@@ -671,6 +671,9 @@ namespace CosmicShore.Gameplay
         {
             CSDebug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
             NetSessionRecorder.Mark("bounce", toastMessage);
+            // A bounce lands on HOME with its notice, never on the launch panel of a match the party
+            // it was launched with can no longer play (MenuReturnCard).
+            CosmicShore.UI.MenuReturnCard.Clear();
             await RecoverFromFailedTransitionAsync();
             // Show the notice AFTER recovery. ToastService is a scene-bound MonoBehaviour
             // (it subscribes to the channel in OnEnable), so it is destroyed + recreated by
