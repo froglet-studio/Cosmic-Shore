@@ -45,9 +45,13 @@ Hub windows: the strip's four words (Toy Box, Arcade, Arena, Mission) all read i
 "Every pixel is important." Nothing in the UI moves for its own sake while a player is reading or playing.
 
 - **Still:** every tab underline (the top nav's Home / Hangar / Ark bar ran the selection sweep and read as frozen next
-  to the hub strip's bar; both are plain bars now), the lattice backdrop (no drift, no element pulses, no twinkles), the presence orb (no orbiting dots, no
+  to the hub strip's bar; both are plain bars now), the panel lattice (no drift, no element pulses, no twinkles), the presence orb (no orbiting dots, no
   spinning ring), the party bonds (solid), the Hangar bay (no breathing rings, no scan line, no motes), floating
   avatars and art, the settings gear, element halos (`KitElementHalo.breathe` off).
+- **The one background motion: the sea lines** behind a whole window (Arcade, Arena, Mission, Toy Box, Configure,
+  Profile, Leaderboard; `Docs/MENU_REDESIGN_B.md` §63). Shombith chose it on 2026-10-25 from the canvas's Rev 12 board
+  ("keep it a bit slow"): thin neutral-blue wave lines over a 95 % veil, three layers sliding one 480-unit loop per
+  90 / 68 / 45 s. `author_ui_lattice.py` fails any layer faster than 40 s a loop.
 - **Kept, because they mean something:** progress spinners while something loads or connects, the music EQ while a
   track plays, the hint that teaches a control, the START sweep, the current quest segment's spark, window entrances
   and the lattice crystallising in (transitions are meaningful moments; Shombith proposed putting the dramatic visuals
@@ -60,6 +64,6 @@ Hub windows: the strip's four words (Toy Box, Arcade, Arena, Mission) all read i
 |---|---|
 | No element tokens, rims, literal element colours or element button variants in any UI prefab or scene; the lockup's element colour off | `Tools/Build/check_ui_colors.py` |
 | The kit palette (Play / Cta lime, Purchase gold, Danger fire, retired variants = Default) | `author_ui_kit_prefabs.py` validation |
-| The lattice / orb / bond materials still; no rim materials written | `author_ui_lattice.py` validation |
-| Period 0 really holds the shaders still | `lattice_preview.py --check` |
+| The lattice / orb / bond materials still; no rim materials written; the sea lines slow (40 s a loop or more) | `author_ui_lattice.py` validation |
+| Period 0 really holds the shaders still; the sea lines move a fraction of a line per frame and loop without a seam | `lattice_preview.py --check` |
 | Each screen's colour choices | the screen's `author_*.py` generator and review against this page |

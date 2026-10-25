@@ -124,6 +124,7 @@ def _lattice_guid(key):
 
 LATTICE_PANEL_MAT = _lattice_guid("panel_mat")
 LATTICE_WINDOW_MAT = _lattice_guid("window_mat")
+SEA_WINDOW_MAT = _lattice_guid("sea_window_mat")
 
 
 def lattice_image(material_guid):
@@ -181,6 +182,14 @@ def window_lattice_node(key, name="Lattice", rect=None):
     """The two-layer lattice for a whole window's backdrop (Lattice_Window.mat)."""
     n = K.Node(key, name, rect or K.STRETCH)
     n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_WINDOW_MAT))
+    return n
+
+
+def window_sea_node(key, name="SeaLines", rect=None):
+    """The sea lines behind a whole window (§63, Sea_Window.mat): slow wave lines in three depth layers over the
+    window's veil. Put it right after the veil so the window's content draws over it."""
+    n = K.Node(key, name, rect or K.STRETCH)
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(SEA_WINDOW_MAT))
     return n
 
 

@@ -7,7 +7,9 @@ blueprint grid (kit_grid) behind style-B panels and windows.
     Assets/_Graphics/Materials/Shaders/UI/UILattice.cginc    hand-written; the maths (Tools/Build/lattice_preview.py
                                                              compiles and renders it with clang)
     Lattice_Panel.mat     one finer layer for panels (the Ark recipe, leaderboard, Profile card, Toy Box cards...)
-    Lattice_Window.mat    two layers for a whole window's backdrop (Arcade, Arena, Mission, Configure, Toy Box)
+    Lattice_Window.mat    two layers for a panel-sized backdrop (the pilot record, the friends drawer, the in-game HUD)
+    Sea_Window.mat        the sea lines behind a whole window (Arcade, Arena, Mission, Toy Box, Configure, Profile,
+                          Leaderboard): SeaLines.shader on UISeaLines.cginc, §63
 
 It also writes the rev 6 rims (ElementRim.shader, §45.3: ElementRim_<element>.mat) and the presence orb and party
 bonds (§45.4): Presence.shader / Bond.shader on UIPresence.cginc, Presence_Orb.mat (the friends orb in Menu_Main)
@@ -37,6 +39,8 @@ RIM_CGINC = f"{DIR}/UIElementRim.cginc"
 PRESENCE_SHADER = f"{DIR}/Presence.shader"
 BOND_SHADER = f"{DIR}/Bond.shader"
 PRESENCE_CGINC = f"{DIR}/UIPresence.cginc"
+SEA_SHADER = f"{DIR}/SeaLines.shader"
+SEA_CGINC = f"{DIR}/UISeaLines.cginc"
 
 
 def guid(key):
@@ -50,6 +54,9 @@ RIM_CGINC_GUID = guid("rim_cginc")
 PRESENCE_SHADER_GUID = guid("presence_shader")
 BOND_SHADER_GUID = guid("bond_shader")
 PRESENCE_CGINC_GUID = guid("presence_cginc")
+SEA_SHADER_GUID = guid("sea_shader")
+SEA_CGINC_GUID = guid("sea_cginc")
+SEA_GUID = guid("sea_window_mat")
 PRESENCE_GUID = guid("presence_mat")
 BOND_GUID = guid("bond_mat")
 # Rev 7 (§47.1): the selection's light - the rim shader in white (the vertex colour, the theme's Selection blue,
@@ -85,6 +92,14 @@ MATERIALS = {
                            _PulseRepeat=1400, _PulseLength=120, _TwinkleDensity=0, _FadeStart=0.55, _Reveal=1),
 }
 MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
+# The sea lines behind a whole window (§63, Shombith 2026-10-25: the canvas's Rev 12 Sea lines board, "keep it a bit
+# slow"): three depth layers of thin wave lines in a lighter neutral blue, sliding sideways one 480-unit loop per
+# 90 / 68 / 45 s - half again slower than the board's 60 / 45 / 30. The one background motion the menu keeps
+# (Docs/UI_COLOR_RULES.md); SEA_SLOWEST_LOOP is the floor the gate holds every layer to.
+SEA_LINE = (0.43529412, 0.5176471, 0.84705883)     # #6F84D8
+SEA = dict(_Spacing=46, _Loop=480, _Amplitude=9, _FarAlpha=0.13, _FarWidth=0.8, _FarSeconds=90, _MidAlpha=0.19,
+           _MidWidth=1, _MidSeconds=68, _NearAlpha=0.27, _NearWidth=1.3, _NearSeconds=45, _FadeTop=0.2, _FadeBottom=0.2)
+SEA_SLOWEST_LOOP = 40
 # The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
 # the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
 # (author_menu_friends_drawer.py) both read them, so a bond always ends under its avatar.
@@ -190,6 +205,10 @@ def presence_material():
                                 _Bond2=clear, _BondAngles=ORB_MEMBER_ANGLES + (0,)))
 
 
+def sea_material():
+    return shader_material("Sea_Window", SEA_SHADER_GUID, SEA, dict(_Color=(1, 1, 1), _LineColor=SEA_LINE))
+
+
 def bond_material():
     return shader_material("Bond_Party", BOND_SHADER_GUID, BOND, dict(_Color=(1, 1, 1)))
 
@@ -214,6 +233,10 @@ def outputs():
     out[f"{DIR}/Presence_Orb.mat.meta"] = mat_meta(PRESENCE_GUID)
     out[f"{DIR}/Bond_Party.mat"] = bond_material()
     out[f"{DIR}/Bond_Party.mat.meta"] = mat_meta(BOND_GUID)
+    out[f"{SEA_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, SEA_SHADER_GUID)
+    out[f"{SEA_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, SEA_CGINC_GUID)
+    out[f"{DIR}/Sea_Window.mat"] = sea_material()
+    out[f"{DIR}/Sea_Window.mat.meta"] = mat_meta(SEA_GUID)
     out[f"{DIR}/SelectionRim.mat"] = selection_material(False)
     out[f"{DIR}/SelectionRim.mat.meta"] = mat_meta(SELECTION_GUID)
     out[f"{DIR}/SelectionBar.mat"] = selection_material(True)
@@ -259,8 +282,8 @@ def validate_screens(prefabs):
     gridded = sorted(p for p, t in prefabs.items() if f"guid: {KIT_GRID}" in t)
     assert not gridded, f"the blueprint grid is still drawn in {gridded}"
     for w in WINDOWS:
-        assert f"m_Material: {{fileID: 2100000, guid: {WINDOW_GUID}, type: 2}}" in prefabs.get(w, ""), \
-            f"{w} has no window lattice behind it"
+        assert f"m_Material: {{fileID: 2100000, guid: {SEA_GUID}, type: 2}}" in prefabs.get(w, ""), \
+            f"{w} has no sea lines behind it"
     # Every bond Image has KitRimMesh beside it, and no screen is lit with a retired element rim.
     for path, text in prefabs.items():
         lit, meshed = rim_pairs(text)
@@ -300,6 +323,19 @@ def validate(files):
         written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
         assert written == declared_, f"{mat}: properties drifted (missing {declared_ - written}, extra {written - declared_})"
         assert f"guid: {g}" in files[f"{shader_path}.meta"], f"{shader_path}.meta has the wrong guid"
+    # The sea lines (§63): the material carries every property the shader declares, and every layer moves - slowly.
+    src = open(os.path.join(REPO, SEA_SHADER), encoding="utf-8").read()
+    assert '#include "UISeaLines.cginc"' in src, "SeaLines.shader does not include UISeaLines.cginc"
+    sea_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+    m = files[f"{DIR}/Sea_Window.mat"]
+    assert f"m_Shader: {{fileID: 4800000, guid: {SEA_SHADER_GUID}, type: 3}}" in m, "Sea_Window is not on SeaLines.shader"
+    written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+    assert written == sea_declared, f"Sea_Window: properties drifted (missing {sea_declared - written}, extra {written - sea_declared})"
+    assert f"guid: {SEA_GUID}" in files[f"{DIR}/Sea_Window.mat.meta"], "Sea_Window.mat.meta has the wrong guid"
+    assert f"guid: {SEA_SHADER_GUID}" in files[f"{SEA_SHADER}.meta"], "SeaLines.shader.meta has the wrong guid"
+    for k in ("_FarSeconds", "_MidSeconds", "_NearSeconds"):
+        v = float(re.search(rf"^    - {k}: (.*)$", m, re.M).group(1))
+        assert v >= SEA_SLOWEST_LOOP, f"Sea_Window: {k} is {v} s - the sea lines stay slow (at least {SEA_SLOWEST_LOOP} s a loop)"
     orb = files[f"{DIR}/Presence_Orb.mat"]
     assert f"- _SpaceColor: {col(NEUTRAL)}" in orb, "the orb's ring must be the neutral blue, not an element's colour"
     for k in ("_SpinSeconds", "_DotSize", "_BondPeriod", "_BondSpeed"):
@@ -360,6 +396,10 @@ def self_test(files):
             BOND_SHADER_GUID, RIM_SHADER_GUID))),
         ("the selection stops breathing", lambda f: f.__setitem__(f"{DIR}/SelectionRim.mat", re.sub(
             r"    - _Breathe: [\d.]+\n", "    - _Breathe: 0\n", f[f"{DIR}/SelectionRim.mat"], count=1))),
+        ("the sea lines racing", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
+            "    - _NearSeconds: 45\n", "    - _NearSeconds: 12\n", 1))),
+        ("the sea material on the lattice shader", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
+            SEA_SHADER_GUID, SHADER_GUID))),
         ("the theme loses the selection's material", lambda f: f.__setitem__(THEME, f[THEME].replace(SELECTION_GUID, "8" * 32, 1))),
     ]
     screens = shipped_prefabs()
@@ -368,8 +408,8 @@ def self_test(files):
             WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Sprite: {{fileID: 21300000, guid: {KIT_GRID}, type: 3}}\n"}))),
         ("a screen lit with an element rim again", lambda f: f.__setitem__("__screens__", dict(screens, **{
             PARTY_PANEL: screens[PARTY_PANEL].replace(f"guid: {BOND_GUID}", f"guid: {RIM_GUID['Space']}", 1)}))),
-        ("a window without its lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
-            WINDOWS[2]: screens[WINDOWS[2]].replace(WINDOW_GUID, "2" * 32)}))),
+        ("a window without its sea lines", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            WINDOWS[2]: screens[WINDOWS[2]].replace(SEA_GUID, "2" * 32)}))),
         ("a party bond without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
             PARTY_PANEL: screens[PARTY_PANEL].replace(RIM_SCRIPT, "5" * 32)}))),
     ]

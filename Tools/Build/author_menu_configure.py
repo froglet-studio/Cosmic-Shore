@@ -1158,9 +1158,9 @@ def steps_row(chrome, kind):
 def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
     # Near-opaque (the owner, 2026-10-15): it keeps the Arcade window behind from reading through.
-    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.94, raycast=True)
-    # Rev 6: the living lattice over the veil (Lattice_Window.mat).
-    root.child(M.window_lattice_node("VeilLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA, raycast=True)
+    # §63: the sea lines over the veil (Sea_Window.mat).
+    root.child(M.window_sea_node("VeilLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
     preview_window(root, kind)
 
     # Everything but the preview. ConfigureCinema fades this one group while the player flies.
@@ -1364,7 +1364,9 @@ def tab_node(parent, i, key, icon, caption):
 
 def build_leaderboard_view():
     root = N("root", "LeaderboardView", STRETCH)
-    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.72, raycast=True)
+    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA,
+               raycast=True)
+    root.child(M.window_sea_node("VeilSea", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     right = root.child(N("Board", "Board", R((0, 1), (1, 1), ((500 - 40) / 2, -LEFT_TOP), (-(500 + 40), COL_H), (0.5, 1))))
     tabs = right.child(N("Tabs", "Tabs", TL(8, 0, 360, 108)))

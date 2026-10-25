@@ -14130,3 +14130,12 @@ project code; Amoebius builds. Rules: `Docs/UI_COLOR_RULES.md`. Check by hand:
 - [ ] Hub strip: Toy Box, Arcade, Arena and Mission all read in the same blue whichever is open; only the underline moves.
 - [ ] Home: the Toy Box, Arcade and Arena buttons look the same (no lime Arcade); Mission is dimmed while unavailable.
 - [ ] EditMode suite passes.
+
+## Sea lines behind every window (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: `lattice_preview.py` compiles `UISeaLines.cginc` and the
+`SeaLines.shader` fragment with clang and asserts the dials; `author_ui_lattice.py --check / --self-test`; every
+window generator `--check`; `check_ui_colors.py`; `check_generated_assets.py`. Owed in the editor:
+- [ ] `CosmicShore/UI/SeaLines` compiles with no errors or warnings (Console, shader inspector).
+- [ ] Arcade, Arena, Mission, Toy Box, Configure, Profile, Leaderboard: slow lines in three depths, no seam, no flicker,
+      the world barely visible through the 95 % veil (`Docs/MENU_REDESIGN_B.md` §63).

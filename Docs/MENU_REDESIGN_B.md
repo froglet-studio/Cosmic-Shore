@@ -2985,3 +2985,28 @@ ships until one is picked. What the attempt taught, for the next one: a script-e
 SilencePerimeterPass pattern) can feed the overlay canvas a blurred world at a quarter size with no renderer-asset
 change, and per-window variation on one shared UI material travels as vertex data (UV1/UV2) - both are in the reverted
 commits if a later design needs them.
+
+## 63. Sea lines behind every window (2026-10-25, awaiting in-editor approval)
+
+Shombith picked H, "Sea lines", from the canvas's Rev 12 options board, saw it under the Arcade and Profile windows
+(R12SeaArcade / R12SeaProfile, an 86 % veil, 60 / 45 / 30 s layers) and asked for it built: "keep it a bit slow.
+Make it 95% opaque".
+
+- **The shader.** `CosmicShore/UI/SeaLines` (`SeaLines.shader` on `UISeaLines.cginc`), UI/Default plumbing like the
+  lattice. Lines rest 46 canvas units apart; line i is in layer i mod 3 (far, middle, near: alpha 0.13 / 0.19 / 0.27,
+  width 0.8 / 1 / 1.3). Each line is two sines whose periods divide the 480-unit loop, with its own amplitude and
+  phase, so a layer that slides one loop per period never shows a seam. Only the nearest line and its two neighbours
+  are evaluated per pixel. The window's top and bottom 20 % fade out. Time alone animates it, so no canvas rebuilds.
+- **The material.** `Sea_Window.mat`, written by `author_ui_lattice.py` (guid `sea_window_mat`): the colour #6F84D8,
+  layers at 90 / 68 / 45 s a loop (the board's speeds, half again slower). The gate fails any layer under 40 s.
+- **Where.** `menu_b_motion.window_sea_node` replaces the window lattice right after the veil in the Arcade, Arena,
+  Mission and Toy Box windows (node key `BackdropLattice`, now named SeaLines), the three Configure views
+  (`VeilLattice`), and new in the Profile and Leaderboard windows (`VeilSea`). The panel lattice (`Lattice_Panel`) and
+  the panel-sized `Lattice_Window` (pilot record, friends drawer, in-game HUD) are unchanged.
+- **The veil.** `WINDOW_BACKDROP_ALPHA` 0.75 -> 0.95, shared by every window above; Profile and Leaderboard (0.72) and
+  Configure (0.94) use it too.
+- **Proof without an editor.** `lattice_preview.py` compiles the real include and fragment with clang and renders the
+  full 1920 x 1080 window: thin and faint, moving a fraction of a line per frame, one whole loop returns the same frame,
+  0 seconds holds it still, a hidden window draws nothing, the edges fade. Unity's own shader compile is still owed.
+- **Hand test.** Open Arcade, Arena, Mission, Toy Box, a game's Configure, Profile and Leaderboard: the lines drift
+  slowly right to left in three depths, the game world barely shows through, no seam passes, nothing flickers.

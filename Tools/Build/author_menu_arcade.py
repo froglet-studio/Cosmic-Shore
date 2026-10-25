@@ -708,7 +708,8 @@ OPEN_BOND_ALPHA = 0.35     # an open seat's bond (ArcadeLobbyList.openBondAlpha)
 # Arena, Toy Box and Mission windows.
 # 0.55 -> 0.75 on 2026-10-17 (the owner: "make the bg opaque by 20%"): still glass, but Home no longer
 # reads through behind a window's title and Back.
-WINDOW_BACKDROP_ALPHA = 0.75
+# 0.75 -> 0.95 on 2026-10-25 (Shombith, with the sea lines, §63: "make it 95% opaque").
+WINDOW_BACKDROP_ALPHA = 0.95
 # Rev 3: the four windows' body and header, shared. The left inset is a gutter for the friends control
 # drawn over every window (rev 3's 76 px handle on the left edge; since rev 6 the presence orb, ORB_*
 # below); the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.
@@ -989,8 +990,8 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     root = N("root", "ArcadeView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=WINDOW_BACKDROP_ALPHA)
-    # Rev 6: the living lattice over the glass (Lattice_Window.mat); it crystallises in as the window fades in.
-    root.child(M.window_lattice_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    # §63: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
+    root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     # Sibling order is FOCUS order: ScreenSwitcher.Refocus lands on the first live Selectable in
     # hierarchy order, so the explore scroll comes before the party panel (the Body lays them out

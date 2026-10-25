@@ -131,8 +131,8 @@ def build_view():
     root = N("root", "MissionView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
-    # Rev 6: the living lattice over the glass (Lattice_Window.mat); it crystallises in as the window fades in.
-    root.child(M.window_lattice_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    # §63: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
+    root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     # Sibling order is FOCUS order (ScreenSwitcher.Refocus): the cards first, the party panel next, Back last.
     body = root.child(N("Body", "Body", A.WINDOW_BODY))

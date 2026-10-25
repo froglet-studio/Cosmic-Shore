@@ -13,7 +13,9 @@ reveal 0 shows nothing, reveal 1 equals the plain draw, reveal 0.5 shows a disc;
 edge fade empties the corners. The rim (ElementRim.shader) and the presence orb and party bonds (Presence.shader,
 Bond.shader on UIPresence.cginc, section 45.4) go through the same translation: the orb draws exactly _Online dots
 on its orbit and turns them, a bond lights only in its member's colour and only for a seated member, the bond
-dashes flow outward, and the molecule's bond stays on its line. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
+dashes flow outward, and the molecule's bond stays on its line. The sea lines (SeaLines.shader on UISeaLines.cginc,
+section 63) are thin, move slowly, loop without a seam, hold still at 0 seconds and fade at the window's top and
+bottom. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
 (stencil, clip rect, UnityCG) is Unity's standard UI/Default block, copied from SilhouetteHolo.shader.
 """
 import argparse
@@ -33,6 +35,8 @@ RIM_SHADER = os.path.join(SHADER_DIR, "ElementRim.shader")
 PRESENCE_CGINC = os.path.join(SHADER_DIR, "UIPresence.cginc")
 PRESENCE_SHADER = os.path.join(SHADER_DIR, "Presence.shader")
 BOND_SHADER = os.path.join(SHADER_DIR, "Bond.shader")
+SEA_CGINC = os.path.join(SHADER_DIR, "UISeaLines.cginc")
+SEA_SHADER = os.path.join(SHADER_DIR, "SeaLines.shader")
 
 # The whole translation: HLSL out-params to C++ references, and the vector constructor spellings.
 SUBS = [(r"\bout float\b", "float&"),
@@ -67,6 +71,7 @@ static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t;
 static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 static inline float atan2_(float y, float x) { return std::atan2(y, x); }
 static inline float cos_(float x) { return std::cos(x); }
+static inline float sqrt_(float x) { return std::sqrt(x); }
 typedef float4 half4;
 typedef int sampler2D;
 static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
@@ -77,6 +82,7 @@ static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
 #define sin sin_
 #define atan2 atan2_
 #define cos cos_
+#define sqrt sqrt_
 """
 
 UNIFORMS = r"""
@@ -417,6 +423,136 @@ int main() {
 """
 
 
+SEA_UNIFORMS = r"""
+struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; };
+float4 _Time;
+fixed4 _Color, _LineColor;
+float _Spacing, _Loop, _Amplitude, _FarAlpha, _FarWidth, _FarSeconds, _MidAlpha, _MidWidth, _MidSeconds;
+float _NearAlpha, _NearWidth, _NearSeconds, _FadeTop, _FadeBottom;
+"""
+
+SEA_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+#undef sqrt
+static void defaults() {   // Sea_Window.mat (author_ui_lattice.py SEA)
+    _Color = (float4){1, 1, 1, 1}; _LineColor = (float4){0.435f, 0.518f, 0.847f, 1};
+    _Spacing = 46; _Loop = 480; _Amplitude = 9;
+    _FarAlpha = 0.13f; _FarWidth = 0.8f; _FarSeconds = 90; _MidAlpha = 0.19f; _MidWidth = 1; _MidSeconds = 68;
+    _NearAlpha = 0.27f; _NearWidth = 1.3f; _NearSeconds = 45; _FadeTop = 0.2f; _FadeBottom = 0.2f;
+}
+// A W x H render of a 1920 x 1080 window at time t: mean alpha, optional PPM over the 95 % veil's near-black, and
+// the per-pixel alphas for comparing frames.
+static double render(int W, int H, float t, float vertexAlpha, const char* ppm, float* keep) {
+    _Time = (float4){t / 20, t, t * 2, t * 3};
+    FILE* f = ppm ? std::fopen(ppm, "wb") : nullptr;
+    if (f) std::fprintf(f, "P6 %d %d 255\n", W, H);
+    double sum = 0;
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++) {
+            v2f IN;
+            float u = (x + 0.5f) / W, v = 1 - (y + 0.5f) / H;
+            IN.texcoord = (float2){u, v};
+            IN.worldPosition = (float4){u * 1920, v * 1080, 0, 1};
+            IN.color = (float4){1, 1, 1, vertexAlpha};
+            float4 c = frag(IN);
+            sum += c.w;
+            if (keep) keep[y * W + x] = c.w;
+            if (f) {
+                float bg[3] = {0.0f, 0.004f, 0.04f};
+                unsigned char px[3];
+                float rgb[3] = {c.x, c.y, c.z};
+                for (int k = 0; k < 3; k++) {
+                    float o = bg[k] * (1 - c.w) + rgb[k] * c.w;
+                    px[k] = (unsigned char)(o < 0 ? 0 : (o > 1 ? 255 : o * 255));
+                }
+                std::fwrite(px, 1, 3, f);
+            }
+        }
+    if (f) std::fclose(f);
+    return sum / ((double)W * H);
+}
+static double diff(const float* a, const float* b, int n) {
+    double d = 0;
+    for (int i = 0; i < n; i++) d += std::fabs(a[i] - b[i]);
+    return d / n;
+}
+int main(int argc, char** argv) {
+    const char* out = argc > 1 ? argv[1] : nullptr;
+    char path[1024];
+    auto P = [&](const char* name) -> const char* { if (!out) return nullptr; std::snprintf(path, sizeof path, "%s/%s", out, name); return path; };
+    // Full size: the lines are about one canvas unit wide, so a smaller render would miss them.
+    const int W = 1920, H = 1080, N = W * H;
+    static float f0[N], f1[N], fLoop[N], fNearLoop[N], tmp[N];
+    defaults();
+    double cover = render(W, H, 10.0f, 1.0f, P("sea_t10.ppm"), f0);
+    render(W, H, 25.0f, 1.0f, P("sea_t25.ppm"), nullptr);
+    render(W, H, 10.0f + 1.0f / 60.0f, 1.0f, nullptr, f1);
+    // One loop of every layer at once: 90, 68 and 45 s share no small common period, so hold the far and middle
+    // layers still and run the near one exactly one loop.
+    defaults(); _FarSeconds = 0; _MidSeconds = 0;
+    render(W, H, 10.0f, 1.0f, nullptr, fLoop);
+    render(W, H, 10.0f + _NearSeconds, 1.0f, nullptr, fNearLoop);
+    double loopDiff = diff(fLoop, fNearLoop, N);
+    // Still: every layer at 0 seconds draws the same frame at any time.
+    defaults(); _FarSeconds = 0; _MidSeconds = 0; _NearSeconds = 0;
+    render(W, H, 3.0f, 1.0f, nullptr, tmp);
+    render(W, H, 30.0f, 1.0f, nullptr, fLoop);
+    double stillDiff = diff(tmp, fLoop, N);
+    defaults();
+    double hidden = render(W, H, 10.0f, 0.0f, nullptr, nullptr);
+    double half = render(W, H, 10.0f, 0.5f, nullptr, nullptr);
+    // The edges: the top and bottom rows are faded out, the middle rows carry lines.
+    double top = 0, mid = 0;
+    for (int x = 0; x < W; x++) top += f0[x] + f0[(H - 1) * W + x];
+    for (int y = H / 2 - 100; y < H / 2 + 100; y++) for (int x = 0; x < W; x++) mid += f0[y * W + x];
+    mid /= 200.0 * W; top /= 2.0 * W;
+    double frame = diff(f0, f1, N);
+    std::printf("sea: cover %.4f | one frame apart %.5f | near loop %.6f | still %.6f | hidden %.6f | half %.4f | top %.5f mid %.4f\n",
+                cover, frame, loopDiff, stillDiff, hidden, half, top, mid);
+    int bad = 0;
+    auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
+    need(cover > 0.001 && cover < 0.02, "the sea lines are faint and thin: a small share of the window");
+    need(frame > 1e-6, "the lines move");
+    need(frame < cover * 0.5, "and slowly: from one frame to the next a line moves a fraction of its width");
+    need(loopDiff < 2e-3, "a layer that slides one whole loop lands back where it started (no seam)");
+    need(stillDiff < 1e-6, "0 seconds holds every layer still");
+    need(hidden < 1e-7, "a hidden window draws nothing");
+    need(std::fabs(half - cover * 0.5) < cover * 0.02, "the vertex alpha fades the lines");
+    need(top < 1e-6 && mid > cover, "the top and bottom fade out, the middle carries the lines");
+    return bad ? 1 : 0;
+}
+"""
+
+
+def build_sea(work, out):
+    inc = translate(open(SEA_CGINC, encoding="utf-8").read())
+    frag = translate(extract_frag(open(SEA_SHADER, encoding="utf-8").read()))
+    src = os.path.join(work, "sea.cpp")
+    open(src, "w").write(SHIM + inc + SEA_UNIFORMS + frag + SEA_MAIN)
+    exe = os.path.join(work, "sea")
+    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit("FAIL: the sea lines shader maths does not compile")
+    r = subprocess.run([exe] + ([out] if out else []), capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode:
+        raise SystemExit("FAIL: the sea lines dials do not drive as asserted")
+    if out:
+        from PIL import Image
+        for name in ("sea_t10", "sea_t25"):
+            ppm = os.path.join(out, name + ".ppm")
+            Image.open(ppm).save(os.path.join(out, name + ".png"))
+            os.remove(ppm)
+
+
 def extract_frag(shader_text):
     m = re.search(r"fixed4 frag\(v2f IN\) : SV_Target\n(\s*)\{", shader_text)
     assert m, "frag() not found in Lattice.shader"
@@ -511,7 +647,8 @@ def main():
         print(f"rendered to {out}")
     build_rim(work)
     build_presence(work)
-    print("OK: the lattice, the rim, the presence orb and the bonds compile and their dials drive")
+    build_sea(work, out)
+    print("OK: the lattice, the rim, the presence orb, the bonds and the sea lines compile and their dials drive")
 
 
 if __name__ == "__main__":
