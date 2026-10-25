@@ -62,11 +62,20 @@ log `runs/2026-10-25`). Mechanism: `Docs/DIAGNOSTICS.md` § "The Bug Ledger".
 - **Clean-play counting:** Yash's fixes still read 0 of 2 on his branch. The validation trail (`3484cb554`) rides on
   every send as `reports/<user>/ledger/validation.log`; read it before changing the counting again.
 
-## 5. Performance (same sweep, `perf_hunt.py status --refresh` 2026-10-24)
+## 5. Performance (`perf_hunt.py status --refresh`, 2026-10-25)
 
-Gates all OK. 99 regressions flagged, mostly Menu_Main and Regatta captures from Caleb, Andrew and Yash compared with
-one baseline recorded on a different machine (Menu_Main 3.8 ms CPU against 10-30 ms). Per-machine baselines are needed
-before these numbers mean regressions. Open capture tasks: T-20261015-56dd, -3e0b, -3972, -1551, -7edd.
+Gates all OK. **Baselines are per machine since 2026-10-25** (`scene|label|user`; each tester's first valid capture of a
+scenario is their baseline, and the 17 older baselines went to the tester whose capture they were). Only each
+machine's NEWEST capture of a scenario counts. The flagged regressions fell from 184 to 35; most of the 184 were Caleb's
+and Andrew's captures judged against Yash's faster machine. What still stands:
+- Grizzly Charge (jtgjones, 10-25): `LateBehaviourUpdate` 0.40 -> 2.44 ms, CPU +35% (T-20261017-19f0).
+- Garland (Yash, 10-26): `UGUI.Rendering.UpdateBatches` 0.82 -> 4.65 ms.
+- Menu_Main S2 (Yash): `BlackHole.Tick` / `BlackHole.Field` ~0.01 -> 2 ms (T-20261017-9990).
+- Regatta (Caleb, 10-16): GC per frame 47 -> 89 KB (T-20261017-2129).
+- Andrew's Garland and Bloomrush: 19 lines against his own first capture; check one more capture before acting.
+
+T-20261017-1809 closed: Caleb's next capture read its two markers within his baseline. Open capture tasks:
+T-20261015-56dd, -3e0b, -3972, -1551, -7edd.
 
 ## 6. Latest activity (generated)
 

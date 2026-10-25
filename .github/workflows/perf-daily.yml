@@ -134,10 +134,14 @@ jobs:
           cp Docs/perf/status.json "$RUNNER_TEMP/status.json"; cp Docs/Reports/PERFORMANCE.md "$RUNNER_TEMP/PERFORMANCE.md"
           git add Docs/perf/status.json Docs/Reports/PERFORMANCE.md
           git commit -q -m "perf: daily status $(date -u +%Y-%m-%d) [skip ci]"
+          # The sweep also rewrites files this commit does not carry (the baselines, the hunt state). Drop them, or
+          # the rebase below and the perf-status checkout both refuse a dirty tree (every scheduled run failed so,
+          # 2026-10-23..25).
+          git reset -q --hard HEAD
           for i in 1 2 3; do
             if git push origin HEAD:bleeding-edge; then echo "Committed to bleeding-edge."; exit 0; fi
             # bleeding-edge moved: put this one status commit on top of it and try again.
-            git fetch -q origin bleeding-edge && git rebase -q origin/bleeding-edge || { git rebase --abort; break; }
+            git fetch -q origin bleeding-edge && git rebase -q origin/bleeding-edge || { git rebase --abort 2>/dev/null || true; break; }
           done
           echo "::warning::bleeding-edge refused the daily status commit (branch protection?). Published to the perf-status branch instead; allow github-actions to push Docs/perf/status.json to bleeding-edge to stop this."
           git fetch -q origin perf-status || true
