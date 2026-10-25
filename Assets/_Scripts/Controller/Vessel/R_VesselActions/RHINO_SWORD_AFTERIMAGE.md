@@ -197,7 +197,7 @@ deleted (`ABILITY_LOCKUP.md`).
 | `Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs`, `RhinoSkimmerDamagePrismEffect.asset` | Charge energy scaling; cuts own afterimages past the 1 s grace (since 2026-10-17) |
 | `Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs`, `RhinoVesselSurgeByCrystalEffect.asset` | the Surge |
 | `Vessel/VesselElementalImmunity.cs`, `Vessel/ITopSpeedSource.cs`, `Executors/RampBoostActionExecutor.cs` | Momentum |
-| `Executors/RhinoSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
+| `AI/Rhino/RhinoSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
 | `UI/Controller/RhinoVesselHUDController.cs` | the card states, both gauges, the Time chip |
 | `Tests/Editor/RhinoSwordAfterimageTests.cs` | the segment tiling |
 

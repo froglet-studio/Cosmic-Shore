@@ -540,7 +540,7 @@ seats.
 | File | What |
 |---|---|
 | `KiteNavigatorCore.cs` | The kite: move, tail, loop detection, loop resolution, growth, blast radius. Engine-free; ported line for line from the lab's pure functions. |
-| `KiteNavigatorAI.cs` | The AI navigator (the lab's `navAI` / `planLoop`). Engine-free. |
+| `Controller/AI/Wrasse/KiteNavigatorAI.cs` (moved 2026-10-25, AI `ARCHITECTURE.md` 4.3) | The AI navigator (the lab's `navAI` / `planLoop`). Engine-free. |
 | `KiteNavigatorConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset`. |
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
 | `CrewSeatChoice.cs` | The seat a person picked on a crew hull, remembered on the device per hull class (2026-10-21). |

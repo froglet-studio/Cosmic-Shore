@@ -482,7 +482,7 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | The slice (death visual) | `Utility/Effects/PrismSlice.cs` (batch/budget/retire) · `Utility/PrismSliceGeometry.cs` (the stamps) · `_Graphics/Materials/Graphs/PrismSlice.hlsl` + `PrismSlice.shader` · `_Graphics/Materials/PrismSliceMaterial.mat` · `Resources/PrismSliceConfig.asset` · `Vessel/Prism.cs` (`Slice`) · `Prisms/PrismFactory.cs` (`SpawnExplosion` routes it) |
 | Owner-authoritative replication (energy, energize phase, surge bit) | `Controller/Vessel/RhinoSwordNetworkRelay.cs` (on the Rhino root) |
 | Omni-crystal Surge (fill, burst, 6 s energized, +2 levels to every element) | `ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs` → `_SO_Assets/Effects/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffect.asset` (in `RhinoImpactorDataContainer`). *The sword-side `RhinoSwordCrystalBurstEffectSO` + asset were deleted 2026-10-16.* |
-| AI sword hand (writes the trigger mirrors) | `Executors/RhinoSwordAutopilot.cs` (on the Rhino root) |
+| AI sword hand (writes the trigger mirrors) | `Controller/AI/Rhino/RhinoSwordAutopilot.cs` (on the Rhino root; moved 2026-10-25) |
 | Box-overlap re-apply (energize rising edge) | `ImpactEffects/Impactors/SkimmerImpactor.cs` (`ReapplyPrismEffectsToOverlapping`) |
 | Shell-pair re-dispatch (energize rising edge) | `Controller/Managers/PrismShellContactManager.cs` (`RedispatchPairsForOwner`) |
 | Capsule crackle surface mode | `Controller/Vessel/ForcefieldCrackleController.cs` (`CrackleSurface`) |
