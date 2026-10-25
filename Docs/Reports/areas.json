@@ -477,6 +477,58 @@
         "Open the Vessel Studio artifact, the concept fleet row.",
         "Fly a vessel; record Keep / Drop on its Decisions tab."
       ]
+    },
+    "android-build": {
+      "title": "Android build",
+      "aliases": [
+        "android",
+        "android build",
+        "android builds",
+        "play store",
+        "google play",
+        "aab",
+        "apk",
+        "internal testing",
+        "play console"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Shombith",
+        "Garrett",
+        "Caleb"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "all on bleeding-edge; the 32-bit build has not been uploaded to Play yet",
+      "summary": "The signed release App Bundle for Google Play with its pre-upload check, the development APK and the switch that makes it play like release, and 32-bit (ARMv7) back beside ARM64. Build 412826 (2026-10-14, 64-bit only) is on internal testing.",
+      "paths": [
+        "Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs",
+        "Assets/_Scripts/Editor/Build/AndroidBundleCheck.cs",
+        "Assets/_Scripts/Tests/Editor/AndroidBundleCheckTests.cs",
+        "Assets/_Scripts/Utility/DevDiagnostics.cs",
+        "Assets/_Scripts/Utility/DevDiagnosticsToggle.cs",
+        "Assets/Plugins/Android",
+        "ProjectSettings/AndroidResolverDependencies.xml",
+        "Tools/Build/check_android_signing_settings.py",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "docs": [
+        "Docs/ANDROID_BUILD.md",
+        "Docs/PLATFORM_UNIFICATION.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/ANDROID_BUILD.md",
+      "taskAreas": [
+        "Android build"
+      ],
+      "test": [
+        "Pull bleeding-edge; switch the editor to Android.",
+        "Select the upload key in Publishing Settings, then FrogletTools > Build > Android App Bundle (Release); the .check.txt lists arm64-v8a and armeabi-v7a.",
+        "Upload to Play internal testing and install on a 32-bit phone (Moto G Power or Galaxy M) and a 64-bit one."
+      ]
     }
   }
 }
