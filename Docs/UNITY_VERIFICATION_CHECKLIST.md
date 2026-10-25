@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI Dolphin's Switchback drive, one per intensity (`Ys-bleeding-edge`, 2026-10-26, the AI learning sweep) — NOT EDITOR-VERIFIED
+
+**What landed:** `AIBoostPolicySO.ForMode(policy, mode, intensity)` loads `<policy>_<mode>_I<n>` before the mode's
+variant; `AIPilot.Initialize` passes `GameDataSO.SelectedIntensity`. `learn_drives_from_flights.py` writes Switchback's
+per-intensity variants from each intensity's own races: `DolphinAIBoostPolicy_Switchback_I1` / `_I2` / `_I4` (I3 has no
+races yet and flies `DolphinAIBoostPolicy_Switchback`). Why: `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.6.
+
+**Verified without the editor:** reference compile, player config 0 errors, editor config 0 errors in changed files
+(3 pre-existing `SessionError` errors in `UgsRequestPolicy.cs`); `learn_drives_from_flights --self-test` OK (the new
+fallback check watched failing with the fallback removed); `--mode Switchback --check` OK; `switchback_dolphin_sim.py`
+on the recorded courses (I4 course: 232 s / 31 missed mouths with the mode-wide numbers, 148 s / 12 with I4's own).
+NOT run: `RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_ElseTheModes` (EditMode).
+
+**Verify in editor** (the sweep reads the answers from the next races on its own):
+1. Switchback I4 with AI Dolphins: the Third Eye readout's drive is `DolphinAIBoostPolicy_Switchback_I4`'s numbers (it
+   discharges at about half charge); at I3 it is the mode's.
+2. The AI Dolphins circle less at I4 than in the 2026-10-26 04:09 race (23 s circling, 50 s on gate 4).
+
 ### 🔴 The AI Thresher slings; the Wrasse's stale boost policy cleared (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `ThresherSlingAIPolicySO` (new) on `Thresher.prefab`'s AIPilot (`ThresherAIBoostPolicy.asset`), replacing

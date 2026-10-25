@@ -83,7 +83,7 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 
 | Vessel | Learner | The verb | What it writes |
 |---|---|---|---|
-| Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge |
+| Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge; in Switchback also one variant per intensity (`_I<n>`, `PER_INTENSITY_MODES`, `MINIGAME_TRAINING_PLAN.md` §3.6) |
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
 | Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |

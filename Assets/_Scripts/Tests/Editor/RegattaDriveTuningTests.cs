@@ -70,6 +70,28 @@ namespace CosmicShore.Tests
         public void ForMode_NullPolicy_StaysNull()
         {
             Assert.IsNull(AIBoostPolicySO.ForMode(null, GameModes.Regatta));
+            Assert.IsNull(AIBoostPolicySO.ForMode(null, GameModes.Switchback, 4));
+        }
+
+        // Per-intensity variants (Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md §3.6): Switchback's I4 drive is learned from
+        // its I4 races, and an intensity with none of its own flies the mode's variant.
+        [Test]
+        public void ForMode_AnIntensityWithItsOwnVariant_FliesIt_ElseTheModes()
+        {
+            var policy = ScriptableObject.CreateInstance<ChargeBoostAIPolicySO>();
+            policy.name = "DolphinAIBoostPolicy";
+            try
+            {
+                var i4 = AIBoostPolicySO.ForMode(policy, GameModes.Switchback, 4);
+                Assert.AreEqual("DolphinAIBoostPolicy_Switchback_I4", i4.name);
+                Assert.AreEqual("DolphinAIBoostPolicy_Switchback", AIBoostPolicySO.ForMode(policy, GameModes.Switchback, 3).name,
+                    "no I3 races learned yet: the mode's variant");
+                Assert.AreEqual("DolphinAIBoostPolicy_Switchback", AIBoostPolicySO.ForMode(policy, GameModes.Switchback, 0).name,
+                    "no intensity: the mode's variant");
+                Assert.AreSame(policy, AIBoostPolicySO.ForMode(policy, GameModes.Headlong, 4),
+                    "negative control: a mode without variants flies the hull's own policy at any intensity");
+            }
+            finally { Object.DestroyImmediate(policy); }
         }
 
         [Test]
