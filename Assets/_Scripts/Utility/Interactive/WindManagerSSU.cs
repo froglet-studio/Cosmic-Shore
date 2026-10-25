@@ -13,14 +13,17 @@ namespace CosmicShore.Utility
         private float lastWindNoiseScale;
 
         [Tooltip("Speed at which the wind pattern moves horizontally.")]
-        public float windNoiseSpeed = 1;
+        [SerializeField] float windNoiseSpeed = 1;
+        public float WindNoiseSpeed => windNoiseSpeed;
 
         [Tooltip("The wind intensity will be between this value and 'Wind Intensity To'.")]
-        public float windIntensityFrom = -0.4f;
+        [SerializeField] float windIntensityFrom = -0.4f;
+        public float WindIntensityFrom => windIntensityFrom;
         private float lastWindIntensityFrom;
 
         [Tooltip("The wind intensity will be between this value and 'Wind Intensity From'.")]
-        public float windIntensityTo = 0.4f;
+        [SerializeField] float windIntensityTo = 0.4f;
+        public float WindIntensityTo => windIntensityTo;
         private float lastWindIntensityTo;
 
         //Runtime:

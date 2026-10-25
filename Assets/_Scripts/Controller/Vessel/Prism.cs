@@ -42,7 +42,8 @@ namespace CosmicShore.Gameplay
 
         [Header("Prism Status")] 
         public bool destroyed;
-        public bool devastated;
+        [SerializeField] bool devastated;
+        public bool Devastated => devastated;
 
         // Set transiently by Damage/Consume right before destruction so the destruction
         // SFX can tell a creature (fauna) kill from a generic block destroy. Reset on pool reuse.

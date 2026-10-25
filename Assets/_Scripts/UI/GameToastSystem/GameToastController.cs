@@ -111,21 +111,21 @@ namespace CosmicShore.UI
             for (int i = 0, count = _activeHints.Count; i < count; i++)
             {
                 var hint = _activeHints[i];
-                if (!hint.repeatWhileIdle && _hintsFiredOnce.Contains(hint))
+                if (!hint.RepeatWhileIdle && _hintsFiredOnce.Contains(hint))
                     continue;
 
-                float activity = _lastActivityTime.TryGetValue(hint.resetOnSituation, out var t)
+                float activity = _lastActivityTime.TryGetValue(hint.ResetOnSituation, out var t)
                     ? t
                     : _turnStartTime;
                 if (_lastHintShownTime.TryGetValue(hint, out var shown))
                     activity = Mathf.Max(activity, shown);
 
-                if (now - activity < hint.idleSeconds)
+                if (now - activity < hint.IdleSeconds)
                     continue;
 
                 _lastHintShownTime[hint] = now;
                 _hintsFiredOnce.Add(hint);
-                Show(new GameToastData(hint.situation, Domains.Blue, Domains.Blue));
+                Show(new GameToastData(hint.Situation, Domains.Blue, Domains.Blue));
             }
         }
 
@@ -141,16 +141,16 @@ namespace CosmicShore.UI
             string message;
             try
             {
-                message = string.Format(definition.messageTemplate, BuildFormatArgs(definition, data));
+                message = string.Format(definition.MessageTemplate, BuildFormatArgs(definition, data));
             }
             catch (System.FormatException e)
             {
                 Debug.LogError($"[GameToastController] Bad template for {data.Situation} " +
-                               $"(\"{definition.messageTemplate}\"): {e.Message}", this);
+                               $"(\"{definition.MessageTemplate}\"): {e.Message}", this);
                 return;
             }
 
-            var textColor = definition.useDomainColoredNames || !definition.tintWithDomainColor
+            var textColor = definition.UseDomainColoredNames || !definition.TintWithDomainColor
                 ? Color.white
                 : GetDomainColor(data.PrimaryDomain);
 
@@ -166,8 +166,8 @@ namespace CosmicShore.UI
             string arg0 = data.Args is { Length: > 0 } ? data.Args[0] : string.Empty;
             string arg1 = data.Args is { Length: > 1 } ? data.Args[1] : string.Empty;
 
-            string name0 = definition.useDomainColoredNames ? Colorize(arg0, data.PrimaryDomain) : arg0;
-            string name1 = definition.useDomainColoredNames ? Colorize(arg1, data.SecondaryDomain) : arg1;
+            string name0 = definition.UseDomainColoredNames ? Colorize(arg0, data.PrimaryDomain) : arg0;
+            string name1 = definition.UseDomainColoredNames ? Colorize(arg1, data.SecondaryDomain) : arg1;
 
             if (data.Situation == GameToastSituation.Joust)
             {
