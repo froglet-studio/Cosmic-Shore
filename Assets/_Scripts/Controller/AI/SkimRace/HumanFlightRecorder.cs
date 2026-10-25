@@ -61,6 +61,11 @@ namespace CosmicShore.Gameplay
         // (an index into "rivalBoostStatuses", -1 for none), the AI's objective phase (AIPilot.ObjectivePhase, -1 for none),
         // and the degrees between the hull's course and its nose (AIPilot.HeadingDirection reads the course).
         const int RivalStateColumns = 5;
+        // "rivalKite" columns per rival, aligned with "rivals", and "kite" per sample for the pilot's own hull: a crew
+        // vessel's kite (KiteNavigator, the Wrasse) - x, y, z, and the saved boosts; -1 boosts (and a zero position) when no
+        // kite is seated on this machine. 2026-10-26: an AI Wrasse lost 13-33 s at Wrasse Run's first ring in every
+        // recorded race while its hull passed beside the ring, and the record could not say where its kite was.
+        const int KiteColumns = 4;
 
         /// <summary>The flights folder: beside the diagnostics captures, so Store AI record finds them.</summary>
         public static string Folder => Path.Combine(DiagnosticsHUD.OutputDirectory, "Flights");
@@ -130,6 +135,8 @@ namespace CosmicShore.Gameplay
         readonly List<float> _rivalVel = new(2048 * 12);
         readonly List<string> _rivalHulls = new(8);
         readonly List<float> _rivalState = new(2048 * 4 * RivalStateColumns);
+        readonly List<float> _rivalKite = new(2048 * 4 * KiteColumns);
+        readonly List<float> _ownKite = new(2048 * KiteColumns);
         // Each AI boost driver status seen, with its numbers blanked to '#' so "ramping (412 u/s)" and "ramping (430 u/s)"
         // are one entry: the table "rivalBoostStatuses" that "rivalState" indexes.
         readonly List<string> _rivalBoostStatuses = new(32);
@@ -336,6 +343,7 @@ namespace CosmicShore.Gameplay
             NameRace();
             int rivalStart = _rivals.Count, crystalStart = _crystals.Count;
             RecordRivals();
+            RecordKite(tf, _ownKite);
             RecordCrystals(tf.position);
             RecordRailEvents(t);
 
@@ -583,6 +591,8 @@ namespace CosmicShore.Gameplay
             _rivalVel.Clear();
             _rivalHulls.Clear();
             _rivalState.Clear();
+            _rivalKite.Clear();
+            _ownKite.Clear();
             _rivalBoostStatuses.Clear();
             _rivalBoostStatusIndex.Clear();
             _crystals.Clear();
@@ -621,6 +631,7 @@ namespace CosmicShore.Gameplay
                 _rivals.Add(p.RoundStats?.SwitchesThreaded ?? 0);
                 _rivalVel.Add(vel.x); _rivalVel.Add(vel.y); _rivalVel.Add(vel.z);
                 RecordRivalState(vessel.VesselStatus, vessel.Transform);
+                RecordKite(vessel.Transform, _rivalKite);
                 if (first) _rivalHulls.Add(vessel.VesselStatus.VesselType.ToString().ToLowerInvariant());
             }
         }
@@ -651,6 +662,20 @@ namespace CosmicShore.Gameplay
             _rivalState.Add(boostStatus);
             _rivalState.Add(phase);
             _rivalState.Add(courseNose);
+        }
+
+        /// <summary>A crew vessel's kite (see <see cref="KiteColumns"/>) onto <paramref name="into"/>: its world position and
+        /// the saved boosts, or -1 boosts when the hull carries no kite seated here.</summary>
+        static void RecordKite(Transform hull, List<float> into)
+        {
+            if (hull && hull.TryGetComponent(out KiteNavigator kite) && kite.TryGetKitePose(out Vector3 at, out _))
+            {
+                into.Add(at.x); into.Add(at.y); into.Add(at.z);
+                into.Add(kite.SavedBoosts);
+                return;
+            }
+            into.Add(0f); into.Add(0f); into.Add(0f);
+            into.Add(-1f);
         }
 
         /// <summary>The status's index in "rivalBoostStatuses", its digits blanked to '#'; -1 for none.</summary>
@@ -859,6 +884,33 @@ namespace CosmicShore.Gameplay
                     float v = _rivalState[start + k];
                     int col = k % RivalStateColumns;
                     sb.Append(col == 1 ? F(v, "0.##") : col == 4 ? F(v, "0.#") : ((int)v).ToString(c));
+                }
+                sb.Append(']');
+            }
+            // Each rival's kite, aligned with "rivals", and the pilot's own, aligned with "samples" (RecordKite).
+            sb.Append("],\n\"kiteColumns\":[\"x\",\"y\",\"z\",\"savedBoosts\"],\n\"rivalKite\":[");
+            for (int i = 0; i < _samples.Count; i++)
+            {
+                var m = _samples[i];
+                sb.Append(i > 0 ? ",[" : "[");
+                int start = m.RivalStart / 4 * KiteColumns;
+                for (int k = 0; k < m.RivalCount * KiteColumns; k++)
+                {
+                    if (k > 0) sb.Append(',');
+                    float v = _rivalKite[start + k];
+                    sb.Append(k % KiteColumns == 3 ? ((int)v).ToString(c) : F(v, "0.#"));
+                }
+                sb.Append(']');
+            }
+            sb.Append("],\n\"kite\":[");
+            for (int i = 0; i < _samples.Count && (i + 1) * KiteColumns <= _ownKite.Count; i++)
+            {
+                sb.Append(i > 0 ? ",[" : "[");
+                for (int k = 0; k < KiteColumns; k++)
+                {
+                    if (k > 0) sb.Append(',');
+                    float v = _ownKite[i * KiteColumns + k];
+                    sb.Append(k == 3 ? ((int)v).ToString(c) : F(v, "0.#"));
                 }
                 sb.Append(']');
             }

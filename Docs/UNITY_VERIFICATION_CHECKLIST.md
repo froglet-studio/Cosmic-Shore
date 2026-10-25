@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Flights record every crew vessel's kite (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder` writes `rivalKite` (per rival per sample: the kite's x, y, z and the crew's saved
+boosts; -1 when no kite is seated) and `kite` (the pilot's own), read from `KiteNavigator.TryGetKitePose` /
+`SavedBoosts`. `regatta_rival_report.py` prints each stalled ring's closest hull and kite pass.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files, player-dev OK;
+`regatta_rival_report.py --self-test` OK. NOT run in Unity.
+
+**Verify in editor:**
+1. Play Wrasse Run with two AI crews to the end. The stored `flight_WrasseRun_Wrasse_*.json` has `rivalKite` rows with
+   real positions (boosts 0 or more) for each AI Wrasse, and `kite` rows for your own.
+2. A Regatta or Switchback flight has `rivalKite` rows of `0,0,0,-1` for its non-crew rivals (nothing breaks).
+
 ### 🔴 The AI Thresher slings; the Wrasse's stale boost policy cleared (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `ThresherSlingAIPolicySO` (new) on `Thresher.prefab`'s AIPilot (`ThresherAIBoostPolicy.asset`), replacing
