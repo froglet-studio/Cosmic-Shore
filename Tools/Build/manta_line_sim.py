@@ -84,7 +84,7 @@ def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, 
     ring_at = [L.nearest(line, p, -1) for p in P]
     hint = L.nearest(line, P[0], -1)
     pos = line[(hint - 40) % len(line)]; fwd = unit(sub(line[(hint - 38) % len(line)], pos)); hint = -1
-    careful, bold = look_s or (L.CAREFUL, L.BOLD)
+    careful, bold = look_s or L.authored_look_seconds("Manta") or (L.CAREFUL, L.BOLD)
     harmful = RailGrid([C['lanes'][(own + 1) % 3], C['lanes'][(own + 2) % 3]])
     s_prev = 0.0
     cmd = list(fwd)
@@ -174,6 +174,7 @@ def sweep():
 
 def self_test():
     bad = []
+    if L.authored_look_seconds("Manta") is None: bad.append("Manta_Regatta look-ahead not read")
     if race(3, ram_cost=False)["time"] >= race(3)["time"]: bad.append("a ram must cost time")
     if regatta_bands() != (0.975, 0.975): bad.append(f"Regatta bands not read: {regatta_bands()}")
     r = race(1)

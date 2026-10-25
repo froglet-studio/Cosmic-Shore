@@ -24,7 +24,7 @@ The fix (2026-10-25), both halves shipped:
     python3 Tools/Build/regatta_line_sim.py              # every styled hull, I1-I4, before vs the fix
     python3 Tools/Build/regatta_line_sim.py --self-test
 """
-import math, os, sys
+import functools, math, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import situation_features as sf
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
@@ -41,6 +41,22 @@ HULLS = {
     "Sparrow": (80, 0.1, 80, 0.55, 10, 0.5),
 }
 CAREFUL, BOLD, MIN_LOOK, MAX_LOOK = 0.35, 0.8, 60, 520
+RACE_LINES = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
+                                          "Assets", "Resources", "RaceLines"))
+
+
+@functools.lru_cache(maxsize=None)
+def authored_look_seconds(hull):
+    """(careful, bold) look-ahead seconds a hull's Regatta race line is authored with (Resources/RaceLines/<hull>_Regatta),
+    or None when the asset or its fields are missing. A per-hull model's default run reads this, so "shipped" is the
+    shipped look-ahead and not every hull's 0.35 / 0.8 (the Manta's and the Rhino's moved off it on 2026-10-25)."""
+    try:
+        text = open(os.path.join(RACE_LINES, f"{hull}_Regatta.asset"), encoding="utf-8").read()
+        careful = float(re.search(r"^\s+CarefulLookaheadSeconds:\s*([-0-9.eE]+)", text, re.M).group(1))
+        bold = float(re.search(r"^\s+BoldLookaheadSeconds:\s*([-0-9.eE]+)", text, re.M).group(1))
+        return careful, bold
+    except (OSError, AttributeError, ValueError):
+        return None
 
 
 def gap_line(lanes, own, radius):

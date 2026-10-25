@@ -69,7 +69,7 @@ def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=Tr
     hint = L.nearest(line, P[0], -1)
     pos = line[(hint - 40) % len(line)]; fwd = unit(sub(line[(hint - 38) % len(line)], pos)); hint = -1
     speed = rd.CRUISE; tracked = speed; stick = 0.0; cmd = list(fwd)
-    careful, bold = look_s or (L.CAREFUL, L.BOLD); lost = -1
+    careful, bold = look_s or L.authored_look_seconds("Rhino") or (L.CAREFUL, L.BOLD); lost = -1
     idx = 0; t = 0.0; ramping = 0.0; braking = 0.0; maxv = 0.0; misses = 0
     while t < T and idx < total:
         g = idx % n; ring = P[g]; ax = A[g]
@@ -144,6 +144,7 @@ def sweep():
 
 def self_test():
     bad = []
+    if L.authored_look_seconds("Rhino") is None: bad.append("Rhino_Regatta look-ahead not read")
     p = regatta_policy()
     if abs(p.corner - 333) > 1: bad.append(f"Regatta variant not read (cornerSpeed {p.corner})")
     cruise = race(1, drive=False)
