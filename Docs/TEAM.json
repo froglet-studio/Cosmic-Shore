@@ -6,6 +6,13 @@
     "Shombith",
     "Yash"
   ],
+  "approvers": [
+    "Garrett",
+    "Caleb",
+    "Shombith",
+    "Yash",
+    "Iggy"
+  ],
   "people": [
     {
       "name": "Garrett",
@@ -47,7 +54,7 @@
         "shombith@froglet.studio"
       ],
       "branch_prefixes": [],
-      "role": "UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
+      "role": "Heads tooling: the Amoebius engine, editor tools, the Claude skills (/ship and the rest) and the hooks (Shombith, 2026-10-23). Owns cloud and backend services and data (UGS). UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
       "confirmed": true
     },
     {
@@ -71,6 +78,21 @@
         "feat/red-console-logger"
       ],
       "role": "Bug Hunt, party / multiplayer (UGS), diagnostics (redlog), leaderboards; the Vessel Studio and the Amoebius LAUNCHER / studio server / artifact library.",
+      "confirmed": true
+    },
+    {
+      "name": "Iggy",
+      "names": [
+        "KidIgarus",
+        "kidIgarus",
+        "kidigarus",
+        "Iggy"
+      ],
+      "emails": [
+        "isaiah.merrill@gmail.com"
+      ],
+      "branch_prefixes": [],
+      "role": "Wrote much of the game's foundation (Assets/_Scripts/_Core, Game, App; commits 2022-04 to 2025-12). An approver on Froglet Tasks with the core four (Shombith, 2026-10-25).",
       "confirmed": true
     },
     {
@@ -141,5 +163,6 @@
     "cece/": "a Claude Code session; merged mostly by Garrett, sometimes Shombith",
     "codex/": "a Codex session",
     "qa/": "QA results"
-  }
+  },
+  "approvers_note": "Approvers on Froglet Tasks (Docs/TEAM.md rule 9): Editors of the page, who can let other people in (Shombith, 2026-10-25). Everyone else they share it with is a Contributor."
 }

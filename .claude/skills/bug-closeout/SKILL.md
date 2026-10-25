@@ -1,6 +1,6 @@
 ---
 name: bug-closeout
-description: Close out a FIXED bug in every record that tracks it, in one pass - the Bug Ledger (sent from Unity's after-play "Send to Claude" to bugledger/<user> branches; bug_ledger.py mark-fixed), Amoebius's BOARD (the engine's bug and task cards, amoebius_board / amoebius_board_suggest), the team task board (Docs/TEAM_TASKS.md, team_tasks.py done), the QA records (Docs/QA/DEV_TASKS.md and QA_BACKLOG.md via /qa-backlog), the owning doc's dated log row, and the verification record (Docs/UNITY_VERIFICATION_CHECKLIST.md or the PR body's Verification status). Use whenever a session - any collaborator's, any branch - fixes a bug, closes a dev task, resolves a board card or makes a listed test pass, and on "the bug is fixed, update the lists", "close this out", "mark DT-00N done", "what do I update now that X works". Never marks anything done without naming the check that proved it.
+description: Close out a FIXED bug in every record that tracks it, in one pass - the Bug Ledger (sent from Unity's after-play "Send to Claude" to bugledger/<user> branches; bug_ledger.py mark-fixed), Amoebius's BOARD (the engine's bug and task cards, amoebius_board / amoebius_board_suggest), the team's hand-off tickets (Froglet Tasks: GitHub issues labelled team-task, team_tasks.py done), the QA records (Docs/QA/DEV_TASKS.md and QA_BACKLOG.md via /qa-backlog), the owning doc's dated log row, and the verification record (Docs/UNITY_VERIFICATION_CHECKLIST.md or the PR body's Verification status). Use whenever a session - any collaborator's, any branch - fixes a bug, closes a dev task, resolves a board card or makes a listed test pass, and on "the bug is fixed, update the lists", "close this out", "mark DT-00N done", "what do I update now that X works". Never marks anything done without naming the check that proved it.
 ---
 
 # Bug closeout — one fix, every record
@@ -21,7 +21,7 @@ and leave the record open in that state.
 | Record | Where | Search |
 |---|---|---|
 | **Bug Ledger** (editor) | `BugLedger/shared/issues/*.bug.json` on each sender's `origin/bugledger/<user>` branch (pushed by Unity's after-play "Send to Claude") and the user's gitignored `BugLedger/local/` | `python3 Tools/Build/bug_ledger.py list` / `show <id>` (`/bug-ledger` is the fixing skill) |
-| **Team task board** | `Docs/TEAM_TASKS.md` (`T-<date>-<hash>`: the tests, playtests and setup steps sessions hand each other) | `python3 Tools/Build/team_tasks.py list --all` |
+| **Team tickets** (Froglet Tasks) | GitHub issues labelled `team-task` (`T-<date>-<hash>`: the tests, playtests and setup steps sessions hand each other; the page is https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) | `python3 Tools/Build/team_tasks.py list --all` |
 | **Amoebius BOARD** (engine) | `%LOCALAPPDATA%/Amoebius/tracks/board.json` on the user's machine; reachable from a session ONLY through the `amoebius_board` / `amoebius_board_suggest` MCP tools | `amoebius_board` when the tools are connected; otherwise ask the user for the card id |
 | **QA dev tasks** | `Docs/QA/DEV_TASKS.md` (`DT-00N`, each tied to a `QA-...` item in `Docs/QA/QA_BACKLOG.md`) | `grep -n "<symptom>" Docs/QA/DEV_TASKS.md Docs/QA/QA_BACKLOG.md` |
 | **The owning doc** | the system's record: `Docs/PERFORMANCE_OPTIMIZATION.md` §2 (perf), `Docs/SKIM_RACE_AI.md` (that AI), `Docs/ECOSYSTEM*.md`, a `BACKLOG.md` ... (`Docs/claude/DOCUMENTATION_INDEX.md` says which) | `grep -rln "<symptom>" Docs/` |
@@ -36,10 +36,10 @@ and leave the record open in that state.
   `T-...` tool finding closes itself on the next clean run of the tool that filed it. If nothing is published
   (`No open issues. Store: (no BugLedger/shared/issues yet)`), the person has Auto-publish off: say so in one
   line, never ask for pasted JSON. Put the issue id in the commit or PR body.
-- **Team task board.** `python3 Tools/Build/team_tasks.py done <id> --note "<what happened, commit or result>"`
-  closes the hand-off the fix answers. A test that FAILED is not done: the note says what failed and the fix
-  goes on the board as a new `dev` task. A fix that leaves an editor test for someone else ADDS one
-  (`team_tasks.py add --kind test ... --who "Yash (offered), anyone with the Unity Editor"`).
+- **Team tickets** (`/team-tasks`). `python3 Tools/Build/team_tasks.py done <id> --note "<what happened, commit or
+  result>"` closes the hand-off the fix answers. A test that FAILED is not done: say what failed on the ticket, and
+  the fix goes on this branch's ticket as a checklist line (`team_tasks.py step --line ...`). A fix that leaves an
+  editor test for someone else adds it to this branch's one ticket (`/team-tasks add`; it names nobody).
 - **Amoebius BOARD.** Cards are the user's; agents only *suggest*. With the MCP tools: `amoebius_board`
   to find the card, then `amoebius_board_suggest` with a `criterion` (the check) if a follow-up is owed, and
   tell the user which card to accept or move. A card born from the tracks closes itself when its problem
@@ -68,5 +68,5 @@ and leave the record open in that state.
 ## 4. What this skill does not do
 
 It does not decide a bug is fixed, does not pick which check proves it (that is the record's own
-"done when"), and does not edit the tool-owned files by hand (`BugLedger/shared/` only through `bug_ledger.py`, `Docs/QA/*.md` only through `/qa-backlog`, `Docs/TEAM_TASKS.md` only through `team_tasks.py`). It
+"done when"), and does not edit the tool-owned files by hand (`BugLedger/shared/` only through `bug_ledger.py`, `Docs/QA/*.md` only through `/qa-backlog`, team tickets only through `team_tasks.py`). It
 routes. If a record has no "done when", the first write is to give it one.

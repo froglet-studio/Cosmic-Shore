@@ -116,6 +116,8 @@
         ".claude/skills/cosmic-shore-deck",
         "Tools/Build/team_report.py",
         "Tools/Build/team_tasks.py",
+        ".claude/skills/team-tasks",
+        ".github/workflows/team-tasks.yml",
         "Tools/Build/who_works_where.py",
         "Docs/TEAM.md",
         "Docs/Reports"

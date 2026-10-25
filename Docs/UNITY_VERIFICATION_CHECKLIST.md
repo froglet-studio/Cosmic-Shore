@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Manta tilt yaw un-flipped; Dolphin one-thumb response curve (`cece/amazing-franklin-4lp0mk`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `TouchControlProfile.flipTiltSteer` split into `flipTiltSteerPitch` (`FormerlySerializedAs`) and
+`flipTiltSteerYaw`; the Manta flips pitch only (Garrett: "manta gyro has its yaw controls flipped from intended").
+New `oneThumbResponseCurve` (0..1): one-thumb deflection r becomes (1 - c) r + c r^3 radially
+(`TouchInputStrategy.ShapeOneThumb`), tilt steer excluded; the Dolphin ships 0.6, every other hull 0 (Garrett: "too
+sensitive around the home... I like that it can turn sharp"). Turn at quarter / half / three-quarter thumb 0.08 / 0.21 /
+0.46, was 0.19 / 0.41 / 0.67; the rim is unchanged.
+
+**Verified without the editor:** `unity_refcompile` player: OK; editor: 0 errors in changed files.
+`author_touch_profiles.py --check` OK. `TouchControlsTests` compile, not run.
+
+**Verify in editor / on a phone:**
+1. Run `TouchControlsTests` (EditMode): all pass.
+2. Manta, both thumbs off: wheel-turn the phone right, the hull yaws RIGHT; tip the top edge away, pitch as before
+   (unchanged since 2026-10-22).
+3. Dolphin, one thumb: small thumb movements near where it landed turn gently; a thumb at the rim turns as sharp as
+   before. Tune `TouchControlProfiles` Dolphin `oneThumbResponseCurve` (0.5 lighter, 0.7 softer) in
+   `Tools/Build/author_touch_profiles.py` and re-run it.
+4. Thresher launch aim and every other hull: unchanged.
+
 ### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the
@@ -3087,6 +3108,34 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 3. It threads rings at ramp speed without circling them; note its I1-I4 times against the roadmap table.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
+
+### 🔴 The Dolphin AI's Regatta line set from Yash's one Dolphin race (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** the Dolphin's race line `LaneShare` 0.60 → 0.785 (`race_lines_learned.json` → `author_race_lines.py` →
+`Resources/RaceLines/Dolphin_Regatta`). Yash crossed the I1 rings a median 80.5 u out of the 110 u mouth (22 crossings,
+one unfinished race). Set by hand at his ask; the learner replaces it at the third finished Dolphin race. The discharge
+timing is unchanged (one race is too few). No C# changed.
+**Verified without the editor:** `author_race_lines.py --check`, `learn_drives_from_flights.py --check`.
+**Verify in editor:**
+1. Arcade ▸ Regatta I1 and I3, an AI Dolphin, Third Eye on it with trails: it flies further out than before (about
+   three quarters of the way to the rim), never crosses a rail and still threads every ring after a drift.
+2. Note its I1 and I3 times; if it misses rings more than before, say so.
+
+### 🔴 The Rhino AI's Regatta corner speed and line set from Yash's six Rhino races (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** a Regatta-only variant `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta` (the base asset with
+`cornerSpeed` 333, was 600) and the Rhino's race line `LaneShare` 0.676 (was 0.80; `race_lines_learned.json` →
+`author_race_lines.py`). Both are medians of all six of Yash's Rhino races (129 ring passages), set by hand because only
+two finished; the learner replaces them at the third finished race. `learn_drives_from_flights.py` now scales each ring
+crossing by its own ring's mouth (mixing I1 and I3 had read 0.815). No C# changed.
+**Verified without the editor:** `learn_drives_from_flights.py --self-test` and `--check`, `author_race_lines.py --check`.
+`rhino_drive_sim.py` (a model with no rails) is SLOWER at 333 than at 600 (I1 50.2 / 44.9 s, I3 75.1 / 50.1).
+**Verify in editor:**
+1. Arcade ▸ Regatta I1 and I3, an AI Rhino, Third Eye on it: it brakes on the ramp to about 330 u/s before sharp rings
+   and crosses about two thirds of the way out from the braid toward the rim.
+2. It scrapes rails less than before, and its lap times are no worse than before (I1 about 45 s, I3 about 50 s);
+   if it is slower, say so: the model predicted that.
+3. Broadside or any other mode with an AI Rhino: unchanged (still 600).
 
 ### 🔴 The Stoat races Regatta: on the card, its autopilot tunable per mode (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
@@ -14241,3 +14290,24 @@ Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
 2. Any arcade mode and Menu_Main: trails, flora and crystals appear as before (a 0.6 s spawn window, then visible);
    a prism shot inside that window never appears; a Cell Selector world swap still builds behind the veil.
 3. A swarm fauna (Docs/SWARM_FAUNA.md §16.2) hit right after it spawns still materialises (CompleteCreationImmediately).
+
+## 🔴 2026-10-24 — SpawnableGeode: three-value Min without the params array (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGeode.cs` (`Mathf.Min(a, b, c)` ->
+`MathfNoAlloc.Min`, same result). What ran instead of `/verify-unity`: `unity_refcompile` player RESULT OK;
+`perf_hunt.py gates` all OK.
+
+1. Load any arena that builds a Geode (the freestyle six, Cell Selector): its band prisms lay flush, as on 10-20.
+
+## 🔴 2026-10-24 — Cell Selector swap: time-sliced release, no pop-in during suction (unverified: no Unity CLI in the session)
+
+**Files:** `Cell.cs` (`ReleaseRetiredWorld`), `Prism.cs` (`StampSuctionToward`, `CancelPendingCreation`),
+`PrismClockDiagnostics.cs` (`WillWarnNoRenderEntity`). What ran instead of `/verify-unity`: `unity_refcompile` player
+RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Menu_Main, arm Record Insight Mode (FrogletTools > Performance > Performance Benchmark > Load Time
+   Insights), Cell Selector > Orrery right after the boot world appears (while it is still growing in). The old
+   world suctions to a point with no prism popping in during the suction; the new world builds behind the veil.
+2. In the recording: the release span is well under the 1.1-1.4 s of the 10-21 captures; "Suction: prisms not
+   created yet" counts the invisible ones; "Suction: prisms with no render entity" is 0 (or names a real case).
+3. Swap back and forth a few times: no console error, the trail and the new world behave as before.

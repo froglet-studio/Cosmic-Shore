@@ -104,7 +104,9 @@ off-axis, so the locked line passed beside the mouth. In the models the axis poi
 drives) and the old Rhino drive at I3-I4; on the centre line every race finished. This changes every Regatta AI. Under
 it the Rhino was retuned (`cornerReleaseDegrees` 50 → 30, `minSpeedGain` 150 → 50): old vs new drive, I1 43.8 / 44.9,
 I2 58.8 / 62.9, I3 53.7 / 50.1, I4 51.8 / 55.4 s, about a tie (208 vs 213 s in all). The brake stays for hairpins;
-`cornerSpeed` is learned from Yash's Rhino flights when they arrive.
+`cornerSpeed` is learned from Yash's Rhino flights when they arrive. **2026-10-24:** set by hand from his six Rhino
+races (two finished): Regatta `cornerSpeed` 333 (was 600) and the Rhino line `LaneShare` 0.676 (was 0.80); the
+learner replaces both at the third finished race (`AI_BOOST.md` Ramp, `REGATTA.md` §6.2).
 
 **2026-10-17 (later): every hull races its own line along the sides** (`REGATTA.md` §6.2). The centre line above
 is now only the fallback: every styled hull (all but the Squirrel and the Urchin) flies the gap between two rails at its
