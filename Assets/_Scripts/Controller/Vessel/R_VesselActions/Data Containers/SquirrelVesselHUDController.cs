@@ -194,6 +194,7 @@ namespace CosmicShore.UI
 
             Color shielded = ResolveShieldedColor(live);
             view.SetOmniAbilityTint(shielded);
+            view.SetShieldedTint(shielded);          // the drift trail's octahedrons wear it
             view.SetPlayerDomainColor(ResolveDomainColor(live));
 
             _paintedDomain = live;

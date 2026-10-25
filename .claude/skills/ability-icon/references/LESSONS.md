@@ -155,3 +155,10 @@ one thing right. then move on."
     bbox had the trail running under it and turned about the wrong point. Measure the axis with
     `project_point()` on the nose and tail vertices, draw the hull that much low in its canvas so the axis IS
     the canvas centre (the child rect's pivot), and put the trail on that line.
+32. **No state tints on the parts: the angle and the trail change are the signal.** Garrett: "lets have it and
+    the trail stay and remain the domain color (but the octahedrons can change to the shielded domain color),
+    the dynamic angle and trail change should be sufficient." The drift hull and the resting trail wear the
+    domain colour; the drifting trail's octahedrons wear the domain's SHIELDED colour (`SetShieldedTint`, the
+    same resolve the omni card gets). driftColor / doubleDriftColor survive only on the single-icon fallback.
+    General rule: once a card's parts carry team colour, a state is told by SHAPE (and a team-derived colour),
+    not by a second palette.

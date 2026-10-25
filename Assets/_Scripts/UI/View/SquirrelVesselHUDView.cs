@@ -114,12 +114,14 @@ namespace CosmicShore.UI
                  "stretched across the card - blocks at rest, octahedrons (shielded prisms) while drifting.")]
         [SerializeField] private Image driftTrailIcon;
         [Tooltip("The HULL, point-anchored on its own centre so it can TURN: rotated every frame of a drift by the " +
-                 "signed angle between the vessel's forward and its course (SetDriftAngle), eased, and tinted " +
-                 "driftColor / doubleDriftColor while held.")]
+                 "signed angle between the vessel's forward and its course (SetDriftAngle), eased. It wears the " +
+                 "pilot's DOMAIN colour at all times (Garrett 2026-10-25: 'the dynamic angle and trail change " +
+                 "should be sufficient' - no state tint on the parts).")]
         [SerializeField] private Image driftHullIcon;
         [Tooltip("The trail at rest: blocks, straight behind the hull.")]
         [SerializeField] private Sprite driftTrailRestSprite;
-        [Tooltip("The trail while drifting: octahedrons - a drift lays shielded prisms.")]
+        [Tooltip("The trail while drifting: octahedrons - a drift lays shielded prisms - in the domain's SHIELDED " +
+                 "colour (SetShieldedTint, the same push as the omni card); blocks in the domain colour at rest.")]
         [SerializeField] private Sprite driftTrailDriftingSprite;
         [Tooltip("Largest hull turn the card shows, degrees either side - past this a drift reads as a spin.")]
         [SerializeField, Range(10f, 90f)] private float driftMaxAngle = 75f;
@@ -230,6 +232,7 @@ namespace CosmicShore.UI
         private Tween _driftColorTween;
         private Tween _driftScaleTween;
         private float _driftAngleShown;          // the pair's hull turn, degrees, eased toward the live angle
+        private Color _shieldedTint = new Color(0f, 0f, 0f, 0f);   // the domain's shielded colour; alpha 0 = not landed
 
         // The generated Space readout. Built once by EnsureGeneratedAbilityIcons.
         private Image _reachIcon;
@@ -466,6 +469,7 @@ namespace CosmicShore.UI
             PaintStealCount(color);
             PaintJoustPair();
             PaintSkimPair();
+            PaintDriftPair();
         }
 
         /// <summary>
@@ -592,8 +596,27 @@ namespace CosmicShore.UI
             {
                 if (driftTrailRestSprite) driftTrailIcon.sprite = driftTrailRestSprite;
                 driftHullIcon.rectTransform.localRotation = Quaternion.identity;
-                driftHullIcon.color = Color.white;
+                PaintDriftPair();
             }
+        }
+
+        /// <summary>
+        /// The drift parts' colours: the hull and the resting trail in the pilot's domain colour, the drifting
+        /// trail (octahedrons: shielded prisms) in the domain's SHIELDED colour. Nothing here is a state tint.
+        /// </summary>
+        void PaintDriftPair()
+        {
+            if (!HasDriftPair) return;
+            _driftColorTween?.Kill();
+            driftHullIcon.color = _playerDomainColor;
+            driftTrailIcon.color = _drifting && _shieldedTint.a > 0f ? _shieldedTint : _playerDomainColor;
+        }
+
+        /// <summary>The domain's shielded colour, pushed by the controller beside the omni card's tint.</summary>
+        public void SetShieldedTint(Color shielded)
+        {
+            _shieldedTint = shielded;
+            PaintDriftPair();
         }
 
         /// <summary>The trail and the hull are wired as parts - the card's icon is a transparent container over them.</summary>
@@ -611,14 +634,16 @@ namespace CosmicShore.UI
 
             if (HasDriftPair)
             {
-                // The parts: the trail becomes octahedrons (a drift lays shielded prisms), the hull takes the
-                // state tint. The container keeps the scale punch; UGUI does not pass a parent's colour down.
+                // The parts: the trail becomes octahedrons (a drift lays shielded prisms) and takes the domain's
+                // shielded colour; the hull stays in the domain colour. The angle and the trail change are the
+                // whole signal (Garrett 2026-10-25). The container keeps the scale punch.
                 if (driftTrailDriftingSprite) driftTrailIcon.sprite = driftTrailDriftingSprite;
                 _driftColorTween?.Kill();
-                _driftColorTween = driftHullIcon
-                    .DOColor(isDoubleDrift ? doubleDriftColor : driftColor, driftRotationDuration)
-                    .SetEase(Ease.OutQuad)
-                    .SetLink(driftHullIcon.gameObject);
+                if (_shieldedTint.a > 0f)
+                    _driftColorTween = driftTrailIcon
+                        .DOColor(_shieldedTint, driftRotationDuration)
+                        .SetEase(Ease.OutQuad)
+                        .SetLink(driftTrailIcon.gameObject);
             }
             else
             {
@@ -693,10 +718,10 @@ namespace CosmicShore.UI
                     .OnComplete(() => _driftAngleShown = 0f)
                     .SetLink(driftHullIcon.gameObject);
                 _driftColorTween?.Kill();
-                _driftColorTween = driftHullIcon
-                    .DOColor(Color.white, colorTweenDuration)
+                _driftColorTween = driftTrailIcon
+                    .DOColor(_playerDomainColor, colorTweenDuration)
                     .SetEase(Ease.OutQuad)
-                    .SetLink(driftHullIcon.gameObject);
+                    .SetLink(driftTrailIcon.gameObject);
             }
             else
             {
