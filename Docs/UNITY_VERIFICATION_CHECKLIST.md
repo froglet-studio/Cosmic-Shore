@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Waystation: the AI Butterfly flies Regatta's gate steering (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `WaystationController.AICommitFromApproachPoint => true`. In Caleb's two recorded races the AI Butterfly
+orbited the first ring for the whole race (0 of 24); offline on those courses it threads 24 of 24 with the fix.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files; `author_waystation_assets --check`
+OK; `switchback_dolphin_sim --self-test` and `--mode Waystation` (0 and 5 rings before, 24 and 24 after). NOT run:
+`SwitchbackAISteeringTests` in Unity.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): all pass, `Waystation_FliesTheRegattaSteering_WhateverTheSceneSays` included.
+2. Waystation I1 with one AI Butterfly: it threads the first ring on its first or second approach and keeps threading;
+   it never circles a ring for long. It folds on the long legs (WAYSTATION.md "AI").
+3. Every AI finishes the 24 rings.
+
 ### 🔴 Every flight records the match's result (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `HumanFlightRecorder` waits (up to 8 s) after a turn that ended by its own rules for
