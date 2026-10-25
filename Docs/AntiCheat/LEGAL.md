@@ -490,6 +490,10 @@ Checked 2026-10-22. "Undated" means the page has no date and we read it on 2026-
    - What COPPA notice is owed for internal-operations anti-cheat on under-13s?
    - How do we comply with India's s.9(3) for under-18s from May 2027, and does s.17 help?
    - Should minors be excluded from automated sanctions entirely? (The design already does this.)
+   - Built 2026-10-25: the birth year is kept and sent to the server, and anyone not surely 18 gets no quit record
+     (`RULES.keepConductForMinors = false` in `Tools/UGS/CloudCode/match-report.js`). May quit counting run for
+     13-17s (it is a behaviour profile under the UK Children's Code), and is keeping the birth year itself (only the
+     year, protected) proportionate for under-13s?
 6. Can the Code of Conduct lawfully allow restricting modes for cheating? What refunds are owed, and who is the
    "trader" on Steam and the app stores?
 7. What wording and evidence standard should the notice use, so it is not misleading?

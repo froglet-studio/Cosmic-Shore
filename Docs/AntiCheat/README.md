@@ -243,8 +243,12 @@ key there, never the stage or reasons.
   it cannot, is a short notice when an account enters the Undertow, while the methods stay hidden.
 - **Exit:** an upheld appeal clears the record; otherwise trust decays back with clean play (marks expire), except
   for repeat offenders. A false positive is fixed by a person, recorded, and fed back into the thresholds.
-- **Minors are never sent to the Undertow automatically.** The age screen already records a birth year
-  (`PrivacyConsentOverlay`), so we know who is under 13 and under 18. For them a signal opens a human review
+- **Minors are never sent to the Undertow automatically.** The age screen asks a birth year
+  (`PrivacyConsentOverlay`); until 2026-10-25 it kept only "13 or older", so nobody could tell a 15-year-old from an
+  adult. It now keeps the year (`FairPlayAge`) and sends it with each match report; the server keeps the youngest
+  year it has seen (`FAIRPLAY_AGE`, protected) and treats anyone not surely 18, or of unknown age, as a minor
+  (built 2026-10-25, Threat Board R13). For them no quit record is kept, and every signal recorded about them says
+  `review: "human"`, which phase B must honour. For them a signal opens a human review
   instead: EU Recital 71 says solely automated decisions "should not concern a child", the UK Children's Code keeps
   profiling off unless there is a compelling reason, and India bans "behavioural monitoring" of under-18s from about
   May 2027 ([`LEGAL.md`](LEGAL.md) §1.5). Security checks themselves still run. COPPA allows persistent identifiers
@@ -347,7 +351,7 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | Later | R11 Memory editing on the device | 8 | **Moved to later 2026-10-25**: build our own (speed-hack check, then obscured values) instead of the $80 kit; the server checks cover launch. See the LATER task on the board |
 | Medium | T6 Shipped AI pilot as a bot (`PilotControl`) | 9 | T-20261022-7708. **`PilotControl` out of release builds 2026-10-24. AI-like steering measured on the host 2026-10-25, observe only** until the limits are set from logged play (T-20261025-4fef); a modified client that fakes human-looking steering is not caught (that is bot detection, R10) |
 | Medium | R10 Bot farming | 9 | later (phase C) |
-| Medium | R13 Automated penalties on children | 12 | design rule (§4.6) |
+| Medium | R13 Automated penalties on children | 12 | design rule (§4.6). **Built 2026-10-25, with match reports (gated off)**: the birth year is kept and sent; minors and unknown ages get no quit record and every signal about them is marked for a person (§4.6). Counsel decides whether quit counting may run for minors (`RULES.keepConductForMinors`) |
 | Medium | R14 Locking paid content | 8 | design rule (§4.6) |
 | Medium | R16 Reading more from the device than needed | 8 | design rule (§5) |
 | Unset | T7 Display names checked on the client only | 12 | T-20261022-7708. **Done 2026-10-24 on the receiving side**: every player's game hides offensive names it receives (`Pilot {tag}`); a server check of the sender adds nothing a modified game cannot skip |

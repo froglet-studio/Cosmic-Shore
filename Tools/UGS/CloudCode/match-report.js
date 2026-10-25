@@ -15,8 +15,15 @@
 // Nothing is punished here. The record feeds the trust record and the Undertow later (phase B), and a person
 // reviews before anything restricts play.
 //
+// Minors (Threat Board R13; README section 4.6): each `start` carries the birth year the age screen recorded
+// (0 = unknown). It is kept in the protected key FAIRPLAY_AGE and can only move LATER (younger), so re-entering an
+// older year never turns a child into an adult. A player who is not surely 18 (unknown year, or under 18 by the
+// year alone) is treated as a minor: no quit record is kept about them (no behaviour profile, the UK Children's
+// Code default), and every signal recorded about them says review: "human", which phase B must honour (no
+// automatic Undertow for a child). Security checks still run: a minor host's mismatching results are recorded.
+//
 // Params: action ("start" | "end"), matchId, mode, hostId, players (JSON array of UGS ids),
-//         scores (JSON array of { id, score }; end only), winner (end only)
+//         scores (JSON array of { id, score }; end only), winner (end only), birthYear (start only; 0 = unknown)
 // Returns: { ok, reason, matchesStarted, matchesLeft, leaveRate }
 //
 // Tests: node Tools/UGS/CloudCode/match-report.test.cjs
@@ -25,6 +32,7 @@ const { DataApi } = require("@unity-services/cloud-save-1.4");
 
 const CONDUCT_KEY = "FAIRPLAY_CONDUCT";
 const SIGNALS_KEY = "FAIRPLAY_SIGNALS";
+const AGE_KEY = "FAIRPLAY_AGE";
 
 const RULES = {
   recentMatches: 20,          // matches kept per player, for the leave rate and for comparing reports
@@ -33,7 +41,29 @@ const RULES = {
   maxPlayers: 8,
   maxSignals: 50,
   scoreTolerance: 0.001,
+  adultAge: 18,               // surely this old by the birth year alone: nowYear - birthYear - 1 >= adultAge
+  oldestAge: 100,
+  keepConductForMinors: false, // quit counting is a behaviour profile; off for minors unless counsel says otherwise
 };
+
+// Pure: the stored birth year after a report. Only a later (younger) year replaces a stored one.
+function mergeBirthYear(stored, reported, nowYear) {
+  const valid = Number.isInteger(reported) && reported <= nowYear && reported >= nowYear - RULES.oldestAge;
+  if (!valid) return stored || 0;
+  if (!stored) return reported;
+  return Math.max(stored, reported);
+}
+
+// Pure: true unless the player is surely an adult. A year alone leaves the birthday unknown, so a player born
+// in Y is surely 18 only from Y + 19.
+function treatAsMinor(birthYear, nowYear) {
+  if (!birthYear) return true;
+  return nowYear - birthYear - 1 < RULES.adultAge;
+}
+
+function reviewFor(birthYear, nowYear) {
+  return treatAsMinor(birthYear, nowYear) ? "human" : "standard";
+}
 
 function emptyConduct() {
   return { matchesStarted: 0, matchesFinished: 0, matchesLeft: 0, open: null, recent: [] };
@@ -58,16 +88,19 @@ function pushRecent(c, entry) {
   if (c.recent.length > RULES.recentMatches) c.recent.splice(0, c.recent.length - RULES.recentMatches);
 }
 
-function closeOpenAsLeft(c) {
+function closeOpenAsLeft(c, trackConduct) {
   if (!c.open) return;
-  c.matchesLeft++;
-  pushRecent(c, { matchId: c.open.matchId, mode: c.open.mode, hostId: c.open.hostId, startedAt: c.open.at, left: true });
+  if (trackConduct) {
+    c.matchesLeft++;
+    pushRecent(c, { matchId: c.open.matchId, mode: c.open.mode, hostId: c.open.hostId, startedAt: c.open.at, left: true });
+  }
   c.open = null;
 }
 
 // Pure: applies one report to one player's conduct record. Returns { ok, reason, report? }.
-function apply(c, params, nowMs) {
-  if (c.open && nowMs - c.open.at > RULES.openTimeoutMinutes * 60000) closeOpenAsLeft(c);
+// trackConduct false (a minor): unfinished matches are dropped, never counted as left.
+function apply(c, params, nowMs, trackConduct = true) {
+  if (c.open && nowMs - c.open.at > RULES.openTimeoutMinutes * 60000) closeOpenAsLeft(c, trackConduct);
 
   if (typeof params.mode !== "string" || params.mode.length === 0 || params.mode.length > 48) return { ok: false, reason: "bad_mode" };
   if (!isId(params.hostId)) return { ok: false, reason: "bad_host" };
@@ -75,8 +108,8 @@ function apply(c, params, nowMs) {
   const players = Array.isArray(params.players) ? params.players.filter(isId).slice(0, RULES.maxPlayers) : [];
 
   if (params.action === "start") {
-    closeOpenAsLeft(c); // the previous match was never finished
-    c.matchesStarted++;
+    closeOpenAsLeft(c, trackConduct); // the previous match was never finished
+    if (trackConduct) c.matchesStarted++;
     c.open = { matchId: params.matchId, mode: params.mode, hostId: params.hostId, at: nowMs, players };
     return { ok: true };
   }
@@ -91,7 +124,7 @@ function apply(c, params, nowMs) {
       matchId: c.open.matchId, mode: c.open.mode, hostId: c.open.hostId, startedAt: c.open.at, endedAt: nowMs, left: false,
       players: c.open.players, scores, winner: typeof params.winner === "string" ? params.winner.slice(0, 64) : "",
     };
-    c.matchesFinished++;
+    if (trackConduct) c.matchesFinished++;
     c.open = null;
     pushRecent(c, report);
     return { ok: true, report };
@@ -134,11 +167,15 @@ async function saveProtected(api, projectId, playerId, key, value, writeLock) {
 module.exports = async ({ params, context, logger }) => {
   const api = new DataApi(context);
   const { projectId, playerId } = context;
+  const nowMs = Date.now(), nowYear = new Date(nowMs).getUTCFullYear();
+
+  const birthYear = await updateBirthYear(api, projectId, playerId, params, nowYear);
+  const trackConduct = !treatAsMinor(birthYear, nowYear) || RULES.keepConductForMinors;
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const loaded = await loadProtected(api, projectId, playerId, CONDUCT_KEY);
     const conduct = Object.assign(emptyConduct(), loaded.value || {});
-    const result = apply(conduct, params, Date.now());
+    const result = apply(conduct, params, nowMs, trackConduct);
     if (!result.ok) return summary(conduct, false, result.reason);
 
     try {
@@ -156,6 +193,19 @@ module.exports = async ({ params, context, logger }) => {
   }
 };
 
+// Keeps FAIRPLAY_AGE: a start report's birth year is merged in (only ever younger). Returns the stored year.
+async function updateBirthYear(api, projectId, playerId, params, nowYear) {
+  const loaded = await loadProtected(api, projectId, playerId, AGE_KEY);
+  const stored = loaded.value && Number.isInteger(loaded.value.birthYear) ? loaded.value.birthYear : 0;
+  if (params.action !== "start") return stored;
+  const merged = mergeBirthYear(stored, typeof params.birthYear === "number" ? params.birthYear : Number(params.birthYear), nowYear);
+  if (merged !== stored) {
+    try { await saveProtected(api, projectId, playerId, AGE_KEY, { birthYear: merged }, loaded.writeLock); }
+    catch (e) { if (!(e && e.response && e.response.status === 409)) throw e; } // a parallel start wrote it
+  }
+  return merged;
+}
+
 async function compareWithOthers(api, projectId, playerId, report, logger) {
   const others = report.players.filter((id) => id !== playerId);
   for (const other of others) {
@@ -166,8 +216,10 @@ async function compareWithOthers(api, projectId, playerId, report, logger) {
     if (diff.length === 0) continue;
 
     const host = await loadProtected(api, projectId, report.hostId, SIGNALS_KEY);
+    const hostAge = (await loadProtected(api, projectId, report.hostId, AGE_KEY)).value;
+    const review = reviewFor(hostAge && hostAge.birthYear, new Date().getUTCFullYear());
     const signals = Array.isArray(host.value) ? host.value : [];
-    signals.push({ kind: "host_result_mismatch", mode: report.mode, startedAt: report.startedAt, reporters: [playerId, other], diff, at: Date.now() });
+    signals.push({ kind: "host_result_mismatch", mode: report.mode, startedAt: report.startedAt, reporters: [playerId, other], diff, review, at: Date.now() });
     if (signals.length > RULES.maxSignals) signals.splice(0, signals.length - RULES.maxSignals);
     await saveProtected(api, projectId, report.hostId, SIGNALS_KEY, signals, host.writeLock);
     logger.info(`host_result_mismatch: host ${report.hostId}, ${report.mode}, reporters ${playerId} and ${other}`);
@@ -182,6 +234,7 @@ module.exports.params = {
   players: { type: "JSON", required: false },
   scores: { type: "JSON", required: false },
   winner: { type: "String", required: false },
+  birthYear: { type: "Numeric", required: false },
 };
 
-module.exports._test = { apply, findSameMatch, disagreements, leaveRate, emptyConduct, RULES };
+module.exports._test = { apply, findSameMatch, disagreements, leaveRate, emptyConduct, mergeBirthYear, treatAsMinor, reviewFor, RULES };

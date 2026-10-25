@@ -21,9 +21,13 @@ Module._load = function (req) {
   return realLoad.apply(this, arguments);
 };
 const script = require(path.join(__dirname, "match-report.js"));
-const { apply, emptyConduct, leaveRate } = script._test;
+const { apply, emptyConduct, leaveRate, mergeBirthYear, treatAsMinor } = script._test;
 const logger = { info() {}, warning() {} };
-const call = (player, params) => script({ params, context: { projectId: "p", playerId: player }, logger });
+// Adults unless a test says otherwise: an unknown age is treated as a minor (R13).
+const call = (player, params) => script({
+  params: params.action === "start" && !("birthYear" in params) ? { ...params, birthYear: 1990 } : params,
+  context: { projectId: "p", playerId: player }, logger });
+const ageOf = (player) => (store.get(player + "/FAIRPLAY_AGE") || { value: null }).value;
 const signalsOf = (host) => (store.get(host + "/FAIRPLAY_SIGNALS") || { value: [] }).value;
 
 let passed = 0;
@@ -94,6 +98,48 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     for (let i = 0; i < 30; i++) { apply(c, { action: "start", matchId: "mm", mode: "M", hostId: "h" }, t); t += 60000; if (i % 3) apply(c, { action: "end", matchId: "mm", mode: "M", hostId: "h", scores: [] }, t); t += 60000; }
     assert.equal(c.recent.length, 20);
     assert.ok(Math.abs(leaveRate(c) - 0.35) < 0.051);
+  });
+
+  // ---- Minors (Threat Board R13) ----
+  const Y = new Date().getUTCFullYear();
+
+  await test("a stored birth year only ever moves younger", async () => {
+    assert.equal(mergeBirthYear(0, 2012, Y), 2012);
+    assert.equal(mergeBirthYear(2012, 1980, Y), 2012, "re-entering an older year never makes a child an adult");
+    assert.equal(mergeBirthYear(1990, 2010, Y), 2010);
+    assert.equal(mergeBirthYear(1990, Y + 1, Y), 1990, "a future year is ignored");
+    assert.equal(mergeBirthYear(0, "x", Y), 0);
+  });
+
+  await test("only a surely-adult year is treated as adult", () => {
+    assert.equal(treatAsMinor(0, Y), true, "unknown age is a minor");
+    assert.equal(treatAsMinor(Y - 17, Y), true);
+    assert.equal(treatAsMinor(Y - 18, Y), true, "may not have had the 18th birthday yet");
+    assert.equal(treatAsMinor(Y - 19, Y), false);
+  });
+
+  await test("a minor's quits are never counted (no behaviour profile)", async () => {
+    await call("kid", { action: "start", matchId: "k1", mode: "SkimRace", hostId: "host", players, birthYear: Y - 12 });
+    const r = await call("kid", { action: "start", matchId: "k2", mode: "SkimRace", hostId: "host", players, birthYear: 1970 });
+    assert.equal(r.matchesLeft, 0); assert.equal(r.leaveRate, 0); assert.equal(r.matchesStarted, 0);
+    assert.equal(ageOf("kid").birthYear, Y - 12, "the older year did not replace the younger one");
+  });
+
+  await test("an unknown age is treated as a minor too", async () => {
+    await call("old-client", { action: "start", matchId: "u1", mode: "Joust", hostId: "host", players, birthYear: 0 });
+    const r = await call("old-client", { action: "start", matchId: "u2", mode: "Joust", hostId: "host", players, birthYear: 0 });
+    assert.equal(r.matchesLeft, 0);
+  });
+
+  await test("a minor host's mismatch is still recorded, marked for a person", async () => {
+    const ps = ["kidhost", "d"];
+    await call("kidhost", { action: "start", matchId: "q1", mode: "Joust", hostId: "kidhost", players: ps, birthYear: Y - 14 });
+    await call("d", { action: "start", matchId: "q1", mode: "Joust", hostId: "kidhost", players: ps });
+    await call("kidhost", { action: "end", matchId: "q1", mode: "Joust", hostId: "kidhost", players: ps, scores: [{ id: "kidhost", score: 50 }], winner: "kidhost" });
+    await call("d", { action: "end", matchId: "q1", mode: "Joust", hostId: "kidhost", players: ps, scores: [{ id: "kidhost", score: 2 }], winner: "d" });
+    const s = signalsOf("kidhost");
+    assert.equal(s.length, 1); assert.equal(s[0].review, "human");
+    assert.equal(signalsOf("host2")[0].review, "standard", "an adult host's signal is standard");
   });
 
   console.log(`\n${passed} passed`);

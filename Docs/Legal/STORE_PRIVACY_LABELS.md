@@ -13,6 +13,7 @@
 | Identifiers → **User ID** (UGS player id, linked platform account) | App Functionality | Yes | No |
 | Usage Data → **Gameplay Content** (match results, movement sample) | App Functionality | Yes | No |
 | User Content → **Other User Content** (display name; reports a player files) | App Functionality | Yes | No |
+| Other Data → **Other Data Types** (birth year from the age screen, to protect minors) | App Functionality | Yes | No |
 
 "App Functionality" is Apple's purpose that covers "prevent fraud, implement security measures".
 Fingerprinting is not allowed: we use only App Attest and DeviceCheck, never derived device
@@ -25,6 +26,7 @@ identifiers.
 | Device or other IDs (Play Integrity verdicts, device recall) | Yes | No | Fraud prevention, security, and compliance | No |
 | App activity → Other actions (match results, movement sample, leave rate) | Yes | No | Fraud prevention, security, and compliance | No |
 | Personal info → User IDs (UGS player id, linked Google account) | Yes | No | App functionality; Fraud prevention, security, and compliance | No |
+| Personal info → Other info (birth year from the age screen, to protect minors) | Yes | No | App functionality; Fraud prevention, security, and compliance | No |
 | Messages → Other in-app messages (only if chat is added) | — | — | — | — |
 
 Declare the data as **encrypted in transit** and **deletable on request** (the in-game Delete my

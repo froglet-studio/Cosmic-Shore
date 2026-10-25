@@ -272,6 +272,8 @@ namespace CosmicShore.Core
         {
             int age = DateTime.UtcNow.Year - birthYear;
             SetAgeEligible(age >= MinimumAge);
+            // Fair play keeps the year itself, so the server can tell a minor (R13, FairPlayAge).
+            FairPlayAge.Record(birthYear);
         }
 
         /// <summary>

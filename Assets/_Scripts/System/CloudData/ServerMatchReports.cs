@@ -43,6 +43,7 @@ namespace CosmicShore.Core
             CallAsync(new Dictionary<string, object>
             {
                 { "action", "start" }, { "matchId", matchId }, { "mode", mode }, { "hostId", hostId }, { "players", players },
+                { "birthYear", FairPlayAge.BirthYear }, // 0 = unknown, which the server treats as a minor (R13)
             });
 
         public static UniTask<Result> EndAsync(string matchId, string mode, string hostId, List<string> players,

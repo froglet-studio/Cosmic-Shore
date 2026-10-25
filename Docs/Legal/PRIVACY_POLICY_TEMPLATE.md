@@ -119,8 +119,13 @@ play ("bots"), abusive names or messages, and repeated quitting or griefing.
 how your vessel moved during a match; whether a score, purchase or reward request matches the
 game's rules; the platform's check that the game and device are genuine (Apple App Attest and
 DeviceCheck, Google Play Integrity); which platform account you signed in with; reports other
-players make about you; and how often you leave matches early. We **do not** scan your device,
-read other apps or files, or install anything outside the game.
+players make about you; how often you leave matches early; and the birth year you entered on the
+age screen, so we know who is under 18. We **do not** scan your device, read other apps or files,
+or install anything outside the game.
+
+**Players under 18.** If you are under 18, or we do not know your age, no automated check ever
+restricts your account: a person reviews every flag first. We do not keep a record of how often
+you leave matches. Security checks (for example, that match results agree) still run.
 
 **What can happen.** If our checks find play that breaks the Code of Conduct, we may place your
 account in separate matchmaking with other flagged accounts, keep your scores off public

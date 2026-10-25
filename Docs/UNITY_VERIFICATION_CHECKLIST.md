@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: minors are never penalised automatically (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board R13. The age screen asked a birth year but kept only "13 or older"
+(`AnalyticsServiceFacade.SubmitBirthYear`), so nothing could tell an under-18. It now also keeps the year
+(`FairPlayAge`, PlayerPrefs `FairPlayBirthYear`, the youngest year entered wins) and `ServerMatchReports.StartAsync`
+sends it. `match-report.js` keeps it in the protected key `FAIRPLAY_AGE` (only ever younger), keeps no quit record for
+a player not surely 18 or of unknown age, and marks every signal about them `review: "human"`. Rides the match reports,
+so it is **gated off** with them (`MatchReportGate`). Affects the age screen (Shombith's UI, Yash's analytics facade):
+one added line, no change to what the screen shows or the analytics gate.
+
+**Verified without the editor:** `node Tools/UGS/CloudCode/match-report.test.cjs`: 14 passed (5 new); planted faults
+(quit counting on for minors; an older year replacing a younger one) both failed the tests. `unity_refcompile` player:
+88 assemblies, 0 errors; `FairPlayAgeTests` compile (editor config's 3 errors are the unchanged PlayMode usings).
+Amoebius port build: no errors in the changed files, a planted error in `FairPlayAge` caught.
+
+**Test in the editor:**
+1. `FairPlayAgeTests` pass (they save and restore the real PlayerPrefs key).
+2. Clear PlayerPrefs, Play, enter a birth year 15 years back on the age screen: PlayerPrefs `FairPlayBirthYear` holds it;
+   the analytics consent step still appears (13+), exactly as before.
+3. With the match-report gate on (`Tools/UGS/README.md`): after one match, the dashboard shows `FAIRPLAY_AGE` for that
+   player; quitting a match leaves `matchesLeft` at 0 for them, and an adult's quit still counts.
+
 ### 🔴 Fair play: host measures AI-like steering (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T6, the part left after `PilotControl` went out of release builds: a modified client can
