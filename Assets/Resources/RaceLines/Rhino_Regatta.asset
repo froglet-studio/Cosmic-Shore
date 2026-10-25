@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d8964b654c6452780f4eeb7613d7097, type: 3}
   m_Name: Rhino_Regatta
   m_EditorClassIdentifier: 
-  LaneShare: 0.8
+  LaneShare: 0.676
   HullClearance: 18
   Risk: 0.4
   RiskSpread: 0.15

@@ -36,7 +36,7 @@ files the roster does not know yet. It only reads; merging is a separate, delibe
 - **Per-mode variants.** A drive's numbers for one mode live in `Assets/Resources/AIBoostPolicies/<base asset name>_<GameModes name>`
   (e.g. `RhinoAIBoostPolicy_Regatta`), read by `AIBoostPolicySO.ForMode`, `AIModeTuning.For` and
   `MantaSoarAITuningSO.LoadForMode`. A variant of a different class than its base is ignored. The folder holds one
-  variant so far, `MantaSoarAITuning_Regatta` (Soar bands 0.8 / 0.85, set 2026-10-17 from `manta_drive_sim.py` with the
+  variant so far, `MantaSoarAITuning_Regatta` (Soar bands 0.8 / 0.85, set 2026-10-17 from `manta_drive_sim.py` (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`) with the
   learner's writer; a person's Manta flights replace it). So in Regatta the Squirrel and the Manta fly Regatta numbers;
   the Rhino, the Dolphin and the Stoat fly their shipped numbers until their flights are learned. Renaming a base asset
   orphans its variant.
@@ -45,7 +45,7 @@ files the roster does not know yet. It only reads; merging is a separate, delibe
 - **The Stoat's three configs** (`StoatModeAction`, `StoatDipoleConfig`, `StoatSlingConfig`) resolve their variant only once
   the pilot's game data exists (`AIModeTuning.ForPilot` returns null until then; the executors ask again next frame).
 - **The Manta has no base tuning asset.** Its Soar bands are fields on `MantaAnalogTurnBoostExecutor` (0.35 / 0.75);
-  a `MantaSoarAITuning_<mode>` asset replaces them in that mode (Regatta: 0.8 / 0.85). The Manta does not drop Soar
+  a `MantaSoarAITuning_<mode>` asset replaces them in that mode (Regatta: 0.8 / 0.85 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`)). The Manta does not drop Soar
   before a corner: that look-ahead was modelled and was slower on every course (its turn radius barely shrinks when
   it slows), so it was not shipped.
 - **Ring geometry for the Python learners** comes from the flight's own `ringList`; a flight without one falls back to

@@ -936,6 +936,8 @@ namespace CosmicShore.Gameplay
 
             scaleAnimator.SetTargetScale(authoredTargetScale);
             _creationScale = authoredTargetScale;
+            _creationLife++;
+            _creationQueued = false;
             _creationRoutine = StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
             if (prismProperties.IsShielded) ActivateShield();
@@ -1165,55 +1167,143 @@ namespace CosmicShore.Gameplay
             // live ribbon (CompletesAsLiveRibbon) after Initialize. Membership cannot change
             // while the prism waits (a release parks it inactive, which stops this coroutine).
             bool isEnvironmentMass = !CompletesAsLiveRibbon && EnvironmentPrismPool.IsIssued(this);
+            _creationRoutine = null;
 
-            while (true)
+            // Complete now only if nobody of this class is already waiting (first come, first served).
+            if (CreationQueue.IsEmpty(isEnvironmentMass) && HasCreationBudget(isEnvironmentMass))
             {
-                if (s_creationBudgetFrame != Time.frameCount)
-                {
-                    s_creationBudgetFrame = Time.frameCount;
-                    s_creationCompletionsThisFrame = 0;
-                    s_environmentCompletionsThisFrame = 0;
-                    s_creationSpentMs = 0.0;
-                }
-
-                // A WATCHED load gate (the connecting screen showing the build live) states a
-                // per-frame TIME slice instead of a completion count - per-prism completion
-                // cost varies with scene size and collider density, so a count cannot hold a
-                // frame budget across machines. Same argument, same shape, as the lay budget.
-                float watchedCreationMs = PrismTrailBuilder.IsLoadGateHolding
-                    ? PrismTrailBuilder.LoadGateCreationBudgetMsOverride
-                    : 0f;
-                if (watchedCreationMs > 0f)
-                {
-                    if (s_creationSpentMs < watchedCreationMs)
-                        break;
-                }
-                else
-                {
-                    int creationBudget = PrismTrailBuilder.IsLoadGateHolding
-                        ? LoadGateCreationCompletionsPerFrame
-                        : s_bulkTransportsInFlight > 0
-                            ? BulkTransportCreationCompletionsPerFrame
-                            : MaxCreationCompletionsPerFrame;
-                    int spent = isEnvironmentMass
-                        ? s_environmentCompletionsThisFrame
-                        : s_creationCompletionsThisFrame;
-                    if (spent < creationBudget)
-                        break;
-                }
-
-                yield return null;
-                if (destroyed) yield break; // killed while waiting for budget
+                SpendCreationBudget(isEnvironmentMass);
+                FinishCreation(authoredTargetScale);
+                yield break;
             }
+
+            // Otherwise wait in ONE queue, drained by one driver, instead of as a coroutine woken every
+            // frame only to yield again: at 6 completions a frame, 57,638 waiting prisms cost 139 ms a
+            // frame of coroutine scheduling alone in a Bloomrush capture (3.5 fps, 2026-10-20).
+            _creationQueued = true;
+            CreationQueue.Enqueue(this, isEnvironmentMass);
+        }
+
+        static void BeginCreationBudgetFrame()
+        {
+            if (s_creationBudgetFrame == Time.frameCount) return;
+            s_creationBudgetFrame = Time.frameCount;
+            s_creationCompletionsThisFrame = 0;
+            s_environmentCompletionsThisFrame = 0;
+            s_creationSpentMs = 0.0;
+        }
+
+        static bool HasCreationBudget(bool isEnvironmentMass)
+        {
+            BeginCreationBudgetFrame();
+
+            // A WATCHED load gate (the connecting screen showing the build live) states a
+            // per-frame TIME slice instead of a completion count - per-prism completion
+            // cost varies with scene size and collider density, so a count cannot hold a
+            // frame budget across machines. Same argument, same shape, as the lay budget.
+            float watchedCreationMs = PrismTrailBuilder.IsLoadGateHolding
+                ? PrismTrailBuilder.LoadGateCreationBudgetMsOverride
+                : 0f;
+            if (watchedCreationMs > 0f)
+                return s_creationSpentMs < watchedCreationMs;
+
+            int creationBudget = PrismTrailBuilder.IsLoadGateHolding
+                ? LoadGateCreationCompletionsPerFrame
+                : s_bulkTransportsInFlight > 0
+                    ? BulkTransportCreationCompletionsPerFrame
+                    : MaxCreationCompletionsPerFrame;
+            int spent = isEnvironmentMass
+                ? s_environmentCompletionsThisFrame
+                : s_creationCompletionsThisFrame;
+            return spent < creationBudget;
+        }
+
+        static void SpendCreationBudget(bool isEnvironmentMass)
+        {
             if (isEnvironmentMass) s_environmentCompletionsThisFrame++;
             else s_creationCompletionsThisFrame++;
+        }
 
-            _creationRoutine = null;
-            FinishCreation(authoredTargetScale);
+        /// <summary>Prisms waiting for a creation completion (diagnostics, tests).</summary>
+        public static int CreationQueueLength => CreationQueue.Count;
+
+        /// <summary>
+        /// The prisms whose spawn wait has ended but whose completion the per-frame budget has not
+        /// reached yet, in arrival order, one queue per budget class. A waiting prism costs nothing
+        /// per frame. An entry whose prism has since died, completed, gone inactive (a coroutine would
+        /// have been stopped there) or started a new life is dropped without spending budget.
+        /// </summary>
+        static class CreationQueue
+        {
+            static readonly System.Collections.Generic.Queue<(Prism prism, int life)> s_environment = new();
+            static readonly System.Collections.Generic.Queue<(Prism prism, int life)> s_other = new();
+            static readonly ProfilerMarker s_drainMarker = new("Prism.CreationQueue.Drain");
+            static Driver s_driver;
+
+            public static int Count => s_environment.Count + s_other.Count;
+
+            public static bool IsEmpty(bool isEnvironmentMass) =>
+                (isEnvironmentMass ? s_environment : s_other).Count == 0;
+
+            public static void Enqueue(Prism prism, bool isEnvironmentMass)
+            {
+                (isEnvironmentMass ? s_environment : s_other).Enqueue((prism, prism._creationLife));
+                if (s_driver) return;
+                var go = new GameObject("[PrismCreationQueue]") { hideFlags = HideFlags.HideInHierarchy };
+                UnityEngine.Object.DontDestroyOnLoad(go);
+                s_driver = go.AddComponent<Driver>();
+            }
+
+            [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+            static void ResetOnLoad()
+            {
+                s_environment.Clear();
+                s_other.Clear();
+                s_driver = null;
+            }
+
+            static void Drain(System.Collections.Generic.Queue<(Prism prism, int life)> queue, bool isEnvironmentMass)
+            {
+                while (queue.Count > 0 && HasCreationBudget(isEnvironmentMass))
+                {
+                    var (prism, life) = queue.Dequeue();
+                    if (!prism || prism.destroyed || !prism._creationQueued || prism._creationLife != life
+                        || prism.IsCreationComplete || !prism.gameObject.activeInHierarchy)
+                        continue;
+
+                    SpendCreationBudget(isEnvironmentMass);
+                    prism._creationQueued = false;
+                    try { prism.FinishCreation(prism._creationScale); }
+                    catch (Exception e) { Debug.LogException(e, prism); }   // one bad prism must not stall the queue
+                }
+            }
+
+            // Runs in Update, before this frame's coroutines resume, so prisms already waiting are served
+            // before a prism whose spawn wait ends this frame.
+            sealed class Driver : MonoBehaviour
+            {
+                void Update()
+                {
+                    if (s_environment.Count == 0 && s_other.Count == 0) return;
+                    using (s_drainMarker.Auto())
+                    {
+                        Drain(s_environment, true);
+                        Drain(s_other, false);
+                    }
+                }
+
+                void OnDestroy()
+                {
+                    if (s_driver == this) s_driver = null;
+                }
+            }
         }
 
         Coroutine _creationRoutine;
         Vector3 _creationScale;
+        // Bumped by every Initialize, so a queue entry left by an earlier life of a pooled prism is dropped.
+        int _creationLife;
+        bool _creationQueued;
 
         /// <summary>
         /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
@@ -1224,9 +1314,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void CompleteCreationImmediately()
         {
-            if (destroyed || IsCreationComplete || _creationRoutine == null) return;
-            StopCoroutine(_creationRoutine);
+            if (destroyed || IsCreationComplete || (_creationRoutine == null && !_creationQueued)) return;
+            if (_creationRoutine != null) StopCoroutine(_creationRoutine);
             _creationRoutine = null;
+            _creationQueued = false;   // its queue entry is dropped when the drain reaches it
             FinishCreation(_creationScale);
         }
 
@@ -1507,6 +1598,7 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = volumeAtDeath;
 
             destroyed = true;
+            _creationQueued = false;   // as the waiting coroutine did: killed while waiting never completes (a Restore registers itself)
             devastated = devastate;
 
             // Destroyed mass weighs nothing in the per-domain sums — drop it from the

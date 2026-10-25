@@ -1,0 +1,144 @@
+{
+  "id": "gecko",
+  "order": 10,
+  "name": "Gecko",
+  "tagline": "the runner: stick to mass, run it, hop",
+  "round": "concept · round 1",
+  "accent": "#ff9ec6",
+  "kind": "surface",
+  "chip": "concept · round 1",
+  "summary": "The runner. Hold LT near any mass and it sticks, then runs along the structure: the chain of prisms guides its course, its speed climbs to 130 u/s, the camera rolls onto the surface, and a rival's rail it runs becomes yours. Let go, or press RT, and it hops off with a ×1.4 kick and three seconds of carried momentum to the next surface. Wall-running, where every prismscape is a wall.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "LT stick and run along mass · release / RT hop"
+    },
+    {
+      "k": "Run",
+      "v": "to 130 u/s on a surface, 50 free"
+    },
+    {
+      "k": "Hop",
+      "v": "×1.4, momentum kept 3 s"
+    },
+    {
+      "k": "Why",
+      "v": "wall-running: Titanfall 2, Ghostrunner, Mario Kart World's wall ride"
+    }
+  ],
+  "fantasy": "It treats the prismscape as a climbing gym. A good lap never touches open space: ribbon, rival rail, cluster, hop, ribbon.",
+  "why": "Wall-running converts geometry into speed and players chain it once they trust the wall (Titanfall's 2x rule, Ghostrunner 2.5M, Mario Kart World's wall-ride meta). The Urchin grinds a line at 300 on its own rail; the Gecko runs the outside of ANY mass at a gain and the fun is the hop between surfaces. Camera tilt onto the surface is the tell.",
+  "flight": {
+    "cruise": 50,
+    "pitchYaw": 120,
+    "roll": 130,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 200
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Hop",
+      "param": "hopKick",
+      "range": [
+        1,
+        1.25
+      ],
+      "l5": "Spring Legs",
+      "tip": "Charge is the kick of a hop off."
+    },
+    "mass": {
+      "name": "Claim",
+      "param": "convertScale",
+      "range": [
+        1,
+        1.5
+      ],
+      "l5": "Overgrow",
+      "tip": "Mass grows every rival rail the Gecko converts."
+    },
+    "space": {
+      "name": "Grip Reach",
+      "param": "stickReach",
+      "range": [
+        1,
+        1.8
+      ],
+      "l5": "Long Toes",
+      "tip": "Space is how far from mass LT still grabs."
+    },
+    "time": {
+      "name": "Run Speed",
+      "param": "runCap",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Sprint",
+      "tip": "Time is its top speed on a surface."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Sprinter",
+      "lv": {
+        "charge": 10,
+        "mass": 0,
+        "space": 0,
+        "time": 10
+      },
+      "info": "Fast runs and big hops: the racer."
+    },
+    {
+      "name": "Claimer",
+      "lv": {
+        "charge": 0,
+        "mass": 10,
+        "space": 10,
+        "time": 0
+      },
+      "info": "Grabs from far and grows what it runs: the territory player."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "stick to mass and run (hold)",
+    "rt": "hop off"
+  },
+  "notModelled": [
+    "The surface is a chain of prism centres, not a mesh: the hull runs a line through the structure at a fixed clearance. The game would use the prismscape topology (PrismscapeTopology) it already has.",
+    "Converting a rival rail is the Squirrel's steal rule applied by running; what super-shielded mass does under the Gecko is open."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Gecko). Nearest shipped relative: the Urchin's rail grind (URCHIN_TRAIL_RIDER.md), which this deliberately differs from."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

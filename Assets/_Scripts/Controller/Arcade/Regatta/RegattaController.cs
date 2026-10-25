@@ -312,8 +312,23 @@ namespace CosmicShore.Gameplay
 
             float look = style.Lookahead(status.Speed, state.Risk);
             aim = state.Line.PointAhead(nearest, look);
-            after = state.Line.PointAhead(nearest, 2f * look);
+            // The corner the boost drivers judge is the turn AT the ring they are after (AIBoostContext's objective), so
+            // "after" is the line a look-ahead past that ring, not past the steering point.
+            after = TryGetAIGate(pilot, out var gate)
+                ? state.Line.PointAhead(LineIndexAtRing(state.Line, gate.Position), look)
+                : state.Line.PointAhead(nearest, 2f * look);
             return true;
+        }
+
+        readonly Dictionary<(RegattaRaceLine line, Vector3 ring), int> _lineIndexAtRing = new();
+
+        /// <summary>The line point nearest a ring's centre - where the line threads it. Searched once per line and ring.</summary>
+        int LineIndexAtRing(RegattaRaceLine line, Vector3 ring)
+        {
+            if (_lineIndexAtRing.TryGetValue((line, ring), out int i)) return i;
+            i = line.Nearest(ring, -1);
+            _lineIndexAtRing[(line, ring)] = i;
+            return i;
         }
 
         const float LineRefindDistance = 250f;
@@ -398,6 +413,7 @@ namespace CosmicShore.Gameplay
             _urchinAI?.Clear();
             _pilotLines.Clear();
             _gapLines.Clear();
+            _lineIndexAtRing.Clear();
             base.OnNetworkDespawn();
         }
     }

@@ -2985,6 +2985,25 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `WaystationController`:
+- The fold's aim is held under asin(0.5 R / d), so it lands within half the mouth; before, a flat 12 degrees landed a
+  420 u fold 87 u off a 40-56 u ring.
+- It lets go 30 u short of the plane, so the hull flies through.
+- The AI races at full throttle (`AIThrottleFloor` 1).
+- The autopilot check uses `TryGetComponent`. It used the `VesselStatus.AIPilot` getter, which ADDS an autopilot to
+  every human's hull, every server tick.
+
+The audit and what stays open: `BUTTERFLY.md` §8a.
+**Verified without the editor:** `unity_refcompile` (player-dev clean, editor 0 errors in changed files), gates.
+`WaystationFoldTests` written, NOT run.
+**Verify in editor:**
+1. Run `WaystationFoldTests`: all pass.
+2. Arcade ▸ Waystation with AI Butterflies, Third Eye on one. It flies at ~67 u/s, and when it folds it lands just short
+   of a ring and threads it (it does not fold past or beside the mouth). Expect fewer folds from far away; each lands.
+3. Your own Butterfly, with the Inspector open on its root: no `AIPilot` component appears that was not there before.
+
 ### 🔴 Every Regatta AI hull races its own line along the sides of the braid (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** every AI hull except the Squirrel and the Urchin flies its own line through Regatta. That line is the
@@ -3013,7 +3032,12 @@ risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u f
 4. Easy / Medium: the difficulty mistakes still show (amber "not noticed", red "misjudged"); after a missed ring the
    pilot comes back to that ring the gate way, not a whole lap round.
 5. The Squirrel and the Urchin fly as before.
-6. Time I1–I4 per hull against the roadmap table.
+6. **The Stoat** opens its field pair along the line (its path dots bend, it warps above cruise) and still lets go near
+   each ring; run `StoatDipoleTests`. Before the 2026-10-17 range fix it would have raced at cruise on the line.
+7. **The speed drives still fire on the line** (2026-10-17 fix): the Rhino ramps on the straights (Third Eye: "ramping on
+   the straight", ~840 u/s) and the Dolphin releases and re-drifts at the peak ("drifts again at the peak"). Before the
+   fix neither would ever have fired on the line.
+8. Time I1–I4 per hull against the roadmap table.
 
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
@@ -3085,6 +3109,34 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The Dolphin AI's Regatta line set from Yash's one Dolphin race (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** the Dolphin's race line `LaneShare` 0.60 → 0.785 (`race_lines_learned.json` → `author_race_lines.py` →
+`Resources/RaceLines/Dolphin_Regatta`). Yash crossed the I1 rings a median 80.5 u out of the 110 u mouth (22 crossings,
+one unfinished race). Set by hand at his ask; the learner replaces it at the third finished Dolphin race. The discharge
+timing is unchanged (one race is too few). No C# changed.
+**Verified without the editor:** `author_race_lines.py --check`, `learn_drives_from_flights.py --check`.
+**Verify in editor:**
+1. Arcade ▸ Regatta I1 and I3, an AI Dolphin, Third Eye on it with trails: it flies further out than before (about
+   three quarters of the way to the rim), never crosses a rail and still threads every ring after a drift.
+2. Note its I1 and I3 times; if it misses rings more than before, say so.
+
+### 🔴 The Rhino AI's Regatta corner speed and line set from Yash's six Rhino races (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** a Regatta-only variant `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta` (the base asset with
+`cornerSpeed` 333, was 600) and the Rhino's race line `LaneShare` 0.676 (was 0.80; `race_lines_learned.json` →
+`author_race_lines.py`). Both are medians of all six of Yash's Rhino races (129 ring passages), set by hand because only
+two finished; the learner replaces them at the third finished race. `learn_drives_from_flights.py` now scales each ring
+crossing by its own ring's mouth (mixing I1 and I3 had read 0.815). No C# changed.
+**Verified without the editor:** `learn_drives_from_flights.py --self-test` and `--check`, `author_race_lines.py --check`.
+`rhino_drive_sim.py` (a model with no rails) is SLOWER at 333 than at 600 (I1 50.2 / 44.9 s, I3 75.1 / 50.1).
+**Verify in editor:**
+1. Arcade ▸ Regatta I1 and I3, an AI Rhino, Third Eye on it: it brakes on the ramp to about 330 u/s before sharp rings
+   and crosses about two thirds of the way out from the braid toward the rim.
+2. It scrapes rails less than before, and its lap times are no worse than before (I1 about 45 s, I3 about 50 s);
+   if it is slower, say so: the model predicted that.
+3. Broadside or any other mode with an AI Rhino: unchanged (still 600).
+
 ### 🔴 The Stoat races Regatta: on the card, its autopilot tunable per mode (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the Stoat is on `ArcadeGameRegatta` (`author_regatta_assets.py`, `--check` OK) with a Time +10 starting row
@@ -3139,6 +3191,42 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 3. To compare with the old AI: `git revert` this commit's asset change (one file), race again, compare.
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
+
+### 🔴 Party: B31 fixed again - lobby reads one second apart (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B31, "The first fix did not hold"): `LobbyReadPacer` holds every
+lobby GET of ours (presence refresh, party refresh, the reads around a property save) at least 1.05 s after
+the last, waiting its turn if needed. The refresh tick reads ONE lobby: when the party session is due its read,
+that tick skips the presence read. Before: 1,061 party-read 429s in Caleb's and Gradi's 21-23 Oct tests.
+**Verified without the editor:** `PartyRefreshRecoveryTests` (13) and the party suites (185) on Amoebius;
+`unity_refcompile` player and editor (only the known AuthenticationServiceFacade errors). `/verify-unity` is
+not available in the cloud session.
+**Verify in editor:**
+1. Two machines (or MPPM main + P2) party up and stay 10 minutes in the menu. No `rate-limited - backing off`
+   on either; `net_logs.py show 1` reads `429s 0`.
+2. Invite, accept, and a member leaving still show on the other screen within about 2 s (property saves now
+   wait for their read turn, up to about a second).
+
+### 🔴 Party: B35 fixed - direct joins no longer fail with `NetworkConfig mismatch` (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed** (cause and fix in `Docs/PartySystem/BUGS.md` B35): 11 of the 31 registered network prefabs
+committed a `GlobalObjectIdHash` that is not the one Unity computes, so two editors on the same commit could
+hash the prefab list differently and the host refused every join. Each now carries Unity's value (one line per
+prefab). `Tools/Build/check_network_prefab_hashes.py` fails on a stale hash (`--fix` writes it). Each peer's
+multiplayer test log records a `netConfig` line (config hash + prefab keys), and `net_logs.py show` names the
+keys that differ between two players.
+**Verified without the editor:** `check_network_prefab_hashes.py --self-test` and the gate on the tree;
+`NetworkConfigMarkTests` (3) and the party suites as edit-mode tests on Amoebius; `net_logs.py --self-test`;
+`unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session, so Unity has not
+compiled or loaded the change.
+**Verify in editor:**
+1. Open the project: none of the eleven prefabs (Player, NetworkVesselSpawner, AstroLeagueBall, Butterfly,
+   Falcon, Rhino, Scarab, Termite, MassSharkFauna, QuadFish, TadPoleFauna) shows as modified in git after
+   selecting it in the Project window (Unity computes the same value, so nothing to save).
+2. Two machines on this commit: one hosts a party, the other direct-joins, then once more by accepting an
+   invite. Pass: the joiner lands in the party; the host has no `NetworkConfig mismatch`.
+3. `python3 Tools/Build/net_logs.py collect` then `show 1`: both players have a `netConfig` event and no
+   `NetworkConfig differs between players` line.
 
 ### 🔴 Party: B31-B33 fixed - refresh under the UGS read limit, the shared presence lobby survives its host, a new Play starts clean (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
@@ -13222,6 +13310,37 @@ confirmation and the Project Record".
 6. Pull the plug (no network) and stop Play with something new: the pill reads NOT SENT with the reason, and the next
    send carries it.
 
+## 🔴 2026-10-17 — The Stoat slowdown: a vessel registry instead of scene searches, and named Driver markers (unverified: no Unity CLI in the session)
+
+**Files:** `VesselStatus.cs` (`Live` registry), `BlackHoleVesselPull.cs`, `StoatRippleExecutor.cs`,
+`StoatPathfinderExecutor.cs`, `WarpFieldVesselScaler.cs` (read it instead of `FindObjectsByType<VesselStatus>`),
+the eight nested `Driver` classes (one named marker each), `BlackHoleRegistry.cs` / `BlackHoleGravityField.cs`
+(nested markers), `MarkerBudget.cs`. What ran instead of `/verify-unity`: Amoebius compiled the whole game and ran
+Warpline before and after (Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-17); `unity_refcompile` player-dev has no errors in
+changed files (its errors are all in UGS multiplayer/friends files whose packages this container could not fetch);
+`perf_hunt.py gates` OK.
+
+1. Release, Menu_Main, fly the Stoat for 10 minutes with the **Third Eye closed**. Frames should stay where they were
+   in minute one (no slide to 30-40 fps). Make the poles and let them annihilate: the ripple still knocks a nearby rival.
+2. Fly into a pole's pull: the hull is still pulled (and carried through a pair), as before.
+3. Warp-field mode: vessels still shrink and grow with the field.
+4. Stoat foresight: rivals' predicted paths still draw.
+5. Stop Play: the auto-capture's `diag` lists `BlackHoleRegistry.LateUpdate` and the `BlackHole.*` rows by name
+   (no anonymous `Driver.LateUpdate`).
+
+## 🔴 2026-10-18 — Early 4-minute auto-capture in Menu_Main (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Editor/Diagnostics/PerfAutoCapture.cs`, `Docs/DIAGNOSTICS.md`. What ran instead of
+`/verify-unity`: `unity_refcompile` editor (0 errors in changed files; the standing 3 are an unfetchable package),
+`perf_hunt.py --self-test`, console-logging and conditional-compilation gates.
+
+1. Code Optimization = Release. Play Menu_Main. The Scene view badge counts down `Auto-capture: S2-4min in 3:59`.
+2. At 4:00 it reads `S2-4min running; S2 follows at 8 min`, then counts down to S2.
+3. Stop Play after about 4½ minutes: the after-play pop-up shows 1 performance capture SENT, and
+   `bugledger/<you>` gets `capture_Menu_Main_S2-4min_*.json`.
+4. Play again for 8½ minutes or more: two captures go (S2-4min and S2).
+5. Skim Race (90 s) and Wildlife Liberation (2 min) behave as before: one capture each, no early one.
+
 ## 🔴 2026-10-17 — Kit labels shrink to fit (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 `KitText` (shrinkToFit, minSizeScale) plus every style-B prefab re-emitted with auto-size on. `/verify-unity` was not
@@ -14130,3 +14249,35 @@ Not opened in Unity (no editor in the session); `unity_refcompile --config edito
 - [ ] Fly the Starlings, pick a card; on a later hand that offers it again the row reads `Lv 3 → 7` (the arrow renders, no box).
 - [ ] Open that card's details: `Level 3 → 7`, each number `now → next`, `Unlocks at Lv 5: ...` for a jolt the pick passes.
 - [ ] With no hand, open details: each held card heads `Lv N → N+1` with numbers beside the next level's and its next jolt; a card at 15 shows `Max level`.
+
+## 🔴 2026-10-24 — Quest track parallax sleeps while hidden (Menu_Main clipping cost) (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/UI/Views/QuestTrackView.cs`. What ran instead of `/verify-unity`: `unity_refcompile`
+player RESULT OK (no errors in project code); console-logging and conditional-compilation gates OK.
+Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Menu_Main, open Profile: the quest cards still shrink and fade toward the edges, and grow back when
+   scrolled to the centre, exactly as before. Claim a quest: its card animates, then settles at the right scale.
+2. Leave Profile (or enter freestyle) and play Menu_Main past the 4-minute auto-capture, then stop Play. In the
+   capture, `ClipperRegistry.Cull` should be well below the 3-7 ms of the 10-19..23 captures (0.26 ms on 10-16).
+
+## 🔴 2026-10-24 — Prism creation waits in one queue, not one coroutine per prism (Bloomrush 3.5 fps) (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Controller/Vessel/Prism.cs` (`CreationQueue`). What ran instead of `/verify-unity`:
+`unity_refcompile` player and player-dev RESULT OK; console-logging and conditional-compilation gates OK.
+Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Arcade > Bloomrush, play 90 s or more (the editor auto-captures), stop Play. In the capture,
+   `Prism.CreateBlockCoroutine` calls per frame drop from ~56,000 to a handful, `CoroutinesDelayedCalls` from ~139 ms,
+   and `Prism.CreationQueue.Drain` appears. The cactus forest still grows in (as slowly as before).
+2. Any arcade mode and Menu_Main: trails, flora and crystals appear as before (a 0.6 s spawn window, then visible);
+   a prism shot inside that window never appears; a Cell Selector world swap still builds behind the veil.
+3. A swarm fauna (Docs/SWARM_FAUNA.md §16.2) hit right after it spawns still materialises (CompleteCreationImmediately).
+
+## 🔴 2026-10-24 — SpawnableGeode: three-value Min without the params array (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGeode.cs` (`Mathf.Min(a, b, c)` ->
+`MathfNoAlloc.Min`, same result). What ran instead of `/verify-unity`: `unity_refcompile` player RESULT OK;
+`perf_hunt.py gates` all OK.
+
+1. Load any arena that builds a Geode (the freestyle six, Cell Selector): its band prisms lay flush, as on 10-20.

@@ -310,8 +310,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (_activeLobby == null) return;
-            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-            await _activeLobby.RefreshAsync().AsMainThread();
+            await LobbyReadPacer.RefreshAsync(_activeLobby);
         }
 
         /// <inheritdoc/>

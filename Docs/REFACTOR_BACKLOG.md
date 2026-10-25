@@ -45,6 +45,25 @@ session); open the project once and let it compile.
 | **S19/S20** | 24 sites / 16 files `GetComponent`+null check → `TryGetComponent` | The audit's ~159 was a loose pattern; the exact mechanical shape is **44** sites. 17 skipped (in-flight files), 3 skipped because the two lines are not sibling statements — folding them would have moved a null-warning inside a braceless `if` (a real behaviour change, caught in review) |
 | **S28** (part) | `TOOLING.md`, `PartySystem/REFACTOR.md`, `ARCHITECTURE_CORE.md`, `AI_SYSTEM/ARCHITECTURE.md`, `ScoringSystem/REFACTOR.md` corrected with dated re-measurements | see below |
 
+### Batch 2 (same day, also `Ys-bleeding-edge` only)
+
+Same proof standard: headless compile, player and editor config, 0 errors in changed files, and none of the changed files in the unfetchable-package bucket, where errors would be hidden.
+
+| row | what landed | what the measurement corrected |
+|---|---|---|
+| **S11** | `ASSEMBLY_SPLIT` phase-2 steps 1–2: `CrystalStats` / `PrismStats` / `CombatHitStats` / `AbilityStats` → `Data/Structs/`, `GameplaySFXCategory` → `Data/Enums/` (namespaces kept, moved text compared line for line); `RoundStats.cs` `git mv`'d to `Controller/Player/` | `RoundStats` was the **only** `Data/` file using Netcode or Collections, so `CosmicShore.Data`'s asmdef `references` is now `[]` — a true leaf |
+| **S26** | `AIPilot`'s `#region Unused Methods` (3 private methods + a commented coroutine) and the `_hit` field only it used, deleted | The `Port/` hits are Amoebius's hand-ported copy, not callers |
+| **C9** (part) | `SeedAssembler` / `CloakSeedWall` read `VesselPrismController.SecondaryTrail` instead of reflecting on the private `Trail2` | **Not done:** dropping `SeedAssembler`'s swallowing `catch {}` — it changes what happens when `StopBonding` throws, so it is a behaviour change |
+| **S9** | `ButterflyAutopilotModeDriver` → `Controller/AI/Butterfly/` (guid kept), `ScarabScrambleJukePlanner` extracted verbatim to `Controller/AI/Scarab/` (AI `ARCHITECTURE.md` 4.3) | Three generators (Dustup, Sirocco, Tapestry) AUTHOR the driver's `.meta` and its folder's `.meta`; they now point at the new path, and the new folder's `.meta` carries the guid they mint (`--check` green, negative control catches a wrong guid) |
+
+**Measured and deliberately left this batch:**
+- **M5 (class name ≠ file name):** 19 concrete types (mostly Ship→Vessel leftovers, plus `MinigameHUDView.cs` → `MiniGameHUDView` and `SO_ColorPalette.cs` → `SO_Color_Palette`); 13 of them are on assets (e.g. `R_VesselElementStatsHandler.cs` → `class R_ShipElementStatsHandler`, on **16** assets). The repo's own docs (`BRANCHING_AND_RELEASE.md`, `check_generated_assets.py`) say Unity then cannot load the script. But `VesselStatus` both `[RequireComponent]`s and `GetOrAdd`s the component, so a failed binding would be hidden by a fresh default-valued component. An editor has to settle it (team task) before anyone renames classes or files.
+- **Toast reflection** (`ToastNotificationAPI`/`Manager` set private fields by name; same shape as C9): every toast file is in flight on `claude/new-session-76hnyc` (Shombith's menu branch). Do it after that merges.
+- **S13** `PrismSpatialIndex` job split: two `prisma-*` branches edit line 96, inside the region that would move.
+- **S16** shared Swarm hash: four one-line expressions with different modulus constants, in protected ecology code that two `tandava` branches are editing. A helper would add an indirection and prevent nothing, so **not worth its code**.
+- **S22** Grizzly dangling guid: `Grizzly.prefab` is in flight on `grizzly-v2` and `grizzly-v3`.
+- **S24** toy emblem material leak: `Docs/ToySystem/BACKLOG.md` says itself that the fix changes matrix-station material ownership — not a no-op.
+
 **Re-measured and NOT a basic refactor:** **S6** `"Menu_Main"` — of the 16 literals, 7 are the
 deliberate fallback when `SceneNameListSO` is unassigned, and 6 are in the party layer (LOCKED), 3 of
 them presence-protocol payloads rather than scene loads; leave it to the party work. **S27**
