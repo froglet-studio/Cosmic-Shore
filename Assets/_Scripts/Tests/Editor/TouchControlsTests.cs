@@ -239,14 +239,50 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void OnlyTheMantaTurnsItsIdleTiltOver()
+        public void OnlyTheMantaTurnsItsIdleTiltPitchOver()
         {
-            // Garrett, 2026-10-22: the Manta's soar steered the opposite way on both axes. The Thresher's
-            // launch aim reads the same tilt and keeps it as is.
+            // Garrett, 2026-10-22: the Manta's soar steered the opposite way on both axes; 2026-10-25: its yaw
+            // was then flipped from intended, so only pitch stays turned over. The Thresher's launch aim reads
+            // the same tilt and keeps it as is.
             var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
             Assert.That(library, Is.Not.Null);
-            Assert.That(library.Find(VesselClassType.Manta).flipTiltSteer, Is.True);
-            Assert.That(library.Find(VesselClassType.Thresher).flipTiltSteer, Is.False);
+            Assert.That(library.Find(VesselClassType.Manta).flipTiltSteerPitch, Is.True);
+            Assert.That(library.Find(VesselClassType.Manta).flipTiltSteerYaw, Is.False);
+            Assert.That(library.Find(VesselClassType.Thresher).flipTiltSteerPitch, Is.False);
+            Assert.That(library.Find(VesselClassType.Thresher).flipTiltSteerYaw, Is.False);
+        }
+
+        [Test]
+        public void TheDolphinsOneThumbCurveSoftensHomeAndKeepsTheRim()
+        {
+            // Garrett, 2026-10-25: "too sensitive around the home... I like that it can turn sharp".
+            var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
+            float curve = library.Find(VesselClassType.Dolphin).oneThumbResponseCurve;
+            Assert.That(curve, Is.GreaterThan(0f));
+            Assert.That(library.Find(VesselClassType.Squirrel).oneThumbResponseCurve, Is.EqualTo(0f));
+
+            // The rim is untouched, in any direction.
+            var rim = new Vector2(0.6f, 0.8f);
+            Assert.That(TouchInputStrategy.ShapeOneThumb(rim, curve).x, Is.EqualTo(rim.x).Within(1e-5f));
+            Assert.That(TouchInputStrategy.ShapeOneThumb(rim, curve).y, Is.EqualTo(rim.y).Within(1e-5f));
+
+            // Near home a deflection commands less than it did, and keeps its direction.
+            var small = new Vector2(0.15f, 0.2f);
+            var shaped = TouchInputStrategy.ShapeOneThumb(small, curve);
+            Assert.That(shaped.magnitude, Is.LessThan(small.magnitude * 0.6f));
+            Assert.That(Vector2.Angle(shaped, small), Is.LessThan(0.01f));
+
+            // Monotonic: more thumb is always more turn.
+            float last = 0f;
+            for (int i = 1; i <= 20; i++)
+            {
+                float r = TouchInputStrategy.ShapeOneThumb(new Vector2(i / 20f, 0f), curve).x;
+                Assert.That(r, Is.GreaterThan(last));
+                last = r;
+            }
+
+            // Negative control: a zero curve is the identity.
+            Assert.That(TouchInputStrategy.ShapeOneThumb(small, 0f), Is.EqualTo(small));
         }
 
         [Test]

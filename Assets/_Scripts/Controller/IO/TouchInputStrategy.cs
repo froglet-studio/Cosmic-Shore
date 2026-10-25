@@ -336,7 +336,7 @@ namespace CosmicShore.Gameplay
             {
                 oneThumbActive = true;
                 oneThumbStick = TiltToStick(tilt.Sample(Time.deltaTime, TouchControlProfileLibrarySO.Instance),
-                    Profile.flipTiltSteer);
+                    Profile.flipTiltSteerYaw, Profile.flipTiltSteerPitch);
                 Reparameterize();
                 inputStatus.XDiff = 0.5f;
             }
@@ -413,8 +413,29 @@ namespace CosmicShore.Gameplay
         /// <summary>Tilt as a thumb: wheel-turn is the stick's x, and tipping the top edge away is the
         /// thumb pushed UP - so it flies exactly as a pushed-up thumb does, and the Invert Y setting turns
         /// it over with every other stick (no inversion of its own; Garrett, 2026-10-21). A hull whose profile
-        /// sets <c>flipTiltSteer</c> (the Manta) reads the tilt turned over on both axes, before Invert Y.</summary>
-        private static Vector2 TiltToStick(Vector2 tiltStick, bool flip) => flip ? -tiltStick : tiltStick;
+        /// sets <c>flipTiltSteerYaw</c> / <c>flipTiltSteerPitch</c> reads that axis turned over, before Invert Y
+        /// (the Manta flips pitch only: Garrett flipped both on 2026-10-22 and put yaw back on 2026-10-25).</summary>
+        private static Vector2 TiltToStick(Vector2 tiltStick, bool flipYaw, bool flipPitch) =>
+            new(flipYaw ? -tiltStick.x : tiltStick.x, flipPitch ? -tiltStick.y : tiltStick.y);
+
+        /// <summary>
+        /// One-thumb response curve (a hull's <c>oneThumbResponseCurve</c>, the Dolphin's): the thumb's
+        /// deflection r, measured radially so a diagonal keeps its direction, becomes (1 - c) r + c r^3.
+        /// The slope at the centre drops to (1 - c) and the rim stays at 1, so a thumb near home makes small
+        /// corrections and a thumb at the rim turns as sharp as before. It runs before the mix's own Ease, so
+        /// the two compose; at c = 0.6 the commanded turn at quarter / half / three-quarter deflection is
+        /// 0.08 / 0.21 / 0.46 (was 0.19 / 0.41 / 0.67) and the slope at home is 0.3 (was 0.75). Tilt steer never
+        /// passes through here.
+        /// </summary>
+        public static Vector2 ShapeOneThumb(Vector2 stick, float curve)
+        {
+            if (curve <= 0f) return stick;
+            float r = stick.magnitude;
+            if (r <= 0f) return stick;
+            float clamped = Mathf.Min(r, 1f);
+            float shaped = (1f - curve) * clamped + curve * clamped * clamped * clamped;
+            return stick * (shaped / r);
+        }
 
         /// <summary>A held AIM button's drag from where it landed is the right stick (single-stick hulls
         /// only - a two-stick hull flies on it). Written after the flight mix so it wins over the mirror.</summary>
@@ -660,7 +681,8 @@ namespace CosmicShore.Gameplay
             // zero by the handler above, so it must not be read as a real input - that decaying
             // value is what used to leak into throttle and roll (see Reparameterize).
             oneThumbActive = true;
-            oneThumbStick = useLeft ? leftNormalizedJoystickPosition : rightNormalizedJoystickPosition;
+            oneThumbStick = ShapeOneThumb(useLeft ? leftNormalizedJoystickPosition : rightNormalizedJoystickPosition,
+                Profile != null ? Profile.oneThumbResponseCurve : 0f);
         }
 
         private void ProcessCommandStickControls(Vector2 position)

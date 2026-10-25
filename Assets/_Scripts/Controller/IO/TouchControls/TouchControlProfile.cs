@@ -117,10 +117,24 @@ namespace CosmicShore.Gameplay
                  "back pitches. The Manta's soar, the Thresher's launch aim.")]
         public bool tiltSteersWhileIdle;
 
-        [Tooltip("Turns the idle tilt steer over on both axes: wheel-turn right yaws left, tipping the top edge " +
-                 "away pitches as a pulled-back thumb. Invert Y still applies on top. The Manta (Garrett, " +
-                 "2026-10-22: both left/right and up/down were the opposite of his expectation).")]
-        public bool flipTiltSteer;
+        [Tooltip("Turns the idle tilt steer's PITCH over: tipping the top edge away pitches as a pulled-back " +
+                 "thumb. Invert Y still applies on top. The Manta (Garrett, 2026-10-22: up/down was the " +
+                 "opposite of his expectation).")]
+        [UnityEngine.Serialization.FormerlySerializedAs("flipTiltSteer")]
+        public bool flipTiltSteerPitch;
+
+        [Tooltip("Turns the idle tilt steer's YAW over: wheel-turn right yaws left. Off on every hull today - " +
+                 "the Manta flew flipped from 2026-10-22 and Garrett reverted its yaw on 2026-10-25 (\"manta " +
+                 "gyro has its yaw controls flipped from intended\").")]
+        public bool flipTiltSteerYaw;
+
+        [Header("One thumb")]
+        [Tooltip("Softens the CENTRE of one-thumb flight (one thumb on the glass) without touching the rim: " +
+                 "the thumb's deflection r becomes (1 - c) r + c r^3 before the mix, so small corrections " +
+                 "turn gently and a thumb at the rim still turns exactly as sharp. 0 = linear (every hull " +
+                 "but the Dolphin). The Dolphin (Garrett, 2026-10-25: \"too sensitive around the home... " +
+                 "I like that it can turn sharp but it should have a nonlinear response curve\").")]
+        [Range(0f, 1f)] public float oneThumbResponseCurve;
 
         [Header("Both thumbs off")]
         [Tooltip("With no thumb on the glass, both analog triggers read fully pulled - the Rhino energizes " +
