@@ -2388,4 +2388,5 @@ button and has no report; it is unchanged.
 **Hand test.** Two machines: one joins a party that is not there (or the host stops Play mid-join), and the
 joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
 Play stops.
+Ticket: T-20261025-6541 (#1527).
 

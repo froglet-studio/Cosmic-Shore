@@ -14406,3 +14406,13 @@ RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPT
 1. Release, Menu_Main (Garland), fly the freestyle vessel through the flora and swing the camera: spindles still
    step between braid / converging braid / thread with no visible pop.
 2. The next Menu_Main auto-capture: `SpindleLod.Drain` max total ms per frame about 3 ms or less (was 14.7).
+
+## 🔴 2026-10-25 — Spindle LOD far batches update incrementally (unverified: no Unity CLI in the session)
+
+**File:** `SpindleLodSystem.cs` (`JoinBatch`, `LeaveBatch`, `Rebuild`). Ran instead: refcompile player-dev OK,
+SpindleLodTests 17/17 on the engine runner (no test covers the batches).
+
+1. Release, Arcade > Wrecking Ball, play 2 minutes past the auto-capture. Far spindles (the braids and threads in the
+   distance) are all still drawn, none blinks out at the screen edge, none is drawn where a limb used to be.
+2. In the capture: `SpindleLod.Draw` well under the 9.3 ms/frame of 10-22, `SpindleLod.Drain` at or under ~3 ms.
+3. Menu_Main (Garland): the same look checks while flying through the flora.
