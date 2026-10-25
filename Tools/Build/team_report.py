@@ -15,7 +15,7 @@ it, and a hand-written report (Docs/Reports/<NAME>.md) that says what the work I
   - recent commits on any branch that touch the area's paths, newest first, each with where it is (the area's branch,
     bleeding-edge);
   - what other branches have in flight there (who_works_where.py);
-  - the open tasks for the area (Docs/TEAM_TASKS.md).
+  - the open tickets for the area (Froglet Tasks: GitHub issues labelled team-task).
 `--write` puts that block into the report doc between its team_report markers, so the doc a person opens is current.
 Run `git fetch origin` first: it reads origin/*. A reader: it changes nothing but, with --write, that block.
 """
@@ -84,23 +84,19 @@ def in_flight(root, paths, days, skip):
 
 
 def open_tasks(root, area_names):
-    path = os.path.join(root, 'Docs/TEAM_TASKS.md')
-    if not os.path.exists(path):
-        return []
+    """The area's open tickets (Froglet Tasks, GitHub issues labelled team-task); [] when GitHub cannot be read."""
     sys.path.insert(0, os.path.join(root, 'Tools/Build'))
     try:
         import team_tasks  # noqa: E402
-        _, tasks = team_tasks.parse(open(path, encoding='utf-8').read())
+        return team_tasks.open_tickets([n.strip() for n in area_names])
     except Exception:
         return []
-    names = {n.lower() for n in area_names}
-    return [t for t in tasks if t.area.strip().lower() in names and t.is_open]
 
 
 def block(root, key, a, days):
     branches = [b for b in [a.get('branch'), 'bleeding-edge'] if b]
     lines = [f"_Generated {datetime.date.today().isoformat()} from git (last {days} days), "
-             f"who_works_where.py and Docs/TEAM_TASKS.md: `python3 Tools/Build/team_report.py area {key} --days {days}`._", '']
+             f"who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area {key} --days {days}`._", '']
     rows = recent(root, a['paths'], days, branches)
     lines.append(f"### Recent changes ({len(rows)}{'+' if len(rows) >= MAX_COMMITS else ''})")
     if not rows:
@@ -116,7 +112,7 @@ def block(root, key, a, days):
         who = ', '.join(f.get('people') or []) or 'unattributed'
         lines.append(f"- `{f['branch']}` ({who}, {f.get('date', '')}): {f.get('last', '')}")
     tasks = open_tasks(root, a.get('taskAreas', [a['title']]))
-    lines += ['', '### Open tasks (Docs/TEAM_TASKS.md)']
+    lines += ['', '### Open tickets (Froglet Tasks)']
     if not tasks:
         lines.append('- None.')
     for t in tasks:

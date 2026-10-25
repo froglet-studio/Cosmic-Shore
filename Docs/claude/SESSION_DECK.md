@@ -19,7 +19,7 @@ checks people ask for in every session take one press and no model turn. Source:
 | Button | Runs (from the repo root) | Model turn? |
 |---|---|---|
 | Team | `git fetch --prune origin`, then `python3 .claude/hooks/team_activity.py --peek 12`: every branch's pushes in the last 12 h, HOT where they touch files this session changed. Writes no hook state, so the prompt hook still reports each push once. | No |
-| Gates | All at once: `check_console_logging`, `check_using_directives`, `check_conditional_compilation`, `check_ai_no_state_writes`, `check_switch_label_collisions`, `check_enum_member_references`, `check_self_referential_locals`, `team_tasks.py --check` (the shared to-do board, `Docs/TEAM_TASKS.md`) (about 25 s, set by the using-directives gate). PASS/FAIL per gate with its last line. | No |
+| Gates | All at once: `check_console_logging`, `check_using_directives`, `check_conditional_compilation`, `check_ai_no_state_writes`, `check_switch_label_collisions`, `check_enum_member_references`, `check_self_referential_locals`, `team_tasks.py --self-test` (the team's hand-off tickets, Froglet Tasks) (about 25 s, set by the using-directives gate). PASS/FAIL per gate with its last line. | No |
 | Compile | `bash Tools/Build/unity_refcompile/run.sh --config player-dev` (several minutes; the first run in a container fetches the reference assemblies). The last 28 lines. | No |
 | Sync | `git fetch --prune origin`, then ahead/behind against `origin/<branch>`, uncommitted files, and how far `origin/bleeding-edge` is ahead. | No |
 | Ship | Submits `/ship-quick`. | Yes |

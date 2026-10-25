@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Manta tilt yaw un-flipped; Dolphin one-thumb response curve (`cece/amazing-franklin-4lp0mk`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `TouchControlProfile.flipTiltSteer` split into `flipTiltSteerPitch` (`FormerlySerializedAs`) and
+`flipTiltSteerYaw`; the Manta flips pitch only (Garrett: "manta gyro has its yaw controls flipped from intended").
+New `oneThumbResponseCurve` (0..1): one-thumb deflection r becomes (1 - c) r + c r^3 radially
+(`TouchInputStrategy.ShapeOneThumb`), tilt steer excluded; the Dolphin ships 0.6, every other hull 0 (Garrett: "too
+sensitive around the home... I like that it can turn sharp"). Turn at quarter / half / three-quarter thumb 0.08 / 0.21 /
+0.46, was 0.19 / 0.41 / 0.67; the rim is unchanged.
+
+**Verified without the editor:** `unity_refcompile` player: OK; editor: 0 errors in changed files.
+`author_touch_profiles.py --check` OK. `TouchControlsTests` compile, not run.
+
+**Verify in editor / on a phone:**
+1. Run `TouchControlsTests` (EditMode): all pass.
+2. Manta, both thumbs off: wheel-turn the phone right, the hull yaws RIGHT; tip the top edge away, pitch as before
+   (unchanged since 2026-10-22).
+3. Dolphin, one thumb: small thumb movements near where it landed turn gently; a thumb at the rim turns as sharp as
+   before. Tune `TouchControlProfiles` Dolphin `oneThumbResponseCurve` (0.5 lighter, 0.7 softer) in
+   `Tools/Build/author_touch_profiles.py` and re-run it.
+4. Thresher launch aim and every other hull: unchanged.
+
 ### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the
