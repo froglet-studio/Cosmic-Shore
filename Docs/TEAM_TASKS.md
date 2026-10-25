@@ -2095,12 +2095,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.4; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
 
-### T-20261024-bc4c · open · dev · Fair play
+### T-20261024-bc4c · done · dev · Fair play
 - **Task:** HIGH (Threat Board R11): harden the few values worth editing (boost charge, element levels, score) with obscured types and add a speed-hack check (wall clock vs game time); flag, do not crash
 - **Done when:** A memory editor changing boost charge no longer sticks, and a speed hack produces a signal, on a PC release build
 - **Who can take it:** Yash; flag the new package (e.g. CodeStage ACTk) to Garrett first per CLAUDE.md
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.3; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
+- **Done:** 2026-10-25, Not bought: Shombith decided 2026-10-25 to build an in-house version later (see the LATER task added the same day). Server checks T2/T3/T5 cover the launch risk.
 
 ### T-20261022-a669 · open · test · Dolphin
 - **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops, easing the last degrees in ~0.1 s through the touch nose lag since 2026-10-23, with no sensor jitter), holds at 90 degrees either side, and keeps its roll when the thumb returns
@@ -2405,3 +2406,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (Menu_Main, UGS); Yash (offered)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261025-bff9 · open · dev · Fair play
+- **Task:** LATER (R11, decided 2026-10-25): build our own memory-edit protection instead of the paid kit: a speed-hack check (game time vs the real clock) that raises a FairPlaySignal, then obscured storage for the few values worth editing (boost charge, element levels, local score). Revisit when ranked play or public matchmaking arrives, or T5/report data shows in-match edits
+- **Done when:** Speed-hack check raises a signal on a PC release build under a speed hack; obscured values agreed with the vessel owners
+- **Who can take it:** Shombith; Yash or Garrett for the vessel values
+- **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 8b

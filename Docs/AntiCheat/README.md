@@ -344,7 +344,7 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | High | T8 No Report button | 12 | T-20261022-7708. **Done 2026-10-24**: Report (three reasons, to UGS Moderation) and Block on the profile popup; Moderation package added |
 | High | T4 Host decides every result | 6 | T-20261024-af9e. **Match reports built 2026-10-24, gated off**: disagreeing reports flag the host; a host that lies the same to everyone is not caught |
 | High | T9 Leaving costs nothing | 8 | T-20261024-9d7c. **Quit counting built 2026-10-24, gated off**; no consequence until the Undertow |
-| High | R11 Memory editing on the device | 8 | T-20261024-bc4c |
+| Later | R11 Memory editing on the device | 8 | **Moved to later 2026-10-25**: build our own (speed-hack check, then obscured values) instead of the $80 kit; the server checks cover launch. See the LATER task on the board |
 | Medium | T6 Shipped AI pilot as a bot (`PilotControl`) | 9 | T-20261022-7708 |
 | Medium | R10 Bot farming | 9 | later (phase C) |
 | Medium | R13 Automated penalties on children | 12 | design rule (§4.6) |
