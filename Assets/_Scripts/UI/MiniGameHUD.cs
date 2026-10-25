@@ -540,6 +540,9 @@ namespace CosmicShore.UI
                     // scoring crystals and never a lifeform heart (SkimRace's own-domain filter
                     // would reject every one of them).
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Scurry");
+                case GameModes.Tandava:
+                    // the swarm: one opponent loose in a closed cell - "where is it" is the whole question
+                    return CreateProviderComponent<TandavaObjectiveProvider>("ObjectiveProvider_Tandava");
                 default:
                     return null;
             }
