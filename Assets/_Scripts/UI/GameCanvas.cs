@@ -28,7 +28,7 @@ namespace CosmicShore.UI
         [SerializeField] public TMP_Text EncounteredCaptainText;
 
         // [SerializeField] ShipHUDEventChannelSO onShipHUDInitialized;
-        [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
+        [SerializeField] ScriptableEventVesselHUDData onShipHUDInitialized;
 
         private void OnEnable()
         {

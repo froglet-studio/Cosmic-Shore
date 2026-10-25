@@ -66,6 +66,15 @@ namespace CosmicShore.Gameplay
             var impactorVessel = impactor.Vessel;
             var impacteeVessel = impactee.Skimmer.VesselStatus.Vessel;
 
+            // A joust is scored between two PILOTS: its domain test, its scorer and its feed post
+            // all read the vessels' players. A hull with no live player (mid-swap in the Vessel
+            // Changer, a despawning hull, a crew seat nobody sits in) has nobody to score or lose,
+            // and reading it threw on IsLocalUser after "No Player found to get domain!" (Bug
+            // Ledger E-775c564039 / E-6e925c3b8b, Andrew 2026-10-20).
+            if (!UnityLiveness.Alive(impactorVessel.VesselStatus.Player) ||
+                !UnityLiveness.Alive(impacteeVessel.VesselStatus.Player))
+                return;
+
             // Only trigger if the skimmer's vessel is faster than the impactor
             if (impacteeVessel.VesselStatus.Speed <= impactorVessel.VesselStatus.Speed)
                 return;

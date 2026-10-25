@@ -183,7 +183,13 @@ Before this, an attached AI aimed down whatever rail it had latched — right on
 pilot on a rival's lane crawled at 20 u/s for the rest of the race. **Unmeasured:** after a Slip the
 pilot flies back at the ring through the braid and may re-latch a rival's lane (1.5 s
 `MinSlipIntervalSeconds` bounds the loop); how often an AI Urchin ends up on its own lane is a
-playtest number. Every other hull is untouched — none attaches, and the driver finds every
+playtest number. **Measured 2026-10-25** from 17 recorded races with an AI Urchin rival: on its own lane in 15 (300-304
+u/s, won 10), on the human's lane in 2 (both I4 Hard, the only AI; within 14 u of it for 96% of the race at 42-48 u/s,
+5-10 of 24 rings in 105 s). Two fixes, NOT editor-verified: a **dry-crawl cap** (`UrchinAutopilotConfigSO.MaxDryCrawlSeconds`
+4 s, `UrchinRailAssessment.DryCrawlTooLong`: the arc test keeps a crawl that threads the next ring, and a rival's lane
+threads every ring, so without a cap it crawled ring after ring), and a **stand-off approach** (`RegattaController
+.OwnLaneApproach`: a free Urchin nearer a rival's lane than its own, within `aiRivalLaneClearance` 30 u, aims
+`aiOwnLaneStandOff` 20 u past its own lane straight away from the rival point, so it leaves that rail at once). Every other hull is untouched — none attaches, and the driver finds every
 control by capability. `AIPilot` is unchanged. The AI templates are
 `Random`, so the bot grid draws its hulls from the card. The Manta's boost has an autopilot
 drive; the Rhino's ramp did NOT engage for an AI (2026-10-14 audit: the press only comes from a human input
@@ -252,7 +258,7 @@ every AI seat instead of per domain (Squirrels lift off their rail); the Rhino's
 addressed but unmeasured (2026-10-17: it brakes ON the ramp at 300 u/s² to a corner speed, `AI/AI_BOOST.md`). The bleeding-edge commit `fb2bff7ac` (Skim Race ring
 crystals) merges cleanly and does not change Regatta.
 
-**2026-10-17 (Ys-bleeding-edge only, not editor-verified).** Regatta's gate steering now puts the "through" point on
+**2026-10-17 (not editor-verified).** Regatta's gate steering now puts the "through" point on
 the line from the pilot through the ring's CENTRE, not on the ring's axis (`GateRaceController.ArmRacer`, gated by
 `AICommitFromApproachPoint`, so Regatta only). A drifting hull locks its course on that point, and an axis point lay off
 that line when the pilot committed off-axis, so the locked line passed beside the mouth. In the offline models the axis
@@ -332,6 +338,66 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   median of 1,042 crossings: the braid's middle IS the Squirrel's line) and the Urchin (rides its own lane).
 - **Tests:** `RegattaRaceLineTests` (clearance, radius, the centre line as the negative control, the loop, the
   style's bounds and seeded risk, which hulls have a style). Not editor-verified.
+
+### 6.3 The line's aim is a path lead, and it never cuts a mouth (2026-10-25)
+
+Yash, 2026-10-25: "I need all vessels to fly and win the race in Regatta based on their AI skills ... modifying their
+default AI skills." **Measured first, from the rivals in 87 stored editor Regatta races** (`Tools/Build/
+regatta_rival_report.py`; each flight records every AI rival's position and rings at 10 Hz): the Urchin threaded 23.5
+rings a minute and the Squirrel 13.7, but every hull on the generic gate steering or the race line threaded only
+5.5-9.3 (Serpent 9.3, Manta 7.9, Dolphin 7.2, Sparrow 6.4, Rhino 6.3, Scarab 5.5), where the offline drive models had
+them at 25-58. Difficulty did not explain it (Hard was often worse than Medium). Traced: these AIs crossed the ring's
+plane just OUTSIDE the mouth (median 1.1-1.7 ring radii from the centre; the Squirrel and Urchin: 0.3, the
+measurement's floor) and swung 500-1500 u wide before re-attacking, the Manta missing one ring for every two it
+threaded; on the line, the fastest two missed more rings than they threaded (Manta 13 / 5, Scarab 9 / 8).
+
+Two causes, both in the shared steering, both fixed:
+
+- **The orbit break-off fired on the line.** `AIPilot.UpdateOrbitBreak` is built for chasing a crystal: it breaks off
+  when the objective sits inside the turning circle off the nose, or when 360° of turning passes without the range
+  falling. The line's aim is a LEAD POINT one look-ahead ahead, so its range never falls (one lap of the circuit IS
+  360°) and every sharp bend puts it off the nose inside the circle; the break-off then flew an escape leg of
+  2 x max(2R - 18, 1.5 s x speed) (966 u for the Scarab): the wide swings. A rail's aim is the same kind of point and
+  was already exempt. Now the mode marks the line's aim each frame (`AIPilot.MarkAimAsPathLead`, called by
+  `GateRaceController` when it returns `TryRaceLine`'s point) and the break-off skips it. Other modes and every other
+  aim keep the break-off (the flag is cleared before every sample).
+- **The look-ahead cut the mouth.** Steering at a point a look-ahead along the line cuts every bend; at a ring on a
+  bend the chord to that point crosses the ring's plane outside a small mouth (I3/I4: 72 u) when the hull is fast.
+  `RegattaRaceLine.AimThroughRing`: when the ring's crossing point is nearer along the line than the look-ahead AND
+  the chord would cross outside the mouth less the hull's room (`RaceLineStyleSO.ClearanceAt`), the pilot aims at the
+  crossing point pushed straight on by what is left of the look-ahead. Where the chord already threads, the line is
+  untouched.
+
+**Offline model** (`Tools/Build/regatta_line_sim.py`: the real line over the exported rails, `AIPilot`'s own stick
+law, the shipped break-off; each hull at its recorded race speed), seconds for 3 laps, before → after, and the
+break-offs plus misses in the four races:
+
+| Hull | u/s | I1 | I2 | I3 | I4 | Break-offs + misses |
+|---|---:|---|---|---|---|---|
+| Manta | 267 | 88.5 → 53.3 | 87.1 → 59.8 | 104.2 → 66.5 | 215.5 → 66.5 | 83 → 0 |
+| Scarab | 322 | 59.7 → 43.8 | 58.1 → 48.2 | 135.3 → 53.6 | 145.2 → 53.3 | 81 → 0 |
+| Rhino | 130 | 126.9 → 109.9 | 139.9 → 123.3 | 150.5 → 131.3 | 149.0 → 130.9 | 26 → 0 |
+| Sparrow | 80 | 189.6 → 178.5 | 223.2 → 200.6 | 231.8 → 213.9 | 231.3 → 212.7 | 24 → 0 |
+| Dolphin | 120 | 119.3 → 119.3 | 136.7 → 133.6 | 173.8 → 142.7 | 163.3 → 141.4 | 19 → 0 |
+| Serpent | 157 | 100.1 → 90.8 | 113.6 → 101.5 | 122.3 → 108.7 | 124.0 → 107.5 | 18 → 0 |
+
+The shipped column is close to the real races for the slow hulls (Rhino, Sparrow, Dolphin: about 6-12 rings a
+minute in both), which is why the model is trusted to rank the fix; the editor is still the measurement.
+
+**What else was measured and left alone:**
+- **The Scarab's corner lift** (lift the throttle, its only brake, before a corner): modelled
+  (`scarab_drive_sim.py`), never faster than flat out on Regatta's steering, so not shipped. Its lost races were the
+  two causes above.
+- **Each hull's timed default skills** (`AIPilot.abilities`, cycled on a timer): the Dolphin's three are all bound to
+  the commit control and skipped by the cycle; the Sparrow's guns cost no boost (its afterburner is free, full auto
+  costs 0 ammo); the Rhino, Manta, Scarab and Squirrel have none; the Serpent's are Garrett's (in-flight branch
+  `cece/vibrant-archimedes-n3xn3x`). Nothing in the recordings tied a timed skill to a lost race, so none changed.
+- **Rail rams:** 90-94% of the time the Dolphin, Sparrow, Squirrel and Urchin spent under 20 u/s mid-race they were
+  within 15 u of a rail prism. Most of those races predate the line (2026-10-17), which exists to keep hulls off the
+  rails; re-measure with races flown after this change.
+
+Tests: `RegattaRaceLineTests` (`AimThroughRing_*`, `DistanceAlong_*`). The break-off flag is held by the model's
+self-test, not a Unity test (`AIPilot` needs a live vessel). Not editor-verified (`UNITY_VERIFICATION_CHECKLIST.md`).
 
 ## 6.5 Scoring — the team sum
 

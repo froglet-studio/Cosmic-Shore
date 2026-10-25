@@ -413,7 +413,9 @@ namespace CosmicShore.Gameplay
             s_boxNormals = mesh.normals;
             s_boxTriangles = mesh.triangles;
             temp.SetActive(false); // Destroy is deferred to end-of-frame; don't flash a cube at the origin
-            Object.Destroy(temp);
+            // Edit mode (an icon bake) cannot Destroy: it logs an error and leaves the cube in the open scene.
+            if (Application.isPlaying) Object.Destroy(temp);
+            else Object.DestroyImmediate(temp);
         }
     }
 }

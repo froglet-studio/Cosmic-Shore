@@ -54,6 +54,13 @@ namespace CosmicShore.Gameplay
 
         // The "state" column's bits (written into the file's header as "stateBits").
         const int StateBoosting = 1, StateDischarging = 2, StateDrifting = 4, StateSlowed = 8, StateAttached = 16, StateStationary = 32;
+        // Bits only a rival's "rivalState" carries (the AI's side of the situation): an AI is flying it, the AI is breaking
+        // off an orbit (AIPilot.IsBreakingOrbit: the boost drivers stand down), the hull's translation is restricted.
+        const int RivalStateAI = 64, RivalStateBreakingOff = 128, RivalStateRestricted = 256;
+        // "rivalState" columns per rival, aligned with "rivals": state bits, BoostMultiplier, the AI boost driver's status
+        // (an index into "rivalBoostStatuses", -1 for none), the AI's objective phase (AIPilot.ObjectivePhase, -1 for none),
+        // and the degrees between the hull's course and its nose (AIPilot.HeadingDirection reads the course).
+        const int RivalStateColumns = 5;
 
         /// <summary>The flights folder: beside the diagnostics captures, so Store AI record finds them.</summary>
         public static string Folder => Path.Combine(DiagnosticsHUD.OutputDirectory, "Flights");
@@ -122,6 +129,12 @@ namespace CosmicShore.Gameplay
         readonly List<float> _rivals = new(2048 * 16);
         readonly List<float> _rivalVel = new(2048 * 12);
         readonly List<string> _rivalHulls = new(8);
+        readonly List<float> _rivalState = new(2048 * 4 * RivalStateColumns);
+        // Each AI boost driver status seen, with its numbers blanked to '#' so "ramping (412 u/s)" and "ramping (430 u/s)"
+        // are one entry: the table "rivalBoostStatuses" that "rivalState" indexes.
+        readonly List<string> _rivalBoostStatuses = new(32);
+        readonly Dictionary<string, int> _rivalBoostStatusIndex = new(32);
+        readonly StringBuilder _statusKey = new(96);
         readonly List<float> _crystals = new(2048 * MaxCrystals * 4);
         readonly List<float> _crystalPick = new(MaxCrystals * 2);
         readonly List<RailCopy> _rails = new(4);
@@ -554,6 +567,9 @@ namespace CosmicShore.Gameplay
             _rivals.Clear();
             _rivalVel.Clear();
             _rivalHulls.Clear();
+            _rivalState.Clear();
+            _rivalBoostStatuses.Clear();
+            _rivalBoostStatusIndex.Clear();
             _crystals.Clear();
             _rails.Clear();
             _railEvents.Clear();
@@ -589,8 +605,58 @@ namespace CosmicShore.Gameplay
                 _rivals.Add(at.x); _rivals.Add(at.y); _rivals.Add(at.z);
                 _rivals.Add(p.RoundStats?.SwitchesThreaded ?? 0);
                 _rivalVel.Add(vel.x); _rivalVel.Add(vel.y); _rivalVel.Add(vel.z);
+                RecordRivalState(vessel.VesselStatus, vessel.Transform);
                 if (first) _rivalHulls.Add(vessel.VesselStatus.VesselType.ToString().ToLowerInvariant());
             }
+        }
+
+        /// <summary>
+        /// A rival's state, so a flight can say WHY an AI flew as it did without a Unity session (2026-10-25: an AI Rhino
+        /// held 50 u/s through two whole Regatta races and the record could not say whether its ramp driver was waiting,
+        /// braking or stood down). The AI's own fields are read through TryGetComponent, never the VesselStatus.AIPilot
+        /// getter, which ADDS a pilot to a hull that has none.
+        /// </summary>
+        void RecordRivalState(IVesselStatus status, Transform hull)
+        {
+            int state = (status.IsBoosting ? StateBoosting : 0) | (status.IsChargedBoostDischarging ? StateDischarging : 0)
+                        | (status.IsDrifting ? StateDrifting : 0) | (status.IsSlowed ? StateSlowed : 0)
+                        | (status.IsAttached ? StateAttached : 0) | (status.IsStationary ? StateStationary : 0)
+                        | (status.IsTranslationRestricted ? RivalStateRestricted : 0);
+            int boostStatus = -1, phase = -1;
+            if (status is Component c && c.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled)
+            {
+                state |= RivalStateAI | (pilot.IsBreakingOrbit ? RivalStateBreakingOff : 0);
+                boostStatus = BoostStatusIndex(pilot.BoostStatus);
+                if (pilot.Objective.Has) phase = (int)pilot.Objective.Phase;
+            }
+            Vector3 course = status.Course;
+            float courseNose = course.sqrMagnitude > 1e-6f ? Vector3.Angle(course, hull.forward) : 0f;
+            _rivalState.Add(state);
+            _rivalState.Add(status.BoostMultiplier);
+            _rivalState.Add(boostStatus);
+            _rivalState.Add(phase);
+            _rivalState.Add(courseNose);
+        }
+
+        /// <summary>The status's index in "rivalBoostStatuses", its digits blanked to '#'; -1 for none.</summary>
+        int BoostStatusIndex(string status)
+        {
+            if (string.IsNullOrEmpty(status)) return -1;
+            _statusKey.Clear();
+            bool inNumber = false;
+            foreach (char ch in status)
+            {
+                bool digit = char.IsDigit(ch) || (inNumber && ch == '.');
+                if (digit) { if (!inNumber) _statusKey.Append('#'); }
+                else _statusKey.Append(ch);
+                inNumber = digit;
+            }
+            string key = _statusKey.ToString();
+            if (_rivalBoostStatusIndex.TryGetValue(key, out int index)) return index;
+            index = _rivalBoostStatuses.Count;
+            _rivalBoostStatuses.Add(key);
+            _rivalBoostStatusIndex[key] = index;
+            return index;
         }
 
         // Stopping Play mid-race (or quitting) writes the race so far as an unfinished flight.
@@ -756,6 +822,27 @@ namespace CosmicShore.Gameplay
                 {
                     if (k > 0) sb.Append(',');
                     sb.Append(F(_rivalVel[start + k], "0.#"));
+                }
+                sb.Append(']');
+            }
+            // Each rival's state, aligned with "rivals": RivalStateColumns values per rival (RecordRivalState).
+            sb.Append("],\n\"rivalStateColumns\":[\"state\",\"boost\",\"boostStatus\",\"phase\",\"courseNose\"],");
+            sb.Append("\"rivalStateBits\":{\"ai\":").Append(RivalStateAI).Append(",\"breakingOff\":").Append(RivalStateBreakingOff)
+              .Append(",\"restricted\":").Append(RivalStateRestricted).Append("},\n\"rivalBoostStatuses\":[");
+            for (int i = 0; i < _rivalBoostStatuses.Count; i++)
+                sb.Append(i > 0 ? ",\"" : "\"").Append(Esc(_rivalBoostStatuses[i])).Append('"');
+            sb.Append("],\n\"rivalState\":[");
+            for (int i = 0; i < _samples.Count; i++)
+            {
+                var m = _samples[i];
+                sb.Append(i > 0 ? ",[" : "[");
+                int start = m.RivalStart / 4 * RivalStateColumns;
+                for (int k = 0; k < m.RivalCount * RivalStateColumns; k++)
+                {
+                    if (k > 0) sb.Append(',');
+                    float v = _rivalState[start + k];
+                    int col = k % RivalStateColumns;
+                    sb.Append(col == 1 ? F(v, "0.##") : col == 4 ? F(v, "0.#") : ((int)v).ToString(c));
                 }
                 sb.Append(']');
             }

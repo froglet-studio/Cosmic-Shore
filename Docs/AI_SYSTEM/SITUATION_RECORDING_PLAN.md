@@ -67,7 +67,14 @@ attached, stationary), `lvC lvM lvS lvT`, `held` (AI-holding samples are now kep
 `camx camy camz camfx camfy camfz fov camMode` (Caleb's V1 view); `rivalVel` (vx, vy, vz per rival, aligned with
 `rivals`); `crystals` (the 12 nearest: x, y, z, element); `railEvents` ([t, rail, prism, 1 destroyed / 0 restored]).
 Since 2026-10-17 also: the hull's resource meters `m0..m3` (names in the header's `meterNames`, the boost meter's
-index in `boostMeter`; the Dolphin's charge is read from them) and `timeMode` (the Stoat's Mass / Time mode). Not
+index in `boostMeter`; the Dolphin's charge is read from them) and `timeMode` (the Stoat's Mass / Time mode).
+Since 2026-10-25 also **each rival's state** (`rivalState`, aligned with `rivals`; columns named in `rivalStateColumns`):
+its `state` bits (the pilot's six plus `rivalStateBits`: `ai`, `breakingOff` = `AIPilot.IsBreakingOrbit`, `restricted`
+= translation restricted), its `boost` (BoostMultiplier), `boostStatus` (an index into `rivalBoostStatuses`, the AI boost
+driver's status with its numbers blanked to `#`; -1 for none), `phase` (`AIPilot.ObjectivePhase`, -1 for none) and
+`courseNose` (degrees between the hull's course and its nose). Why: an AI Rhino held 50 u/s through two whole Regatta
+races (2026-10-23) and the record could not say whether its ramp driver was waiting, braking or stood down.
+`regatta_rival_report.py --hull <hull>` prints each race's shares. Not
 recorded: the hull-specific speed-verb phases (ramp, soar, skim boost) beyond `boost`, the meters and `state`; they have
 no shared field on the vessel status.
 

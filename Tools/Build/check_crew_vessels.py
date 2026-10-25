@@ -35,11 +35,13 @@ CONTAINER = os.path.join(ROOT, "Assets", "_SO_Assets", "Vessel Prefab Container.
 ROSTER = os.path.join(SCRIPTS, "Controller", "Toys", "ToyVesselRoster.cs")
 ENUM = os.path.join(SCRIPTS, "Data", "Enums", "VesselClassType.cs")
 
-# Classes that name a crew whose seat is not on ICrewSeat yet, and where that move is planned (Garrett's and Yash's
-# crew work on bleeding-edge: never re-home their seats from this gate).
+# Classes that name a crew whose seat is not on ICrewSeat (Garrett's and Yash's crew work on bleeding-edge: never re-home
+# their seats from this gate). The planned move (KITE_NAVIGATOR.md, work order step 2) merged in #1407 without it, and
+# every crew is on ICrewStations since 2026-10-23, so whether these join ICrewSeat or ICrewSeat folds into ICrewStations
+# is the crew owners' decision: Docs/REFACTOR_BACKLOG.md S64.
 PENDING = {
-    "Wrasse": "KiteNavigator joins ICrewSeat: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md, work order step 2",
-    "Honeyguide": "HoneyguideCrew joins ICrewSeat in the same work order (KITE_NAVIGATOR.md names the Honeyguide and Ratel)",
+    "Wrasse": "KiteNavigator is not on ICrewSeat; joining it or folding ICrewSeat into ICrewStations is open (REFACTOR_BACKLOG.md S64)",
+    "Honeyguide": "HoneyguideCrew is not on ICrewSeat; the same open decision (REFACTOR_BACKLOG.md S64)",
 }
 
 

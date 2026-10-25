@@ -509,10 +509,8 @@ def controller_body(ctx, wiring):
             + onoff("invertY") + onoff("invertThrottle") + onoff("music") + sl("musicSlider") + onoff("sfx")
             + sl("sfxSlider") + onoff("haptics") + "  hapticsSlider: {fileID: 0}\n"
             + "".join(f"  {f}: {ref(ctx.c(wiring[f][1], 'tmp'))}\n" for f in ("fovValueText", "musicValueText", "sfxValueText"))
-            + "  privacyPolicyUrl: https://cosmicshore.com/privacy\n"
-            "  deleteDataUrl: https://cosmicshore.com/delete-my-data\n"
-            "  bugReportUrl: https://cosmicshore.com/support\n"
-            f"  accountView: {ref(ctx.c('Window/Account', 'account'))}\n")
+            + "".join(f"  {field}: {STORE_SITE}{path}\n" for field, path in STORE_LINKS)
+            + f"  accountView: {ref(ctx.c('Window/Account', 'account'))}\n")
 
 
 def prefab_outputs():
@@ -755,6 +753,11 @@ def every_target_resolves(path, text_, objects, before):
             assert not lost(cm.group(2), int(cm.group(1))), f"{path}: stub {sm.group(1)} addresses {cm.group(1)}, which {cm.group(2)} no longer has"
 
 
+# The settings links point at the store site (merge c659fe209f, claude/store-page-urls-kg5qx7).
+STORE_SITE = "https://www.froglet.games"
+STORE_LINKS = (("privacyPolicyUrl", "/privacy"), ("deleteDataUrl", "/delete-my-data"), ("bugReportUrl", "/support"))
+
+
 def validate(files):
     guids = T.known_guids() | PACKAGE
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
@@ -764,6 +767,8 @@ def validate(files):
     V = K.FileIds(VIEW)
     _, ctl = A.doc_of(view, V("root#controller"))
     assert ctl and S["controller"] in ctl, "SettingsView: the root carries no GameSettingsPanelController"
+    for field, path in STORE_LINKS:
+        assert f"  {field}: {STORE_SITE}{path}\n" in ctl, f"controller.{field} does not point at {STORE_SITE}{path} (the store page)"
     for _, _, rows in PAGES:
         for kind, cap, _, field in rows:
             if kind == "tg":
@@ -877,6 +882,7 @@ def self_test(files):
         ("a stand-in mark on an Account row", lambda f: f.__setitem__(view, _stand_in_mark(f[view]))),
         ("an Account row missing", lambda f: f.__setitem__(view, re.sub(r"  - provider: 4\n    root: .*\n    mark: .*\n    line: .*\n    linkButton: .*\n    linkedMark: .*\n", "", f[view]))),
         ("the Account window ships shown", lambda f: f.__setitem__(view, _show_prompt(f[view]))),
+        ("a settings link back on the old site", lambda f: f.__setitem__(view, f[view].replace(STORE_SITE, "https://cosmicshore.com", 1))),
         ("OptionsMenuContent left nested", lambda f: f.__setitem__(MODAL_PREFAB, f[MODAL_PREFAB] + f"# guid: {OPTIONS_GUID}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)

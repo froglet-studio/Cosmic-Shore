@@ -28,7 +28,9 @@ benchmark window - made every `Placement.BodyRadius` on the toys' `Placement` PR
 red on bleeding-edge from 2026-10-08 to 2026-10-17, and the public nested
 `OnlineInfoEntry.Status` made `Status.Speed` on DrillRunner's `Status` property read the
 same way. Limit: a DERIVED type in another file naming an inherited nested enum
-unqualified is no longer checked.
+unqualified is no longer checked. A PARTIAL type's other files do see it (one type, several
+files): moving `OrcaCrew`'s AI half into `OrcaCrewAI.cs` (2026-10-25) made its bare
+`TargetKind.Hull` resolve to the global `TargetKind` instead, 7 false findings.
 
 Limits, stated rather than implied: this understands `EnumName.Member`. It does not see
 a member reached through a `using static`, an alias, or a variable of the enum's type,
@@ -66,6 +68,27 @@ INHERITED_MEMBERS = {
 ATTR_RE = re.compile(r"\[[^\]]*\]")
 NAMESPACE_RE = re.compile(r"\bnamespace\b")
 LEADING_IDENT_RE = re.compile(r"^\s*([A-Za-z_]\w*)")
+PARTIAL_RE = re.compile(r"\bpartial\s+(?:class|struct|record|interface)\s+(\w+)")
+
+
+def share_across_partials(file_private, partials):
+    """A nested enum is file-local, except that every file of the same partial type sees it.
+
+    `file_private` is path -> enum name -> (members, declaring path); `partials` is path -> the
+    partial type names that file declares. Returns a new path -> enum map where each file also
+    holds the nested enums of the files sharing one of its partial types (its own win a clash).
+    Matched by type name only, so two unrelated partials of one name share too - the error is
+    toward fewer findings, never a false one.
+    """
+    out = {path: dict(enums) for path, enums in file_private.items()}
+    for src, enums in file_private.items():
+        for dst, names in partials.items():
+            if dst == src or not (names & partials.get(src, set())):
+                continue
+            own = out.setdefault(dst, {})
+            for name, entry in enums.items():
+                own.setdefault(name, entry)
+    return out
 
 
 def enum_members(body: str) -> "set[str]":
@@ -184,14 +207,18 @@ def main() -> int:
     ambiguous: "set[str]" = set()
     declared_in: "dict[str, str]" = {}
     # Enums only their own file can name unqualified (see is_type_scoped): path -> name -> members.
-    file_private: "dict[str, dict[str, set[str]]]" = {}
+    file_private: "dict[str, dict[str, tuple[set[str], str]]]" = {}
+    partials: "dict[str, set[str]]" = {}
     for path, src in sources.items():
         code = strip_comments_and_strings(src)
+        names = set(PARTIAL_RE.findall(code))
+        if names:
+            partials[path] = names
         for m in ENUM_RE.finditer(code):
             name, body = m.group(1), m.group(2)
             found = enum_members(body)
             if is_type_scoped(code, m.start()):
-                file_private.setdefault(path, {})[name] = found
+                file_private.setdefault(path, {})[name] = (found, os.path.relpath(path, ROOT))
                 continue
             if name in members and found != members[name]:
                 # Two different enums share a name - a reference is unresolvable
@@ -203,6 +230,7 @@ def main() -> int:
 
     for name in ambiguous:
         members.pop(name, None)
+    file_private = share_across_partials(file_private, partials)
 
     # 2. Check every `EnumName.Member` reference against it. A file sees the global
     #    enums plus its own private ones, which shadow a global enum of the same name.
@@ -215,10 +243,9 @@ def main() -> int:
         code = strip_comments_and_strings(src)
         visible, ref_re, decl_of = members, global_re, declared_in
         if path in file_private:
-            visible = {**members, **file_private[path]}
+            visible = {**members, **{n: e[0] for n, e in file_private[path].items()}}
             ref_re = ref_pattern(visible)
-            here = os.path.relpath(path, ROOT)
-            decl_of = {**declared_in, **{n: here for n in file_private[path]}}
+            decl_of = {**declared_in, **{n: e[1] for n, e in file_private[path].items()}}
         for m in ref_re.finditer(code):
             enum_name, member = m.group(1), m.group(2)
             if member in visible[enum_name] or member in INHERITED_MEMBERS:
@@ -327,6 +354,20 @@ def self_test() -> int:
         ("a top-level enum under a file-scoped namespace is global",
          not scoped_at(file_scoped_ns), None),
         ("an enum after a closed class body is global", not scoped_at(after_a_class), None),
+    ]
+
+    # Partial types: the other files of the type see its nested enum; unrelated files do not.
+    crew = "namespace N { public sealed partial class OrcaCrew { enum TargetKind { None = 0, Hull = 1 } } }"
+    crew_ai = "namespace N { public sealed partial class OrcaCrew { void F() { var k = TargetKind.Hull; } } }"
+    other = "namespace N { partial class Elsewhere { } }"
+    parts = {"crew": set(PARTIAL_RE.findall(crew)), "ai": set(PARTIAL_RE.findall(crew_ai)),
+             "other": set(PARTIAL_RE.findall(other))}
+    shared = share_across_partials({"crew": {"TargetKind": ({"None", "Hull"}, "crew")}}, parts)
+    checks += [
+        ("a partial type's name is read", parts["ai"] == {"OrcaCrew"}, parts["ai"]),
+        ("another file of the partial type sees its nested enum (the 2026-10-25 false positive)",
+         shared.get("ai", {}).get("TargetKind", (None,))[0] == {"None", "Hull"}, shared.get("ai")),
+        ("an unrelated partial type does not", "other" not in shared, shared.get("other")),
     ]
 
     failed = [(name, extra) for name, ok, extra in checks if not ok]

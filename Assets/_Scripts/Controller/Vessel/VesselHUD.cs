@@ -6,12 +6,12 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
-    public class ShipHUD : MonoBehaviour // TODO: remove this class (unneeded) 
+    public class VesselHUD : MonoBehaviour // TODO: remove this class (unneeded) 
     {
         [SerializeField] VesselController ship;
 
         // [SerializeField] ShipHUDEventChannelSO onShipHUDInitialized;
-        [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
+        [SerializeField] ScriptableEventVesselHUDData onShipHUDInitialized;
 
         void Start()
         {
