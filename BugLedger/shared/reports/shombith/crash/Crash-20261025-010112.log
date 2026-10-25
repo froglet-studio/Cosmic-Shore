@@ -1,0 +1,627 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-25 01:01:12 (next editor launch after the abnormal exit)
+session:        20261023-190628004  (pid 18084, Unity 6000.3.17f1)
+started:        2026-10-23T19:06:28.016Z UTC
+last heartbeat: 2026-10-23T22:12:16.897Z UTC
+last state:     EditMode
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261023-190011734
+started: 2026-10-23T19:00:11.736Z UTC
+unity:   6000.3.17f1
+pid:     18084
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[00:30:58.567] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-190011734.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:32:44.456] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:32:55.316] ---- domain reload complete — session re-adopted ----
+[00:33:41.865] ---- main thread unresponsive ~46s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-190011734.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:34:13.769] ---- main thread stalled ~78s and RECOVERED — slow, not hung ----
+[00:36:18.656] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-190532393.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:36:54.710] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:38:06.716] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-190721081.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[Worker2] Start importing Assets/_Scripts/Controller/Environment/FloraAndFauna/NcaCreature/NcaCreatureFauna.cs using Guid(6d70ec6c79d28c22a117620124b0be7f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '217b38df851cdb3cdb8c4943fb60e256') in 0.0173328 seconds
+[Worker0] Start importing Assets/_Scripts/UI/Elements/AbilityCardPress.cs using Guid(f5667b344f694120ae36eb645687f139) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'bc7e87b9141d611694de7213aaa8c413') in 0.0191931 seconds
+[Worker1]  -> (artifact id: '956415c43b19fb9ed394d8059761543f') in 0.1934921 seconds
+[Worker2] Start importing Assets/_Prefabs/Spacevessels/Starling.prefab using Guid(1e5ceb8a48f583eabb3d3bfc5d277a15) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/BrittleStarExecutor.cs using Guid(2c154db499b910c2132d458b6bef6d7f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'e24b6ace8b2ddb741aba493427c11f6c') in 0.0210045 seconds
+[Worker1] Start importing Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Cell Config 2.asset using Guid(6a8fdec94d8d7c1e55ce2b82f195fb2d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Data/Enums/GameModes.cs using Guid(a7b65a4a8d72d8b4da2e2b63fa9195e4) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'f21102e07d630ed7f091e16060418464') in 0.017925 seconds
+[Worker1]  -> (artifact id: '0640744878d213cbcb5b1b484ed0518b') in 0.128531 seconds
+[Worker0] Start importing Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset using Guid(38d89b6853e84f91b05c4a334256e3bb) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Animation/StarlingAnimation.cs using Guid(1f7ad12fa4a0148c37506ed0803d550d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '2aa67934e97bee4eda7226a1aec0af48') in 0.0221954 seconds
+[Worker0]  -> (artifact id: 'e3925971e8563e52e8e7940c3a0f667d') in 0.1142 seconds
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/DeviceTierTests.cs using Guid(770d0a4c79cf4dc6afa03583968b2c8a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '4279a7aa5e76aa9e7bf725004154fef8') in 0.0168724 seconds
+[Worker2]  -> (artifact id: '2e59f776e818a8ad69778bea96059c03') in 0.5318683 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWildlifeCage.cs using Guid(469e1bd1844a88150b76db5ae25fe27a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '0338355477366bf422402f2428a4004b') in 0.0206595 seconds
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/HoneyguideTests.cs using Guid(945df59660a04ae5be771bb6769b6b8c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'a04e6f26b58825a43192aa8c71489474') in 0.0260965 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Animation/ThresherSwimMath.cs using Guid(950f8ce3fe3ba5b5cae80cf6ec5c6a3e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_SO_Assets/Cell Configs/Geode Cell/Geode Cell Config.asset using Guid(d4601f67eef74f77a459d65deea3f94d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2]  -> (artifact id: '963272dfb7ac1b01275113ec6eac7358') in 0.0206806 seconds
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/DriftJet.cs using Guid(4fa735e2aecc47b46a59091cf80da687) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1797ab0db7e13b7a172336187dc88a25') in 0.0228178 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRibcage.cs using Guid(3ebf9ad45cfc0a1612b65dd4bcde0ad2) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '42c5d028a7b559a50e93675ebc12be59') in 0.0182142 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Projectile Prism Effects/SniperCrackSuperShieldPrismEffectSO.cs using Guid(b9eb3830cac112644aa8041af278f0d9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '29f964aff0193f7550375b10e2c05ec2') in 0.0345909 seconds
+[Worker0]  -> (artifact id: '7dc4f377c4b8c67613cce8e64decd603') in 0.2046863 seconds
+[Worker2] Start importing Assets/Resources/ElementalAbilityMaps/Orca.asset using Guid(210e70a432684f2d96a0194df8c9a9c3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '4879363e02567f46668eeb922ca5d262') in 0.0332406 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/Preview/ModePreviewSession.cs using Guid(def199157e77b0d87044d18bf8147465) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '90a18b914f49a94d9b0529165d636cc4') in 0.0431037 seconds
+[Worker0] Start importing Assets/_Graphics/Icons/AbilityIcons/Starling/Starling_Space.png using Guid(9d2dce799e27eb1b208a5b7f79eba449) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '9d4b2f393cef1603cf12f340679feb1f') in 0.0522678 seconds
+[Worker2] Start importing Assets/_Prefabs/CORE/NetworkManager.prefab using Guid(f934e20c0b36bc64e8710d3c2e570629) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/REGATTA.md using Guid(55efaf46990f77c15cd2ba0375f2f773) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '65117c667559e1e449c7cb758f053a13') in 0.0300355 seconds
+[Worker0] Start importing Assets/_Graphics/Materials/SpindleLodFar.mat using Guid(e504df112b682b68f8997daade6a4fbe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/Resources/PrismLayouts/SpawnableWildlifeCage_27a8ee7e118b540f.bytes using Guid(b84f9b9565d7f9f4b2dc95dc87b04be1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '7133aab2046387577b29dffece4ecb82') in 0.0702859 seconds
+[Worker1]  -> (artifact id: 'cb422a466c478c16e2443ba2f9ce1d73') in 0.0327868 seconds
+[Worker0] Start importing Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs using Guid(67b2deb0e5d440a1aaadb16169f3d41d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/GobyPistolTests.cs using Guid(2fd4a6ad540d4342a7082e6ae05b26c0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: 'ee35bdb3f3efc167f9de2122b1a02e7c') in 0.0198299 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '5bde122f0090bb521b0b7614dab9cd65') in 0.019045 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/StarlingRules.cs using Guid(ff2904f0185a72d63dd65ed8ddc393ce) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Graphics/CardImages/Honeyguide_Inactive.png using Guid(3431465cd37f9d08628d55263d8d5514) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0]  -> (artifact id: '07c3e0a245a043e67c4531e1ace54080') in 0.0206651 seconds
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1a5ae700daccfba66eebc39ae1a21a2c') in 0.041302 seconds
+[Worker0] Start importing Assets/_Graphics/Design Assests/HUD UI/Touch/TouchGlyph_LiftLeftThumb.png using Guid(8f3ab066fc2408d1c30da19ba872efff) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Models/Vessel Models/Stoat.fbx using Guid(0ef0b84d93774ac39ddc699c59d0821a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0]  -> (artifact id: '1ddd3eb28dcc0b4e2c763803d3bdb5d3') in 0.0573954 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Arcade/WrasseRun using Guid(55c6eb68017d04be21c13ba1b7baebcd) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '3af4568e56367d976c4b773088fd719d') in 0.0179333 seconds
+[Worker1]  -> (artifact id: 'b0812c56ac00220d6816d01c257a6cd1') in 0.1557149 seconds
+[Worker0] Start importing Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Cell Config 1.asset using Guid(1272c806f122444f525a000ccbcb472b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md using Guid(8835dfad4de96c128bb59f66d58b1776) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'cd9603ad965c22602aa76e0dce596193') in 0.0285262 seconds
+[Worker0]  -> (artifact id: '5c001ba19fbaa7a5bdb59fd8862aee37') in 0.1084334 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Arcade/WrasseRun/WrasseRunController.cs using Guid(bd0b3c5c3e4853070c68a7a99d230b5e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '3c54e42dc15616696f17f3a7ebfeb1f8') in 0.0155567 seconds
+[Worker0] Start importing Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs using Guid(83524134d88a42df833d3450f62b0aae) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '442da6c522bde7309dfd69ea9ed0e274') in 0.0329214 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/IO/TouchInputStrategy.cs using Guid(5fdf1a2bb72f5a04f8b8391cf881e6e0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '1c15c40c7c284f33b6291af4bb92125d') in 0.0255517 seconds
+[Worker0] Start importing Assets/_Models/Vessel Models/Orca.fbx using Guid(9b34bfdd14c8462c8bc138b3938820a2) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'cb7cc0dee6778bd73653043aef9f15a2') in 1.147681 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Animation/ScarabAnimation.cs using Guid(e1efeda8651d4ec0998f04323cf32066) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'c063b8a3f2e354a86c01ae6c39294a8b') in 0.018557 seconds
+[Worker0]  -> (artifact id: '63248ba35b059bf7a5bdd00d7220ebed') in 0.1501833 seconds
+[Worker1] Start importing Assets/_Models/Vessel Models/Goby.fbx using Guid(f3abfc0c83d0426a9490ef4874ce9320) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/Resources/KiteNavigatorUnlit.mat using Guid(323de18569534686969203279163666f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'd4d92ee8bc8774494da4875a9784adc3') in 0.0284978 seconds
+[Worker0] Start importing Assets/_Scripts/ScriptableObjects/SpindleLodProfileSO.cs using Guid(2752eb76f9dbc45b6da7297e4b92ad42) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '3a55df1c2357b743e5a857e30da957ec') in 0.0223995 seconds
+[Worker1]  -> (artifact id: '0580bbd3d1d501bea910e684ed8ac224') in 0.1700777 seconds
+[Worker2] Start importing Assets/_SO_Assets/Cell Configs/Cleave Cell/Cleave Cell Config 4.asset using Guid(02bfa044b1857c9bba123e6dba4804fe) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_SO_Assets/Cell Configs/Regatta Cell/Regatta Cell Config 3.asset using Guid(ff80f22ab0303ace7a1139de2f9f2222) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Tests/Editor/WrasseRunCourseTests.cs using Guid(7f9717f08ef046c42912b501343fbb1f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'e974f9bc9e73fa41838fd4eff127f5db') in 0.0205907 seconds
+[Worker2]  -> (artifact id: '548db0a29454ef90796bf0f0200c6cdd') in 0.1328401 seconds
+[Worker0]  -> (artifact id: '824d7765dd6300b9b7ad6a93b9d78817') in 0.1237869 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/IO/DeviceOrientationHandler.cs using Guid(1e645f6e0f891c84daef1664208cafbd) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '170e924253d10b7a02521b6f3a378f70') in 0.0209435 seconds
+[Worker2] Start importing Assets/Resources/ElementalAbilityMaps/Jacks.asset using Guid(c3e9a7f15b2d4e08a6f1d9c2b7e4a530) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'f2794433314b80e3c0343e5ece01d95f') in 0.0500964 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Environment/Spawning/PrismTrailBuilder.cs using Guid(ca4f038cc0778581ae9bedc03fe56ee4) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md using Guid(907d74a5798da93f27a78e2336a2bef2) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'f2f7138b5bd53cb76da6975218d01deb') in 0.0479176 seconds
+[Worker0]  -> (artifact id: '76acdec4352e1ff120041fb4d3d6adff') in 0.0545831 seconds
+[Worker2] Start importing Assets/_Prefabs/Spacevessels/Goby.prefab using Guid(982ad3e4c35f4421ae0424bf7bb1ee47) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/Resources/PrismLayouts/SpawnableBoneyard_d44a3aaf563c13bd.bytes using Guid(ddad2b9cd89ff9224205becb54d57f4e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs using Guid(13c4202d1966f054494cd5cc19854133) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: '84bc6f9723c37a3aa395fe74424a1d57') in 0.0387924 seconds
+[Worker0]  -> (artifact id: 'a9ab18394683fdc0238382e194542d3f') in 0.0295449 seconds
+[Worker1] Start importing Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset using Guid(25a98002ea18f5d45b5e8b2098a06c57) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Models/Spindles using Guid(d4964c2f6c216ec8067697590403aafa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '234d712ab0cceafa1178bc444aef267f') in 0.0587526 seconds
+[Worker1]  -> (artifact id: '0c4df5a5e9ca83591245c0a598d86a24') in 0.4542925 seconds
+[Worker2]  -> (artifact id: '78c58b5cac83549e4619e65dabbf58de') in 0.7862556 seconds
+[Worker0] Start importing Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset using Guid(e17b4c9a2d6f4835b0a9c3e1f7d2b648) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1] Start importing Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewTriggerLT.asset using Guid(faa23ae712ea4dfa8079891caf4586d8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'e2765d24828395a9f3e1af4824d716de') in 0.0357189 seconds
+[Worker0]  -> (artifact id: '01371e0d12c55759b4f7176ed95f1a4e') in 0.1079772 seconds
+[Worker2] Start importing Assets/Resources/PrismLayouts/SpawnableWildlifeCage_4ecd7d3ec5004d28.bytes using Guid(5ae32b6c9b993ce7a4db3d1e04a73163) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '855b0abbd6351adb29459cd7d6085097') in 0.0391083 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/StarlingConfigSO.cs using Guid(fbb3518d0709af5add057712f0379566) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '25a4f9bbfe24010dad0463255534e2a6') in 0.1190771 seconds
+[Worker2] Start importing Assets/Resources/QualityPresetCuts.asset using Guid(581db72621a84cd8833e99c5b3723a13) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '1b0f65249a9c43706bc16d4030650ecb') in 0.0762612 seconds
+[Worker1] Start importing Assets/_Graphics/CardImages/Starling_large.png using Guid(42bbb35c6c8abd11030e8d8e7d482149) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'f6da4cefb47f8bf755354f8cabb277e8') in 0.0721306 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_PLASMA_CLAW.md using Guid(fb99a3d5b27a0a34ba336f5a8e21bd73) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '2b0b16552164b143ad0d412322cd4b30') in 0.0442883 seconds
+[Worker1] Start importing Assets/_Graphics/Design Assests/HUD UI/Touch/TouchIcon_Hold.png using Guid(15328e6bb0f2cce90c3e7202bb49abbf) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_SO_Assets/Mode Previews/ModePreview_WrasseRun.asset using Guid(f80c455d519b24a9de48aa04c665865f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'c3355a33c74ed6b48ffbf2892057f90a') in 0.0886216 seconds
+[Worker2] Start importing Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl using Guid(631b1929270bf2aacc5c4ded13875e6c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '12a0d2ead7727fe6f5aece1e05e5b8c2') in 0.0232524 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Environment/Spawning/PrismLayoutBake.cs using Guid(045b73f57ffd4959916b984a4e784172) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/PistolPlane.cs using Guid(e38eeecca2e441fea7a6f59bf9eafaac) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '9af8772f5335e42050cb71c3e1ac1f80') in 0.0695909 seconds
+[Worker2]  -> (artifact id: 'af7343963a339f9c74d499bb1cfbb69c') in 0.0252421 seconds
+[Worker1] Start importing Assets/_Graphics/Icons/AbilityIcons/Starling/Starling_Charge.png using Guid(1c7737e895c969681ad591709ee90381) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] Start importing Assets/_SO_Assets/Classes/SO_Class_Starling.asset using Guid(35c8c86490eefdb90b1fb666c9e2ee01) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '709ffcf8a102b63533b1f6e6804efbb5') in 0.0812467 seconds
+[Worker2]  -> (artifact id: '4aeb12683885e75c3019135b1309cf2d') in 0.2148587 seconds
+[Worker1] Start importing Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/GobySkimmerImpactorDataContainer.asset using Guid(69e574b928414a7f98965dbccb9473d1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker1]  -> (artifact id: '58818cf680e5fd839add80cfb39be9eb') in 0.0273459 seconds
+[Worker0]  -> (artifact id: '894c2cccbec77c5d3502f45552f4b19f') in 0.7519109 seconds
+[Worker2] Start importing Assets/_Scripts/Tests/Editor/RingThreadProbeTests.cs using Guid(10e15aa611d2442cb5acf4356ded05d0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '6a877ca81ce981881465b0a908ebce4f') in 0.0244488 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md using Guid(5679a58816746f84fb4b9da6ff69651f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguidePeckAction.asset using Guid(0b7f3c1e5a2d4e6f8a9b1c2d3e4f5a6b) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: '8d71353badfdc27b8594bee89fbd184b') in 0.0295085 seconds
+[Worker0]  -> (artifact id: '0bdaea1fc12a910ecee0b96103f0208a') in 0.0322057 seconds
+[Worker2] Start importing Assets/_Graphics/Design Assests/HUD UI/Touch/TouchIcon_Recall.png using Guid(ca1ac713c24158d9f2895b8311bac0cb) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2] [Licensing::Client] Successfully resolved entitlement details
+[Worker2] [Licensing::Client] Successfully resolved entitlement details
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/Crew/HoneyguideCrew.cs using Guid(e6781de741f64665937346e6ca30f746) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/ThresherTouchLaunch.cs using Guid(b268beedf4e84669a8d0a1188de84e42) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: '0d38d776a25aa3e39b315d3e01eae948') in 0.0181214 seconds
+[Worker0]  -> (artifact id: '9c7de4515c1ab08d82aaeea7609036f4') in 0.0239368 seconds
+[Worker2]  -> (artifact id: 'e80e43bea4fc6a062bbf0e525733712a') in 0.158243 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md using Guid(3a7776e698a074df1ee14f255378ebf9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Models/Vessel Models/BrittleStar.fbx using Guid(2250dc49280d4207a8b19724c0ffad27) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'fea478821cf97db102f527ac413f271a') in 0.0304705 seconds
+[Worker0]  -> (artifact id: '3ceb3017cbc6d34e3076cbefbef01c21') in 0.0642615 seconds
+[Worker2] Start importing Assets/_Scripts/Controller/Environment/FloraAndFauna/Spindle.cs using Guid(8ec45d1233573f9409107a25ab23b0c9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '66ddfafe1881e6d9ce4c51c0b86ebdb4') in 0.0217716 seconds
+[Worker1] Start importing Assets/_Prefabs/Spacevessels/Honeyguide.prefab using Guid(f6abe5afafae41909d25da175bc23493) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Graphics/Design Assests/Hangar/Honeyguide_Hangar_Preview.png using Guid(c9f7d03eb70a4487831649a85ad729d6) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRegattaRails.cs using Guid(24b34d8d18afe497d8873ce631a6c7d5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: '0df07200de7675a0592528b548423684') in 0.041324 seconds
+[Worker2]  -> (artifact id: '321c06ec9222dccc6d9a0347bde83a90') in 0.0218099 seconds
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/StarlingActionSO.cs using Guid(997b132d9f567a315e985770722aa6a0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset using Guid(f39120e072fe4d5e9de0ca6e6180d575) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker0]  -> (artifact id: 'adb26b938b44c11dc76b38afa0232330') in 0.0253208 seconds
+[Worker2]  -> (artifact id: '98f24764273cb97a9d2bfe3b293b900a') in 0.1007111 seconds
+[Worker0] Start importing Assets/_Prefabs/Spacevessels/Rhino.prefab using Guid(b8c185f31f5b4add8202df2e3efeacce) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/_Scripts/Controller/ImpactEffects/Impactors/NetworkVesselImpactor.cs using Guid(7b6b52a5b8bf44b9bf86a0d51d59554d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker2]  -> (artifact id: '0ce356e26f084a481f3e0ecd9912e303') in 0.0188272 seconds
+[Worker2] Start importing Assets/_SO_Assets/Cell Configs/Skein Cell/Skein Cell Config 4.asset using Guid(49793c20915d9de7a1ddc299197380ca) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '0db6e284bb5e333bf0713d751ca675b6') in 0.6587497 seconds
+[Worker2]  -> (artifact id: '087ab7bf145133e453e765d73dc8f898') in 0.1391417 seconds
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActionHandler.cs using Guid(ab3e795de1597af4f812bc7bbb73356d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset using Guid(9f6e2fcf98f99f3ed5ff96934bb43d6d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '8d264412599f80af7e02841c95be272a') in 0.0188567 seconds
+[Worker1] Start importing Assets/_SO_Assets/Cell Configs/Cleave Cell/Cleave Cell Config 1.asset using Guid(919fc3cbaa210b46ebacd865c8688b44) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: 'deeef3647784e6367f5728289b195557') in 0.1387715 seconds
+[Worker0]  -> (artifact id: 'ef96ef0c0a5f55a34a6bf7e4713104ab') in 0.6309664 seconds
+[Worker2] Start importing Assets/_Scripts/UI/TouchControls/TouchButtonLayout.cs using Guid(1f748809b24c42858d8f1d13d9eb0b90) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1]  -> (artifact id: '645213c58a374662849af3bf4e39e7a5') in 0.1529641 seconds
+[Worker2]  -> (artifact id: 'd27f03c1d51949c991dfcc15e76b0b56') in 0.0204493 seconds
+[Worker0] Start importing Assets/Resources/TouchControlProfiles.asset using Guid(a8f12c18f05f86c77afa921677e8f2ff) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2] Start importing Assets/Resources/ElementalAbilityMaps/Goby.asset using Guid(0d9a12bec1e54418b13d4c3d5ad0fb77) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] Start importing Assets/_SO_Assets/Game Toasts/GameToastLibrary.asset using Guid(d0d5f3caa1e64bf5b154650a01bb0b45) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] (ScriptedImporter)
+[Worker2]  -> (artifact id: '45450571759f35b94916e4fa34932b85') in 0.0327519 seconds
+[Worker1]  -> (artifact id: '54b7f49b2051f75281b42fa695c9623d') in 0.0582839 seconds
+[Worker0]  -> (artifact id: '3edc7021989753f3a0383579d1e46c32') in 0.1923001 seconds
+[Worker2] Start importing Assets/_SO_Assets/Cell Configs/Breakwater Cell/Breakwater Cell Config 1.asset using Guid(49ce4640e8d53ff19253cadc21ef3246) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableComet.cs using Guid(a45fc00a01abd244ba53e392fc38b7cc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/ScriptableObjects/IncorporealDepthSO.cs using Guid(e80a6d99dfbd0f685d6338897f925b3f) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'b77db06502050cbba18e621b2307c201') in 0.0283227 seconds
+[Worker0]  -> (artifact id: '1754136662baa784cacad49b8e5b3daf') in 0.0220205 seconds
+[Worker2]  -> (artifact id: '32f25284fa090edcbb8926d969c8a764') in 0.1699153 seconds
+[Worker1] Start importing Assets/_Scripts/UI/TouchControls/TouchThrottleSlider.cs using Guid(43276030551e498daef8fde40d8209a8) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableYggdra.cs using Guid(826552284fbd4566828fe4ef392dfea6) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker1]  -> (artifact id: 'e39b3e1366a53cb2896db65c2b90d700') in 0.0204167 seconds
+[Worker0]  -> (artifact id: '5c3177181b46477e04b6eda4231b3835') in 0.0196027 seconds
+[Worker2] Start importing Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_HerdingRing.png using Guid(9f1c4a7e3b6d4e82b5a0c8d2e7f1b396) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] (ScriptedImporter)
+[Worker1] Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md using Guid(95f286e9864c4986067bbd5a1cc6b88d) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Controller/Vessel/Prism.cs using Guid(f366d272ab4f79e419d678fc6ca23512) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker0]  -> (artifact id: '7805f3601772dd30cb33ba9402319032') in 0.0243286 seconds
+[Worker1]  -> (artifact id: 'e327aaa699175768a41c756f76ee1139') in 0.0405715 seconds
+[Worker2]  -> (artifact id: '502a13f033aba2dd86a3975ff733c9b5') in 0.0558006 seconds
+[Worker1] Start importing Assets/_SO_Assets/Classes/SO_Class_Goby.asset using Guid(b569f215d5ca452d9e4ab28af3ee55ab) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker2] Start importing Assets/_Scripts/Controller/Vessel/StarlingVesselTransformer.cs using Guid(2876a472623244762397e1ce05a7cc78) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker1] (ScriptedImporter)
+[Worker2] (ScriptedImporter)
+[Worker0] Start importing Assets/_Scripts/Tests/Editor/SilencePerimeterTests.cs using Guid(3037a8f286be45ccb8c4cbe19d3e597e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) 
+[Worker0] (ScriptedImporter)
+[Worker2]  -> (artifact id: '5424aa7f8314f55b15fd234b5825c0bd') in 0.0396941 seconds
+[Worker0]  -> (artifact id: '4fcb9fab180fa6e181fd40f12638778a') in 0.0434642 seconds
+[Worker1]  -> (artifact id: '7efeffec640fe8d8bb0a9132fbaad33c') in 0.1328942 seconds
+Assets\_Scripts\Controller\Arcade\MultiplayerDomainGamesController.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(472,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(890,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\Racing\GateRaceController.cs(644,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\TurnMonitors\NetworkJoustCollisionTurnMonitor.cs(98,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(305,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(317,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(337,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(290,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(326,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(345,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(142,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(220,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(257,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(414,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(786,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(815,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(214,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(235,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(270,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(285,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(479,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(489,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\Controller\JacksHUDController.cs(130,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\OrcaHUDController.cs(155,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\WrasseHUDController.cs(107,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1517,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+Assets\_Scripts\UI\View\AnglerHUDView.cs(124,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(332,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(362,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(251,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(245,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Skimmer Effects\VesselElementalDebuffBySkimmerEffectSO.cs(55,32): warning CS0414: The field 'VesselElementalDebuffBySkimmerEffectSO.debuffDuration' is assigned but its value is never used
+Reloading assemblies after finishing script compilation.
+Reloading assemblies after forced synchronous recompile.
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+[Licensing::Client] Successfully resolved entitlement details
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-18084-3mb3n9
+[Logcat] [WorkThread] 00:36:16.1968 Worker thread exited
+[Logcat] [MainThread]00:36:16.1973 Dispatcher shutting down
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  5.008 seconds
+Refreshing native plugins compatible for Editor in 42.19 ms, found 12 plugins.
+Native extension for iOS target not found
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.entities/Unity.Scenes.Editor/Internals/Properties/Unity.Properties.Internals.asmref has no target assembly definition
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+TypeManager.Initialize took: 1607ms
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 54.81 ms, found 12 plugins.
+Start HTTP server: port:7801
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007ff8f84f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff8f9d2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff8f9d2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff8f84a587f (Unity) DebugStringToFile
+0x00007ff8f8361b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001d5e245ed4e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001d5e245eb53 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001d5e245e80b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001d5e245dc8e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001d5e245d9ed (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001d5e245d81b (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:88)
+0x000001d585b73761 (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:237)
+0x000001d585b71aa3 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:164)
+0x000001d58450dbfb (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:44)
+0x000001d5844e7b25 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff8f3036c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff8f2f78984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff8f2f73965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ff8f2ea9fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ff8f2edcbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x000001d547cc3392 (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x000001d547cc326b (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x000001d547cbdceb (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x000001d71cffbc3b (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ff8f3036c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff8f2f78984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff8f2f78a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff8f8d2fdd4 (Unity) scripting_method_invoke
+0x00007ff8f8d36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff8f8d32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff8f9322433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ff8f8c4d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ff8f8c44cf3 (Unity) MonoManager::FinalizeReload
+0x00007ff8fac15cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ff8faca52d6 (Unity) ImportOutOfDateAssets
+0x00007ff8facae3fa (Unity) RefreshInternalV2
+0x00007ff8facb6f17 (Unity) StopAssetImportingV2Internal
+0x00007ff8f9567c52 (Unity) Application::TickTimer
+0x00007ff8f9349f7c (Unity) MainMessageLoop
+0x00007ff8f9351a12 (Unity) UnityMain
+0x00007ff66a662f2a (Unity) __scrt_common_main_seh
+0x00007ff9f948dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff9fa0dee4c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[Licensing::Client] Successfully resolved entitlement details
+[Logcat] [WorkThread] 00:36:39.4247 Worker thread started
+[Licensing::Client] Successfully resolved entitlement details
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in 23.940 seconds
+Domain Reload Profiling: 28935ms
+	BeginReloadAssembly (2821ms)
+		ExecutionOrderSort (12ms)
+		DisableScriptedObjects (298ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (3ms)
+		CreateAndSetChildDomain (1634ms)
+	RebuildCommonClasses (63ms)
+	RebuildNativeTypeToScriptingClass (27ms)
+	initialDomainReloadingComplete (106ms)
+	LoadAllAssembliesAndSetupDomain (1976ms)
+		LoadAssemblies (460ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (1702ms)
+			TypeCache.Refresh (776ms)
+				TypeCache.ScanAssembly (727ms)
+			BuildScriptInfoCaches (864ms)
+			ResolveRequiredComponents (49ms)
+	FinalizeReload (23941ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (11833ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (122ms)
+			SetLoadedEditorAssemblies (48ms)
+			BeforeProcessingInitializeOnLoad (1799ms)
+			ProcessInitializeOnLoadAttributes (8404ms)
+			ProcessInitializeOnLoadMethodAttributes (1434ms)
+			AfterProcessingInitializeOnLoad (21ms)
+			EditorAssembliesLoaded (3ms)
+		ExecutionOrderSort2 (17ms)
+		AwakeInstancesAfterBackupRestoration (9589ms)
+Asset Pipeline Refresh (id=11d7e0a335a3aa144be49235d302f6e0): Total: 30.477 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=24669 ms
+		Asset DB Callback time: managed=714 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=5089 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=4464, non-scripts=11906
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 4.462ms
+	ApplyChangesToAssetFolders: 0.913ms
+	Scan: 0.003ms
+	OnSourceAssetsModified: 0.003ms
+	CategorizeAssetsWithTransientArtifact: 0.012ms
+	ProcessAssetsWithTransientArtifactChanges: 20.845ms
+	CategorizeAssets: 471.500ms
+	ImportOutOfDateAssets: 24042.335ms (24001.003ms without children)
+		CompileScripts: 2.493ms
+		CollectScriptTypesHashes: 11.353ms
+		ReloadNativeAssets: 13.294ms
+		UnloadImportedAssets: 2.955ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 6.202ms
+		InitializingProgressBar: 0.002ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.003ms
+		OnDemandSchedulerStart: 5.029ms
+	PostProcessAllAssets: 714.186ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.769ms
+	UnloadStreamsBegin: 2.607ms
+	PersistCurrentRevisions: 1.869ms
+	UnloadStreamsEnd: 0.004ms
+	GenerateScriptTypeHashes: 56.504ms
+	Untracked: 5217.353ms
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[INFO ] [relay] log Unity client connected with ID: editor-18084-r81yhd (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-18084-r81yhd port=9001
+Unloading 321 unused Assets / (107.1 KB). Loaded Objects now: 57002.
+Memory consumption went from 0.84 GB to 0.84 GB.
+Total: 204.834600 ms (FindLiveObjects: 6.440400 ms CreateObjectMapping: 9.812100 ms MarkObjects: 185.588600 ms  DeleteObjects: 2.990300 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Asset Pipeline Refresh (id=5498f896c2bed0449828fe98c66b3f5f): Total: 0.055 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "M8-2NffC"... (expires: 2026-10-23T22:46:56Z)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 99.138ms
+Scanning for USB devices : 87.377ms
+Scanning for USB devices : 64.640ms
+Scanning for USB devices : 67.890ms
+Scanning for USB devices : 86.677ms
+Android Extension - Scanning For ADB Devices 1271 ms
+Android Extension - Scanning For ADB Devices 1350 ms
+Scanning for USB devices : 63.485ms
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+Android Extension - Scanning For ADB Devices 1344 ms
+Android Extension - Scanning For ADB Devices 972 ms
+IPCStream (Upm-18084): IPC stream failed to read (Not connected)
+IPCStream (hubIPCService): IPC stream failed to read (Not connected)
+Unexpected transport error from import worker 0 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker0.log
+0x00007ff8f84f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff8f9d2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff8f9d2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff8f84a587f (Unity) DebugStringToFile
+0x00007ff8fad40ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ff8fad4da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ff8fad10207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ff8fad12aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ff8fad090c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ff8fad13f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ff8fad20867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ff8fad0ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ff8fad0dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ff8fad1d809 (Unity) IOService::Run
+0x00007ff8fad1e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ff8f9d22b80 (Unity) Thread::RunThreadWrapper
+0x00007ff9f948dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff9fa0dee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 0: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker0.log
+Unexpected transport error from import worker 2 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker2.log
+0x00007ff8f84f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff8f9d2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff8f9d2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff8f84a587f (Unity) DebugStringToFile
+0x00007ff8fad40ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ff8fad4da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ff8fad10207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ff8fad12aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ff8fad090c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ff8fad13f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ff8fad20867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ff8fad0ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ff8fad0dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ff8fad1d809 (Unity) IOService::Run
+0x00007ff8fad1e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ff8f9d22b80 (Unity) Thread::RunThreadWrapper
+0x00007ff9f948dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff9fa0dee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 2: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker2.log
+[LAYOUT] About to save layout C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/Shombith/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+

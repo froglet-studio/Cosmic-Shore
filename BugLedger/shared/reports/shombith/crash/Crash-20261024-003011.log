@@ -1,0 +1,1453 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-24 00:30:11 (next editor launch after the abnormal exit)
+session:        20261022-185914540  (pid 16656, Unity 6000.3.17f1)
+started:        2026-10-22T18:59:14.553Z UTC
+last heartbeat: 2026-10-23T07:27:52.424Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~44918s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261022-185914540.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261022-184313492
+started: 2026-10-22T18:43:13.499Z UTC
+unity:   6000.3.17f1
+pid:     23224
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[00:14:13.459] ---- main thread unresponsive ~46s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261022-184313492.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:15:50.430] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:15:58.698] ---- domain reload complete — session re-adopted ----
+[00:16:44.904] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261022-184313492.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:17:31.169] ---- main thread stalled ~92s and RECOVERED — slow, not hung ----
+[00:25:04.358] ---- main thread stalled ~217s and RECOVERED — slow, not hung ----
+[00:28:06.966] ---- domain reload begins (script compilation / play-mode transition) ----
+cuments\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261022-185711467.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:28:45.695] ---- domain reload begins (script compilation / play-mode transition) ----
+String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.Boolean anonymous, System.IO.FileOptions options) [0x0019e] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.IO.FileOptions options) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.FileStream..ctor(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,int,System.IO.FileOptions)
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding, System.Int32 bufferSize) [0x00055] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.StreamWriter..ctor(string,bool,System.Text.Encoding)
+  at System.IO.File.WriteAllText (System.String path, System.String contents, System.Text.Encoding encoding) [0x00034] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.StateCache`1[T].SaveJsonState (System.String filePath, T value) [0x00014] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.StateCache`1[T].SetState (UnityEngine.Hash128 key, T obj) [0x00059] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007ff915304e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff916b3f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff916b3fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9152b587f (Unity) DebugStringToFile
+        0x00007ff915171b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000020742d874fe (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000020742d87323 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000020742d86ffb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:27:57.761] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261022-185711392.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:29:59.191] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Do[00:30:00.586] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261022-1859145[01:20:56.810] ---- main thread stalled ~3104s and RECOVERED — slow, not hung ----
+[12:57:50.485] ---- editor quitting (clean exit) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+Scanning for USB devices : 55.716ms
+Scanning for USB devices : 54.837ms
+Scanning for USB devices : 81.128ms
+Scanning for USB devices : 56.291ms
+Scanning for USB devices : 54.334ms
+Scanning for USB devices : 67.905ms
+Scanning for USB devices : 55.030ms
+Scanning for USB devices : 55.554ms
+Scanning for USB devices : 88.092ms
+Scanning for USB devices : 58.313ms
+Scanning for USB devices : 52.542ms
+Scanning for USB devices : 52.352ms
+Scanning for USB devices : 56.024ms
+Scanning for USB devices : 66.451ms
+Scanning for USB devices : 54.485ms
+Scanning for USB devices : 54.687ms
+Scanning for USB devices : 64.933ms
+Scanning for USB devices : 77.991ms
+Scanning for USB devices : 48.528ms
+Scanning for USB devices : 81.654ms
+Scanning for USB devices : 55.269ms
+Scanning for USB devices : 55.235ms
+Scanning for USB devices : 58.098ms
+Scanning for USB devices : 54.683ms
+Scanning for USB devices : 54.964ms
+Scanning for USB devices : 54.513ms
+Scanning for USB devices : 58.025ms
+Scanning for USB devices : 65.092ms
+Scanning for USB devices : 93.899ms
+Scanning for USB devices : 59.286ms
+Scanning for USB devices : 55.557ms
+Scanning for USB devices : 57.124ms
+Scanning for USB devices : 53.598ms
+Scanning for USB devices : 54.009ms
+Scanning for USB devices : 54.742ms
+Scanning for USB devices : 56.287ms
+Scanning for USB devices : 55.200ms
+Scanning for USB devices : 55.967ms
+Scanning for USB devices : 55.411ms
+Scanning for USB devices : 59.272ms
+Scanning for USB devices : 57.076ms
+Scanning for USB devices : 55.789ms
+Scanning for USB devices : 54.609ms
+Scanning for USB devices : 54.676ms
+Scanning for USB devices : 69.920ms
+Scanning for USB devices : 58.534ms
+Scanning for USB devices : 55.555ms
+Scanning for USB devices : 68.806ms
+Scanning for USB devices : 55.409ms
+Scanning for USB devices : 55.208ms
+Scanning for USB devices : 90.066ms
+Scanning for USB devices : 63.675ms
+Scanning for USB devices : 54.988ms
+Scanning for USB devices : 55.839ms
+Scanning for USB devices : 55.852ms
+Scanning for USB devices : 83.683ms
+Scanning for USB devices : 63.505ms
+Scanning for USB devices : 54.588ms
+Scanning for USB devices : 54.955ms
+Scanning for USB devices : 68.355ms
+Scanning for USB devices : 56.267ms
+Scanning for USB devices : 55.156ms
+Scanning for USB devices : 82.010ms
+Scanning for USB devices : 56.216ms
+Scanning for USB devices : 53.047ms
+Scanning for USB devices : 52.098ms
+Scanning for USB devices : 53.946ms
+Scanning for USB devices : 61.825ms
+Scanning for USB devices : 56.189ms
+Scanning for USB devices : 53.855ms
+Scanning for USB devices : 54.544ms
+Scanning for USB devices : 65.433ms
+Scanning for USB devices : 66.287ms
+Scanning for USB devices : 66.183ms
+Scanning for USB devices : 53.590ms
+Scanning for USB devices : 53.481ms
+Scanning for USB devices : 54.493ms
+Scanning for USB devices : 79.482ms
+Scanning for USB devices : 55.803ms
+Scanning for USB devices : 54.802ms
+Scanning for USB devices : 56.757ms
+Scanning for USB devices : 63.461ms
+Scanning for USB devices : 57.463ms
+Scanning for USB devices : 74.648ms
+Scanning for USB devices : 53.020ms
+Scanning for USB devices : 54.266ms
+Scanning for USB devices : 54.212ms
+Scanning for USB devices : 65.826ms
+Scanning for USB devices : 53.465ms
+Scanning for USB devices : 56.713ms
+Scanning for USB devices : 57.060ms
+Scanning for USB devices : 64.825ms
+Scanning for USB devices : 53.793ms
+Scanning for USB devices : 53.734ms
+Scanning for USB devices : 79.047ms
+Scanning for USB devices : 54.504ms
+Scanning for USB devices : 54.213ms
+Scanning for USB devices : 54.502ms
+Scanning for USB devices : 56.991ms
+Scanning for USB devices : 63.487ms
+Scanning for USB devices : 56.795ms
+Scanning for USB devices : 58.449ms
+Scanning for USB devices : 79.440ms
+Scanning for USB devices : 52.922ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 76.706ms
+Scanning for USB devices : 56.200ms
+Scanning for USB devices : 52.424ms
+Scanning for USB devices : 55.638ms
+Scanning for USB devices : 54.462ms
+Scanning for USB devices : 56.845ms
+Scanning for USB devices : 54.220ms
+Scanning for USB devices : 58.420ms
+Scanning for USB devices : 53.633ms
+Scanning for USB devices : 68.543ms
+Scanning for USB devices : 69.602ms
+Scanning for USB devices : 54.225ms
+Scanning for USB devices : 55.087ms
+Scanning for USB devices : 55.831ms
+Scanning for USB devices : 56.686ms
+Scanning for USB devices : 63.844ms
+Scanning for USB devices : 56.181ms
+Scanning for USB devices : 59.112ms
+Scanning for USB devices : 80.299ms
+Scanning for USB devices : 56.563ms
+Scanning for USB devices : 85.195ms
+Scanning for USB devices : 54.322ms
+Scanning for USB devices : 58.865ms
+Scanning for USB devices : 57.789ms
+Scanning for USB devices : 58.412ms
+Scanning for USB devices : 64.278ms
+Scanning for USB devices : 56.532ms
+Scanning for USB devices : 55.323ms
+Scanning for USB devices : 57.183ms
+Scanning for USB devices : 64.707ms
+Scanning for USB devices : 53.942ms
+Scanning for USB devices : 55.266ms
+Scanning for USB devices : 53.322ms
+Scanning for USB devices : 54.827ms
+Scanning for USB devices : 54.215ms
+Scanning for USB devices : 66.692ms
+Scanning for USB devices : 55.125ms
+Scanning for USB devices : 54.573ms
+Scanning for USB devices : 54.680ms
+Scanning for USB devices : 67.359ms
+Scanning for USB devices : 54.457ms
+Scanning for USB devices : 55.761ms
+Scanning for USB devices : 53.748ms
+Scanning for USB devices : 54.796ms
+Scanning for USB devices : 54.840ms
+Scanning for USB devices : 61.237ms
+Scanning for USB devices : 56.381ms
+Scanning for USB devices : 55.876ms
+Scanning for USB devices : 88.582ms
+Scanning for USB devices : 55.898ms
+Scanning for USB devices : 88.398ms
+Scanning for USB devices : 53.894ms
+Scanning for USB devices : 54.660ms
+Scanning for USB devices : 55.613ms
+Scanning for USB devices : 56.203ms
+Scanning for USB devices : 73.300ms
+Scanning for USB devices : 54.221ms
+Scanning for USB devices : 56.891ms
+Scanning for USB devices : 53.897ms
+Scanning for USB devices : 66.459ms
+Scanning for USB devices : 79.920ms
+Scanning for USB devices : 54.303ms
+Scanning for USB devices : 54.238ms
+Scanning for USB devices : 53.795ms
+Scanning for USB devices : 55.485ms
+Scanning for USB devices : 68.070ms
+Scanning for USB devices : 66.447ms
+Scanning for USB devices : 55.688ms
+Scanning for USB devices : 54.252ms
+Scanning for USB devices : 65.881ms
+Scanning for USB devices : 55.731ms
+Scanning for USB devices : 53.216ms
+Scanning for USB devices : 85.612ms
+Scanning for USB devices : 53.212ms
+Scanning for USB devices : 54.070ms
+Scanning for USB devices : 55.751ms
+Scanning for USB devices : 57.422ms
+Scanning for USB devices : 62.498ms
+Scanning for USB devices : 55.423ms
+Scanning for USB devices : 57.224ms
+Scanning for USB devices : 55.856ms
+Scanning for USB devices : 64.223ms
+Scanning for USB devices : 84.840ms
+Scanning for USB devices : 54.961ms
+Scanning for USB devices : 54.487ms
+Scanning for USB devices : 56.367ms
+Scanning for USB devices : 54.294ms
+Scanning for USB devices : 60.106ms
+Scanning for USB devices : 53.834ms
+Scanning for USB devices : 55.338ms
+Scanning for USB devices : 53.760ms
+Scanning for USB devices : 81.704ms
+Scanning for USB devices : 55.379ms
+Scanning for USB devices : 54.550ms
+Scanning for USB devices : 53.466ms
+Scanning for USB devices : 56.163ms
+Scanning for USB devices : 53.961ms
+Scanning for USB devices : 55.017ms
+Scanning for USB devices : 53.449ms
+Scanning for USB devices : 55.808ms
+Scanning for USB devices : 79.914ms
+Scanning for USB devices : 54.843ms
+Scanning for USB devices : 54.880ms
+Scanning for USB devices : 69.214ms
+Scanning for USB devices : 54.897ms
+Scanning for USB devices : 57.228ms
+Scanning for USB devices : 55.297ms
+Scanning for USB devices : 57.448ms
+Scanning for USB devices : 55.267ms
+Scanning for USB devices : 55.083ms
+Scanning for USB devices : 51.676ms
+Scanning for USB devices : 53.544ms
+Scanning for USB devices : 77.056ms
+Scanning for USB devices : 56.280ms
+Scanning for USB devices : 60.003ms
+Scanning for USB devices : 63.425ms
+Scanning for USB devices : 53.403ms
+Scanning for USB devices : 56.350ms
+Scanning for USB devices : 52.202ms
+Scanning for USB devices : 52.627ms
+Scanning for USB devices : 56.731ms
+Scanning for USB devices : 62.813ms
+Scanning for USB devices : 53.631ms
+Scanning for USB devices : 56.801ms
+Scanning for USB devices : 55.359ms
+Scanning for USB devices : 63.327ms
+Scanning for USB devices : 53.400ms
+Scanning for USB devices : 53.278ms
+Scanning for USB devices : 51.196ms
+Scanning for USB devices : 55.052ms
+Scanning for USB devices : 54.969ms
+Scanning for USB devices : 63.237ms
+Scanning for USB devices : 55.643ms
+Scanning for USB devices : 55.058ms
+Scanning for USB devices : 54.200ms
+Scanning for USB devices : 67.324ms
+Scanning for USB devices : 51.462ms
+Scanning for USB devices : 55.019ms
+Scanning for USB devices : 84.526ms
+Scanning for USB devices : 61.971ms
+Scanning for USB devices : 53.620ms
+Scanning for USB devices : 55.078ms
+Scanning for USB devices : 54.538ms
+Scanning for USB devices : 78.595ms
+Scanning for USB devices : 55.554ms
+Scanning for USB devices : 56.475ms
+Scanning for USB devices : 56.686ms
+Scanning for USB devices : 72.696ms
+Scanning for USB devices : 56.151ms
+Scanning for USB devices : 71.723ms
+Scanning for USB devices : 53.763ms
+Scanning for USB devices : 55.146ms
+Scanning for USB devices : 57.346ms
+Scanning for USB devices : 58.974ms
+Scanning for USB devices : 55.210ms
+Scanning for USB devices : 57.121ms
+Scanning for USB devices : 55.897ms
+Scanning for USB devices : 70.243ms
+Scanning for USB devices : 84.928ms
+Scanning for USB devices : 54.378ms
+Scanning for USB devices : 58.199ms
+Scanning for USB devices : 55.994ms
+Scanning for USB devices : 52.965ms
+Scanning for USB devices : 55.227ms
+Scanning for USB devices : 56.195ms
+Scanning for USB devices : 56.102ms
+Scanning for USB devices : 54.496ms
+Scanning for USB devices : 66.990ms
+Scanning for USB devices : 76.234ms
+Scanning for USB devices : 54.505ms
+Scanning for USB devices : 55.066ms
+Scanning for USB devices : 55.887ms
+Scanning for USB devices : 53.696ms
+Scanning for USB devices : 69.242ms
+Scanning for USB devices : 65.077ms
+Scanning for USB devices : 56.996ms
+Scanning for USB devices : 55.206ms
+Scanning for USB devices : 69.016ms
+Scanning for USB devices : 88.259ms
+Scanning for USB devices : 55.357ms
+Scanning for USB devices : 52.475ms
+Scanning for USB devices : 52.192ms
+Scanning for USB devices : 55.825ms
+Scanning for USB devices : 65.942ms
+Scanning for USB devices : 64.250ms
+Scanning for USB devices : 56.316ms
+Scanning for USB devices : 53.655ms
+Scanning for USB devices : 88.205ms
+Scanning for USB devices : 84.618ms
+Scanning for USB devices : 56.704ms
+Scanning for USB devices : 52.813ms
+Scanning for USB devices : 51.528ms
+Scanning for USB devices : 55.799ms
+Scanning for USB devices : 54.749ms
+Scanning for USB devices : 55.474ms
+Scanning for USB devices : 56.078ms
+Scanning for USB devices : 57.191ms
+Scanning for USB devices : 65.549ms
+Scanning for USB devices : 89.408ms
+Scanning for USB devices : 54.979ms
+Scanning for USB devices : 52.503ms
+Scanning for USB devices : 57.135ms
+Scanning for USB devices : 60.691ms
+Scanning for USB devices : 60.527ms
+Scanning for USB devices : 57.429ms
+Scanning for USB devices : 59.283ms
+Scanning for USB devices : 83.066ms
+Scanning for USB devices : 55.246ms
+Scanning for USB devices : 79.469ms
+Scanning for USB devices : 59.692ms
+Scanning for USB devices : 53.564ms
+Scanning for USB devices : 54.569ms
+Scanning for USB devices : 55.368ms
+Scanning for USB devices : 34.229ms
+Scanning for USB devices : 80.608ms
+Scanning for USB devices : 54.622ms
+Scanning for USB devices : 55.140ms
+Scanning for USB devices : 67.240ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 84.041ms
+Scanning for USB devices : 56.111ms
+Scanning for USB devices : 53.594ms
+Scanning for USB devices : 55.104ms
+Scanning for USB devices : 64.539ms
+Scanning for USB devices : 23.780ms
+Scanning for USB devices : 78.454ms
+Scanning for USB devices : 55.106ms
+Scanning for USB devices : 56.021ms
+Scanning for USB devices : 66.321ms
+Scanning for USB devices : 82.874ms
+Scanning for USB devices : 60.180ms
+Scanning for USB devices : 56.776ms
+Scanning for USB devices : 58.036ms
+Scanning for USB devices : 54.711ms
+Scanning for USB devices : 69.683ms
+Scanning for USB devices : 55.465ms
+Scanning for USB devices : 59.226ms
+Scanning for USB devices : 55.237ms
+Scanning for USB devices : 68.553ms
+Scanning for USB devices : 83.865ms
+Scanning for USB devices : 55.534ms
+Scanning for USB devices : 55.684ms
+Scanning for USB devices : 57.711ms
+Scanning for USB devices : 56.350ms
+Scanning for USB devices : 55.555ms
+Scanning for USB devices : 57.947ms
+Scanning for USB devices : 57.796ms
+Scanning for USB devices : 52.626ms
+Scanning for USB devices : 69.759ms
+Scanning for USB devices : 54.153ms
+Scanning for USB devices : 53.894ms
+Scanning for USB devices : 84.244ms
+Scanning for USB devices : 55.578ms
+Scanning for USB devices : 54.952ms
+Scanning for USB devices : 55.904ms
+Scanning for USB devices : 59.576ms
+Scanning for USB devices : 67.316ms
+Scanning for USB devices : 68.418ms
+Scanning for USB devices : 57.401ms
+Scanning for USB devices : 58.087ms
+Scanning for USB devices : 68.371ms
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "_QYkuV-F"... (expires: 2026-10-23T04:04:34Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 81.587ms
+Scanning for USB devices : 55.897ms
+Scanning for USB devices : 55.017ms
+Scanning for USB devices : 54.052ms
+Scanning for USB devices : 55.479ms
+Scanning for USB devices : 64.936ms
+Scanning for USB devices : 67.009ms
+Scanning for USB devices : 54.990ms
+Scanning for USB devices : 78.171ms
+Scanning for USB devices : 54.873ms
+Scanning for USB devices : 72.186ms
+Scanning for USB devices : 58.909ms
+Scanning for USB devices : 54.444ms
+Scanning for USB devices : 54.265ms
+Scanning for USB devices : 56.876ms
+Scanning for USB devices : 67.218ms
+Scanning for USB devices : 65.150ms
+Scanning for USB devices : 57.709ms
+Scanning for USB devices : 51.431ms
+Scanning for USB devices : 56.404ms
+Scanning for USB devices : 82.418ms
+Scanning for USB devices : 65.958ms
+Scanning for USB devices : 52.564ms
+Scanning for USB devices : 55.281ms
+Scanning for USB devices : 56.036ms
+Scanning for USB devices : 64.992ms
+Scanning for USB devices : 55.183ms
+Scanning for USB devices : 56.476ms
+Scanning for USB devices : 79.402ms
+Scanning for USB devices : 54.324ms
+Scanning for USB devices : 72.091ms
+Scanning for USB devices : 57.076ms
+Scanning for USB devices : 54.202ms
+Scanning for USB devices : 53.856ms
+Scanning for USB devices : 54.643ms
+Scanning for USB devices : 71.296ms
+Scanning for USB devices : 55.163ms
+Scanning for USB devices : 55.224ms
+Scanning for USB devices : 54.540ms
+Scanning for USB devices : 109.694ms
+Scanning for USB devices : 56.218ms
+Scanning for USB devices : 57.525ms
+Scanning for USB devices : 54.513ms
+Scanning for USB devices : 52.601ms
+Scanning for USB devices : 55.771ms
+Scanning for USB devices : 56.760ms
+Scanning for USB devices : 53.800ms
+Scanning for USB devices : 79.351ms
+Scanning for USB devices : 55.002ms
+Scanning for USB devices : 55.863ms
+Scanning for USB devices : 59.233ms
+Scanning for USB devices : 64.193ms
+Scanning for USB devices : 55.460ms
+Scanning for USB devices : 54.167ms
+Scanning for USB devices : 54.158ms
+Scanning for USB devices : 52.967ms
+Scanning for USB devices : 55.095ms
+Scanning for USB devices : 60.803ms
+Scanning for USB devices : 62.472ms
+Scanning for USB devices : 53.207ms
+Scanning for USB devices : 57.851ms
+Scanning for USB devices : 62.856ms
+Scanning for USB devices : 81.223ms
+Scanning for USB devices : 56.454ms
+Scanning for USB devices : 54.369ms
+Scanning for USB devices : 55.027ms
+Scanning for USB devices : 57.165ms
+Scanning for USB devices : 68.670ms
+Scanning for USB devices : 69.729ms
+Scanning for USB devices : 57.737ms
+Scanning for USB devices : 86.609ms
+Scanning for USB devices : 54.866ms
+Scanning for USB devices : 57.823ms
+Scanning for USB devices : 78.720ms
+Scanning for USB devices : 58.622ms
+Scanning for USB devices : 56.876ms
+Scanning for USB devices : 55.410ms
+Scanning for USB devices : 88.616ms
+Scanning for USB devices : 63.300ms
+Scanning for USB devices : 55.039ms
+Scanning for USB devices : 57.489ms
+Scanning for USB devices : 55.901ms
+Scanning for USB devices : 54.975ms
+Scanning for USB devices : 70.628ms
+Scanning for USB devices : 52.238ms
+Scanning for USB devices : 54.705ms
+Scanning for USB devices : 56.490ms
+Scanning for USB devices : 53.189ms
+Scanning for USB devices : 56.160ms
+Scanning for USB devices : 55.293ms
+Scanning for USB devices : 58.703ms
+Scanning for USB devices : 63.462ms
+Scanning for USB devices : 83.117ms
+Scanning for USB devices : 65.696ms
+Scanning for USB devices : 56.824ms
+Scanning for USB devices : 55.690ms
+Scanning for USB devices : 56.212ms
+Scanning for USB devices : 81.092ms
+Scanning for USB devices : 65.877ms
+Scanning for USB devices : 55.507ms
+Scanning for USB devices : 56.585ms
+Scanning for USB devices : 55.792ms
+Scanning for USB devices : 83.279ms
+Scanning for USB devices : 55.852ms
+Scanning for USB devices : 52.478ms
+Scanning for USB devices : 53.754ms
+Scanning for USB devices : 56.834ms
+Scanning for USB devices : 67.522ms
+Scanning for USB devices : 53.029ms
+Scanning for USB devices : 59.415ms
+Scanning for USB devices : 55.279ms
+Scanning for USB devices : 68.483ms
+Scanning for USB devices : 57.147ms
+Scanning for USB devices : 54.204ms
+Scanning for USB devices : 52.816ms
+Scanning for USB devices : 53.813ms
+Scanning for USB devices : 53.457ms
+Scanning for USB devices : 55.874ms
+Scanning for USB devices : 55.583ms
+Scanning for USB devices : 59.970ms
+Scanning for USB devices : 66.099ms
+Scanning for USB devices : 54.395ms
+Scanning for USB devices : 82.538ms
+Scanning for USB devices : 54.114ms
+Scanning for USB devices : 54.870ms
+Scanning for USB devices : 82.687ms
+Scanning for USB devices : 52.483ms
+Scanning for USB devices : 52.879ms
+Scanning for USB devices : 55.864ms
+Scanning for USB devices : 65.738ms
+Scanning for USB devices : 54.733ms
+Scanning for USB devices : 54.295ms
+Scanning for USB devices : 56.900ms
+Scanning for USB devices : 62.995ms
+Scanning for USB devices : 75.668ms
+Scanning for USB devices : 53.540ms
+Scanning for USB devices : 54.720ms
+Scanning for USB devices : 53.016ms
+Scanning for USB devices : 55.696ms
+Scanning for USB devices : 93.684ms
+Scanning for USB devices : 60.692ms
+Scanning for USB devices : 57.100ms
+Scanning for USB devices : 56.325ms
+Scanning for USB devices : 54.631ms
+Scanning for USB devices : 55.611ms
+Scanning for USB devices : 55.600ms
+Scanning for USB devices : 74.552ms
+Scanning for USB devices : 54.978ms
+Scanning for USB devices : 52.436ms
+Scanning for USB devices : 53.301ms
+Scanning for USB devices : 54.211ms
+Scanning for USB devices : 71.665ms
+Scanning for USB devices : 66.255ms
+Scanning for USB devices : 54.851ms
+Scanning for USB devices : 54.330ms
+Scanning for USB devices : 65.290ms
+Scanning for USB devices : 74.120ms
+Scanning for USB devices : 56.711ms
+Scanning for USB devices : 55.865ms
+Scanning for USB devices : 54.726ms
+Scanning for USB devices : 54.568ms
+Scanning for USB devices : 61.972ms
+Scanning for USB devices : 62.235ms
+Scanning for USB devices : 58.961ms
+Scanning for USB devices : 59.192ms
+Scanning for USB devices : 57.972ms
+Scanning for USB devices : 80.552ms
+Scanning for USB devices : 52.332ms
+Scanning for USB devices : 56.621ms
+Scanning for USB devices : 78.787ms
+Scanning for USB devices : 58.290ms
+Scanning for USB devices : 55.757ms
+Scanning for USB devices : 54.542ms
+Scanning for USB devices : 54.392ms
+Scanning for USB devices : 55.668ms
+Scanning for USB devices : 68.171ms
+Scanning for USB devices : 81.017ms
+Scanning for USB devices : 54.807ms
+Scanning for USB devices : 54.762ms
+Scanning for USB devices : 55.621ms
+Scanning for USB devices : 58.114ms
+Scanning for USB devices : 57.321ms
+Scanning for USB devices : 67.910ms
+Scanning for USB devices : 54.980ms
+Scanning for USB devices : 56.496ms
+Scanning for USB devices : 64.887ms
+Scanning for USB devices : 80.588ms
+Scanning for USB devices : 55.844ms
+Scanning for USB devices : 53.913ms
+Scanning for USB devices : 54.182ms
+Scanning for USB devices : 57.879ms
+Scanning for USB devices : 73.784ms
+Scanning for USB devices : 58.453ms
+Scanning for USB devices : 53.763ms
+Scanning for USB devices : 56.023ms
+Scanning for USB devices : 54.166ms
+Scanning for USB devices : 55.570ms
+Scanning for USB devices : 54.149ms
+Scanning for USB devices : 73.389ms
+Scanning for USB devices : 66.105ms
+Scanning for USB devices : 51.943ms
+Scanning for USB devices : 52.641ms
+Scanning for USB devices : 56.867ms
+Scanning for USB devices : 55.148ms
+Scanning for USB devices : 65.754ms
+Scanning for USB devices : 56.990ms
+Scanning for USB devices : 59.676ms
+Scanning for USB devices : 87.540ms
+Scanning for USB devices : 55.321ms
+Scanning for USB devices : 56.240ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 70.670ms
+Scanning for USB devices : 54.502ms
+Scanning for USB devices : 54.087ms
+Scanning for USB devices : 55.495ms
+Scanning for USB devices : 57.222ms
+Scanning for USB devices : 81.883ms
+Scanning for USB devices : 55.644ms
+Scanning for USB devices : 56.103ms
+Scanning for USB devices : 54.472ms
+Scanning for USB devices : 70.196ms
+Scanning for USB devices : 55.711ms
+Scanning for USB devices : 55.251ms
+Scanning for USB devices : 64.476ms
+Scanning for USB devices : 54.343ms
+Scanning for USB devices : 53.245ms
+Scanning for USB devices : 55.656ms
+Scanning for USB devices : 55.725ms
+Scanning for USB devices : 68.972ms
+Scanning for USB devices : 55.715ms
+Scanning for USB devices : 56.034ms
+Scanning for USB devices : 53.641ms
+Scanning for USB devices : 70.266ms
+Scanning for USB devices : 55.150ms
+Scanning for USB devices : 54.974ms
+Scanning for USB devices : 55.437ms
+Scanning for USB devices : 71.945ms
+Scanning for USB devices : 54.768ms
+Scanning for USB devices : 55.243ms
+Scanning for USB devices : 57.291ms
+Scanning for USB devices : 65.384ms
+Scanning for USB devices : 67.031ms
+Scanning for USB devices : 53.094ms
+Scanning for USB devices : 54.411ms
+Scanning for USB devices : 65.612ms
+Scanning for USB devices : 84.179ms
+Scanning for USB devices : 54.574ms
+Scanning for USB devices : 55.018ms
+Scanning for USB devices : 55.994ms
+Scanning for USB devices : 53.979ms
+Scanning for USB devices : 54.826ms
+Scanning for USB devices : 77.396ms
+Scanning for USB devices : 70.340ms
+Scanning for USB devices : 54.627ms
+Scanning for USB devices : 57.175ms
+Scanning for USB devices : 56.360ms
+Scanning for USB devices : 54.791ms
+Scanning for USB devices : 68.163ms
+Scanning for USB devices : 83.959ms
+Scanning for USB devices : 53.927ms
+Scanning for USB devices : 54.735ms
+Scanning for USB devices : 55.545ms
+Scanning for USB devices : 66.387ms
+Scanning for USB devices : 66.717ms
+Scanning for USB devices : 54.741ms
+Scanning for USB devices : 55.650ms
+Scanning for USB devices : 55.246ms
+Scanning for USB devices : 86.182ms
+Scanning for USB devices : 67.171ms
+Scanning for USB devices : 53.423ms
+Scanning for USB devices : 58.517ms
+Scanning for USB devices : 53.014ms
+Scanning for USB devices : 56.332ms
+Scanning for USB devices : 65.693ms
+Scanning for USB devices : 66.020ms
+Scanning for USB devices : 54.464ms
+Scanning for USB devices : 66.737ms
+Scanning for USB devices : 54.169ms
+Scanning for USB devices : 54.622ms
+Scanning for USB devices : 52.404ms
+Scanning for USB devices : 55.023ms
+Scanning for USB devices : 55.206ms
+Scanning for USB devices : 69.395ms
+Scanning for USB devices : 63.185ms
+Scanning for USB devices : 54.012ms
+Scanning for USB devices : 56.123ms
+Scanning for USB devices : 53.998ms
+Scanning for USB devices : 57.448ms
+Scanning for USB devices : 53.308ms
+Scanning for USB devices : 81.931ms
+Scanning for USB devices : 71.507ms
+Scanning for USB devices : 53.992ms
+Scanning for USB devices : 55.347ms
+Scanning for USB devices : 56.031ms
+Scanning for USB devices : 66.171ms
+Scanning for USB devices : 70.187ms
+Scanning for USB devices : 56.087ms
+Scanning for USB devices : 56.065ms
+Scanning for USB devices : 56.406ms
+Scanning for USB devices : 55.140ms
+Scanning for USB devices : 54.919ms
+Scanning for USB devices : 86.656ms
+Scanning for USB devices : 53.445ms
+Scanning for USB devices : 52.639ms
+Scanning for USB devices : 51.989ms
+Scanning for USB devices : 53.226ms
+Scanning for USB devices : 57.356ms
+Scanning for USB devices : 63.577ms
+Scanning for USB devices : 68.204ms
+Scanning for USB devices : 53.740ms
+Scanning for USB devices : 66.353ms
+Scanning for USB devices : 55.875ms
+Scanning for USB devices : 55.911ms
+Scanning for USB devices : 52.872ms
+Scanning for USB devices : 53.455ms
+Scanning for USB devices : 54.929ms
+Scanning for USB devices : 65.079ms
+Scanning for USB devices : 62.458ms
+Scanning for USB devices : 55.229ms
+Scanning for USB devices : 53.377ms
+Scanning for USB devices : 52.445ms
+Scanning for USB devices : 53.071ms
+Scanning for USB devices : 52.633ms
+Scanning for USB devices : 54.533ms
+Scanning for USB devices : 53.695ms
+Scanning for USB devices : 53.940ms
+Scanning for USB devices : 54.194ms
+Scanning for USB devices : 56.176ms
+Scanning for USB devices : 66.170ms
+Scanning for USB devices : 58.268ms
+Scanning for USB devices : 55.905ms
+Scanning for USB devices : 75.486ms
+Scanning for USB devices : 53.248ms
+Scanning for USB devices : 81.353ms
+Scanning for USB devices : 57.581ms
+Scanning for USB devices : 52.070ms
+Scanning for USB devices : 54.429ms
+Scanning for USB devices : 55.409ms
+Scanning for USB devices : 74.338ms
+Scanning for USB devices : 54.628ms
+Scanning for USB devices : 57.209ms
+Scanning for USB devices : 54.651ms
+Scanning for USB devices : 70.782ms
+Scanning for USB devices : 55.050ms
+Scanning for USB devices : 55.253ms
+Scanning for USB devices : 55.624ms
+Scanning for USB devices : 54.480ms
+Scanning for USB devices : 54.232ms
+Scanning for USB devices : 62.694ms
+Scanning for USB devices : 64.306ms
+Scanning for USB devices : 56.523ms
+Scanning for USB devices : 54.553ms
+Scanning for USB devices : 55.116ms
+Scanning for USB devices : 84.038ms
+Scanning for USB devices : 54.846ms
+Scanning for USB devices : 55.972ms
+Scanning for USB devices : 53.585ms
+Scanning for USB devices : 56.757ms
+Scanning for USB devices : 72.695ms
+Scanning for USB devices : 66.994ms
+Scanning for USB devices : 57.736ms
+Scanning for USB devices : 54.088ms
+Scanning for USB devices : 54.553ms
+Scanning for USB devices : 85.882ms
+Scanning for USB devices : 59.026ms
+Scanning for USB devices : 55.094ms
+Scanning for USB devices : 53.037ms
+Scanning for USB devices : 51.784ms
+Scanning for USB devices : 54.757ms
+Scanning for USB devices : 81.990ms
+Scanning for USB devices : 62.736ms
+Scanning for USB devices : 53.312ms
+Scanning for USB devices : 52.474ms
+Scanning for USB devices : 87.951ms
+Scanning for USB devices : 56.734ms
+Scanning for USB devices : 52.599ms
+Scanning for USB devices : 57.215ms
+Scanning for USB devices : 54.000ms
+Scanning for USB devices : 67.057ms
+Scanning for USB devices : 63.468ms
+Scanning for USB devices : 55.859ms
+Scanning for USB devices : 57.098ms
+Scanning for USB devices : 54.436ms
+Scanning for USB devices : 55.715ms
+Scanning for USB devices : 52.880ms
+Scanning for USB devices : 81.749ms
+Scanning for USB devices : 65.755ms
+Scanning for USB devices : 54.704ms
+Scanning for USB devices : 52.429ms
+Scanning for USB devices : 55.713ms
+Scanning for USB devices : 66.135ms
+Scanning for USB devices : 63.224ms
+Scanning for USB devices : 55.351ms
+Scanning for USB devices : 54.021ms
+Scanning for USB devices : 65.595ms
+Scanning for USB devices : 53.684ms
+Scanning for USB devices : 54.264ms
+Scanning for USB devices : 52.580ms
+Scanning for USB devices : 55.030ms
+Scanning for USB devices : 53.783ms
+Scanning for USB devices : 54.766ms
+Scanning for USB devices : 55.306ms
+Scanning for USB devices : 64.801ms
+Scanning for USB devices : 68.368ms
+Scanning for USB devices : 53.868ms
+Scanning for USB devices : 52.513ms
+Scanning for USB devices : 55.138ms
+Scanning for USB devices : 59.012ms
+Scanning for USB devices : 53.824ms
+Scanning for USB devices : 51.318ms
+Scanning for USB devices : 54.725ms
+Scanning for USB devices : 54.298ms
+Scanning for USB devices : 70.234ms
+Scanning for USB devices : 57.431ms
+Scanning for USB devices : 58.088ms
+Scanning for USB devices : 54.760ms
+Scanning for USB devices : 67.010ms
+Scanning for USB devices : 88.349ms
+Scanning for USB devices : 56.365ms
+Scanning for USB devices : 53.092ms
+Scanning for USB devices : 55.968ms
+Scanning for USB devices : 59.350ms
+Scanning for USB devices : 69.037ms
+Scanning for USB devices : 66.279ms
+Scanning for USB devices : 66.731ms
+Scanning for USB devices : 55.872ms
+Scanning for USB devices : 56.852ms
+Scanning for USB devices : 54.559ms
+Scanning for USB devices : 53.465ms
+Scanning for USB devices : 53.212ms
+Scanning for USB devices : 55.254ms
+Scanning for USB devices : 56.662ms
+Scanning for USB devices : 66.504ms
+Scanning for USB devices : 65.748ms
+Scanning for USB devices : 64.006ms
+Scanning for USB devices : 54.211ms
+Scanning for USB devices : 55.146ms
+Scanning for USB devices : 55.139ms
+Scanning for USB devices : 56.681ms
+Scanning for USB devices : 52.988ms
+Scanning for USB devices : 53.954ms
+Scanning for USB devices : 53.619ms
+Scanning for USB devices : 75.480ms
+Scanning for USB devices : 60.658ms
+Scanning for USB devices : 57.115ms
+Scanning for USB devices : 57.129ms
+Scanning for USB devices : 64.207ms
+Scanning for USB devices : 82.060ms
+Scanning for USB devices : 54.758ms
+Scanning for USB devices : 51.853ms
+Scanning for USB devices : 53.822ms
+Scanning for USB devices : 56.842ms
+Scanning for USB devices : 64.931ms
+Scanning for USB devices : 66.534ms
+Scanning for USB devices : 54.358ms
+Scanning for USB devices : 54.114ms
+Scanning for USB devices : 56.405ms
+Scanning for USB devices : 57.444ms
+Scanning for USB devices : 55.723ms
+Scanning for USB devices : 90.218ms
+Scanning for USB devices : 54.836ms
+Scanning for USB devices : 52.331ms
+Scanning for USB devices : 54.905ms
+Scanning for USB devices : 55.331ms
+Scanning for USB devices : 67.413ms
+Scanning for USB devices : 65.401ms
+Scanning for USB devices : 83.236ms
+Scanning for USB devices : 54.173ms
+Scanning for USB devices : 54.818ms
+Scanning for USB devices : 57.858ms
+Scanning for USB devices : 54.575ms
+Scanning for USB devices : 72.889ms
+Scanning for USB devices : 18.630ms
+Scanning for USB devices : 52.160ms
+Scanning for USB devices : 54.434ms
+Scanning for USB devices : 56.673ms
+Scanning for USB devices : 73.172ms
+Scanning for USB devices : 64.615ms
+Scanning for USB devices : 55.584ms
+Scanning for USB devices : 52.717ms
+Scanning for USB devices : 56.128ms
+Scanning for USB devices : 80.464ms
+Scanning for USB devices : 57.168ms
+Scanning for USB devices : 53.525ms
+Scanning for USB devices : 55.238ms
+Scanning for USB devices : 54.504ms
+Scanning for USB devices : 68.658ms
+Scanning for USB devices : 66.016ms
+Scanning for USB devices : 55.791ms
+Scanning for USB devices : 52.439ms
+Scanning for USB devices : 54.429ms
+Scanning for USB devices : 55.059ms
+Scanning for USB devices : 55.077ms
+Scanning for USB devices : 87.073ms
+Scanning for USB devices : 56.460ms
+Scanning for USB devices : 53.981ms
+Scanning for USB devices : 57.176ms
+Scanning for USB devices : 56.284ms
+Scanning for USB devices : 66.575ms
+Scanning for USB devices : 62.845ms
+Scanning for USB devices : 65.195ms
+Scanning for USB devices : 55.825ms
+Scanning for USB devices : 54.436ms
+Scanning for USB devices : 54.890ms
+Scanning for USB devices : 56.013ms
+Scanning for USB devices : 54.088ms
+Scanning for USB devices : 53.928ms
+Scanning for USB devices : 58.418ms
+Scanning for USB devices : 68.311ms
+Scanning for USB devices : 55.034ms
+Scanning for USB devices : 60.095ms
+Scanning for USB devices : 53.361ms
+Scanning for USB devices : 69.418ms
+Scanning for USB devices : 56.092ms
+Scanning for USB devices : 73.224ms
+Scanning for USB devices : 52.259ms
+Scanning for USB devices : 55.185ms
+Scanning for USB devices : 55.475ms
+Scanning for USB devices : 64.048ms
+Scanning for USB devices : 55.665ms
+Scanning for USB devices : 54.546ms
+Scanning for USB devices : 55.669ms
+Scanning for USB devices : 66.335ms
+Scanning for USB devices : 74.691ms
+Scanning for USB devices : 58.098ms
+Scanning for USB devices : 53.328ms
+Scanning for USB devices : 54.752ms
+Scanning for USB devices : 55.225ms
+Scanning for USB devices : 70.665ms
+Scanning for USB devices : 64.170ms
+Scanning for USB devices : 57.884ms
+Scanning for USB devices : 54.666ms
+Scanning for USB devices : 55.403ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 61.797ms
+Scanning for USB devices : 55.938ms
+Scanning for USB devices : 54.802ms
+Scanning for USB devices : 55.205ms
+Scanning for USB devices : 58.074ms
+Scanning for USB devices : 77.434ms
+Scanning for USB devices : 55.025ms
+Scanning for USB devices : 59.526ms
+Scanning for USB devices : 54.530ms
+Scanning for USB devices : 59.022ms
+Scanning for USB devices : 86.985ms
+Scanning for USB devices : 53.859ms
+Scanning for USB devices : 54.081ms
+Scanning for USB devices : 55.619ms
+Scanning for USB devices : 53.651ms
+Scanning for USB devices : 88.932ms
+Scanning for USB devices : 67.965ms
+Scanning for USB devices : 54.429ms
+Scanning for USB devices : 53.169ms
+Scanning for USB devices : 54.992ms
+Scanning for USB devices : 81.433ms
+Scanning for USB devices : 54.019ms
+Scanning for USB devices : 53.735ms
+Scanning for USB devices : 54.876ms
+Scanning for USB devices : 54.208ms
+Scanning for USB devices : 65.970ms
+Scanning for USB devices : 67.183ms
+Scanning for USB devices : 56.862ms
+Scanning for USB devices : 58.245ms
+Scanning for USB devices : 57.402ms
+Scanning for USB devices : 79.225ms
+Scanning for USB devices : 55.150ms
+Scanning for USB devices : 53.492ms
+Scanning for USB devices : 54.154ms
+Scanning for USB devices : 60.064ms
+Scanning for USB devices : 63.937ms
+Scanning for USB devices : 63.897ms
+Scanning for USB devices : 53.938ms
+Scanning for USB devices : 55.628ms
+Scanning for USB devices : 54.980ms
+Scanning for USB devices : 57.135ms
+Scanning for USB devices : 53.707ms
+Scanning for USB devices : 82.904ms
+Scanning for USB devices : 55.686ms
+Scanning for USB devices : 54.846ms
+Scanning for USB devices : 54.916ms
+Scanning for USB devices : 57.667ms
+Scanning for USB devices : 68.546ms
+Scanning for USB devices : 61.963ms
+Scanning for USB devices : 55.069ms
+Scanning for USB devices : 54.463ms
+Scanning for USB devices : 57.303ms
+Scanning for USB devices : 81.712ms
+Scanning for USB devices : 57.566ms
+Scanning for USB devices : 56.955ms
+Scanning for USB devices : 57.099ms
+Scanning for USB devices : 56.233ms
+Scanning for USB devices : 67.247ms
+Scanning for USB devices : 61.933ms
+Scanning for USB devices : 66.222ms
+Scanning for USB devices : 53.715ms
+Scanning for USB devices : 55.685ms
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "TXGh5GbS"... (expires: 2026-10-23T06:03:45Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 55.784ms
+Scanning for USB devices : 78.405ms
+Scanning for USB devices : 53.158ms
+Scanning for USB devices : 54.683ms
+Scanning for USB devices : 57.439ms
+Scanning for USB devices : 59.682ms
+Scanning for USB devices : 63.242ms
+Scanning for USB devices : 55.692ms
+Scanning for USB devices : 54.242ms
+Scanning for USB devices : 55.485ms
+Scanning for USB devices : 76.713ms
+Scanning for USB devices : 72.929ms
+Scanning for USB devices : 52.242ms
+Scanning for USB devices : 51.818ms
+Scanning for USB devices : 61.107ms
+Scanning for USB devices : 70.924ms
+Scanning for USB devices : 67.138ms
+Scanning for USB devices : 55.166ms
+Scanning for USB devices : 55.014ms
+Scanning for USB devices : 57.276ms
+Scanning for USB devices : 78.071ms
+Scanning for USB devices : 55.523ms
+Scanning for USB devices : 53.694ms
+Scanning for USB devices : 53.687ms
+Scanning for USB devices : 56.025ms
+Scanning for USB devices : 23.620ms
+Scanning for USB devices : 55.915ms
+Scanning for USB devices : 66.219ms
+Scanning for USB devices : 54.826ms
+Scanning for USB devices : 53.565ms
+Scanning for USB devices : 55.161ms
+Scanning for USB devices : 53.902ms
+Scanning for USB devices : 53.132ms
+Scanning for USB devices : 54.255ms
+Scanning for USB devices : 56.842ms
+Scanning for USB devices : 65.830ms
+Scanning for USB devices : 65.338ms
+Scanning for USB devices : 55.339ms
+Scanning for USB devices : 54.525ms
+Scanning for USB devices : 56.314ms
+Scanning for USB devices : 57.696ms
+Scanning for USB devices : 56.365ms
+Scanning for USB devices : 55.026ms
+Scanning for USB devices : 78.255ms
+Scanning for USB devices : 52.618ms
+Scanning for USB devices : 53.471ms
+Scanning for USB devices : 56.084ms
+Scanning for USB devices : 81.308ms
+Scanning for USB devices : 55.084ms
+Scanning for USB devices : 56.585ms
+Scanning for USB devices : 55.276ms
+Scanning for USB devices : 83.659ms
+Scanning for USB devices : 53.809ms
+Scanning for USB devices : 54.384ms
+Scanning for USB devices : 83.010ms
+Scanning for USB devices : 54.367ms
+Scanning for USB devices : 55.411ms
+Scanning for USB devices : 56.084ms
+Scanning for USB devices : 56.723ms
+Scanning for USB devices : 62.482ms
+Scanning for USB devices : 64.809ms
+Scanning for USB devices : 57.908ms
+Scanning for USB devices : 55.224ms
+Scanning for USB devices : 54.164ms
+Scanning for USB devices : 79.266ms
+Scanning for USB devices : 56.646ms
+Scanning for USB devices : 70.582ms
+Scanning for USB devices : 57.137ms
+Scanning for USB devices : 54.823ms
+Scanning for USB devices : 66.699ms
+Scanning for USB devices : 53.500ms
+Scanning for USB devices : 56.113ms
+Scanning for USB devices : 54.313ms
+Scanning for USB devices : 68.728ms
+Scanning for USB devices : 82.541ms
+Scanning for USB devices : 54.571ms
+Scanning for USB devices : 53.712ms
+Scanning for USB devices : 54.580ms
+Scanning for USB devices : 55.397ms
+Scanning for USB devices : 68.858ms
+Scanning for USB devices : 63.431ms
+Scanning for USB devices : 53.895ms
+Scanning for USB devices : 55.547ms
+Scanning for USB devices : 55.355ms
+Scanning for USB devices : 54.947ms
+Scanning for USB devices : 53.283ms
+Scanning for USB devices : 86.210ms
+Scanning for USB devices : 61.870ms
+Scanning for USB devices : 56.011ms
+Scanning for USB devices : 55.971ms
+Scanning for USB devices : 59.968ms
+Scanning for USB devices : 66.852ms
+Scanning for USB devices : 69.660ms
+Scanning for USB devices : 56.469ms
+Scanning for USB devices : 55.888ms
+Scanning for USB devices : 69.227ms
+Scanning for USB devices : 81.921ms
+Scanning for USB devices : 58.163ms
+Scanning for USB devices : 55.506ms
+Scanning for USB devices : 55.941ms
+Scanning for USB devices : 53.774ms
+Scanning for USB devices : 56.008ms
+Scanning for USB devices : 84.941ms
+Scanning for USB devices : 56.044ms
+Scanning for USB devices : 55.766ms
+Scanning for USB devices : 67.463ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 87.391ms
+Scanning for USB devices : 56.664ms
+Scanning for USB devices : 53.969ms
+Scanning for USB devices : 55.249ms
+Scanning for USB devices : 52.516ms
+Scanning for USB devices : 56.230ms
+Scanning for USB devices : 74.297ms
+Scanning for USB devices : 58.267ms
+Scanning for USB devices : 58.239ms
+Scanning for USB devices : 62.156ms
+Scanning for USB devices : 87.902ms
+Scanning for USB devices : 56.848ms
+Scanning for USB devices : 53.643ms
+Scanning for USB devices : 54.623ms
+Scanning for USB devices : 51.150ms
+Scanning for USB devices : 54.270ms
+Scanning for USB devices : 87.946ms
+Scanning for USB devices : 58.040ms
+Scanning for USB devices : 54.880ms
+Scanning for USB devices : 65.589ms
+Scanning for USB devices : 75.122ms
+Scanning for USB devices : 57.701ms
+Scanning for USB devices : 57.861ms
+Scanning for USB devices : 55.243ms
+Scanning for USB devices : 55.126ms
+Scanning for USB devices : 53.529ms
+Scanning for USB devices : 71.421ms
+Scanning for USB devices : 57.846ms
+Scanning for USB devices : 54.581ms
+Scanning for USB devices : 86.143ms
+Scanning for USB devices : 52.793ms
+Scanning for USB devices : 54.977ms
+Scanning for USB devices : 77.269ms
+Scanning for USB devices : 55.359ms
+Scanning for USB devices : 55.627ms
+Scanning for USB devices : 58.301ms
+Scanning for USB devices : 55.470ms
+Scanning for USB devices : 56.312ms
+Scanning for USB devices : 63.783ms
+Scanning for USB devices : 76.905ms
+Scanning for USB devices : 55.115ms
+Scanning for USB devices : 64.897ms
+Scanning for USB devices : 54.543ms
+Scanning for USB devices : 52.980ms
+Scanning for USB devices : 53.627ms
+Scanning for USB devices : 55.080ms
+Scanning for USB devices : 56.557ms
+Scanning for USB devices : 80.852ms
+Scanning for USB devices : 55.480ms
+Scanning for USB devices : 57.858ms
+Scanning for USB devices : 53.626ms
+Scanning for USB devices : 77.440ms
+Scanning for USB devices : 55.828ms
+Scanning for USB devices : 56.100ms
+Scanning for USB devices : 54.141ms
+Scanning for USB devices : 55.589ms
+Scanning for USB devices : 55.124ms
+Scanning for USB devices : 55.766ms
+Scanning for USB devices : 56.726ms
+Scanning for USB devices : 58.654ms
+Scanning for USB devices : 55.534ms
+Scanning for USB devices : 72.274ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 78.601ms
+Scanning for USB devices : 56.955ms
+Scanning for USB devices : 52.729ms
+Scanning for USB devices : 54.368ms
+Scanning for USB devices : 54.379ms
+Scanning for USB devices : 74.582ms
+Scanning for USB devices : 61.500ms
+Scanning for USB devices : 53.538ms
+Scanning for USB devices : 55.388ms
+Scanning for USB devices : 66.850ms
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "7RAKKd-U"... (expires: 2026-10-23T08:03:15Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Asset Pipeline Refresh (id=c64cdab118351964dbff9949a0407ec2): Total: 0.111 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[LAYOUT] About to save layout C:\Users\Shombith\Documents\GitHub\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/Shombith/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Pipeline Server stopped
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-23224-w1jp4t
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 25156 (child process of PID 25292) has been terminated.
+SUCCESS: The process with PID 25292 (child process of PID 23224) has been terminated.
+[websockify wrapper] Kill
+[websockify wrapper] Process killed
+Killing ADB server in 0.0652652 seconds.
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: 'f79771b6ba8bd6ada6cfefbdc82ffa9b') in 0.1009409 seconds
+[Licensing::Client] Successfully resolved entitlement details
+Refreshing native plugins compatible for Editor in 34.82 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.16 ms.
+Asset Pipeline Refresh (id=b791e08f84b648540ada5cc8857c9a30): Total: 2.486 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=1 (actual=1, local cache=0, cache server=0)
+		Asset DB Process Time: managed=2 ms, native=585 ms
+		Asset DB Callback time: managed=42 ms, native=1855 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4464, non-scripts=11909
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 3
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 0.001ms
+	ApplyChangesToAssetFolders: 0.590ms
+	Scan: 245.683ms
+	OnSourceAssetsModified: 0.112ms
+	CategorizeAssetsWithTransientArtifact: 0.050ms
+	ProcessAssetsWithTransientArtifactChanges: 2.623ms
+	CategorizeAssets: 76.528ms
+	ImportOutOfDateAssets: 181.662ms (-54.071ms without children)
+		ImportManagerImport: 162.430ms (58.623ms without children)
+			ImportInProcess: 103.707ms
+			UpdateCategorizedAssets: 0.099ms
+		ReloadNativeAssets: 1.900ms
+		UnloadImportedAssets: 8.889ms
+		ReloadImportedAssets: 55.274ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 3.680ms
+		InitializingProgressBar: 0.013ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.002ms
+		OnDemandSchedulerStart: 3.545ms
+	PostProcessAllAssets: 1854.629ms
+	Hotreload: 42.825ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.292ms
+	UnloadStreamsBegin: 0.674ms
+	PersistCurrentRevisions: 1.653ms
+	UnloadStreamsEnd: 0.003ms
+	Untracked: 77.518ms
+
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureMaelstromView.prefab using Guid(ed93dc5ea823c1def2fdf7422454ed55) (PrefabImporter) -> (artifact id: '260058958b8c21a692cfebde060610cf') in 0.0632358 seconds
+Refreshing native plugins compatible for Editor in 38.08 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.14 ms.
+Asset Pipeline Refresh (id=96fec333f0aef1a42bf0be2d1b26e849): Total: 0.266 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) (PrefabImporter) -> (artifact id: 'e39e19707c2db595e75a7e4ce36202c2') in 0.0860857 seconds
+Refreshing native plugins compatible for Editor in 34.83 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.13 ms.
+Asset Pipeline Refresh (id=79ce1d220aa9f434aa014b4fdf6ae110): Total: 0.301 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=1 (actual=1, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=239 ms
+		Asset DB Callback time: managed=13 ms, native=47 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4464, non-scripts=11909
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 6
+	InvokeCustomDependenciesCallbacks: 0.000ms
+	InvokePackagesCallback: 0.001ms
+	ApplyChangesToAssetFolders: 0.415ms
+	Scan: 17.057ms
+	OnSourceAssetsModified: 0.068ms
+	CategorizeAssetsWithTransientArtifact: 0.102ms
+	ProcessAssetsWithTransientArtifactChanges: 0.197ms
+	CategorizeAssets: 61.361ms
+	ImportOutOfDateAssets: 146.107ms (-39.202ms without children)
+		ImportManagerImport: 134.815ms (46.432ms without children)
+			ImportInProcess: 88.310ms
+			UpdateCategorizedAssets: 0.073ms
+		ReloadNativeAssets: 1.361ms
+		UnloadImportedAssets: 3.935ms
+		ReloadImportedAssets: 40.140ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.573ms
+		InitializingProgressBar: 0.009ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.002ms
+		OnDemandSchedulerStart: 2.474ms
+	PostProcessAllAssets: 23.021ms
+	Hotreload: 38.152ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.088ms
+	UnloadStreamsBegin: 0.434ms
+	PersistCurrentRevisions: 0.689ms
+	UnloadStreamsEnd: 0.005ms
+	Untracked: 12.660ms
+
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) (PrefabImporter) -> (artifact id: '6fe22ddd1cbe24265a59e0750d755398') in 0.0699927 seconds
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: '8f5e634732404cd2a65bcd9e3119c871') in 0.0493854 seconds
+Refreshing native plugins compatible for Editor in 36.35 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.14 ms.
+Asset Pipeline Refresh (id=f3c5c1ac5dfbf3e47adfbd3a381c03ee): Total: 0.353 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=2 (actual=2, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=288 ms
+		Asset DB Callback time: managed=14 ms, native=50 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4464, non-scripts=11909
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 6
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 0.001ms
+	ApplyChangesToAssetFolders: 0.331ms
+	Scan: 16.033ms
+	OnSourceAssetsModified: 0.071ms
+	CategorizeAssetsWithTransientArtifact: 0.095ms
+	ProcessAssetsWithTransientArtifactChanges: 0.194ms
+	CategorizeAssets: 57.360ms
+	ImportOutOfDateAssets: 201.794ms (-60.948ms without children)
+		ImportManagerImport: 189.570ms (67.566ms without children)
+			ImportInProcess: 121.926ms
+			UpdateCategorizedAssets: 0.078ms
+		ReloadNativeAssets: 1.337ms
+		UnloadImportedAssets: 5.095ms
+		ReloadImportedAssets: 61.955ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.528ms
+		InitializingProgressBar: 0.013ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 2.244ms
+	PostProcessAllAssets: 24.169ms
+	Hotreload: 40.492ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.586ms
+	UnloadStreamsBegin: 0.334ms
+	PersistCurrentRevisions: 0.888ms
+	UnloadStreamsEnd: 0.002ms
+	Untracked: 10.990ms
+
+Start importing ProjectSettings/ProjectSettings.asset using Guid(00000000000000004000000000000000) (LibraryAssetImporter) -> (artifact id: '16987c3052bec6e748d1e36e40109a74') in 0.0044752 seconds
+Refreshing native plugins compatible for Editor in 35.27 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.13 ms.
+Asset Pipeline Refresh (id=afc9362c23bad2e4e9880b1150f9cfcc): Total: 0.174 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 15963 unused Assets / (10.0 MB). Loaded Objects now: 40179.
+Memory consumption went from 0.79 GB to 0.78 GB.
+Total: 443.598100 ms (FindLiveObjects: 4.879600 ms CreateObjectMapping: 6.794200 ms MarkObjects: 397.002300 ms  DeleteObjects: 34.919700 ms)
+
+Unexpected transport error from import worker 0 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker0.log
+0x00007ff915304e2e (Unity) StackWalker::ShowCallstack
+0x00007ff916b3f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff916b3fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9152b587f (Unity) DebugStringToFile
+0x00007ff917b50ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ff917b5da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ff917b20207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ff917b22aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ff917b190c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ff917b23f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ff917b30867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ff917b1ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ff917b1dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ff917b2d809 (Unity) IOService::Run
+0x00007ff917b2e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ff916b32b80 (Unity) Thread::RunThreadWrapper
+0x00007ff9f948dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff9fa0dee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 0: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker0.log
+Unexpected transport error from import worker 2 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker2.log
+0x00007ff915304e2e (Unity) StackWalker::ShowCallstack
+0x00007ff916b3f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff916b3fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9152b587f (Unity) DebugStringToFile
+0x00007ff917b50ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ff917b5da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ff917b20207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ff917b22aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ff917b190c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ff917b23f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ff917b30867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ff917b1ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ff917b1dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ff917b2d809 (Unity) IOService::Run
+0x00007ff917b2e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ff916b32b80 (Unity) Thread::RunThreadWrapper
+0x00007ff9f948dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff9fa0dee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 2: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker2.log
+
