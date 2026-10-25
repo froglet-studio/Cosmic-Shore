@@ -158,6 +158,7 @@ namespace CosmicShore.Editor
             {
                 LoadAllLocked();
                 SyncFromSharedLocked();
+                if (!EditorUtility.scriptCompilationFailed) ResolveCompiledErrorsLocked();
             }
 
             if (string.IsNullOrEmpty(SessionState.GetString(EditorStartKey, "")))
@@ -1003,6 +1004,29 @@ namespace CosmicShore.Editor
             }
             catch { }
             DeleteLocked(issue.Id);
+        }
+
+        static readonly System.Text.RegularExpressions.Regex CompileErrorTitle =
+            new(@"\berror CS\d{4}:", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// A compile error is fixed when the code compiles: Unity loads no new scripts while any
+        /// compile error stands, so a load with compilation clean is the compiler's own proof. Each one
+        /// otherwise stayed open for good (61 across the shared ledgers on 2026-10-25, each seen once,
+        /// some from September: a half-finished pull or a branch switch compiled mid-way). If the
+        /// error comes back it is filed again, open.
+        /// </summary>
+        static void ResolveCompiledErrorsLocked()
+        {
+            List<BugLedgerIssue> compiled = null;
+            foreach (var issue in Issues.Values)
+                if (issue.Kind == BugLedgerIssueKind.Auto && (issue.IsOpen || issue.IsValidating) &&
+                    CompileErrorTitle.IsMatch(issue.Title ?? ""))
+                    (compiled ??= new List<BugLedgerIssue>()).Add(issue);
+            if (compiled == null) return;
+            foreach (var issue in compiled)
+                ResolveLocked(issue, "compiled clean: the scripts compiled and loaded without this error");
+            Trail($"scripts compiled clean: closed {compiled.Count} compile error(s)");
         }
 
         static string TombstonePath(string id) => Path.Combine(ResolvedDir, id + ".bug.json");
