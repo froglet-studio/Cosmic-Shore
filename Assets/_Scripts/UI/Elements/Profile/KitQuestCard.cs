@@ -43,8 +43,11 @@ namespace CosmicShore.UI
         [SerializeField] private string meterLine = "Intensity {level} of {max}";
         [Tooltip("A goal row. {level} is the intensity it unlocks.")]
         [SerializeField] private string goalLine = "Unlock intensity {level}";
+        // Not "completedLine": QuestItemCard (the base) already serializes that name for its
+        // description line, and Unity refuses a field name repeated down a hierarchy ("The same
+        // field name is serialized multiple times", Bug Ledger E-2c9bfa16f7).
         [Tooltip("The state line on a claimed quest.")]
-        [SerializeField] private string completedLine = "Completed";
+        [SerializeField] private string claimedLine = "Completed";
         [Tooltip("The state line on a quest whose reward waits to be claimed.")]
         [SerializeField] private string readyLine = "Ready to claim";
         [Tooltip("The state line on an unlocked quest still being played.")]
@@ -161,7 +164,7 @@ namespace CosmicShore.UI
 
             if (stateText)
             {
-                stateText.SetText(claimed ? completedLine : ready ? readyLine : progress ? inProgressLine : lockedLine);
+                stateText.SetText(claimed ? claimedLine : ready ? readyLine : progress ? inProgressLine : lockedLine);
                 stateText.SetColorToken(ready ? UIColorToken.Cta : UIColorToken.NeutralLightest);
             }
             if (titleText) titleText.SetColorToken(locked ? UIColorToken.NeutralLightest : UIColorToken.TextLight);
