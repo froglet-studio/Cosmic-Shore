@@ -15002,3 +15002,13 @@ Owed in the editor (`Docs/MENU_REDESIGN_B.md` §70):
 - [ ] Hub windows: LB / RB slide between windows; LT / RT close the window and page the top bar.
 - [ ] The now-playing card hides while any window is open over Home.
 - [ ] Home: clicking the pilot's name opens the Profile; in the Profile, clicking the name opens the name editor.
+
+## Rev 17 J: the Voyage window, episodes apart from voyages (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: generator `--check` / `--self-test`, refcompile, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §71):
+- [ ] Voyage window: "Episodes" left with Episode 1's panel (title, bar, "n / 5") and five quest cards on a track;
+      Episode 2 a locked bar under it; "Voyages" right with Tandava full bleed, Voyage 2 and 3 locked.
+- [ ] The quest cards fit at 224 wide: names, goal rows and PLAY QUEST do not overlap; CLAIM and PLAY work.
+- [ ] SET SAIL is focused first and opens the arena launch panel; the voyages column scrolls once there are more.
+- [ ] The friends drawer still pushes the window's header and body right.

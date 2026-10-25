@@ -3157,3 +3157,30 @@ and loading screens as well. Any part with grid bg should change to this new sea
   (`author_ui_lattice.py` gains negative controls for a panel back on the lattice, the sign-in without its sea and a
   washed-over panel sea), `lattice_preview.py --check`, `check_generated_assets.py`, `check_ui_colors.py`. Unity's own
   compile and the look in the editor are owed (checklist entry "Sea everywhere").
+
+## 71. Rev 17 J: episodes apart from voyages, the old quest tracker back (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25, through Rev 14-17 on the canvas: "Make the quest into a tracker like before ... The old quest tracker
+was good ... the episode 1 do not need to be so big", "It does not [need] useless text like where does your vessel go
+next", "both the quest tracker and the voyages look the same. Please differentiate them ... tracker is taking too much
+... keep [episodes] separate from tandava its not a episode", "why remove episodes? and also there will be more
+voyages", then "Rev17 J implement".
+
+- **Episodes, left.** A head ("Episodes"), then Episode 1 in a glass panel: "Episode 1", "The Hypersea", the progress
+  bar and "n / 5" (`summaryLine '{claimed} / {total}'`) on one row, and under it the quest tracker. Episode 2 is its own
+  locked bar under the panel - an episode, never a voyage card.
+- **The old quest tracker.** `VoyageQuestCard.prefab` is the Profile's QuestCard (`author_menu_profile.build_quest_card`,
+  which now takes a size and `compact`): art and numeral, state, name, goal line, the two goal rows, the intensity meter
+  and PLAY QUEST / CLAIM / "Unlocks after", and its track node and segment. Five across at 224 x 500 (art 140, the name
+  in Body, the goal rows without their title). `QuestTrackView` spawns it into an HLG. Rev 13's `QuestRow.prefab` is
+  retired (deleted; the generator removes it if it comes back).
+- **Voyages, right.** A scrolling column (ScrollRect, VLG + fitter: there will be more voyages). Tandava is full-bleed
+  art with a fade at its foot, OPEN, "Voyage 1", its name (VoyageView's title), its four forms and SET SAIL - square,
+  no glass, unlike every episode surface. Voyage 2 and Voyage 3 are locked tiles: the number and a lock, no invented name.
+- **No filler.** The header is just "Voyage". Gone: "Where your story goes next", the episode's tagline, "The next
+  voyage arrives with Episode 2.", "Co-op hunt", the crew line, the card description. The generator fails if any
+  returns, if the voyages column stops scrolling, or if Episode 2 and Voyage 2 are not both there.
+- **Proof without an editor.** `author_menu_mission.py --check` / `--self-test` (new controls: filler back in the header,
+  a frozen voyages column, a quest card that cannot claim), `author_menu_profile.py --check` (the full-size QuestCard is
+  byte-identical), refcompile player config, the gates. The look and the tracker's behaviour are owed in the editor
+  (checklist entry "Rev 17 J").

@@ -159,13 +159,17 @@ CARD_W, CARD_H, TRACK_H, GAP = 352, 670, 50, 20
 ART_H = 190
 
 
-def build_quest_card():
-    root = N("root", "QuestCard", R(size=(CARD_W, CARD_H)))
-    root.add("cg", 225, canvas_group(True)).add("le", 114, le(mw=0, fw=1, ph=CARD_H))
+def build_quest_card(name="QuestCard", card_w=CARD_W, card_h=CARD_H, art_h=ART_H, gap=GAP, compact=False):
+    """One quest card on the track. `compact` is the Voyage window's (Docs/MENU_REDESIGN_B.md section 71, the approved
+    R17 J board: five across an episode): tighter padding, the name in Body, the goal rows without their title."""
+    pad = 16 if compact else 20
+    cw = card_w - 2 * pad
+    root = N("root", name, R(size=(card_w, card_h)))
+    root.add("cg", 225, canvas_group(True)).add("le", 114, le(mw=0, fw=1, ph=card_h))
     root.add("in", 114, M.entrance("Rise", by_sibling=True))
 
     # The track: the segment back to the previous card's node, then this card's node.
-    seg = image_node(root, "Segment", "Segment", TL(-(CARD_W + GAP) // 2, 15, CARD_W + GAP, 2), "SurfaceDark")
+    seg = image_node(root, "Segment", "Segment", TL(-(card_w + gap) // 2, 15, card_w + gap, 2), "SurfaceDark")
     seg.comps = [x for x in seg.comps if x[0] != "th"]
     seg.add("mask", 114, A.rect_mask())
     spark = seg.child(N("Segment/SparkGroup", "SparkGroup", STRETCH))
@@ -187,7 +191,7 @@ def build_quest_card():
         .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
     border.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
 
-    clip = body.child(N("Body/Art", "Art", TL(2, 2, CARD_W - 4, ART_H)))
+    clip = body.child(N("Body/Art", "Art", TL(2, 2, card_w - 4, art_h)))
     clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))) \
         .add("th", 114, H.themed("SurfaceBlack")).add("mask", 114, A.rect_mask())
     art = clip.child(N("Body/Art/Image", "Image", STRETCH))
@@ -203,34 +207,36 @@ def build_quest_card():
     lk = image_node(lock, "Body/Art/Lock/Glyph", "Glyph", STRETCH, "TextLight", K.chrome_sprite("chrome_lock"),
                     preserve=True)
 
-    y = ART_H + 22
-    label(body.child(N("Body/State", "State", TL(20, y, 312, 18))), "In progress", "Label", "NeutralLightest")
-    label(body.child(N("Body/Title", "Title", TL(20, y + 22, 312, 30))), "QUEST", "H3", "TextLight")
-    label(body.child(N("Body/Description", "Description", TL(20, y + 58, 312, 44))), "", "BodySmall",
-          "NeutralLightest", valign="top", wrap=True)
-    C.themed_line(body, "Body/Rule", "Rule", TL(20, y + 110, 312, 1), "SurfaceDark")
+    y = art_h + (16 if compact else 22)
+    label(body.child(N("Body/State", "State", TL(pad, y, cw, 18))), "In progress", "Label", "NeutralLightest")
+    label(body.child(N("Body/Title", "Title", TL(pad, y + (20 if compact else 22), cw, 26 if compact else 30))), "QUEST",
+          "Body" if compact else "H3", "TextLight")
+    label(body.child(N("Body/Description", "Description", TL(pad, y + (48 if compact else 58), cw, 40 if compact else 44))), "",
+          "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    C.themed_line(body, "Body/Rule", "Rule", TL(pad, y + (94 if compact else 110), cw, 1), "SurfaceDark")
 
-    goals = body.child(N("Body/Goals", "Goals", TL(20, y + 130, 312, 120)))
+    goals = body.child(N("Body/Goals", "Goals", TL(pad, y + (106 if compact else 130), cw, 80 if compact else 120)))
     goals.add("cg", 225, canvas_group(True))
-    section_label(goals, "Body/Goals/Title", "Title", "Goals", TL(0, 0, 200, 18), "NeutralLightest")
+    if not compact:
+        section_label(goals, "Body/Goals/Title", "Title", "Goals", TL(0, 0, 200, 18), "NeutralLightest")
     for i in range(2):
         k = f"Body/Goals/Row{i + 1}"
-        row = goals.child(N(k, f"Goal{i + 1}", TL(0, 26 + i * 46, 312, 42)))
+        row = goals.child(N(k, f"Goal{i + 1}", TL(0, i * 40, cw, 36) if compact else TL(0, 26 + i * 46, 312, 42)))
         row.add("cg", 225, canvas_group(True))
         done = image_node(row, f"{k}/Done", "Done", TL(0, 4, 14, 14), "Cta", K.chrome_sprite("chrome_confirm"), preserve=True)
         done.comps = [x for x in done.comps if x[0] != "th"]
         pend = image_node(row, f"{k}/Pending", "Pending", TL(3, 7, 9, 9), "TextLight")
         pend.comps = [x for x in pend.comps if x[0] != "th"]
         pend.rot = 45
-        cap = row.child(N(f"{k}/Caption", "Caption", TL(24, 2, 288, 16)))
+        cap = row.child(N(f"{k}/Caption", "Caption", TL(24, 2, cw - 24, 16)))
         cap.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("UNLOCK INTENSITY 3", "Label", tok("NeutralLightest"))) \
             .add("kt", 114, K.kit_text("Label", "NeutralLightest"))
-        desc = row.child(N(f"{k}/Description", "Description", TL(24, 20, 288, 22)))
+        desc = row.child(N(f"{k}/Description", "Description", TL(24, 18 if compact else 20, cw - 24, 18 if compact else 22)))
         desc.add("cr", 222, K.canvas_renderer()) \
             .add("tmp", 114, A.ellipsis(text("Play Intensity 2 to unlock", "BodySmall", tok("TextLight")))) \
             .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
 
-    foot = body.child(N("Body/Footer", "Footer", R((0, 0), (1, 0), (0, 20), (-40, 100), (0.5, 0))))
+    foot = body.child(N("Body/Footer", "Footer", R((0, 0), (1, 0), (0, pad), (-2 * pad, 100), (0.5, 0))))
     claim = foot.child(N("Body/Footer/Claim", "Claim", R((0, 0), (1, 0), (0, 0), (0, 54), (0.5, 0))))
     claim.add("cg", 225, canvas_group(False))
     claim.children.append(Inst("ClaimButton", "KitButton", "ClaimButton", STRETCH,
@@ -242,7 +248,7 @@ def build_quest_card():
         bar = image_node(play, f"Body/Footer/Play/Bar{i + 1}", f"Bar{i + 1}", R((0, 1), None, (i * 12, -40), (8, h), (0, 0)),
                          "SurfaceDark")
         bar.comps = [x for x in bar.comps if x[0] != "th"]
-    mt = play.child(N("Body/Footer/Play/Meter", "Meter", R((0, 1), None, (58, -28), (220, 22), (0, 0.5))))
+    mt = play.child(N("Body/Footer/Play/Meter", "Meter", R((0, 1), None, (58, -28), (min(220, cw - 58), 22), (0, 0.5))))
     mt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Intensity 1 of 4", "Body", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("Body", "TextLight"))
     w, h = K.button_size("PLAY QUEST", small=True)
