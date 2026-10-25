@@ -15033,3 +15033,18 @@ instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors
 4. Headlong, any AI: steering as before (its switch is off).
 5. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --mode Switchback --since 2026-10-26`.
 
+## 🔴 2026-10-26 — Breakwater: the AI Sparrows fly the Regatta steering and fire the rocket at the station; any AI turns hard for a target behind it (unverified: no Unity CLI in the session)
+
+**Files:** `BreakwaterController.cs` (`AICommitFromApproachPoint` => true), `HoldBoostAIPolicySO.cs` ("clear the way"),
+`Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset` (new), `SparrowAIBoostPolicy.asset` (the new fields,
+empty), `AIPilot.cs` (`TurnHardIfBehind`), `MinigameAbilityAITests.cs`, `SwitchbackAISteeringTests.cs`. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; `learn_drives_from_flights.py
+--check` (all modes) OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.5, §6.
+
+1. Run `MinigameAbilityAITests` (5) and `SwitchbackAISteeringTests` (8): all pass.
+2. Breakwater, I1 and I4, AI Sparrows (Third Eye, Follow one): it lines up behind each station and threads the eye; it
+   no longer circles a station. A rocket leaves as it closes on a station (one per station) and blows the weave open.
+3. Breakwater with a human Sparrow: the rocket and guns work as before (the rule is the AI's only).
+4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
+5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
+

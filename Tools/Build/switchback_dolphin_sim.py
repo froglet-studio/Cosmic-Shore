@@ -36,6 +36,18 @@ COMMIT_COS = 0.9
 LEAD_INSIDE_SHARE = 0.8                          # lead_inside: the approach point at most this share of the commit radius                                # AIPilot: LookingAtCrystal = dot(desired, course) >= 0.9
 
 
+# A race's config: the hull (cruise u/s, turn rate = rts x v + base deg/s, whether its AIPilot drifts) and the mode's
+# GateRaceController distances. The Dolphin in Switchback is the default; SPARROW_BREAKWATER is the Sparrow's minigame
+# (Sparrow.prefab: ThrottleScaler 50 + MinimumSpeed 10 at the AI's 0.6 skill throttle = 40 u/s, the 36 u/s its AI rivals
+# raced at; Pitch/Yaw 80, RotationThrottleScaler 0.1; drift 0, BREAKWATER.md "The AI opens its own doors";
+# MinigameBreakwater.unity: commit 240, approach lead 280, through 200).
+DOLPHIN_SWITCHBACK = {"cruise": CRUISE, "rts": 0.0, "base": TURN, "drift": True,
+                      "commit": COMMIT_DIST, "lead": APPROACH_LEAD, "through": THROUGH}
+SPARROW_BREAKWATER = {"cruise": 40.0, "rts": 0.1, "base": 80.0, "drift": False,
+                      "commit": 240.0, "lead": 280.0, "through": 200.0,
+                      "eye": 18.0 - 12.32 / 2}   # BREAKWATER.md: the 18 u eye, less half the 12.32 u hull; the rest is danger weave
+
+
 def course_from_flight(path):
     f = json.load(open(path, encoding="utf-8"))
     cols = f["ringColumns"]
@@ -57,7 +69,8 @@ MAXM, FILL, DRAIN, LERP = 2.259, 1 / 3.636, 0.4, 1.5                   # dolphin
 PEAK_MARGIN, MIN_DIS, MIN_GAIN, MAX_HOLD, GRACE, UP_TO_SPEED = 3.0, 0.2, 30.0, 4.0, 0.25, 0.9
 
 
-def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, trace=None, lead_inside=None, drive=None):
+def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, trace=None, lead_inside=None, drive=None,
+         cfg=None):
     """drive: None (no charge economy: cruise only) or a SHIPPED_DRIVE / LEARNED_DRIVE dict: the charge economy of
     dolphin_drive_sim.py (a drift banks charge and freezes the speed; letting go discharges toward cruise x m x m) with
     ChargeBoostAIPolicySO's drive (let go on a lined-up straight once the meter is full enough; hold the next commit off
@@ -66,15 +79,19 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
     kept inside the commit radius (lead_inside defaults to regatta_fix; pass it to test either half alone)."""
     if lead_inside is None:
         lead_inside = regatta_fix
+    cfg = cfg or DOLPHIN_SWITCHBACK
+    CRUISE_, COMMIT_, LEAD_, THROUGH_ = cfg["cruise"], cfg["commit"], cfg["lead"], cfg["through"]
+    drift = drift and cfg["drift"]
+    turn_rate = lambda speed: cfg["rts"] * speed + cfg["base"]
     gates = course["gates"]; total = len(gates)
     pos = list(course["start"]); fwd = list(course["heading"]); cmd = list(fwd); travel = list(fwd)
-    v = CRUISE; R = v / math.radians(TURN); run = max(max(0.0, 2 * R - 18), v * 1.5)
-    idx = 0; locked = -1; side = 1.0; lead = APPROACH_LEAD; t = 0.0
+    v = CRUISE_; R = v / math.radians(turn_rate(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
+    idx = 0; locked = -1; side = 1.0; lead = LEAD_; t = 0.0
     drifting = False; orbit = L.Orbit(); extending = False; ext_t = 0.0
-    misses = 0; breaks = 0; drift_t = 0.0
+    misses = 0; breaks = 0; drift_t = 0.0; weave = 0
     meter = 0.0; pinned = 1.0; discharging = False; hold = False; held_at = -1e9; was_dis = False; top = v
     mm = lambda x: 1 + (MAXM - 1) * x
-    target_speed = lambda: CRUISE * (mm(meter) * pinned if discharging else 1.0)
+    target_speed = lambda: CRUISE_ * (mm(meter) * pinned if discharging else 1.0)
     while t < T and idx < total:
         g = gates[idx]; ring, ax = g["p"], g["a"]
         if idx != locked:
@@ -83,15 +100,15 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
             leg_from = gates[idx - 1]["p"] if idx > 0 else pos
             # GateRaceController.ApproachLeadFor: with the Regatta steering on, the approach point never lies outside
             # the commit radius (lead_inside forces it on its own, for the comparison)
-            lead = min(APPROACH_LEAD, LEAD_SHARE * norm(sub(leg_from, ring)))
+            lead = min(LEAD_, LEAD_SHARE * norm(sub(leg_from, ring)))
             if lead_inside:
-                lead = min(lead, LEAD_INSIDE_SHARE * COMMIT_DIST)
-        commit = min(COMMIT_DIST, lead + 0.5 * R) if regatta_fix else COMMIT_DIST
+                lead = min(lead, LEAD_INSIDE_SHARE * COMMIT_)
+        commit = min(COMMIT_, lead + 0.5 * R) if regatta_fix else COMMIT_
         approaching = norm(sub(ring, pos)) > commit
         if regatta_fix:
-            through = add(ring, mul(unit(sub(ring, pos)), THROUGH))
+            through = add(ring, mul(unit(sub(ring, pos)), THROUGH_))
         else:
-            through = sub(ring, mul(ax, side * THROUGH))
+            through = sub(ring, mul(ax, side * THROUGH_))
         aim = add(ring, mul(ax, side * lead)) if approaching else through
         to = sub(aim, pos)
         desired = unit(to) if norm(to) > 1.0 else list(travel)
@@ -118,7 +135,7 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
                 to_ring = sub(ring, pos)
                 if (ang(travel, to_ring) <= drive["align"] and ang(fwd, to_ring) <= drive["align"]
                         and norm(to_ring) / max(v, 1) >= drive["runway"] and meter >= drive["spend"]
-                        and CRUISE * mm(meter) ** 2 - v >= MIN_GAIN):
+                        and CRUISE_ * mm(meter) ** 2 - v >= MIN_GAIN):
                     drifting = False; hold = True; held_at = t
                     discharging = meter > 0; travel = list(fwd)
         # the commit drift (held off while a discharge climbs; never under 0.9 of the throttle target)
@@ -139,15 +156,15 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
                     if meter <= 0: discharging = False
                 v += (target_speed() - v) * LERP * dt
             top = max(top, v)
-            R = v / math.radians(TURN); run = max(max(0.0, 2 * R - 18), v * 1.5)
+            R = v / math.radians(turn_rate(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
         if drifting:
             drift_t += dt
             # the nose comes round free, onto the aim (GateRaceController's drift look target)
-            fwd = rotate_toward(fwd, desired, math.radians(TURN) * dt); cmd = list(fwd)
+            fwd = rotate_toward(fwd, desired, math.radians(turn_rate(v)) * dt); cmd = list(fwd)
         else:
             steer = add(fwd, mul(desired, -0.35)) if extending else to
             s = ai_stick(ang(fwd, steer))
-            fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(TURN * s) * dt, dt, lag)
+            fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(turn_rate(v) * s) * dt, dt, lag)
             travel = list(fwd)
         newpos = add(pos, mul(travel, v * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
@@ -155,6 +172,7 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
             k = a0 / (a0 - a1); hit = add(pos, mul(sub(newpos, pos), k))
             if norm(sub(hit, ring)) <= g["r"]:
                 idx += 1
+                if cfg.get("eye") and norm(sub(hit, ring)) > cfg["eye"]: weave += 1   # scored, through the danger weave
             else:
                 misses += 1
                 if regatta_fix:
@@ -164,7 +182,7 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
                           round(ang(travel, desired))))
         pos = newpos; t += dt
     return {"time": round(t, 1) if idx >= total else None, "rings": idx, "misses": misses, "breaks": breaks,
-            "drift": round(drift_t / max(t, 1e-6), 2), "top": round(top)}
+            "drift": round(drift_t / max(t, 1e-6), 2), "top": round(top), "weave": weave}
 
 
 def self_test():

@@ -57,9 +57,9 @@ Learned from the fastest 3 finished races: flight_Regatta_Squirrel_20261016_1644
 
 | Setting | Was | Learned | Why |
 |---|---:|---:|---|
-| `SkimHeight` | -6.5 | **-5.95** | you skim 13.45 u from your rail's centre on the rail's - face (the side its rings are on) (99% of skimming on the - face); minus the course's skim lift 7.50; the sign picks the face |
+| `SkimHeight` | -5.95 | **-5.95** | you skim 13.45 u from your rail's centre on the rail's - face (the side its rings are on) (99% of skimming on the - face); minus the course's skim lift 7.50; the sign picks the face |
 | `TrackGuardMargin` | 1.64 | **1.64** | your closest 10% of skimming was 1.35 u from the shell; margins only ever widen |
 | `MassGuardMargin` | 1.38 | **1.38** | your closest 10% of skimming was 1.35 u from the shell; margins only ever widen |
-| `LookaheadSeconds` | 0.93 | **1.03** | you point at the rail 1.03 s ahead |
-| `LookaheadMin` | 60 | **70** | your shortest look-aheads are 70 u |
-| `StickGainPerDegree` | 0.032 | **0.025** | you deflect the stick 0.025 per degree off your aim |
+| `LookaheadSeconds` | 1.03 | **1.03** | you point at the rail 1.03 s ahead |
+| `LookaheadMin` | 70 | **70** | your shortest look-aheads are 70 u |
+| `StickGainPerDegree` | 0.025 | **0.025** | you deflect the stick 0.025 per degree off your aim |
