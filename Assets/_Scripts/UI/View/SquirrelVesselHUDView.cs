@@ -129,8 +129,9 @@ namespace CosmicShore.UI
                  "'the right facing squirrel should be the players domain color. the other squirrel can " +
                  "be the danger color (fire). when the player jousts then both can turn lime.'")]
         [SerializeField] private Image joustOpponentIcon;
-        [Tooltip("Skimming (the TIME card) as a pair, a child of its icon: the Squirrel in its skimmer sphere and the " +
-                 "prisms it has reached - tinted the pilot's DOMAIN colour (skimmed mass is yours).")]
+        [Tooltip("Skimming (the TIME card) as parts under its icon: the Squirrel and the prisms it has reached - " +
+                 "tinted the pilot's DOMAIN colour (skimmed mass is yours). The skimmer sphere between them is a " +
+                 "third child the view never tints: it stays white.")]
         [SerializeField] private Image skimSelfIcon;
         [Tooltip("The prisms still ahead of the sphere - tinted the shared spec's blueColor. Garrett 2026-10-25: " +
                  "'make the vessel and the prisms touching and behind the skimmer the player's domain color. make " +

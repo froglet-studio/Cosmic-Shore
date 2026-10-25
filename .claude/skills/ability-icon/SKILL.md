@@ -13,6 +13,12 @@ and `Docs/Icons/ability_icons_audit_2026-10-24.png`.
 
 ## 0. The bar, in one paragraph
 
+> Garrett, 2026-10-25, on the Crystal Joust and Skimming pairs: "I really like where we landed here on both
+> because the icons are teaching the ability." That is the test every icon now passes or fails: a pilot who
+> has never used the ability learns from the card WHO acts (the hull, its real mesh), WHAT it acts on (the
+> opponent, the prisms) and WHAT CHANGES (yours in the domain colour, theirs in danger, the untouched in blue,
+> lime when it lands). A mark that only labels the ability is the floor; a mark that teaches it is the bar.
+
 An icon **names the ACT in one object**. Not the hull doing it, the target and an arrow; the one
 thing a pilot who has used the ability once would draw: the bomb, the blast, the rail into the
 distance, the ball lifting off the ribbon. Angular (zero corner radius, butt caps, mitred joins - the

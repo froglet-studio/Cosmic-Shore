@@ -7,6 +7,7 @@ can show it near 40.
 
 | Rule | Value | Why |
 |---|---|---|
+| The icon TEACHES the ability | who acts (the hull's real mesh), on what, and what changes - told by TINT on separately-tinted parts (yours = domain colour, theirs = danger, untouched = the HUD blue, landed = lime), never by element | Garrett 2026-10-25: "the icons are teaching the ability" |
 | One object names the act | ≤ 3 shapes, 1 focal mass, ≤ 4 connected components | a scene is a diagram at 128 and noise at 40 |
 | Optical box | 116 px (margin 6), long axis fills ≥ 80 % of it | the lockup scales by authored size, so a timid icon draws small on the HUD |
 | Primary stroke | 11 px (5.2 at 60) | reads under the gauge fill and the cooldown veil |

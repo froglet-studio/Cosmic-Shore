@@ -10,8 +10,9 @@ A spec may carry `REBIND = [...]` with two kinds of step:
     dict(file="Assets/.../SquirrelHUDVariant.prefab", pair=dict(container="4425814395415128621",
          view="<view MonoBehaviour fileID>", children=[("JoustSelf", "Squirrel_JoustSelf", "joustSelfIcon"), ...]))
         the icon Image `container` becomes a transparent holder (no sprite, alpha 0) and gets one stretched child
-        Image per entry (name, icon, the view field that is pointed at it) - the Dolphin's jaw-pair arrangement,
-        for a card whose parts are tinted separately. Idempotent: an existing child of that name is left alone.
+        Image per entry (name, icon, the view field that is pointed at it; None for a part the view never tints,
+        e.g. a white ring) - the Dolphin's jaw-pair arrangement, for a card whose parts are tinted separately.
+        Idempotent: an existing child of that name is left alone.
 
 The guid of an icon is read from its .meta (the kit writes the meta before it rebinds). A rebind never touches a
 file it was not named for: the same placeholder sprite can be referenced from another prefab on purpose (the
@@ -163,7 +164,7 @@ def _apply_pair(text, step, icon_meta):
             text = text[:ra] + rblk + text[rb:]
         else:
             text = _set_in_block(text, fid_img, "m_Sprite", f"{{fileID: 21300000, guid: {guid}, type: 3}}")
-        if pair.get("view"):
+        if pair.get("view") and field:
             va, vb = _block(text, pair["view"])
             vblk = text[va:vb]
             if re.search(rf"^\s*{field}: ", vblk, re.M):

@@ -137,3 +137,6 @@ one thing right. then move on."
     `ElementalBarsConfigSO.blueColor`, the HUD's one blue). Prisms are `motifs.block()` - a box from front-above
     with its seams cut - after a notched band read as "the profile of a chocolate bar". The pair's `pair=` step
     inserts the view's fields after a named anchor (`after=`). Seam slivers trip the specks gate: exempt by name.
+29. **The ring stays white, and thinner.** A part the view never tints is still its own child (field None in the
+    `pair=` step) so it is not painted with the hull. 5 px. Garrett on the two pairs: "I really like where we
+    landed here on both because the icons are teaching the ability" - now the bar at the top of SKILL.md.
