@@ -75,7 +75,8 @@ Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now 
 
 ## Open decisions (owner: Garrett)
 
-1. **Initial element levels.** SP arcade spawns at level 5 in everything (`MiniGame.cs:61`) —
+1. **Initial element levels.** *(Since then the SP default became resting 0, and `MiniGame.cs` was retired on
+   2026-10-25; the legacy explore Play button keeps the 0 in `ArcadeExploreView`.)* SP arcade spawns at level 5 in everything (`MiniGame.cs:61`) —
    all upgrades ON at spawn; MP spawns at 0 — upgrades unreachable without crystals.
    *Recommendation:* spawn at resting 0 (or captain-authored levels) everywhere; let crystals +
    comeback drive progression. This makes the unlock an earned mid-match power spike in every mode.
