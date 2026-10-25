@@ -3201,6 +3201,20 @@ The steps below test these values.
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Party: B38 - a failed join's recovery stops when Play stops (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B38): `PartyInviteController`'s recovery and leave-lobby flows check
+`PlayEnded` after every await, so a flow still running when Play stops no longer loads Menu_Main or creates a
+UGS session in edit mode.
+**Verified without the editor:** `PartyRecoveryAfterPlayTests` (3) and the full edit-mode suite on Amoebius
+(618/622; the 4 known SceneTransitionManager / AppManagerBootstrap failures); `unity_refcompile` player and editor
+(only the known AuthenticationServiceFacade errors). `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. Two machines: the joiner direct-joins a party whose host then stops Play; while the joiner shows "Bouncing to
+   solo menu", stop Play on the joiner. Pass: no `Recovery failed` error after Play stops.
+2. Same, but let the bounce finish: the joiner lands in a working solo menu (the recovery still runs in Play).
+3. In a party, Leave Party and stop Play at once: no `Leave-lobby flow failed` error.
+
 ### 🔴 Party: B37 - the presence lobby create waits for Unity Services; its failures name their cause (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B37): `PresenceLobbyService.JoinOrCreateAsync` waits for Unity

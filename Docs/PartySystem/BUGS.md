@@ -45,6 +45,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
 | B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
 | B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
+| B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2362,4 +2363,29 @@ for the whole session; it now retries with back-off (3 s up to 60 s, `SchedulePr
 `Could not create presence lobby` error; a `Presence lobby not rejoined - retrying` warning, then the online list
 fills. Press Invite on a friend during the outage: the "Connection service not ready" toast.
 Ticket: T-20261025-3506 (#1524).
+
+## B38 — "Recovery failed" when Play stops during a failed join's recovery 🟡 (root-caused & fixed 2026-10-25)
+
+**Seen in.** Bug Ledger `E-41b7610878` (belac, 19 Oct: `Recovery failed (InvalidOperationException): This can
+only be used during play mode, please use EditorSceneManager.OpenScene() instead`, at
+`PartyInviteController.RecoverFromFailedTransitionAsync`, the Menu_Main load) and `E-0de9ec6c70` (Gradi, 3
+times, 2-28 Sep: `Recovery failed (ArgumentNullException): Value cannot be null. Parameter name:
+asyncOperation`). Both are marked **EditMode** in the ledger: they were logged after Play had stopped.
+
+**Cause.** After a failed join (or a lost host, B10), `RecoverFromFailedTransitionAsync` awaits the party
+leave and the Netcode shutdown (up to its shutdown timeout), then loads Menu_Main, then creates the solo
+session. The leave-lobby flow does the same. Stopping Play inside those awaits let the flow continue in edit
+mode: `SceneManager.LoadSceneAsync` throws there (Unity 6000.4), or returns null and UniTask's `ToUniTask`
+throws on it (6000.3). Had the load not thrown, `EnsurePartySessionAsync` would then have created a UGS
+session in edit mode, where nothing ever leaves it (the leak class behind B33/B34).
+
+**What changed.** `PartyInviteController.PlayEnded(flow)` is checked after every await in both flows and in
+their catch blocks: once Play has stopped (`IsPlaying`, Unity's flag; tests substitute it) or the controller
+is destroyed, the flow stops with a verbose line on the `Party` channel instead of loading a scene or
+creating a session. Held by `PartyRecoveryAfterPlayTests` (3). `ReconnectService`'s scene load is started by a
+button and has no report; it is unchanged.
+
+**Hand test.** Two machines: one joins a party that is not there (or the host stops Play mid-join), and the
+joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
+Play stops.
 

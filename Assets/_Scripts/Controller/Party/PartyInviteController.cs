@@ -533,12 +533,15 @@ namespace CosmicShore.Gameplay
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
                     await hcs.LeavePartySessionAsync().AsMainThread();
+                if (PlayEnded("leave-lobby flow")) return;
 
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct).AsMainThread();
                 _networkTransition.ClearStaleReferences();
+                if (PlayEnded("leave-lobby flow")) return;
 
                 await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single)
                     .ToUniTask(cancellationToken: ct);
+                if (PlayEnded("leave-lobby flow")) return;
 
                 if (hcs != null)
                     await hcs.EnsurePartySessionAsync().AsMainThread();
@@ -554,6 +557,7 @@ namespace CosmicShore.Gameplay
                 // Timeout / cancel continuations can land on the thread pool.
                 // Yield onto PlayerLoop.Update to land on Unity's main thread.
                 await UniTask.Yield(PlayerLoopTiming.Update);
+                if (PlayEnded("leave-lobby flow")) return;
                 CSDebug.LogError($"[PartyInviteController] Leave-lobby flow failed " +
                                $"({e.GetType().Name}): {e}");
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
@@ -681,6 +685,25 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(toastMessage)) bounceToastChannel?.ShowPrefix(toastMessage);
         }
 
+        /// <summary>Whether Play is running. Tests substitute it; it is Unity's own flag otherwise.</summary>
+        internal static Func<bool> IsPlaying { get; set; } = () => Application.isPlaying;
+
+        /// <summary>
+        /// True once Play has stopped or this controller is gone, so the flow that awaited must stop
+        /// (B38, Docs/PartySystem/BUGS.md). The recovery and the leave-lobby flow await the party leave and
+        /// the Netcode shutdown (seconds, with a timeout) before loading Menu_Main; when Play stopped in that
+        /// window, the load ran in edit mode and threw ("This can only be used during play mode", Bug Ledger
+        /// E-41b7610878; on Unity 6000.3 a null operation, "Value cannot be null. Parameter name:
+        /// asyncOperation", E-0de9ec6c70), and the solo session after it would have been created in edit
+        /// mode, where nothing ever leaves it.
+        /// </summary>
+        private bool PlayEnded(string flow)
+        {
+            if (IsPlaying() && this != null) return false;
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] Play ended during the {flow} - stopping it.");
+            return true;
+        }
+
         /// <summary>
         /// Restarts the local NetworkManager host so the user returns to a functional
         /// menu state after a failed transition.
@@ -690,6 +713,7 @@ namespace CosmicShore.Gameplay
             // Recovery may be entered from a thread-pool continuation; land on
             // PlayerLoop.Update to guarantee main thread before touching anything.
             await UniTask.Yield(PlayerLoopTiming.Update);
+            if (PlayEnded("recovery")) return;
             CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Attempting recovery - recreating solo Relay session");
 
             // A spectate that failed or lost its host must not leave the approval payload armed:
@@ -711,18 +735,22 @@ namespace CosmicShore.Gameplay
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
                     await hcs.LeavePartySessionAsync().AsMainThread();
+                if (PlayEnded("recovery")) return;
 
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, CancellationToken.None).AsMainThread();
                 _networkTransition.ClearStaleReferences();
+                if (PlayEnded("recovery")) return;
 
                 await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single)
                     .ToUniTask();
+                if (PlayEnded("recovery")) return;
 
                 if (hcs != null)
                     await hcs.EnsurePartySessionAsync().AsMainThread();
             }
             catch (Exception e)
             {
+                if (PlayEnded("recovery")) return;
                 CSDebug.LogError($"[PartyInviteController] Recovery failed ({e.GetType().Name}): {e}");
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
