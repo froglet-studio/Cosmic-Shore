@@ -51,17 +51,17 @@ def squirrel_nose(box, cx, cy, roll=0.0):
                                          pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
 
 
-HALF = dict(box=57, dilate_px=1.8)      # each hull of the pair: fitted to 57 px, the noses 2 px apart at the centre line
+HALF = dict(box=54, dilate_px=1.8)      # each hull of the pair: fitted to 54 px, the noses 8 px apart ("separate them a bit")
 
 
 def joust_self():
-    """The player's Squirrel, right-facing, in the LEFT half: nose at x 63."""
-    return squirrel(HALF["box"], 34.5, 64, dilate_px=HALF["dilate_px"])
+    """The player's Squirrel, right-facing, in the LEFT half: nose at x 60."""
+    return squirrel(HALF["box"], 33, 64, dilate_px=HALF["dilate_px"])
 
 
 def joust_other():
-    """The opponent, the same hull the same size mirrored, in the RIGHT half: nose at x 65, nose to nose."""
-    return mesh_silhouette.silhouette(FBX, box=HALF["box"], cx=93.5, cy=64, dilate_px=HALF["dilate_px"], mirror=True,
+    """The opponent, the same hull the same size mirrored, in the RIGHT half: nose at x 68, nose to nose."""
+    return mesh_silhouette.silhouette(FBX, box=HALF["box"], cx=95, cy=64, dilate_px=HALF["dilate_px"], mirror=True,
                                       pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
 
 
