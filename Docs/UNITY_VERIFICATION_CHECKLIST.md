@@ -3171,6 +3171,38 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The Scarab AI's Regatta line set from Yash's two Scarab races (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** the Scarab's race line `LaneShare` 0.60 → 0.788 (`race_lines_learned.json` → `author_race_lines.py` →
+`Resources/RaceLines/Scarab_Regatta`). Yash crossed the I2 rings a median 63 u out of the 88 u mouth (37 crossings, two
+unfinished races). Set by hand at his ask; the learner replaces it at the third finished Scarab race. No C# changed.
+**Verified without the editor:** `author_race_lines.py --check`, `learn_drives_from_flights.py --check`.
+**Verify in editor:**
+1. Regatta I2 and I3 with a Hard AI Scarab, Third Eye with trails: it flies about four fifths of the way out from the
+   braid, never crosses a rail, and threads the rings without the wide miss-and-swing of 2026-10-23.
+2. `regatta_rival_report.py --hull scarab` on that race: rings per minute and its state shares.
+
+### 🔴 Two AIs that sat out whole Regatta races: the Dolphin frozen in a start-line drift, the Urchin on a rival's lane (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **Dolphin:** `AIPilot` commits a drift only at `commitMinSpeed` (20 u/s) or faster, and on a hull whose drift keeps
+  its speed (`VesselTransformer.HoldsSpeedWhileDrifting`) only at `commitUpToSpeedShare` (0.9) of its throttle target.
+  It lets go of a commit drift that falls under 20 u/s. Applies to every hull that commits drifts.
+- **Urchin:** a dry crawl on a rival's lane is left after `MaxDryCrawlSeconds` (4 s), and a free Urchin beside a
+  rival's lane aims 20 u past its own lane, away from the rival lane.
+
+Why: in Yash's 2026-10-25 Stoat race the AI Dolphin held 0 u/s, drifting, for 60 s. In two 2026-10-20 I4 races the AI
+Urchin crawled the human's lane at 42-48 u/s for 105 s.
+**Verified without the editor:** `unity_refcompile` editor config, `RegattaStuckAITests` written (not run).
+**Verify in editor:**
+1. Regatta I1 and I2 with an AI Dolphin, Third Eye on it: it leaves the start line at cruise and races (rings
+   thread, speed well above 0). Its boost line reads "charging in the drift" only while it is moving.
+2. Regatta I4 with you on Jade and ONE AI Urchin: it reaches its own lane within a few seconds and rides at about
+   300 u/s. In the recording (`regatta_rival_report.py --hull urchin`) it is boosted most of the race.
+3. Squirrel / Manta / Rhino AIs: no change in how often they drift (their drift does not hold speed, so only the
+   20 u/s floor applies).
+4. Run `RegattaStuckAITests`, `UrchinRailAssessmentTests`.
+
 ### 🔴 Arena vessel picker: < > arrows and a sliding hull strip, so every hull can be picked (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `ConfigureArenaView.prefab` gains `PrevVesselButton` / `NextVesselButton` (two `KitButtonSmall`

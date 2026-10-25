@@ -224,6 +224,15 @@ namespace CosmicShore.Gameplay
         public static bool IsDryCrawl(bool hostile, bool rideSlowed, bool convertible, bool canAffordSpike) =>
             hostile && rideSlowed && (!convertible || !canAffordSpike);
 
+        /// <summary>
+        /// A dry crawl that began at <paramref name="since"/> (negative = none) has gone on longer than
+        /// <paramref name="maxSeconds"/>: leave the rail whatever <see cref="Decide"/> said. A rival's lane in Regatta
+        /// threads EVERY ring (all three lanes pass through each mouth), so the arc test alone keeps a pilot that
+        /// latched one crawling it ring after ring.
+        /// </summary>
+        public static bool DryCrawlTooLong(bool crawlingDry, float since, float now, float maxSeconds) =>
+            crawlingDry && since >= 0f && now - since > maxSeconds;
+
         static bool Threads(in UrchinRailScan scan, float capture, bool crawlingDry, float dryCrawlArc) =>
             scan.Valid && scan.MinDistance <= capture && (!crawlingDry || scan.ArcToMin <= dryCrawlArc);
 

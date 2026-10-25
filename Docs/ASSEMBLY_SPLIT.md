@@ -191,7 +191,7 @@ Moving them into `CosmicShore.Data` is a small, mechanical, independently-review
 and it takes the SOAP layer from 19 dirty files to about 9.
 
 The rest are real coupling and need real decisions: `IVessel` / `IVesselStatus` /
-`VesselImpactor` (`ScriptableClassType`), and `MiniGameHUD` / `ShipHUD`
+`VesselImpactor` (`ScriptableClassType`), and `MiniGameHUD` / `VesselHUD` (was `ShipHUD`)
 (`ScriptableVesselHUDData`) — a SOAP channel that carries a *HUD MonoBehaviour* as its payload
 is the coupling, and re-pointing it at an interface is a design change, not a move.
 

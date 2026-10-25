@@ -183,7 +183,13 @@ Before this, an attached AI aimed down whatever rail it had latched — right on
 pilot on a rival's lane crawled at 20 u/s for the rest of the race. **Unmeasured:** after a Slip the
 pilot flies back at the ring through the braid and may re-latch a rival's lane (1.5 s
 `MinSlipIntervalSeconds` bounds the loop); how often an AI Urchin ends up on its own lane is a
-playtest number. Every other hull is untouched — none attaches, and the driver finds every
+playtest number. **Measured 2026-10-25** from 17 recorded races with an AI Urchin rival: on its own lane in 15 (300-304
+u/s, won 10), on the human's lane in 2 (both I4 Hard, the only AI; within 14 u of it for 96% of the race at 42-48 u/s,
+5-10 of 24 rings in 105 s). Two fixes, NOT editor-verified: a **dry-crawl cap** (`UrchinAutopilotConfigSO.MaxDryCrawlSeconds`
+4 s, `UrchinRailAssessment.DryCrawlTooLong`: the arc test keeps a crawl that threads the next ring, and a rival's lane
+threads every ring, so without a cap it crawled ring after ring), and a **stand-off approach** (`RegattaController
+.OwnLaneApproach`: a free Urchin nearer a rival's lane than its own, within `aiRivalLaneClearance` 30 u, aims
+`aiOwnLaneStandOff` 20 u past its own lane straight away from the rival point, so it leaves that rail at once). Every other hull is untouched — none attaches, and the driver finds every
 control by capability. `AIPilot` is unchanged. The AI templates are
 `Random`, so the bot grid draws its hulls from the card. The Manta's boost has an autopilot
 drive; the Rhino's ramp did NOT engage for an AI (2026-10-14 audit: the press only comes from a human input
@@ -304,14 +310,15 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   careful follows the line tightly with 1.5x. Every AI seat draws its own risk round the hull's (seeded per seat), so a
   grid has careful and bold pilots of the same hull. Starting values: Rhino 0.80 / 18 u / 0.40 (biggest, fastest:
   out wide, safer; line set 2026-10-24 from Yash's six Rhino races: 0.676), Manta 0.70 / 16 / 0.50 (line learned 2026-10-24: 0.809), Dolphin 0.60 / 12 / 0.50 (line set 2026-10-24 from Yash's one Dolphin race: 0.785), Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
-  0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45.
+  0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45 (line set 2026-10-25 from Yash's two Scarab races: 0.788).
 - **Learned from people**: `learn_drives_from_flights.py` measures where a person crosses the rings in their fastest
   three finished races of a hull and writes that hull's `LaneShare` (`race_lines_learned.json`, read by the
   generator). Each crossing is scaled by its OWN ring's mouth (an I1 crossing read against the I3 mouth looked far
   wider: the Rhino's six races read 0.815 that way and 0.676 crossing by crossing, I1 0.676 and I3 0.672). The Manta's
   line is learned (0.809). The Rhino's 0.676 was SET BY HAND on 2026-10-24 (Yash's ask) from all six of his Rhino races,
   four of them unfinished, because only two finished; the learner replaces it at the third finished race. The Dolphin's 0.785 was set by hand the same day from Yash's one
-  Dolphin race (I1, 22 crossings, unfinished); the learner replaces it at the third finished race too.
+  Dolphin race (I1, 22 crossings, unfinished); the learner replaces it at the third finished race too. The Scarab's 0.788
+  was set by hand on 2026-10-25 from Yash's two Scarab races (I2, 37 crossings, both unfinished: the AI Stoat won).
 - **Steering** (`GateRaceController.TryRaceLine`, overridden here): asked after the difficulty belief and the
   missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
   the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second

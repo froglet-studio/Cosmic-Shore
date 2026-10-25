@@ -1414,7 +1414,7 @@ The scoreboard swaps its buttons to host-only **Continue**; the connecting panel
 
 ### The reparenting pipeline (important for any redesign)
 
-Each vessel prefab carries its own overlay canvas with the vessel HUD inside. On spawn, `ShipHUD` (`Assets/_Scripts/Controller/Vessel/VesselHUD.cs` — marked "TODO: remove this class") raises a SOAP event, and the game HUD **rips the vessel HUD's children out of the vessel prefab and reparents them under the game canvas** at sibling index 0 (so they draw under modals). **Three near-identical copies of this reparent loop exist** (`MiniGameHUD`, `MenuMiniGameHUD`, `GameCanvas`). Consequence: the runtime hierarchy matches no authored prefab — laying out in-game UI in the editor shows a false picture (see §5.7).
+Each vessel prefab carries its own overlay canvas with the vessel HUD inside. On spawn, `VesselHUD` (`Assets/_Scripts/Controller/Vessel/VesselHUD.cs`, `ShipHUD` until 2026-10-25 — marked "TODO: remove this class") raises a SOAP event, and the game HUD **rips the vessel HUD's children out of the vessel prefab and reparents them under the game canvas** at sibling index 0 (so they draw under modals). **Three near-identical copies of this reparent loop exist** (`MiniGameHUD`, `MenuMiniGameHUD`, `GameCanvas`). Consequence: the runtime hierarchy matches no authored prefab — laying out in-game UI in the editor shows a false picture (see §5.7).
 
 ### Coverage
 

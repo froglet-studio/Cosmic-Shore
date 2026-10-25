@@ -218,7 +218,8 @@ same ledger issues. Keep it a pure function — no editor types, no statics with
 
 Auto-capture guard rails: own `[BugLedger]`/`[CrashDetector]` console lines are excluded, a
 bounded queue absorbs storms (dedupe makes drops harmless), an **auto-issue cap** stops a runaway
-error generator from minting files, and occurrence updates are throttled to **one file write per
+error generator from minting files (it counts open issues seen in the last 30 days; counting every
+issue ever filed stopped a months-old ledger filing anything new), and occurrence updates are throttled to **one file write per
 issue per editor session** — so a published issue doesn't flip to pending-MOD on every single
 occurrence.
 
