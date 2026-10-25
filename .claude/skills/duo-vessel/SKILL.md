@@ -22,7 +22,10 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
 > `WrasseCrewBodies`, `OrcaCrew`, `CrewSeatChoice`), so this branch's move of the Wrasse onto
 > `ICrewSeat` was withdrawn in the merge in favour of theirs. Their plan takes it from here:
 > `Controller/Vessel/Crew/KITE_NAVIGATOR.md` "Two humans, two seats", step 2 (Garrett with Yash). The Wrasse row below
-> is that target; `check_crew_vessels.py` lists the Wrasse and the Honeyguide as PENDING until then. (Marlin and Jacks was a crew too
+> is that target; `check_crew_vessels.py` lists the Wrasse and the Honeyguide as PENDING until then. Since 2026-10-23
+> every crew, the Goby included, is on `ICrewStations` (who sits in which seat, `Docs/CREW_STATIONS.md`); `ICrewSeat`
+> stays the seat the card names. Whether the others join `ICrewSeat` or it folds into `ICrewStations` is the crew
+> owners' call (`Docs/REFACTOR_BACKLOG.md` S64). (Marlin and Jacks was a crew too
 > until 2026-10-21, when Garrett reduced it to the Jacks: one player who herds or flies the two fish, no second seat;
 > `R_VesselActions/JACKS.md`.)
 

@@ -92,6 +92,43 @@ Panel rather than into lavalamp Home UI ... This should be the general flow").
    host controls), ready-up works.
 6. No regression: first boot opens on HOME; enter freestyle during the splash and nothing opens over you.
 
+### 🔴 Camera feel: G-force (lag, drift slide, neck), impact shake, skim and drift rumble, recoil (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/CAMERA_FEEL.md`. `CustomCameraController` adds a feel layer after its pose and takes it off
+before the next (`ApplyFeel` / `UndoFeel`); events come from `SkimmerImpactor`, `VesselImpactor`, `ExplosionImpactor`,
+`ProjectileImpactor` and `Gun` through `VesselCameraFeel`; every number is on `Resources/CameraFeelConfig.asset`
+(new). `AccessibilitySettings.CameraShakeIntensity` now scales the feel and the legacy `Shake`.
+
+**Verified without the editor:** `unity_refcompile` player OK (0 errors in project code; negative control: a planted
+error in `CameraFeel.cs` is reported); editor config 0 errors in changed files. `CameraFeelTests` on the engine's
+edit-mode runner (`prisma_edit_mode_tests`), with `CameraLookAheadTests`, `FollowHeightScaleTests` and
+`RearViewLawTests` beside it. Gates: console logging, conditional compilation, far clip, Mathf params, using
+directives.
+
+**Verify in editor (any hull, Toybox freestyle is quickest):**
+1. Run `CameraFeelTests` (EditMode): all pass.
+2. Cruise straight: the hull holds its place on screen (a very slow breathing drift only). Boost: the hull pulls a
+   little ahead, then settles back when the boost holds. Turn hard: the hull leads into the turn.
+3. Skim a trail (Squirrel): a fine wiggle that builds with a dense skim and fades after; each prism nudges away from
+   its side.
+4. Ram a prism: a short shove toward the hull, a tilt and a thud of shake; a super-shielded or large environment prism
+   lands harder than a Sparrow trail.
+5. Drift (Squirrel or Dolphin) at speed: the hull slides clearly off the centre (about 8% of the follow distance,
+   more on a small agile hull), building with an accelerating start and a small overshoot, never a straight-line
+   ease; the view leans outward like a neck under G and wobbles faintly; it swings back on release. A slow drift
+   slides less. A boost tips the view slightly nose-up. Round 2 (2026-10-25), after Yash's Squirrel flight.
+5b. Hull size: in the Debug Inspector on the gameplay camera, `_feelHullSize` reads each hull's size (a
+   Squirrel a few units, an Orca tens) and `_feelGForce` falls as size grows; an Orca feels clearly less G, and
+   slower, than a Manta.
+6. Fire (Sparrow full-auto, Urchin spikes): a small recoil per shot, no buzz.
+7. Rear view, the Butterfly's fold placement (no feel while aiming), a wormhole transit and the Thresher's spectate
+   vantage: nothing jumps.
+8. Settings: camera shake at 0 removes all of it, the older shakes too; at 1 they are as before.
+
+**First-pass tuning** (`CameraFeelConfig`): max lag 6% of the follow distance, impact shove 3.5%, impact trauma 0.5,
+skim nudge 0.4%, rumble 0.3 deg, drift slide 8%, neck roll 3.5 / pitch 1.5 deg at full G, G spring 1.3 Hz damping
+0.7, recoil 0.6%, breathing 0.1 deg; size G (5 / size)^0.35 in 0.55..1.4; table G 0.4 (Starling) to 1.15 (Squirrel). If it all reads too strong or weak, change `strength` first.
+
 ### 🔴 Manta tilt yaw un-flipped; Dolphin one-thumb response curve (`cece/amazing-franklin-4lp0mk`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `TouchControlProfile.flipTiltSteer` split into `flipTiltSteerPitch` (`FormerlySerializedAs`) and
@@ -3135,6 +3172,20 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 3. It threads rings at ramp speed without circling them; note its I1-I4 times against the roadmap table.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
+
+### 🔴 The flight recorder keeps each rival's state (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder.RecordRivalState` writes `rivalState` per rival per sample (state bits incl. AI /
+breaking off / restricted, BoostMultiplier, the AI boost driver's status as an index into `rivalBoostStatuses`, the
+objective phase, course-vs-nose degrees); `regatta_rival_report.py --hull <hull>` summarises it. Reads the AI through
+`TryGetComponent`, never the `VesselStatus.AIPilot` getter.
+**Verified without the editor:** `unity_refcompile` (player-dev), `regatta_rival_report.py --self-test`.
+**Verify in editor:**
+1. Race Regatta with an AI Rhino on the grid; after Play stops, the new `flight_Regatta_*.json` has `rivalState`,
+   `rivalStateColumns`, `rivalStateBits` and a `rivalBoostStatuses` list that names the Rhino's ramp statuses.
+2. `python3 Tools/Build/regatta_rival_report.py --dir <the Flights folder> --hull rhino` prints a "breaking off ...,
+   boosted ...; <status shares>" line under that race. If the Rhino again holds 50 u/s, that line says why.
+3. The Console stays clean while recording (no new errors or warnings).
 
 ### 🔴 The Dolphin AI's Regatta line set from Yash's one Dolphin race (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 
@@ -14044,6 +14095,27 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — LT / RT page the screens only from the top tab bar (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §64. Changed `ScreenSwitcher`, `MenuSpotlight` (keyboard held on the guide's path), `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity`
+(top nav: Submit entries, keycaps out of pad navigation), `NavBarPadFocusTests` (new). What ran instead of
+`/verify-unity`: see the PR's Verification section.
+1. Menu_Main with a pad, Hangar, the pad on a vessel tile (e.g. Sparrow): LT / RT do nothing (no screen change).
+2. D-pad up from the Hangar: the pad lands on a top tab and its sky-blue focus ring shows (never on the LT / RT
+   keycaps). RT now pages to the Ark, and the ring moves to ARK with the underline; RT again pages to Home; LT back.
+   PORT is still skipped.
+3. On the bar, D-pad left / right moves the ring between tabs; A on a tab opens that screen and the ring stays on the
+   bar. D-pad down enters the screen; LT / RT stop paging again.
+4. Home: with the pad on the HOME tab, A does not open the Arcade; D-pad down to the hub row, A opens what is selected.
+   With nothing selected on Home, A still opens the Arcade.
+5. Open the Arcade (or Settings) and press D-pad up repeatedly: the pad never leaves the window onto a tab. Inside a hub
+   window, LT / RT still slide between Toy Box / Arcade / Arena / Mission.
+6. Mouse: clicking a tab, or the LT / RT keycaps, still pages exactly once (PORT plays its Denied sting once). Hovering
+   a tab still lifts its word; no ring appears for a click.
+7. First-login guide (a fresh profile, or replay the guide), keyboard only, no pad connected: the arrow keys never leave
+   the spotlit control (nor reach a top tab), and Enter presses the spotlit control. With the mouse only, no focus ring
+   appears anywhere until a key is pressed.
+
 ## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
 Docs/MENU_REDESIGN_B.md §63. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`
@@ -14433,3 +14505,33 @@ RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPT
 1. Release, Menu_Main (Garland), fly the freestyle vessel through the flora and swing the camera: spindles still
    step between braid / converging braid / thread with no visible pop.
 2. The next Menu_Main auto-capture: `SpindleLod.Drain` max total ms per frame about 3 ms or less (was 14.7).
+
+## 🔴 2026-10-25 — Spindle LOD far batches update incrementally (unverified: no Unity CLI in the session)
+
+**File:** `SpindleLodSystem.cs` (`JoinBatch`, `LeaveBatch`, `Rebuild`). Ran instead: refcompile player-dev OK,
+SpindleLodTests 17/17 on the engine runner (no test covers the batches).
+
+1. Release, Arcade > Wrecking Ball, play 2 minutes past the auto-capture. Far spindles (the braids and threads in the
+   distance) are all still drawn, none blinks out at the screen edge, none is drawn where a limb used to be.
+2. In the capture: `SpindleLod.Draw` well under the 9.3 ms/frame of 10-22, `SpindleLod.Drain` at or under ~3 ms.
+3. Menu_Main (Garland): the same look checks while flying through the flora.
+
+## 🔴 2026-10-25 — Regatta: the race line's aim is a path lead (no break-off) and never cuts a mouth (unverified: no Unity CLI in the session)
+
+**Files:** `AIPilot.cs` (`MarkAimAsPathLead`, `UpdateOrbitBreak`), `GateRaceController.cs` (marks the line's aim),
+`RegattaRaceLine.cs` (`AimThroughRing`, `DistanceAlong`), `RegattaController.cs` (`TryRaceLine`). What ran instead of
+`/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files (the 3 known
+`AuthenticationServiceFacade` errors only); `regatta_line_sim.py --self-test`. `Arcade/REGATTA.md` §6.3.
+
+1. Run the edit-mode tests `RegattaRaceLineTests` (the four new `AimThroughRing_*` / `DistanceAlong_*`) and
+   `RegattaNoCrystalTargetTests`: all pass.
+2. Regatta, I3, Hard rivals, a grid with a Manta, a Scarab, a Rhino and a Sparrow (the Third Eye, FrogletTools > AI >
+   Third Eye, Follow on each in turn). No AI flies off its line in a wide loop (500 u or more) between two rings; the
+   Manta and the Scarab thread the rings on bends instead of passing just beside them.
+3. Same at I1 and I4: every AI hull finishes its laps; the Third Eye's objective label stays on Approach on the line
+   (Misjudged only on Easy / Medium, as before).
+4. Any other gate race (Headlong, Skein) and any crystal mode: AIs still break off a crystal they circle (the flag is
+   only set by Regatta's line).
+5. After a few races, run `python3 Tools/Build/regatta_rival_report.py --dir <your flights> --since 2026-10-26`: rings
+   a minute per hull should rise from 5.5-9.3 toward the model's (Manta ~22, Scarab ~27, Rhino ~11).
+

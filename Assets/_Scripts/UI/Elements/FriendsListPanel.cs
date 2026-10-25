@@ -988,8 +988,7 @@ namespace CosmicShore.UI
                 var go = _spawnedRequests[i];
                 if (!go) { _spawnedRequests.RemoveAt(i); continue; }
 
-                var entry = go.GetComponent<RequestInfoEntry>();
-                if (entry == null) continue;
+                if (!go.TryGetComponent(out RequestInfoEntry entry)) continue;
                 if (entry.PlayerId != playerId || entry.EntryKind != kind) continue;
 
                 Destroy(go);

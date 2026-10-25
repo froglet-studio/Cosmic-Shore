@@ -43,6 +43,14 @@ namespace CosmicShore.UI
         [SerializeField] private string meterLine = "Intensity {level} of {max}";
         [Tooltip("A goal row. {level} is the intensity it unlocks.")]
         [SerializeField] private string goalLine = "Unlock intensity {level}";
+        [Tooltip("The state line on a claimed quest.")]
+        [SerializeField] private string completedLine = "Completed";
+        [Tooltip("The state line on a quest whose reward waits to be claimed.")]
+        [SerializeField] private string readyLine = "Ready to claim";
+        [Tooltip("The state line on an unlocked quest still being played.")]
+        [SerializeField] private string inProgressLine = "In progress";
+        [Tooltip("The state line on a locked quest.")]
+        [SerializeField] private string lockedLine = "Locked";
 
         [Header("Style-B Card")]
         [Tooltip("The chrome theme.")]
@@ -153,7 +161,7 @@ namespace CosmicShore.UI
 
             if (stateText)
             {
-                stateText.SetText(claimed ? "Completed" : ready ? "Ready to claim" : progress ? "In progress" : "Locked");
+                stateText.SetText(claimed ? completedLine : ready ? readyLine : progress ? inProgressLine : lockedLine);
                 stateText.SetColorToken(ready ? UIColorToken.Cta : UIColorToken.NeutralLightest);
             }
             if (titleText) titleText.SetColorToken(locked ? UIColorToken.NeutralLightest : UIColorToken.TextLight);

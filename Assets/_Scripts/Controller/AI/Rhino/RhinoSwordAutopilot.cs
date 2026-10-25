@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] ShieldSkimmerScaleConfigSO swordConfig;
 
-        enum Intent { Rest, Stroke, Recover, Stance }
+        enum Intent { Rest = 0, Stroke = 1, Recover = 2, Stance = 3 }
 
         readonly List<Prism> _nearby = new(64);
         Intent _intent;

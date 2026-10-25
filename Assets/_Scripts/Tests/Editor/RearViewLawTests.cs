@@ -338,7 +338,10 @@ namespace CosmicShore.Tests
             // now the only thing switching it off.
             string code = Code(PipPath);
             Assert.IsTrue(code.Contains("void Awake"), "Pip must keep its Awake default-off.");
-            Assert.IsTrue(Regex.IsMatch(code, @"Awake\(\)\s*\{[\s\S]{0,200}SetCameraActive"),
+            // Anywhere in Awake's body before its first closing brace, not within a fixed character
+            // window: the stripped comments leave their indentation behind, and the unwired-camera
+            // fallback (FindOwnPipCamera) sits ahead of the call, which pushed it past the old 200.
+            Assert.IsTrue(Regex.IsMatch(code, @"void Awake\(\)\s*\{[^}]*\bSetCameraActive\("),
                 "Pip.Awake must still stand its camera down.");
         }
 
