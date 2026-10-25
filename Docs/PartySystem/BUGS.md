@@ -43,6 +43,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 | B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
+| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2284,4 +2285,45 @@ differed in these tests: the logs carry only the host's one-line refusal.
 **Hand test.** Two machines on this commit: one hosts a party, the other direct-joins (and once by
 accepting an invite). Pass: the joiner lands in the party, no `NetworkConfig mismatch` on the host. If it
 still fails, send the logs; `net_logs.py show` will name the prefab or setting.
+
+## B36 — The Relay drops the host after the game freezes 🟠 (root-caused 2026-10-25; the freeze itself is not fixed)
+
+**Seen in.** Bug Ledger `E-4d0d17e44b` ("Received error message from Relay: player timed out due to
+inactivity", 16 sightings), `E-0a098d80df` ("Relay allocation is invalid", 16), `E-fda866d511` ("Failed to
+establish connection with the Relay server", 11), `E-e5ff2abb8c` ("Transport failure! Relay allocation needs to
+be recreated", 10) and `E-e6054bc064` ("Host is shutting down due to network transport failure", 10). In the
+multiplayer test logs: the owner's 20 Oct test (`owner-20261020_195824`, solo against AI in Bloomrush) lost its
+host three times in 20 minutes, each time about 3 s after the Bloomrush scene was torn down (twice on the way
+back to the menu, once on a Bloomrush replay). Each ended in `Bouncing to solo menu: Connection lost`.
+
+**Not this bug.** The `Received error message from Relay: not connected` lines in Caleb's and Gradi's 21-23 Oct
+joins are the joiner's side of B35 (the host refused the connection).
+
+**Cause.**
+1. Unity Relay disconnects a player it has heard nothing from for about 10 s. Our UnityTransport pings the
+   Relay every 0.5 s (`m_HeartbeatTimeoutMS: 500` on `NetworkManager.prefab`; UTP 2.7.4 `RelayLayer` sends a
+   ping when nothing else went out). Those pings go out from the transport's update on the main thread, so
+   a frame that lasts 10 s sends nothing.
+2. The owner's Bloomrush flights record a mean frame of 190, 290, 273 and 300 ms (676 ms in one short run),
+   against 17-21 ms for every other mode on the same machine. Between "return to menu" (`AppState ->
+   MainMenu`) and the Bloomrush scene's unload, about 85 s passed with nothing logged. The Single-mode load's
+   final frame (destroy the Bloomrush scene, build Menu_Main, unload unused assets) is the likely 10 s freeze.
+   The logs had no frame timing, so this is inferred, not measured.
+3. Gradi's 19 Oct boot drop (`Failed to establish connection with the Relay server (server didn't answer any
+   BIND message)`) followed `HCS retry did not finish within 15s`: an allocation that sat unused about as
+   long. Same family, not proven.
+
+**What changed (2026-10-25).**
+- `FrameStallWatch` (`Assets/_Scripts/Utility/`): while the NetworkManager is listening, a frame of 3 s or
+  more is recorded in the session record as `stall` ("12.4s in MinigameBloomrush"). One of 9 s or more also
+  warns that Relay may drop the session. Resets at Play start; runs every frame from Play start.
+- `MultiplayerSetup.OnTransportFailure` records `relayDrop` with the freeze it followed ("after a 12.4 s freeze
+  2.9 s earlier") or "no freeze in the last 30 s".
+- `net_logs.py show` prints each player's `longest freeze` on its summary line.
+- Held by `FrameStallWatchTests` (5) and the `net_logs.py --self-test` checks.
+
+**Still open.** These changes make the next drop name its cause; they do not stop the freeze. If the next log
+shows a `stall` of 10 s before the `relayDrop`, the fix is in the freezing frame: profile the Bloomrush to
+menu load (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, `/perf-hunt`) and why Bloomrush runs at 3-5 fps on that
+machine. If it shows "no freeze", the drop is a network fault and needs a different look.
 

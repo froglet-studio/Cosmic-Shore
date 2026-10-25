@@ -3181,6 +3181,15 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 `LookaheadSeconds` 1.016 -> 0.93, `LookaheadMin` 26.8 -> 60, `MassGuardMargin` 1.298 -> 1.379, `StickGainPerDegree`
 0.041 -> 0.032. No code changed (`SkimRaceDriver` already takes the face from `SkimHeight`'s sign). Why:
 `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §8; numbers: `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md`.
+**Re-learned 2026-10-25** (policy `regatta-learned-20261025-3flights`). Races written 23/24 before the recorder fix now
+count as finished, so the three fastest finished races changed:
+- `SkimHeight` -6.498 -> **-5.948**: same face, 0.55 u nearer the rail.
+- `LookaheadSeconds` 0.93 -> **1.03**.
+- `LookaheadMin` 60 -> **70**.
+- `StickGainPerDegree` 0.032 -> **0.025**.
+- The margins are unchanged.
+
+The steps below test these values.
 **Verified without the editor:** `author_skimrace_ai_config.py --check`, `learn_from_flights.py --self-test`.
 **Verify in editor:**
 1. Regatta I1, solo, Squirrel against AI Squirrels (or let the AI fly your hull: Third Eye ▸ Pilots ▸ AI). Watch an AI
@@ -3191,6 +3200,23 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 3. To compare with the old AI: `git revert` this commit's asset change (one file), race again, compare.
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
+
+### 🔴 Net: B36 - a game freeze is recorded, and a Relay drop names the freeze it followed (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B36): `FrameStallWatch` records any frame of 3 s or more while the
+NetworkManager is listening (`stall` in the session record; a warning at 9 s, since Relay drops a connection
+after about 10 s of silence). `MultiplayerSetup.OnTransportFailure` records `relayDrop` naming the freeze it
+followed. `net_logs.py show` prints each player's longest freeze.
+**Verified without the editor:** `FrameStallWatchTests` (5) and the full edit-mode suite on Amoebius (612/616; the
+4 failures are the known SceneTransitionManager / AppManagerBootstrap ones); `net_logs.py --self-test`;
+`unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. Play online and stay in the menu: no `stall` events and no warning (the watch costs one clock read per frame).
+2. In the menu, pause the editor (Pause button) for 12 s and resume. The console shows the `[Net] The game froze
+   for 12.0 s ...` warning; the multiplayer log has a `stall` event. If the Relay then drops, its `relayDrop`
+   says "after a 12.0 s freeze".
+3. Play Bloomrush solo against AI to the end and back to the menu, then `net_logs.py show 1`: read the longest
+   freeze on the summary line.
 
 ### 🔴 Party: B31 fixed again - lobby reads one second apart (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 
@@ -3326,8 +3352,11 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
 - **The last ring is counted.** It takes one last sample on the frame the race ends, so a finished race is written 24/24.
   Before, 12 of Yash's 13 finished races read 23/24, their last sample 2–19 u short of ring 24.
 - **The hull, mode, domain, target and intensity are named when recording starts**, so a race left mid-way no longer
-  writes hull "Unknown" with raceTarget 0. A race that ends short of its target is marked `"ended":"race left before the
-  finish"`.
+  writes hull "Unknown" with raceTarget 0. `ended` says how the turn ended: `race over` when the match ended by its
+  own rules (you finished, a rival won, a mode with no ring target ended), `left before the end` when the match was gone
+  that frame (back to the menu), `play stopped` when Play stopped. Whether you finished is `finished`. (Fixed
+  2026-10-25: the first cut marked every race short of the ring target "race left before the finish", which mislabelled
+  21 races a rival won and 22 flights of modes without rings.)
 - **`buttonEvents`** `[t, InputEvents value, 1 pressed / 0 released]`, with a `buttonNames` map. It holds the pilot's
   own presses (abilities, stick actions, flip), with no IdleAction and nothing while the AI holds the hull.
 - **No labels are typed.** `racing_line.py` reads each leg's style (rail, drift, ability, boost, plain, rival
@@ -3344,7 +3373,14 @@ within 30 u of the last ring. `Tools/Build/racing_line.py` is new (`Docs/AI_SYST
 3. Drift through a few turns and ride your own rail for a stretch: `python3 Tools/Build/racing_line.py --dir <Flights folder>`
    shows those legs under `drift` and `rail` in its styles table.
 4. Start a race and go back to the menu mid-way: if it is stored, its hull is `Squirrel` (not Unknown), `raceTarget` is
-   24, and `ended` is `race left before the finish`.
+   24, and `ended` is `left before the end`. Lose a Regatta race to a rival, and play a Skim Race: both are `race over`.
+
+**Shown by the stored flights (2026-10-25, 73 flights from 6 people since the fix):**
+- No flight is written one ring short any more; the finished Regatta races read 24/24.
+- No hull "Unknown" after 2026-10-17 06:26.
+- 70 of 73 flights carry button presses.
+
+Steps 1 and 2 are met by that data; steps 3 and 4 still need a run in the editor.
 
 ### 🔴 AI training recorder: flight/3 records the situation (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
@@ -6198,6 +6234,22 @@ clears `scheduledByOwner` and `ownerScratch` and zeroes `scheduledActionCount`
 1. The project compiles: the console shows no `CS0103` for `PrismTimerManager.cs`.
 2. Play any arcade mode with prisms, then return to the menu (this unloads the scene and destroys
    the manager): no `PrismTimerManager` errors or exceptions in the console.
+
+---
+
+### 🔴 Squirrel ring morph / Scarab forge land on the pose-jittered body's frame (`cece/gifted-brown-x8cf74`, 2026-10-25)
+
+**Bug (Garrett):** the omni crystal morphed onto a TILTED ring, then shifted onto the real one. Cause:
+`CrystalDepthPrisms.ApplyPose` turns each crystal's model children to a random pose (`CrystalPoseJitter`);
+the morph's body copy carries that local pose, but the ring/ball targets were resolved in the morph ROOT's
+frame, so they landed turned by the jitter. **Fix:** `CrystalMorphRunner.BodyFrame`; `SquirrelCrystalMorph`
+and `ScarabCrystalMorph` resolve targets in it.
+
+**Not opened in Unity** (no editor). `unity_refcompile` player: 0 project errors.
+
+**Verify in editor:** Squirrel through several omni crystals (each has a different jitter): the plates land
+exactly on the ring, with no tilt and no shift at the hand-off (set `Resources/CrystalMorphConfig.duration` 9 to
+watch). Scarab forge: the cage closes onto the ball with no snap at the end.
 
 ---
 
@@ -14303,3 +14355,16 @@ Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
 `perf_hunt.py gates` all OK.
 
 1. Load any arena that builds a Geode (the freestyle six, Cell Selector): its band prisms lay flush, as on 10-20.
+
+## 🔴 2026-10-24 — Cell Selector swap: time-sliced release, no pop-in during suction (unverified: no Unity CLI in the session)
+
+**Files:** `Cell.cs` (`ReleaseRetiredWorld`), `Prism.cs` (`StampSuctionToward`, `CancelPendingCreation`),
+`PrismClockDiagnostics.cs` (`WillWarnNoRenderEntity`). What ran instead of `/verify-unity`: `unity_refcompile` player
+RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Menu_Main, arm Record Insight Mode (FrogletTools > Performance > Performance Benchmark > Load Time
+   Insights), Cell Selector > Orrery right after the boot world appears (while it is still growing in). The old
+   world suctions to a point with no prism popping in during the suction; the new world builds behind the veil.
+2. In the recording: the release span is well under the 1.1-1.4 s of the 10-21 captures; "Suction: prisms not
+   created yet" counts the invisible ones; "Suction: prisms with no render entity" is 0 (or names a real case).
+3. Swap back and forth a few times: no console error, the trail and the new world behave as before.
