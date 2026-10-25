@@ -2975,6 +2975,10 @@ pad could not land on them at all; only the invisible LT / RT keycap buttons at 
 - `Refocus` leaves a selection on the bar alone while no window is open: a screen change under the bar selects nothing
   on the new screen (selecting a Hangar vessel tile would pick that vessel). D-pad down enters the screen.
 - On Home, A on a tab is the tab's press, not the Arcade shortcut.
+- The first-login guide holds the keyboard on its path as well as the pad (`MenuSpotlight.HoldPadOnPath`; Codex review
+  on #1534): it used to hold the selection only while a gamepad was connected, so the arrow keys could already reach
+  Home's other buttons and, before this change, the LT / RT keycaps; now a tab too. A selection off the path goes back to
+  the spotlit control on any device; with no pad an empty selection stays empty, so a mouse player sees no ring.
 - Under an open window the bar's `CanvasGroup` is not interactable (`UpdateScreensInteractable`), so the pad cannot
   climb out of the window onto a tab. A click on a tab is untouched (its `EventTrigger` is not gated by a
   `CanvasGroup`); the LT / RT keycap buttons, which would page the screen behind the window, stand down with it.
@@ -2982,5 +2986,5 @@ pad could not land on them at all; only the invisible LT / RT keycap buttons at 
 Generators: `author_ui_kit_prefabs.py` adds the ring and `KitTopNavTab` to `KitTopNavTab.prefab` (planted defects: the tab
 is no pad stop; it loses its ring); `author_menu_topnav.py` adds the Submit entries and takes the keycaps out of pad
 navigation (planted defects: A no longer presses HOME; the RT keycap back in pad navigation). `NavBarPadFocusTests`
-holds the rule. Changed: `ScreenSwitcher`, `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity` (top nav
+holds the rule. Changed: `ScreenSwitcher`, `MenuSpotlight`, `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity` (top nav
 only), comments in `KitTextTab`, `KitHoverTint`, `HangarAbilitiesPage`.
