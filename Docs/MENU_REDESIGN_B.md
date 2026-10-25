@@ -2956,3 +2956,21 @@ that tab, and still leave LB / RB and A fighting. The TRY flight (§35) could ta
 The header line now reads "Labels follow your device. Select one to see it again." (was "Press one", which read as
 "press that control"; Yash, 2026-10-25), authored in `author_menu_hangar.py` and regenerated into `HangarView.prefab`.
 Changed: `HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only), the header line.
+
+## 66. The Hangar's ability rows are information (2026-10-25, awaiting in-editor approval)
+
+Yash, after talking to Shombith: "my abilities don't need to be selected or clicked to test it in hangar. They are just
+info. So LT / RT always works, just to change the tabs." (Sections 64 and 65, which made LT / RT work only from a tab
+menu, were reverted on Ys-bleeding-edge the same day, `c28b962c2`; LT / RT page the tabs from anywhere, as before.)
+
+- **Nothing the player presses plays an ability.** §63 had already stopped the pad's controls; this removes the rest:
+  the click / tap / A on a row and the keyboard key a row shows. `HangarAbilitiesPage` adds no click listener and polls
+  no key; `HangarControlInput` keeps only the device tracking the keycap labels need (`WasPressed` is gone), and the
+  `demoResumeSeconds` pause after a player's press is gone with the press.
+- **The AI demo is unchanged:** every 2.4 s the next ability's keycap sinks, its row lights and the stage performs it.
+- **The rows keep their look and drop their input** (`author_menu_hangar.py`, `kit_row(..., interactive=False)`): each
+  row's KitButton stays as the frame (an open slot still draws disabled) but leaves pad navigation, a CanvasGroup on
+  the row blocks no raycasts so no click reaches it, and the press sound is gone. The generator fails if a row becomes
+  a pad stop, takes clicks or regains its sound (planted defect: a row takes clicks again).
+- **Header line:** "Labels follow your device." ("Select one to see it again." described a press that no longer exists.)
+

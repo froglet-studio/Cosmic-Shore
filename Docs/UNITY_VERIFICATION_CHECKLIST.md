@@ -14144,6 +14144,16 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — Hangar: the ability rows are information (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §66. Changed `HangarAbilitiesPage`, `HangarControlInput`, `HangarView.prefab` (regenerated).
+1. Hangar > Abilities, any vessel: the AI demo still plays each ability in turn (keycap sinks, row lights, the hull
+   performs it).
+2. Clicking or tapping a row, pressing SPACE / LSHIFT (the keys the rows show), or any pad button: nothing plays, and
+   the demo keeps its rhythm. The rows show no hover or press state and the pad never lands on them.
+3. LT / RT page the screens from anywhere on the Hangar; LB / RB step its tabs. Pulsefire never fires.
+4. The header line reads "Labels follow your device."; keycaps still switch between pad and keyboard names.
+
 ## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
 Docs/MENU_REDESIGN_B.md §63. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`
