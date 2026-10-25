@@ -65,7 +65,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
+### 🟢 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, #1529, 2026-10-25) — VERIFIED IN EDITOR
+
+**Verified in editor 2026-10-25 by Yash**, after #1529 merged to bleeding-edge: Main Menu from a match lands back on its launch panel and works as expected. Ticket T-20261025-4e15 (#1526) closed with that note. The steps below are kept as the record of what the change covers.
 
 **What landed:** `MenuReturnCard` (`_Scripts/UI/`) records the card a match was launched from
 (`ArcadeGameConfigureModal.HandleAllPlayersReady`, every peer). The next Menu_Main load takes it, and
