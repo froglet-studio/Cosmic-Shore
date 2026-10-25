@@ -25,8 +25,20 @@
   ],
   "baselines": [
     "Menu_Main|Garland",
+    "Menu_Main|MinigameRegatta",
+    "MinigameBloomrush|MinigameBloomrush",
+    "MinigameBreakwater|MinigameBreakwater",
+    "MinigameBroadside|MinigameBroadside",
+    "MinigameDustup|MinigameDustup",
     "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
-    "MinigameRegatta|MinigameRegatta"
+    "MinigameHijack|MinigameHijack",
+    "MinigameRegatta|MinigameRegatta",
+    "MinigameSwitchback|MinigameSwitchback",
+    "MinigameTapestry|MinigameTapestry",
+    "MinigameThresherTime|MinigameThresherTime",
+    "MinigameWaystation|MinigameWaystation",
+    "MinigameWrasseRun|MinigameWrasseRun",
+    "MinigameWreckingBall|MinigameWreckingBall"
   ],
   "branchFlow": [
     {
@@ -136,7 +148,7 @@
   "gates": [
     {
       "gate": "mathf params alloc",
-      "ok": false
+      "ok": true
     },
     {
       "gate": "burst MathF (swarm pose)",
@@ -155,11 +167,9 @@
       "ok": true
     }
   ],
-  "gatesOk": false,
-  "generatedUtc": "2026-10-24T19:03:59Z",
+  "gatesOk": true,
+  "generatedUtc": "2026-10-25T02:22:40Z",
   "next": [
-    "Fix the red gate 'mathf params alloc': mathf-params-alloc check: 1 FAILURE(S) (python3 Tools/Build/perf_hunt.py gates)",
-    "Resolve: Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
@@ -259,121 +269,26 @@
     "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker CoroutinesDelayedCalls 0.1444 -> 0.5622 ms/frame (+289%)",
     "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Physics.Simulate 0.092 -> 0.3397 ms/frame (+269%)",
     "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker LightFauna.Tick.PrismScan 0.0912 -> 0.2943 ms/frame (+223%)",
-    "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261015-56dd]",
+    "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261020-fb02]",
     "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
     "2 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me.)"
   ],
   "openPerformanceTasks": [
     {
-      "id": "T-20261015-56dd",
+      "id": "T-20261024-0212",
       "kind": "test",
-      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itse"
+      "task": "Re-capture Bloomrush after the prism creation queue (Ys-bleeding-edge): Release, Third Eye closed, Arcade > Bloomrush, play past the 90 s auto-capture, stop Pla"
     },
     {
-      "id": "T-20261015-3e0b",
+      "id": "T-20261024-803f",
       "kind": "test",
-      "task": "Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), then stop: it goes to Claude by itself. This is the Burst check the 10-08 f"
+      "task": "Re-capture Menu_Main after the QuestTrackView fix (Ys-bleeding-edge): Release, Third Eye closed, play Menu_Main (freestyle or the hub) past the 4-minute auto-ca"
     },
     {
-      "id": "T-20261015-3972",
-      "kind": "test",
-      "task": "S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), then stop: it goes to Claude by itself. It is the go/no-go fo"
-    },
-    {
-      "id": "T-20261015-72e1",
-      "kind": "dev",
-      "task": "Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a"
-    },
-    {
-      "id": "T-20261015-f106",
-      "kind": "setup",
-      "task": "Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged i"
-    },
-    {
-      "id": "T-20261015-7d29",
-      "kind": "test",
-      "task": "Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Relea"
-    },
-    {
-      "id": "T-20261015-7edd",
-      "kind": "test",
-      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude"
-    },
-    {
-      "id": "T-20261015-1551",
-      "kind": "test",
-      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the"
-    },
-    {
-      "id": "T-20261017-c82c",
-      "kind": "test",
-      "task": "Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at"
-    },
-    {
-      "id": "T-20261017-1809",
-      "kind": "dev",
-      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)"
-    },
-    {
-      "id": "T-20261017-2129",
-      "kind": "dev",
-      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)"
-    },
-    {
-      "id": "T-20261017-19f0",
-      "kind": "dev",
-      "task": "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)"
-    },
-    {
-      "id": "T-20261017-2215",
-      "kind": "test",
-      "task": "Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went t"
-    },
-    {
-      "id": "T-20261017-9990",
-      "kind": "dev",
-      "task": "Menu_Main with the Stoat flying: Driver.LateUpdate (BlackHoleRegistry or WormholeView) read 2.7 ms/frame average and 88 ms self in a spike frame (Yash, 2026-10-"
-    },
-    {
-      "id": "T-20261017-7647",
-      "kind": "test",
-      "task": "Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt"
-    },
-    {
-      "id": "T-20261017-3d13",
-      "kind": "test",
-      "task": "Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The ves"
-    },
-    {
-      "id": "T-20261020-86b5",
-      "kind": "test",
-      "task": "Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile"
-    },
-    {
-      "id": "T-20261020-fb02",
-      "kind": "test",
-      "task": "Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; co"
-    },
-    {
-      "id": "T-20261020-09fe",
+      "id": "T-20261021-b133",
       "kind": "decision",
-      "task": "Pick the spindle LOD style and tune it in Unity. Resources/SpindleLodProfile > style: OVERT (default; the braid fans open on the prisms' own depth ramp, as far "
-    },
-    {
-      "id": "T-20261021-a2b3",
-      "kind": "dev",
-      "task": "Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resume"
-    },
-    {
-      "id": "T-20261021-a743",
-      "kind": "dev",
-      "task": "A Cell Selector swap releases the old world at a fixed 500 prisms a frame (Cell.ReleaseRetiredWorld). That took 1.1-1.4 s in both Orrery captures, for only 4,25"
-    },
-    {
-      "id": "T-20261021-e916",
-      "kind": "dev",
-      "task": "Both Orrery captures logged '[PrismClock] STRICT MODE: no companion render entity to stamp (cellSwapSuction)': some prisms of the retiring world have no render "
+      "task": "Decide which preset an older MobileLow phone starts on: first-run auto-detect still picks Very Low with 4x MSAA (Round 8); a hand pick of Low / Very Low now wri"
     },
     {
       "id": "T-20261021-fa97",
@@ -381,13 +296,102 @@
       "task": "Measure the new Medium / Low quality presets on an older phone (Mali-G52 / Adreno 610 class): F7 diag GPU ms at High, Medium, Low in the same scene, and run the"
     },
     {
-      "id": "T-20261021-b133",
+      "id": "T-20261020-09fe",
       "kind": "decision",
-      "task": "Decide which preset an older MobileLow phone starts on: first-run auto-detect still picks Very Low with 4x MSAA (Round 8); a hand pick of Low / Very Low now wri"
+      "task": "Pick the spindle LOD style and tune it in Unity. Resources/SpindleLodProfile > style: OVERT (default; the braid fans open on the prisms' own depth ramp, as far "
+    },
+    {
+      "id": "T-20261020-fb02",
+      "kind": "test",
+      "task": "Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; co"
+    },
+    {
+      "id": "T-20261020-86b5",
+      "kind": "test",
+      "task": "Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile"
+    },
+    {
+      "id": "T-20261017-7647",
+      "kind": "test",
+      "task": "Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt"
+    },
+    {
+      "id": "T-20261017-9990",
+      "kind": "dev",
+      "task": "Menu_Main with the Stoat flying: Driver.LateUpdate (BlackHoleRegistry or WormholeView) read 2.7 ms/frame average and 88 ms self in a spike frame (Yash, 2026-10-"
+    },
+    {
+      "id": "T-20261017-3d13",
+      "kind": "test",
+      "task": "Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The ves"
+    },
+    {
+      "id": "T-20261017-2215",
+      "kind": "test",
+      "task": "Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went t"
+    },
+    {
+      "id": "T-20261017-19f0",
+      "kind": "dev",
+      "task": "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)"
+    },
+    {
+      "id": "T-20261017-2129",
+      "kind": "dev",
+      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)"
+    },
+    {
+      "id": "T-20261017-1809",
+      "kind": "dev",
+      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)"
+    },
+    {
+      "id": "T-20261017-c82c",
+      "kind": "test",
+      "task": "Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at"
+    },
+    {
+      "id": "T-20261015-1551",
+      "kind": "test",
+      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the"
+    },
+    {
+      "id": "T-20261015-7edd",
+      "kind": "test",
+      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude"
+    },
+    {
+      "id": "T-20261015-7d29",
+      "kind": "test",
+      "task": "Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Relea"
+    },
+    {
+      "id": "T-20261015-f106",
+      "kind": "setup",
+      "task": "Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged i"
+    },
+    {
+      "id": "T-20261015-72e1",
+      "kind": "dev",
+      "task": "Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a"
+    },
+    {
+      "id": "T-20261015-3972",
+      "kind": "test",
+      "task": "S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), then stop: it goes to Claude by itself. It is the go/no-go fo"
+    },
+    {
+      "id": "T-20261015-3e0b",
+      "kind": "test",
+      "task": "Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), then stop: it goes to Claude by itself. This is the Burst check the 10-08 f"
+    },
+    {
+      "id": "T-20261015-56dd",
+      "kind": "test",
+      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itse"
     }
   ],
   "regressions": [
-    "Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",

@@ -44,6 +44,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 | B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
 | B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
+| B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
+| B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2326,4 +2328,64 @@ joins are the joiner's side of B35 (the host refused the connection).
 shows a `stall` of 10 s before the `relayDrop`, the fix is in the freezing frame: profile the Bloomrush to
 menu load (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, `/perf-hunt`) and why Bloomrush runs at 3-5 fps on that
 machine. If it shows "no freeze", the drop is a network fault and needs a different look.
+Tickets: T-20261025-482c (#1520, the retest) and T-20261024-0212 (#1495, Bloomrush's slow frames after the
+prism creation queue; it now also times the return to the menu).
+
+## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
+
+**Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same
+second as one of them, `E-ca3bc5cbe1` ("[INVITE-SEND] ABORT - presence lobby is null", Gradi, 11 Sep). Not seen
+since 11 Sep on any machine. Gradi's 13 Oct crash log shows the same create still failing for other reasons:
+`(0) Request timeout` and `An unknown error occurred`.
+
+**Cause.** `PresenceLobbyService.CreateAsync` logged `e.Message` only, so no report kept the frame that threw.
+What fits: `JoinOrCreateAsync` ran before Unity Services had initialized (or with nobody signed in). The SDK
+then has no session service to call, so the query threw a bare `NullReferenceException` (logged as "Join
+failed ... creating new lobby as fallback"), and the create threw the same one. Without a presence lobby, an
+invite aborts (the second issue). The party code was reworked since (every UGS call through
+`UgsRequestPolicy`, 7 Oct), so this is a likely cause, not a proven one.
+
+**Already fixed, 2026-10-08 (`ceabacdd50`).** A failed boot-time join left the player with no presence lobby
+for the whole session; it now retries with back-off (3 s up to 60 s, `SchedulePresenceRejoin`).
+
+**What changed (2026-10-25).**
+- `JoinOrCreateAsync` does not call the SDK until Unity Services are `Initialized` and a player is signed in
+  (`UgsNotReadyReason`); the lobby stays null and the rejoin back-off tries again.
+- A create failure the rejoin recovers from (`Transient`, `RateLimited`, `Benign`, `Cancelled`; Gradi's timeouts)
+  is a one-line warning. Anything else, a bare `NullReferenceException` included, is logged with the whole
+  exception, so a recurrence names its frame.
+- `SendInviteAsync` with no presence lobby is a warning naming whether a rejoin is pending, and the friends
+  panel shows its authored `serviceNotReadyLine` ("Connection service not ready. Try again shortly.") instead
+  of silently resetting the row. `HostConnectionService.HasPresenceLobby` is the public read for it.
+- Held by `PresenceLobbyCreateTests` (2).
+
+**Hand test.** Start Play with the network cable out (or Wi-Fi off), wait 10 s, plug it back in: no
+`Could not create presence lobby` error; a `Presence lobby not rejoined - retrying` warning, then the online list
+fills. Press Invite on a friend during the outage: the "Connection service not ready" toast.
+Ticket: T-20261025-3506 (#1524).
+
+## B38 — "Recovery failed" when Play stops during a failed join's recovery 🟡 (root-caused & fixed 2026-10-25)
+
+**Seen in.** Bug Ledger `E-41b7610878` (belac, 19 Oct: `Recovery failed (InvalidOperationException): This can
+only be used during play mode, please use EditorSceneManager.OpenScene() instead`, at
+`PartyInviteController.RecoverFromFailedTransitionAsync`, the Menu_Main load) and `E-0de9ec6c70` (Gradi, 3
+times, 2-28 Sep: `Recovery failed (ArgumentNullException): Value cannot be null. Parameter name:
+asyncOperation`). Both are marked **EditMode** in the ledger: they were logged after Play had stopped.
+
+**Cause.** After a failed join (or a lost host, B10), `RecoverFromFailedTransitionAsync` awaits the party
+leave and the Netcode shutdown (up to its shutdown timeout), then loads Menu_Main, then creates the solo
+session. The leave-lobby flow does the same. Stopping Play inside those awaits let the flow continue in edit
+mode: `SceneManager.LoadSceneAsync` throws there (Unity 6000.4), or returns null and UniTask's `ToUniTask`
+throws on it (6000.3). Had the load not thrown, `EnsurePartySessionAsync` would then have created a UGS
+session in edit mode, where nothing ever leaves it (the leak class behind B33/B34).
+
+**What changed.** `PartyInviteController.PlayEnded(flow)` is checked after every await in both flows and in
+their catch blocks: once Play has stopped (`IsPlaying`, Unity's flag; tests substitute it) or the controller
+is destroyed, the flow stops with a verbose line on the `Party` channel instead of loading a scene or
+creating a session. Held by `PartyRecoveryAfterPlayTests` (3). `ReconnectService`'s scene load is started by a
+button and has no report; it is unchanged.
+
+**Hand test.** Two machines: one joins a party that is not there (or the host stops Play mid-join), and the
+joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
+Play stops.
 

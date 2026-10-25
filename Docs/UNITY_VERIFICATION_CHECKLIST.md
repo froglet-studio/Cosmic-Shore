@@ -3201,6 +3201,34 @@ The steps below test these values.
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Party: B38 - a failed join's recovery stops when Play stops (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B38): `PartyInviteController`'s recovery and leave-lobby flows check
+`PlayEnded` after every await, so a flow still running when Play stops no longer loads Menu_Main or creates a
+UGS session in edit mode.
+**Verified without the editor:** `PartyRecoveryAfterPlayTests` (3) and the full edit-mode suite on Amoebius
+(618/622; the 4 known SceneTransitionManager / AppManagerBootstrap failures); `unity_refcompile` player and editor
+(only the known AuthenticationServiceFacade errors). `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. Two machines: the joiner direct-joins a party whose host then stops Play; while the joiner shows "Bouncing to
+   solo menu", stop Play on the joiner. Pass: no `Recovery failed` error after Play stops.
+2. Same, but let the bounce finish: the joiner lands in a working solo menu (the recovery still runs in Play).
+3. In a party, Leave Party and stop Play at once: no `Leave-lobby flow failed` error.
+
+### 🔴 Party: B37 - the presence lobby create waits for Unity Services; its failures name their cause (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B37): `PresenceLobbyService.JoinOrCreateAsync` waits for Unity
+Services and a sign-in; a retryable create failure is a warning, anything else is logged with its stack;
+`SendInviteAsync` with no presence lobby is a warning, and the friends panel shows `serviceNotReadyLine`.
+**Verified without the editor:** `PresenceLobbyCreateTests` (2) and the full edit-mode suite on Amoebius (615/619;
+the 4 known SceneTransitionManager / AppManagerBootstrap failures); `unity_refcompile` player and editor (only the
+known AuthenticationServiceFacade errors). `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. Normal Play online: the presence lobby joins as before (the online list fills, invites work).
+2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
+   `Presence lobby not rejoined - retrying` warning, then the online list fills.
+3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
 ### 🔴 Net: B36 - a game freeze is recorded, and a Relay drop names the freeze it followed (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B36): `FrameStallWatch` records any frame of 3 s or more while the
@@ -14368,3 +14396,13 @@ RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPT
 2. In the recording: the release span is well under the 1.1-1.4 s of the 10-21 captures; "Suction: prisms not
    created yet" counts the invisible ones; "Suction: prisms with no render entity" is 0 (or names a real case).
 3. Swap back and forth a few times: no console error, the trail and the new world behave as before.
+
+## 🔴 2026-10-25 — Spindle LOD drain capped by time (unverified: no Unity CLI in the session)
+
+**Files:** `SpindleLodSystem.cs` (`Drain`), `SpindleLodProfileSO.cs` + `Resources/SpindleLodProfile.asset`
+(`maxTransitionMsPerFrame` 3). Ran instead: refcompile player-dev OK, SpindleLodTests 17/17 on the engine runner,
+`author_spindle_lod_meshes.py --check` OK.
+
+1. Release, Menu_Main (Garland), fly the freestyle vessel through the flora and swing the camera: spindles still
+   step between braid / converging braid / thread with no visible pop.
+2. The next Menu_Main auto-capture: `SpindleLod.Drain` max total ms per frame about 3 ms or less (was 14.7).

@@ -728,6 +728,10 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send invite: {e.Message}");
+                // No presence lobby yet (it is being rejoined, B37): the click used to just reset the row,
+                // so the invite seemed to do nothing. Say so.
+                if (HostConnectionService.Instance != null && !HostConnectionService.Instance.HasPresenceLobby)
+                    ShowToast(serviceNotReadyLine, ToastKind.Error);
                 _outgoingInvitePlayerIds.Remove(playerId);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
             }
