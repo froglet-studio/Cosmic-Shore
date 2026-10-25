@@ -1,0 +1,80 @@
+{
+    "scene": "MinigameScarabScramble",
+    "timestamp": "2026-10-26 02:58:00",
+    "label": "",
+    "secondsSinceSceneLoad": 107.36569213867188,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 30,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Scarab Scramble Cell Config",
+            "spawnProfile": "Scarab Scramble Spawn Profile",
+            "configChoice": "Random",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "RandomLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 59587.90234375,
+            "liveEnvironmentVolume": 59548.1171875,
+            "livePrismCount": 5970,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 164000.0,
+            "frenzyEnterVolume": 391000.0,
+            "frenzyExitVolume": 388000.0,
+            "frenzyEnterCount": 5810,
+            "frenzyExitCount": 5600,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": false,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Gold",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 30,
+            "flora": [],
+            "fauna": [
+                {
+                    "config": "Scarab Scramble Tadpole Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 6,
+                    "initialBatch": 4,
+                    "cap": 8,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Scarab Scramble Brittlestar Fauna Config Data",
+                    "prefab": "MassBrittlestarFauna",
+                    "live": 2,
+                    "initialBatch": 2,
+                    "cap": 4,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Scarab Scramble Piranha Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 22,
+                    "initialBatch": 8,
+                    "cap": 22,
+                    "atCap": true,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}
