@@ -15554,3 +15554,11 @@ of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in chan
 4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
 5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
 
+## 🔴 2026-10-26 — Squirrel prism pool refills fast enough (unverified: no Unity editor in the session)
+
+**File:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (Squirrel Prism pool: `bufferSizeTarget` 240,
+`maxInstantiateRate` 160, `maxAddsPerFrame` 8). Measured in Amoebius: pool misses 7.5 KB/frame -> 0.
+
+1. Release, Arcade > Thresher Time (or Regatta with Squirrels), play past the auto-capture.
+2. In the capture: no `PoolMiss.Squirrel Prism` row (was 1.71 ms/frame in Thresher Time), `PoolRefill.Squirrel Prism`
+   present; trails look the same.
