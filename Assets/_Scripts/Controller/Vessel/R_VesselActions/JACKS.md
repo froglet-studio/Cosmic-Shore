@@ -61,6 +61,13 @@ along. It is one velocity displacement on the hull's transformer (the Angler's d
 less the distance the hull's own flight covers meanwhile, so it arrives at the decoy; what the net carries comes with it.
 The next one waits for this one to land plus `teleportGuard`.
 
+**The decoy is a third jack** (Garrett, 2026-10-25: "Let's have the decoy look like a third jack"): each decoy down is drawn
+as a copy of the jacks' model (`JacksBodies.UpdateDecoys`; a fourth with Time 5's second), painted in the domain's ship
+material, at the jacks' own size for the mode, swimming in place on the board and facing the way the hull did when it was
+laid. It grows in where it is laid, and a re-laid decoy shrinks out of its old place and grows into the new one
+(`decoyGrowRate` 5/s; a move over `decoyRelayDistance` 8 u is a re-lay, a smaller one is followed). Every peer draws it
+from the published decoys. The copy has no collider. Its 2D mark is a jack's dot; its ring keeps the decoy's colour.
+
 One player, two thumbs, two modes. The switch is the seat swap: D-pad left / right, the left / right arrow keys (`Docs/CREW_STATIONS.md`: fly -> herd -> the next hull), or a double tap on
 the small view (the Wrasse's gesture, `PilotSwapGesture`).
 

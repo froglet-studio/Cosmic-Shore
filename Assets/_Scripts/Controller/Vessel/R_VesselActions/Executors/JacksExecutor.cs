@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
         [Header("Presentation (game only; the lab's colours)")]
         [Tooltip("The jacks (the lab's #f2c84b).")]
         [SerializeField] Color jackColor = new(0.949f, 0.784f, 0.294f, 1f);
-        [Tooltip("The decoy (the lab's #f0a043).")]
+        [Tooltip("The decoy's ring (the lab's #f0a043); the decoy itself is drawn as a third jack.")]
         [SerializeField] Color decoyColor = new(0.941f, 0.627f, 0.263f, 1f);
         [Tooltip("A danger creature's mark (the lab's #ff5a3c).")]
         [SerializeField] Color dangerColor = new(1f, 0.353f, 0.235f, 1f);
@@ -1404,7 +1404,8 @@ namespace CosmicShore.Gameplay
             for (int s = 0; s < 2; s++)
             {
                 if (!_decoyOn[s]) continue;
-                marks.Dot(_decoys[s], decoyColor, dot * 3f, 8f);
+                // the decoy is drawn as a third jack (JacksBodies), so it wears a jack's mark; its ring keeps the decoy's colour
+                if (!flightView || _herding) marks.Dot(_decoys[s], jackColor, dot * 3f, 8f);
                 marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyColor * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
             }
             float charge = Level(Element.Charge);

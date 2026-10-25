@@ -68,6 +68,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float jackSwimHzPer100 = 0.8f;
         [Tooltip("Flying: the beat stops rising at this speed (u/s), so a boost does not blur the tail.")]
         [SerializeField, Min(1f)] float flightSwimSpeedCap = 200f;
+
+        [Header("The decoys (Garrett, 2026-10-25: \"Let's have the decoy look like a third jack\")")]
+        [Tooltip("How fast a decoy's jack grows in where it is laid, and shrinks away where it was (per second): a re-laid " +
+                 "decoy shrinks out of its old place and grows into the new one, so nothing pops.")]
+        [SerializeField, Min(0.1f)] float decoyGrowRate = 5f;
+        [Tooltip("A decoy that moves further than this at once (u) is re-laid (shrinks out, grows in) rather than slid.")]
+        [SerializeField, Min(0f)] float decoyRelayDistance = 8f;
         [Tooltip("Half-amplitude (degrees) of the body wave at spine.1, spine.2 and tail.")]
         [SerializeField] Vector3 jackSwimDegrees = new(6f, 12f, 22f);
         [Tooltip("Phase each bone lags the one before it, in beats.")]
@@ -127,6 +134,10 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
 
         readonly Jack[] _jacks = new Jack[2];
+        // each decoy is drawn as a third jack (a fourth with Time 5's second): a copy of the first jack's model, swimming in place
+        readonly Jack[] _decoyJacks = new Jack[2];
+        readonly float[] _decoyGrow = new float[2];
+        readonly Vector3[] _decoyShown = new Vector3[2];
         Transform _skimmer;
         bool _skimmerSeated;
         NetMesh _net;
@@ -214,26 +225,44 @@ namespace CosmicShore.Gameplay
             {
                 var t = FindDeep(transform, jackModelNames[k]);
                 if (!t) continue;
-                var bodyFrame = t.rotation * Quaternion.Inverse(Quaternion.Euler(jackModelEuler));
-                _jacks[k] = new Jack
-                {
-                    T = t,
-                    Renderer = t.GetComponentInChildren<SkinnedMeshRenderer>(true),
-                    RestScale = t.localScale,
-                    Spine = new[] { Bone.Find(t, "spine.1", bodyFrame), Bone.Find(t, "spine.2", bodyFrame), Bone.Find(t, "tail", bodyFrame) },
-                    FinL = Bone.Find(t, "fin.L", bodyFrame),
-                    FinR = Bone.Find(t, "fin.R", bodyFrame),
-                    Phase = 0.37f * k,
-                    Scale = flightModelScale,
-                };
-                if (_jacks[k].Renderer) _jacks[k].Renderer.updateWhenOffscreen = true;
+                _jacks[k] = MakeJack(t, 0.37f * k);
                 t.gameObject.SetActive(false);
                 foreach (var c in t.GetComponentsInChildren<Transform>(true)) c.gameObject.layer = layer;
+            }
+            // the decoys: copies of the first jack's model, drawn the same way (Garrett, 2026-10-25: "Let's have the decoy look
+            // like a third jack"). A copy carries no collider: a decoy is a herder, never a body that touches anything.
+            var source = _jacks[0];
+            for (int s = 0; s < _decoyJacks.Length && source != null; s++)
+            {
+                var copy = Instantiate(source.T.gameObject, source.T.parent, false);
+                copy.name = s == 0 ? "Decoy Jack" : "Decoy Jack B";
+                foreach (var c in copy.GetComponentsInChildren<Collider>(true)) Destroy(c);
+                copy.SetActive(false);
+                _decoyJacks[s] = MakeJack(copy.transform, 0.61f + 0.29f * s);
+                _decoyJacks[s].RestScale = source.RestScale;
             }
             // The puppetry's flares and its renderer reads land on a drawn jack, not on the hidden rig. Set before the vessel
             // initializes its animation (which keeps a renderer it was given).
             var anim = GetComponentInChildren<VesselAnimation>(true);
             if (anim && _jacks[0] != null && _jacks[0].Renderer) anim.SkinnedMeshRenderer = _jacks[0].Renderer;
+        }
+
+        Jack MakeJack(Transform t, float phase)
+        {
+            var bodyFrame = t.rotation * Quaternion.Inverse(Quaternion.Euler(jackModelEuler));
+            var j = new Jack
+            {
+                T = t,
+                Renderer = t.GetComponentInChildren<SkinnedMeshRenderer>(true),
+                RestScale = t.localScale,
+                Spine = new[] { Bone.Find(t, "spine.1", bodyFrame), Bone.Find(t, "spine.2", bodyFrame), Bone.Find(t, "tail", bodyFrame) },
+                FinL = Bone.Find(t, "fin.L", bodyFrame),
+                FinR = Bone.Find(t, "fin.R", bodyFrame),
+                Phase = phase,
+                Scale = flightModelScale,
+            };
+            if (j.Renderer) j.Renderer.updateWhenOffscreen = true;
+            return j;
         }
 
         // ------------------------------------------------------------------ read by the executor on a non-owning peer
@@ -329,12 +358,14 @@ namespace CosmicShore.Gameplay
             {
                 _netGrow = 0f;
                 _net?.Hide();
+                UpdateDecoys(false, transform.up, dt);
                 return;
             }
 
             var up = _flying ? transform.up : _crew && _crew.Config ? _crew.BoardUp : transform.up;
             for (int k = 0; k < _jacks.Length; k++)
                 if (_jacks[k] != null) Swim(_jacks[k], up, dt);
+            UpdateDecoys(seated, _crew && _crew.Config ? _crew.BoardUp : up, dt);   // the decoys lie on the board
             DrawNet();
             _snap = false;
         }
@@ -395,11 +426,19 @@ namespace CosmicShore.Gameplay
                 facing = Quaternion.LookRotation(heading, up);
             }
 
+            Pose(j, transform.position + j.Offset, facing, speed, turn, 1f, dt);
+        }
+
+        /// <summary>A drawn jack at <paramref name="position"/>, facing <paramref name="facing"/> (its swim frame), at its
+        /// mode's size times <paramref name="grow"/>, its body beating with <paramref name="speed"/> and bent by
+        /// <paramref name="turn"/> (degrees per second). The two jacks and the decoys alike.</summary>
+        void Pose(Jack j, Vector3 position, Quaternion facing, float speed, float turn, float grow, float dt)
+        {
             float wantScale = _flying ? flightModelScale : jackModelScale;
             j.Scale = _snap ? wantScale : Mathf.Lerp(j.Scale, wantScale, 1f - Mathf.Exp(-modelScaleEase * dt));
             float parentScale = j.T.parent ? Mathf.Max(1e-4f, j.T.parent.lossyScale.x) : 1f;
-            j.T.localScale = j.RestScale * (j.Scale / parentScale);
-            j.T.SetPositionAndRotation(transform.position + j.Offset, facing * Quaternion.Euler(jackModelEuler));
+            j.T.localScale = j.RestScale * (j.Scale * grow / parentScale);
+            j.T.SetPositionAndRotation(position, facing * Quaternion.Euler(jackModelEuler));
             Paint(j);
 
             j.Phase = Mathf.Repeat(j.Phase + (jackSwimHz + jackSwimHzPer100 * speed * 0.01f) * dt, 1f);
@@ -413,6 +452,52 @@ namespace CosmicShore.Gameplay
             float flap = Mathf.Sin((j.Phase + 0.25f) * 2f * Mathf.PI) * jackFinFlapDegrees;
             j.FinL.Pose(0f, 0f, -flap);
             j.FinR.Pose(0f, 0f, flap);
+        }
+
+        /// <summary>
+        /// Each decoy down is drawn as a third jack (a fourth with Time 5's second; Garrett, 2026-10-25: "Let's have the decoy
+        /// look like a third jack"), swimming in place on the board at the jacks' own size, on every peer: the owner's
+        /// decoys here, the published ones elsewhere. Laid, it grows in; re-laid somewhere else, it shrinks out of the old
+        /// place and grows into the new one (the continuity law); taken away, it shrinks out.
+        /// </summary>
+        void UpdateDecoys(bool seated, Vector3 up, float dt)
+        {
+            byte flags = n_flags.Value;
+            for (int s = 0; s < _decoyJacks.Length; s++)
+            {
+                var j = _decoyJacks[s];
+                if (j == null) continue;
+                Vector3 at = default;
+                bool on = seated && (IsAuthority
+                    ? _crew && _crew.TryGetDecoy(s, out at)
+                    : (flags & (s == 0 ? DecoyBit : DecoyBBit)) != 0);
+                if (on && !IsAuthority) at = transform.position + (s == 0 ? n_decoy.Value : n_decoyB.Value);
+                bool relay = on && _decoyGrow[s] > 0f && (at - _decoyShown[s]).sqrMagnitude > decoyRelayDistance * decoyRelayDistance;
+                float step = decoyGrowRate * dt;
+                if (!on || relay)
+                {
+                    _decoyGrow[s] = Mathf.MoveTowards(_decoyGrow[s], 0f, step);
+                    if (relay && _decoyGrow[s] <= 0f) _decoyShown[s] = at;   // gone from the old place: grow in at the new one
+                }
+                else
+                {
+                    if (_decoyGrow[s] <= 0f)
+                    {
+                        // laid: it faces the way the hull does, on the board
+                        _decoyShown[s] = at;
+                        var heading = Vector3.ProjectOnPlane(transform.forward, up);
+                        j.Heading = heading.sqrMagnitude > 1e-6f ? heading.normalized : Vector3.ProjectOnPlane(transform.up, up).normalized;
+                    }
+                    else _decoyShown[s] = at;   // a small move (the board settling) is followed
+                    _decoyGrow[s] = Mathf.MoveTowards(_decoyGrow[s], 1f, step);
+                }
+                bool shown = _decoyGrow[s] > 0f;
+                if (j.T.gameObject.activeSelf != shown) j.T.gameObject.SetActive(shown);
+                if (!shown) continue;
+                var facing = Quaternion.LookRotation(Vector3.ProjectOnPlane(j.Heading, up).sqrMagnitude > 1e-6f
+                    ? Vector3.ProjectOnPlane(j.Heading, up) : transform.forward, up);
+                Pose(j, _decoyShown[s], facing, 0f, 0f, Mathf.SmoothStep(0f, 1f, _decoyGrow[s]), dt);
+            }
         }
 
         // ------------------------------------------------------------------ the skimmer and the net

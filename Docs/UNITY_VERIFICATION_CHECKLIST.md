@@ -14328,3 +14328,15 @@ as below in the commit.
 48. Netting: Y or F (or the Space card) does nothing - the net keeps its size, the camera does not move.
 49. Herding: Y or F still eases out to the whole cell and back; the Space card is lit only then.
 
+### Round 12 (2026-10-25, same branch)
+
+Garrett: "Let's have the decoy look like a third jack." Each decoy is drawn as a copy of the jack model
+(`JacksBodies.UpdateDecoys`). Headless compile OK; `author_jacks_assets.py --check` OK.
+
+50. Land: a third jack swims in place between the two (the always-there decoy), the same model, colour and size, with a
+    jack's dot and the decoy's ring round it in the herding view.
+51. Pull a trigger to re-lay it: it shrinks away where it was and grows in at the jack on that side - no pop. At Time 5
+    the second decoy is a fourth jack.
+52. Take off and net: the decoy jacks stay on the board, drawn at the flying size; fly into one - nothing is hit (no
+    collider). A second machine sees the same decoy jacks.
+
