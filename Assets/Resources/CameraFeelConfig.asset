@@ -1,0 +1,103 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5bf975b67ff4e66b39d7e1e854da264, type: 3}
+  m_Name: CameraFeelConfig
+  m_EditorClassIdentifier: 
+  feelEnabled: 1
+  strength: 1
+  inertiaFrequency: 1.3
+  inertiaDamping: 0.85
+  fullLagAcceleration: 15
+  maxLag: 0.06
+  forwardLagShare: 0.7
+  kickFrequency: 4.5
+  kickDamping: 0.42
+  maxKick: 0.08
+  maxKickAngle: 3
+  skimNudge: 0.004
+  skimTilt: 0.12
+  skimEdgeFloor: 0.3
+  skimMinInterval: 0.025
+  skimRumblePerSkim: 0.15
+  skimRumbleDecay: 2.5
+  impactNudge: 0.035
+  impactLurch: 0.45
+  impactTilt: 1.2
+  impactTrauma: 0.5
+  impactMinInterval: 0.12
+  referencePrismVolume: 60
+  prismWeightRange: {x: 0.6, y: 2}
+  shieldedWeight: 1.25
+  superShieldedWeight: 1.6
+  vesselBumpWeight: 1
+  blastTrauma: 0.6
+  blastNudge: 0.04
+  blastTilt: 1.5
+  struckTrauma: 0.2
+  struckNudge: 0.015
+  struckTilt: 0.6
+  struckMinInterval: 0.15
+  shotKick: 0.006
+  shotPitch: 0.3
+  shotTrauma: 0.03
+  shotMinInterval: 0.035
+  pickupLift: 0.012
+  pickupTilt: 0.4
+  traumaDecay: 1.5
+  traumaAngle: 2.5
+  traumaRoll: 3
+  traumaOffset: 0.012
+  traumaFrequency: 9
+  rumbleAngle: 0.3
+  rumbleFrequency: 6.5
+  driftFullSlipDegrees: 35
+  driftRoll: 2
+  driftYaw: 1.5
+  driftOffset: 0.02
+  driftRumble: 0.5
+  driftEase: 5
+  breathAngle: 0.1
+  breathFrequency: 0.15
+  vessels:
+  - vessel: 6
+    inertia: 0.8
+    weight: 0.9
+  - vessel: 2
+    inertia: 0.85
+    weight: 0.9
+  - vessel: 4
+    inertia: 0.75
+    weight: 0.9
+  - vessel: 11
+    inertia: 0.9
+    weight: 1
+  - vessel: 1
+    inertia: 0.9
+    weight: 1
+  - vessel: 3
+    inertia: 1.35
+    weight: 1.25
+  - vessel: 5
+    inertia: 1.3
+    weight: 1.25
+  - vessel: 7
+    inertia: 1.15
+    weight: 1.1
+  - vessel: 20
+    inertia: 1.4
+    weight: 1.3
+  - vessel: 13
+    inertia: 1.1
+    weight: 0.9
+  - vessel: 21
+    inertia: 0.4
+    weight: 0.5

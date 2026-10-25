@@ -49,6 +49,8 @@ namespace CosmicShore.Gameplay
                     Projectile.RaiseVesselStruck(shipImpactee);
                     if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Domain))
                         break;
+                    // The camera following the struck vessel takes the round (Docs/CAMERA_FEEL.md).
+                    VesselCameraFeel.Struck(shipImpactee.Vessel.VesselStatus, transform.position);
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileShipEffects)) return;
                     foreach (var effect in projectileImpactorDataContainer.ProjectileShipEffects)
                     {

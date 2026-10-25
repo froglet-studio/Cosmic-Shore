@@ -65,6 +65,37 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Camera feel: inertia, impact shake, skim and drift rumble, recoil (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/CAMERA_FEEL.md`. `CustomCameraController` adds a feel layer after its pose and takes it off
+before the next (`ApplyFeel` / `UndoFeel`); events come from `SkimmerImpactor`, `VesselImpactor`, `ExplosionImpactor`,
+`ProjectileImpactor` and `Gun` through `VesselCameraFeel`; every number is on `Resources/CameraFeelConfig.asset`
+(new). `AccessibilitySettings.CameraShakeIntensity` now scales the feel and the legacy `Shake`.
+
+**Verified without the editor:** `unity_refcompile` player OK (0 errors in project code; negative control: a planted
+error in `CameraFeel.cs` is reported); editor config 0 errors in changed files. `CameraFeelTests` on the engine's
+edit-mode runner (`prisma_edit_mode_tests`), with `CameraLookAheadTests`, `FollowHeightScaleTests` and
+`RearViewLawTests` beside it. Gates: console logging, conditional compilation, far clip, Mathf params, using
+directives.
+
+**Verify in editor (any hull, Toybox freestyle is quickest):**
+1. Run `CameraFeelTests` (EditMode): all pass.
+2. Cruise straight: the hull holds its place on screen (a very slow breathing drift only). Boost: the hull pulls a
+   little ahead, then settles back when the boost holds. Turn hard: the hull leads into the turn.
+3. Skim a trail (Squirrel): a fine wiggle that builds with a dense skim and fades after; each prism nudges away from
+   its side.
+4. Ram a prism: a short shove toward the hull, a tilt and a thud of shake; a super-shielded or large environment prism
+   lands harder than a Sparrow trail.
+5. Drift (Squirrel or Dolphin): the camera banks into the turn and wobbles faintly; it eases back on release.
+6. Fire (Sparrow full-auto, Urchin spikes): a small recoil per shot, no buzz.
+7. Rear view, the Butterfly's fold placement (no feel while aiming), a wormhole transit and the Thresher's spectate
+   vantage: nothing jumps.
+8. Settings: camera shake at 0 removes all of it, the older shakes too; at 1 they are as before.
+
+**First-pass tuning** (`CameraFeelConfig`): max lag 6% of the follow distance, impact shove 3.5%, impact trauma 0.5,
+skim nudge 0.4%, rumble 0.3 deg, drift bank 2 deg, recoil 0.6%, breathing 0.1 deg; per-hull inertia 0.4 (Starling) to
+1.4 (Orca). If it all reads too strong or weak, change `strength` first.
+
 ### 🔴 Manta tilt yaw un-flipped; Dolphin one-thumb response curve (`cece/amazing-franklin-4lp0mk`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `TouchControlProfile.flipTiltSteer` split into `flipTiltSteerPitch` (`FormerlySerializedAs`) and
