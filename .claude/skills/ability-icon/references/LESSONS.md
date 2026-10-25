@@ -96,3 +96,11 @@ one thing right. then move on."
     gem (start the marks inside it); the gap gate then named four narrow wedges between each spark and the
     lance arm beside it - found by dumping the tight-gap mask's quadrants, fixed by steepening the sparks.
     Two blind tweaks had already missed.
+22. **"The Squirrel" means the Squirrel's silhouette, not a chevron.** Garrett on the first "through" option: "it
+    should read as the squirrel silhouette vs a generic one." The silhouette comes from the hull's OWN mesh:
+    `hull_view.py` projects the FBX (bind pose, file frame, nose +Y) to top / side / front masks with no Blender,
+    and the spec's `squirrel_top()` is drawn to those proportions (slim wedge body, forward-swept wings with pod
+    tips, a ribbed tail). Two ribs, not three - three fuse into a fishbone at 40 px.
+23. **Keep the creature off the wings.** With the body overlapping the hull's widest part the composite was a
+    blob at 40 px in every placement; with the creature at the NOSE (the hull punching through it, wings clear
+    of the halves) it reads at 40. Place the second object where the silhouette is narrowest.

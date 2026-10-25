@@ -18,7 +18,7 @@ The core (drift) icons live in Core/ so the family gate compares the elemental i
 """
 import math
 
-from canvas import band, fill, rect, rotate, scale, stroke, translate
+from canvas import band, empty, fill, ngon, rect, rotate, scale, stroke, translate
 from motifs import hull, speed_wedge, trail_band
 
 HULL = "Squirrel"
@@ -30,18 +30,37 @@ CRYSTAL = scale([(44.8, 12), (83.2, 12), (103.7, 44.8), (85.8, 96), (64, 122.9),
 CLEAVE = [(4, 96), (124, 30)]
 
 
+def squirrel_top(cx=64, cy=64, L=112, heading=-90, ribs=((20, 24), (40, 16))):
+    """The Squirrel's OWN silhouette, from above: a slim wedge body with the canopy, two forward-swept wings ending
+    in engine pods, and the ribbed tail (a spine with chevron ribs). Proportions measured off its FBX top view
+    (python3 Tools/Build/icon_kit/hull_view.py "Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx":
+    4.5 wide x 6.45 long, body 3.3, tail 2.7+). Nose at -y in its own frame; heading -90 = nose up, 0 = nose right.
+    Two ribs by default - three fuse into a fishbone blur at 40 px. Garrett 2026-10-25: "it should read as the
+    squirrel silhouette vs a generic one"."""
+    k = L / 100.0
+
+    def P(pts):
+        return rotate([(cx + x * k, cy + y * k) for x, y in pts], heading + 90, cx, cy)
+
+    body = fill(P([(0, -50), (6, -42), (8, -20), (7, 4), (0, 10), (-7, 4), (-8, -20), (-6, -42)]))
+    wings = empty()
+    for sgn in (1, -1):
+        wings |= fill(P([(sgn * 6, -6), (sgn * 6, -22), (sgn * 30, -46), (sgn * 40, -46), (sgn * 40, -30), (sgn * 14, -2)]))
+    spine = stroke(P([(0, 6), (0, 50)]), 7 * k)
+    rb = empty()
+    for y, w in ribs:
+        rb |= stroke(P([(-w, y - w * 0.55), (0, y), (w, y - w * 0.55)]), 7 * k)
+    return body | wings | spine | rb
+
+
 def crystal_joust():
-    """Candidate A of 2026-10-25: the fleet's own JOUST pictogram (objective_jousts.png - two lances meeting, the
-    spark) with the CRYSTAL at the meeting point. The Jousts objective and the Crystal Joust ability are one act,
-    so they wear one mark; the Jousts metric icon in ModeControlsLibrary is rebound to this sprite too."""
-    gem = fill(scale(CRYSTAL, 0.5, 0.5, 64, 64))
-    lances = stroke([(14, 28), (40, 64), (14, 100)], 12) | stroke([(114, 28), (88, 64), (114, 100)], 12)
-    m = lances | gem
-    # The spark: four marks that START on the gem's edge, so gem and spark are one mass (and one component).
-    for ang in (62, 118, 242, 298):   # steep, so each spark clears the lance arm beside it (gate: gap)
-        a = math.radians(ang)
-        m |= stroke([(64 + 12 * math.cos(a), 64 + 12 * math.sin(a)), (64 + 44 * math.cos(a), 64 + 44 * math.sin(a))], 7)
-    return m
+    """The joust: the Squirrel punching THROUGH the creature at its nose - the creature (a lifeform's hexagonal
+    body) split by the channel the hull cut, the Squirrel solid across it, its wings clear of the halves.
+    Chosen 2026-10-25 from four placements (halves flung apart / at the nose / bigger / already passed)."""
+    me = squirrel_top(56, 64, 100, heading=0)
+    body = fill(ngon(6, 26, 96, 64, rot=0))
+    channel = rect(0, 55, 128, 73)
+    return me | (body & ~channel)
 
 
 def skimming():

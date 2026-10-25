@@ -19,5 +19,9 @@ function, what it is in the game, and the rule for using it.
 | Band / ring / disc | `canvas.band`, `canvas.ring`, `canvas.disc` | arcs, orbits, reticles | 96-gons: round things yes, round corners no |
 | Chamfered rect | `canvas.chamfered_rect` | a plate, a card, a chip | the style guide's corner sliver on two opposite corners |
 
+**A hull's own silhouette** is drawn to its FBX's proportions: `python3 Tools/Build/icon_kit/hull_view.py
+<Hull.fbx>` writes top / side / front masks to look at and measure; the spec keeps the motif (`squirrel_top()` in
+`specs/squirrel.py`) until a second hull needs it. A creature / lifeform body is a hexagon (`ngon(6, r, ...)`).
+
 Element marks (bolt, hexagon, black-hole ring, hourglass - the Starlings' cards) are NOT in this
 vocabulary for ability icons: the flower owns the element. They remain the Starlings' card faces.
