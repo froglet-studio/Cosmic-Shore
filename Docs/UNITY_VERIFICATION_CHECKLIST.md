@@ -14949,3 +14949,14 @@ compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGA
 3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
    rings a minute well above the 8 of the older races, boosted share well above 20%.
 
+
+## 🔴 2026-10-25 — Prism carriers: no "Quaternion To Matrix conversion failed" on slice, destruction or shed (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Utility/Effects/PrismSlice.cs` (`TryRequest`), `PrismCollisionBurst.cs`
+(`TryRequestDestruction`, `TryRequestShed`): each normalizes the rotation on entry, as `PrismDebris` (eb9b53b4) and
+`TryRequestSuction` already do. Bug Ledger E-16d65ffecb, E-4b42aa3244, E-a41c3e0381, E-12a3d17ed1. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK.
+
+1. Any mode with a long-lived trail (Freestyle, a few minutes of flying): destroy prisms on it (ram, shoot, blade-slice)
+   and steal some (fly a vessel of another domain through it). No "Quaternion To Matrix conversion failed" in the Console.
+2. The deaths, slices and steal sheds look as before (no tilted or skewed debris).
