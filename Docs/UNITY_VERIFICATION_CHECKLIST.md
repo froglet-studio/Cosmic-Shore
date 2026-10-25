@@ -14144,6 +14144,16 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — Hangar: the ability rows are information (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §66. Changed `HangarAbilitiesPage`, `HangarControlInput`, `HangarView.prefab` (regenerated).
+1. Hangar > Abilities, any vessel: the AI demo still plays each ability in turn (keycap sinks, row lights, the hull
+   performs it).
+2. Clicking or tapping a row, pressing SPACE / LSHIFT (the keys the rows show), or any pad button: nothing plays, and
+   the demo keeps its rhythm. The rows show no hover or press state and the pad never lands on them.
+3. LT / RT page the screens from anywhere on the Hangar; LB / RB step its tabs. Pulsefire never fires.
+4. The header line reads "Labels follow your device."; keycaps still switch between pad and keyboard names.
+
 ## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
 Docs/MENU_REDESIGN_B.md §63. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`
@@ -14563,3 +14573,12 @@ SpindleLodTests 17/17 on the engine runner (no test covers the batches).
 5. After a few races, run `python3 Tools/Build/regatta_rival_report.py --dir <your flights> --since 2026-10-26`: rings
    a minute per hull should rise from 5.5-9.3 toward the model's (Manta ~22, Scarab ~27, Rhino ~11).
 
+## 🔴 2026-10-25 — Charge crystal light: no per-seam allocation, cheaper petal glow (unverified: no Unity CLI in the session)
+
+**File:** `Assets/_Scripts/Utility/ChargeArcs.cs` (`ChargeSeamWalker.AvoidCircling`, `ChargeArcs.SeamWalk`). Ran
+instead: refcompile player-dev OK; the two rewrites matched the originals on 200,000 random cases each.
+
+1. Edit-mode: run `CrystalChargeArcsTests` (they need the Editor's AssetDatabase).
+2. Release, any mode with Charge crystals (Wrecking Ball): the bolt still walks the seams, never circles one bloom a
+   fifth time, and the petals beside it glow as before.
+3. In the capture: no `GC.Alloc` under `CrystalChargeArcs.LateUpdate`; its ms/frame under the 0.83 of 10-22.
