@@ -35,7 +35,7 @@ We use automated checks and player reports, and a person reviews before anything
 - **restrict ranked and public play** for a period.
 
 These can start without advance notice. **None of them removes access to anything you paid
-for.** Threats to anyone's safety may be reported to the authorities.
+for**: you can always play what you bought on your own and with AI teammates. Threats to anyone's safety may be reported to the authorities.
 
 ## Notice and appeal
 

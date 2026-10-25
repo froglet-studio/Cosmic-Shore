@@ -227,6 +227,14 @@ key there, never the stage or reasons.
 - **Restricted** — ranked play, leaderboards and public matchmaking locked. **A human signs this off** (GDPR Art. 22
   safeguard: no "solely automated" decision with a significant effect). Never touches anything they paid for: paid
   episodes and hulls stay playable solo and with AI.
+- **What a restriction may cover (R14, enforced since 2026-10-25).** Only play WITH or SEEN BY other people: ranked,
+  public matchmaking (the Undertow pool), leaderboards, and rewards earned through the breach. Solo and AI play are
+  never restricted in any mode, so a purchase is never cut off and the fair-play code never needs to know what was
+  bought. `Tools/Build/check_fairplay_paid_content.py` (in the bleeding-edge guard and `/to-bleeding-edge`'s gates)
+  holds it both ways: fair-play code (any `FairPlay*`, `Undertow*`, `TrustRecord*` or `AntiCheat*` file, the
+  Moderation and Steam folders, the Cloud Code scripts) may not name the episode-token / store layer, and that layer
+  may not name a fair-play type or record. Phase B's mode lock asks only "with people or alone?", never which mode
+  or episode.
 - **Notice and appeal after 3 Undertow matches**, as you asked. The notice is a statement of reasons: what kind of
   behaviour (cheating, botting, conduct), that automated detection was involved, which rule of the Code of Conduct,
   how to appeal and how long it lasts. It does **not** reveal the detection method. "We detected something in your
@@ -352,7 +360,7 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | Medium | T6 Shipped AI pilot as a bot (`PilotControl`) | 9 | T-20261022-7708. **`PilotControl` out of release builds 2026-10-24. AI-like steering measured on the host 2026-10-25, observe only** until the limits are set from logged play (T-20261025-4fef); a modified client that fakes human-looking steering is not caught (that is bot detection, R10) |
 | Medium | R10 Bot farming | 9 | **Two server checks built 2026-10-25, with match reports (gated off), observe only**: `around_the_clock` (match starts in 20 distinct hours of 24) and `repetitive_results` (6 matches of a mode within 2% of the same time). Still phase C: the human-vs-AI flight classifier (needs Yash's and Garrett's flight data, T-20261025-cebb), identical routes across accounts, many accounts per device (needs App Attest / Play Integrity), and farming earning nothing (the Undertow) |
 | Medium | R13 Automated penalties on children | 12 | design rule (§4.6). **Built 2026-10-25, with match reports (gated off)**: the birth year is kept and sent; minors and unknown ages get no quit record and every signal about them is marked for a person (§4.6). Counsel decides whether quit counting may run for minors (`RULES.keepConductForMinors`) |
-| Medium | R14 Locking paid content | 8 | design rule (§4.6) |
+| Medium | R14 Locking paid content | 8 | **Enforced 2026-10-25**: restrictions cover only play with or seen by others (§4.6); a gate in the bleeding-edge guard fails any fair-play code that names the paid layer, or paid code that names a fair-play record |
 | Medium | R16 Reading more from the device than needed | 8 | design rule (§5) |
 | Unset | T7 Display names checked on the client only | 12 | T-20261022-7708. **Done 2026-10-24 on the receiving side**: every player's game hides offensive names it receives (`Pilot {tag}`); a server check of the sender adds nothing a modified game cannot skip |
 | Not ticked | R15 False positives with no evidence or appeal | 12 | — (the ladder in §4.6 still requires evidence and appeal) |
