@@ -22,8 +22,8 @@ namespace CosmicShore.Gameplay
     /// lights round it, its attendant packs patrol it, a drum runs and the cell glows gold - and when the drum stops it is
     /// the ANTLION, whose last feast completes the cycle. A form, once taken, is remembered: cut limbs regrow from its
     /// stomach. Every match draws one of three VARIANTS of each form. The mode has no fire: its effect is gold prism
-    /// debris (<see cref="TandavaGoldBurst"/>). Every pilot flies one domain; they win by shattering its body below a third
-    /// of its form, breaking the halo, wiping it out, starving it, or holding it off until the clock runs out.
+    /// debris (<see cref="TandavaGoldBurst"/>). Every pilot flies one domain; they win by shattering its body below 35%
+    /// of its form, breaking the halo, wiping it out or starving it - there is no clock.
     ///
     /// This controller is the swarm's <see cref="ISwarmDirector"/> on EVERY peer (fauna are client-local, the Brood Rush
     /// precedent). The SERVER runs the director (<see cref="TandavaDirectorCore"/>, pure C#, proven in

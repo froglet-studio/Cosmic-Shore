@@ -122,8 +122,8 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>Tandava's shatter threshold used when <see cref="tandavaBreakPercent"/> is 0: the pilots win when the
         /// swarm's body - whatever form it wears - is cut below this percent of that form's full body (Assets/_Scripts/
-        /// Controller/Arcade/TANDAVA.md). The match also ends when the pilots break the halo or the clock runs out (they
-        /// win) or the Antlion eats its last feast (they lose).</summary>
+        /// Controller/Arcade/TANDAVA.md). The match also ends when the pilots break the halo, wipe it out or starve it
+        /// (they win) or the Antlion eats its last feast (they lose); there is no clock.</summary>
         public const int DefaultTandavaBreakPercent = 35;
 
         /// <summary>Tandava's halo used when <see cref="tandavaHaloRingsToBreak"/> is 0: the pilots win when they break
@@ -414,8 +414,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int broadsidePointsPerPilot = 100;
 
         [Tooltip("Tandava: the pilots win when the swarm's body is cut below this PERCENT of its form's full body (it " +
-                 "shatters). They also win by breaking the halo or holding it off until the clock runs out, and lose if " +
-                 "the Antlion eats its last feast. 0 = default (35).")]
+                 "shatters). They also win by breaking the halo, wiping it out or starving it (there is no clock), and " +
+                 "lose if the Antlion eats its last feast. 0 = default (35).")]
         [Range(0, 100)] public int tandavaBreakPercent = 35;
 
         [Tooltip("Tandava: halo rings (twelve round the Lord of the Dance) the pilots must break before its drum stops to " +

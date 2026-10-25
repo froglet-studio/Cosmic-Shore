@@ -513,18 +513,6 @@ static class TandavaHarness
                 s.FormMealVolume[d.FormIx] += s.Eaten - s.MealEatenAtStart;
             }
             if (e.Kind == TandavaEventKind.FeedEnded) { s.MealEnds[e.B]++; if (e.B == (int)TandavaMealEnd.Broken) s.MealsBroken++; }
-            if (e.Kind == TandavaEventKind.FeedEnded && e.B == (int)TandavaMealEnd.Bare && Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "1")
-            {
-                var pl = s.Plants.FirstOrDefault(x => x.Id == e.A);
-                if (pl != null)
-                {
-                    float nearest = float.MaxValue;
-                    for (int i = 0; i < c.Cap; i++) if (c.Active[i]) nearest = MathF.Min(nearest, Vector3.Distance(c.Pos[i] * UnitScale, pl.At));
-                    var mouthW = c.Anchor * UnitScale + TandavaDirectorCore.InBody(st, d.Form.FeedMouth);
-                    Console.WriteLine($"      bare at {s.Now:F0} s: {d.Form.Name} plan {Keys[c.PlanIx]}, plant r {pl.At.Length():F0} store {pl.Store / pl.Leaf:F0} prisms, " +
-                                      $"mouth-plant {Vector3.Distance(mouthW, pl.At):F0} u, nearest member {nearest:F0} u, goal r {d.Goal.Length():F0}, mood {d.Mood}");
-                }
-            }
             if (e.Kind == TandavaEventKind.Rising) { s.RiseAt = s.Now; s.RiseAnchor = c.Anchor * UnitScale; }
             if (e.Kind == TandavaEventKind.DanceBegan)
             {
@@ -555,8 +543,6 @@ static class TandavaHarness
         c.Step(ReadOnlySpan<SwarmPredator>.Empty);
         foreach (var e in c.Events) if (e.Kind == SwarmEventKind.Laid && d.Feeding) s.LaidWhileFeeding++;
         c.Events.Clear();
-        if ((c.Anchor * UnitScale).Length() > s.MaxRadius && Environment.GetEnvironmentVariable("TANDAVA_DIAG") == "2" && (c.Anchor * UnitScale).Length() > 630f)
-            Console.WriteLine($"      r {(c.Anchor * UnitScale).Length():F0} at {s.Now:F1} s: {Keys[c.PlanIx]} phase {d.Phase} mood {d.Mood} goal r {d.Goal.Length():F0} coil {d.Coil}");
         s.MaxRadius = MathF.Max(s.MaxRadius, (c.Anchor * UnitScale).Length());
         if (d.InDance && s.Post != null && (int)MathF.Round(s.Now * TickHz) % 10 == 0)
             for (int k = 0; k < HaloCount; k++) { if (d.HaloIsOut(k)) continue; s.HaloSamples++; if (Guarded(s, k)) s.GuardedSamples++; }

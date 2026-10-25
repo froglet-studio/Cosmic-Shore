@@ -4,8 +4,8 @@
 `MinigameTandava` · assets owned by `Tools/Build/author_tandava_assets.py` (`--check`, `--self-test`).
 
 **Status: authored headless, NOT yet run in the Unity editor.** Everything below that describes behaviour is from the
-headless harness (`Tools/Build/swarm_core_harness`, mode `tandava`, T1-T15), the reference compile (`unity_refcompile`,
-player and editor), a Roslyn type-check of the swarm glue, and the generators. QA: `QA-TANDAVA-9..14` in
+headless harness (`Tools/Build/swarm_core_harness`, mode `tandava`, T1-T19), the reference compile (`unity_refcompile`,
+player and editor), a Roslyn type-check of the swarm glue, and the generators. QA: `QA-TANDAVA-9..20` in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` (§ Tandava; `/verify-unity` could not run: no Unity editor or `unity` CLI in the
 authoring session). `QA-TANDAVA-1..8` describe the first design and are superseded.
 
@@ -156,7 +156,9 @@ x = -430.
 through the band 240-720 u - five Borromean (60 prisms), five Coral (110), four Lantern (70), four Reed (130) and three
 Frond (120) in Mass, carrying the food (2,200-4,400 volume a plant, half a meal to most of one), and three Tendril (84) and
 three Coral (140) in Space, colour and a snack. A plant regrows when it is left alone and dies when it is eaten down to 4
-prisms; the cell's seeder replants it elsewhere. The director surveys every plant the swarm can eat (`SwarmFauna.CanEat`,
+prisms; the cell's seeder replants it elsewhere, and a plant that has grown enough seeds a child of its own (the
+canonical species' `GrowthPerOffspring` rule, carried by the forks since 2026-10-25) - both refill only to the
+species' own count, so the reef never grows past 27. The director surveys every plant the swarm can eat (`SwarmFauna.CanEat`,
 the one edibility predicate) twice a second and weighs it by its live prisms times its OWN leaf (`Flora.LeafVolume`: a
 Borromean leaf is 73 volume, a Coral one 25, a Reed one 17).
 
@@ -480,10 +482,12 @@ Prisms: the reef 2,682 + one body of up to 642.
 
 ## 9. Next phases
 
-1. **Run it in the editor** (QA-TANDAVA-9..14; the Swarm cell has not run in Unity either - QA-SWARM-* first): the
+1. **Run it in the editor** (QA-TANDAVA-9..20; the Swarm cell has not run in Unity either - QA-SWARM-* first): the
    feeding intake against real Borromean plants, the bolt against real hulls, the HUD rows and the flare, the gold burst,
-   the halo, and how a full match plays against the seven-minute clock.
-2. **Tune from the playtest**: the moods' thresholds and speeds, the meal-break share, the banks, the clock.
-3. **The tactic chooser**: per-form defences beyond the guard ring (a Many-Headed lunge, the Antlion's jaw snap) on the
-   same queued-lever seam, each with a visible tell.
+   the halo, the rolled-up meals, the Many-Headed lunge and the Antlion's jaw snap at real hull speeds, and how long a
+   full match runs with no clock.
+2. **Tune from the playtest**: the moods' thresholds and speeds, the meal-break share, the banks, the lunge's reach and
+   `PlanWellClip`, the snap's lead and hold.
+3. **More tactics** on the same queued-lever seam (the Antlion's snap and the Many-Headed lunge landed in the sixth and seventh passes): one
+   for the Great Serpent and the Lord of the Dance beyond the coil and the halo, each with a visible tell.
 4. **Severing**: a cut region split into its own `SwarmFauna` (a decoy or a hunter), within the proxy and collider ceilings.
