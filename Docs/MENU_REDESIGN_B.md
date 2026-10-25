@@ -2925,7 +2925,9 @@ still the one random event, so both showed "Cosmic Shore soundtrack". Now:
 the chip's FIRST child, which is the chip frame's fill (`Fill`, `Border`, `Icon`), and left the sprite-less `Icon`
 drawing a white quad on top. It now finds the `Icon` child by name.
 
-## 61. The Hangar's pad presses belong to the menu (2026-10-25, awaiting in-editor approval)
+## 63. The Hangar's pad presses belong to the menu (2026-10-25, awaiting in-editor approval)
+
+(Numbered 63 because `claude/new-session-76hnyc`, in flight, already writes sections 61 and 62.)
 
 Yash's play test: on the Hangar's Abilities tab with a Sparrow, RT both paged the top bar to the Ark (the top bar shows
 LT / RT for that) and played Pulsefire Cannons (its keycap reads RT). `ScreenSwitcher` and `HangarAbilitiesPage` both
