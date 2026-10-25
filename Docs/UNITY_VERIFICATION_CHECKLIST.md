@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Crystal pickups run once per machine: no ghost omni crystal on a watcher's screen (`cece/gallant-brown-2gs03c`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselImpactor.RouteCrystalPickup(isSpawned, isOwner)`. A spawned copy of another pilot's vessel
+no longer runs the omni/elemental crystal chain from its own physics contact. Only the owner's
+ServerRpc → ClientRpc runs it, once on every peer. Before this, a watcher ran the chain twice. For a Squirrel the
+second morph found no ring (0.15 s anti-spam) and faded a collider-less copy of the crystal (Garrett, host, watching
+Shombith's Squirrel). Record: `R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md` §3.
+
+**Verified without the editor:** `unity_refcompile` player: OK; editor: 0 errors in changed files.
+`VesselCrystalPickupRouteTests` (3) compile; reverting `VesselImpactor` breaks them (negative control).
+
+**Verify in editor:**
+1. Host + one client (ParrelSync or two machines), both Squirrels. The client collects an omni crystal. On the
+   HOST's screen the crystal becomes the eight-prism ring and nothing is left behind. No
+   `[SquirrelCrystalMorph] no usable Shielded boost ring` warning appears.
+2. Reverse: the host collects; the client's screen shows the same clean morph.
+3. Each screen shows ONE ring per pickup, not two.
+4. Elemental crystal pickup by the client (any hull with a hull fusion): one fusion on the host's screen, not two.
+5. Offline freestyle: omni and elemental pickups still play as before.
+
 ### 🔴 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuReturnCard` (`_Scripts/UI/`) records the card a match was launched from
