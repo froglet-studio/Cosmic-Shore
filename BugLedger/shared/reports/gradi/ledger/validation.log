@@ -1,339 +1,3 @@
-2026-10-16T22:38:12.194Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-16T22:38:25.740Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-16T22:38:28.618Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-16T22:38:35.148Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-16T22:51:51.665Z PlayMode session ended (761s play run, exiting play mode): 1 fix(es) waiting; counted: none
-2026-10-17T01:00:11.635Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:00:24.845Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:00:27.755Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:00:33.860Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:30:19.141Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:30:32.987Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:30:33.324Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:30:41.388Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T01:38:53.952Z PlayMode session ended (476s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-cdf0c783c1 E-7cc3e0223c
-2026-10-17T21:46:04.621Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T21:46:45.418Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T21:46:45.805Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T21:46:46.482Z E-17461650a8: fix f8af9fb5b taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:46.560Z E-1f1ff22829: fix 8bcdde930 taken (EditMode); needs 2 clean run(s)
-2026-10-17T21:46:46.617Z E-2f25b16a12: fix d7e361701 taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:46.672Z E-4065bcae2a: fix a227e1e2b taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:46.726Z E-5713660fbd: fix 8df5d3359 taken (EditMode); needs 2 clean run(s)
-2026-10-17T21:46:46.780Z E-6020da4524: fix a227e1e2b taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:46.840Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-17T21:46:46.893Z E-959befc35b: fix f8af9fb5b taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:46.955Z E-be60130128: fix 59e83e19d taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:47.007Z E-c18c6cc0e6: fix 8df5d3359 taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:47.066Z E-c523697cae: fix 2e8d5f63b is not in this checkout yet — waiting for a pull
-2026-10-17T21:46:47.118Z E-c703a8f80b: fix f8af9fb5b taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:47.172Z E-cb11787d50: fix d7e361701 taken (EditMode); needs 2 clean run(s)
-2026-10-17T21:46:47.223Z E-edc6a81429: fix f8af9fb5b taken (PlayMode); needs 2 clean run(s)
-2026-10-17T21:46:53.707Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T22:06:47.482Z PlayMode session ended (1150s play run, exiting play mode): 13 fix(es) waiting; counted: E-17461650a8 1/2 E-2f25b16a12 1/2 E-4065bcae2a 1/2 E-6020da4524 1/2 E-959befc35b 1/2 E-be60130128 1/2 E-c18c6cc0e6 1/2 E-c703a8f80b 1/2 E-edc6a81429 1/2; fired: E-cdf0c783c1 E-4584be3111 E-79b40242f7
-2026-10-17T22:12:00.428Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T22:12:13.820Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T22:12:14.023Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T22:12:27.102Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-17T22:12:27.148Z E-c523697cae: fix 2e8d5f63b is not in this checkout yet — waiting for a pull
-2026-10-17T22:12:30.687Z editor load: play=False capture=True minPlay=15s issues=151
-2026-10-17T22:42:41.653Z PlayMode session ended (692s play run, exiting play mode): 13 fix(es) waiting; counted: E-17461650a8 2/2 E-2f25b16a12 2/2 E-4065bcae2a 2/2 E-6020da4524 2/2 E-959befc35b 2/2 E-be60130128 2/2 E-c18c6cc0e6 2/2 E-c703a8f80b 2/2 E-edc6a81429 2/2
-2026-10-17T23:06:52.133Z editor load: play=False capture=True minPlay=15s issues=142
-2026-10-17T23:07:08.092Z editor load: play=False capture=True minPlay=15s issues=142
-2026-10-17T23:07:08.794Z editor load: play=False capture=True minPlay=15s issues=142
-2026-10-17T23:07:12.540Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-17T23:07:12.585Z E-c523697cae: fix 2e8d5f63b is not in this checkout yet — waiting for a pull
-2026-10-17T23:18:21.345Z PlayMode session ended (245s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-cdf0c783c1 E-79b40242f7
-2026-10-17T23:25:45.004Z PlayMode session ended (400s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-20f939a2fa
-2026-10-17T23:40:44.418Z editor load: play=False capture=True minPlay=15s issues=144
-2026-10-17T23:41:00.566Z editor load: play=False capture=True minPlay=15s issues=144
-2026-10-17T23:41:00.603Z editor load: play=False capture=True minPlay=15s issues=144
-2026-10-17T23:41:06.839Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-17T23:41:06.886Z E-c523697cae: fix 2e8d5f63b is not in this checkout yet — waiting for a pull
-2026-10-17T23:45:16.645Z PlayMode session ended (192s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-17T23:52:44.914Z PlayMode session ended (293s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-18T00:11:35.269Z editor load: play=False capture=True minPlay=15s issues=145
-2026-10-18T00:11:49.352Z editor load: play=False capture=True minPlay=15s issues=145
-2026-10-18T00:11:49.415Z editor load: play=False capture=True minPlay=15s issues=145
-2026-10-18T00:11:58.112Z E-17461650a8: fix f8af9fb5b taken (EditMode); needs 2 clean run(s)
-2026-10-18T00:11:58.162Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T00:11:58.210Z E-c523697cae: fix 2e8d5f63b is not in this checkout yet — waiting for a pull
-2026-10-18T00:12:02.913Z editor load: play=False capture=True minPlay=15s issues=145
-2026-10-18T00:33:45.937Z PlayMode session ended (702s play run, exiting play mode): 5 fix(es) waiting; counted: none
-2026-10-18T00:34:02.956Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:34:38.425Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:34:53.819Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:34:53.884Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:34:54.111Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:34:58.115Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T00:34:58.162Z E-c523697cae: fix 2e8d5f63b taken (EditMode); needs 2 clean run(s)
-2026-10-18T00:44:18.201Z PlayMode session ended (208s play run, exiting play mode): 6 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-18T00:52:58.090Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:53:13.359Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:53:13.439Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:53:20.939Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T00:53:29.383Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T00:58:04.146Z PlayMode session ended (282s play run, exiting play mode): 6 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-18T01:41:48.348Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T01:42:02.561Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T01:42:02.614Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T01:42:10.732Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T01:42:12.788Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:16:09.609Z PlayMode session ended (207s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T02:20:29.099Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:20:47.085Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:20:48.199Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:20:55.133Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T02:20:57.579Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:28:30.739Z PlayMode session ended (310s play run, exiting play mode): 6 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-18T02:31:40.363Z PlayMode session ended (162s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T02:43:42.795Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:43:58.435Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:43:59.015Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:44:05.319Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T02:45:14.982Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:45:31.286Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:45:31.489Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:45:37.539Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T02:45:40.577Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:50:06.351Z PlayMode session ended (247s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T02:52:39.410Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:52:54.766Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:52:54.785Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:53:02.041Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T02:53:04.388Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T02:58:35.681Z PlayMode session ended (259s play run, exiting play mode): 6 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-18T03:12:37.268Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T03:12:52.600Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T03:12:52.638Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T03:13:00.735Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T03:13:58.083Z PlayMode session ended (51s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T03:23:07.804Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T03:23:22.193Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T03:23:22.196Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T03:23:28.889Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T03:28:42.036Z PlayMode session ended (85s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T03:40:48.226Z PlayMode session ended (410s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T03:56:11.486Z PlayMode session ended (119s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T03:58:55.267Z PlayMode session ended (107s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T04:05:28.621Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T04:05:46.190Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T04:05:46.454Z editor load: play=False capture=True minPlay=15s issues=146
-2026-10-18T04:05:51.286Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T04:17:05.358Z PlayMode session ended (416s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T04:50:36.202Z editor load: play=False capture=True minPlay=15s issues=148
-2026-10-18T04:51:03.798Z editor load: play=False capture=True minPlay=15s issues=148
-2026-10-18T04:51:04.437Z editor load: play=False capture=True minPlay=15s issues=148
-2026-10-18T04:51:12.920Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T04:51:16.013Z editor load: play=False capture=True minPlay=15s issues=148
-2026-10-18T04:55:22.595Z PlayMode session ended (219s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T05:25:35.864Z PlayMode session ended (2032s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T05:28:20.390Z PlayMode session ended (149s play run, exiting play mode): 6 fix(es) waiting; counted: none
-2026-10-18T05:49:07.358Z editor load: play=False capture=True minPlay=15s issues=149
-2026-10-18T05:49:31.733Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T05:49:31.835Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T05:49:38.986Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T05:54:17.601Z PlayMode session ended (270s play run, exiting play mode): 6 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-18T06:15:53.055Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T06:16:37.864Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T06:16:40.682Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T06:16:58.336Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T06:17:03.904Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T06:23:42.109Z PlayMode session ended (392s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-18T13:35:15.217Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:35:51.599Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:35:51.762Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:35:55.294Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T13:36:00.971Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:41:54.977Z PlayMode session ended (305s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-18T13:43:53.023Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:44:37.833Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:44:37.837Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:44:45.961Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T13:44:48.259Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T13:48:13.805Z PlayMode session ended (175s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-18T13:50:18.242Z PlayMode session ended (108s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-18T14:32:43.681Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T14:33:27.070Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T14:33:27.088Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T14:33:35.698Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T14:33:47.762Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T14:38:51.823Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T14:39:46.090Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T14:39:53.460Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-18T14:39:53.758Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-18T15:18:01.089Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T00:35:18.829Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T00:36:24.728Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T00:36:31.945Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-19T00:36:41.853Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T00:36:46.977Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T14:44:44.554Z PlayMode session ended (363s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-ced2f8d740 E-e5ff2abb8c E-e6054bc064 E-46ca22c3ef
-2026-10-19T14:56:13.786Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T15:00:17.429Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T15:00:18.222Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T15:22:17.410Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-19T15:22:31.003Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T16:34:59.950Z PlayMode session ended (511s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-19T16:35:15.122Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T21:03:35.481Z PlayMode session ended (3322s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-ced2f8d740 E-e5ff2abb8c E-e6054bc064
-2026-10-19T22:08:43.364Z PlayMode session ended (3164s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c E-997a063b2a E-cdf0c783c1
-2026-10-19T22:19:28.944Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T22:20:39.131Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-19T22:20:52.489Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T22:20:55.516Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-19T22:21:32.637Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T13:58:51.847Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T14:00:08.498Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T14:00:13.216Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T14:00:23.405Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T14:00:32.171Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T14:09:32.316Z PlayMode session ended (327s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-20T14:15:49.748Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T14:16:52.792Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T14:16:52.806Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T14:17:00.654Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T15:45:22.048Z PlayMode session ended (764s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-20T15:46:54.564Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T15:47:51.505Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T15:47:54.351Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T16:42:48.994Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T16:44:00.039Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T16:44:00.118Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T16:44:08.814Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T16:52:05.116Z PlayMode session ended (463s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-20f939a2fa
-2026-10-20T17:01:42.681Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T17:02:34.165Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T17:02:34.506Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T17:02:39.777Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T17:02:49.938Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T17:38:36.465Z PlayMode session ended (358s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-20T17:42:20.500Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T17:43:45.801Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T17:43:46.085Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T17:44:21.421Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T17:49:32.692Z PlayMode session ended (308s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c
-2026-10-20T17:57:14.025Z PlayMode session ended (398s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c
-2026-10-20T18:18:06.768Z PlayMode session ended (1066s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c
-2026-10-20T18:58:23.908Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T18:59:21.104Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T18:59:21.238Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T18:59:26.010Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T18:59:33.455Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:08:28.970Z PlayMode session ended (509s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-fa9f643cd7
-2026-10-20T19:18:13.458Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:19:13.074Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:19:13.130Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:19:19.174Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T19:19:22.978Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:38:59.125Z PlayMode session ended (707s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-20f939a2fa E-cdf0c783c1
-2026-10-20T19:58:06.054Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:59:08.359Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:59:10.087Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T19:59:15.269Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T19:59:19.793Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T22:58:38.317Z PlayMode session ended (525s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c
-2026-10-20T23:10:11.189Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T23:11:43.465Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T23:11:46.580Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T23:11:52.224Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-20T23:12:03.227Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-20T23:51:44.192Z PlayMode session ended (767s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-20f939a2fa
-2026-10-20T23:59:56.091Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:01:14.773Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:01:14.801Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:01:20.006Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T00:01:25.899Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:03:49.494Z PlayMode session ended (112s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T00:20:33.472Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:21:39.045Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:21:39.135Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:21:45.131Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T00:21:50.089Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:25:48.176Z PlayMode session ended (169s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-21T00:28:51.889Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:30:08.243Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:30:08.261Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:30:16.535Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T00:30:22.985Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:40:21.551Z PlayMode session ended (418s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-fa9f643cd7 E-faa24ff5b6
-2026-10-21T00:49:12.492Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:50:26.056Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:50:26.081Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T00:50:31.729Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T01:01:27.362Z PlayMode session ended (439s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c
-2026-10-21T02:01:50.304Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:03:03.655Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:03:03.676Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:03:09.383Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T02:08:57.010Z PlayMode session ended (332s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T02:26:18.232Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:27:33.510Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:27:33.856Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:27:39.911Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T02:31:05.809Z PlayMode session ended (165s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-cdf0c783c1
-2026-10-21T02:35:14.930Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:36:34.630Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:36:35.575Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:36:43.154Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T02:36:48.972Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T02:42:54.501Z PlayMode session ended (310s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T02:52:26.019Z PlayMode session ended (391s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-20f939a2fa
-2026-10-21T02:55:41.451Z PlayMode session ended (160s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-2f792e94b7
-2026-10-21T03:03:50.868Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:05:07.927Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:05:08.008Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:05:14.152Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T03:30:28.210Z PlayMode session ended (112s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-20f939a2fa
-2026-10-21T03:34:55.487Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:36:15.893Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:36:16.131Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:36:23.056Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T03:36:27.463Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:43:47.613Z PlayMode session ended (398s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c
-2026-10-21T03:54:31.074Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:55:51.323Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:55:51.492Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T03:56:00.550Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:02:20.934Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T04:36:21.249Z PlayMode session ended (130s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T04:40:30.121Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:41:58.429Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:41:58.734Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:42:03.669Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T04:42:09.087Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:53:39.108Z PlayMode session ended (442s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T04:58:10.610Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:59:37.837Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:59:37.853Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T04:59:45.352Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T04:59:50.424Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:07:04.925Z PlayMode session ended (363s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T05:18:24.787Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:19:49.569Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:19:49.626Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:19:56.234Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T05:20:00.202Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:21:39.064Z PlayMode session ended (46s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T05:26:56.417Z PlayMode session ended (271s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T05:36:49.136Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:37:40.463Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T05:45:21.895Z PlayMode session ended (199s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T05:47:06.881Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:47:29.379Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T05:47:33.285Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:47:33.302Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:47:33.399Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:57:39.761Z PlayMode session ended (529s play run, exiting play mode): 4 fix(es) waiting; counted: none; fired: E-1f28d58e0c
-2026-10-21T05:59:16.725Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:59:28.729Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:59:28.821Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T05:59:33.378Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
-2026-10-21T05:59:36.284Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T06:03:46.905Z PlayMode session ended (241s play run, exiting play mode): 4 fix(es) waiting; counted: none
-2026-10-21T06:44:58.976Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T06:45:12.180Z editor load: play=False capture=True minPlay=15s issues=150
-2026-10-21T06:45:12.204Z editor load: play=False capture=True minPlay=15s issues=150
 2026-10-21T06:45:14.036Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
 2026-10-21T06:47:07.885Z PlayMode session ended (85s play run, exiting play mode): 4 fix(es) waiting; counted: none
 2026-10-21T06:49:09.743Z PlayMode session ended (85s play run, exiting play mode): 4 fix(es) waiting; counted: none
@@ -597,3 +261,121 @@
 2026-10-25T00:32:12.823Z editor load: play=False capture=True minPlay=15s issues=149
 2026-10-25T00:32:22.875Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
 2026-10-25T00:36:26.999Z PlayMode session ended (253s play run, exiting play mode): 5 fix(es) waiting; counted: none; fired: E-d6b3d6f496 E-2fab142e42
+2026-10-25T00:43:28.071Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T00:46:53.939Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T00:47:06.349Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T00:47:07.020Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T00:47:15.066Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T00:56:06.499Z PlayMode session ended (539s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T00:57:35.549Z PlayMode session ended (74s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T01:05:52.945Z PlayMode session ended (274s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T01:54:46.728Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T01:58:12.328Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T01:58:25.412Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T01:58:25.486Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T01:58:32.914Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T02:00:00.229Z PlayMode session ended (95s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T02:15:56.069Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:16:05.270Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T02:16:17.882Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:16:17.928Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:16:18.163Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:16:25.619Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T02:21:21.462Z PlayMode session ended (304s play run, exiting play mode): 5 fix(es) waiting; counted: none; fired: E-d6b3d6f496 E-2fab142e42
+2026-10-25T02:21:34.168Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:24:15.546Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T02:24:27.394Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:24:27.639Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:24:36.311Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T02:28:44.320Z PlayMode session ended (257s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T02:29:25.870Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:36:45.387Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T02:36:57.376Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:36:57.388Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:37:05.634Z E-6b79cd07f1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T02:37:05.686Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T02:37:05.726Z E-ca3bc5cbe1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T02:49:26.349Z PlayMode session ended (749s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T02:51:26.336Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:51:57.878Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T02:52:10.090Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:52:10.129Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:52:10.156Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T02:52:18.328Z E-0de9ec6c70: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T02:52:18.378Z E-41b7610878: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T02:52:18.424Z E-6b79cd07f1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T02:52:18.471Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T02:52:18.517Z E-ca3bc5cbe1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T02:54:39.653Z PlayMode session ended (149s play run, exiting play mode): 5 fix(es) waiting; counted: none; fired: E-d6b3d6f496
+2026-10-25T02:54:51.993Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:00:31.425Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:00:40.696Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T03:00:52.832Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:00:53.044Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:00:53.626Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:01:01.472Z E-0de9ec6c70: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:01:01.521Z E-41b7610878: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:01:01.570Z E-6b79cd07f1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:01:01.621Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T03:01:01.668Z E-ca3bc5cbe1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:04:04.529Z PlayMode session ended (192s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T03:07:56.086Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:09:59.130Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T03:10:11.164Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:10:11.202Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:10:18.941Z E-0de9ec6c70: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:10:18.989Z E-41b7610878: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:10:19.052Z E-6b79cd07f1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:10:19.109Z E-6e925c3b8b: fix db43442b7 is not in this checkout yet — waiting for a pull
+2026-10-25T03:10:19.168Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T03:10:19.221Z E-ca3bc5cbe1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:17:03.510Z PlayMode session ended (412s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T03:21:46.789Z PlayMode session ended (180s play run, exiting play mode): 5 fix(es) waiting; counted: none; fired: E-d6b3d6f496
+2026-10-25T03:37:25.674Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:40:36.918Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T03:40:48.841Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:40:48.908Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:40:56.911Z E-0de9ec6c70: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:40:56.967Z E-41b7610878: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:40:57.015Z E-6b79cd07f1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:40:57.066Z E-6e925c3b8b: fix db43442b7 is not in this checkout yet — waiting for a pull
+2026-10-25T03:40:57.116Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T03:40:57.166Z E-ca3bc5cbe1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:44:07.753Z PlayMode session ended (199s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T03:51:42.097Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:52:32.511Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T03:52:44.508Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:52:44.622Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:52:44.624Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T03:52:52.391Z E-0de9ec6c70: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:52:52.438Z E-41b7610878: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T03:52:52.485Z E-6b79cd07f1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:52:52.534Z E-6e925c3b8b: fix db43442b7 is not in this checkout yet — waiting for a pull
+2026-10-25T03:52:52.583Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T03:52:52.634Z E-ca3bc5cbe1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T03:57:16.540Z PlayMode session ended (272s play run, exiting play mode): 5 fix(es) waiting; counted: none; fired: E-d6b3d6f496
+2026-10-25T16:23:15.876Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T16:56:47.736Z editor load: play=True capture=True minPlay=15s issues=150
+2026-10-25T16:57:01.202Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T16:57:01.862Z editor load: play=False capture=True minPlay=15s issues=150
+2026-10-25T16:57:10.204Z E-0de9ec6c70: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.245Z E-16d65ffecb: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.296Z E-20f939a2fa: fix 911c8c2b7 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.344Z E-2320339269: fix 3fa268cd7 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T16:57:10.395Z E-41b7610878: fix c5449e28a is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.445Z E-4584be3111: fix 911c8c2b7 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.485Z E-4b42aa3244: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.528Z E-5103c76904: fix f3b155dd3 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T16:57:10.574Z E-5a15f5e924: fix f3b155dd3 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T16:57:10.626Z E-6b79cd07f1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.682Z E-6e925c3b8b: fix db43442b7 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.732Z E-72e807d601: fix 456375be0 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.774Z E-79b40242f7: fix 97ecf47e0 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.817Z E-7cc3e0223c: fix 3fa268cd7 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T16:57:10.858Z E-908f18b36f: fix 5ad9f467b is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.896Z E-a41c3e0381: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:10.938Z E-ad12affa41: fix 3fa268cd7 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T16:57:10.989Z E-ca3bc5cbe1: fix e80f9a02d is not in this checkout yet — waiting for a pull
+2026-10-25T16:57:11.036Z E-f1681b036f: fix 605570721 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T16:57:11.089Z E-fa9f643cd7: fix 911c8c2b7 is not in this checkout yet — waiting for a pull
+2026-10-25T17:07:06.588Z PlayMode session ended (605s play run, exiting play mode): 11 fix(es) waiting; counted: E-2320339269 1/2 E-5103c76904 1/2 E-5a15f5e924 1/2 E-7cc3e0223c 1/2 E-ad12affa41 1/2 E-f1681b036f 1/2; fired: E-d6b3d6f496
