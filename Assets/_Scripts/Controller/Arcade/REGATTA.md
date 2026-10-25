@@ -400,6 +400,33 @@ minute in both), which is why the model is trusted to rank the fix; the editor i
 Tests: `RegattaRaceLineTests` (`AimThroughRing_*`, `DistanceAlong_*`). The break-off flag is held by the model's
 self-test, not a Unity test (`AIPilot` needs a live vessel). Not editor-verified (`UNITY_VERIFICATION_CHECKLIST.md`).
 
+### 6.4 On the line, "straight" is judged on the path (2026-10-25, the Rhino first)
+
+The Rhino, measured on its own line for the first time (`Tools/Build/rhino_line_sim.py`: the ramp drive
+`RampBoostAIPolicySO` on the real race line with `AIPilot`'s stick law, the Regatta variant's numbers and §6.3's fix):
+it ramped only **5-10%** of a race and took **196-216 s** for three laps; the real Rhino AIs raced at its 50 u/s cruise
+(5-6 rings a minute) after the line arrived. Every frame the ramp stayed off, the one gate that failed was the
+angle: `AIBoostPolicySO.IsStraight` asks for the course within 12 deg of the target, and since 2026-10-17 the target the
+drives judge is the RING (so the runway is the ring's range, §6.2). But the line follows the braid's curve between
+rings, so the hull is pointed along the curve and the ring round the bend sat 18-35 deg off the course (median 21 deg):
+no stretch of the line was ever straight, for ANY hull's speed verb that asks it (the Rhino's ramp, the Sparrow's
+afterburner, the Scarab's dash, the Serpent's pellets, the Dolphin's spend; the Manta's Soar reads the stick).
+
+**Fix:** `AIBoostContext.PathDirection`: when the pilot's aim is a path's lead point (`AIPilot.MarkAimAsPathLead`,
+only Regatta's line sets it) the drives judge "straight" (`AngleToTarget`, and the Dolphin's nose check) on where the
+pilot is going; the runway and the corner stay the ring's. Every other mode and aim is unchanged (no path, no change).
+
+| Rhino, 3 laps | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| cruise only (no ramp) | 285.3 s | 320.2 s | 341.3 s | 340.0 s |
+| judged by the ring (before) | 196.7 s, ramping 5% | 198.1 s, 7% | 195.7 s, 10% | 216.2 s, 8% |
+| judged by the path (now) | **29.6 s**, 100% | **40.7 s**, 82% | **51.8 s**, 70% | **48.0 s**, 85% |
+
+No mouth missed in any of them. **Not changed, for Yash to decide:** the sweep (`rhino_line_sim.py --sweep`) finds
+170 → 119 s over the four courses with `cornerSpeed` 1000 (it is 333, set by hand on 2026-10-24 from Yash's Rhino
+races) and `engageRunwaySeconds` 0.6 (1.5). The model has no rail rams, which matter at 700 u/s, so the person's number
+stands until editor races say otherwise. Tests: `RegattaDriveTuningTests.Context_*`, `RampPolicy_OnTheLine_*`.
+
 ## 6.5 Scoring — the team sum
 
 `RegattaScoringRuleSO` (a `GateRaceScoringRuleSO` subclass; the asset is points rules,

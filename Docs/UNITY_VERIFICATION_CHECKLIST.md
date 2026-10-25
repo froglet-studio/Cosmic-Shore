@@ -14582,3 +14582,18 @@ instead: refcompile player-dev OK; the two rewrites matched the originals on 200
 2. Release, any mode with Charge crystals (Wrecking Ball): the bolt still walks the seams, never circles one bloom a
    fifth time, and the petals beside it glow as before.
 3. In the capture: no `GC.Alloc` under `CrystalChargeArcs.LateUpdate`; its ms/frame under the 0.83 of 10-22.
+
+## 🔴 2026-10-25 — Regatta: on the race line, the speed drives judge "straight" on the path (unverified: no Unity CLI in the session)
+
+**Files:** `AIBoostPolicySO.cs` (`AIBoostContext.ToPath` / `PathDirection`; `AngleToTarget` reads it), `AIPilot.cs`
+(`TickBoostPolicy` passes the line's aim when it is a path lead), `ChargeBoostAIPolicySO.cs` (nose check). What ran
+instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; console, conditional
+compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGATTA.md` §6.4.
+
+1. Run `RegattaDriveTuningTests` (the three new `Context_*` / `RampPolicy_OnTheLine_*`): all pass.
+2. Regatta, I1 and I3, an AI Rhino (Third Eye, Follow it): its boost status reads "ramping" on the straights of its line
+   and "braking on the ramp" before corners, not "waiting" for the whole race; it races far above 50 u/s.
+3. Same grid with an AI Sparrow, Scarab and Dolphin: the Sparrow holds its afterburner on straights, the Scarab
+   dashes, the Dolphin spends its charge (status "discharging").
+4. Any other mode with these hulls (a crystal mode, Headlong): boosting looks as before (no path, no change).
+
