@@ -126,7 +126,7 @@ can end the run on somebody else's score.
 
 > **The Skim Race entry shipped asking for 39 crystals, and a Skim Race at intensity 1 ends at 24.**
 > The tool did not flag it because `EndConditionOverrides` authors Skim Race as `0` = *auto*, and the
-> auto value is computed IN THE SCENE by `CrystalCollisionTurnMonitor` — the scene's track has 8
+> auto value is computed IN THE SCENE by the crystal turn monitor (`NetworkCrystalCollisionTurnMonitor`) — the scene's track has 8
 > waypoints at intensity 1 and the monitor runs 3 laps there — so `TryGetAuthoredTurnTarget` had
 > nothing to compare against and the check was silently skipped. 39 is only the monitor's fallback
 > for a scene with no track at all. Every player who "completed" the race had 24, never reached 39,
