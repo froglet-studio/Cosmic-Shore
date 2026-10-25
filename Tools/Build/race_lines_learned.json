@@ -8,6 +8,9 @@
     },
     "Rhino": {
       "LaneShare": 0.676
+    },
+    "Scarab": {
+      "LaneShare": 0.788
     }
   },
   "note": "Written by learn_drives_from_flights.py --write from people's Regatta flights; read by author_race_lines.py."
