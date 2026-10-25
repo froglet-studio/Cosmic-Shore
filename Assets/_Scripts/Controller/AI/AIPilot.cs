@@ -1380,9 +1380,12 @@ namespace CosmicShore.Gameplay
             Vector3 toJudged = _objective.Has && !_objective.Mistake ? judged - transform.position : toObjective;
             // The leg after the objective, from the objective (zero when the mode does not say, or while breaking off).
             Vector3 nextLeg = !_extending && _nextLegProvider?.Invoke() is Vector3 after ? after - judged : default;
+            // On a path (a race line's lead point, MarkAimAsPathLead) "is this straight" is asked of where the pilot is
+            // going, not of the ring round the bend (AIBoostContext.PathDirection); the runway and corner stay the ring's.
+            Vector3 toPath = _aimIsPathLead && !_extending ? toObjective : default;
             _boostDriver.Tick(new AIBoostContext(
                 toJudged, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
-                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg));
+                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg, toPath));
 
             // The drift-charge driver spends the bank by ending the commit drift on a straight -
             // the same release the off-course branch performs, just earlier.
