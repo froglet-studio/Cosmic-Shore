@@ -14573,3 +14573,12 @@ SpindleLodTests 17/17 on the engine runner (no test covers the batches).
 5. After a few races, run `python3 Tools/Build/regatta_rival_report.py --dir <your flights> --since 2026-10-26`: rings
    a minute per hull should rise from 5.5-9.3 toward the model's (Manta ~22, Scarab ~27, Rhino ~11).
 
+## 🔴 2026-10-25 — Charge crystal light: no per-seam allocation, cheaper petal glow (unverified: no Unity CLI in the session)
+
+**File:** `Assets/_Scripts/Utility/ChargeArcs.cs` (`ChargeSeamWalker.AvoidCircling`, `ChargeArcs.SeamWalk`). Ran
+instead: refcompile player-dev OK; the two rewrites matched the originals on 200,000 random cases each.
+
+1. Edit-mode: run `CrystalChargeArcsTests` (they need the Editor's AssetDatabase).
+2. Release, any mode with Charge crystals (Wrecking Ball): the bolt still walks the seams, never circles one bloom a
+   fifth time, and the petals beside it glow as before.
+3. In the capture: no `GC.Alloc` under `CrystalChargeArcs.LateUpdate`; its ms/frame under the 0.83 of 10-22.
