@@ -440,7 +440,8 @@ Deviations from the board, all small:
 - **Locked PORT has no hover lift.** Its word's colour belongs to `MenuAvailabilityView`, so the
   instance's `KitHoverTint` is disabled rather than fighting it.
 - **No focus ring on the tabs**, as agreed: they are not `Selectable`s. Gamepad moves through LT / RT,
-  unchanged.
+  unchanged. *(Superseded 2026-10-25 by §64: each tab is a `KitTopNavTab` pad stop with the focus ring, and LT / RT
+  page the screens only while the pad is on the bar.)*
 - **The lock and the dim use `SetActive` / literal colours inside `MenuAvailabilityView`**, existing
   code left alone like `UpdateNavBar`. The literal is set to the `InactiveLight` value; the PORT
   word's own colour is the kit default (`NeutralLightest`), driven externally on that one instance.
@@ -2948,3 +2949,38 @@ that tab, and still leave LB / RB and A fighting. The TRY flight (§35) could ta
 The header line now reads "Labels follow your device. Select one to see it again." (was "Press one", which read as
 "press that control"; Yash, 2026-10-25), authored in `author_menu_hangar.py` and regenerated into `HangarView.prefab`.
 Changed: `HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only), the header line.
+
+## 64. LT / RT page the screens only from the tab bar (2026-10-25, awaiting in-editor approval)
+
+Yash, after the §63 fix: "LT and RT will only control the tab left and right only if we select that tab panel ... if
+we are down, such as on the hangar's vessels controls or below some other buttons, then we cannot use LT and RT for
+going left and right ... make it one source of truth: you have to navigate the tab menu to access it with LT and RT."
+
+**The rule.** `ScreenSwitcher.IsOnNavBar(selected, NavBar)` is the one test: the pad's selection is a live control under
+the nav bar. Only then do LT / RT page the screens. Anywhere below the bar a trigger belongs to whatever the pad is on
+(the menu does nothing with it). Hub windows are unchanged: inside Toy Box / Arcade / Arena / Mission, LT / RT still
+slide between them (§47.2), since that strip is not a pad stop.
+
+**The tabs are pad stops now.** Until today the five tabs were pointer-only (an `EventTrigger`, no `Selectable`), so the
+pad could not land on them at all; only the invisible LT / RT keycap buttons at the ends of the row were reachable.
+- `KitTopNavTab` (new, `Assets/_Scripts/UI/Kit/`): a `KitSelectableBase` on the tab prefab's root that owns only the
+  focus ring - the sky-blue Selection with the selection light, inset to stay inside the 84-tall band. Its own `onClick`
+  stays empty: the tab's `EventTrigger` presses it, on a click (eventID 4) and now on Submit (eventID 15, A or Enter),
+  so a click never presses twice. The word, underline and hover lift are unchanged.
+- The LT / RT keycap buttons leave pad navigation (`Navigation.Mode` None): they are pointer affordances, draw no ring,
+  and D-pad up from a screen should land on a tab. A click on them still pages.
+
+**The pad stays on the bar.**
+- After LT / RT the selection moves to the tab of the screen now showing, so the ring follows the underline.
+- `Refocus` leaves a selection on the bar alone while no window is open: a screen change under the bar selects nothing
+  on the new screen (selecting a Hangar vessel tile would pick that vessel). D-pad down enters the screen.
+- On Home, A on a tab is the tab's press, not the Arcade shortcut.
+- Under an open window the bar's `CanvasGroup` is not interactable (`UpdateScreensInteractable`), so the pad cannot
+  climb out of the window onto a tab. A click on a tab is untouched (its `EventTrigger` is not gated by a
+  `CanvasGroup`); the LT / RT keycap buttons, which would page the screen behind the window, stand down with it.
+
+Generators: `author_ui_kit_prefabs.py` adds the ring and `KitTopNavTab` to `KitTopNavTab.prefab` (planted defects: the tab
+is no pad stop; it loses its ring); `author_menu_topnav.py` adds the Submit entries and takes the keycaps out of pad
+navigation (planted defects: A no longer presses HOME; the RT keycap back in pad navigation). `NavBarPadFocusTests`
+holds the rule. Changed: `ScreenSwitcher`, `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity` (top nav
+only), comments in `KitTextTab`, `KitHoverTint`, `HangarAbilitiesPage`.
