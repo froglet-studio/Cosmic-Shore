@@ -864,6 +864,18 @@ namespace CosmicShore.Gameplay
             if (duration <= 0.01f) return;
             if (blockCollider) blockCollider.enabled = false;
 
+            // A prism whose creation has not completed is invisible and has no render entity yet (one is made
+            // when it first shows), so there is nothing to suction. Its pending creation is cancelled: completing
+            // during the suction would pop it in at full size inside a world shrinking to a point. These were the
+            // Orrery swaps' "no companion render entity" prisms (T-20261021-e916).
+            if (!IsCreationComplete)
+            {
+                CancelPendingCreation();
+                CosmicShore.Utility.PerformanceBenchmark.LoadInsights.Count(
+                    "Suction: prisms not created yet (invisible; creation cancelled)");
+                return;
+            }
+
             var handle = RenderHandle;
             if (!PrismRenderService.IsHandleUsable(in handle))
             {
@@ -882,8 +894,10 @@ namespace CosmicShore.Gameplay
 
                 CosmicShore.Utility.PerformanceBenchmark.LoadInsights.Count(
                     "Suction: prisms with no render entity (they snap instead of suctioning)");
-                PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
-                    PrismRenderService.StatusLine());
+                // The detail line is composed only for the one warning that is actually logged.
+                if (PrismClockDiagnostics.WillWarnNoRenderEntity("cellSwapSuction"))
+                    PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
+                        _renderEntityDecline ?? PrismRenderService.StatusLine());
                 return;
             }
 
@@ -1312,6 +1326,19 @@ namespace CosmicShore.Gameplay
         /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
         /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
         /// </summary>
+        /// <summary>
+        /// Abandon this life's pending creation (spawn wait or the creation queue): the prism stays invisible,
+        /// collider-off and unregistered until it is released or re-initialised. For mass leaving the world
+        /// before it ever showed (a retiring world's suction). No-op once complete.
+        /// </summary>
+        public void CancelPendingCreation()
+        {
+            if (IsCreationComplete) return;
+            if (_creationRoutine != null) StopCoroutine(_creationRoutine);
+            _creationRoutine = null;
+            _creationQueued = false;   // its queue entry is dropped when the drain reaches it
+        }
+
         public void CompleteCreationImmediately()
         {
             if (destroyed || IsCreationComplete || (_creationRoutine == null && !_creationQueued)) return;
