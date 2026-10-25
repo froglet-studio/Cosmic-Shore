@@ -62,6 +62,7 @@ MonoBehaviour:
   decoyCooldown: 4
   dashSpeed: 3
   dashGap: 40
+  decoyPlaceHold: 0.3
   decoyTapPixels: 70
   teleportGuard: 0.6
   pooEvery: 6

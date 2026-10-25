@@ -359,7 +359,8 @@ namespace CosmicShore.Gameplay
         /// plants'): a plant prism the net takes is PLUCKED, freed from its plant as ordinary cell mass
         /// (<see cref="HealthPrism.LeaveAsSkeleton"/>: it stops swaying, the plant forgets it, the mass stays in the world),
         /// then dragged like any other. Never a creature's body (the creature is netted as a creature), super-shielded mass,
-        /// a prism still growing in, an environment-owned track, or the trail still coming out of our own hull.
+        /// a prism still growing in, an environment-owned track (an owner-less plain prism; plants are owner-less too and ARE dragged), or the trail
+        /// still coming out of our own hull.
         /// </summary>
         void CatchPrisms(JacksExecutor ex)
         {
@@ -374,8 +375,11 @@ namespace CosmicShore.Gameplay
             {
                 var p = _prisms[i];
                 if (!p || p.destroyed || p.SpatialIndexId < 0 || _draggedSet.Contains(p)) continue;
-                if (p.IsEnvironmentOwned || SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
                 var living = p as HealthPrism;
+                // an owner-less plain prism is a mode's fixed environment (Skim Race's track); every PLANT prism is owner-less
+                // too (IsEnvironmentOwned is "no player name"), and skipping those is what kept the net from touching any prism
+                // in rounds 5 and 7
+                if ((p.IsEnvironmentOwned && !living) || SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
                 if (living && living.ResolveOwnerFauna()) continue;   // a creature's body: the creature is netted
                 if (!f.Contains(p.transform.position, 0.5f * p.transform.lossyScale.magnitude, out float s, out float t, out float w))
                     continue;

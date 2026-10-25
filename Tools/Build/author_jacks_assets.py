@@ -576,7 +576,7 @@ NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDept
               "  jackCrystalHeight: 200\n"
               "  netCameraFill: 0.8\n  netCameraEase: 3\n")
 # The Time ability and the second decoy (Garrett, 2026-10-25), after decoyCooldown where the C# declares them.
-DASH_FIELDS = "  dashSpeed: 3\n  dashGap: 40\n  decoyTapPixels: 70\n"
+DASH_FIELDS = "  dashSpeed: 3\n  dashGap: 40\n  decoyPlaceHold: 0.3\n  decoyTapPixels: 70\n"
 HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  herdJacksFill: 0.8\n  herdJacksMargin: 40\n"
                     "  viewZoomEase: 3\n  zoomButtonSize: 0.09\n"
                     "  zoomButtonIcon: {fileID: 0}\n  callButtonIcon: {fileID: 0}\n")
@@ -614,6 +614,8 @@ def config_retrofit(text: str) -> str:
         text = re.sub(r"^(  netPrismCap: .*\n)",
                       lambda m: m.group(1) + "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", text,
                       count=1, flags=re.M)
+    if "  dashSpeed:" in text and "  decoyPlaceHold:" not in text:   # round 9 (2026-10-25): a held trigger lays its decoy
+        text = re.sub(r"^(  dashGap: .*\n)", lambda m: m.group(1) + "  decoyPlaceHold: 0.3\n", text, count=1, flags=re.M)
     if "  dashSpeed:" not in text:   # round 8 (2026-10-25): the dash and the second decoy
         text = re.sub(r"^(  decoyCooldown: .*\n)", lambda m: m.group(1) + DASH_FIELDS, text, count=1, flags=re.M)
     if "  herdViewZoom:" in text and "  herdJacksFill:" not in text:
@@ -708,14 +710,15 @@ MAP_ENTRIES = [
     (3, 0, "Herding Ring", "Space widens the ring both jacks and the decoy push the herd out of; it is never "
         "smaller than a big thumb.",
      "Eat Shields", "The herd eats shielded prisms."),
-    (4, 1, "Decoy Dash", "Herding, pull a trigger (or tap the decoy) and both jacks dash to the decoy. Time makes the dash "
-        "and the herd faster.",
-     "Second Decoy", "A second decoy: the jack on each side of the screen leaves its own (its bumper, or lifting its thumb), "
-        "and that side's trigger dashes to it."),
+    (4, 1, "Decoy Dash", "Herding, tap a trigger (or tap the decoy) and both jacks dash to the decoy; hold the trigger to "
+        "lay the decoy at the jack on that side. There is always one decoy. Time makes the dash and the herd faster.",
+     "Second Decoy", "A second decoy: each trigger has its own - hold it to lay it at the jack on that side, tap it to dash "
+        "there."),
 ]
 # The words the map shipped with before the net (2026-10-21..24): a map that still carries them is rewritten (2026-10-25:
 # "update the map text"); words the team edited since are left alone.
-STALE_MAP_WORDS = ("The jacks'' call (A)", "(X), so they can jump back", "'Flying Decoy'", "'Herd Speed'")
+STALE_MAP_WORDS = ("The jacks'' call (A)", "(X), so they can jump back", "'Flying Decoy'", "'Herd Speed'",
+                   "Herding, pull a trigger (or tap the decoy)")
 
 
 def map_entries() -> str:
@@ -850,7 +853,7 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no herd glow field (run the tool)")
     if ("  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config
             or "  netPrismCap:" not in config or "  jackNetCrystalReach:" not in config or "  netSwingSeconds:" not in config
-            or "  netLitLift:" not in config or "  dashSpeed:" not in config):
+            or "  netLitLift:" not in config or "  dashSpeed:" not in config or "  decoyPlaceHold:" not in config):
         errs.append("JacksConfig.asset: no net fields (run the tool)")
     if "  herdViewZoom:" not in config or "  callButtonIcon:" not in config or "  herdJacksFill:" not in config:
         errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")

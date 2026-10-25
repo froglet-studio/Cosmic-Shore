@@ -11,7 +11,7 @@ namespace CosmicShore.UI
     /// <list type="bullet">
     /// <item><b>Charge</b> - the share of the herd that is DANGER, on the card's gauge.</item>
     /// <item><b>Mass</b> - the herd's size, as a number on the card, and how full it is on the gauge.</item>
-    /// <item><b>Space</b> - lit while a decoy is down (the flying jacks can jump to it).</item>
+    /// <item><b>Space</b> - lit while the second decoy (Time level 5) is down; the first is always down.</item>
     /// <item><b>Time</b> - the DASH (2026-10-25): lit while both jacks dash to a decoy.</item>
     /// </list>
     /// The view is the Rhino's HUD (the hull is a Rhino clone). The herd count is GENERATED into the Mass card at runtime
@@ -88,7 +88,7 @@ namespace CosmicShore.UI
                 herdGauge.fillAmount = fill;
             }
 
-            bool decoy = crew.HasDecoy;
+            bool decoy = crew.HasSecondDecoy;   // there is always one decoy; the card lights for the second (Time 5)
             if (decoy != _decoyLit)
             {
                 _decoyLit = decoy;

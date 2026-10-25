@@ -174,6 +174,8 @@ namespace CosmicShore.Gameplay
         /// <summary>0 when the call is ready, 1 just after it was used.</summary>
         public float CallCooldown01 => config && config.CallCooldown > 0f ? Mathf.Clamp01((_callReadyAt - Time.time) / config.CallCooldown) : 0f;
         public bool HasDecoy => _decoyOn[0] || _decoyOn[1];
+        /// <summary>The second decoy (Time level 5) is down.</summary>
+        public bool HasSecondDecoy => _decoyOn[1];
         /// <summary>Herding: both jacks are dashing to a decoy (the Time ability).</summary>
         public bool Dashing => _dashing;
         /// <summary>The jacks are out herding and the hull holds still (false: they are flying it).</summary>
@@ -311,7 +313,7 @@ namespace CosmicShore.Gameplay
             Play(config.CallSfx, JacksCentre);
         }
 
-        /// <summary>The netting jacks JUMP to the decoy placed last, keeping their heading; that decoy is spent. On the machine
+        /// <summary>The netting jacks JUMP to the decoy placed last, keeping their heading; the decoy stays (there is always one). On the machine
         /// that owns the hull (its transform replicates). Herding, the triggers DASH instead (<see cref="Dash"/>).</summary>
         public void Teleport()
         {
@@ -322,8 +324,7 @@ namespace CosmicShore.Gameplay
             if (!t) return;
             Play(config.TeleportSfx, t.position);
             _vessel.SetPose(new Pose(_decoys[slot], t.rotation));
-            _teleReadyAt = Time.time + config.TeleportGuard;
-            _decoyOn[slot] = false;
+            _teleReadyAt = Time.time + config.TeleportGuard;   // the decoy stays: there is always one (2026-10-25)
         }
 
         /// <summary>
@@ -363,6 +364,16 @@ namespace CosmicShore.Gameplay
             if (arrived) _dashing = false;
         }
 
+        /// <summary>There is ALWAYS at least one decoy (Garrett, 2026-10-25: "there should always be at least one decoy
+        /// available. the second decoy unlocks with upgrading time"): with none down, the first is laid between the jacks.</summary>
+        void EnsureDecoy()
+        {
+            if (_decoyOn[0] || _status == null || !_status.Transform) return;
+            _decoys[0] = OnPlane(JacksCentre);
+            _decoyOn[0] = true;
+            _lastDecoy = 0;
+        }
+
         void ClearDecoys()
         {
             _decoyOn[0] = _decoyOn[1] = false;
@@ -374,9 +385,7 @@ namespace CosmicShore.Gameplay
         int DecoySlotFor(int k)
         {
             if (!TimeUpgraded) return 0;
-            if (_view == null) return k;
-            float x = _view.WorldToScreen(_jack[k]).x, other = _view.WorldToScreen(_jack[1 - k]).x;
-            return x <= other ? 0 : 1;
+            return ScreenSideJack(0) == k ? 0 : 1;
         }
 
         // a held button or a double press toggles the plane's pull once
@@ -431,6 +440,7 @@ namespace CosmicShore.Gameplay
                 if (_herding && _dashing) StepDash(dt);
                 else if (_herding) StepJacks(dt);
                 else _dashing = false;
+                EnsureDecoy();
                 for (int s = 0; s < 2; s++)
                     if (_decoyOn[s]) _decoys[s] = OnPlane(_decoys[s]);
                 if (!TimeUpgraded) _decoyOn[1] = false;   // the second decoy goes with the upgrade
@@ -650,23 +660,48 @@ namespace CosmicShore.Gameplay
             // the flight's buttons are paused while the jacks herd, so the call and the zoom are read here: B or T calls
             // (the flying call's own Button2), Y or F zooms out to the whole cell and back (Garrett, 2026-10-24)
             var keys = Keyboard.current;
-            if ((pad != null && pad.buttonEast.wasPressedThisFrame) || (keys != null && keys.tKey.wasPressedThisFrame)) Call();
+            if ((pad != null && (pad.buttonEast.wasPressedThisFrame || pad.buttonSouth.wasPressedThisFrame))
+                || (keys != null && (keys.tKey.wasPressedThisFrame || keys.spaceKey.wasPressedThisFrame))) Call();
             if ((pad != null && pad.buttonNorth.wasPressedThisFrame) || (keys != null && keys.fKey.wasPressedThisFrame))
                 _view.ToggleCellView();
-            // the Time ability: a trigger dashes both jacks to a decoy - the left trigger (Q) to the left one, the right (E)
-            // to the right one; with one decoy, either trigger goes to it
-            bool lt = pad != null && pad.leftTrigger.ReadValue() > 0.5f, rt = pad != null && pad.rightTrigger.ReadValue() > 0.5f;
-            if ((lt && !_triggerWas[0]) || (keys != null && keys.qKey.wasPressedThisFrame)) Dash(0);
-            if ((rt && !_triggerWas[1]) || (keys != null && keys.eKey.wasPressedThisFrame)) Dash(1);
-            _triggerWas[0] = lt;
-            _triggerWas[1] = rt;
+            // the triggers (Q / E): a TAP dashes both jacks to that side's decoy (the Time ability), a HOLD lays that decoy
+            // at the jack on that side of the screen (Garrett, 2026-10-25: the second decoy is "controlled by the second
+            // trigger (in placement and which one you fly to)"); with one decoy both triggers lay and dash to it
+            ReadTrigger(0, (pad != null && pad.leftTrigger.ReadValue() > 0.5f) || (keys != null && keys.qKey.isPressed));
+            ReadTrigger(1, (pad != null && pad.rightTrigger.ReadValue() > 0.5f) || (keys != null && keys.eKey.isPressed));
 
             for (int k = 0; k < 2; k++)
                 if (!held[k] && !_padHolds[k]) _jackDown[k] = false;
         }
 
         readonly bool[] _padHolds = new bool[2];
-        readonly bool[] _triggerWas = new bool[2];
+        readonly bool[] _triggerWas = new bool[2], _triggerPlaced = new bool[2];
+        readonly float[] _triggerDownAt = new float[2];
+
+        void ReadTrigger(int side, bool down)
+        {
+            if (down && !_triggerWas[side])
+            {
+                _triggerDownAt[side] = Time.unscaledTime;
+                _triggerPlaced[side] = false;
+            }
+            if (down && !_triggerPlaced[side] && Time.unscaledTime - _triggerDownAt[side] >= config.DecoyPlaceHold)
+            {
+                _triggerPlaced[side] = true;   // held: lay this side's decoy at this side's jack
+                int k = ScreenSideJack(side);
+                DropDecoy(side, OnPlane(_jack[k]));
+            }
+            if (!down && _triggerWas[side] && !_triggerPlaced[side]) Dash(side);   // tapped: dash
+            _triggerWas[side] = down;
+        }
+
+        /// <summary>The jack on <paramref name="side"/> of the herding view (0 the left).</summary>
+        int ScreenSideJack(int side)
+        {
+            if (_view == null) return side;
+            bool zeroLeft = _view.WorldToScreen(_jack[0]).x <= _view.WorldToScreen(_jack[1]).x;
+            return (side == 0) == zeroLeft ? 0 : 1;
+        }
 
         /// <summary>A phone's dash: a tap on a decoy (within <c>decoyTapPixels</c> of it on the herding view) dashes both jacks
         /// to it, unless a jack is closer under the finger.</summary>
@@ -801,6 +836,7 @@ namespace CosmicShore.Gameplay
                     _jackTarget[k] = _jack[k];
                     _jackDown[k] = _jackWasDown[k] = false;
                 }
+                EnsureDecoy();
                 return;
             }
             var t = _status != null ? _status.Transform : null;

@@ -159,6 +159,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float dashSpeed = 3f;
         [Tooltip("The dash: how far apart the two jacks land, one either side of the decoy (u).")]
         [SerializeField, Min(0f)] float dashGap = 40f;
+        [Tooltip("Herding: a trigger held this long (s) lays that side's decoy at the jack on that side instead of dashing (a " +
+                 "tap dashes).")]
+        [SerializeField, Min(0.05f)] float decoyPlaceHold = 0.3f;
         [Tooltip("The dash on a phone: a tap this close to a decoy on the herding view (pixels) dashes to it.")]
         [SerializeField, Min(8f)] float decoyTapPixels = 70f;
         [Tooltip("Seconds between teleports (the lab's 0.6 s guard).")]
@@ -311,6 +314,7 @@ namespace CosmicShore.Gameplay
         public float DashSpeed => dashSpeed;
         public float DashGap => dashGap;
         public float DecoyTapPixels => decoyTapPixels;
+        public float DecoyPlaceHold => decoyPlaceHold;
         public float PooEvery => pooEvery;
         public int PooCount => pooCount;
         public float PooSpread => pooSpread * labScale;

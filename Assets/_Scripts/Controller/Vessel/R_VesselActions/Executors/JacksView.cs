@@ -200,10 +200,44 @@ namespace CosmicShore.Gameplay
             float size = cfg.ZoomButtonSize * Screen.height, margin = cfg.ViewMargin * Screen.height;
             var zoom = new Rect(Screen.width - margin - size, Screen.height - margin - size, size, size);
             var call = new Rect(zoom.x, zoom.y - margin - size, size, size);
-            // a button shows only once it has an icon (Garrett, 2026-10-24: "the herding view had some strange empty icons in
-            // the upper right"); the pad's Y / B and the keys F / T reach both meanwhile
-            if (cfg.ZoomButtonIcon) _zoomButton.Show(zoom, cfg.ZoomButtonIcon); else _zoomButton.Hide();
-            if (cfg.CallButtonIcon) _callButton.Show(call, cfg.CallButtonIcon); else _callButton.Hide();
+            // each button wears its authored icon, or a plain drawn glyph until one is authored (Garrett, 2026-10-24: "the
+            // herding view had some strange empty icons in the upper right"; 2026-10-25: hiding them left a phone no call)
+            _zoomButton.Show(zoom, cfg.ZoomButtonIcon ? cfg.ZoomButtonIcon : Glyph(ref s_zoomGlyph, DrawZoomGlyph));
+            _callButton.Show(call, cfg.CallButtonIcon ? cfg.CallButtonIcon : Glyph(ref s_callGlyph, DrawCallGlyph));
+        }
+
+        // ---- the drawn glyphs: a shape, never text (the player-facing-text rule is about words) ----
+
+        static Sprite s_zoomGlyph, s_callGlyph;
+        const int GlyphSize = 64;
+
+        static Sprite Glyph(ref Sprite cache, System.Func<int, int, bool> inside)
+        {
+            if (cache) return cache;
+            var tex = new Texture2D(GlyphSize, GlyphSize, TextureFormat.RGBA32, false) { name = "JacksViewGlyph", filterMode = FilterMode.Bilinear };
+            var px = new Color32[GlyphSize * GlyphSize];
+            for (int y = 0; y < GlyphSize; y++)
+            for (int x = 0; x < GlyphSize; x++)
+                px[y * GlyphSize + x] = inside(x, y) ? new Color32(255, 255, 255, 235) : new Color32(255, 255, 255, 0);
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            cache = Sprite.Create(tex, new Rect(0, 0, GlyphSize, GlyphSize), new Vector2(0.5f, 0.5f));
+            return cache;
+        }
+
+        // zoom out: four corner brackets, the frame of a wider view
+        static bool DrawZoomGlyph(int x, int y)
+        {
+            const int m = 6, len = 20, th = 6;
+            int ix = Mathf.Min(x, GlyphSize - 1 - x), iy = Mathf.Min(y, GlyphSize - 1 - y);
+            return ix >= m && iy >= m && ((ix < m + th && iy < m + len) || (iy < m + th && ix < m + len));
+        }
+
+        // call: a dot inside a ring, the herd drawn to a point
+        static bool DrawCallGlyph(int x, int y)
+        {
+            float dx = x - (GlyphSize - 1) * 0.5f, dy = y - (GlyphSize - 1) * 0.5f, r = Mathf.Sqrt(dx * dx + dy * dy);
+            return r <= 8f || (r >= 21f && r <= 27f);
         }
 
         /// <summary>One of the herding view's buttons: a style-guide frame over a screen rect, an optional icon inside it. It
