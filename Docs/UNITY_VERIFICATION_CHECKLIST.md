@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Arena configure: one shared vessel panel for every seat; intensity on top (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** the settings column reads Intensity, Pilots, Vessel (Arcade and Arena). On the Arena, tapping a seat
+row selects it and the vessel panel below (< seven tiles >, CLAIM) picks THAT seat's hull: your own, or an AI's (no
+claim; the host applies it, `RequestAIVessel`, protocol 12 -> 14). Tap the selected AI again or your own row to go
+back. The < > arrows are generator-authored, 32 x 56, level with the tiles and inset from the panel edges
+(`Docs/HomeHub/ARCHITECTURE.md` §3.2.1).
+
+**Verified without the editor:** `unity_refcompile` player OK, editor 0 errors in changed files;
+`author_menu_configure.py --check` / `--self-test` OK (its drift from `d9b7305b1` is gone); every gate in
+`.claude/skills/to-bleeding-edge/gates.sh` OK. `SharedVesselPanelTests` compile, not run.
+
+**Verify in editor:**
+1. Arcade > any card: the column reads Intensity, Pilots, Vessel; the pad's first focus is an intensity node.
+2. Arena > Regatta: the caption reads "Your vessel"; the < > sit level with the tiles, a little in from the panel's
+   edges; tiles, arrows and CLAIM pick your hull as before; Start waits for CLAIM.
+3. Add two AI. Tap one AI's row: it turns the Selection colour, the caption reads "<Domain> AI's vessel", CLAIM hides.
+   Tap a tile: that AI's row name and icon change at once. Use the arrows: they step it, skipping hulls taken.
+4. Tap the same AI row again (or your own row): the caption is "Your vessel" and your hull is shown again.
+5. Party of two: the guest can select and pick only their own team's AI; the host sees the guest's picks.
+6. Launch: each AI flies the hull its row named.
+7. Run `SharedVesselPanelTests` and `ArenaHullStripTests` (EditMode).
+
 ### 🔴 AI seat names follow the pick; result rows name each pilot's vessel (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `ArcadeGameConfigureModal.AiSeatName` resolves the hull by `AIHullSeating.SeatHull`, the rule the chip's icon and hover label already used. On an opponent seat it named the card's pinned hull first, so a picked hull showed under "Squirrel" (Regatta) until hovered. The result panel's line under each name is now `{domain}  ·  {vessel}`, the hull that human or AI was flying at the end (`Scoreboard.pilotLine` / `pilotNoVesselLine`, authored on the component).

@@ -56,6 +56,27 @@ namespace CosmicShore.UI
                                  "the carousel arrows work without it.")]
         List<KitHullTile> hullTiles = new();
 
+        [Header("Shared vessel panel")]
+        [SerializeField, Tooltip("The vessel section's caption. It names whose hull the panel is picking: the " +
+                                 "pilot's own, or the AI seat they tapped. Optional.")]
+        TMPro.TMP_Text seatCaptionText;
+
+        [SerializeField, Tooltip("The caption while the panel picks the pilot's own hull. Empty: no caption.")]
+        string ownSeatCaption = "Your vessel";
+
+        [SerializeField, Tooltip("The caption while the panel picks an AI seat's hull. {domain} is the AI's team. " +
+                                 "Empty: no caption.")]
+        string aiSeatCaption = "{domain} AI's vessel";
+
+        [SerializeField, Tooltip("What the vessel section names when the selected AI has no hull yet (dealt at " +
+                                 "launch from the hulls left). Empty: nothing.")]
+        string autoVesselLine = "Auto";
+
+        [SerializeField, Tooltip("The vessel section's own hull labels (the section value, the class name). While " +
+                                 "an AI seat is selected only these follow its hull; the pilot's summary chips, " +
+                                 "FLY row and controls keep naming the pilot's own.")]
+        List<TMPro.TMP_Text> seatVesselNameTexts = new();
+
         // The card hull the leftmost tile shows (StripOffset).
         int _stripOffset;
 
@@ -122,6 +143,7 @@ namespace CosmicShore.UI
             }
 
             DrawVessel(vessel);
+            if (seatCaptionText) seatCaptionText.text = TemplateText.Fill(ownSeatCaption);
 
             // The controls block describes the hull this pilot will fly, so it follows the strip.
             if (vessel && vessel != _controlsVessel)
@@ -132,6 +154,37 @@ namespace CosmicShore.UI
         }
 
         SO_Vessel _controlsVessel;
+
+        /// <summary>
+        /// Draw an AI seat's hull in the shared vessel panel (the pilot tapped that seat): the caption names
+        /// the seat, the section's own labels and description show the hull (<see cref="autoVesselLine"/> when
+        /// none is picked yet), the arrows step it when <paramref name="canCycle"/>, and the claim button stands
+        /// aside - an AI's pick lands as it is made. The pilot's own summary, FLY row and controls are untouched.
+        /// </summary>
+        public void ShowSeatVessel(SO_Vessel vessel, string seatDomain, bool canCycle)
+        {
+            if (seatCaptionText) seatCaptionText.text = TemplateText.Fill(aiSeatCaption, "domain", seatDomain);
+
+            if (vesselIcon)
+            {
+                vesselIcon.sprite  = vessel ? vessel.IconActive : null;
+                vesselIcon.enabled = vessel;
+            }
+
+            if (prevButton) prevButton.interactable = canCycle;
+            if (nextButton) nextButton.interactable = canCycle;
+
+            if (selectVesselButton)
+            {
+                SetPartShown(selectVesselButton.gameObject, false);
+                selectVesselButton.interactable = false;
+            }
+
+            string name = vessel ? vessel.Name : TemplateText.Fill(autoVesselLine);
+            foreach (var label in seatVesselNameTexts)
+                if (label) label.text = name;
+            if (vesselDescriptionText) vesselDescriptionText.text = vessel ? vessel.Description : string.Empty;
+        }
 
         /// <summary>
         /// Draw the hull strip: the tiles show a window onto <paramref name="ships"/> that keeps
