@@ -579,3 +579,20 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     General rule: **a file's default pose is an output.** Gate it like the takes and morphs.
     (The Unity side is inferred from the symptom: all 14 hulls rest in their first take. The reimport check in
     `Docs/UNITY_VERIFICATION_CHECKLIST.md` confirms it; if a hull still leans, capture rest from the bind poses in code.)
+
+52. **A hull filmed SIDE-ON is judged from the camera's side, at the camera's size (2026-10-25, the Pistol,
+    `specs/pistol.py`).** The contact sheet's `side` tile looks from +X, the pilot's LEFT. The Pistol's camera sees its
+    pilot's RIGHT, where the big claw is, so round 1 was judged from a tile that showed the claw behind the body. Render
+    the camera's side too (`render.VIEWS` takes a new entry such as `(-1, 0, 0.06)`; `render.render_frame` with
+    `dist_factor` about 4 gives the game's pixel size) and look at both. Three more things the rounds taught:
+    - **A crustacean side-on reads from its outline, not its parts.** Round 1 had every part (claw, rings, struts, whips)
+      and read as a wasp: a straight tube abdomen, rings lofted flat, struts standing straight down. Round 2 read as a
+      pistol shrimp with three outline changes: rings on a CURVED spine (`spine_loft`, sections square to it) bending
+      to the fan, a pleuron plate hanging down each side of each ring (the scalloped lower edge), and struts that bend
+      in the camera's plane.
+    - **A paint band only catches faces whose CENTRE falls in it.** The barrel's loft had stations 0.09 apart and its
+      domain bands were 0.02-0.04 wide, so no face centre fell inside and nothing painted. The build reported green.
+      Loft densely (here 19 stations) wherever a band, stripe or rim is painted by position.
+    - **Build a hinged part SHUT and rotate it open by the take's angle.** The cocked hammer is the shut geometry turned
+      by -75 degrees about its knuckle, and `snap` is +75. Round 1 cocked at 62 and snapped 55, so the shut pose
+      stayed 7 degrees open. With one constant for both angles, the take is exact by construction.

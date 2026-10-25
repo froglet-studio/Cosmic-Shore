@@ -106,6 +106,7 @@ namespace CosmicShore.Gameplay
             // mask, SDR. Draw the way the game's camera draws (OffscreenCameraSetup; Garrett, 2026-10-21)
             OffscreenCameraSetup.AdoptGameCameraImage(_cam, postProcessing: true, antiAliasing: true, shadows: true);
             _marks = new UnprocessedOverlay(_cam, "KiteNavigatorMarks");
+            TwoDCameraSky.Register(_cam);   // a 2D camera: no sky cell net glued to the board (TwoDCameraSky)
             RenderPipelineManager.beginCameraRendering += BeginRender;
             RenderPipelineManager.endCameraRendering += EndRender;
 
@@ -218,6 +219,7 @@ namespace CosmicShore.Gameplay
             RenderPipelineManager.beginCameraRendering -= BeginRender;
             RenderPipelineManager.endCameraRendering -= EndRender;
             EndRender(default, _cam);
+            TwoDCameraSky.Unregister(_cam);
             RestorePilot();
             _park.Release();
             _frame.Dispose();

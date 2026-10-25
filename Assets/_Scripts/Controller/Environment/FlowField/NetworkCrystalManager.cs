@@ -302,6 +302,16 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        public override void RelocateCrystal(int crystalId, Vector3 position) => RelocateCrystal_ServerRpc(crystalId, position);
+
+        [ServerRpc(RequireOwnership = false)]
+        private void RelocateCrystal_ServerRpc(int crystalId, Vector3 position)
+        {
+            int idx = crystalId - 1;
+            if (idx < 0 || idx >= n_Slots.Count || n_Slots[idx].IsEmpty) return;
+            n_Slots[idx] = new CrystalSlotData { Position = position, Domain = n_Slots[idx].Domain };
+        }
+
         /// <summary>
         /// A ring is threaded on the machine that SIMULATES the pilot (see
         /// <see cref="CrystalRaceRing"/>), but credited only here on the server - the same split

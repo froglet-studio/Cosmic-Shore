@@ -115,7 +115,7 @@ PAGES = [
 ]
 READOUTS = {"fovSlider": "fovValueText", "musicSlider": "musicValueText", "sfxSlider": "sfxValueText"}
 LINKS = (("BugReport", "BUG REPORT", "Default", "bugReportButton"), ("Privacy", "PRIVACY POLICY", "Default", "privacyPolicyButton"),
-         ("DeleteData", "DELETE MY DATA", "Default", "deleteDataButton"), ("Credits", "CREDITS", "Default", "creditsButton"),
+         ("DeleteData", "DELETE MY DATA", "Danger", "deleteDataButton"), ("Credits", "CREDITS", "Default", "creditsButton"),
          ("Quit", "QUIT GAME", "Cancel", "quitGameButton"))
 PERF_BUTTONS = (("AutoDetect", "AUTO DETECT", "autoDetectButton"), ("Benchmark", "RUN BENCHMARK", "benchmarkButton"))
 WIN_W, WIN_H, PAD, ROW_H, CTRL_X = 1600, 900, 48, 84, 970
@@ -298,9 +298,9 @@ def account_page(page, pk):
     label(page.child(N(f"{pk}/Name", "PilotName", TL(0, 0, 900, 40))), "", "H2", "TextLight")
     label(page.child(N(f"{pk}/Id", "PlayerId", TL(0, 46, 900, 20))), "", "Label", "NeutralLightest")
     g = page.child(N(f"{pk}/Guest", "GuestNotice", TL(0, 84, PAGE_W, 56)))
-    H.framed(g, f"{pk}/Guest", 10, "SurfaceVeryDark", "ElementCharge")
+    H.framed(g, f"{pk}/Guest", 10, "SurfaceVeryDark", "Danger")
     ic = g.child(N(f"{pk}/Guest/Icon", "Icon", R((0, 0.5), None, (32, 0), (24, 24))))
-    ic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementCharge"), K.chrome_sprite("chrome_person"), preserve=True))
+    ic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Danger"), K.chrome_sprite("chrome_person"), preserve=True))
     label(g.child(N(f"{pk}/Guest/Text", "Text", TL(60, 0, PAGE_W - 80, 56))),
           "Guest pilot. Your progress lives on this device. Link an account to keep it if you reinstall or change devices.",
           "Body", "TextLight")
@@ -320,12 +320,12 @@ def account_page(page, pk):
         w, h = K.button_size("LINK", small=True)
         holder = r.child(N(f"{rk}/Link", "Link", R((1, 0.5), None, (0, 0), (w, h), (1, 0.5))))
         holder.children.append(P.Inst(f"Account{name}LinkButton", "KitButtonSmall", "LinkButton", STRETCH,
-                                      K.button_mods("KitButtonSmall", "Space", False, "LINK", small=True)))
+                                      K.button_mods("KitButtonSmall", "Default", False, "LINK", small=True)))
         label(r.child(N(f"{rk}/Linked", "Linked", R((1, 0.5), None, (0, 0), (200, 24), (1, 0.5)), active=False)),
-              "Linked", "Label", "ElementTime", align="right")
+              "Linked", "Label", "Cta", align="right")
     act = rows.child(N(f"{pk}/Rows/Actions", "Actions",
                        TL(0, ACCOUNT_ROWS_TOP + len(ACCOUNT_ROWS) * ACCOUNT_PITCH + ACCOUNT_ACTIONS_GAP, PAGE_W, 40)))
-    for k, cap, variant, anchor in (("SignOut", "SIGN OUT", "Mass", 0), ("Delete", "DELETE ACCOUNT", "Danger", 1)):
+    for k, cap, variant, anchor in (("SignOut", "SIGN OUT", "Cancel", 0), ("Delete", "DELETE ACCOUNT", "Danger", 1)):
         w, h = K.button_size(cap, small=True)
         holder = act.child(N(f"{pk}/Rows/Actions/{k}", k, R((anchor, 0.5), None, (0, 0), (w, h), (anchor, 0.5))))
         holder.children.append(P.Inst(f"Account{k}Button", "KitButtonSmall", f"{k}Button", STRETCH,
@@ -367,7 +367,7 @@ def prompt_node(root):
         .add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True)).add("th", 114, H.themed("TextLight"))
     M.bracket_nodes(win, "Prompt/Window/Bracket", inset=14)
     inner = PROMPT_W - 2 * PAD
-    label(win.child(N("Prompt/Window/Eyebrow", "Eyebrow", TL(PAD, 40, inner, 18))), "Link Google", "Label", "Cta")
+    label(win.child(N("Prompt/Window/Eyebrow", "Eyebrow", TL(PAD, 40, inner, 18))), "Link Google", "Label", "NeutralLightest")
     label(win.child(N("Prompt/Window/Title", "Title", TL(PAD, 64, inner, 46))), "This Google account already has a pilot", "H2", "TextLight")
     label(win.child(N("Prompt/Window/Body", "Body", TL(PAD, 118, inner, 48))),
           "Pilots cannot be merged. Choose which one to fly; the other stays where it is.", "Body", "NeutralLightest",
@@ -377,8 +377,8 @@ def prompt_node(root):
     for i, side in enumerate(("This", "Other")):
         ck = f"Prompt/Window/Cards/{side}"
         card = cards.child(N(ck, side, TL(i * (card_w + 60), 0, card_w, 280)))
-        H.framed(card, ck, 10, "SurfaceVeryDark", "Selection" if side == "Other" else "SurfaceLight")
-        label(card.child(N(f"{ck}/Caption", "Caption", TL(28, 24, card_w - 56, 18))), "", "Label", "Cta" if side == "Other" else "NeutralLightest")
+        H.framed(card, ck, 10, "SurfaceVeryDark", "SurfaceLight")
+        label(card.child(N(f"{ck}/Caption", "Caption", TL(28, 24, card_w - 56, 18))), "", "Label", "NeutralLightest")
         label(card.child(N(f"{ck}/Name", "Name", TL(28, 52, card_w - 56, 36))), "", "H2", "TextLight")
         for j, (stat, cap) in enumerate((("Crystals", "Crystals"), ("Vessels", "Vessels"), ("Quests", "Quests done"))):
             y = 110 + j * 52
@@ -389,7 +389,7 @@ def prompt_node(root):
           "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
     row = win.child(N("Prompt/Window/Buttons", "Buttons", R((0, 0), (1, 0), (0, 44), (-2 * PAD, 52), (0.5, 0))))
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0)))
-    for k, cap, variant in (("Primary", "FLY SHOMBOSS", "Play"), ("Secondary", "KEEP NOVA RUNNER", "Mass"), ("Cancel", "CANCEL", "Space")):
+    for k, cap, variant in (("Primary", "FLY SHOMBOSS", "Cta"), ("Secondary", "KEEP NOVA RUNNER", "Default"), ("Cancel", "CANCEL", "Cancel")):
         w, h = K.button_size(cap, small=True)
         holder = row.child(N(f"Prompt/Window/Buttons/{k}", k, R(size=(w + 80, h))))
         holder.add("le", 114, le(pw=w + 80, ph=h))

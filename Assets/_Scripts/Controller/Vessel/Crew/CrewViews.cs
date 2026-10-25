@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -310,6 +311,51 @@ namespace CosmicShore.Gameplay
             _lastTapPos = _pressPos;
             return doubled;
         }
+    }
+
+    /// <summary>
+    /// The sky in a 2D camera: its Voronoi cell net is faded out (Garrett, 2026-10-25: "the characters with an
+    /// orthographic view like the shrimp are doing something weird with the voroni effect on the skybox" - "go ahead with
+    /// the fade"; "call these 2d cameras"). A 2D camera slides and zooms across a plane (the Pistol's off-axis side view,
+    /// the Wrasse's kite board, the Jacks' herding view) while the sky follows only rotation, and through those narrow or
+    /// orthographic lenses the cell net sits magnified, glued to the screen as the world scrolls, and swings when the
+    /// plane turns. The stars, nebulae and galactic band stay: still behind a scrolling view they read as distance; a net
+    /// of lines reads as something on the lens.
+    /// <para>The sky shader reads one GLOBAL, <c>_SkyCellOverlaySuppress</c>, which this sets for every camera as it
+    /// begins rendering: a registered 2D camera's fade, 0 for the rest (so the main view is untouched, and unset it
+    /// reads 0). The baked phone sky (<c>StaticSkyPanorama</c>, the MobileLow tier) carries its cells in its texture and
+    /// is not faded.</para>
+    /// </summary>
+    public static class TwoDCameraSky
+    {
+        static readonly int s_suppress = Shader.PropertyToID("_SkyCellOverlaySuppress");
+        static readonly Dictionary<Camera, float> s_fade = new();
+        static bool s_hooked;
+
+        /// <summary>Fade the sky's cell net in the 2D camera <paramref name="cam"/>'s render (1 = gone, 0 = as authored).</summary>
+        public static void Register(Camera cam, float fade01 = 1f)
+        {
+            if (!cam) return;
+            s_fade[cam] = Mathf.Clamp01(fade01);
+            if (s_hooked) return;
+            s_hooked = true;
+            RenderPipelineManager.beginCameraRendering += Begin;
+        }
+
+        /// <summary>Stop fading it; the last one out unhooks and leaves the sky as authored.</summary>
+        public static void Unregister(Camera cam)
+        {
+            if (!ReferenceEquals(cam, null)) s_fade.Remove(cam);
+            if (s_fade.Count > 0 || !s_hooked) return;
+            s_hooked = false;
+            RenderPipelineManager.beginCameraRendering -= Begin;
+            Shader.SetGlobalFloat(s_suppress, 0f);
+        }
+
+        /// <summary>The fade <paramref name="cam"/> renders with (0 for any camera that is not a registered 2D camera).</summary>
+        public static float FadeFor(Camera cam) => cam && s_fade.TryGetValue(cam, out float f) ? f : 0f;
+
+        static void Begin(ScriptableRenderContext _, Camera cam) => Shader.SetGlobalFloat(s_suppress, FadeFor(cam));
     }
 
     /// <summary>

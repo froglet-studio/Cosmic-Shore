@@ -31,7 +31,8 @@ namespace CosmicShore.UI
         }
 
         [SerializeField] private SO_CaptainList captains;
-        [SerializeField] private AbilityLockupStyleSO lockupStyle;
+        [Tooltip("What a pilot card's element glyph draws in. Docs/UI_COLOR_RULES.md: an element never has a fixed colour in the UI - its glyph's shape says which it is.")]
+        [SerializeField] private CosmicShore.UI.UIColorToken elementTint = CosmicShore.UI.UIColorToken.NeutralLightest;
 
         [Header("Hero")]
         [SerializeField] private CanvasGroup heroGroup;
@@ -62,7 +63,6 @@ namespace CosmicShore.UI
 
         void Awake()
         {
-            if (!lockupStyle) lockupStyle = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
             for (int i = 0; i < cards.Length; i++)
             {
                 int index = i;
@@ -116,7 +116,7 @@ namespace CosmicShore.UI
             if (heroQuoteText) heroQuoteText.text = string.IsNullOrEmpty(p.Flavor) ? string.Empty : quoteTemplate.Replace("{quote}", p.Flavor.Trim('“', '”', '"'));
             if (heroAiText) heroAiText.text = string.IsNullOrEmpty(p.AIBehaviorDescription) ? string.Empty : aiTemplate.Replace("{behaviour}", p.AIBehaviorDescription);
             for (int i = 0; i < cards.Length; i++)
-                if (cards[i]?.underline) cards[i].underline.color = i == _selected ? Colour(_pilots[Mathf.Min(i, _pilots.Count - 1)]) : Color.clear;
+                if (cards[i]?.underline) cards[i].underline.color = i == _selected ? CosmicShore.UI.UITheme.Resolve(null, CosmicShore.UI.UIColorToken.Selection) : Color.clear;   // a real selection
         }
 
         string ElementName(SO_Captain p)
@@ -125,6 +125,6 @@ namespace CosmicShore.UI
             return i >= 0 && i < elementNames.Length ? elementNames[i] : p.PrimaryElement.ToString();
         }
 
-        Color Colour(SO_Captain p) => lockupStyle ? lockupStyle.ColourFor(p.PrimaryElement) : Color.white;
+        Color Colour(SO_Captain p) => CosmicShore.UI.UITheme.Resolve(null, elementTint);
     }
 }

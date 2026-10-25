@@ -89,6 +89,10 @@ PREFAB = "Assets/_Prefabs/FloraAndFauna/TandavaSwarmFauna.prefab"
 # the Arena grid. To list it: `git mv` the card and its .meta back to Games/ (the guid-collision gate would read the
 # parked copy as another asset's), set LISTED = True and re-run - both rosters get it again.
 LISTED = False
+# Rev 13 (Shombith, 2026-10-25: "add it as a unlocked voyage game"): Tandava is Voyage 1, launched from the Voyage window
+# (author_menu_mission.py) - still on no screen's GRID, but back on the MASTER roster, the by-mode lookup a party guest,
+# the AI spawner and the return-from-match path resolve a card through. The card stays parked in _Archive.
+VOYAGE = True
 CARD_LISTED_REL = "Assets/_SO_Assets/Games/ArcadeGameTandava.asset"
 CARD_PARKED_REL = "Assets/_SO_Assets/Games/_Archive/ArcadeGameTandava.asset"
 CARD_REL = CARD_LISTED_REL if LISTED else CARD_PARKED_REL
@@ -788,9 +792,11 @@ g.emit_scene("MinigameTandava", G_ASSET["MinigameTandava.unity"], SCENE)
 if LISTED:
     g.register_arena_card(G_ASSET["ArcadeGameTandava"])    # master + ARENA grid, never Arcade
 else:
-    for roster in (lib.GAME_LIST, lib.ARENA_GRID):         # parked: off every roster a screen draws
+    for roster in ((lib.ARENA_GRID,) if VOYAGE else (lib.GAME_LIST, lib.ARENA_GRID)):   # parked: off every grid
         g.emit(roster, re.sub(rf"(?m)^  - \{{fileID: 11400000, guid: {G_ASSET['ArcadeGameTandava']}, type: 2\}}\n", "",
                               g.read_current(roster)))
+    if VOYAGE:
+        g.register_game_list(G_ASSET["ArcadeGameTandava"], lib.GAME_LIST)   # a voyage: the master roster only
 g.register_always_unlocked()
 g.register_build_scene("MinigameBroodRush", "MinigameTandava", G_ASSET["MinigameTandava.unity"])
 # the halo's target was the ring of fire's: migrate the key (FormerlySerializedAs reads the old one; this rewrites it)
@@ -1032,9 +1038,11 @@ for h in CARD_HULLS:
 if LISTED and G_ASSET["ArcadeGameTandava"] not in g.files.get(lib.ARENA_GRID, ""):
     errors.append("card is not on the ARENA grid")
 if not LISTED:
-    for roster in (lib.GAME_LIST, lib.ARENA_GRID, lib.ARCADE_GRID):
+    for roster in ((lib.ARENA_GRID, lib.ARCADE_GRID) if VOYAGE else (lib.GAME_LIST, lib.ARENA_GRID, lib.ARCADE_GRID)):
         if G_ASSET["ArcadeGameTandava"] in g.read_current(roster):
-            errors.append(f"card is on {roster} but the mode is parked (LISTED = False: no screen may show it)")
+            errors.append(f"card is on {roster} but the mode is parked (LISTED = False: no grid may show it)")
+    if VOYAGE and G_ASSET["ArcadeGameTandava"] not in g.read_current(lib.GAME_LIST):
+        errors.append("the voyage card is not on the master roster (a guest, the AI spawner and the return path cannot resolve it)")
 if G_ASSET["ArcadeGameTandava"] in g.read_current(lib.ARCADE_GRID):
     errors.append("card is on the ARCADE grid (arena cards never are)")
 if re.search(r"(?i)\bfire\b|\bflame", card + g.files[SETTINGS_REL]):

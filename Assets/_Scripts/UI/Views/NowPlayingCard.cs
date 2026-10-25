@@ -9,8 +9,8 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The now-playing card, bottom right of Menu_Main (Docs/MENU_REDESIGN_B.md §56, the R10NowPlaying board, like EA
-    /// SPORTS FC's). It shows only on the screens listed in <see cref="restingOn"/> (the owner, 2026-10-18: the Profile
-    /// tab only) and hides while the pilot record is open (its Audio Studio carries the same controls). With
+    /// SPORTS FC's). It shows only on the screens listed in <see cref="restingOn"/> (Home since Rev 13, and only while no window is
+    /// open over it: the Profile is the pilot record now, whose Audio Studio carries the same controls) and hides while the pilot record is open (its Audio Studio carries the same controls). With
     /// <see cref="toastOffScreens"/> on, it would also slide in elsewhere for <see cref="toastSeconds"/> when a track
     /// starts; it ships off. Hovered, it shows Back / Pause / Skip. Hidden while the music is off in Settings or stopped.
     /// </summary>
@@ -30,8 +30,8 @@ namespace CosmicShore.UI
         [SerializeField] Button skipButton;
 
         [Header("Behaviour")]
-        [Tooltip("Menu screens the card shows on (the owner: Profile only).")]
-        [SerializeField] ScreenSwitcher.MenuScreens[] restingOn = { ScreenSwitcher.MenuScreens.PROFILE };
+        [Tooltip("Menu screens the card shows on (Home since Rev 13; the Profile carries the Audio Studio itself).")]
+        [SerializeField] ScreenSwitcher.MenuScreens[] restingOn = { ScreenSwitcher.MenuScreens.HOME };
         [Tooltip("Off: the card shows only on the resting screens. On: elsewhere it also slides in for a few seconds when a track starts.")]
         [SerializeField] bool toastOffScreens;
         [SerializeField, Min(0.5f)] float toastSeconds = 4f;
@@ -125,6 +125,10 @@ namespace CosmicShore.UI
         bool Resting()
         {
             if (!_switcher || restingOn == null) return false;
+            // A window over the screen (a hub window, a configure, Settings) hides it: Home stays the active SCREEN under
+            // every modal, so without this the card showed over every window (Shombith, 2026-10-25: "Music should not
+            // show up everywhere").
+            if (_switcher.HasActiveModal) return false;
             foreach (var s in restingOn)
                 if (_switcher.ScreenIsActive(s)) return true;
             return false;

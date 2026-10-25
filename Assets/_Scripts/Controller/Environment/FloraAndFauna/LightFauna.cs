@@ -93,6 +93,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Frenzy;
 
+        /// <summary>A light creature's whole body re-reads its domain (<see cref="OnTeamChanged"/>), so it can be stolen.</summary>
+        public override bool CanBeStolen => true;
+
+        /// <summary>A live domain change (a steal, or a mode's recolour): every live body prism takes the new team.</summary>
+        protected override void OnTeamChanged()
+        {
+            var body = BodyPrisms;
+            if (body == null) return;
+            for (int i = 0; i < body.Length; i++)
+                if (body[i] && !body[i].destroyed) body[i].ChangeTeam(domain);
+        }
+
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell); // record the explicit host cell (multi-cell correctness)
