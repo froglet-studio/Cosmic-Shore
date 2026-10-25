@@ -27,7 +27,7 @@
 | 2 | Relay connection dies mid-session (timed out / allocation invalid / bind failed -> host shuts down) | E-0a098d80df, E-4d0d17e44b, E-fda866d511, E-e5ff2abb8c, E-e6054bc064 | **B36, root-caused 2026-10-25:** Relay cuts a host that sends nothing for ~10 s; the owner's drops each followed a Bloomrush teardown in a mode running at 3-5 fps there. Freezes and the freeze each drop followed are now in the test log; the freeze itself needs a profile |
 | 3 | B31: the party session refresh is still rate-limited every ~10-15 s | every test; e.g. gradi 23 Oct: 53 in 9 min | **fixed again 2026-10-24, awaiting retest:** the presence and party reads went out in the same second; every read now waits 1.05 s after the last (`LobbyReadPacer`) and a tick reads one lobby |
 | 4 | Presence lobby create throws NullReference (5x); "INVITE-SEND ABORT - presence lobby is null" | E-6b79cd07f1, E-ca3bc5cbe1 | **B37, fixed 2026-10-25, awaiting retest:** the join waits for Unity Services and a sign-in; failures now name their cause; the player is told when an invite cannot go out. Not seen since 11 Sep |
-| 5 | Recovery after a failed join throws (ArgumentNull / InvalidOperation) | E-0de9ec6c70, E-41b7610878 | new |
+| 5 | Recovery after a failed join throws (ArgumentNull / InvalidOperation) | E-0de9ec6c70, E-41b7610878 | **B38, fixed 2026-10-25:** the recovery ran on after Play stopped and loaded a scene in edit mode; it now stops when Play stops |
 
 Closed in practice: **B32** (seen recover twice). Waiting on more evidence: **B33**.
 

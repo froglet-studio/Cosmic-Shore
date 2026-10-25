@@ -408,7 +408,7 @@ def page_header(page, key, title, line):
 
 def abilities_page(panel):
     page = page_node(panel, "Abilities", True, own_canvas=True)
-    page_header(page, "Tabs/Abilities", "WATCH THE AI PLAY EACH CONTROL", "Labels follow your device. Press one to see it again.")
+    page_header(page, "Tabs/Abilities", "WATCH THE AI PLAY EACH CONTROL", "Labels follow your device. Select one to see it again.")
     lst = list_node(page, "Tabs/Abilities/List", 54)
     for name, _ in ELEMENTS:
         k = f"Tabs/Abilities/{name}"

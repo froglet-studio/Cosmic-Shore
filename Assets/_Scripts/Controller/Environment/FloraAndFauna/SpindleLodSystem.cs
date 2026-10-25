@@ -116,7 +116,8 @@ namespace CosmicShore.Gameplay
             public readonly List<int> entries = new();
             public Matrix4x4[] matrices = new Matrix4x4[64];
             public Bounds bounds;
-            public bool dirty;
+            public bool dirty;               // a full Rebuild is due (new batch, or the box is stale)
+            public int leftSinceRebuild;     // leaves since the box was last fitted
             public RenderParams renderParams;
         }
 
@@ -935,7 +936,19 @@ namespace CosmicShore.Gameplay
             e.batchSlot = b.entries.Count;
             _entries[i] = e;
             b.entries.Add(i);
-            b.dirty = true;
+            // Incremental, never a rebuild: a joining limb writes its own slot and grows the box. A
+            // full Rebuild per changed frame walked every limb of the batch (18,893 instanced limbs
+            // in Wrecking Ball: SpindleLod.Draw 9.3 ms/frame while the drain was busy).
+            if (b.dirty) return;
+            if (b.entries.Count == 1) { b.dirty = true; return; }
+            if (b.matrices.Length < b.entries.Count)
+                System.Array.Resize(ref b.matrices, Mathf.NextPowerOfTwo(b.entries.Count));
+            var m = PoseMatrix(_lastPose[i]);
+            b.matrices[e.batchSlot] = m;
+            var box = InstanceBox(b.mesh.bounds, m);
+            box.Expand(InstancePad(b));
+            b.bounds.Encapsulate(box);
+            b.renderParams.worldBounds = b.bounds;
         }
 
         void LeaveBatch(int i)
@@ -951,9 +964,12 @@ namespace CosmicShore.Gameplay
                 var me = _entries[movedEntry];
                 me.batchSlot = slot;
                 _entries[movedEntry] = me;
+                b.matrices[slot] = b.matrices[last];
             }
             b.entries.RemoveAt(last);
-            b.dirty = true;
+            // The box is kept: it only over-covers (a little culling, never a missing limb), and is
+            // fitted again once half the batch has left.
+            if (++b.leftSinceRebuild * 2 > b.entries.Count) b.dirty = true;
             e.batched = false;
             e.batchSlot = -1;
             e.batch = null;
@@ -1012,24 +1028,33 @@ namespace CosmicShore.Gameplay
             Bounds world = default;
             for (int j = 0; j < count; j++)
             {
-                float4x4 p = _lastPose[batch.entries[j]];
-                var m = new Matrix4x4(
-                    new Vector4(p.c0.x, p.c0.y, p.c0.z, p.c0.w), new Vector4(p.c1.x, p.c1.y, p.c1.z, p.c1.w),
-                    new Vector4(p.c2.x, p.c2.y, p.c2.z, p.c2.w), new Vector4(p.c3.x, p.c3.y, p.c3.z, p.c3.w));
+                var m = PoseMatrix(_lastPose[batch.entries[j]]);
                 batch.matrices[j] = m;
-                // The instance's world box, conservatively: its mesh box's eight corners through
-                // its pose would be exact; centre +- the transformed half-diagonal is enough for a
-                // culling box and cheaper. The sway and the width hold add a little - padded below.
-                Vector3 c = m.MultiplyPoint3x4(meshBounds.center);
-                Vector3 r = Vector3.one * m.MultiplyVector(meshBounds.extents).magnitude;
-                var box = new Bounds(c, r * 2f);
+                var box = InstanceBox(meshBounds, m);
                 if (j == 0) world = box; else world.Encapsulate(box);
             }
-            world.Expand(world.size.magnitude * 0.05f + 1f + (Overt ? 2f * IncorporealDepth.MaxOpening * batch.strength : 0f));
+            world.Expand(world.size.magnitude * 0.05f + InstancePad(batch));
             batch.bounds = world;
             batch.renderParams.worldBounds = world;
             batch.dirty = false;
+            batch.leftSinceRebuild = 0;
         }
+
+        static Matrix4x4 PoseMatrix(float4x4 p) => new(
+            new Vector4(p.c0.x, p.c0.y, p.c0.z, p.c0.w), new Vector4(p.c1.x, p.c1.y, p.c1.z, p.c1.w),
+            new Vector4(p.c2.x, p.c2.y, p.c2.z, p.c2.w), new Vector4(p.c3.x, p.c3.y, p.c3.z, p.c3.w));
+
+        // The instance's world box, conservatively: its mesh box's eight corners through its pose
+        // would be exact; centre +- the transformed half-diagonal is enough for a culling box and
+        // cheaper. The sway and the width hold add a little - InstancePad covers them.
+        static Bounds InstanceBox(Bounds meshBounds, Matrix4x4 m)
+        {
+            Vector3 c = m.MultiplyPoint3x4(meshBounds.center);
+            Vector3 r = Vector3.one * m.MultiplyVector(meshBounds.extents).magnitude;
+            return new Bounds(c, r * 2f);
+        }
+
+        float InstancePad(FarBatch batch) => 1f + (Overt ? 2f * IncorporealDepth.MaxOpening * batch.strength : 0f);
 
         // ── Teardown ────────────────────────────────────────────────────────────────────────────
 

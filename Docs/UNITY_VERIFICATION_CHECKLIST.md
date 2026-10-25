@@ -3201,6 +3201,20 @@ The steps below test these values.
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Party: B38 - a failed join's recovery stops when Play stops (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B38): `PartyInviteController`'s recovery and leave-lobby flows check
+`PlayEnded` after every await, so a flow still running when Play stops no longer loads Menu_Main or creates a
+UGS session in edit mode.
+**Verified without the editor:** `PartyRecoveryAfterPlayTests` (3) and the full edit-mode suite on Amoebius
+(618/622; the 4 known SceneTransitionManager / AppManagerBootstrap failures); `unity_refcompile` player and editor
+(only the known AuthenticationServiceFacade errors). `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. Two machines: the joiner direct-joins a party whose host then stops Play; while the joiner shows "Bouncing to
+   solo menu", stop Play on the joiner. Pass: no `Recovery failed` error after Play stops.
+2. Same, but let the bounce finish: the joiner lands in a working solo menu (the recovery still runs in Play).
+3. In a party, Leave Party and stop Play at once: no `Leave-lobby flow failed` error.
+
 ### 🔴 Party: B37 - the presence lobby create waits for Unity Services; its failures name their cause (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B37): `PresenceLobbyService.JoinOrCreateAsync` waits for Unity
@@ -14003,6 +14017,19 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §63. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`
+(summary only). What ran instead of `/verify-unity`: `unity_refcompile` player RESULT OK; `author_menu_hangar.py
+--check` OK; console-logging gate OK.
+1. Menu_Main with a pad, Hangar > Abilities, Sparrow: press RT. The top bar pages to the Ark; Pulsefire does NOT play.
+   Back on the Hangar, LT pages to the left only (Skyburst Rockets does not play); LB / RB step the tabs only.
+2. D-pad to the Pulsefire row, press A: Pulsefire plays (keycap sinks, row glows, the hull fires); Turret Stance (A)
+   does not play with it. The AI resumes ~4 s later.
+3. Keyboard: press the key a row shows (e.g. SPACE, LSHIFT): that ability plays. Mouse click / touch tap on a row: it
+   plays.
+4. Keycaps still follow the device (pad LT / RT / A / B, keyboard keys) as the last-used device changes.
+
 ## 🔴 2026-10-19 — Song names and Arena hull icons (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md §60. Changed `AudioSystem`, `SoundtrackPlayer`, `SoundtrackSO`, `AudioStudioPanel`,
@@ -14379,3 +14406,13 @@ RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPT
 1. Release, Menu_Main (Garland), fly the freestyle vessel through the flora and swing the camera: spindles still
    step between braid / converging braid / thread with no visible pop.
 2. The next Menu_Main auto-capture: `SpindleLod.Drain` max total ms per frame about 3 ms or less (was 14.7).
+
+## 🔴 2026-10-25 — Spindle LOD far batches update incrementally (unverified: no Unity CLI in the session)
+
+**File:** `SpindleLodSystem.cs` (`JoinBatch`, `LeaveBatch`, `Rebuild`). Ran instead: refcompile player-dev OK,
+SpindleLodTests 17/17 on the engine runner (no test covers the batches).
+
+1. Release, Arcade > Wrecking Ball, play 2 minutes past the auto-capture. Far spindles (the braids and threads in the
+   distance) are all still drawn, none blinks out at the screen edge, none is drawn where a limb used to be.
+2. In the capture: `SpindleLod.Draw` well under the 9.3 ms/frame of 10-22, `SpindleLod.Drain` at or under ~3 ms.
+3. Menu_Main (Garland): the same look checks while flying through the flora.

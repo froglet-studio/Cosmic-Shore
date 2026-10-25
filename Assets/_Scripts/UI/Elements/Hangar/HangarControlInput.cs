@@ -6,8 +6,10 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Reads the PHYSICAL control behind a <see cref="HintBinding"/> straight off the device, so the
-    /// Hangar can answer "the player just pressed RT" without a vessel (and its input strategy) being
+    /// Hangar can answer "the player just pressed SPACE" without a vessel (and its input strategy) being
     /// alive. Also tracks which device the player last used, so labels follow the hand on the controls.
+    /// The Hangar asks it only about keyboard keys: on a menu screen every pad control is the menu's
+    /// (<see cref="HangarAbilitiesPage"/>).
     /// </summary>
     public static class HangarControlInput
     {

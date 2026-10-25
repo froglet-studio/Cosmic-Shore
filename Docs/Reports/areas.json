@@ -529,6 +529,73 @@
         "Select the upload key in Publishing Settings, then FrogletTools > Build > Android App Bundle (Release); the .check.txt lists arm64-v8a and armeabi-v7a.",
         "Upload to Play internal testing and install on a 32-bit phone (Moto G Power or Galaxy M) and a 64-bit one."
       ]
+    },
+    "steam-launch": {
+      "title": "Steam launch",
+      "aliases": [
+        "steam",
+        "steam launch",
+        "steam release",
+        "launch",
+        "launch readiness",
+        "steam playtest",
+        "playtest",
+        "store page",
+        "steamworks",
+        "steam direct",
+        "how fast to launch",
+        "shipping on steam"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Caleb",
+        "Garrett",
+        "Yash"
+      ],
+      "audience": [
+        "Shombith",
+        "Caleb",
+        "Garrett"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "everything described is on bleeding-edge; this report doc arrives with PR #1521",
+      "summary": "Getting Cosmic Shore onto Steam as an invite-only Playtest (Revision 2), not the paid Early Access of Revision 1. The uploader, the Playtest runbook and the platform work are finished and waiting on a Steamworks app that does not exist yet, so the 30-day Steam Direct clock has not started.",
+      "paths": [
+        "Tools/Steam",
+        "Tools/Build/build_windows.sh",
+        "Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.cs",
+        "Docs/STEAM_BUSINESS_SETUP.md",
+        "Docs/STEAM_RELEASE_TASKS.md",
+        "Docs/STEAM_PLAYTEST_RUNBOOK.md",
+        "Docs/STEAM_CHECKPOINT_SERIES.md",
+        "Docs/LAUNCH_BLOCKER_INDEX.md",
+        "Docs/BUILD_AND_DELIVERY.md",
+        ".github/workflows/unity-ci.yml"
+      ],
+      "docs": [
+        "Docs/STEAM_RELEASE_TASKS.md",
+        "Docs/STEAM_BUSINESS_SETUP.md",
+        "Docs/STEAM_PLAYTEST_RUNBOOK.md",
+        "Docs/STEAM_CHECKPOINT_SERIES.md",
+        "Docs/BUILD_AND_DELIVERY.md",
+        "Docs/LAUNCH_BLOCKER_INDEX.md",
+        "Docs/Legal/README.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Steam Launch Status (the page for Shombith and Caleb)",
+          "url": "https://claude.ai/artifact/53u11qrp5tgdSm87S1Mj4n"
+        }
+      ],
+      "report": "Docs/Reports/STEAM_LAUNCH.md",
+      "taskAreas": [
+        "Steam launch"
+      ],
+      "test": [
+        "Nothing here is testable in the editor: the gate is off-machine (a Steamworks account).",
+        "The one thing a person can do today: ./Tools/Build/build_windows.sh --version <x.y.z>, launch the player, sign in, reach Menu_Main, open and close the pause menu, read Player.log (QA-BUILD-WINDOWS-PLAYER).",
+        "Steam upload, once an app id exists: ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal"
+      ]
     }
   }
 }
