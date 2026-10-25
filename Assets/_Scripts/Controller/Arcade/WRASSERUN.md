@@ -92,6 +92,10 @@ at full throttle. Two laps of ~4.6 k u are ~150 s at cruise; every boost buys ~3
   - **the Wrasse's AI** is `KiteNavigatorAI` on the Sling: it drags the kite through the next ring
     (`TryGetNextRing`) whenever the board plane cuts its mouth, and otherwise whirls loops, preferring Time.
   - With `aiCrewNavigates` off, an AI hull seats no kite, its probe is never live, and its HULL threads.
+- **Every flight records the kites** (2026-10-26): `rivalKite` (each rival's kite position and saved boosts, aligned with
+  `rivals`; -1 boosts when no kite is seated) and `kite` (the pilot's own). The AI Wrasse lost 13-33 s at the first ring
+  in every recorded race while its hull passed beside it, and the record could not say where the kite was;
+  `regatta_rival_report.py --mode WrasseRun` now prints each stalled ring's closest hull and kite pass.
 - The hull's `AIPilot` names **no boost policy** (2026-10-26). The Sparrow's `SparrowAIBoostPolicy`, inherited with the
   clone, pressed a `BoostActionSO` the Wrasse does not bind, so it never did anything; the boost is the crew's
   (`AIPilotWantsBoost` above). `author_wrasse_assets.py` clears it in the clone and checks it.

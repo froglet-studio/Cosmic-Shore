@@ -87,6 +87,14 @@ leaves evidence.
    no longer stands down at `beforeAssemblyReload` — it stamps the sentinel `DomainReload` and
    keeps running until the domain unload aborts it (handled; the journal flushes in `finally`),
    so a reload that wedges in "Run managed callbacks" still gets dumped.
+8. **Only the editor runs it** (2026-10-25). Unity's asset import workers are separate editor
+   processes in the same project that also run `[InitializeOnLoad]`, but never tick the editor
+   loop. Each one used to start a detector session of its own, read as "unresponsive" from its
+   first heartbeat, and when Unity retired the idle worker the next launch reported a crash
+   (yskha's Crash-20261026-034810: pid 16260 "unresponsive for ~5324s" while the editor, pid
+   7240, played on). The detector and the Bug Ledger both return at once when
+   `AssetDatabase.IsAssetImportWorkerProcess()` is true; reports written before this from a
+   worker read as long hangs in EditMode from a session nobody played in.
 
 Guard rails: an error storm is rate-capped (20/s, excess collapsed to one count), the journal is
 size-capped (drops with one marker past the cap), reports are pruned to a count, and the whole

@@ -105,3 +105,13 @@ Squirrel in Joust and Skim Race, the Scarab in Scarab Scramble.
 (`author_skimrace_ai_config.py`, which gave Regatta its own copy so Skim Race's calibrated numbers never move). Since
 2026-10-26 the recorder copies Skim Race's track into each flight, so the Squirrel's skim is measured there beside the
 policy each intensity flies (`LEARNED_FROM_FLIGHTS_SkimRace.md`), as evidence for that tuner.
+
+## 6. Every flight says who won (2026-10-26)
+
+Yash: "record each match's result". A match that ends by its own rules is stored once the mode has published its
+ranked results (`GameDataSO.Results`, waited for up to 8 s), with a `result` block: the winning domain and name, the
+pilot's domain, `youWon`, and every ranked row (rank, name, domain, score, the mode's score text, is this the pilot).
+A match left early writes `"result": null`. So a mode with no finish line (Grizzly Charge, Bloomrush, Dog Fight) can be
+judged: `learn_drives_from_flights.py` learns a mode without rings from the matches the person WON once there are three,
+and `Docs/Reports/AI_LEARNING.md` shows "You won N of M" per hull and intensity.
+

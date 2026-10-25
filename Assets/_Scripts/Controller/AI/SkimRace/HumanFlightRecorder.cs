@@ -61,6 +61,11 @@ namespace CosmicShore.Gameplay
         // (an index into "rivalBoostStatuses", -1 for none), the AI's objective phase (AIPilot.ObjectivePhase, -1 for none),
         // and the degrees between the hull's course and its nose (AIPilot.HeadingDirection reads the course).
         const int RivalStateColumns = 5;
+        // "rivalKite" columns per rival, aligned with "rivals", and "kite" per sample for the pilot's own hull: a crew
+        // vessel's kite (KiteNavigator, the Wrasse) - x, y, z, and the saved boosts; -1 boosts (and a zero position) when no
+        // kite is seated on this machine. 2026-10-26: an AI Wrasse lost 13-33 s at Wrasse Run's first ring in every
+        // recorded race while its hull passed beside the ring, and the record could not say where its kite was.
+        const int KiteColumns = 4;
 
         /// <summary>The flights folder: beside the diagnostics captures, so Store AI record finds them.</summary>
         public static string Folder => Path.Combine(DiagnosticsHUD.OutputDirectory, "Flights");
@@ -130,6 +135,8 @@ namespace CosmicShore.Gameplay
         readonly List<float> _rivalVel = new(2048 * 12);
         readonly List<string> _rivalHulls = new(8);
         readonly List<float> _rivalState = new(2048 * 4 * RivalStateColumns);
+        readonly List<float> _rivalKite = new(2048 * 4 * KiteColumns);
+        readonly List<float> _ownKite = new(2048 * KiteColumns);
         // Each AI boost driver status seen, with its numbers blanked to '#' so "ramping (412 u/s)" and "ramping (430 u/s)"
         // are one entry: the table "rivalBoostStatuses" that "rivalState" indexes.
         readonly List<string> _rivalBoostStatuses = new(32);
@@ -158,6 +165,11 @@ namespace CosmicShore.Gameplay
         bool _havePrevRot;
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
         bool _recording, _turnWasRunning;
+        // A match that ended by its own rules is stored once its RESULT is in (GameDataSO.Results, which the mode fills at
+        // game end, a frame or a ClientRpc after the turn stops), or after ResultWaitSeconds without one.
+        const float ResultWaitSeconds = 8f;
+        bool _awaitingResult;
+        float _resultDeadline;
         // Named when recording starts and kept: by the time the turn ends the hull may already be despawned and the game
         // data reset (leaving to the menu mid-race wrote a flight with hull "Unknown" and raceTarget 0, 2026-10-16).
         string _hullName = "Unknown", _modeName = "Unknown", _domainName = "";
@@ -194,6 +206,12 @@ namespace CosmicShore.Gameplay
 
             // Every game mode: an AI training record of whichever vessel the local player flies by hand.
             bool running = _gameData.IsTurnRunning;
+            if (_awaitingResult)
+            {
+                // Sampling has stopped; store the race once the result is in, the wait runs out, or a new turn begins.
+                if (HasResult() || now >= _resultDeadline || running) Finish("race over");
+                if (!running) return;
+            }
             if (!running)
             {
                 if (_recording)
@@ -208,7 +226,12 @@ namespace CosmicShore.Gameplay
                     // The ring that ended the race is threaded on this frame or the last; samples run at 10 Hz, so without
                     // this last one a finished race was written one ring short (23 / 24, Regatta 2026-10-16).
                     TakeSample(now);
-                    Finish(matchStillHere ? "race over" : "left before the end");
+                    if (matchStillHere && !HasResult())
+                    {
+                        _awaitingResult = true;
+                        _resultDeadline = now + ResultWaitSeconds;
+                    }
+                    else Finish(matchStillHere ? "race over" : "left before the end");
                 }
                 _turnWasRunning = false;
                 return;
@@ -336,6 +359,7 @@ namespace CosmicShore.Gameplay
             NameRace();
             int rivalStart = _rivals.Count, crystalStart = _crystals.Count;
             RecordRivals();
+            RecordKite(tf, _ownKite);
             RecordCrystals(tf.position);
             RecordRailEvents(t);
 
@@ -583,6 +607,8 @@ namespace CosmicShore.Gameplay
             _rivalVel.Clear();
             _rivalHulls.Clear();
             _rivalState.Clear();
+            _rivalKite.Clear();
+            _ownKite.Clear();
             _rivalBoostStatuses.Clear();
             _rivalBoostStatusIndex.Clear();
             _crystals.Clear();
@@ -621,6 +647,7 @@ namespace CosmicShore.Gameplay
                 _rivals.Add(p.RoundStats?.SwitchesThreaded ?? 0);
                 _rivalVel.Add(vel.x); _rivalVel.Add(vel.y); _rivalVel.Add(vel.z);
                 RecordRivalState(vessel.VesselStatus, vessel.Transform);
+                RecordKite(vessel.Transform, _rivalKite);
                 if (first) _rivalHulls.Add(vessel.VesselStatus.VesselType.ToString().ToLowerInvariant());
             }
         }
@@ -653,6 +680,20 @@ namespace CosmicShore.Gameplay
             _rivalState.Add(courseNose);
         }
 
+        /// <summary>A crew vessel's kite (see <see cref="KiteColumns"/>) onto <paramref name="into"/>: its world position and
+        /// the saved boosts, or -1 boosts when the hull carries no kite seated here.</summary>
+        static void RecordKite(Transform hull, List<float> into)
+        {
+            if (hull && hull.TryGetComponent(out KiteNavigator kite) && kite.TryGetKitePose(out Vector3 at, out _))
+            {
+                into.Add(at.x); into.Add(at.y); into.Add(at.z);
+                into.Add(kite.SavedBoosts);
+                return;
+            }
+            into.Add(0f); into.Add(0f); into.Add(0f);
+            into.Add(-1f);
+        }
+
         /// <summary>The status's index in "rivalBoostStatuses", its digits blanked to '#'; -1 for none.</summary>
         int BoostStatusIndex(string status)
         {
@@ -677,18 +718,22 @@ namespace CosmicShore.Gameplay
         // Stopping Play mid-race (or quitting) writes the race so far as an unfinished flight.
         void OnApplicationQuit()
         {
-            if (_recording) Finish("play stopped");
+            if (_recording) Finish(_awaitingResult ? "race over" : "play stopped");
         }
 
         void OnDestroy()
         {
-            if (_recording) Finish("play stopped");
+            if (_recording) Finish(_awaitingResult ? "race over" : "play stopped");
             if (s_instance == this) s_instance = null;
         }
+
+        /// <summary>The mode has published its final ranked results (GameDataSO.Results).</summary>
+        bool HasResult() => _gameData && _gameData.Results != null && _gameData.Results.Count > 0;
 
         void Finish(string why)
         {
             _recording = false;
+            _awaitingResult = false;
             int byHand = 0;
             for (int i = 0; i < _samples.Count; i++) if (!_samples[i].Held) byHand++;
             if (byHand < 2 * SampleHz)
@@ -748,6 +793,7 @@ namespace CosmicShore.Gameplay
             sb.Append("\"laps\":").Append(target > 0 && ringCount > 0 ? Mathf.CeilToInt(target / (float)ringCount) : 0).Append(',');
             sb.Append("\"finished\":").Append(target > 0 && rings >= target ? "true" : "false").Append(',');
             sb.Append("\"raceSeconds\":").Append(F(_samples[_samples.Count - 1].T)).Append(',');
+            AppendResult(sb);
             sb.Append("\"meanFrameMs\":").Append(F(_frames > 0 ? 1000f * _frameSum / _frames : 0f, "0.0")).Append(',');
             sb.Append("\"sampleHz\":").Append(F(SampleHz)).Append(',');
             sb.Append("\"referenceShellHeight\":").Append(F(SkimRaceCourse.ReferenceShellHeight, "0.###")).Append(',');
@@ -862,6 +908,33 @@ namespace CosmicShore.Gameplay
                 }
                 sb.Append(']');
             }
+            // Each rival's kite, aligned with "rivals", and the pilot's own, aligned with "samples" (RecordKite).
+            sb.Append("],\n\"kiteColumns\":[\"x\",\"y\",\"z\",\"savedBoosts\"],\n\"rivalKite\":[");
+            for (int i = 0; i < _samples.Count; i++)
+            {
+                var m = _samples[i];
+                sb.Append(i > 0 ? ",[" : "[");
+                int start = m.RivalStart / 4 * KiteColumns;
+                for (int k = 0; k < m.RivalCount * KiteColumns; k++)
+                {
+                    if (k > 0) sb.Append(',');
+                    float v = _rivalKite[start + k];
+                    sb.Append(k % KiteColumns == 3 ? ((int)v).ToString(c) : F(v, "0.#"));
+                }
+                sb.Append(']');
+            }
+            sb.Append("],\n\"kite\":[");
+            for (int i = 0; i < _samples.Count && (i + 1) * KiteColumns <= _ownKite.Count; i++)
+            {
+                sb.Append(i > 0 ? ",[" : "[");
+                for (int k = 0; k < KiteColumns; k++)
+                {
+                    if (k > 0) sb.Append(',');
+                    float v = _ownKite[i * KiteColumns + k];
+                    sb.Append(k == 3 ? ((int)v).ToString(c) : F(v, "0.#"));
+                }
+                sb.Append(']');
+            }
             // The nearest crystals each sample, aligned with "samples": x, y, z, element per crystal.
             sb.Append("],\n\"crystals\":[");
             for (int i = 0; i < _samples.Count; i++)
@@ -913,6 +986,35 @@ namespace CosmicShore.Gameplay
             if (railed && !haveLane)
                 Debug.LogWarning($"[HumanFlightRecorder] {_modeName} record stored WITHOUT its rail ({_railWhy}); the learner cannot measure it against the rail.");
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// The match's result (2026-10-26, Yash: "record each match's result"), so a flight in a mode with no finish line
+        /// (Grizzly Charge, Bloomrush, Dog Fight) can still say who won: the winning domain and name, the pilot's domain,
+        /// whether that domain won, and every ranked row of <c>GameDataSO.Results</c> as [rank, name, domain, score, the
+        /// mode's score text, is this the pilot]. null when the match was left before it produced one.
+        /// </summary>
+        void AppendResult(StringBuilder sb)
+        {
+            if (!HasResult())
+            {
+                sb.Append("\"result\":null,");
+                return;
+            }
+            var results = _gameData.Results;
+            string you = _player ? _player.Name : "";
+            Domains yours = _player ? _player.Domain : Domains.Blue;
+            sb.Append("\"result\":{\"winnerDomain\":\"").Append(_gameData.WinnerDomain).Append("\",\"winnerName\":\"")
+              .Append(Esc(_gameData.WinnerName)).Append("\",\"yourDomain\":\"").Append(yours).Append("\",\"youWon\":")
+              .Append(_gameData.WinnerDomain == yours ? "true" : "false").Append(",\"rowColumns\":[\"rank\",\"name\",\"domain\",\"score\",\"scoreText\",\"you\"],\"rows\":[");
+            for (int i = 0; i < results.Count; i++)
+            {
+                var r = results[i];
+                sb.Append(i > 0 ? ",[" : "[").Append(r.Rank).Append(",\"").Append(Esc(r.Name)).Append("\",\"").Append(r.Domain)
+                  .Append("\",").Append(F(r.Score, "0.###")).Append(",\"").Append(Esc(r.ScoreText)).Append("\",")
+                  .Append(r.Name == you ? "true" : "false").Append(']');
+            }
+            sb.Append("]},");
         }
 
         /// <summary>A rail's prisms as [x, y, z, up x, up y, up z]; [] when there is none.</summary>
