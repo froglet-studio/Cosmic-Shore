@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol: the path map, teleport between perches, either way from any den (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** after its rest at a perch the Pistol's view becomes the path map: each island glows by the opposing
+prisms the vortex ring could reach over it; pick a den and a direction (A / D or left stick, F / Y turns round) and dive
+(or tap a path's start) to ride it. Another den is a teleport: no rest, no den growth. The AI takes the richest island.
+`PistolPaths` (pure) + `GobyPistolDuo` (scores, choice, map camera, lit bars for the Pistol's camera only).
+
+**Verified without the editor:** refcompile player 0 errors, editor 0 in changed files; `PistolPaths` run headless in a
+harness (options, cursor, AI pick, band; a planted wrong expectation failed); logging, conditional compilation, crew
+vessels, orthographic views, `author_goby_assets --check`. New tests `Paths_*` compile, not run. `/verify-unity` did
+not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Ride to a perch: after the rest the view pulls back to all perches; islands with rival prisms near them glow lime and
+   thicker, empty ones thin blue; the highlight is white with a pointer along the way it rides.
+2. A / D and the left stick move the highlight across the map; F / Y turns it round at its den; the head's "ahead" waits.
+3. Pick another den and dive: the Pistol appears there and rides; arriving at the next perch the den grows only by the
+   distance ridden since the teleport. Holding the dive through a perch rides on after half a second.
+4. A tap or click near a path's start rides it. The Goby's view never shows the bars.
+5. Fly the Goby: the AI Pistol heads for the island with the most rival prisms.
+
 ### 🔴 2D cameras fade the sky's Voronoi cell net (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `TwoDCameraSky` sets the global `_SkyCellOverlaySuppress` per camera; `HyperSeaSkybox.shader` fades

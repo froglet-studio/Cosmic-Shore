@@ -223,6 +223,33 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("For the Pistol's view only, a prism this far out of its plane reads as far as the Goby's view's most distant mass.")]
         [SerializeField, Min(1f)] float depthFullSpreadAt = 60f;
 
+        [Header("Pistol: the path map at a perch (Garrett, 2026-10-25: pick a den and a direction; teleporting grows no den)")]
+        [Tooltip("How far above or below an island's ground a prism still counts toward the island's score, u (the vortex " +
+                 "ring flies in the plane; the undertow's reach decides how far out of it).")]
+        [SerializeField, Min(1f)] float pathScoreBand = 60f;
+        [Tooltip("Seconds between two islands' scores while the Pistol rides (one island at a time; every frame while the map " +
+                 "is open).")]
+        [SerializeField, Min(0.01f)] float pathScoreInterval = 0.1f;
+        [Tooltip("Holding the dive this long once the map opens sets off on the highlighted path (so holding the dive through a " +
+                 "perch rides on); a fresh press sets off at once.")]
+        [SerializeField, Min(0f)] float chooseHoldSeconds = 0.5f;
+        [Tooltip("The map camera's field of view, degrees.")]
+        [SerializeField, Range(20f, 90f)] float mapFov = 50f;
+        [Tooltip("Room round the perches on the map: 1 frames them edge to edge.")]
+        [SerializeField, Range(1f, 2f)] float mapMargin = 1.2f;
+        [Tooltip("A path's glow, thickest (the island with the most opposing prisms), as a share of the map's radius.")]
+        [SerializeField, Range(0.001f, 0.05f)] float mapPathThickness = 0.014f;
+        [Tooltip("An empty path's glow, as a share of the thickest.")]
+        [SerializeField, Range(0.05f, 1f)] float mapPathThinShare = 0.25f;
+        [Tooltip("A tap or click this close to a path's start, pixels, picks it and sets off.")]
+        [SerializeField, Min(8f)] float mapPickPixels = 70f;
+        [Tooltip("An empty path's glow (the palette's neutral).")]
+        [SerializeField] Color mapPathColdColor = new(0.30f, 0.45f, 0.75f, 1f);
+        [Tooltip("The path with the most opposing prisms (the palette's call-to-action lime).")]
+        [SerializeField] Color mapPathHotColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+        [Tooltip("The highlighted path, its start den and the arrow that says which way it rides.")]
+        [SerializeField] Color mapPickColor = new(0.96f, 0.96f, 1f, 1f);
+
         [Header("Pistol: its model (Pistol.fbx, specs/pistol.py: a pistol-shrimp ship, nose +Z, big claw on its right)")]
         [Tooltip("The Pistol's hull, drawn where the ride puts it. Empty: a capsule stands in.")]
         [SerializeField] GameObject pistolModel;
@@ -292,6 +319,17 @@ namespace CosmicShore.ScriptableObjects
         public float TrailBlockGap => trailBlockGap;
         public Vector3 TrailBlockScale => trailBlockScale;
         public float BodyR => pBodyR;
+        public float PathScoreBand => pathScoreBand;
+        public float PathScoreInterval => pathScoreInterval;
+        public float ChooseHoldSeconds => chooseHoldSeconds;
+        public float MapFov => mapFov;
+        public float MapMargin => mapMargin;
+        public float MapPathThickness => mapPathThickness;
+        public float MapPathThinShare => mapPathThinShare;
+        public float MapPickPixels => mapPickPixels;
+        public Color MapPathColdColor => mapPathColdColor;
+        public Color MapPathHotColor => mapPathHotColor;
+        public Color MapPickColor => mapPickColor;
         public GameObject PistolModel => pistolModel;
         public float PistolModelLength => pistolModelLength;
         public float SnapClawShut => snapClawShut;

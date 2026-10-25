@@ -64,6 +64,21 @@
 >   (below) is answered.
 > - The four cards: Charge **Vortex Sting**, Mass **Dens** (L5 Fortress), Space **Undertow** (L5 Deep Undertow), Time
 >   **Quick Jump** (L5 Phase Dart). `Tools/Build/author_goby_assets.py` writes and checks them.
+> - "when the shrimp gets to a new perch it should be able to pick another perch to teleport to. teleporting to different
+>   perches does not grow them. only traveling the distance using the dive should grow the den. the pistol should be able
+>   to travel either direction from a den as well. the view that allows the pistol to find a den and direction of
+>   interest should show which paths have collected the most opposing prisms for the vortex ring to destroy." **[stated]**
+>   (2026-10-25). **[read]:** after its rest at a perch the Pistol's view pulls back to the PATH MAP: every perch framed,
+>   looking along the islands' planes. Each island glows along its ground as a lit faceted bar, thicker and from the
+>   neutral blue toward the call-to-action lime as it holds more OPPOSING prisms (not the pair's domain, breakable, not
+>   super-shielded: what the vortex ring can catch) over it, within the undertow's reach of its plane and `pathScoreBand`
+>   60 u of its ground. The options are every den, either way it has an island (`PistolPaths`); the head's "ahead" waits
+>   for the Goby's next island. A / D or the left stick moves the highlight (white, with a pointer at its den along the way
+>   it rides), F / Y turns it round, and the dive rides it (a fresh press, or held 0.5 s, so holding the dive through a perch
+>   rides on); a tap or click near a path's start picks it and goes. Picking another den TELEPORTS there and rides from it:
+>   no rest, no den growth (only the distance ridden grows the den the Pistol next arrives at). The AI takes the island
+>   with the most opposing prisms (ties: nearest end), and its old way when every island is empty. Scores are kept one
+>   island per 0.1 s, every frame while the map is open.
 > - The Pistol has its own MODEL (Garrett, 2026-10-24: "give the pistol a model"): `Pistol.fbx`, a pistol-shrimp ship
 >   built by `/vessel-model` (`specs/pistol.py`, `Docs/VesselModels/Pistol.md`): 19 floating parts, the big hammer claw
 >   on its right (the side the Pistol's camera sees going forward), four element morphs. The seat draws it where the
@@ -817,3 +832,7 @@ the line it settled.
     chip is honest; the aimed jump's key J.
   - The toroidal lens: `VortexRingLens` (top section). **[proposed]** dropping the faceted ring mesh entirely (the lens
     alone carries the ring); the rim tint stays the ring's old 0x9fe8ff rather than the domain colour.
+- 2026-10-25, Garrett: the path map, teleport between perches, either direction from any den, den growth only from the
+  distance ridden (top section). **[proposed]** the map's look (side-on to the islands, lit bars by score, a white pick
+  with a pointer), its controls (A / D or left stick, F / Y turns round, the dive or a tap rides), "opposing" = any domain
+  but the pair's, and the AI's pick (the richest island, else its old way).

@@ -126,6 +126,17 @@ MonoBehaviour:
   viewDistance: 60
   viewPistolAt: -0.35
   depthFullSpreadAt: 60
+  pathScoreBand: 60
+  pathScoreInterval: 0.1
+  chooseHoldSeconds: 0.5
+  mapFov: 50
+  mapMargin: 1.2
+  mapPathThickness: 0.014
+  mapPathThinShare: 0.25
+  mapPickPixels: 70
+  mapPathColdColor: {r: 0.3, g: 0.45, b: 0.75, a: 1}
+  mapPathHotColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
+  mapPickColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   pistolModel: {fileID: 919132149155446097, guid: 7d2e9b4c1a6f4e83b5c0d8a2f6e1b937, type: 3}
   pistolModelLength: 2.7
   snapClawShut: 75

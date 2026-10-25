@@ -79,6 +79,17 @@ namespace CosmicShore.Gameplay
         bool _resting = true; float _restT, _waitT, _travelled; int _restQueue, _restSpawned;
         bool _touchGhost, _touchSnap, _backPressed;
         float _dive;
+        // the choice at a perch (PistolPaths, Garrett 2026-10-25): every island's opposing prisms, kept one island at a time;
+        // the map the person picks a den and a direction on; the cursor and how the dive confirms it
+        readonly List<PathChoice> _options = new();
+        readonly List<int> _pathScore = new();
+        readonly HashSet<Prism> _scoreSeen = new();
+        int _scoreCursor, _pathScoreMax; float _scoreAt;
+        bool _choosing, _diveWasDown; PathChoice _choice; float _chooseT, _stickWas;
+        float _mapRadius = 1f;
+        Mesh _cube; Material[] _heatMats; Material _pickMat;
+        readonly List<Matrix4x4>[] _heatPieces = { new(), new(), new(), new(), new() };
+        readonly List<Matrix4x4> _pickPieces = new();
         bool _mouseDown, _aiming; Vector2 _mouseFrom, _pointerAt; Vector2? _mouseAim, _padAim; int _fingerId = -1;
         float _scanAt;
         readonly List<RingRun> _rings = new();
@@ -139,6 +150,10 @@ namespace CosmicShore.Gameplay
         public bool HasLock => _lockTarget;
         public bool DartReady => !_darting && _t >= _dartReadyAt;
         public bool HeadingBack => _travelDir < 0;
+        /// <summary>True while the Pistol, at a perch, waits for its person to pick a den and a direction (the path map).</summary>
+        public bool Choosing => _choosing;
+        /// <summary>The opposing prisms the vortex ring could reach along island <paramref name="segment"/>, last counted.</summary>
+        public int PathScore(int segment) => segment >= 0 && segment < _pathScore.Count ? _pathScore[segment] : 0;
         // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
         public bool LockHeld => _lockHeld && _human == Half.Goby;
         public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldown));
@@ -191,6 +206,7 @@ namespace CosmicShore.Gameplay
             _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _rings.Clear(); _held.Clear();
+            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0; _choosing = false;
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
             _home = _gt.position; _aiHasDir = false; _aiIslandGoal = 0f; _perched = false; _perchT = 0f;
@@ -233,7 +249,9 @@ namespace CosmicShore.Gameplay
             TwoDCameraSky.Unregister(_cam);
             if (_view) Destroy(_view);
             if (_bodyGo) Destroy(_bodyGo);
-            foreach (var o in new Object[] { _torus, _lockMat, _bodyMat }) if (o) Destroy(o);
+            foreach (var o in new Object[] { _torus, _lockMat, _bodyMat, _cube, _pickMat }) if (o) Destroy(o);
+            if (_heatMats != null) foreach (var m in _heatMats) if (m) Destroy(m);
+            _heatMats = null; _choosing = false; _pathScore.Clear();
             _claw = _tail = null; _bodyIsModel = false; _bodyDomain = null;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); ClearLock();
             _goby = null; _status = null; _gt = null; _cam = null; _view = null; _bodyGo = null; _camLive = false;
@@ -640,6 +658,7 @@ namespace CosmicShore.Gameplay
 
         void StepPistol(float dt)
         {
+            ScorePaths();
             if (_resting) { Rest(dt); return; }
             var inp = _human == Half.Pistol ? HumanPistol() : AIPistol();
             _dive = inp.Dive;
@@ -670,10 +689,14 @@ namespace CosmicShore.Gameplay
             while (_restSpawned < due) { LayDenPrism(den); _restSpawned++; }
             if (_restT < Config.RestSeconds) return;
 
-            // the Pistol's choice at a perch: on toward the Goby, or back toward the older dens (Back; the AI goes back after
-            // waiting at the head)
-            if (_human == Half.Pistol) { if (_backPressed) { _backPressed = false; _travelDir = -_travelDir; } }
-            else if (_at == _perches.Count - 1 && _at > 0) { _waitT += dt; if (_waitT > Config.AiBackAfter) { _travelDir = -1; _waitT = 0f; } }
+            // the Pistol's choice at a perch (Garrett, 2026-10-25): any den, either way. A person picks on the path map; the AI
+            // takes the island holding the most opposing prisms for its ring, and otherwise its old way (on toward the Goby,
+            // back toward the older dens after waiting at the head)
+            PistolPaths.Options(_perches.Count, _segments.Count, _options);
+            if (_human == Half.Pistol) { Choose(dt); return; }
+            int best = PistolPaths.Best(_options, _pathScore, _segments.Count, _at);
+            if (best >= 0) { SetOff(_options[best]); return; }
+            if (_at == _perches.Count - 1 && _at > 0) { _waitT += dt; if (_waitT > Config.AiBackAfter) { _travelDir = -1; _waitT = 0f; } }
             else if (_travelDir < 0 && _restT > Config.RestSeconds) _travelDir = 1;   // the AI turns for the head at the den it went back to
 
             if (_travelDir < 0 && _at == 0) _travelDir = 1;
@@ -691,6 +714,169 @@ namespace CosmicShore.Gameplay
             // 2026-10-22: "it should not launch from the perch each time")
             PistolBodyMath.PlaceAtStart(_p, _f, _body.pMinSpeed);
         }
+
+        /// <summary>Sets off on <paramref name="c"/>: from another perch it TELEPORTS there first, which grows no den (only the
+        /// distance ridden does, counted from here: Garrett, 2026-10-25).</summary>
+        void SetOff(PathChoice c)
+        {
+            if (!PistolPaths.Ready(c, _segments.Count)) return;
+            if (c.Perch != _at)
+            {
+                _at = Mathf.Clamp(c.Perch, 0, _perches.Count - 1);
+                _travelled = 0f;
+                _p.wpos = _perches[_at].Pos;
+                _camLive = false;   // a cut, not a pan, to the den it jumped to
+            }
+            _choosing = false;
+            _travelDir = c.Dir;
+            _waitT = 0f;
+            Ride(c.Segment, c.Dir);
+        }
+
+        /// <summary>The person's pick on the path map: the cursor walks the options (left stick / A, D; the one whose start is
+        /// next across the screen), Back turns it round at its den, a tap or click near a path's start picks that one and
+        /// sets off, and the dive sets off on the highlighted one (a fresh press, or held through the perch for
+        /// <c>chooseHoldSeconds</c>).</summary>
+        void Choose(float dt)
+        {
+            bool began = false, held = false; Vector2 at = default;
+            if (_cam) ReadPointer(out at, out began, out held);
+            if (!_choosing)
+            {
+                _choosing = true; _chooseT = 0f; _stickWas = 0f;
+                _choice = new PathChoice(_at, _travelDir);
+                _diveWasDown = DiveHeld(held);
+                _scoreCursor = 0;
+            }
+            _chooseT += dt;
+            if (_options.Count == 0) return;
+            if (PistolPaths.IndexOf(_options, _choice) < 0) _choice = _options[PistolPaths.Nearest(_options, _choice.Perch)];
+
+            int step = ChooseStep();
+            if (step != 0) _choice = StepOnScreen(step);
+            if (_backPressed)
+            {
+                _backPressed = false;
+                var turned = new PathChoice(_choice.Perch, -_choice.Dir);
+                if (PistolPaths.IndexOf(_options, turned) >= 0) _choice = turned;
+            }
+
+            bool go = false;
+            if (began && PickNear(at, out var picked)) { _choice = picked; go = true; }
+            bool dive = DiveHeld(held);
+            if (dive && !_diveWasDown) go = true;
+            if (dive && _chooseT >= Config.ChooseHoldSeconds) go = true;
+            _diveWasDown = dive;
+            if (!go || !PistolPaths.Ready(_choice, _segments.Count)) return;
+            SetOff(_choice);
+            _mouseDown = held; _aiming = false; _mouseFrom = at;   // a finger still down keeps diving
+        }
+
+        bool DiveHeld(bool pointerHeld)
+        {
+            var kb = Keyboard.current; var pad = Gamepad.current;
+            return pointerHeld
+                   || (kb != null && (kb.spaceKey.isPressed || kb.sKey.isPressed || kb.downArrowKey.isPressed))
+                   || (pad != null && (pad.buttonSouth.isPressed || pad.leftTrigger.ReadValue() > 0.5f));
+        }
+
+        /// <summary>-1, 0 or +1: a fresh push of the left stick or A / D (the D-pad and the arrows are the swap).</summary>
+        int ChooseStep()
+        {
+            int step = 0;
+            var kb = Keyboard.current; var pad = Gamepad.current;
+            if (kb != null) { if (kb.aKey.wasPressedThisFrame) step = -1; else if (kb.dKey.wasPressedThisFrame) step = 1; }
+            float x = pad != null ? pad.leftStick.ReadValue().x : 0f;
+            if (step == 0 && Mathf.Abs(x) > 0.6f && Mathf.Abs(_stickWas) <= 0.6f) step = x > 0f ? 1 : -1;
+            _stickWas = x;
+            return step;
+        }
+
+        /// <summary>The option whose start is next across the screen in <paramref name="step"/>'s direction (so left means
+        /// left on the map), or along the chain when there is no camera yet.</summary>
+        PathChoice StepOnScreen(int step)
+        {
+            if (!_cam) return PistolPaths.Step(_options, _choice, step);
+            float from = _cam.WorldToScreenPoint(OptionAnchor(_choice)).x, bestDx = float.MaxValue;
+            var best = _choice;
+            foreach (var c in _options)
+            {
+                var sp = _cam.WorldToScreenPoint(OptionAnchor(c));
+                if (sp.z <= 0f) continue;
+                float dx = (sp.x - from) * step;
+                if (dx > 0.5f && dx < bestDx) { bestDx = dx; best = c; }
+            }
+            return best;
+        }
+
+        bool PickNear(Vector2 screen, out PathChoice picked)
+        {
+            picked = _choice;
+            if (!_cam) return false;
+            float bestD = Config.MapPickPixels * Config.MapPickPixels;
+            bool any = false;
+            foreach (var c in _options)
+            {
+                var sp = _cam.WorldToScreenPoint(OptionAnchor(c));
+                if (sp.z <= 0f) continue;
+                float d = ((Vector2)sp - screen).sqrMagnitude;
+                if (d < bestD) { bestD = d; picked = c; any = true; }
+            }
+            return any;
+        }
+
+        /// <summary>Where an option is picked on the map: a little way along its island from its den (the head's "ahead",
+        /// which waits for the next island, a little way along the Goby's nose).</summary>
+        Vector3 OptionAnchor(PathChoice c)
+        {
+            if (!PistolPaths.Ready(c, _segments.Count))
+                return _perches[Mathf.Clamp(c.Perch, 0, _perches.Count - 1)].Pos + (_gt ? _gt.forward : Vector3.forward) * _mapRadius * 0.12f;
+            var seg = _segments[c.Segment];
+            float s = c.Dir > 0 ? seg.L * 0.18f : seg.L * 0.82f;
+            return seg.Ground(s, _tracks[c.Segment]);
+        }
+
+        /// <summary>One island's score at a time: the opposing prisms (not the pair's domain, never super-shielded or still
+        /// growing: what the vortex ring can catch) over it, within the undertow's reach of its plane and
+        /// <c>pathScoreBand</c> of its ground. Every frame while the map is open, every <c>pathScoreInterval</c> otherwise.</summary>
+        void ScorePaths()
+        {
+            while (_pathScore.Count < _segments.Count) _pathScore.Add(0);
+            if (_pathScore.Count > _segments.Count) _pathScore.RemoveRange(_segments.Count, _pathScore.Count - _segments.Count);
+            if (_segments.Count == 0) { _pathScoreMax = 0; return; }
+            if (!_choosing && _t < _scoreAt) return;
+            _scoreAt = _t + Config.PathScoreInterval;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            int k = _scoreCursor % _segments.Count;
+            _scoreCursor = (k + 1) % _segments.Count;
+            var seg = _segments[k];
+            var f = PistolPlane.For(seg, 1, Config.SlopeDegrees, _tracks[k]);
+            float reach = Mathf.Max(1f, Config.PullReach.EvaluateReplicated(_status)), band = Config.PathScoreBand;
+            float step = Mathf.Max(reach, band) * 1.5f, r = Mathf.Sqrt(reach * reach + band * band + step * step * 0.25f);
+            int count = 0;
+            _scoreSeen.Clear();
+            for (float s = 0f; s <= seg.L + step * 0.5f; s += step)
+            {
+                index.QuerySphere(seg.Ground(Mathf.Min(s, seg.L), _tracks[k]), r, _q2);
+                foreach (var prism in _q2)
+                {
+                    if (!_scoreSeen.Add(prism) || !Opposing(prism)) continue;
+                    Vector3 fr = f.ToFrame(prism.transform.position);
+                    if (PistolPaths.InBand(fr, f.EndX, PistolPlane.Ground(f, Mathf.Clamp(fr.x, 0f, f.EndX)), reach, band)) count++;
+                }
+                _q2.Clear();
+            }
+            _scoreSeen.Clear();
+            _pathScore[k] = count;
+            _pathScoreMax = 0;
+            foreach (int n in _pathScore) _pathScoreMax = Mathf.Max(_pathScoreMax, n);
+        }
+
+        /// <summary>A prism the vortex ring could take that is not the pair's: another domain, breakable, not super-shielded,
+        /// not still growing (the ring's own capture rule, StepRings).</summary>
+        bool Opposing(Prism prism) => Breakable(prism) && !prism.IsGrowing && !prism.prismProperties.IsSuperShielded
+                                      && prism.Domain != _status.Domain;
 
         void LayDenPrism(Den den)
         {
@@ -1163,6 +1349,8 @@ namespace CosmicShore.Gameplay
             if (!_cam) return;
             if (!showSideView) { _cam.enabled = false; _pip.Restore(); Draw3D(); return; }
             _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
+            if (_choosing && _human == Half.Pistol) { MapView(); Draw3D(); return; }
+            _cam.farClipPlane = 6000f;
             // the side camera, Tiny Wings' (Garrett, 2026-10-22): square to the plane and looking along +M from its back (so
             // the frame's x runs left to right), BESIDE the Pistol with an off-axis lens that looks ahead. It frames the
             // ground near the bottom with the Pistol a third of the way in, and zooms out as the Pistol speeds up and flies
@@ -1294,6 +1482,122 @@ namespace CosmicShore.Gameplay
             bone.rotation = turn * restWorld;
         }
 
+        /// <summary>The path map: the camera pulls back to frame every perch, looking along the islands' planes (their
+        /// hills side-on, the side view's language), with an ordinary lens.</summary>
+        void MapView()
+        {
+            Vector3 lo = _perches[0].Pos, hi = lo, n = Vector3.zero, up = Vector3.zero;
+            foreach (var d in _perches) { lo = Vector3.Min(lo, d.Pos); hi = Vector3.Max(hi, d.Pos); }
+            for (int k = 0; k < _segments.Count; k++)
+            {
+                var f = PistolPlane.For(_segments[k], 1, Config.SlopeDegrees, null);
+                n += Vector3.Dot(f.M, _f.M) >= 0f ? f.M : -f.M;
+                up += f.Up;
+            }
+            if (n.sqrMagnitude < 1e-6f) n = _f.M;
+            n.Normalize();
+            up = Vector3.ProjectOnPlane(up.sqrMagnitude > 1e-6f ? up : _f.Up, n);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, n);
+            Vector3 centre = (lo + hi) * 0.5f;
+            float radius = 1f;
+            foreach (var d in _perches) radius = Mathf.Max(radius, (d.Pos - centre).magnitude);
+            radius += Config.PathScoreBand;
+            _mapRadius = radius;
+            float fov = Config.MapFov, dist = radius / Mathf.Sin(0.5f * fov * Mathf.Deg2Rad) * Config.MapMargin;
+            var wantRot = Quaternion.LookRotation(n, up.normalized);
+            Vector3 wantPos = centre - n * dist;
+            float k1 = Mathf.Clamp01(Time.deltaTime * 4f);
+            _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k1) : wantRot;
+            _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, k1) : wantPos;
+            _camLive = true;
+            _cam.farClipPlane = Mathf.Max(6000f, dist + radius * 2f);
+            _cam.ResetProjectionMatrix();
+            _cam.fieldOfView = fov;
+            _cam.transform.SetPositionAndRotation(_camPos, _camRot);
+            DrawMap();
+        }
+
+        /// <summary>The paths as facts in the world, for the Pistol's camera only: a lit, faceted bar along each island's
+        /// ground, thicker and from the neutral blue toward the call-to-action lime as it holds more opposing prisms; the
+        /// highlighted path in white, with a pointer at its den along the way it rides.</summary>
+        void DrawMap()
+        {
+            EnsureMapAssets();
+            foreach (var list in _heatPieces) list.Clear();
+            _pickPieces.Clear();
+            float thick = _mapRadius * Config.MapPathThickness;
+            bool pickReady = PistolPaths.Ready(_choice, _segments.Count);
+            for (int k = 0; k < _segments.Count; k++)
+            {
+                float heat = _pathScoreMax > 0 ? (float)PathScore(k) / _pathScoreMax : 0f;
+                int level = Mathf.Clamp(Mathf.RoundToInt(heat * (_heatPieces.Length - 1)), 0, _heatPieces.Length - 1);
+                float w = thick * Mathf.Lerp(Config.MapPathThinShare, 1f, heat);
+                bool picked = pickReady && _choice.Segment == k;
+                AddPath(k, w, picked ? _pickPieces : _heatPieces[level], picked ? w * 1.35f : w);
+            }
+            // the pointer: at the picked den, along the way it rides (the head's "ahead" waits for the Goby's next island)
+            Vector3 den = _perches[Mathf.Clamp(_choice.Perch, 0, _perches.Count - 1)].Pos, tip = OptionAnchor(_choice);
+            Vector3 dir = tip - den;
+            if (dir.sqrMagnitude > 1e-4f)
+            {
+                float len = Mathf.Min(dir.magnitude, _mapRadius * 0.1f), head = thick * 4f;
+                var rot = Quaternion.LookRotation(dir.normalized, _cam ? -_cam.transform.forward : Vector3.up);
+                _pickPieces.Add(Matrix4x4.TRS(den + dir.normalized * (len - head * 0.5f), rot, new Vector3(head, head * 0.4f, head)));
+                _pickPieces.Add(Matrix4x4.TRS(den, Quaternion.identity, Vector3.one * thick * 3f));   // the den it sets off from
+            }
+            var rp = new RenderParams(_heatMats[0]) { camera = _cam, shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false };
+            for (int i = 0; i < _heatPieces.Length; i++)
+            {
+                if (_heatPieces[i].Count == 0) continue;
+                rp.material = _heatMats[i];
+                Graphics.RenderMeshInstanced(rp, _cube, 0, _heatPieces[i]);
+            }
+            if (_pickPieces.Count > 0)
+            {
+                rp.material = _pickMat;
+                Graphics.RenderMeshInstanced(rp, _cube, 0, _pickPieces);
+            }
+        }
+
+        void AddPath(int k, float w, List<Matrix4x4> into, float drawW)
+        {
+            var seg = _segments[k]; var track = _tracks[k];
+            int pieces = Mathf.Clamp(Mathf.CeilToInt(seg.L / 40f), 4, 32);
+            Vector3 lift = seg.N * drawW;   // just above the trail, so the ground's blocks never hide it
+            Vector3 a = seg.Ground(0f, track) + lift;
+            for (int i = 1; i <= pieces; i++)
+            {
+                Vector3 b = seg.Ground(seg.L * i / pieces, track) + lift;
+                Vector3 d = b - a;
+                if (d.sqrMagnitude > 1e-4f)
+                    into.Add(Matrix4x4.TRS((a + b) * 0.5f, Quaternion.LookRotation(d, seg.N), new Vector3(drawW, drawW, d.magnitude + drawW * 0.5f)));
+                a = b;
+            }
+        }
+
+        void EnsureMapAssets()
+        {
+            if (_heatMats != null) return;
+            _cube = CubeMesh();
+            _heatMats = new Material[_heatPieces.Length];
+            for (int i = 0; i < _heatMats.Length; i++)
+            {
+                var c = Color.Lerp(Config.MapPathColdColor, Config.MapPathHotColor, i / (float)(_heatMats.Length - 1));
+                _heatMats[i] = Lit(c, c * 0.45f, 0.55f);
+            }
+            var pick = Config.MapPickColor;
+            _pickMat = Lit(pick, pick * 0.6f, 0.6f);
+        }
+
+        /// <summary>A unit cube with its own normals per face: a faceted, lit bar piece.</summary>
+        static Mesh CubeMesh()
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var mesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
+            Destroy(go);
+            return mesh;
+        }
+
         void Draw3D()
         {
             // each vortex ring bends the light behind it round its core: a subtle toroidal lens, the black holes' kin
@@ -1390,7 +1694,9 @@ namespace CosmicShore.Gameplay
             GUILayout.Label($"Goby    perches {_perches.Count}   dart {(DartReady ? "ready" : "...")}{(_charging ? $" charging {DartCharge01:0.00}" : "")}   lock {(_lockTarget ? (_lockIsVessel ? "vessel" : "fauna") : "none")}");
             GUILayout.Label($"Pistol  {(_resting ? $"resting at perch {_at}" : $"riding {_seg} {(_dir > 0 ? "on" : "back")}")}   jump {_p.launch}   den prisms {DenPrisms}   heading {(_travelDir > 0 ? "on" : "back")}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
-                ? "Pistol: hold Space / mouse / finger / A to dive; T / B ghost; Q / X Snap; F / Y back; with aimed jumps on, drag (or RT + right stick, or J) and let go"
+                ? (_choosing
+                    ? "Pistol at a perch: the map - A / D or left stick picks a path, F / Y turns it round, Space / A / tap rides it (the brightest holds the most opposing prisms)"
+                    : "Pistol: hold Space / mouse / finger / A to dive; T / B ghost; Q / X Snap; F / Y back; with aimed jumps on, drag (or RT + right stick, or J) and let go")
                 : "Goby: aim the hull; hold Q / X / RT to charge a dart, let go to dart; F / Y / LT lock");
             GUILayout.EndArea();
 #endif

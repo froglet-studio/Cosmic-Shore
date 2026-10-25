@@ -435,6 +435,39 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Paths_EveryDenEitherWay_ThenTheHeadWaits()
+        {
+            // Garrett, 2026-10-25: "the pistol should be able to travel either direction from a den"
+            var o = new List<PathChoice>();
+            PistolPaths.Options(3, 2, o);
+            var want = new[] { (0, 1), (1, -1), (1, 1), (2, -1), (2, 1) };
+            Assert.That(o.Count, Is.EqualTo(want.Length));
+            for (int i = 0; i < want.Length; i++) { Assert.That(o[i].Perch, Is.EqualTo(want[i].Item1)); Assert.That(o[i].Dir, Is.EqualTo(want[i].Item2)); }
+            Assert.That(PistolPaths.Ready(o[4], 2), Is.False, "the head's ahead waits for the Goby's next island");
+            Assert.That(o[3].Segment, Is.EqualTo(1), "back from perch 2 rides island 1");
+            PistolPaths.Options(1, 0, o);
+            Assert.That(o.Count, Is.EqualTo(1));
+            Assert.That(PistolPaths.Ready(o[0], 0), Is.False, "the control: one perch, nothing to ride yet");
+            PistolPaths.Options(3, 2, o);
+            Assert.That(PistolPaths.Step(o, new PathChoice(0, 1), -1).Same(new PathChoice(0, 1)), "the cursor stops at the chain's end");
+            Assert.That(PistolPaths.Step(o, new PathChoice(1, -1), 2).Same(new PathChoice(2, -1)));
+        }
+
+        [Test]
+        public void Paths_TheAiTakesTheIslandWithTheMostOpposingPrisms()
+        {
+            var o = new List<PathChoice>();
+            PistolPaths.Options(4, 3, o);
+            int best = PistolPaths.Best(o, new[] { 2, 9, 4 }, 3, 3);
+            Assert.That(o[best].Segment, Is.EqualTo(1), "island 1 holds the most");
+            Assert.That(o[best].Perch, Is.EqualTo(2), "of its two ends, the one nearest the perch it is at");
+            Assert.That(PistolPaths.Best(o, new[] { 0, 0, 0 }, 3, 3), Is.EqualTo(-1), "the control: every island empty, it keeps its own way");
+            Assert.That(PistolPaths.InBand(new Vector3(50f, 10f, 30f), 100f, 0f, 40f, 60f), Is.True);
+            Assert.That(PistolPaths.InBand(new Vector3(50f, 10f, 50f), 100f, 0f, 40f, 60f), Is.False, "beyond the undertow's reach");
+            Assert.That(PistolPaths.InBand(new Vector3(120f, 10f, 0f), 100f, 0f, 40f, 60f), Is.False, "past the island's end");
+        }
+
+        [Test]
         public void Pistol_HasItsOwnModel()
         {
             // Garrett, 2026-10-24: "give the pistol a model" (specs/pistol.py, Docs/VesselModels/Pistol.md)
