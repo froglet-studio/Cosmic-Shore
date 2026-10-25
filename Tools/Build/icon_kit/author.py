@@ -7,7 +7,8 @@
     python3 Tools/Build/icon_kit/author.py --all [--check]  # every spec in specs/
 
 A spec (specs/<hull>.py) is HULL plus ICONS = [dict(name, element, act, draw)], where draw() returns a mask or
-[(mask, alpha), ...] in icon px. The sheet lands in Docs/Icons/sheets/<hull>.png with the icon as HEAD last committed it as BEFORE
+[(mask, alpha), ...] in icon px. An icon may carry exempt={"gate": "who said so and why"}: the gate still runs and
+prints, it just does not block the write (a hull's real silhouette fails `gap` on its ribs by design). The sheet lands in Docs/Icons/sheets/<hull>.png with the icon as HEAD last committed it as BEFORE
 (so a write does not erase its own comparison; a new icon has no BEFORE). The .meta is never rewritten for an icon that has one - the
 prefab's binding keeps its guid; a NEW icon gets the house sprite meta with a deterministic guid.
 """
@@ -72,8 +73,10 @@ def gate(rendered):
             im.save(p)
             r = verify.measure(p)
             fails = verify.judge(r)
+            exempt = [f for f in fails if f in icon.get("exempt", {})]
+            fails = [f for f in fails if f not in exempt]
             bad += bool(fails)
-            print("  " + verify.fmt(r, fails))
+            print("  " + verify.fmt(r, fails) + "".join(f"  [exempt {e}: {icon['exempt'][e]}]" for e in exempt))
             if icon.get("family", True):
                 family.append(p)
         for a, b, iou in verify.judge_family(family):

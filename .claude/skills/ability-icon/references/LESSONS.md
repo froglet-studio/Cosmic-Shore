@@ -104,3 +104,13 @@ one thing right. then move on."
 23. **Keep the creature off the wings.** With the body overlapping the hull's widest part the composite was a
     blob at 40 px in every placement; with the creature at the NOSE (the hull punching through it, wings clear
     of the halves) it reads at 40. Place the second object where the silhouette is narrowest.
+24. **"Fidelity" means the hull's real geometry.** Garrett on the drawn silhouette: "the fidelity is too low. this
+    reads too abstractly." `mesh_silhouette.silhouette()` projects the FBX mesh itself (parallel projection,
+    pitch / yaw, a 1.2 px thickening so the ribs survive 60 px); twelve views went on one sheet and Garrett chose
+    D (tipped 45, turned 15). The hand-drawn `squirrel_top()` is retired. A real silhouette fails the `gap` gate
+    on its ribs by design: the icon carries `exempt={"gap": "<who, why>"}`, printed on every run, never silent.
+25. **Measure the projection before composing on it.** Three rounds put the creature up-right of the nose because
+    I assumed yaw 15 tilted the hull's axis; `project_point()` on the nose and tail vertices showed the axis is
+    HORIZONTAL in view D and the fitted box IS the hull's length. Compose from projected points, not from the
+    numbers that produced them. And the creature at the nose needs a narrow crack (12 px) - a wide channel turns
+    a body into two brackets.

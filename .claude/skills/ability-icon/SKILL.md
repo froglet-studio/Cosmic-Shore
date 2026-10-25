@@ -21,7 +21,8 @@ the cooldown veil sweep OVER the icon; a hairline drowns under them), one focal 
 shapes, one stroke weight, filling the optical box. The element flower above the icon owns the
 element: an icon never repeats its element's mark ("I don't see what value the redundancy could
 provide"). A hull's own silhouette is fair game where it IS the act (the Dolphin's jaw on its Space
-icon; the Manta soaring; the Urchin on its ribbon). Test every icon by covering everything but its
+icon; the Manta soaring; the Urchin on its ribbon) - and it is the hull's MESH projected (`mesh_silhouette.py`),
+never a drawing of it ("the fidelity is too low. this reads too abstractly"). Test every icon by covering everything but its
 largest shape: if the act is gone, it is a scene, not a symbol.
 
 ## 1. Read before you touch

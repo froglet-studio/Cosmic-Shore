@@ -18,6 +18,7 @@ The core (drift) icons live in Core/ so the family gate compares the elemental i
 """
 import math
 
+import mesh_silhouette
 from canvas import band, empty, fill, ngon, rect, rotate, scale, stroke, translate
 from motifs import hull, speed_wedge, trail_band
 
@@ -30,37 +31,31 @@ CRYSTAL = scale([(44.8, 12), (83.2, 12), (103.7, 44.8), (85.8, 96), (64, 122.9),
 CLEAVE = [(4, 96), (124, 30)]
 
 
-def squirrel_top(cx=64, cy=64, L=112, heading=-90, ribs=((20, 24), (40, 16))):
-    """The Squirrel's OWN silhouette, from above: a slim wedge body with the canopy, two forward-swept wings ending
-    in engine pods, and the ribbed tail (a spine with chevron ribs). Proportions measured off its FBX top view
-    (python3 Tools/Build/icon_kit/hull_view.py "Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx":
-    4.5 wide x 6.45 long, body 3.3, tail 2.7+). Nose at -y in its own frame; heading -90 = nose up, 0 = nose right.
-    Two ribs by default - three fuse into a fishbone blur at 40 px. Garrett 2026-10-25: "it should read as the
-    squirrel silhouette vs a generic one"."""
-    k = L / 100.0
+FBX = "Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx"
+VIEW_D = dict(pitch=45, yaw=15, dilate_px=1.2)   # Garrett 2026-10-25: "D" of the twelve-view sheet
 
-    def P(pts):
-        return rotate([(cx + x * k, cy + y * k) for x, y in pts], heading + 90, cx, cy)
 
-    body = fill(P([(0, -50), (6, -42), (8, -20), (7, 4), (0, 10), (-7, 4), (-8, -20), (-6, -42)]))
-    wings = empty()
-    for sgn in (1, -1):
-        wings |= fill(P([(sgn * 6, -6), (sgn * 6, -22), (sgn * 30, -46), (sgn * 40, -46), (sgn * 40, -30), (sgn * 14, -2)]))
-    spine = stroke(P([(0, 6), (0, 50)]), 7 * k)
-    rb = empty()
-    for y, w in ribs:
-        rb |= stroke(P([(-w, y - w * 0.55), (0, y), (w, y - w * 0.55)]), 7 * k)
-    return body | wings | spine | rb
+def squirrel(box, cx, cy):
+    """The Squirrel's REAL silhouette: its FBX mesh, parallel-projected from above tipped 45 and turned 15 (view D),
+    thickened 1.2 px so the ribbed tail survives the 60 px card. Garrett 2026-10-25 on a hand-drawn version:
+    "the fidelity is too low. this reads too abstractly." On this view the hull's nose-tail axis is horizontal."""
+    return mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=cy, **VIEW_D)
+
+
+def squirrel_nose(box, cx, cy):
+    """Where the mesh's nose vertex lands for the same placement (the point the joust composes around)."""
+    return mesh_silhouette.project_point(FBX, mesh_silhouette.nose_vertex(FBX), box=box, cx=cx, cy=cy,
+                                         pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
 
 
 def crystal_joust():
-    """The joust: the Squirrel punching THROUGH the creature at its nose - the creature (a lifeform's hexagonal
-    body) split by the channel the hull cut, the Squirrel solid across it, its wings clear of the halves.
-    Chosen 2026-10-25 from four placements (halves flung apart / at the nose / bigger / already passed)."""
-    me = squirrel_top(56, 64, 100, heading=0)
-    body = fill(ngon(6, 26, 96, 64, rot=0))
-    channel = rect(0, 50, 128, 78)   # wider than the body: a clear gap each side, not a slit (gate: gap)
-    return me | (body & ~channel)
+    """The joust: the Squirrel (view D) driving its nose into a creature - a hexagonal lifeform body, cracked
+    along the hull's axis where it hits. Chosen 2026-10-25 from four placements; a crack of 12 keeps the body a
+    body (a wide channel made two brackets)."""
+    box, cx, cy = 80, 46, 68          # the fitted box IS the hull's length: tail at cx - 40 = 6, nose at 86
+    n = squirrel_nose(box, cx, cy)
+    body = fill(ngon(6, 28, n[0] + 6, n[1], rot=0)) & ~rect(0, n[1] - 6, 128, n[1] + 6)
+    return squirrel(box, cx, cy) | body
 
 
 def skimming():
@@ -85,7 +80,8 @@ def sharp_drift():
 
 
 ICONS = [
-    dict(name="Squirrel_CrystalJoust", element="Charge", act="Crystal Joust", draw=crystal_joust, before=PH + "HuntIcon-PLACEHOLDER.png"),
+    dict(name="Squirrel_CrystalJoust", element="Charge", act="Crystal Joust", draw=crystal_joust, before=PH + "HuntIcon-PLACEHOLDER.png",
+         exempt={"gap": "Garrett 2026-10-25 - the hull is its real mesh; the rib gaps are the fidelity he asked for"}),
     dict(name="Squirrel_Skimming", element="Time", act="Skimming", draw=skimming, before="Assets/_Graphics/Design Assests/HUD UI/New_Sparrow/boost icon.png"),
     dict(name="Squirrel_Drift", element="Core", act="Drift", draw=drift, subdir="Core", before=PH + "DriftIconSelected-PLACEHOLDER.png"),
     dict(name="Squirrel_SharpDrift", element="Core", act="Sharp Drift", draw=sharp_drift, subdir="Core", before=PH + "CannonIconSelected-PLACEHOLDER.png"),

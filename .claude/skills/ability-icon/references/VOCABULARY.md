@@ -19,9 +19,11 @@ function, what it is in the game, and the rule for using it.
 | Band / ring / disc | `canvas.band`, `canvas.ring`, `canvas.disc` | arcs, orbits, reticles | 96-gons: round things yes, round corners no |
 | Chamfered rect | `canvas.chamfered_rect` | a plate, a card, a chip | the style guide's corner sliver on two opposite corners |
 
-**A hull's own silhouette** is drawn to its FBX's proportions: `python3 Tools/Build/icon_kit/hull_view.py
-<Hull.fbx>` writes top / side / front masks to look at and measure; the spec keeps the motif (`squirrel_top()` in
-`specs/squirrel.py`) until a second hull needs it. A creature / lifeform body is a hexagon (`ngon(6, r, ...)`).
+**A hull's own silhouette is its mesh**, never a drawing of it (Garrett 2026-10-25: "the fidelity is too low"):
+`mesh_silhouette.silhouette(fbx, pitch, yaw, box, cx, cy, dilate_px)` projects the FBX on the kit grid, and
+`project_point()` / `nose_vertex()` give the points to compose around; `hull_view.py` writes top / side / front
+PNGs to look at first. The Squirrel's view is D (pitch 45, yaw 15, +1.2 px, `specs/squirrel.py`). Such an icon
+exempts the `gap` gate by name. A creature / lifeform body is a hexagon (`ngon(6, r, ...)`).
 
 Element marks (bolt, hexagon, black-hole ring, hourglass - the Starlings' cards) are NOT in this
 vocabulary for ability icons: the flower owns the element. They remain the Starlings' card faces.
