@@ -47,12 +47,19 @@ in both modes, each chip naming its control:
 | Card | Control | Herding | Netting |
 |---|---|---|---|
 | **Mass: The Call** | B / T (Button2, Input 7) | calls the herd to the point between the jacks (`callTime`, then `callCooldown` on the card's veil) | toggles whether the herd is drawn to the plane (lit while it is) |
-| **Space: Wide** | Y / F (Button4, Input 14) | eases the view out to the whole cell and back | the net grows `wideNetScale` (1.8) times - spread, height and depth - and the chase camera pulls back to hold it |
-| **Time: Decoys** | the triggers / L and R shift (Inputs 2 and 1; the chip is the two-trigger glyph, Input 13) | a pull lays that trigger's decoy at the jack on that side of the screen (a phone: lift a thumb) | a pull jumps the hull to that trigger's decoy (a phone: lift a thumb, or both for the one placed last, Input 4) |
+| **Space: Wide** | Y / F (Button4, Input 14) | eases the view out to the whole cell and back | nothing (round 11, 2026-10-25: "remove the space ability in net mode"; round 10's bigger net, `wideNetScale`, is retired) |
+| **Time: Decoys** | the triggers / L and R shift (Inputs 2 and 1; the chip is the two-trigger glyph, Input 13) | a pull lays that trigger's decoy at the jack on that side of the screen (a phone: lift a thumb) | a pull FLIES the hull fast to that trigger's decoy (a phone: lift a thumb, or both for the one placed last, Input 4) |
 
-Without Time 5 there is one decoy and either trigger lays it or jumps to it; with it each trigger has its own. A card
+Without Time 5 there is one decoy and either trigger lays it or flies to it; with it each trigger has its own. A card
 tapped on screen presses its control in either mode: netting through the flight's buttons, herding through
-`JacksExecutor.OnCardPress` (the flight's buttons are paused while the jacks herd). Wide is one toggle for both modes.
+`JacksExecutor.OnCardPress` (the flight's buttons are paused while the jacks herd).
+
+**The fast travel** (round 11, Garrett, 2026-10-25: "don't teleport, move quickly, so the player has a sense of where they
+travelled to"): the hull flies to the decoy at `travelSpeed` (900 u/s) on top of its own flight, never quicker than
+`travelMinSeconds` (0.35 s) or slower than `travelMaxSeconds` (1.2 s), keeping its heading, and the chase camera rides
+along. It is one velocity displacement on the hull's transformer (the Angler's dash, `VesselTransformer.ModifyVelocity`),
+less the distance the hull's own flight covers meanwhile, so it arrives at the decoy; what the net carries comes with it.
+The next one waits for this one to land plus `teleportGuard`.
 
 One player, two thumbs, two modes. The switch is the seat swap: D-pad left / right, the left / right arrow keys (`Docs/CREW_STATIONS.md`: fly -> herd -> the next hull), or a double tap on
 the small view (the Wrasse's gesture, `PilotSwapGesture`).
@@ -78,9 +85,10 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   `netSpread` further apart, so the **net** between them opens wider and taller (§1.1).
   - **Call** is Button2 (B, T; Input 7): it TOGGLES whether the herd is drawn to the plane (Garrett, 2026-10-24: "in
     netting mode it toggles plane attraction for fauna of your domain"). On at take-off; the herd glows while it is on.
-  - **Jump** to a decoy is a trigger (Input 2 the left's, Input 1 the right's, or a lifted thumb) and Input 4 (both
-    thumbs lifted: the one placed last): the hull and the jacks jump there, keeping their heading; the decoy stays.
-  - **Wide** is Button4 (Y, F; Input 14): the bigger net.
+  - **Fast travel** to a decoy is a trigger (Input 2 the left's, Input 1 the right's, or a lifted thumb) and Input 4
+    (both thumbs lifted: the one placed last): the hull and the jacks fly there fast, keeping their heading; the decoy
+    stays.
+  - **Wide** (Button4, Input 14) does nothing while netting.
   - No ramp boost (Garrett, 2026-10-25: "lets remove the rhino speed buff at full speed and straight"): Input 0 is
     unbound and the Rhino's `RampBoostActionRegistry` is stripped, so the AI's boost policy cannot arm it either. The hull
     flies at the Rhino rig's plain speed.
@@ -206,8 +214,8 @@ crystal's own). The invisible hull's TOUCH leaves crystals and prisms alone in b
 |---|---|---|
 | Charge | the share of DANGER creatures: 0% at -5, 100% at 15. A danger creature that touches a rival hull stings it (a scored Strike through `CombatHitDrain`) and is spent | **Attack**: the herd goes for rivals within `attackRange` and every creature that touches one bites it (a Strike) |
 | Mass | **The Call** (round 10: "mass should be the herd calling ability in herding mode and the plane attraction toggle in net mode"; B, T). Scales the herd's birth rate: a birth takes the species' own feeds at -5, a third of them at 15 | **Mass Clusters**: every `pooEvery` one creature lays `pooCount` prisms of our domain |
-| Space | **Wide** (round 10: "Space be the zoomed out view in herding mode and netting mode being zoomed out allows an even bigger net"; Y, F). Scales every herder's ring: the thumb floor at -5, +6% of it per level above | **Eat Shields**: the herd eats shielded prisms (never super-shielded) |
-| Time | **Decoys** (round 10, 2026-10-25: "in herding mode the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy"): herding, a trigger lays the decoy at the jack on that side (a phone: a lifted thumb); netting, a trigger jumps the hull to it. There is ALWAYS one decoy (2026-10-25: "there should always be at least one decoy available"): laid between the jacks when they land and never spent by the jump. Time scales the herd's speed, +6% per level, floored at x0.4. (Rounds 8-9 made Time a herding DASH of both jacks to the decoy; retired with `dashSpeed`, `dashGap`, `decoyPlaceHold` and `decoyTapPixels`.) | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each trigger has its own decoy - the left trigger lays the left one (at the jack further left on the herding view) and jumps to it, the right likewise; a phone's both-thumbs lift jumps to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
+| Space | **Wide** (round 10: "Space be the zoomed out view in herding mode"; Y, F; herding only since round 11: "remove the space ability in net mode"). Scales every herder's ring: the thumb floor at -5, +6% of it per level above | **Eat Shields**: the herd eats shielded prisms (never super-shielded) |
+| Time | **Decoys** (round 10, 2026-10-25: "in herding mode the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy"): herding, a trigger lays the decoy at the jack on that side (a phone: a lifted thumb); netting, a trigger flies the hull fast to it (round 11: "don't teleport, move quickly"). There is ALWAYS one decoy (2026-10-25: "there should always be at least one decoy available"): laid between the jacks when they land and never spent by the travel. Time scales the herd's speed, +6% per level, floored at x0.4. (Rounds 8-9 made Time a herding DASH of both jacks to the decoy; retired with `dashSpeed`, `dashGap`, `decoyPlaceHold` and `decoyTapPixels`.) | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each trigger has its own decoy - the left trigger lays the left one (at the jack further left on the herding view) and flies to it, the right likewise; a phone's both-thumbs lift flies to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
 
 Each upgrade is its own gate with its element written out (`JacksExecutor.ChargeUpgraded` .. `TimeUpgraded`), so
 `/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose). The
@@ -217,8 +225,8 @@ the tool reads, and the skimmer's curve is switched off on the Jacks (`Scale.Ena
 variant the tool reads past). The map's words are rewritten by the tool whenever they still carry an older round's words
 (`STALE_MAP_WORDS`). On the HUD (`JacksHUDController`): the Charge card's gauge is the danger share; the Mass card is the
 call - herding, lit while it pulls the herd, its cooldown on the veil; netting, lit while the plane's pull is on - with
-the herd's size on it and its fill on the gauge; the Space card is lit while Wide is on; the Time card flashes
-(`decoyFlashSeconds`) when a decoy is laid or jumped to.
+the herd's size on it and its fill on the gauge; the Space card is lit while the herding view is Wide; the Time card flashes
+(`decoyFlashSeconds`) when a decoy is laid and is lit for the whole of a fast travel.
 
 The herders are the two jacks and the decoy (the marlin was a third until 2026-10-21). The design rule "never stun
 vessels" holds: no contact slows or stuns a hull. PvP is petals only, so every hit on a rival is a Strike.

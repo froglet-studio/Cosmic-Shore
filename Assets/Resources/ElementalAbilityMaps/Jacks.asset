@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'Every few seconds a creature of the herd lays a cluster of your mass.'
   - Element: 3
     AbilityLabel: 'Wide'
-    AbilityDescription: 'Herding, zoom out to the whole cell and back. Netting, open an even bigger net, with the camera pulled back to hold it. Space widens the ring both jacks and the decoy push the herd out of; it is never smaller than a big thumb.'
+    AbilityDescription: 'Herding, zoom out to the whole cell and back. Space widens the ring both jacks and the decoy push the herd out of; it is never smaller than a big thumb.'
     Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -43,10 +43,10 @@ MonoBehaviour:
     UpgradeDescription: 'The herd eats shielded prisms.'
   - Element: 4
     AbilityLabel: 'Decoys'
-    AbilityDescription: 'Herding, pull a trigger to lay the decoy at the jack on that side (on a phone, lift a thumb). Netting, pull a trigger to teleport to the decoy. There is always one decoy. Time makes the herd faster.'
+    AbilityDescription: 'Herding, pull a trigger to lay the decoy at the jack on that side (on a phone, lift a thumb). Netting, pull a trigger to rush to the decoy at speed. There is always one decoy. Time makes the herd faster.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Second Decoy'
-    UpgradeDescription: 'A second decoy: each trigger has its own, laid by it while herding and teleported to by it while netting.'
+    UpgradeDescription: 'A second decoy: each trigger has its own, laid by it while herding and rushed to by it while netting.'

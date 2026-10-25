@@ -85,19 +85,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, opened by how far apart they
         /// are (every peer reads the same opening back from the published fish), its mouth facing the hull's
-        /// <paramref name="forward"/> and its bag hanging toward <paramref name="bag"/> (<see cref="Swing"/>), and
-        /// <paramref name="wide01"/> of the way to Wide's bigger net (<see cref="JacksExecutor.Wide01"/>, eased, so nothing pops).</summary>
-        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 forward, Vector3 up, Vector3 bag,
-                                                    float wide01)
+        /// <paramref name="forward"/> and its bag hanging toward <paramref name="bag"/> (<see cref="Swing"/>).</summary>
+        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 forward, Vector3 up, Vector3 bag)
         {
-            float open = JacksMath.NetOpenFromGap(Vector3.Distance(a, b), cfg.NetClosedGap, OpenGap(cfg, wide01));
-            float scale = Mathf.Lerp(1f, cfg.WideNetScale, wide01);
-            float height = Mathf.Lerp(cfg.NetMinHeight, cfg.NetMaxHeight, open) * scale;
-            return JacksMath.NetFrame.Between(a, b, forward, up, bag, height, cfg.NetDepth * scale);
+            float open = JacksMath.NetOpenFromGap(Vector3.Distance(a, b), cfg.NetClosedGap, cfg.NetOpenGap);
+            float height = Mathf.Lerp(cfg.NetMinHeight, cfg.NetMaxHeight, open);
+            return JacksMath.NetFrame.Between(a, b, forward, up, bag, height, cfg.NetDepth);
         }
-
-        /// <summary>The fish's distance apart with the net fully open, <paramref name="wide01"/> of the way to Wide's.</summary>
-        internal static float OpenGap(JacksConfigSO cfg, float wide01) => Mathf.Lerp(cfg.NetOpenGap, cfg.WideNetOpenGap, wide01);
 
         /// <summary>
         /// Where the bag hangs (<see cref="JacksMath.SwingBag"/>): back from the hull's nose, swung out against how fast the
@@ -126,8 +120,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Whether the fish are close enough to hold a net: at take-off they swim in from the herding board, and a
         /// net strung across that whole gap would sweep the board. The net opens once they are in formation.</summary>
-        internal static bool Formed(JacksConfigSO cfg, Vector3 a, Vector3 b, float wide01) =>
-            (a - b).sqrMagnitude <= Sq(OpenGap(cfg, wide01) * FormedSlack);
+        internal static bool Formed(JacksConfigSO cfg, Vector3 a, Vector3 b) =>
+            (a - b).sqrMagnitude <= Sq(cfg.NetOpenGap * FormedSlack);
 
         // the fish are "in formation" this far past the net's widest gap
         const float FormedSlack = 1.25f;
@@ -138,14 +132,14 @@ namespace CosmicShore.Gameplay
         internal void Step(JacksExecutor ex, Vector3 a, Vector3 b, float dt)
         {
             var cfg = ex.Config;
-            if (!Formed(cfg, a, b, ex.Wide01))
+            if (!Formed(cfg, a, b))
             {
                 if (Open) Release(ex);
                 return;
             }
             var status = ex.Status;
             var hull = status.Transform;
-            Frame = FrameFor(cfg, a, b, hull.forward, hull.up, _trail.Step(cfg, hull.forward, dt), ex.Wide01);
+            Frame = FrameFor(cfg, a, b, hull.forward, hull.up, _trail.Step(cfg, hull.forward, dt));
             Open = true;
 
             Carry(cfg, dt);

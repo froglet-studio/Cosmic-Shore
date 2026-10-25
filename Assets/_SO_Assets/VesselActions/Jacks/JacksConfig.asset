@@ -57,11 +57,13 @@ MonoBehaviour:
   jackCrystalHeight: 200
   netCameraFill: 0.8
   netCameraEase: 3
-  wideNetScale: 1.8
   callTime: 2.5
   callCooldown: 20
   decoyCooldown: 4
   teleportGuard: 0.6
+  travelSpeed: 900
+  travelMinSeconds: 0.35
+  travelMaxSeconds: 1.2
   pooEvery: 6
   pooCount: 7
   pooSpread: 22

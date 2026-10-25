@@ -14314,3 +14314,17 @@ Danger Share and Breeding, four Starling rows) and is now red on Danger Share an
 45. At Time 5: each trigger lays its own decoy while herding and teleports to its own while netting.
 46. A second machine sees the bigger net when the owner presses Y (the Wide flag replicates).
 
+### Round 11 (2026-10-25, same branch)
+
+Garrett: "great improvements. don't teleport, move quickly, so the player has a sense of where they travelled to. remove
+the space ability in net mode." The netting trigger now flies the hull to the decoy (`travelSpeed` 900 u/s, 0.35-1.2 s,
+the Angler's velocity displacement); Wide is herding only and round 10's bigger net (`wideNetScale`, its replicated flag)
+is retired. Steps 42 (netting half), 44 and 46 above are replaced by these. Headless compile and the generator's checks
+as below in the commit.
+
+47. Netting: pull a trigger - the hull flies fast to the decoy, visibly crossing the space between, keeping its heading,
+    and stops close to the decoy; the Time card is lit while it flies. A far decoy takes about a second, a near one about
+    a third of a second. Netted crystals ride along.
+48. Netting: Y or F (or the Space card) does nothing - the net keeps its size, the camera does not move.
+49. Herding: Y or F still eases out to the whole cell and back; the Space card is lit only then.
+

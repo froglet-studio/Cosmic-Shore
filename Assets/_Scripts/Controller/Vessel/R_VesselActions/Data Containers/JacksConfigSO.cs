@@ -140,10 +140,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.2f, 1f)] float netCameraFill = 0.8f;
         [Tooltip("Netting: how fast the chase camera eases to the distance that keeps the net in view (1/s).")]
         [SerializeField, Min(0.1f)] float netCameraEase = 3f;
-        [Tooltip("WIDE, the Space ability, while netting (Garrett, 2026-10-25: \"netting mode being zoomed out allows an even " +
-                 "bigger net\"): the fish's spread, the net's height and its depth are multiplied by this, and the chase " +
-                 "camera pulls back to keep it all in view. 1 = Wide changes nothing while netting.")]
-        [SerializeField, Range(1f, 4f)] float wideNetScale = 1.8f;
 
         [Header("The AI")]
         [Tooltip("An AI hull herds this long (s), then flies.")]
@@ -158,8 +154,16 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float callCooldown = 20f;
         [Tooltip("Retired 2026-10-25 with the flying decoy (Time level 5 is the second decoy now); nothing reads it.")]
         [SerializeField, Min(0f)] float decoyCooldown = 4f;
-        [Tooltip("Seconds between teleports (the lab's 0.6 s guard).")]
+        [Tooltip("Seconds between fast travels to a decoy (the lab's 0.6 s guard), counted from when one lands.")]
         [SerializeField, Min(0f)] float teleportGuard = 0.6f;
+        [Tooltip("Netting, the TIME ability's fast travel (Garrett, 2026-10-25: \"don't teleport, move quickly, so the player " +
+                 "has a sense of where they travelled to\"): the hull flies to the decoy at this speed (u/s), on top of its " +
+                 "own flight.")]
+        [SerializeField, Min(1f)] float travelSpeed = 900f;
+        [Tooltip("The fast travel never takes less than this (s), so a near decoy is still a visible move, ...")]
+        [SerializeField, Min(0.05f)] float travelMinSeconds = 0.35f;
+        [Tooltip("... and never more than this (s), so a far one is still quick.")]
+        [SerializeField, Min(0.05f)] float travelMaxSeconds = 1.2f;
 
         [Header("Level 5")]
         [Tooltip("pooEvery: Mass L5, seconds between clusters.")]
@@ -280,13 +284,10 @@ namespace CosmicShore.Gameplay
         public float JackNetCrystalReach => jackNetCrystalReach;
         public float NetCameraFill => netCameraFill;
         public float NetCameraEase => netCameraEase;
-        public float WideNetScale => wideNetScale;
         /// <summary>The fish's distance apart with the net closed, and fully open: what <see cref="JacksMath.NetOpenFromGap"/>
         /// reads the opening back from.</summary>
         public float NetClosedGap => 2f * flightGap;
         public float NetOpenGap => 2f * (flightGap + netSpread + flightReach);
-        /// <summary>The same, fully open while Wide (the Space ability) nets: the spread <see cref="WideNetScale"/> times over.</summary>
-        public float WideNetOpenGap => 2f * (flightGap + netSpread * wideNetScale + flightReach);
         public float HerdViewZoom => herdViewZoom;
         public float HerdFollowJacks => herdFollowJacks;
         public float CellViewMargin => cellViewMargin;
@@ -299,6 +300,9 @@ namespace CosmicShore.Gameplay
         public float CallCooldown => callCooldown;
         public float DecoyCooldown => decoyCooldown;
         public float TeleportGuard => teleportGuard;
+        public float TravelSpeed => travelSpeed;
+        public float TravelMinSeconds => travelMinSeconds;
+        public float TravelMaxSeconds => Mathf.Max(travelMinSeconds, travelMaxSeconds);
         public float PooEvery => pooEvery;
         public int PooCount => pooCount;
         public float PooSpread => pooSpread * labScale;

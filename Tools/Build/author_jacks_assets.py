@@ -549,7 +549,7 @@ def config_asset(script_guid: str) -> str:
         "  separation: 58\n  neighbourRadius: 160\n  grazeSense: 130\n  minHerd: 30\n  herdCap: 150\n  floorBirthSeconds: 0.12\n"
         f"  companionFauna: {{fileID: 11400000, guid: {COMPANION_FAUNA_GUID}, type: 2}}\n" + HERD_MARK_FIELDS +
         "  dogSpeed: 520\n  padDogSpeed: 1\n  aiNoise: 0.15\n" + FLIGHT_FIELDS + NET_FIELDS + "  callTime: 2.5\n  callCooldown: 20\n  decoyCooldown: 4\n"
-        "  teleportGuard: 0.6\n  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
+        "  teleportGuard: 0.6\n" + TRAVEL_FIELDS + "  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
         "  attackRange: 200\n  contactReach: 8\n  strikeCooldown: 1.2\n  pipSize: 0.32\n  viewMargin: 0.02\n  viewDepth: 600\n"
         + STABILITY_FIELDS + HERD_VIEW_FIELDS +
         f"  callSfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
@@ -582,13 +582,18 @@ NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDept
               "  netSettleEase: 3\n  netPrismCap: 48\n  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n"
               "  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n"
               "  jackCrystalHeight: 200\n"
-              "  netCameraFill: 0.8\n  netCameraEase: 3\n  wideNetScale: 1.8\n")
+              "  netCameraFill: 0.8\n  netCameraEase: 3\n")
 # The herding dash (rounds 8-9) and the herding view's own buttons (round 2), retired in round 10 (Garrett, 2026-10-25: "on
 # PC the gamepad view should only every have the 5 standard ability icons"; "in herding mode the triggers should drop decoys"):
 # a committed config loses them. RETIRED_DASH_FIELDS sat after decoyCooldown, RETIRED_BUTTON_FIELDS after viewZoomEase.
 RETIRED_DASH_FIELDS = "  dashSpeed: 3\n  dashGap: 40\n  decoyPlaceHold: 0.3\n  decoyTapPixels: 70\n"
 RETIRED_BUTTON_FIELDS = "  zoomButtonSize: 0.09\n  zoomButtonIcon: {fileID: 0}\n  callButtonIcon: {fileID: 0}\n"
-RETIRED_FIELDS = ("dashSpeed", "dashGap", "decoyPlaceHold", "decoyTapPixels", "zoomButtonSize", "zoomButtonIcon", "callButtonIcon")
+# Round 11 (2026-10-25: "remove the space ability in net mode"): Wide's bigger net (round 10's wideNetScale) goes too.
+RETIRED_FIELDS = ("dashSpeed", "dashGap", "decoyPlaceHold", "decoyTapPixels", "zoomButtonSize", "zoomButtonIcon", "callButtonIcon",
+                  "wideNetScale")
+# The fast travel (round 11, Garrett, 2026-10-25: "don't teleport, move quickly, so the player has a sense of where they
+# travelled to"), after teleportGuard where the C# declares them.
+TRAVEL_FIELDS = "  travelSpeed: 900\n  travelMinSeconds: 0.35\n  travelMaxSeconds: 1.2\n"
 HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  herdJacksFill: 0.8\n  herdJacksMargin: 40\n"
                     "  viewZoomEase: 3\n")
 
@@ -630,9 +635,9 @@ def config_retrofit(text: str) -> str:
                       count=1, flags=re.M)
     if "  herdViewZoom:" not in text:
         text = re.sub(r"^(  viewPanEase: .*\n)", lambda m: m.group(1) + HERD_VIEW_FIELDS, text, count=1, flags=re.M)
-    if "  netCameraEase:" in text and "  wideNetScale:" not in text:   # round 10 (2026-10-25): Wide's bigger net
-        text = re.sub(r"^(  netCameraEase: .*\n)", lambda m: m.group(1) + "  wideNetScale: 1.8\n", text, count=1, flags=re.M)
-    for field in RETIRED_FIELDS:   # round 10: the herding dash and the view's own buttons
+    if "  travelSpeed:" not in text:   # round 11 (2026-10-25): the fast travel replaces the jump
+        text = re.sub(r"^(  teleportGuard: .*\n)", lambda m: m.group(1) + TRAVEL_FIELDS, text, count=1, flags=re.M)
+    for field in RETIRED_FIELDS:   # rounds 10-11: the herding dash, the view's own buttons, Wide's bigger net
         text = re.sub(r"^  %s: .*\n" % field, "", text, flags=re.M)
     return text
 
@@ -720,20 +725,20 @@ MAP_ENTRIES = [
         "drawn to the plane. Mass sets how fast the herd breeds: a birth takes the species' own feeds at -5 and a third of "
         "them at 15, and the herd never starves below its minimum size.",
      "Mass Clusters", "Every few seconds a creature of the herd lays a cluster of your mass."),
-    (3, 14, "Wide", "Herding, zoom out to the whole cell and back. Netting, open an even bigger net, with the camera pulled "
-        "back to hold it. Space widens the ring both jacks and the decoy push the herd out of; it is never smaller than a "
-        "big thumb.",
+    (3, 14, "Wide", "Herding, zoom out to the whole cell and back. Space widens the ring both jacks and the decoy push the "
+        "herd out of; it is never smaller than a big thumb.",
      "Eat Shields", "The herd eats shielded prisms."),
     (4, 13, "Decoys", "Herding, pull a trigger to lay the decoy at the jack on that side (on a phone, lift a thumb). "
-        "Netting, pull a trigger to teleport to the decoy. There is always one decoy. Time makes the herd faster.",
-     "Second Decoy", "A second decoy: each trigger has its own, laid by it while herding and teleported to by it while netting."),
+        "Netting, pull a trigger to rush to the decoy at speed. There is always one decoy. Time makes the herd faster.",
+     "Second Decoy", "A second decoy: each trigger has its own, laid by it while herding and rushed to by it while netting."),
 ]
 
 # Card words from before round 10 (the herding dash): a committed map still carrying
 # any of them is rewritten (words the team edited since are left alone).
 STALE_MAP_WORDS = ("The jacks'' call (A)", "(X), so they can jump back", "'Flying Decoy'", "'Herd Speed'",
                    "Herding, pull a trigger (or tap the decoy)", "Decoy Dash", "tap it to dash",
-                   "Netting, switch whether", "pull a trigger to jump to the decoy")
+                   "Netting, switch whether", "pull a trigger to jump to the decoy", "open an even bigger net",
+                   "teleport to the decoy")
 
 
 def map_entries() -> str:
@@ -868,12 +873,12 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no herd glow field (run the tool)")
     if ("  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config
             or "  netPrismCap:" not in config or "  jackNetCrystalReach:" not in config or "  netSwingSeconds:" not in config
-            or "  netLitLift:" not in config or "  wideNetScale:" not in config):
+            or "  netLitLift:" not in config or "  travelSpeed:" not in config):
         errs.append("JacksConfig.asset: no net fields (run the tool)")
     if "  herdViewZoom:" not in config or "  viewZoomEase:" not in config or "  herdJacksFill:" not in config:
         errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")
     if any(re.search(r"^  %s:" % f, config, re.M) for f in RETIRED_FIELDS):
-        errs.append("JacksConfig.asset: still the herding dash's or the view buttons' fields (retired in round 10; run the tool)")
+        errs.append("JacksConfig.asset: still the herding dash's, the view buttons' or Wide's net fields (retired; run the tool)")
     action = guid_of_script("JacksActionSO")
     for name, value, text in controls:
         if f"guid: {action}, type: 3" not in text or f"  control: {value}\n" not in text:
@@ -1103,17 +1108,21 @@ def self_test():
     expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
     expect(check_assets(cfg.replace(NET_FIELDS, ""), controls, cont), 1, "no net fields")
     expect(check_assets(cfg.replace(HERD_VIEW_FIELDS, ""), controls, cont), 1, "no herding view zoom fields")
-    round1 = cfg.replace("  wideNetScale: 1.8\n", "").replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
+    round1 = cfg.replace(TRAVEL_FIELDS, "").replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
         "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", "").replace("  netTrailEase: 5\n", "").replace("  netPrismCap: 48\n", "").replace("  jackNetCrystalReach: 10\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
                                                              "  jackCrystalReach: 18\n").replace("  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", "")
     expect(check_assets(round1, controls, cont), 1, "the net's first-round config")
     if config_retrofit(round1) != cfg:
         fails.append("the config retrofit does not bring the first-round net config to the second round")
     round9 = cfg.replace("  decoyCooldown: 4\n", "  decoyCooldown: 4\n" + RETIRED_DASH_FIELDS).replace(
-        "  viewZoomEase: 3\n", "  viewZoomEase: 3\n" + RETIRED_BUTTON_FIELDS).replace("  wideNetScale: 1.8\n", "")
-    expect(check_assets(round9, controls, cont), 2, "the round-9 config (the dash and the view buttons, no wide net)")
+        "  viewZoomEase: 3\n", "  viewZoomEase: 3\n" + RETIRED_BUTTON_FIELDS).replace(TRAVEL_FIELDS, "")
+    expect(check_assets(round9, controls, cont), 2, "the round-9 config (the dash and the view buttons, no fast travel)")
     if config_retrofit(round9) != cfg:
-        fails.append("the config retrofit does not bring the round-9 config to round 10")
+        fails.append("the config retrofit does not bring the round-9 config to round 11")
+    round10 = cfg.replace("  netCameraEase: 3\n", "  netCameraEase: 3\n  wideNetScale: 1.8\n").replace(TRAVEL_FIELDS, "")
+    expect(check_assets(round10, controls, cont), 2, "the round-10 config (Wide's net, no fast travel)")
+    if config_retrofit(round10) != cfg:
+        fails.append("the config retrofit does not bring the round-10 config to round 11")
     if config_retrofit(cfg.replace(NET_FIELDS, "").replace(HERD_VIEW_FIELDS, "")) != cfg:
         fails.append("the config retrofit does not put the net and herding view fields back where the asset keeps them")
     no_worm = cont.replace(f"  - {{fileID: 11400000, guid: {WORM_EFFECT_GUID}, type: 2}}\n", "")

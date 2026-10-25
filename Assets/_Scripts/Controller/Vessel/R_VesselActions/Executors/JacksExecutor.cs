@@ -129,10 +129,11 @@ namespace CosmicShore.Gameplay
         int _lastDecoy;   // the decoy placed most recently: the one a phone's both-thumbs lift jumps to
         float _decoyActedAt = -99f;   // the last decoy laid or jumped to (the Time card's flash)
 
-        // WIDE, the Space ability (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode and netting mode being
-        // zoomed out allows an even bigger net"): one toggle, read by both modes
-        bool _wide, _remoteWide;
-        float _wideToggleReadyAt, _wide01;
+        // WIDE, the Space ability (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"), herding only since
+        // "remove the space ability in net mode" the same day
+        bool _wide;
+        float _wideToggleReadyAt;
+        float _travelUntil;   // netting: a fast travel to a decoy is under way until then
         // herding, the flight's buttons are paused, so a press of an ability CARD (AbilityCardPress) is heard here
         ScriptableEventInputEvents _cardPresses;
 
@@ -143,7 +144,6 @@ namespace CosmicShore.Gameplay
         bool _herding, _inputPaused, _holding, _heldWasStationary;
         bool _remoteHerding;   // another machine owns the hull: its jacks are herding (JacksBodies' flags)
         bool _remotePlane;     // ... and, netting, whether its herd is drawn to the plane
-        bool _following;       // this frame, the jacks are another machine's (FollowRemoteCrew)
         bool _lit;             // the herd is lit (TryGetLeashMark's glow): herding, or drawn to the plane while netting
         bool _planeAttract = true;   // netting: the call toggles it (herding draws the herd to the plane always)
         bool _planeNow = true;       // this frame: whether the herd is drawn to the plane
@@ -180,13 +180,12 @@ namespace CosmicShore.Gameplay
         public bool HasDecoy => _decoyOn[0] || _decoyOn[1];
         /// <summary>The second decoy (Time level 5) is down.</summary>
         public bool HasSecondDecoy => _decoyOn[1];
-        /// <summary>Seconds since a decoy was last laid (herding) or jumped to (netting): the Time card's flash.</summary>
+        /// <summary>Seconds since a decoy was last laid (herding): the Time card's flash.</summary>
         public float SinceDecoyAction => Time.time - _decoyActedAt;
-        /// <summary>WIDE (the Space ability): herding, the view is out to the whole cell; netting, the net is bigger and the
-        /// chase camera further back. The owner's on every peer.</summary>
-        public bool Wide => _following ? _remoteWide : _wide;
-        /// <summary>How far toward <see cref="Wide"/> the net and the views are (0..1, eased at <c>viewZoomEase</c>).</summary>
-        public float Wide01 => _wide01;
+        /// <summary>Netting: the hull is flying fast to a decoy (the Time ability).</summary>
+        public bool Travelling => Time.time < _travelUntil;
+        /// <summary>WIDE (the Space ability, herding only): the herding view is out to the whole cell.</summary>
+        public bool Wide => _wide;
         /// <summary>The jacks are out herding and the hull holds still (false: they are flying it).</summary>
         public bool Herding => _herding;
         /// <summary>The share of the herd that is danger at the current Charge.</summary>
@@ -227,6 +226,7 @@ namespace CosmicShore.Gameplay
             ClearDecoys();
             _wide = false;
             _decoyActedAt = -99f;
+            _travelUntil = 0f;
             _holding = false;   // a respawn resets the hull's stationary flag itself
             _callUntil = _callReadyAt = _teleReadyAt = 0f;
             _recruitAt = _floorBirthAt = 0f;
@@ -322,35 +322,45 @@ namespace CosmicShore.Gameplay
             Play(config.CallSfx, JacksCentre);
         }
 
-        /// <summary>THE SPACE ABILITY, WIDE (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode and netting
-        /// mode being zoomed out allows an even bigger net"): one toggle for both modes - herding, the view eases out to the
-        /// whole cell; netting, the net grows <c>wideNetScale</c> times and the chase camera pulls back to hold it.</summary>
+        /// <summary>THE SPACE ABILITY, WIDE (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"): herding,
+        /// the view eases out to the whole cell and back. Nothing while netting ("remove the space ability in net mode").</summary>
         public void ToggleWide()
         {
-            if (Time.unscaledTime < _wideToggleReadyAt) return;
+            if (!_herding || Time.unscaledTime < _wideToggleReadyAt) return;
             _wideToggleReadyAt = Time.unscaledTime + ToggleGuard;
             _wide = !_wide;
         }
 
         /// <summary>
         /// THE TIME ABILITY while netting (Garrett, 2026-10-25: "in netting mode the triggers should fast travel to the
-        /// decoy"): the jacks JUMP to the decoy on trigger <paramref name="side"/> (0 the left), keeping their heading; the
-        /// decoy stays (there is always one). Without the Time-5 upgrade there is one decoy and either trigger goes to it;
-        /// with it each trigger goes to its own. A phone's both-thumbs lift goes to the one placed last
-        /// (<paramref name="side"/> -1). On the machine that owns the hull (its transform replicates). Herding, the
-        /// triggers LAY the decoys instead (<see cref="ReadTrigger"/>).
+        /// decoy"; then "don't teleport, move quickly, so the player has a sense of where they travelled to"): the hull FLIES
+        /// to the decoy on trigger <paramref name="side"/> (0 the left), keeping its heading, at <c>travelSpeed</c> on top of
+        /// its own flight, in <c>travelMinSeconds</c>..<c>travelMaxSeconds</c>. One velocity displacement on the hull's
+        /// transformer (the Angler's dash, <see cref="VesselTransformer.ModifyVelocity(Vector3, float, bool, float)"/>: its
+        /// weight averages 1 over its life, so it carries the hull the whole way), less the distance the hull's own flight
+        /// covers meanwhile, so it arrives at the decoy. The decoy stays (there is always one). Without the Time-5 upgrade
+        /// there is one decoy and either trigger goes to it; with it each trigger goes to its own. A phone's both-thumbs
+        /// lift goes to the one placed last (<paramref name="side"/> -1). On the machine that owns the hull (its transform
+        /// replicates). Herding, the triggers LAY the decoys instead (<see cref="ReadTrigger"/>).
         /// </summary>
         public void Teleport(int side = -1)
         {
             int slot = side < 0 ? (_decoyOn[_lastDecoy] ? _lastDecoy : 0) : TimeUpgraded ? side : 0;
-            if (!config || !_decoyOn[slot] || _herding || Time.time < _teleReadyAt || _vessel == null || _status == null) return;
-            if (!ElementalTransfer.IsDecidedHere(_status)) return;
+            if (!config || !_decoyOn[slot] || _herding || Time.time < _teleReadyAt || _status == null) return;
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;   // the hull's transform is its owner's to move
             var t = _status.Transform;
-            if (!t) return;
+            var transformer = _status.VesselTransformer;
+            if (!t || !transformer) return;
+            Vector3 to = _decoys[slot] - t.position;
+            float distance = to.magnitude;
+            if (distance < 1f) return;
+            float time = Mathf.Clamp(distance / config.TravelSpeed, config.TravelMinSeconds, config.TravelMaxSeconds);
+            var own = _status.Course * _status.Speed;   // what the hull's own flight covers meanwhile
+            var velocity = (to - own * time) / time;
+            transformer.ModifyVelocity(velocity, time, true, (velocity + own).magnitude * 1.25f);
             Play(config.TeleportSfx, t.position);
-            _vessel.SetPose(new Pose(_decoys[slot], t.rotation));
-            _teleReadyAt = Time.time + config.TeleportGuard;
-            _decoyActedAt = Time.time;
+            _travelUntil = Time.time + time;
+            _teleReadyAt = _travelUntil + config.TeleportGuard;
         }
 
         /// <summary>There is ALWAYS at least one decoy (Garrett, 2026-10-25: "there should always be at least one decoy
@@ -408,7 +418,6 @@ namespace CosmicShore.Gameplay
             UpdateBoard(dt);
             float ring = Ring;
             bool remote = FollowRemoteCrew();
-            _following = remote;
             if (remote)
             {
                 // another machine owns the hull: its jacks, decoy and call (JacksBodies) herd here
@@ -436,7 +445,6 @@ namespace CosmicShore.Gameplay
                 if (!TimeUpgraded) _decoyOn[1] = false;   // the second decoy goes with the upgrade
             }
 
-            _wide01 = Mathf.MoveTowards(_wide01, Wide ? 1f : 0f, config.ViewZoomEase * dt);
             bool herdingNow = remote ? _remoteHerding : _herding;
             _planeNow = herdingNow || (remote ? _remotePlane : _planeAttract);
             SetLit(_planeNow);
@@ -479,10 +487,9 @@ namespace CosmicShore.Gameplay
         bool FollowRemoteCrew()
         {
             if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool decoyB, out var atB,
-                                                       out bool calling, out bool flying, out bool plane, out bool wide)) return false;
+                                                       out bool calling, out bool flying, out bool plane)) return false;
             _remoteHerding = !flying;
             _remotePlane = plane;
-            _remoteWide = wide;
             _jack[0] = a;
             _jack[1] = b;
             _decoyOn[0] = decoy;
@@ -575,9 +582,7 @@ namespace CosmicShore.Gameplay
             Vector2 right = input != null ? input.RightNormalizedJoystickPosition : Vector2.zero;
             float a = JacksMath.Ease(config.FlightFormationEase, dt);
             // sticks apart open the net: the fish swim further apart (Garrett, 2026-10-24: "a net that opens wider with xdiff")
-            // ... and Wide (the Space ability) opens it further still (2026-10-25: "an even bigger net")
-            float spread = config.NetSpread * Mathf.Lerp(1f, config.WideNetScale, _wide01);
-            float gap = config.FlightGap + spread * JacksMath.NetOpenFromSticks(left, right);
+            float gap = config.FlightGap + config.NetSpread * JacksMath.NetOpenFromSticks(left, right);
             for (int k = 0; k < 2; k++)
             {
                 var want = JacksMath.FlightOffset(k == 0 ? -1f : 1f, k == 0 ? left : right, gap, config.FlightReach);

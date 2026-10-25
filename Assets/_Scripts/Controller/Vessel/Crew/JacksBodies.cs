@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
 
         // Offsets are quantized before they are written, so jacks at rest do not dirty the variables every tick.
         const float OffsetQuantum = 0.25f;
-        const byte DecoyBit = 1, CallingBit = 2, SeatedBit = 4, FlyingBit = 8, PlaneBit = 16, DecoyBBit = 32, WideBit = 64;
+        const byte DecoyBit = 1, CallingBit = 2, SeatedBit = 4, FlyingBit = 8, PlaneBit = 16, DecoyBBit = 32;
 
         [Header("Models (found by name under this hull)")]
         [Tooltip("Name of the Rhino rig the hull was cloned from (left in the prefab, switched off: the puppetry still turns " +
@@ -243,8 +243,7 @@ namespace CosmicShore.Gameplay
         /// jacks itself (the owner, or unspawned), or before the owner has published them.
         /// </summary>
         internal bool TryGetRemoteCrew(out Vector3 jackA, out Vector3 jackB, out bool hasDecoy, out Vector3 decoy,
-                                       out bool hasDecoyB, out Vector3 decoyB, out bool calling, out bool flying, out bool plane,
-                                       out bool wide)
+                                       out bool hasDecoyB, out Vector3 decoyB, out bool calling, out bool flying, out bool plane)
         {
             byte flags = n_flags.Value;
             var p = transform.position;
@@ -257,7 +256,6 @@ namespace CosmicShore.Gameplay
             hasDecoyB = (flags & DecoyBBit) != 0;
             calling = (flags & CallingBit) != 0;
             plane = (flags & PlaneBit) != 0;
-            wide = (flags & WideBit) != 0;
             return !IsAuthority && (flags & SeatedBit) != 0;
         }
 
@@ -289,7 +287,6 @@ namespace CosmicShore.Gameplay
                 bool flying = seated && !_crew.Herding;
                 bool calling = seated && _crew.Calling;
                 bool plane = seated && _crew.PlaneAttract;
-                bool wide = seated && _crew.Wide;
                 bool decoy = false, decoyB = false;
                 if (seated && _crew.TryGetDecoy(0, out var at))
                 {
@@ -307,7 +304,7 @@ namespace CosmicShore.Gameplay
                     a = flying ? _crew.JackLocal(0) : _crew.JackWorld(0) - transform.position;
                     b = flying ? _crew.JackLocal(1) : _crew.JackWorld(1) - transform.position;
                 }
-                Publish(seated, flying, calling, plane, wide, decoy, decoyB, a, b);
+                Publish(seated, flying, calling, plane, decoy, decoyB, a, b);
                 SetMode(flying);
                 Place(0, a, true, rot);
                 Place(1, b, true, rot);
@@ -457,11 +454,11 @@ namespace CosmicShore.Gameplay
             if (want)
             {
                 Vector3 a = transform.position + _jacks[0].Offset, b = transform.position + _jacks[1].Offset;
-                want = JacksNet.Formed(_crew.Config, a, b, _crew.Wide01);
+                want = JacksNet.Formed(_crew.Config, a, b);
                 if (want)
                 {
                     var bag = _netTrail.Step(_crew.Config, transform.forward, Time.deltaTime);
-                    _netShown = JacksNet.FrameFor(_crew.Config, a, b, transform.forward, transform.up, bag, _crew.Wide01);
+                    _netShown = JacksNet.FrameFor(_crew.Config, a, b, transform.forward, transform.up, bag);
                 }
                 else _netTrail.Reset();
             }
@@ -590,11 +587,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void Publish(bool seated, bool flying, bool calling, bool plane, bool wide, bool decoy, bool decoyB, Vector3 a, Vector3 b)
+        void Publish(bool seated, bool flying, bool calling, bool plane, bool decoy, bool decoyB, Vector3 a, Vector3 b)
         {
             if (!IsSpawned || !IsOwner) return;
             byte flags = (byte)((seated ? SeatedBit : 0) | (flying ? FlyingBit : 0) | (calling ? CallingBit : 0)
-                                | (plane ? PlaneBit : 0) | (wide ? WideBit : 0) | (decoy ? DecoyBit : 0) | (decoyB ? DecoyBBit : 0));
+                                | (plane ? PlaneBit : 0) | (decoy ? DecoyBit : 0) | (decoyB ? DecoyBBit : 0));
             if (flags != n_flags.Value) n_flags.Value = flags;
             if (!seated) return;
             Write(n_jackA, a);
