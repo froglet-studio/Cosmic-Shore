@@ -101,10 +101,7 @@ the engine renamed twice, retired tools brought back. **Every session:**
 Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
 The per-prompt team hooks (`team_context.py`, `team_activity.py`, `team_tasks_nudge.py`, deleted 2026-10-25) were switched off on
 2026-10-23 (Shombith: too noisy, and they slowed every chat). Ask for what the others pushed when you need it:
-`python3 .claude/hooks/team_activity.py --peek 12`. One team hook does run: `team_tasks_mode.py` has every chat ask
-its person once, before the first task, whether this chat uses Froglet Tasks **automatically** (shows the tickets
-that touch the work and offers moves, each waiting on a yes) or **manually** (only through `/team-tasks`); keep the
-answer for the whole chat (Shombith, 2026-10-25). The Froglet Tasks page (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)
+`python3 .claude/hooks/team_activity.py --peek 12`. The Froglet Tasks page (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)
 is the board people read; the `/team-tasks` skill syncs it with the issues.
 
 ## Amoebius and the Vessel Studio (DECIDED 2026-10-19, `Docs/TOOLING_DECISIONS.md` §6)
