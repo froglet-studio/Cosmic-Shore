@@ -459,8 +459,8 @@ namespace CosmicShore.Gameplay
             mesh = null;
             var profile = SpindleLodProfileSO.Instance;
             var set = profile ? profile.SyntheticSet : null;
-            if (set == null || !set.source || !profile.lodEnabled || !profile.wireTemplate) return null;
-            var template = profile.wireTemplate;
+            if (set == null || !set.source || !profile.LodEnabled || !profile.WireTemplate) return null;
+            var template = profile.WireTemplate;
             if (!template.shader || !template.shader.isSupported) return null;
             // The wire's tiers and the effect's globals are the system's.
             if (!SpindleLodSystem.EnsureRunning()) return null;
@@ -474,14 +474,14 @@ namespace CosmicShore.Gameplay
             var mat = new Material(template) { name = $"SwitchRingWire_{ColorUtility.ToHtmlStringRGB(body)}" };
             // Dark body, bright facets: the prism rings' own pairing (dark = rim x 0.22). Both ends near
             // the signal colour washed every facet into one flat band.
-            float dark = profile.switchRingDarkShare;
+            float dark = profile.SwitchRingDarkShare;
             mat.SetColor(DullColorId, new Color(body.r * dark, body.g * dark, body.b * dark, 1f));
-            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, profile.switchRingRimWhiten));
+            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, profile.SwitchRingRimWhiten));
             mat.SetFloat(SpindleGirthId, set.girth);
             mat.SetFloat(SpindleStrandId, set.strandRadius);
-            mat.SetFloat(SpindleStrengthId, profile.switchRingStrength);
-            mat.SetFloat(SpindleDistanceId, profile.switchRingDistance);
-            mat.SetFloat(SpindleSwayId, profile.switchRingSway);
+            mat.SetFloat(SpindleStrengthId, profile.SwitchRingStrength);
+            mat.SetFloat(SpindleDistanceId, profile.SwitchRingDistance);
+            mat.SetFloat(SpindleSwayId, profile.SwitchRingSway);
             s_wireRingMaterials[key] = mat;
             return mat;
         }

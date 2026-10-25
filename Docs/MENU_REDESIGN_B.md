@@ -1985,9 +1985,12 @@ boards were approved with "Approved, price is fine, make it look-only for now". 
 - **The upgrade moment.** Six crystals fly from the button to the hull. On landing, the new pip flashes white and settles
   in the element's colour, the hull morphs from the old level to the new one (`AnimateElementLevel`, 0.5 s) and swells
   (`Pulse`), a hex ring bursts, and a banner names the element, "LEVEL N" and "{ability} grows".
-- **Look-only.** Levels are saved per vessel per element in PlayerPrefs (`HangarUpgradeStore`,
-  `hangar.upgrade.{vessel}.{element}`, max 10). The hull shows the bought form on every visit, and **nothing in a match
-  reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
+- **Look-only.** Levels are saved per vessel per element, max 10, on the player's cloud profile
+  (`HangarUpgradeStore` -> `PlayerDataService.SetHangarUpgradeLevel`, `ProfileEconomy.HangarUpgrades`), in the same save
+  as the crystals they cost (2026-10-25, `Docs/REFACTOR_BACKLOG.md` S67: they were in PlayerPrefs, so a reinstall kept
+  the debit and lost the level). A level bought before then is still read from the old device key
+  `hangar.upgrade.{vessel}.{element}` and adopted into the profile once it has loaded. The hull shows the bought form on
+  every visit, and **nothing in a match reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
   Garrett, who owns vessel tuning).
 - **The words** are serialized on `HangarUpgradesPage`: `buyTemplate`, `maxedWord`, `bannerTemplate` and
   `bannerLineTemplate`.
