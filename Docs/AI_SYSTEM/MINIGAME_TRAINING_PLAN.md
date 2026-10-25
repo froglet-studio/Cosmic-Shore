@@ -36,7 +36,7 @@ From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one who
 
 | Vessel | Racing minigame | Shape | State (2026-10-26) |
 |---|---|---|---|
-| **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). AI Dolphins thread 0-2 of 20 rings at I2 (§3.1) |
+| **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
 | Stoat | Warpline (also Slingshot) | gate race, field pairs | 4 hand-flown races (I1-I2). AI on hold for Garrett's configuration |
 | Rhino | Headlong | lapped gate race | none yet |
@@ -57,17 +57,17 @@ From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one who
 - This is the defect Regatta fixed on 2026-10-17. A drifting Dolphin locks its course on the gate's "through" point,
   which sits on the ring's AXIS, so a commit made off-axis passes beside the mouth. Regatta moved the through point onto
   the line through the ring's centre (`GateRaceController.ArmRacer`, `aiCommitFromApproachPoint`), and later added a
-  re-attack after a missed ring. Switchback still runs with the switch OFF. Turning it on is ticket T-20261015-cb8f:
-  Garrett's call for his gate races, Yash's for the training plan.
+  re-attack after a missed ring. **Turned on for Switchback on 2026-10-26** (`SwitchbackController.AICommitFromApproachPoint`,
+  Yash's call for the training plan; ticket T-20261015-cb8f covers Garrett's other gate races).
 - `learn_drives_from_flights.py --mode Switchback` already has three finished races to learn from (I1 and I2 mixed).
   Measured against the AI's numbers, the person:
   - starts a discharge lined up within 27 degrees, not 12;
   - needs only 0.9 s of runway, not 2.5;
   - spends the charge at 0.82, not 0.95.
 
-### 3.2 The intensity ladder today
+### 3.2 The intensity ladder before 2026-10-26
 
-Intensity is the course alone (`SWITCHBACK.md`, "Intensity is the COURSE"):
+Intensity was the course alone (`SWITCHBACK.md`, "Intensity is the COURSE"):
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
@@ -76,15 +76,15 @@ Intensity is the course alone (`SWITCHBACK.md`, "Intensity is the COURSE"):
 | What it asks | nothing new | threading | precision | precision |
 
 The Dolphin's verbs are skim (bank charge), drift (carve a turn its 110°/s cannot make) and discharge (spend it down a
-straight). None of them is taught or demanded by a level. Only the mouth shrinks, and I2 is a cliff (72 → 28 u radius).
+straight). None of them was taught or demanded by a level. Only the mouth shrank, and I2 was a cliff (72 → 28 u radius).
 
-### 3.3 Proposal: one new demand per level (for Yash to choose, Garrett to approve)
+### 3.3 One new demand per level (built 2026-10-26)
 
 | | I1: Learn to fly | I2: Carve | I3: Charge economy | I4: Gauntlet |
 |---|---|---|---|---|
 | Teaches | steering through gates | the drift | skim, then spend | all three, under pressure |
 | Mouth (radius) | 72 (as now) | 48 | 32 | 20 |
-| Course | a smooth flowing arc, gentle corners (≤ 30°), long legs | **switchbacks**: pairs of 90-150° hairpins only a drift makes | skim ribbons (prism walls) along some legs to bank charge, long straights after them to discharge | tight hairpins, short legs, danger prisms near the racing line |
+| Course | a smooth flowing arc, gentle corners (≤ 40°: 30° failed every seed in the 480-1080 shell), long legs | **switchbacks**: pairs of 90-150° hairpins only a drift makes | skim ribbons (prism walls) along some legs to bank charge, long straights after them to discharge | tight hairpins, short legs, danger prisms near the racing line |
 | Rivals | AI Dolphins on Easy | Medium | Medium / Hard | Hard |
 | Fun | flow, speed, no failure | the carve | timing the release | risk vs reward: the fast line is the dangerous one |
 
@@ -92,8 +92,10 @@ Why these numbers: the I4 mouth today (4.3 u radius against a 2.86 u hull) leave
 cannot carve through it, so the ladder ends in precision, not mastery. The proposed mouths keep the same order (each
 level tighter) without the cliff.
 
-Each change lands in the course generator (`SwitchbackCourse`, `SwitchbackCourseTests`) and the mode's generator
-(`author_switchback_assets.py`). It is a redesign of Garrett's mode, so it waits for his yes.
+Built as proposed, with the exact numbers in `SWITCHBACK.md` ("Intensity is the COURSE"): the hairpins in
+`SwitchbackCourse` (`SwitchbackCourseTests`), the I3 walls and I4 danger prisms in `SwitchbackFeatures` /
+`SpawnableSwitchbackFeatures` (`SwitchbackFeaturesTests`), wired by `author_switchback_assets.py`. The rivals' difficulty
+per level is still the player's pick in the launch panel. It is a redesign of Garrett's mode: he can re-tune any of it.
 
 ## 4. The end state: Regatta rebuilt from the trained vessels
 
@@ -109,11 +111,12 @@ Once two to four vessels race at their best in their own minigames:
 
 ## 5. What is done, what is next
 
-- **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here.
-- **Next, decisions for Yash** (and Garrett for Switchback):
-  1. Turn on the Regatta steering fix for Switchback (`aiCommitFromApproachPoint`), so the AI Dolphins can race and the
-     training has real rivals.
-  2. Choose or reshape the I1-I4 design in §3.3, then build it.
-  3. Write the first Switchback Dolphin numbers now (`--mode Switchback --write`), or wait for more races per intensity.
-- **Then:** Yash plays Switchback at each intensity, repeatedly. Each batch: learn, check the AI's pace in the
-  recordings, adjust. Then the next vessel.
+- **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here. Then, on Yash's yes:
+  1. The Regatta steering fix is on for Switchback (`AICommitFromApproachPoint`), so the AI Dolphins can race.
+  2. The I1-I4 ladder of §3.3 is built.
+  3. The first Switchback Dolphin numbers are written from the 6 races (`DolphinAIBoostPolicy_Switchback`,
+     `LEARNED_DRIVES_Switchback.md`): line up within 27°, stick band 0.46, 0.87 s of runway, spend at 0.82. They came
+     from I1 and I2 on the old ladder, so the next races re-learn them.
+  None of it has been run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+- **Next:** Yash plays Switchback at each intensity, repeatedly. Each batch: `learn_drives_from_flights.py --mode
+  Switchback --write`, check the AI's pace in the recordings, adjust. Then the next vessel.

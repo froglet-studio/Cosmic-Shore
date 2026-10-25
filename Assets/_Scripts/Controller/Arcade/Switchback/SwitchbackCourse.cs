@@ -26,21 +26,25 @@ namespace CosmicShore.Gameplay
         public float RingRadius;
         public Vector3 FirstGateDirection;   // the spawn formation's POLE - see Generate()
         public float FirstGateDistance;
+        public int HairpinEvery;             // every Nth corner is a hairpin (0 = none) - see IsHairpinCorner
+        public float HairpinMinDegrees;      // a hairpin turns at least this much...
+        public float HairpinMaxDegrees;      // ...and at most this much
 
         /// <summary>
-        /// The shipped course shape per intensity. INTENSITY IS THE COURSE, not the arena: the
-        /// mode runs one cell, and what climbs is how hard the gates are to fly - the mouths
-        /// narrow, the corners sharpen, the legs shorten, and each gate is twisted further off
-        /// the line you arrive on. Gate COUNT is deliberately constant (it is the end-game
-        /// target, authored in one place), so a match is the same length at every level and the
-        /// four are comparable. The same reasoning as Rampage, where the forest is identical at
-        /// all four and only the pressure changes.
-        ///
-        /// <para>Every row is measured, not eyeballed: <c>SwitchbackCourseTests</c> sweeps 400
-        /// seeds of each and asserts the caps hold, no course fails to generate, no two mouths
-        /// come within a ring diameter of each other, and every corner clears the Dolphin's
-        /// turning circle at BOOST (min turn radius 180.7u = 347 u/s over 110 deg/s) - the state
-        /// in which a racer is least able to correct.</para>
+        /// The shipped course shape per intensity: ONE NEW DEMAND PER LEVEL (Yash, 2026-10-26,
+        /// <c>Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md</c> §3.3). Switchback is where the Dolphin's AI is
+        /// trained, so each level teaches one of the Dolphin's verbs and the next adds one:
+        /// <list type="number">
+        /// <item><b>I1, learn to fly:</b> a flowing arc of wide gates, gentle corners (40 degrees at most), no hairpins.</item>
+        /// <item><b>I2, carve:</b> every second corner is a HAIRPIN (90-150 degrees) that only a drift makes - the
+        /// gate faces the leg you arrive on, so you thread it straight and carve the turn after it.</item>
+        /// <item><b>I3, charge economy:</b> long legs, a hairpin every third corner, and skim walls along legs
+        /// (<see cref="SpawnableSwitchbackFeatures"/>): skim to bank charge, discharge down the straight.</item>
+        /// <item><b>I4, gauntlet:</b> short legs, a hairpin every second corner (110-150), the tightest mouths, and
+        /// danger prisms beside the racing line - the fast line is the risky one.</item>
+        /// </list>
+        /// Gate COUNT stays constant (the end-game target, authored in one place), so the four levels are
+        /// comparable. <c>SwitchbackCourseTests</c> sweeps 400 seeds of each.
         /// </summary>
         /// <summary>
         /// The Dolphin's own circumscribing radius, in world units: 2.86.
@@ -48,68 +52,42 @@ namespace CosmicShore.Gameplay
         /// <para>MEASURED from the shipped prefab rather than guessed - the eight corners of all
         /// eleven hull box colliders on <c>Dolphin.prefab</c>, pushed through their transform
         /// chains to the vessel root (root scale 1), giving a hull of 5.29 x 1.23 x 5.30 and a
-        /// worst-corner distance from the origin of 2.860 on <c>TopNose</c>. The circumscribing
-        /// radius rather than the half-width because a pilot may be rolled to any angle when they
-        /// arrive, so it is the clearance a mouth has to offer in every orientation.</para>
+        /// worst-corner distance from the origin of 2.860 on <c>TopNose</c>.</para>
         /// </summary>
         public const float DolphinHullRadius = 2.86f;
-
-        /// <summary>
-        /// How much bigger than the ship the TIGHTEST mouth is. 1.5 - "barely bigger than a
-        /// Dolphin", which is what intensity 4 is for. The single dial for the whole ladder's
-        /// bottom end; raising it relaxes every level but the first.
-        /// </summary>
-        public const float NarrowestMouthClearance = 1.5f;
 
         /// <summary>The widest mouth, at intensity 1. Play-tested; do not derive it.</summary>
         public const float WidestRingRadius = 72f;
 
         /// <summary>
-        /// The mouth radius for an intensity, geometric between the two anchored ends. Pure and
-        /// public so <c>SwitchbackCourseTests</c> can assert the ladder rather than a table of
-        /// numbers that would have to be edited twice.
+        /// The mouth radius per intensity: 72, 48, 32, 20. Each level two thirds of the last at most, so there is no
+        /// cliff (the old geometric ladder went 72 -> 28 at I2). The tightest is 7 ship radii: room to come through
+        /// it in a drift, which a 4.3 u mouth (1.5 ship radii, the old I4) never left - it ended the ladder in
+        /// precision instead of mastery.
         /// </summary>
-        public static float RingRadiusForIntensity(int intensity)
-        {
-            int i = Mathf.Clamp(intensity, 1, 4);
-            float tightest = DolphinHullRadius * NarrowestMouthClearance;
-            float ratio = Mathf.Pow(tightest / WidestRingRadius, 1f / 3f);
-            return WidestRingRadius * Mathf.Pow(ratio, i - 1);
-        }
+        public static float RingRadiusForIntensity(int intensity) =>
+            new[] { WidestRingRadius, 48f, 32f, 20f }[Mathf.Clamp(intensity, 1, 4) - 1];
 
         public static SwitchbackCourseSettings ForIntensity(int intensity)
         {
             int i = Mathf.Clamp(intensity, 1, 4);
             var s = new SwitchbackCourseSettings
             {
-                // A leg is never shorter than the ~360u an AI needs for its approach run at
-                // cruise, and never shorter than the 313u a boosted Dolphin's turning circle
-                // demands at the sharpest corner these caps allow.
-                MinStep = new[] { 420f, 400f, 380f, 360f }[i - 1],
-                MaxStep = new[] { 680f, 650f, 620f, 580f }[i - 1],
-                MaxTurnDegrees = new[] { 45f, 50f, 55f, 60f }[i - 1],
-                AxisJitterDegrees = new[] { 30f, 40f, 50f, 60f }[i - 1],
-                MaxPresentDegrees = new[] { 50f, 55f, 60f, 65f }[i - 1],
-                // 72 -> 4.3, GEOMETRIC (each level 2.56x tighter than the last). Both ends are
-                // anchored and the middle is interpolated between them:
-                //
-                //   Level 1 is 72, the play-tested opening. Wider than any shipped fly-through in
-                //   the game (the Scarab's 24u switch, Astro League's 62u goal mouth, Scramble's
-                //   60/54/48/42 hoops), because a racer arrives far faster than a ball.
-                //
-                //   Level 4 is DolphinHullRadius x NarrowestMouthClearance - barely bigger than
-                //   the ship itself, which is the whole of what intensity means here.
-                //
-                // Geometric rather than linear because the ends are an order of magnitude apart:
-                // linear would spend three levels barely narrowing and then fall off a cliff,
-                // where a constant ratio makes every step the same increment of difficulty. Note
-                // the cost of anchoring both ends - level 2 is a big drop from level 1 (72 -> 28),
-                // which is arithmetic rather than a judgement, and the one number to retune if it
-                // reads as a cliff is NarrowestMouthClearance.
+                // Never under the ~360u an AI needs for its approach run. I3's legs are the LONGEST: they are
+                // the straights a banked charge is spent down. I4's are the shortest.
+                MinStep = new[] { 420f, 400f, 460f, 360f }[i - 1],
+                MaxStep = new[] { 620f, 650f, 720f, 520f }[i - 1],
+                // The ordinary corners. Hairpins are their own band, below.
+                MaxTurnDegrees = new[] { 40f, 45f, 50f, 55f }[i - 1],
+                AxisJitterDegrees = new[] { 15f, 25f, 30f, 40f }[i - 1],
+                MaxPresentDegrees = new[] { 40f, 50f, 55f, 60f }[i - 1],
+                HairpinEvery = new[] { 0, 2, 3, 2 }[i - 1],
+                HairpinMinDegrees = new[] { 0f, 90f, 90f, 110f }[i - 1],
+                HairpinMaxDegrees = new[] { 0f, 150f, 130f, 150f }[i - 1],
                 RingRadius = RingRadiusForIntensity(i),
-                // Comfortably more than two mouths across at every level, so no two gates can be
-                // threaded by one pass and the wrong one can never be the nearer.
-                MinSeparation = 260f,
+                // More than two mouths across at every level. Lower where hairpins fold the course back on
+                // itself: two 400u legs either side of a 150 degree hairpin put their outer gates 207u apart.
+                MinSeparation = new[] { 260f, 200f, 220f, 180f }[i - 1],
             };
             return s;
         }
@@ -201,11 +179,17 @@ namespace CosmicShore.Gameplay
 
                 Vector3 p = pts[pts.Count - 1];
                 Vector3 prevHeading = headings[headings.Count - 1];
-                Vector3 h = RaceCourseGeometry.Deflect(ref rng, prevHeading, s.MaxTurnDegrees);
+                // The corner is at the gate just placed (index Count - 1). A hairpin is drawn from its own band and
+                // never steered back off a wall (that would cap it): a hairpin that leaves the shell is re-drawn.
+                bool hairpin = IsHairpinCorner(pts.Count - 1, s);
+                Vector3 h = hairpin
+                    ? DeflectBetween(ref rng, prevHeading, s.HairpinMinDegrees, s.HairpinMaxDegrees)
+                    : RaceCourseGeometry.Deflect(ref rng, prevHeading, s.MaxTurnDegrees);
                 float step = rng.Range(s.MinStep, s.MaxStep);
                 Vector3 cand = p + h * step;
                 float r = cand.magnitude;
 
+                if (hairpin && (r > s.OuterRadius || r < s.InnerRadius)) continue;
                 if (r > s.OuterRadius || r < s.InnerRadius)
                 {
                     // Steer back toward the middle of the shell - CLAMPED to the same turn cap,
@@ -242,6 +226,13 @@ namespace CosmicShore.Gameplay
                     axis = RaceCourseGeometry.SafeNormalize(pts[i] - pts[i - 1], Vector3.forward);
                     halfTurn = 0f;
                 }
+                else if (IsHairpinCorner(i, s))
+                {
+                    // A hairpin gate faces the leg you ARRIVE on: thread it straight, then carve the turn after it.
+                    // Facing the bisector would stand it near edge-on (75 degrees off a 150 degree hairpin's legs).
+                    axis = RaceCourseGeometry.SafeNormalize(pts[i] - pts[i - 1], Vector3.forward);
+                    halfTurn = 0f;
+                }
                 else
                 {
                     Vector3 inbound = RaceCourseGeometry.SafeNormalize(pts[i] - pts[i - 1], Vector3.forward);
@@ -259,6 +250,26 @@ namespace CosmicShore.Gameplay
 
         // ── geometry helpers ─────────────────────────────────────────────────
         // Everything except TooClose now lives in RaceCourseGeometry, shared with Headlong.
+
+        /// <summary>
+        /// Whether the corner at gate <paramref name="gateIndex"/> is a hairpin: every
+        /// <see cref="SwitchbackCourseSettings.HairpinEvery"/>th corner, never the first or last gate (neither is a
+        /// corner). Public so the tests and the features layer agree on which corners are hairpins.
+        /// </summary>
+        public static bool IsHairpinCorner(int gateIndex, in SwitchbackCourseSettings s) =>
+            s.HairpinEvery > 0 && gateIndex >= 1 && gateIndex < s.GateCount - 1 && gateIndex % s.HairpinEvery == 0;
+
+        /// <summary>Rotate <paramref name="v"/> by an angle between the two bounds about a random perpendicular
+        /// axis: a hairpin's heading change.</summary>
+        static Vector3 DeflectBetween(ref RaceCourseGeometry.Rng rng, Vector3 v, float minDegrees, float maxDegrees)
+        {
+            Vector3 u = RaceCourseGeometry.Perpendicular(v);
+            Vector3 w = Vector3.Cross(v, u);
+            float phi = rng.Range(0f, 2f * Mathf.PI);
+            Vector3 spin = RaceCourseGeometry.SafeNormalize(u * Mathf.Cos(phi) + w * Mathf.Sin(phi), u);
+            float angle = rng.Range(minDegrees, maxDegrees) * Mathf.Deg2Rad;
+            return RaceCourseGeometry.SafeNormalize(RaceCourseGeometry.RotateAbout(v, spin, angle), v);
+        }
 
         static bool TooClose(List<Vector3> pts, Vector3 cand, float minSeparation)
         {
