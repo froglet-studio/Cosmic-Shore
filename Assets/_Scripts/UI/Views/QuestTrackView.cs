@@ -51,6 +51,10 @@ namespace CosmicShore.UI
         [Header("Summary (optional)")]
         [Tooltip("\"1 of 5 complete\": quests claimed out of the list.")]
         [SerializeField] private TMP_Text summaryText;
+        [Tooltip("The summary's line. {claimed} is the quests claimed, {total} the quests listed. Empty shows nothing.")]
+        [SerializeField] private string summaryLine = "{claimed} of {total} complete";
+        [Tooltip("The description of a placeholder quest (SO_UnlockData.IsPlaceholder). Empty shows nothing.")]
+        [SerializeField] private string comingSoonLine = "Coming Soon";
 
         private readonly List<QuestItemCard> _cards = new();
         private readonly List<CanvasGroup> _descriptionLabels = new();
@@ -200,7 +204,8 @@ namespace CosmicShore.UI
                 if (state == QuestItemState.Claimed) claimed++;
             }
             if (summaryText && questList != null)
-                summaryText.text = $"{claimed} of {questList.Quests.Count} complete";
+                summaryText.text = TemplateText.Fill(summaryLine,
+                    "claimed", claimed.ToString(), "total", questList.Quests.Count.ToString());
         }
 
         /// <summary>The highest intensity the player has unlocked on a quest's mode (0 while locked,
@@ -480,7 +485,7 @@ namespace CosmicShore.UI
                 if (tmp != null)
                 {
                     var quest = questList.Quests[i];
-                    tmp.text = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
+                    tmp.text = quest.IsPlaceholder ? comingSoonLine : quest.Description;
                 }
 
                 if (!go.TryGetComponent<CanvasGroup>(out var cg))
@@ -622,24 +627,43 @@ namespace CosmicShore.UI
 
         // ── Parallax Depth ────────────────────────────────────────────────────
 
+        // The parallax value each card was last written with (NaN = write it next frame).
+        private readonly List<float> _parallaxWritten = new();
+        private KitSightline _parallaxSight;
+
+        // Writes a card only when its parallax value changed, and nothing while nobody can see the track.
+        // Assigning a transform marks it moved even with the same value, and a moved card makes every
+        // RectMask2D above and inside it re-clip its graphics: with the style-B quest cards (three masks
+        // each) that ran every frame on the hidden Profile screen and in freestyle, part of the 3-7 ms
+        // ClipperRegistry.Cull in the 2026-10-19..23 Menu_Main captures (Docs/PERFORMANCE_OPTIMIZATION.md §2).
         void UpdateParallax()
         {
             if (scrollRect == null || _cards.Count == 0 || parallaxFalloff <= 0f) return;
 
-            var viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+            _parallaxSight ??= new KitSightline(scrollRect.transform, null, null);
+            while (_parallaxWritten.Count < _cards.Count) _parallaxWritten.Add(float.NaN);
+            if (!_parallaxSight.Visible) return;
+
+            var viewportRect = scrollRect.viewport ? scrollRect.viewport : (RectTransform)scrollRect.transform;
             Vector3 viewportCenter = viewportRect.TransformPoint(viewportRect.rect.center);
 
             for (int i = 0; i < _cards.Count; i++)
             {
                 var card = _cards[i];
-                if (card == null || card.IsAnimating) continue;
+                if (card == null || card.IsAnimating)
+                {
+                    _parallaxWritten[i] = float.NaN;   // an animation owns it now; rewrite once it ends
+                    continue;
+                }
 
-                var cardRect = card.GetComponent<RectTransform>();
+                var cardRect = (RectTransform)card.transform;
                 Vector3 cardCenter = cardRect.TransformPoint(cardRect.rect.center);
                 float distance = Mathf.Abs(cardCenter.x - viewportCenter.x);
                 float t = Mathf.Clamp01(distance / parallaxFalloff);
+                if (Mathf.Abs(t - _parallaxWritten[i]) < 1e-4f) continue;   // NaN never compares equal
+                _parallaxWritten[i] = t;
 
-                card.transform.localScale = Vector3.one * Mathf.Lerp(1f, minCardScale, t);
+                cardRect.localScale = Vector3.one * Mathf.Lerp(1f, minCardScale, t);
 
                 if (card.TryGetComponent<CanvasGroup>(out var cg))
                     cg.alpha = Mathf.Lerp(1f, minCardAlpha, t);
@@ -653,6 +677,7 @@ namespace CosmicShore.UI
             foreach (var card in _cards)
                 if (card != null) Destroy(card.gameObject);
             _cards.Clear();
+            _parallaxWritten.Clear();
         }
 
         void KillAllTweens()

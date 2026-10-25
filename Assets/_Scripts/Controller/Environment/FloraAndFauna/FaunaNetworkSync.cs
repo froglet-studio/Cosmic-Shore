@@ -96,9 +96,13 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<byte> _netLifeState = new((byte)LifeState.Alive);
         readonly NetworkVariable<byte> _netDeathStyle = new((byte)LifeformDeathStyle.Withered);
 
-        // The leash's MARK (Fauna.ApplyLeashMark), server-write: the holder's domain in the high byte and the lean x 255
-        // in the low byte, 0 = wild. A NetworkVariable so a peer that joins mid-herd sees the marked creatures marked.
-        readonly NetworkVariable<ushort> _netLeashMark = new(0);
+        // The leash's MARK (Fauna.ApplyLeashMark), server-write: the holder's domain, the glow and the lean x 255, a byte
+        // each (PackLeashMark), 0 = wild. A NetworkVariable so a peer that joins mid-herd sees the marked creatures marked.
+        readonly NetworkVariable<uint> _netLeashMark = new(0);
+
+        // A STOLEN creature's domain (Fauna.StealInto, the Jacks' net; Garrett, 2026-10-24): 0 = still the one it was born
+        // with (the identity's), else the domain it was stolen into. Server-write, so a late joiner sees it stolen.
+        readonly NetworkVariable<byte> _netStolenDomain = new(0);
 
         bool _appliedReplicatedDeath;
 
@@ -376,6 +380,7 @@ namespace CosmicShore.Gameplay
         {
             _netLifeState.OnValueChanged += OnLifeStateChanged;
             _netLeashMark.OnValueChanged += OnLeashMarkChanged;
+            _netStolenDomain.OnValueChanged += OnStolenDomainChanged;
 
             // Server: the spawner already ran the full Initialize + AssignLineage before Spawn -
             // nothing to do. Clients: puppet-ize BEFORE Initialize so the sim halves (goal
@@ -395,6 +400,7 @@ namespace CosmicShore.Gameplay
                                           ResolvePaletteConfig(host, identity),
                                           (Element)identity.Element);
             OnLeashMarkChanged(0, _netLeashMark.Value);
+            OnStolenDomainChanged(0, _netStolenDomain.Value);
 
             // Joined mid-death: run the same local death path now (crystal + wither) so the husk
             // withers instead of popping out at the server's despawn.
@@ -406,34 +412,67 @@ namespace CosmicShore.Gameplay
         {
             _netLifeState.OnValueChanged -= OnLifeStateChanged;
             _netLeashMark.OnValueChanged -= OnLeashMarkChanged;
+            _netStolenDomain.OnValueChanged -= OnStolenDomainChanged;
+        }
+
+        /// <summary>Server: the creature was stolen into <paramref name="domain"/> (<see cref="Fauna.StealInto"/>); every
+        /// client's copy takes the new domain, body prisms and all. A no-op off the server and when never spawned.</summary>
+        public void PublishStolenDomain(Domains domain)
+        {
+            if (!IsSpawned || !IsServer) return;
+            if (_netStolenDomain.Value != (byte)domain) _netStolenDomain.Value = (byte)domain;
+        }
+
+        void OnStolenDomainChanged(byte _, byte next)
+        {
+            if (IsServer || !fauna || next == 0) return;
+            fauna.ApplyStolenDomain((Domains)next);
+        }
+
+        /// <summary>Server: the creature's body prisms were shielded (<see cref="Fauna.ShieldBody"/>); every client's copy
+        /// shields its own (prism shield state is not replicated, each peer applies it). A no-op off the server.</summary>
+        public void PublishShieldBody()
+        {
+            if (!IsSpawned || !IsServer) return;
+            ShieldBody_ClientRpc();
+        }
+
+        [ClientRpc]
+        void ShieldBody_ClientRpc()
+        {
+            if (IsServer || !fauna) return;
+            fauna.ApplyShieldBody();
         }
 
         /// <summary>Server: publish the creature's leash mark (<see cref="Fauna.ApplyLeashMark"/>); a no-op off the server
         /// and when never network-spawned.</summary>
-        public void PublishLeashMark(Domains domain, float lean)
+        public void PublishLeashMark(Domains domain, float lean, float glow)
         {
             if (!IsSpawned || !IsServer) return;
-            ushort packed = PackLeashMark(domain, lean);
+            uint packed = PackLeashMark(domain, lean, glow);
             if (_netLeashMark.Value != packed) _netLeashMark.Value = packed;
         }
 
-        void OnLeashMarkChanged(ushort _, ushort next)
+        void OnLeashMarkChanged(uint _, uint next)
         {
             if (IsServer || !fauna) return;
-            UnpackLeashMark(next, out var domain, out float lean);
-            fauna.ApplyLeashMark(domain, lean);
+            UnpackLeashMark(next, out var domain, out float lean, out float glow);
+            fauna.ApplyLeashMark(domain, lean, glow);
         }
 
-        /// <summary>The mark on the wire: the domain in the high byte, the lean x 255 in the low byte; no lean is 0.</summary>
-        public static ushort PackLeashMark(Domains domain, float lean)
+        /// <summary>The mark on the wire: the domain in bits 16-23, the glow in <see cref="Spindle.GlowQuantum"/> steps in
+        /// bits 8-15, the lean x 255 in bits 0-7; no lean and no glow is 0 (wild).</summary>
+        public static uint PackLeashMark(Domains domain, float lean, float glow)
         {
-            int amount = Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
-            return amount == 0 ? (ushort)0 : (ushort)(((int)domain & 0xFF) << 8 | amount);
+            uint amount = (uint)Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
+            uint lit = Spindle.QuantizeGlow(glow);
+            return amount == 0 && lit == 0 ? 0u : ((uint)domain & 0xFF) << 16 | lit << 8 | amount;
         }
 
-        public static void UnpackLeashMark(ushort packed, out Domains domain, out float lean)
+        public static void UnpackLeashMark(uint packed, out Domains domain, out float lean, out float glow)
         {
-            domain = (Domains)(packed >> 8);
+            domain = (Domains)((packed >> 16) & 0xFF);
+            glow = ((packed >> 8) & 0xFF) * Spindle.GlowQuantum;
             lean = (packed & 0xFF) / 255f;
         }
 

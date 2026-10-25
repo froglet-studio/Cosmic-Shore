@@ -604,7 +604,6 @@ ugsStatsManager.ReportSkimRaceStats(
 | Score tracker | `SkimRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
 | Stats provider | `SkimRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| Base crystal monitor | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Waypoint track (per-intensity waypoints, ribbon normals, crystals per lap, marked waypoints) | `SpawnableWaypointTrack.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Crystal drawn + collected as a race ring (§7a) | `CrystalRaceRing.cs` | `_Scripts/Controller/Arcade/Racing/` |

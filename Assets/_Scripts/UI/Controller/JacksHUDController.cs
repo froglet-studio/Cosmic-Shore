@@ -10,10 +10,16 @@ namespace CosmicShore.UI
     /// The Jacks' four ability cards read the herd (design: <c>Controller/Vessel/R_VesselActions/JACKS.md</c>):
     /// <list type="bullet">
     /// <item><b>Charge</b> - the share of the herd that is DANGER, on the card's gauge.</item>
-    /// <item><b>Mass</b> - the herd's size, as a number on the card, and how full it is on the gauge.</item>
-    /// <item><b>Space</b> - lit while a decoy is down (the flying jacks can jump to it).</item>
-    /// <item><b>Time</b> - lit while the jacks CALL the herd, with the call's long cooldown on the card's veil.</item>
+    /// <item><b>Mass</b> - the CALL (Garrett, 2026-10-25: "mass should be the herd calling ability in herding mode and the
+    /// plane attraction toggle in net mode"): herding, lit while a call lasts, veiled while it cools; netting, lit while the
+    /// herd is drawn to the plane. The herd's size as a number on the card, and how full it is on the gauge.</item>
+    /// <item><b>Space</b> - WIDE ("Space be the zoomed out view in herding mode"; herding only, "remove the space ability in
+    /// net mode"): lit while the herding view is out to the whole cell.</item>
+    /// <item><b>Time</b> - the DECOYS ("in herding mode the triggers should drop decoys. in netting mode the triggers should
+    /// fast travel to the decoy"): a flash each time one is laid, and lit for the whole of a fast travel.</item>
     /// </list>
+    /// These five cards (with the omni crystal's) are every control the Jacks have: the herding view draws no buttons of its
+    /// own (2026-10-25: "on PC the gamepad view should only every have the 5 standard ability icons").
     /// The view is the Rhino's HUD (the hull is a Rhino clone). The herd count is GENERATED into the Mass card at runtime
     /// (the Wrasse's counts are the pattern), so the HUD prefab carries no extra object. Polled from this hull's own
     /// executor, a serialized reference (vessel rule 14), behind the fleet's pilot gate (rule 5); every push is
@@ -36,12 +42,16 @@ namespace CosmicShore.UI
         [Tooltip("A herd at or below its floor.")]
         [SerializeField] Color countFloorColor = new(0.59f, 0.65f, 0.76f, 1f);
 
+        [Header("Time card")]
+        [Tooltip("How long the Time card stays lit after a decoy is laid (herding), in seconds. A fast travel (netting) lights it for as long as it flies.")]
+        [SerializeField, Min(0f)] float decoyFlashSeconds = 0.3f;
+
         const string CountName = "HerdCount";
 
         TMP_Text _count;
         int _shownCount = -1;
         float _danger = -1f, _fill = -1f, _veil = -1f;
-        bool _decoyLit, _callLit, _isLocalPilotHud;
+        bool _wideLit, _massLit, _timeLit, _isLocalPilotHud;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -51,11 +61,12 @@ namespace CosmicShore.UI
             _isLocalPilotHud = vesselStatus?.Player != null && !vesselStatus.IsInitializedAsAI && vesselStatus.IsLocalUser;
             _shownCount = -1;
             _danger = _fill = _veil = -1f;
-            _decoyLit = _callLit = false;
+            _wideLit = _massLit = _timeLit = false;
 
             var view = View;
             if (!view) return;
             if (view.TryGetAbilityIcon(Element.Mass, out var icon)) _count = EnsureCount(icon);
+            view.SetAbilityPressed(Element.Mass, false);
             view.SetAbilityPressed(Element.Space, false);
             view.SetAbilityPressed(Element.Time, false);
         }
@@ -88,25 +99,33 @@ namespace CosmicShore.UI
                 herdGauge.fillAmount = fill;
             }
 
-            bool decoy = crew.HasDecoy;
-            if (decoy != _decoyLit)
+            // Mass: the call while herding (lit while it lasts, veiled while it cools), the plane's pull while netting
+            bool herding = crew.Herding;
+            bool mass = herding ? crew.Calling : crew.PlaneAttract;
+            if (mass != _massLit)
             {
-                _decoyLit = decoy;
-                view.SetAbilityPressed(Element.Space, decoy);
+                _massLit = mass;
+                view.SetAbilityPressed(Element.Mass, mass);
             }
-
-            bool calling = crew.Calling;
-            if (calling != _callLit)
-            {
-                _callLit = calling;
-                view.SetAbilityPressed(Element.Time, calling);
-            }
-
-            float veil = crew.CallCooldown01;
+            float veil = herding ? crew.CallCooldown01 : 0f;
             if (!Mathf.Approximately(veil, _veil))
             {
                 _veil = veil;
-                view.SetAbilityCooldown(Element.Time, veil);
+                view.SetAbilityCooldown(Element.Mass, veil);
+            }
+
+            bool wide = herding && crew.Wide;
+            if (wide != _wideLit)
+            {
+                _wideLit = wide;
+                view.SetAbilityPressed(Element.Space, wide);
+            }
+
+            bool time = crew.Travelling || crew.SinceDecoyAction < decoyFlashSeconds;
+            if (time != _timeLit)
+            {
+                _timeLit = time;
+                view.SetAbilityPressed(Element.Time, time);
             }
         }
 

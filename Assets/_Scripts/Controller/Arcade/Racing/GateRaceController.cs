@@ -1196,6 +1196,8 @@ namespace CosmicShore.Gameplay
                 if (!misjudged && lineLostIndex != index && TryRaceLine(captured, self, out Vector3 lineAim, out Vector3 lineAfter))
                 {
                     pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    // A look-ahead along a line, not a point to reach: the pilot's orbit break-off must not judge it.
+                    pilot.MarkAimAsPathLead();
                     after = lineAfter;
                     return lineAim;
                 }

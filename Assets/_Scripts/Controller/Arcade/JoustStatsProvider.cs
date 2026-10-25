@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     public class JoustStatsProvider : ScoreboardStatsProvider
     {
         [Header("Dependencies")]
-        [SerializeField] private JoustCollisionTurnMonitor joustTurnMonitor;
+        [SerializeField] private NetworkJoustCollisionTurnMonitor joustTurnMonitor;
 
         [Header("Icons")]
         [SerializeField] private Sprite joustIcon;

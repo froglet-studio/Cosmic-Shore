@@ -248,6 +248,18 @@ namespace CosmicShore.Utility
             return s_configured;
         }
 
+        /// <summary>
+        /// The implosion's authored life (the pool prefab's <c>implosionDuration</c>), for the one other consumption
+        /// visual: the suction drawn as the destruction's cut (<c>PrismInteractionLod.TrySuction</c>), which must be
+        /// over exactly when the implosion it stands in for would have been. False while unconfigured — the suction
+        /// then refuses and the factory draws the implosion.
+        /// </summary>
+        internal static bool TryGetImplosionDuration(out float duration)
+        {
+            duration = s_impDuration;
+            return s_impConfigured;
+        }
+
         /// <summary>Implosion counterpart of <see cref="Configure"/> — same contract,
         /// reading the mesh/material/timings off the pooled implosion prefab so the
         /// batched suction is visually identical to the pooled one.</summary>
@@ -321,6 +333,11 @@ namespace CosmicShore.Utility
             Color bright, Color dark, Vector3 velocity, float speedLimitOverride,
             PrismKind kind = PrismKind.Plain)
         {
+            // A rotation that drifted off unit length (1.00001 after many prism-to-prism
+            // multiplications) makes Matrix4x4.TRS log "Quaternion To Matrix conversion failed"
+            // (Bug Ledger E-16d65ffecb and three more, Garrett and Shombith). Normalize once here.
+            rotation = Quaternion.Normalize(rotation);
+
             // No Entities Graphics on this device (a WebGL2 browser): the same piece, computed below with the
             // same arithmetic, is drawn by the capped MeshRenderer carrier (Docs/PRISM_ANIMATION.md §4.11)
             // instead of being queued for a batch that could never spawn. False everywhere else.
@@ -381,6 +398,8 @@ namespace CosmicShore.Utility
         public static bool TryRequestImplosion(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Transform target)
         {
+            rotation = Quaternion.Normalize(rotation);   // see TryRequestExplosion
+
             // §4.11: on a device without Entities Graphics the capped MeshRenderer carrier draws it instead.
             bool meshRendererPath = PrismMeshRendererStamps.Active;
             if (!s_impConfigured || (!meshRendererPath && !PrismRenderService.Enabled) || s_quitting) return false;

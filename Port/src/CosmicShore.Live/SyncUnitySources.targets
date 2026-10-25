@@ -72,9 +72,9 @@
         var usingRx = new Regex(@"^([\s﻿]*)using\s+([A-Za-z_][\w.]*)\s*;", RegexOptions.Compiled);
         var qualified = map.Where(kv => kv.Value != null)
           .Select(kv => (rx: new Regex(@"(?<![\w.])" + Regex.Escape(kv.Key) + @"(?=\.)", RegexOptions.Compiled), to: kv.Value)).ToList();
-        // A qualified reference into a DELETED namespace (UnityEngine.Serialization.FormerlySerializedAs)
-        // resolves to the engine root, where those attributes live.
-        qualified.Insert(0, (new Regex(@"(?<![\w.])UnityEngine\.Serialization(?=\.)", RegexOptions.Compiled), "CosmicShore.Engine"));
+        // A qualified UnityEngine.Serialization.X maps like any other namespace (to CosmicShore.Engine.Serialization, where
+        // FormerlySerializedAsAttribute lives). An older special case sent it to the engine root, which no longer has it
+        // (TouchControlProfile.cs, 2026-10-25).
 
         // RPC interception: the IL post-processor's job. Every [ServerRpc]/[ClientRpc] body starts
         // with a call that routes the invocation over the network (NetRpc.Intercept) and returns when

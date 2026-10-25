@@ -62,6 +62,11 @@ namespace CosmicShore.Gameplay
                  "our domain's hue, so the herd reads as ours (Garrett, 2026-10-21: \"a slight hue shift in your domain\"). " +
                  "0 = no mark.")]
         [SerializeField, Range(0f, 1f)] float herdHueLean = 0.35f;
+        [Tooltip("The herd lights up (Garrett, 2026-10-23: \"fauna that get herded should light up when in herding mode. " +
+                 "fauna that get called should light up when flying\"): while the jacks herd, and while a call lasts in " +
+                 "flight, a herded creature's spindle colours are multiplied by 1 + this (HDR, so the bloom catches them). " +
+                 "0 = they never light up.")]
+        [SerializeField, Range(0f, 7.9f)] float herdGlow = 1.5f;
 
         [Header("The jacks")]
         [Tooltip("dogSpeed: how fast a jack runs to its thumb (lab units/s).")]
@@ -81,6 +86,67 @@ namespace CosmicShore.Gameplay
         [Tooltip("Flying: how fast a jack eases to the place under its thumb (1/s), and swims into formation on take-off.")]
         [SerializeField, Min(0.1f)] float flightFormationEase = 8f;
 
+        [Header("Netting (Garrett, 2026-10-24: \"lets make it a net that opens wider with xdiff\")")]
+        [Tooltip("Netting: how much further apart the fish swim with the sticks fully apart (u per side, on top of " +
+                 "flightGap and the sticks' own reach), so the net opens wider.")]
+        [SerializeField, Min(0f)] float netSpread = 30f;
+        [Tooltip("Netting: the mouth's height with the net closed (sticks at rest or together; u).")]
+        [SerializeField, Min(0.5f)] float netMinHeight = 6f;
+        [Tooltip("Netting: the mouth's height with the net fully open (sticks fully apart; u).")]
+        [SerializeField, Min(0.5f)] float netMaxHeight = 36f;
+        [Tooltip("Netting: how deep the bag hangs behind the mouth, in its middle (u).")]
+        [SerializeField, Min(0.5f)] float netDepth = 26f;
+        [Tooltip("Netting: how fast the bag's swing follows the hull's turning (1/s; the turn rate it swings against is eased " +
+                 "at this). Lower swings later and longer.")]
+        [SerializeField, Min(0.1f)] float netTrailEase = 5f;
+        [Tooltip("Netting: how far the bag swings out against a turn, in seconds of the nose's turn (Garrett, 2026-10-25: \"i " +
+                 "would expect this to work in any direction ... whether changing or maintaining directions\"): turning up " +
+                 "it swings down, turning left it swings right, for as long as the turn lasts.")]
+        [SerializeField, Min(0f)] float netSwingSeconds = 0.6f;
+        [Tooltip("Netting: the most the bag leans from straight back (the tangent of the angle: 1.2 is about 50 degrees).")]
+        [SerializeField, Min(0f)] float netSwingMax = 1.2f;
+        [Tooltip("Netting: a crystal settles this far into the bag (0 the mouth, 1 the bottom).")]
+        [SerializeField, Range(0f, 1f)] float netSettle = 0.75f;
+        [Tooltip("Netting: how fast a netted crystal sinks to netSettle (1/s).")]
+        [SerializeField, Min(0.1f)] float netSettleEase = 3f;
+        [Tooltip("Netting: the most prisms the net drags at once (Garrett, 2026-10-25: \"lets have prisms move and be dragged " +
+                 "by the net\"). Each is a mover of the prism-motion rule: one that runs into another prism destroys both.")]
+        [SerializeField, Range(0, 256)] int netPrismCap = 48;
+        [Tooltip("Netting: a netted prism sinks this far into the bag (0 the mouth, 1 the mesh) at netSettleEase, and lies " +
+                 "flat against the net there (Garrett, 2026-10-25: \"when prisms are stuck in the net their orientation should " +
+                 "match the expectation of being stuck in the net\").")]
+        [SerializeField, Range(0f, 1f)] float netPrismSettle = 1f;
+        [Tooltip("Netting: how fast a netted prism turns to lie flat against the net, its length along the fish line (1/s).")]
+        [SerializeField, Min(0.1f)] float netPrismTurnEase = 6f;
+        [Tooltip("Netting: our own domain's prisms the net crosses are lit, not moved (Garrett, 2026-10-25: \"when prisms of " +
+                 "the same domain are netted then they should be briefly lit\"): how far toward white (Prism.SetColorLift).")]
+        [SerializeField, Range(0f, 1f)] float netLitLift = 0.6f;
+        [Tooltip("Netting: how long an own-domain prism stays lit after the net leaves it (s).")]
+        [SerializeField, Min(0f)] float netLitSeconds = 0.6f;
+        [Tooltip("Netting: how long a lit prism takes to light up and to fade back (s): nothing pops.")]
+        [SerializeField, Min(0f)] float netLitFadeSeconds = 0.25f;
+        [Tooltip("Netting: a netted rival hull loses this much of each element (normalized; 0.1 = one crystal each), " +
+                 "knocked loose into the net.")]
+        [SerializeField, Range(0f, 1f)] float netRivalTake = 0.1f;
+        [Tooltip("Netting: seconds before the same rival hull can lose crystals to the net again.")]
+        [SerializeField, Min(0.1f)] float netRivalCooldown = 2f;
+        [Tooltip("Herding: how close a jack must come to a crystal to collect it, across the board as the herding view sees " +
+                 "it (u; Garrett, 2026-10-24: \"i had a hard time collecting crystals\").")]
+        [SerializeField, Min(0f)] float jackCrystalReach = 32f;
+        [Tooltip("Netting: how close a flying jack must come to a crystal to collect it (u, round the fish; Garrett, " +
+                 "2026-10-25: \"if either jack hits the omnicrystal it should still produce the serpent\"). The net between " +
+                 "the jacks carries the crystals the fish do not touch.")]
+        [SerializeField, Min(0f)] float jackNetCrystalReach = 10f;
+        [Tooltip("Herding: how far above or below the board a crystal can sit and still be collected by a jack under it in " +
+                 "the top-down view (u).")]
+        [SerializeField, Min(0f)] float jackCrystalHeight = 200f;
+        [Tooltip("Netting: the chase camera backs off until the jacks and the net's catch fit inside this share of the " +
+                 "view from its centre (Garrett, 2026-10-24: \"the jacks and anything in their net should be in the camera " +
+                 "view while netting\").")]
+        [SerializeField, Range(0.2f, 1f)] float netCameraFill = 0.8f;
+        [Tooltip("Netting: how fast the chase camera eases to the distance that keeps the net in view (1/s).")]
+        [SerializeField, Min(0.1f)] float netCameraEase = 3f;
+
         [Header("The AI")]
         [Tooltip("An AI hull herds this long (s), then flies.")]
         [SerializeField, Min(1f)] float aiHerdSeconds = 14f;
@@ -88,14 +154,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float aiFlightSeconds = 6f;
 
         [Header("The call and the decoy")]
-        [Tooltip("callTime: seconds the jacks' call lasts.")]
+        [Tooltip("callTime: herding, seconds the jacks' call lasts (the herd pulled to the point between the jacks).")]
         [SerializeField, Min(0f)] float callTime = 2.5f;
-        [Tooltip("callCooldown: seconds before the call is ready again.")]
+        [Tooltip("callCooldown: herding, seconds before the call is ready again.")]
         [SerializeField, Min(0f)] float callCooldown = 20f;
-        [Tooltip("decoyCooldown: Time L5, seconds between the decoys the flying jacks drop.")]
+        [Tooltip("Retired 2026-10-25 with the flying decoy (Time level 5 is the second decoy now); nothing reads it.")]
         [SerializeField, Min(0f)] float decoyCooldown = 4f;
-        [Tooltip("Seconds between teleports (the lab's 0.6 s guard).")]
+        [Tooltip("Seconds between fast travels to a decoy (the lab's 0.6 s guard), counted from when one lands.")]
         [SerializeField, Min(0f)] float teleportGuard = 0.6f;
+        [Tooltip("Netting, the TIME ability's fast travel (Garrett, 2026-10-25: \"don't teleport, move quickly, so the player " +
+                 "has a sense of where they travelled to\"): the hull flies to the decoy at this speed (u/s), on top of its " +
+                 "own flight.")]
+        [SerializeField, Min(1f)] float travelSpeed = 900f;
+        [Tooltip("The fast travel never takes less than this (s), so a near decoy is still a visible move, ...")]
+        [SerializeField, Min(0.05f)] float travelMinSeconds = 0.35f;
+        [Tooltip("... and never more than this (s), so a far one is still quick.")]
+        [SerializeField, Min(0.05f)] float travelMaxSeconds = 1.2f;
 
         [Header("Level 5")]
         [Tooltip("pooEvery: Mass L5, seconds between clusters.")]
@@ -116,9 +190,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float strikeCooldown = 1.2f;
 
         [Header("The herding view")]
-        [Tooltip("The small view's height, as a share of the screen's height (the Wrasse's pipSize).")]
+        [Tooltip("Unused since 2026-10-24 (one view at a time, no small view): kept so a reinstated small view keeps its " +
+                 "size. Was the small view's height, as a share of the screen's height.")]
         [SerializeField, Range(0.1f, 0.6f)] float pipSize = 0.32f;
-        [Tooltip("The small view's margin from the screen's corner, as a share of the screen's height.")]
+        [Tooltip("The margin of the herding view's buttons and of a stick-driven jack from the screen's edge, as a share of " +
+                 "the screen's height.")]
         [SerializeField, Range(0f, 0.2f)] float viewMargin = 0.02f;
         [Tooltip("How far above and below the plane the herding camera sees (game units).")]
         [SerializeField, Min(10f)] float viewDepth = 600f;
@@ -142,6 +218,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float flightHullWeight = 0.45f;
         [Tooltip("How fast the view pans once its goal leaves the slack box (1/s; the lab's 1.6). Lower is calmer.")]
         [SerializeField, Min(0.01f)] float viewPanEase = 1.2f;
+        [Tooltip("Herding: the view's span is multiplied by this (Garrett, 2026-10-24: \"the herding view should have a view " +
+                 "that is zoomed in a bit more and follows the jacks\"). 1 = the thumb-framed span.")]
+        [SerializeField, Range(0.2f, 2f)] float herdViewZoom = 0.75f;
+        [Tooltip("Herding: how much the view's framing follows the jacks rather than the herd (1 = the jacks alone).")]
+        [SerializeField, Range(0f, 1f)] float herdFollowJacks = 1f;
+        [Tooltip("Herding, zoomed out to the whole cell (Wide, the Space ability: its card, gamepad Y, F): the cell's diameter times this " +
+                 "fills the view's short side.")]
+        [SerializeField, Min(0.5f)] float cellViewMargin = 1.1f;
+        [Tooltip("Herding: the view zooms out so both jacks stay inside this share of it from its centre (Garrett, " +
+                 "2026-10-24: \"as the sharks fly apart in herding mode the camera should zoom out so they never collide with " +
+                 "the screen perimeter\").")]
+        [SerializeField, Range(0.3f, 0.95f)] float herdJacksFill = 0.8f;
+        [Tooltip("Herding: room kept round each jack inside that share (u; a herding jack is about 40 long).")]
+        [SerializeField, Min(0f)] float herdJacksMargin = 40f;
+        [Tooltip("How fast the herding view eases between the jacks' zoom and the whole cell (1/s).")]
+        [SerializeField, Min(0.1f)] float viewZoomEase = 3f;
 
         [Header("Audio (FMOD; empty until sound design wires them)")]
         [Tooltip("The jacks call the herd.")]
@@ -171,18 +263,54 @@ namespace CosmicShore.Gameplay
         public float FloorBirthSeconds => floorBirthSeconds;
         public FaunaConfigurationSO CompanionFauna => companionFauna;
         public float HerdHueLean => herdHueLean;
+        public float HerdGlow => herdGlow;
         public float DogSpeed => dogSpeed * labScale;
         public float PadDogSpeed => padDogSpeed;
         public float AINoise => aiNoise;
         public float FlightGap => flightGap;
         public float FlightReach => flightReach;
         public float FlightFormationEase => flightFormationEase;
+        public float NetSpread => netSpread;
+        public float NetMinHeight => netMinHeight;
+        public float NetMaxHeight => Mathf.Max(netMinHeight, netMaxHeight);
+        public float NetDepth => netDepth;
+        public float NetTrailEase => netTrailEase;
+        public float NetSwingSeconds => netSwingSeconds;
+        public float NetSwingMax => netSwingMax;
+        public float NetSettle => netSettle;
+        public float NetSettleEase => netSettleEase;
+        public int NetPrismCap => netPrismCap;
+        public float NetPrismSettle => netPrismSettle;
+        public float NetPrismTurnEase => netPrismTurnEase;
+        public float NetLitLift => netLitLift;
+        public float NetLitSeconds => netLitSeconds;
+        public float NetLitFadeSeconds => netLitFadeSeconds;
+        public float NetRivalTake => netRivalTake;
+        public float NetRivalCooldown => netRivalCooldown;
+        public float JackCrystalReach => jackCrystalReach;
+        public float JackCrystalHeight => jackCrystalHeight;
+        public float JackNetCrystalReach => jackNetCrystalReach;
+        public float NetCameraFill => netCameraFill;
+        public float NetCameraEase => netCameraEase;
+        /// <summary>The fish's distance apart with the net closed, and fully open: what <see cref="JacksMath.NetOpenFromGap"/>
+        /// reads the opening back from.</summary>
+        public float NetClosedGap => 2f * flightGap;
+        public float NetOpenGap => 2f * (flightGap + netSpread + flightReach);
+        public float HerdViewZoom => herdViewZoom;
+        public float HerdFollowJacks => herdFollowJacks;
+        public float CellViewMargin => cellViewMargin;
+        public float ViewZoomEase => viewZoomEase;
+        public float HerdJacksFill => herdJacksFill;
+        public float HerdJacksMargin => herdJacksMargin;
         public float AIHerdSeconds => aiHerdSeconds;
         public float AIFlightSeconds => aiFlightSeconds;
         public float CallTime => callTime;
         public float CallCooldown => callCooldown;
         public float DecoyCooldown => decoyCooldown;
         public float TeleportGuard => teleportGuard;
+        public float TravelSpeed => travelSpeed;
+        public float TravelMinSeconds => travelMinSeconds;
+        public float TravelMaxSeconds => Mathf.Max(travelMinSeconds, travelMaxSeconds);
         public float PooEvery => pooEvery;
         public int PooCount => pooCount;
         public float PooSpread => pooSpread * labScale;

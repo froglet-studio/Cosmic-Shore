@@ -53,6 +53,12 @@ namespace CosmicShore.Gameplay
                  "staying on if it threads the objective within this arc (the crawl is ~20 u/s).")]
         [Min(0f)] public float DryCrawlArc = 80f;
 
+        [Tooltip("Seconds a riding AI may crawl HOSTILE mass dry (no way to make it its own) before it leaves the " +
+                 "rail whatever the arc test says. The arc test keeps a crawl that threads the next ring, and a " +
+                 "rival's rail threads every ring, so without this cap an AI that latched a rival's lane could " +
+                 "crawl it ring after ring for the whole race (Regatta I4, 2026-10-20: 42-48 u/s for 105 s).")]
+        [Min(0.5f)] public float MaxDryCrawlSeconds = 4f;
+
         [Tooltip("Reversal aim distance, as a multiple of the vessel's live minimum turn radius. " +
                  "The aim point is set off to one side as well as behind, so the swing has a " +
                  "turning direction instead of a vanishing cross product.")]

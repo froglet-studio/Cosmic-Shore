@@ -47,19 +47,6 @@ branch, and let other people in as Contributors, who can take, file, suggest and
 the page reaches GitHub through the sync below. Developers are encouraged, not obliged, to open the page when they
 start a day; this skill does everything the page does.
 
-## Automatic or manual (asked once per chat)
-
-`.claude/hooks/team_tasks_mode.py` has every chat ask its person once, before the first task (Shombith, 2026-10-25):
-
-- **Automatic**: run `list --json` and `me`, show only the open or live tickets whose area, files or branch match the
-  work (or say there are none), and offer the moves the work calls for: take, suggest a hand-off, done with proof.
-  Each move waits for the person's yes.
-- **Manual**: leave Froglet Tasks alone unless the person runs `/team-tasks` or asks. `/ship` still writes its
-  Hand-offs section.
-
-The answer holds for the whole chat. The hook stays quiet for the scheduled sync, a session started from a ticket
-(automatic) and a chat that opens with `/team-tasks`. Self-test: `python3 .claude/hooks/team_tasks_mode.py --self-test`.
-
 ## A session started from a ticket
 
 The page's "Start in a new session" opens a Claude Code session on the repo, from the base branch, with the ticket as

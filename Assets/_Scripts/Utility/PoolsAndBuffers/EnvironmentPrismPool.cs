@@ -304,8 +304,7 @@ namespace CosmicShore.Gameplay
                 instanceScale.SetTargetScale(restore);
             }
 
-            var team = instance.GetComponent<PrismTeamManager>();
-            if (team == null)
+            if (!instance.TryGetComponent(out PrismTeamManager team))
             {
                 CSDebug.LogError($"[EnvironmentPrismPool] PrepareForLay: PrismTeamManager missing on {instance.name}");
             }

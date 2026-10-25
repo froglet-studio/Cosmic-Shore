@@ -638,16 +638,33 @@ def _open_tasks(area="Performance"):
 
 
 def _bugs():
+    """The Bug Ledger's count, read the way the board is: every origin/bugledger/<user> branch merged
+    (bug_ledger.collect_board), not the checked-out tree. Until 2026-10-25 this read bug_ledger.load_all(),
+    the working tree's BugLedger/shared only, and reported "2 open, 1 validating" while 309 issues sat on
+    the senders' branches. Falls back to the working tree when no origin branch carries a ledger (not
+    fetched yet)."""
     try:
         import bug_ledger
-        issues = list(bug_ledger.load_all().values())
+        board = bug_ledger.collect_board()
+        issues = board["issues"]
+        source = "%d branch(es)" % board["branchesScanned"]
+        if not issues:
+            issues = list(bug_ledger.load_all().values())
+            source = "working tree"
     except Exception:  # noqa: BLE001
         return {"open": 0, "validating": 0, "top": []}
     live = [i for i in issues if i.get("state") in ("open", "validating")]
-    live.sort(key=lambda i: (i.get("state") != "open", -int(i.get("regressions") or 0), -int(i.get("timesSeen") or 0)))
+
+    def testers(i):  # senders who hit it; a copy merged into a feature branch is not another tester
+        return sum(1 for b in i.get("branches") or [] if b.startswith("bugledger/"))
+
+    live.sort(key=lambda i: (i.get("state") != "open", -testers(i),
+                             -int(i.get("regressions") or 0), -int(i.get("timesSeen") or 0)))
     return {"open": sum(1 for i in live if i["state"] == "open"),
             "validating": sum(1 for i in live if i["state"] == "validating"),
-            "top": [{"id": i["id"], "state": i["state"], "title": (i.get("title") or "")[:110]} for i in live[:5]]}
+            "source": source,
+            "top": [{"id": i["id"], "state": i["state"], "title": (i.get("title") or "")[:110],
+                     "testers": testers(i)} for i in live[:5]]}
 
 
 def build_status(gates, board, amoebius, regressions):
@@ -696,7 +713,8 @@ def status_text(st):
         top = ", ".join(f"{n} {kb:.1f} KB/f" for n, kb in a.get("topGameAllocators", [])[:3])
         lines.append(f"- Amoebius {a['key']}: {a['verdict']}" + (f"; top game allocators {top}" if top else ""))
     b = st.get("bugs", {})
-    lines.append(f"- Bug Ledger: {b.get('open', 0)} open, {b.get('validating', 0)} validating")
+    lines.append(f"- Bug Ledger: {b.get('open', 0)} open, {b.get('validating', 0)} validating"
+                 + (f" (from {b['source']})" if b.get("source") else ""))
     lines.append("Next, in order:")
     for i, n in enumerate(st.get("next", [])[:6], 1):
         lines.append(f"  {i}. {n}")
@@ -801,6 +819,25 @@ def self_test():
             assert "Next, in order:" in status_text(st)
         finally:
             _open_tasks, _bugs = keep
+        # The Bug Ledger count is the senders' branches merged, not the checked-out tree (2026-10-25: the tree
+        # held 3 issues while the bugledger branches held 309), with the tree only as the unfetched fallback.
+        import bug_ledger
+        saved_bl = (bug_ledger.collect_board, bug_ledger.load_all)
+        on_branches = [{"id": "E-a", "state": "open", "title": "a", "branches": ["bugledger/x"], "timesSeen": 1},
+                       {"id": "E-b", "state": "open", "title": "b", "branches": ["bugledger/x", "bugledger/y", "bleeding-edge"], "timesSeen": 1},
+                       {"id": "E-c", "state": "validating", "title": "c", "branches": ["bugledger/y"], "timesSeen": 9},
+                       {"id": "E-d", "state": "ignored", "title": "d", "branches": ["bugledger/y"], "timesSeen": 1}]
+        try:
+            bug_ledger.collect_board = lambda: {"issues": on_branches, "branchesScanned": 2}
+            bug_ledger.load_all = lambda: {"e-z": {"id": "E-z", "state": "open", "title": "z"}}
+            b = _bugs()
+            assert (b["open"], b["validating"], b["source"]) == (2, 1, "2 branch(es)"), b
+            assert b["top"][0]["id"] == "E-b" and b["top"][0]["testers"] == 2, "most testers first"
+            bug_ledger.collect_board = lambda: {"issues": [], "branchesScanned": 0}
+            b = _bugs()
+            assert (b["open"], b["source"]) == (1, "working tree"), b
+        finally:
+            bug_ledger.collect_board, bug_ledger.load_all = saved_bl
         assert rose(10, 11.6, "cpuBusyMs") and not rose(10, 11.4, "cpuBusyMs") and not rose(1.0, 1.4, "cpuBusyMs")
         c = parse_scan("=== LARGE allocations in Update/LateUpdate/FixedUpdate/OnGUI: 6\n  x\n=== LARGE allocations in per-FRAME coroutines (yield return null): 9\n=== `yield return new ...` INSIDE A LOOP (one alloc per iteration, per instance): 63\n")
         assert c == {"updateAllocations": 6, "yieldNullLoops": 9, "yieldNewInLoop": 63, "total": 78}, c

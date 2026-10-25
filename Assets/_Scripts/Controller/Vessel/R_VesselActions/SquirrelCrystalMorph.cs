@@ -137,8 +137,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Every target is resolved in WORLD space off its prism, then brought into this
-            // object's frame — the mesh's targets have to live in the same space as its vertices.
+            // Every target is resolved in WORLD space off its prism, then brought into the BODY's
+            // frame (BodyFrame) — the mesh's targets have to live in the same space as its vertices.
             var targets = new List<CrystalMorphMeshBuilder.OctahedronTarget>(lay.Prisms.Count);
             string firstRefusal = null;
             for (int i = 0; i < lay.Prisms.Count; i++)
@@ -186,7 +186,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The eight faces of one laid prism's shield, in this object's frame — built from the
+        /// The eight faces of one laid prism's shield, in the body's frame — built from the
         /// shield's OWN semi-axes (<see cref="PrismOctahedronShield"/> derives them from the
         /// authored BoxCollider and the circumscribing scale) and the prism's FINAL scale. Under the
         /// clock law a prism's transform is final at its stamp, but reading <c>TargetScale</c> makes
@@ -211,7 +211,7 @@ namespace CosmicShore.Gameplay
 
             Vector3 scale = prism.TargetScale;
             if (scale == Vector3.zero) scale = prism.transform.localScale;
-            var toLocal = transform.worldToLocalMatrix *
+            var toLocal = BodyFrame.worldToLocalMatrix *
                           Matrix4x4.TRS(prism.transform.position, prism.transform.rotation, scale);
 
             target = CrystalMorphMeshBuilder.OctahedronTarget.FromSemiAxes(

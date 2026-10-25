@@ -1,5 +1,6 @@
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -584,7 +585,7 @@ namespace CosmicShore.Gameplay
                     var p = BandPoint(R, yb, band, i, n);
                     var box = new Box(p, rot, new Vector3(2.2f, 3.6f, 1f));
                     var size = box.S;
-                    size.y = Mathf.Min(size.y,
+                    size.y = MathfNoAlloc.Min(size.y,
                         FitAxis(box, 1, BandPoint(R, yb, band, i - 1, n)),
                         FitAxis(box, 1, BandPoint(R, yb, band, i + 1, n)));
                     Emit(p, rot, size, bandDoms[band]);

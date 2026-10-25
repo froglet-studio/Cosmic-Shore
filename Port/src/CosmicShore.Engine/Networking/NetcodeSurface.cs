@@ -33,6 +33,31 @@ namespace CosmicShore.Engine.Networking
         public NetworkTopologyTypes NetworkTopology = NetworkTopologyTypes.ClientServer;
         public bool UseCMBService;
         public bool AutoSpawnPlayerPrefabClientSide = true;
+
+        /// <summary>
+        /// A 64-bit fingerprint of what peers must agree on to connect (original: <c>NetworkConfig.GetConfig</c>): the
+        /// protocol version, the registered prefab keys when <see cref="ForceSamePrefabs"/> (sorted), the tick rate and
+        /// the approval / scene-management / variable-safety switches, in Netcode's order. FNV-1a here, not Netcode's
+        /// XXHash64, so the number is stable across Amoebius peers but not equal to a Unity build's; the game only logs it.
+        /// </summary>
+        public ulong GetConfig(bool cache = true)
+        {
+            const ulong offset = 14695981039346656037UL, prime = 1099511628211UL;
+            ulong h = offset;
+            void Mix(ulong v) { for (int i = 0; i < 8; i++) { h ^= (byte)(v >> (8 * i)); h *= prime; } }
+            Mix(ProtocolVersion);
+            if (ForceSamePrefabs && Prefabs != null)
+            {
+                var keys = new List<uint>(Prefabs.NetworkPrefabOverrideLinks.Keys);
+                keys.Sort();
+                foreach (var k in keys) Mix(k);
+            }
+            Mix(TickRate);
+            Mix(ConnectionApproval ? 1UL : 0UL);
+            Mix(EnableSceneManagement ? 1UL : 0UL);
+            Mix(EnsureNetworkVariableLengthSafety ? 1UL : 0UL);
+            return h;
+        }
     }
 
     public enum NetworkTopologyTypes { ClientServer = 0, DistributedAuthority = 1 }
@@ -106,6 +131,34 @@ namespace CosmicShore.Engine.Networking
 
         public void Remove(GameObject prefab) => _prefabs.RemoveAll(p => p.Prefab == prefab);
         public void Remove(NetworkPrefab prefab) => _prefabs.Remove(prefab);
+
+        /// <summary>
+        /// Every registered prefab by the hash a peer names it with (original: <c>NetworkPrefabOverrideLinks</c>): the
+        /// prefab's own <c>GlobalObjectIdHash</c>, or for an override the hash (or source prefab's hash) it replaces.
+        /// Built on read, from <see cref="Prefabs"/>.
+        /// </summary>
+        public Dictionary<uint, NetworkPrefab> NetworkPrefabOverrideLinks
+        {
+            get
+            {
+                var links = new Dictionary<uint, NetworkPrefab>();
+                foreach (var p in Prefabs)
+                {
+                    if (p == null) continue;
+                    uint key = p.Override switch
+                    {
+                        NetworkPrefabOverride.Hash => p.SourceHashToOverride,
+                        NetworkPrefabOverride.Prefab => HashOf(p.SourcePrefabToOverride),
+                        _ => HashOf(p.Prefab),
+                    };
+                    if (key != 0) links[key] = p;
+                }
+                return links;
+            }
+        }
+
+        static uint HashOf(GameObject prefab)
+            => prefab != null && prefab.GetComponent<NetworkObject>() is { } no ? no.GlobalObjectIdHash : 0u;
     }
 
     /// <summary>Custom prefab spawn handler hook (original: <c>INetworkPrefabInstanceHandler</c>).</summary>

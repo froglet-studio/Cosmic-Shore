@@ -88,7 +88,7 @@ counts, five-petal motes, depth measured from the plane and a dither cone in the
 | What | Where |
 |---|---|
 | The lab (rounds 1-3) and its write-up | `Docs/Studios/CrewVesselLab.html`, `Docs/Studios/CREW_VESSEL_LAB.md` |
-| The kite core and its AI, engine-free and ported line for line from the lab | `Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs`, `KiteNavigatorAI.cs` |
+| The kite core and its AI, engine-free and ported line for line from the lab | `Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs`, `Controller/AI/Wrasse/KiteNavigatorAI.cs` |
 | The seat on the hull: board, motes, shadows, thumb, effects, swap, saved boosts, L5s, Omni burst | `KiteNavigator.cs` |
 | The two views, drawn by the game's renderer (the top-down kite camera, the picture-in-picture swap, the five-petal motes) | `KiteNavigatorView.cs` |
 | Every number, cloned from the lab, plus the rounds 4-4f fields | `KiteNavigatorConfigSO.cs`, `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset` |

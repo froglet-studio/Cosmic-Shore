@@ -49,6 +49,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Clearance points in the structure's local space.")]
         [SerializeField] protected Vector3[] spawnClearPoints = System.Array.Empty<Vector3>();
 
+        /// <summary>The base fields that feed generation, in the order the layout-bake fingerprint
+        /// mixes them (<see cref="PrismLayoutBakeFormat.Fingerprint"/>). Named with <c>nameof</c> so a
+        /// rename moves the fingerprint - and with it the bake file the game asks for - instead of
+        /// silently dropping that field from the key and serving a stale bake.</summary>
+        internal static readonly string[] FingerprintBaseFields =
+            { nameof(seed), nameof(density), nameof(spawnClearRadius), nameof(spawnClearPoints) };
+
         /// <summary>Golden angle in radians - the phyllotaxis constant (same value as
         /// PrismGeometry.AddShellPatch) behind canopies, whorls, and placement spirals.</summary>
         protected const float GoldenAngle = 2.39996323f;

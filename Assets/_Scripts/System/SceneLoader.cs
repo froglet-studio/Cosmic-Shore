@@ -323,6 +323,8 @@ namespace CosmicShore.Core
             // on HOME with no modals open. These keys are set by ScreenSwitcher
             // during normal menu navigation but become stale when a scene
             // transition destroys modal GameObjects without proper ModalWindowOut().
+            // The card the match was launched from is not one of them: ScreenSwitcher
+            // re-opens it from MenuReturnCard once the menu is up.
             PlayerPrefs.DeleteKey("ReturnToScreen");
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
@@ -605,7 +607,9 @@ namespace CosmicShore.Core
             // "Main Menu" return does NOT route here; it goes straight through
             // ReturnToMainMenu(), which keeps the live Relay so the whole party
             // reloads Menu_Main together. Here the session is already gone, so we
-            // return to the menu and fully reset local game state.
+            // return to the menu and fully reset local game state - on HOME: the
+            // party the card was launched with is gone, so it is not re-opened.
+            CosmicShore.UI.MenuReturnCard.Clear();
             ReturnToMainMenu();
             gameData.ResetAllData();
         }
