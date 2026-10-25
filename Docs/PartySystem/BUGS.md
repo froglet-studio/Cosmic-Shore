@@ -2326,4 +2326,6 @@ joins are the joiner's side of B35 (the host refused the connection).
 shows a `stall` of 10 s before the `relayDrop`, the fix is in the freezing frame: profile the Bloomrush to
 menu load (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, `/perf-hunt`) and why Bloomrush runs at 3-5 fps on that
 machine. If it shows "no freeze", the drop is a network fault and needs a different look.
+Tickets: T-20261025-482c (#1520, the retest) and T-20261024-0212 (#1495, Bloomrush's slow frames after the
+prism creation queue; it now also times the return to the menu).
 
