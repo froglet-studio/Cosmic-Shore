@@ -1,0 +1,70 @@
+{
+    "scene": "MinigameSwitchback",
+    "timestamp": "2026-10-26 01:40:04",
+    "label": "",
+    "secondsSinceSceneLoad": 110.6998062133789,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 30,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Skim Race Cell Config",
+            "spawnProfile": "Skim Race Spawn Profile",
+            "configChoice": "Random",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "RandomLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 51436.83203125,
+            "liveEnvironmentVolume": 51278.02734375,
+            "livePrismCount": 4305,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 128000.0,
+            "frenzyEnterVolume": 240000.0,
+            "frenzyExitVolume": 224000.0,
+            "frenzyEnterCount": 2000,
+            "frenzyExitCount": 1600,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Jade",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 30,
+            "flora": [],
+            "fauna": [
+                {
+                    "config": "Skim Race Tadpole Fauna Config Data",
+                    "prefab": "TadPoleFauna",
+                    "live": 22,
+                    "initialBatch": 12,
+                    "cap": 40,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Skim Race Brittlestar Fauna Config Data",
+                    "prefab": "MassBrittlestarFauna",
+                    "live": 8,
+                    "initialBatch": 4,
+                    "cap": 16,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}
