@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI Thresher slings; the Wrasse's stale boost policy cleared (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `ThresherSlingAIPolicySO` (new) on `Thresher.prefab`'s AIPilot (`ThresherAIBoostPolicy.asset`), replacing
+the Squirrel's inherited `SkimRingAIPolicySO`, which bound nothing on a Thresher. At a corner 70°+ off and 120 u+ away it
+presses Plant (and Winch) through the replicated path, and lets go when its course faces the ring (15°) or after 3 s
+(THRESHERTIME.md §4). `ThresherActionSO.Control` getter added. `Wrasse.prefab`'s AIPilot names no policy now: the
+Sparrow's, inherited with the clone, pressed a Boost the Wrasse does not bind; the crew's boost is KiteNavigator's.
+Both mode generators check it.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files; `author_thresher_assets`,
+`author_thresher_time_assets`, `author_wrasse_assets`, `author_wrasse_run_assets` `--check` OK (the two new checks
+watched failing on the old references); network-prefab-hash check OK. NOT run: `ThresherSlingAIPolicyTests`.
+
+**Verify in editor:**
+1. Run `ThresherSlingAIPolicyTests` (EditMode): all pass.
+2. Thresher Time with AI Threshers, I2: at a sharp corner an AI plants (its ball stops, it swings round), leaves toward
+   the ring and threads it. The Third Eye readout says `ThresherAIBoostPolicy: planted: swinging round the ball` then
+   `waiting for a corner`. Every AI still finishes.
+3. No AI Thresher sits planted: each swing ends within about 3 s.
+4. In a party of two, the client sees the AI's ball stop and the AI swing, the same as the host (the presses replicate).
+5. Wrasse Run with AI crews: the Grouper still boosts on the straights (KiteNavigator), exactly as before.
+
+**First-pass tuning** (`ThresherAIBoostPolicy`): plant at 70°+ off, 120 u+ away, 1.5 s between slings, let go within
+15° or at 3 s, winch while planted. The AI learning sweep learns them from people's Thresher races once there are three
+complete ones in a mode.
+
 ### 🔴 Skim Race flights carry their track (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `HumanFlightRecorder` copies Skim Race's `SpawnableWaypointTrack` into each Skim Race flight
@@ -3529,6 +3555,19 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
 2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
+### 🔴 Party: B31 addendum - a lobby write's read is retried on a 429 (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B31, "First retest"): `LobbyPropertyWriter.WriteAsync` runs its read
+before the save under `UgsRequestPolicy`, so one 429 no longer drops the write (the 25 Oct "RepublishLocalIdentity
+error ... RateLimitExceeded"). `Refresh` / `Save` are internal delegates so tests drive them.
+**Verified without the editor:** `LobbyPropertyWriterRetryTests` (3, uses `DispatchProxy` for a stand-in `ISession`)
+plus `UgsRequestPolicyTests`, `OfflineSessionTests`, `PartyRefreshRecoveryTests` on Amoebius (111/111); the retry test
+fails with the old code; `unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The three `LobbyPropertyWriterRetryTests` pass in the Test Runner (if `DispatchProxy` is unavailable in the editor's
+   Mono, they fail at `DispatchProxy.Create`; say so in the next session).
+2. Start a party (host), then within 2 s rename yourself: no "[LobbyPropertyWriter] ... RateLimitExceeded" warning.
 
 ### 🔴 Net: Load Time Insights records every online load by itself, the return to the menu included (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
@@ -15541,3 +15580,11 @@ of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in chan
 4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
 5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
 
+## 🔴 2026-10-26 — Squirrel prism pool refills fast enough (unverified: no Unity editor in the session)
+
+**File:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (Squirrel Prism pool: `bufferSizeTarget` 240,
+`maxInstantiateRate` 160, `maxAddsPerFrame` 8). Measured in Amoebius: pool misses 7.5 KB/frame -> 0.
+
+1. Release, Arcade > Thresher Time (or Regatta with Squirrels), play past the auto-capture.
+2. In the capture: no `PoolMiss.Squirrel Prism` row (was 1.71 ms/frame in Thresher Time), `PoolRefill.Squirrel Prism`
+   present; trails look the same.
