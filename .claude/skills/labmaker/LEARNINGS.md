@@ -1670,3 +1670,38 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: retire a drawn option with a list next to the lab's shipped settings and a matching list on the game's config, held equal by the generator's `--check`. Never delete the key or the enum member. When a game test plays the shipped config, recompute its golden by running the real C# core on the real asset as well as the page, and the two must agree.
 - Evidence: `abilityPool` in the page's dynamo-core block; `DynamoSettings.Abilities`, `HoneyguideConfigSO.retiredAbilities`; `author_honeyguide_assets.py` check "retiredAbilities is not the lab's RETIRED_ABILITIES"; `HoneyguideTests.Ratel_NeverDrawsPrinter_WhileItIsRetired`.
 - Promoted: no
+
+### L-STU-144 — A cyclic input switched at the drive's zero crossings earns exactly nothing; centre the stroke on the drive's peak
+- Lab: Pump Rider Lab (`Docs/Studios/PumpRiderLab.html`) · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-15
+- What happened: pumping pays `∫ bend · d(knees)`. The first AI stood up when a dip began (`bend > 0`) and crouched when a hump began, a square wave switched where the bend crosses zero, so every stroke happened at zero bend: 0.04 u/s² of pumping and an average of 123.3 u/s, the same as coasting. The rookie beat the skilled pilot, because its late, jittered strokes landed nearer the peaks. Standing up while the load is FALLING (i.e. across the dip's peak, led by half a knee stroke) gives 10.95 u/s² and 197.8 u/s on the same rollers. Earlier, writing the law as `N·dh` (load × hip travel) instead of `v²·bend·dh` counted the pull's share as speed; the Flat course (a straight rail) read −0.85 u/s² against 0.00.
+- Do instead: for any mechanic where a phase-timed input pumps energy (pumping, swinging, a timed release), derive the work integral first and put the stroke where the integrand peaks, not where it changes sign. Give the lab a course where the mechanic must earn exactly zero, show it as a scorecard column, and plant the wrong law once to prove the column fires. When a rookie beats the skilled AI, suspect the skilled AI's timing before the mechanic.
+- Evidence: `PumpRiderLab.html` `aiInput` (`extend = kQ < kP`), `simStep` (the pumping law); `PUMP_RIDER_LAB.md` round 1 "Checked" and "Found".
+- Promoted: no
+
+### L-STU-145 — When two choices pay the same, a "best" AI that always picks one of them wastes its time switching
+- Lab: Pump Rider Lab · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-15
+- What happened: on a rail you can roll round, every bend is a dip on one side and a hump on the other, and both pay (stand in the dip, crouch over the hump). The first AI always rolled onto the bend's inside, so on rollers it spun 180° every half roller (0.67 s of every 1.33 s spent rolling) and pumped less than staying put. Taking the NEARER equivalent side, and switching only when a hump would throw it off, removed the spin.
+- Do instead: before scripting an AI's target, list the targets the mechanic scores as equal and pick the nearest one. "The AI looks busy" (the page's `busy` column) is a cue to check for an equivalence it is ignoring.
+- Evidence: `PumpRiderLab.html` `aiInput` (the `a1` / `a2` side choice); `PUMP_RIDER_LAB.md` round 1 "Found".
+- Promoted: no
+
+### L-STU-146 — A feel lab needs fixed frames of reference before anyone can judge the feel
+- Lab: Pump Rider Lab round 1 → 1b (`Docs/Studios/PumpRiderLab.html`) · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-15
+- What happened: round 1 drew a 2D-canvas rail in empty space with a camera that rolled with the rider and a starfield at infinity. Its scorecard was sound, but nothing in view was fixed: no up, no floor, nothing passing, so speed, height and lean could not be seen. The designer's verdict: "without frames of reference this is very hard to appreciate at all". Round 1b rebuilt the view in three.js with a fixed world: the rail integrated once and cached so it never shifts, a floor grid under the oval, seeded pillars / clusters / crystals that never move, a gate every 600 u, world-fixed dust wrapped round the camera, and a world-up chase camera (the rolling camera kept as an option). It also added a game-feel layer: a rhythm-style lane showing when to stand and crouch, a rating on every stroke, laps, and sound. The physics did not change.
+- Do instead: for any lab about how motion FEELS, put fixed references in view from round 1. That means a floor or horizon, objects that pass at several distances (parallax), and a camera whose up is the world's, not the vessel's. Turn the mechanic's timing into something the player can see coming (a lane, a ghost), and rate every attempt on screen. A scorecard proves a mechanic works; it does not make a person able to feel it.
+- Evidence: `PUMP_RIDER_LAB.md` "Round 1b"; `PumpRiderLab.html` section (9).
+- Promoted: no
+
+### L-STU-147 — three.js r128 sizes `instanceColor` from the CURRENT count: colour every slot before zeroing it
+- Lab: Pump Rider Lab round 1b · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-15
+- What happened: the instanced pools were made with `count = 0`, then every slot was coloured with `setColorAt`. In r128, `setColorAt` creates `instanceColor` with `new Float32Array(this.count * 3)`, so the buffer had length 0. Every later per-instance colour (the rail's dip/hump tint, the scenery tints) was written past the end and silently dropped: no error, no warning, and the rail drew in one flat colour. Found by reading `rail.instanceColor.array` from the page (undefined past index 0).
+- Do instead: create the mesh with its full capacity, call `setColorAt` on every slot, THEN set `count = 0`. When a tint "does nothing", read the attribute's array length before touching materials or lighting.
+- Evidence: `PumpRiderLab.html` `build3D` → `inst()`.
+- Promoted: no
+
+### L-STU-148 — Model the hand: when a button takes a thumb off a stick, the AI's sticks must pay for it too
+- Lab: Pump Rider Lab round 2 (`Docs/Studios/PumpRiderLab.html`) · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-16
+- What happened: the designer's dual-stick scheme puts the knees on XDiff and a push on A, and pointed out that a player takes a thumb off a stick to press A. The AI writes raw sticks through the game's mix. When it also zeroes the right stick for `ppThumbOff` 0.25 s after each A press, Dual stick averages 125.4 u/s on the oval from a stop and rates 70.6% of strokes PERFECT. With the thumb-off set to 0, it scores exactly what the trigger-knees way scores (129.5, 92.9%). Started at 150 u/s, where nobody pushes, the two are identical, so the whole 4.1 u/s and 22-point gap is the hand.
+- Do instead: when a control scheme shares a hand between two inputs (a face button and a stick, a trigger and a bumper), write the conflict into the AI's INPUTS, not into the model, and give the cost its own dial with 0 as the control. Otherwise the scorecard rates the scheme as if the player had a third thumb.
+- Evidence: `PumpRiderLab.html` `aiInput` (`thumbUntil`), `simStep` (`mix`); `PUMP_RIDER_LAB.md` round 2.
+- Promoted: no
