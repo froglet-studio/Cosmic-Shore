@@ -15956,3 +15956,28 @@ of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in chan
 3. Arena > Broadside (or Brood Rush), + AI on one domain until it holds 4-5 pilots: the seat rows tighten (shorter,
    closer) once START would pass the bottom margin; the Easy / Medium / Hard buttons stay clear and clickable.
 4. Maelstrom: 3-4 pilots in one domain push Format and the launch row down; nothing overlaps.
+
+## Tandava: the vessel picker from the Voyage window (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: refcompile (player; editor config's 3 errors are bleeding-edge's,
+none in changed files), the new edit-mode test compiles (`ArenaHullStripTests.AnArenaRulesCardIsHandled_EvenOffEveryRoster`).
+- [ ] Voyage > Tandava > SET SAIL opens the arena launch panel with the hull strip and arrows; Squirrel, Sparrow and Rhino
+      can each be picked and flown.
+- [ ] The Arena screen's four cards still open the same panel; arcade cards still open the arcade panel.
+- [ ] `ArenaHullStripTests` passes in the Test Runner.
+
+## Tandava: the armoured body (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Shombith: "the rhino killed the whole form under 20 seconds". The Mass body is shield tier in every pose but the eating
+ones (`tandava_plans.armoured`, `TANDAVA.md` armour pass). No Unity editor in the cloud session. Proven offline:
+`author_tandava_assets.py --check` / `--self-test` (a coil left armoured is caught), the tandava swarm harness (all
+checks ok; T40 against the armour: 20 blows/s shatters it at 53 s, was 15.8 s), refcompile (player; editor config's 3
+errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
+- [ ] The Great Serpent's Mass coils draw as shielded prisms; its Charge hood and its Space/Time parts look as before.
+- [ ] A Rhino sword slice on a Mass member sheds the shield; a second slice kills it. With Space at L5 (Breaker) one
+      slice kills; the energized blade still pops the shields.
+- [ ] Flying off for over 2 s and coming back: the shed members are shielded again.
+- [ ] While it eats (rolled up, or the Antlion's clasp) the body is bare: one slice a member.
+- [ ] A Rhino assault from the hatch no longer shatters the Great Serpent in under 20 s; time it (the model says ~50 s
+      at a constant 20 blows/s).
+- [ ] Other swarms (the research plans, the ecology swarm) show no new shields.

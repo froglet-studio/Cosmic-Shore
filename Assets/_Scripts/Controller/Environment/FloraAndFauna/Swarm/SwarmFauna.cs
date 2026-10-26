@@ -438,7 +438,7 @@ namespace CosmicShore.Gameplay
                 PuffWindupTicks = Mathf.Max(0, Mathf.RoundToInt(config.PuffWindupSeconds * config.TickHz)),
                 EngageRadius = config.EngageRadius, MaxEngaged = config.MaxProxies,
                 MultiDomain = Lineages,
-                // a scripted form's tiers are a designed body (Tandava's protectors); a census plan's tier-1 marks stay unread
+                // a scripted form's tiers are a designed body (Tandava's protectors and its armour); a census plan's tier-1 marks stay unread
                 PlanDanger = config.HasScriptedPlans,
             };
             for (int e = 0; e < 4; e++)
