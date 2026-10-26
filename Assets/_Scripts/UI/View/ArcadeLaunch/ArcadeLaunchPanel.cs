@@ -50,7 +50,7 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("This panel's domain tiles (Jade, Ruby, Gold).")]
         protected List<DomainInfoData> domainTiles = new(3);
 
-        [SerializeField, Tooltip("This panel's AI difficulty row (Easy / Medium / Hard). Optional: a " +
+        [SerializeField, Tooltip("This panel's AI difficulty row (Easy / Medium / Hard / Legendary). Optional: a " +
                                  "panel without one never offers the setting. Shown only on cards " +
                                  "whose AI reads it (AIDifficultyRules.IsOfferedFor); the modal " +
                                  "decides, the row only draws.")]

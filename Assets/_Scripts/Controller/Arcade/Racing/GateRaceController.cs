@@ -1122,8 +1122,8 @@ namespace CosmicShore.Gameplay
         }
 
         // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
-        // Easy and Medium race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
-        // Hard on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
+        // Easy, Medium and Hard race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
+        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
         SkimRaceHandicapLevel RaceHandicapLevel() => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
             ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
             : default;

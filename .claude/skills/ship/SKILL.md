@@ -162,6 +162,13 @@ git log --no-merges --format='%h %an %s' origin/bleeding-edge..origin/$BRANCH
   shared branch: other sessions push all day.
 - **If `$BRANCH` is someone else's branch, confirm with the person before pushing a merge onto it**
   (`who_works_where.py` shows who drove it).
+- **Other sessions promote the same branch at the same time** (Ys-bleeding-edge, 2026-10-26: three sessions merged
+  bleeding-edge in and opened PRs within the hour, twice). Before merging, list the open PRs from `$BRANCH` into
+  bleeding-edge; one exists means take it over and refresh it, never open a second (`create_pull_request`
+  answering "A pull request already exists" means the same). Re-fetch right before you merge and again before you
+  push: if `origin/$BRANCH` already carries the same bleeding-edge merge, drop yours (`git merge --abort`, or
+  `git reset --hard origin/$BRANCH` when nothing local is unpushed), gate the remote tree and carry on from it;
+  stacking a second identical merge only doubles the conflicts the next promote reads.
 
 **Merge bleeding-edge in and resolve every conflict keeping both sides' intent** - the two branches are
 different people's work.
@@ -194,6 +201,14 @@ never stand a compiler up for a ship, and a SKIP is not a failure). Player confi
 editor config gates only files changed since bleeding-edge (its standing 3 errors in
 `AuthenticationServiceFacade.cs` come from a package that cannot be fetched). Fix anything red on `$BRANCH`
 before the PR - the root cause, never a skipped check. Read exit codes as §0.05 says (bare, not through a pipe).
+
+**Amoebius builds only where you build it.** The `amoebius` CI job runs daily and on demand, not on PRs, so a promote
+that brings new game code can break the engine build with nothing red on the PR. When a .NET 10 SDK is already present
+(`~/.dotnet`), also run `dotnet build Port/src/CosmicShore.Player -nologo -v q` (and `dotnet test
+Port/tests/CosmicShore.Tests`, naming any failure that is red on bleeding-edge too). The usual break is game code naming a
+Unity type the engine stands in for under another shape - a `List<>` overload (`Graphics.RenderMeshInstanced`), or an
+attribute class named with an `Attribute` suffix where Unity's has none (`RequireComponent`, broken by `TheaterGhost`'s
+cast): fix the stand-in to Unity's real shape, never the game code, and say "Affects: Shombith's Amoebius engine".
 
 **Push.** `git push -u origin "$BRANCH"`. Rejected because someone pushed meanwhile: `git fetch origin
 "$BRANCH"`, `git merge origin/$BRANCH`, re-run the gates if the new commits touched C#, push again. Network

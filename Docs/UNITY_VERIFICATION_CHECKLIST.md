@@ -65,6 +65,64 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI Stoat retrained for Warpline (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `WarplineController.AICommitFromApproachPoint` = true (the Regatta gate steering); new
+`Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` and `StoatSlingConfig_Warpline` learned from Yash's 11 races;
+`StoatDipoleConfig.asset` serializes `autopilotMaxOrbitDegrees: 360` (its code default); the AI learning sweep no longer
+holds Warpline. Why: `Assets/_Scripts/Controller/Arcade/WARPLINE.md` §3.1.
+
+**Verified without the editor:** reference compile player OK, editor no errors in changed files; `ai_learn.py` and
+`learn_drives_from_flights.py` self-tests OK; `--check` OK (Warpline, Regatta); `author_stoat_assets.py --check` OK;
+offline 0 of 11 recorded courses finished before, 11 of 11 after. NOT run: `SwitchbackAISteeringTests.Warpline_*`.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): all pass.
+2. Play Warpline (I1-I3) against two AI Stoats: they thread ring 0 and finish both laps; in FrogletTools > AI > Third
+   Eye their phase moves Approach -> Through ring N without circling a ring.
+3. They lay pairs often and briefly (about every 1.5 s, held up to about 2 s), not one pair held for many seconds.
+4. The Console shows nothing new.
+
+---
+
+### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three mega forms that combine into one omega form with three seats (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** a first Unity clone of the Vessel Studio's Omega Crews lab (`Docs/Studios/VesselStudio/omega.html`,
+CONCEPT_FLEET.md §10) for Yash to test: `OmegaMath` (the page's omegaFlight, slotOf, dock ease, meter, element mults,
+finisher cone, line for line; `OmegaMathTests` holds it to goldens from the page's own code), `OmegaCrew` on each hull's
+root (the Orca's lifecycle: forms, seats, the meter, the members' moves, the crew weapon, the finisher, input-only AI
+seats), `OmegaVesselTransformer` (the Stoat's two-stick flight with cruise and turn rates switched per form),
+`OmegaCrewView` (placeholder member bodies, struts, fire, the finisher cone), `OmegaCrystalEffectSO` in the shared
+`OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three Stoat-clone prefabs by
+`Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green, 23 negative controls). The Unity CLI was not
+available in the session, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the
+only compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
+
+**Test (Menu_Main > freestyle > Toy Box > Vessel Changer > Warden; then Bulwark, Tempest):**
+1. **Apart.** The Stoat hull with two faceted bodies flying beside it (one each side, a little behind), in your domain colour.
+   They keep up through turns and boosts. The Mass card reads half; the Space card fills as they close in.
+2. **The hull member's move (RT).** Warden as the Stoat: a boost burst (x2 for 1.2 s, then 4 s cool: the Charge card
+   refills). D-pad right (or the right arrow): you are the Thresher; the hull jumps to that body's pose and the body left
+   behind takes yours. RT held near mass: prisms ahead are destroyed with a lit bar to the strike. D-pad right again: the
+   Butterfly (a boost). Bulwark: Rhino sweep, Grizzly charge-and-release burst (an explosion at 140 u), Scarab dash.
+   Tempest: Squirrel boost, Sparrow guns (the nearest prism on the nose line), Manta boost.
+3. **Combine.** With the Mass card past a third and both bodies close (the Space card full), hold LT: the two bodies dock onto
+   the hull over about 1.6 s (one 9 u above and 4 back, one 8 u below and 6 back), struts appear, the hull flies faster with
+   wider turns (Warden cruise ~71, Tempest ~89) and bulldozes mass it touches. The Mass card now drains.
+4. **Seats combined.** D-pad right: Arms. Your flight input stops and the hull's AI flies; the mouse / right stick / W A S D
+   turn a thin bar from the hull (the turret line, bounded); RT fires the crew weapon down it (Warden whip, Bulwark
+   cannon with charge, Tempest guns). D-pad right: Core. LT holds the shield (the Mass card drains faster, mass touched
+   dies). With the Mass card near full, RT fires the finisher: the mass in a cone ahead dies, a big blast, and the crew
+   splits round you (one body ahead, two behind to the sides) at nine tenths of the speed; you fly your member again.
+5. **Split on purpose.** As Helm, hold LT half a second: the crew splits. Let the Mass card run out combined: it splits.
+6. **AI seats.** As Helm combined, the Arms AI turns the bar onto mass ahead and fires; the Core AI shields when mass is
+   about to hit. As Arms or Core, the AI Helm flies the hull (it never splits by choice).
+7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars and cones disappear; the console shows no
+   errors from the crew.
+
+**PASS:** every step as described, no console errors. **FAIL:** a body that drifts away or never docks · a swap that leaves
+the hull where it was · a combine that never ends · RT doing nothing in a seat · input still live in Arms / Core · a bar or
+body left behind after a vessel swap.
 ### 🔴 Rhino round 2: no energy; Charge steals; Space alone sets the length (camera follows); combo toasts, AI combos, ramp line on the Time card (`cece/wonderful-knuth-rzv8qp`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "Omnicrystal doesn't need the element buff, lets discard the whole notion of energy as
@@ -425,6 +483,24 @@ NOT run: `RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_E
 1. Switchback I4 with AI Dolphins: the Third Eye readout's drive is `DolphinAIBoostPolicy_Switchback_I4`'s numbers (it
    discharges at about half charge); at I3 it is the mode's.
 2. The AI Dolphins circle less at I4 than in the 2026-10-26 04:09 race (23 s circling, 50 s on gate 4).
+
+### 🔴 Warpline: the AI Stoats finish the race (`Ys-bleeding-edge`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (on top of "The AI Stoat retrained for Warpline", 2026-10-26, above: the same steering and copies):
+`WarplineController.AICommitFromApproachPoint => true` (Regatta's gate steering), and Warpline-only autopilot copies `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` / `StoatSlingConfig_Warpline`: the warp let go
+250 u from the ring (60 in the base), held 1.0-2.36 s, the sling numbers from Yash's 15 races. In those races the AI
+Stoats finished none of 30. Garrett's base Stoat configs are unchanged.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files; `switchback_dolphin_sim --self-test`
+and `--mode Warpline` (shipped: none of 15 courses finished; now 15 of 15, 0 missed rings, median 82-92 s with the
+warp at 120-170 u/s); `learn_drives_from_flights --mode Warpline --check`; `ai_learn --self-test`. NOT run:
+`SwitchbackAISteeringTests` in Unity.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): `Warpline_FliesTheRegattaSteering_WhateverTheSceneSays` and
+   `Warpline_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing` pass.
+2. Warpline I1 and I4 against two AI Stoats (Hard): they thread the rings without looping back, warp on the legs and
+   drop out of the warp well before each ring (Third Eye), and finish both laps.
 
 ### 🔴 Breakwater: the AI Sparrows boost on the legs (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -3978,6 +4054,21 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
 2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
+### 🔴 Load Time Insights: the boot's menu load is timed while online (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (B36 addendum, the 26 Oct multiplayer sweep): a 10.4 s frame in the boot's load of Menu_Main dropped
+the Relay host, and no report existed for that load. `LoadInsights.BeginBootLoad` records it (loadKind `"boot"`) when
+online or armed, from just before `AuthenticationSceneController` calls `LoadScene`, to `SceneLoader`'s "Menu shown"
+(`IsRecordingMenuLoad`, renamed from `IsRecordingMenuReturn`, covers both kinds that end at the menu).
+**Verified without the editor:** `LoadInsightsAutoRecordTests` 8/8 (recording the boot as a launch fails the new
+test); the full edit-mode suite on Amoebius 664/668 (the 4 known failures); `unity_refcompile` player and editor OK;
+the console-logging and conditional-compilation gates; `net_logs.py --self-test`. `/verify-unity` is not available in
+the cloud session.
+**Verify in editor:**
+1. The 8 `LoadInsightsAutoRecordTests` pass in the Test Runner.
+2. Play from the Bootstrap scene while online. After Play, `net_logs.py show 1` lists a `boot` load under "Loads"
+   with its worst frame; a frame over 9 s carries RELAY RISK.
 
 ### 🔴 Party: Block 5 step 7 - two absent reads before a player is removed (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -14480,6 +14571,116 @@ verification, steps 2-9. The short version:
 4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
+## 🔴 Match replays on Will's Theater + AstroLeague goal replay port (2026-10-15, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session, so `/verify-unity` could not run. Checked offline only: `Tools/Build/unity_refcompile/run.sh`
+player (0 errors in project code, no changed file in any unverified bucket) and editor (0 errors in changed files; the 3
+known `AuthenticationServiceFacade` MPPM errors); `ReplayStoreTests` compiled and RUN outside Unity with Roslyn + the
+cached NUnit (20/20; negative control: an overwrite and an open path guard fail 7); the out-of-editor gates. Design:
+`Docs/REPLAYS.md`, `Docs/THEATER.md`.
+
+1. **Theater itself** (Will Bogen's P0, never opened in Unity after his last fixes): run `Docs/THEATER.md` §7's list.
+   Press 9, 9; a file lands in `<repo>/Recordings/`; press 8; the world and its prisms are in shot and the HUD is gone;
+   press 1 and fly the free camera; press 2 and a loop returns to the same vantage; press 8 and the HUD and live ships
+   come back.
+2. **Regatta records itself.** Arcade > Regatta, race to the end screen. **Pass:** `<repo>/Recordings/` holds
+   `Regatta_<date>_<time>.cstheater` and `Regatta_<date>_<time>.replay.json`; the JSON lists every pilot (yours has
+   `"IsLocal": true`), `"HasResults": true`, and its winner and scores match the scoreboard.
+3. **Watch it.** Still in the Regatta scene after that race, press 8. **Pass:** the Theater plays that race; the ghosts
+   are the right hulls in their domain colours; Free / Pilot / Orbit / Chase all work.
+4. **Leaving keeps the replay.** Leave a Regatta race from the pause menu mid-race. **Pass:** a replay is still saved,
+   with `"EndedBecause": "left the match"` and `"HasResults": false`.
+5. **Retention.** Create `Resources/ReplayConfig` with Keep Newest = 2 and race three times, after making one hand
+   recording with 9. **Pass:** exactly the two newest replay pairs remain, and the hand-made recording is untouched.
+6. **Only the configured modes record.** Play a Skim Race. **Pass:** no new replay.
+7. **Online.** Host and guest race Regatta together. **Pass:** each machine saves its own replay of the race.
+8. **AstroLeague goal replay** (ported onto Theater's poses and interpolation). Score a goal. **Pass:** the ghost ball
+   blooms in, retraces the shot on the broadcast camera, shrinks out, and the gameplay camera comes back, as before.
+9. **Cloud index.** Signed in, after a Regatta replay: the UGS dashboard shows player data key `REPLAY_INDEX` holding
+   that replay's summary (no frames).
+
+## 🔴 Replay browser, Arcade Replays button and playback HUD (2026-10-24, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session, so `/verify-unity` could not run. Checked offline only: refcompile player (0 errors in
+project code) and editor (the 3 known `AuthenticationServiceFacade` errors, 0 in changed files); `ReplayCommandTests`
+RUN outside Unity with Roslyn + the cached NUnit (17/17) and `ReplayStoreTests` re-run (20/20);
+`author_menu_replays.py --check` / `--self-test` (8 planted defects caught), `author_menu_arcade.py --self-test` (20,
+including the new Replays one); the two Menu_Main generators proven order-independent; the out-of-editor gates. Design:
+`Docs/REPLAYS.md` section 6. Needs a finished Regatta replay on the device first (the list above, item 2).
+
+1. **The button.** Open the Arcade. **Pass:** REPLAYS sits left of BACK in the header, in the same style; it opens the
+   Replays window; B closes it back to the Arcade (not to Home).
+2. **The list.** **Pass:** the Regatta replay is the first row, newest first: "Regatta", the date and length, "Winner:
+   <name>" (or "No final results" for a race you left), pilots and intensity; the pad lands on its WATCH; D-pad down walks
+   the rows and the list scrolls to follow; the right stick scrolls; with no replays the empty line shows instead.
+3. **Watch from the menu.** Press WATCH. **Pass:** the menu disappears; the race plays as ghosts with the HUD over it
+   (title, time counting up, scrub bar moving); no menu button reacts to the pad underneath. (Since 2026-10-24 the ghosts
+   race inside the arena - the next entry, "Replays inside the arena".)
+4. **Controls.** **Pass:** A pauses / plays (the button reads PLAY while paused); LB / RB skip 5 s; LT / RT halve /
+   double the speed between x0.25 and x4; D-pad left / right change the shot (the readout says FREE, PILOT, ORBIT,
+   CHASE) and up / down the pilot; on Free the pilot name hides and the sticks fly the camera; dragging the scrub bar
+   seeks; each HUD button does the same with the mouse or a touch.
+5. **Leaving.** Press B (and again with EXIT, and Escape). **Pass:** the replay ends, the menu and its camera come back
+   exactly as they were (the lava-lamp vessel visible, the music still playing), focus is on the row you watched, and
+   that same B press did NOT also close the Replays window.
+6. **Delete.** Press DELETE once: it reads CONFIRM; wait 3 s: it reads DELETE again. Press it twice. **Pass:** the row
+   and both files in `<repo>/Recordings/` are gone; the next row takes focus.
+7. **Another device.** Signed in on a second device (or after deleting the local files of a replay still in
+   `REPLAY_INDEX`). **Pass:** an ON YOUR OTHER DEVICES section lists it with "Recorded on another device" and no buttons.
+8. **A broken file.** Delete a replay's `.cstheater` but keep its `.replay.json`, reopen the window. **Pass:** the row is
+   gone (the store skips orphans); corrupt the `.cstheater` instead: WATCH shows "That replay could not be opened." and
+   a `[Replay] Cannot watch` warning names the reason.
+9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
+   black screen), and the Theater's own playback runs.
+
+## 🔴 My Replays in the Profile - the last 10 games (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+The replay work merged into Ys-bleeding-edge, plus MY REPLAYS in the Profile header and a last-10 rule
+(`Docs/REPLAYS.md`, "Where to find them"). No Unity CLI in the session, so `/verify-unity` could not run. Checked offline:
+refcompile player and editor 0 errors in project code; `author_menu_profile.py --self-test` (including "MY REPLAYS
+opening the wrong window") and `author_menu_replays.py --self-test`; the branch workflow's post-merge gates. Do the two
+entries below this one too ("Replays inside the arena", "Replay browser ...").
+
+1. **Find it without a match.** From Home, press the pilot avatar (or Y). **Pass:** the Profile shows MY REPLAYS left
+   of BACK, in the same style; D-pad to it and press A (or click it) and the "My replays" window opens with "Your last
+   10 games" beside the title; B closes it back to the Profile (not to Home).
+2. **The last 10.** Race Regatta 11 times (or copy 11 replay pairs into `<repo>/Recordings/`). **Pass:** the window
+   lists 10, newest first, and the folder holds the newest 10 pairs (the 11th oldest was pruned).
+3. **Watch from the Profile.** WATCH a row. **Pass:** "Building the arena", then the race inside Regatta's rails; B or
+   EXIT returns to the Profile's window with focus on that row.
+4. **Both doors, one window.** Open it from the Arcade's REPLAYS too. **Pass:** the same window and the same list.
+
+## 🔴 Replays inside the arena (2026-10-24, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+WATCH now stands the race's own arena - the mode preview's satellite cell with the config the match ran (Regatta's
+rails), its rings - 120,000 units down -Z, shifts the ghosts onto it and plays there (`Docs/REPLAYS.md` §6.1). No Unity
+CLI in the session, so `/verify-unity` could not run. Checked offline: refcompile player (0 errors in project code) and
+editor (the 3 known errors, 0 in changed files); `ReplayStagePlacementTests` 4/4 run with Roslyn + NUnit (negative
+control: a flipped shift fails one), `ReplayStoreTests` 20/20, `ReplayCommandTests` 17/17; `author_menu_replays.py`
+`--self-test` 9/9 planted defects caught; the gates. Needs a Regatta replay recorded AFTER this change (the recording
+now carries its cell config and the summary its `ArenaOrigin`); an older one still plays in the arena of its
+intensity.
+
+1. **The arena builds.** Arcade > REPLAYS > WATCH. **Pass:** "Building the arena" shows over the dimmed menu for a few
+   seconds, then the race plays with the three Regatta rails and the gate rings around the ghosts; the menu's own world
+   (the lava lamp, its cell) is nowhere in shot.
+2. **The ghosts are ON the course.** Watch the start and a few corners on Chase and Orbit. **Pass:** the ghosts start on
+   the start line and thread the rings; an Urchin's ghost rides along its rail, not beside it. (A ghost offset from the
+   course by a constant distance means the arena origin is wrong - check the summary's `ArenaOrigin`.)
+3. **Full rails.** **Pass:** the rails are continuous ribbons as in the match, not dotted (Arena Prism Stride 1).
+4. **Cancel while building.** Press WATCH, then B (and again with CANCEL, and Escape) while "Building the arena" shows.
+   **Pass:** back on the list at once, no error, no status line; WATCH again works.
+5. **Leaving tears it down.** Leave a replay, open the Hierarchy. **Pass:** `ModePreviewArena` and `ReplayStage
+   (Regatta)` are gone within a few seconds; the lava lamp's trails still work (the pool survived); no frame hitch on
+   the way back worth noticing.
+6. **Back to back.** Watch, leave, watch again five times. **Pass:** each build and teardown is clean, the Console stays
+   clear, memory does not climb (Profiler > Memory, total used).
+7. **Next to the preview.** Open a card's configure window so its preview stands, close it, then watch a replay at once.
+   **Pass:** both satellites come and go without touching each other.
+8. **No arena available.** Temporarily set Arena Build Timeout Seconds to 5 on a Resources/ReplayConfig and watch.
+   **Pass:** a `[Replay] ... did not finish building` warning, and the race plays on the dark stage instead.
+9. **Performance.** Profile a replay inside the arena. **Pass:** frame time comparable to watching the Regatta match
+   itself; if the build hitches the menu, raise Arena Prism Stride and note the number.
 
 ## 🔴 2026-10-17 — Bleeding-edge merge + first-login guide on the rev-3 menu (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
@@ -16234,6 +16435,26 @@ hybrid NCA), `TandavaSeveringController` HUD and toast 152. Headless only: harne
 
 **PASS:** both shapes read as a whale/jelly mix, the turns are smooth, it rises after ~24 s. **FAIL:** a blob · members
 pop at a turn · it never rises · it heals mid-turn.
+
+## 🔴 2026-10-26 — AI difficulty: Easy / Medium / Hard / Legendary (unverified: no Unity editor in the session)
+
+**Files:** `AIDifficulty.cs` (`Legendary = 4`), `SkimRaceDifficultySO.cs` + `Resources/SkimRaceDifficulty.asset` (Hard
+0.12 s / 0.02, Legendary = no handicap), the Configure views' AI rows (`author_menu_configure.py`). EditMode:
+`AIDifficultyRulesTests`, `SkimRaceHandicapTests`.
+
+1. Arcade > Skim Race: the row beside ADD AI PILOT shows Easy, Medium, Hard, Legendary; no plate overlaps ADD AI
+   PILOT; each lights when pressed; the AI seats read "Legendary AI" etc. Pad left / right steps through all four.
+2. Race once on Easy and once on Legendary with two AIs: Easy turns in late and overshoots crystals; Legendary takes
+   every crystal cleanly. Hard sits between (a rare overshoot).
+3. Arena > Broadside or Regatta: the Rev 4 row shows four equal plates; Legendary works the same way.
+4. Back out and reopen the card: the pick is remembered (Legendary included). A guest sees the host's pick.
+
+## Third Eye: the pilot scan no longer walks the scene (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (editor config).
+
+1. Open the Third Eye, dock it behind another tab, play Menu_Main (Release) past the 4-minute auto-capture and send it. **Pass:** no train of ~100 ms spikes every 0.5 s; `perf_capture_report.py` prints no "editor stall" line.
+2. Show the Third Eye in a Regatta / Skim Race match. **Pass:** the Pilots list still names every hull, You first; a Squirrel flown by the Skim Race pilot reads AI and shows its skim readout; the You / AI toggle still works.
 
 ## Arcade match length: every end-game target aimed at ~90 s (2026-10-26, `cece/optimistic-darwin-ri44aa`) - NOT EDITOR-VERIFIED
 

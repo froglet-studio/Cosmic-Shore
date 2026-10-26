@@ -170,7 +170,9 @@ when a prompt is about vessel work. Studio domain colours come from the game's p
 (`HumanFlightRecorder`, `BugHuntAutoSend`), and the hourly **AI learning sweep** relearns the AIs from it
 (`Tools/Build/ai_learn.py --run`), judges whether they now race like the person, fixes what numbers cannot, and pushes
 to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test command**: run it yourself or leave it
-to the sweep. A new learner joins `ai_learn.py`. Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
+to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
+first), never in Regatta**; the arena games are rebuilt later from those skills (Yash, 2026-10-27,
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`). Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
 
 ## Testing
 

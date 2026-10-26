@@ -29,6 +29,7 @@ namespace CosmicShore.Core
         public const string Loadout               = "LOADOUT_DATA";
         public const string QuestGraph            = "QUEST_GRAPH_PROGRESS";
         public const string DrillProgress         = "DRILL_PROGRESS";
+        public const string ReplayIndex           = "REPLAY_INDEX";
 
         // ── Analytics Events ──
         // Every event (and its parameters) must also be declared in the UGS

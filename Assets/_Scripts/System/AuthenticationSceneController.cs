@@ -1039,6 +1039,10 @@ namespace CosmicShore.Core
             _sceneTransitionManager?.SetFadeImmediate(1f);
 
             CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Loading {menuScene} via network scene management...");
+            // Timed when online (B36): this load runs with the Relay host already up, and on 26 Oct one frame of it
+            // lasted 10.4 s and Relay dropped the host. SceneLoader ends the recording when the menu shows.
+            CosmicShore.Utility.PerformanceBenchmark.LoadInsights.BeginBootLoad(
+                $"Boot - {SceneManager.GetActiveScene().name} -> {menuScene}");
             NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
         }
 

@@ -2365,6 +2365,23 @@ including the return to the menu (`loadKind: "menuReturn"`), and the after-Play 
 `net_logs.py show` lists it under the test, with a RELAY RISK flag on a frame over 9 s. The scheduled multiplayer
 sweep (`Docs/MULTIPLAYER_START_HERE.md` §3.1) reads it. No hand step is needed for the capture any more.
 
+**Measured at boot (2026-10-26 sweep, `shombith-20261026_182837`).** Cause 3 above is now measured, not guessed.
+Shombith's solo Play on `claude/new-session-76hnyc` (`1779d97ef8`) hosted its solo party over Relay at 12.3 s. The
+Relay took 12 s to come up (`HostingParty` at 12.3 s, `InParty` at 24.6 s), so the boot's first 15 s wait timed out
+at 24.4 s, a beat before it did. Then one frame lasted **10.4 s** while the Authentication scene was still active
+(`stall 10.4s in Authentication`). Relay answered no BIND (`Failed to establish connection with the Relay server`),
+the host shut down (`relayDrop after a 10.4 s freeze 0.0 s earlier`) and the game bounced to the solo menu at
+35.1 s. It re-hosted by 50.5 s and played on. The menu's objects woke at 36.4 s, so the frozen frame is most likely
+the boot's own load of Menu_Main: `AuthenticationSceneController.LoadMainMenuNetworkedAsync` loads it through
+Netcode's scene manager with the Relay host already up, the same shape as the Bloomrush return. **That load was not
+timed:** Load Time Insights covered game launches, cell swaps and returns to the menu, not the boot. Now it does:
+`LoadInsights.BeginBootLoad` (loadKind `"boot"`) starts just before that `LoadScene`, and `SceneLoader` ends it when
+the menu shows, as it ends a return. So the next online boot on any machine brings a report that names the slow part
+of the load (under "Loads" in `net_logs.py show`, RELAY RISK over 9 s). `LoadInsightsAutoRecordTests` (8) hold it.
+Not fixed yet: the freeze itself. When the report names it, the fix is in that frame. If the boot must keep loading
+the menu over a live Relay, the other lever is to start the Relay host after the menu is up (a boot-order change for
+whoever owns the boot).
+
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 
 **Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same

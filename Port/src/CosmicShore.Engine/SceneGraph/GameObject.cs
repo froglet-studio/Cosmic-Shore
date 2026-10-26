@@ -274,7 +274,7 @@ namespace CosmicShore.Engine
             if (!t_adding.Add(componentType)) return; // mutual requirement: the outer add supplies it
             try
             {
-            foreach (RequireComponentAttribute req in componentType.GetCustomAttributes(typeof(RequireComponentAttribute), inherit: true))
+            foreach (RequireComponent req in componentType.GetCustomAttributes(typeof(RequireComponent), inherit: true))
                 foreach (var t in new[] { req.m_Type0, req.m_Type1, req.m_Type2 })
                 {
                     if (t == null || t.IsAbstract || t.IsInterface || !typeof(Component).IsAssignableFrom(t)) continue;
