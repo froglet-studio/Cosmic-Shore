@@ -15892,3 +15892,11 @@ errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
 - [ ] A Rhino assault from the hatch no longer shatters the Great Serpent in under 20 s; time it (the model says ~50 s
       at a constant 20 blows/s).
 - [ ] Other swarms (the research plans, the ecology swarm) show no new shields.
+
+## 🔴 2026-10-26 — ResourceSystem.Reset tolerates Unity's edit-mode Reset message (`cece/exciting-thompson-wdi3wm`, salvaged from `cece/inspiring-einstein-k6syi5` a109b25848) (unverified: no Unity CLI in the session)
+
+`ResourceSystem.Reset()` shares its name with Unity's edit-mode `Reset` message, which the editor sends the instant
+the component is added, before `Resources` exists. The method now returns when `Resources` is null.
+
+- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
+- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
