@@ -101,7 +101,7 @@ assert lib.existing_guid("Assets/_SO_Assets/Classes/SO_Class_Thresher.asset") ==
 # to size the circuit and the turn monitor asks the controller for the target, so the finish line
 # and the course cannot be different lengths. Kept in sync with
 # EndConditionOverridesSO.DefaultThresherTimeGateTarget.
-LAPS = 3
+LAPS = 2
 RINGS_PER_LAP = 8                 # ThresherTimeCourse.GatesPerLap
 GATE_TARGET = LAPS * RINGS_PER_LAP
 BASE_RADIUS = 800                 # ThresherTimeCourse.BaseRadius
@@ -126,11 +126,11 @@ AI_THROUGH_DISTANCE = 100
 MAX_PLAUSIBLE_SPEED = 4600
 BOOSTED_SLING_SPEED = 2600 * 70 / 380 * 4.8
 
-# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.3 a
-# quarter-of-race deficit (6 gates) buys 1.8 element levels, Grizzly Time's number on the same
-# 24-gate race. The Thresher's Time element scales the Plant's spin-up rate and cap (x1 -> x1.75),
+# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.45 a
+# quarter-of-race deficit (4 gates) buys 1.8 element levels, Grizzly Time's number on the same
+# 16-gate race (0.3 on the old three-lap, 24-gate race; cut to two laps for a ~90 s race, 2026-10-26). The Thresher's Time element scales the Plant's spin-up rate and cap (x1 -> x1.75),
 # so a trailing pilot winds a sling up to the ceiling sooner - the buff lands on the mode's axis.
-COMEBACK_RATE = 0.3
+COMEBACK_RATE = 0.45
 
 # Fresh Netcode ids for the clone's in-scene NetworkObjects (rule 4 above).
 HASH_SALT = "MinigameThresherTime"

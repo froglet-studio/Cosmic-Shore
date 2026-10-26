@@ -64,13 +64,13 @@ DUST_CONTAINER = ("Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers
 EXISTING["ButterflyCombatHitBySkimmerEffect"] = lib.existing_guid(REPORTER)
 
 # ── The race ─────────────────────────────────────────────────────────────────
-POINT_TARGET = 10     # kept in sync with EndConditionOverridesSO.DefaultDustupPointTarget
+POINT_TARGET = 4      # kept in sync with EndConditionOverridesSO.DefaultDustupPointTarget (10 until 2026-10-26: unreached by 211 s)
 DUST_POINTS = 1
 STRIKE_CLASS = 5      # CombatHitClass.Strike
 # Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). A quarter of the race behind
-# (2.5 dustings) buys 1.5 element levels - and on this hull an element level is the dust itself:
+# (1 dusting) buys 1.5 element levels, the 1.5 that 0.6 bought on the old 10-point race - and on this hull an element level is the dust itself:
 # Charge is the bite, Space the capsule's length.
-COMEBACK_RATE = 0.6
+COMEBACK_RATE = 1.5
 
 # The Boneyard is NUCLEUS-LESS: Dog Fight's own ring and crystal volume, read off its scene below.
 SPAWN = common.spawn_block(40, 700, 0)

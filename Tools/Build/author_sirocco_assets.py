@@ -56,10 +56,10 @@ DUST_PRISM = "Assets/_SO_Assets/Effects/Skimmer Prism Effects/ButterflyScaleDust
 EXISTING["ButterflyScaleDustPrismEffect"] = lib.existing_guid(DUST_PRISM)
 
 # ── The race ─────────────────────────────────────────────────────────────────
-PRISM_TARGET = 600    # kept in sync with EndConditionOverridesSO.DefaultSiroccoPrismTarget
-# Comeback - a FUNCTION OF THE TARGET. A quarter behind (150 prisms) buys 1.5 element levels, and
+PRISM_TARGET = 400    # kept in sync with EndConditionOverridesSO.DefaultSiroccoPrismTarget (600 until 2026-10-26)
+# Comeback - a FUNCTION OF THE TARGET. A quarter behind (100 prisms) buys 1.5 element levels, and
 # on this mode an element level is the dust itself: Space is the swath, Charge the bite.
-COMEBACK_RATE = 0.01
+COMEBACK_RATE = 0.015
 SPAWN = common.spawn_block(500, 0, 0)   # Rampage's own ring - 500 outside its nucleus
 
 CARD_REL = "Assets/_SO_Assets/Games/ArcadeGameSirocco.asset"

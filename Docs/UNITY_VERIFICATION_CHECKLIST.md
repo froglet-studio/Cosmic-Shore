@@ -16403,3 +16403,21 @@ No Unity editor in the session. Verified offline only: reference compile (editor
 1. Open the Third Eye, dock it behind another tab, play Menu_Main (Release) past the 4-minute auto-capture and send it. **Pass:** no train of ~100 ms spikes every 0.5 s; `perf_capture_report.py` prints no "editor stall" line.
 2. Show the Third Eye in a Regatta / Skim Race match. **Pass:** the Pilots list still names every hull, You first; a Squirrel flown by the Skim Race pilot reads AI and shows its skim readout; the You / AI toggle still works.
 
+## Arcade match length: every end-game target aimed at ~90 s (2026-10-26, `cece/optimistic-darwin-ri44aa`) - NOT EDITOR-VERIFIED
+
+No Unity editor, `unity` CLI or .NET SDK in the session, so no compile ran. Verified offline only: all 46
+`author_*_assets.py --check`, `cleave_budget.py`, `waystation_course.py --target 15`, `hijack_budget.py`,
+`skein_budget.py`, `arcade_mode_lib.py --self-test`, `author_skimrace_relativity_track.py --check`,
+`check_console_logging.py`, `check_conditional_compilation.py`, and a Python port of the Switchback course walk
+(1,600/1,600 seeds fit at 26 gates). The numbers and the reasoning: `Docs/ARCADE_MATCH_LENGTH.md`.
+
+1. Let Unity compile. **Pass:** no errors from `EndConditionOverridesSO.cs`, `EndConditionOverridesWindow.cs`,
+   `DogFightPointTurnMonitor.cs`, `RampagePrismTurnMonitor.cs`.
+2. Open FrogletTools > Game Modes > End Game Conditions. **Pass:** Rampage shows four intensity rows
+   (2000/1700/1300/1000), Grizzly Charge has its own row (90), Dog Fight reads 40, and "Live matches build".
+3. Run the edit-mode tests `SwitchbackCourseTests`, `WeeklyChallengeTests`, `RaceCourseSourceTests`. **Pass:** green.
+4. Play Grizzly Charge and Dog Fight once each. **Pass:** Grizzly Charge ends at 90 points, Dog Fight at 40.
+5. Play Rampage at intensity 1 and 4. **Pass:** the target reads 2000 at I1 and 1000 at I4.
+6. Play Headlong or Redline. **Pass:** the HUD counts 40 gates over 5 laps of 8 rings.
+7. Time one match of each mode the doc's table marks "estimate", flown by an experienced pilot. **Pass:** each
+   lands within ~60-120 s; record the times in `Docs/ARCADE_MATCH_LENGTH.md` §2.

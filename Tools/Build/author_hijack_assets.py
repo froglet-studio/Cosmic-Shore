@@ -120,7 +120,10 @@ SPAWN_RING_RADIUS = int(budget.SPAWN_RING_RADIUS)
 # HALVED from 1500 on request: a 3-5 minute race read as long for a mode whose whole loop is
 # grind -> launch -> cascade, and 750 is still 41% of the hostile mass an intensity-1 yard holds
 # for one domain, so the yard is not close to exhausted at the whistle.
-HIJACK_STEAL_TARGET = 750
+#
+# Cut again to 500 on 2026-10-26: a human-plus-two-AI lobby had not reached 750 by 167 s, and the
+# arcade goal is an experienced match near 90 s.
+HIJACK_STEAL_TARGET = 500
 
 # The comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`), which is the
 # trap Dog Fight, The Bends and Wildlife Liberation have now all recorded independently: a rate
@@ -129,7 +132,8 @@ HIJACK_STEAL_TARGET = 750
 # halving the target DOUBLES the rate (0.008 -> 0.016). Leaving it at 0.008 would have passed the
 # assert below (1.5 levels) while quietly halving the comeback, which is exactly the silent
 # fraction-of-a-level drift those three modes each record. The assert is a FLOOR, not the spec.
-COMEBACK_RATE = 0.016
+# 750 -> 500 multiplies it by 1.5 again (0.016 -> 0.024), holding the same 3.0 levels.
+COMEBACK_RATE = 0.024
 
 # One omni crystal idling in the hollow core. NOT the objective - the mode's arrow points at
 # burrs (HijackObjectiveProvider) - it is an elemental pickup a pilot may take in passing. The

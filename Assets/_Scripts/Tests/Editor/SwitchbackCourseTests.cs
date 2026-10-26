@@ -19,7 +19,7 @@ namespace CosmicShore.Tests
         // CapsuleMembrane authors radius 1200. The controller derives the same shell.
         const float Inner = 480f;
         const float Outer = 1080f;
-        const int Gates = 20;
+        const int Gates = 26;   // EndConditionOverridesSO.DefaultSwitchbackGateTarget (20 until 2026-10-26)
         const int Seeds = 400;
 
         // Dolphin at BOOST: 347 u/s over a speed-independent 110 deg/s. The state in which a

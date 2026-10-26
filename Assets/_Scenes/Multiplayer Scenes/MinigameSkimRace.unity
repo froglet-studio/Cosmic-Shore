@@ -772,7 +772,7 @@ MonoBehaviour:
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   optionalEnvironment: {fileID: 1899528610}
-  lapsPerIntensity: 03000000030000000200000002000000
+  lapsPerIntensity: 03000000030000000100000001000000
   optionalLaps: 3
 --- !u!114 &1078953729
 MonoBehaviour:
