@@ -20,6 +20,8 @@ in the header. Also Arcade -> **REPLAYS**, beside BACK. Both open My Replays: th
 | Record inputs (like Overwatch 2) or outcomes? | **Outcomes** - poses, never inputs | Flight integrates in `Update`, gameplay rolls the global `Random`, AI paces with coroutines: re-running inputs drifts. `Docs/THEATER.md` §1 makes the same call; do not revisit it. |
 | Build a recorder, or use the Theater's? | **The Theater's**, unchanged | Will's recorder, format, ghosts and cameras already exist; a second recorder would be a fork. |
 | Which mode first? | **Regatta** (`GameModes.Regatta = 56`) | Its course is authored on the arena, so a replay needs no seed; the AI-training recorder already reads its rails. |
+| Which modes record? (2026-10-26) | **Every mode, every match**, except the menu's freestyle (the lava lamp) | Yash: "any game mode I play, it should be automatically recorded". `ReplayConfigSO.recordEveryMode` (on), `neverRecordModes` (Random); the main menu scene (`SceneNameListSO.MainMenuScene`) never records. |
+| How is a replay watched? (2026-10-26) | **On the free camera** by default (`ReplayConfigSO.startShot`) | "simulate the entire game with my free cameras as in third eye": the Theater's Free shot (sticks / WASD, seeded from the orbit framing); Pilot / Orbit / Chase stay one D-pad press away. |
 | One file format or two? | **Two** | Frames stay in the Theater's compact binary `.cstheater`; a small JSON summary sits beside it so the browser and Cloud Save never open the frames. |
 | Where do replays live? | **On the device, summaries in Cloud Save** | Frames are megabytes; a summary is about a kilobyte. A match recorded on another device can be listed, not watched. |
 | Share the AI-training recorder's sampling? | **Yes, in principle** | `HumanFlightRecorder` (local pilot's sticks, 10 Hz, editor/dev only) and the Theater recorder (every hull's pose, 30 Hz, ships) still sample separately; folding the first onto the second is a later step (`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` says extend, do not fork). |
@@ -80,7 +82,10 @@ returns the summaries that are not on this device.
 
 | Field | Default | Meaning |
 |---|---|---|
-| Auto Record Modes | Regatta | Modes recorded from Go to the end screen |
+| Record Every Mode | on | Every mode records itself (the main menu scene never does) |
+| Auto Record Modes | Regatta | With Record Every Mode off, the modes that record |
+| Never Record Modes | Random | Never recorded, even with Record Every Mode on |
+| Start Shot | Free | The camera a replay opens on |
 | Results Wait Seconds | 20 | Real-time wait for the end screen before saving without results |
 | Keep Newest | 10 | Replays kept on the device - the player's last 10 games (Yash, 2026-10-26) |
 | Listed Replays | 10 | My Replays lists this many per section (this device, other devices), newest first |
@@ -167,6 +172,11 @@ answer to "show this mode's arena without the menu changing": the mode preview's
   density** (`ModePreviewArena.Stand`'s `prismStride`, `ReplayConfigSO.ArenaPrismStride` = 1; the preview flies at 4);
 - a gate race's rings from the same `RaceCourseSource` the match controller builds from (`ModePreviewGateCourse`;
   Regatta and Skein take the course off the arena prefab, so the rings are the match's);
+- **the race rings the match was flown through**, captured at Go (`ReplaySummary.Gates`: every `RaceGateRing` in the
+  scene in its first seconds, relative to the arena origin) and rebuilt exactly - a gate race draws a new course seed
+  each match and a guest never sees it, so nothing else could place them. A replay recorded before 2026-10-26 has no
+  rings captured: Regatta and Skein still stand the preview's course (theirs comes off the arena prefab), a seeded
+  race stands none. The Cloud Save index carries no rings;
 - the poses shifted by the stage origin minus `ReplaySummary.ArenaOrigin` (the match scene's cell position, recorded at
   Go; zero for a summary written before it, which is where every arcade scene's cell sits).
 
@@ -200,9 +210,10 @@ browser", and "Replays inside the arena").
 | Next | What | Notes |
 |---|---|---|
 | The world in a replay | Prisms, fauna, crystals, projectiles | The Theater's P1 and P2 (`Docs/THEATER.md` §6). Until then the arena in shot is the one at the race's start (section 6.1). |
+| Rings that move | Skim Race's crystal rings | Captured once, at Go; a ring that moves with its crystal later in the match stays at its first place. |
+| A mode with no preview definition | Maelstrom (and any mode the preview library lacks) | Recorded and watchable, on the dark stage. |
 | A controller-built arena | Astro League's goals, Scarab's hoops | Their structures are built by the match controller, which the preview does not model either (`Docs/ModePreview/ARCHITECTURE.md` §7); such a replay shows the cell around the ghosts. |
 | One camera director | Spectate, replay and Third Eye on one set of shots | `SpectatorController`, `TheaterSubjectCamera` / `TheaterFreeCamera` and the editor-only `ThirdEyeRig` all pose cameras separately today; unifying them is its own refactor. |
-| Second mode | Skim Race | Add it to Auto Record Modes. Its rings are seeded per match, while the preview course uses the card-art seed, so record the match's course seed and pass it to the stage before turning it on. Regatta and Skein take their course off the arena prefab and are exact. |
 
 ## 9. Ownership
 

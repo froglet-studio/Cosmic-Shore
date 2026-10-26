@@ -14651,6 +14651,23 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
 9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
    black screen), and the Theater's own playback runs.
 
+## 🔴 Every mode records itself; replays open on the free camera (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Yash: "any game mode I play, it should be automatically recorded ... simulate the entire game with my free cameras as in
+third eye". No Unity CLI in the session, so `/verify-unity` could not run. Checked offline: refcompile player and editor
+0 errors in project code; `ReplayStagePlacementTests` 5/5 (rings and arena origin survive the sidecar);
+`author_menu_replays.py --check` / `--self-test`; the gates.
+
+1. **Any mode records.** Play a match each of Skim Race, Joust and a gate race (Headlong or Switchback). **Pass:** each
+   leaves a `<Mode>_<date>_<time>.cstheater` + `.replay.json` in `<repo>/Recordings/` and a row in My Replays.
+2. **The lava lamp never records.** Fly freestyle in the menu for a minute. **Pass:** no new file.
+3. **Free camera first.** WATCH any replay. **Pass:** it opens on the free camera framing the match; the left stick /
+   WASD flies it, the right stick / mouse looks; D-pad left / right still cycles Pilot, Orbit, Chase.
+4. **The rings are the match's.** Watch the Headlong replay. **Pass:** the ghosts thread the rings (the JSON's `Gates`
+   lists them); for Skim Race the rings stand where they stood at Go.
+5. **No arena, still a replay.** Watch a Maelstrom game's replay (no preview definition). **Pass:** it plays on the dark
+   stage.
+
 ## 🔴 My Replays in the Profile - the last 10 games (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
 
 The replay work merged into Ys-bleeding-edge, plus MY REPLAYS in the Profile header and a last-10 rule

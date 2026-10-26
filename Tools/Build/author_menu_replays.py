@@ -92,9 +92,9 @@ TITLE = "My replays"
 HUD_WORDS = dict(timeTemplate="{position} / {duration}", speedTemplate="x{speed}", pauseLabel="PAUSE", playLabel="PLAY")
 SHOT_NAMES = ("FREE", "PILOT", "ORBIT", "CHASE")          # TheaterShot order
 CONFIRM_DELETE = "CONFIRM"
-EMPTY_LINE = "No replays yet. Finish a Regatta and it is kept here, ready to watch."
+EMPTY_LINE = "No replays yet. Play any match and it is kept here, ready to watch."
 ELSEWHERE_LINE = "Recorded on another device"
-PAD_HINT = "A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit"
+PAD_HINT = "Sticks / WASD fly the camera    A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit"
 LOADING_LINE = "Building the arena"
 LOADING_HINT = "The race plays in the arena it was flown in."
 TRANSPORT = (  # key, caption, component field
@@ -276,7 +276,7 @@ def build_hud():
     fg = bot.child(N("Bottom/Follow", "Follow", TR(PAD, 114, 360, 24)))
     fg.add("cg", 225, H.canvas_group(True))
     label(fg.child(N("Bottom/Follow/Name", "Name", STRETCH)), "Pilot", "Body", "TextLight", align="right")
-    label(bot.child(N("Bottom/Hint", "Hint", R((0.5, 0), None, (0, 14), (1100, 20), (0.5, 0)))), PAD_HINT,
+    label(bot.child(N("Bottom/Hint", "Hint", R((0.5, 0), None, (0, 14), (1400, 20), (0.5, 0)))), PAD_HINT,
           "BodySmall", "NeutralLightest", align="center")
 
     # Shown first: the replay's arena builds before anything plays (ReplayArenaStage).
