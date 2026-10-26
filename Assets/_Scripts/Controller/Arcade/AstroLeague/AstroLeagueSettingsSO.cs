@@ -192,7 +192,7 @@ namespace CosmicShore.Gameplay
                  "are raised by exactly that budget (480 x 62.5 = 30000) - retune them together. " +
                  "Collider budget: the lining is FREE - a shield swaps the mesh and the mass, never " +
                  "the collider, so these prisms stay LOD-cullable like any other. What the count does " +
-                 "buy is permanence: super-shielded mass is removable only by an energised blade. " +
+                 "buy is permanence: super-shielded mass is removable only by an energised blade with the Rhino's Space L5. " +
                  "480 is the doubling that keeps the rim reading as a line on the (much larger) " +
                  "current court instead of a dotted one.")]
         [SerializeField] int edgePrismCount = 480;
