@@ -2,8 +2,8 @@
 """team_tasks.py - the team's shared to-do board, Docs/TEAM_TASKS.md (Docs/TEAM.md rule 9).
 
 Any session or person leaves a task another collaborator can pick up: a test that needs the Unity Editor,
-a playtest, a dashboard to set up, content to write, a decision to take. Yash has offered to take tasks
-(Yash, 2026-10-15); a task he could do names him in "Who can take it".
+a playtest, a dashboard to set up, content to write, a decision to take. "Who can take it" names the owner of
+the area first (Docs/TEAM.md), never whoever offered (Shombith, 2026-10-26).
 
     team_tasks.py list [--all] [--area A] [--for NAME] [--kind K]   open tasks (or every task)
     team_tasks.py add --area A --kind K --task T --done-when D --who W [--see S] [--by B]
@@ -336,7 +336,7 @@ def self_test():
     bad = []
     seed = "# Board\n\n" + MARK + "\n"
     day = datetime.date(2026, 10, 15)
-    t1, a = add(seed, "Activation", "test", "Play the guide once.", "It draws.", "Yash (offered)", today=day)
+    t1, a = add(seed, "Activation", "test", "Play the guide once.", "It draws.", "Shombith (Menu_Main)", today=day)
     t2, b = add(t1, "Activation", "setup", "Declare the events.", "UGS lists them.", "anyone", see="x", today=day)
     if a == b or not re.match(r"T-20261015-[0-9a-f]{4}$", a):
         bad.append("ids are not distinct date+hash ids")

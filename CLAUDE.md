@@ -10,7 +10,7 @@ When a task spans multiple files or systems, complete ALL of them in a single pa
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
-- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Yash has offered to take tasks.
+- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Each task is named to the owner of its area.
   Sections: How to use it; The board
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
   Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
@@ -85,8 +85,9 @@ the engine renamed twice, retired tools brought back. **Every session:**
   `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
 - **Hand off what others can do** on the shared to-do board, [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md)
   (`python3 Tools/Build/team_tasks.py add | list | take | done`): every editor test, playtest, setup step, content gap
-  or decision your work leaves for someone else. Name who can take it (**Yash has offered to take tasks**; name the
-  area's owner, e.g. Shombith for Menu_Main), tell the person what you added, and close the tasks your work finishes.
+  or decision your work leaves for someone else. Name the **owner of the area** (`Docs/TEAM.md`), never whoever
+  offered: **anything on UGS or the backend is Shombith's, so ask him directly** (Shombith, 2026-10-26). Tell the
+  person what you added, and close the tasks your work finishes.
   `.claude/hooks/team_tasks_nudge.py` reminds every session; activation / onboarding prompts also get that area's open
   tasks.
 

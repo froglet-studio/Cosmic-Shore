@@ -5,15 +5,16 @@ Editor, a playtest, a dashboard or service to set up, content to write, a decisi
 our work goes through Claude sessions, and a session cannot open Unity, sign in to a dashboard or watch a
 first-timer play. This is where it says so, and where somebody picks it up (Docs/TEAM.md rule 9).
 
-**Yash has offered to take tasks** (Yash, 2026-10-15): testing in the editor, playtests, UGS and
-dashboard setup, and follow-up fixes. When you add a task he could do, name him in "Who can take it".
-Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your own.
+**Every task is named to the owner of its area** (`Docs/TEAM.md`; `who_works_where.py` for the files), never
+to whoever offered to help (Shombith, 2026-10-26). Anything on UGS or the backend (Cloud Code, Cloud Save,
+Access Control, Moderation, authentication, dashboards, deploys) is Shombith's: name him first and ask him
+directly. The owner named first is the person the task waits on.
 
 ## How to use it
 
 - **Add** a task whenever your work leaves something another person can do or test. Claude sessions do
   this before they finish (a hook reminds them), and tell the person what they added:
-  `python3 Tools/Build/team_tasks.py add --area Activation --kind test --task "..." --done-when "..." --who "Yash (offered), anyone with the Editor" --see "Docs/..."`
+  `python3 Tools/Build/team_tasks.py add --area Activation --kind test --task "..." --done-when "..." --who "Shombith (Menu_Main)" --see "Docs/..."`
 - **Find** work: `python3 Tools/Build/team_tasks.py list` (open tasks), `--for Yash`, `--area Activation`,
   `--kind test`.
 - **Take** one, so nobody does it twice: `team_tasks.py take <id> --who <you>`. **Close** it:
@@ -43,35 +44,35 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-7b5a · open · test · Activation
 - **Task:** Re-test the first-login spotlight in Unity: the 2026-10-06 playtest saw no dim, no frame, no caption and dead presses; a CanvasRenderer fix landed after it and was never re-tested.
 - **Done when:** On a fresh profile Menu_Main shows the dim, the pulsing frame on ARCADE, its caption and a pressable Settings gear, and the menu takes presses. Result written in the checklist section.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'First-login guide - spotlight draws nothing in Unity'
 
 ### T-20261015-b47d · open · test · Activation
 - **Task:** Hand-test the first-login guide, the microgame Lesson with its ghost demo, and the ftue_* analytics events, end to end.
 - **Done when:** All nine steps of the checklist section pass, or each failure is written there and added here as a dev task.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'Ghost demo + first-login guide + FTUE analytics'; Docs/ModePreview/TRAINING_PLAN.md 10.7
 
 ### T-20261015-9809 · open · setup · Activation
 - **Task:** Declare ftue_step_completed (quest_id, phase_index, step_id, step_name, seconds_since_launch), ftue_phase_completed (quest_id, phase_index, seconds_since_launch) and ftue_completed (quest_id, seconds_since_launch) in the UGS dashboard Event Manager; UGS silently drops undeclared events.
 - **Done when:** The three events and their parameters are in the Event Manager, and one test session's events show up in UGS.
-- **Who can take it:** Yash (offered; UGS), Shombith (analytics handoff)
+- **Who can take it:** Shombith (UGS, analytics handoff)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 5; Docs/Analytics/event-taxonomy.md 4
 
 ### T-20261015-2fc0 · open · setup · Activation
 - **Task:** Build the activation funnel and D1/D7 retention in PostHog: game_first_launched > menu_ready > ftue_step_completed (guide) > ftue_phase_completed (phase 0) > game_started > game_completed, split by invite_wave.
 - **Done when:** The funnel and the retention charts exist and read real sessions; the paid-EA gate (D1 >= 35%, D7 >= 15%) can be read off them.
-- **Who can take it:** Ian (funnel owner, C3), Yash (offered)
+- **Who can take it:** Ian (funnel owner, C3)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 6.3; Docs/Analytics/POSTHOG_SETUP.md; Docs/Analytics/DATA_ARCHITECTURE.md
 
 ### T-20261015-99cd · open · test · Activation
 - **Task:** Watch three to five first-time players on a default build (master unlock at its shipped default) without helping them, and note where each one stalls.
 - **Done when:** Notes per player (where they stalled, how long to the first match, whether they came back) are linked here, and each stall is a new task.
-- **Who can take it:** Andrew, Shombith, Yash (offered)
+- **Who can take it:** Andrew, Shombith
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 6.4; STEAM_EA_INVESTOR_CHECKPOINT C2 / E7
 
@@ -85,7 +86,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-f4c7 · done · dev · Activation
 - **Task:** Reconcile Menu_Main between the first-login guide (merged into Ys-bleeding-edge 2026-10-15) and Menu Redesign B (claude/new-session-76hnyc) before either reaches bleeding-edge: the spotlight must find the restyled ARCADE entry, cards and Settings gear.
 - **Done when:** Both are on one branch, the spotlight walks the restyled menu in the editor, and author_first_login_guide.py --check passes.
-- **Who can take it:** Shombith (Menu_Main owner), Yash (offered)
+- **Who can take it:** Shombith (Menu_Main owner)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 4; Docs/MENU_REDESIGN_B.md on claude/new-session-76hnyc
 - **Progress (2026-10-17, claude/new-session-76hnyc):** both are on one branch now (bleeding-edge merged in), author_first_login_guide.py --check passes, and the guide's targets were checked offline: the ARCADE hub (MenuHubButton, target 10), the Arcade grid's ArcadeExploreView / TryRevealCard, Settings (MenuGuideAlwaysAvailable on the restyled SettingsButton, now guarded by author_menu_home.py), and the Preview step (now spotlights FLY via ModePreviewWindow.guideTarget, because the rev-3 preview is full-screen). Left: the in-editor walk (Docs/UNITY_VERIFICATION_CHECKLIST.md 'Bleeding-edge merge 2026-10-17').
@@ -94,42 +95,42 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-d364 · open · content · Activation
 - **Task:** Write Mentor tip lists for the non-racing mode families (TRAINING_PLAN phase 5): only the racing family (SwitchesThreaded) and seven racing modes have tips today.
 - **Done when:** Every playable card composes a Mentor list (DrillCoverageTests asserts it once phase 6 lands); author_drill_assets.py --check passes.
-- **Who can take it:** Caleb, Garrett, anyone who writes game copy; Yash (offered) to wire them
+- **Who can take it:** Caleb, Garrett, anyone who writes game copy
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ModePreview/TRAINING_PLAN.md 4.2 and 10
 
 ### T-20261015-ed8e · open · content · Activation
 - **Task:** Author SO_ArcadeGame.Tips for the 54 of 56 arcade cards that have none, so GameBriefingView has something to teach before a match. Write them in each mode's author_<mode>_assets.py generator, not only in the asset.
 - **Done when:** Every card has two or more tips and every touched generator's --check passes.
-- **Who can take it:** Caleb (arcade mode map), anyone; Yash (offered)
+- **Who can take it:** Caleb (arcade mode map), anyone
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ArcadeLaunch/ARCHITECTURE.md (Tips); the /arcadegame skill
 
 ### T-20261015-81b3 · open · dev · Analytics
 - **Task:** Reconcile the two items ANALYTICS_HANDOFF 8 left for the quest-branch merge: the save record's Version vs SchemaVersion, and the second progression key QUEST_GRAPH_PROGRESS beside GAME_MODE_PROGRESSION.
 - **Done when:** One schema field name and a written decision on the two keys, with a test.
-- **Who can take it:** Shombith (handoff addressee), Yash (offered)
+- **Who can take it:** Shombith (handoff addressee)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/Analytics/ANALYTICS_HANDOFF.md 8
 
 ### T-20261015-013e · open · test · Activation
 - **Task:** Run the three progression QA items that have never been run: QA-PROGRESSION-GATE-ON, QA-PROGRESSION-GATE-OFF and QA-FTUE-QUEST-ROWS.
 - **Done when:** Results are submitted under Docs/QA/RESULTS and /qa-backlog has applied them.
-- **Who can take it:** Andrew, Caleb, Yash (offered)
+- **Who can take it:** Andrew, Caleb
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/QA/QA_BACKLOG.md
 
 ### T-20261015-ff1c · open · docs · Activation
 - **Task:** Fix stale activation docs: the unlock-chain tables in MENU_PROGRESSION_AND_IAP.md and QUEST_TRACK_AND_BREADCRUMB.md (live chain: Scurry > Hex Race > Joust > Maelstrom > Vessel Hangar), and QuestMap/QUEST_MAP.html, which still draws the retired breadcrumb nodes.
 - **Done when:** The three docs match the shipped GameModeQuestList.asset and the quest graph.
-- **Who can take it:** anyone; Yash (offered)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 7
 
 ### T-20261015-1a5b · done · dev · Performance
 - **Task:** check_mathf_params_alloc.py is red on two sites that predate the activation work: BlackHoleWarp.cs:87 (3-value Mathf.Max) and FlipWave.cs:153 (4-value Mathf.Max), each allocating a params array.
 - **Done when:** Both use MathfNoAlloc or nested two-value calls and the gate passes.
-- **Who can take it:** the owners of the black hole and FlipWave code (check who_works_where.py); Yash (offered)
+- **Who can take it:** the owners of the black hole and FlipWave code (check who_works_where.py)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Tools/Build/check_mathf_params_alloc.py
 
@@ -158,7 +159,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-2082 · open · dev · AI training
 - **Task:** Build T1 of the AI training plan: the AI Lab (Test Range R1-R3) in MinigameRegatta - any hull on any seat (trained or untrained), 0.25x-8x time, the Third Eye's trails and readout in a development build, speed graph and phase timeline, a scorecard JSON per run.
 - **Done when:** A development build of Regatta opens the AI Lab, races chosen hulls at chosen speed, and writes a scorecard file the artifact's numbers can be compared with.
-- **Who can take it:** Yash (offered), with Garrett for the trainer hand-off
+- **Who can take it:** Garrett (the trainer hand-off)
 - **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/AI_TRAINING_PLAN.md section 3 L1, Docs/Studios/VESSEL_TEST_RANGE_PLAN.md
 
@@ -167,21 +168,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-56dd · open · test · Performance
 - **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itself; the Scene view badge counts down), stop playing (it goes to Claude by itself) (the file is one JSON holding burst, diag, prof, renderers, cells and the console; pasting it into a Claude session also works). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
 - **Done when:** A capture_Menu_Main_S2_*.json whose reader output (python3 Tools/Build/perf_capture_report.py) shows no ERROR line (Release, Burst on, no managed job time) is pasted and recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2 with its numbers.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3e0b · open · test · Performance
 - **Task:** Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), then stop: it goes to Claude by itself. This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
 - **Done when:** The capture is shared or pasted; its burst section reads Run() BURST, Schedule() BURST; prof.managedJobMs < 0.2; the Profiler top-allocators list confirms or clears PoolRefill.Squirrel Prism. Recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3972 · open · test · Performance
 - **Task:** S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), then stop: it goes to Claude by itself. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
 - **Done when:** The capture is shared or pasted and the Fauna.BodySync / LightFauna.Update rows are read; the L8 decision is written in Docs/PERFORMANCE_OPTIMIZATION.md 3.3.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
@@ -210,21 +211,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-72e1 · open · dev · Performance
 - **Task:** Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a changed mesh by array identity (SceneRenderer ReferenceEquals on RenderVertices / RenderUvWide / RenderSubmesh), so a per-frame mesh upload allocates the whole buffer each frame: CrystalChargeArcs.LateUpdate reads ~708 KB/frame in the Skim Race marker run while the game's own code is allocation-free (it reuses its writer lists). Unity's SetVertices(List) allocates nothing. Make the setters copy in place when the length matches, bump mesh.version, and have the renderer's dirty check key on version (or a per-buffer stamp) instead of array identity, so the engine's allocation numbers mean the game's.
 - **Done when:** python3 Tools/Build/perf_hunt.py amoebius --no-build reads CrystalChargeArcs.LateUpdate under 1 KB/frame with the mesh still animating (a screenshot or the flux arcs visibly moving), engine tests green, and the CrystalChargeArcs entry removed from Docs/perf/amoebius_known.json.
-- **Who can take it:** Shombith (the Amoebius engine), Yash (offered)
+- **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
 - **See:** Docs/perf/amoebius_known.json; Port/src/CosmicShore.Engine/Rendering/Mesh.cs:249,289; Mesh.Extras.cs:78,139; Port/src/CosmicShore.Render/SceneRenderer.cs:2676,1428,2501; Port/docs/ARCHITECTURE.md 11.3b
 
 ### T-20261015-f106 · open · setup · Performance
 - **Task:** Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged into Ys-bleeding-edge) fires once a day only after it reaches bleeding-edge / the default branch. Until then run it by hand: Actions > perf-daily > Run workflow on Ys-bleeding-edge. Check the first run's two artifacts (perf-sweep, perf-amoebius) read sensibly: gates all OK, the Amoebius Skim Race run 'within baseline'.
 - **Done when:** A perf-daily run has completed green on the default branch on its own schedule (Actions shows a scheduled run), and its perf-sweep artifact lists the gates OK and the shared captures.
-- **Who can take it:** Garrett (bleeding-edge / repo settings), Shombith (CI), Yash (offered)
+- **Who can take it:** Garrett (bleeding-edge / repo settings), Shombith (CI)
 - **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
 - **See:** .github/workflows/perf-daily.yml; Docs/PERFORMANCE_OPTIMIZATION.md 3.4; /perf-hunt section 0
 
 ### T-20261015-7d29 · open · test · Performance
 - **Task:** Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Release if shown, then Play Menu_Main past the badge's auto-capture countdown, stop, and check the console says it was sent to Claude by itself.
 - **Done when:** Every step of the 2026-10-15 badge entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes (or the failing step is reported to a Claude session), and the entry is moved to verified.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-15; Docs/DIAGNOSTICS.md, The Bug Hunt & Performance badge
 
@@ -267,28 +268,28 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-1551 · open · test · Performance
 - **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the Third Eye CLOSED and one with it OPEN (the editor captures each by itself, labelled MinigameRegatta; the capture records the open cameras), stop Play each time (each capture goes to Claude by itself)
 - **Done when:** Both captures are on bugledger/yskha and the report names what the 10 fps is spent on (game vs Third Eye vs editor state)
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md §4.2a
 
 ### T-20261015-4354 · open · test · Multiplayer
 - **Task:** Run the Unity multiplayer hand tests on Ys-bleeding-edge: the eleven QA-NET items in Docs/QA/QA_BACKLOG.md (QA-NET-SDK-UPGRADE first, it is the gate), in the order in Docs/QA/ANDREW_TEST_HANDOFF.md. Give each Multiplayer Play Mode virtual player its own tag (P2, P3, P4) first. Plus two checks with no QA item yet: host drops then the new host invites at once (5 times), and 5 minutes idle in the menu with no 429s.
 - **Done when:** Every QA-NET item has a verdict in a Docs/QA/RESULTS/<date>-<name>.md file that was Submitted (BLOCKED is a valid verdict, e.g. QA-NET-ARCADE-LOBBY-FOLLOW without three machines); the two extra checks are written in its 'Anything else' section; then tell Claude to apply the results.
-- **Who can take it:** Andrew, Yash (offered)
+- **Who can take it:** Andrew
 - **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
 - **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/QA/README.md; Docs/MULTIPLAYER_START_HERE.md 5.2; Docs/PartySystem/TESTS.md
 
 ### T-20261015-0426 · open · test · Multiplayer
 - **Task:** Hand-test Amoebius multiplayer on Windows from Prisma.exe: the eight steps of Docs/MULTIPLAYER_START_HERE.md 5.1 (four players tile, party up, simulated 4G, pulled cable, session fault 'party is full', capture, TCP still works, through the relay). Do NOT run the live UGS test (5.3); that touches the real UGS project and waits for the owner's go-ahead.
 - **Done when:** Each of the eight steps is PASS or FAIL in the 'Anything else' section of a QA results file, with the log text verbatim for any FAIL; a FAIL is also added here as a dev task.
-- **Who can take it:** Andrew, Yash (offered), a Windows machine
+- **Who can take it:** Andrew, a Windows machine
 - **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
 - **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/MULTIPLAYER_START_HERE.md 5.1; Port/docs/MULTIPLAYER.md
 
 ### T-20261015-fafa · done · dev · Performance
 - **Task:** Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/AOEExplosion.cs), so every crystal collect and every explodable projectile mints a GameObject tree. Measured in Amoebius (Skim Race I2, 2026-10-15): VesselImpactor.AcceptImpactee 5.6 KB/frame, all of it SquirrelVesselExplosionByCrystalEffect (the Squirrel's boost ring, ~300 KB per omni collect in .NET; the ring's prisms are the design, the un-pooled explosion object is the practice gap). A GenericPoolManager<AOEExplosion> per prefab (like PrismExplosionPoolManager) with Release instead of Destroy at the end of ExplodeAsync; keep the reset-for-replay cleanup. Go/no-go: a Unity Release capture's Instantiate / GC rows on a crystal collect.
 - **Done when:** AOE explosions come from a pool; perf_hunt.py amoebius shows VesselImpactor.AcceptImpactee under 1 KB/frame on Skim Race I2 and the baseline is adopted; a Release capture of Skim Race shows no Instantiate on a crystal collect.
-- **Who can take it:** Garrett (projectiles / the Squirrel's ring), Yash (offered)
+- **Who can take it:** Garrett (projectiles / the Squirrel's ring)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)
 - **Done:** 2026-10-17, 2026-10-17, Yash's session: AOEExplosionPool (opt-in, on for the Squirrel ring spawner: 1 miss / 7 reuses per 8 collects). The real allocator was CrystalMorphMeshBuilder.TryBuild (5.22 of 5.53 KB/frame); its per-source emit cache brought VesselImpactor.AcceptImpactee 5.53 -> 3.41 KB/frame, under the 3.83 baseline (rest is Amoebius's Mesh.Set* copy). Unity check: T-20261017-c82c / Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17.
@@ -324,7 +325,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-aed4 · done · test · Activation
 - **Task:** First-login guide Skip and every-Lesson Skip on claude/new-session-76hnyc: SKIP (and pad Y) ends the quest for good; Lessons offer Skip on a fresh profile
 - **Done when:** Steps 1-2 of the checklist entry 'Style-B playtest fixes' pass in the editor
-- **Who can take it:** Yash (offered; FTUE owner)
+- **Who can take it:** Yash (FTUE owner)
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 28
 - **Done:** 2026-10-15, Superseded: the owner switched the tutorial off (MainQuest questEnabled 0, DrillLibrary tutorialsEnabled 0), MENU_REDESIGN_B section 29
@@ -332,14 +333,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-a46a · open · decision · Activation
 - **Task:** Should a guide Skip be measured? It currently raises nothing (ftue_completed stays 'played through'). If yes, add and declare an ftue_skipped event in UGS and PostHog
 - **Done when:** Decided; if yes the event is declared and fired from QuestGraphRunner.HandleSkipRequested
-- **Who can take it:** Ian (funnel owner), Yash (offered)
+- **Who can take it:** Ian (funnel owner)
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 28
 
 ### T-20261015-fd3f · open · test · ui
 - **Task:** Touch and aspect check on claude/new-session-76hnyc: on a phone build with no pad no keycaps or RShift anywhere; tap input stays touch (InputDeviceActuation now reads the touchscreen before the mouse); 4:3 and 21:9 layouts stay on screen
 - **Done when:** Steps 7-8 of the checklist entry pass on a phone and in the Device Simulator
-- **Who can take it:** Yash (offered), Caleb / Andrew (QA)
+- **Who can take it:** Caleb / Andrew (QA)
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 28
 
@@ -376,7 +377,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261016-7044 · done · test · Menu_Main / Configure
 - **Task:** Play-test the rev-3 Configure window (full-window live preview + step cards; FLY / STOP; pad focus; Arena hulls; Maelstrom pool) on PC, pad and a phone
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Configure rev 3' items 1-5 pass or are filed as bugs
-- **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
+- **Who can take it:** Shombith (Menu_Main)
 - **Added:** 2026-10-16 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 33
 - **Done:** 2026-10-17, Superseded: the rev-3 Configure (full-window preview + step cards) was replaced by Rev 4 simple on 2026-10-17 (Docs/MENU_REDESIGN_B.md §43); its playtest is T-20261017-1ec4.
@@ -422,14 +423,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-ac73 · open · test · Multiplayer
 - **Task:** Check that multiplayer test logs collect themselves in Unity: an MPPM test (main + P2 + P3) leaves one Logs/NetSessions file per player, the main editor sends them by itself (one console line names the players), the send lands them on bugledger/<you>, and net_logs.py show 1 prints one timeline. Solo play writes nothing. From now on, press Send to Claude after every multiplayer hand test instead of pasting consoles.
 - **Done when:** The six steps of the checklist entry 'Multiplayer test logs collect themselves' pass, or a failure is noted with its console
-- **Who can take it:** Andrew, Yash (offered)
+- **Who can take it:** Andrew
 - **Added:** 2026-10-15 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Multiplayer test logs entry); Docs/DIAGNOSTICS.md § Multiplayer test logs; Amoebius writes the same logs during the live UGS test (Docs/MULTIPLAYER_START_HERE.md 5.3)
 
 ### T-20261015-d7f8 · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Who can take it:** the owner of the files it names (who_works_where.py)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
 - **Done:** 2026-10-15, Duplicate of T-20261015-fafa: attributed with nested markers to the un-pooled AOE ring explosion on each omni collect (lever L13, Garrett).
@@ -437,7 +438,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-c8e2 · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Who can take it:** the owner of the files it names (who_works_where.py)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
 - **Done:** 2026-10-17, 2026-10-17: not a code regression. The baseline commit (574e0d39a) itself re-measures 0.766 KB/frame today; the refill tracks boost-prism lays 1:1 at ~20 KB each in .NET (net new ring mass), so it moves with how many rings the AIs lay. Current build 0.693 (repeats to 0.3%); the Skim Race Amoebius baseline was re-adopted from that run with this evidence (Docs/PERFORMANCE_OPTIMIZATION.md 2, 10-17 pool row).
@@ -445,7 +446,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-c7db · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Who can take it:** the owner of the files it names (who_works_where.py)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
 - **Done:** 2026-10-17, 2026-10-17: fixed. The implosion pool topped its buffer up to 160 although death implosions are batched since D4 and only the Sparrow's ReverseSuction Get()s it; PrismManagers.prefab bufferSizeTarget 160 -> 24. PoolRefill.PrismImplosion 0.157 (baseline commit) / 0.122 -> 0.000 KB/frame. Same prefab: the explosion pool (never Get()) no longer prewarms 1,500 objects at boot.
@@ -497,21 +498,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261016-2292 · open · test · Arena launch
 - **Task:** Open Menu > Arena in the editor and look at the AI Difficulty row and the re-fitted vessel carousel on all four cards (Astro League, Brood Rush, Regatta, Broadside)
 - **Done when:** Row sits under the intensity row like Arcade's Skim Race; icon, arrows and SELECT VESSEL fit inside the carousel frame; Easy/Medium/Hard light and step with the pad
-- **Who can take it:** Yash (offered); Shombith owns Menu_Main
+- **Who can take it:** Shombith owns Menu_Main
 - **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (AI difficulty on every Arena card)
 
 ### T-20261017-c82c · open · test · Performance
 - **Task:** Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at the same density as before and turns towards the crystal after a collect; look for transparent shards drawing in the wrong order where two overlap (they are one instanced draw now, unsorted inside it). (2) Skim Race or Regatta as the Squirrel: ten omni collects in a row, each lays its shielded ring and the crystal still morphs onto it and dissolves.
 - **Done when:** Someone has looked and written here whether the snow reads the same (if not, what is wrong) and the Squirrel collect still morphs; Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17 entry ticked
-- **Who can take it:** Yash (offered), Garrett (crystals, cytoplasm)
+- **Who can take it:** Garrett (crystals, cytoplasm)
 - **Added:** 2026-10-17 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17; Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-17 row)
 
 ### T-20261016-b12d · open · test · Brittle Star
 - **Task:** Walk the Brittle Star four-mode build step by step in the Editor: the danger trail when overheated in Space Mode, the spare-ring stock (LT refused with none, one per crystal, two at most, the ring regrowing), the HUD cards (Charge = spare rings, Space = heat, red when overheated), an AI seat in an arcade match, and two MPPM clients (petals only; the analog-RT gap). Garrett played it 2026-10-16 and reported it working, not step by step.
 - **Done when:** Each step of BRITTLE_STAR.md 'In-editor verification' 2-12 is reported pass or fail; failures become dev tasks
-- **Who can take it:** Yash (offered), anyone with the Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Editor
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md (In-editor verification); Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -526,7 +527,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261016-5ed6 · open · dev · Brittle Star
 - **Task:** Replicate the Brittle Star's analog RT depth (two bytes a frame) so remote copies fire, heat, overheat (and lay the danger trail) and stiffen the Charge cords at the owner's real pull; today a remote copy reads a press as a full pull, so its heat state can differ by peer (vessel rule 48). The Thresher has the same gap.
 - **Done when:** Two MPPM clients agree on overheat timing and the danger trail during a half pull
-- **Who can take it:** Yash (offered: party / multiplayer), Garrett
+- **Who can take it:** Yash (party / multiplayer), Garrett
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 3.4 and follow-up F13; .claude/skills/vessel/SKILL.md 4.ab4
 
@@ -540,7 +541,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-147f · done · test · Menu_Main / Hangar
 - **Task:** Play-test the Hangar's TRY IT FOR REAL (Abilities tab): the selected vessel flown for real in open water, its abilities firing on the real controls, the drill coach; START / Esc / STOP back; no screen paging or tab switch while flying
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Hangar TRY' items 1-4 pass or are filed as bugs
-- **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
+- **Who can take it:** Shombith (Menu_Main)
 - **Added:** 2026-10-17 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 35
 - **Done:** 2026-10-19, Superseded 2026-10-19: TRY was removed; the owner asked for an AI-only, very low-cost Hangar preview (MENU_REDESIGN_B §59).
@@ -555,21 +556,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261016-e2fb · open · test · Brittle Star
 - **Task:** Play the Brittle Star's 2026-10-16 tuning pass in the Editor: the ring regrows over 3 s after LT (modes off meanwhile); RT at a full pull in Charge Mode leaves the sabers flexing on a ring flick (cordMaxRigidity 0.4) and released they whip slower (cordLooseWave 144); Space Mode at a full pull overheats after ~6 s at Space 0 and ~20 s at Space 10, same ~5 s lockout; the ring explosion is 4x thicker and bursts out five-fold as lit faceted volumes (five coiling arms led by crystals, the ring's pentagon with crystal knots, a faceted torus front with five crests, turning with the ring's spin; nothing flat from any angle); the trail blocks are long and slim (1 x 1 x 6, base trail 0.5 wide) and widen in x and y with Mass.
 - **Done when:** Each item seen in Play mode and noted in Docs/UNITY_VERIFICATION_CHECKLIST.md's 'Brittle Star tuning pass' section
-- **Who can take it:** Garrett, or Yash (offered)
+- **Who can take it:** Garrett
 - **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
 
 ### T-20261016-acc7 · open · test · Brittle Star
 - **Task:** Profile a Brittle Star Space-10 burst: heatCapacity x3.33 lets five guns fire ~20 s at 450 rounds/s with 9 s flights, so ~4,000 rounds can be alive (~2,000 at Space 0, 6 s bursts) against the turrets' pool max of 2,400 (GenericPoolManager then instantiates on demand and destroys on release). Capture with 3-4 AI Brittle Stars at Space 10 and decide: raise the pool, shorten the flight, or cap the burst.
 - **Done when:** A capture (capture console command) attached to the task, and the pool or the numbers changed, or kept with the measurement as the reason
-- **Who can take it:** Yash (offered: diagnostics), Garrett decides
+- **Who can take it:** Yash (diagnostics), Garrett decides
 - **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
 - **See:** BRITTLE_STAR.md section 3.4 Cost and F9
 
 ### T-20261017-60e9 · open · test · Prisms
 - **Task:** Editor-verify the prism destruction and steal detail levels (cece/dreamy-pascal-7xxx1m, lab rounds 9-12): a close death bursts into silver triangles that lean along the hit; neighbours on a trail rammed at once do not play the same animation, yet each cloud stays one smooth burst (round 12; fragmentVariety 0 makes them copies); a FAR death is 24 wedges on the same law (not the old explosion graph); a big trail wipe draws every death; the steal's roll looks as before. Frame Debugger: destructions draw with keyword _BURST_FRAGMENT, steals with _BURST_ROLL, the roll's mesh is Prism_HighPoly_<n>. Run EditMode PrismCollisionBurstTests.
 - **Done when:** Checklist items 9-12 in Docs/UNITY_VERIFICATION_CHECKLIST.md pass (or each failure is filed as a dev task) and PrismCollisionBurstTests are green
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-13
 
@@ -583,14 +584,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-1249 · open · dev · Tooling
 - **Task:** unity_refcompile's editor config reports 3 errors in AuthenticationServiceFacade.cs (Unity.Multiplayer.PlayMode / CurrentPlayer, from 296123a9e) as PROJECT errors on a clean bleeding-edge, so every branch's editor run reads FAILED. Unity.Multiplayer.Playmode is already an unobtainable package: map that namespace to it (note the case difference) in Tools/Build/unity_refcompile so they land in the unobtainable-package bucket. Do not change the game file.
 - **Done when:** A clean bleeding-edge editor run reads RESULT: OK with those 3 in the unobtainable bucket, and a planted typo in a changed Editor file still fails it
-- **Who can take it:** Shombith (CI), Yash (offered)
+- **Who can take it:** Shombith (CI)
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** Tools/Build/unity_refcompile/README.md
 
 ### T-20261017-75d5 · open · docs · Prisms
 - **Task:** Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs has two back-to-back summary blocks (near lines 666 and 2220 on cece/dreamy-pascal-7xxx1m; already on bleeding-edge): a member was inserted between a doc comment and its method, so the doc now sits on the wrong member. Move each onto the method it describes or delete it if superseded. Doc comments only.
 - **Done when:** A scan for '/// </summary>' followed by '/// <summary>' finds nothing in the file
-- **Who can take it:** Yash (offered), anyone
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
 
@@ -620,7 +621,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-aca2 · open · test · Crew vessels
 - **Task:** Playtest the Wrasse in the Unity Editor: open the Toybox, fly the Wrasse station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Wrasse). It has only been compiled headlessly.
 - **Done when:** The checklist entry is marked verified, or each failing step is a dev task naming what was seen
-- **Who can take it:** Yash (offered), anyone with the Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Editor
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Docs/UNITY_VERIFICATION_CHECKLIST.md (Kite Navigator entry)
 
@@ -679,7 +680,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261016-c76e · done · test · Multiplayer
 - **Task:** Two-machine repro for B32 with both logs: host and guest party up on two PCs, start a Regatta match, the guest leaves mid-race, then the host waits 2 minutes in the menu and stops Play. Both editors send their logs by themselves.
 - **Done when:** net_logs.py collect shows ONE test with both machines (host/main and guest/main), and the host's timeline says whether it left Reconnecting
-- **Who can take it:** Caleb, Yash (offered)
+- **Who can take it:** Caleb
 - **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PartySystem/BUGS.md B32; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Multiplayer test logs' steps 7-9
 - **Done:** 2026-10-17, Folded into the B31-B33 retest task, whose step 3 is this repro with the fix in place.
@@ -687,14 +688,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261016-01ec · open · test · Regatta AI
 - **Task:** Run RhinoRampDriveTests and watch an AI Rhino race Regatta I1-I4 in the Third Eye: it should ramp on straights, brake ON the ramp before each ring, and only let go round sharp corners
 - **Done when:** the tests pass and the four times are written into REGATTA_AI_ROADMAP.md's Rhino row
-- **Who can take it:** Yash (has offered to take tasks)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Rhino AI brakes on the ramp)
 
 ### T-20261016-b719 · open · test · Regatta AI
 - **Task:** Run DolphinChargeDriveTests and watch an AI Dolphin race Regatta I1-I4 in the Third Eye: after each discharge it should drift again near its top speed (Third Eye: 'drifts again at the peak'), and every Regatta AI should thread rings through their centre without circling
 - **Done when:** the tests pass and the four Dolphin times are written into REGATTA_AI_ROADMAP.md
-- **Who can take it:** Yash (has offered to take tasks)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Dolphin AI drifts again at the discharge's peak)
 
@@ -708,35 +709,35 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261016-d177 · open · test · Regatta AI
 - **Task:** Watch an AI Manta race Regatta I1-I4 in the Third Eye: it should hold Soar (~700 u/s) through most of each leg, pivot only in hard turns, and thread rings without circling; run RegattaDriveTuningTests
 - **Done when:** tests pass and the four Manta times are written into REGATTA_AI_ROADMAP.md
-- **Who can take it:** Yash (has offered to take tasks)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Manta AI holds Soar deeper into turns)
 
 ### T-20261017-1809 · open · dev · Performance
 - **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)
 - **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Who can take it:** the owner of the files it names (who_works_where.py)
 - **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
 
 ### T-20261017-2129 · open · dev · Performance
 - **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)
 - **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Who can take it:** the owner of the files it names (who_works_where.py)
 - **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
 
 ### T-20261017-19f0 · open · dev · Performance
 - **Task:** Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)
 - **Done when:** a new capture of MinigameGrizzlyCharge|MinigameGrizzlyCharge compares within its baseline (perf_hunt.py compare)
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Who can take it:** the owner of the files it names (who_works_where.py)
 - **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
 
 ### T-20261017-0026 · open · test · Regatta / launch panel UI
 - **Task:** Hand-test the AI seat chip hull labels on Regatta's launch panel: hover name, (i) badge, vessel info card (Docs/UNITY_VERIFICATION_CHECKLIST.md, 2026-10-17 entry)
 - **Done when:** All six verify steps pass in the editor; the checklist entry is marked green
-- **Who can take it:** Yash (offered); Shombith (UI prefabs, if authored art is wanted)
+- **Who can take it:** Shombith (UI prefabs, if authored art is wanted)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Assets/_Scripts/UI/Elements/VesselInfoPopup.cs
 
@@ -750,7 +751,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-8cc0 · open · test · Regatta AI
 - **Task:** Watch the AI hulls race their own lines in Regatta (Third Eye, trails on): Rhino, Manta, Dolphin, Stoat should fly between two rails outside the braid's core, never crossing a rail, the Rhino widest; run RegattaRaceLineTests; then fly each hull yourself a few races so learn_drives_from_flights.py can set its line from you
 - **Done when:** tests pass, the lines look right on I1-I4, and each hull has 3 finished flights
-- **Who can take it:** Yash (has offered to take tasks)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Every Regatta AI hull races its own line)
 
@@ -771,28 +772,28 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-5109 · open · test · Refactor
 - **Task:** Open Ys-bleeding-edge in the Unity Editor once after the 2026-10-17 basic refactor pass (enum numbering, TryGetComponent, 3 inspectors moved to Assets/_Scripts/Editor, dead Find branches): let it compile, then open a CameraSettingsSO, a ShapeDefinition and a UniversalStatsProvider and check each custom inspector still draws.
 - **Done when:** Editor compiles with no new console errors and the three custom inspectors draw; note the result in Docs/REFACTOR_BACKLOG.md section 0.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Unity Editor
 - **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
 - **See:** Docs/REFACTOR_BACKLOG.md section 0
 
 ### T-20261017-4c56 · open · dev · Refactor
 - **Task:** Delete the measured-unreferenced vestiges the 2026-10-17 session could not delete (blocked by its permission check): Assets/_Scripts/System/Architectures/ (LoginEventBus.cs, a static event bus nothing calls, plus folder metas) and the stale namespaced copy Assets/_Scripts/Controller/IO/_Input Mapping/InputActionsAsset.cs (+ folder meta; the live generated wrapper is Game/IO/_Input Mapping/InputActionsAsset.cs). Also drop the Controller/IO/_Input Mapping/ entry from Tools/Build/check_console_logging.py TOOL_PATHS.
 - **Done when:** git rm'd on Ys-bleeding-edge, Unity compiles, check_console_logging.py 0 problems.
-- **Who can take it:** Yash (offered)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
 - **See:** Docs/REFACTOR_BACKLOG.md section 0 row S17
 
 ### T-20261017-bb32 · open · test · Multiplayer
 - **Task:** Retest the B31-B33 party fixes in the editor: (1) Play, stop, Play again - no 'lobby not found' and no 'Relay session not ready' on the second Play; (2) two machines in a party, 10 minutes in the menu - no 'rate-limited' lines; (3) the player who went online first leaves a Regatta match mid-race and stops Play - the other stays InParty.
 - **Done when:** The four steps of the checklist entry 'Party: B31-B33 fixed' pass with both machines' logs sent (net_logs.py collect shows them), or a failure is noted with its log
-- **Who can take it:** Caleb, Yash (offered), Andrew
+- **Who can take it:** Caleb, Andrew
 - **Added:** 2026-10-17 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Party: B31-B33 fixed); Docs/PartySystem/BUGS.md B31-B33
 
 ### T-20261017-1154 · open · test · QA
 - **Task:** EditMode Run All on Ys-bleeding-edge (or a bleeding-edge that contains it): the 23 remaining DT-003 failures were fixed offline 2026-10-17 without an editor
 - **Done when:** Window > General > Test Runner > EditMode > Run All is fully green (or only CrystalHullFusionBakeTests.ShippedBakes_AreCurrent red, with its message pasted into DT-003)
-- **Who can take it:** Yash (offered), Caleb or Andrew (QA)
+- **Who can take it:** Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
 
@@ -806,7 +807,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-35e3 · open · test · Menu_Main
 - **Task:** Play-test the rev 6 presence orb and party molecule in the editor: the orb bottom-left (glow, turning ring, one dot per player online, 'N online' / 'FRIENDS'), pressing it opens the party panel, it sits over the four windows without covering their cards; in a two-device party each member shows on the orb's inner ring with a bond in their domain colour; the panel draws the party as a molecule (leader in the middle, bonds to seated pilots, violet '+ Invite a friend' tiles).
 - **Done when:** Every step of Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 6 step 4: presence orb + party molecule' passes (no pink shaders, no canvas rebuild from the orb in the Profiler) or the failures are reported in this task.
-- **Who can take it:** Shombith (Menu_Main owner) or Yash (offered: party / multiplayer); a second device for step 4
+- **Who can take it:** Shombith (Menu_Main owner); a second device for step 4
 - **Added:** 2026-10-17 by Claude (claude/new-session-76hnyc) (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §45.4
 
@@ -834,14 +835,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-f77b · open · test · In-game HUD
 - **Task:** Playtest the Rev 8 glass-ladder scoreboard on claude/new-session-76hnyc: team headers with the team time once, glass rows with stripe and share line, your row in sky blue, the reward strip counting, rimmed PLAY AGAIN / MAIN MENU, the rematch count line, a free-for-all mode without headers; run ScoreboardLadderTests
 - **Done when:** All six checklist steps pass in the editor, or each failure is reported back
-- **Who can take it:** Shombith or Yash (offered)
+- **Who can take it:** Shombith
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-17 Scoreboard Rev 8 option B); Docs/MENU_REDESIGN_B.md section 49
 
 ### T-20261017-61b1 · open · dev · Cloud Save
 - **Task:** Move UGSCloudSaveProvider's 'Failed to save data: {error}' toast to an authored line: the provider is plain C# (no inspector), so the words need a home such as a small Resources SO or the existing cloud-data config
 - **Done when:** No C# string literal in UGSCloudSaveProvider reaches ToastNotificationAPI.Show
-- **Who can take it:** Shombith (owns cloud and backend services and data); Yash (offered)
+- **Who can take it:** Shombith (owns cloud and backend services and data)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** CLAUDE.md Code Style: player-facing text has a human-facing control
 
@@ -855,14 +856,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-7647 · open · test · Performance
 - **Task:** Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt & Performance badge; play the laggy scene past the badge's auto-capture countdown and stop Play. It lands on your bugledger branch by itself (Shombith's has no capture yet)
 - **Done when:** A valid capture of the laggy scene is on origin/bugledger/<user>
-- **Who can take it:** Shombith; Yash (offered)
+- **Who can take it:** Shombith
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** .claude/skills/perf-hunt/SKILL.md section 1; Docs/DIAGNOSTICS.md (Bug Hunt & Performance badge)
 
 ### T-20261017-13fb · done · test · Menu_Main / Hangar
 - **Task:** Play-test the Hangar ability showcase: press an ability and watch the vessel fire each of its real abilities in turn (autopilot), jump with another press, TRY to take the stick, START/Esc to end; list any ability that shows nothing
 - **Done when:** All six checklist steps pass, or each failure is reported back with the vessel and ability
-- **Who can take it:** Shombith (Menu_Main); Yash (offered)
+- **Who can take it:** Shombith (Menu_Main)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-18 Hangar ability showcase); Docs/MENU_REDESIGN_B.md section 51
 - **Done:** 2026-10-19, Superseded 2026-10-19: the flown showcase was removed; replaced by the AI demo on the stage (MENU_REDESIGN_B §59).
@@ -870,7 +871,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-5b28 · open · test · Sign-in / Settings
 - **Task:** Hand-test the Rev 9 sign-in UI on claude/new-session-76hnyc: the lattice drifting over the splash and sign-in art; Sign in to fly with Steam / Google / Apple / Play as guest (providers answer 'not ready in this build' until the login branch); the SignInChooser and AccountSettingsView context-menu previews; Settings > Account (fifth tab), locked in a match
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 9 sign-in UI' steps 1-8 pass or their failures are filed
-- **Who can take it:** Shombith (Menu_Main, sign-in); Yash (offered)
+- **Who can take it:** Shombith (Menu_Main, sign-in)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §54
 
@@ -884,7 +885,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-9025 · done · test · Vessel models
 - **Task:** Open branch ccr-d93a6dfb-ugbxng in the Editor after the seven vessel models were rebuilt in place by /vessel-model (2026-10-17): let the FBX files reimport with no console warning, open the Squirrel / Dolphin / Sparrow / Serpent / Manta (and Falcon, Shrike, Termite) prefabs, run FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs (four REAL shapes on each live file), Audit Vessel Construction and Audit Vessel Tails and Jets, re-bake Crystal Hull Fusions for the Squirrel, Dolphin and Manta, then fly each hull in freestyle: pitch / yaw / roll / throttle move the whole hull, the domain colour lands on the domain slot, glass and engine mouths read, each element morph is nameable
 - **Done when:** (2026-10-18: scope is now the SQUIRREL only; the other six files are the artist's again) the Squirrel checks in Docs/UNITY_VERIFICATION_CHECKLIST.md's 2026-10-18 paragraph (round 8) are ticked - every take moves like the artist's Squirrel (rear engines included, roll banks the whole wing), the spine follows the chevrons, Mass shows - or the failing step is written there
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor; Garrett judges the look
+- **Who can take it:** Andrew, anyone with the Unity Editor; Garrett judges the look
 - **Added:** 2026-10-17 by Claude session for Garrett, 2026-10-17 (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/README.md; Docs/VesselModels/sheets/ (before/after)
 - **Done:** 2026-10-18, Garrett, 2026-10-18: the round-8 Squirrel passes in the Editor (elements upgraded, domain changed, indistinguishable from the original); the other six vessels are the artist's files, unchanged
@@ -892,7 +893,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-3b6b · done · dev · Vessel models
 - **Task:** Swap the Urchin and Rhino prefabs from their part-per-mesh placeholders (Urchan_Test.fbx, Rhino_Test.fbx) onto the rebuilt rigs urchan_shapekey_with_animations.fbx and rhino_shapekey_with_animations.fbx with FrogletTools > Vessels > Wiring > Swap Vessel Rig, which moves the geometry, remaps the materials and makes the animation rig-safe (Docs/VESSEL_CONSTRUCTION.md); the rigs now carry four REAL element morphs where the artist rigs had none
 - **Done when:** Both prefabs draw one SkinnedMeshRenderer from the rig file, Audit Vessel Elemental Morphs reports four REAL shapes on each, the jets and colliders sit where they did, and a flight in freestyle shows the puppetry (UrchinAnimation / RhinoAnimation resolve their parts by bone name)
-- **Who can take it:** Garrett (Urchin and Rhino owner), Yash (offered)
+- **Who can take it:** Garrett (Urchin and Rhino owner)
 - **Added:** 2026-10-17 by Claude session for Garrett, 2026-10-17 (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/VesselModels/Urchin.md section 8; Docs/VesselModels/Rhino.md section 8; .claude/skills/vessel-model/SKILL.md section 6
 - **Done:** 2026-10-18, 2026-10-18 fleet pass: both prefabs now draw the artist rigs with four real morphs (specs/urchin.py, specs/rhino.py), done offline without the swapper; the bones follow the placeholder parts, which keep the colliders. Editor test is the new Urchin/Rhino task.
@@ -908,7 +909,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-13dd · open · test · Vessel models
 - **Task:** Fly the rebuilt Dolphin on ccr-d93a6dfb-ugbxng (2026-10-18, /vessel-model loop round 4): it should look and fly exactly like the original; upgrade its elements and change its domain as on the Squirrel; re-run the Dolphin hull-fusion bake if the crystal fusion looks off
 - **Done when:** Garrett says it passes as the Squirrel did, or the difference is written in Docs/UNITY_VERIFICATION_CHECKLIST.md's Dolphin paragraph
-- **Who can take it:** Garrett (judges); Yash (offered) can run the Editor steps
+- **Who can take it:** Garrett (judges)
 - **Added:** 2026-10-18 by Claude session for Garrett (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/dolphin_after.jpg
 
@@ -950,7 +951,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-a04b · open · test · Profile / Audio
 - **Task:** Hand-test Rev 10 on claude/new-session-76hnyc: EXPAND on the Profile pilot card opens the pilot record (solid + lattice): stats, favourite vessel, favourite pilot picker (LB/RB), fly time by vessel, the Audio Studio (skip / pause / stop / ticks), and the now-playing card on Home
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 10' steps 1-5 pass or their failures are filed
-- **Who can take it:** Shombith (Menu_Main); Yash (offered)
+- **Who can take it:** Shombith (Menu_Main)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §56
 
@@ -964,35 +965,35 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-fab2 · open · test · Sign-in
 - **Task:** Hand-test R9b: Google's and Apple's own sign-in buttons (same size, untinted, sky-blue ring around on pad focus), no Steam button, the Steam-not-running note, Settings > Account marks
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'R9b' steps 1-6 pass in the editor
-- **Who can take it:** Shombith; Yash (offered)
+- **Who can take it:** Shombith
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §57
 
 ### T-20261018-3ec7 · open · test · Vessel models
 - **Task:** Fly the six NEW hulls on ccr-d93a6dfb-ugbxng: Thresher, Scarab, Stoat, Angler, Brittle Star, Shrike (spaceships inspired by their clades, replacing the procedural C# hulls). For each: reimport the FBX, run Audit Vessel Elemental Morphs + Construction + Tails and Jets, fly it, change domain, upgrade each element, and check the puppetry signs listed per vessel in the checklist
 - **Done when:** each hull is accepted or its faults are named (one line per hull in Docs/VesselModels/README.md)
-- **Who can take it:** Garrett (owner's eye); Yash (offered) can run the Editor steps and audits
+- **Who can take it:** Garrett (owner's eye)
 - **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
 
 ### T-20261018-97b6 · open · test · Vessel models
 - **Task:** Fly the Urchin and Rhino rig swaps: the prefabs now draw the artist's rigs (urchan_/rhino_shapekey_with_animations.fbx) with four real element morphs. Reimport, check the drawn pods/plates stay inside their colliders in every pose, plumes come out of the drawn mouths, the domain lands on the accent slot, each element morphs the hull
 - **Done when:** both pass in the Editor, or the differences are written in the checklist's fleet-pass entry
-- **Who can take it:** Garrett (Urchin and Rhino owner); Yash (offered)
+- **Who can take it:** Garrett (Urchin and Rhino owner)
 - **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
 
 ### T-20261018-987b · open · test · Vessel models
 - **Task:** Fly the reproduced Sparrow, Serpent and Manta (2026-10-18): the FBXs are rebuilt by the pipeline and proven identical to the artist files (every take, morph, material and node); they should look and fly exactly as before
 - **Done when:** Garrett says they are indistinguishable, as the Squirrel was
-- **Who can take it:** Garrett; Yash (offered)
+- **Who can take it:** Garrett
 - **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
 
 ### T-20261018-1432 · open · setup · Vessel models
 - **Task:** Run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions on ccr-d93a6dfb-ugbxng after the reimport and push the Thresher, Scarab, Brittle Star, Urchin and Rhino bake assets: they are stale (keyed to the old placeholder meshes) and solve at runtime until re-baked
 - **Done when:** CrystalHullFusionBakeTests.ShippedBakes_AreCurrent is green with the new hulls
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Unity Editor
 - **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
 
@@ -1006,7 +1007,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-d3e5 · open · test · Vessel colour
 - **Task:** Look at the new vessel colour scheme in the Editor: fly each domain (Jade, Ruby, Gold) at the chase camera and in the hangar on a few hulls (Squirrel, Rhino, Manta, Thresher). Check the body for self-overlap ghosting (it is transparent with no depth write and now has a visible steel rim), the Manta/Termite/Falcon/Rhino domain colour on their accents and the ember on their engines (brighter on boost), and that every class card and hangar preview shows the new silver-plate render.
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md's colour-scheme entry is ticked or an issue is filed; if the body ghosts, the hull moves to BlueBaseOpaqueVesselMaterial (Docs/VesselModels/COLOR.md section 6)
-- **Who can take it:** Yash (offered), anyone with the Editor; Garrett for the look
+- **Who can take it:** anyone with the Editor; Garrett for the look
 - **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/VesselModels/COLOR.md
 
@@ -1028,7 +1029,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-0886 · open · test · Rhino
 - **Task:** Editor-verify the Rhino four-row kit on cece/relaxed-hopper-r62hbd (never opened in Unity): compile, then run the 'Rhino deep dive' section of Docs/UNITY_VERIFICATION_CHECKLIST.md - sword energize/cooldown and Charge gauge, afterimages cut by the Rhino's own blade after 1 s, Time card lit on boost + Momentum flash + speed gauge, the L1+R1 and sticks-apart chips, Manta Soar chip, a Grizzly losing petals to a danger prism, and a 2-player check that a replica's sword/ramp match the owner's
 - **Done when:** Every numbered check in that section passes, or each failure is filed as a dev task
-- **Who can take it:** Yash (offered) or Caleb/Andrew (QA); Garrett for the balance calls
+- **Who can take it:** Caleb/Andrew (QA); Garrett for the balance calls
 - **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Rhino deep dive); Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md
 
@@ -1042,7 +1043,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-2962 · open · dev · CI gates
 - **Task:** check_vessel_on_vessel_motion.py is red on bleeding-edge: it flags VesselImpulseByExplosionEffectSO (the Grizzly's self-launch, which returns unless SourceVessel is the vessel hit). Teach the gate the self-only guard (or a reasoned allow-list entry) with a negative control; do not change the effect
 - **Done when:** The gate exits 0 on bleeding-edge and still fails when the SourceVessel guard is deleted
-- **Who can take it:** Yash (offered) or whoever owns the CI gates
+- **Who can take it:** whoever owns the CI gates
 - **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
 - **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'
 
@@ -1085,7 +1086,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-8b32 · open · test · Crew vessels
 - **Task:** Fly the Goby and Pistol (VesselClassType 18) in the Unity Editor on the shared crew pieces (cece/sharp-tesla-j0kd7z, 2026-10-18; the Wrasse half was withdrawn on 2026-10-21, so the Wrasse is checked only for its card name), from the Toybox Vessel Changer. Check the six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md 'One notion of a crew vessel': both cards name both subvessels, the seat view is a lower-left square while flying the hull and swaps with the pilot view on 2 / 1, the Pistol's foreground dithers instead of vanishing, and the Wrasse behaves exactly as before. Then the three steps of 'The Goby's vortex ring and flares are lit faceted volumes' (the ring shaded and faceted in both views, the flares lit, nothing pink).
 - **Done when:** Both crew vessels flown in the editor, the checklist entry marked green or its failures filed
-- **Who can take it:** Yash (offered), Garrett (sign-off), anyone with the Editor
+- **Who can take it:** Garrett (sign-off), anyone with the Editor
 - **Added:** 2026-10-18 by a Claude session (`cece/sharp-tesla-j0kd7z`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -1100,21 +1101,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-2c7e · open · dev · Vessel models
 - **Task:** Work the nine follow-ups the ship review of the vessel-model branch left (Docs/VesselModels/README.md 'Follow-ups from the ship review'): one Editor check (BakeMesh scale), the Shrike beam origin under the Space morph, a Thresher pectoral sign question, two latent Rhino/VesselCustomization nits, two deletion proposals (GhostAction, the six procedural hull builders: check Amoebius first) and two per-spawn/per-frame perf trims.
 - **Done when:** each row is fixed, filed or answered in the README's table
-- **Who can take it:** Yash (offered), anyone; Garrett for the sign question and the deletions
+- **Who can take it:** anyone; Garrett for the sign question and the deletions
 - **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/VesselModels/README.md
 
 ### T-20261018-6a9d · open · test · Menu_Main / Profile / Bootstrap
 - **Task:** Hand-test the Rev 10 play-test fixes (now-playing card on the Profile tab only, Audio Studio buttons no longer overlap, navy record and friends panel, fuller pilot record) and the Bootstrap welcome card
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 10 play-test fixes' and '§58 Bootstrap welcome card' steps pass in the editor
-- **Who can take it:** Shombith; Yash (offered)
+- **Who can take it:** Shombith
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §56 play-test round, §58
 
 ### T-20261018-0201 · open · test · Crew vessels
 - **Task:** Import and fly the Goby's own hull (Goby.fbx, built by /vessel-model on the Squirrel's rig) in the Unity Editor: the audits, the crystal-hull-fusion bake, a Toybox flight and the cards, per Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Goby flies its own hull'
 - **Done when:** the checklist entry's six steps are green, or each failure is filed; Garrett has said whether it reads as the Goby
-- **Who can take it:** Yash (offered), Garrett (sign-off: the owner's flight is the bar), anyone with the Editor
+- **Who can take it:** Garrett (sign-off: the owner's flight is the bar), anyone with the Editor
 - **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/goby_after.jpg
 
@@ -1128,7 +1129,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-fde3 · open · dev · Quick fixes
 - **Task:** Re-apply five small fixes stranded on old branches, in one PR into bleeding-edge: Time crystal sounds through muted SFX (c30040ec96), recycled shielded prisms play the shield-off effect in Microscene (bbb47c111b, + the Port copy), the /ab-test skill (691cd25d6e), the detect-competing-changes skill (7380381338), the session-branch triage tool (13834d5584); plus two stale doc rows (BRANCH_PARTS_STATUS A/C/M landed, ECOSYSTEM_MASTERPLAN Phase B item 6 done)
 - **Done when:** One PR merged into bleeding-edge with all five fixes and both doc rows; the two in-editor checks (muted Time crystal is silent; Wander toy / HexRace recycle shows no shield-off effect) recorded as done or owed
-- **Who can take it:** Yash (offered), any session
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); any session
 - **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
 - **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 1
 
@@ -1149,14 +1150,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261018-1a4a · open · dev · Black Hole cell
 - **Task:** Measure the Sparrow sink-to-source time through the crystal wormhole on today's lens (da2027490f); if the playtest asks (under ~10 s, less warp, smaller poles, stronger suck and spit) are not met, port only the tuning from 86ce29027d (cece/charming-cerf-alf1j1) onto the new lens pass
 - **Done when:** Either a write-up showing the new lens already meets the asks (branch then obsolete) or a PR with before / after times for every ship
-- **Who can take it:** Yash (offered)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
 - **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 5
 
 ### T-20261018-a251 · open · dev · Branch parts (nice-brahmagupta)
 - **Task:** Keep landing the project-sprint parts still only on cece/nice-brahmagupta-ojclij (B, D-L; A, C, M landed in 9d9e713977), cheapest first: H (Unity-side parity harness) and K (leak fixes)
 - **Done when:** H and K each picked onto bleeding-edge with their editor test steps run, and Docs/BRANCH_PARTS_STATUS.md updated; B waits on the sound designer saving Cosmic Shore.fspro, L on Garrett's sign-off
-- **Who can take it:** Yash (offered); Garrett (part L sign-off)
+- **Who can take it:** Garrett (part L sign-off)
 - **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
 - **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 6; Docs/BRANCH_PARTS_STATUS.md
 
@@ -1170,7 +1171,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261019-39a8 · open · test · Menu_Main / Hangar
 - **Task:** Play-test the Hangar AI demo (Abilities tab): the AI presses each ability's control in turn (keycap sinks, row lights, the 3D hull performs the move); a press of your own plays that one and the AI resumes after ~4 s; no hull swap, no world, no camera change; frame time on the tab stays at the plain stage's
 - **Done when:** Each vessel's four abilities play on the stage with their keycaps pressing, and the Profiler shows no extra cost over the stage
-- **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
+- **Who can take it:** Shombith (Menu_Main)
 - **Added:** 2026-10-19 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §59
 
@@ -1192,7 +1193,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261019-41bb · open · dev · Vessel HUD
 - **Task:** Give the remaining runtime Shader.Find("Universal Render Pipeline/Unlit") callers a Resources material for the variant each uses (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, BrittleStarExecutor, ShrikeExecutor, GrizzlyClawConeVisual, ArcLightningFallback, SegmentSpawnerPreview); a player build strips the shader, which is why the Wrasse's kite drew nothing on Android
 - **Done when:** Each caller loads its shader through a referenced material and draws in an Android development build
-- **Who can take it:** any session; Yash (offered) to check on a phone
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); any session
 - **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** KITE_NAVIGATOR.md Round 5; Assets/Resources/KiteNavigatorUnlit.mat
 - **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** GrizzlyClawConeVisual done: it copies Resources/KiteNavigatorUnlit.mat (set additive), falls back to Shader.Find, and with neither logs one error and draws no cone instead of throwing. BrittleStarExecutor (cord fallback) and ShrikeExecutor (missile trail) already return null rather than throw, but still need the referenced material to draw on a phone.
@@ -1207,7 +1208,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261019-3b72 · open · test · Thresher
 - **Task:** Fly the Thresher on cece/elegant-goldberg-eanwgx, on a phone and in the Editor: the tail no longer beats - it hangs along the chain, lags a hard turn, sways back past straight and settles; lifting the thumb eases the bank flat instead of snapping it; planted, the tail swings round to the ball. In Thresher Time (and Skim Race, and an arcade preview) swing the BALL through the lit ring while the hull passes outside it - the ring counts.
 - **Done when:** THRESHER.md In-editor verification H2-H4b and THRESHERTIME.md step 9 pass on a phone build and in the Editor, with ThresherHullFormTests and RingThreadProbeTests green
-- **Who can take it:** Garrett (owner's eye, the mobile run); Yash (offered) can run the Editor steps and the two test fixtures
+- **Who can take it:** Garrett (owner's eye, the mobile run)
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
@@ -1222,7 +1223,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261020-d102 · open · test · Crew vessels
 - **Task:** Playtest the Crew of Four Lab (round 4, the 4-seat vessel) by hand, on PC and phone: take the helm and a gunner seat in each of the four games at I2, compare the Round 4 preset (stabilized turrets on outriggers) with the Hull-locked turrets control from a gunner seat, and record on the Decisions tab which seats felt like a job, which felt like waiting, and whether the turret view feels steady enough. The AI cannot feel sway (its points are the same with and without stabilization), and the shield's worth is within noise, so a person at the helm decides both.
 - **Done when:** At least one Decisions entry from a person for the helm and one for a gunner seat, with the game it came from
-- **Who can take it:** Yash (offered), Garrett, anyone
+- **Who can take it:** Garrett, anyone
 - **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb
 
@@ -1236,7 +1237,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261020-440c · open · test · Crew vessels
 - **Task:** Fly the Orca (the 4-seat vessel) in the Unity editor from the Toybox Vessel Changer on cece/happy-noether-m54hz6: the helm (two thumbs, right-trigger boost tank, left-trigger danger shield), then keys 2-4 for each gunner turret (stabilized aim while the AI turns the hull, Release launches a missile you fly, a second Release bursts it, an omni crystal through a missile adds 3 to the Charge card's count), then 1 back to the helm. Steps and expected results: Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Orca'.
 - **Done when:** Every step of the checklist entry ticked (or a bug filed per failure), and the console clean in play mode
-- **Who can take it:** Garrett (owner), Yash (offered)
+- **Who can take it:** Garrett (owner)
 - **Added:** 2026-10-20 by a Claude session (`cece/happy-noether-m54hz6`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
 
@@ -1250,56 +1251,56 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-9ef8 · open · test · Crew vessels
 - **Task:** Fly the Orca's round 5 in the Unity editor on cece/happy-noether-m54hz6, and check the crew cameras' post-processing: the Wrasse's kite view and the Orca's turret view should have bloom like the pilot view; the helm shield rides white (super-shielded) then drops red (danger) ~4 s later and stays ~20 s; seat 2 sniper beam kills a super-shielded wall and counts down 12 s; seat 3 fast gun overheats after ~6 s; seat 4 bomb bursts on a second press and never pushes the Orca; an omni crystal gives every seat a missile. Steps: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 5'.
 - **Done when:** Every step of the round-5 checklist entry ticked (or a bug filed per failure), console clean in play mode
-- **Who can take it:** Garrett (owner), Yash (offered)
+- **Who can take it:** Garrett (owner)
 - **Added:** 2026-10-21 by a Claude session (`cece/happy-noether-m54hz6`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
 
 ### T-20261021-a73f · open · test · Crew vessels
 - **Task:** Fly the Orca's round 6 in the Unity editor on cece/happy-noether-m54hz6: the person's seat lights its ability card (helm Time, 2 Space, 3 Mass, 4 Charge) and each gunner card shows its own missiles; the sniper is always scoped with its ring and countdown; the fast gun's view sits over the turret and a slow sweep draws a clean line of thin prisms ~120 u out; the bomb has no cooldown, one at a time (Fire throws, Fire bursts, the next press throws again); every gun has its own crosshair.
 - **Done when:** Every step of 'Orca round 6' in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is filed as a dev task.
-- **Who can take it:** Garrett (owner), Yash (offered)
+- **Who can take it:** Garrett (owner)
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 6'; Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
 
 ### T-20261021-8afe · open · dev · Crew vessels
 - **Task:** Fit the Orca prefab to its new model (Orca.fbx, 36 u long, 49 u across): the hit box, skimmer, jets (move them to the model's jet.L.mouth / jet.R.mouth, z -14.75) and flare are still the Sparrow's, sized for a 12 u hull; decide the chase camera distance (the convention says ~113 u back, the lab's camBack is 50: change it in the lab first).
 - **Done when:** The jets burn from the model's engine mouths, the hit box covers the hull and wings, and the chase camera distance is decided in the lab and on the prefab.
-- **Who can take it:** Garrett (owner, the feel), Yash (offered)
+- **Who can take it:** Garrett (owner, the feel)
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Follow-ups'; Docs/VesselModels/Orca.md
 
 ### T-20261021-3fbb · open · test · Crew vessels
 - **Task:** Fly the Orca's round 7 in the Unity editor on cece/happy-noether-m54hz6, boosting and turning hard: the fast gun's rounds and the bomb leave the barrel tips and fly straight through their crosshairs (not sideways with the hull); the sniper's view is normal with the Serpent's pip scope always open in the upper left and the beam passing through both reticles; missiles leave the turret tubes; the Serpent's own scope is unchanged.
 - **Done when:** Every step of 'Orca round 7' in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is filed as a dev task.
-- **Who can take it:** Garrett (owner), Yash (offered)
+- **Who can take it:** Garrett (owner)
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 7'
 
 ### T-20261021-ab48 · open · dev · Vessel models
 - **Task:** Rebuild the from-scratch hulls as HOVERING ASSEMBLIES (Garrett 2026-10-21: the original vessels are 'free floating parts that are associated and animated together but clearly distinct parts of a hovering assembly'; vessel-model SKILL 0.5, LESSONS 49). Measured with Tools/Build/vessel_model/assembly_report.py (parts that float >= 0.4% of the diagonal): Butterfly 0/5, Thresher 0/8, Brittle Star 0/37, Scarab 3/16, Stoat 4/15, Shrike 3/10, Angler 5/8 (Grouper and WrasseKite on cece/loving-fermat-ntdnbu not measured here); the artist hulls float most of theirs (Manta 7/7, Squirrel 28/39, Serpent 22/27). One hull per round per the skill's loop, Garrett flies each. This also answers item (1) of T-20261018-2070 (Scarab: floating parts, not connected modules).
 - **Done when:** Each listed hull passes assembly_report.py --floating with its major parts named in its spec, and Garrett has flown it.
-- **Who can take it:** Garrett (judges each hull), the session that built it, Yash (offered: editor checks)
+- **Who can take it:** Garrett (judges each hull), the session that built it
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** .claude/skills/vessel-model/SKILL.md 0.5; .claude/skills/vessel-model/references/LESSONS.md 49
 
 ### T-20261021-07cd · open · test · Crew vessels
 - **Task:** Fly the Orca's round 9 in the Unity editor on cece/happy-noether-m54hz6: launch a missile from any gunner seat (F): it is the skyburst rocket with an igniting, flickering motor, it banks into your turns, and a lit faceted plume trail swells behind it and stays after the burst; in seat 4 the bomb has no ring and no BURST text, and while a bomb is out the prisms its blast will break (not yours) glow in your colour.
 - **Done when:** Every step of Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 9' passes with a clean console, or the failures are filed.
-- **Who can take it:** Garrett (owner), Yash (offered)
+- **Who can take it:** Garrett (owner)
 - **Added:** 2026-10-21 by a Claude session (`cece/happy-noether-m54hz6`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 9'; Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
 
 ### T-20261020-86b5 · open · test · Performance
 - **Task:** Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile_IsSaneAndMeasured checks the LOD meshes against the braid Unity imported), then Play Menu_Main > Cell Selector > Lattice and fly in and out of a plant: no pop as limbs cross ~140 / ~590 / ~2,660 units, and the HUD console 'renderers' line shows far limbs as instanced. If a graph imports magenta, untick lodEnabled on Resources/SpindleLodProfile and report it.
 - **Done when:** Both graphs import clean, SpindleLodTests pass, and a fly-through shows no visible swap
-- **Who can take it:** Garrett (the look), Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Garrett (the look), anyone with the Unity Editor
 - **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
 - **See:** Docs/SPINDLE_LOD.md §5
 
 ### T-20261020-fb02 · open · test · Performance
 - **Task:** Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; compare CPU/GPU ms, draws, and the renderers census (the capture's spindle LOD line).
 - **Done when:** Two S2 captures on the bugledger branch, the delta written into Docs/PERFORMANCE_OPTIMIZATION.md L1
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Who can take it:** Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
 - **See:** Docs/SPINDLE_LOD.md §4-5; T-20261015-56dd
 
@@ -1334,7 +1335,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261020-1ffa · open · test · vessels
 - **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-6 (step 6: the onset shake and the danger vignette) - a pilot who took a scored hit (no petals needed) has their hits deflect off rival prisms with a wobble for the hit's worth (a Strike 3.2 s, a rocket 4-8 s), take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
 - **Done when:** All six steps observed in the editor, including the MPPM step, with any mismatch filed as a dev task
-- **Who can take it:** Yash (offered; editor + MPPM), Garrett (owner's eye)
+- **Who can take it:** Garrett (owner's eye)
 - **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
 - **See:** Docs/ElementalAbilitySystem/SILENCE.md
 
@@ -1385,7 +1386,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-2973 · open · test · vessels
 - **Task:** Editor-check the silence 3D perimeter (cece/sleepy-shannon-9qk646): in Dog Fight or with 'silence test' in the console, a thin band of half-buried shards over a thin danger frame hugs the screen border, dragged toward a point that wanders around the edge; 'silence test 8' sends it deep and it bleeds back out as the seconds drain; hits sink and glitch it; it fades when the silence ends; no magenta, nothing on other cameras or other players' screens; 'silence' reports 'perimeter drawing 160 shards on <camera>' and the depth. Note the frame cost on a phone (one camera-colour copy while silenced)
 - **Done when:** seen working in the editor and on one phone build, or the failures are filed
-- **Who can take it:** Garrett (owner's eye), Yash (offered)
+- **Who can take it:** Garrett (owner's eye)
 - **Added:** 2026-10-21 by Garrett's session (cece/sleepy-shannon-9qk646) (`cece/sleepy-shannon-9qk646`)
 - **See:** Docs/ElementalAbilitySystem/SILENCE.md §5, §8
 
@@ -1500,7 +1501,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-ffcf · done · test · ecology
 - **Task:** Measure where a world swap's time goes. In the Editor open FrogletTools > Performance > Performance Benchmark, tab Load Time Insights, and arm Record Insight Mode. Enter Play in Menu_Main and use the Cell Selector to swap to the Orrery (then Atlantis, if you can). Each swap now records like a game load: spans for the suction, the release of the old world, the layout bake, the streamed lay and the settle (creation + grow-in), ending when the veil lifts. Press Copy on the report and paste it into a Claude session
 - **Done when:** A Load Time Insights report of an Orrery swap is pasted into a session, which names the stage that dominates and fixes that stage
-- **Who can take it:** Garrett, or Yash (offered)
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b (What the bake does NOT speed up); Cell.SwapCellConfigRoutine
 - **Done:** 2026-10-21, 2026-10-21, Garrett's capture: Orrery swap 21.3 s, streamed lay 16.1 s of it with 0.8 s of per-prism work (frame-bound: one 256-prism async clone batch per frame). Fixed on cece/relaxed-hopper-ns2hdu: 2,048-prism batches and a raised integration slice while the gate holds; the re-capture is the next test task on this board
@@ -1508,7 +1509,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-8321 · done · test · ecology
 - **Task:** Re-capture the Orrery swap after the lay fix, exactly as before: Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session. The last capture was 21.3 s (lay 16.1 s, settle 2.8 s, release 1.4 s). The lay now clones 2,048 prisms per batch behind the veil, so it should drop by several seconds. Watch for: the settle growing (creation still completes 512 per frame), and the new rows for the clone wait, reused vs new prisms, creation completions, the trail return, and prisms with no render entity at suction. Also say whether the world looks right after the veil lifts
 - **Done when:** A new Orrery swap report is in a session; the lay span is clearly shorter than 16.1 s and the world looks as before; the next stage to fix is named from it
-- **Who can take it:** Garrett, or Yash (offered)
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b (Measured); PrismTrailBuilder.LoadGateCloneBatchSize
 - **Done:** 2026-10-21, 2026-10-21, Garrett's second capture: Orrery swap 21.3 -> 13.9 s (lay 16.1 -> 5.7 s). The settle grew to 5.8 s, mostly the last prisms' invisible grow-in (3.7-4.6 s at growthRate 0.5) behind the opaque menu veil; now snapped there (PrismTrailBuilder.LoadGateCovered). Re-capture is the next ecology test task
@@ -1531,14 +1532,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261020-1187 · open · test · crew-vessels
 - **Task:** Play the Wrasse's new Sling control in the Unity Editor and on a phone: Toybox > Vessel Changer > Wrasse, swap to the kite (double-tap the small view or press 2), then drag (the kite trails on a rope), make small circles (it whirls round in big ones and closes loops) and lift (it flies free). Also: the pad's stick places the rope's hand on the board; swinging the kite through a Toybox toy fires nothing, while the Thresher's ball (the flail) swung through one fires it once.
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 1-4 pass, with any feel notes (rope length, stiffness, drag) recorded
-- **Who can take it:** Garrett (feel sign-off, phone); Yash (offered) for the Editor pass
+- **Who can take it:** Garrett (feel sign-off, phone)
 - **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md round 6
 
 ### T-20261020-ec68 · open · test · crew-vessels
 - **Task:** Play Wrasse Run (GameModes 68) in the Editor: the Arcade card, a 2-player launch, the hull alone not counting, the kite collecting rings (AI navigating and you navigating), Time boosts, AI crews (two AIs: the hull's pilot and a kite navigator) slinging through their rings and finishing, and Thresher Time's ball still threading.
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 5-10 pass
-- **Who can take it:** Yash (offered; editor tests), Garrett (sign-off); Caleb or Andrew for a QA run
+- **Who can take it:** Garrett (sign-off); Caleb or Andrew for a QA run
 - **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §7
 
@@ -1552,35 +1553,35 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261020-d09f · open · test · Crew vessels
 - **Task:** Round 7 of the Wrasse on cece/loving-fermat-ntdnbu: reimport Grouper.fbx and WrasseKite.fbx, open Wrasse.prefab, then fly it - the Grouper and Wrasse bodies and their puppetry, the whole-screen kite, the 30% zoom centred on the Grouper, yaw in place, the drawn cord, let go by lift / held click / held trigger, top speed 364 and the doubled lasso, and two machines seeing each other's Wrasse
 - **Done when:** Every step of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down
-- **Who can take it:** Yash (offered) runs the Editor pass; Garrett judges the feel
+- **Who can take it:** Garrett judges the feel; anyone with the Editor runs the pass
 - **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 7)
 
 ### T-20261020-a9f5 · open · dev · Crew vessels
 - **Task:** Fit the Wrasse hull's parts to the Grouper model: a hit box sized to Docs/VesselModels/Grouper.md (it is still the Sparrow's flat 10.3 x 0.46 x 4.4 box, the Grouper is 5.6 u tall), the two jets re-homed to the engine mouths (+-0.78, -0.30, -2.62), FlareEngine pointed at the Grouper's Engine slot, and the Wrasse's CrystalHullFusion bakes re-baked on the Grouper mesh
 - **Done when:** The Grouper's collisions, plumes, engine flash and crystal fusion all sit on the Grouper in play
-- **Who can take it:** Yash (offered) or anyone with the Editor; Garrett signs off the fit
+- **Who can take it:** anyone with the Editor; Garrett signs off the fit
 - **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
 
 ### T-20261020-8dbc · open · test · Crew vessels
 - **Task:** Round 8 of the Wrasse on cece/loving-fermat-ntdnbu: on the kite, the hand stops at a line just above the ability cards while the kite swings past it and off the bottom; the Grouper's view fills the box left of the cards and below the line; the Grouper's view keeps a larger faint Wrasse stand-in. Check a phone and a wide monitor
 - **Done when:** Steps 12 and 13 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
-- **Who can take it:** Garrett (feel); Yash (offered) can run it
+- **Who can take it:** Garrett (feel)
 - **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8)
 
 ### T-20261021-3d24 · open · test · Crew vessels
 - **Task:** Rounds 8b and 9 of the Wrasse on cece/loving-fermat-ntdnbu: the hand stops a small margin inside the screen's sides and top while the Wrasse swings past every edge on its cord; the four lasso elements' motes are four green-yellows with no blue or orange (Charge #a0ff00, Mass #5ec600, Space #40ff00, Time #9bcf00); say if any two are hard to tell apart in play
 - **Done when:** Steps 14 and 15 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
-- **Who can take it:** Garrett (feel and colour call); Yash (offered) can run it
+- **Who can take it:** Garrett (feel and colour call)
 - **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Docs/VesselModels/COLOR.md 5b; Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8b and 9)
 
 ### T-20261021-d063 · open · test · Crew vessels
 - **Task:** Round 10 of the Wrasse on cece/loving-fermat-ntdnbu: the juice. No effect rings; each loop's motes become its effect (fizzle sputters out grey, Space explodes with the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, Charge orbits onto the Wrasse); the lasso cinches; the Grouper's small view no longer pumps in and out of its box
 - **Done when:** The round-10 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down with what to change
-- **Who can take it:** Garrett (feel: is it bespoke, unique, dynamic and polished?); Yash (offered) can run it
+- **Who can take it:** Garrett (feel: is it bespoke, unique, dynamic and polished?)
 - **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 10); bash Tools/Build/kite_navigator_lab/juice_sheet.sh
 
@@ -1594,7 +1595,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261020-41eb · open · test · Thresher
 - **Task:** Fly the Thresher on cece/tender-hamilton-qcd1hi (Editor and phone): the chain never turns lime, the launch crosshair stays white the whole lap, and a charged ball's rim burns toward white (not lime) as the Space gauge fills
 - **Done when:** All four steps of the 2026-10-20 'no lime' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, and the charged ball reads as explosive (energyRimTint tuned if not)
-- **Who can take it:** Garrett (owner's eye on how the charged ball reads); Yash (offered) can run the Editor steps
+- **Who can take it:** Garrett (owner's eye on how the charged ball reads)
 - **Added:** 2026-10-20 by a Claude session (`cece/tender-hamilton-qcd1hi`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b; Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -1608,7 +1609,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-2d87 · done · dev · vessels
 - **Task:** Phone movement bugs: the Urchin flies full reverse whenever no thumb is on the glass (GunVesselTransformer.ReadThrottle reads XDiff 0 as -1; return 0 while InputStatus.Idle), and the Scarab never thrusts on touch (ScarabVesselTransformer.ReadThrottle01 reads only RightTriggerAnalog; treat Touch && !Idle like autopilot as a stopgap)
 - **Done when:** On an Android build the Urchin stops (not reverses) when both thumbs lift, and the Scarab flies in Scarab Scramble
-- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Who can take it:** Garrett (vessels), any session
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 1-2
 - **Done:** 2026-10-21, Done on cece/admiring-hamilton-gyzzh8: idle parity (both thumbs off reads XDiff 0.5) stops the Urchin reversing; the Scarab reads the touch throttle slider. Phone check is in the new phone-controls test task.
@@ -1624,7 +1625,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-bb9f · done · dev · vessels
 - **Task:** Touch feel pass: fix the Squirrel/Serpent idle snap (MantaAnimationContoller Idle writes +p,x against puppetry's -2p,2x), ease the stick in StoatAnimation, AnglerAnimation and ButterflyAnimation (rule 53), set touchNoseResponse 9 on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip, and honour Invert Y on touch
 - **Done when:** On a phone, lifting the last thumb eases every hull to rest and the dual-stick hulls answer the thumb without the 0.67 s nose lag
-- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Who can take it:** Garrett (vessels), any session
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 5-7, 14
 - **Done:** 2026-10-21, Idle snaps fixed (Squirrel, Serpent, Sparrow, Stoat, Angler, Butterfly). The touch nose response and Invert Y on touch were not part of Garrett's list: moved to a new dev task.
@@ -1640,14 +1641,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-d476 · open · test · vessels
 - **Task:** First phone captures of the vessels with a second render or full-screen pass: Stoat dropping a dipole (black-hole lens), Wrasse in either seat, Thresher launch view, Serpent scoped, Brittle Star at full fire, Butterfly by a wormhole; plus the D1 check (move the right thumb to a card on Grizzly, Sparrow, Squirrel) and a ruler on a card
 - **Done when:** One Profiler capture per hull is on the perf record and the D1/D2 observations are written into MOBILE_VESSELS.md §6
-- **Who can take it:** Yash (offered, phone tests), Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §4, §6
 
 ### T-20261021-4a95 · open · docs · vessels
 - **Task:** Correct the mobile doc drift found by the audit: BRITTLE_STAR F1 and SCARAB §3.1/§15 (cards reach face buttons since 9718a382), BRITTLE_STAR:35 + T-20261016-3e80 (phone flip does nothing), ABILITY_LOCKUP:346-348, SQUIRREL_DRIFT:519, BUTTERFLY_FOLD ghost, InputEvents.cs comments, InputHintBindingMap Button2 key, REFACTOR_BACKLOG S29 scope, T-20261019-41bb list, T-20261016-5ed6 (depth does replicate)
 - **Done when:** Each listed line matches the code
-- **Who can take it:** any session; Yash (offered)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); any session
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §5
 - **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** fixed BRITTLE_STAR F1 and :35 (plus R2's flip line), SCARAB §3.1 / §3.2 / §15 item 9 (new §3.11 'On a phone'), and annotated T-20261016-3e80. The rest of the list is open.
@@ -1655,28 +1656,28 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-6632 · open · test · Squirrel
 - **Task:** Fly the Squirrel's new drift animation: while drifting the four engine pods swing onto the travel direction, parallel with the jets, jets still seated in the pods; check the pods against the wing slats past ~30 degrees of aim
 - **Done when:** SQUIRREL_DRIFT.md section 12 steps 1-6 pass in Toy Box > Vessel Changer > Squirrel, and the clipping question has an answer (fine, or a driftOffset value)
-- **Who can take it:** Garrett (Squirrel / vessel feel); Yash (offered)
+- **Who can take it:** Garrett (Squirrel / vessel feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#12
 
 ### T-20261021-9843 · open · test · Squirrel
 - **Task:** Listen to the Squirrel's drift loop: quiet on a shallow slide, rising linearly to the pre-change volume at 180 degrees of slip; the release one-shot follows the angle the drift ended at; run DriftSlipVolumeTests
 - **Done when:** SQUIRREL_DRIFT.md section 13 steps 1-5 pass, or quietVolume01 / fullSlipDegrees retuned by ear
-- **Who can take it:** Garrett (Squirrel feel); Yash (offered)
+- **Who can take it:** Garrett (Squirrel feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#13
 
 ### T-20261021-edc0 · open · test · Thresher
 - **Task:** Fly the Thresher on cece/youthful-johnson-hccyzf: it spawns in Mass Mode (lit ball, steals rival prisms, lays a trail, no blasts); A leaves it and the ball breaks again; a vessel swap back puts it in Mass Mode; AI Threshers in Thresher Time stay in Mass Mode
 - **Done when:** All four steps of the 2026-10-21 Thresher Mass Mode entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
-- **Who can take it:** Yash (offered) can run the Editor steps; Garrett decides whether AI Threshers should stay in Mass Mode
+- **Who can take it:** Garrett decides whether AI Threshers should stay in Mass Mode; anyone with the Editor runs the steps
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §2b
 
 ### T-20261021-7967 · open · test · Thresher
 - **Task:** Fly the Thresher launch view on cece/youthful-johnson-hccyzf with a gamepad: the crosshair starts on what you pointed at when you planted, a brief trigger sag no longer drops the view, and a release with RT held flies straight down the crosshair
 - **Done when:** All five steps (step 5 is round 2's Time-raised launch) of the 2026-10-21 Thresher launch-view entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
-- **Who can take it:** Garrett (owner's feel on the launch); Yash (offered) can run the Editor steps
+- **Who can take it:** Garrett (owner's feel on the launch)
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a
 
@@ -1690,7 +1691,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-2574 · open · test · Crew vessels
 - **Task:** Playtest the Honeyguide and Ratel in the Unity Editor: Toybox Vessel Changer station, then the 7 steps of its checklist entry. It has only been compiled headlessly.
 - **Done when:** the steps in Docs/UNITY_VERIFICATION_CHECKLIST.md 'Honeyguide and Ratel' pass and HoneyguideTests is green
-- **Who can take it:** Yash (offered), anyone with the Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Editor
 - **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
 
@@ -1711,7 +1712,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-2dd0 · open · test · Crew vessels
 - **Task:** Playtest the Honeyguide's round 6 triggers and its new hull model in the Unity Editor: the 6 steps of its round-6 checklist entry (Peck/Flit, upgrades, the model's paint, morphs and puppetry).
 - **Done when:** The round-6 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or its failures are filed.
-- **Who can take it:** Yash (offered), anyone with the Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Editor
 - **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/VesselModels/Honeyguide.md
 
@@ -1762,7 +1763,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-9fd3 · open · test · vessels
 - **Task:** Phone-test the fleet's new touch controls on an Android development build of cece/admiring-hamilton-gyzzh8: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' steps 4-15 (Urchin let-go, Scarab slider/juke, Brittle Star aim discs, Dolphin lift-either + tilt roll, Manta tilt soar, Rhino both-off energize, Thresher tilt launch, Stoat, Angler paint, Serpent/Shrike zoom, idle easing, arena swap tiles, no flip toggle)
 - **Done when:** Each step passes on a phone, or each failure is filed as a dev task; tilt signs and button sizes judged by hand
-- **Who can take it:** Garrett (asked for it; owner's feel), Yash (offered, phone tests)
+- **Who can take it:** Garrett (asked for it; owner's feel)
 - **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8
 
@@ -1776,7 +1777,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-cb48 · done · dev · vessels
 - **Task:** Touch feel leftovers: set touchNoseResponse on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip (the Angler's 9 is ignored there); honour Invert Y / Invert Throttle in TouchInputStrategy.Reparameterize and the one-thumb Pitch()
 - **Done when:** Dual-stick hulls answer the thumb without the 0.67 s nose lag on a phone; the invert settings change touch flight
-- **Who can take it:** any session (Garrett's vessels); Yash (offered) to check on a phone
+- **Who can take it:** any session (Garrett's vessels)
 - **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 2 rows 7 and 14
 - **Done:** 2026-10-21, Done wider than the task (Garrett: 'get rid of all steering lag, and inconsistent y-inversions that are not left to the settings'): no nose lag for any human pilot on any device/hull (NoseFollowFraction), touchNoseResponse retired; one Invert Y rule in every strategy (ApplyInvertSettings), touch reads both invert settings. MOBILE_VESSELS.md section 8, second round.
@@ -1827,7 +1828,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-aa08 · open · dev · Amoebius
 - **Task:** In Amoebius, booting straight into Menu_Main (--scene Menu_Main, no Bootstrap) throws a NullReferenceException in ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial on the first laid prism. That kills the environment lay after its first clone batch (Garland lays 2,048 of 4,259 prisms), so a headless Menu_Main run cannot check a whole world build. Either inject the theme manager on a direct scene entry or document the Bootstrap requirement in the player's --scene help
 - **Done when:** A headless --scene Menu_Main run lays the whole Garland (4,259 prisms under Environment/Cell/SpawnableGarland), or the requirement is documented
-- **Who can take it:** Shombith (the Amoebius engine); Yash (offered)
+- **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Port/src/CosmicShore.Player (--scene Menu_Main); ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial
 
@@ -1855,14 +1856,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-6fa4 · open · test · Ecology
 - **Task:** Dying limbs become shards (Docs/ECOSYSTEM.md section 63, branch cece/awesome-faraday-7fsppt): Play Menu_Main (or any freestyle cell with flora), joust or starve a plant, and watch its spindles. Every fifth limb (SnowChanger.limbsPerMorphedShard = 5, toned down 2026-10-21) should fade while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the same outside-in order the limbs go. No limb pops out and no shard pops in. Then check the Console is clean and the Renderer census still shows the snow as one instanced family. On a Low preset fewer limbs should leave shards once the cap (SnowChanger.maxMorphedShards x 0.25) is reached.
 - **Done when:** Seen in Unity: limbs condense into shards in order, no pop, no errors; or the failure is written here and a dev task added
-- **Who can take it:** Garrett (the look), Yash (offered)
+- **Who can take it:** Garrett (the look)
 - **Added:** 2026-10-21 by a Claude session (`cece/awesome-faraday-7fsppt`)
 - **See:** Docs/ECOSYSTEM.md section 63; Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChanger.cs AddMorphedShard; Spindle.MorphIntoShard
 
 ### T-20261021-249e · done · test · vessels
 - **Task:** Fly Marlin and Jacks round 4 on cece/sharp-faraday-gq7m65: the thumb-framed jacks' view on a full-size phone, the faint rings in the marlin's view, the 30-150 herd and its frame time, and the domain hue mark on herded and Angler-tamed creatures (host + client too)
 - **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-21 Marlin and Jacks steps 11-14 pass, or the failures are dev tasks
-- **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
+- **Who can take it:** Garrett (the look and feel)
 - **Added:** 2026-10-21 by Garrett (`cece/sharp-faraday-gq7m65`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/JACKS.md
 - **Done:** 2026-10-21, Superseded 2026-10-21 by the Jacks (cece/lucid-turing-zndmgf): the marlin-view steps are gone; the thumb view, herd size and hue mark carry into the Jacks test task
@@ -1877,7 +1878,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-723e · open · test · Crew vessels
 - **Task:** Phone playtest of the crew hulls' triggers (Android dev build): Toybox > Vessel Changer > Wrasse and Grouper - fly the Grouper with two thumbs, let the AI Wrasse save a Time boost (the Time card counts it), then lift the LEFT thumb and keep steering with the right: the hull boosts, holding the thumb up chains boosts, and the Time card shows the lift-left glyph. Then the Orca helm: lift the left thumb to boost (tank drains), lift the right thumb to raise the shield. Then the Honeyguide: its Charge / Mass cards show the lift glyphs. Also on a pad: RT boosts the Grouper and the Orca, LT shields the Orca.
 - **Done when:** Each step behaves as written on a phone and on a pad; any miss is filed as a dev task with what happened
-- **Who can take it:** Yash (offered) or Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md 'The phone boost'; ORCA_CREW.md follow-ups
 
@@ -1892,7 +1893,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-110d · open · test · Vessel models
 - **Task:** Reimport the 14 rebuilt hull FBXs (cece/quirky-brown-lkhhx9) and fly the Shrike, the Wrasse (Grouper + Kite) and the Marlin with the stick centred: no left bank, the tails beat about the centre. Spot-check the other 11 at rest (Docs/UNITY_VERIFICATION_CHECKLIST.md, 'New hulls rest at REST')
 - **Done when:** Every rebuilt hull rests level and centred at a centred stick, and each model's clip list starts with 'rest'
-- **Who can take it:** Garrett (reported it); Yash (offered) can run the reimport and spot-checks
+- **Who can take it:** Garrett (reported it)
 - **Added:** 2026-10-21 by a Claude session (`cece/quirky-brown-lkhhx9`)
 - **See:** .claude/skills/vessel-model/references/LESSONS.md #51
 
@@ -1906,14 +1907,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-308e · open · test · Crew vessels
 - **Task:** Fly the Wrasse and hold the Grouper's boost trigger (RT, right Shift, or the phone's left-thumb lift) with several saved boosts: they chain back to back with no gap, and the Time card shows no cooldown veil.
 - **Done when:** Saved boosts chain with no wait in the editor and on a phone
-- **Who can take it:** Yash (offered), Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
 
 ### T-20261021-90a6 · open · test · Crew vessels
 - **Task:** Android dev build, branch cece/compassionate-rubin-baeyvi: (1) Toybox > Vessel Changer > Honeyguide and Ratel, swap to the Ratel: hold a finger still on a prism ~0.5 s and it is deleted (1 AP); a drag that leaves the cell still moves it; the Fly button left of the big board swaps back to flying. (2) Fly the Wrasse kite seat, go back to the app shell (HOME): touching or using a pad in the menu must not steer the kite or swap seats; re-enter freestyle and you are seated where you were. Repeat (2) for the Orca gunner, the Ratel, the Pistol and the Marlin jacks.
 - **Done when:** Both steps pass on a phone, or the failure is filed as a dev task
-- **Who can take it:** Garrett (found the bugs) or Yash (offered: playtests)
+- **Who can take it:** Garrett (found the bugs)
 - **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
 - **See:** 29315a060, 77ead5f41
 
@@ -1927,14 +1928,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-227a · open · test · Starling vessel
 - **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer on branch cece/quirky-gates-skplxp: the 120-member murmuration reads as one, the camera roll turns the world the way flight rolls (pad y-diff and phone spin), two thumbs keep turning the view while pinching, holding a pick with no hand lists each held card with its text, numbers and reached jolts, and pressing another pick while the details are open browses to that element
 - **Done when:** Each item passes in Play mode, or the failures are reported
-- **Who can take it:** Garrett (feel), Yash (offered)
+- **Who can take it:** Garrett (feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
 
 ### T-20261021-d6dc · open · test · Starling vessel
 - **Task:** Profiler capture of the Starlings at 120 and 200 members on a phone build and in the editor: the swarm executor's Update (separation now on a grid) and the 120-230 SkinnedMeshRenderers (one per member, updateWhenOffscreen) against the frame budget
 - **Done when:** A capture is filed and either fits the budget or names the hot path to cut (e.g. GPU-instanced members instead of skinned copies)
-- **Who can take it:** Yash (offered)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StarlingSwarmExecutor.cs
 
@@ -1948,7 +1949,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-2f67 · open · test · Angler
 - **Task:** Fly the Angler's round 8 (two groups take turns; no squad pick, recall or boost) in the editor and on a phone: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Angler round 8', steps 1-6.
 - **Done when:** All six steps pass, or the failures are filed as dev tasks
-- **Who can take it:** Yash (offered), Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
 
@@ -1962,14 +1963,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-876d · open · test · Crew vessels
 - **Task:** Phone playtest of the Orca gunner buttons (Android dev build, no pad): Toybox > Vessel Changer > Orca · 4 seat, two-finger tap (or the D-pad) to a gunner seat. Two buttons sit round the right thumb: Fire (seat colour) and Missile (rocket icon); the top line of seat text is gone. Left-thumb drag aims the turret while the right thumb holds Fire; Missile launches, the left thumb steers it, Missile again bursts it, and Fire hides while it flies. A thumb resting on a button while the left aims never swaps seats. On the bomb seat Fire throws, Fire again bursts. Buttons hide on the helm and when a pad connects. On a pad: X or RT fires, A launches/bursts, left stick aims.
 - **Done when:** Each step behaves as written on a phone and a pad; buttons sit inside the safe area and don't cover the ability row; any miss is filed as a dev task
-- **Who can take it:** Yash (offered) or Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/fervent-goodall-8cihle`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Two buttons per gunner'; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca gunner buttons'
 
 ### T-20261021-003c · open · test · vessels
 - **Task:** Fly the Jacks (was Marlin and Jacks): one player, two modes - herd on the top-down board with the hull parked, or fly the two fish as the hull with the two-thumb flight (one fish per thumb); switch with D-pad / 1-2 / double tap. Include the herd steps carried over from the Marlin and Jacks tests (thumb-framed view, 30-150 herd and its frame time, domain hue mark) and host + client
 - **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-21 'Marlin and Jacks becomes the Jacks' steps 1-9 pass on PC, pad and a phone, or the failures are dev tasks
-- **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
+- **Who can take it:** Garrett (the look and feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/lucid-turing-zndmgf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -1990,7 +1991,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261021-cd1e · done · test · Crew vessels
 - **Task:** Phone playtest of the Goby & Pistol seat buttons (Android dev build, no pad): Toybox > Vessel Changer > Goby and Pistol. Flying the Goby, two buttons sit round the right thumb: Primer (fires at what is ahead, its count drops) and Flares (fires only once a prime has been set off by the Pistol and blocks are hot); the Squirrel's lifts (left = ring, right = drift) still work. Double tap the small view: now Ghost and Snap sit there instead, dimmed while cooling; a finger on the Pistol's view dives (hold) and launches (drag and let go), also while another finger holds Ghost. On a pad: X primer, Y flares; on a keyboard: Q primer, F flares; the D-pad up/down does nothing.
 - **Done when:** Every step behaves as written; buttons sit inside the safe area and don't cover the ability row; misses filed as dev tasks
-- **Who can take it:** Yash (offered) or Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)
 - **Done:** 2026-10-22, Superseded 2026-10-22: the Goby's Primer and Flares were retired with its new kit (Dart / Lock; Ghost / Snap / Back). The new kit's playtest is its own task.
@@ -1998,14 +1999,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261022-adee · open · test · Crew vessels
 - **Task:** Playtest the Goby & Pistol's new kit (Android dev build AND a pad, Toybox > Vessel Changer > Goby and Pistol). Goby: it never cruises; aim with one thumb (or the sticks), hold Dart (phone button / RT / Q) and let go - a tap darts ~140 u, a full charge ~600 u in 1 s; it stops on the first block and perches there; into empty space it lays its own small perch. Lock (button / LT / F) a rival or fauna in front: a lit ring marks it. Double tap the small view to fly the Pistol: it rides the dart's trail downhill to the next perch, rests ~1 s and a den of prisms grows round the perch (more the further it travelled, and with Mass); Back (button / LB / B) at a perch turns it toward older dens. Mass beside its plane drifts into it (further with Space). With a rival locked and on the Pistol's screen, Snap fires a ring that flies at it and takes petals. Check: lifting a thumb never fires anything; the D-pad up/down does nothing; buttons sit inside the safe area.
 - **Done when:** Every step behaves as written on a phone and a pad, or the misses are filed as dev tasks; Garrett has the feel notes for the next round
-- **Who can take it:** Yash (offered) or Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (top section)
 
 ### T-20261022-bc36 · open · dev · Crew vessels
 - **Task:** Run GobyPistolTests in the Unity editor (EditMode) and fix any failure; then open Goby.prefab once and save it (the generator stripped the Squirrel's tube and drift executors and swapped its impact containers by YAML: let Unity re-serialize and confirm no missing-script or missing-reference warnings).
 - **Done when:** GobyPistolTests green in the editor and Goby.prefab saves clean
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Unity Editor
 - **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** Assets/_Scripts/Tests/Editor/GobyPistolTests.cs; Tools/Build/author_goby_assets.py
 
@@ -2106,7 +2107,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261022-a669 · open · test · Dolphin
 - **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops, easing the last degrees in ~0.1 s through the touch nose lag since 2026-10-23, with no sensor jitter), holds at 90 degrees either side, and keeps its roll when the thumb returns
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' step 7 passes on a phone; the horizon stays level in the room while turning
-- **Who can take it:** Yash (has offered to take tests) or Garrett (Dolphin design owner)
+- **Who can take it:** Garrett (Dolphin design owner)
 - **Added:** 2026-10-22 by a Claude session (`cece/exciting-fermat-khf8vn`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8, Dolphin row; Assets/_Scripts/Controller/IO/TouchControls/TouchAttitudeRoll.cs
 
@@ -2120,14 +2121,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261022-a4ab · open · test · crew
 - **Task:** Play the Wrasse in Unity (Toybox Vessel Changer > Wrasse) and navigate: the lasso motes, kite, tail and cord in the kite view keep their distinct limes against crystals (no bloom/tonemap on them), and the view's straight edges, the lower bar included, stay straight while the speed tunnel's Panini is on
 - **Done when:** Marks read crisp and distinct from crystals; no bowed edges in the kite view; pilot view unchanged
-- **Who can take it:** Garrett (Wrasse owner), Yash (offered)
+- **Who can take it:** Garrett (Wrasse owner)
 - **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 11
 
 ### T-20261022-70b1 · open · test · crew
 - **Task:** In Unity, fly each picture-in-picture view and check the new frame sits exactly on the small view's edge, does not block taps or the double-tap swap, and sits under the HUD: Wrasse (both seats), Goby & Pistol (both seats), Orca (turret seat, lifted pilot view), Jacks (herding and flying). Also check that the Jacks' rings and dots keep their colours (no bloom on them) and that no orthographic view bows
 - **Done when:** Frame is aligned on all four vessels at 16:9, 4:3 and a phone; taps and swaps still work; Jacks marks read crisp
-- **Who can take it:** Yash (offered), Garrett (crew vessels)
+- **Who can take it:** Garrett (crew vessels)
 - **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
 - **See:** Docs/claude/SHADERS_AND_PERFORMANCE.md § Orthographic views and picture-in-picture frames
 
@@ -2141,7 +2142,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261022-971d · open · test · crew
 - **Task:** On a phone, Toybox Vessel Changer > Honeyguide and Ratel, swap to the Ratel (tap the small board twice): hold the phone portrait and check the Dynamo board reads upright, fills the screen, its text is readable and the cards, cells and Fly button (above the board, top left) are easy thumb targets; drag, tap a port, tap a lit card, long-press delete and Fly all land where the finger is. Also check the Ratel never draws Printer (no free prism at a spin).
 - **Done when:** The portrait board plays correctly by touch on an Android or iOS phone, or the failures are filed as a dev task
-- **Who can take it:** Garrett (Honeyguide owner), Yash (offered)
+- **Who can take it:** Garrett (Honeyguide owner)
 - **Added:** 2026-10-22 by Garrett (`cece/nifty-dirac-2dmclm`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md step 4; HoneyguideDynamoView.cs
 
@@ -2155,7 +2156,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261022-b932 · open · test · Crew vessels
 - **Task:** On a phone (Android and iOS) on Very Low: fly the Wrasse and Grouper and the Honeyguide and Ratel from the Toybox Vessel Changer. Check: you start on the Wrasse / Ratel; no picture-in-picture anywhere; the Wrasse turns the screen to portrait and the Grouper back to landscape; the Ratel's board sits on a plain backdrop; the Ratel button (flying) and Fly button (Ratel) swap; the app launches and every menu stays landscape. Then on Medium: the PiPs are back. Also the Goby, Orca turret and Jacks herd views on Very Low show no small view.
 - **Done when:** All checks pass on one Android and one iPhone, or failures filed as dev tasks
-- **Who can take it:** Yash (offered), Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 12; HONEYGUIDE.md Very Low; Docs/PLATFORM_UNIFICATION.md 3.10
 
@@ -2191,7 +2192,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261022-accb · done · test · Input
 - **Task:** Fly two or three hulls (a two-stick hull like the Squirrel, a one-thumb hull like the Sparrow) on a gamepad on this branch and judge whether small corrections feel like the old pad (before 2026-10-21) while the nose still has no lag. Tune Resources/GamepadFlightConfig live in Play: responseExponent (centre softness, 1.5) and steeringSensitivity (full-stick rate, 0.85); 1 / 1 is the uncurved pad.
 - **Done when:** Garrett signs off on the values, or new values are committed to Resources/GamepadFlightConfig.asset
-- **Who can take it:** Garrett (the feel), Yash (offered)
+- **Who can take it:** Garrett (the feel)
 - **Added:** 2026-10-22 by a Claude session (`cece/serene-galileo-t77xt3`)
 - **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/ScriptableObjects/GamepadFlightConfigSO.cs
 - **Done:** 2026-10-23, Superseded: Garrett flew the response curve and it lost the smoothness; replaced by the gamepad steering smoother (CascadeSmoother), retested under the new task.
@@ -2199,7 +2200,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261023-70a9 · done · test · Input
 - **Task:** Fly the Squirrel and the Sparrow on a gamepad on cece/serene-galileo-t77xt3: do turns build and settle smoothly (no jolt) while the nose still answers at once? Resources/GamepadFlightConfig now ships legacyNoseLag ON (the old 1.5/s nose lag, exactly) with the smoother off (delay 0): fly it, then untick legacyNoseLag and try the smoother (smoothingStages 6, smoothingDelaySeconds 0.12-0.35 s) to compare; decide which ships. Also run the EditMode CascadeSmootherTests.
 - **Done when:** Garrett signs off on the feel and the values (committed to Resources/GamepadFlightConfig.asset), and CascadeSmootherTests pass
-- **Who can take it:** Garrett (the feel), Yash (offered, tests)
+- **Who can take it:** Garrett (the feel)
 - **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
 - **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/IO/CascadeSmoother.cs, Docs/UNITY_VERIFICATION_CHECKLIST.md
 - **Done:** 2026-10-23, Garrett flew the pad 2026-10-23: the old 1.5/s nose lag wins ('responsive, but eases into its target ... keep this on gamepad'); the stage smoother lost (reads as input lag) and was removed. Pad dial now Resources/GamepadFlightConfig.noseFollowPerSecond = 1.5.
@@ -2207,7 +2208,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261023-27e8 · open · test · Input
 - **Task:** Find the touch nose lag: on a phone (or the Device Simulator) on cece/serene-galileo-t77xt3, fly the Squirrel and the Sparrow with Resources/TouchControlProfiles.noseFollowPerSecond at 9 (shipped 2026-10-23, best judgement), 0 (10-21 to 10-23) and 5; pick the one that is responsive and eases into its target like the pad. Also run the EditMode NoseFollowDialTests (and update their touch expectation if the value changes).
 - **Done when:** Garrett picks a touch value and it is committed to TouchControlProfiles (through Tools/Build/author_touch_profiles.py, which owns the asset)
-- **Who can take it:** Garrett (the feel), Yash (offered: tests, phone playtest)
+- **Who can take it:** Garrett (the feel)
 - **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
 - **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/Vessel/VesselTransformer.cs PilotNoseFollowPerSecond
 
@@ -2221,14 +2222,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261023-06ac · open · test · Crew vessels
 - **Task:** Playtest the Ratel's pattern-made juice and the effect line above the cards in the Unity Editor and on a phone in portrait: the 7 steps of its checklist entry (cell bursts, card pop, the taken prism flying hex-to-disc into the battery, the lime line for Dynamo cards).
 - **Done when:** All 7 steps of the 2026-10-23 Honeyguide juice entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or the failures are filed as dev tasks
-- **Who can take it:** Yash (offered: playtests) or Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-23 by a Claude session (`cece/inspiring-hawking-mnzmqc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Honeyguide juice, 2026-10-23); Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
 
 ### T-20261024-303b · open · test · vessels
 - **Task:** Starlings level scaling in the HUD (branch cece/bold-gauss-lad943): fly the Starlings, pick a card, then on the next hand check a card you already hold reads 'Lv 3 -> 7' on the row; open its details (trigger + A/B/X/Y or long press) and check 'Level 3 -> 7', each number as 'now -> next', and the jolts the pick unlocks; with no hand, the details head each held card 'Lv N -> N+1' with numbers beside the next level's; a card at 15 shows 'Max level'; the arrow glyph renders (no box)
 - **Done when:** All lines read as described in Play mode, or a failure is noted
-- **Who can take it:** Yash (offered) or Garrett
+- **Who can take it:** Garrett
 - **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
 
@@ -2242,14 +2243,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-b227 · open · test · Vessel Studio
 - **Task:** Playtest the ten concept vessels in the Vessel Studio artifact (hub row 'New vessels - the concept fleet'): fly each on phone and PC, watch its AI, and Record Keep / Drop with a line of why on each page's Decisions tab; then pick five, then three (Docs/Studios/CONCEPT_FLEET.md section 1).
 - **Done when:** Every one of the ten pages has a Keep or Drop decision in the shared log and the owner has named the five and the three.
-- **Who can take it:** Yash (asked for them; offered playtests), Garrett (product call on the three)
+- **Who can take it:** Yash (asked for them), Garrett (product call on the three)
 - **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
 - **See:** Docs/Studios/CONCEPT_FLEET.md; https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa
 
 ### T-20261017-3244 · open · dev · Vessel Studio
 - **Task:** Give the picked concept vessels a clean AI difficulty ladder (Hard fastest on every course, D24): the shared belief mistakes barely cost these fast movers and the lab-only press delay punishes tempo mechanics (the Octopus's Easy DNFs; the Albatross's Easy loses the updraft). One AI round per kept vessel, scorecard before and after.
 - **Done when:** Each kept vessel's Scorecard shows Hard < Medium < Easy on all four courses, recorded in CONCEPT_FLEET.md section 4.
-- **Who can take it:** Yash (offered: follow-up fixes), any Claude session with /vessel-studio
+- **Who can take it:** any Claude session with /vessel-studio
 - **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
 - **See:** Docs/Studios/CONCEPT_FLEET.md section 4; studio-kinds.js ai() per kind
 
@@ -2263,7 +2264,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-479c · open · test · Refactor
 - **Task:** Settle whether Unity 6 binds a MonoBehaviour whose class name differs from its file name: open Assets/_Prefabs/Spacevessels/Squirrel.prefab (any vessel) and check the R_ShipElementStatsHandler component (file R_VesselElementStatsHandler.cs) shows its script and serialized values, not 'Missing script'. VesselStatus GetOrAdd()s it at runtime, which would hide a failed binding. 19 such mismatches exist, 13 of them on assets (Docs/REFACTOR_BACKLOG.md section 0, batch 2, M5).
 - **Done when:** Result (binds / missing) recorded in Docs/REFACTOR_BACKLOG.md M5; if missing, a dev task to rename file or class is added.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone with the Unity Editor
 - **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
 - **See:** Docs/REFACTOR_BACKLOG.md section 0 batch 2
 
@@ -2284,7 +2285,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-5cf2 · open · test · Butterfly
 - **Task:** Play Waystation with AI Butterflies (Third Eye on one): each fold lands just short of a ring and threads it; the AI flies ~67 u/s; your own hull gains no AIPilot component; run WaystationFoldTests
 - **Done when:** tests pass and the folds land in the rings
-- **Who can take it:** Yash (has offered to take tasks)
+- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith)
 - **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The AI Butterfly's fold lands in the ring)
 
@@ -2396,7 +2397,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261024-1948 · open · setup · Fair play
 - **Task:** Deploy match reports: run match-report.test.cjs, deploy Tools/UGS/CloudCode/match-report.js (development first), set MatchReportGate.Enabled = true in a test build and run the 'Match reports' editor checks, then production
 - **Done when:** Checklist entry 'Fair play: match reports' is green; a quit guest shows left 1 in FAIRPLAY_CONDUCT
-- **Who can take it:** Shombith (UGS, backend owner); Yash (MPPM test, offered)
+- **Who can take it:** Shombith (UGS, backend owner)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
 
@@ -2424,7 +2425,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261025-885c · open · test · Fair play
 - **Task:** Fair play - T1 Steam sign-in editor checks: run the 'Steam sign-in on PC' steps in Docs/UNITY_VERIFICATION_CHECKLIST.md with the Steam client running (first launch signs in with Steam, an old anonymous player links, Steam closed falls back to anonymous)
 - **Done when:** All seven checks pass and the checklist entry is marked verified
-- **Who can take it:** Shombith (authentication); Yash (offered, editor test)
+- **Who can take it:** Shombith (authentication)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -2438,7 +2439,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261025-4fef · open · test · Fair play
 - **Task:** Fair play - T6 AI-like steering limits: play arena matches with the ArcadeMatch log channel on, write down the turn-end 'still %' and 'deg/s2' numbers for AI hulls and for humans on gamepad, keyboard and touch, then set aiLikeMaxIdlePercent and aiLikeMaxTurnJerk in a Resources/MovementPlausibilityConfig asset below every human value seen
 - **Done when:** The asset exists with both limits, and a playtest of humans on every input raised no AiLikeSteering signal
-- **Who can take it:** Yash (Netcode, vessels; has offered to take tasks)
+- **Who can take it:** Yash (Netcode, vessels)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
 

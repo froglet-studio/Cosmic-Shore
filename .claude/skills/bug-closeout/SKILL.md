@@ -39,7 +39,7 @@ and leave the record open in that state.
 - **Team task board.** `python3 Tools/Build/team_tasks.py done <id> --note "<what happened, commit or result>"`
   closes the hand-off the fix answers. A test that FAILED is not done: the note says what failed and the fix
   goes on the board as a new `dev` task. A fix that leaves an editor test for someone else ADDS one
-  (`team_tasks.py add --kind test ... --who "Yash (offered), anyone with the Unity Editor"`).
+  (`team_tasks.py add --kind test ... --who "<the area's owner, Docs/TEAM.md>"`).
 - **Amoebius BOARD.** Cards are the user's; agents only *suggest*. With the MCP tools: `amoebius_board`
   to find the card, then `amoebius_board_suggest` with a `criterion` (the check) if a follow-up is owed, and
   tell the user which card to accept or move. A card born from the tracks closes itself when its problem

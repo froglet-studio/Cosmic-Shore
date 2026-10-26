@@ -973,7 +973,7 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
 - **Hand-offs** (`Docs/TEAM.md` rule 9): anything the branch leaves for a person (an editor test, a playtest, a
   dashboard step, content, an owner's decision) is a task on `Docs/TEAM_TASKS.md` (`python3 Tools/Build/team_tasks.py
-  add ...`), naming who can take it (Yash has offered to take tasks). Close the tasks the branch finished. Then put
+  add ...`), naming the owner of the area (`Docs/TEAM.md`; UGS and backend: Shombith). Close the tasks the branch finished. Then put
   `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section, and run
   `team_tasks.py --check`.
 - Do not ask whether Amoebius or the Vessel Studio helped: the decision is recorded (`Docs/TOOLING_DECISIONS.md`

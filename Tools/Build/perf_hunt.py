@@ -560,7 +560,7 @@ def write_report(block):
 
 def file_task(task, done_when, see):
     r = subprocess.run(["python3", "Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
-                        "--task", task, "--done-when", done_when, "--who", "the owner of the files it names (who_works_where.py); Yash (offered)",
+                        "--task", task, "--done-when", done_when, "--who", "the owner of the files it names (who_works_where.py)",
                         "--see", see, "--by", "perf_hunt sweep"], cwd=REPO, capture_output=True, text=True)
     m = re.search(r"T-\d{8}-[0-9a-f]{4}", r.stdout + r.stderr)
     return m.group(0) if m else None

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """team_tasks_nudge.py - a UserPromptSubmit hook (.claude/settings.json) that keeps the team's shared to-do board,
 Docs/TEAM_TASKS.md, in front of every session and the person in it (Docs/TEAM.md rule 9; Yash, 2026-10-15: "ask them
-during their work to make to-dos and tests for other collaborators, mention that Yash is willing to do some of the
-work, and recommend it to anyone, Shombith or someone else").
+during their work to make to-dos and tests for other collaborators"). Tasks go to the OWNER of the area, never to
+whoever offered (Shombith, 2026-10-26: "that's not how froglet tasks work").
 
   - On a session's FIRST prompt:
-      * the person sees how many tasks are open and how many name Yash, who has offered to take tasks;
+      * the person sees how many tasks are open;
       * Claude is told to add a task with Tools/Build/team_tasks.py whenever the work leaves something another
-        collaborator can do or test, to name who could take it (Yash when he could), to tell the person, and to
-        close a task the work finishes.
+        collaborator can do or test, to name the area's owner, to tell the person, and to close a task the work
+        finishes.
   - On the first prompt about ACTIVATION / ONBOARDING (FTUE, tutorial, tooltips, first login, the guide, the
     Lesson / Mentor / ghost demo, funnels, retention, new players):
       * the person sees the open activation tasks count;
@@ -43,7 +43,11 @@ OWNER_TOPICS = {
         r'fauna|spindles?|lattice|arboretum|snow ?(?:shards?|changer)|projectiles?|explosions?|aoe|impactors?|'
         r'squirrel|regatta|bleeding-edge)\b', re.IGNORECASE),
 }
-OFFER = 'Yash has offered to take tasks: editor tests, playtests, UGS and dashboard setup, follow-up fixes.'
+OWNERS = ('Name the OWNER of the area (Docs/TEAM.md; who_works_where.py for the files), never whoever offered: '
+          'Shombith for anything on UGS or the backend (Cloud Code, Cloud Save, Access Control, Moderation, '
+          'authentication, dashboards, deploys), Menu_Main, UI prefabs and the Amoebius engine; Garrett for '
+          'bleeding-edge, vessels and product decisions; Yash for the party / multiplayer layer, diagnostics and the '
+          'Vessel Studio; Caleb and Andrew for QA runs.')
 
 
 def root():
@@ -63,12 +67,8 @@ def open_tasks(base):
         return []
 
 
-def names_yash(t):
-    return 'yash' in t.fields.get('Who can take it', '').lower()
-
-
 def owner_of(t):
-    """The first name in "Who can take it" - the person the task waits on (later names are offers)."""
+    """The first name in "Who can take it" - the person the task waits on (the area's owner)."""
     who = t.fields.get('Who can take it', '')
     m = re.match(r'\s*([A-Z][a-z]+)', who)
     return m.group(1) if m else ''
@@ -116,10 +116,8 @@ BOARD_RULE = (
     'work, and before you finish, ADD a task with `python3 Tools/Build/team_tasks.py add --area <area> --kind '
     '<test|dev|content|setup|decision|docs> --task "..." --done-when "..." --who "..." --see "..."` for anything '
     'the work leaves that another collaborator can do or test: an editor test you could not run, a playtest, a '
-    'dashboard or service to set up, content to write, a decision for the owner. Name who could take it: ' + OFFER +
-    ' Name him when he could do it, and name the owner of the area when it is theirs (Shombith: Menu_Main, UI '
-    'prefabs, the engine; Garrett: bleeding-edge, vessels, product decisions; Caleb and Andrew: QA runs; see '
-    'Docs/TEAM.md). Tell the person, in a line, which tasks you added and suggest who to hand each to. If your work '
+    'dashboard or service to set up, content to write, a decision for the owner. ' + OWNERS +
+    ' Tell the person, in a line, which tasks you added and suggest who to hand each to. If your work '
     'finishes a task on the board, close it with `team_tasks.py done <id> --note "..."` (a failed test is not done: '
     'note the failure and add the fix as a dev task). Commit the board with the work; /ship puts `team_tasks.py '
     'pr-section` in the pull request body.')
@@ -132,23 +130,21 @@ def respond(payload, base=None):
     notices, context = [], []
 
     if once(session, 'board'):
-        yash = sum(1 for t in tasks if names_yash(t))
-        notices.append(f'Team to-dos: {len(tasks)} open on Docs/TEAM_TASKS.md ({yash} that Yash offered to take). '
+        notices.append(f'Team to-dos: {len(tasks)} open on Docs/TEAM_TASKS.md, each named to the owner of its area. '
                        'Claude adds a to-do there when your work leaves a test or a task for someone else.')
         context.append(BOARD_RULE)
 
     if ACTIVATION.search(prompt) and once(session, 'activation'):
         act = [t for t in tasks if t.area.lower() == 'activation']
         notices.append(f'Activation / onboarding: {len(act)} open team tasks in this area (Docs/TEAM_TASKS.md, '
-                       'Docs/ACTIVATION.md). ' + OFFER)
+                       'Docs/ACTIVATION.md).')
         context.append(
             'This prompt is about ACTIVATION / ONBOARDING. Start from Docs/ACTIVATION.md (every plan, who is on what, '
             'the path in order). The open activation tasks on the board are below: build on them, take one if this '
             'work does it, and do not duplicate one. As you work, MAKE TO-DOS AND TESTS FOR THE OTHER COLLABORATORS: '
             'every editor test, playtest, first-timer observation, UGS / PostHog step or content gap this work '
-            'leaves becomes a task on the board (team_tasks.py add --area Activation). Tell the person ' + OFFER +
-            ' Suggest Yash for what he can do, and Shombith (Menu_Main / UI), Garrett (product decisions) or Caleb / '
-            'Andrew (QA) where it is theirs.\n' + (listing(act) or '- (no open activation tasks)'))
+            'leaves becomes a task on the board (team_tasks.py add --area Activation), named to its owner. ' + OWNERS +
+            ' Tell the person which tasks you added.\n' + (listing(act) or '- (no open activation tasks)'))
 
     me = person_from_git(base)
     for name, topic in OWNER_TOPICS.items():
@@ -214,8 +210,9 @@ def self_test():
     if not tasks:
         bad.append('no open tasks read from the shipped board')
     if not first or 'team_tasks.py add' not in first['hookSpecificOutput']['additionalContext'] or \
-            'Yash' not in first.get('systemMessage', ''):
-        bad.append('the first prompt did not carry the board rule and the offer')
+            'Shombith for anything on UGS' not in first['hookSpecificOutput']['additionalContext'] or \
+            'offered to take' in first.get('systemMessage', ''):
+        bad.append('the first prompt did not carry the board rule and the owners, or still routes by offer')
     if again is not None:
         bad.append('the board notice repeated in one session')
     if not act or 'MAKE TO-DOS AND TESTS' not in act['hookSpecificOutput']['additionalContext'] or \

@@ -286,7 +286,7 @@ poses. After writing: re-run `fbx_probe`, `rest_compare`, `measure_vessel_models
 (reimport, `FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs`, `Audit Vessel
 Construction`, `Audit Vessel Tails and Jets`, re-bake `Bake Crystal Hull Fusions` where a
 vessel has fusion bakes, a flight) in `Docs/UNITY_VERIFICATION_CHECKLIST.md` and as a team task
-(`python3 Tools/Build/team_tasks.py add --area <Vessel> --kind test ...`, Yash has offered).
+(`python3 Tools/Build/team_tasks.py add --area <Vessel> --kind test ...`, named to the vessel's owner).
 The Urchin and Rhino prefabs draw their rebuilt rigs since 2026-10-18 (`urchan_shapekey_with_animations.fbx`,
 `rhino_shapekey_with_animations.fbx`, four REAL morphs where the artist rigs had none). The swap was done by
 prefab surgery that does all three of a rig swap's jobs (Docs/VESSEL_CONSTRUCTION.md: geometry, materials,
