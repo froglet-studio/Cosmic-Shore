@@ -56,6 +56,10 @@ namespace CosmicShore.UI
                                  "decides, the row only draws.")]
         protected AIDifficultyPicker aiDifficultyPicker;
 
+        [SerializeField, Tooltip("The pilots as a lineup of pedestals (style-B arcade window, section 74). Optional: a " +
+                                 "panel without one draws its pilots on the domain tiles' seat strips.")]
+        protected ConfigureSeatLineup seatLineup;
+
         [SerializeField, Tooltip("Start / ready-up button.")]
         protected Button startButton;
 
@@ -192,6 +196,7 @@ namespace CosmicShore.UI
         public IReadOnlyList<IntensitySelectButton> IntensityButtons => intensityButtons;
         public IReadOnlyList<DomainInfoData> DomainTiles => domainTiles;
         public Button StartButton => startButton;
+        public ConfigureSeatLineup SeatLineup => seatLineup;
         public GameObject WaitingForOthersLabel => waitingForOthersLabel;
         public FavoriteIcon Favorite => favoriteIcon;
 
@@ -461,6 +466,8 @@ namespace CosmicShore.UI
         public virtual void SetAIDifficultyAvailable(bool available)
         {
             if (aiDifficultyPicker) SetPartShown(aiDifficultyPicker.gameObject, available);
+            // The lineup's AI seats say how the AI flies only where the card offers a difficulty.
+            if (seatLineup && !available) seatLineup.SetDifficulty(null);
         }
 
         /// <summary>Light <paramref name="difficulty"/> on the row. Draws only; raises nothing, so
@@ -468,6 +475,7 @@ namespace CosmicShore.UI
         public virtual void ShowAIDifficulty(CosmicShore.Data.AIDifficulty difficulty)
         {
             if (aiDifficultyPicker) aiDifficultyPicker.SetSelected(difficulty);
+            if (seatLineup) seatLineup.SetDifficulty(difficulty);
         }
 
         /// <summary>Wired by the modal, so a panel prefab needs no onClick of its own.</summary>
