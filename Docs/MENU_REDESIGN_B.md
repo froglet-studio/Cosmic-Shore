@@ -3666,3 +3666,22 @@ Unlocked options share), `author_menu_arcade.py` (`all_games_header`, `option_ro
 tab dropped, the sort row open on arrival, the explore view without its options); `ArcadeGridOrderTests` compile in the
 editor assembly (not run: no editor here); the player and editor reference compiles.
 
+
+## 86. The picked pilot's podium glows instead of an outline (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith, with a screenshot of the Arena card):** "The selection UI is overlapping. We do not need a selection
+icon we can glow the podium below more to see it."
+
+**Built** (`author_menu_configure.py`, `ConfigureSeatPedestal`):
+- The blue outline round the picked pilot (`Pilot/Pick/Editing/Band`) is gone. It covered the pilot and their hull and
+  ran over the next seat's portrait.
+- The seat the vessel strip is picking lights its podium instead: `Pilot/Lit`, under the hull and inside the seat's
+  width. It holds a wider pool of the team's light (`Halo`, `kit_pool`, tinted like the pool through the new
+  `podiumGlow` field) and a white-hot rim (`Core`, `kit_pool_rim`), breathing (KitAmbient Breathe, 1.6 s, down to 55 %).
+- `editingMark` now points at `Pilot/Lit`, so the modal's logic is unchanged. The pilot is still the button that points
+  the strip at its seat.
+
+**How it was checked:**
+- `author_menu_configure.py --check` and `--self-test`. Two new plants are both caught: the outline sprite back on the
+  pedestal, and `podiumGlow` unwired. The validator also asserts that the podium breathes.
+- `gates.sh`, including the player and editor reference compiles.

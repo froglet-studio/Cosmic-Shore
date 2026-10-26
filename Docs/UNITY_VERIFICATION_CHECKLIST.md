@@ -16438,6 +16438,14 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Configure: picked pilot's podium glows, no outline (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 86.
+
+1. Open an Arena card with three pilots, then press the third. **Pass:** no rectangle round any pilot. The picked seat's
+   podium glows brighter and wider in its team colour and breathes. Nothing overlaps the neighbouring portraits.
+2. Press another pilot. **Pass:** the glow moves to that podium, and the vessel strip names that pilot's vessel.
+
 ## Arcade SORT and FILTER (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md section 85. Run `ArcadeGridOrderTests` in the Test Runner (edit mode).

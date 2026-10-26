@@ -55,8 +55,10 @@ namespace CosmicShore.UI
         [SerializeField] private CanvasGroup hullGroup;
         [Tooltip("The pilot and their hull as a button: points the vessel strip at this seat. Optional.")]
         [SerializeField] private Button pickButton;
-        [Tooltip("Lit while the vessel strip picks this seat's hull. Optional.")]
+        [Tooltip("The podium's glow, lit while the vessel strip picks this seat's hull (no outline round the pilot). Optional.")]
         [SerializeField] private CanvasGroup editingMark;
+        [Tooltip("The glow's pool of light, tinted the team's colour like the pool. Optional.")]
+        [SerializeField] private Image podiumGlow;
 
         [Header("Kick")]
         [Tooltip("The ✕ on a placed AI the host may remove.")]
@@ -120,6 +122,7 @@ namespace CosmicShore.UI
             var colour = colorSet ? colorSet.GetDomainSignalColor(domain) : UITheme.Resolve(theme, UIColorToken.TextLight);
             if (pool) pool.color = new Color(colour.r, colour.g, colour.b, pool.color.a);
             if (poolRim) poolRim.color = new Color(colour.r, colour.g, colour.b, poolRim.color.a);
+            if (podiumGlow) podiumGlow.color = new Color(colour.r, colour.g, colour.b, podiumGlow.color.a);
             KitVisibility.SetShown(localGlow, isLocal);
             KitVisibility.SetShown(aiTag, isAi);
             if (nameText) nameText.text = pilotName ?? string.Empty;
