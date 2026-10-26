@@ -45,8 +45,8 @@ OWNER_TOPICS = {
 }
 OWNERS = ('Name the OWNER of the area (Docs/TEAM.md; who_works_where.py for the files), never whoever offered: '
           'Shombith for anything on UGS or the backend (Cloud Code, Cloud Save, Access Control, Moderation, '
-          'authentication, dashboards, deploys), Menu_Main, UI prefabs and the Amoebius engine; Caleb and Shombith '
-          'for FTUE / onboarding (no one else is on it); Garrett for '
+          'authentication, dashboards, deploys), Menu_Main, UI prefabs and the Amoebius engine, and he leads '
+          'activation (Caleb heads FTUE with him; no one else is on it); Garrett for '
           'bleeding-edge, vessels and product decisions; Yash for the party / multiplayer layer, diagnostics and the '
           'Vessel Studio; Caleb and Andrew for QA runs.')
 
