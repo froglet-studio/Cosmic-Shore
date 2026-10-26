@@ -37,6 +37,9 @@ sealed class RingStubLobby : IHostSession
     public int PlayerCount => Roster.Count;
     public event Action Deleted { add { } remove { } }
     public event Action<string> PlayerLeaving { add { } remove { } }
+    public event Action<string> PlayerJoined { add { } remove { } }
+    public event Action<string> PlayerHasLeft { add { } remove { } }
+    public event Action PlayerPropertiesChanged { add { } remove { } }
     public List<IReadOnlyPlayer> Roster { get; } = new();
     public IReadOnlyList<IReadOnlyPlayer> Players => Roster;
     public RingStubCurrentPlayer Local { get; } = new();

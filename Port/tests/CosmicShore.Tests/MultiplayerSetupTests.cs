@@ -37,6 +37,9 @@ public class MultiplayerSetupTests : IDisposable
         public int PlayerCount => 1;
         public event Action Deleted { add { } remove { } }
         public event Action<string> PlayerLeaving { add { } remove { } }
+        public event Action<string> PlayerJoined { add { } remove { } }
+        public event Action<string> PlayerHasLeft { add { } remove { } }
+        public event Action PlayerPropertiesChanged { add { } remove { } }
         public System.Collections.Generic.IReadOnlyList<IReadOnlyPlayer> Players { get; } =
             Array.Empty<IReadOnlyPlayer>();
         public CosmicShore.Engine.Networking.IPlayer CurrentPlayer => null;

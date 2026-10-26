@@ -220,6 +220,9 @@ namespace CosmicShore.Engine.Networking
             public Dictionary<string, SessionProperty> Properties => _view.Properties;
             public event Action Deleted;
             public event Action<string> PlayerLeaving;
+            public event Action<string> PlayerJoined;
+            public event Action<string> PlayerHasLeft;
+            public event Action PlayerPropertiesChanged;
             public IReadOnlyList<IReadOnlyPlayer> Players => _view.Players;
             public IPlayer CurrentPlayer => _closed ? null : _view.Self;
             public IHostSession AsHost() => this;
@@ -227,7 +230,14 @@ namespace CosmicShore.Engine.Networking
             void Apply(SessionRecord rec)
             {
                 LastRecord = rec;
-                foreach (var id in _view.Apply(rec)) PlayerLeaving?.Invoke(id);
+                var before = new HashSet<string>(_view.Players.Select(p => p.Id));
+                var left = _view.Apply(rec).ToList();
+                foreach (var id in left) PlayerLeaving?.Invoke(id);
+                // The SDK's order: PlayerLeaving before the roster drops a player, PlayerHasLeft after.
+                // This engine applies a whole record at once, so both follow the one Apply.
+                foreach (var id in left) PlayerHasLeft?.Invoke(id);
+                foreach (var p in _view.Players)
+                    if (!before.Contains(p.Id)) PlayerJoined?.Invoke(p.Id);
             }
 
             SessionException Gone(SessionError error, string message)

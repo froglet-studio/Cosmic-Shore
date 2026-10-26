@@ -179,6 +179,9 @@ namespace CosmicShore.Engine.Networking
         public int PlayerCount => _inner.PlayerCount;
         public event Action Deleted { add => _inner.Deleted += value; remove => _inner.Deleted -= value; }
         public event Action<string> PlayerLeaving { add => _inner.PlayerLeaving += value; remove => _inner.PlayerLeaving -= value; }
+        public event Action<string> PlayerJoined { add => _inner.PlayerJoined += value; remove => _inner.PlayerJoined -= value; }
+        public event Action<string> PlayerHasLeft { add => _inner.PlayerHasLeft += value; remove => _inner.PlayerHasLeft -= value; }
+        public event Action PlayerPropertiesChanged { add => _inner.PlayerPropertiesChanged += value; remove => _inner.PlayerPropertiesChanged -= value; }
         public IReadOnlyList<IReadOnlyPlayer> Players => _inner.Players;
         public IPlayer CurrentPlayer => _inner.CurrentPlayer;
 
