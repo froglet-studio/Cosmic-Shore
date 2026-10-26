@@ -63,6 +63,7 @@
   .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; }
   .tbtn { font: 700 13px/1 var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; color: #1a1200; background: var(--accent); border: 0; border-radius: 8px; padding: 9px 12px; touch-action: manipulation; }
   .tbtn.ghost { background: rgba(232,236,255,0.18); color: #e8ecff; }
+  .tbtn.mode { background: rgba(196,139,255,0.9); color: #12061f; min-width: 92px; }   /* B: the mode, as the game's Mass card */
   .tturn { position: absolute; inset: 0; display: none; place-items: center; text-align: center; color: #e8ecff; font: 600 16px/1.4 var(--font-display); background: rgba(5,8,23,0.86); z-index: 6; padding: 24px; }
   @media (orientation: portrait) { body.play .tturn { display: grid; } }
   body.play .stagebtn, body.play .transport { display: none; }
@@ -273,7 +274,7 @@
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
-        <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
+        <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn mode" id="tMode" title="B: the Stoat's mode (Mass, Time, Hybrid), as the game's Mass card">B · Mass</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
     </div>
@@ -2151,6 +2152,7 @@
   $('tExit').addEventListener('click', () => setPlayMode(false));
   $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => stopRace());
+  $('tMode').addEventListener('click', () => toggleMechanic());   // B on a phone: the game's Mass card is this button
   function syncTouchBar() {
     if (!playMode) return;
     $('tStart').textContent = race === 'running' && !stopped ? '❚❚ Pause' : '▶ Play';   // the studio transport (/vessel-studio D18)
@@ -4374,6 +4376,7 @@
     if (fieldSling && fieldSling.pair.alive) fieldSling.pair.held = false;
     fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.warm = 0; ftLive.carry = 0;
     document.querySelectorAll('[data-sling]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.sling === slingMode ? 'true' : 'false'));
+    $('tMode').textContent = 'B · ' + (slingMode === 'field' ? 'Mass' : slingMode === 'dipole' ? 'Time' : slingMode === 'hybrid' ? 'Hybrid' : 'Orbit');
     if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false);
     setStyle(style);
   }
