@@ -410,6 +410,35 @@ reticle with the plan's triggers and stick for `gtAiAim` 0.3 s, and lets go. **S
 Gate round 20, s): circuit I1 54.0 / 60.4 / **49.5**, I2 59.6 / 53.8 / **48.2**, I3 51.5 / 77.2 / **49.0**, I4 **49.2** /
 79.5 / 53.0; hairpins I1–I4 **31–39** / 66–95 / 43–50 (round 19: circuit I4 62.4, hairpins 44–53).
 
+## 1i. Round 21 (studio only) — the team's reticle controls and a confirm (2026-10-27)
+
+**The problem Yash hit playing round 20:** letting go of both triggers made a straight 600 u tunnel, never the bent one
+shaped in the reticle. Analog triggers pass back through zero over a few frames on the way out, and round 20 made the
+tunnel from the last of them: no squeeze, no bend. *"We need a mechanic to confirm the tunnel ... with the right trigger we
+control the right turn, with the left trigger the left turn, and like a double thumb the average vector ... in 4
+directions."*
+
+| | |
+|---|---|
+| **Hold the triggers** | the reticle, as round 20 (30 u ahead, nothing made, no time limit) |
+| **RT / LT** | bend right / left: the bend's sideways part is RT − LT |
+| **Both sticks** | their average bends it any of four ways (added to the triggers' part), while the hull holds its line |
+| **How far** | `gtTurnMax` 120° at full; the further it bends, the shorter (`gtLenMax` 600 → `gtLenMin` 120 u) and fatter (throat 3 → 40 u). Squeezing **both** triggers harder also shortens it (both full: a 120 u straight hop) |
+| **Make it** | **A** (Enter; **A · Go** on a phone) makes exactly what the reticle shows; the triggers must come up before the next reticle. **Letting go of both triggers** also makes it, from the shape held `gtReleaseGrace` 0.15 s before, so the triggers and sticks springing back never straighten it |
+
+Round 19/20's LT-shortens / RT-widens shape rules (`gtLtWiden`, `gtTurnLenShare`) are gone.
+
+**Measured** (headless, a 0.1 s release with the triggers and sticks springing back): RT full → 120° right, LT full →
+120° left, RT 0.6 + LT 0.2 → 44° right over 408 u, both half + sticks up → 120° up, both full → a 120 u straight hop;
+A with RT half → 57°, and still holding the triggers after A opens no second reticle. The made tunnel matched the
+reticle every time.
+
+**The AI** tries 21 bends × 9 squeezes, holds both triggers evenly and pushes both sticks toward the ring.
+**Scorecard** (Hard, seed 1; Mass / Time / Gate, s): circuit I1 54.0 / 60.4 / **38.6**, I2 59.6 / 53.8 / **40.6**, I3
+51.5 / 77.2 / **43.0**, I4 49.2 / 79.5 / **42.5**; hairpins I1–I4 **31–39** / 66–95 / 42–48. Gate is now the AI's
+fastest mode on every circuit, by 10+ s: **a balance question** for the team (the warp after a thin tunnel, `gtWarpShare`
+and `gtFatCut`, and the ride speed `gtTubeSpeed` are the levers).
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
