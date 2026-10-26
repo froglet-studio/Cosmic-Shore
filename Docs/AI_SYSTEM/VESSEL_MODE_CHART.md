@@ -11,7 +11,7 @@ Every hull's AI has two halves:
   `GateRaceController`'s steering. Other modes give the platform autopilot their own objectives.
 - **The drive** (when to spend the hull's speed verb) belongs to the HULL and works in any mode.
 
-Regatta-only extras: the commit-from-approach-point fix, no crystal detour, the Urchin's rail aim, and the
+Regatta-only extras (no crystal detour is every gate race's since 2026-10-26): the commit-from-approach-point fix, the Urchin's rail aim, and the
 `_Regatta` tuning variants.
 
 So a Regatta AI hull is **ready to fly** any mode whose card offers it. It is **only tuned and tested** in the

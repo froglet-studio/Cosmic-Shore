@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Racing AIs fly the waypoints, never a crystal (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `GateRaceController.AIDetoursForCrystals` (false) gates the on-the-way crystal detour, so no gate race's
+AI steers at a crystal any more, whatever its scene's `aiCrystalDetourSlack` (200-220 u) says. Regatta's own override
+removed (now the base rule). `RegattaNoCrystalTargetTests` became `RaceAIWaypointsOnlyTests`. Why:
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §6.1.
+
+**Verified without the editor:** reference compile player OK, editor no errors in changed files; gates.sh. NOT run:
+`RaceAIWaypointsOnlyTests` (EditMode).
+
+**Verify in editor:**
+1. Run `RaceAIWaypointsOnlyTests` (EditMode): both pass.
+2. Play Switchback with AI Dolphins and watch one in FrogletTools > AI > Third Eye: its phase is only Approach / Through
+   ring N (never "Crystal on the way"), and it flies past crystals beside its line.
+3. The same in Breakwater (AI Sparrows) and Headlong.
+
+---
+
 ### 🔴 The Sparrow's rocket learned from Yash's shots; Switchback's I3 drive from every intensity (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `SparrowAIBoostPolicy_Breakwater`'s "clear the way" rocket now fires from 138-354 u of a station

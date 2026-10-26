@@ -229,13 +229,31 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | Vessel / minigame | The ability that wins the race | AI today |
 |---|---|---|
 | **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races) |
-| Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned (§3.4); blast through the crystal detour |
+| Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned per intensity (§3.6-3.7); no crystals: a racing AI flies the gates only (§6.1) |
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
 | Stoat / Warpline | the field pair's warp | on hold for Garrett's configuration |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
 | Manta / Redline | Soar | the Soar executor's bands |
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
 | Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
+
+### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26)
+
+> "While playing any racing game mode, AI should not go for crystals. It should only focus on waypoints. If the
+> crystals are the waypoints, then go for crystals. [...] I figured out the AI dolphins were collecting crystals more
+> than going through the waypoints to win the race."
+
+Every gate race (Switchback, Breakwater, Headlong, Redline, Warpline, Slingshot, Skein, Waystation, Grizzly Time,
+Thresher Time, Wrasse Run) let an AI swing up to 200-220 u off its line for any crystal near its route
+(`aiCrystalDetourSlack`, serialized in each scene); only Regatta had opted out. Taking a crystal skips the approach to
+the next mouth, so in Switchback a Dolphin that took one usually missed the gate after it. Now
+`GateRaceController.AIDetoursForCrystals` is false for every gate race, in code: the AI flies the course's waypoints
+and nothing else, whatever the scene says. A mode whose race needs a crystal (one that IS a waypoint, or one the vessel
+cannot finish without) overrides it to true; none does today. The cost: an AI Dolphin no longer fires its crystal blast
+in a race. Test: `RaceAIWaypointsOnlyTests`.
+
+Modes whose crystals ARE the objective keep them: Skim Race (its crystal count ends the race), Tollway (an omni
+crystal forges the ball), The Bends, Rampage and the crystal modes. Sirocco already steers for mass, not crystals.
 
 **Breakwater's steering, first.** The AI Sparrows threaded about 1 station a minute in Yash's five races, circling 56%
 of the race: the 280 u approach point lay outside the 240 u commit radius, Switchback's defect. `BreakwaterController`
