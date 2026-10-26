@@ -1,6 +1,6 @@
 {
  "note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: when a learner changes, every flight is learned from again. Delete a line to relearn it. 'waiting' holds the flights no learner read yet (mode on hold, hull with no learner) and why: each is learned from once its reason goes away. A flight whose learner failed is in neither, so the next sweep tries it again.",
- "learners": "e335b402a2411517",
+ "learners": "4fddee067b3c2b2d",
  "flights": [
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Squirrel_20261016_110728.json",
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Squirrel_20261016_110924.json",
@@ -19,6 +19,7 @@
   "BugLedger/shared/reports/gradi/flights/flight_Cleave_Rhino_20261025_205000.json",
   "BugLedger/shared/reports/gradi/flights/flight_Cleave_Rhino_20261026_125920.json",
   "BugLedger/shared/reports/gradi/flights/flight_Cleave_Rhino_20261026_130232.json",
+  "BugLedger/shared/reports/gradi/flights/flight_Cleave_Rhino_20261026_135223.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261021_074436.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_184626.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_213939.json",
