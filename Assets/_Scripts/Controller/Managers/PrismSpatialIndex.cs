@@ -1860,6 +1860,29 @@ namespace CosmicShore.Gameplay
         #region Registration
 
         /// <summary>
+        /// Who is watching prism lives - the match replay's world recorder (<c>TheaterWorldRecorder</c>,
+        /// <c>Docs/REPLAYS.md</c>), or nobody. Every real prism's birth (<see cref="Register"/>), death
+        /// (<see cref="MarkDestroyed"/>, <see cref="Unregister"/>), restoration and movement passes
+        /// through this index, so one observer here records the whole prism world without a hook in
+        /// <see cref="Prism"/>. Null costs one comparison per call.
+        /// </summary>
+        public static IPrismLifeObserver LifeObserver;
+
+        /// <summary>Hand every live real prism to <paramref name="observer"/> as a birth - the world as it stands now.</summary>
+        public void VisitLive(IPrismLifeObserver observer)
+        {
+            if (observer == null || !_spatial.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                var prism = _prisms[i];
+                if (prism == null) continue;
+                var flags = _spatial[i].Flags;
+                if ((flags & PrismFlags.IsActive) == 0 || (flags & PrismFlags.Destroyed) != 0) continue;
+                observer.OnPrismBorn(i, prism);
+            }
+        }
+
+        /// <summary>
         /// Registers a prism for batch AOE processing, growth occupancy, and the
         /// containing cell's density grids. Returns the registry index which
         /// should be stored on the Prism for O(1) updates and unregistration.
@@ -1926,6 +1949,7 @@ namespace CosmicShore.Gameplay
             // publish their shell here — the flags above are the source of truth.
             RefreshShellData(index);
 
+            LifeObserver?.OnPrismBorn(index, prism);
             return index;
         }
 
@@ -1937,6 +1961,7 @@ namespace CosmicShore.Gameplay
             // Already freed (e.g. OnDisable then ResetState both fire) - don't
             // double-push the slot onto the free list.
             if (s.Flags == 0 && _prisms[index] == null) return;
+            LifeObserver?.OnPrismGone(index);
             // Live entries hold a bucket slot; destroyed ones were already removed.
             if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
             {
@@ -1970,6 +1995,7 @@ namespace CosmicShore.Gameplay
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             if ((s.Flags & PrismFlags.Destroyed) != 0) return; // already destroyed
+            LifeObserver?.OnPrismGone(index);
             // Destroyed mass no longer occupies space - growth may fill the site.
             if ((s.Flags & PrismFlags.IsActive) != 0)
             {
@@ -2014,6 +2040,7 @@ namespace CosmicShore.Gameplay
             // Shell view: a restored prism that is still shielded re-captures its
             // shell at the restored pose (stale data from before destruction).
             RefreshShellData(index);
+            if (prism) LifeObserver?.OnPrismRestored(index, prism);
         }
 
         /// <summary>
@@ -2039,6 +2066,7 @@ namespace CosmicShore.Gameplay
             }
             s.Position = newPosition;
             _spatial[index] = s;
+            LifeObserver?.OnPrismMoved(index, position);
         }
 
         public void UpdateShieldState(int index, bool shielded, bool superShielded)
@@ -2446,6 +2474,14 @@ namespace CosmicShore.Gameplay
                 }
                 s.Position = p;
                 _spatial[index] = s;
+            }
+
+            var observer = LifeObserver;
+            if (observer == null) return;
+            for (int i = 0; i < n; i++)
+            {
+                int index = indices[i];
+                if (index >= 0 && index < _highWaterMark) observer.OnPrismMoved(index, positions[i]);
             }
         }
 

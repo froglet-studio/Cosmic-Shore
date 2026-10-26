@@ -14673,6 +14673,33 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
 9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
    black screen), and the Theater's own playback runs.
 
+## 🔴 Replays record the world: prisms come back (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Yash: "yes start recording the world too". Every prism's birth, death, restoration and movement is recorded beside the
+vessels (`TheaterWorldRecorder` on `PrismSpatialIndex.LifeObserver`) and played as instanced boxes
+(`TheaterWorldPlayback`), `Docs/REPLAYS.md` §6.2. No Unity CLI in the session, so `/verify-unity` could not run. Checked
+offline: refcompile player and editor 0 errors in project code; `TheaterWorldTests` 7/7 in an offline NUnit harness
+(file round trip, a recording without a world, shift, seek forward / backward, swap-remove; two negative controls
+fail as they should); `ReplayStoreTests` 20/20 on the new format; the gates. Not measured: the frame cost of
+recording in a busy match, and of drawing ~50k recorded prisms - profile both.
+
+1. **The trails are the match's.** Play Skim Race or Joust to the end, then WATCH it. **Pass:** it opens at once (no
+   "Building the arena"); the pilots' trails grow behind the ghosts as they fly, coloured by domain, and the walls,
+   rails and flora stand as they did.
+2. **Destroyed prisms go.** Play a match where prisms are destroyed (a Rhino, a Dolphin crash). **Pass:** in the replay
+   they vanish at the moment they were destroyed.
+3. **Seek both ways.** Skip forward (RB) and back (LB) a few times, and let it loop. **Pass:** after each skip the world
+   matches that moment - trails shorter after a skip back - with no hitch longer than a frame or two.
+4. **Creatures move.** Watch a match with swarm fauna. **Pass:** their body prisms move with them (in steps, about five
+   a second).
+5. **Shielded prisms read lighter.** **Pass:** a shielded wall is drawn lighter than an unshielded one of its domain.
+6. **The file and the log.** **Pass:** the `.cstheater` is a few MB at most for a 3-minute match; no
+   `world recording reached its ... event cap` warning in an ordinary match; no errors while watching or leaving.
+7. **Old replays still play.** WATCH a replay recorded before this change. **Pass:** "Building the arena", then the
+   race in the rebuilt arena as before.
+8. **Profile it.** With the Profiler, record a busy match (four pilots, Joust) and watch its replay. **Pass:** the
+   recorder's cost does not show above noise during the match; drawing the world costs a few draw calls per domain.
+
 ## 🔴 Every mode records itself; replays open on the free camera (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
 
 Yash: "any game mode I play, it should be automatically recorded ... simulate the entire game with my free cameras as in

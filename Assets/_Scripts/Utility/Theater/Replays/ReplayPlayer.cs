@@ -41,7 +41,11 @@ namespace CosmicShore.Utility
     /// behind the <see cref="IReplayTransport"/> every <see cref="IReplayCommand"/> runs against, and
     /// a <see cref="ReplayCurtain"/> that clears the screen for the replay's own controls.
     ///
-    /// <para><b>The arena first, then the ghosts.</b> <see cref="BeginAsync"/> stands the mode's own
+    /// <para><b>A recorded world comes first.</b> A recording that carries its prism world
+    /// (<see cref="TheaterRecording.World"/>) plays among exactly the prisms the match had, drawn by
+    /// <see cref="TheaterWorldPlayback"/> on the vessels' clock; no arena is built for it.</para>
+    ///
+    /// <para><b>Otherwise the arena first, then the ghosts.</b> <see cref="BeginAsync"/> stands the mode's own
     /// arena as a satellite far from the menu world and shifts the recording onto it
     /// (<see cref="ReplayStagePlacement"/>), so the race plays through its real rails and rings.
     /// When no arena can be stood (a mode with no preview definition, a build that times out) the
@@ -61,11 +65,13 @@ namespace CosmicShore.Utility
         readonly TheaterPlayback _playback = new();
         readonly ReplayCurtain _curtain = new();
         readonly ReplayArenaStage _stage = new();
+        readonly TheaterWorldPlayback _world = new();
 
         TheaterConfigSO _stageConfig;
         CameraManager _cameraManager;
         bool _backToMenuCamera;
         int _drainPrismsPerFrame = 150;
+        float _worldStart;
 
         /// <summary>Raised once when watching ends, by any path, after the screen is back.</summary>
         public event Action Stopped;
@@ -107,7 +113,13 @@ namespace CosmicShore.Utility
             IsLoading = true;
             try
             {
-                onArena = await _stage.StandAsync((GameModes)recording.GameMode, Mathf.Max(1, summary != null ? summary.Intensity : 1),
+                // A recording with its world plays among its own prisms: nothing is built, so there is
+                // nothing to wait for. Older recordings stand the mode's arena as before.
+                if (recording.HasWorld)
+                    onArena = _stage.StandRecordedWorld((GameModes)recording.GameMode, Vector3.back * replay.StageDistance,
+                                                        summary?.Gates, request.Theme);
+                else
+                    onArena = await _stage.StandAsync((GameModes)recording.GameMode, Mathf.Max(1, summary != null ? summary.Intensity : 1),
                                                   recording.CellConfigName, Vector3.back * replay.StageDistance,
                                                   replay.ArenaPrismStride, replay.ArenaBuildTimeoutSeconds,
                                                   request.Container, request.Theme, _drainPrismsPerFrame, ct,
@@ -130,7 +142,13 @@ namespace CosmicShore.Utility
                 ReplayStagePlacement.Shift(recording,
                     ReplayStagePlacement.Offset(summary != null ? summary.ArenaOrigin : Vector3.zero, _stage.Origin));
 
-            if (StartPlayback(request, onArena)) return true;
+            if (StartPlayback(request, onArena))
+            {
+                _worldStart = recording.StartTime;
+                if (recording.HasWorld && _world.Begin(recording.World, replay.WorldPrismMaterial))
+                    _world.Advance(_worldStart);
+                return true;
+            }
 
             _stage.StrikeAsync(_drainPrismsPerFrame).Forget();
             return false;
@@ -167,7 +185,14 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>Advance the replay. Real time: a paused or slowed game does not slow it.</summary>
-        public void Tick(float unscaledDeltaTime) => _playback.Tick(unscaledDeltaTime);
+        public void Tick(float unscaledDeltaTime)
+        {
+            _playback.Tick(unscaledDeltaTime);
+            if (!_world.IsPlaying || !_playback.IsPlaying) return;
+            // The world follows the vessels' clock, whatever moved it: play, a seek, a loop.
+            _world.Advance(_worldStart + _playback.Position);
+            _world.Render();
+        }
 
         public void TogglePause() => _playback.TogglePause();
         public void Seek(float seconds) => _playback.Seek(seconds);
@@ -183,6 +208,7 @@ namespace CosmicShore.Utility
             // gameplay camera. Only then does the menu take its view back and the curtain come down.
             // The arena goes last, off screen, a slice per frame.
             _playback.Stop();
+            _world.Stop();
             if (_backToMenuCamera && _cameraManager) _cameraManager.SetMainMenuCameraActive();
             _curtain.Lower();
             _stage.StrikeAsync(_drainPrismsPerFrame).Forget();
