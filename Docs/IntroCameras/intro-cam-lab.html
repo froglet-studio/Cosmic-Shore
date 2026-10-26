@@ -144,7 +144,7 @@ details.unity ul{padding-left:18px;margin:6px 0}
 
 <div class="app">
   <header class="top">
-    <div class="brand"><h1>Intro <b>Cam</b> Lab</h1><p>One pre-game camera for every Cosmic Shore mode. Watch each one, then keep, tweak or redo it.</p></div>
+    <div class="brand"><h1>Intro <b>Cam</b> Lab</h1><p>Every intro in a family can play before any mode in it; the game picks one at random each match.</p></div>
     <div class="spacer"></div>
     <div class="ctl"><span>Your domain</span>
       <div class="seg" id="domSeg" role="group" aria-label="Your domain">
@@ -216,13 +216,13 @@ details.unity ul{padding-left:18px;margin:6px 0}
       <ul class="vlist" id="vlist"><li class="hint" style="display:block">No verdicts on this mode yet.</li></ul>
     </section>
     <details class="unity">
-      <summary>How this lands in Unity</summary>
-      <p>Today every mode plays the same <code>PreGameCinematicController</code> path: four chords of a 150-unit circle, 60 up, looking at the scene centre, then 1.5&nbsp;s to the pilot.</p>
+      <summary>How this plays in Unity</summary>
+      <p>Each mode belongs to one of six families. Before a match the game picks one of the family's intros at random, never the same one twice in a row, and shows that mode's own title, tagline and objective over it.</p>
       <ul>
-        <li>One sequence asset per <code>GameModes</code> value, a list of shots (move kind, duration, easing, anchors, field of view, roll, shake). The controller plays it when one is set and falls back to today's orbit when not.</li>
-        <li>Anchors are named scene objects (crystal, gate 0, hulk 2, nucleus), never the coordinates in this page; this page uses stand-in arenas.</li>
-        <li>Every caption is an authored text field on the asset; an empty field shows nothing.</li>
-        <li>The hand-off to the pilot, Skip (0.3&nbsp;s) and the gamepad South button stay exactly as they are.</li>
+        <li>The intros live in <code>Resources/IntroCameraLibrary.asset</code>, written by <code>Tools/Build/author_intro_cameras.py</code>.</li>
+        <li>Shots aim at things in the real arena (the cell centre, your vessel, rivals, crystals, race gates, the biggest wrecks and cacti), not at this page's coordinates, and scale with the cell.</li>
+        <li>Every caption is an authored text field; an empty one shows nothing.</li>
+        <li>The hand-off to the pilot, Skip (0.3&nbsp;s) and the gamepad South button work as before. A mode outside every family still plays the old orbit.</li>
       </ul>
     </details>
   </aside>
@@ -399,7 +399,7 @@ const flash=(at=0,d=.4)=>({k:'flash',at,d}), speed=(at=0,d=99,amt=1)=>({k:'speed
 /* ---------- the modes ---------- */
 const MODES=[];
 const M=d=>MODES.push(d);
-const GROUPS=['Domain classics','Races','Fights','Demolition','Party and control','Arena'];
+const GROUPS=['Crystal fields','Gate races','Boneyard','Forests and demolition','Cages','Courts and cells'];
 
 M({key:'skimrace',name:'Skim Race',group:0,hull:'Squirrel',concept:'Trail skim',
 pitch:'Open low on a live trail at speed, so the first thing you learn is that trails are the road. Crane off the end to find the one crystal, then walk the grid.',
@@ -612,7 +612,7 @@ function kitForest(ctx,o={}){const R=ctx.R,r=rng(o.seed||31),P=Prisms(),bases=[]
     const base=d.clone().multiplyScalar(R*(o.shell||.97)),h=(o.h0||40)+r()*(o.h1||70);cactus(P,base,d.clone().negate(),h,pal[i%pal.length],r);bases.push({base,dir:d.clone().negate(),h});}
   return{P,bases};}
 
-M({key:'bends',name:'The Bends',group:2,hull:'Dolphin',concept:'High noon',
+M({key:'bends',name:'The Bends',group:3,hull:'Dolphin',concept:'High noon',
 pitch:'A spaghetti-western duel in the cactus forest: a wide low shot between the trunks, a draw-speed vertigo on the rival, then a slow circle around the two of you.',
 build(ctx){kitBase(ctx);const F=kitForest(ctx,{seed:42,n:85,below:-.1,h0:50,h1:90});F.P.build(ctx);
   const me=spawn(ctx,'dolphin',0,V(-50,-70,0),V(50,-70,0)),rv=spawn(ctx,'dolphin',1,V(50,-70,0),V(-50,-70,0));
@@ -634,7 +634,7 @@ function kitCages(ctx){const P=Prisms();cageBars(P,210,2,0x7c86b8,1.4);cageBars(
   for(let i=0;i<16;i++){const u=hash(i+60)*2-1,a=hash(i+70)*6.283,qq=Math.sqrt(1-u*u),d=V(qq*Math.cos(a),u,qq*Math.sin(a)),sp=new T3.Mesh(sg,cm.material);sp.position.copy(d.clone().multiplyScalar(17));sp.quaternion.setFromUnitVectors(UP,d);core.add(sp);}
   ctx.scene.add(core);ctx.ticks.push(T=>{core.rotation.y=T*.3;core.rotation.x=Math.sin(T*.4)*.3;});return{core};}
 
-M({key:'wildlifeliberation',name:'Wildlife Liberation',group:2,hull:'Sparrow',concept:'Breach',
+M({key:'wildlifeliberation',name:'Wildlife Liberation',group:4,hull:'Sparrow',concept:'Breach',
 pitch:'Break in the way you will: through the outer cage into the swarm, through the middle cage past the big ones, into the core face to face with the worst. Then snap back out to your start.',
 build(ctx){kitBase(ctx);kitCages(ctx);grid(ctx,'sparrow',V(0,0,-232),V(0,0,1),6,{cols:3,spacing:11});
   return[
@@ -643,7 +643,7 @@ build(ctx){kitBase(ctx);kitCages(ctx);grid(ctx,'sparrow',V(0,0,-232),V(0,0,1),6,
   {name:'The core',note:'Face to face with the core creature; flash on entry, slight tremor.',k:'move',dur:1.6,p0:V(4,10,80),p1:V(2,6,40),l0:V(0,0,0),l1:V(0,0,0),f0:62,f1:46,shake:.25,ease:'out',fx:[flash(0,.35)]},
   {name:'Snap out',note:'Rip back out of all three cages to the start line.',k:'move',dur:1.3,p0:V(2,6,40),p1:V(30,30,-300),l0:V(0,0,0),l1:V(0,0,-232),f0:46,f1:64,ease:'expoOut',fx:[speed(0,.9,1.3)],cap:[stat('First pilot to the kill target',.3,1.4)]}];}});
 
-M({key:'undertow',name:'Undertow',group:2,hull:'Scarab',concept:'Crab along the cage',
+M({key:'undertow',name:'Undertow',group:4,hull:'Scarab',concept:'Crab along the cage',
 pitch:'The Scarab\'s plate hits sideways, so the camera moves sideways: a long crab along the cage wall beside the wildlife, a whip of a dash, then the whole caged arena.',
 build(ctx){kitBase(ctx);kitCages(ctx);grid(ctx,'scarab',V(0,0,-232),V(0,0,1),6,{cols:3,spacing:11});
   return[
@@ -684,7 +684,7 @@ build(ctx){kitBase(ctx);const P=Prisms(),Rm=95,w=24;
   {name:'Pull out',note:'Back away from the ribbon until both interlocked ribbons fill the frame.',k:'move',dur:2.4,p0:edge.getPointAt(.78).add(V(0,6,0)),p1:V(140,150,240),l0:edge.getPointAt(.8),l1:V(0,0,0),f0:84,f1:56,ease:'inOut',cap:[sub('Four arenas. One blade. The arena is the score.',.3,1.9)]},
   {name:'Orbit',note:'A slow turn around the ribbons.',k:'orbit',dur:1.8,c:V(0,0,0),r0:290,h0:150,a0:30,a1:65,f0:56,ease:'smooth',cap:[stat('Cut the prism target first')]}];}});
 
-M({key:'salvo',name:'Salvo',group:3,hull:'Sparrow',concept:'Target lock',
+M({key:'salvo',name:'Salvo',group:2,hull:'Sparrow',concept:'Target lock',
 pitch:'A high strike-planning orbit where every hulk lights up in turn as a target, in the world, then a missile-cam dive at the biggest one and a slow drift back through the dust.',
 build(ctx){kitBase(ctx,{fog:.0014});const b=kitBoneyard(ctx,{seed:44});
   b.hulks.forEach((h,i)=>{const bx=new T3.LineSegments(new T3.EdgesGeometry(new T3.BoxGeometry(h.rad*2.4,h.rad*2.4,h.len+10)),new T3.LineBasicMaterial({color:0xff5a3c,transparent:true,opacity:0}));
@@ -740,7 +740,7 @@ build(ctx){kitBase(ctx);const r=rng(62),P=Prisms();
 function kitCourt(ctx,o={}){const R=ctx.R,cr=R*.7;ctx.scene.add(new T3.LineSegments(new T3.EdgesGeometry(new T3.IcosahedronGeometry(cr,2)),new T3.LineBasicMaterial({color:0xffe0a8,transparent:true,opacity:.28})));
   ctx.scene.add(new T3.Mesh(new T3.SphereGeometry(cr,40,24),new T3.MeshBasicMaterial({color:0xffc070,side:T3.BackSide,transparent:true,opacity:.05,depthWrite:false})));return{cr};}
 
-M({key:'scarabscramble',name:'Scarab Scramble',group:4,hull:'Scarab',concept:'Hoop tour',
+M({key:'scarabscramble',name:'Scarab Scramble',group:5,hull:'Scarab',concept:'Hoop tour',
 pitch:'A playful, bouncy flight that threads every glowing hoop in the court in one line, like a ball someone just batted, then the court from above.',
 build(ctx){kitBase(ctx);const C=kitCourt(ctx),r=rng(43),hoops=[];
   for(let i=0;i<6;i++){const a=i/6*6.283+.3,y=(i%2?1:-1)*35+(r()-.5)*20,p=V(Math.cos(a)*C.cr*.55,y,Math.sin(a)*C.cr*.55),t=V(-Math.sin(a),0,Math.cos(a));ring(ctx,p,qAlign(t),14,0xffd27a,.9,1.6);hoops.push(p);}
@@ -751,7 +751,7 @@ build(ctx){kitBase(ctx);const C=kitCourt(ctx),r=rng(43),hoops=[];
   {name:'The court',note:'Up over the court.',k:'orbit',dur:2.0,c:V(0,0,0),r0:150,r1:220,h0:90,h1:160,a0:40,a1:90,f0:60,ease:'inOut',cap:[stat('Roll it through any hoop')]},
   {name:'Drop in',note:'Bounce down to the start.',k:'move',dur:1.4,p0:V(120,150,150),p1:V(20,-40,-100),l0:V(0,0,0),l1:V(0,-50,-130),f0:60,f1:56,ease:'back'}];}});
 
-M({key:'tollway',name:'Tollway',group:4,hull:'Scarab',concept:'Toll posts',
+M({key:'tollway',name:'Tollway',group:5,hull:'Scarab',concept:'Toll posts',
 pitch:'A beat of low-angle cuts up at each toll post and its plant, the ring grafted on a few, then a crane up a monument the scoring already raised.',
 build(ctx){kitBase(ctx);const C=kitCourt(ctx),r=rng(48),P=Prisms(),posts=[];
   for(let i=0;i<8;i++){const u=r()*2-1,a=i/8*6.283,q=Math.sqrt(1-u*u)*.9,d=V(q*Math.cos(a),u*.6,q*Math.sin(a)).normalize(),base=d.clone().multiplyScalar(C.cr),inn=d.clone().negate();
@@ -766,7 +766,7 @@ build(ctx){kitBase(ctx);const C=kitCourt(ctx),r=rng(48),P=Prisms(),posts=[];
   {name:'Monument',note:'Crane up a scarab-wing monument raised by earlier tolls.',k:'move',dur:2.1,p0:mon.clone().add(V(30,-20,30)),p1:mon.clone().add(V(40,40,50)),l0:mon,l1:mon,f0:56,f1:52,ease:'inOut',cap:[sub('Plant a ring. Every ball through it pays you.',.2,1.8)]},
   {name:'The court',note:'Slow orbit of the whole court.',k:'orbit',dur:1.8,c:V(0,0,0),r0:240,h0:110,a0:30,a1:60,f0:58,ease:'smooth',cap:[stat('First domain to the toll target')]}];}});
 
-M({key:'hijack',name:'Hijack',group:4,hull:'Urchin',concept:'Grind line',
+M({key:'hijack',name:'Hijack',group:5,hull:'Urchin',concept:'Grind line',
 pitch:'Ride a rail at grinding height as it changes colour under you, punch through a burr, then the three great rings from far away, still turning.',
 build(ctx){kitBase(ctx);const rr=150,normals=[V(0,1,.15),V(.9,.3,.2),V(-.3,.4,.9)].map(n=>n.normalize()),circles=[];
   normals.forEach((n,k)=>{const q=qAlign(n);for(let j=0;j<3;j++){const m=new T3.Mesh(new T3.TorusGeometry(rr,1.7,6,90,6.283/3),stdMat(col(j+k),.45));m.quaternion.copy(q);m.rotateZ(j*6.283/3);ctx.scene.add(m);}
@@ -779,7 +779,7 @@ build(ctx){kitBase(ctx);const rr=150,normals=[V(0,1,.15),V(.9,.3,.2),V(-.3,.4,.9
   {name:'Burr',note:'Punch through a spiny burr where two rails cross.',k:'move',dur:1.2,p0:burrs[0].clone().add(V(-30,8,-30)),p1:burrs[0].clone().add(V(20,-4,20)),l0:burrs[0],l1:burrs[0].clone().add(V(60,-10,60)),f0:70,f1:90,ease:'in',fx:[flash(.55,.3)]},
   {name:'Three rails',note:'Far out, the three rings and their burrs turning in frame.',k:'orbit',dur:2.3,c:V(0,0,0),r0:360,h0:100,a0:0,a1:70,f0:54,ease:'inOut',cap:[sub('Grind your colour. Steal theirs.',.2,1.8),stat('Steal the prism target',.8,1.4)]}];}});
 
-M({key:'bloomrush',name:'Bloomrush',group:4,hull:'Manta',concept:'Reef bloom',
+M({key:'bloomrush',name:'Bloomrush',group:5,hull:'Manta',concept:'Reef bloom',
 pitch:'A slow, dreamy drift through the reef with tagged wildlife glowing their fuses. Then everything blooms at once, the way a good round ends.',
 build(ctx){kitBase(ctx,{tint:0x2a6a7a});const r=rng(52),P=Prisms(),pal=[0xff7aa8,0xffb36b,0x5fe0c8,0xb48cff];
   function branch(p,d,len,depth,c){const n=Math.max(1,Math.floor(len/4));for(let i=0;i<n;i++)P.add(p.clone().addScaledVector(d,i*4+2),qDir(d),V(2.4,2.4,3.6),c);const e=p.clone().addScaledVector(d,n*4);if(depth>0)for(let k=0;k<3;k++){const nd=d.clone().add(V(r()-.5,r()*.3,r()-.5).multiplyScalar(1.4)).normalize();branch(e,nd,len*.7,depth-1,c);}}
@@ -794,7 +794,7 @@ build(ctx){kitBase(ctx,{tint:0x2a6a7a});const r=rng(52),P=Prisms(),pal=[0xff7aa8
   {name:'Bloom',note:'Vertigo on the crystal as every fuse goes at once.',k:'vertigo',dur:2.0,target:cr,dir:V(.6,.3,-1),d0:30,d1:120,f0:72,ease:'inOut',fx:[flash(1.2,.5)],cap:[sub('Skim to arm. Tag to plant. Beat the fuse.',.2,1.8)]},
   {name:'The reef',note:'Wide orbit over the reef.',k:'orbit',dur:1.9,c:V(0,-80,0),r0:250,h0:110,a0:180,a1:215,f0:58,ease:'smooth',cap:[stat('120 seconds · biggest bloom wins')]}];}});
 
-M({key:'tapestry',name:'Tapestry',group:4,hull:'Butterfly',concept:'Blank canvas',
+M({key:'tapestry',name:'Tapestry',group:5,hull:'Butterfly',concept:'Blank canvas',
 pitch:'Start in an empty sky. Three painters cross it and the wakes appear behind them while the camera follows one brush, then a top-down shot shows the territory you will fight over.',
 build(ctx){kitBase(ctx);const r=rng(60),painters=[];
   for(let k=0;k<3;k++){const pts=[];for(let i=0;i<7;i++){const a=k*2.1+i*.7;pts.push(V(Math.cos(a)*(60+i*22),(r()-.5)*50,Math.sin(a)*(60+i*22)));}const c=new T3.CatmullRomCurve3(pts),N=160,
@@ -836,7 +836,7 @@ build(ctx){kitBase(ctx,{tint:0x6a3c8a});const nuc=new T3.Mesh(new T3.Icosahedron
   {name:'Pulse',note:'Vertigo on the nucleus as the next wave breaks.',k:'vertigo',dur:1.5,target:V(0,0,0),dir:V(.5,.5,1),d0:70,d1:170,f0:64,ease:'inOut',cap:[stat('A brood every 30 seconds')]}];}});
 
 const FLEET=['urchin','squirrel','manta','rhino','scarab','sparrow','dolphin'];
-M({key:'regatta',name:'Regatta',group:5,hull:'Every hull',concept:'Grid walk',
+M({key:'regatta',name:'Regatta',group:1,hull:'Every hull',concept:'Grid walk',
 pitch:'Walk the starting grid like race day, hull by hull, then ride high over the three braided rails and come home to the gold gate.',
 build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:56,n:8,gates:12,gridBack:34});
   for(let d=0;d<3;d++){const pts=[];for(let i=0;i<400;i++){const u=i/400,p=k.curve.getPointAt(u),fr=frame(k.curve.getTangentAt(u)),ph=u*6.283*8+d*2.094;pts.push(p.addScaledVector(fr.side,Math.cos(ph)*7).addScaledVector(fr.up,Math.sin(ph)*7));}tube(ctx,new T3.CatmullRomCurve3(pts,true),.8,col(d),.55,700,true);}
@@ -846,7 +846,7 @@ build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:56,n:8,gates:12,gridBack:34
   {name:'Braided rails',note:'High over the racing line, the three domain rails braiding below.',k:'path',dur:2.4,curve:k.curve,u0:.1,u1:.38,off:V(0,16,0),ahead:.04,lookUp:-.2,f0:70,bank:.7,ease:'inOut',fx:[speed(0,2.4,.8)],cap:[sub('Every hull. One circuit. Three laps.',.2,1.8)]},
   {name:'Gold gate',note:'Up and round to the gold start gate.',k:'orbit',dur:1.7,c:V(0,0,0),r0:230,h0:110,a0:0,a1:40,f0:58,ease:'inOut',cap:[stat('Lead runner home wins')]}];}});
 
-M({key:'broadside',name:'Broadside',group:5,hull:'Every fighting hull',concept:'Roll call',
+M({key:'broadside',name:'Broadside',group:2,hull:'Every fighting hull',concept:'Roll call',
 pitch:'A fight-night roll call: every hull gets one hero beat with the weapon it brings, then the title lands over the Boneyard.',
 build(ctx){kitBase(ctx,{fog:.0014});kitBoneyard(ctx,{seed:57});
   const weapons=['Guns and rockets','Chain spikes','Energised sword','The joust','The cone','The plate','The bloom'],hulls=['sparrow','urchin','rhino','squirrel','dolphin','scarab','manta'],names=['Sparrow','Urchin','Rhino','Squirrel','Dolphin','Scarab','Manta'],vs=[];
@@ -952,7 +952,7 @@ function syncList(){rack.querySelectorAll('button.mode').forEach(b=>{const on=+b
 sel.addEventListener('change',()=>load(+sel.value));
 function moveWords(s){return({move:'Dolly / crane',orbit:'Orbit',path:'Fly the line',vertigo:'Dolly zoom',cuts:'Hard cuts',hold:'Hold',handoff:'Hand-off'})[s.k]+(s.shake?' · handheld':'')+(s.fovWave?' · lens breathing':'')+(s.spin?' · roll':'');}
 function renderSheet(){const m=MODES[st.idx];
-  document.getElementById('sGroup').textContent=GROUPS[m.group]+' · '+m.hull;document.getElementById('sName').textContent=m.name;
+  document.getElementById('sGroup').textContent=GROUPS[m.group]+' family · '+m.hull;document.getElementById('sName').textContent=m.name;
   document.getElementById('sConcept').textContent=st.compare?'Today\'s orbit (every mode)':m.concept;
   document.getElementById('sPitch').textContent=st.compare?'What every mode plays now: four straight chords of a circle around the scene centre with a short pause at each corner, then the hand-off.':m.pitch;
   const ol=document.getElementById('shots');ol.innerHTML='';
