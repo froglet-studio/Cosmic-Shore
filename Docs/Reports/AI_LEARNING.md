@@ -1,8 +1,8 @@
 # AI learning: what the last races taught
 
-Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-10-26 18:59 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
+Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-10-26 19:27 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
 
-**195 new flight(s)** since the last learn.
+**196 new flight(s)** since the last learn.
 
 ## Bloomrush
 
@@ -200,10 +200,8 @@ hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (ind
 
 New flights: Dolphin 1, Manta 13, Rhino 6, Scarab 3, Serpent 2, Sparrow 6, Squirrel 49, Stoat 2, Urchin 6.
 
-- `learn_drives_from_flights --write`: OK. Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset.
-- `learn_drives_from_flights --check`: OK. check: OK
-- `author_race_lines --check`: OK. author_race_lines --check: OK (7 hulls, 4 learned)
-- `learn_from_flights --write`: OK. wrote Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md
+**On hold, not written:** the AIs train in their own minigames; Regatta is rebuilt from those skills later (Yash, 2026-10-27).
+
 
 - **Urchin: measured, not written** - the Urchin's riding is its modes' scene fields, not a drive asset (reported).
 
@@ -404,10 +402,10 @@ thresher       4     12    5.0   138       1%     0%    0/4    1: 4, 2: 4, 0: 3,
 
 ## Warpline
 
-New flights: Stoat 14.
+New flights: Stoat 15.
 
-**On hold, not written:** the Stoat's AI waits for Garrett's configuration (issue 1198).
-
+- `learn_drives_from_flights --write`: OK. Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset, Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset.
+- `learn_drives_from_flights --check`: OK. check: OK
 
 The person, every recorded race in this mode:
 
@@ -416,13 +414,13 @@ The person, every recorded race in this mode:
 | Stoat | I1 | 4 | 4 | 87 s | - | 2026-10-25 07:33 |
 | Stoat | I2 | 3 | 3 | 66 s | 1 of 1 | 2026-10-27 00:16 |
 | Stoat | I3 | 6 | 6 | 79 s | 6 of 6 | 2026-10-27 00:18 |
-| Stoat | I4 | 1 | 1 | 110 s | 1 of 1 | 2026-10-27 00:21 |
+| Stoat | I4 | 2 | 2 | 110 s | 2 of 2 | 2026-10-27 00:31 |
 
 The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-stoat         28      4    2.6   141       9%     0%    0/28   0: 30, 2: 17, 1: 16, 3: 13
+stoat         30      4    2.5   141      10%     0%    0/30   0: 32, 2: 18, 1: 17, 3: 14
 ```
 
 ## Waystation
@@ -484,4 +482,6 @@ hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (ind
 
 ## Files the learners changed
 
-- none (no hull had three finished races yet, or nothing moved)
+- `Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset`
+- `Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset`
+- `Docs/AI_SYSTEM/LEARNED_DRIVES_Warpline.md`
