@@ -11,6 +11,10 @@ namespace CosmicShore.UI
     /// One seat of <see cref="ConfigureSeatLineup"/>: a pilot's portrait standing on a pool of their team's
     /// light, their name, a status line and the team stepper - or, for an open seat, the + octagon that
     /// adds an AI. It draws what the lineup hands it and raises what the pilot presses; it decides nothing.
+    ///
+    /// <para>Rev 25 (Docs/MENU_REDESIGN_B.md section 78): the pilot stands on the hull they fly, and on a card
+    /// whose hulls are picked (an Arena card, a voyage) pressing the pilot points the vessel strip under the
+    /// lineup at this seat. A card with one team hides the team stepper.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI Kit/Configure Seat Pedestal")]
     public class ConfigureSeatPedestal : MonoBehaviour
@@ -41,6 +45,18 @@ namespace CosmicShore.UI
         [Tooltip("Changes the seat's team with left / right; its arrows do the same by pointer.")]
         [SerializeField] private ConfigureTeamStepper teamStepper;
         [SerializeField] private TMP_Text teamText;
+        [Tooltip("The stepper's group: hidden on a card with one team. Optional.")]
+        [SerializeField] private CanvasGroup teamGroup;
+
+        [Header("Vessel")]
+        [Tooltip("The hull the pilot flies (SO_Vessel.IconActive), under their feet. Optional.")]
+        [SerializeField] private Image hullImage;
+        [Tooltip("The hull's group: hidden while the seat names no hull. Optional.")]
+        [SerializeField] private CanvasGroup hullGroup;
+        [Tooltip("The pilot and their hull as a button: points the vessel strip at this seat. Optional.")]
+        [SerializeField] private Button pickButton;
+        [Tooltip("Lit while the vessel strip picks this seat's hull. Optional.")]
+        [SerializeField] private CanvasGroup editingMark;
 
         [Header("Kick")]
         [Tooltip("The ✕ on a placed AI the host may remove.")]
@@ -68,10 +84,14 @@ namespace CosmicShore.UI
         /// <summary>The ✕ was pressed (this AI's placement ordinal).</summary>
         public event Action<int> OnKick;
 
+        /// <summary>The pilot was pressed: the vessel strip should pick this seat's hull.</summary>
+        public event Action OnPicked;
+
         /// <summary>Whether the seat shows an AI.</summary>
         public bool IsAi { get; private set; }
 
         bool _open;
+        bool _pickable;
         int _aiOrdinal = -1;
 
         void Awake()
@@ -79,6 +99,7 @@ namespace CosmicShore.UI
             if (seatButton) seatButton.onClick.AddListener(() => { if (_open) OnOpenPressed?.Invoke(); });
             if (kickButton) kickButton.onClick.AddListener(() => { if (IsAi && _aiOrdinal >= 0) OnKick?.Invoke(_aiOrdinal); });
             if (teamStepper) teamStepper.OnStep += dir => OnTeamStep?.Invoke(dir);
+            if (pickButton) pickButton.onClick.AddListener(() => { if (_pickable) OnPicked?.Invoke(); });
         }
 
         public void ShowPilot(string pilotName, Sprite portrait, Domains domain, string team, string status, bool isAi,
@@ -129,6 +150,7 @@ namespace CosmicShore.UI
             if (openNameText) openNameText.text = openName ?? string.Empty;
             if (openLineText) openLineText.text = line ?? string.Empty;
             if (seatButton) seatButton.interactable = canAddAi;
+            SetVessel(null, false, false);
         }
 
         public void Hide()
@@ -140,7 +162,34 @@ namespace CosmicShore.UI
             if (seatButton) seatButton.interactable = false;
             if (kickButton) kickButton.interactable = false;
             if (teamStepper) teamStepper.SetChangeable(false);
+            SetVessel(null, false, false);
         }
+
+        /// <summary>
+        /// The hull this pilot flies (null hides it), whether pressing the pilot points the vessel strip here, and
+        /// whether the strip picks this seat's hull now.
+        /// </summary>
+        public void SetVessel(Sprite hull, bool pickable, bool editing)
+        {
+            if (hullImage)
+            {
+                hullImage.sprite = hull;
+                hullImage.enabled = hull;
+            }
+            KitVisibility.SetShown(hullGroup, hull);
+            _pickable = pickable;
+            if (pickButton)
+            {
+                pickButton.interactable = pickable;
+                var nav = pickButton.navigation;
+                nav.mode = pickable ? Navigation.Mode.Automatic : Navigation.Mode.None;
+                pickButton.navigation = nav;
+            }
+            KitVisibility.SetShown(editingMark, pickable && editing);
+        }
+
+        /// <summary>Whether the team stepper shows at all (a card with one team has nothing to step).</summary>
+        public void SetTeamShown(bool shown) => KitVisibility.SetShown(teamGroup, shown);
 
         public void SetStatus(string status)
         {

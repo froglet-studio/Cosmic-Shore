@@ -1682,6 +1682,7 @@ namespace CosmicShore.UI
                 var taken = TakenHullsForAiSeat(ordinal);
                 arena.ShowHullStrip(_availableShips, shown ? _availableShips.FindIndex(v => v && v.Class == shown.Class) : -1,
                                     v => taken.Contains(v.Class), confirmed: false);
+                RefreshSeatLineup();     // the seat the strip picks for is lit, and stands on its new hull
                 return;
             }
 
@@ -1691,6 +1692,7 @@ namespace CosmicShore.UI
             arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed);
             arena.ShowHullStrip(_availableShips, _availableShipIndex,
                                 v => IsHullHeldByOtherPilot(v.Class), _vesselConfirmed);
+            RefreshSeatLineup();
         }
 
         /// <summary>A tap on the hull strip: show that hull, unless the pick is already made, a claim

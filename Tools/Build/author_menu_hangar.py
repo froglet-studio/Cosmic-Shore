@@ -838,23 +838,26 @@ def line_node(parent, key, a, b, token, alpha, width=LINE_W):
     return n
 
 
-def rail_points(w, h):
-    return [(0, h * RAIL_STUB), (0, h), (w - RAIL_LEAN, h), (w, h * RAIL_KNEE), (w, RAIL_Y + RAIL_CHAMFER),
-            (w - RAIL_CHAMFER, RAIL_Y), (w * RAIL_START, RAIL_Y)]
+def rail_points(w, h, lean=RAIL_LEAN, knee=RAIL_KNEE, rail_y=RAIL_Y, chamfer=RAIL_CHAMFER, start=RAIL_START):
+    return [(0, h * RAIL_STUB), (0, h), (w - lean, h), (w, h * knee), (w, rail_y + chamfer),
+            (w - chamfer, rail_y), (w * start, rail_y)]
 
 
-def rail_border(panel, w, h):
+def rail_border(panel, w, h, prefix="Abilities/Panel/Border", **shape):
     """Rev 24's border (R24Borders "2 Rail", Shombith 2026-10-26: "I just care about the angled panel border"): the old
     Hangar's Bracket_Large - open at the top, a short stub on the left, the right side leaning out on a long diagonal -
-    closed on the right by a chamfered rail that stops short of the tabs, a faint dash where it ends and a corner mark."""
-    border = panel.child(N("Abilities/Panel/Border", "Border", STRETCH))
-    pts = rail_points(w, h)
+    closed on the right by a chamfered rail that stops short of the tabs, a faint dash where it ends and a corner mark.
+    `shape` overrides rail_points' lean / knee / rail_y / chamfer / start (Rev 25's configure card runs the rail along
+    its top edge)."""
+    border = panel.child(N(prefix, "Border", STRETCH))
+    pts = rail_points(w, h, **shape)
     for i, (a, b) in enumerate(zip(pts, pts[1:])):
-        line_node(border, f"Abilities/Panel/Border/Line{i}", a, b, "NeutralLightest", 1.0)
-    x = w * RAIL_START
-    line_node(border, "Abilities/Panel/Border/Dash", (x - 30, RAIL_Y), (x - 14, RAIL_Y), "NeutralLightest", 0.35)
-    border.child(N("Abilities/Panel/Border/Corner", "Corner", TLr(0, h - 22, 22, 22))).add("cr", 222, K.canvas_renderer()) \
+        line_node(border, f"{prefix}/Line{i}", a, b, "NeutralLightest", 1.0)
+    x, y = pts[-1]
+    line_node(border, f"{prefix}/Dash", (x - 30, y), (x - 14, y), "NeutralLightest", 0.35)
+    border.child(N(f"{prefix}/Corner", "Corner", TLr(0, h - 22, 22, 22))).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("TextLight", 0.8), K.kit_sprite("kit_corner_tri")))
+    return border
 
 
 def nested_canvas():

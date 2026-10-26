@@ -3395,3 +3395,39 @@ Tandava (one crew, `MaxDomainsAllowed: 1`) carries no team stepper. Nothing is b
 **Built now:** the Arcade window's intensity reads 1 - 4 instead of I - IV (`IntensityStepper.numerals`, authored by
 `author_menu_configure.py`; the unlock line follows). The boards show the other choice too: no number, just the four
 pips as a rising signal sign (B boards).
+
+## 78. Rev 25 B built: the Arcade card in Arena and Voyage, the signal sign, the open border, a roomier card (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the Rev 25 boards (section 77): "Go with B and the signal sign but the add AI button is going out.
+Also the open panel that we used in the hangar use it here too", then "You can make the space bigger I guess bro, its too
+noisy if you cramp stuff up". Built in `author_menu_configure.py` for the Arcade window (`ConfigureView`) and the Arena
+window (`ConfigureArenaView`, which every voyage opens through `ArenaLaunchPanel.Handles`); the Maelstrom window keeps the
+Rev 4 column and is byte-identical.
+
+- **Roomier.** The preview narrows from 1100 to 860 and the right column widens from 680 to 920 (`G_PV_W`, `G_SET_W`).
+  The card hugs its sections and the controls panel above it takes the rest, so the Arcade's shorter card leaves its
+  controls room for every row. The objective box moves to the preview's top-left (no room beside FLY any more); the +1
+  toast keeps the top-right.
+- **The open border.** The card is the Hangar's "2 Rail" border (`H.rail_border`, now shared, with the rail along the
+  card's top edge, a 30-unit chamfer and a 40-unit lean) over `kit_cradle_card`, a new kit sprite: the Hangar's cradle at
+  920 x 536, faint at the top instead of clear. The right inset (56) clears the leaning side; the generator asserts the
+  sprite and the rail were drawn for the same card.
+- **The signal sign.** Intensity is LB, four bars rising left to right (20 wide, 14 to 53 tall) lit up to the picked level,
+  RB. The bars are the `KitIntensityPip`s, so the modal drives them as before; there is no numeral (`numeralText` is
+  empty). What opens the next level moved to the caption row's right.
+- **Six pedestals on the Arena.** The lineup draws a pedestal per seat the modal holds on those cards (`MaxArenaSeats` 6,
+  the Arcade's `MaxMatchSeats` 4; the generator reads both from the modal). Each pilot stands on the hull they fly
+  (`ConfigureSeatPedestal.hullImage`): your strip pick, another pilot's arena claim (else the hull they last flew), an AI's
+  `AIHullSeating.SeatHull`; a one-hull card shows its hull on every seat. A card with one team (Tandava,
+  `MaxDomainsAllowed: 1`) hides the team steppers.
+- **The vessel strip for the pressed seat** (B). Under the lineup: < seven hull tiles >, then CLAIM - the same
+  `ArenaLaunchPanel` hull strip, claim flow and caption ("Your vessel" / "{domain} AI's vessel"). Pressing a pilot
+  (`ConfigureSeatPedestal.pickButton`, in pad navigation only where it does something) points the strip at that seat
+  through the modal's `SelectVesselSeat`, the same rule the seat rows' hull taps used; the seat the strip picks for wears
+  the selection band. The old class line and description under the strip are gone (the controls panel names the hull).
+- **ADD AI stays inside.** ADD AI PILOT and the Easy / Medium / Hard row sit on the card's last row, inside the inset.
+- Retired with it: the Arena's Rev 4 column, its `ConfigurePilotsFit`, the controls grid under the preview, the hull
+  section's class line, and the generator's `hull_body` / `vessel_body`.
+
+Affects Yash's shared vessel panel (`ArenaLaunchPanel`, the hull strip and claim, #1558): its strip and claim are reused
+as they are; only where they sit moved. Editor check: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 25 configure card".

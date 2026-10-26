@@ -16110,6 +16110,29 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Rev 25 configure card: Arena and Voyage on the Arcade card, the signal sign, the open border (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
+`author_menu_configure.py --check` / `--self-test` (45 planted defects caught), `author_ui_kit_sprites.py --check`,
+`author_menu_hangar.py --check` (the shared rail border left the Hangar byte-identical), `gates.sh`, rect renders of
+`ConfigureView`, `ConfigureArenaView` and `ConfigureSeatPedestal`. Docs/MENU_REDESIGN_B.md section 78.
+
+1. Open any Arcade card. **Pass:** the preview is narrower (860), the right column wider; the card has no glass frame -
+   an open angled border, a rail along the top right that chamfers into a right side leaning in toward the floor, a
+   corner mark bottom-left; intensity is LB, four rising bars lit to the level, RB, no number; the "Play N to unlock"
+   line on the caption row's right; ADD AI PILOT and Easy / Medium / Hard inside the border; the controls above show
+   every row.
+2. Open Brood Rush (Arena). **Pass:** the same card, six pedestals, each pilot standing on a hull icon over the pool of
+   their team's colour; under them "Your vessel" with the hull strip and CLAIM; the hull you tap appears under your feet.
+3. Add two AIs, then press an AI's pedestal (mouse, or move to it with the pad and press A). **Pass:** the strip's
+   caption reads "{domain} AI's vessel", that pedestal wears the blue band, a tap on a tile changes the hull under that
+   AI's feet; pressing your own pedestal gives the strip back ("Your vessel"). CLAIM still gates START.
+4. Open Tandava from the Voyage window. **Pass:** the same card; no team steppers (one crew); the hull strip shows its
+   three hulls.
+5. As a guest in an Arena lobby. **Pass:** the host's hull shows under the host; your AIs (your team) can be pressed,
+   the others cannot.
+6. LB / RB step intensity, a locked level shows its unlock line, and nothing overlaps the leaning right side at 16:10.
+
 ## Menu_Main slide lag: masks sleep while nothing under them can be seen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds, every menu generator `--check` / `--self-test`, `check_generated_assets.py`.
