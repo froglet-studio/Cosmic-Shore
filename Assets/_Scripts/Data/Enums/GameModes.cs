@@ -335,8 +335,14 @@ namespace CosmicShore.Data
         // See _Scripts/Controller/Arcade/TANDAVA.md.
         Tandava = 69,
 
+        // TandavaSevering (70): Voyage 2, a FORK of Tandava carrying the severing, wound memory and whale-jelly chimera
+        // work of PR #1046 (cut it in two and the piece crawls off as the Severed; it learns from its wounds; on its way
+        // up to the dance it tears between a whale and a jelly). Its own controller, scene, card and assets, so Tandava
+        // itself moves on without it (Garrett, 2026-10-26). See _Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md.
+        TandavaSevering = 70,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 64) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 65) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

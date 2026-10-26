@@ -28,8 +28,8 @@ namespace CosmicShore.Core
                 _refs = _instance.GetComponent<DialogueUIPrefabRefs>();
                 _animator = _instance.GetComponent<Animator>();
 
-                _refs.nextButton.onClick.AddListener(OnNextClicked);
-                _refs.skipButton.onClick.AddListener(OnSkipClicked);
+                _refs.NextButton.onClick.AddListener(OnNextClicked);
+                _refs.SkipButton.onClick.AddListener(OnSkipClicked);
             }
 
             _instance.SetActive(true);
@@ -38,7 +38,7 @@ namespace CosmicShore.Core
         public void ShowLine(DialogueSet set, DialogueLine line, Action onLineComplete)
         {
             _currentOnLineComplete = onLineComplete;
-            _refs.nextButton.gameObject.SetActive(false);
+            _refs.NextButton.gameObject.SetActive(false);
 
             if (set.mode == DialogueModeType.Monologue)
                 ShowMonologueLine(set, line);
@@ -57,7 +57,7 @@ namespace CosmicShore.Core
                 _refs.OnAnimInComplete = () =>
                 {
                     StartTypewriter(_refs.MonologueDialogText, line.text,
-                        () => _refs.nextButton.gameObject.SetActive(true));
+                        () => _refs.NextButton.gameObject.SetActive(true));
                     _refs.OnAnimInComplete = null;
                 };
 
@@ -67,14 +67,14 @@ namespace CosmicShore.Core
             else
             {
                 StartTypewriter(_refs.MonologueDialogText, line.text,
-                    () => _refs.nextButton.gameObject.SetActive(true));
+                    () => _refs.NextButton.gameObject.SetActive(true));
             }
         }
 
         void ShowDialogueLine(DialogueSet set, DialogueLine line)
         {
             bool isLeft = ResolveSide(line) == DialogueSide.Left;
-            _refs.nextButton.gameObject.SetActive(false);
+            _refs.NextButton.gameObject.SetActive(false);
 
             if (isLeft)
             {
@@ -82,7 +82,7 @@ namespace CosmicShore.Core
                 _refs.leftPortrait.sprite = set.portraitSpeaker1;
                 _refs.leftDialogueText.text = "";
                 _refs.leftDialogueText.gameObject.SetActive(true);
-                _refs.rightSpeakerRoot.gameObject.SetActive(false);
+                _refs.RightSpeakerRoot.gameObject.SetActive(false);
             }
             else
             {
@@ -90,7 +90,7 @@ namespace CosmicShore.Core
                 _refs.rightPortrait.sprite = set.portraitSpeaker2;
                 _refs.rightDialogueText.text = "";
                 _refs.rightDialogueText.gameObject.SetActive(true);
-                _refs.leftSpeakerRoot.gameObject.SetActive(false);
+                _refs.LeftSpeakerRoot.gameObject.SetActive(false);
             }
 
             if ((isLeft && !_leftPanelEntered) || (!isLeft && !_rightPanelEntered))
@@ -99,7 +99,7 @@ namespace CosmicShore.Core
                 {
                     var text = isLeft ? _refs.leftDialogueText : _refs.rightDialogueText;
                     StartTypewriter(text, line.text,
-                        () => _refs.nextButton.gameObject.SetActive(true));
+                        () => _refs.NextButton.gameObject.SetActive(true));
                     _refs.OnAnimInComplete = null;
                 };
 
@@ -112,7 +112,7 @@ namespace CosmicShore.Core
             {
                 var text = isLeft ? _refs.leftDialogueText : _refs.rightDialogueText;
                 StartTypewriter(text, line.text,
-                    () => _refs.nextButton.gameObject.SetActive(true));
+                    () => _refs.NextButton.gameObject.SetActive(true));
             }
         }
 
@@ -131,7 +131,7 @@ namespace CosmicShore.Core
 
         void OnNextClicked()
         {
-            _refs.nextButton.gameObject.SetActive(false);
+            _refs.NextButton.gameObject.SetActive(false);
             _currentOnLineComplete?.Invoke();
             _currentOnLineComplete = null;
         }

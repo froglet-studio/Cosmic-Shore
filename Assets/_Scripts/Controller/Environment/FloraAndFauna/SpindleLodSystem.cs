@@ -964,7 +964,11 @@ namespace CosmicShore.Gameplay
                 var me = _entries[movedEntry];
                 me.batchSlot = slot;
                 _entries[movedEntry] = me;
-                b.matrices[slot] = b.matrices[last];
+                // A batch waiting for its Rebuild owns no live matrices: JoinBatch returns before
+                // growing the array while it is dirty, so `last` can lie past its end (Bug Ledger
+                // E-7cbbaadd58, Garrett: IndexOutOfRange here in a busy drain). Rebuild rewrites every
+                // slot from the poses, so nothing needs carrying across.
+                if (!b.dirty) b.matrices[slot] = b.matrices[last];
             }
             b.entries.RemoveAt(last);
             // The box is kept: it only over-covers (a little culling, never a missing limb), and is

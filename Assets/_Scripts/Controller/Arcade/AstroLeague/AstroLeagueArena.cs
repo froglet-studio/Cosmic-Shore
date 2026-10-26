@@ -49,10 +49,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] float goalRingRadius = 62f;
 
         // Config-first dimension reads (see the header above): the settings asset owns the court.
-        float BaseLength => settings != null ? settings.arenaLength : arenaLength;
-        float BaseWidth => settings != null ? settings.arenaWidth : arenaWidth;
-        float BaseHeight => settings != null ? settings.arenaHeight : arenaHeight;
-        float BaseGoalRadius => settings != null ? settings.goalMouthRadius : goalRingRadius;
+        float BaseLength => settings != null ? settings.ArenaLength : arenaLength;
+        float BaseWidth => settings != null ? settings.ArenaWidth : arenaWidth;
+        float BaseHeight => settings != null ? settings.ArenaHeight : arenaHeight;
+        float BaseGoalRadius => settings != null ? settings.GoalMouthRadius : goalRingRadius;
 
         [Header("References")]
         [SerializeField] AstroLeagueBall ball;
@@ -90,8 +90,8 @@ namespace CosmicShore.Gameplay
 
         // Goal-portal tints are config-only (AstroLeagueSettingsSO) - no inline palette duplicate.
         // Gray fallback only fires with no settings wired (a broken scene, not a shipping state).
-        Color JadeColor => settings != null ? settings.jadeGoalColor : Color.gray;
-        Color RubyColor => settings != null ? settings.rubyGoalColor : Color.gray;
+        Color JadeColor => settings != null ? settings.JadeGoalColor : Color.gray;
+        Color RubyColor => settings != null ? settings.RubyGoalColor : Color.gray;
 
         /// <summary>
         /// Build (or rebuild) the stadium at the given intensity scale + court shape. Called by the
@@ -107,7 +107,7 @@ namespace CosmicShore.Gameplay
             _W = BaseWidth * _scale;
             _H = BaseHeight * _scale;
             _goalR = BaseGoalRadius * _scale;
-            _boundaryRadius = (settings != null ? settings.boundaryRadius : 190f) * _scale;
+            _boundaryRadius = (settings != null ? settings.BoundaryRadius : 190f) * _scale;
 
             // Clear anything from a prior Build (defensive - normally built once per scene).
             for (int i = _generated.Count - 1; i >= 0; i--)
@@ -120,13 +120,13 @@ namespace CosmicShore.Gameplay
             // goal caps sit on the goal lines (±length/2) and "backboard" missed shots. The nucleus
             // visual is morphed to match by the controller (Cell.SetNucleusMesh / SetNucleusWorldRadius).
             Vector3 halfExtents = new Vector3(_W / 2f, _H / 2f, _L / 2f);
-            float octFrac = settings != null ? settings.octagonBevelFraction : 0.5f;
-            float bevFrac = settings != null ? settings.beveledBoxBevelFraction : 0.45f;
-            var ringOuter = settings != null ? settings.notchedRingOuterShape : AstroLeagueBoundaryShape.Cylinder;
-            float ringMajor = settings != null ? settings.ringMajorRadiusFraction : 0.5f;
-            float ringTube = settings != null ? settings.ringTubeRadiusFraction : 0.18f;
-            float notchCenter = (settings != null ? settings.notchCenterDegrees : 0f) * Mathf.Deg2Rad;
-            float notchHalf = (settings != null ? settings.notchHalfWidthDegrees : 30f) * Mathf.Deg2Rad;
+            float octFrac = settings != null ? settings.OctagonBevelFraction : 0.5f;
+            float bevFrac = settings != null ? settings.BeveledBoxBevelFraction : 0.45f;
+            var ringOuter = settings != null ? settings.NotchedRingOuterShape : AstroLeagueBoundaryShape.Cylinder;
+            float ringMajor = settings != null ? settings.RingMajorRadiusFraction : 0.5f;
+            float ringTube = settings != null ? settings.RingTubeRadiusFraction : 0.18f;
+            float notchCenter = (settings != null ? settings.NotchCenterDegrees : 0f) * Mathf.Deg2Rad;
+            float notchHalf = (settings != null ? settings.NotchHalfWidthDegrees : 30f) * Mathf.Deg2Rad;
             _boundary = new AstroLeagueBoundary(shape, Center, halfExtents, _boundaryRadius, octFrac, bevFrac,
                 ringOuter, ringMajor, ringTube, notchCenter, notchHalf);
             if (ball != null) ball.SetBoundary(_boundary);
@@ -167,7 +167,7 @@ namespace CosmicShore.Gameplay
         void RebuildEdgeLining()
         {
             ClearEdgeLining();
-            if (!Application.isPlaying || settings == null || !settings.edgePrismsEnabled || _boundary == null)
+            if (!Application.isPlaying || settings == null || !settings.EdgePrismsEnabled || _boundary == null)
                 return;
             if (!prismSpawnChannel)
             {
@@ -182,11 +182,11 @@ namespace CosmicShore.Gameplay
                 for (int i = 1; i < path.Length; i++)
                     totalLength += Vector3.Distance(path[i - 1], path[i]);
 
-            int count = Mathf.Max(0, settings.edgePrismCount);
+            int count = Mathf.Max(0, settings.EdgePrismCount);
             if (count == 0 || totalLength < 1f) return;
 
             float spacing = totalLength / count;
-            float inset = settings.edgePrismInset * _scale;
+            float inset = settings.EdgePrismInset * _scale;
             int laid = 0;
 
             // One continuous arc-length walk across ALL edge paths (the carry-over between paths is
@@ -220,7 +220,7 @@ namespace CosmicShore.Gameplay
                             tangent, inward == Vector3.zero ? Vector3.up : inward);
 
                         BoostRingBuilder.LayOne(prismSpawnChannel, worldPos, rotation,
-                            settings.edgePrismScale, PrismKind.SuperShielded, Domains.Blue,
+                            settings.EdgePrismScale, PrismKind.SuperShielded, Domains.Blue,
                             playerName: null, $"AstroLeagueEdge::{laid++}", collected: _edgePrisms);
                     }
                     distanceToNext -= segmentLength - travelled;

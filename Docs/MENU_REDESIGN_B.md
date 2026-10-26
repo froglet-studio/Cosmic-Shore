@@ -2050,6 +2050,19 @@ now looks like style B:
 - **Gate:** four new planted defects: a row that grows on hover, the hover label unwired, a card row unwired, and the
   modal back on the generated card.
 
+**The Pilots section fits its tallest domain column (2026-10-26).** The section was authored for one seat and the open
+seat (`PILOTS_BODY_H`), but a column grows by a row per pilot, so a second pilot in one domain ran into the AI pilots row
+and a third sat behind its Easy / Medium / Hard buttons. `ConfigurePilotsFit` on each view's `Steps` now grows the
+section to the tallest column, drops the AI row under it and moves the next section (Vessel; Maelstrom: Format) and the
+launch row down by the same amount, up to `maxGrowth`, the room above `BOTTOM` the generator measures per window
+(Arcade 144.6, Arena 86.6, Maelstrom 126.6). Past that the seat rows and the open seat tighten: gaps 6 -> 2, then rows
+down to 32 (the kick button), which only a crowded Arena column needs (5 pilots: rows of 34.9). A lobby that cannot
+launch (all six Arena pilots in one domain) grows 19 px past `BOTTOM` instead of covering the row. The generator's
+`check_pilots_fit` runs the same arithmetic over every seat count, reading the seat ceilings from
+`ArcadeGameConfigureModal` and the Arena roster's `MinDomainsAllowed`; two new planted defects (the fit unwired from the
+AI row, the launch row left out of it). Also: a `KitVisibility` hide now finishes the part's entrance first, which had
+left the AI row visible but dead on cards that do not offer it.
+
 ## 44. Playtest fixes: the Ark under the nav, the fly hint's x, flat - and x (2026-10-17)
 
 - **The Ark** ("Ark screen is messed up"): the title and the recipe panel sat up under the top nav.
@@ -3285,3 +3298,5 @@ Rev 4 column, section 43, and are the follow-up).
   `author_ui_kit_sprites.py --check` / `--self-test` (the pool, its rim and the octagon outline, with controls);
   `check_generated_assets.py`, `check_ui_colors.py`, `check_console_logging.py`. The look and the pad flow are owed
   in the editor (checklist entry "Rev 20 G").
+
+- **With Yash's `ConfigurePilotsFit` (bleeding-edge #1563, merged in 2026-10-26).** It grows the Rev 4 Pilots section to its tallest domain column and moves the next section and START down with it. The arcade view no longer has that section (its pilots are the pedestal lineup, its domain columns a hidden seat book), so the fit is authored on the Arena and Maelstrom views only; a fit on the arcade view would move START and the lineup to fit columns nobody sees. `author_menu_configure.py` asserts the arcade view carries none, and its self-test plants one there (Yash's two plants now target the Arena view).

@@ -225,7 +225,7 @@ REGATTA_LEARNED = {
     "LookaheadMin": 70.0,
     "LookaheadSeconds": 1.03,
     "MassGuardMargin": 1.379,
-    "PolicyVersion": "regatta-learned-20261025-3flights",
+    "PolicyVersion": "regatta-learned-20261026-3flights",
     "SkimHeight": -5.948,
     "StickGainPerDegree": 0.025,
     "TrackGuardMargin": 1.642,

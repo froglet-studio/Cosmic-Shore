@@ -43,12 +43,12 @@ namespace CosmicShore.Gameplay
 
             // Stagger the first seed by the full interval so a fresh match does not open with a
             // nucleus already studded before anyone has flown anywhere.
-            _nextSeedTime = Time.time + (config != null ? config.seedIntervalSeconds : 14f);
+            _nextSeedTime = Time.time + (config != null ? config.SeedIntervalSeconds : 14f);
         }
 
         void Update()
         {
-            if (config == null || config.ballPrefab == null) return;   // unwired = silent, per the audio/reference convention
+            if (config == null || config.BallPrefab == null) return;   // unwired = silent, per the audio/reference convention
             if (_status == null) return;
             if (!ScarabBallForge.CanSpawnLocally) return;              // clients never mint
 
@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
 
             // Re-arm FIRST, so a refusal (no nucleus, domain at its cap) costs one interval rather
             // than retrying every frame — the cap PAUSES the clock, it never culls anything.
-            _nextSeedTime = Time.time + Mathf.Max(0.5f, config.seedIntervalSeconds);
+            _nextSeedTime = Time.time + Mathf.Max(0.5f, config.SeedIntervalSeconds);
 
             var cell = ResolveCell();
             if (cell == null) return;

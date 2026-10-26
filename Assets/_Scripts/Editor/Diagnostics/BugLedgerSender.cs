@@ -208,7 +208,13 @@ namespace CosmicShore.Editor
                 ? FrogletGit.RunWithEnv(env, "read-tree", remote.Parent)
                 : FrogletGit.RunWithEnv(env, "read-tree", "--empty");
             if (!read.Ok) return "read-tree: " + read.Text.Trim();
-            FrogletGit.RunWithEnv(env, "rm", "--cached", "-r", "-q", "--ignore-unmatch", "--", ctx.IssuesDir);
+            // -f: this index is the ledger branch's tree, so its issue files differ from both this
+            // checkout's HEAD and its working tree, and a plain `rm --cached` refuses ("staged content
+            // different from both the file and the HEAD"), exits 1 and removes nothing. Unchecked,
+            // that kept every issue a machine ever published: Garrett's 04:53 send still carried
+            // E-16d65ffecb at 1/2 three hours after it closed at 2/2, so the board never saw it close.
+            var clear = FrogletGit.RunWithEnv(env, "rm", "--cached", "-f", "-r", "-q", "--ignore-unmatch", "--", ctx.IssuesDir);
+            if (!clear.Ok) return "rm --cached: " + clear.Text.Trim();
 
             int n = 0;
             foreach (var (path, json) in files)

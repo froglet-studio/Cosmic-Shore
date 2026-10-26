@@ -13,8 +13,10 @@ namespace CosmicShore.Gameplay
         ScriptableEventNoParam _onPlayGame;
         
         private float _timeRemaining;
-        public float timeRemaining;
-        public TMP_Text textMeshPro;
+        [SerializeField] float timeRemaining;
+        public float TimeRemaining => timeRemaining;
+        [SerializeField] TMP_Text textMeshPro;
+        public TMP_Text TextMeshPro => textMeshPro;
         bool _timerEnded = true;
 
         private void OnEnable()

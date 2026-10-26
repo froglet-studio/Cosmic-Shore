@@ -8602,22 +8602,6 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 7
   colorDrivenExternally: 0
---- !u!114 &749820614337312798
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 283104064783759948}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd34103d35b600054f385f891268893d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mode: 1
-  period: 1.2
-  amplitude: 0.6
-  phase: 0
 --- !u!114 &3810160051745568379
 MonoBehaviour:
   m_ObjectHideFlags: 0
