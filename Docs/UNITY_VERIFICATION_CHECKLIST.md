@@ -4017,6 +4017,21 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Load Time Insights: the boot's menu load is timed while online (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (B36 addendum, the 26 Oct multiplayer sweep): a 10.4 s frame in the boot's load of Menu_Main dropped
+the Relay host, and no report existed for that load. `LoadInsights.BeginBootLoad` records it (loadKind `"boot"`) when
+online or armed, from just before `AuthenticationSceneController` calls `LoadScene`, to `SceneLoader`'s "Menu shown"
+(`IsRecordingMenuLoad`, renamed from `IsRecordingMenuReturn`, covers both kinds that end at the menu).
+**Verified without the editor:** `LoadInsightsAutoRecordTests` 8/8 (recording the boot as a launch fails the new
+test); the full edit-mode suite on Amoebius 664/668 (the 4 known failures); `unity_refcompile` player and editor OK;
+the console-logging and conditional-compilation gates; `net_logs.py --self-test`. `/verify-unity` is not available in
+the cloud session.
+**Verify in editor:**
+1. The 8 `LoadInsightsAutoRecordTests` pass in the Test Runner.
+2. Play from the Bootstrap scene while online. After Play, `net_logs.py show 1` lists a `boot` load under "Loads"
+   with its worst frame; a frame over 9 s carries RELAY RISK.
+
 ### 🔴 Party: Block 5 step 7 - two absent reads before a player is removed (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 7, from the August work's c9c6db1772): one short
