@@ -44,6 +44,7 @@ namespace CosmicShore.Utility
     {
         readonly GameDataSO _gameData;
         readonly ReplayIndexRepository _index;
+        readonly SceneNameListSO _sceneNames;
 
         ReplayStore _store;
         TheaterRecorder _recorder;
@@ -53,8 +54,9 @@ namespace CosmicShore.Utility
         Task _indexLoad;
         bool _disposed;
 
-        public ReplayService(GameDataSO gameData, ReplayIndexRepository index)
+        public ReplayService(GameDataSO gameData, ReplayIndexRepository index, SceneNameListSO sceneNames = null)
         {
+            _sceneNames = sceneNames;
             _gameData = gameData;
             _index = index;
 
@@ -138,7 +140,10 @@ namespace CosmicShore.Utility
         void HandleTurnStarted()
         {
             if (_disposed) return;
-            if (!ReplayConfigSO.Resolve().ShouldAutoRecord(_gameData.GameMode)) return;
+            // Every mode records itself; the menu's freestyle (the lava lamp) never does - it is not a match.
+            string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (!ReplayConfigSO.Resolve().ShouldAutoRecord(_gameData.GameMode, activeScene,
+                                                           _sceneNames ? _sceneNames.MainMenuScene : null)) return;
 
             var theater = TheaterConfigSO.Resolve();
             if (!theater.recordVessels) return;
@@ -159,6 +164,7 @@ namespace CosmicShore.Utility
 
             _recordCts = new CancellationTokenSource();
             RecordLoopAsync(_recorder, _recordCts.Token).Forget();
+            CaptureCourseAsync(_pending, _pending.ArenaOrigin, _recordCts.Token).Forget();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Replay] recording {_gameData.GameMode}");
         }
 
@@ -177,6 +183,38 @@ namespace CosmicShore.Utility
                 }
             }
             catch (OperationCanceledException) { /* stopped: turn end, session end, dispose */ }
+        }
+
+        /// <summary>
+        /// The race rings this match is flown through, captured from the scene so the replay rebuilds
+        /// exactly them - a gate race draws a new course seed every match (and a guest never sees the
+        /// seed at all), so rebuilding from the mode's defaults would put the rings somewhere else.
+        /// Rings can stand a moment after Go, so this looks once a second for the first few seconds.
+        /// </summary>
+        static async UniTaskVoid CaptureCourseAsync(ReplaySummary summary, Vector3 arenaOrigin, CancellationToken ct)
+        {
+            const int Attempts = 8;
+            try
+            {
+                for (int attempt = 0; attempt < Attempts && summary.Gates.Count == 0; attempt++)
+                {
+                    var rings = UnityEngine.Object.FindObjectsByType<RaceGateRing>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                    for (int i = 0; i < rings.Length; i++)
+                    {
+                        var ring = rings[i];
+                        if (!ring) continue;
+                        summary.Gates.Add(new ReplayGate
+                        {
+                            Index = ring.Index, Position = ring.transform.position - arenaOrigin,
+                            Axis = ring.Axis, Radius = ring.Radius
+                        });
+                    }
+                    summary.Gates.Sort((a, b) => a.Index.CompareTo(b.Index));
+                    if (summary.Gates.Count == 0)
+                        await UniTask.Delay(1000, ignoreTimeScale: true, cancellationToken: ct);
+                }
+            }
+            catch (OperationCanceledException) { /* the recording stopped first */ }
         }
 
         void HandleTurnEnded()
@@ -339,6 +377,12 @@ namespace CosmicShore.Utility
             if (cap <= 0) return;
 
             if (!await TryEnsureIndexLoadedAsync()) return;
+            // The index lists matches for other devices, which cannot watch them, so it carries no course.
+            if (summary.Gates.Count > 0 && ReplaySummary.TryParse(summary.ToJson(), out var listed, out _))
+            {
+                listed.Gates.Clear();
+                summary = listed;
+            }
             _index.Upsert(summary, cap);
         }
 

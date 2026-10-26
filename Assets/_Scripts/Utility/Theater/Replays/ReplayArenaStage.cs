@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -53,7 +54,7 @@ namespace CosmicShore.Utility
         public async UniTask<bool> StandAsync(GameModes mode, int intensity, string recordedConfigName, Vector3 origin,
                                               int prismStride, float timeoutSeconds, Container container,
                                               ThemeManagerDataContainerSO theme, int drainPrismsPerFrame,
-                                              CancellationToken ct)
+                                              CancellationToken ct, IReadOnlyList<ReplayGate> recordedGates = null)
         {
             if (IsStanding || _striking || _arena.Cell) return false;
 
@@ -94,7 +95,8 @@ namespace CosmicShore.Utility
                 }
                 if (!_arena.Cell) return false;
 
-                RaiseCourse(definition, config, intensity, theme);
+                if (recordedGates is { Count: > 0 }) RaiseRecordedCourse(definition.Mode, recordedGates, theme);
+                else RaiseCourse(definition, config, intensity, theme);
                 IsStanding = true;
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Replay] arena for {mode} ({config.CellName}) standing at {origin}.");
                 return true;
@@ -140,11 +142,39 @@ namespace CosmicShore.Utility
             }
         }
 
-        /// <summary>A gate race's rings (and any structure the match hangs on them), as the preview stands them.</summary>
+        /// <summary>
+        /// The rings the match was flown through, exactly as the recording captured them (any gate race,
+        /// Skim Race included): the seed a gate race drew, or a guest never saw, does not matter.
+        /// </summary>
+        void RaiseRecordedCourse(GameModes mode, IReadOnlyList<ReplayGate> gates, ThemeManagerDataContainerSO theme)
+        {
+            _host = new GameObject($"ReplayStage ({mode})");
+            var course = new List<RaceGate>(gates.Count);
+            var rings = new List<RaceGateRing>(gates.Count);
+            for (int i = 0; i < gates.Count; i++)
+            {
+                var gate = new RaceGate(_arena.Origin + gates[i].Position, gates[i].Axis, gates[i].Radius);
+                course.Add(gate);
+                var go = new GameObject($"Gate_{i + 1:00}");
+                go.transform.SetParent(_host.transform, false);
+                var ring = go.AddComponent<RaceGateRing>();
+                ring.Build(i, gate, theme, RecordedRingBloomSeconds, RaceGateRing.FindCoincident(course, rings, i));
+                rings.Add(ring);
+            }
+        }
+
+        const float RecordedRingBloomSeconds = 0.9f;
+
+        /// <summary>
+        /// A gate race's rings as the preview stands them - only for a race whose course is a property of
+        /// its ARENA (Regatta, Skein), which a replay recorded before rings were captured can still trust.
+        /// A seeded race (Switchback, Headlong, ...) drew a course this cannot know, so it stands no rings.
+        /// </summary>
         void RaiseCourse(ModePreviewDefinitionSO definition, CellConfigDataSO config, int intensity,
                          ThemeManagerDataContainerSO theme)
         {
             if (RaceCourseSource.For(definition.Mode) == null) return;
+            if (definition.Mode is not (GameModes.Regatta or GameModes.Skein)) return;
 
             _host = new GameObject($"ReplayStage ({definition.Mode})");
             _course = _host.AddComponent<ModePreviewGateCourse>();

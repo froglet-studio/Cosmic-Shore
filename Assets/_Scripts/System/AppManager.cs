@@ -599,7 +599,8 @@ namespace CosmicShore.Core
             builder.RegisterFactory(
                 c => new ReplayService(
                     c.Resolve<GameDataSO>(),
-                    new ReplayIndexRepository(new UGSCloudSaveProvider())),
+                    new ReplayIndexRepository(new UGSCloudSaveProvider()),
+                    c.Resolve<SceneNameListSO>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
