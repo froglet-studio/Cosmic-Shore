@@ -69,7 +69,8 @@ namespace CosmicShore.Gameplay
         int _turnFlareLaneSign;
 
         [Header("Gap Settings")]
-        public float offset;
+        [SerializeField] float offset;
+        public float Offset => offset;
         public float Gap;
         public float MinimumGap = 1f;
         public Vector3 TargetScale;

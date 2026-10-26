@@ -12,31 +12,39 @@ namespace CosmicShore.Gameplay
     {
         [Header("Scale Settings")]
         [Tooltip("Maps normalized radius (0-1) to output scale (0-1)")]
-        public AnimationCurve scaleByRadius = AnimationCurve.Linear(0, 0, 1, 1);
+        [SerializeField] AnimationCurve scaleByRadius = AnimationCurve.Linear(0, 0, 1, 1);
+        public AnimationCurve ScaleByRadius => scaleByRadius;
 
         [Header("Detection Settings")]
         [Tooltip("Initial detection radius on startup")]
-        public float startRadius = 150f;
+        [SerializeField] float startRadius = 150f;
+        public float StartRadius => startRadius;
 
         [Tooltip("Minimum detection radius (corresponds to scale 0)")]
-        public float minRadius = 20f;
+        [SerializeField] float minRadius = 20f;
+        public float MinRadius => minRadius;
 
         [Tooltip("Maximum detection radius (corresponds to scale 1)")]
-        public float maxRadius = 100f;
+        [SerializeField] float maxRadius = 100f;
+        public float MaxRadius => maxRadius;
 
         [Tooltip("How fast the radius grows when no obstacles detected (units/sec)")]
-        public float radiusGrowthRate = 6000f;
+        [SerializeField] float radiusGrowthRate = 6000f;
+        public float RadiusGrowthRate => radiusGrowthRate;
 
         [Tooltip("How fast the radius shrinks when obstacles detected (units/sec)")]
-        public float radiusShrinkRate = 6000f;
+        [SerializeField] float radiusShrinkRate = 6000f;
+        public float RadiusShrinkRate => radiusShrinkRate;
 
         [Header("Smoothing")]
         [Tooltip("Time to smooth scale transitions")]
-        public float scaleSmoothTime = 0.2f;
+        [SerializeField] float scaleSmoothTime = 0.2f;
+        public float ScaleSmoothTime => scaleSmoothTime;
 
         [Header("Performance")]
         [Tooltip("How often to run obstacle detection (seconds)")]
-        public float updateInterval = 0.05f;
+        [SerializeField] float updateInterval = 0.05f;
+        public float UpdateInterval => updateInterval;
 
         /// <summary>
         /// Validates and clamps values to reasonable ranges.

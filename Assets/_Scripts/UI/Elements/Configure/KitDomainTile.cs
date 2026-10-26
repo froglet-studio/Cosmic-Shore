@@ -61,6 +61,9 @@ namespace CosmicShore.UI
 
         private int _shownCount = -1;
 
+        /// <summary>The open-seat row under the chips (ConfigurePilotsFit tightens it with the seat rows).</summary>
+        public RectTransform OpenSeatRect => openSeatGroup ? (RectTransform)openSeatGroup.transform : null;
+
         private Color DomainColour => colorSet ? colorSet.GetDomainSignalColor(Domain) : UITheme.Resolve(theme, UIColorToken.TextLight);
 
         private void OnEnable()

@@ -29,7 +29,8 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Short description shown briefly on selection.")]
         [TextArea(1, 3)]
-        public string description = "";
+        [SerializeField] string description = "";
+        public string Description => description;
 
         [Tooltip("Thumbnail shown on the selection sign. Optional.")]
         public Sprite thumbnail;
@@ -37,10 +38,12 @@ namespace CosmicShore.Gameplay
         [Header("Auto-Generation")]
         [Tooltip("If set to anything other than None AND waypoints is empty, " +
                  "waypoints will be auto-generated at runtime from this preset.")]
-        public ShapePreset autoGeneratePreset = ShapePreset.None;
+        [SerializeField] ShapePreset autoGeneratePreset = ShapePreset.None;
+        public ShapePreset AutoGeneratePreset => autoGeneratePreset;
 
         [Tooltip("Radius used when auto-generating waypoints.")]
-        public float autoGenerateRadius = 100f;
+        [SerializeField] float autoGenerateRadius = 100f;
+        public float AutoGenerateRadius => autoGenerateRadius;
 
         [Header("Waypoints")]
         [Tooltip("Ordered list of crystal spawn positions in local space (~200 unit bounding box).")]
@@ -48,25 +51,31 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Whether the player trail is ACTIVE while flying toward each waypoint. " +
                  "Must match waypoints count. If shorter, remaining waypoints default to true.")]
-        public List<bool> trailEnabledPerSegment = new();
+        [SerializeField] List<bool> trailEnabledPerSegment = new();
+        public List<bool> TrailEnabledPerSegment => trailEnabledPerSegment;
 
         [Header("Player Start")]
         [Tooltip("Where to place the player when this shape mode begins, in local space.")]
-        public Vector3 playerStartOffset = new Vector3(0f, 0f, -150f);
+        [SerializeField] Vector3 playerStartOffset = new Vector3(0f, 0f, -150f);
+        public Vector3 PlayerStartOffset => playerStartOffset;
 
         [Tooltip("Player's starting rotation (Euler angles).")]
-        public Vector3 playerStartEuler = Vector3.zero;
+        [SerializeField] Vector3 playerStartEuler = Vector3.zero;
+        public Vector3 PlayerStartEuler => playerStartEuler;
 
         [Header("Reveal Camera")]
         [Tooltip("Euler angles for the reveal cinemachine camera (top-down = 90,0,0).")]
-        public Vector3 revealCameraEuler = new Vector3(90f, 0f, 0f);
+        [SerializeField] Vector3 revealCameraEuler = new Vector3(90f, 0f, 0f);
+        public Vector3 RevealCameraEuler => revealCameraEuler;
 
         [Tooltip("Distance the reveal camera sits from the shape center.")]
-        public float revealCameraDistance = 400f;
+        [SerializeField] float revealCameraDistance = 400f;
+        public float RevealCameraDistance => revealCameraDistance;
 
         [Header("Scoring")]
         [Tooltip("Par time in seconds. Used to grade performance.")]
-        public float parTime = 60f;
+        [SerializeField] float parTime = 60f;
+        public float ParTime => parTime;
 
         // ── Runtime auto-generation ───────────────────────────────────────────
 

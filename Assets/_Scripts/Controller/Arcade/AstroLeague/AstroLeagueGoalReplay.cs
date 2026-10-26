@@ -52,7 +52,7 @@ namespace CosmicShore.Gameplay
             _settings = settings;
             _cameraManager = cameraManager;
 
-            float recordSeconds = Mathf.Max(1f, settings != null ? settings.goalReplayRecordSeconds : 4f);
+            float recordSeconds = Mathf.Max(1f, settings != null ? settings.GoalReplayRecordSeconds : 4f);
             int capacity = Mathf.Max(8, Mathf.CeilToInt(recordSeconds / Time.fixedDeltaTime));
             _samples = new Sample[capacity];
             ClearRecording();
@@ -119,8 +119,8 @@ namespace CosmicShore.Gameplay
                 float span = flight[n - 1].Time - flight[0].Time;
                 if (span < 0.2f) return;
 
-                float playWindow = Mathf.Max(0.5f, windowSeconds * _settings.goalReplayWindowFraction);
-                float speed = Mathf.Max(_settings.goalReplayMinPlaybackSpeed, span / playWindow);
+                float playWindow = Mathf.Max(0.5f, windowSeconds * _settings.GoalReplayWindowFraction);
+                float speed = Mathf.Max(_settings.GoalReplayMinPlaybackSpeed, span / playWindow);
 
                 BuildGhost(flight[0]);
                 // Aim the ghost down the shot from frame one (orients its motion trail).
@@ -180,7 +180,7 @@ namespace CosmicShore.Gameplay
                         {
                             var panRot = Quaternion.LookRotation(toGhost.normalized, Vector3.up);
                             _replayCam.rotation = Quaternion.Slerp(_replayCam.rotation, panRot,
-                                1f - Mathf.Exp(-Mathf.Max(0.1f, _settings.goalReplayPanSpeed) * Time.unscaledDeltaTime));
+                                1f - Mathf.Exp(-Mathf.Max(0.1f, _settings.GoalReplayPanSpeed) * Time.unscaledDeltaTime));
                         }
                     }
                     if (_ghostVisual != null)
@@ -232,11 +232,11 @@ namespace CosmicShore.Gameplay
             float fov = _cameraManager != null ? _cameraManager.ReplayCameraFieldOfView : 60f;
             float halfTan = Mathf.Max(0.1f, Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad));
             float distance = Mathf.Max(60f * _arenaScale,
-                pathRadius * Mathf.Max(1f, _settings.goalReplayFramingMargin) / halfTan);
+                pathRadius * Mathf.Max(1f, _settings.GoalReplayFramingMargin) / halfTan);
 
             return centroid
                    + side * distance
-                   + Vector3.up * (distance * _settings.goalReplayVantageElevation);
+                   + Vector3.up * (distance * _settings.GoalReplayVantageElevation);
         }
 
         void BuildGhost(Sample first)

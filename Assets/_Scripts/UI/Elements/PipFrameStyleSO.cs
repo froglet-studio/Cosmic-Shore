@@ -21,24 +21,32 @@ namespace CosmicShore.UI
 
         [Header("Colours")]
         [Tooltip("The hairline round the picture. §3: Light (E6E9FF) draws bounding boxes.")]
-        public UIColorToken edgeColor = UIColorToken.TextLight;
+        [SerializeField] UIColorToken edgeColor = UIColorToken.TextLight;
+        public UIColorToken EdgeColor => edgeColor;
         [Tooltip("The hairline's opacity.")]
-        [Range(0f, 1f)] public float edgeAlpha = 0.85f;
+        [SerializeField, Range(0f, 1f)] float edgeAlpha = 0.85f;
+        public float EdgeAlpha => edgeAlpha;
         [Tooltip("The band outside the hairline, and the filled sliver corners. §3: Neutral (Dark) (222645) is panel chrome.")]
-        public UIColorToken chromeColor = UIColorToken.SurfaceDark;
+        [SerializeField] UIColorToken chromeColor = UIColorToken.SurfaceDark;
+        public UIColorToken ChromeColor => chromeColor;
         [Tooltip("The band's opacity.")]
-        [Range(0f, 1f)] public float chromeAlpha = 1f;
+        [SerializeField, Range(0f, 1f)] float chromeAlpha = 1f;
+        public float ChromeAlpha => chromeAlpha;
 
         [Header("Shape")]
         [Tooltip("§5: the large sliver (cards, popups, panels) when on, the small one (buttons, chips) when off.")]
-        public bool largeSliver = true;
+        [SerializeField] bool largeSliver = true;
+        public bool LargeSliver => largeSliver;
         [Tooltip("§5: the sliver may mirror. Off cuts the top-left and bottom-right corners; on, the top-right and bottom-left.")]
-        public bool flipSliver;
+        [SerializeField] bool flipSliver;
+        public bool FlipSliver => flipSliver;
         [Tooltip("The style guide's widths are at 1080 lines; the frame scales them to the screen's height.")]
-        public float referenceHeight = 1080f;
+        [SerializeField] float referenceHeight = 1080f;
+        public float ReferenceHeight => referenceHeight;
 
         [Header("Layering")]
         [Tooltip("The frame's screen-space overlay canvas order. Below the HUD's canvases, above every camera's picture.")]
-        public int sortingOrder = -10;
+        [SerializeField] int sortingOrder = -10;
+        public int SortingOrder => sortingOrder;
     }
 }

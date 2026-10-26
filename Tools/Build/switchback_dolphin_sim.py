@@ -46,6 +46,14 @@ DOLPHIN_SWITCHBACK = {"cruise": CRUISE, "rts": 0.0, "base": TURN, "drift": True,
 SPARROW_BREAKWATER = {"cruise": 40.0, "rts": 0.1, "base": 80.0, "drift": False,
                       "commit": 240.0, "lead": 280.0, "through": 200.0,
                       "eye": 18.0 - 12.32 / 2}   # BREAKWATER.md: the 18 u eye, less half the 12.32 u hull; the rest is danger weave
+# The Sparrow's held boost in Breakwater (HoldBoostAIPolicySO, race() models its Tick): the boosted speed is the 135 u/s
+# Yash held all race in his 2026-10-26 races. SPARROW_BOOST_BASE is the base policy's bands (the variant's until
+# 2026-10-26); SPARROW_BOOST_BREAKWATER mirrors Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset.
+SPARROW_BOOST_BASE = {"boost_speed": 135.0, "boost_align": 12, "boost_release_align": 25, "boost_stick": 0.35,
+                      "boost_release_stick": 0.6, "boost_engage": 1.5, "boost_release": 0.5,
+                      "boost_min_hold": 0.6, "boost_min_rest": 0.4}
+SPARROW_BOOST_BREAKWATER = dict(SPARROW_BOOST_BASE, boost_align=45, boost_release_align=60, boost_stick=1.0,
+                                boost_release_stick=1.0, boost_engage=2.0, boost_release=1.25)
 # The Butterfly in Waystation (2026-10-26): Butterfly.prefab DefaultMinimumSpeed 12 + DefaultThrottleScaler 55 at the AI's
 # full throttle (WaystationController.AIThrottleFloor 1) = 67 u/s, Pitch/Yaw 45 deg/s, RotationThrottleScaler 0, no drift;
 # MinigameWaystation.unity: commit 260, approach lead 300, through 220. Its fold is not modelled: cruise only is the floor.
@@ -76,9 +84,10 @@ PEAK_MARGIN, MIN_DIS, MIN_GAIN, MAX_HOLD, GRACE, UP_TO_SPEED = 3.0, 0.2, 30.0, 4
 
 def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, trace=None, lead_inside=None, drive=None,
          cfg=None):
-    """drive: None (no charge economy: cruise only) or a SHIPPED_DRIVE / LEARNED_DRIVE dict: the charge economy of
-    dolphin_drive_sim.py (a drift banks charge and freezes the speed; letting go discharges toward cruise x m x m) with
-    ChargeBoostAIPolicySO's drive (let go on a lined-up straight once the meter is full enough; hold the next commit off
+    """drive: None (no charge economy: cruise only) or a SHIPPED_DRIVE / LEARNED_DRIVE dict (an optional "peak": False
+    lets each discharge run out instead of drifting again at its peak, a what-if: the game re-drifts at the peak): the
+    charge economy of dolphin_drive_sim.py (a drift banks charge and freezes the speed; letting go discharges toward
+    cruise x m x m) with ChargeBoostAIPolicySO's drive (let go on a lined-up straight once the meter is full enough; hold the next commit off
     until the discharge peaks) and AIPilot's commit floor (no commit under 0.9 of the throttle target)."""
     """regatta_fix: the steering AICommitFromApproachPoint turns on, which since 2026-10-26 includes the approach point
     kept inside the commit radius (lead_inside defaults to regatta_fix; pass it to test either half alone)."""
@@ -95,6 +104,7 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
     drifting = False; orbit = L.Orbit(); extending = False; ext_t = 0.0
     misses = 0; breaks = 0; drift_t = 0.0; weave = 0
     meter = 0.0; pinned = 1.0; discharging = False; hold = False; held_at = -1e9; was_dis = False; top = v
+    boosting = False; boost_share = 0.0; stick = 0.0
     mm = lambda x: 1 + (MAXM - 1) * x
     target_speed = lambda: CRUISE_ * (mm(meter) * pinned if discharging else 1.0)
     while t < T and idx < total:
@@ -133,7 +143,7 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
             was_dis = discharging
             if hold:
                 since = t - held_at
-                if (discharging and since >= MIN_DIS and v >= target_speed() - PEAK_MARGIN) or \
+                if (discharging and drive.get("peak", True) and since >= MIN_DIS and v >= target_speed() - PEAK_MARGIN) or \
                         (not discharging and since > GRACE) or since > MAX_HOLD:
                     hold = False
             elif drifting and not extending:
@@ -162,13 +172,33 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
                 v += (target_speed() - v) * LERP * dt
             top = max(top, v)
             R = v / math.radians(turn_rate(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
+        elif cfg.get("boost_speed"):
+            # A held boost (HoldBoostAIPolicySO.Driver.Tick, AIBoostPolicySO.IsStraight / StillStraight / HasRunway /
+            # TurnAhead): judged by the ring (AIPilot.TickBoostPolicy), its bearing off the course and its runway at the
+            # current speed, and the stick the pilot wrote last frame; held at least boost_min_hold s, rested
+            # boost_min_rest s.
+            to_ring = sub(ring, pos); off = ang(travel, to_ring); runway = norm(to_ring) / max(v, 1.0)
+            since = t - held_at
+            if boosting:
+                if extending or (since >= cfg.get("boost_min_hold", 0.6) and
+                                 (off > cfg.get("boost_release_align", 25) or stick > cfg.get("boost_release_stick", 0.6)
+                                  or runway < cfg.get("boost_release", 0.5))):
+                    boosting = False; held_at = t
+            elif since >= cfg.get("boost_min_rest", 0.4) and not extending and off <= cfg.get("boost_align", 12) \
+                    and stick <= cfg.get("boost_stick", 0.35) and runway >= cfg.get("boost_engage", 1.5):
+                boosting = True; held_at = t
+            if boosting: boost_share += dt
+            tgt = cfg["boost_speed"] if boosting else CRUISE_
+            v += (tgt - v) * LERP * dt
+            top = max(top, v)
+            R = v / math.radians(turn_rate(v)); run = max(max(0.0, 2 * R - 18), v * 1.5)
         if drifting:
             drift_t += dt
             # the nose comes round free, onto the aim (GateRaceController's drift look target)
             fwd = rotate_toward(fwd, desired, math.radians(turn_rate(v)) * dt); cmd = list(fwd)
         else:
             steer = add(fwd, mul(desired, -0.35)) if extending else to
-            s = ai_stick(ang(fwd, steer))
+            s = stick = ai_stick(ang(fwd, steer))
             fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(turn_rate(v) * s) * dt, dt, lag)
             travel = list(fwd)
         newpos = add(pos, mul(travel, v * dt))
@@ -187,7 +217,8 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
                           round(ang(travel, desired))))
         pos = newpos; t += dt
     return {"time": round(t, 1) if idx >= total else None, "rings": idx, "misses": misses, "breaks": breaks,
-            "drift": round(drift_t / max(t, 1e-6), 2), "top": round(top), "weave": weave}
+            "drift": round(drift_t / max(t, 1e-6), 2), "top": round(top), "weave": weave,
+            "boost": round(boost_share / max(t, 1e-6), 2)}
 
 
 def self_test():
@@ -204,6 +235,14 @@ def self_test():
     r0, r1 = race(across, False, T=120), race(across, True, T=120)
     if not (r1["rings"] >= r0["rings"] and r1["rings"] == 2):
         bad.append(f"crossed gate: today {r0}, with the Regatta fix {r1}")
+    # the Sparrow's held boost: wide gates on a straight line, so boosting is faster than cruising and threads them all
+    sp = {"gates": [{"p": [0, 0, 600.0 * (i + 1)], "a": [0, 0, 1], "r": 40.0} for i in range(5)],
+          "start": [0, 0, 0], "heading": [0, 0, 1]}
+    cruise_ = race(sp, True, cfg=SPARROW_BREAKWATER, T=300)
+    boost_ = race(sp, True, cfg=dict(SPARROW_BREAKWATER, **SPARROW_BOOST_BREAKWATER), T=300)
+    if not (boost_["rings"] == 5 and cruise_["time"] and boost_["time"] and boost_["time"] < 0.6 * cruise_["time"]
+            and boost_["boost"] > 0.5):
+        bad.append(f"Sparrow boost on a straight: cruise {cruise_}, boosting {boost_}")
     print("switchback_dolphin_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 
@@ -211,7 +250,8 @@ def self_test():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir"); ap.add_argument("--self-test", action="store_true")
-    ap.add_argument("--mode", default="Switchback", help="Switchback (the Dolphin) or Waystation (the Butterfly, no fold)")
+    ap.add_argument("--mode", default="Switchback",
+                    help="Switchback (the Dolphin), Waystation (the Butterfly, no fold) or Breakwater (the Sparrow's boost)")
     a = ap.parse_args()
     if a.self_test:
         sys.exit(self_test())
@@ -222,6 +262,16 @@ def main():
             print(f"{c['file']} (person {c['person']:.0f} s)")
             print(f"   the shipped steering: {race(c, False, cfg=BUTTERFLY_WAYSTATION, T=300)}")
             print(f"   Regatta's steering:   {race(c, True, cfg=BUTTERFLY_WAYSTATION, T=300)}")
+        return
+    if a.mode == "Breakwater":
+        print("(seconds for one lap of stations or None, stations threaded, through the danger weave, share boosting)")
+        for p in sorted(glob.glob(os.path.join(a.dir, "flight_Breakwater_*.json"))):
+            c = course_from_flight(p)
+            for name, boost in (("cruise only", {}), ("the base bands", SPARROW_BOOST_BASE),
+                                ("Breakwater's bands", SPARROW_BOOST_BREAKWATER)):
+                r = race(c, True, cfg=dict(SPARROW_BREAKWATER, **boost), T=300)
+                print(f"   I{c['intensity']} {c['file']} {name:18}: {r['time']} s, {r['rings']}, weave {r['weave']}, "
+                      f"boosting {r.get('boost', 0):.0%}")
         return
     courses = [course_from_flight(p) for p in sorted(glob.glob(os.path.join(a.dir, "flight_Switchback_*.json")))]
     print("(seconds for the 20 gates or None, gates threaded, mouths missed, break-offs, share drifting; the person's time)")

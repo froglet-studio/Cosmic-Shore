@@ -75,6 +75,12 @@ namespace CosmicShore.UI
 
         public bool IsPlaying => _clock >= 0f;
 
+        /// <summary>Where the object stands at rest: the pose the entrance is bringing it to while it
+        /// plays, otherwise where it is. Read this, not anchoredPosition, to learn an authored position
+        /// that an entrance may be offsetting right now.</summary>
+        public Vector2 RestPosition => IsPlaying ? _restPosition
+            : transform is RectTransform rect ? rect.anchoredPosition : Vector2.zero;
+
         private static readonly List<KitEntrance> s_Replay = new();
 
         /// <summary>

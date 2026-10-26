@@ -22,12 +22,14 @@ namespace CosmicShore.Core
     {
         public string setId;
         public DialogueModeType mode = DialogueModeType.Monologue;
-        public DialogueChannel channel = DialogueChannel.MainMenu;
+        [SerializeField] DialogueChannel channel = DialogueChannel.MainMenu;
+        public DialogueChannel Channel => channel;
 
         public Sprite portraitSpeaker1;
         public Sprite portraitSpeaker2;
 
-        public List<DialogueLine> lines = new List<DialogueLine>();
+        [SerializeField] List<DialogueLine> lines = new List<DialogueLine>();
+        public List<DialogueLine> Lines => lines;
         public RewardData rewardData;
     }
 }

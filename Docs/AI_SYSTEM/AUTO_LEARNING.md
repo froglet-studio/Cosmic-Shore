@@ -18,7 +18,7 @@ or leaves it to the sweep below.
 | New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, every hour | `Tools/Build/ai_learn.py --run` |
 | The AI's numbers change for that mode only | the learners (`<asset>_<Mode>` variants) | `Assets/Resources/AIBoostPolicies/`, `Assets/Resources/RaceLines/`, `SkimRaceAIConfig_Regatta` |
 | What changed, and whether the AI now races like the person | the sweep | `Docs/Reports/AI_LEARNING.md` |
-| It reaches the person's editor | the person pulls `Ys-bleeding-edge` as usual | - |
+| It reaches the person's editor | `Ys-bleeding-edge` is merged into `bleeding-edge` (a pull request), and the person pulls it. Yash's editor ran `bleeding-edge` on 2026-10-26 (his load reports' `gitBranch`), so a sweep change reaches his races only after that merge | - |
 
 `ai_learn.py` remembers what it has learned from (`Docs/AI_SYSTEM/ai_learning_seen.json`), so an hour with no new
 race writes nothing. Only a race a learner actually read is remembered as learned: one in a mode on hold or of a hull
@@ -36,7 +36,14 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 1. `git fetch origin`, check out `Ys-bleeding-edge`, merge `origin/Ys-bleeding-edge` (merge, never rebase).
 2. `python3 Tools/Build/ai_learn.py`. **0 new flights: stop.** No commit, no message.
 3. `python3 Tools/Build/ai_learn.py --run`, then read `Docs/Reports/AI_LEARNING.md`.
-4. For each mode with new flights, judge whether the AI races well enough to win against the person:
+4. For each mode with new flights, judge whether the AI races well enough to win against the person. **A race counts
+   only if the editor that flew it HAD the AI's change**, not just if it came later: the play session's load report
+   (`BugLedger/shared/reports/<user>/load/load_<scene>_<time>_*.json`, the nearest one before the race) names its
+   `gitBranch` and `gitCommitHash`; `git merge-base --is-ancestor <the AI's commit> <that hash>`. A race flown on a
+   build without the change measures the OLD AI (2026-10-26: Breakwater's new boost bands were 70 minutes old on
+   `Ys-bleeding-edge` and absent from Yash's `bleeding-edge` build).
+   The rival report's circling counts only time near the ring while NOT closing on it (a slow hull on long legs spends
+   seconds inside 250 u on a straight approach), and "boosted" needs the boosting or discharging bit as well:
    - It finishes, its rings per minute are near the person's, and it barely circles or stalls: the learned numbers
      are the whole job.
    - It circles, stalls, threads few rings or is far slower: numbers alone will not fix that. Diagnose it with the
@@ -87,7 +94,7 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
 | Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |
-| Sparrow | drives (HoldBoost) | boost (state bit) | start / stop bands, shortest hold and rest |
+| Sparrow | drives (HoldBoost) | boost (state bit); the rocket (a SkyBurst press, 2026-10-26) | start / stop bands, shortest hold and rest; the rocket's range and aim (`rocketMinRange` / `rocketMaxRange`: p10 / p90 of the presses' distance to the ring, `rocketAimDegrees`: their median nose angle); in Breakwater never a boost release under 1.25 s (`FLOORS`, the danger weave) |
 | Serpent | drives (PelletBoost) | a ConsumeBoost press | start bands, seconds between pellets |
 | Scarab | drives (SnapDash) | throttle double-tap at TIME 5 | start bands, dash cooldown |
 | Squirrel | drives (SkimRing) outside Regatta and Skim Race; skim line in Regatta (writes) and Skim Race (report only) | a boost-ring press / the skim | ring bands / skim line |
@@ -115,3 +122,13 @@ A match left early writes `"result": null`. So a mode with no finish line (Grizz
 judged: `learn_drives_from_flights.py` learns a mode without rings from the matches the person WON once there are three,
 and `Docs/Reports/AI_LEARNING.md` shows "You won N of M" per hull and intensity.
 
+## 7. A drive per intensity: which races teach it (2026-10-26)
+
+In a `PER_INTENSITY_MODES` mode (Switchback) each intensity of a policy hull learns its own `<policy>_<mode>_I<n>`
+(`MINIGAME_TRAINING_PLAN.md` §3.6). Two rules decide which races teach what (§3.7):
+- **Only the intensity's current course.** A flight records its rings; the newest flight's mouth radius decides the
+  course, and races on a retired one are left out (`on_current_course`). A variant already written stays until the new
+  course has three finished races of its own.
+- **The mode-wide variant learns from every intensity**: the fastest race of each first (`fastest_each_intensity`),
+  because it is what the intensities without their own fly, and the three fastest overall are always the easiest
+  intensity's. Every other mode learns exactly as before.

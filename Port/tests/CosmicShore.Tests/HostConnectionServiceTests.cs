@@ -43,6 +43,10 @@ sealed class HcsLobby : IHostSession
     public int PlayerCount => Roster.Count;
     public event Action Deleted { add { } remove { } }
     public event Action<string> PlayerLeaving { add { } remove { } }
+    public event Action<string> PlayerJoined { add { } remove { } }
+    public event Action<string> PlayerHasLeft { add { } remove { } }
+    public event Action PlayerPropertiesChanged { add { } remove { } }
+    public event Action RemovedFromSession { add { } remove { } }
     public List<IReadOnlyPlayer> Roster { get; } = new();
     public IReadOnlyList<IReadOnlyPlayer> Players => Roster;
     public HcsCurrentPlayer Local { get; } = new();
@@ -80,6 +84,10 @@ sealed class FakePartySession : IHostSession
     public int PlayerCount => 1;
     public event Action Deleted { add { } remove { } }
     public event Action<string> PlayerLeaving { add { } remove { } }
+    public event Action<string> PlayerJoined { add { } remove { } }
+    public event Action<string> PlayerHasLeft { add { } remove { } }
+    public event Action PlayerPropertiesChanged { add { } remove { } }
+    public event Action RemovedFromSession { add { } remove { } }
     public IReadOnlyList<IReadOnlyPlayer> Players { get; } = Array.Empty<IReadOnlyPlayer>();
     public CosmicShore.Engine.Networking.IPlayer CurrentPlayer => null;
     public Task RefreshAsync() => Task.CompletedTask;
@@ -97,6 +105,10 @@ sealed class FakePartySessionService : IPartySessionService
     public ISession ActiveSession => Session;
     public float CreatedAtUnscaledTime => 0f;
     public event Action<string> PlayerLeaving { add { } remove { } }
+    public event Action<string> PlayerJoined { add { } remove { } }
+    public event Action<string> PlayerHasLeft { add { } remove { } }
+    public event Action PlayerPropertiesChanged { add { } remove { } }
+    public event Action RemovedFromSession { add { } remove { } }
     public Task CreateAsync(int maxPlayers) => Task.CompletedTask;
     public Task JoinByIdAsync(string sessionId) => Task.CompletedTask;
     public Task LeaveAsync() { Session = null; return Task.CompletedTask; }
