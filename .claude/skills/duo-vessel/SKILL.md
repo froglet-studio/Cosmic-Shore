@@ -22,7 +22,10 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
 > `WrasseCrewBodies`, `OrcaCrew`, `CrewSeatChoice`), so this branch's move of the Wrasse onto
 > `ICrewSeat` was withdrawn in the merge in favour of theirs. Their plan takes it from here:
 > `Controller/Vessel/Crew/KITE_NAVIGATOR.md` "Two humans, two seats", step 2 (Garrett with Yash). The Wrasse row below
-> is that target; `check_crew_vessels.py` lists the Wrasse and the Honeyguide as PENDING until then. (Marlin and Jacks was a crew too
+> is that target; `check_crew_vessels.py` lists the Wrasse and the Honeyguide as PENDING until then. Since 2026-10-23
+> every crew, the Goby included, is on `ICrewStations` (who sits in which seat, `Docs/CREW_STATIONS.md`); `ICrewSeat`
+> stays the seat the card names. Whether the others join `ICrewSeat` or it folds into `ICrewStations` is the crew
+> owners' call (`Docs/REFACTOR_BACKLOG.md` S64). (Marlin and Jacks was a crew too
 > until 2026-10-21, when Garrett reduced it to the Jacks: one player who herds or flies the two fish, no second seat;
 > `R_VesselActions/JACKS.md`.)
 
@@ -33,7 +36,7 @@ Say *crew vessel* in new code and docs; each half is a **subvessel**, the extra 
 | Crew vessel | Card | Hull (`VesselClassType`) | Seat on its root | The seat's view | Brief |
 |---|---|---|---|---|---|
 | **Wrasse** | Wrasse and Grouper | Wrasse = 19 (the Sparrow without its kit, two thumbs) | `KiteNavigator`: a one-thumb kite on the hull's x-z plane | top-down orthographic, the real world projected onto the plane | `references/designs/wrasse-and-grouper.md` → `Controller/Vessel/Crew/KITE_NAVIGATOR.md` |
-| **Goby** | Goby and Pistol | Goby = 18 (a Squirrel-derived prefab stripped of the Squirrel's kit; pinned: it perches and darts like the Shrike slings, 2026-10-22) | `GobyPistolDuo`: the Pistol, riding a FLAT plane through each dart from perch to perch, downhill either way | side-on perspective square to the plane | `references/designs/goby-and-pistol.md` (its top section is the kit as it is now) |
+| **Goby** | Goby and Pistol | Goby = 18 (a Squirrel-derived prefab stripped of the Squirrel's kit; it cruises, darts and perches like the Shrike docks and slings, pinned only while perched or darting, 2026-10-23) | `GobyPistolDuo`: the Pistol, riding a FLAT plane through each dart from perch to perch, downhill either way | side-on perspective square to the plane | `references/designs/goby-and-pistol.md` (its top section is the kit as it is now) |
 
 **The shape both chose** (call it **C** beside §3.1's A and B): **one hull class and one prefab** - a clone of a donor
 hull, authored and registered by `Tools/Build/author_<hull>_assets.py` (`author_wrasse_assets.py` is the fuller
@@ -234,6 +237,12 @@ enum before taking a value.
   cannot use.
 - Hand-picked targets (the Pistol's Launch: tap and drag, or the right trigger + right stick) go
   through the input strategy, never a raw `Input` read.
+- **Every crew brief carries an ability matrix with all three platforms** (Garrett, 2026-10-25: "ability matrix should
+  now include controls like that. table with all three platforms"): per seat, each card's ability, what it does and how
+  its element scales it, its level-5 upgrade, and its control on mobile, gamepad and mouse/keyboard, in that column order
+  for a 2D seat ("the control priority for 2d characters is mobile, gamepad, mouse/keyboard"); plus the seat-level moves
+  (a map, the swap). Design a 2D seat's controls touch first, then the pad, then the keyboard. The Goby & Pistol's
+  (`references/designs/goby-and-pistol.md`) is the pattern; update it in every change that moves a control.
 
 ### 3.3 The four-icon row and ONE shared meter (Garrett, 2026-10-14)
 
@@ -311,10 +320,20 @@ enum before taking a value.
 - **A card's words are a contract.** `HangarAbilityKindsTests` fails any designed ability whose label and description
   contain none of `HangarAbilityKinds`' words (it would show no stage move). "Quick Jump: Time shortens the jump
   cooldown" is Passive; "... the burst of speed that flings it" is Boost. Classify every new card before shipping.
+- **A hull pinned for good stops being a vessel** (the Goby, 2026-10-23: "barely cruising around at all"). Pinning a
+  seat's hull so it only darts made the Goby a turret: it moved only during a dart, a dart stopped at the first prism
+  near its line, and its AI then waited for the other seat. Pin a hull only for a stance (perched, docked, darting) and
+  let it fly between; couple the two seats by what one lays for the other (the Goby's islands, `GobyIslands`), not by
+  making one wait.
 - **A pinned hull still turns.** A seat that must not let its hull cruise pins it (`SetTranslationRestricted`: the
   fleet's restricted stance), moves it only with `TranslateShip`, and turns it for its own AI with `ApplyRotation`
   while the player's input is paused. Starting the platform `AIPilot` instead flies the hull like its donor.
 
+- **A ride that leaves the ground by comparing one frame's fall with the ground** (the Pistol, 2026-10-22). Its liftoff
+  then depends on the frame's length: at 120 steps a second the Pistol never flew, at 30 and 60 it flew at random points
+  and crashed onto hump fronts, so none of its landings was ever the smooth slide its whole ride was built round. Leave a
+  crest by curvature (v^2 times the curvature > g cos), step the ride at a fixed substep whatever the frame, and gate any
+  landing reward on real airtime. Measure a sidescroller's ride headless at 30, 60 and 120 fps before tuning it.
 - **A pilotless half.** Any path that takes a human off a half (swap, disconnect, pause, death of
   the partner) must hand the half to its AI in the same frame.
 - **Counting the seat twice.** Team size, backfill and scoreboards that count `IVessel`s, rather
@@ -332,6 +351,19 @@ enum before taking a value.
 - **An unrolled world folds where the path crosses itself.** If one half's world is built from the other
   half's path (the Pistol's sidescroller), loops, helices and turns tighter than the band fold it. Measure
   this with an unroll test that has a control which must fold (a flat circle), before tuning anything else.
+- **A crew hull cloned from a donor keeps the donor's HUD.** The Goby drew the Squirrel's HUD (drift card, boost fill,
+  steal ring) for ten days after its kit was stripped, because the HUD lives in a nested prefab and a controller the kit
+  strip never named. Give each seat its own cards in the same pass as the kit (2026-10-24, Garrett: "give both of its
+  seats separate UI ability icons, glyphs, etc."): one HUD variant whose view carries both seats' icons per card, a
+  controller that re-seeds icons, chips, veils, gauges and counts on a swap (`author_goby_hud.py`, `GobyPistolHUDView`,
+  `GobyPistolHUDController` are the pattern).
+- **An AI that picks a heading from a fixed lattice misses narrow targets.** 26 evenly spread headings are ~40 degrees
+  apart; an island 1000 u long with a 60 u corridor catches only what lies within ~3.5 degrees of its line, so the
+  Goby AI's lattice alone caught 1 of a 40-prism band. Add a candidate heading through each of a sample of the targets
+  themselves (`PistolPaths.BestHeading`, `AimedHeadings`): it found all 40 (2026-10-25, measured headless).
+- **A chip can only name a control the glyph set has.** A seat that reads keys of its own (the Pistol's G and B) has
+  no honest chip: `ControlGlyphSet` holds one row per fleet control (A / Space, B / T, X / Q, Y / F, the triggers and
+  shifts, RB / E). Put each seat's moves on those controls, keep the old keys as quiet aliases, and the chips derive.
 
 ## 7. Glossary
 

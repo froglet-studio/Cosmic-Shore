@@ -40,8 +40,14 @@ namespace CosmicShore.Gameplay
         /// mode does not say.</summary>
         public readonly Vector3 NextLeg;
 
+        /// <summary>From the vessel to where it is actually flying, when that is a lead point on a path rather than the
+        /// objective (a race line's look-ahead, <see cref="AIPilot.MarkAimAsPathLead"/>); zero otherwise. See
+        /// <see cref="PathDirection"/>.</summary>
+        public readonly Vector3 ToPath;
+
         public AIBoostContext(Vector3 toTarget, Vector3 heading, Vector3 forward, float speed, float stick,
-                              bool breakingOrbit, bool commitDriftHeld, bool restricted, Vector3 nextLeg = default)
+                              bool breakingOrbit, bool commitDriftHeld, bool restricted, Vector3 nextLeg = default,
+                              Vector3 toPath = default)
         {
             ToTarget = toTarget;
             Heading = heading;
@@ -52,12 +58,25 @@ namespace CosmicShore.Gameplay
             CommitDriftHeld = commitDriftHeld;
             Restricted = restricted;
             NextLeg = nextLeg;
+            ToPath = toPath;
         }
 
         public float Distance => ToTarget.magnitude;
 
-        /// <summary>Degrees between where the vessel is travelling and where the objective is.</summary>
-        public float AngleToTarget => Vector3.Angle(Heading, ToTarget);
+        /// <summary>
+        /// Where the pilot is going: the path's lead point when it flies one (<see cref="ToPath"/>), else the objective.
+        /// On Regatta's race line the line follows the braid's curve between rings, so the hull is pointed along the
+        /// curve and the ring it is after sits 18-35 deg off the course for most of every leg (median 21 deg in
+        /// <c>Tools/Build/rhino_line_sim.py</c>): judged by the ring, no stretch of the line was ever "straight" and no
+        /// hull spent its speed verb there (the Rhino ramped 5-10% of a race and took 196-216 s for three laps; judged by
+        /// the path, 70-100% and 30-52 s; 2026-10-25). The runway and the corner stay the objective's
+        /// (<see cref="Distance"/>, <see cref="CornerDegrees"/>).
+        /// </summary>
+        public Vector3 PathDirection => ToPath.sqrMagnitude > 1e-4f ? ToPath : ToTarget;
+
+        /// <summary>Degrees between where the vessel is travelling and where it is going (<see cref="PathDirection"/>:
+        /// the objective, or a race line's lead point).</summary>
+        public float AngleToTarget => Vector3.Angle(Heading, PathDirection);
 
         /// <summary>Seconds to the objective at the current speed - the straight still ahead.</summary>
         public float RunwaySeconds => Distance / Mathf.Max(Speed, 1f);
@@ -139,6 +158,24 @@ namespace CosmicShore.Gameplay
             if (!policy) return policy;
             var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}");
             return variant && variant.GetType() == policy.GetType() ? variant : policy;
+        }
+
+        /// <summary>
+        /// The variant tuned for one mode at one intensity - <c>&lt;name&gt;_&lt;mode&gt;_I&lt;n&gt;</c>, e.g.
+        /// <c>DolphinAIBoostPolicy_Switchback_I4</c>, learned from that intensity's races alone - else the mode's
+        /// variant (<see cref="ForMode(AIBoostPolicySO, GameModes)"/>). A mode whose intensity is its course (Switchback's
+        /// 72 u mouths at I1, 20 u at I4) needs a drive per course: one set of numbers learned from every intensity
+        /// is the easiest one's, and throws the hardest one's mouths. <paramref name="intensity"/> 0 or less: the mode's.
+        /// </summary>
+        public static AIBoostPolicySO ForMode(AIBoostPolicySO policy, GameModes mode, int intensity)
+        {
+            if (!policy) return policy;
+            if (intensity > 0)
+            {
+                var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}_I{intensity}");
+                if (variant && variant.GetType() == policy.GetType()) return variant;
+            }
+            return ForMode(policy, mode);
         }
 
         /// <summary>A straight worth starting to spend on (before the runway test).</summary>

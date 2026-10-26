@@ -13,6 +13,21 @@ public class Vector3Tests
     }
 
     [Fact]
+    public void RotateTowards_TurnsByAtMostTheAngle_AndMovesTheLength()
+    {
+        // A 90-degree turn capped at 30 degrees lands 30 degrees round, at the current length (no magnitude delta).
+        var r = Vector3.RotateTowards(Vector3.forward * 2f, Vector3.right, 30f * Mathf.Deg2Rad, 0f);
+        AssertApprox(new Vector3(System.MathF.Sin(30f * Mathf.Deg2Rad), 0f, System.MathF.Cos(30f * Mathf.Deg2Rad)) * 2f, r);
+        // Enough angle reaches the target's direction; the length moves by at most the magnitude delta.
+        AssertApprox(Vector3.right * 1.5f, Vector3.RotateTowards(Vector3.forward * 2f, Vector3.right, 4f, 0.5f));
+        // Opposite vectors still turn, by exactly the angle allowed.
+        var flip = Vector3.RotateTowards(Vector3.forward, Vector3.back, 90f * Mathf.Deg2Rad, 0f);
+        Assert.True(System.MathF.Abs(Vector3.Dot(flip, Vector3.forward)) < Tolerance && System.MathF.Abs(flip.magnitude - 1f) < Tolerance);
+        // Negative control: a zero angle leaves the direction alone.
+        AssertApprox(Vector3.forward, Vector3.RotateTowards(Vector3.forward, Vector3.right, 0f, 0f));
+    }
+
+    [Fact]
     public void Cross_FollowsEngineHandedness()
     {
         // right × up = forward — the convention every tuned maneuver in the game relies on.

@@ -306,7 +306,6 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | Base multiplayer mini-game | `MultiplayerMiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Base mini-game controller | `MiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal turn monitor (network) | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| Crystal turn monitor (base) | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Time turn monitor (network) | `NetworkTimeBasedTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Time turn monitor (base) | `TimeBasedTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |

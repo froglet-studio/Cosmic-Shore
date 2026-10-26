@@ -72,6 +72,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // this row is also the diag's tell for a run whose Burst jobs had not compiled yet.
             "ShellContact.Query",
 
+            // The nested "Driver" LateUpdates, each named for its owner (they all read as "::Driver.LateUpdate"
+            // before; a 2026-10-17 menu capture had one 88 ms spike there and could not say whose).
+            "BlackHoleRegistry.LateUpdate",
+            "WormholeView.LateUpdate",
+            "WarpFieldVesselScaler.LateUpdate",
+            "PrismLit.Flush",
+            "PrismCradle.Flush",
+            "VesselSpeedTunnel.LateUpdate",
+            "VesselPlacementView.LateUpdate",
+            "VesselRearView.LateUpdate",
+            // Inside the black-hole field tick (the Stoat's poles): the field's own phases. The tick's
+            // top-level phases (BlackHole.Tick/Field/Pairs/...) are listed with the drivers below.
+            "BlackHole.GravityField.Admit",
+            "BlackHole.GravityField.Prune",
+
             // Skim Race AI (every AI seat, every frame), and the two planners inside Decide that cost
             // the most: the 20 Hz track planner (bursts) and the laid-mass guard.
             "SkimRace.Pilot.Decide",
@@ -83,6 +98,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // anonymous Driver.LateUpdate self time - 2.7 ms average, 88 ms spikes - until these existed (2026-10-18).
             "BlackHole.Tick",
             "BlackHole.Field",
+            // Inside the field (2026-10-26: 2.47 ms/frame of Field self time, unsplit, with a Stoat dipole in Menu_Main).
+            "BlackHole.GravityField.Jobs",
+            "BlackHole.GravityField.BoxContacts",
+            "BlackHole.GravityField.IndexWrite",
+            "BlackHole.GravityField.Contacts",
             "BlackHole.Pairs",
             "BlackHole.VesselPull",
             "BlackHole.Waves",

@@ -150,7 +150,11 @@ directory per working tree, so several worktrees can share a TMPDIR without read
 Package assemblies (and the `UnityEngine.UnityConsentModule` stub) are shared in
 `$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
 compilation, once with the player defines and once adding `UNITY_EDITOR`, and writes every type's serialized
-fields, bases and enum members. `Tools/Build/check_generated_assets.py` audits YAML assets against that output,
+fields, bases and enum members (project and package types, uGUI/TMP, and the engine's `UnityEngine.Events`,
+whose `UnityEventBase.m_PersistentCalls` is the body of every UnityEvent field). Package DLLs are player builds,
+so each package's own sources (its `_packages/<name>.rsp`) are parsed once more with `UNITY_EDITOR` for the
+fields only the editor has, which is what writes assets (Netcode's `ShowTopMostFoldoutHeaderGroup` on every
+`NetworkBehaviour`, `NetworkTransformExpanded`, `NetworkAnimatorExpanded`). `Tools/Build/check_generated_assets.py` audits YAML assets against that output,
 so run this tool before it.
 
 

@@ -523,10 +523,10 @@ MonoBehaviour:
   defaultCapacity: 10
   maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 120
-  maxInstantiateRate: 40
+  bufferSizeTarget: 240
+  maxInstantiateRate: 160
   baseInstantiateRate: 5
-  maxAddsPerFrame: 4
+  maxAddsPerFrame: 8
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   OnSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
 --- !u!1 &9017542608246938095

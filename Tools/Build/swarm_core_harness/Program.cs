@@ -88,6 +88,8 @@ static class Program
         if (args.Length > 1 && args[1] == "emotion") return EmotionExport.Run(args, plans);   // round 11d-2 (§27): the emotion probe export
         if (args.Length > 1 && args[1] == "lod") return SwarmLodHarness.Run(plans) == 0 ? 0 : 1;   // round 11f (Docs/ECOLOGY_LOD.md §5)
         if (args.Length > 1 && args[1] == "lineage") return LineageHarness.RunAll(plans, args.Length > 2 ? args[2] : null) == 0 ? 0 : 1;
+        // Tandava (Assets/_Scripts/Controller/Arcade/TANDAVA.md §8): the scripted-plan sort core + the stage director
+        if (args.Length > 2 && args[1] == "tandava") return TandavaHarness.Run(plans, args[2]) == 0 ? 0 : 1;
         string plansDir = args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans";
         if (args.Length > 1 && args[1] == "evo") return EvoHarness.Run(plans, plansDir) == 0 ? 0 : 1;
         Console.WriteLine("plans: " + string.Join(", ", plans.Select(p => $"{p.Kind} N={p.N} mix=[{string.Join(",", p.Mix)}] R={p.Radius:F1}")));

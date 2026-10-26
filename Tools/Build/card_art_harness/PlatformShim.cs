@@ -233,6 +233,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected float density = 1f;
         [SerializeField] protected float spawnClearRadius = 0f;
         [SerializeField] protected Vector3[] spawnClearPoints = Array.Empty<Vector3>();
+        // Mirrors the shipped base (CellEnvironmentSpawnableBase.FingerprintBaseFields).
+        internal static readonly string[] FingerprintBaseFields =
+            { nameof(seed), nameof(density), nameof(spawnClearRadius), nameof(spawnClearPoints) };
         protected const float GoldenAngle = 2.39996323f;
         protected List<PrismLay> _cachedLays;
         protected System.Random _r;

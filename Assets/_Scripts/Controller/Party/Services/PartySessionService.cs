@@ -264,8 +264,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (ActiveSession == null) return;
-            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-            await ActiveSession.RefreshAsync().AsMainThread();
+            await LobbyReadPacer.RefreshAsync(ActiveSession);
         }
 
         /// <inheritdoc/>
@@ -286,8 +285,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!firstAttempt)
                     {
-                        UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-                        try { await session.RefreshAsync().AsMainThread(); } catch { /* best-effort resync before the retry */ }
+                        try { await LobbyReadPacer.RefreshAsync(session); } catch { /* best-effort resync before the retry */ }
                     }
                     firstAttempt = false;
                     session.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,

@@ -44,6 +44,13 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("\"up to 7\" - the game cap.")]
         TMPro.TMP_Text gameCapText;
 
+        [SerializeField, Tooltip("The race target's line. {points} is the target. Empty shows nothing.")]
+        string winTargetLine = "{points} points";
+        [SerializeField, Tooltip("The game cap's line. {games} is the cap. Empty shows nothing.")]
+        string gameCapLine = "up to {games}";
+        [SerializeField, Tooltip("The game cap's line on a tournament with no cap. Empty shows nothing.")]
+        string noGameCapLine = "no cap";
+
         [SerializeField, Tooltip("\"2 / 1 / 0\" - placement points, first to last.")]
         TMPro.TMP_Text pointsByPlaceText;
 
@@ -69,8 +76,10 @@ namespace CosmicShore.UI
         void DrawFormat()
         {
             if (!tournamentData) return;
-            if (winTargetText) winTargetText.text = $"{tournamentData.EffectiveWinTarget} points";
-            if (gameCapText) gameCapText.text = tournamentData.MaxGames > 0 ? $"up to {tournamentData.MaxGames}" : "no cap";
+            if (winTargetText) winTargetText.text = TemplateText.Fill(winTargetLine, "points", tournamentData.EffectiveWinTarget.ToString());
+            if (gameCapText) gameCapText.text = tournamentData.MaxGames > 0
+                ? TemplateText.Fill(gameCapLine, "games", tournamentData.MaxGames.ToString())
+                : noGameCapLine;
             if (pointsByPlaceText && tournamentData.PointsByPlace != null)
                 pointsByPlaceText.text = string.Join(" / ", tournamentData.PointsByPlace);
             if (seatsText) seatsText.text = tournamentData.SeatCount.ToString();

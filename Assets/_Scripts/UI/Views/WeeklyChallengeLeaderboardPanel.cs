@@ -96,9 +96,10 @@ namespace CosmicShore.UI
         [SerializeField]
         Color[] podiumColors =
         {
-            new(1f, 0.84f, 0.25f, 1f),      // gold
-            new(0.78f, 0.82f, 0.86f, 1f),   // silver
-            new(0.80f, 0.53f, 0.30f, 1f),   // bronze
+            // Docs/UI_COLOR_RULES.md: gold means spending only, so no gold / silver / bronze.
+            new(0.6f, 1f, 0.5f, 1f),        // first: the call-to-action lime (a good outcome)
+            new(0.9f, 0.91f, 0.95f, 1f),    // second: white
+            new(0.455f, 0.482f, 0.678f, 1f) // third: the neutral blue
         };
 
         [Header("Style-B board (all optional)")]
@@ -394,9 +395,9 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatarSprite(int avatarId)
         {
-            if (avatarId < 0 || profileIcons?.profileIcons == null) return null;
+            if (avatarId < 0 || profileIcons?.ProfileIcons == null) return null;
 
-            foreach (var icon in profileIcons.profileIcons)
+            foreach (var icon in profileIcons.ProfileIcons)
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
 

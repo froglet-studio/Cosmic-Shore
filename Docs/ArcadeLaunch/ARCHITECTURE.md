@@ -275,6 +275,43 @@ legacy `LoadoutSystem.SaveGameLoadOut` "last game play configuration" is superse
 hull; its only writer was the retired two-screen path's `PlaySelectedGame`, and its read is
 kept as a fallback below this store.
 
+### 3.2.1 Leaving a match lands back on its panel
+
+Pressing Main Menu - on the result panel, in the pause menu, on the Maelstrom summary - used to land
+on HOME with the lava lamp, so changing the AI difficulty or the intensity for another go meant
+finding the card again. It now lands on **the launch panel of the card the match was launched
+from**, over the window that lists it, already seeded with the setup that just flew (§3.2) (Yash,
+2026-10-25: "this should be the general flow").
+
+- **The record:** `MenuReturnCard` (`_Scripts/UI/`), the card's mode plus whether it was this week's
+  challenge. Written in `HandleAllPlayersReady` beside the launch preference, on every peer. It is
+  a static, so it survives the scene loads and not an app restart, and the next Menu_Main load
+  TAKES it, so only the first load after a launch counts as a return.
+- **The re-open:** `ScreenSwitcher.ReturnToLaunchedCardCoroutine`, started from `Start`. It goes
+  through `OpenGame(GameModes)`: the window whose roster lists the card opens, then the card is
+  pressed, the same path as the Hangar's Games tab. For this week's challenge (if the week still
+  names that mode) it goes through `OpenWeeklyChallenge`. The Maelstrom card opens its own window
+  through `OpenFor` as usual.
+- **It waits for what a press never has to**, because a press cannot land while the splash covers
+  the menu: the menu's vessel (`MainMenuState.Ready`), the boot world (`EnvironmentLoadVeil`: the
+  preview stands a second arena, which must not race the first build) and the lobby
+  (`ArcadeGameConfigureModal.IsReadyToOpenCards`: before the sync manager spawns, the host's commit
+  returns on its first line). After `returnToCardTimeoutSeconds` (90 s, past the splash's own
+  60 s boot-world hold) it stays on HOME.
+- **Who does not re-open it** (`MenuReturnCard.ShouldReopen`, held by `MenuReturnCardTests`):
+  - A party GUEST. The host's open reaches them as the replicated lobby (§3.1), so the whole
+    party lands on the panel together. A guest's own `OpenFor` would be a request for the card.
+  - A guided path (`MenuGuide`) or the first orientation funnel (`QuestArcadeConstraints.Active`),
+    which decide where the player goes; the quest resumes on HOME.
+  - A player who already went into freestyle or a window.
+  - A host loss or a session end, which clear the record (`PartyInviteController.BounceToSoloMenuAsync`,
+    `SceneLoader.HandleActiveSessionEnd`): the party it was launched with is gone.
+- **Launches that do not come from a card** (Quick Play, missions, training, benchmarks) write no
+  record and still return to HOME.
+
+This is a place the player was, not a guided path (`Docs/HomeHub/ARCHITECTURE.md` §8): the player
+pressed Main Menu, and the panel they launched from is where that press now goes.
+
 ### 3.3 The AI difficulty row: the opponent, not the map
 
 Three buttons under the intensity row - **Easy, Medium, Hard** - set how well the AI flies.
@@ -888,6 +925,14 @@ raised and nothing subscribes to it, in code or in any scene — a removal candi
 integration point rather than part of the two-screen path.
 
 ## The Maelstrom pool list is a Toy Box VARIANT ROW
+
+> **Superseded 2026-10-25 (kept for the lesson below).** The style-B configure windows (`a326296f6`,
+> 2026-10-15) moved the pool list out of `Menu_Main` into `ConfigureMaelstromView.prefab`, with its own
+> row, `ConfigurePoolRow.prefab`; both are authored by `Tools/Build/author_menu_configure.py`. The
+> `MaelstromPoolRow.prefab` this section describes was then referenced by nothing, and its generator,
+> `author_maelstrom_pool_cards.py`, had no grid left to patch, so both were deleted
+> (`Docs/REFACTOR_BACKLOG.md` S62). What still holds is the rule at the end of the next paragraphs: a
+> card slot is a promise about what the data means.
 
 `MaelstromPoolRow.prefab` was a 228×170 chamfered PNG drawn **Simple** — stretched — into a 260×80
 grid cell, carrying one centred label and nothing else. That is the trap §4.1.8 of

@@ -172,9 +172,11 @@ namespace CosmicShore.Tests
             // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
             // 61 -> 62 on 2026-10-13: ThresherTime (66), the Thresher's circuit race.
             // 62 -> 63 on 2026-10-20: WrasseRun (68), the Wrasse and Grouper's race (67 is SerpentCharge's,
-            // in flight on another branch: when it lands this becomes 64).
+            // in flight on another branch).
+            // 63 -> 64 on 2026-10-25: Tandava (69), the co-op swarm hunt - authored as 62 on its branch, renumbered at
+            // the merge (the seventh collision). When SerpentCharge (67) lands this becomes 65.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(63, values.Length,
+            Assert.AreEqual(64, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

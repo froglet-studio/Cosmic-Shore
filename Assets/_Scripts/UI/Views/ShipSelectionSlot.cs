@@ -7,6 +7,6 @@ namespace CosmicShore.UI
     public struct ShipSelectionSlot
     {
         public VesselClassType vesselType;
-        public ShipSelectionItemView itemView;
+        public VesselSelectionItemView itemView;
     }
 }

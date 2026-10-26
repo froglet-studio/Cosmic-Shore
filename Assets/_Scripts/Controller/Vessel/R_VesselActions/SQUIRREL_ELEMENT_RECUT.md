@@ -77,7 +77,7 @@ lifeforms, and the steal size on pilots.
 | `Tools/Build/check_squirrel_card_fit.py` *(new)* | measures both generated cards against the sprite's own alpha, the font's own advance table and the shared style asset; 6 negative controls |
 | `Tools/Build/check_using_directives.py` | reads with `utf-8-sig` — `\ufeff` is not whitespace, so the gate could not see the FIRST using in any of the 74 BOM'd files and reported it missing |
 | `SquirrelVesselHUDView.cs` | drift + overheat retired (428 → 246 lines); impact rest scale re-anchored to Charge; `SetTubeCooldownReady` → `Element.Mass`. **Third pass:** builds the Space card (`EnsureGeneratedAbilityIcons`), `SetStealReach01` / `SetStealCount`. **Fourth pass:** `SetDangerTint` / `PaintBoostRing`, and the steal count moved below the ring's maximum at a 4-digit-safe size. **Fifth pass:** the tunnel accent removed; `LayOutReachRing` lifts the ring so the whole readout fits the icon's own box |
-| `SquirrelVesselHUDController.cs` | drift juice + its three subscriptions removed; **third pass:** `PushStealReadout` polls the skimmer's reach and `RoundStats.PrismStolen` |
+| `SquirrelHUDController.cs` | drift juice + its three subscriptions removed; **third pass:** `PushStealReadout` polls the skimmer's reach and `RoundStats.PrismStolen` |
 | `Skimmer.cs` | new `ElementalScale01` — the live reach as a fraction of this skimmer's own authored range |
 | `AbilityButtonPressJuice.cs` | **sixth pass:** captures its rest scale LAZILY instead of in `Awake`, `OnDisable` writes nothing until it has, and `SetRestScale` lets a layout owner re-anchor it. Its `Awake` capture of the prefab's authored 0.7 is what held four of the five cards below the size the style asks for |
 | `Tools/Build/check_rest_scale_capture.py` *(new)* | fails any UI component that captures a scale into a field in `Awake` / `OnEnable` / `Start`; 4 negative controls, and it names the pre-fix line |
@@ -579,7 +579,7 @@ this codebase**, which is the whole reason it must never be asked for a colour. 
 `Docs/PALETTE.md` §2.8.
 
 **The Dolphin already had the right shape** and is the reason this is a Squirrel bug rather than a
-fleet one: `DolphinVesselHUDController.ResolveDomainSignalColor()` is called from
+fleet one: `DolphinHUDController.ResolveDomainSignalColor()` is called from
 `PushCrystalSeeding()` inside its own `Update`, so it has always resolved live. A fleet sweep found no
 other HUD controller snapshotting a domain; every other reader in `R_VesselActions/` resolves at USE
 time (per shot, per lay), which is correct.
@@ -748,7 +748,7 @@ unchanged and the hull visibly drifts, so this is a readout decision rather than
 **`ElementalBarsView.JuiceDriftStart` / `JuiceDriftEnd` already exist, are fully written, and are
 ALSO dead** (no callers anywhere in the tree) — they juice the petal flowers rather than an ability
 icon, which is where a drift readout belongs now that all four icons mean their abilities. Restoring
-drift feedback is one line in `SquirrelVesselHUDController` pointing at those instead. Not done here
+drift feedback is one line in `SquirrelHUDController` pointing at those instead. Not done here
 because it is a separate design call.
 
 ## Also worth knowing

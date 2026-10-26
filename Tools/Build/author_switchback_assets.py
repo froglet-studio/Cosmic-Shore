@@ -61,6 +61,10 @@ G_SCRIPT = {
     "SwitchbackScoringRuleSO":    guid("script/SwitchbackScoringRuleSO"),
     "SwitchbackGateTurnMonitor":  guid("script/SwitchbackGateTurnMonitor"),
     "SwitchbackCourseTests":      guid("script/SwitchbackCourseTests"),
+    # The I3 skim walls and I4 danger prisms (MINIGAME_TRAINING_PLAN.md §3.3, 2026-10-26).
+    "SwitchbackFeatures":          guid("script/SwitchbackFeatures"),
+    "SpawnableSwitchbackFeatures": guid("script/SpawnableSwitchbackFeatures"),
+    "SwitchbackFeaturesTests":     guid("script/SwitchbackFeaturesTests"),
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
@@ -68,6 +72,7 @@ G_ASSET = {
     "ArcadeGameSwitchback":   guid("asset/ArcadeGameSwitchback"),
     "SwitchbackScoringRule":  guid("asset/SwitchbackScoringRule"),
     "MinigameSwitchback.unity": guid("asset/MinigameSwitchback.unity"),
+    "SpawnableSwitchbackFeatures.prefab": guid("asset/SpawnableSwitchbackFeatures.prefab"),
 }
 
 # ── Existing GUIDs we reference (read from the repo, never invented) ──────────
@@ -90,7 +95,12 @@ EXISTING = {
     "IconActive":              "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":            "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground":          "587d2203114c8004c9985d0112c89585",
+    # the environment prism the course features lay (the one Breakwater's stations use)
+    "EnvironmentPrism":        "ed9defc56162b4b4588e61c20984b6d9",
 }
+PRISM_FILEID = 4563009547826722997
+# The features prefab's local fileIDs (one GameObject, its Transform, the spawnable).
+PF_GO, PF_TR, PF_MB = 5330000000000101, 5330000000000102, 5330000000000103
 
 # ── Tuning ───────────────────────────────────────────────────────────────────
 
@@ -230,6 +240,10 @@ SCRIPT_PATHS = {
     "SwitchbackScoringRuleSO":     "Assets/_Scripts/Controller/Arcade/Scoring/GateRaceScoringRuleSO.cs",
     "SwitchbackGateTurnMonitor":   "Assets/_Scripts/Controller/Arcade/Racing/RaceGateTurnMonitor.cs",
     "SwitchbackCourseTests":       "Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs",
+    "SwitchbackFeatures":          "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackFeatures.cs",
+    "SpawnableSwitchbackFeatures":
+        "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwitchbackFeatures.cs",
+    "SwitchbackFeaturesTests":     "Assets/_Scripts/Tests/Editor/SwitchbackFeaturesTests.cs",
 }
 for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
@@ -245,6 +259,75 @@ emit("Assets/_Scripts/Controller/Arcade/Switchback.meta",
      f"fileFormatVersion: 2\nguid: {guid('folder/Switchback')}\nfolderAsset: yes\n"
      f"DefaultImporter:\n  externalObjects: {{}}\n  userData:\n  assetBundleName:\n"
      f"  assetBundleVariant:\n")
+
+
+# ── 1b. The course-features prefab (intensity 3 skim walls, intensity 4 danger prisms) ─────
+#
+# domain 3 = Domains.Blue, as Breakwater: a feature of the course hands no domain anything.
+# layAcrossFrames 0: the walls are part of the course and must exist when the race starts.
+# The layout is a pure function of the course (SwitchbackFeatures.Layout), so the prefab carries
+# only the base spawnable fields; the seed is never consulted.
+emit("Assets/_Prefabs/Spawnables/SpawnableSwitchbackFeatures.prefab", f"""%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &{PF_GO}
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  serializedVersion: 6
+  m_Component:
+  - component: {{fileID: {PF_TR}}}
+  - component: {{fileID: {PF_MB}}}
+  m_Layer: 0
+  m_Name: SpawnableSwitchbackFeatures
+  m_TagString: Untagged
+  m_Icon: {{fileID: 0}}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &{PF_TR}
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {PF_GO}}}
+  serializedVersion: 2
+  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}
+  m_LocalPosition: {{x: 0, y: 0, z: 0}}
+  m_LocalScale: {{x: 1, y: 1, z: 1}}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {{fileID: 0}}
+  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
+--- !u!114 &{PF_MB}
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {PF_GO}}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['SpawnableSwitchbackFeatures']}, type: 3}}
+  m_Name:
+  m_EditorClassIdentifier:
+  seed: 45
+  domain: 3
+  children: []
+  leafPrefab: {{fileID: 0}}
+  layAcrossFrames: 0
+  layBudgetMsPerFrame: 6
+  intensityLevel: 1
+  prism: {{fileID: {PRISM_FILEID}, guid: {EXISTING['EnvironmentPrism']}, type: 3}}
+  density: 1
+  spawnClearRadius: 0
+  spawnClearPoints: []
+""")
+emit("Assets/_Prefabs/Spawnables/SpawnableSwitchbackFeatures.prefab.meta",
+     f"fileFormatVersion: 2\nguid: {G_ASSET['SpawnableSwitchbackFeatures.prefab']}\nPrefabImporter:\n"
+     f"  externalObjects: {{}}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n")
 
 
 # ── 2. Scoring rule ──────────────────────────────────────────────────────────
@@ -309,6 +392,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['SwitchbackScoringRu
   aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 400
   reportResyncSeconds: 3
+  featuresPrefab: {{fileID: {PF_MB}, guid: {G_ASSET['SpawnableSwitchbackFeatures.prefab']}, type: 3}}
 """
 
 

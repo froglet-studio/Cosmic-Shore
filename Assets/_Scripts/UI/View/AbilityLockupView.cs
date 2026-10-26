@@ -264,7 +264,7 @@ namespace CosmicShore.UI
         public RectTransform Row => transform.Find("AbilityLockupRow") as RectTransform;
 
         /// <summary>A card's width in canvas units, at host scale 1.</summary>
-        public float CardWidth => ResolveStyle() ? style.plateWidth : 104f;
+        public float CardWidth => ResolveStyle() ? style.PlateWidth : 104f;
 
         /// <summary>A full totem's height (element plate, gap, ability plate) in canvas units.</summary>
         public float CardHeight => ResolveStyle() ? style.PlateHeight : 182f;
@@ -273,7 +273,7 @@ namespace CosmicShore.UI
         public float CardCentreAboveHost => ResolveStyle() ? style.CardCenterOffsetY : 47f;
 
         /// <summary>A colour for a button that is not an element's (the drift colour).</summary>
-        public Color NeutralColour => ResolveStyle() ? style.driftColour : Color.white;
+        public Color NeutralColour => ResolveStyle() ? style.DriftColour : Color.white;
 
         public Color ColourFor(Element element) => ResolveStyle() ? style.ColourFor(element) : Color.white;
 
@@ -314,7 +314,7 @@ namespace CosmicShore.UI
                 var rt = slot.TouchGlyph.rectTransform;
                 rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.anchoredPosition = Vector2.zero;
-                float side = style.chipHeight * 1.8f;
+                float side = style.ChipHeight * 1.8f;
                 rt.sizeDelta = new Vector2(side, side);
                 slot.TouchGlyph.preserveAspect = true;
                 slot.TouchGlyph.raycastTarget = false;
@@ -421,7 +421,7 @@ namespace CosmicShore.UI
                 }
                 coreHosts[ability] = host;
                 _coreSlots[ability] = slot;
-                ApplyElementColour(slot, ability == CoreAbility.OmniCrystal ? OmniEdge : style.driftColour,
+                ApplyElementColour(slot, ability == CoreAbility.OmniCrystal ? OmniEdge : style.DriftColour,
                                    omni: ability == CoreAbility.OmniCrystal);
                 coreCount++;
             }
@@ -501,7 +501,7 @@ namespace CosmicShore.UI
 
             row.anchorMin = row.anchorMax = row.pivot = new Vector2(1f, 0f);
             row.sizeDelta = Vector2.zero;
-            row.anchoredPosition = new Vector2(-style.rowMarginRight, style.rowMarginBottom);
+            row.anchoredPosition = new Vector2(-style.RowMarginRight, style.RowMarginBottom);
             row.localScale = Vector3.one;
             row.localRotation = Quaternion.identity;
             return row;
@@ -581,7 +581,7 @@ namespace CosmicShore.UI
             if (host.parent != row) host.SetParent(row, false);
 
             host.anchorMin = host.anchorMax = host.pivot = new Vector2(0.5f, 0.5f);
-            host.sizeDelta = new Vector2(style.plateWidth, style.abilityCellHeight);
+            host.sizeDelta = new Vector2(style.PlateWidth, style.AbilityCellHeight);
             host.localScale = Vector3.one;
             host.localRotation = Quaternion.identity;
             if (host.TryGetComponent<AbilityButtonPressJuice>(out var juice))
@@ -590,8 +590,8 @@ namespace CosmicShore.UI
             // from that corner. index is signed: 0..count-1 are the elemental columns and NEGATIVE
             // values are the non-elemental cards beyond Charge, one pitch apart each.
             host.anchoredPosition = new Vector2(
-                -(count - 1 - index) * style.cardPitch - style.plateWidth * 0.5f,
-                style.abilityCellHeight * 0.5f);
+                -(count - 1 - index) * style.CardPitch - style.PlateWidth * 0.5f,
+                style.AbilityCellHeight * 0.5f);
             host.SetSiblingIndex(Mathf.Max(0, index));
         }
 
@@ -651,8 +651,8 @@ namespace CosmicShore.UI
             card.anchorMin = card.anchorMax = card.pivot = new Vector2(0.5f, 0.5f);
             card.localRotation = Quaternion.identity;
             card.localScale = Vector3.one;
-            float cardHeight = withElementCell ? style.PlateHeight : style.abilityCellHeight;
-            card.sizeDelta = new Vector2(style.plateWidth, cardHeight);
+            float cardHeight = withElementCell ? style.PlateHeight : style.AbilityCellHeight;
+            card.sizeDelta = new Vector2(style.PlateWidth, cardHeight);
             card.anchoredPosition = new Vector2(0f, withElementCell ? style.CardCenterOffsetY : 0f);
             card.SetSiblingIndex(0);   // behind the icon; UGUI draws siblings in order
 
@@ -667,29 +667,29 @@ namespace CosmicShore.UI
                 // Sibling order IS draw order, and a bloom has to sit BEHIND the plate it haloes - so
                 // each bloom is a sibling placed before its plate rather than a child of it. Building
                 // them in this order is the whole layering contract.
-                slot.ElementBloom = ResolveChildImage(card, "ElementBloom", style.bloomSprite);
+                slot.ElementBloom = ResolveChildImage(card, "ElementBloom", style.BloomSprite);
                 SetCellRect(slot.ElementBloom.rectTransform, elementY,
-                            style.plateWidth + style.bloomPadding * 2f,
-                            style.petalCellHeight + style.bloomPadding * 2f);
-                slot.ElementBloom.color = WithAlpha(style.bloomColor, 0f);   // nothing glows at rest
+                            style.PlateWidth + style.BloomPadding * 2f,
+                            style.PetalCellHeight + style.BloomPadding * 2f);
+                slot.ElementBloom.color = WithAlpha(style.BloomColor, 0f);   // nothing glows at rest
 
                 // The element plate narrows UPWARD and the ability plate narrows DOWNWARD, so the pair
                 // meets wide-edge to wide-edge across the gap and reads as one waisted object.
                 slot.ElementPlate = ResolveTrapezoid(card, "ElementPlate", narrow, 1f);
-                SetCellRect(slot.ElementPlate.rectTransform, elementY, style.plateWidth, style.petalCellHeight);
-                slot.ElementPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
+                SetCellRect(slot.ElementPlate.rectTransform, elementY, style.PlateWidth, style.PetalCellHeight);
+                slot.ElementPlate.color = slot.Locked ? style.LockedPlateColor : style.PlateColor;
                 ApplySlantEdge(slot.ElementPlate, slot.Locked, upgraded: false);
             }
 
-            slot.AbilityBloom = ResolveChildImage(card, "AbilityBloom", style.bloomSprite);
+            slot.AbilityBloom = ResolveChildImage(card, "AbilityBloom", style.BloomSprite);
             SetCellRect(slot.AbilityBloom.rectTransform, abilityY,
-                        style.plateWidth + style.bloomPadding * 2f,
-                        style.abilityCellHeight + style.bloomPadding * 2f);
-            slot.AbilityBloom.color = WithAlpha(style.bloomColor, 0f);
+                        style.PlateWidth + style.BloomPadding * 2f,
+                        style.AbilityCellHeight + style.BloomPadding * 2f);
+            slot.AbilityBloom.color = WithAlpha(style.BloomColor, 0f);
 
             slot.AbilityPlate = ResolveTrapezoid(card, "AbilityPlate", 1f, narrow);
-            SetCellRect(slot.AbilityPlate.rectTransform, abilityY, style.plateWidth, style.abilityCellHeight);
-            slot.AbilityPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
+            SetCellRect(slot.AbilityPlate.rectTransform, abilityY, style.PlateWidth, style.AbilityCellHeight);
+            slot.AbilityPlate.color = slot.Locked ? style.LockedPlateColor : style.PlateColor;
             ApplySlantEdge(slot.AbilityPlate, slot.Locked, upgraded: false);
             slot.AbilityPlate.raycastTarget = false;
             AdoptButtonTarget(host, slot.AbilityPlate);
@@ -704,9 +704,9 @@ namespace CosmicShore.UI
             // INVISIBLE until a meter is actually adopted onto this card (AdoptGauge turns it on):
             // an empty track under an ability that has no meter is a false affordance - it reads as
             // a gauge stuck at zero.
-            float gaugeFrac = Mathf.Clamp01(style.gaugeCellFraction);
-            float gaugeH = style.abilityCellHeight * gaugeFrac;
-            float gaugeY = abilityY - (style.abilityCellHeight - gaugeH) * 0.5f;   // sits on the base
+            float gaugeFrac = Mathf.Clamp01(style.GaugeCellFraction);
+            float gaugeH = style.AbilityCellHeight * gaugeFrac;
+            float gaugeY = abilityY - (style.AbilityCellHeight - gaugeH) * 0.5f;   // sits on the base
 
             // A gauge shorter than its plate must take the plate's width AT ITS OWN TOP, not the
             // plate's full width - the ability plate is already tapering by then, so a track that
@@ -720,13 +720,13 @@ namespace CosmicShore.UI
             // four and shows up only on whichever slot a vessel happens to bind a meter to.
             // Insetting makes the band FRAME the meter, which is the better read anyway.
             float d = style.PlateEdgeReach;
-            float gaugeW = style.plateWidth - d * 2f;
+            float gaugeW = style.PlateWidth - d * 2f;
             var gauge = new PlateRect(
                 width: gaugeW,
                 height: Mathf.Max(1f, gaugeH - d * 2f),
                 centreY: gaugeY,
-                topEdge: gaugeW > 0.01f ? (style.plateWidth * gaugeTopEdge - d * 2f) / gaugeW : 1f,
-                bottomEdge: gaugeW > 0.01f ? (style.plateWidth * narrow - d * 2f) / gaugeW : 1f);
+                topEdge: gaugeW > 0.01f ? (style.PlateWidth * gaugeTopEdge - d * 2f) / gaugeW : 1f,
+                bottomEdge: gaugeW > 0.01f ? (style.PlateWidth * narrow - d * 2f) / gaugeW : 1f);
 
             slot.GaugeTrack = ResolveTrapezoid(card, "GaugeTrack", gauge.TopEdge, gauge.BottomEdge);
             SetCellRect(slot.GaugeTrack.rectTransform, gauge.CentreY, gauge.Width, gauge.Height);
@@ -739,8 +739,8 @@ namespace CosmicShore.UI
             // Press flash sits ABOVE the plate and below the icon, so a press lights the ability
             // trapezoid rather than blooming a circle behind it.
             slot.Flash = ResolveTrapezoid(card, "PressFlash", 1f, narrow);
-            SetCellRect(slot.Flash.rectTransform, abilityY, style.plateWidth, style.abilityCellHeight);
-            slot.Flash.color = WithAlpha(style.pressFlashColor, 0f);
+            SetCellRect(slot.Flash.rectTransform, abilityY, style.PlateWidth, style.AbilityCellHeight);
+            slot.Flash.color = WithAlpha(style.PressFlashColor, 0f);
 
             if (flowerElement != Element.None)
                 slot.FlowerSocket = ResolveFlowerSocket(card, flowerElement);
@@ -808,9 +808,9 @@ namespace CosmicShore.UI
             var mark = ResolveChildImage(card, "LockedMark", null);
             var rt = mark.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(style.iconBoxSize * 0.4f, style.lockedMarkThickness);
+            rt.sizeDelta = new Vector2(style.IconBoxSize * 0.4f, style.LockedMarkThickness);
             rt.anchoredPosition = new Vector2(0f, abilityY);
-            mark.color = style.lockedMarkColor;
+            mark.color = style.LockedMarkColor;
         }
 
         /// <summary>
@@ -828,7 +828,7 @@ namespace CosmicShore.UI
             if (rt.parent != slot.GaugeClip) rt.SetParent(slot.GaugeClip, false);
 
             StretchTo(rt, 0f);                              // the clip owns the size and the shape
-            slot.GaugeTrack.color = style.gaugeTrackColor;  // there IS a meter here now
+            slot.GaugeTrack.color = style.GaugeTrackColor;  // there IS a meter here now
 
             // Filled needs a sprite - Image draws a plain quad and IGNORES fillAmount when the
             // sprite is null - and it must be a plain box, because the stencil is what shapes this,
@@ -839,7 +839,7 @@ namespace CosmicShore.UI
             gauge.fillOrigin = (int)Image.OriginVertical.Bottom;
             gauge.preserveAspect = false;
             gauge.raycastTarget = false;
-            gauge.color = style.gaugeFillColor;
+            gauge.color = style.GaugeFillColor;
         }
 
         /// <summary>
@@ -1081,7 +1081,7 @@ namespace CosmicShore.UI
             if (socket.parent != card) socket.SetParent(card, false);
 
             socket.anchorMin = socket.anchorMax = socket.pivot = new Vector2(0.5f, 0.5f);
-            socket.sizeDelta = new Vector2(style.petalFlowerSize, style.petalFlowerSize);
+            socket.sizeDelta = new Vector2(style.PetalFlowerSize, style.PetalFlowerSize);
             socket.anchoredPosition = new Vector2(0f, style.FlowerLocalY);
             socket.localScale = Vector3.one;
             socket.localRotation = Quaternion.identity;
@@ -1120,7 +1120,7 @@ namespace CosmicShore.UI
 
             var rt = emblem.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(style.petalFlowerSize, style.petalFlowerSize);
+            rt.sizeDelta = new Vector2(style.PetalFlowerSize, style.PetalFlowerSize);
             rt.anchoredPosition = new Vector2(0f, style.FlowerLocalY);
             rt.localScale = Vector3.one;
             rt.localRotation = Quaternion.identity;
@@ -1139,8 +1139,8 @@ namespace CosmicShore.UI
             }
 
             socket.anchorMin = socket.anchorMax = socket.pivot = new Vector2(0.5f, 0.5f);
-            socket.sizeDelta = new Vector2(style.plateWidth, style.chipHeight);
-            socket.anchoredPosition = new Vector2(0f, -cardHeight * 0.5f - style.chipGap - style.chipHeight * 0.5f);
+            socket.sizeDelta = new Vector2(style.PlateWidth, style.ChipHeight);
+            socket.anchoredPosition = new Vector2(0f, -cardHeight * 0.5f - style.ChipGap - style.ChipHeight * 0.5f);
             socket.localScale = Vector3.one;
             socket.localRotation = Quaternion.identity;
             return socket;
@@ -1184,8 +1184,8 @@ namespace CosmicShore.UI
             // Borderless: with the rim retired, the bloom and the plate lift ARE the upgrade signal,
             // and BOTH trapezoids take it - the element upgraded the ability, so the pair is what
             // changed state, not one half of it.
-            Color bloomTarget = upgraded ? style.bloomColor : WithAlpha(style.bloomColor, 0f);
-            Color plateTarget = upgraded ? style.upgradedPlateColor : style.plateColor;
+            Color bloomTarget = upgraded ? style.BloomColor : WithAlpha(style.BloomColor, 0f);
+            Color plateTarget = upgraded ? style.UpgradedPlateColor : style.PlateColor;
 
             // The slant edge crosses with them - it is part of the plate, not a separate frame, and
             // it is the one channel with enough contrast left to read at a glance on a dark plate.
@@ -1201,19 +1201,19 @@ namespace CosmicShore.UI
                 return;
             }
 
-            float d = style.upgradeTransitionDuration;
+            float d = style.UpgradeTransitionDuration;
             var seq = DOTween.Sequence().SetUpdate(true).SetLink(slot.Card.gameObject);
             if (slot.ElementBloom) seq.Join(slot.ElementBloom.DOColor(bloomTarget, d).SetEase(Ease.OutCubic));
             if (slot.AbilityBloom) seq.Join(slot.AbilityBloom.DOColor(bloomTarget, d).SetEase(Ease.OutCubic));
             if (slot.ElementPlate) seq.Join(slot.ElementPlate.DOColor(plateTarget, d).SetEase(Ease.OutCubic));
             if (slot.AbilityPlate) seq.Join(slot.AbilityPlate.DOColor(plateTarget, d).SetEase(Ease.OutCubic));
 
-            if (upgraded && style.unlockPunchScale > 1f)
+            if (upgraded && style.UnlockPunchScale > 1f)
             {
                 slot.Card.localScale = Vector3.one;
                 seq.Join(slot.Card
-                    .DOPunchScale(Vector3.one * (style.unlockPunchScale - 1f),
-                                  style.unlockPunchDuration, 1, 0.6f));
+                    .DOPunchScale(Vector3.one * (style.UnlockPunchScale - 1f),
+                                  style.UnlockPunchDuration, 1, 0.6f));
             }
 
             slot.Tween = seq;
@@ -1244,7 +1244,7 @@ namespace CosmicShore.UI
         /// means "this vessel has not authored an icon for this slot", which is a fact about the
         /// ART - and a slot that is being DRIVEN is an ability that exists, whatever the row can
         /// draw of it. The Serpent is the case that proved it: its sniper's recharge was pushed
-        /// correctly from <c>SerpentVesselHUDController</c> from the day the ability shipped, and
+        /// correctly from <c>SerpentHUDController</c> from the day the ability shipped, and
         /// landed nowhere for three rounds of playtest because that vessel binds 0 of its 4 icons.
         /// The veil needs no icon anyway - it sizes itself on the ability PLATE, which a locked
         /// card has. The general rule: <i>an indicator that refuses to draw because its
@@ -1329,7 +1329,7 @@ namespace CosmicShore.UI
 
             // Sized and placed on the ability plate in HOST space, where the plate sits at zero.
             clip.anchorMin = clip.anchorMax = clip.pivot = new Vector2(0.5f, 0.5f);
-            clip.sizeDelta = new Vector2(style.plateWidth, style.abilityCellHeight);
+            clip.sizeDelta = new Vector2(style.PlateWidth, style.AbilityCellHeight);
             clip.anchoredPosition = Vector2.zero;
             clip.localScale = Vector3.one;
             clip.localRotation = Quaternion.identity;
@@ -1339,8 +1339,8 @@ namespace CosmicShore.UI
             // The sweep has to cover the trapezoid's corners at every angle, so it is squared off to
             // the plate's diagonal rather than its width - a disc inscribed in the rect would leave
             // the corners permanently lit.
-            float reach = Mathf.Sqrt(style.plateWidth * style.plateWidth +
-                                     style.abilityCellHeight * style.abilityCellHeight);
+            float reach = Mathf.Sqrt(style.PlateWidth * style.PlateWidth +
+                                     style.AbilityCellHeight * style.AbilityCellHeight);
             SetCellRect(sweep.rectTransform, 0f, reach, reach);
             sweep.type = Image.Type.Filled;
             sweep.fillMethod = Image.FillMethod.Radial360;
@@ -1354,7 +1354,7 @@ namespace CosmicShore.UI
             // the cleared area clockwise out of the top, which is the classic cooldown read.
             sweep.fillClockwise = false;
             sweep.preserveAspect = false;
-            sweep.color = style.cooldownVeilColor;
+            sweep.color = style.CooldownVeilColor;
 
             slot.CooldownClip = clip;
             slot.CooldownSweep = sweep;
@@ -1365,9 +1365,9 @@ namespace CosmicShore.UI
             if (!slot.Flash) return;
 
             slot.FlashTween?.Kill();
-            slot.Flash.color = style.cooldownReadyFlashColor;
+            slot.Flash.color = style.CooldownReadyFlashColor;
             slot.FlashTween = slot.Flash
-                .DOFade(0f, style.cooldownReadyFlashDuration)
+                .DOFade(0f, style.CooldownReadyFlashDuration)
                 .SetEase(Ease.OutQuad)
                 .SetUpdate(true)
                 .SetLink(slot.Flash.gameObject);
@@ -1479,7 +1479,7 @@ namespace CosmicShore.UI
             // Style B: the control's NAME on a keycap, on either device. A pad control with no
             // name authored falls through to its artwork below.
             string keyName = glyph == null ? null : _chipKeyboard ? glyph.keyboardLabel : glyph.padLabel;
-            bool keycap = style && style.keycapChips && !string.IsNullOrEmpty(keyName);
+            bool keycap = style && style.KeycapChips && !string.IsNullOrEmpty(keyName);
             DrawKeycap(slot, keycap ? keyName : null, held, set);
 
             // A passive ability has no button, and several pad buttons have no keyboard equivalent.
@@ -1495,7 +1495,7 @@ namespace CosmicShore.UI
                 slot.ChipGlyph.sprite = !showGlyph ? null
                                       : held && glyph.padGlyphHeld ? glyph.padGlyphHeld
                                                                    : glyph.padGlyph;
-                slot.ChipGlyph.color = held ? set.heldColor : set.restColor;
+                slot.ChipGlyph.color = held ? set.HeldColor : set.RestColor;
                 slot.ChipGlyph.enabled = showGlyph;
             }
 
@@ -1503,7 +1503,7 @@ namespace CosmicShore.UI
             {
                 slot.ChipLabel ??= ResolveChipLabel(slot.ChipSocket, set);
                 slot.ChipLabel.text = showLabel ? glyph.keyboardLabel : string.Empty;
-                slot.ChipLabel.color = held ? set.heldColor : set.restColor;
+                slot.ChipLabel.color = held ? set.HeldColor : set.RestColor;
                 slot.ChipLabel.enabled = showLabel;
             }
         }
@@ -1531,27 +1531,27 @@ namespace CosmicShore.UI
                     existing.SetParent(slot.ChipSocket, false);
                 }
                 slot.Keycap = existing;
-                slot.KeycapFill = ResolveChildImage(existing, "Fill", style.keycapFillSprite);
-                slot.KeycapBorder = ResolveChildImage(existing, "Border", style.keycapBorderSprite);
+                slot.KeycapFill = ResolveChildImage(existing, "Fill", style.KeycapFillSprite);
+                slot.KeycapBorder = ResolveChildImage(existing, "Border", style.KeycapBorderSprite);
                 StretchTo(slot.KeycapFill.rectTransform, 0f);
                 StretchTo(slot.KeycapBorder.rectTransform, 0f);
                 slot.KeycapLabel = ResolveChipLabel(existing, set);
-                slot.KeycapLabel.fontSize = style.keycapTextSize;
-                if (style.keycapFont) slot.KeycapLabel.font = style.keycapFont;
+                slot.KeycapLabel.fontSize = style.KeycapTextSize;
+                if (style.KeycapFont) slot.KeycapLabel.font = style.KeycapFont;
                 slot.KeycapLabel.textWrappingMode = TextWrappingModes.NoWrap;
             }
 
             slot.Keycap.gameObject.SetActive(true);
             slot.KeycapLabel.text = keyName;
-            slot.KeycapLabel.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldTextToken : style.keycapTextToken);
-            slot.KeycapFill.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldFillToken : style.keycapFillToken);
+            slot.KeycapLabel.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.KeycapHeldTextToken : style.KeycapTextToken);
+            slot.KeycapFill.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.KeycapHeldFillToken : style.KeycapFillToken);
             // Rev 3: the keycap's edge in the card's element colour, so control and ability read as one.
-            slot.KeycapBorder.color = slot.HasTint ? slot.Tint : CosmicShore.UI.UITheme.Resolve(null, style.keycapBorderToken);
+            slot.KeycapBorder.color = slot.HasTint ? slot.Tint : CosmicShore.UI.UITheme.Resolve(null, style.KeycapBorderToken);
 
-            float width = Mathf.Min(style.plateWidth,
-                                    slot.KeycapLabel.GetPreferredValues(keyName).x + style.keycapPadding * 2f);
+            float width = Mathf.Min(style.PlateWidth,
+                                    slot.KeycapLabel.GetPreferredValues(keyName).x + style.KeycapPadding * 2f);
             slot.Keycap.anchorMin = slot.Keycap.anchorMax = slot.Keycap.pivot = new Vector2(0.5f, 0.5f);
-            slot.Keycap.sizeDelta = new Vector2(Mathf.Max(width, style.chipHeight), style.chipHeight);
+            slot.Keycap.sizeDelta = new Vector2(Mathf.Max(width, style.ChipHeight), style.ChipHeight);
             slot.Keycap.anchoredPosition = Vector2.zero;
             // Held, the key reads as pressed IN: lit and a touch smaller.
             slot.Keycap.localScale = held ? Vector3.one * 0.92f : Vector3.one;
@@ -1573,7 +1573,7 @@ namespace CosmicShore.UI
 
             StretchTo(label.rectTransform, 0f);
             label.alignment = TextAlignmentOptions.Center;
-            label.fontSize = set.keyboardLabelSize;
+            label.fontSize = set.KeyboardLabelSize;
             label.raycastTarget = false;
             return label;
         }
@@ -1634,12 +1634,12 @@ namespace CosmicShore.UI
             slot.FlashTween?.Kill();
             slot.FlashTween = null;
 
-            if (pressed) slot.Flash.color = style.pressFlashColor;
+            if (pressed) slot.Flash.color = style.PressFlashColor;
 
             if (!pressed || releaseImmediately)
             {
                 slot.FlashTween = slot.Flash
-                    .DOFade(0f, style.pressFlashDuration)
+                    .DOFade(0f, style.PressFlashDuration)
                     .SetEase(Ease.OutQuad)
                     .SetUpdate(true)
                     .SetLink(slot.Flash.gameObject);
@@ -1668,13 +1668,13 @@ namespace CosmicShore.UI
         void ApplySlantEdge(TrapezoidGraphic plate, bool locked, bool upgraded, Slot tinted = null)
         {
             if (!plate) return;
-            plate.EdgeThickness = style.slantEdgeThickness;
-            plate.EdgeWrap = style.slantEdgeWrap;
-            plate.EdgeAntialias = style.slantEdgeAntialias;
-            plate.EdgeColor = locked ? style.lockedMarkColor
-                                     : upgraded ? style.upgradedSlantEdgeColor
-                                                : tinted is { HasTint: true } ? WithAlpha(tinted.Tint, style.elementEdgeAlpha)
-                                                                              : style.slantEdgeColor;
+            plate.EdgeThickness = style.SlantEdgeThickness;
+            plate.EdgeWrap = style.SlantEdgeWrap;
+            plate.EdgeAntialias = style.SlantEdgeAntialias;
+            plate.EdgeColor = locked ? style.LockedMarkColor
+                                     : upgraded ? style.UpgradedSlantEdgeColor
+                                                : tinted is { HasTint: true } ? WithAlpha(tinted.Tint, style.ElementEdgeAlpha)
+                                                                              : style.SlantEdgeColor;
         }
 
         // ---------------------------------------------------------------
@@ -1698,7 +1698,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ApplyElementColour(Slot slot, Color colour, bool omni)
         {
-            if (slot == null || !style || !style.elementColour || slot.Locked) return;
+            if (slot == null || !style || !style.ElementColour || slot.Locked) return;
             slot.HasTint = true;
             slot.Tint = colour;
             if (slot.ElementPlate) BuildLava(slot.Card, slot.ElementPlate, colour, omni, 0);
@@ -1724,13 +1724,13 @@ namespace CosmicShore.UI
 
             Color.RGBToHSV(colour, out float h, out float sat, out float val);
             var second = Color.HSVToRGB(Mathf.Repeat(h + 0.06f, 1f), sat, val * 0.95f);
-            Color[] omniColours = { style.chargeColour, style.massColour, style.spaceColour, style.timeColour };
+            Color[] omniColours = { style.ChargeColour, style.MassColour, style.SpaceColour, style.TimeColour };
             for (int i = 0; i < 2; i++)
             {
-                var blob = ResolveChildImage(clip, $"Blob{i}", style.bloomSprite);
+                var blob = ResolveChildImage(clip, $"Blob{i}", style.BloomSprite);
                 var c = omni ? omniColours[(i + omniOffset) % 4] : i == 0 ? colour : second;
-                blob.color = WithAlpha(c, style.lavaAlpha * (i == 0 ? 1f : 0.8f));
-                float d = style.plateWidth * style.lavaBlobScale * (i == 0 ? 1f : 0.8f);
+                blob.color = WithAlpha(c, style.LavaAlpha * (i == 0 ? 1f : 0.8f));
+                float d = style.PlateWidth * style.LavaBlobScale * (i == 0 ? 1f : 0.8f);
                 var rt = blob.rectTransform;
                 rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.sizeDelta = new Vector2(d, d);
@@ -1742,7 +1742,7 @@ namespace CosmicShore.UI
                 {
                     Rt = rt,
                     Home = home,
-                    Period = Mathf.Lerp(style.lavaPeriod.x, style.lavaPeriod.y, k),
+                    Period = Mathf.Lerp(style.LavaPeriod.x, style.LavaPeriod.y, k),
                     Phase = k * Mathf.PI * 2f,
                 });
             }
@@ -1750,14 +1750,14 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (_blobs.Count == 0 || !style || !style.lavaMotion) return;
+            if (_blobs.Count == 0 || !style || !style.LavaMotion) return;
             float t = Time.unscaledTime;
             for (int i = 0; i < _blobs.Count; i++)
             {
                 var b = _blobs[i];
                 if (!b.Rt) continue;
                 float a = t * (Mathf.PI * 2f) / Mathf.Max(0.1f, b.Period) + b.Phase;
-                b.Rt.anchoredPosition = b.Home + new Vector2(Mathf.Sin(a), Mathf.Cos(a * 0.77f)) * style.lavaDrift;
+                b.Rt.anchoredPosition = b.Home + new Vector2(Mathf.Sin(a), Mathf.Cos(a * 0.77f)) * style.LavaDrift;
                 float sc = 1f + 0.18f * Mathf.Sin(a * 0.6f);
                 b.Rt.localScale = new Vector3(sc, sc, 1f);
             }

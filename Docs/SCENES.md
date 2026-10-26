@@ -25,7 +25,7 @@ that grew into the Menu_Main lava lamp, freestyle, toybox and lobby. It was **re
 with its scene, controller, card and mode preview; ID 28 stays reserved. Do not reintroduce it.
 `OnlineDuelForTheCell (29)` (`MinigameDuelForCellMultiplayer_Gameplay.unity`, card
 `ArcadeGameOnlineDuelForTheCell.asset`) followed the same day: Brood Rush replaced it. Its controller
-stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellController`. ID 29 stays reserved.
+stays reserved; `OnlineDuelForTheCellController` was on no scene and was retired 2026-10-25 (`Docs/Reports/DEAD_CODE_M8.md`). ID 29 stays reserved.
 
 **2026-10-13:** the 2v2 CoOp vs AI (30) and CoOp Wildlife Blitz (32) scenes were dropped from the build
 list, and their cards plus the 21 legacy cards that named no existing scene were moved to
@@ -43,7 +43,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **Bootstrap** | 0 (must be first) | `_Scenes/Bootstrap.unity` | App entry point: DI registration, platform config, auth start, splash |
 | **Authentication** | 1 | `_Scenes/Authentication.unity` | Auth UI, cached session check, NetworkManager host start |
 | **Menu_Main** | 2 | `_Scenes/Menu_Main.unity` | Main menu with networked autopilot vessel, screen navigation |
-| **SplashScreen** | — | `_Scenes/SplashScreen.unity` | Optional splash screen (used by `SplashToAuthFlow`) |
+| **SplashScreen** | — | `_Scenes/SplashScreen.unity` | Optional splash screen (`SplashToAuthFlow`, which routed it, was on no scene and was retired 2026-10-25) |
 
 ### Single-Player Game Scenes
 
@@ -91,6 +91,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
+| **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller. **Out of the build since 2026-10-13** (Garrett's call, DESIGN_CALLS 12.3): the scene stays on disk, its entry is gone from `EditorBuildSettings.asset` and its card is in `_SO_Assets/Games/_Archive/`. |
 | **MinigameMaelstromMultuplayer** | `_Scenes/Multiplayer Scenes/` | Maelstrom variant | Multi-round tournament format |
 
@@ -248,7 +249,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         │
         ├── SkimRaceController              — deterministic track, crystal race, golf scoring
         ├── JoustController      — collision tracking, server-authoritative winner, golf scoring
-        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds (its own mode is retired; CoOp Wildlife Blitz's scene runs it)
         ├── ScurryController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
@@ -327,6 +327,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
+| 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
 
 Note: IDs 7, 31 and 47 are skipped in the enum, and all three are reserved forever because saved selections still carry them. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document); 47 was Drumfire, the Dolphin-only rhythm range removed in 2026-09 because it read as Rampage without offering enough of its own (its lane geometry survives as a platform capability — `ApproachLaneGeometry`, `CrystalManager.CrystalPlacementMode.ApproachLanes`, `ScoringMetric.VolumeDestroyed`). Many single-player arcade modes (1, 3-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations. `Rampage(2)` left this set — it is now a multiplayer destruction race with its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
@@ -440,7 +441,7 @@ Collision-based competitive duel. Players collide with each other; first to reac
 - `UseGolfRules => true` — lower score = better
 - Server-authoritative collision tracking: clients report via ServerRpc, server monotonically updates counts
 - Winner score = elapsed time; loser score = 99999
-- `JoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
+- `NetworkJoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
 - Atomic results sync via `FixedString64Bytes[]` / `float[]` / `int[]` arrays in ClientRpc
 - `_finalResultsSent` guard prevents duplicate end-game processing
 
@@ -558,17 +559,9 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 |---|---|---|
 | `TimeBasedTurnMonitor` | `TurnMonitors/` | Elapsed time ≥ duration |
 | `NetworkTimeBasedTurnMonitor` | `TurnMonitors/` | Network-aware time-based |
-| `CrystalCollisionTurnMonitor` | `TurnMonitors/` | Player collects N crystals |
-| `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Network-aware crystal collection |
-| `JoustCollisionTurnMonitor` | `TurnMonitors/` | Player completes N jousts |
-| `NetworkJoustCollisionTurnMonitor` | `TurnMonitors/` | Network-aware joust tracking |
+| `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Player's domain collects N crystals (network-aware; the local-only base was folded in, 2026-10-25) |
+| `NetworkJoustCollisionTurnMonitor` | `TurnMonitors/` | Player's domain completes N jousts (network-aware; the local-only base was folded in, 2026-10-25) |
 | `VesselCollisionTurnMonitor` | `TurnMonitors/` | Player vessel collides with object |
-| `CellControlTurnMonitor` | `TurnMonitors/` | Cell ownership conditions met |
-| `VolumeCreatedTurnMonitor` | `TurnMonitors/` | Player creates N prisms |
-| `VolumeDestroyedTurnMonitor` | `TurnMonitors/` | Player destroys N prisms |
-| `AllLifeFormsDestroyedTurnMonitor` | `TurnMonitors/` | All enemies defeated |
-| `DistanceTurnMonitor` | `TurnMonitors/` | Player travels N units |
-| `ResourceAccumulationTurnMonitor` | `TurnMonitors/` | Player collects N resources |
 | `RampagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Rampage target |
 | `CleavePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Cleave target |
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
@@ -583,6 +576,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
+| `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 
@@ -683,7 +677,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
 | SkimRace | `SkimRaceController.cs` | `_Scripts/Controller/Arcade/` |
 | Joust | `JoustController.cs` | `_Scripts/Controller/Arcade/` |
-| Cellular Duel (MP) | `OnlineDuelForTheCellController.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal Capture | `ScurryController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `BroodRushController.cs` | `_Scripts/Controller/Arcade/` |

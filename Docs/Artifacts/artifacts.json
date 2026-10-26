@@ -10,30 +10,44 @@
       "group": "Vessel Studio",
       "summary": "Every vessel and its AI, flown, watched and decided on before the game changes: the hub, the Squirrel and Stoat studios, the studio agent and the Sync panel. The repo pages are the source (/vessel-studio D12); an import only brings back what a publish changed.",
       "unwrap": true,
-      "strip": [
-        "<script src=\"sync.js\"></script>"
-      ],
       "skip": [
         "build.json"
       ],
       "publishedFrom": {
-        "branch": "Ys-bleeding-edge",
-        "sha": "f4c18e9a079795e421f6996495819a8dd58d6328",
-        "subject": "feat(vessel-studio): game domain colours everywhere, and a hook that recommends the studio"
+        "branch": "HEAD",
+        "sha": "84c9ba3321fd253c619b3022aed1e0825fcb8977",
+        "subject": "feat(vessel-studio): the Gibbon's two modes - time mode on the Tether's auto-tethers, space mode on two tethers"
       },
       "files": {
-        "ai_race_panel.js": "ff96f93b87b22e5647bf724265a269aa0021c8d00f1ee40671e1ab341d1547fc",
-        "index.html": "886002017c850b836675ed289b7526466037556e117218524b13099d7a5f2ce4",
-        "squirrel.html": "f139bc0a4075b42a3520bcea2a98ea678a257428040bb5d598075e18971df8d5",
-        "stoat.html": "caba95b2fe208220631cd5155f4e752ba91ac71dc0ff2e650aafe1c14554910a",
+        "ai_race_panel.js": "7b09efd6abbaa0e4009a99b6d006f68107c39aa8e8a8c7a1616823346dc27096",
+        "albatross.html": "21b8625950853d8a4ba3eff8f371564c03e935d8a52635e7559c18736cf6ef40",
+        "brittlestar.html": "baf20c9e5d8a858dd6931d6ed92bcbebd7ee7469b0c560a1b50cdc1cdd681c62",
+        "dragonfly.html": "a62dbf3b0c53da1ff156b5bd2ad06acf28165a65ac1f4d019e9de3419df93107",
+        "eel.html": "47b397b14d353156f6f277c3c3d33051601919428b15fcefe23fc54c687dd79e",
+        "flea.html": "f29ffc165f20e88c926da292a806f39c41eb059627bf7ba416a8ca6f52d28f06",
+        "gecko.html": "f3f909e16397cb43360e9db45c37252bb4c991eabb4661e6476e57c1ac9d4a12",
+        "gibbon.html": "95584dd679b84b1008f67bf11c2503a2a4dab9833ca62c36048d9c40848cd48f",
+        "index.html": "1f7bc717e0042d2aaa5156347fbf9692978b93a6487093196ddcfff17f377d39",
+        "marlin.html": "0e366759b20bef5aa57f15932b4859e82d631e1e79ba6889f02b57f1e5f11998",
+        "mole.html": "8949832332bd77cb166888dab9a06fedb67b02dffabf0ac5632a10fd28dacfa0",
+        "octopus.html": "52571f00c1dc497bee7ca860ae371b407c43363caead96e2a0f573988da5c410",
+        "remora.html": "0320b670b14e2bbfad63134ec0ec4969a0d0bff613d9701941c659382bf8d48e",
+        "shrike.html": "5304a7d59e1842ba5daf2b921eb26555889706d3221c2ee8fb100dadeb1474d5",
+        "squirrel.html": "9a7c650969da2dd4de3a450d5530d99f21cbfe5fb1837fd45670e10fcf07a10d",
+        "stoat.html": "6d7dfd707fb9b23ba62485f79594db208abb67ef15bf02ee559a81c2ded5a857",
         "studio-domains.js": "db1678842bc6b7796e082338b6dd805f75d215c7fc35917da7dcb4efb35fb8db",
-        "studio-ide.js": "17e8713dc8e2a371099eb9fd60ea02e8f56d73fa2e73c9dac988e2723a7e23c4",
+        "studio-game.js": "71c90d9ef49249b296caa3d15f4b9babaf57149240febd18d3bd75dc6ec0a3e1",
+        "studio-ide.js": "2d4e0c177895f032d2af07c5f254828ba30ecbf9dac0aaac782c694f7c4e34b3",
+        "studio-kinds.js": "a14ceff5343f9324db8e1be15ac6f716f34241cebea60af8a326bf3c357d9ca0",
         "studio-look.js": "813fbdd9c7efbc09255a9285682dee91fca7a9eff9111735d73c0587954ac47a",
-        "studios.json": "ea7e35f87334dc07dee4f712806cc6a5b8592caa2ccbca33c12c859850b383b8",
-        "sync.js": "43aa82724bf160c7847ef25efc18cf0a451c5d895ef1c4771e8702549af00ab4"
+        "studio-new.js": "3cc11cb7438bddd6702e234cb89c06e9056a5e7c882ba204cb10592ab19b69a3",
+        "studio-theme.js": "2dbce50da70ebdeed2017745cd834fe27dc2103eecab5bda51493abac34b75f5",
+        "studio-vessel.js": "d68bdf758289251104edc0960a3e6f56ccaa9101dd6715ed40808da534554b54",
+        "studios.json": "dac509059b31ca48a7a86e9da4e9adf1127f10ad17339318ebf2141c28ba644b",
+        "sync.js": "4e2985383c88b3fe8911f3fa934ce16e2171a4151990039e2e24ecedcf153ff7"
       },
-      "version": "1791589285-639e",
-      "importedAt": "2026-10-09"
+      "version": "38",
+      "importedAt": "2026-10-18"
     }
   ]
 }

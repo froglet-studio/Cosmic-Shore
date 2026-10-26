@@ -83,6 +83,11 @@ namespace CosmicShore.Editor
                         Collect(candidates, Path.Combine(dir, "Logs", NetTestLogs.FolderName), "net_*.json", "net", cutoff);
             }
             catch { /* unreadable VP folder contributes nothing */ }
+            // Load Time Insights reports (LoadInsights): every load of an online session records by itself (B36), the
+            // return to the menu included. Only the JSON; the .txt beside it is the same report for people. A report
+            // holds up to 4,096 spans, so it gets the flights' larger cap rather than being skipped silently.
+            Collect(candidates, Path.Combine(Application.persistentDataPath, LoadInsights.OutputSubfolder), "load_*.json",
+                    "load", cutoff, MaxFlightBytes);
 
             candidates.Sort((a, b) => b.file.LastWriteTimeUtc.CompareTo(a.file.LastWriteTimeUtc));
             var reports = new List<Report>(candidates.Count);

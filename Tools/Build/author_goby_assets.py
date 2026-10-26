@@ -23,7 +23,9 @@ WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-
             * the hull's input bindings are the Goby's two buttons (CrewButtonActionSO): Dart on Button3Action and Lock
               on Button4Action (a pad's X / Y, keys Q / F, the Goby's phone buttons), and on a pad also RT (Dart) and LT
               (Lock); the Squirrel's thumb-lift overrides are gone, so lifting a thumb while aiming fires nothing;
-            * Resources/ElementalAbilityMaps/Goby.asset is the Goby & Pistol's own four cards (GOBY_MAP).
+            * Resources/ElementalAbilityMaps/Goby.asset is the Goby & Pistol's own four cards (GOBY_MAP);
+            * the HUD is the Goby & Pistol's own, each seat's four cards (author_goby_hud.py: the Squirrel's HUD
+              instance and controller swapped for GobyHUDVariant and GobyPistolHUDController).
           NOT stripped (it needs the editor): the Squirrel's skimmer, which still collects crystals and carries the
           Squirrel's passive skimmer effects (team task in Docs/TEAM_TASKS.md).
     Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewButton0.asset, CrewButton1.asset (+ .meta).
@@ -47,6 +49,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from author_stoat_assets import global_object_id_hash, replace_once  # noqa: E402  (the shared Netcode hash)
 from studio_to_unity import parse_shipped  # noqa: E402  (the lab's SHIPPED block: the Goby's own cruise)
+import author_goby_hud  # noqa: E402  (each seat's own cards: the HUD swap the retrofit applies)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 VESSELS = os.path.join(ROOT, "Assets", "_Prefabs", "Spacevessels")
@@ -386,7 +389,7 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
 
 def retrofit(text: str) -> str:
     """The Goby's own kit onto a Squirrel-derived prefab (the strip, then the bindings). Idempotent."""
-    return swap_containers(bind_buttons(strip_squirrel_kit(text)))
+    return author_goby_hud.swap_hud(swap_containers(bind_buttons(strip_squirrel_kit(text))))
 
 
 def swap_model(text: str) -> str:
@@ -531,6 +534,7 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     left, dangling = squirrel_kit_left(text)
     want(not left, f"Goby.prefab: the Squirrel's kit is still on it: {left}")
     want(not dangling, f"Goby.prefab: local references that name no object: {dangling[:5]}")
+    errs += author_goby_hud.check_hud(text)
     return errs
 
 
@@ -575,6 +579,7 @@ def check_all():
         return ["Goby.prefab (+ .meta) is missing: run Tools/Build/author_goby_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Goby.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid, config_guid)
+    errs += [f"author_goby_hud: {d} drifted (run Tools/Build/author_goby_hud.py)" for d in author_goby_hud.sync(check=True)]
     errs += check_crew_buttons()
     errs += check_containers(read(PREFAB))
     for path in (CLASS_ASSET, MAP):
@@ -588,6 +593,8 @@ def check_all():
 
 def author():
     script_guid, config_guid = guid_of(DUO_SCRIPT_META), guid_of(CONFIG_META)
+    for rel in author_goby_hud.sync(check=False):   # each seat's icons and the HUD variant, before the prefab names them
+        print("wrote", rel)
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR), script_guid, config_guid))
         write(PREFAB + ".meta", prefab_meta())
@@ -628,6 +635,9 @@ def self_test():
     expect(check_prefab(good.replace(GOBY_BINDINGS["_inputEventShipActions"], "  _inputEventShipActions: []\n"), script_guid, config_guid), 1, "the seat's buttons unbound")
     expect(check_prefab(good.replace(GOBY_BINDINGS["_touchActionOverrides"], "  _touchActionOverrides:\n  - InputEvent: 12\n    ShipActions:\n    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}\n"), script_guid, config_guid), 1, "the Squirrel's drift on a thumb lift")
     expect(check_prefab(bind_buttons(swap_model(read(DONOR))) + duo_block(script_guid, config_guid), script_guid, config_guid), 1, "the Squirrel's executors left on")
+    expect(check_prefab(good.replace(author_goby_hud.VARIANT_GUID, author_goby_hud.SQUIRREL_HUD_VARIANT_GUID), script_guid, config_guid), 1, "the Squirrel's HUD")
+    if retrofit(good) != good:
+        fails.append("retrofit (the HUD swap included) is not idempotent")
     if not check_containers(read(DONOR)):
         fails.append("the containers check did not fire on the Squirrel's own prefab")
     if bind_buttons(good) != good:

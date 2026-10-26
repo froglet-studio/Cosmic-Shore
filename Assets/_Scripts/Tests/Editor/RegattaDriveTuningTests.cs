@@ -28,10 +28,70 @@ namespace CosmicShore.Tests
             }
         }
 
+        // AIBoostContext.PathDirection (2026-10-25): on a race line "straight" is judged on the path, the runway on the ring.
+        [Test]
+        public void Context_OnAPath_JudgesTheAngleOnThePath_AndTheRunwayOnTheRing()
+        {
+            var toRing = new Vector3(300f, 0f, 600f);   // the ring round the bend, ~27 deg off the course
+            var c = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0f, false, false, false,
+                toPath: new Vector3(5f, 0f, 200f));
+            Assert.Less(c.AngleToTarget, 2f, "the hull is flying straight along its line");
+            Assert.AreEqual(toRing.magnitude, c.Distance, 1e-3f, "the runway is still the distance to the ring");
+            Assert.AreEqual(toRing.magnitude / 400f, c.RunwaySeconds, 1e-4f);
+        }
+
+        [Test]
+        public void Context_WithoutAPath_JudgesTheObjective()
+        {
+            // Negative control: every mode that is not on a race line (no toPath) reads exactly as before.
+            var toRing = new Vector3(300f, 0f, 600f);
+            var c = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0f, false, false, false);
+            Assert.AreEqual(Vector3.Angle(Vector3.forward, toRing), c.AngleToTarget, 1e-3f);
+            Assert.AreEqual(toRing, c.PathDirection);
+        }
+
+        [Test]
+        public void RampPolicy_OnTheLine_SeesAStraight_WhereTheRingAloneDidNot()
+        {
+            var policy = ScriptableObject.CreateInstance<RampBoostAIPolicySO>();
+            try
+            {
+                var toRing = new Vector3(300f, 0f, 600f);
+                var byRing = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0.05f, false, false, false);
+                var byPath = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0.05f, false, false, false,
+                    toPath: new Vector3(5f, 0f, 200f));
+                Assert.IsFalse(policy.IsStraight(byRing), "judged by the ring round the bend: never straight (the bug)");
+                Assert.IsTrue(policy.IsStraight(byPath), "judged by the line it is flying: straight");
+            }
+            finally { Object.DestroyImmediate(policy); }
+        }
+
         [Test]
         public void ForMode_NullPolicy_StaysNull()
         {
             Assert.IsNull(AIBoostPolicySO.ForMode(null, GameModes.Regatta));
+            Assert.IsNull(AIBoostPolicySO.ForMode(null, GameModes.Switchback, 4));
+        }
+
+        // Per-intensity variants (Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md §3.6): Switchback's I4 drive is learned from
+        // its I4 races, and an intensity with none of its own flies the mode's variant.
+        [Test]
+        public void ForMode_AnIntensityWithItsOwnVariant_FliesIt_ElseTheModes()
+        {
+            var policy = ScriptableObject.CreateInstance<ChargeBoostAIPolicySO>();
+            policy.name = "DolphinAIBoostPolicy";
+            try
+            {
+                var i4 = AIBoostPolicySO.ForMode(policy, GameModes.Switchback, 4);
+                Assert.AreEqual("DolphinAIBoostPolicy_Switchback_I4", i4.name);
+                Assert.AreEqual("DolphinAIBoostPolicy_Switchback", AIBoostPolicySO.ForMode(policy, GameModes.Switchback, 3).name,
+                    "no I3 races learned yet: the mode's variant");
+                Assert.AreEqual("DolphinAIBoostPolicy_Switchback", AIBoostPolicySO.ForMode(policy, GameModes.Switchback, 0).name,
+                    "no intensity: the mode's variant");
+                Assert.AreSame(policy, AIBoostPolicySO.ForMode(policy, GameModes.Headlong, 4),
+                    "negative control: a mode without variants flies the hull's own policy at any intensity");
+            }
+            finally { Object.DestroyImmediate(policy); }
         }
 
         [Test]

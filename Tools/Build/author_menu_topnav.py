@@ -76,8 +76,11 @@ ARROWS = [
 ]
 # Strip order = MenuScreens order = the NavActiveImages / NavInactiveImages order.
 TABS = [("HANGAR", "HangarLink", "OnClickHangarNav"), ("ARK", "ArkLink", "OnClickArkNav"),
-        ("HOME", "HomeLink", "OnClickHomeNav"), ("PORT", "PortLink", "OnClickPortNav"),
-        ("PROFILE", "ProfileLink", "OnClickProfileNav")]
+        ("HOME", "HomeLink", "OnClickHomeNav"), ("PORT", "PortLink", "OnClickPortNav")]
+# Rev 13 (Shombith, 2026-10-25): "we do not need a separate profile screen ... keep the top bar count at 4". The
+# PROFILE tab (index 4) is retired: the profile opens from the Home pilot card (ScreenSwitcher.navHiddenScreens).
+# Its minted documents are removed on every run, so a scene still carrying the fifth tab loses it.
+RETIRED_TAB_INDICES = (4,)
 HOME, PORT = 2, 3          # HOME is the screen the menu opens on; PORT is disabledScreens[0]
 
 # The old subtree the migration deletes (root GameObjects; their components and children go too).
@@ -303,6 +306,8 @@ class Ids:
                        "trigger", "availability")} for i in range(len(TABS))]
         self.keys = [{k: str(f(f"Key{a['side']}#{k}")) for k in ("inst", "stub", "stub_label_kt", "stub_border_th", "hover")}
                      for a in ARROWS]
+        self.retired = {str(f(f"Tab{i}#{k}")) for i in RETIRED_TAB_INDICES for k in
+                        ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "trigger")}
 
     def all(self):
         out = set(self.band.values()) | set(self.rule.values())
@@ -422,7 +427,7 @@ def transform(text):
         for fid in sc.subtree(root):
             sc.remove(fid)
     for fid in list(sc.order):
-        if fid in generated:
+        if fid in generated or fid in ids.retired:
             sc.remove(fid)
 
     items, xs, row_w = row()
@@ -531,6 +536,7 @@ def validate(before_text, after_text, guids):
     for root in RETIRED_ROOTS:
         if before.has(root):
             retired |= set(before.subtree(root))
+    retired |= Ids().retired
     assert removed <= retired | generated, f"unexpected removals {sorted(removed - retired - generated)[:3]}"
     changed = {f for f in set(before.order) & set(sc.order) if before.docs[f] != sc.docs[f]}
     assert changed <= PATCHED | generated, f"unexpected edits {sorted(changed - PATCHED - generated)[:3]}"

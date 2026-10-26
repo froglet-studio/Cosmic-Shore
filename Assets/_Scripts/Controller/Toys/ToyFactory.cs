@@ -345,6 +345,10 @@ namespace CosmicShore.Gameplay
             if (signal == ToySwitchSignal.Next)
                 return PrismShaderMaterial(CtaLime(theme),
                                            theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
+            // HALO likewise: the pearl, minted on the prism shader once and cached by colour.
+            if (signal == ToySwitchSignal.Halo)
+                return PrismShaderMaterial(HaloPearl,
+                                           theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
 
             var painted = SwitchDomain(signal, domain);
             // Unity's null is not C#'s, so this is an explicit truthiness test rather than `??`.
@@ -358,9 +362,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The colour a switch of this signal reads as (its label, its hub, its ring tint fallback).</summary>
         public static Color SwitchColor(ThemeManagerDataContainerSO theme, ToySwitchSignal signal, Domains domain)
-            => signal == ToySwitchSignal.Next
-                ? CtaLime(theme)
-                : DomainAccentColor(theme, SwitchDomain(signal, domain));
+            => signal switch
+            {
+                ToySwitchSignal.Next => CtaLime(theme),
+                ToySwitchSignal.Halo => HaloPearl,
+                _ => DomainAccentColor(theme, SwitchDomain(signal, domain)),
+            };
+
+        /// <summary>
+        /// A HALO switch's pearl: a warm white, fixed rather than themed - a halo is light, and the one colour no playable
+        /// domain, no danger rim and no free pickup wears (ToySwitchVocabularyTests keeps it over 0.5 summed channel
+        /// distance from each of them, Gold's accent the nearest at ~0.9).
+        /// </summary>
+        public static readonly Color HaloPearl = new(0.96f, 0.94f, 0.86f);
 
         /// <summary>
         /// The free-pickup LIME - the platform's "this one is available to you" colour, taken from
@@ -459,8 +473,8 @@ namespace CosmicShore.Gameplay
             mesh = null;
             var profile = SpindleLodProfileSO.Instance;
             var set = profile ? profile.SyntheticSet : null;
-            if (set == null || !set.source || !profile.lodEnabled || !profile.wireTemplate) return null;
-            var template = profile.wireTemplate;
+            if (set == null || !set.source || !profile.LodEnabled || !profile.WireTemplate) return null;
+            var template = profile.WireTemplate;
             if (!template.shader || !template.shader.isSupported) return null;
             // The wire's tiers and the effect's globals are the system's.
             if (!SpindleLodSystem.EnsureRunning()) return null;
@@ -474,14 +488,14 @@ namespace CosmicShore.Gameplay
             var mat = new Material(template) { name = $"SwitchRingWire_{ColorUtility.ToHtmlStringRGB(body)}" };
             // Dark body, bright facets: the prism rings' own pairing (dark = rim x 0.22). Both ends near
             // the signal colour washed every facet into one flat band.
-            float dark = profile.switchRingDarkShare;
+            float dark = profile.SwitchRingDarkShare;
             mat.SetColor(DullColorId, new Color(body.r * dark, body.g * dark, body.b * dark, 1f));
-            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, profile.switchRingRimWhiten));
+            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, profile.SwitchRingRimWhiten));
             mat.SetFloat(SpindleGirthId, set.girth);
             mat.SetFloat(SpindleStrandId, set.strandRadius);
-            mat.SetFloat(SpindleStrengthId, profile.switchRingStrength);
-            mat.SetFloat(SpindleDistanceId, profile.switchRingDistance);
-            mat.SetFloat(SpindleSwayId, profile.switchRingSway);
+            mat.SetFloat(SpindleStrengthId, profile.SwitchRingStrength);
+            mat.SetFloat(SpindleDistanceId, profile.SwitchRingDistance);
+            mat.SetFloat(SpindleSwayId, profile.SwitchRingSway);
             s_wireRingMaterials[key] = mat;
             return mat;
         }

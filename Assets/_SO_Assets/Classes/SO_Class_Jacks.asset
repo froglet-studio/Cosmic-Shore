@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 22
   Name: Jacks
-  Description: Two jacks herd the cell's wildlife. Run each jack with a thumb and lift it
-    to leave the decoy, or take off and fly them, one fish under each thumb, calling
-    the herd to them. D-pad left or right switches between herding and flying.
+  Description: Two jacks herd the cell's wildlife. Herding, run each jack with a thumb,
+    lift it to leave a decoy, pull a trigger to dash both jacks to it, and call the herd.
+    Netting, fly them, one fish under each thumb, with a net between them that opens as
+    the sticks go apart. D-pad left or right switches between herding and netting.
   PrimaryElement: 0
   Element: {fileID: 0}
   InitialResourceLevels:

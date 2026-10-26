@@ -247,8 +247,10 @@ horizon a ship is HELD rather than destroyed — a simple version's stated limit
 
 Applied only on the machine that drives the vessel (`!IsNetworkClient`: the owner, or a
 non-networked vessel) and never on a stationary one (whose transformer does not age its modifiers,
-so entries would pile up). Vessels are enumerated once a second while a hole is live — there is no
-vessel registry, and this is not a hot path. `ModifyVelocity` weights a fresh entry at 1.5×, and an
+so entries would pile up). Vessels are re-read once a second while a hole is live, from
+`VesselStatus.Live` (the registry `VesselStatus` keeps in OnEnable/OnDisable). It used to be a
+`FindObjectsByType<VesselStatus>` scene search, which walks every loaded object and so grew all
+session: 1.8 ms a call in a Stoat match's first minute, 20-36 ms eight minutes in (2026-10-17). `ModifyVelocity` weights a fresh entry at 1.5×, and an
 entry given this frame's `dt` as its duration is consumed exactly once on steady frame times, so the
 shift handed over is `v_g / 1.5`; on a jittery frame an entry can survive into a second application
 at ~0.5× — bounded noise, the price of the sanctioned channel over a direct position write.
@@ -460,6 +462,57 @@ two AIs holding pairs, the player's squeeze was refused — "sometimes my pair s
 is now 16 (`maxBlackHoles`; the field's well list `BlackHolePhysics.NativeWells` holds 16); the prism warp bank stays at
 4 and takes the holes nearest the camera; the lens draws the nearest 8. A squeeze refused for room keeps asking while the
 trigger is held (`StoatDipoleExecutor.StepAuthority`), so it opens the moment there is room.
+
+## 5.3 The vortex ring lens — a toroid, not a singularity (`VortexRingLens` + `VortexRingLensPass` + `VortexRingLens.shader` / `.hlsl`, 2026-10-24)
+
+Garrett, 2026-10-24: "make the vortex ring loose the flat effect and replace it with a cool warping effect like the
+black holes use but convey a more subtle toroid instead of a spherical singularity". The Pistol's vortex ring bends the
+light round its CORE CIRCLE: a subtle doughnut of bent light with a faint rim on the tube's edge, no shadow and no core.
+It is the black hole lens's plumbing with a different per-pixel step, in sibling files so the black hole's verified
+lens and its goldens stay untouched.
+
+**What a pixel does** (`VortexRingLens.hlsl`, run on the CPU by `verify_vortex_ring_lens.py`). The ring's core circle
+is an exact ellipse on screen. Each pixel finds the nearest point q on it (Eberly's robust bisection), measures its
+distance in tube widths, u = d/σ, and pulls its sample toward the core by `σ·bend·P(u)`, `P(u) = u·e^(−u²/2)·(1 − (u/3)²)²`:
+the smooth well's profile laid along a curve, exactly zero from u = 3. σ is 0.6 of the tube's radius, so the faint rim
+(the ring's tint) sits on the tube's edge. A slow ripple runs across the tube on the ring's spin (the swirl), red is bent
+a little more and blue a little less (the chromatic split). Seen nearly edge-on the doughnut's hole is narrower than the
+bend's reach and the nearest point flips across the major axis; the bend fades to zero on that medial axis so it never
+creases, and a ring seen exactly edge-on is the segment of its diameter, so it never vanishes. Opaque mass in front of
+the core point by more than 1.8 tube radii is not bent.
+
+**Any camera.** `VortexRingLens.ScreenRing` works the ellipse out from the camera's REAL `projectionMatrix ·
+worldToCameraMatrix`, never from its field of view, so the Pistol's off-axis seat lens (`PistolPlane.OffAxis` →
+`Matrix4x4.Frustum`), the chase camera and the Scene view all draw it on the ring. The clip position of a ring point is
+linear in (cos θ, sin θ); rotating θ so the clip w reads `w0(1 + λ cos θ')` and substituting the aberration map
+`cos θ' = (cos ψ − λ)/(1 − λ cos ψ)` makes the screen point linear in (cos ψ, sin ψ), whose principal axes are the
+ellipse's. Nothing is inverted, so edge-on stays exact. The core's inverse depth is exact too:
+`1/w = (1 − λ cos ψ)/(w0(1 − λ²))`, which gives each core point its own tube width and depth test. A ring any part of
+which is within the near plane is not drawn; it fades as its nearest point closes on the plane.
+
+**The API** (`Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/VortexRingLens.cs`). Every frame a ring should bend
+light: `VortexRingLens.Set(key, centre, axis, radius, tube, strength01, tint, spin)` in world units, the key being the
+ring object itself; `Remove(key)` when it dies. A ring not Set for 2 frames is dropped. `LifeFade(age, remaining)` is
+the usual strength: it swells in over 0.25 s and fades out over the last 0.5 s. The first live ring holds the depth
+texture on through `BlackHoleLens.CameraSupport` (shared with the holes, counted), and the pass runs only while a ring
+lives; the nearest 8 a camera sees are drawn.
+
+**The knobs** are the material's: `Resources/VortexRingLens.mat` — bend 0.55, rim 0.07, chromatic split 0.12, swirl
+0.3, swirl rate 0.5 (radians of ripple per radian of spin). The pass never overrides them.
+
+**Proof.** `python3 Tools/Shaders/verify_vortex_ring_lens.py`: the nearest point against brute force over round,
+eccentric, thin and edge-on ellipses; the profile zero on the core and from the reach; no crease walking lines across
+rings (a control with the medial fade removed fails); the foreground skip; and `ScreenRing` (cut out of the C#, built
+with dotnet) against brute-force projection on symmetric and off-axis cameras, edge-on rings among them (a control with
+the aberration map's sign flipped fails); and the shader through glslang (a control without the depth include
+fails). `VortexRingLensTests` (EditMode) hold the face-on circle, the off-axis camera
+against a field-of-view-only control, the edge-on segment, the near plane, the life fade, the registry's cap and order,
+and the shader bank against the C#.
+
+**Stated limits.** A transparent between the camera and the ring is in the copy, so it is bent with the background.
+Seen edge-on, the ring's near and far halves overlap on screen and read their mean depth, so an opaque thing between
+the two halves counts as in front. The shader is compiled here by glslang against the black hole lens's per-file URP
+mock (the script's tier C); the real URP ShaderLibrary compiles it only when Unity imports it.
 
 ## 6. Tools, keys, console and the test scene — retired (2026-10-10)
 

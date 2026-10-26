@@ -81,6 +81,15 @@ namespace CosmicShore.Gameplay
                  "off-line with no way to correct.")]
         [SerializeField, Range(1f, 90f)] float aiFoldAimDegrees = 12f;
 
+        [Tooltip("The fold lands along the heading it leaves on, so an aim error of θ lands d·sin θ off the ring's centre. " +
+                 "The aim is also held under the angle that lands within this share of the ring's mouth (2026-10-17: at " +
+                 "the authored 12 degrees alone a 420 u fold landed 87 u off a 40-56 u mouth).")]
+        [SerializeField, Range(0.1f, 1f)] float aiFoldMouthShare = 0.5f;
+
+        [Tooltip("Let go this many units SHORT of the ring's plane, so the hull flies through the mouth after the fold " +
+                 "(a crossing inside the fold's own step is not counted - GateRaceController declines it).")]
+        [SerializeField, Min(0f)] float aiFoldLandShort = 30f;
+
         [Tooltip("Seconds before an autopilot re-tries a fold it could not start. A press the " +
                  "ability refuses (still recharging) is harmless but costs an RPC, so it is not " +
                  "re-sent every frame.")]
@@ -137,7 +146,10 @@ namespace CosmicShore.Gameplay
 
                 // The pilot being an AUTOPILOT, not the player being an AI - the same gate the
                 // Manta's boost drive uses, so a lava-lamp or companion Butterfly behaves alike.
-                if (status.AIPilot == null || !status.AIPilot.AutoPilotEnabled)
+                // TryGetComponent, never VesselStatus.AIPilot: that getter ADDS an autopilot, and this loop
+                // reads every player, humans included, every server tick (vessel-ai skill §1.7).
+                if (!(status is Component statusComponent) || !statusComponent.TryGetComponent(out AIPilot autopilot)
+                    || !autopilot.AutoPilotEnabled)
                 {
                     if (_aiFoldReleaseAt.ContainsKey(pilot)) ReleaseFold(pilot);
                     continue;
@@ -159,17 +171,59 @@ namespace CosmicShore.Gameplay
 
                 if (distance < aiFoldMinDistance) continue;
                 if (distance > fold.ResolveRange(status)) continue;
-                if (Vector3.Angle(status.Transform.forward, toGate) > aiFoldAimDegrees) continue;
+                float aim = Vector3.Angle(status.Transform.forward, toGate);
+                if (aim > FoldAimLimitDegrees(distance, RingRadiusFor(pilot), aiFoldMouthShare, aiFoldAimDegrees)) continue;
 
                 // The hold IS the distance: the executor reaches hold x ReachSpeed along the
-                // heading, so letting go after distance / ReachSpeed lands on the ring. Read off
-                // the ability's own asset rather than copied here.
-                float reachSpeed = Mathf.Max(1f, fold.ReachSpeed);
-                _aiFoldReleaseAt[pilot] = now + distance / reachSpeed;
+                // heading. Let go short of the ring's plane (FoldHoldSeconds), so the hull then
+                // flies through the mouth. ReachSpeed is read off the ability's own asset.
+                _aiFoldReleaseAt[pilot] = now + FoldHoldSeconds(distance, aim, aiFoldLandShort, fold.ReachSpeed);
                 _aiFoldRetryAt[pilot] = now + aiFoldRetrySeconds;
                 handler.PerformShipControllerActionsReplicated(input);
             }
         }
+
+        /// <summary>
+        /// The largest aim error a fold over <paramref name="distance"/> may leave on and still land within
+        /// <paramref name="mouthShare"/> of a ring of <paramref name="ringRadius"/>: asin(share·R/d), never over the
+        /// authored <paramref name="maxDegrees"/>. The fold lands along its heading, so an error of θ lands d·sin θ off.
+        /// </summary>
+        public static float FoldAimLimitDegrees(float distance, float ringRadius, float mouthShare, float maxDegrees)
+        {
+            if (distance <= 1e-3f || ringRadius <= 0f) return maxDegrees;
+            float limit = Mathf.Asin(Mathf.Clamp01(mouthShare * ringRadius / distance)) * Mathf.Rad2Deg;
+            return Mathf.Min(maxDegrees, limit);
+        }
+
+        /// <summary>
+        /// Seconds to hold a fold aimed <paramref name="aimDegrees"/> off a ring <paramref name="distance"/> away so it
+        /// lands <paramref name="landShort"/> before the ring's plane: (d·cos θ - short) / ReachSpeed, never negative.
+        /// </summary>
+        public static float FoldHoldSeconds(float distance, float aimDegrees, float landShort, float reachSpeed) =>
+            Mathf.Max(0f, distance * Mathf.Cos(aimDegrees * Mathf.Deg2Rad) - landShort) / Mathf.Max(1f, reachSpeed);
+
+        /// <summary>The mouth radius of <paramref name="pilot"/>'s next ring, or 0 when the course has not landed.</summary>
+        float RingRadiusFor(IPlayer pilot)
+        {
+            int index = pilot?.RoundStats?.SwitchesThreaded ?? -1;
+            if (index < 0 || index >= RaceLength || _course.Count == 0) return 0f;
+            return _course[RingIndexFor(index)].Radius;
+        }
+
+        /// <summary>A race: the AI flies at full throttle, as a person does (WAYSTATION.md expects the bot at 67 u/s; at
+        /// the Butterfly's authored 0.6 skill throttle it cruised at about 45).</summary>
+        protected override float AIThrottleFloor => 1f;
+
+        /// <summary>
+        /// Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>, 2026-10-26): commit no earlier
+        /// than the approach point, which then lies inside the commit radius; aim through the ring's CENTRE; re-attack after
+        /// a missed mouth. With the shipped steering the AI Butterfly threaded 0 of 24 rings in both of Caleb's races
+        /// (2026-10-20/21): its approach point sat 300 u out against a 260 u commit, and it orbited the first ring 150-300 u
+        /// off for the whole race on its 85 u turning circle (45 deg/s at 67 u/s). Offline on those two courses
+        /// (<c>Tools/Build/switchback_dolphin_sim.py --mode Waystation</c>, no fold): 0 and 5 rings before, 24 of 24 on both
+        /// after, in 205 s and 213 s against Caleb's 245 s and 205 s.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
 
         void ReleaseFold(IPlayer pilot)
         {

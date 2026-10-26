@@ -304,7 +304,6 @@ KIT_TEXT_TAB = K.kit_script("KitTextTab")
 MENU_AUDIO = K.meta_guid("Assets/_Scripts/UI/MenuAudio.cs")
 VESSEL_PREFABS = K.meta_guid("Assets/_SO_Assets/Vessel Prefab Container.asset")
 GLYPH_SET = K.meta_guid("Assets/Resources/ControlGlyphSet.asset")
-LOCKUP_STYLE = K.meta_guid("Assets/Resources/AbilityLockupStyle.asset")
 CAPTAINS = K.meta_guid("Assets/_SO_Assets/Captains/Elemental/ElementalCaptains.asset")
 GAME_LISTS = [K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"),
               K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArenaGames.asset")]
@@ -330,9 +329,11 @@ def element_glyph(name):
     return sprite_guid(f"Assets/_Graphics/ElementIcons/icon_{name.lower()}Upgrade_3_active.png")
 
 
-def kit_row(parent, key, name, r, layout_h, content_keys=()):
+def kit_row(parent, key, name, r, layout_h, content_keys=(), interactive=True):
     """A selectable row: focus ring, glass fill, hairline, KitButton (Cancel variant, outline) and the
-    menu's press sound. The row's own content draws itself; the button paints only its frame."""
+    menu's press sound. The row's own content draws itself; the button paints only its frame.
+    interactive=False keeps the look and drops the input (an information row, section 66): out of pad
+    navigation, and a CanvasGroup that blocks no raycasts, so no click, tap or A reaches it; no press sound."""
     b = parent.child(N(key, name, r))
     b.add("le", 114, le(ph=layout_h))
     ring = b.child(N(f"{key}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10))))
@@ -348,13 +349,17 @@ def kit_row(parent, key, name, r, layout_h, content_keys=()):
 
     def body(ctx, go):
         content = "".join(f"  - {ref(ctx.c(k, c))}\n" for k, c in content_keys)
+        nav = K.SELECTABLE_FIELDS if interactive else K.SELECTABLE_FIELDS.replace("    m_Mode: 3\n", "    m_Mode: 0\n")
         return K.mono(go, KIT_BUTTON,
-                      K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n" + EMPTY_CALLS
+                      nav + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n" + EMPTY_CALLS
                       + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{key}/FocusRing', 'img'))}\n"
                       f"  variant: {K.VARIANTS['Cancel']}\n  fill: 0\n"
                       f"  fillGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n  borderGraphic: {ref(ctx.c(f'{key}/Border', 'img'))}\n"
                       + (f"  contentGraphics:\n{content}" if content else "  contentGraphics: []\n") + "  playGradient: {fileID: 0}\n")
     b.add("button", 114, body)
+    if not interactive:
+        b.add("cg", 225, lambda ctx, go: canvas_group(True)(ctx, go).replace("  m_BlocksRaycasts: 1\n", "  m_BlocksRaycasts: 0\n"))
+        return b
     b.add("audio", 114, lambda ctx, go: K.mono(go, MENU_AUDIO, "  category: 11\n"))
     return b
 
@@ -408,11 +413,12 @@ def page_header(page, key, title, line):
 
 def abilities_page(panel):
     page = page_node(panel, "Abilities", True, own_canvas=True)
-    page_header(page, "Tabs/Abilities", "WATCH THE AI PLAY EACH CONTROL", "Labels follow your device. Press one to see it again.")
+    page_header(page, "Tabs/Abilities", "WATCH THE AI PLAY EACH CONTROL", "Labels follow your device.")
     lst = list_node(page, "Tabs/Abilities/List", 54)
     for name, _ in ELEMENTS:
         k = f"Tabs/Abilities/{name}"
-        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, 94), (0.5, 1)), 94)
+        # Information, not buttons (section 66): the AI demo plays each ability; nothing the player presses does.
+        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, 94), (0.5, 1)), 94, interactive=False)
         halo(row, f"{k}/Halo", TLr(-6, -1, 96, 96), round(0.25 * [n for n, _ in ELEMENTS].index(name), 2))
         row.child(N(f"{k}/Hex", "Hex", TLr(14, 19, 56, 56))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("SurfaceLight", 0.35), K.kit_sprite("kit_hex_fill"), preserve=True))
@@ -446,11 +452,11 @@ def abilities_page(panel):
         return K.mono(go, ABILITIES_SCRIPT,
                       "  rows:\n" + rows
                       + f"  prefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n  glyphSet: {K.ref(11400000, GLYPH_SET, 2)}\n"
-                      f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+                      f"  elementTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
                       "  openSlotName: Open slot\n  openSlotLine: Not designed yet.\n  passiveWord: Passive\n  glowSeconds: 0.9\n"
                       "  kindOverrides: []\n"
-                      "  demoStepSeconds: 2.4\n  demoLeadSeconds: 0.8\n  demoResumeSeconds: 4\n"
+                      "  demoStepSeconds: 2.4\n  demoLeadSeconds: 0.8\n"
                       "  keyPressSeconds: 0.35\n  keyPressScale: 0.84\n")
     page.add("logic", 114, body)
     return page
@@ -529,7 +535,7 @@ def upgrades_page(panel):
                      f"    upgradeButtonText: {ref(ctx.c(f'{k}/Buy/Label', 'tmp'))}\n")
         return K.mono(go, UPGRADES_SCRIPT,
                       "  rows:\n" + rows + f"  headerLineText: {ref(ctx.c('Tabs/Upgrades/Line', 'tmp'))}\n"
-                      f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+                      f"  elementTint: {K.TOKEN_INDEX['Purchase']}\n"
                       "  crystalsPerLevel: 100\n"
                       "  pipOff: {r: 0.13, g: 0.15, b: 0.27, a: 1}\n  pipFlashSeconds: 0.45\n  morphSeconds: 0.5\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
@@ -639,7 +645,7 @@ def pilots_page(panel):
                        f"    underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n")
         h = "Tabs/Pilots/Hero"
         return K.mono(go, PILOTS_SCRIPT,
-                      f"  captains: {K.ref(11400000, CAPTAINS, 2)}\n  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+                      f"  captains: {K.ref(11400000, CAPTAINS, 2)}\n  elementTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
                       f"  heroGroup: {ref(ctx.c(h, 'cg'))}\n  heroPortrait: {ref(ctx.c(f'{h}/Portrait', 'img'))}\n"
                       f"  heroFrame: {ref(ctx.c(f'{h}/Frame', 'img'))}\n  heroEyebrowText: {ref(ctx.c(f'{h}/Eyebrow', 'tmp'))}\n"
                       f"  heroNameText: {ref(ctx.c(f'{h}/Name', 'tmp'))}\n  heroDescriptionText: {ref(ctx.c(f'{h}/Desc', 'tmp'))}\n"
@@ -745,15 +751,9 @@ def hangar_bay(clip):
     for i, (w, h) in enumerate(((640, 120), (480, 90), (330, 62))):
         ring = glow_img(bay, f"Hero/Clip/Bay/Ring{i}", f"Ring{i}", R((0.5, 0), None, (0, 96), (w, h)), "ControlActive", 0.5,
                         K.kit_sprite("kit_hex_line2"))
-        ring.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.25, phase=i * 0.33))
-    scan = glow_img(bay, "Hero/Clip/Bay/Scan", "Scan", R((0, 0.5), (1, 0.5), (0, 0), (0, 3)), "ControlActive", 0.45,
-                    K.kit_sprite("kit_spark"))
-    scan.add("amb", 114, M.ambient("Float", period=7.0, amplitude=240))
-    for i in range(8):
-        x, y = (i * 113) % 760 - 380, (i * 71) % 420 - 160
-        mote = glow_img(bay, f"Hero/Clip/Bay/Mote{i}", f"Mote{i}", R(pos=(x, y), size=(5, 5)), "TextLight", 0.8,
-                        K.kit_sprite("kit_hex_fill"))
-        mote.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.0 + (i % 3), amplitude=0.1, phase=i * 0.21))
+        ring.add("cg", 225, canvas_group(True))
+    # Still since 2026-10-24 (Garrett: "every pixel is important"): the rings no longer breathe, and the sweeping scan
+    # line and the drifting motes are gone. The bay is a place, not a show; the vessel's moves are the motion here.
 
 
 def stage_fx(clip):
@@ -795,6 +795,10 @@ def stage_fx(clip):
 
 def build_view(row_guid):
     root = N("root", "HangarView", STRETCH)
+    # §70 (Shombith 2026-10-25: "Hangar should have it too"): the sea behind the whole screen, under the top bar, first so
+    # every zone draws over it. Its wash dims the menu world behind the Hangar the way a hub window's veil does.
+    sea = root.child(N("Sea", "Sea", R((0, 0), (1, 1), (0, -42), (0, -84))))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_WINDOW_MAT))
 
     # ---- header ----
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
@@ -920,7 +924,7 @@ def build_view(row_guid):
     rz = body.child(N("Abilities", "Tabs", R(size=(548, 844))))
     rz.add("le", 114, le(mw=0, pw=0, fw=38))
     panel = rz.child(N("Abilities/Panel", "Panel", R((0, 0), (1, 1), (2.5, 0), (-5, 0))))
-    M.rim_border(framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)[1], "Mass")   # rev 6
+    framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)
     build_tabs(panel)
 
     # ---- the spend-crystals popup ----
@@ -1180,6 +1184,7 @@ def validate_prefabs(files, guids):
         check_sources(path, text, files)
     # The detail view: every field set, each to the right kind of object.
     view = files[f"{OUT_DIR}/HangarView.prefab"]
+    assert f"guid: {M.SEA_WINDOW_MAT}, type: 2" in view, "the Hangar has no sea behind it (§70)"
     detail = K.FileIds("HangarView")("root#detail")
     _, body = doc_of(view, detail)
     for field, want in DETAIL_FIELDS.items():
@@ -1219,8 +1224,16 @@ def validate_prefabs(files, guids):
         "the Abilities rows must be Charge, Mass, Space, Time"
     # The AI demo (2026-10-19): the page plays the stage itself, so it carries the demo timings and nothing of TRY
     # survives - no forward to a preview, no window over the stage, no hint, no bare-arena asset on disk.
-    for field in ("demoStepSeconds", "demoLeadSeconds", "demoResumeSeconds", "keyPressSeconds", "keyPressScale"):
+    for field in ("demoStepSeconds", "demoLeadSeconds", "keyPressSeconds", "keyPressScale"):
         assert f"\n  {field}: " in abil, f"the Abilities page has no AI demo field {field}"
+    # Section 66: the ability rows are information - out of pad navigation, blocking no raycasts, no press sound.
+    for name, _ in ELEMENTS:
+        k = f"Tabs/Abilities/{name}"
+        _, btn = doc_of(view, hv(f"{k}#button"))
+        assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", btn), f"the {name} ability row is a pad stop (it is information)"
+        _, cg = doc_of(view, hv(f"{k}#cg"))
+        assert cg and "  m_BlocksRaycasts: 0\n" in cg, f"the {name} ability row takes clicks (it is information)"
+        assert not doc_of(view, hv(f"{k}#audio"))[1], f"the {name} ability row still has a press sound"
     assert "tryPreview" not in abil, "the Abilities page still forwards to TRY"
     for gone in ("TryButton", "TryPreview", "TryHint", "TryLine"):
         assert f"m_Name: {gone}\n" not in view, f"retired TRY node {gone} is back in HangarView"
@@ -1330,6 +1343,9 @@ def self_test(current, files, guids):
     desc_ref = re.search(r"vesselDescriptionText: \{fileID: (-?\d+)\}", dbody).group(1)
     plants = {
         "the screen's entrances stripped": view_plant(M.strip_entrances),
+        "the Hangar without its sea": view_plant(lambda t: t.replace(M.SEA_WINDOW_MAT, "0" * 32)),
+        "an ability row takes clicks again": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("Tabs/Abilities/Charge#cg")), "  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n")),
         "detail field swapped onto the wrong kind": view_plant(lambda t: t.replace(
             f"chipLabel: {{fileID:", f"chipLabel: {{fileID: {name_ref}}}\n  chipLabelX: {{fileID:", 1)),
         "detail field unwired": view_plant(lambda t: t.replace(

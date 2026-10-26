@@ -112,15 +112,13 @@ def avatar_oct(parent, key, r, ring_token, inset=(6, 10), ambient=False):
     image_node(av, f"{key}/Back", "Back", R((0, 0), (1, 1), (0, 0), (-inset[0], -inset[0])), "SurfaceDark", OCT)
     icon = art_node(av, f"{key}/Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-inset[1], -inset[1])),
                     A.AVATAR_PLACEHOLDER, preserve=True)
-    if ambient:
-        icon.add("amb", 114, M.ambient("Float", period=4.2, amplitude=4))
     return av
 
 
 def preview(win):
     pv = win.child(N("Window/Preview", "Preview", TL(0, 0, SIDE, HGT)))
     image_node(pv, "Window/Preview/Fill", "Fill", R((0, 0), (1, 1), (1, 0), (-2, -2)), "SurfaceVeryDark")
-    pv.child(M.grid_node("Window/Preview/Grid"))
+    pv.child(M.panel_sea_node("Window/Preview/Grid"))
     M.bracket_nodes(pv, "Window/Preview/Bracket")
     image_node(pv, "Window/Preview/Edge", "Edge", R((1, 0), (1, 1), (0, 0), (1, -2), (1, 0.5)), "SurfaceDark")
     label(pv.child(N("Window/Preview/Caption", "Caption", TL(0, 50, SIDE, 18))), "How others see you", "Label",

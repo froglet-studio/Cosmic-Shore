@@ -4,6 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -77,6 +78,18 @@ namespace CosmicShore.Gameplay
         const float PrismHalfWidth = 1f;          // the Sparrow's 2 u trail prism
         const float RamReach = 4f;                // a hull's shadow is this much wider than a point
         const int MaxPrismShadows = 900;
+
+        // The stages of a frame, named so a capture can say which one costs: Update read 1.67 ms/frame self in Wrasse
+        // Run (2026-10-22, two kites) with nothing inside it to split the time (PERFORMANCE_OPTIMIZATION.md, 10-25).
+        static readonly ProfilerMarker s_boardMarker = new("KiteNavigator.Board");
+        static readonly ProfilerMarker s_motesMarker = new("KiteNavigator.Motes");
+        static readonly ProfilerMarker s_prismsMarker = new("KiteNavigator.ShadowPrisms");
+        static readonly ProfilerMarker s_rivalsMarker = new("KiteNavigator.ShadowRivals");
+        static readonly ProfilerMarker s_creaturesMarker = new("KiteNavigator.ShadowCreatures");
+        static readonly ProfilerMarker s_steerMarker = new("KiteNavigator.Steer");
+        static readonly ProfilerMarker s_flyMarker = new("KiteNavigator.Fly");
+        static readonly ProfilerMarker s_effectsMarker = new("KiteNavigator.Effects");
+        static readonly ProfilerMarker s_drawMarker = new("KiteNavigator.Draw");
 
         [Header("Config")]
         [Tooltip("Every number of the kite (KiteNavigatorConfig.asset, the lab's signed-off candidate). The Wrasse hull's " +
@@ -429,9 +442,12 @@ namespace CosmicShore.Gameplay
             if (dt <= 0f) return;
 
             _s = ScreenSettings();
-            UpdateBoard(dt);
-            _view?.Frame(_humanNavigates);
-            ShadowRaceRing(dt);
+            using (s_boardMarker.Auto())
+            {
+                UpdateBoard(dt);
+                _view?.Frame(_humanNavigates);
+                ShadowRaceRing(dt);
+            }
             if (_remoteKite)
             {
                 _kite.Position = _remotePos;
@@ -441,39 +457,51 @@ namespace CosmicShore.Gameplay
                 if (Time.time >= _stateSendAt) SendRiderState();
                 return;
             }
-            StepMotes(dt);
-            ShadowPrisms();
-            ShadowRivals(dt);
-            ShadowCreatures();
+            using (s_motesMarker.Auto()) StepMotes(dt);
+            using (s_prismsMarker.Auto()) ShadowPrisms();
+            using (s_rivalsMarker.Auto()) ShadowRivals(dt);
+            using (s_creaturesMarker.Auto()) ShadowCreatures();
 
-            _sling = false;
-            if (_humanNavigates) ReadKiteInput();
-            else StepAI(dt);
-            if (TryHandRect(out float hx, out float hzLo, out float hzHi))
-                _aim = new KiteVec(Mathf.Clamp(_aim.X, -hx, hx), Mathf.Clamp(_aim.Z, hzLo, hzHi));
+            using (s_steerMarker.Auto())
+            {
+                _sling = false;
+                if (_humanNavigates) ReadKiteInput();
+                else StepAI(dt);
+                if (TryHandRect(out float hx, out float hzLo, out float hzHi))
+                    _aim = new KiteVec(Mathf.Clamp(_aim.X, -hx, hx), Mathf.Clamp(_aim.Z, hzLo, hzHi));
+            }
 
-            var fly = FlightSettings();
-            var prev = _sling ? _kite.Sling(fly, _aim.X, _aim.Z, _down, dt) : _kite.Move(fly, _aim.X, _aim.Z, _down, dt);
-            HeadContacts(prev);
-            if (_kite.AdvanceTail(_s, _loop)) CloseLoop(_loop);
-            EaseKiteHeading(dt);
+            using (s_flyMarker.Auto())
+            {
+                var fly = FlightSettings();
+                var prev = _sling ? _kite.Sling(fly, _aim.X, _aim.Z, _down, dt) : _kite.Move(fly, _aim.X, _aim.Z, _down, dt);
+                HeadContacts(prev);
+                if (_kite.AdvanceTail(_s, _loop)) CloseLoop(_loop);
+                EaseKiteHeading(dt);
+            }
 
-            // the boost is the hull's: a rider's Time loops are banked on the hull's machine (FireTime)
-            if (_rider) SendPose();
-            else StepBoost(dt);
-            CountBlast();
-            LayMassQueue();
-            PruneEffects();
+            using (s_effectsMarker.Auto())
+            {
+                // the boost is the hull's: a rider's Time loops are banked on the hull's machine (FireTime)
+                if (_rider) SendPose();
+                else StepBoost(dt);
+                CountBlast();
+                LayMassQueue();
+                PruneEffects();
+            }
         }
 
         // after the hull has moved this frame: the views follow it, then draw
         void LateUpdate()
         {
             if (_view == null || _vessel == null || !UnityLiveness.Alive(_vessel.Transform)) return;
-            UpdateBoard(0f);
-            if (_rider && Time.deltaTime > 0f) RecordRiderPath();
-            _view.Frame(_humanNavigates);
-            _view.Draw();
+            using (s_drawMarker.Auto())
+            {
+                UpdateBoard(0f);
+                if (_rider && Time.deltaTime > 0f) RecordRiderPath();
+                _view.Frame(_humanNavigates);
+                _view.Draw();
+            }
         }
 
         // ------------------------------------------------------------------ seats

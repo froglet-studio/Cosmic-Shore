@@ -218,6 +218,35 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Check_WarnsButPassesWithout32BitLibraries()
+        {
+            var r = CheckBundle(GoodManifest, "arm64-v8a", Elf64(0x4000), "CN=Froglet Games", with32Bit: false);
+            Assert.IsTrue(r.Passed, r.Format());
+            Assert.AreEqual(1, r.Warnings.Count, r.Format());
+            StringAssert.Contains("armeabi-v7a", r.Warnings[0]);
+        }
+
+        [Test]
+        public void EstimateBaseDownloadBytes_CountsOnlyTheLargestAbisLibraries()
+        {
+            var entries = new (string, long)[]
+            {
+                ("base/dex/classes.dex", 10),
+                ("base/assets/bin/Data/data.unity3d", 100),
+                ("base/lib/arm64-v8a/libil2cpp.so", 50),
+                ("base/lib/arm64-v8a/libunity.so", 20),
+                ("base/lib/armeabi-v7a/libil2cpp.so", 40),
+                ("base/lib/armeabi-v7a/libunity.so", 15),
+            };
+            // 110 shared + 70 for arm64, not + 55 for armv7 as well.
+            Assert.AreEqual(180, AndroidBundleCheck.EstimateBaseDownloadBytes(entries));
+            Assert.AreEqual(110, AndroidBundleCheck.EstimateBaseDownloadBytes(new (string, long)[]
+            {
+                ("base/dex/classes.dex", 10), ("base/assets/bin/Data/data.unity3d", 100)
+            }));
+        }
+
+        [Test]
         public void Check_WarnsButPassesOnA4KLibrary()
         {
             var r = CheckBundle(GoodManifest, "arm64-v8a", Elf64(0x1000), "CN=Froglet Games");
@@ -227,7 +256,8 @@ namespace CosmicShore.Tests
         }
 
         static AndroidBundleCheck.Report CheckBundle(byte[] manifest, string abi, byte[] library, string signer,
-                                                      string expectedPackage = Package, bool withSymbols = true)
+                                                      string expectedPackage = Package, bool withSymbols = true,
+                                                      bool with32Bit = true)
         {
             string path = Path.Combine(Path.GetTempPath(), $"cs-aab-test-{Guid.NewGuid():N}.aab");
             try
@@ -236,6 +266,8 @@ namespace CosmicShore.Tests
                 {
                     if (manifest != null) Write(zip, "base/manifest/AndroidManifest.xml", manifest);
                     Write(zip, $"base/lib/{abi}/libmain.so", library);
+                    // The shipped bundle carries 32-bit libraries beside the 64-bit ones (2026-10-15).
+                    if (with32Bit && abi != "armeabi-v7a") Write(zip, "base/lib/armeabi-v7a/libmain.so", new byte[128]);
                     Write(zip, "base/dex/classes.dex", new byte[256]);
                     // Where AGP puts a symbol table when Debug Symbols is Include In Bundle.
                     if (withSymbols) Write(zip, AndroidBundleCheck.DebugSymbolsPrefix + abi + "/libmain.so.sym", new byte[64]);

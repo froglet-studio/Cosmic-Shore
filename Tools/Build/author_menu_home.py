@@ -12,8 +12,8 @@ GameObject, its fileID and its name; only its look, its rect and its children ch
     Hub row (ButtonLayouts): along the bottom, 30 apart. Each hub's Button becomes a KitButton under the
         SAME fileID (MenuHubButton requires a Button and KitButton is one; the press-sound call stays),
         with the kit's FocusRing / Fill / Border children, a hub glyph and its label - Toy Box, Arcade,
-        Arena, Mission. Arcade is the opaque Play button with the A keycap and the pad's preferred
-        focus; Mission draws Inactive (its MenuAvailabilityView stays Unavailable, no double dim). All
+        Arena, Mission. Arcade keeps the A keycap and the pad's preferred focus
+        but draws like the other three (Shombith, 2026-10-24: the four hubs share one colour, no lime); Mission draws Inactive (its MenuAvailabilityView stays Unavailable, no double dim). All
         four used to point m_TargetGraphic at the legacy, inactive ArcadeButton's Image, so none gave
         any press feedback; that legacy object is deleted.
     Pilot chip (top left): a framed plate behind the octagonal avatar (HomeScreen.avatarImage moves to
@@ -80,7 +80,7 @@ IDS = dict(
     bar_text_rt="1060766722", bar_text="1060766723",
     accept_go="909973148", accept_rt="909973149", accept_img="909973151", accept_icon_rt="1829191283", accept_icon="1829191284",
     cancel_go="1110576754", cancel_rt="1110576755", cancel_img="1110576757", cancel_icon_rt="1002720939", cancel_icon="1002720940",
-    name_go="7613213338458363602", name_rt="8076153094407706410", name_img="1014305526008866599",
+    name_btn="151569430713730966", name_go="7613213338458363602", name_rt="8076153094407706410", name_img="1014305526008866599",
     name_text_rt="8019494028173304602", name_text="1674904252436572557",
     avatar_go="3602970348709213962", avatar_rt="5738383061455623117", avatar_img="7652523670908676547",
     avatar_btn="4628693416680068390",
@@ -89,11 +89,14 @@ IDS = dict(
     row_go="1613024078", row_rt="1613024079", row_hlg="1613024080",
     tap_btn="797780469", quest_runner="654228613",
 )
+# Rev 13 (Shombith, 2026-10-25): the fourth hub is VOYAGE - the Mission window became the Voyage window (episodes, the
+# quest track, and the voyages they lead to: Tandava first). Its key and GameObjects keep the Mission names (the modal
+# type is still ModalWindows.MISSION); it opens (Available) and draws like the other three.
 HUBS = [  # key, go, rt, root img, button, hub comp, avail comp, label go, label rt, label tmp, caption, glyph, variant
     ("Toybox", "200217508", "200217509", "200217512", "200217511", "200217515", "200217514", "1681475207", "1681475208", "1681475209", "Toy Box", "chrome_cube", "Default"),
-    ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Play"),
+    ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Default"),
     ("Arena", "1015093819", "1015093820", "1015093823", "1015093822", "1015093826", "1015093825", "2097070915", "2097070916", "2097070917", "Arena", "chrome_blades", "Default"),
-    ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Mission", "chrome_target", "Inactive"),
+    ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Voyage", "chrome_globe", "Default"),
 ]
 HUB_PAD, HUB_MIN_W, HUB_H = (28, 28, 18, 18), 210, 66
 
@@ -305,6 +308,7 @@ def patch_hubs(p):
         p.replace(hub, hb)
         if variant == "Inactive":
             p.field(avail, "dimOwnGraphics", "0")
+        p.field(avail, "availability", "2" if variant == "Inactive" else "0")
 
 
 def _last_doc(p, node):
@@ -336,10 +340,10 @@ def chip_node():
     image_node(n, "Chip/Divider", "Divider", TL(436, 28, 1, 56), "SurfaceDark")
     cr = n.child(N("Chip/Crystals", "Crystals", TL(456, 26, 130, 60)))
     label(cr.child(N("Chip/Crystals/Label", "Label", TL(0, 0, 130, 16))), "Crystals", "Label", "NeutralLightest")
-    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "ElementMass", K.chrome_sprite("chrome_crystal"), preserve=True)
+    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "Purchase", K.chrome_sprite("chrome_crystal"), preserve=True)
     amt = cr.child(N("Chip/Crystals/Amount", "Amount", TL(28, 22, 100, 28)))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("ElementMass"))) \
-        .add("kt", 114, K.kit_text("Data", "ElementMass"))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("Data", "TextLight"))
     cr.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Chip/Crystals/Amount', 'tmp'))}\n"))
     return n
 
@@ -380,8 +384,7 @@ def settings_nodes():
     bord = N("Settings/Border", "Border", STRETCH)
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_hex_line1"), True))
     gear = N("Settings/Gear", "Gear", R(size=(36, 36)))
-    gear.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_gear"), preserve=True)) \
-        .add("spin", 114, M.ambient("Spin", period=24.0, amplitude=0.0))
+    gear.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_gear"), preserve=True))
     kw = K.label_width("X", "Label") + 24
     slot = N("Settings/KeycapSlot", "KeycapSlot", R((0.5, 0), None, (0, -8), (kw, K.line_height("Label") + 8), (0.5, 1)))
     slot.children.append(P.Inst("SettingsKeycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", "X", None)]))
@@ -455,10 +458,18 @@ def patch_header(p):
     clip_rt = p.emit(avatar_nodes(), I["avatar_rt"], I["avatar_rt"])
     p.children(I["avatar_rt"], [clip_rt, I["lamp_rt"]])
     p.field(I["home_comp"], "avatarImage", ref(p.ctx.c("Avatar/Clip/Avatar", "img")))
-    # Parity with the old Home: pressing the avatar opens the profile window (its Avatar tab).
+    # Rev 13 (Shombith, 2026-10-25): the profile has no tab; pressing the pilot (avatar or name) opens it, as Y does.
+    # The avatar editor is the profile's own CHANGE AVATAR.
     p.add_comp(I["avatar_go"], "button", 114, lambda ctx, go: mono(go, A.BUTTON,
                A.selectable() + f"  m_TargetGraphic: {ref(I['avatar_img'])}\n"
-               + A.calls([(PROFILE_WINDOW, "CosmicShore.UI.ProfileIconSelectView", "OpenAvatar")])))
+               + A.calls([(SWITCHER, "CosmicShore.UI.ScreenSwitcher", "OnClickProfileNav")])))
+    # The name's own Button opens it too (Shombith, 2026-10-25: "Clicking on the avatar or name should bring up the whole
+    # profile"); it opened the display-name editor, which is the profile's own now. Its press sound stays.
+    nb = p.doc(I["name_btn"])
+    nb = re.sub(r"(      - m_Target: )\{fileID: " + PROFILE_WINDOW + r"\}\n        m_TargetAssemblyTypeName: [^\n]*\n(?:          [^\n]*\n)?        m_MethodName: OpenDisplayName\n",
+                lambda m: f"{m.group(1)}{{fileID: {SWITCHER}}}\n        m_TargetAssemblyTypeName: CosmicShore.UI.ScreenSwitcher, Assembly-CSharp\n"
+                          "        m_MethodName: OnClickProfileNav\n", nb)
+    p.replace(I["name_btn"], nb)
 
     # Lamp: a diamond on the avatar's corner; no profile call (it asks Go offline?).
     p.rect(I["lamp_rt"], R((1, 0), (1, 0), (4, 4), (28, 28), (0.5, 0.5)))
@@ -552,8 +563,6 @@ def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
     A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(ART_W, CARD_H)), None)
     bord = c.child(N(f"{k}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(border_token), K.kit_sprite("kit_sliver14_line1"), True))
-    if border_token == "ElementTime":
-        M.rim_border(bord, "Time")                                      # rev 6: progress is Time
     label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(TEXT_X, 12, TEXT_W, 16))), eyebrow, "Label", eyebrow_token)
     # Everything under the eyebrow folds away with the card (HomeDockCard.detailGroup).
     detail = c.child(N(f"{k}/Detail", "Detail", STRETCH))
@@ -587,22 +596,22 @@ def upnext_node():
     # Rev 3: docked on the left under the pilot chip, stacked; a closed card closes its gap.
     root = N("UpNext", "UpNext", TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, CARD_W, 2 * CARD_H + DOCK_GAP))
     root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), DOCK_GAP, 0, (0, 0), (0, 0)))
-    w, wd = upnext_card("Weekly", "Weekly challenge", "ElementTime", "ElementTime", 0)
+    w, wd = upnext_card("Weekly", "Weekly challenge", "NeutralLightest", "SurfaceDark", 0)
     # The stats row sizes each word to itself (an HLG over TMP's preferred widths): "YOUR BEST" ran into
     # its value when the slots were fixed pixel widths.
     stats = wd.child(N("UpNext/Weekly/Stats", "Stats", TL(TEXT_X, 76, CARD_W - TEXT_X - 14, 18)))
     stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (1, 1), (0, 0)))
     label(stats.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", R(size=(64, 18)))), "Ends in", "Label", "TextLight")
     cd = stats.child(N("UpNext/Weekly/Countdown", "Countdown", R(size=(110, 18))))
-    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("ElementTime"))) \
-        .add("kt", 114, K.kit_text("DataSmall", "ElementTime"))
+    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     stats.child(N("UpNext/Weekly/StatsGap", "Gap", R(size=(10, 18)))).add("le", 114, le(pw=10, ph=18))
     label(stats.child(N("UpNext/Weekly/BestLabel", "BestLabel", R(size=(76, 18)))), "Your best", "Label", "NeutralLightest")
     b = stats.child(N("UpNext/Weekly/Best", "Best", R(size=(100, 18))))
     b.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("None yet", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(w)
-    q, qd = upnext_card("Quest", "Current quest", "ElementTime", "ElementTime", 0)
+    q, qd = upnext_card("Quest", "Current quest", "NeutralLightest", "SurfaceDark", 0)
     for i, h in enumerate((8, 10, 12, 14)):
         seg = qd.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (TEXT_X + i * 10, -92), (7, h), (0, 0))))
         seg.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
@@ -624,7 +633,7 @@ def upnext_node():
              f"  questMeterText: {ref(ctx.c('UpNext/Quest/MeterText', 'tmp'))}\n"
              + K.refs_list("questMeterSegments", [ctx.c(f"UpNext/Quest/Meter{i + 1}", "th") for i in range(4)])
              + f"  weeklyDock: {ref(ctx.c('UpNext/Weekly', 'dock'))}\n  questDock: {ref(ctx.c('UpNext/Quest', 'dock'))}\n"
-             + "  noBestText: None yet\n  readyToClaimText: Ready to claim on your Profile\n"
+             + "  noBestText: None yet\n  readyToClaimText: Ready to claim in Voyage\n"
              + "  nextGoalTemplate: 'Next: {goal}'\n  allUnlockedText: Every intensity unlocked\n"
              + "  meterTemplate: Intensity {level} of {max}\n"
              + f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n  screenSwitcher: {ref(SWITCHER)}\n  refreshSeconds: 1\n"))
@@ -649,7 +658,7 @@ def build_invite():
         .add("mask", 114, A.mask(False))
     av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
     av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
-    label(root.child(N("Eyebrow", "Eyebrow", TL(112, 24, 380, 16))), "Party invite", "Label", "Cta")
+    label(root.child(N("Eyebrow", "Eyebrow", TL(112, 24, 380, 16))), "Party invite", "Label", "NeutralLightest")
     nm = root.child(N("Name", "Name", TL(112, 44, 380, 28)))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Pilot", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight"))
@@ -853,12 +862,16 @@ def validate(files):
         assert S["kitbutton"] in d, f"{key}Button is not a KitButton"
         assert f"  m_TargetGraphic: {{fileID: {ctx.c(f'Hub/{key}/Fill', 'img')}}}" in d, f"{key}Button: press feedback targets another object"
         assert f"  variant: {K.VARIANTS[variant]}\n" in d, f"{key}Button: wrong variant"
+        assert variant == "Default", f"{key}: the four hubs draw alike (Default)"
+        assert "  availability: 0\n" in sc.docs[avail], f"{key}: the hub is not Available"
         assert "m_MethodName: PlayAudio" in d, f"{key}Button lost its press sound"
         assert f"  preferredFocus: {1 if key == 'Arcade' else 0}\n" in sc.docs[hub], f"{key}: preferredFocus wrong"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["lamp_btn"]]), "the lamp still opens the profile window"
     avatar_btn = str(ctx.fid(f"{I['avatar_go']}#button"))
-    assert sc.has(avatar_btn) and f"m_Target: {{fileID: {PROFILE_WINDOW}}}" in sc.docs[avatar_btn] \
-        and "m_MethodName: OpenAvatar\n" in sc.docs[avatar_btn], "pressing the Home avatar no longer opens the profile window"
+    assert sc.has(avatar_btn) and f"m_Target: {{fileID: {SWITCHER}}}" in sc.docs[avatar_btn] \
+        and "m_MethodName: OnClickProfileNav\n" in sc.docs[avatar_btn], "pressing the Home pilot no longer opens the profile"
+    nb = sc.docs[I["name_btn"]]
+    assert "m_MethodName: OnClickProfileNav\n" in nb and "OpenDisplayName" not in nb, "pressing the Home pilot's name does not open the profile"
     assert sc.script(PROFILE_WINDOW) == C.script("ProfileIconSelectView"), "PROFILE_WINDOW is not the profile window"
     lamp = sc.docs[I["lamp_comp"]]
     assert f"  statusLabel: {{fileID: {ctx.c('Name/Status', 'tmp')}}}" in lamp, "the lamp's status label is unwired"
@@ -964,8 +977,14 @@ def self_test(files):
 
     def avatar_dead(f):
         s = f[SCENE]
-        i = s.index("m_MethodName: OpenAvatar\n", s.index(f"  m_TargetGraphic: {{fileID: {IDS['avatar_img']}}}"))
-        f[SCENE] = s[:i] + "m_MethodName: OpenAvatarX\n" + s[i + len("m_MethodName: OpenAvatar\n"):]
+        i = s.index("m_MethodName: OnClickProfileNav\n", s.index(f"  m_TargetGraphic: {{fileID: {IDS['avatar_img']}}}"))
+        f[SCENE] = s[:i] + "m_MethodName: OnClickProfileNavX\n" + s[i + len("m_MethodName: OnClickProfileNav\n"):]
+
+    def name_dead(f):
+        s = f[SCENE]
+        i = s.index(f"--- !u!114 &{I['name_btn']}\n")
+        j = s.index("--- ", i + 4)
+        f[SCENE] = s[:i] + s[i:j].replace("m_MethodName: OnClickProfileNav\n", "m_MethodName: OpenDisplayName\n") + s[j:]
 
     def arcade_unfocused(f):
         hub = HUBS[1][5]
@@ -977,6 +996,7 @@ def self_test(files):
         ("the invite's drop-in stripped", lambda f: f.__setitem__(invite_path(), M.strip_entrances(f[invite_path()]))),
         ("the lamp's status label unwired", unwire_status),
         ("the Home avatar no longer opens the profile window", avatar_dead),
+        ("the Home pilot's name back on the name editor", name_dead),
         ("Arcade not the pad's first stop", arcade_unfocused),
         ("a hub left a plain Button", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),
@@ -987,6 +1007,8 @@ def self_test(files):
         ("the double-tap surface back over the panel", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  m_Children:\n  - {{fileID: {TAP['rt']}}}\n  - {{fileID: 1769152617528871830}}\n",
             f"  m_Children:\n  - {{fileID: 1769152617528871830}}\n  - {{fileID: {TAP['rt']}}}\n", 1))),
+        ("the Arcade hub lime again", lambda f: f.__setitem__(SCENE, re.sub(
+            r"(--- !u!114 &1749518389\n(?:(?!--- ).*\n)*?  variant: )0\n", r"\g<1>5\n", f[SCENE], count=1))),
         ("the Arcade hub re-targeted away from ARCADE", lambda f: f.__setitem__(SCENE, re.sub(
             r"(--- !u!114 &1749518393\n(?:(?!--- ).*\n)*?  target: )10\n", r"\g<1>14\n", f[SCENE], count=1))),
         ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

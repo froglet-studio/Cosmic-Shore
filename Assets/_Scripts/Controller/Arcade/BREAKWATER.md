@@ -1179,6 +1179,19 @@ that is 1.46× clearance, so an AI that never opens a single door **still thread
 reaches**. *The pre-open eye is the designed FLOOR on AI competence* — the mode cannot produce an
 AI that is stuck, only one that is slow.
 
+### Since 2026-10-26: the Regatta steering, and the rocket fired at the station
+
+Two changes for the Sparrow's training (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §6):
+- **Steering.** `BreakwaterController.AICommitFromApproachPoint` is true. With the numbers above the 280 u approach
+  point lay outside the 240 u commit radius on any leg over 700 u: a pilot reaching it was still "approaching" and
+  circled it (Yash's five races of 2026-10-20: AI Sparrows threaded about 1 station a minute, circling 56% of the race).
+  With the switch on, the approach point stays inside the commit radius (`GateRaceController.ApproachLeadFor`) and the
+  through line runs through the station's centre, which is the eye.
+- **The rocket.** In Breakwater the Sparrow's drive is `Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater`,
+  which takes the SkyBurst rocket off the AIPilot timer and fires it at the station: once per station, nose within 4 deg,
+  between 60 and 220 u (its reach is 229 u), with a rocket in the bay. The guns stay on the timer (the paragraphs above
+  still hold for them). Every other mode keeps the timer for the rocket too.
+
 ### The crystal detour
 
 Installing an external target provider **replaces** `AIPilot`'s own crystal seeking outright — the

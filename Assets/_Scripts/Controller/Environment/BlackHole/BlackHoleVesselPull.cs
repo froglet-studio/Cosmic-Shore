@@ -23,8 +23,8 @@ namespace CosmicShore.Gameplay
     ///
     /// The shift is applied only on the machine that drives the vessel (the owner, or a
     /// non-networked vessel): a replica's transformer is inactive and its transform is the
-    /// owner's to write. Vessels are enumerated once a second (there is no vessel registry; the
-    /// pull is live only while a hole is), never per frame.
+    /// owner's to write. Vessels are re-read from <see cref="VesselStatus.Live"/> once a second (the
+    /// pull is live only while a hole is), never searched for in the scene.
     ///
     /// <b>Ownership.</b> A hole a vessel slung (<see cref="BlackHole.OwnerVessel"/> — the Stoat's
     /// wormhole pair) pulls only that vessel: a vessel may not move an opposing vessel
@@ -133,8 +133,8 @@ namespace CosmicShore.Gameplay
             {
                 _nextRefresh = Time.unscaledTime + RefreshSeconds;
                 _vessels.Clear();
-                // Not a hot path: once a second, only while a hole is live or a pull is decaying.
-                _vessels.AddRange(Object.FindObjectsByType<VesselStatus>(FindObjectsSortMode.None));
+                // The registry, never a scene search: that grew to 20-36 ms a call late in a Stoat match.
+                _vessels.AddRange(VesselStatus.Live);
             }
 
             var wells = new BlackHolePhysics.NativeWells();

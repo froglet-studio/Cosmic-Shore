@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
         VesselCustomization Customization { get; }
         R_VesselActionHandler ActionHandler { get; }
 
-        R_ShipElementStatsHandler ElementalStatsHandler { get; }
+        R_VesselElementStatsHandler ElementalStatsHandler { get; }
 
         /// <summary>
         /// Per-vessel elemental ability state: quantitative multipliers + level-threshold

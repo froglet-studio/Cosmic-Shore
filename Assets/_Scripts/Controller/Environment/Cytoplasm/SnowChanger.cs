@@ -75,6 +75,14 @@ namespace CosmicShore.Gameplay
         // when idle. OnCellItemsUpdated only rewinds the cursor; Update does the work.
         int _reorientCursor = int.MaxValue;
 
+        // A mode-side tint (CellVisualTint): ONE material clone for this cell's shards, made once, so recolouring the
+        // whole cytoplasm is one SetColor a frame however many shards there are (a property block per shard would be
+        // thousands of writes a frame). On the instanced path the clone IS _instancedMaterial (already this cell's own
+        // copy). The snow prefab's own material is never written.
+        static readonly int ColorId = Shader.PropertyToID("_Color");
+        Material _tintMaterial;
+        Color _baseColour = Color.white;
+
         // ── Shards condensing out of dying limbs ──────────────────────────────────────────
         // A shard a limb became grows from nothing to its law scale while the limb's own fade
         // runs, turning from the limb's heading to the crystal (continuity of existence: the
@@ -119,7 +127,10 @@ namespace CosmicShore.Gameplay
 
             float innerR = nucleusRadius;
             float outerR = membraneRadius;
-            float cellVolume = shardDistance * shardDistance * shardDistance;
+            // a cell config may space its motes wider than the prefab does (a big arena: the count is a CUBE of the radius)
+            var config = cellData.Cell != null ? cellData.Cell.Config : null;
+            float spacing = config != null && config.CytoplasmShardDistance > 0 ? config.CytoplasmShardDistance : shardDistance;
+            float cellVolume = spacing * spacing * spacing;
 
             // Uniform density throughout the full sphere (0 → membrane)
             float sphereVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR);
@@ -156,9 +167,64 @@ namespace CosmicShore.Gameplay
                     r * cosTheta);
 
                 shards.Add(tempSnow);
+                if (_tintMaterial) AssignTint(tempSnow);
             }
 
             ChangeSnowOrientation();
+        }
+
+        /// <summary>The cytoplasm's own colour (SnowGraph's <c>_Color</c> on the shard prefab's material).</summary>
+        public bool TryGetMaterialColour(out Color colour)
+        {
+            colour = Color.white;
+            var r = snow ? snow.GetComponentInChildren<Renderer>() : null;
+            var m = r ? r.sharedMaterial : null;
+            if (!m || !m.HasProperty(ColorId)) return false;
+            colour = m.GetColor(ColorId);
+            return true;
+        }
+
+        /// <summary>
+        /// Make this cell's shards tintable: clone the shard material ONCE and point every shard at the clone. A loop over
+        /// every shard, so call it before the moment that needs it (a mode's ready screen), not inside a transition.
+        /// </summary>
+        public void PrepareColourOverride()
+        {
+            if (_tintMaterial) return;
+            if (_instanced)
+            {
+                // the instanced path already draws from this cell's own runtime copy (_instancedMaterial): tint that
+                // one - no second clone, nothing to assign
+                _tintMaterial = _instancedMaterial;
+                if (_tintMaterial && _tintMaterial.HasProperty(ColorId)) _baseColour = _tintMaterial.GetColor(ColorId);
+                return;
+            }
+            var r = snow ? snow.GetComponentInChildren<Renderer>() : null;
+            var baseMat = r ? r.sharedMaterial : null;
+            if (!baseMat) return;
+            _tintMaterial = new Material(baseMat) { name = baseMat.name + " (cell tint)" };
+            if (baseMat.HasProperty(ColorId)) _baseColour = baseMat.GetColor(ColorId);
+            if (shards == null) return;
+            for (int i = 0; i < shards.Count; i++) if (shards[i]) AssignTint(shards[i]);
+        }
+
+        /// <summary>Recolour every shard of this cell (the clone's colour; prepared on first use).</summary>
+        public void SetColourOverride(Color colour)
+        {
+            PrepareColourOverride();
+            if (_tintMaterial) _tintMaterial.SetColor(ColorId, colour);
+        }
+
+        /// <summary>Back to the material's own colour (the clone stays assigned; it now matches the original).</summary>
+        public void ClearColourOverride()
+        {
+            if (_tintMaterial) _tintMaterial.SetColor(ColorId, _baseColour);
+        }
+
+        void AssignTint(GameObject shard)
+        {
+            var renderers = shard.GetComponentsInChildren<Renderer>();
+            for (int k = 0; k < renderers.Length; k++) renderers[k].sharedMaterial = _tintMaterial;
         }
 
         /// <summary>Requests a reorientation pass. The work is time-sliced in Update
@@ -210,6 +276,7 @@ namespace CosmicShore.Gameplay
                 shard.transform.localScale = Vector3.zero;
                 index = shards.Count;
                 shards.Add(shard);
+                if (_tintMaterial) AssignTint(shard);   // a tinted cell's new shard wears the tint too
             }
 
             _morphedShards++;
@@ -282,6 +349,7 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_instancedMaterial) Destroy(_instancedMaterial);
+            if (_tintMaterial && _tintMaterial != _instancedMaterial) Destroy(_tintMaterial);   // the GameObject path's clone
         }
 
         /// <summary>Sets up the instanced path when the shard prefab is a single mesh with a single material

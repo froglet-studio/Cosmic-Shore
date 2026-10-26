@@ -641,7 +641,7 @@ COL_GAP = (SET_W - 2 * PAD - 3 * COL_W) // 2
 EYEBROW = {"arcade": "Arcade", "arena": "Arena", "maelstrom": "Arcade - Maelstrom"}
 PANEL_CLASS = {"arcade": "minigame", "arena": "arena", "maelstrom": "maelstrom"}
 VIEW_NAME = {"arcade": "ConfigureView", "arena": "ConfigureArenaView", "maelstrom": "ConfigureMaelstromView"}
-HULL_SLOTS = 8
+HULL_SLOTS = 7          # hull tiles on the Arena strip; the < > arrows slide it over a card with more hulls
 
 
 
@@ -957,8 +957,7 @@ def vessel_body(sec):
         .add("th", 114, themed("SurfaceBlack")).add("mask", 114, A.rect_mask())
     art = clip.child(N("VesselNode/Clip/Art", "Art", STRETCH))
     art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, SQUIRREL_ICON)) \
-        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], "")) \
-        .add("amb", 114, M.ambient("Float", period=3.6, amplitude=4))
+        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], ""))
     side = inner - VESSEL_ART_W - 16
     info = sec.child(N("ClassInfo", "ClassInfo", TL(VESSEL_ART_W + 16, SEC_HEAD, side, VESSEL_ART_H)))
     info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
@@ -967,19 +966,33 @@ def vessel_body(sec):
           "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
 
 
-HULL_COLS = 8
+HULL_COLS = HULL_SLOTS
 HULL_ROWS = (HULL_SLOTS + HULL_COLS - 1) // HULL_COLS
-HULL_W_SET = (SET_W - 2 * PAD - (HULL_COLS - 1) * 4) // HULL_COLS
+HULL_TILE_GAP = 4
+HULL_W_SET = 74                      # a tile; the strip of seven sits centred between the arrows
+ARROW_W, ARROW_H, ARROW_GAP = 32, 56, 6
+HULL_ROW_W = HULL_SLOTS * HULL_W_SET + (HULL_SLOTS - 1) * HULL_TILE_GAP
+HULL_ROW_X = (SET_W - 2 * PAD - HULL_ROW_W) // 2
 HULL_SEC_H = SEC_HEAD + HULL_ROWS * HULL_H + 8 + 34
 
 
 def hull_body(sec):
-    """The Arena's hulls as one row of eight tiles, then the class line and Claim."""
+    """The Arena's shared vessel panel: < seven hull tiles >, then the class line and Claim. The arrows sit
+    against the tiles and level with their middle, inset from the panel's edges (Yash, 2026-10-25: "make
+    them little center to the vessel panel"), and slide the strip over a card with more hulls than tiles
+    (ArenaLaunchPanel.StripOffset). Whose hull it picks - the pilot's own, or the AI seat they tapped - is the
+    modal's (the shared vessel panel, Docs/HomeHub/ARCHITECTURE.md section 3.2)."""
     inner = SET_W - 2 * PAD
+    assert HULL_ROW_X - ARROW_GAP - ARROW_W >= 0, "the < arrow runs off the vessel panel"
     strip = sec.child(N("HullStrip", "HullStrip", TL(0, SEC_HEAD, inner, HULL_ROWS * HULL_H)))
     for i in range(HULL_SLOTS):
         strip.children.append(Inst(f"Hull{i + 1}", "ConfigureHullTile", f"Hull{i + 1}",
-                                   TL((i % HULL_COLS) * (HULL_W_SET + 4), (i // HULL_COLS) * HULL_H, HULL_W_SET, HULL_H)))
+                                   TL(HULL_ROW_X + i * (HULL_W_SET + HULL_TILE_GAP), 0, HULL_W_SET, HULL_H)))
+    arrow_y = (HULL_H - ARROW_H) // 2
+    for name, caption, x in (("PrevVesselButton", "<", HULL_ROW_X - ARROW_GAP - ARROW_W),
+                             ("NextVesselButton", ">", HULL_ROW_X + HULL_ROW_W + ARROW_GAP)):
+        strip.children.append(Inst(name, "KitButtonSmall", name, TL(x, arrow_y, ARROW_W, ARROW_H),
+                                   K.button_mods("KitButtonSmall", "Default", False, caption, small=True)))
     top = SEC_HEAD + HULL_ROWS * HULL_H + 8
     bw, bh = K.button_size("CLAIM", small=True)
     info = sec.child(N("ClassInfo", "ClassInfo", TL(0, top, inner - bw - 12, 34)))
@@ -1010,7 +1023,7 @@ def footer(chrome, kind):
     label(rdy, "Ready to launch", "Body", "TextLight")
     why = status.child(N("Status/Reason", "Reason", STRETCH))
     why.add("cg", 225, canvas_group(False))
-    label_e(why, "", "Body", "Purchase")
+    label_e(why, "", "Body", "Danger")   # why it cannot launch: a problem, so fire (never the spend gold)
     wait = status.child(N("Status/Waiting", "Waiting", STRETCH))
     wait.add("cg", 225, canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=1.6, amplitude=0.5))
     label(wait, "Waiting for others...", "Body", "ControlActive")
@@ -1125,22 +1138,17 @@ def steps_row(chrome, kind):
     node or a domain - never on FLY or Back. Its sections are Step1..3 so the panel's value labels keep
     their keys: Vessel, Intensity, Pilots (Maelstrom: Intensity, Pilots, then Format)."""
     steps = glass(chrome, "Steps", "Steps", TL(SET_X, TOP, SET_W, column_height(kind)), 0)
-    M.rim_border(M.find_node(steps, "Steps/Frame/Border"), "Charge")   # rev 6: setting up a game is play
     y = PAD
     keys = ("Step1", "Step2", "Step3") if kind != "maelstrom" else (None, "Step1", "Step2")
-    if kind != "maelstrom":
-        vh = HULL_SEC_H if kind == "arena" else VESSEL_SEC_H
-        cv = section(steps, "Step1", y, vh, "Vessel", "Squirrel", 1)
-        (hull_body if kind == "arena" else vessel_body)(cv)
-        y += vh + SEC_GAP
-    ci = section(steps, keys[1], y, INTENSITY_SEC_H, "Intensity", "1", 2)
+    # Entrance staggers follow the order on screen (the Maelstrom keeps its own: Intensity 2, Pilots 3).
+    ci = section(steps, keys[1], y, INTENSITY_SEC_H, "Intensity", "1", 2 if kind == "maelstrom" else 1)
     for i in range(4):
         ci.children.append(Inst(f"Intensity{i + 1}", "ConfigureIntensityNode", f"Intensity{i + 1}",
                                 TL(i * (NODE_W + NODE_GAP), SEC_HEAD, NODE_W, NODE_H),
                                 [("root#in", "staggerIndex", i + 2, None)]))
     y += INTENSITY_SEC_H + SEC_GAP
     ph = SEC_HEAD + PILOTS_BODY_H + (8 + AI_ROW_H if kind != "maelstrom" else 0)
-    cp = section(steps, keys[2], y, ph, "Pilots", "1 of 4", 3)
+    cp = section(steps, keys[2], y, ph, "Pilots", "1 of 4", 3 if kind == "maelstrom" else 2)
     for i, (dname, dval) in enumerate(DOMAINS):
         cp.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
                                 TL(i * (COL_W + COL_GAP), SEC_HEAD, COL_W, TILE_H + 6 + SEAT_H),
@@ -1150,6 +1158,13 @@ def steps_row(chrome, kind):
     if kind in ("arcade", "arena"):
         ai_row(cp, SET_W - 2 * PAD, SEC_HEAD + PILOTS_BODY_H + 8)
     y += ph + SEC_GAP
+    # The vessel comes LAST, under the pilots (Yash, 2026-10-25: intensity on top, the vessel panel below):
+    # on the Arena it is the shared vessel panel, picking the hull of whichever seat above was tapped.
+    if kind != "maelstrom":
+        vh = HULL_SEC_H if kind == "arena" else VESSEL_SEC_H
+        cv = section(steps, "Step1", y, vh, "Vessel", "Squirrel", 3)
+        (hull_body if kind == "arena" else vessel_body)(cv)
+        y += vh + SEC_GAP
     if kind == "maelstrom":
         format_section(steps, y)
         y += SEC_HEAD + 4 * FORMAT_ROW_H + SEC_GAP
@@ -1160,9 +1175,9 @@ def steps_row(chrome, kind):
 def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
     # Near-opaque (the owner, 2026-10-15): it keeps the Arcade window behind from reading through.
-    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.94, raycast=True)
-    # Rev 6: the living lattice over the veil (Lattice_Window.mat).
-    root.child(M.window_lattice_node("VeilLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA, raycast=True)
+    # §67: the sea lines over the veil (Sea_Window.mat).
+    root.child(M.window_sea_node("VeilLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
     preview_window(root, kind)
 
     # Everything but the preview. ConfigureCinema fades this one group while the player flies.
@@ -1231,9 +1246,16 @@ def panel_body(ctx, go, kind):
                    f"  microToast: {ref(ctx.c('Preview/Toast', 'toast'))}\n")
     if kind == "arena":
         fields += (f"  roster: {K.ref(11400000, ARENA_ROSTER, 2)}\n"
-                   "  vesselIcon: {fileID: 0}\n  prevButton: {fileID: 0}\n  nextButton: {fileID: 0}\n"
+                   "  vesselIcon: {fileID: 0}\n"
+                   f"  prevButton: {ref(ctx.iref('PrevVesselButton', 'root#button'))}\n"
+                   f"  nextButton: {ref(ctx.iref('NextVesselButton', 'root#button'))}\n"
                    f"  selectVesselButton: {ref(ctx.iref('ClaimButton', 'root#button'))}\n"
-                   + refs("hullTiles", [ctx.iref(f"Hull{i + 1}", "root#hull") for i in range(HULL_SLOTS)]))
+                   + refs("hullTiles", [ctx.iref(f"Hull{i + 1}", "root#hull") for i in range(HULL_SLOTS)])
+                   + f"  seatCaptionText: {ref(ctx.c('Step1/Caption', 'tmp'))}\n"
+                   "  ownSeatCaption: Your vessel\n"
+                   "  aiSeatCaption: '{domain} AI''s vessel'\n"
+                   "  autoVesselLine: Auto\n"
+                   + refs("seatVesselNameTexts", [ctx.c("Step1/Value", "tmp"), ctx.c("ClassInfo/Name", "tmp")]))
     if kind == "maelstrom":
         fields += (f"  videoView: {ref(ctx.c('Preview', 'video'))}\n"
                    f"  poolList: {ref(ctx.c('Pool', 'list'))}\n"
@@ -1257,7 +1279,9 @@ def panel_body(ctx, go, kind):
 LB_ROW_W, LB_ROW_H = 1336, 58
 REWARD_BANDS = ((1, 1, "1st", "100"), (2, 2, "2nd", "50"), (3, 3, "3rd", "20"), (4, 20, "4th - 20th", "10"),
                 (21, 0, "21st and below", "5"))
-PODIUM = (("Podium1", 1, "Purchase"), ("Podium2", 2, "TextLight"), ("Podium3", 3, "Purchase"))
+# Docs/UI_COLOR_RULES.md: gold means spending only, so first place is the lime of a good outcome, then white, then the
+# neutral blue (no gold / silver / bronze).
+PODIUM = (("Podium1", 1, "Cta"), ("Podium2", 2, "TextLight"), ("Podium3", 3, "NeutralLightest"))
 TABS = (("World", "chrome_globe", "World"), ("Regional", "chrome_pin", "Regional"), ("Friends", "chrome_people", "Friends"))
 ALL_GAMES = A.ALL_GAMES
 PROFILE_ICONS = A.PROFILE_ICONS
@@ -1304,8 +1328,6 @@ def podium_slot(parent, key, rank, accent, amin, amax, top, height):
     image_node(n, f"{key}/AvatarBack", "AvatarBack", R((0, 0.5), None, (122, 0), (62, 62)), "SurfaceDark",
                K.kit_sprite("kit_oct_fill"))
     av = art_node(n, f"{key}/Avatar", "Avatar", R((0, 0.5), None, (122, 0), (58, 58)), AVATAR_PLACEHOLDER, preserve=True)
-    if first:
-        av.add("amb", 114, M.ambient("Float", period=3.4, amplitude=5))
     nm = n.child(N(f"{key}/Name", "Name", R((0, 0.5), (1, 0.5), ((170 - 20) / 2, 14), (-(170 + 20), 26))))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("PILOT", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight"))
@@ -1329,7 +1351,7 @@ def reward_band(parent, i, lo, hi, caption, amount):
           "ControlActive")
     label(n.child(N(f"{key}/Rank", "Rank", R((0, 0.5), None, (14, 0), (200, 24), (0, 0.5)))), caption, "Body", "TextLight")
     label(n.child(N(f"{key}/Amount", "Amount", R((1, 0.5), None, (-40, 0), (100, 26), (1, 0.5)))), amount, "Data",
-          "Purchase", align="right")
+          "Cta", align="right")   # what you win: good, so lime (the crystal beside it stays the currency's gold)
     ic = image_node(n, f"{key}/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (18, 18), (1, 0.5)), "Purchase",
                     K.chrome_sprite("chrome_crystal"), preserve=True)
     n.add("band", 114, lambda ctx, go: mono(go, S["band"],
@@ -1366,7 +1388,9 @@ def tab_node(parent, i, key, icon, caption):
 
 def build_leaderboard_view():
     root = N("root", "LeaderboardView", STRETCH)
-    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.72, raycast=True)
+    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA,
+               raycast=True)
+    root.child(M.window_sea_node("VeilSea", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     right = root.child(N("Board", "Board", R((0, 1), (1, 1), ((500 - 40) / 2, -LEFT_TOP), (-(500 + 40), COL_H), (0.5, 1))))
     tabs = right.child(N("Tabs", "Tabs", TL(8, 0, 360, 108)))
@@ -1374,9 +1398,8 @@ def build_leaderboard_view():
     for i, (key, icon, cap) in enumerate(TABS):
         tab_node(tabs, i, key, icon, cap)
     thirds = (((0, 1), (0.326, 1)), ((0.337, 1), (0.663, 1)), ((0.674, 1), (1, 1)))
-    podium_slot(right, "Podium1", 1, "Purchase", thirds[1][0], thirds[1][1], 112, 130)
-    podium_slot(right, "Podium2", 2, "TextLight", thirds[0][0], thirds[0][1], 132, 110)
-    podium_slot(right, "Podium3", 3, "Purchase", thirds[2][0], thirds[2][1], 132, 110)
+    for (key, rank, accent), (amin, amax), top, height in zip(PODIUM, (thirds[1], thirds[0], thirds[2]), (112, 132, 132), (130, 110, 110)):
+        podium_slot(right, key, rank, accent, amin, amax, top, height)
 
     lst = right.child(N("List", "List", R((0, 1), (1, 1), (0, -260), (0, COL_H - 260), (0.5, 1))))
     lst.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=4))
@@ -1384,7 +1407,7 @@ def build_leaderboard_view():
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.92), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("th", 114, themed("SurfaceVeryDark", 0.92))
-    lst.child(M.grid_node("List/Grid"))
+    lst.child(M.panel_sea_node("List/Grid"))
     bord = lst.child(N("List/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True)).add("th", 114, themed("SurfaceDark"))
@@ -1456,8 +1479,7 @@ def build_leaderboard_view():
             f"  profileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
             f"  localRowColor: {color('ControlActive')}\n  rowColor: {color('TextLight')}\n"
             "  localNameSuffix: ' *'\n"
-            "  podiumColors:\n  - {r: 1, g: 0.84, b: 0.25, a: 1}\n  - {r: 0.78, g: 0.82, b: 0.86, a: 1}\n"
-            "  - {r: 0.8, g: 0.53, b: 0.3, a: 1}\n"
+            "  podiumColors:\n" + "".join(f"  - {color(accent)}\n" for _, _, accent in PODIUM)
             + refs("podium", [ctx.c(k, "slot") for k, _, _ in PODIUM])
             + refs("rewardBands", [ctx.c(f"Rewards/Band{i + 1}", "band") for i in range(len(REWARD_BANDS))])
             + f"  bestRankText: {ref(ctx.c('Best/Rank', 'tmp'))}\n"
@@ -1471,7 +1493,6 @@ def build_leaderboard_view():
 # VesselInfoCard.prefab - Yash's AI seat info card, in style B (rev 5)
 # --------------------------------------------------------------------------------------------
 
-LOCKUP_STYLE = K.meta_guid("Assets/Resources/AbilityLockupStyle.asset")
 CARD_ELEMENTS = (("Charge", 1), ("Mass", 2), ("Space", 3), ("Time", 4))
 INFO_W, INFO_H = 420, 480
 
@@ -1523,7 +1544,7 @@ def build_info_card():
                  f"  - element: {v}\n    hex: {ref(ctx.c(f'Card/Abilities/{el}/Hex', 'img'))}\n"
                  f"    name: {ref(ctx.c(f'Card/Abilities/{el}/Name', 'tmp'))}\n" for el, v in CARD_ELEMENTS)
              + f"  abilitiesGroup: {ref(ctx.go('Card/Abilities'))}\n"
-             f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+             f"  hexTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
              "  subtitleTemplate: '{seat}  -  {element} vessel'\n  elementOnlyTemplate: '{element} vessel'\n"
              "  abilitiesHeading: ABILITIES\n  abilityBullet: '-  '\n"
              f"  backdropButton: {ref(ctx.c('root', 'button'))}\n"
@@ -1930,7 +1951,7 @@ def validate_prefabs(files):
     rows = re.findall(r"^  - element: (\d+)\n    hex: \{fileID: (-?\d+)\}\n    name: \{fileID: (-?\d+)\}", pbody, re.M)
     assert [r[0] for r in rows] == ["1", "2", "3", "4"] and all(r[1] != "0" and r[2] != "0" for r in rows), \
         "the info card needs a wired row for each of Charge, Mass, Space and Time"
-    assert f"lockupStyle: {{fileID: 11400000, guid: {LOCKUP_STYLE}" in pbody, "the info card has no element colours"
+    assert f"  hexTint: {K.TOKEN_INDEX['NeutralLightest']}\n" in pbody, "the info card's hexes wear an element colour again"
 
     # The intensity node writes the shared IntVariable, or the modal's selection never reaches the
     # session (IntensitySelectButton.SetSelected).
@@ -2006,7 +2027,12 @@ def validate_prefabs(files):
                         f"{view}: the +1 toast shares the preview's GameObject (hiding it hides the preview)"
         if kind == "arena":
             wired(text, body, "selectVesselButton", S["button"], view)
-            hulls = re.findall(r"^  - \{fileID: (-?\d+)\}", body.split("  hullTiles:")[1], re.M)
+            # The < > arrows step the shared vessel panel (and slide the strip past its seventh tile).
+            wired(text, body, "prevButton", S["button"], view)
+            wired(text, body, "nextButton", S["button"], view)
+            wired(text, body, "seatCaptionText", TMP, view)
+            tiles_block = re.match(r"(?:  - .*\n)*", body.split("  hullTiles:\n")[1]).group(0)
+            hulls = re.findall(r"^  - \{fileID: (-?\d+)\}", tiles_block, re.M)
             assert len(hulls) == HULL_SLOTS and all(A.kind_of(text, h) == (114, S["hull"]) for h in hulls), \
                 f"{view}: the hull strip needs {HULL_SLOTS} hull tiles"
             assert f"roster: {{fileID: 11400000, guid: {ARENA_ROSTER}" in body, f"{view}: no Arena roster (Handles is false)"

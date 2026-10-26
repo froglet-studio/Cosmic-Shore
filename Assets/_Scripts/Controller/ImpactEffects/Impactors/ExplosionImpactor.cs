@@ -621,6 +621,10 @@ namespace CosmicShore.Gameplay
                     _vesselsHit ??= new HashSet<int>(4);
                     if (!_vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID())) break;
 
+                    // The camera following the caught vessel rocks with the blast (Docs/CAMERA_FEEL.md) - once per
+                    // blast, under the same ledger, whatever the container carries.
+                    VesselCameraFeel.Blast(vesselImpactee.Vessel.VesselStatus, transform.position);
+
                     if (!explosionImpactorDataContainer) return;
                     var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;
                     if(!DoesEffectExist(vesselExplosionEffects)) return;

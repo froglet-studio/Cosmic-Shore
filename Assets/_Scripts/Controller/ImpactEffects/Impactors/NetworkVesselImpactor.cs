@@ -51,9 +51,17 @@ namespace CosmicShore.Gameplay
         void ExecuteCrystalImpact_ServerRpc(CrystalImpactData data) =>
             ExecuteCrystalImpact_ClientRpc(data);
 
+        // A joining client can hold this hull before its pilot is paired with it
+        // (ClientPlayerVesselInitializer's pending pairs). The local trigger path already keeps a
+        // pilotless hull out of every impact (ImpactorBase's isInitialized gate); a broadcast pickup
+        // keeps the same rule here, or its effects read the hull's domain off no pilot (Bug Ledger
+        // E-6e925c3b8b: the Squirrel's crystal morph, and the ring laid in the Jade fallback).
         [ClientRpc]
-        void ExecuteCrystalImpact_ClientRpc(CrystalImpactData data) =>
+        void ExecuteCrystalImpact_ClientRpc(CrystalImpactData data)
+        {
+            if (!vesselImpactor.IsInitializedForImpact) return;
             vesselImpactor.ExecuteOmniCrystalImpact(data);
+        }
         
         public void ExecuteOnHitElementalCrystal(CrystalImpactData data)
         {
@@ -65,8 +73,11 @@ namespace CosmicShore.Gameplay
             ExecuteElementalCrystalImpact_ClientRpc(data);
 
         [ClientRpc]
-        void ExecuteElementalCrystalImpact_ClientRpc(CrystalImpactData data) =>
+        void ExecuteElementalCrystalImpact_ClientRpc(CrystalImpactData data)
+        {
+            if (!vesselImpactor.IsInitializedForImpact) return;   // same rule as the omni pickup above
             vesselImpactor.ExecuteElementalCrystalImpact(data);
+        }
 
         // ── Combat petal transfer (IElementalLossRelay) ──────────────────────
         //

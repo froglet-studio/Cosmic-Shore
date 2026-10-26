@@ -188,8 +188,7 @@ namespace CosmicShore.UI
 
             try
             {
-                var canvasGroup = panel.GetComponent<CanvasGroup>();
-                if (canvasGroup == null)
+                if (!panel.TryGetComponent(out CanvasGroup canvasGroup))
                     canvasGroup = panel.AddComponent<CanvasGroup>();
                 if (canvasGroup == null) return;
 

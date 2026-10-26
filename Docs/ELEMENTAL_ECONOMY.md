@@ -516,7 +516,7 @@ its two prefabs are kept rather than deleted, because a dangling container refer
 `AOESlowExplosion.prefab` / `AOEShieldedRingSpawner.prefab` is worse than an empty one.
 
 What is left behind, reported rather than swept: `ScriptableEventSkimmerDebuffApplied` and
-`SkimmerDebuffPayload` now have **no producer** — the channel and `RhinoVesselHUDController`'s
+`SkimmerDebuffPayload` now have **no producer** — the channel and `RhinoHUDController`'s
 `ShowDebuffTimer` handler were kept, since a SOAP channel with no producer is a wire rather than a
 feature and this one is the generic *"a skimmer debuffed you"* vehicle. *(2026-10-16: the channel
 ASSET `EventOnSkimmerDebuffApplied` and the HUD handler are now deleted, with the rest of the

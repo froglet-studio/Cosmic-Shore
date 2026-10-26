@@ -20,12 +20,16 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/R_VesselActions/JAC
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
         - JacksExecutor on the ShipActions object and in its ActionExecutorRegistry, wired to JacksConfig.asset, the
           fleet's turn-end channel and Event_CombatHitStats (the Angler's assets)
-        - the flying jacks' buttons: the Rhino's ramp boost stays on Input 0; the JUMP to the decoy on Input 1 (the trigger
+        - the netting jacks' buttons: no ramp boost (stripped 2026-10-25, its registry too); the JUMP to the decoy on Input 1 (the trigger
           / a lifted thumb) and Input 4 (both thumbs lifted); CALL on Input 7 (A); the jacks' own DECOY on Input 6 (X; the
           Time level-5 upgrade). The Rhino's gamepad overrides (the shield swipes) are emptied
         - NO SWORD: the sword driver and its afterimages (ScaleSkimmerObject), the shield swipes (ShieldSwipeActionRegistry),
-          the sword relay, the sword autopilot and the Momentum ward are stripped (RHINO_SUBTREES, RHINO_COMPONENTS). The
-          ForceFieldSkimmer stays: it is the hull's near-field skimmer and its trail (its blade FX rests unlit)
+          the sword relay, the sword autopilot, the Momentum ward, the sword's look (RhinoSwordFXController) and its five
+          streaks are stripped (RHINO_SUBTREES, RHINO_COMPONENTS). The ForceFieldSkimmer stays: it is the hull's skimmer,
+          made THE JACK (Garrett, 2026-10-23: three orthogonal axes spun about (1,1,1) on the line between the fish) - two
+          more trigger capsules (X, Z) beside its own Y one (jack_retrofit); JacksBodies poses and draws it
+        - NO JETS: the Rhino's vestigial jets (the ten VesselJets, JetFX, the arc lightning, JetTest, the two jet particle
+          systems; RHINO_JET_PREFABS, RHINO_SUBTREES) are stripped (Garrett, 2026-10-23)
         - RhinoVesselHUDController becomes JacksHUDController, wired to the executor
         - its VesselImpactor on JacksImpactorDataContainer: haptics, the danger debuff and the prism damage; the Rhino's
           plough and its surge / explosion crystals are the Rhino's alone
@@ -97,6 +101,9 @@ CONTROLS = [  # (asset name, JacksControl value, guid)
     ("JacksCall", 0, "4f8a2c6e9b1d4a7380e5c2f9d6b1a734"),
     ("JacksTeleport", 1, "a6d1e9b3c7f24058b9e2a4d6c1f8b357"),
     ("JacksDecoy", 2, "2c7e5a9f3b1d4c68a0f7e2b9d4c6a185"),
+    ("JacksTeleportLeft", 3, "383961a51cd1410faca371d1465177d6"),
+    ("JacksTeleportRight", 4, "6e6541a7626b4b6cabac2c46acf840c0"),
+    ("JacksWide", 5, "2c6bc3b113fd4d5098b070a376feb4d3"),
 ]
 CONTROL = {name: guid for name, _, guid in CONTROLS}
 DONOR_CONTAINER_GUID = "212ff1ef2b8c43c4ab1acfc073c79e0b"   # RhinoImpactorDataContainer
@@ -111,19 +118,58 @@ SHIP_ACTIONS_GO = "1916516311732452555"      # the ShipActions child (its Action
 REGISTRY_ID = "5397651131628914846"
 EXECUTOR_ID = "2200000000000000001"          # JacksExecutor on ShipActions
 
-# The flying jacks' buttons (InputEvents: 0 FullSpeedStraight, 1 RightStickAction, 4 IdleAction, 6 Button1 (X), 7 Button2 (A))
+# The netting jacks' buttons (InputEvents: 1 RightStickAction = the right trigger / right shift / a right thumb lifted, 2 the
+# left's, 4 IdleAction = both thumbs lifted, 7 Button2 = B / T, 14 Button4 = Y / F). Round 10 (Garrett, 2026-10-25): "mass
+# should be the herd calling ability ... Space be the zoomed out view ... in netting mode the triggers should fast travel to
+# the decoy" - so 7 calls (Mass), 14 is Wide (Space), and each trigger jumps to its own decoy (Time). Input 0
+# (FullSpeedStraight) carried the Rhino's ramp boost until "lets remove the rhino speed buff at full speed and straight".
 BINDINGS = re.compile(r"(  _inputEventShipActions:)\n(?:  [- ] .*\n)+")
 OVERRIDES = re.compile(r"(  _gamepadActionOverrides:)\n(?:  [- ] .*\n)+")
 WANT_BINDINGS = (
     "  _inputEventShipActions:\n"
-    f"  - InputEvent: 0\n    ShipActions:\n    - {{fileID: 11400000, guid: {RAMP_BOOST_GUID}, type: 2}}\n"
-    f"  - InputEvent: 1\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleport']}, type: 2}}\n"
+    f"  - InputEvent: 1\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleportRight']}, type: 2}}\n"
+    f"  - InputEvent: 2\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleportLeft']}, type: 2}}\n"
     f"  - InputEvent: 4\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleport']}, type: 2}}\n"
-    f"  - InputEvent: 6\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksDecoy']}, type: 2}}\n"
-    f"  - InputEvent: 7\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksCall']}, type: 2}}\n")
+    f"  - InputEvent: 7\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksCall']}, type: 2}}\n"
+    f"  - InputEvent: 14\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksWide']}, type: 2}}\n")
 
-RHINO_SUBTREES = ["ScaleSkimmerObject", "ShieldSwipeActionRegistry"]
-RHINO_COMPONENTS = ["RhinoSwordNetworkRelay", "VesselElementalImmunity", "RhinoSwordAutopilot"]
+# the sword's five streaks and the legacy jet objects are Rhino parts too (Garrett, 2026-10-23: "the vestigal jets from the
+# rhino should be gone"; "instead of a sword (1 axis) make it all three orthogonal axes")
+# ... and the Rhino's ramp speed boost (Garrett, 2026-10-25: "lets remove the rhino speed buff at full speed and straight"): its
+# executor's registry goes, so neither the button nor the AI's boost policy (RampBoostAIPolicySO) can arm it
+RHINO_SUBTREES = ["ScaleSkimmerObject", "ShieldSwipeActionRegistry", "LeftJetParticle", "RightJetParticle", "JetTest",
+                  "RampBoostActionRegistry"] + [
+    f"RhinoSwordBladeTracer{i}" for i in range(5)]
+RHINO_COMPONENTS = ["RhinoSwordNetworkRelay", "VesselElementalImmunity", "RhinoSwordAutopilot", "RhinoSwordFXController"]
+# the Rhino's nested jets: the ten VesselJets (two pods, eight body nozzles), the pods' JetFX and the arc lightning
+RHINO_JET_PREFABS = {"55ceca573be662744948afc745f8840b": "VesselJet", "f2d613e7ff9874744baa70c5dc697310": "JetFX",
+                     "304ca7b3152755c4885ea01bcc7183a6": "VfxArcLightning"}
+# THE SKIMMER: the sword's capsule, hidden, a small near-field sphere at the hull (JacksBodies). It was THE JACK for a day
+# (2026-10-23: two more capsules on it, X and Z, spun about (1,1,1)); Garrett, 2026-10-24: "the spinning jack in the middle
+# doesn't work. lets make it a net" - the net is JacksNet's, drawn by JacksBodies, and the two arm colliders come off
+# (net_retrofit). Their ids are retired: never reuse them.
+SKIMMER_INSTANCE = "1660592348679971898"           # ForceFieldSkimmer Variant nested under the fuselage
+SKIMMER_GO = "2695624631939139826"                 # its root GameObject (stripped)
+SKIMMER_VARIANT_GUID = "c8d5df1098821194eb69eec4c965548e"
+SKIMMER_SOURCE_GO = "3630837686170528968"          # the variant's root GameObject, the added components' target
+SKIMMER_Y_COLLIDER = "4880931740909781519"         # the sword's own capsule (direction 1)
+# the skimmer's effects (Garrett, 2026-10-25: "remove the rhino skimmer effect"): the Rhino's container carried the sword's
+# prism damage (its Space-5 Breaker), its combat hit and its steal on rival hulls; the Jacks' hidden skimmer takes the
+# fleet's empty container - it only collects elemental crystals, whose effects are the crystal's own
+RHINO_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # RhinoForceFieldSkimmerImpactorDataContainer
+NO_EFFECTS_SKIMMER_CONTAINER_GUID = "0ae2a0c5e2da4ac8885103089fc2ddce"   # NoEffectsSkimmerImpactorDataContainer
+# ... and its Space-scaled size (the sword's 30 -> 50) is switched off: JacksBodies sizes the hidden skimmer, so the curve
+# changed nothing and only read, in /element-ability-table, as the Jacks' Space scaling
+SKIMMER_COMPONENT = "1957019139854139517"   # the Skimmer on the nested ForceFieldSkimmer Variant
+SKIMMER_SCALE_OFF = (f"    - target: {{fileID: {SKIMMER_COMPONENT}, guid: {SKIMMER_VARIANT_GUID},\n        type: 3}}\n"
+                     "      propertyPath: Scale.Enabled\n      value: 0\n      objectReference: {fileID: 0}\n")
+RETIRED_ARM_COLLIDERS = ("2200000000000000061", "2200000000000000062")   # the jack's X and Z arms (2026-10-23 only)
+# the omni crystal produces an omnivorous worm in our domain (Garrett, 2026-10-24): one VesselSpawnFaunaByCrystalEffectSO in
+# the Jacks' container, naming the worm colony
+CRYSTAL_EFFECTS = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Vessel Crystal Effects")
+WORM_EFFECT = os.path.join(CRYSTAL_EFFECTS, "JacksOmniWormByCrystalEffect.asset")
+WORM_EFFECT_GUID = "7c2e9b4d1f6a4e38a5d0b3c8e1f7a924"
+WORM_FAUNA_GUID = "eca04f08bc0448c2a0150f75ac23e83f"   # WormColonyFaunaConfig ("Worm Colony Kaiju"): eats prisms and creatures
 RHINO_HUD_KEYS = ["view", "swordDriver", "afterimage", "speedWard"]
 
 
@@ -193,6 +239,13 @@ def strip_rhino_kit(text: str) -> str:
         sc = re.search(r"^  m_Script: \{fileID: 11500000, guid: (\w+)", d, re.M)
         if k == "114" and sc and sc.group(1) in kill_scripts:
             removed.add(a)
+    # the nested jets: their PrefabInstance and its stripped stubs
+    jets = {a for k, a, d in docs if k == "1001" and any(f"m_SourcePrefab: {{fileID: 100100000, guid: {g}," in d
+                                                          for g in RHINO_JET_PREFABS)}
+    for k, a, d in docs:
+        pi = re.search(r"^  m_PrefabInstance: \{fileID: (-?\d+)\}", d, re.M)
+        if a in jets or (" stripped" in d.split("\n", 1)[0] and pi and pi.group(1) in jets):
+            removed.add(a)
     out = []
     for k, a, d in docs:
         if a in removed:
@@ -201,9 +254,48 @@ def strip_rhino_kit(text: str) -> str:
             d = re.sub(r"^  - component: \{fileID: %s\}\n" % r, "", d, flags=re.M)
             d = re.sub(r"^  - \{fileID: %s\}\n" % r, "", d, flags=re.M)
             d = re.sub(r"\{fileID: %s\}" % r, "{fileID: 0}", d)
+        # an added component that was removed leaves its entry naming nothing
+        d = re.sub(r"^    - targetCorrespondingSourceObject: \{[^}]*\}\n      insertIndex: -?\d+\n      addedObject: \{fileID: 0\}\n",
+                   "", d, flags=re.M)
         out.append(d)
     text = head + "".join(out)
     return re.sub(r"^(  (?:m_Children|_executors|m_Component)):\n(?=  [a-zA-Z_<]|--- |\Z)", r"\1: []\n", text, flags=re.M)
+
+
+def net_retrofit(text: str) -> str:
+    """Take the jack's two arm colliders off the sword skimmer (the net replaced the jack, 2026-10-24): their documents and
+    their entries in the skimmer's added components. Idempotent."""
+    head, docs = split_docs(text)
+    if not any(a in RETIRED_ARM_COLLIDERS for _, a, _ in docs):
+        return text
+    text = head + "".join(d for _, a, d in docs if a not in RETIRED_ARM_COLLIDERS)
+    for cid in RETIRED_ARM_COLLIDERS:
+        text = re.sub(r"^    - targetCorrespondingSourceObject: \{[^}]*\}\n      insertIndex: -?\d+\n      addedObject: \{fileID: %s\}\n"
+                      % cid, "", text, flags=re.M)
+    return text
+
+
+def check_jack(text: str):
+    """No Rhino jet, no sword streak, and the sword skimmer is one trigger capsule (the net is code, not colliders)."""
+    errs = []
+    for guid, name in RHINO_JET_PREFABS.items():
+        if f"m_SourcePrefab: {{fileID: 100100000, guid: {guid}," in text:
+            errs.append(f"Jacks.prefab: the Rhino's {name} is still on the hull (the vestigial jets)")
+    inst = re.search(r"--- !u!1001 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % SKIMMER_INSTANCE, text)
+    cap = re.search(r"--- !u!136 &%s\nCapsuleCollider:\n((?:.*\n)*?)(?=--- !u!|\Z)" % SKIMMER_Y_COLLIDER, text)
+    if not (cap and f"  m_GameObject: {{fileID: {SKIMMER_GO}}}\n" in cap.group(1) and "  m_IsTrigger: 1\n" in cap.group(1)
+            and inst and f"addedObject: {{fileID: {SKIMMER_Y_COLLIDER}}}" in inst.group(1)):
+        errs.append("Jacks.prefab: the sword skimmer has lost its trigger capsule (the hull's near-field skimmer)")
+    for cid in RETIRED_ARM_COLLIDERS:
+        if f"&{cid}\n" in text or f"{{fileID: {cid}}}" in text:
+            errs.append(f"Jacks.prefab: the retired jack's arm collider {cid} is still on the skimmer (run the tool)")
+    if not (inst and SKIMMER_SCALE_OFF in inst.group(1)):
+        errs.append("Jacks.prefab: the hidden skimmer still scales with Space (the sword's 30 -> 50; it changes nothing)")
+    if RHINO_SKIMMER_CONTAINER_GUID in text or not (inst and NO_EFFECTS_SKIMMER_CONTAINER_GUID in inst.group(1)):
+        errs.append("Jacks.prefab: the hidden skimmer does not carry the empty skimmer container (the Rhino's sword effects ride along)")
+    if inst and re.search(r"addedObject: \{fileID: 0\}", inst.group(1)):
+        errs.append("Jacks.prefab: the sword skimmer lists an added component that names nothing")
+    return errs
 
 
 def executor_retrofit(text: str) -> str:
@@ -218,8 +310,8 @@ def executor_retrofit(text: str) -> str:
 
 
 def hud_retrofit(text: str) -> str:
-    """RhinoVesselHUDController (the sword) becomes JacksHUDController, wired to the executor. Idempotent."""
-    rhino_hud, jacks_hud = guid_of_script("RhinoVesselHUDController"), guid_of_script("JacksHUDController")
+    """RhinoHUDController (the sword) becomes JacksHUDController, wired to the executor. Idempotent."""
+    rhino_hud, jacks_hud = guid_of_script("RhinoHUDController"), guid_of_script("JacksHUDController")
     head, docs = split_docs(text)
     out = []
     for _, _, d in docs:
@@ -430,7 +522,11 @@ def retrofit(text: str) -> str:
     text = text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {CONTAINER_GUID},")
     text = text.replace(f"  settings: {{fileID: 11400000, guid: {RHINO_CAMERA_GUID}, type: 2}}",
                         f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}")
-    return icons_retrofit(bodies_retrofit(text))
+    text = text.replace(f"guid: {RHINO_SKIMMER_CONTAINER_GUID},", f"guid: {NO_EFFECTS_SKIMMER_CONTAINER_GUID},")
+    inst = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_Modifications:\n" % SKIMMER_INSTANCE, text)
+    if inst and SKIMMER_SCALE_OFF not in text:
+        text = text[:inst.end()] + SKIMMER_SCALE_OFF + text[inst.end():]
+    return net_retrofit(icons_retrofit(bodies_retrofit(text)))
 
 
 def prefab_meta() -> str:
@@ -452,10 +548,10 @@ def config_asset(script_guid: str) -> str:
         "  labScale: 0.4\n  thumbMm: 22\n  thumbMargin: 1.25\n  viewSpan: 1800\n" + THUMB_VIEW_FIELDS + "  camSlack: 0.45\n  planePull: 1.6\n"
         "  separation: 58\n  neighbourRadius: 160\n  grazeSense: 130\n  minHerd: 30\n  herdCap: 150\n  floorBirthSeconds: 0.12\n"
         f"  companionFauna: {{fileID: 11400000, guid: {COMPANION_FAUNA_GUID}, type: 2}}\n" + HERD_MARK_FIELDS +
-        "  dogSpeed: 520\n  padDogSpeed: 1\n  aiNoise: 0.15\n" + FLIGHT_FIELDS + "  callTime: 2.5\n  callCooldown: 20\n  decoyCooldown: 4\n"
-        "  teleportGuard: 0.6\n  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
+        "  dogSpeed: 520\n  padDogSpeed: 1\n  aiNoise: 0.15\n" + FLIGHT_FIELDS + NET_FIELDS + "  callTime: 2.5\n  callCooldown: 20\n  decoyCooldown: 4\n"
+        "  teleportGuard: 0.6\n" + TRAVEL_FIELDS + "  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
         "  attackRange: 200\n  contactReach: 8\n  strikeCooldown: 1.2\n  pipSize: 0.32\n  viewMargin: 0.02\n  viewDepth: 600\n"
-        + STABILITY_FIELDS +
+        + STABILITY_FIELDS + HERD_VIEW_FIELDS +
         f"  callSfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
         f"  decoySfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
         f"  teleportSfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n")
@@ -471,13 +567,38 @@ STABILITY_RENAMES = (("jackSeatPlaneEase", "herdPlaneEase"), ("pilotSeatPlaneEas
 # The jacks flying the hull, and the AI's mode (Garrett, 2026-10-21: "they can switch to 3d flight mode and use two thumb
 # flight controls"). Added once, after aiNoise, where the C# declares them.
 FLIGHT_FIELDS = ("  flightGap: 14\n  flightReach: 10\n  flightFormationEase: 8\n  aiHerdSeconds: 14\n  aiFlightSeconds: 6\n")
+# (NET_FIELDS follow it in the asset, after aiFlightSeconds; Unity reads a field wherever it sits)
 
 
 # The jacks' view framed by the thumb (Garrett, 2026-10-21: "zoomed out enough that on a full size mobile device an above
 # average sized thumb barely covers the smallest jack repulsion radius") and the herd's mark ("a slight hue shift in your
 # domain"). Added once, like the stability fields.
 THUMB_VIEW_FIELDS = "  phoneShortMm: 71\n  thumbCover: 0.9\n"
-HERD_MARK_FIELDS = "  herdHueLean: 0.35\n"
+HERD_MARK_FIELDS = "  herdHueLean: 0.35\n  herdGlow: 1.5\n"   # the glow: "fauna that get herded should light up" (2026-10-23)
+# The net (Garrett, 2026-10-24: "lets make it a net that opens wider with xdiff"), after the flight's and the AI's fields;
+# and the herding view zoomed in, following the jacks, with its whole-cell zoom and buttons, after viewPanEase.
+# A netted prism sinks into the mesh and lies flat against it (round 13, Garrett, 2026-10-25: "when prisms are stuck in the
+# net their orientation should match the expectation of being stuck in the net"), after netPrismCap.
+NET_PRISM_LIE_FIELDS = "  netPrismSettle: 1\n  netPrismTurnEase: 6\n"
+NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDepth: 26\n  netTrailEase: 5\n"
+              "  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n  netSettle: 0.75\n"
+              "  netSettleEase: 3\n  netPrismCap: 48\n" + NET_PRISM_LIE_FIELDS + "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n"
+              "  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n"
+              "  jackCrystalHeight: 200\n"
+              "  netCameraFill: 0.8\n  netCameraEase: 3\n")
+# The herding dash (rounds 8-9) and the herding view's own buttons (round 2), retired in round 10 (Garrett, 2026-10-25: "on
+# PC the gamepad view should only every have the 5 standard ability icons"; "in herding mode the triggers should drop decoys"):
+# a committed config loses them. RETIRED_DASH_FIELDS sat after decoyCooldown, RETIRED_BUTTON_FIELDS after viewZoomEase.
+RETIRED_DASH_FIELDS = "  dashSpeed: 3\n  dashGap: 40\n  decoyPlaceHold: 0.3\n  decoyTapPixels: 70\n"
+RETIRED_BUTTON_FIELDS = "  zoomButtonSize: 0.09\n  zoomButtonIcon: {fileID: 0}\n  callButtonIcon: {fileID: 0}\n"
+# Round 11 (2026-10-25: "remove the space ability in net mode"): Wide's bigger net (round 10's wideNetScale) goes too.
+RETIRED_FIELDS = ("dashSpeed", "dashGap", "decoyPlaceHold", "decoyTapPixels", "zoomButtonSize", "zoomButtonIcon", "callButtonIcon",
+                  "wideNetScale")
+# The fast travel (round 11, Garrett, 2026-10-25: "don't teleport, move quickly, so the player has a sense of where they
+# travelled to"), after teleportGuard where the C# declares them.
+TRAVEL_FIELDS = "  travelSpeed: 900\n  travelMinSeconds: 0.35\n  travelMaxSeconds: 1.2\n"
+HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  herdJacksFill: 0.8\n  herdJacksMargin: 40\n"
+                    "  viewZoomEase: 3\n")
 
 
 def config_retrofit(text: str) -> str:
@@ -494,6 +615,35 @@ def config_retrofit(text: str) -> str:
         text = re.sub(r"^(  viewSpan: .*\n)", lambda m: m.group(1) + THUMB_VIEW_FIELDS, text, count=1, flags=re.M)
     if "  herdHueLean:" not in text:
         text = re.sub(r"^(  companionFauna: .*\n)", lambda m: m.group(1) + HERD_MARK_FIELDS, text, count=1, flags=re.M)
+    elif "  herdGlow:" not in text:
+        text = re.sub(r"^(  herdHueLean: .*\n)", lambda m: m.group(1) + "  herdGlow: 1.5\n", text, count=1, flags=re.M)
+    if "  netSpread:" not in text:
+        text = re.sub(r"^(  aiFlightSeconds: .*\n)", lambda m: m.group(1) + NET_FIELDS, text, count=1, flags=re.M)
+    if "  netSpread:" in text and "  netTrailEase:" not in text:   # 2026-10-24 round 2: the trail, the jacks' reach, the zoom-out
+        text = re.sub(r"^(  netDepth: .*\n)", lambda m: m.group(1) + "  netTrailEase: 5\n", text, count=1, flags=re.M)
+        text = text.replace("  jackCrystalReach: 18\n", "  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n  jackCrystalHeight: 200\n")
+    if "  netTrailEase:" in text and "  netSwingSeconds:" not in text:   # round 5 (2026-10-25): the swing, our prisms lit
+        text = re.sub(r"^(  netTrailEase: .*\n)", lambda m: m.group(1) + "  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", text,
+                      count=1, flags=re.M)
+    if "  jackCrystalReach:" in text and "  jackNetCrystalReach:" not in text:   # round 4 (2026-10-25): netting jacks collect
+        text = re.sub(r"^(  jackCrystalReach: .*\n)", lambda m: m.group(1) + "  jackNetCrystalReach: 10\n", text, count=1, flags=re.M)
+    if "  netSpread:" in text and "  netPrismCap:" not in text:   # round 3 (2026-10-25): the net drags prisms
+        text = re.sub(r"^(  netSettleEase: .*\n)", lambda m: m.group(1) + "  netPrismCap: 48\n", text, count=1, flags=re.M)
+    if "  netPrismCap:" in text and "  netLitLift:" not in text:
+        text = re.sub(r"^(  netPrismCap: .*\n)",
+                      lambda m: m.group(1) + "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", text,
+                      count=1, flags=re.M)
+    if "  herdViewZoom:" in text and "  herdJacksFill:" not in text:
+        text = re.sub(r"^(  cellViewMargin: .*\n)", lambda m: m.group(1) + "  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", text,
+                      count=1, flags=re.M)
+    if "  herdViewZoom:" not in text:
+        text = re.sub(r"^(  viewPanEase: .*\n)", lambda m: m.group(1) + HERD_VIEW_FIELDS, text, count=1, flags=re.M)
+    if "  netPrismCap:" in text and "  netPrismSettle:" not in text:   # round 13 (2026-10-25): prisms lie in the mesh
+        text = re.sub(r"^(  netPrismCap: .*\n)", lambda m: m.group(1) + NET_PRISM_LIE_FIELDS, text, count=1, flags=re.M)
+    if "  travelSpeed:" not in text:   # round 11 (2026-10-25): the fast travel replaces the jump
+        text = re.sub(r"^(  teleportGuard: .*\n)", lambda m: m.group(1) + TRAVEL_FIELDS, text, count=1, flags=re.M)
+    for field in RETIRED_FIELDS:   # rounds 10-11: the herding dash, the view's own buttons, Wide's bigger net
+        text = re.sub(r"^  %s: .*\n" % field, "", text, flags=re.M)
     return text
 
 
@@ -512,15 +662,16 @@ CONTAINER_CRYSTAL = ["8de915fb00503344ca89a92a0a127b00"]  # VesselHapticsByCryst
 def container_asset() -> str:
     lst = lambda gs: "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in gs)
     return so_header(guid_of_script("VesselImpactorDataContainerSO"), "JacksImpactorDataContainer") + (
-        "  vesselPrismEffects:\n" + lst(CONTAINER_PRISM) + "  vesselCrystalEffects:\n" + lst(CONTAINER_CRYSTAL) +
+        "  vesselPrismEffects:\n" + lst(CONTAINER_PRISM) + "  vesselCrystalEffects:\n" + lst(CONTAINER_CRYSTAL + [WORM_EFFECT_GUID]) +
         "  vesselMassCrystalEffects: []\n  vesselChargeCrystalEffects: []\n  vesselSpaceCrystalEffects: []\n"
         "  vesselTimeCrystalEffects: []\n  vesselSkimmerEffects: []\n  vesselLifeformCrystalEffects: []\n"
         "  omniCrystalRetirement: {fileID: 0}\n")
 
 
-DESCRIPTION = ("  Description: Two jacks herd the cell's wildlife. Run each jack with a thumb and lift it\n"
-               "    to leave the decoy, or take off and fly them, one fish under each thumb, calling\n"
-               "    the herd to them. D-pad left or right switches between herding and flying.\n")
+DESCRIPTION = ("  Description: Two jacks herd the cell's wildlife. Herding, run each jack with a thumb,\n"
+               "    lift it to leave a decoy, pull a trigger to dash both jacks to it, and call the herd.\n"
+               "    Netting, fly them, one fish under each thumb, with a net between them that opens as\n"
+               "    the sticks go apart. D-pad left or right switches between herding and netting.\n")
 # The marlin era's crew names (Marlin, Jacks): the Jacks are one vessel with one seat, so the card names no crew.
 CREW = "  CrewNames:\n  - Marlin\n  - Jacks\n  CrewNameTemplate: '{0} and {1}'\n"
 
@@ -574,16 +725,25 @@ MAP_ENTRIES = [
     (1, 0, "Danger Share", "Charge sets the share of the herd that is DANGER: none at -5, all of it at 15. A danger "
         "creature that touches a rival hull stings it (a Strike) and is spent.",
      "Attack", "The herd goes for rivals near it and bites any it touches."),
-    (2, 0, "Breeding", "Mass sets how fast the herd breeds: a birth takes the species' own feeds at -5 and a third of "
-        "them at 15. The herd never starves below its minimum size.",
+    # round 10 (Garrett, 2026-10-25): the Mass card is the call, the Space card Wide, the Time card the decoys (the triggers)
+    (2, 7, "The Call", "Herding, call the herd to the point between the jacks. Netting, toggle whether your creatures are "
+        "drawn to the plane. Mass sets how fast the herd breeds: a birth takes the species' own feeds at -5 and a third of "
+        "them at 15, and the herd never starves below its minimum size.",
      "Mass Clusters", "Every few seconds a creature of the herd lays a cluster of your mass."),
-    (3, 0, "Herding Ring", "Space widens the ring both jacks and the decoy push the herd out of; it is never "
-        "smaller than a big thumb.",
+    (3, 14, "Wide", "Herding, zoom out to the whole cell and back. Space widens the ring both jacks and the decoy push the "
+        "herd out of; it is never smaller than a big thumb.",
      "Eat Shields", "The herd eats shielded prisms."),
-    (4, 7, "Herd Speed", "Time sets how fast the herd swims. The jacks' call (A) pulls the herd to them for a moment, on "
-        "a long cooldown.",
-     "Flying Decoy", "Flying, the jacks leave the decoy where they are (X), so they can jump back to it."),
+    (4, 13, "Decoys", "Herding, pull a trigger to lay the decoy at the jack on that side (on a phone, lift a thumb). "
+        "Netting, pull a trigger to rush to the decoy at speed. There is always one decoy. Time makes the herd faster.",
+     "Second Decoy", "A second decoy: each trigger has its own, laid by it while herding and rushed to by it while netting."),
 ]
+
+# Card words from before round 10 (the herding dash): a committed map still carrying
+# any of them is rewritten (words the team edited since are left alone).
+STALE_MAP_WORDS = ("The jacks'' call (A)", "(X), so they can jump back", "'Flying Decoy'", "'Herd Speed'",
+                   "Herding, pull a trigger (or tap the decoy)", "Decoy Dash", "tap it to dash",
+                   "Netting, switch whether", "pull a trigger to jump to the decoy", "open an even bigger net",
+                   "teleport to the decoy")
 
 
 def map_entries() -> str:
@@ -599,7 +759,8 @@ def map_retrofit(text: str) -> str:
     """The committed map named Jacks, and its cards' words rewritten where they still name the marlin (words the team
     edited since are left alone). Idempotent."""
     text = text.replace("  m_Name: Marlin\n", "  m_Name: Jacks\n")
-    if "arlin" in text[text.index("  entries:\n"):]:
+    entries = text[text.index("  entries:\n"):]
+    if "arlin" in entries or any(w in entries for w in STALE_MAP_WORDS):
         text = text[:text.index("  entries:\n")] + map_entries()
     return text
 
@@ -678,7 +839,9 @@ def check_prefab(text: str, script_guid: str):
     for key, guid in (("config", CONFIG_GUID), ("OnMiniGameTurnEnd", TURN_END_GUID), ("onCombatHitLanded", COMBAT_HIT_GUID)):
         want(ex and f"  {key}: {{fileID: 11400000, guid: {guid}, type: 2}}" in ex.group(1),
              f"Jacks.prefab: JacksExecutor.{key} is not wired")
-    want(WANT_BINDINGS in text, "Jacks.prefab: the flying jacks' buttons are not ramp 0, jump 1 + 4, decoy 6, call 7")
+    want(WANT_BINDINGS in text, "Jacks.prefab: the netting jacks' buttons are not jump right 1 / left 2 / last 4, call 7, wide 14 "
+                                "(round 10; no ramp boost, no flying decoy)")
+    want(f"guid: {RAMP_BOOST_GUID}, type: 2" not in text, "Jacks.prefab: the Rhino's ramp speed boost is still bound")
     want("  _gamepadActionOverrides: []\n" in text, "Jacks.prefab: the Rhino's gamepad overrides (the swipes) are still bound")
     want(f"guid: {CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
          "Jacks.prefab: the VesselImpactor is not on JacksImpactorDataContainer (the Rhino's plough would ride along)")
@@ -686,7 +849,7 @@ def check_prefab(text: str, script_guid: str):
     for n in RHINO_SUBTREES:
         want(n not in names, f"Jacks.prefab: the Rhino's {n} is still on the hull")
     for n in RHINO_COMPONENTS + ["ShieldSkimmerScaleDriver", "RhinoSwordAfterimage", "ShieldSwipeActionExecutor",
-                                 "RhinoVesselHUDController"]:
+                                 "RhinoHUDController"]:
         want(f"guid: {guid_of_script(n)}, type: 3" not in text, f"Jacks.prefab: the Rhino's {n} is still on the hull")
     hud = re.search(r"guid: %s, type: 3\}\n((?:.*\n)*?)(?=--- !u!|\Z)" % guid_of_script("JacksHUDController"), text)
     want(hud and f"  crew: {{fileID: {EXECUTOR_ID}}}\n" in hud.group(1), "Jacks.prefab: the HUD is not JacksHUDController on the executor")
@@ -694,7 +857,7 @@ def check_prefab(text: str, script_guid: str):
     want(not dangling, f"Jacks.prefab: dangling local fileID reference(s) {dangling[:5]}")
     want(f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}" in text and RHINO_CAMERA_GUID not in text,
          "Jacks.prefab: the camera settings are not JacksCameraSettingsSO (a tune would move the Rhino's camera)")
-    return errs + check_bodies(text)
+    return errs + check_bodies(text) + check_jack(text)
 
 
 def check_assets(config: str, controls, container: str):
@@ -711,14 +874,47 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no thumb-framed view fields (run the tool)")
     if "  herdHueLean:" not in config:
         errs.append("JacksConfig.asset: no herd mark field (run the tool)")
+    if "  herdGlow:" not in config:
+        errs.append("JacksConfig.asset: no herd glow field (run the tool)")
+    if ("  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config
+            or "  netPrismCap:" not in config or "  jackNetCrystalReach:" not in config or "  netSwingSeconds:" not in config
+            or "  netLitLift:" not in config or "  travelSpeed:" not in config or "  netPrismSettle:" not in config):
+        errs.append("JacksConfig.asset: no net fields (run the tool)")
+    if "  herdViewZoom:" not in config or "  viewZoomEase:" not in config or "  herdJacksFill:" not in config:
+        errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")
+    if any(re.search(r"^  %s:" % f, config, re.M) for f in RETIRED_FIELDS):
+        errs.append("JacksConfig.asset: still the herding dash's, the view buttons' or Wide's net fields (retired; run the tool)")
     action = guid_of_script("JacksActionSO")
     for name, value, text in controls:
         if f"guid: {action}, type: 3" not in text or f"  control: {value}\n" not in text:
             errs.append(f"{name}.asset: not a JacksActionSO with control {value}")
-    for g in CONTAINER_PRISM + CONTAINER_CRYSTAL:
+    for g in CONTAINER_PRISM + CONTAINER_CRYSTAL + [WORM_EFFECT_GUID]:
         if g not in container:
             errs.append(f"JacksImpactorDataContainer: missing effect {g}")
     return errs
+
+
+def worm_effect_asset() -> str:
+    """The omni crystal produces an omnivorous worm in our domain (Garrett, 2026-10-24)."""
+    return so_header(guid_of_script("VesselSpawnFaunaByCrystalEffectSO"), "JacksOmniWormByCrystalEffect") + (
+        f"  fauna: {{fileID: 11400000, guid: {WORM_FAUNA_GUID}, type: 2}}\n  spawnBehind: 30\n")
+
+
+def check_worm_effect(text: str):
+    errs = []
+    if f"guid: {guid_of_script('VesselSpawnFaunaByCrystalEffectSO')}, type: 3" not in text:
+        errs.append("JacksOmniWormByCrystalEffect.asset: does not name VesselSpawnFaunaByCrystalEffectSO")
+    if f"  fauna: {{fileID: 11400000, guid: {WORM_FAUNA_GUID}, type: 2}}" not in text:
+        errs.append("JacksOmniWormByCrystalEffect.asset: does not name the worm colony (the omni crystal would produce nothing)")
+    return errs
+
+
+def container_retrofit(text: str) -> str:
+    """The worm effect in the container's crystal (omni) effects, once. Idempotent."""
+    if WORM_EFFECT_GUID in text:
+        return text
+    return re.sub(r"^(  vesselCrystalEffects:\n(?:  - .*\n)*)",
+                  lambda m: m.group(1) + f"  - {{fileID: 11400000, guid: {WORM_EFFECT_GUID}, type: 2}}\n", text, count=1, flags=re.M)
 
 
 def check_registrations(container: str, network: str, lists, cls: str, kmap: str, fusion: str):
@@ -743,6 +939,7 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  vesselClass: {JACKS_CLASS_ID}\n" in kmap and "  m_Name: Jacks\n" in kmap, "ElementalAbilityMaps/Jacks: wrong class or name")
     want("arlin" not in kmap, "ElementalAbilityMaps/Jacks: a card still names the marlin")
     want("Sword" not in kmap, "ElementalAbilityMaps/Jacks: still the Rhino's cards")
+    want(not any(w in kmap for w in STALE_MAP_WORDS), "ElementalAbilityMaps/Jacks: still older card words (before the net or the dash; run the tool)")
     jacks, rhino = fusion_entries(fusion, JACKS_CLASS_ID), fusion_entries(fusion, RHINO_CLASS_ID)
     want(len(jacks) == 4, f"CrystalHullFusionConfig: {len(jacks)} Jacks entries, not 4")
     want([e.split("\n", 1)[1] for e in jacks] == [e.split("\n", 1)[1] for e in rhino],
@@ -774,6 +971,10 @@ def check_all():
         if not name or name.group(1) != os.path.splitext(os.path.basename(path))[0]:
             errs.append(f"{os.path.relpath(path, ROOT)}: m_Name is not its file name (a marlin-era name: run the tool)")
     errs += check_assets(read(CONFIG), [(n, v, read(control_path(n))) for n, v, _ in CONTROLS], read(JACKS_CONTAINER))
+    if not os.path.exists(WORM_EFFECT) or guid_of(WORM_EFFECT + ".meta") != WORM_EFFECT_GUID:
+        errs.append("JacksOmniWormByCrystalEffect.asset (+ .meta, its guid) is missing: run the tool")
+    else:
+        errs += check_worm_effect(read(WORM_EFFECT))
     errs += check_registrations(read(CONTAINER), read(NETWORK_PREFABS), [(os.path.basename(p), read(p)) for p in CLASS_LISTS],
                                 read(CLASS_ASSET), read(MAP), read(FUSION))
     return errs
@@ -817,10 +1018,15 @@ def author():
         write(CAMERA + ".meta", native_meta(CAMERA_GUID))
     else:
         rename_m_name(CAMERA, "MarlinCameraSettingsSO", "JacksCameraSettingsSO")
+    if not os.path.exists(WORM_EFFECT):
+        write(WORM_EFFECT, worm_effect_asset()); write(WORM_EFFECT + ".meta", native_meta(WORM_EFFECT_GUID))
     if not os.path.exists(JACKS_CONTAINER):
         write(JACKS_CONTAINER, container_asset()); write(JACKS_CONTAINER + ".meta", native_meta(CONTAINER_GUID))
     else:
         rename_m_name(JACKS_CONTAINER, "MarlinImpactorDataContainer", "JacksImpactorDataContainer")
+        old = read(JACKS_CONTAINER); new = container_retrofit(old)
+        if new != old:
+            write(JACKS_CONTAINER, new)
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS))); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
     else:
@@ -864,6 +1070,18 @@ def self_test():
     expect(check_prefab(good.replace(f"  - component: {{fileID: {TELEMETRY_ID}}}\n", ""), script_guid), 1, "no telemetry")
     expect(check_prefab(good.replace(icon_override(*ICON_SPRITES[2]), ""), script_guid), 1, "the Rhino's Space icon")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {BODIES_ID}}}\n", ""), script_guid), 1, "no bodies component")
+    arm = (f"--- !u!136 &{RETIRED_ARM_COLLIDERS[0]}\nCapsuleCollider:\n  m_GameObject: {{fileID: {SKIMMER_GO}}}\n")
+    expect(check_prefab(good + arm, script_guid), 1, "the retired jack's arm collider")
+    expect(check_prefab(good.replace(NO_EFFECTS_SKIMMER_CONTAINER_GUID, RHINO_SKIMMER_CONTAINER_GUID), script_guid), 1,
+           "the Rhino's sword effects on the hidden skimmer")
+    expect(check_prefab(good.replace(SKIMMER_SCALE_OFF, ""), script_guid), 1, "the hidden skimmer scaling with Space")
+    if check_prefab(net_retrofit(good + arm), script_guid):
+        fails.append("net_retrofit does not take the retired jack's arm collider off")
+    jets = read(DONOR).split("--- !u!1001 &3901220500000001\n", 1)
+    expect(check_jack("--- !u!1001 &3901220500000001\n" + jets[1]), 2, "a Rhino jet left on the hull")
+    rhino = build_clone(read(DONOR), script_guid)
+    if any(f"guid: {g}," in rhino for g in RHINO_JET_PREFABS) or "RhinoSwordBladeTracer" in rhino:
+        fails.append("the strip leaves a Rhino jet or a sword streak on the clone")
     expect(check_prefab(good.replace(f"  _shipGeometries:\n  - {{fileID: {FUSE_GO}}}\n",
                                      f"  _shipGeometries:\n  - {{fileID: {MARLIN_GO_ID}}}\n"), script_guid), 1, "the marlin's ship geometry")
     marlin = good + model_instance(MARLIN_INSTANCE_ID, MARLIN_TRANSFORM_ID, FUSE_TRANSFORM, MARLIN_FBX_GUID, "Marlin", "-2", MARLIN_GO_ID)
@@ -892,6 +1110,39 @@ def self_test():
         fails.append("the config retrofit does not rename the marlin-era fields or put the flight fields back")
     expect(check_assets(cfg.replace(THUMB_VIEW_FIELDS, ""), controls, cont), 1, "no thumb-framed view fields")
     expect(check_assets(cfg.replace(HERD_MARK_FIELDS, ""), controls, cont), 1, "no herd mark field")
+    expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
+    expect(check_assets(cfg.replace(NET_FIELDS, ""), controls, cont), 1, "no net fields")
+    expect(check_assets(cfg.replace(HERD_VIEW_FIELDS, ""), controls, cont), 1, "no herding view zoom fields")
+    round1 = cfg.replace(TRAVEL_FIELDS, "").replace(NET_PRISM_LIE_FIELDS, "").replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
+        "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", "").replace("  netTrailEase: 5\n", "").replace("  netPrismCap: 48\n", "").replace("  jackNetCrystalReach: 10\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
+                                                             "  jackCrystalReach: 18\n").replace("  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", "")
+    expect(check_assets(round1, controls, cont), 1, "the net's first-round config")
+    if config_retrofit(round1) != cfg:
+        fails.append("the config retrofit does not bring the first-round net config to the second round")
+    round9 = cfg.replace("  decoyCooldown: 4\n", "  decoyCooldown: 4\n" + RETIRED_DASH_FIELDS).replace(
+        "  viewZoomEase: 3\n", "  viewZoomEase: 3\n" + RETIRED_BUTTON_FIELDS).replace(TRAVEL_FIELDS, "")
+    expect(check_assets(round9, controls, cont), 2, "the round-9 config (the dash and the view buttons, no fast travel)")
+    if config_retrofit(round9) != cfg:
+        fails.append("the config retrofit does not bring the round-9 config to round 11")
+    round12 = cfg.replace(NET_PRISM_LIE_FIELDS, "")
+    expect(check_assets(round12, controls, cont), 1, "the round-12 config (prisms not yet lying in the mesh)")
+    if config_retrofit(round12) != cfg:
+        fails.append("the config retrofit does not bring the round-12 config to round 13")
+    round10 = cfg.replace("  netCameraEase: 3\n", "  netCameraEase: 3\n  wideNetScale: 1.8\n").replace(TRAVEL_FIELDS, "")
+    expect(check_assets(round10, controls, cont), 2, "the round-10 config (Wide's net, no fast travel)")
+    if config_retrofit(round10) != cfg:
+        fails.append("the config retrofit does not bring the round-10 config to round 11")
+    if config_retrofit(cfg.replace(NET_FIELDS, "").replace(HERD_VIEW_FIELDS, "")) != cfg:
+        fails.append("the config retrofit does not put the net and herding view fields back where the asset keeps them")
+    no_worm = cont.replace(f"  - {{fileID: 11400000, guid: {WORM_EFFECT_GUID}, type: 2}}\n", "")
+    expect(check_assets(cfg, controls, no_worm), 1, "the container without the omni crystal's worm")
+    if container_retrofit(no_worm) != cont or container_retrofit(cont) != cont:
+        fails.append("the container retrofit does not add the worm effect once")
+    worm = worm_effect_asset()
+    expect(check_worm_effect(worm), 0, "the worm effect passes")
+    expect(check_worm_effect(worm.replace(WORM_FAUNA_GUID, "0" * 32)), 1, "a worm effect naming no worm")
+    if config_retrofit(cfg.replace("  herdGlow: 1.5\n", "")) != cfg:
+        fails.append("the config retrofit does not put the herd glow back after herdHueLean")
     if config_retrofit(cfg) != cfg or "herdPlaneEase" not in config_retrofit(cfg.replace(STABILITY_FIELDS, "")):
         fails.append("the config retrofit is not idempotent or does not add the stability fields")
     if config_retrofit(cfg.replace(THUMB_VIEW_FIELDS, "").replace(HERD_MARK_FIELDS, "")) != cfg:
@@ -909,9 +1160,13 @@ def self_test():
            "a card that still names the marlin's crew")
     if class_retrofit(cls.replace(DESCRIPTION, DESCRIPTION + CREW).replace("  Name: Jacks\n", "  Name: Marlin and Jacks\n")) != cls:
         fails.append("the class retrofit does not take the marlin's crew and name off the card")
-    expect(check_registrations(container, network, lists, cls, kmap.replace("Flying Decoy", "Marlin Decoy"), fusion), 1,
+    expect(check_registrations(container, network, lists, cls, kmap.replace("Second Decoy", "Marlin Decoy"), fusion), 1,
            "a card that still names the marlin")
-    if map_retrofit(kmap.replace("Flying Decoy", "Marlin Decoy")) != kmap or map_retrofit(kmap) != kmap:
+    stale = kmap.replace("'Second Decoy'", "'Flying Decoy'")
+    expect(check_registrations(container, network, lists, cls, stale, fusion), 1, "the map's words from before the net")
+    if map_retrofit(stale) != kmap:
+        fails.append("the map retrofit does not rewrite the words from before the net")
+    if map_retrofit(kmap.replace("Second Decoy", "Marlin Decoy")) != kmap or map_retrofit(kmap) != kmap:
         fails.append("the map retrofit does not rewrite the marlin's words, or is not idempotent")
     expect(check_registrations(container, network, lists, cls.replace(CARD_FIELDS["SquadImage"], "2286f04c9031ee84d8d935de1926f92a"), kmap,
                               fusion), 1, "the Rhino's squad image")

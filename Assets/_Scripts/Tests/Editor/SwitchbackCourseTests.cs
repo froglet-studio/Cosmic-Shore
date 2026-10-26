@@ -90,7 +90,8 @@ namespace CosmicShore.Tests
         [Test]
         public void NoCornerExceedsTheTurnCap([Values(1, 2, 3, 4)] int intensity)
         {
-            float cap = SwitchbackCourseSettings.ForIntensity(intensity).MaxTurnDegrees;
+            // An ordinary corner stays under the cap; a hairpin (every Nth corner from I2) turns inside its own band.
+            var s = Settings(intensity);
             for (int seed = 1; seed <= Seeds; seed++)
             {
                 var c = Course(intensity, seed);
@@ -99,8 +100,46 @@ namespace CosmicShore.Tests
                     Vector3 inbound = (c[i].Position - c[i - 1].Position).normalized;
                     Vector3 outbound = (c[i + 1].Position - c[i].Position).normalized;
                     float turn = SwitchbackCourse.Angle(inbound, outbound);
-                    Assert.LessOrEqual(turn, cap + 0.05f,
-                        $"intensity {intensity} seed {seed} gate {i}: {turn:F1} deg corner exceeds the {cap} cap.");
+                    if (SwitchbackCourse.IsHairpinCorner(i, s))
+                    {
+                        Assert.That(turn, Is.InRange(s.HairpinMinDegrees - 0.05f, s.HairpinMaxDegrees + 0.05f),
+                            $"intensity {intensity} seed {seed} gate {i}: a {turn:F1} deg hairpin is outside its band.");
+                        continue;
+                    }
+                    Assert.LessOrEqual(turn, s.MaxTurnDegrees + 0.05f,
+                        $"intensity {intensity} seed {seed} gate {i}: {turn:F1} deg corner exceeds the {s.MaxTurnDegrees} cap.");
+                }
+            }
+        }
+
+        [Test]
+        public void HairpinsStartAtIntensityTwo([Values(1, 2, 3, 4)] int intensity)
+        {
+            // I1 teaches flying through gates; from I2 every second (I3: third) corner is a hairpin only a drift makes.
+            var s = Settings(intensity);
+            int hairpins = 0;
+            for (int i = 1; i < Gates - 1; i++)
+                if (SwitchbackCourse.IsHairpinCorner(i, s)) hairpins++;
+            if (intensity == 1) Assert.AreEqual(0, hairpins, "intensity 1 has a hairpin.");
+            else Assert.GreaterOrEqual(hairpins, 5, $"intensity {intensity} has only {hairpins} hairpins.");
+        }
+
+        [Test]
+        public void AHairpinGateFacesTheLegYouArriveOn([Values(2, 3, 4)] int intensity)
+        {
+            // Thread it straight, then carve: facing the corner's bisector would stand it 45-75 deg off the arrival.
+            var s = Settings(intensity);
+            for (int seed = 1; seed <= 50; seed++)
+            {
+                var c = Course(intensity, seed);
+                for (int i = 1; i < c.Count - 1; i++)
+                {
+                    if (!SwitchbackCourse.IsHairpinCorner(i, s)) continue;
+                    Vector3 arrive = (c[i].Position - c[i - 1].Position).normalized;
+                    float present = SwitchbackCourse.Angle(arrive, c[i].Axis);
+                    if (present > 90f) present = 180f - present;
+                    Assert.LessOrEqual(present, s.AxisJitterDegrees + 0.05f,
+                        $"intensity {intensity} seed {seed} hairpin gate {i} presents {present:F1} deg off the arrival.");
                 }
             }
         }
@@ -132,11 +171,15 @@ namespace CosmicShore.Tests
             // Dubins: pure pursuit cannot reach a target inside a circle of radius R tangent to
             // its velocity, so a leg shorter than 2R*sin(turn) is a corner nobody can make -
             // human or AI - and no amount of turning harder fixes it.
+            // A hairpin is not flown on the turning circle: it is a DRIFT corner (thread the gate, carve after it),
+            // which is the verb intensities 2-4 teach. Every ordinary corner still clears the boosted circle.
+            var s = Settings(intensity);
             for (int seed = 1; seed <= Seeds; seed++)
             {
                 var c = Course(intensity, seed);
                 for (int i = 1; i < c.Count - 1; i++)
                 {
+                    if (SwitchbackCourse.IsHairpinCorner(i, s)) continue;
                     Vector3 inbound = (c[i].Position - c[i - 1].Position).normalized;
                     Vector3 outbound = (c[i + 1].Position - c[i].Position).normalized;
                     float turn = SwitchbackCourse.Angle(inbound, outbound) * Mathf.Deg2Rad;
@@ -200,7 +243,8 @@ namespace CosmicShore.Tests
         {
             // Intensity is the COURSE, not the arena: mouths narrow, corners sharpen, gates
             // twist further off the line. If any of these ever stops moving in one direction,
-            // the ladder has stopped meaning anything.
+            // the ladder has stopped meaning anything. Leg length is NOT monotone on purpose
+            // (2026-10-26): intensity 3's legs are the longest, the straights a banked charge is spent down.
             for (int i = 1; i < 4; i++)
             {
                 var lo = SwitchbackCourseSettings.ForIntensity(i);
@@ -208,7 +252,6 @@ namespace CosmicShore.Tests
                 Assert.Less(hi.RingRadius, lo.RingRadius, $"ring radius did not tighten from {i} to {i + 1}.");
                 Assert.Greater(hi.MaxTurnDegrees, lo.MaxTurnDegrees, $"corners did not sharpen from {i} to {i + 1}.");
                 Assert.Greater(hi.AxisJitterDegrees, lo.AxisJitterDegrees, $"gates did not twist further from {i} to {i + 1}.");
-                Assert.Less(hi.MinStep, lo.MinStep, $"legs did not shorten from {i} to {i + 1}.");
             }
         }
 
@@ -227,20 +270,18 @@ namespace CosmicShore.Tests
         // ── The mouth ladder ─────────────────────────────────────────────
 
         /// <summary>
-        /// The tightest mouth is sized off the SHIP, not off a number somebody liked. Intensity 4
-        /// is "barely bigger than a Dolphin", so it must clear the measured hull and must not
-        /// clear it by much - a mouth that has quietly grown back to several ship-widths is the
-        /// failure this catches, and it does not throw, it just stops being intensity 4.
+        /// The tightest mouth leaves room to come through it in a DRIFT (2026-10-26): the old intensity 4 was 1.5
+        /// ship radii, which only precision could thread, so the ladder ended in precision instead of mastery of the
+        /// Dolphin's verbs. Still tight - under ten ship radii - so intensity 4 stays the hardest.
         /// </summary>
         [Test]
-        public void TightestMouthIsBarelyBiggerThanTheShip()
+        public void TightestMouthLeavesRoomToDrift()
         {
             float r4 = SwitchbackCourseSettings.ForIntensity(4).RingRadius;
             float hull = SwitchbackCourseSettings.DolphinHullRadius;
 
-            Assert.Greater(r4, hull, "intensity 4's mouth is smaller than the ship - unflyable.");
-            Assert.LessOrEqual(r4, hull * 2f,
-                $"intensity 4's mouth is {r4 / hull:F2} ship-radii; 'barely bigger' is under 2.");
+            Assert.GreaterOrEqual(r4, hull * 5f, $"intensity 4's mouth is {r4 / hull:F2} ship radii: no room to drift.");
+            Assert.Less(r4, hull * 10f, $"intensity 4's mouth is {r4 / hull:F2} ship radii: no longer tight.");
         }
 
         [Test]
@@ -251,19 +292,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void MouthLadderIsGeometric()
+        public void MouthLadderHasNoCliff()
         {
-            // Equal ratios means every step is the same increment of difficulty. Asserted rather
-            // than trusted because the ladder is computed, and a linear ramp between the same two
-            // ends would pass every other test here while feeling like three flat levels and a
-            // cliff.
-            float r1 = SwitchbackCourseSettings.ForIntensity(1).RingRadius;
-            float r2 = SwitchbackCourseSettings.ForIntensity(2).RingRadius;
-            float r3 = SwitchbackCourseSettings.ForIntensity(3).RingRadius;
-            float r4 = SwitchbackCourseSettings.ForIntensity(4).RingRadius;
-
-            Assert.AreEqual(r2 / r1, r3 / r2, 1e-4f);
-            Assert.AreEqual(r3 / r2, r4 / r3, 1e-4f);
+            // Each level at least 60% of the last: the old geometric ladder dropped I1 -> I2 from 72 to 28 (39%),
+            // a cliff on the very level that now teaches the drift.
+            for (int i = 1; i < 4; i++)
+            {
+                float lo = SwitchbackCourseSettings.ForIntensity(i).RingRadius;
+                float hi = SwitchbackCourseSettings.ForIntensity(i + 1).RingRadius;
+                Assert.GreaterOrEqual(hi / lo, 0.6f, $"the mouth drops from {lo} to {hi} between {i} and {i + 1}.");
+            }
         }
 
         [Test]

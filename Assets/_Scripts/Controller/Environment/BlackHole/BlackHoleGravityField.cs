@@ -121,6 +121,15 @@ namespace CosmicShore.Gameplay
         static readonly List<Candidate> _candidates = new();
         static readonly List<Prism> _evict = new();
         static float _nextAdmission;
+        static readonly Unity.Profiling.ProfilerMarker s_admit = new("BlackHole.GravityField.Admit");
+        static readonly Unity.Profiling.ProfilerMarker s_prune = new("BlackHole.GravityField.Prune");
+        static readonly Unity.Profiling.ProfilerMarker s_verdicts = new("BlackHole.GravityField.Verdicts");
+        // The rest of a tick, named so a capture can split BlackHole.Field's self time (2.47 ms/frame in a
+        // Menu_Main capture with a Stoat dipole, 2026-10-26, with nothing inside to say where).
+        static readonly Unity.Profiling.ProfilerMarker s_jobs = new("BlackHole.GravityField.Jobs");
+        static readonly Unity.Profiling.ProfilerMarker s_boxContacts = new("BlackHole.GravityField.BoxContacts");
+        static readonly Unity.Profiling.ProfilerMarker s_indexWrite = new("BlackHole.GravityField.IndexWrite");
+        static readonly Unity.Profiling.ProfilerMarker s_contacts = new("BlackHole.GravityField.Contacts");
 
         // The hole behind each well slot this frame. A well index is NOT a holes-list index: the
         // wells skip null holes, so a capture's well index is resolved through this table.
@@ -177,12 +186,13 @@ namespace CosmicShore.Gameplay
             if (sweep)
             {
                 _nextAdmission = Time.unscaledTime + config.AdmissionInterval;
-                if (wells.Count > 0) Admit(holes, config);
+                if (wells.Count > 0)
+                    using (s_admit.Auto()) Admit(holes, config);
             }
 
             // The cheap checks every frame; the entity and hierarchy checks on the sweep cadence
             // — the job and the bulk writers are safe against a dead entity in between.
-            Prune(deep: sweep);
+            using (s_prune.Auto()) Prune(deep: sweep);
             int n = _prisms.Count;
             if (n == 0 || dt <= 0f) return;
 
@@ -243,15 +253,19 @@ namespace CosmicShore.Gameplay
             _level = NextLevel(n);
             bool spheres = _level == PrismMotionLevel.Bulk;
             var contacts = ScheduleContacts(index, indexLive, n, integrate, spheres);
-            writeBack.Complete();
-            contacts.Complete();
-            if (indexLive && !spheres) BoxContacts(index, n);
+            using (s_jobs.Auto())
+            {
+                writeBack.Complete();
+                contacts.Complete();
+            }
+            if (indexLive && !spheres)
+                using (s_boxContacts.Auto()) BoxContacts(index, n);
 
             if (indexLive)
-                index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
+                using (s_indexWrite.Auto()) index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
 
-            ApplyContacts(index, dt, _level);
-            ApplyVerdicts(index);
+            using (s_contacts.Auto()) ApplyContacts(index, dt, _level);
+            using (s_verdicts.Auto()) ApplyVerdicts(index);
         }
 
         // ---------------- Prism motion: collisions ----------------

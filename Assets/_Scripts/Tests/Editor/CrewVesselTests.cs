@@ -12,7 +12,8 @@ namespace CosmicShore.Tests
     /// vessel"): one hull class that carries ONE seat (an <see cref="ICrewSeat"/>), a card that names both subvessels
     /// (SO_Vessel.CrewNames joined by CrewNameTemplate) while Name stays the one-word key, and a place on the Vessel
     /// Changer's roster. Tools/Build/check_crew_vessels.py holds the same from the files, with negative controls. The Wrasse
-    /// and the Honeyguide join when their seats move onto ICrewSeat (KITE_NAVIGATOR.md, "Two humans, two seats", step 2).
+    /// and the Honeyguide join if their seats move onto ICrewSeat; the branch that planned it (#1407) merged without that
+    /// move, so it is the crew owners' call now (Docs/REFACTOR_BACKLOG.md S64).
     /// </summary>
     public class CrewVesselTests
     {
@@ -33,6 +34,28 @@ namespace CosmicShore.Tests
             Assert.AreEqual(card, cls.CardName, "the card names both subvessels");
             CollectionAssert.Contains(cls.CrewNames, seats[0].SeatName, "the seat is one of the subvessels its card names");
             CollectionAssert.Contains(ToyVesselRoster.Default, type, "the Vessel Changer offers only the roster");
+        }
+
+        [Test]
+        public void TwoDCameraSky_FadesTheCellNetOnlyInA2DCamera()
+        {
+            // Garrett, 2026-10-25: the 2D cameras (the Pistol's, the kite board, the Jacks') fade the sky's Voronoi net
+            var twoD = new GameObject("2D").AddComponent<Camera>();
+            var main = new GameObject("main").AddComponent<Camera>();
+            try
+            {
+                TwoDCameraSky.Register(twoD);
+                Assert.That(TwoDCameraSky.FadeFor(twoD), Is.EqualTo(1f), "a 2D camera fades the cell net");
+                Assert.That(TwoDCameraSky.FadeFor(main), Is.EqualTo(0f), "the control: any other camera keeps the sky as authored");
+                TwoDCameraSky.Unregister(twoD);
+                Assert.That(TwoDCameraSky.FadeFor(twoD), Is.EqualTo(0f), "unregistered, it is an ordinary camera again");
+            }
+            finally
+            {
+                TwoDCameraSky.Unregister(twoD);
+                Object.DestroyImmediate(twoD.gameObject);
+                Object.DestroyImmediate(main.gameObject);
+            }
         }
     }
 }

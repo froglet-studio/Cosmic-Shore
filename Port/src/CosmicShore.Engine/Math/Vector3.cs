@@ -108,6 +108,30 @@ namespace CosmicShore.Engine
             return (a.normalized * MathF.Cos(theta) + relative * MathF.Sin(theta)) * magLerp;
         }
 
+        /// <summary>Unity's Vector3.RotateTowards: turn <paramref name="current"/> toward <paramref name="target"/> by at most
+        /// <paramref name="maxRadiansDelta"/> radians, and move its length toward the target's by at most
+        /// <paramref name="maxMagnitudeDelta"/>. A negative angle turns away; opposite vectors turn about any perpendicular.</summary>
+        public static Vector3 RotateTowards(Vector3 current, Vector3 target, float maxRadiansDelta, float maxMagnitudeDelta)
+        {
+            float lenA = current.magnitude, lenB = target.magnitude;
+            if (lenA < 1e-6f || lenB < 1e-6f) return MoveTowards(current, target, maxMagnitudeDelta);
+            Vector3 a = current / lenA, b = target / lenB;
+            float dot = Mathf.Clamp(Dot(a, b), -1f, 1f);
+            float angle = MathF.Acos(dot);
+            float len = Mathf.MoveTowards(lenA, lenB, maxMagnitudeDelta);
+            if (angle < 1e-6f) return b * len;
+            float turn = MathF.Min(angle, maxRadiansDelta);
+            Vector3 axis = Cross(a, b);
+            if (axis.sqrMagnitude < 1e-12f)   // opposite: any perpendicular
+            {
+                axis = Cross(a, MathF.Abs(a.x) < 0.9f ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 1f, 0f));
+            }
+            axis = axis.normalized;
+            Vector3 perp = Cross(axis, a);    // in the plane of a and b, toward b
+            Vector3 dir = a * MathF.Cos(turn) + perp * MathF.Sin(turn);
+            return dir.normalized * len;
+        }
+
         public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
             Vector3 toVector = target - current;
