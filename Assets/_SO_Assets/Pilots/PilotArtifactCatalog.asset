@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 846d36b797f14c90987103291b242356, type: 3}
+  m_Name: PilotArtifactCatalog
+  m_EditorClassIdentifier:
+  pilots:
+  - {fileID: 11400000, guid: e5b3bdb9412c8cf752e9f76a6b4fbb04, type: 2}
+  - {fileID: 11400000, guid: 92bcae015aeba07825aa80b3febd91c6, type: 2}
+  - {fileID: 11400000, guid: 68a84aedc1337399eac1665042900534, type: 2}
+  - {fileID: 11400000, guid: 76e6d77f8adaeebed0ad7f79eab6c4f8, type: 2}
+  - {fileID: 11400000, guid: dd00a3a48137fdf4c1bdc477756e4643, type: 2}
+  - {fileID: 11400000, guid: 14f9aeea4d36f7c50ab54acf45cc572e, type: 2}
+  - {fileID: 11400000, guid: 3acfd50a7e43f2fc8d9221c4adc0888a, type: 2}
+  - {fileID: 11400000, guid: ed3fb9f7aedf8742100569516136548d, type: 2}
+  - {fileID: 11400000, guid: fb411c5f7fa72e36dbe47ecd83fc2ac7, type: 2}
+  artifacts: []

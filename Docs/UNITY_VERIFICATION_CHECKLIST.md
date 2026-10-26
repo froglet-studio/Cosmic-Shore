@@ -6493,6 +6493,49 @@ pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
 
 ---
 
+### 🔴 Pilots & artifacts slice 2: nine default pilots, vessel keywords, the catalog asset (`claude/modest-sagan-0ybcgo`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/PILOTS_AND_ARTIFACTS.md` §10.4): `Tools/Build/author_pilot_assets.py` wrote nine
+`Pilot_<Vessel>_Default.asset`, `PilotArtifactCatalog.asset`, and a `keywords` list on nine
+`SO_Class_*.asset`. Its `--check` is clean and was negative-controlled on disk.
+
+**Not opened in Unity.** Checked against the compiled schema with `check_generated_assets.py`.
+
+**Verify in editor:**
+1. Test Runner, EditMode: `PilotCatalogAssetTests` passes (3 tests).
+2. Select `Assets/_SO_Assets/Pilots/PilotArtifactCatalog.asset`: nine pilots listed, none Missing.
+3. Select `Pilot_Manta_Default`: Requirement shows Vessel = Manta, Is Default ticked.
+4. Select `SO_Class_Squirrel`: Keywords shows Base Prism Production, Boost, Blade, Crystal Blast,
+   Attach. Re-save it and confirm `git diff` shows no change beyond formatting.
+
+---
+
+### 🔴 Pilots & artifacts slice 1: keywords, pilot/artifact SOs, catalog, saved squads (`claude/modest-sagan-0ybcgo`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (design: `Docs/PILOTS_AND_ARTIFACTS.md` §10): `VesselKeyword`, `VesselRequirement`,
+`ElementalBoost`, `SquadSlot` / `SavedSquad` / `SquadBook` in `CosmicShore.Data`; `PilotSO`,
+`ArtifactSO` and `PilotArtifactCatalogSO` under `ScriptableObjects/PilotsAndArtifacts/`; a
+`Keywords` list on `SO_Vessel`; `SQUAD_DATA` reshaped into the squad book (schema 1). No asset is
+authored yet, so nothing in a scene reads any of it. Also: the legacy `SquadSystem.Init` no longer
+builds a squad from null captain defaults, which on an install with no `squad.data` threw from
+`PortSquadView.Start` on every Menu_Main load (found by reading, not observed).
+
+**Not opened in Unity** (no editor or `unity` CLI in the session). Real-reference compile
+(`Tools/Build/unity_refcompile`): 0 project errors in the player and editor configs, gate
+negative-controlled on a runtime file and both test files. The 26 shipped edit-mode tests were run
+headless (NUnit, real source, engine stand-ins) and pass; two planted logic mutations failed 4 of them.
+
+**Verify in editor:**
+1. Test Runner, EditMode: `SquadBookTests` and `PilotArtifactCatalogTests` pass (26 tests).
+2. Create ▸ ScriptableObjects ▸ Pilots ▸ Pilot, Artifact, and Pilot and Artifact Catalog each make an
+   asset; the Pilot's Requirement shows Vessel (defaults to Any) and a Keywords list.
+3. Open any `SO_Class_*.asset`: a "Pilots & Artifacts" header with an empty Keywords list sits above
+   Gameplay Parameters, and the asset is not dirtied on open.
+4. Delete `squad.data` from `Application.persistentDataPath`, enter Play from Menu_Main: no
+   NullReferenceException from `Squad..ctor` / `PortSquadView.Start` in the console.
+
+---
+
 ### 🔴 Store readiness: production iOS id, Android API 36 + ARM64, Unity IAP removed, iOS export-compliance plist (`claude/serene-edison-lfv24f`, 2026-10-08)
 
 Step 1 and the store settings of `Docs/PLATFORM_UNIFICATION.md` (§3.9). The console walkthrough is
