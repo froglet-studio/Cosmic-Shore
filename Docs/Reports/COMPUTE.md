@@ -41,6 +41,8 @@ run. Tooling, so changes go through Shombith (CLAUDE.md).
 
 ## 4. Open items, and what is asked of whom
 
+**Handed to Shombith entirely (Garrett, 2026-10-26).** His starting point: `Docs/Compute/HANDOFF.md`.
+
 - **Shombith (tooling):** review `Tools/Compute` and the five new skills before the merge; decide whether the daily
   scout sweep may keep pushing `Docs/Compute/**` to its own branch, `compute-queue`.
 - **Yash (Regatta AI):** the stage-1 results are proposals for you; the plan's decision 1 (what spread counts as level).

@@ -6,7 +6,7 @@ into, and the neural cellular automata that grow them). Both are the same shape:
 **loss function** that says how good a point in it is. Froglet Compute turns that shape into a queue that every
 collaborator's computer works through whenever its person is away.
 
-Asked for by Garrett, 2026-10-26: "a skill that any contributor can reference that will retrieve the highest priority
+**Owner: Shombith** (tooling; Garrett handed it to him on 2026-10-26 - start at `HANDOFF.md`). Asked for by Garrett, 2026-10-26: "a skill that any contributor can reference that will retrieve the highest priority
 compute tasks and allow contributors to set and forget on their hardware", that "suggests useful spaces to explore if
 there is nothing in the backlog", and that keeps finding new opportunities. Skills: `/compute` (join, run, read the
 board), `/compute-job` (define a space and a loss), `/compute-scout` (find what to search next), `/regatta-balance`
