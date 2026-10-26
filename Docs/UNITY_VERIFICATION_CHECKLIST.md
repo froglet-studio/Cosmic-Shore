@@ -15652,3 +15652,12 @@ of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in chan
 1. Release, Arcade > Thresher Time (or Regatta with Squirrels), play past the auto-capture.
 2. In the capture: no `PoolMiss.Squirrel Prism` row (was 1.71 ms/frame in Thresher Time), `PoolRefill.Squirrel Prism`
    present; trails look the same.
+
+## Tandava: the vessel picker from the Voyage window (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: refcompile (player; editor config's 3 errors are bleeding-edge's,
+none in changed files), the new edit-mode test compiles (`ArenaHullStripTests.AnArenaRulesCardIsHandled_EvenOffEveryRoster`).
+- [ ] Voyage > Tandava > SET SAIL opens the arena launch panel with the hull strip and arrows; Squirrel, Sparrow and Rhino
+      can each be picked and flown.
+- [ ] The Arena screen's four cards still open the same panel; arcade cards still open the arcade panel.
+- [ ] `ArenaHullStripTests` passes in the Test Runner.

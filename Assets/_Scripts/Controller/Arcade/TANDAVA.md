@@ -9,7 +9,7 @@ player and editor), a Roslyn type-check of the swarm glue, and the generators. Q
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` (§ Tandava; `/verify-unity` could not run: no Unity editor or `unity` CLI in the
 authoring session). `QA-TANDAVA-1..8` describe the first design and are superseded.
 
-**A voyage (Rev 13, 2026-10-25, Shombith: "add it as a unlocked voyage game"):** `VOYAGE = True` in the generator puts the card back on the master roster (`OrganicRematchGames`) while it stays in `_Archive` and off every grid; the Voyage window (`author_menu_mission.py`, `VoyageView`) is where players launch it. The paragraph below describes the state before that.
+**A voyage (Rev 13, 2026-10-25, Shombith: "add it as a unlocked voyage game"):** `VOYAGE = True` in the generator puts the card back on the master roster (`OrganicRematchGames`) while it stays in `_Archive` and off every grid; the Voyage window (`author_menu_mission.py`, `VoyageView`) is where players launch it. Set sail opens the arena launch panel and its hull picker: `ArenaLaunchPanel.Handles` takes any `ArenaRules` card as well as the Arena roster's (2026-10-26 - routed by the roster alone, the voyage fell to the arcade's one-hull panel and its pilots could not change vessel). The paragraph below describes the state before that.
 
 **Unlisted (2026-10-25): the mode is kept but shows up NOWHERE in the UI** - not on the Arena, Arcade, Mission or
 Toybox screens and not a rematch pick (the prompter: "keep Tandava as a gamemode but don't commit it to arena, arcade,

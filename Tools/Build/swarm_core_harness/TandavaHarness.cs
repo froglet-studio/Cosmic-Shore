@@ -1141,6 +1141,29 @@ static class TandavaHarness
                 Check(swing >= 0.5f * MathF.Abs(struck - charged), $"{key}: the live strike swings {swing:F0} u (at least half the plans' {MathF.Abs(struck - charged):F0})");
             }
 
+        // ── T40 (a measurement, no assertion yet): an assault from the hatch - culling R members a second from t = 0 and
+        // never letting up. It hatches with an empty stomach, so nothing it loses before its first meal regrows; a Rhino's
+        // sword (one slice per plain member, a 30-120 u blade) culls at about the 20/s row (Shombith, 2026-10-26: "the rhino
+        // killed the whole form under 20 seconds").
+        Console.WriteLine("T40 assault from the hatch (measured)");
+        foreach (float rate in new[] { 10f, 20f, 40f })
+        {
+            var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 71);
+            float owed = 0f;
+            RunFor(s, RunCap, x =>
+            {
+                owed += rate / TickHz;
+                int n = (int)owed;
+                if (n <= 0) return;
+                owed -= n;
+                int k = Cut(x.C, n, x.C.BX);
+                x.Lost += k;
+            });
+            var d = s.D;
+            Console.WriteLine($"    {rate:F0}/s: {d.Outcome} at {d.Clock:F1} s as the {d.Form.Name}; alive {Active(s.C)} of {d.Form.PlanCount}; " +
+                              $"{s.Meals} meals; stomach {s.C.Stomach.Sum():F0}; {Timeline(s)}");
+        }
+
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
     }
