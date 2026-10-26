@@ -20,6 +20,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1, (int)AIDifficulty.Easy);
             Assert.AreEqual(2, (int)AIDifficulty.Medium);
             Assert.AreEqual(3, (int)AIDifficulty.Hard);
+            Assert.AreEqual(4, (int)AIDifficulty.Legendary);
         }
 
         [Test]
@@ -34,13 +35,14 @@ namespace CosmicShore.Tests
             Assert.AreEqual(AIDifficulty.Easy, AIDifficultyRules.Resolve(AIDifficulty.Easy));
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(AIDifficulty.Medium));
             Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Resolve(AIDifficulty.Hard));
+            Assert.AreEqual(AIDifficulty.Legendary, AIDifficultyRules.Resolve(AIDifficulty.Legendary));
         }
 
         [Test]
         public void Resolve_TurnsAnUnwrittenOrUnknownValueIntoTheDefault()
         {
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(0), "unwritten");
-            Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(4), "a member a later build added");
+            Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(5), "a member a later build added");
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(-1), "garbage");
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(default(AIDifficulty)));
         }
@@ -48,7 +50,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Resolve_RoundTripsTheReplicatedInt()
         {
-            foreach (var d in new[] { AIDifficulty.Easy, AIDifficulty.Medium, AIDifficulty.Hard })
+            foreach (var d in new[] { AIDifficulty.Easy, AIDifficulty.Medium, AIDifficulty.Hard, AIDifficulty.Legendary })
                 Assert.AreEqual(d, AIDifficultyRules.Resolve((int)d));
         }
 
@@ -92,7 +94,9 @@ namespace CosmicShore.Tests
         {
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Step(AIDifficulty.Easy, +1));
             Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Step(AIDifficulty.Medium, +1));
-            Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Step(AIDifficulty.Hard, +1));
+            Assert.AreEqual(AIDifficulty.Legendary, AIDifficultyRules.Step(AIDifficulty.Hard, +1));
+            Assert.AreEqual(AIDifficulty.Legendary, AIDifficultyRules.Step(AIDifficulty.Legendary, +1));
+            Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Step(AIDifficulty.Legendary, -1));
             Assert.AreEqual(AIDifficulty.Easy, AIDifficultyRules.Step(AIDifficulty.Medium, -1));
             Assert.AreEqual(AIDifficulty.Easy, AIDifficultyRules.Step(AIDifficulty.Easy, -1));
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Step(AIDifficulty.Medium, 0));

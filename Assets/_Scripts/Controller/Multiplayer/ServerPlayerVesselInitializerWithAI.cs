@@ -640,8 +640,8 @@ namespace CosmicShore.Gameplay
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
 
             // The lobby AI difficulty, on the modes whose AI is this autopilot (the Arena's Astro
-            // League, Brood Rush and Broadside): Easy and Medium fly on a belief with the Skim Race's
-            // mistakes (late notice, a misjudged target), Hard on the truth. Every other mode clears
+            // League, Brood Rush and Broadside): Easy, Medium and Hard fly on a belief with the Skim Race's
+            // mistakes (late notice, a misjudged target), Legendary on the truth. Every other mode clears
             // it, so a pilot that changes modes or hands never carries a stale one.
             var level = AIDifficultyRules.UsesPilotBelief(gameData.GameMode)
                 ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
