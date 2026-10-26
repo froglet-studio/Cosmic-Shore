@@ -358,9 +358,18 @@ PARTS = ()
 TAB_ROLE, TAB_PAD, TAB_GAP = "BodySmall", 12, 18
 SIDE = 40                                   # the screen's side margins
 LIST_W = 230                                # the vessel list, on the left
-DOSSIER_W, DOSSIER_H, DOSSIER_TOP = 710, 890, 150   # author_ui_kit_sprites.CRADLE_W / _H: the open cradle's fill
+# Section 83 (Shombith, 2026-10-26: "in the hangar we can reduce the size of each component it looks too big in the
+# game"): everything under the top bar is laid out in a larger space and drawn at CONTENT_SCALE, so every component is
+# smaller by the same amount at any aspect (the canvas matches height, so the space is (1080 - TOP_BAR) / scale tall).
+# Every top offset below is measured from the content's top, just under the top bar.
+CONTENT_SCALE, TOP_BAR = 0.88, 84
+CONTENT_H = round((1080 - TOP_BAR) / CONTENT_SCALE)
+ORB_TOP = 44 + 92 + 14          # author_menu_arcade.ORB_Y + ORB_SIZE, plus air: the friends orb, bottom left (screen px)
+LIST_BOTTOM = ORB_TOP / CONTENT_SCALE    # the vessel list stops above the orb (content units)
+DOSSIER_W, DOSSIER_TOP = 710, 66
+DOSSIER_H = CONTENT_H - DOSSIER_TOP - 40    # author_ui_kit_sprites.CRADLE_W / _H: the open cradle's fill
 CENTRE_L, CENTRE_R = SIDE + LIST_W + 44, SIDE + DOSSIER_W + 30   # section 82: the list header and the kicker apart
-HEADER_TOP, CENTRE_TOP, BOTTOM = 100, 248, 40
+HEADER_TOP, CENTRE_TOP, BOTTOM = 16, 164, 40
 PAD = 30                                    # the dossier's content inset
 PAD_R = 60                                  # a page's right inset: clears the right side leaning in to the floor
 PAGE_TOP_PARTS, PAGE_TOP, PAGE_BOTTOM = 84, 84, 30
@@ -513,7 +522,8 @@ def abilities_page(panel):
         k = f"Tabs/Abilities/{name}"
         # Information, not buttons (section 66): the AI demo plays each ability; nothing the player presses does.
         # Section 82: a little smaller all through (100 tall, was 112).
-        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, ABILITY_ROW_H), (0.5, 1)), ABILITY_ROW_H, interactive=False)
+        # Section 83: a press (click, tap, A) plays this ability on the stage - and only a press.
+        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, ABILITY_ROW_H), (0.5, 1)), ABILITY_ROW_H)
         # Rev 24: the element as the HUD's own flower, at the level the player bought on this vessel.
         element_flower(row, f"{k}/Flower", "Flower", TLr(12, 16, 68, 68), name)
         halo(row, f"{k}/Halo", TLr(80, 4, 92, 92), round(0.25 * n, 2))
@@ -553,7 +563,6 @@ def abilities_page(panel):
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
                       "  openSlotName: Open slot\n  openSlotLine: Not designed yet.\n  passiveWord: Passive\n  glowSeconds: 0.9\n"
                       "  kindOverrides: []\n"
-                      "  demoStepSeconds: 2.4\n  demoLeadSeconds: 0.8\n"
                       "  keyPressSeconds: 0.35\n  keyPressScale: 0.84\n")
     page.add("logic", 114, body)
     return page
@@ -987,7 +996,11 @@ def build_view(row_guid):
     sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_WINDOW_MAT))
 
     # ---- the header: the vessel on OVERVIEW, the pilot on PILOTS, the slot on ARTIFACTS (HangarTabsView writes it) ----
-    header = root.child(N("Header", "Header", R((0, 1), (1, 1), ((CENTRE_L - CENTRE_R) / 2, -HEADER_TOP),
+    frame = root.child(N("Frame", "Frame", R((0, 0), (1, 1), (0, -TOP_BAR / 2), (0, -TOP_BAR))))
+    k = 0.5 / CONTENT_SCALE
+    content = frame.child(N("Frame/Content", "Content", R((0.5 - k, 1 - 1 / CONTENT_SCALE), (0.5 + k, 1), (0, 0), (0, 0), (0.5, 1))))
+    content.scale = CONTENT_SCALE
+    header = content.child(N("Header", "Header", R((0, 1), (1, 1), ((CENTRE_L - CENTRE_R) / 2, -HEADER_TOP),
                                                 (-(CENTRE_L + CENTRE_R), CENTRE_TOP - HEADER_TOP - 10), (0.5, 1))))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     # A screen, not a modal: ScreenSwitcher replays these on every enter (KitEntrance.ReplayUnder).
@@ -999,17 +1012,18 @@ def build_view(row_guid):
           "Get in your flow and stay there.", "Body", "NeutralLightest", valign="top", wrap=True)
     # Section 82 ("Crystals is looking too clamped up"): clear of the top bar, the word and the pill apart, the pill sized
     # for the balance it shows (the kit pill's own padding, author_ui_kit_prefabs.build_currency_pill).
-    bal = root.child(N("Header/Balance", "Balance", R((1, 1), None, (-SIDE, -100), (220, 40), (1, 1))))
+    bal = content.child(N("Header/Balance", "Balance", R((1, 1), None, (-SIDE, -16), (220, 40), (1, 1))))
     bal.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 5, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
     label(bal.child(N("Header/Balance/Label", "Label", R(size=(K.label_width("CRYSTALS", "Label"), K.line_height("Label"))))),
           "CRYSTALS", "Label", "NeutralLightest")
     bal.children.append(pill_instance("HeaderPill", "CrystalBalance"))
 
     # ---- three zones over the whole screen, each placed on its own anchors ----
-    body = root.child(N("Body", "Body", STRETCH))
+    body = content.child(N("Body", "Body", STRETCH))
     body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
 
-    lz = body.child(N("List", "VesselList", R((0, 0), (0, 1), (SIDE, -HEADER_TOP), (LIST_W, -(HEADER_TOP + BOTTOM)), (0, 1))))
+    # Section 83: the list ends above the friends orb (bottom left, outside this scaled content).
+    lz = body.child(N("List", "VesselList", R((0, 0), (0, 1), (SIDE, -HEADER_TOP), (LIST_W, -(HEADER_TOP + LIST_BOTTOM)), (0, 1))))
     lh = lz.child(N("List/Header", "Header", R((0, 1), (1, 1), (0, 0), (-10, 18), (0.5, 1))))
     label(lh.child(N("List/Header/Label", "Label", STRETCH)), "VESSELS", "Label", "TextLight")
     label(lh.child(N("List/Header/Count", "OwnedCount", STRETCH)), "1 / 11 owned", "Label", "NeutralLightest", align="right")
@@ -1461,18 +1475,22 @@ def validate_prefabs(files, guids):
     _, abil = doc_of(view, hv("Tabs/Abilities#logic"))
     assert abil and [int(x) for x in re.findall(r"  - element: (\d+)", abil)] == [i for _, i in ELEMENTS], \
         "the Abilities rows must be Charge, Mass, Space, Time"
-    # The AI demo (2026-10-19): the page plays the stage itself, so it carries the demo timings and nothing of TRY
-    # survives - no forward to a preview, no window over the stage, no hint, no bare-arena asset on disk.
-    for field in ("demoStepSeconds", "demoLeadSeconds", "keyPressSeconds", "keyPressScale"):
-        assert f"\n  {field}: " in abil, f"the Abilities page has no AI demo field {field}"
-    # Section 66: the ability rows are information - out of pad navigation, blocking no raycasts, no press sound.
+    # Section 83: a press plays an ability and nothing plays on its own - no AI demo timings, and nothing of TRY
+    # survives (no forward to a preview, no window over the stage, no hint, no bare-arena asset on disk).
+    for field in ("keyPressSeconds", "keyPressScale"):
+        assert f"\n  {field}: " in abil, f"the Abilities page has no press field {field}"
+    assert "demoStepSeconds" not in abil, "the Abilities page plays on its own again (the AI demo is retired, section 83)"
     for name, _ in ELEMENTS:
         k = f"Tabs/Abilities/{name}"
         _, btn = doc_of(view, hv(f"{k}#button"))
-        assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", btn), f"the {name} ability row is a pad stop (it is information)"
-        _, cg = doc_of(view, hv(f"{k}#cg"))
-        assert cg and "  m_BlocksRaycasts: 0\n" in cg, f"the {name} ability row takes clicks (it is information)"
-        assert not doc_of(view, hv(f"{k}#audio"))[1], f"the {name} ability row still has a press sound"
+        assert re.search(r"  m_Navigation:\n    m_Mode: 3\n", btn), f"the {name} ability row is not a pad stop (A plays it)"
+        assert not doc_of(view, hv(f"{k}#cg"))[1], f"the {name} ability row blocks its clicks"
+        assert doc_of(view, hv(f"{k}#audio"))[1], f"the {name} ability row has no press sound"
+    # Section 83: one scaled content under the top bar, and the list clear of the friends orb.
+    _, content_rt = doc_of(view, hv("Frame/Content#rt"))
+    assert f"m_LocalScale: {{x: {K.f32(CONTENT_SCALE)}, y: {K.f32(CONTENT_SCALE)}, z: 1}}" in content_rt, \
+        "the Hangar's content is not drawn at its scale"
+    assert LIST_BOTTOM * CONTENT_SCALE >= ORB_TOP - 1, "the vessel list runs under the friends orb"
     assert "tryPreview" not in abil, "the Abilities page still forwards to TRY"
     for gone in ("TryButton", "TryPreview", "TryHint", "TryLine"):
         assert f"m_Name: {gone}\n" not in view, f"retired TRY node {gone} is back in HangarView"
@@ -1595,8 +1613,11 @@ def self_test(current, files, guids):
     plants = {
         "the screen's entrances stripped": view_plant(M.strip_entrances),
         "the Hangar without its sea": view_plant(lambda t: t.replace(M.SEA_WINDOW_MAT, "0" * 32)),
-        "an ability row takes clicks again": view_plant(lambda t: T.in_doc(
-            t, str(K.FileIds("HangarView")("Tabs/Abilities/Charge#cg")), "  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n")),
+        "an ability row out of pad navigation again": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("Tabs/Abilities/Charge#button")), "    m_Mode: 3\n", "    m_Mode: 0\n")),
+        "the Hangar drawn at full size": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("Frame/Content#rt")), f"m_LocalScale: {{x: {K.f32(CONTENT_SCALE)}, y: {K.f32(CONTENT_SCALE)}, z: 1}}",
+            "m_LocalScale: {x: 1, y: 1, z: 1}")),
         "detail field swapped onto the wrong kind": view_plant(lambda t: t.replace(
             f"chipLabel: {{fileID:", f"chipLabel: {{fileID: {name_ref}}}\n  chipLabelX: {{fileID:", 1)),
         "detail field unwired": view_plant(lambda t: t.replace(
@@ -1615,7 +1636,7 @@ def self_test(current, files, guids):
         "an ability name starting left of its row": view_plant(lambda t: re.sub(
             r"(m_AnchorMin: \{x: 0, y: 1\}\n  m_AnchorMax: \{x: 1, y: 1\}\n  m_AnchoredPosition: \{x: )" + str(ABILITY_TEXT_X)
             + r"(, y: -14\})", r"\g<1>-38\2", t, count=1)),
-        "the AI demo losing its step time": view_plant(lambda t: t.replace("\n  demoStepSeconds: 2.4\n", "\n", 1)),
+        "the AI demo back": view_plant(lambda t: t.replace("\n  keyPressSeconds:", "\n  demoStepSeconds: 2.4\n  keyPressSeconds:", 1)),
         "TRY's window back over the stage": view_plant(lambda t: t.replace("m_Name: FallbackIcon\n", "m_Name: TryPreview\n", 1)),
         "the stage not reaching its effects": view_plant(lambda t: re.sub(
             r"(\n  fx: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),

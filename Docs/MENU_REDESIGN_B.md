@@ -3576,3 +3576,39 @@ button's rect, the strip's arrows back to self-sizing kit buttons, CHANGE unwire
 stage that cannot zoom in, the stage's line unwired); the reference compile; offline renders of the configure cards and
 the Hangar (no text on an image, nothing past its box).
 
+## 83. Hangar abilities on a press, the Hangar drawn smaller, the list clear of the friends orb, readable controls, CODEX in the top bar (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "Abilities when I click them then only the vessel should perform. Again I say in the hangar we can
+reduce the size of each component it looks too big in the game"; "See at bottom left it overlaps the friends icon";
+"texts for controls are tooooo small"; "Change the order in the top. It should be Codex (locked like port invent an icon
+it will be a beastiary or like pokedex for showing elements, ethirions and ecology), Hangar, Home, Ark and then Port
+(Locked)"; "According to the order the slide menu should work too".
+
+**Hangar abilities** (`HangarAbilitiesPage`, `author_menu_hangar.py`): each ability row is a button again - a click, a
+tap or A on the focused row makes the vessel perform that ability. Nothing plays on its own: the AI demo of section 66
+(an ability every 2.4 s) is gone, with its two timings.
+
+**Hangar sizes**: everything under the top bar sits in one `Frame/Content` drawn at 0.88, laid out in a space 1 / 0.88
+as large (its anchors run past the frame, so after the scale it fills the frame exactly at any width; the menu canvas
+matches height, so the space is 1132 tall). Every component is 12 % smaller and the space between them grows to match.
+The top offsets are measured from under the top bar now (`TOP_BAR` 84). The dossier's cradle is drawn 1026 tall
+(`author_ui_kit_sprites.CRADLE_H`) so it still reaches the foot.
+
+**Friends orb**: the vessel list ends 150 px above the screen's foot (`ORB_TOP`: the orb's top plus air), so it never runs
+under the friends orb at the bottom left.
+
+**Configure controls** (`author_menu_configure.py`): two wide columns (were three), and a control's name runs up to its
+glyph (it gave up 96 px to a description that is never shown), so names read whole at Body size.
+
+**Top bar** (`author_menu_topnav.py`, `ScreenSwitcher`): CODEX, HANGAR, HOME, ARK, PORT. CODEX is new and locked like
+PORT (`MenuScreens.CODEX = 6`, `OnClickCodexNav`, in `disabledScreens`); its glyph is drawn by `author_nav_glyphs.py`
+(an open book, an ethirion's diamond on one page and a leaf on the other). The generator now writes the strip's
+`screens` order from the same list as the tabs, so LT / RT and the slide follow the bar; CODEX has no panel yet (its
+locked slot is never entered). The Codex's data already exists (`Docs/CODEX.md`, Garrett's); this is only its door.
+The tabs' objects are keyed by link, not place, so a reorder can never hand one tab's wiring to another.
+
+**How it was checked:** every menu generator's `--check` / `--self-test` (new plants: an ability row out of pad
+navigation, the Hangar drawn at full size, the AI demo back, the strip in the old order, CODEX not locked, CODEX
+without its lock view); `author_elemental_converter.py` now reads `disabledScreens` as a list (ARK open, PORT closed);
+the reference compile; offline renders (the scratch renderer learned uniform scale).
+

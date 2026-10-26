@@ -10,28 +10,25 @@ namespace CosmicShore.UI
     /// <summary>
     /// The Hangar's ABILITIES tab (rev 3): every ability of the selected vessel - its icon, name,
     /// element and what it does - with the control that fires it written as the player's own device
-    /// names it (LT / RT / A / B on a pad, LSHIFT / SPACE on a keyboard, nothing on touch). When the AI demo
-    /// plays an ability the 3D vessel on the stage PERFORMS it (in the neutral tint: elements carry no colour in the UI,
+    /// names it (LT / RT / A / B on a pad, LSHIFT / SPACE on a keyboard, nothing on touch). When the player presses a
+    /// row (click, tap or A) the 3D vessel on the stage PERFORMS that ability (in the neutral tint: elements carry no colour in the UI,
     /// Docs/UI_COLOR_RULES.md) and the row lights. The
     /// move is the ability's own kind (shot, boost, build, sense...), read from its name and description by
     /// <see cref="HangarAbilityKinds"/> (Docs/MENU_REDESIGN_B.md section 46).
     ///
-    /// <para><b>The rows are information</b> (section 66; Yash and Shombith, 2026-10-25: "my abilities don't need to
-    /// be selected or clicked ... They are just info"). Nothing the player presses plays one: not a click, a tap,
-    /// A, a pad control or a keyboard key, and the rows are not pad stops (author_menu_hangar.py takes them out of
-    /// navigation and out of raycasts). Every pad control is the menu's on this screen - LT / RT page the screens,
-    /// LB / RB step the tabs (section 63: polling RT fired Pulsefire while it paged to the Ark).</para>
+    /// <para><b>A press plays it, and nothing else does</b> (Docs/MENU_REDESIGN_B.md section 83; Shombith, 2026-10-26:
+    /// "Abilities when I click them then only the vessel should perform"). Each row is a button: a click, a tap or A on
+    /// the focused row performs that ability. Nothing plays on its own any more (the AI demo of section 66 is gone), and
+    /// the game's own controls still do nothing here - LT / RT page the screens, LB / RB step the tabs (section 63:
+    /// polling RT fired Pulsefire while it paged to the Ark).</para>
     ///
     /// <para>The rows read the shipped <see cref="ElementalAbilityMapSO"/> (name, description, input)
     /// and the vessel's own HUD icon art; the control name comes from the fleet's one glyph table
     /// (<see cref="ControlGlyphSetSO"/>) through <see cref="InputHintBindingMap"/>, the same path the
     /// in-match keycaps take, so the Hangar can never name a different button than the HUD does.</para>
     ///
-    /// <para><b>The AI demo</b> (the owner, 2026-10-19: "the preview should only be played by AI and it should be low
-    /// cost, very low cost ... just light weight to show the controls"). While the tab is on screen the AI presses each
-    /// ability's control in turn: the keycap sinks, the row lights and the stage's display copy performs the move. It
-    /// costs what the stage already costs - no world, no hull swap, no camera loan. It replaced TRY and the flown
-    /// showcase, which stood a whole Barren cell, swapped the menu hull and borrowed the gameplay camera.</para>
+    /// <para><b>Light weight</b> (the owner, 2026-10-19: "it should be low cost, very low cost"): a press sinks the keycap,
+    /// lights the row and the stage's display copy performs the move - no world, no hull swap, no camera loan.</para>
     /// </summary>
     public class HangarAbilitiesPage : MonoBehaviour, IHangarTabPage
     {
@@ -39,8 +36,7 @@ namespace CosmicShore.UI
         public class Row
         {
             public Element element = Element.Charge;
-            [Tooltip("The row's frame. A look only: out of pad navigation and raycasts, nothing presses it (section 66); " +
-                     "an open slot draws it disabled.")]
+            [Tooltip("The row's button: a press performs the ability on the stage (section 83); an open slot draws it disabled.")]
             public KitButton button;
             public Image icon;
             public TMP_Text nameText;
@@ -103,11 +99,7 @@ namespace CosmicShore.UI
                  "overrides that reading for one vessel's element.")]
         [SerializeField] private KindOverride[] kindOverrides = new KindOverride[0];
 
-        [Header("AI demo")]
-        [Tooltip("Seconds between the AI's presses: each ability's control in turn, and the vessel performs it.")]
-        [SerializeField, Min(0.5f)] private float demoStepSeconds = 2.4f;
-        [Tooltip("Seconds before the first press after the tab opens or the vessel changes.")]
-        [SerializeField, Min(0f)] private float demoLeadSeconds = 0.8f;
+        [Header("Press")]
         [Tooltip("Seconds a pressed keycap stays sunk.")]
         [SerializeField, Min(0.05f)] private float keyPressSeconds = 0.35f;
         [Tooltip("Keycap scale at the bottom of a press.")]
@@ -117,20 +109,31 @@ namespace CosmicShore.UI
         HangarVesselStage _stage;
         bool _active;
         bool _keyboard;
-        float _demoClock;
-        int _demoNext;
+        bool _wired;
 
         void Awake()
         {
             if (!glyphSet) glyphSet = Resources.Load<ControlGlyphSetSO>("ControlGlyphSet");
+            WireRows();
+        }
+
+        // Each row's button performs its own ability; wired once, the row read at press time.
+        void WireRows()
+        {
+            if (_wired) return;
+            _wired = true;
+            foreach (var row in rows)
+            {
+                if (row?.button == null) continue;
+                var r = row;
+                row.button.onClick.AddListener(() => { if (_active) Fire(r); });
+            }
         }
 
         public void SetVessel(SO_Vessel vessel, HangarVesselStage stage)
         {
             _vessel = vessel;
             _stage = stage;
-            _demoNext = 0;
-            _demoClock = demoLeadSeconds;
             var map = vessel ? ElementalAbilityMapSO.LoadFor(vessel.Class) : null;
             VesselHUDView hud = null;
             if (vessel && prefabs && prefabs.TryGetShipPrefab(vessel.Class, out Transform prefab, reportMissing: false))
@@ -178,11 +181,7 @@ namespace CosmicShore.UI
             RefreshKeycaps();
         }
 
-        public void SetActivePage(bool active)
-        {
-            if (active && !_active) _demoClock = demoLeadSeconds;
-            _active = active;
-        }
+        public void SetActivePage(bool active) => _active = active;
 
         // A level bought on UPGRADES shows on these flowers too.
         void OnEnable() => HangarUpgradeStore.LevelChanged += HandleUpgrade;
@@ -199,15 +198,6 @@ namespace CosmicShore.UI
         {
             if (HangarControlInput.TrackDevice() || _keyboard != HangarControlInput.LastWasKeyboard) RefreshKeycaps();
             float dt = Time.unscaledDeltaTime;
-            if (_active && _stage && _stage.Showing)
-            {
-                _demoClock -= dt;
-                if (_demoClock <= 0f)
-                {
-                    _demoClock = demoStepSeconds;
-                    DemoStep();
-                }
-            }
             for (int i = 0; i < rows.Length; i++)
             {
                 var row = rows[i];
@@ -228,27 +218,13 @@ namespace CosmicShore.UI
             }
         }
 
-        /// <summary>The AI's press: the next ability this vessel has, round and round.</summary>
-        void DemoStep()
-        {
-            for (int n = 0; n < rows.Length; n++)
-            {
-                int i = (_demoNext + n) % rows.Length;
-                var row = rows[i];
-                if (row == null || row.open) continue;
-                _demoNext = i + 1;
-                Fire(row);
-                return;
-            }
-        }
-
         void Fire(Row row)
         {
             if (row == null || row.open || (row.button && !row.button.interactable)) return;
             row.lit = 1f;
             row.pressed = 1f;
             if (row.halo) row.halo.Flash();
-            if (_stage) _stage.Perform(Colour(row.element), row.kind, holdTurn: false);
+            if (_stage) _stage.Perform(Colour(row.element), row.kind);
         }
 
         HangarAbilityKind KindOf(VesselClassType vessel, Element element, ElementalAbilityEntry entry)

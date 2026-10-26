@@ -380,13 +380,19 @@ def hover_text():
 ROW_W = 396
 
 
+CTRL_NAME_RIGHT = 44          # the control's glyph / key label (32 + air)
+CTRL_COLS = 2                 # the controls grid: two wide columns, so each ability's name reads whole
+
+
 def build_ability_row():
     root = N("root", "ConfigureAbilityRow", R(size=(ROW_W, 34)))
     root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     art_node(root, "Icon", "Icon", R((0, 0.5), None, (13, 0), (26, 26)), K.kit_sprite("kit_hex_fill"), preserve=True)
     petal = art_node(root, "Petal", "Petal", R((0, 0.5), None, (24, -8), (12, 12)), None, preserve=True)
     petal.active = False
-    label_e(root.child(N("Name", "Name", R((0, 0.5), (1, 0.5), ((36 - 96) / 2, 0), (-(36 + 96), 22)))),
+    # Section 83 (Shombith, 2026-10-26: "texts for controls are tooooo small"): the name takes the cell up to the
+    # control's glyph (it lost 96 to a description that is never shown), so it reads whole instead of "Skyburst ...".
+    label_e(root.child(N("Name", "Name", R((0, 0.5), (1, 0.5), ((36 - CTRL_NAME_RIGHT) / 2, 0), (-(36 + CTRL_NAME_RIGHT), 22)))),
             "Ability", "Body", "TextLight", align="left")
     desc = label_e(root.child(N("Description", "Description", R((1, 0.5), None, (-44, 0), (140, 18), (1, 0.5)))),
                    "", "BodySmall", "NeutralLightest", align="right")
@@ -1143,7 +1149,7 @@ G_KINDS = ("arcade", "arena")
 # can make the detail view bigger also see texts are overlapping with images"): the preview is 1100 x 620 again and the
 # right column 680; the controls are one compact panel and the card takes the rest of the column.
 G_SET_X, G_SET_W = SET_X, SET_W
-G_CTRL_H = 144                                       # the hull's name and two rows of three controls
+G_CTRL_H = 144                                       # the hull's name and two rows of two controls (section 83)
 G_GAP = 14
 G_START_H = 80
 G_START_TOP = BOTTOM - G_START_H
@@ -1544,7 +1550,9 @@ def g_column(chrome, kind):
     assert y - G_SEC_GAP + G_PAD_B == g_card_h(kind), f"{kind}: the card's sections and its height disagree"
     assert ped_h(kind) - WORDS_H - IMG_GAP - IMG_TOP >= 120, f"{kind}: the pedestals leave the portraits no room"
     ctrl = glass(chrome, "ControlsPanel", "ControlsPanel", TL(G_SET_X, TOP, G_SET_W, G_CTRL_H), 3)
-    controls(ctrl, TL(PAD, PAD, G_SET_W - 2 * PAD, G_CTRL_H - 2 * PAD), cols=3, inner_w=G_SET_W - 2 * PAD)
+    controls(ctrl, TL(PAD, PAD, G_SET_W - 2 * PAD, G_CTRL_H - 2 * PAD), cols=CTRL_COLS, inner_w=G_SET_W - 2 * PAD)
+    name_w = (G_SET_W - 2 * PAD - (CTRL_COLS - 1) * 28) // CTRL_COLS - 36 - CTRL_NAME_RIGHT
+    assert name_w >= K.label_width("Pulsefire Cannons", "Body"), f"a control's name has {name_w} px: it would be cut"
     assert (G_CTRL_H - 2 * PAD - 36) >= 2 * CTRL_CELL_H + 4, "the controls panel cannot show two rows"
     return cfg
 

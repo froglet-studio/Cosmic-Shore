@@ -339,13 +339,14 @@ def emit_node(ctx, node, parent_rt, out):
         child_rts.append(ctx.rt(ch.key) if isinstance(ch, Node) else ctx.fid(ch.key + "#stub"))
     r = node.rect
     deg = getattr(node, "rot", 0)     # a z rotation in degrees (an element flower's petals); none on nearly every node
+    sc = getattr(node, "scale", 1)    # a uniform scale (the Hangar's content, section 83); 1 on nearly every node
     children = ("  m_Children:\n" + "".join(f"  - {{fileID: {c}}}\n" for c in child_rts)
                 if child_rts else "  m_Children: []\n")
     out.append(f"--- !u!224 &{rt}\nRectTransform:\n  m_ObjectHideFlags: 0\n"
                "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
                f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {go}}}\n"
                f"  m_LocalRotation: {rot_z(deg) if deg else '{x: 0, y: 0, z: 0, w: 1}'}\n  m_LocalPosition: {{x: 0, y: 0, z: 0}}\n"
-               "  m_LocalScale: {x: 1, y: 1, z: 1}\n  m_ConstrainProportionsScale: 0\n"
+               f"  m_LocalScale: {{x: {f32(sc)}, y: {f32(sc)}, z: 1}}\n  m_ConstrainProportionsScale: 0\n"
                + children
                + f"  m_Father: {{fileID: {parent_rt}}}\n  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: {f32(deg)}}}\n"
                f"  m_AnchorMin: {v2(*r['amin'])}\n  m_AnchorMax: {v2(*r['amax'])}\n"

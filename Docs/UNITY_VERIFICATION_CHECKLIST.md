@@ -16110,6 +16110,17 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Hangar press-to-perform and scale, controls text, CODEX top bar (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 83.
+
+1. Hangar, ABILITIES. **Pass:** nothing plays on its own; clicking (or A on) a row makes the vessel perform it.
+2. Hangar at 16:9 and 16:10. **Pass:** everything reads smaller with more space; nothing clipped at the edges; the
+   dossier reaches near the foot; the vessel list ends above the friends orb.
+3. Open an Arcade card. **Pass:** the controls panel shows two columns with whole names ("Skyburst Rockets").
+4. Top bar. **Pass:** CODEX (locked, book glyph), HANGAR, HOME, ARK, PORT (locked); pressing CODEX says not open yet;
+   LT / RT step HANGAR - HOME - ARK in that order and skip CODEX and PORT; the slide matches the bar.
+
 ## Configure intensity and vessel strip, friends SPECTATE, Hangar free view and sizes (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline: reference compile, every menu generator's `--check` / `--self-test`,

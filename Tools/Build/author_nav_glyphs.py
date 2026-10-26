@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Author the top nav's five GLYPH sprites - the old Hangar / Ark / Home / Port / Profile icons
+Author the top nav's GLYPH sprites (five cropped from the old nav, plus the drawn CODEX) - the old Hangar / Ark / Home / Port / Profile icons
 without their baked-in words - so the style-B nav can sit each icon BESIDE its authored label.
 
 WHERE THEY COME FROM: the pre-redesign nav (Menu_Main before 99ef3ccd9) drew each tab as one
@@ -210,12 +210,57 @@ DefaultImporter:
 """
 
 
+def codex_alpha(size=70, ss=8):
+    """The CODEX glyph (Docs/MENU_REDESIGN_B.md section 83; Shombith, 2026-10-26: "Codex ... invent an icon it will be a
+    beastiary or like pokedex for showing elements, ethirions and ecology"): an open book, solid like the other tabs,
+    an ethirion's diamond cut out of the left page and a leaf (ecology) out of the right. Drawn, not cropped - the old
+    nav had no codex art."""
+    from PIL import ImageDraw
+    n = size * ss
+    im = Image.new("L", (n, n), 0)
+    d = ImageDraw.Draw(im)
+    u = n / 70.0
+    P = lambda pts: [(x * u, y * u) for x, y in pts]
+    # the two pages: each rises to its outer top corner, with a dip at the spine
+    d.polygon(P([(3, 16), (20, 12), (33, 17), (35, 19), (35, 60), (33, 58), (20, 54), (3, 58)]), fill=255)
+    d.polygon(P([(67, 16), (50, 12), (37, 17), (35, 19), (35, 60), (37, 58), (50, 54), (67, 58)]), fill=255)
+    # the spine: a thin gap between the pages, and the cover's lip under them
+    d.polygon(P([(34.2, 19), (35.8, 19), (35.8, 60), (34.2, 60)]), fill=0)
+    d.polygon(P([(3, 61), (20, 57.5), (35, 63), (50, 57.5), (67, 61), (67, 64), (50, 60.5), (35, 66), (20, 60.5), (3, 64)]), fill=255)
+    # the ethirion (a crystal's diamond) on the left page
+    d.polygon(P([(19, 23), (26, 34), (19, 46), (12, 34)]), fill=0)
+    # the leaf (ecology) on the right page, with its vein left solid
+    import math
+    (ax, ay), (bx, by), w = (42.5, 46), (59, 24), 7.0       # the leaf: pointed at both ends, along a diagonal
+    lx, ly = bx - ax, by - ay
+    ln = math.hypot(lx, ly)
+    nx, ny = -ly / ln, lx / ln
+    edge = lambda sgn: [(ax + lx * t + sgn * nx * w * math.sin(math.pi * t) ** 0.8,
+                         ay + ly * t + sgn * ny * w * math.sin(math.pi * t) ** 0.8) for t in [i / 24 for i in range(25)]]
+    d.polygon(P(edge(1) + edge(-1)[::-1]), fill=0)
+    d.line(P([(ax + lx * 0.12, ay + ly * 0.12), (ax + lx * 0.8, ay + ly * 0.8)]), fill=255, width=max(1, int(1.6 * u)))
+    a = np.asarray(im.resize((size, size), Image.LANCZOS))
+    return a
+
+
+def render_drawn(alpha):
+    side = alpha.shape[0] + PAD * 2
+    out = np.zeros((side, side), dtype=np.uint8)
+    out[PAD:PAD + alpha.shape[0], PAD:PAD + alpha.shape[1]] = alpha
+    rgba = np.empty((side, side, 4), dtype=np.uint8)
+    rgba[..., 0:3] = 255
+    rgba[..., 3] = out
+    return rgba
+
+
 def build_all():
     out = []
     for key, src in SOURCES:
         rgba = render(load_alpha(os.path.join(SRC_DIR, src)))
         name = f"nav_{key}"
         out.append((name, encode_png(rgba), META.format(guid=guid_for(name), sprite_id=guid_for(name + "/sprite"))))
+    rgba = render_drawn(codex_alpha())
+    out.append(("nav_codex", encode_png(rgba), META.format(guid=guid_for("nav_codex"), sprite_id=guid_for("nav_codex/sprite"))))
     return out
 
 
@@ -233,6 +278,9 @@ def self_test():
         g = render(alpha)
         if g.shape[0] != g.shape[1] or g[..., 3].max() == 0:
             failures.append(f"{key}: output is not a filled square")
+    codex = render_drawn(codex_alpha())
+    if codex.shape[:2] != (74, 74) or (codex[..., 3] > 128).mean() < 0.3:
+        failures.append("codex: the drawn glyph is not a solid 74 px tab glyph like the others")
     # negative control: a sprite with NO gap must be reported as having no word to cut away
     fake = np.zeros((40, 40), dtype=np.uint8)
     fake[2:38, 5:35] = 255
