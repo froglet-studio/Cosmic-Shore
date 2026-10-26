@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Sparrow's rocket learned from Yash's shots; Switchback's I3 drive from every intensity (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `SparrowAIBoostPolicy_Breakwater`'s "clear the way" rocket now fires from 138-354 u of a station
+(was 60-220) with the nose within 15.9 deg (was 4), learned from Yash's 12 rocket presses; `DolphinAIBoostPolicy_Switchback`
+(what I3 flies) relearned from the fastest race of each intensity (spend 0.92, was 0.96). Learner only otherwise:
+rocket presses, Breakwater's lead-in ring count, each intensity learned from its current course
+(`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.7, §6). No C# change.
+
+**Verified without the editor:** `learn_drives_from_flights.py --self-test` OK; `--check` OK for Switchback, Breakwater,
+Regatta, Bloomrush; Regatta's and Bloomrush's learned numbers identical before and after. NOT run in Unity.
+
+**Verify in editor** (the sweep reads the answers from the next races on its own):
+1. Breakwater as the Sparrow with AI Sparrows: an AI fires its rocket at a station from roughly 140-350 u out, nose
+   roughly on it, once per station, and threads the hole it made.
+2. Switchback I3 with AI Dolphins: the Third Eye drive readout says "spends at 92%".
+
+---
+
 ### 🔴 The AI Dolphin's Switchback drive, one per intensity (`Ys-bleeding-edge`, 2026-10-26, the AI learning sweep) — NOT EDITOR-VERIFIED
 
 **What landed:** `AIBoostPolicySO.ForMode(policy, mode, intensity)` loads `<policy>_<mode>_I<n>` before the mode's
