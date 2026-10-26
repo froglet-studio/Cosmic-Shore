@@ -117,7 +117,9 @@ namespace CosmicShore.UI
             if (label.enabled != on) label.enabled = on;
             if (!on) return;
             if (label.text != text) label.text = text;
-            label.alpha = Mathf.Clamp01(alpha);
+            var c = label.color;
+            c.a = Mathf.Clamp01(alpha);
+            label.color = c;
         }
 
         Image MakeImage(string name, Color color)
@@ -142,8 +144,6 @@ namespace CosmicShore.UI
             t.color = color;
             t.raycastTarget = false;
             t.textWrappingMode = TextWrappingModes.Normal;
-            t.outlineWidth = 0.12f;
-            t.outlineColor = new Color32(0, 0, 0, 160);
             return t;
         }
 

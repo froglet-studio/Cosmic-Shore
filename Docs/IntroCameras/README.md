@@ -1,6 +1,6 @@
 # Per-mode intro cameras
 
-**Status: built and compiled against real Unity references; not yet played in the editor.**
+**Status: built; compiles against real Unity references and in Amoebius; not yet played in the editor.**
 
 Artifact: https://claude.ai/artifact/Py9YqiPqdUZQsPfmNU7N1f (source: `intro-cam-lab.html` here). Shombith
 approved all 35 intros on 2026-10-26 and asked for them to be shuffled within families.
@@ -48,6 +48,7 @@ intro flies too close.
 ## What the artifact has that the game does not (yet)
 
 - Speed lines and the warp streaks: the game conveys speed with field of view only.
+- The caption outline: TMP outlines need a per-label material instance and Amoebius has no outline, so captions are plain white.
 - Mode-specific set pieces: Salvo's red target frames, Grizzly Charge's prism blast, Tapestry's painters,
   Bloomrush's fuses. These were stand-in world effects; the game shows the real arena instead.
 - Broadside's per-hull weapon captions (the words are per mode, not per cut).
