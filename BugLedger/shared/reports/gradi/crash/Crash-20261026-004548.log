@@ -1,0 +1,1339 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-26 00:45:48 (next editor launch after the abnormal exit)
+session:        20261026-001005649  (pid 34588, Unity 6000.3.17f1)
+started:        2026-10-26T00:10:05.650Z UTC
+last heartbeat: 2026-10-26T04:31:05.577Z UTC
+last state:     DomainReload
+main thread:    unresponsive for ~37s at the last heartbeat — likely a hang / freeze that was then killed
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261026-001005649
+started: 2026-10-26T00:10:05.650Z UTC
+unity:   6000.3.17f1
+pid:     34588
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[20:14:25.943] ---- entering play mode ----
+[20:14:29.528] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[20:14:30.240] ---- play mode running ----
+[20:14:37.746] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91bca1ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ff91bca5e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[20:14:37.749] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[20:14:37.750] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[20:14:37.752] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[20:14:39.269] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:44:20.378] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping instance never stops, so release() never frees it and one immortal voice leaks PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[20:50:02.977] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91bca1ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ff91bca5e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[20:50:02.978] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[20:50:02.979] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[20:50:02.980] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[21:06:36.111] [PlayMode] Error: [PrismOcclusion] could not measure a circumscribing radius for vessel 'Jacks(Clone)' — it has no MeshFilter/SkinnedMeshRenderer hull outside its skimmers. The occlusion corridor is sized from the vessel's own hull, so it has fallen back to PrismOcclusionConfig.fallbackVesselRadius (6). Give the vessel a renderable hull, or the corridor around it is a guess. Docs/PRISM_ANIMATION.md §4.7.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[21:11:14.344] ---- leaving play mode ----
+[21:11:21.224] ---- edit mode restored ----
+[22:26:53.650] ---- entering play mode ----
+[22:26:58.492] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[22:26:58.795] ---- play mode running ----
+[22:27:11.808] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91bca1ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ff91bca5e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[22:27:11.810] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:27:11.811] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:27:11.812] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:27:13.317] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:31:54.058] ---- leaving play mode ----
+[22:31:59.899] ---- edit mode restored ----
+[22:38:12.165] ---- entering play mode ----
+[22:38:16.700] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[22:38:16.965] ---- play mode running ----
+[22:38:27.921] [PlayMode] Exception: SessionException: request_rate_limited
+        Unity.Services.Multiplayer.LobbyHandler.CreateLobbyAsync (System.String lobbyName, System.Int32 maxPlayers, Unity.Services.Lobbies.CreateLobbyOptions options) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:364)
+        Unity.Services.Multiplayer.SessionManager.CreateAsync (Unity.Services.Multiplayer.SessionOptions sessionOptions) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionManager.cs:77)
+        Unity.Services.Multiplayer.WrappedMultiplayerService.CreateSessionAsync (Unity.Services.Multiplayer.SessionOptions sessionOptions) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/WrappedMultiplayerService.cs:63)
+        CosmicShore.Utility.UniTaskExtensions.AsMainThread[T] (System.Threading.Tasks.Task`1[TResult] task) (at Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:66)
+        CosmicShore.Utility.UniTaskExtensions.AsMainThread[T] (System.Threading.Tasks.Task`1[TResult] task) (at Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:67)
+        Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1[TResult].GetResult (System.Int16 token) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:244)
+        Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`2[TStateMachine,T].GetResult (System.Int16 token) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:342)
+        Cysharp.Threading.Tasks.UniTask`1+Awaiter[T].GetResult () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:657)
+        ...
+[22:38:38.170] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91bca1ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ff91bca5e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[22:38:38.171] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:38:38.172] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:38:38.173] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:38:39.590] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:40:47.232] ---- leaving play mode ----
+[22:40:52.410] ---- edit mode restored ----
+[22:50:26.822] ---- entering play mode ----
+[22:50:31.469] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[22:50:31.738] ---- play mode running ----
+[22:50:43.570] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91bca1ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ff91bca5e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[22:50:43.571] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:50:43.572] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:50:43.573] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[22:50:44.956] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:59:00.856] ---- leaving play mode ----
+[22:59:07.105] ---- edit mode restored ----
+[23:01:16.421] ---- entering play mode ----
+[23:01:20.295] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[23:01:20.566] ---- play mode running ----
+[23:01:31.490] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91bca1ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ff91bca5e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[23:01:31.491] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[23:01:31.492] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[23:01:31.493] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b655ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ff91bca1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ff91bca4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ff91bca2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[23:01:34.044] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:02:02.041] ---- leaving play mode ----
+[23:02:05.838] ---- edit mode restored ----
+[00:31:04.134] ---- domain reload begins (script compilation / play-mode transition) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<Mono.Net.Security.AsyncProtocolResult>:TrySetResult (Mono.Net.Security.AsyncProtocolResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Mono.Net.Security.AsyncProtocolResult>:SetResult (Mono.Net.Security.AsyncProtocolResult)
+Mono.Net.Security.AsyncProtocolRequest/<StartOperation>d__23:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>:TrySetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetResult ()
+Mono.Net.Security.AsyncProtocolRequest/<ProcessOperation>d__24:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Nullable`1<int>>:TrySetResult (System.Nullable`1<int>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Nullable`1<int>>:SetResult (System.Nullable`1<int>)
+Mono.Net.Security.AsyncProtocolRequest/<InnerRead>d__25:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)
+Mono.Net.Security.MobileAuthenticatedStream/<InnerRead>d__66:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Threading.Tasks.ValueTask`1/ValueTaskSourceAsTask/<>c<int>:<.cctor>b__4_0 (object)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:InvokeContinuation (System.Action`1<object>,object,bool)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:OnCompleted (System.Net.Sockets.SocketAsyncEventArgs)
+System.Net.Sockets.SocketAsyncEventArgs:Complete_internal ()
+System.Net.Sockets.Socket/<>c:<.cctor>b__367_10 (System.IAsyncResult)
+System.Net.Sockets.SocketAsyncResult/<>c:<Complete>b__27_0 (object)
+System.Threading.QueueUserWorkItemCallback:System.Threading.IThreadPoolWorkItem.ExecuteWorkItem ()
+System.Threading.ThreadPoolWorkQueue:Dispatch ()
+System.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()
+
+(Filename: ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs Line: 231)
+
+Analytics Dispatcher is already flushing.
+0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+0x00007ff91b47587f (Unity) DebugStringToFile
+0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000204ff5c7a0e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x00000200c68a9c9e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000200c68a990d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002050e557203 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000002050e556f96 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x00000206a2460a89 (Mono JIT Code) CosmicShore.Core.UgsAnalyticsSink:Flush () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs:120)
+0x00000206a24607ea (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:Flush () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:606)
+0x00000206a43ffefb (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:HandleAppQuitting () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:808)
+0x00000204057a6557 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000002050e4f0f72 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:70)
+0x00000206a239fefb (Mono JIT Code) CosmicShore.Core.ApplicationLifecycleManager:OnApplicationQuit () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs:85)
+0x0000020405853fd8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ff919b56c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff919a98984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff919a98a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff91bcffdd4 (Unity) scripting_method_invoke
+0x00007ff91bd06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff91bc16f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007ff91b675010 (Unity) GameObject::SendMessageAny
+0x00007ff91bb9bc42 (Unity) SendMessageToEveryone
+0x00007ff91bbcf65a (Unity) NotifyPlayerQuit
+0x00007ff91c53b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff91c53d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff91c53896c (Unity) Application::TickTimer
+0x00007ff91c319f7c (Unity) MainMessageLoop
+0x00007ff91c321a12 (Unity) UnityMain
+0x00007ff784de2f2a (Unity) __scrt_common_main_seh
+0x00007ff99cb87374 (KERNEL32) BaseThreadInitThunk
+0x00007ff99eb9cc91 (ntdll) RtlUserThreadStart
+
+Container Menu_Main (-2095819810) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+0x00007ff91b47587f (Unity) DebugStringToFile
+0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000200c68aafae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000200c68aab63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000200c68aa81b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000204ff5c7a0e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x00000200c68a9c9e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000200c68a990d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002050e557203 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000002050e556f96 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x00000206a24648ab (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:321)
+0x00000206a2464633 (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:109)
+0x00000204057a6557 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x00000206a2461a7b (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000002036c6c4445 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff919b56c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff919a98984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff919a98a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff91bcffdd4 (Unity) scripting_method_invoke
+0x00007ff91bd06c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff91bd02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff91b1dab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ff91bbcf689 (Unity) NotifyPlayerQuit
+0x00007ff91c53b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff91c53d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff91c53896c (Unity) Application::TickTimer
+0x00007ff91c319f7c (Unity) MainMessageLoop
+0x00007ff91c321a12 (Unity) UnityMain
+0x00007ff784de2f2a (Unity) __scrt_common_main_seh
+0x00007ff99cb87374 (KERNEL32) BaseThreadInitThunk
+0x00007ff99eb9cc91 (ntdll) RtlUserThreadStart
+
+Unloading 11 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            4.361 ms
+	Integration:            841.883 ms
+	Integration of assets:  0.004 ms
+	Thread Wait Time:       0.018 ms
+	Total Operation Time:   846.266 ms
+Unloading 1245 unused Assets / (16.5 MB). Loaded Objects now: 35727.
+Memory consumption went from 0.93 GB to 0.92 GB.
+Total: 430.777200 ms (FindLiveObjects: 1.944900 ms CreateObjectMapping: 1.649100 ms MarkObjects: 424.289800 ms  DeleteObjects: 2.892100 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Asset Pipeline Refresh (id=3d56bed1606426f44a0272271ff78109): Total: 0.023 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "Xyd1bTdF"... (expires: 2026-10-26T05:16:11Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+AssetDatabase: script compilation time: 0.023628s
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc - - 200 - application/grpc 9.9208ms
+Starting: C:\Unity\6000.3.17f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1300b0aEDbg.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/gradi/source/repos/Star-Writer2
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Current configuration matches the requested one, skipping
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc - - 200 - application/grpc 1.4801ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp.dll, with 152 defines and 454 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Entities.CodeGen.EntitiesILPostProcessors
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Mono.Cecil.Rocks, Version=0.11.5.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff\Mono.Cecil.Rocks.dll
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with C:\Unity\6000.3.17f1\Editor\Data\Managed\UnityEngine\UnityEngine.CoreModule.dll
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Collections, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with Library\Bee\artifacts\1300b0aEDbg.dag\Unity.Collections.dll
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Burst, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with Library\Bee\artifacts\1300b0aEDbg.dag\Unity.Burst.dll
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Cecil.Awesome, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null with Library\PackageCache\com.unity.entities@f6e02210e263\Unity.Entities.CodeGen\Unity.Cecil.Awesome.dll
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      Processing assembly Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp-Editor.dll, with 150 defines and 483 references
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Entities.CodeGen.EntitiesILPostProcessors
+  - EILPP : Assembly-CSharp : : 3618ms (~1087ms)
+    - EILPP : Assembly-CSharp : GetAllComponentTypes: 278ms 
+    - EILPP : Assembly-CSharp : Cloner: 1ms 
+    - EILPP : Assembly-CSharp : ComponentDataPP: 278ms 
+    - EILPP : Assembly-CSharp : StaticTypeRegistryPostProcessor: 288ms 
+    - EILPP : Assembly-CSharp : WriteAssembly: 1686ms 
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+  - EILPP : Assembly-CSharp-Editor : : 1004ms (~345ms)
+    - EILPP : Assembly-CSharp-Editor : ComponentDataPP: 175ms 
+    - EILPP : Assembly-CSharp-Editor : StaticTypeRegistryPostProcessor: 93ms 
+    - EILPP : Assembly-CSharp-Editor : WriteAssembly: 391ms 
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Jobs.CodeGen.JobsILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved UnityEditor.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with C:\Unity\6000.3.17f1\Editor\Data\Managed\UnityEngine\UnityEditor.CoreModule.dll
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Multiplayer.Tools.NetStats, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with Library\Bee\artifacts\1300b0aEDbg.dag\Unity.Multiplayer.Tools.NetStats.dll
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Netcode.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null with Library\Bee\artifacts\1300b0aEDbg.dag\Unity.Netcode.Runtime.dll
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Burst.Cecil.Rocks, Version=0.11.6.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library\PackageCache\com.unity.burst@6bb9aca3ef38\Unity.Burst.CodeGen\Unity.Burst.Cecil.Rocks.dll
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly application/grpc - - 200 - application/grpc 6661.7740ms
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+info: Unity.ILPP.Runner.PostProcessingPipeline[0]
+      running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/PostProcessAssembly'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/PostProcessAssembly application/grpc - - 200 - application/grpc 15846.7127ms
+ExitCode: 0 Duration: 33s
+[2266/3046  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[BUSY       6s] Csc Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp.dll (+2 others)
+[3038/3046 16s] Csc Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp.dll (+2 others)
+Assets\_Scripts\Controller\Arcade\Tandava\TandavaController.cs(888,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Arcade\Racing\GateRaceController.cs(665,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Arcade\TurnMonitors\NetworkJoustCollisionTurnMonitor.cs(154,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Arcade\HijackController.cs(305,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Arcade\HijackController.cs(317,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Arcade\MultiplayerDomainGamesController.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(472,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(890,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(341,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(270,22): warning CS0108: 'SwarmFauna.StomachVolume(int)' hides inherited member 'Fauna.StomachVolume'. Use the new keyword if hiding was intended.
+
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(285,21): warning CS0108: 'SwarmFauna.IsStarving' hides inherited member 'Fauna.IsStarving'. Use the new keyword if hiding was intended.
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(290,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(307,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(336,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(355,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(129,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(153,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(231,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(268,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(421,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(793,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(815,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(844,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(214,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(235,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(270,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(285,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Vessel\VesselController.cs(479,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Vessel\VesselController.cs(489,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\UI\Controller\GobyPistolHUDController.cs(165,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\Controller\JacksHUDController.cs(149,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\Controller\OrcaHUDController.cs(161,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\Controller\WrasseHUDController.cs(108,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\StarlingHUDView.cs(360,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\StarlingHUDView.cs(390,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(251,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1516,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+
+Assets\_Scripts\UI\View\AnglerHUDView.cs(124,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(245,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Skimmer Effects\VesselElementalDebuffBySkimmerEffectSO.cs(55,32): warning CS0414: The field 'VesselElementalDebuffBySkimmerEffectSO.debuffDuration' is assigned but its value is never used
+[3039/3046  4s] Csc Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp-Editor.dll (+2 others)
+[BUSY       8s] ILPostProcess Library/Bee/artifacts/1300b0aEDbg.dag/post-processed/Assembly-CSharp.dll (+pdb)
+[3040/3046  6s] ILPostProcess Library/Bee/artifacts/1300b0aEDbg.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp-Editor.dll, with 150 defines and 483 references
+
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[3041/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[3042/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+[3043/3046 15s] ILPostProcess Library/Bee/artifacts/1300b0aEDbg.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aEDbg.dag/Assembly-CSharp.dll, with 152 defines and 454 references
+
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[3044/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[3045/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (33.80 seconds), 9 items updated, 3046 evaluated
+Assets\_Scripts\Controller\Arcade\Tandava\TandavaController.cs(888,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\Racing\GateRaceController.cs(665,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\TurnMonitors\NetworkJoustCollisionTurnMonitor.cs(154,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(305,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(317,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerDomainGamesController.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(472,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(890,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(341,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(270,22): warning CS0108: 'SwarmFauna.StomachVolume(int)' hides inherited member 'Fauna.StomachVolume'. Use the new keyword if hiding was intended.
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(285,21): warning CS0108: 'SwarmFauna.IsStarving' hides inherited member 'Fauna.IsStarving'. Use the new keyword if hiding was intended.
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(290,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(307,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(336,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(355,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(129,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(153,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(231,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(268,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(421,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(793,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(815,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(844,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(214,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(235,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(270,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(285,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(479,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(489,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\Controller\GobyPistolHUDController.cs(165,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\JacksHUDController.cs(149,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\OrcaHUDController.cs(161,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\WrasseHUDController.cs(108,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(360,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(390,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(251,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1516,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+Assets\_Scripts\UI\View\AnglerHUDView.cs(124,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(245,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Skimmer Effects\VesselElementalDebuffBySkimmerEffectSO.cs(55,32): warning CS0414: The field 'VesselElementalDebuffBySkimmerEffectSO.debuffDuration' is assigned but its value is never used
+Total cache size 267934272
+Total cache size after purge 267934272, took 00:00:00.7072136
+Reloading assemblies after forced synchronous recompile.
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-34588-pok26g
+Unloading 28 Unused Serialized files (Serialized files now loaded: 0)
+[Logcat] [WorkThread] 00:31:04.6241 Worker thread exited
+[Logcat] [MainThread]00:31:04.6251 Dispatcher shutting down
+Unloading 14 unused Assets / (469.2 KB). Loaded Objects now: 35778.
+Memory consumption went from 0.88 GB to 0.88 GB.
+Total: 683.450200 ms (FindLiveObjects: 25.248600 ms CreateObjectMapping: 2.472800 ms MarkObjects: 653.551600 ms  DeleteObjects: 2.175100 ms)
+
+Unloading 1 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (45.5 KB). Loaded Objects now: 35778.
+Memory consumption went from 0.88 GB to 0.88 GB.
+Total: 463.227100 ms (FindLiveObjects: 2.106800 ms CreateObjectMapping: 1.897600 ms MarkObjects: 459.106200 ms  DeleteObjects: 0.114200 ms)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (0 B). Loaded Objects now: 35778.
+Memory consumption went from 0.88 GB to 0.88 GB.
+Total: 419.194200 ms (FindLiveObjects: 2.016900 ms CreateObjectMapping: 2.174500 ms MarkObjects: 414.925000 ms  DeleteObjects: 0.075900 ms)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (0 B). Loaded Objects now: 35778.
+Memory consumption went from 0.88 GB to 0.88 GB.
+Total: 423.905700 ms (FindLiveObjects: 2.251100 ms CreateObjectMapping: 2.306000 ms MarkObjects: 419.297600 ms  DeleteObjects: 0.049600 ms)
+
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+[INFO ] [relay] log Auto-shutdown timer fired after 180s inactivity, shutting down: Dedicated client disconnected
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+Shut down.
+
