@@ -173,6 +173,35 @@
       "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
     },
     {
+      "id": "omega",
+      "name": "Omega Crews",
+      "file": "omega.html",
+      "kind": "combiner crew vessels - design lab round 1",
+      "chip": "combiner crews · round 1",
+      "summary": "Three shipped vessels fly as themselves (their MEGA forms), then gather into one OMEGA form with three seats: Helm flies it, Arms wields the crew’s weapon, Core keeps the shield and the finisher. Swap seats with the arena’s gesture; the AI takes every seat you leave. The omega meter fills apart and drains combined, so you combine for the walls and split for the crystals. Three crews to compare: the Warden (Stoat, Thresher, Butterfly), the Bulwark (Rhino, Grizzly, Scarab), the Tempest (Squirrel, Sparrow, Manta).",
+      "spec": [
+        {
+          "k": "Mega forms",
+          "v": "each member flies its own flight and one RT move"
+        },
+        {
+          "k": "Omega form",
+          "v": "Helm · Arms (weapon) · Core (shield, finisher) · 3 seat"
+        },
+        {
+          "k": "Meter",
+          "v": "fills on crystals and skims, drains combined; empty = split"
+        },
+        {
+          "k": "Why",
+          "v": "Power Rangers SPD: zords, the Megazord, the finisher that ends the fight"
+        }
+      ],
+      "preview": "previews/omega.png",
+      "accent": "#ff5ea8",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
       "id": "gibbon",
       "name": "Gibbon",
       "file": "gibbon.html",
@@ -501,6 +530,7 @@
     "studio-game.js",
     "studio-new.js",
     "studio-kinds.js",
-    "studio-vessel.js"
+    "studio-vessel.js",
+    "omega-studio.js"
   ]
 }

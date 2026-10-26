@@ -5,7 +5,12 @@ namespace CosmicShore.Data
     //
     // How well the AI pilots fly, chosen by the HOST on the launch panel. It is deliberately
     // NOT intensity: intensity is the MAP (track length, crystal count, laps), difficulty is the
-    // OPPONENT - so a Hard AI can race intensity 1 and an Easy one intensity 4.
+    // OPPONENT - so a Legendary AI can race intensity 1 and an Easy one intensity 4.
+    //
+    // Legendary is the pilot with no deliberate mistakes (the shipped AI byte for byte); Hard, Medium
+    // and Easy fly the same pilot with more and more human-shaped mistakes (SkimRaceDifficultySO).
+    // Until 2026-10-26 Hard was the mistake-free pilot, so a flight recorded before then with a
+    // "Hard" rival raced what is now Legendary.
     //
     // 0 is not a member on purpose. It is what an unwritten field reads as (a save made before
     // difficulty existed, a default struct, a lobby value nobody set), and every reader turns it
@@ -15,6 +20,7 @@ namespace CosmicShore.Data
         Easy = 1,
         Medium = 2,
         Hard = 3,
+        Legendary = 4,
     }
 
     /// <summary>
@@ -32,7 +38,8 @@ namespace CosmicShore.Data
         /// replicated lobby - because both can carry a 0 or a number a future build added.
         /// </summary>
         public static AIDifficulty Resolve(AIDifficulty value) =>
-            value is AIDifficulty.Easy or AIDifficulty.Medium or AIDifficulty.Hard ? value : Default;
+            value is AIDifficulty.Easy or AIDifficulty.Medium or AIDifficulty.Hard or AIDifficulty.Legendary
+                ? value : Default;
 
         /// <summary>The same rule for the int the lobby replicates.</summary>
         public static AIDifficulty Resolve(int value) => Resolve((AIDifficulty)value);
@@ -61,12 +68,16 @@ namespace CosmicShore.Data
         public static bool UsesPilotBelief(GameModes mode) =>
             mode == GameModes.AstroLeague || mode == GameModes.BroodRush || mode == GameModes.Broadside;
 
-        /// <summary>One step easier or harder, clamped to Easy..Hard (the gamepad's left/right).</summary>
+        /// <summary>The easiest and the hardest difficulty, in the order the row draws them.</summary>
+        public const AIDifficulty Easiest = AIDifficulty.Easy;
+        public const AIDifficulty Hardest = AIDifficulty.Legendary;
+
+        /// <summary>One step easier or harder, clamped to Easy..Legendary (the gamepad's left/right).</summary>
         public static AIDifficulty Step(AIDifficulty from, int direction)
         {
             int next = (int)Resolve(from) + (direction < 0 ? -1 : direction > 0 ? 1 : 0);
-            if (next < (int)AIDifficulty.Easy) next = (int)AIDifficulty.Easy;
-            if (next > (int)AIDifficulty.Hard) next = (int)AIDifficulty.Hard;
+            if (next < (int)Easiest) next = (int)Easiest;
+            if (next > (int)Hardest) next = (int)Hardest;
             return (AIDifficulty)next;
         }
     }

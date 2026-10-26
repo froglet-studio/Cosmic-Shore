@@ -44,6 +44,7 @@ that the script re-emits the documents it owns and validates the wiring AS COMMI
 
 import argparse
 import hashlib
+import math
 import importlib.util
 import os
 import re
@@ -1069,7 +1070,8 @@ def sweep_node():
     return n
 
 
-AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3))   # AIDifficulty (Assets/_Scripts/Data), easiest first
+# AIDifficulty (Assets/_Scripts/Data), easiest first; Legendary is the AI with no deliberate mistakes (2026-10-26)
+AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3), ("Legendary", 4))
 AI_BTN_H = 52
 AI_ROW_GAP = 8            # between the domain columns and the AI row (ConfigurePilotsFit keeps it as the columns grow)
 
@@ -1092,10 +1094,11 @@ def ai_row(card, inner, top, compact_x=None):
         label(row.child(N("AIRow/Caption", "Caption", TL(0, 0, 200, 18))), "AI pilots", "Label", "TextLight")
         label(row.child(N("AIRow/Hint", "Hint", TR(0, 0, inner - 210, 18))), "How hard the AI races. The host picks.",
               "BodySmall", "NeutralLightest", align="right")
+    wide = (inner - (len(AI_LEVELS) - 1) * COL_GAP) / len(AI_LEVELS)   # the Rev 4 row: equal plates across the column
     for i, (name, _) in enumerate(AI_LEVELS):
         key = f"AIRow/{name}"
-        opt = row.child(N(key, name, TL(40 + i * (AIC_BTN_W + 6), 0, AIC_BTN_W, G_ACT_H) if compact
-                          else TL(i * (COL_W + COL_GAP), 30, COL_W, AI_BTN_H)))
+        opt = row.child(N(key, name, TL(aic_btn_x(i), 0, aic_btn_w(name), G_ACT_H) if compact
+                          else TL(round(i * (wide + COL_GAP), 2), 30, round(wide, 2), AI_BTN_H)))
         plate = opt.child(N(f"{key}/Plate", "Plate", STRETCH))
         plate.add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver10_line1"), True, raycast=True))
@@ -1232,8 +1235,20 @@ G_ACT_H = 44
 G_ACT_GAP = 14
 G_PIL_H = SEC_HEAD + PED_H + G_ACT_GAP + G_ACT_H
 PIP_W, PIP_H, PIP_GAP = 44, 6, 8
-AIC_BTN_W = 84
-AIC_W = 40 + 3 * AIC_BTN_W + 2 * 6
+AIC_GAP, AIC_PAD, AIC_MIN = 6, 20, 56   # the compact AI row: gap between plates, a plate's padding round its word, its least width
+ADD_AI_W = 250
+
+
+def aic_btn_w(name):
+    """A compact AI plate is as wide as its word needs (Legendary is twice Easy), never under AIC_MIN."""
+    return max(AIC_MIN, math.ceil(K.label_width(name, "Label")) + AIC_PAD)
+
+
+def aic_btn_x(i):
+    return 40 + sum(aic_btn_w(n) + AIC_GAP for n, _ in AI_LEVELS[:i])
+
+
+AIC_W = aic_btn_x(len(AI_LEVELS) - 1) + aic_btn_w(AI_LEVELS[-1][0])
 G_SEATS = 4              # MaxMatchSeats: an arcade card seats four (ArcadeGameConfigureModal)
 
 
@@ -1436,7 +1451,8 @@ def g_pilots(cfg, y):
     for i in range(G_SEATS):
         lu.children.append(Inst(f"Seat{i + 1}", "ConfigureSeatPedestal", f"Seat{i + 1}",
                                 TL(i * (PED_W + PED_GAP), 0, PED_W, PED_H), [("root#in", "staggerIndex", i + 3, None)]))
-    act = lu.child(N("Lineup/AddAi", "AddAi", TL(0, PED_H + G_ACT_GAP, 250, G_ACT_H)))
+    act = lu.child(N("Lineup/AddAi", "AddAi", TL(0, PED_H + G_ACT_GAP, ADD_AI_W, G_ACT_H)))
+    assert ADD_AI_W + 8 <= G_INNER - AIC_W, "the AI difficulty row runs into ADD AI PILOT"
     act.add("cg", 225, canvas_group(True))
     prompt_button(act, "Lineup/AddAi/Button", "AddAiButton", STRETCH, "X", "ADD AI PILOT")
     ai_row(lu, AIC_W, PED_H + G_ACT_GAP, compact_x=G_INNER - AIC_W)
@@ -1453,8 +1469,8 @@ def g_pilots(cfg, y):
            f"  aiProfiles: {K.ref(11400000, AI_PROFILES, 2)}\n"
            "  aiName: AI pilot\n  hostLine: Host\n  youLine: You\n  pilotLine: \n"
            "  aiDifficultyLine: '{difficulty} AI'\n  aiLine: AI\n"
-           "  difficultyNames:\n  - Easy\n  - Medium\n  - Hard\n"
-           "  openName: Open\n  seatLine: Seat {n}\n"
+           "  difficultyNames:\n" + "".join(f"  - {n}\n" for n, _ in AI_LEVELS)
+           + "  openName: Open\n  seatLine: Seat {n}\n"
            "  teamNames:\n  - Jade\n  - Ruby\n  - Gold\n"))
     return sec
 
@@ -2477,8 +2493,8 @@ def validate_prefabs(files):
             # 2026-10-15) and, since 2026-10-16, every Arena card's.
             wired(text, body, "aiDifficultyPicker", S["aipicker"], view)
             _, pick = comp_doc(text, V("AIRow#picker"))
-            assert pick.count("  - Difficulty: ") == 3 and "Button: {fileID: 0}" not in pick, \
-                f"{view}: the AI difficulty row needs Easy, Medium and Hard, each with its button"
+            assert pick.count("  - Difficulty: ") == len(AI_LEVELS) and "Button: {fileID: 0}" not in pick, \
+                f"{view}: the AI difficulty row needs Easy, Medium, Hard and Legendary, each with its button"
         doms = []
         for d, _ in DOMAINS:
             m = re.search(r"target: \{fileID: (\d+), guid: " + asset_guid("ConfigureDomainColumn") +

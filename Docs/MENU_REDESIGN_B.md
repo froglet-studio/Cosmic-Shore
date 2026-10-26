@@ -3289,6 +3289,9 @@ Rev 4 column, section 43, and are the follow-up).
   nothing left to act on here - Shombith chose to build G from bleeding-edge and let the second merge resolve it.
 - **AI difficulty** keeps its row, compact, beside ADD AI PILOT (shown only where the card's AI reads it), and the AI
   seats name it.
+  Since 2026-10-26 the row has four plates, Easy / Medium / Hard / Legendary (`AI_LEVELS`; Docs/SKIM_RACE_AI.md
+  section 10): each compact plate is as wide as its word (`aic_btn_w`, Legendary 116 px) and the row ends 12 px clear
+  of ADD AI PILOT (asserted); the Arena's Rev 4 row splits its width four ways.
 - **START** is a full-width lime Play slab with the A prompt (`prompt_button`), pressed - no hold.
 - **`MinigameLaunchPanel`**: the controls block moves down to clear the AI difficulty row only when that row sits ABOVE
   it (the old layout); with the controls above the row (here) it stays put.
