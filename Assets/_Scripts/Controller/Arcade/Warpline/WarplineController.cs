@@ -31,18 +31,21 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Warpline";
 
-        /// <summary>
-        /// Warpline flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>), as
-        /// Switchback, Breakwater and Waystation do. The scene's 180 u approach lead lay outside its 160 u commit radius,
-        /// and a Stoat warped to ~140 u/s turns at a fixed 48 deg/s (a 167 u circle): in Yash's 15 recorded races
-        /// (2026-10-25..27) the AI Stoats crossed a ring's plane 10-180 u off its 26-48 u mouth and looped 3,000-7,800 u
-        /// back round, finishing none of 30 races. Offline on those courses (<c>Tools/Build/switchback_dolphin_sim.py
-        /// --mode Warpline</c>): none of 15 finished with the shipped steering; all 15 with this one and the warp let go
-        /// 250 u out (<c>Resources/AIBoostPolicies/StoatDipoleConfig_Warpline</c>).
-        /// </summary>
-        protected override bool AICommitFromApproachPoint => true;
-
         protected override RaceCourseSource CreateCourseSource() =>
             new WarplineCourseSource { Laps = laps };
+
+        /// <summary>
+        /// Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>, 2026-10-26): commit no earlier
+        /// than the approach point, which then lies inside the commit radius; aim through the ring's CENTRE; re-attack after
+        /// a missed mouth. With the shipped steering no AI Stoat finished any of Yash's 11 Warpline races (22 rivals, 2.6 rings
+        /// a minute, stalled on ring 0): its approach point sat 180 u out against a 160 u commit, and on its 167 u turning
+        /// circle (48 deg/s at 140 u/s) it circled 10-60 u off the 32-48 u mouths. Offline on those 11 courses
+        /// (<c>Tools/Build/switchback_dolphin_sim.py --mode Warpline</c>, no warp): 0 of 11 finished before, 11 of 11 after.
+        /// Steering alone still missed 4-7 mouths a race and took twice Yash's time: warped, the hull cannot line up from the
+        /// base autopilot's 60 u let-go, so in Warpline it lets go of the warp 250 u out
+        /// (<c>Resources/AIBoostPolicies/StoatDipoleConfig_Warpline</c>; with the warp modelled, all 15 of Yash's courses
+        /// in 82-92 s with no missed mouth, 2026-10-27).
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
     }
 }

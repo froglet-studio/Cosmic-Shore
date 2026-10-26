@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI Stoat retrained for Warpline (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `WarplineController.AICommitFromApproachPoint` = true (the Regatta gate steering); new
+`Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` and `StoatSlingConfig_Warpline` learned from Yash's 11 races;
+`StoatDipoleConfig.asset` serializes `autopilotMaxOrbitDegrees: 360` (its code default); the AI learning sweep no longer
+holds Warpline. Why: `Assets/_Scripts/Controller/Arcade/WARPLINE.md` §3.1.
+
+**Verified without the editor:** reference compile player OK, editor no errors in changed files; `ai_learn.py` and
+`learn_drives_from_flights.py` self-tests OK; `--check` OK (Warpline, Regatta); `author_stoat_assets.py --check` OK;
+offline 0 of 11 recorded courses finished before, 11 of 11 after. NOT run: `SwitchbackAISteeringTests.Warpline_*`.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): all pass.
+2. Play Warpline (I1-I3) against two AI Stoats: they thread ring 0 and finish both laps; in FrogletTools > AI > Third
+   Eye their phase moves Approach -> Through ring N without circling a ring.
+3. They lay pairs often and briefly (about every 1.5 s, held up to about 2 s), not one pair held for many seconds.
+4. The Console shows nothing new.
+
+---
+
 ### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three mega forms that combine into one omega form with three seats (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** a first Unity clone of the Vessel Studio's Omega Crews lab (`Docs/Studios/VesselStudio/omega.html`,
@@ -466,8 +486,8 @@ NOT run: `RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_E
 
 ### 🔴 Warpline: the AI Stoats finish the race (`Ys-bleeding-edge`, 2026-10-27) — NOT EDITOR-VERIFIED
 
-**What landed:** `WarplineController.AICommitFromApproachPoint => true` (Regatta's gate steering), and Warpline-only
-autopilot copies `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` / `StoatSlingConfig_Warpline`: the warp let go
+**What landed** (on top of "The AI Stoat retrained for Warpline", 2026-10-26, above: the same steering and copies):
+`WarplineController.AICommitFromApproachPoint => true` (Regatta's gate steering), and Warpline-only autopilot copies `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` / `StoatSlingConfig_Warpline`: the warp let go
 250 u from the ring (60 in the base), held 1.0-2.36 s, the sling numbers from Yash's 15 races. In those races the AI
 Stoats finished none of 30. Garrett's base Stoat configs are unchanged.
 
@@ -4034,6 +4054,21 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
 2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
+### 🔴 Load Time Insights: the boot's menu load is timed while online (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (B36 addendum, the 26 Oct multiplayer sweep): a 10.4 s frame in the boot's load of Menu_Main dropped
+the Relay host, and no report existed for that load. `LoadInsights.BeginBootLoad` records it (loadKind `"boot"`) when
+online or armed, from just before `AuthenticationSceneController` calls `LoadScene`, to `SceneLoader`'s "Menu shown"
+(`IsRecordingMenuLoad`, renamed from `IsRecordingMenuReturn`, covers both kinds that end at the menu).
+**Verified without the editor:** `LoadInsightsAutoRecordTests` 8/8 (recording the boot as a launch fails the new
+test); the full edit-mode suite on Amoebius 664/668 (the 4 known failures); `unity_refcompile` player and editor OK;
+the console-logging and conditional-compilation gates; `net_logs.py --self-test`. `/verify-unity` is not available in
+the cloud session.
+**Verify in editor:**
+1. The 8 `LoadInsightsAutoRecordTests` pass in the Test Runner.
+2. Play from the Bootstrap scene while online. After Play, `net_logs.py show 1` lists a `boot` load under "Loads"
+   with its worst frame; a frame over 9 s carries RELAY RISK.
 
 ### 🔴 Party: Block 5 step 7 - two absent reads before a player is removed (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -16421,3 +16456,21 @@ No Unity editor in the session. Verified offline only: reference compile (editor
 1. Open the Third Eye, dock it behind another tab, play Menu_Main (Release) past the 4-minute auto-capture and send it. **Pass:** no train of ~100 ms spikes every 0.5 s; `perf_capture_report.py` prints no "editor stall" line.
 2. Show the Third Eye in a Regatta / Skim Race match. **Pass:** the Pilots list still names every hull, You first; a Squirrel flown by the Skim Race pilot reads AI and shows its skim readout; the You / AI toggle still works.
 
+## Arcade match length: every end-game target aimed at ~90 s (2026-10-26, `cece/optimistic-darwin-ri44aa`) - NOT EDITOR-VERIFIED
+
+No Unity editor, `unity` CLI or .NET SDK in the session, so no compile ran. Verified offline only: all 46
+`author_*_assets.py --check`, `cleave_budget.py`, `waystation_course.py --target 15`, `hijack_budget.py`,
+`skein_budget.py`, `arcade_mode_lib.py --self-test`, `author_skimrace_relativity_track.py --check`,
+`check_console_logging.py`, `check_conditional_compilation.py`, and a Python port of the Switchback course walk
+(1,600/1,600 seeds fit at 26 gates). The numbers and the reasoning: `Docs/ARCADE_MATCH_LENGTH.md`.
+
+1. Let Unity compile. **Pass:** no errors from `EndConditionOverridesSO.cs`, `EndConditionOverridesWindow.cs`,
+   `DogFightPointTurnMonitor.cs`, `RampagePrismTurnMonitor.cs`.
+2. Open FrogletTools > Game Modes > End Game Conditions. **Pass:** Rampage shows four intensity rows
+   (2000/1700/1300/1000), Grizzly Charge has its own row (90), Dog Fight reads 40, and "Live matches build".
+3. Run the edit-mode tests `SwitchbackCourseTests`, `WeeklyChallengeTests`, `RaceCourseSourceTests`. **Pass:** green.
+4. Play Grizzly Charge and Dog Fight once each. **Pass:** Grizzly Charge ends at 90 points, Dog Fight at 40.
+5. Play Rampage at intensity 1 and 4. **Pass:** the target reads 2000 at I1 and 1000 at I4.
+6. Play Headlong or Redline. **Pass:** the HUD counts 40 gates over 5 laps of 8 rings.
+7. Time one match of each mode the doc's table marks "estimate", flown by an experienced pilot. **Pass:** each
+   lands within ~60-120 s; record the times in `Docs/ARCADE_MATCH_LENGTH.md` §2.

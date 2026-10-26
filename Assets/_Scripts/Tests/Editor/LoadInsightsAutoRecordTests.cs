@@ -87,7 +87,48 @@ namespace CosmicShore.Tests
         public void TheReport_SaysWhichKindOfLoad()
         {
             Assert.AreEqual("launch", new LoadInsightReport().loadKind, "a report defaults to a launch");
-            Assert.IsFalse(LoadInsights.IsRecordingMenuReturn, "nothing records in edit mode");
+            Assert.IsFalse(LoadInsights.IsRecordingMenuLoad, "nothing records in edit mode");
+        }
+
+        // B36, the 26 Oct sweep: the boot's load of the menu froze 10.4 s with the Relay host up and was never timed.
+        [Test]
+        public void TheBootsMenuLoad_IsRecordedAsBoot_AndEndsAtTheMenu()
+        {
+            Assert.AreEqual("boot", RecordedKind(() => LoadInsights.BeginBootLoad("Boot - Authentication -> Menu_Main"), out bool endsAtMenu));
+            Assert.IsTrue(endsAtMenu, "landing in the menu is the point of a boot load: not aborted, closed when the menu shows");
+        }
+
+        [Test]
+        public void AGameLaunch_IsStillALaunch_AndAReturnStillAMenuReturn()
+        {
+            Assert.AreEqual("launch", RecordedKind(() => LoadInsights.BeginLoad("Game launch"), out bool launchEndsAtMenu));
+            Assert.IsFalse(launchEndsAtMenu, "a launch ends in the game, so a landing in the menu still aborts it");
+            Assert.AreEqual("menuReturn", RecordedKind(() => LoadInsights.BeginLoad("Return to menu", menuReturn: true), out bool returnEndsAtMenu));
+            Assert.IsTrue(returnEndsAtMenu);
+        }
+
+        static readonly FieldInfo s_hostAvailable = typeof(LoadInsights).GetField("HostAvailable", BindingFlags.NonPublic | BindingFlags.Static);
+        static readonly FieldInfo s_recording = typeof(LoadInsights).GetField("s_recording", BindingFlags.NonPublic | BindingFlags.Static);
+        static readonly MethodInfo s_buildReport = typeof(LoadInsights).GetMethod("BuildReportUnlocked", BindingFlags.NonPublic | BindingFlags.Static);
+
+        // Starts a recording, reads the kind its report would carry, then drops the recording without writing a file.
+        static string RecordedKind(System.Action begin, out bool endsAtMenu)
+        {
+            bool hostBefore = (bool)s_hostAvailable.GetValue(null);
+            try
+            {
+                s_hostAvailable.SetValue(null, true);
+                LoadInsights.OnlineProvider = () => true;
+                begin();
+                Assert.IsTrue(LoadInsights.IsRecording);
+                endsAtMenu = LoadInsights.IsRecordingMenuLoad;
+                return ((LoadInsightReport)s_buildReport.Invoke(null, new object[] { "test", true })).loadKind;
+            }
+            finally
+            {
+                s_recording.SetValue(null, false);
+                s_hostAvailable.SetValue(null, hostBefore);
+            }
         }
     }
 }

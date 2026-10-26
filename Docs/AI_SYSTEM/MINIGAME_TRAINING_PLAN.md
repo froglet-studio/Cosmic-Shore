@@ -58,7 +58,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 |---|---|---|---|
 | **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
-| **Stoat** | **Warpline** (also Slingshot) | gate race, field pairs | **Second (Yash, 2026-10-27).** 15 hand-flown races, all finished (I1-I4); the AI Stoats finished none of 30. The hold is lifted; steering fix and the warp's let-go are in, learned from Yash's races (§7) |
+| **Stoat** | **Warpline** (also Slingshot) | gate race, field pairs | **Second (Yash, 2026-10-26/27).** 15 hand-flown races, all finished (I1-I4); the AI Stoats finished none of 30. Retrained: the Regatta steering, the pair and sling numbers learned from Yash (`WARPLINE.md` §3.1), and the warp let go 250 u out (§7, `WARPLINE.md` §3.2) |
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
 | Urchin | Skein | gate race on rails | none yet |
@@ -256,7 +256,7 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races). **Boost, 2026-10-26:** on the legs, let go 1.25 s before each station (`BREAKWATER.md` "The boost"; offline 79-82 s a lap against 110-131 s, no station clipped) |
 | Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned per intensity (§3.6-3.7); no crystals: a racing AI flies the gates only (§6.1) |
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
-| Stoat / Warpline | the field pair's warp | on hold for Garrett's configuration |
+| Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26) |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
 | Manta / Redline | Soar | the Soar executor's bands |
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
@@ -332,7 +332,8 @@ pessimistic on turns):
 Yash threads half the rings while still warping and otherwise lets go about 50 u out: he sees the pair bend his path
 into the ring, which the AI's steering does not use. So the let-go is NOT learned from him; it is set from the model.
 
-**What changed.**
+**What changed.** The steering and the learned numbers landed first, from a session working in parallel on Yash's
+"re train Stoat" (2026-10-26, 11 races, `WARPLINE.md` §3.1); this section adds the warp's let-go (`WARPLINE.md` §3.2).
 - `WarplineController.AICommitFromApproachPoint` = true (the Regatta steering with the approach-point cap).
 - `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` and `StoatSlingConfig_Warpline` (Warpline only,
   `AIModeTuning`), written by the learner from Yash's races: hold a warp 1.0-2.36 s (was 0.8-15), the next pair 1.52 s

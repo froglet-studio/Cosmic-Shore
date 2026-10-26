@@ -304,9 +304,9 @@ namespace CosmicShore.Core
 
             _sceneTransitionManager?.FadeFromBlack().Forget();
 
-            // The menu is on screen: a return-to-menu load recording (B36) ends here. A launch recording ends
-            // elsewhere (MiniGameHUD), so only the menu-return kind is closed.
-            if (LoadInsights.IsRecordingMenuReturn)
+            // The menu is on screen: a return-to-menu or boot load recording (B36) ends here. A launch recording
+            // ends elsewhere (MiniGameHUD), so only the kinds that end at the menu are closed.
+            if (LoadInsights.IsRecordingMenuLoad)
                 LoadInsights.CompleteLoad("Menu shown - the splash fades");
         }
 

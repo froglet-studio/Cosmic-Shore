@@ -53,14 +53,6 @@ levels — and Time sets the warp boost, so it lands on the mode's axis).
 
 ## 3. AI
 
-**2026-10-27, the Stoat's training minigame** (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §7, Yash): in Yash's 15
-races the AI Stoats finished none of 30, crossing the rings off their mouths and looping back round. Now Warpline flies
-Regatta's gate steering (`WarplineController.AICommitFromApproachPoint`, the approach point kept inside the commit
-radius), and in Warpline alone the autopilot reads `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` and
-`StoatSlingConfig_Warpline` (`AIModeTuning`): it lets go of the warp 250 u from the ring (60 below), so the hull, which
-turns at 48 deg/s, lines up before the mouth, and holds each warp 1.0-2.36 s as Yash does. The rest of this section is
-the base autopilot, which every other mode still flies.
-
 **2026-10-10, ported from the Stoat Flight Studio (`/vessel-studio` D24):**
 - **AI difficulty.** The card now offers the lobby's Easy / Medium / Hard picker (`AIDifficultyRules.IsOfferedFor`).
   `GateRaceController.ArmRacers` races Easy and Medium on `GateRaceHandicap`, the Skim Race's two mistakes applied to
@@ -80,6 +72,40 @@ every 2 s — both edges through the **replicated** press path. It is a turning 
 racing line; a human reading the pathfinder beats it.
 
 **Both modes since 2026-10-13** (`R_VesselActions/STOAT_DIPOLE.md` §1a): the autopilot also switches the Stoat's MODE — `StoatModeExecutor` presses B for it, through the replicated path, to fly Time mode's orbit when its target is ≥ 70° off the nose (the orbit is the tighter turn) and back to Mass mode, and the dipole above, once the target is within 35°; at most every 3 s, never mid-squeeze (`StoatModeAction` § Autopilot). In Time mode it slings with `StoatSlingExecutor.AutopilotSling`.
+
+### 3.1 Retrained from Yash's races (2026-10-26)
+
+Yash: "re train Stoat", which lifts the hold the Stoat's AI had been on since 2026-10-17 (issue 1198).
+
+**What his 11 races (I1-I3) showed.** The 22 AI Stoat rivals finished none of them: 2.6 rings a minute, stalled on ring
+0, against Yash's 79-121 s. Raced offline on those courses (`Tools/Build/switchback_dolphin_sim.py --mode Warpline`,
+140 u/s and 48 deg/s, no warp), the shipped gate approach finishes 0 of 11. The approach point sat 180 u out against a
+160 u commit, and on its 167 u turning circle the Stoat circled the 32-48 u mouths. That is the defect Switchback,
+Breakwater and Waystation had.
+
+**What changed:**
+- `WarplineController.AICommitFromApproachPoint` = true, the Regatta steering. Offline: 11 of 11 finished, in 136-255 s
+  (no warp modelled, so slower than a real Stoat). Test: `SwitchbackAISteeringTests.Warpline_*`.
+- `StoatDipoleConfig_Warpline` and `StoatSlingConfig_Warpline` (`Resources/AIBoostPolicies`, AIModeTuning loads them
+  in Warpline only), learned from his three fastest races (`Docs/AI_SYSTEM/LEARNED_DRIVES_Warpline.md`). Pairs: from
+  206 u of the ring (was 300), every 1.5 s (2), held 0.9-2.1 s (0.8-15), lapping the sink at most 78 deg (360). Slings:
+  from 103 u (120), every 1.2 s (3), for a turn from 7 deg (30), released within 14 deg (20), at a full squeeze
+  (0.5).
+- `StoatDipoleConfig.asset` now serializes `autopilotMaxOrbitDegrees` at its code default (360, no change in play), so
+  the learned 78 deg had a field to land in. The learner now reports a learned number whose field the asset lacks,
+  instead of dropping it.
+
+The Stoat's own configs, which every other mode flies, are unchanged.
+
+### 3.2 The warp lets go 250 u out (2026-10-27)
+
+With the steering fixed, the AI still missed 4-7 mouths a race and took about twice Yash's time (offline on his 15
+races, I1-I4): warped to ~140 u/s on a 167 u turning circle, it cannot line up on a 26-48 u ring from the base
+autopilot's 60 u let-go. With the warp modelled (`switchback_dolphin_sim.py --mode Warpline`: laid at 1.5x the let-go,
+let go at it, held 1.0-2.36 s), letting go 250 u out finishes all 15 courses in 82-92 s with no missed mouth, at warp
+speeds of 120-170 u/s (Yash: median 92 s); 175 u starts missing again. So `StoatDipoleConfig_Warpline.autopilotLetGoNear`
+is 250, set by hand: Yash threads half his rings still warped, steering by the pair's bend, which the AI does not use,
+so his ~50 u let-go is not one the AI can copy. The learner never writes that field (`MINIGAME_TRAINING_PLAN.md` §7).
 
 ## 4. Known limit — two pairs at a time
 

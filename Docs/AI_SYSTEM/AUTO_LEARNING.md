@@ -69,8 +69,8 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
   these yet" until a learner covers it).
 - **A mode another collaborator owns the AI of, or one not trained now,** goes in `ai_learn.HOLD` with the reason, so
   it is reported and never written, until they say so. Today: **Regatta** (the AIs train in their own minigames; Regatta
-  is rebuilt from those skills later, Yash 2026-10-27). Warpline was held from 2026-10-17 for Garrett's Stoat
-  configuration, which landed 10-13 / 10-21; Yash lifted it 2026-10-27.
+  is rebuilt from those skills later, Yash 2026-10-27). Warpline, held for the Stoat's configuration since 2026-10-17,
+  was lifted by Yash on 2026-10-26.
 
 ## 4. What is automatic, and what is not yet
 
@@ -99,7 +99,7 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 | Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge; in Switchback also one variant per intensity (`_I<n>`, `PER_INTENSITY_MODES`, `MINIGAME_TRAINING_PLAN.md` §3.6) |
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
-| Stoat | drives (AIModeTuning) | its pair | its three configs; in Warpline never `autopilotLetGoNear` (set from the model, 250 u: `MINIGAME_TRAINING_PLAN.md` §7) |
+| Stoat | drives (AIModeTuning) | its pair | its three configs (`<config>_Warpline`; `_Regatta` from before 2026-10-27); in Warpline never `autopilotLetGoNear` (set from the model, 250 u: `WARPLINE.md` §3.2) |
 | Sparrow | drives (HoldBoost) | boost (state bit); the rocket (a SkyBurst press, 2026-10-26) | start / stop bands, shortest hold and rest; the rocket's range and aim (`rocketMinRange` / `rocketMaxRange`: p10 / p90 of the presses' distance to the ring, `rocketAimDegrees`: their median nose angle); in Breakwater never a boost release under 1.25 s (`FLOORS`, the danger weave) |
 | Serpent | drives (PelletBoost) | a ConsumeBoost press | start bands, seconds between pellets |
 | Scarab | drives (SnapDash) | throttle double-tap at TIME 5 | start bands, dash cooldown |

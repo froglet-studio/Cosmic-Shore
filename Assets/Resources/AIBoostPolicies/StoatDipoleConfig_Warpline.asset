@@ -80,15 +80,16 @@ MonoBehaviour:
   foresightRange: 1500
   foresightMaxRivals: 3
   autopilotHold01: 1.0
-  autopilotMinDistance: 182.798
+  autopilotMinDistance: 206.632
   autopilotHoldSeconds: 4
-  autopilotIntervalSeconds: 1.519
+  autopilotIntervalSeconds: 1.512
   autopilotWatchPath: 1
   autopilotLetGoNear: 250
   autopilotDrySeconds: 0.5
-  autopilotMinHoldSeconds: 0.998
-  autopilotMaxHoldSeconds: 2.357
+  autopilotMinHoldSeconds: 0.887
+  autopilotMaxHoldSeconds: 2.095
   autopilotRelaySeconds: 0.25
+  autopilotMaxOrbitDegrees: 77.671
   openEvent:
     Guid:
       Data1: 0

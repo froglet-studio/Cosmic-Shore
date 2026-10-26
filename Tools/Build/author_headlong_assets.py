@@ -89,7 +89,7 @@ EXISTING = {
 # to size the circuit and the turn monitor asks the controller for the target, so the finish
 # line and the course cannot be different lengths. Kept in sync with
 # EndConditionOverridesSO.DefaultHeadlongGateTarget.
-LAPS = 3
+LAPS = 5
 RINGS_PER_LAP = 8                 # HeadlongCircuitSettings.ForIntensity's GateCount
 GATE_TARGET = LAPS * RINGS_PER_LAP
 
@@ -103,9 +103,10 @@ BASE_RADIUS = 800
 # DOGFIGHT.md, BENDS.md, WILDLIFE_LIBERATION.md and SWITCHBACK.md have each recorded
 # independently, so the assert below fails the build rather than trusting the number.
 #
-# At 0.35: six gates behind (a quarter of the race) buys 2.1 element levels. Measured on the LEAD
+# At 0.21: ten gates behind (a quarter of the five-lap race) buys 2.1 element levels - the 2.1
+# that 0.35 bought on the old three-lap, 24-gate race (raced to ~90 s, 2026-10-26). Measured on the LEAD
 # RUNNER, so a trailing domain is genuinely behind on the same circuit.
-COMEBACK_RATE = 0.35
+COMEBACK_RATE = 0.21
 
 
 _HEADER_TMPL = """%YAML 1.1

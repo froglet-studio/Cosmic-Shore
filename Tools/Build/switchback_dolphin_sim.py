@@ -61,7 +61,6 @@ SPARROW_BOOST_BREAKWATER = dict(SPARROW_BOOST_BASE, boost_align=45, boost_releas
 # at autopilotLetGoNear. The pair's bend of the path is not modelled, so turns are the hull's alone (pessimistic).
 STOAT_WARPLINE = {"cruise": 60.0, "rts": 0.0, "base": 48.0, "drift": False,
                   "commit": 160.0, "lead": 180.0, "through": 120.0}
-WARPLINE_LAPS = 2
 
 
 def stoat_warp(let_go_near, speed=140.0, min_hold=0.8, max_hold=15.0, relay=0.25):
@@ -78,6 +77,11 @@ def stoat_warp(let_go_near, speed=140.0, min_hold=0.8, max_hold=15.0, relay=0.25
 # MinigameWaystation.unity: commit 260, approach lead 300, through 220. Its fold is not modelled: cruise only is the floor.
 BUTTERFLY_WAYSTATION = {"cruise": 67.0, "rts": 0.0, "base": 45.0, "drift": False,
                         "commit": 260.0, "lead": 300.0, "through": 220.0}
+# The Stoat in Warpline with NO warp (2026-10-26): Stoat.prefab Pitch/Yaw 48 deg/s, RotationThrottleScaler 0; 140 u/s, the median
+# speed of the AI Stoat rivals in Yash's I3 races (its pairs warp it; the warp and the poles' pull are not modelled);
+# MinigameWarpline.unity: commit 160, approach lead 180, through 120, two laps of five rings.
+STOAT_WARPLINE_NO_WARP = {"cruise": 140.0, "rts": 0.0, "base": 48.0, "drift": False,
+                  "commit": 160.0, "lead": 180.0, "through": 120.0}
 
 
 def course_from_flight(path):
@@ -275,6 +279,15 @@ def self_test():
     return 0 if not bad else 1
 
 
+def laps_of(course, path):
+    """A lapped circuit (Warpline): the recorded ring set flown again until the race's ring target."""
+    target = int(json.load(open(path, encoding="utf-8")).get("raceTarget") or 0)
+    gates = course["gates"]
+    if gates and target > len(gates):
+        course = dict(course, gates=[gates[k % len(gates)] for k in range(target)])
+    return course
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir"); ap.add_argument("--self-test", action="store_true")
@@ -293,11 +306,13 @@ def main():
             print(f"   Regatta's steering:   {race(c, True, cfg=BUTTERFLY_WAYSTATION, T=300)}")
         return
     if a.mode == "Warpline":
-        print("(seconds for the race or None, rings threaded of 10, mouths missed, break-offs; the person's time)")
+        print("(seconds for both laps or None, rings threaded, mouths missed, break-offs; the person's time)")
         for p in sorted(glob.glob(os.path.join(a.dir, "flight_Warpline_*.json"))):
-            c = course_from_flight(p)
-            c["gates"] = c["gates"] * WARPLINE_LAPS
+            c = laps_of(course_from_flight(p), p)
             print(f"I{c['intensity']} {c['file']} (person {c['person']:.0f} s)")
+            r = race(c, True, cfg=STOAT_WARPLINE_NO_WARP, T=400)
+            print(f"   {'Regatta steering, 140 u/s, no warp':36}: {r['time']} s, {r['rings']}, missed {r['misses']}, "
+                  f"breaks {r['breaks']}")
             for name, fix, near in (("shipped steering, warp let go 60 u", False, 60),
                                     ("Regatta steering, warp let go 60 u", True, 60),
                                     ("Regatta steering, warp let go 250 u", True, 250)):
