@@ -126,9 +126,8 @@ kept = the Notion idea as written; reshaped = it was a number, broke the PvP rul
 1. Two pilots per vessel: the six legacy vessels had four each (one per element). Keep two, or grow the flagships back to three or four (the Hangar has four card slots)?
 1. Which 20: swap the Grizzly in for one of these? (Ironclad moved to the Shrike because the Grizzly is not on the list.)
 1. Art for 16 pilots: use the 8 spare portraits as stand-ins for 8 of them now?
-1. New names (Snap, Glimmer, Pack, Lariat, Pod, Murmur, Roost, Pincer, Shoal, Comb, Raid) are working names: keep, rename, or take names from the old design chat?
+1. New names (Snap, Glimmer, Pack, Lariat, Pod, Murmur, Roost, Pincer, Shoal, Comb, Raid) are working names: keep, rename,?
 1. Artifacts in competitive play: off in ranked/arena, or a fixed power budget per match?
 1. How artifacts are found: cell drops, quest rewards, the Elemental Converter (the captain-upgrade economy is de-scoped).
 1. Pack (Angler) and Shoal (Jacks) change how creatures behave: check them against Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md before building.
 
-Shombith said an older design chat is coming; fold it in here when it arrives.
