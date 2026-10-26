@@ -27,9 +27,9 @@ MonoBehaviour:
     DAIS, so a match raises three to five times the mass and Scramble''s gates (Restless
     164,000 / Frenzy 391,000) would both be crossed before the race was half run, after
     which the ladder conveys nothing. Restated in the currency this mode runs on: the trail
-    band plus the standing anchor forest (21113 volume, 420 prisms) plus 3 monuments for
-    Restless and 7 for Frenzy, at 50,773 volume and 255 prisms each (SCARAB.md 5.1), out of
-    the 10 a maximum-length 4-toll match can raise. ESTIMATE pending the in-editor baseline
+    band plus the standing anchor forest (21113 volume, 420 prisms) plus 2 monuments for
+    Restless and 5 for Frenzy, at 50,773 volume and 255 prisms each (SCARAB.md 5.1), out of
+    the 7 a maximum-length 3-toll match can raise. ESTIMATE pending the in-editor baseline
     measure; see TOLLWAY.md.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
@@ -41,11 +41,11 @@ MonoBehaviour:
   SpawnProfile: {fileID: 11400000, guid: 468d9f650f31515e36446cbb32b6769d, type: 2}
   SenseRadiusOverride: 1300
   PhaseThresholds:
-    RestlessEnter: 2540
-    RestlessExit: 2440
-    FrenzyEnter: 6280
-    FrenzyExit: 6070
-    RestlessEnterVolume: 185000
-    RestlessExitVolume: 181000
-    FrenzyEnterVolume: 413000
-    FrenzyExitVolume: 407000
+    RestlessEnter: 2140
+    RestlessExit: 2040
+    FrenzyEnter: 5460
+    FrenzyExit: 5250
+    RestlessEnterVolume: 135000
+    RestlessExitVolume: 131000
+    FrenzyEnterVolume: 311000
+    FrenzyExitVolume: 305000

@@ -24,7 +24,7 @@ import arcade_mode_lib as lib          # noqa: E402
 import waystation_course as course     # noqa: E402
 
 MODE_ID = 58
-RING_TARGET = 24
+RING_TARGET = 15   # 24 until 2026-10-26 (a 205 s editor finish); 15 aims an experienced run near 90 s
 g = lib.Generator(mode_id=MODE_ID, mode_name="Waystation")
 errors = []
 
@@ -73,8 +73,9 @@ for i in (1, 2, 3, 4):
 
 # ── the comeback rate is a FUNCTION OF THE TARGET ───────────────────────────
 # bonusLevels = deficit x rate, so a rate that survives a re-target silently stops meaning
-# anything. Sized against Switchback's curve (target 20 at 0.5 buys 2.5 levels a quarter down).
-COMEBACK_RATE = 0.4
+# anything. Sized against Switchback's curve (2.5 levels a quarter down): 0.64 x 15/4 = 2.4, the
+# 2.4 that 0.4 bought on the old 24-ring course.
+COMEBACK_RATE = 0.64
 quarter = RING_TARGET * 0.25
 if quarter * COMEBACK_RATE < 1.0:
     errors.append(f"comeback rate {COMEBACK_RATE} buys only "
