@@ -16142,3 +16142,11 @@ hybrid NCA), `TandavaSeveringController` HUD and toast 152. Headless only: harne
 
 **PASS:** both shapes read as a whale/jelly mix, the turns are smooth, it rises after ~24 s. **FAIL:** a blob · members
 pop at a turn · it never rises · it heals mid-turn.
+
+## Third Eye: the pilot scan no longer walks the scene (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (editor config).
+
+1. Open the Third Eye, dock it behind another tab, play Menu_Main (Release) past the 4-minute auto-capture and send it. **Pass:** no train of ~100 ms spikes every 0.5 s; `perf_capture_report.py` prints no "editor stall" line.
+2. Show the Third Eye in a Regatta / Skim Race match. **Pass:** the Pilots list still names every hull, You first; a Squirrel flown by the Skim Race pilot reads AI and shows its skim readout; the You / AI toggle still works.
+
