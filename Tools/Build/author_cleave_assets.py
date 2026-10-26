@@ -184,6 +184,17 @@ MEMBRANE_GUID_BY_INTENSITY = {
     for i in (1, 2, 3, 4)
 }
 
+# Cytoplasm shard spacing per rung. SnowChanger builds (4/3)pi R^3 / spacing^3 shards over the
+# WHOLE membrane sphere, so the x3 shell at the prefab's own spacing built ~113,000 shards on
+# rungs 1 and 2 - 27x the ~4,189 every 1,200 cell has. Scaling the spacing with the membrane
+# keeps the standard cell's count (0 = the prefab's own, for the rungs on the 1,200 shell).
+CYTOPLASM_SHARD_DISTANCE = 120   # SnowChanger.prefab shardDistance (checked below)
+CYTOPLASM_SHARD_DISTANCE_BY_INTENSITY = {
+    i: round(CYTOPLASM_SHARD_DISTANCE * budget.MEMBRANE_RADIUS[i] / 1200)
+       if budget.MEMBRANE_RADIUS[i] > 1200 else 0
+    for i in (1, 2, 3, 4)
+}
+
 # Destruction target - the race metric, PER INTENSITY. The 25%/50% milestone rungs are fractions
 # of whichever applies. Rungs 1 and 2 are vast open arenas holding about a third of the mass of
 # 3 and 4, so a shared 2000 would make them the longest matches in the mode. Owned by the budget
@@ -398,6 +409,7 @@ for a in ARENAS:
   MembranePrefab: {{fileID: {MEMBRANE_FILEID}, guid: {MEMBRANE_GUID_BY_INTENSITY[i]}, type: 3}}
   NucleusPrefab: {{fileID: 0}}
   CytoplasmPrefab: {{fileID: {CYTOPLASM_FILEID}, guid: {EXISTING['Cytoplasm_prefab']}, type: 3}}
+  CytoplasmShardDistance: {CYTOPLASM_SHARD_DISTANCE_BY_INTENSITY[i]}
   CellModifiers: []
   SpawnProfile: {{fileID: 11400000, guid: {G_ASSET['CleaveSpawnProfile']}, type: 2}}
   EnvironmentPrefab: {{fileID: {SPAWNABLE_MB_FILEID}, guid: {G_ASSET[f"prefab/{a['key']}"]}, type: 3}}
@@ -709,6 +721,14 @@ for asset_path, cs_path in CHECKS:
     if unknown:
         errors.append(f"{os.path.basename(asset_path)}: keys not found on "
                       f"{os.path.basename(cs_path)}: {sorted(unknown)}")
+
+# The rung spacings above are a multiple of the cytoplasm prefab's own; if the prefab's moves,
+# the big rungs' shard count moves with the cube of the difference.
+_snow = read("Assets/_Prefabs/Environment/Cytoplasm/SnowChanger.prefab")
+_m = re.search(r"^  shardDistance: (\d+)", _snow, re.M)
+if not _m or int(_m.group(1)) != CYTOPLASM_SHARD_DISTANCE:
+    errors.append(f"SnowChanger.prefab shardDistance is {_m and _m.group(1)}, "
+                  f"CYTOPLASM_SHARD_DISTANCE assumes {CYTOPLASM_SHARD_DISTANCE}")
 
 # The cage is the one arena with a shell count, and it must be the THREE-rind variant - the one
 # the mode kept when the other three nested-shell intensities were replaced.
