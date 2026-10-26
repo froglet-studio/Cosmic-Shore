@@ -1141,6 +1141,62 @@ static class TandavaHarness
                 Check(swing >= 0.5f * MathF.Abs(struck - charged), $"{key}: the live strike swings {swing:F0} u (at least half the plans' {MathF.Abs(struck - charged):F0})");
             }
 
+        // ── T40 (a measurement, no assertion yet): an assault from the hatch - culling R members a second from t = 0 and
+        // never letting up. It hatches with an empty stomach, so nothing it loses before its first meal regrows; a Rhino's
+        // sword (one slice per plain member, a 30-120 u blade) culls at about the 20/s row (Shombith, 2026-10-26: "the rhino
+        // killed the whole form under 20 seconds").
+        Console.WriteLine("T40 assault from the hatch (measured)");
+        foreach (float rate in new[] { 10f, 20f, 40f })
+        {
+            var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 71);
+            float owed = 0f;
+            RunFor(s, RunCap, x =>
+            {
+                owed += rate / TickHz;
+                int n = (int)owed;
+                if (n <= 0) return;
+                owed -= n;
+                int k = Cut(x.C, n, x.C.BX);
+                x.Lost += k;
+            });
+            var d = s.D;
+            Console.WriteLine($"    {rate:F0}/s: {d.Outcome} at {d.Clock:F1} s as the {d.Form.Name}; alive {Active(s.C)} of {d.Form.PlanCount}; " +
+                              $"{s.Meals} meals; stomach {s.C.Stomach.Sum():F0}; {Timeline(s)}");
+        }
+
+        // The same assault against its armour: a blow on a member that wears a shield (the plans' tier 2 - the Mass body
+        // in every pose but the ones it eats in) only sheds it, and the next blow kills. A shed shield stays shed while
+        // the attacker stays near (SwarmTadpoleFauna.SetTier acts on change; the proxy lingers), so it is two blows a
+        // member here. Blade hits are the budget, so this row's rate is BLOWS a second.
+        Console.WriteLine("T40 the same assault against the armour (two blows a shielded member)");
+        foreach (float rate in new[] { 20f, 40f })
+        {
+            var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 71);
+            var shed = new HashSet<int>();
+            float owed = 0f;
+            RunFor(s, RunCap, x =>
+            {
+                owed += rate / TickHz;
+                int n = (int)owed;
+                if (n <= 0) return;
+                owed -= n;
+                var order = Enumerable.Range(0, x.C.Cap).Where(i => x.C.Active[i] && x.C.Hatched[i])
+                                      .OrderBy(i => Vector3.Dot(x.C.Pos[i] - x.C.Anchor, x.C.BX)).Take(n).ToList();
+                foreach (int i in order)
+                {
+                    int e = x.C.EffectiveElement(i);
+                    bool armoured = e != 0 && x.C.TryGetLook(i, e, out _, out int lt) && lt == 2;
+                    if (armoured && shed.Add(i)) continue;
+                    shed.Remove(i);
+                    x.C.Kill(i);
+                    x.Lost++;
+                }
+            });
+            var d = s.D;
+            Console.WriteLine($"    {rate:F0} blows/s: {d.Outcome} at {d.Clock:F1} s as the {d.Form.Name}; alive {Active(s.C)} of {d.Form.PlanCount}; " +
+                              $"{s.Meals} meals; stomach {s.C.Stomach.Sum():F0}; {Timeline(s)}");
+        }
+
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
     }

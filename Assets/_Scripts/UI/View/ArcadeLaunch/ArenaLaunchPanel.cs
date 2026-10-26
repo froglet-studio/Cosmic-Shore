@@ -23,7 +23,8 @@ namespace CosmicShore.UI
     ///
     /// <para>It lives in its OWN window (<see cref="ArcadeLaunchPanel.HostModal"/>) the way the
     /// Maelstrom's does, and it answers <see cref="Handles"/> for the cards in
-    /// <see cref="roster"/> — the Arena's <c>SO_GameList</c>. It must sit BEFORE the arcade's
+    /// <see cref="roster"/> — the Arena's <c>SO_GameList</c> — and for any <see cref="SO_ArcadeGame.ArenaRules"/>
+    /// card, listed or not (a voyage is on no grid). It must sit BEFORE the arcade's
     /// <see cref="MinigameLaunchPanel"/> in the modal's list, because that panel accepts every
     /// non-Maelstrom card and first match wins.</para>
     /// </summary>
@@ -89,8 +90,10 @@ namespace CosmicShore.UI
         /// <summary>The pilot confirmed the vessel currently shown.</summary>
         public event Action OnVesselConfirmRequested;
 
+        // An ArenaRules card is an arena card wherever it is listed: a voyage (Tandava) is on no grid, so the roster
+        // alone sent it to the arcade's one-hull panel and its pilots could not pick a vessel (Shombith, 2026-10-26).
         public override bool Handles(SO_ArcadeGame game)
-            => game != null && roster != null && roster.Games != null && roster.Games.Contains(game);
+            => game != null && (game.ArenaRules || (roster != null && roster.Games != null && roster.Games.Contains(game)));
 
         public override void Bind(SO_ArcadeGame game, int intensity)
         {
