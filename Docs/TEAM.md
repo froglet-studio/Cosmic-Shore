@@ -15,8 +15,8 @@ Correct them in [`TEAM.json`](TEAM.json), which also maps each person's git name
 | Person | Works on (measured) | Git identity |
 |---|---|---|
 | **Garrett** | Owner of `bleeding-edge`. He reviews and merges most pull requests: vessels, tests, environment / ecology, arcade modes, impact effects, materials, skills. His own work: AI training, crystal hull fusion, the Regatta AI roadmap, the multiplayer (MPPM) roadmap, the labs (Omni Motion / Shepard / Combine, Thresher Plant Lab). Most `cece/*` sessions are merged by him; recent ones built the Thresher and the Stoat as their own vessels (#1076, #1079, #1085). | Garrett Milliron, garrett@froglet.studio |
-| **Caleb** | QA sessions (`Docs/QA/RESULTS`), the arcade mode map and previews, card art; merges some `claude/*` work (Skim Race race rings, #1096). | Caleb Steinhagen / FenrysUnchained |
-| **Shombith** | **Heads tooling**: the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the hooks (Shombith, 2026-10-23). **Owns all cloud and backend services and data management** (UGS: Cloud Save and its data such as `HangarCloudData`, authentication, the backend; Shombith, 2026-10-18). UI: `Menu_Main`, the UI prefabs, colour tokens, the Codex; multiplayer scenes. He drives the **Amoebius engine** milestones (`Port/src/CosmicShore.Engine`, `Player`, tests, online play) and merges those pull requests (`cece/focused-planck-*`). | Shombith03, shombith@froglet.studio |
+| **Caleb** | **Heads FTUE with Shombith**, inside the activation work Shombith leads; no one else is on it (Shombith, 2026-10-26). QA sessions (`Docs/QA/RESULTS`), the arcade mode map and previews, card art; merges some `claude/*` work (Skim Race race rings, #1096). | Caleb Steinhagen / FenrysUnchained |
+| **Shombith** | **Heads tooling**: the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the hooks (Shombith, 2026-10-23). **Leads activation** (onboarding, FTUE, the first-run flow), with Caleb heading FTUE; no one else is on it (2026-10-26). **Owns all cloud and backend services and data management** (UGS: Cloud Save and its data such as `HangarCloudData`, authentication, the backend; Shombith, 2026-10-18). UI: `Menu_Main`, the UI prefabs, colour tokens, the Codex; multiplayer scenes. He drives the **Amoebius engine** milestones (`Port/src/CosmicShore.Engine`, `Player`, tests, online play) and merges those pull requests (`cece/focused-planck-*`). | Shombith03, shombith@froglet.studio |
 | **Yash** | The Bug Hunt; party / multiplayer (UGS) hardening (the cloud and backend layer itself is Shombith's); diagnostics (redlog); leaderboards; the **Vessel Studio** (the artifact, studio pages, Sync panel); the **Amoebius launcher** (VESSEL STUDIO page, studio server, artifact library). Branches `Ys-*`, `vessel-studio*`, `amoebius-*`. | Yash Sadhukhan / YsKhan61 |
 | **Iggy** | Wrote much of the game's foundation (`Assets/_Scripts/_Core`, `Game`, `App`; 2022-04 to 2025-12). An **approver** on Froglet Tasks with the core four (Shombith, 2026-10-25). | KidIgarus, isaiah.merrill@gmail.com |
 | Andrew | QA sessions and results. | Andrew Mokhtary (Soncub) |
@@ -32,6 +32,11 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
 
 1. **Look before you touch.** Run `git fetch origin`, then
    `python3 Tools/Build/who_works_where.py query <the paths you will change>` (about 10 s). It lists:
+   - **Owner**: the owner `Docs/TEAM.json` declares for the area, when the owner has said so. **This decides who to
+     ask.** The counts below credit whoever MERGED a pull request, so work that reached `bleeding-edge` through
+     someone's integration branch reads as theirs: FTUE came in through `Ys-bleeding-edge`, read as Yash's, and a
+     session wrote "FTUE owner" on a task (2026-10-18) when Shombith leads activation (2026-10-26). Add an `owners`
+     entry to `Docs/TEAM.json` whenever an owner tells you an area is theirs.
    - **In flight**: unmerged branches with recent work in those paths, and whose they are.
    - **Landed**: pull requests merged into `bleeding-edge` in those paths, who merged them and whose commits
      they hold.
@@ -92,6 +97,11 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    `/ship` puts `team_tasks.py pr-section` in the PR body. The old markdown board (`TEAM_TASKS.md`) is a pointer now;
    the `team_tasks_nudge.py` hook that pushed tasks into every prompt was switched off on 2026-10-23 and deleted on
    2026-10-25 (Shombith). Self-test: `team_tasks.py --self-test`.
+   **An area's owner is not a ticket's assignee.** Tickets still name nobody; owners are who a session ASKS before
+   changing an area, and `who_works_where.py query` prints the owner `Docs/TEAM.json` declares (`owners`). **Anything
+   on UGS or the backend** (Cloud Code, Cloud Save, Access Control, Moderation, authentication, dashboards, deploys)
+   **is Shombith's: ask him directly** (Shombith, 2026-10-26). For now Yash does the Cloud Code work, and may set up
+   the AI flight data; **anything he posts into the backend goes through Shombith first**.
 10. **Give a report to whoever asks** (Yash, 2026-10-15: "if someone asks you about a report of some other person
    working on some shared field, you should be able to give those reports to them"). Garrett asking for Yash's
    Regatta AI work, Shombith asking what changed in an area he shares: build the report from the system, never from

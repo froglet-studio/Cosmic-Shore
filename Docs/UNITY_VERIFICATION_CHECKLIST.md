@@ -65,6 +65,221 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: minors are never penalised automatically (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board R13. The age screen asked a birth year but kept only "13 or older"
+(`AnalyticsServiceFacade.SubmitBirthYear`), so nothing could tell an under-18. It now also keeps the year
+(`FairPlayAge`, PlayerPrefs `FairPlayBirthYear`, the youngest year entered wins) and `ServerMatchReports.StartAsync`
+sends it. `match-report.js` keeps it in the protected key `FAIRPLAY_AGE` (only ever younger), keeps no quit record for
+a player not surely 18 or of unknown age, and marks every signal about them `review: "human"`. Rides the match reports,
+so it is **gated off** with them (`MatchReportGate`). Affects the age screen (Shombith's UI, Yash's analytics facade):
+one added line, no change to what the screen shows or the analytics gate.
+
+**Verified without the editor:** `node Tools/UGS/CloudCode/match-report.test.cjs`: 14 passed (5 new); planted faults
+(quit counting on for minors; an older year replacing a younger one) both failed the tests. `unity_refcompile` player:
+88 assemblies, 0 errors; `FairPlayAgeTests` compile (editor config's 3 errors are the unchanged PlayMode usings).
+Amoebius port build: no errors in the changed files, a planted error in `FairPlayAge` caught.
+
+**Test in the editor:**
+1. `FairPlayAgeTests` pass (they save and restore the real PlayerPrefs key).
+2. Clear PlayerPrefs, Play, enter a birth year 15 years back on the age screen: PlayerPrefs `FairPlayBirthYear` holds it;
+   the analytics consent step still appears (13+), exactly as before.
+3. With the match-report gate on (`Tools/UGS/README.md`): after one match, the dashboard shows `FAIRPLAY_AGE` for that
+   player; quitting a match leaves `matchesLeft` at 0 for them, and an adult's quit still counts.
+
+### 🔴 Fair play: host measures AI-like steering (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T6, the part left after `PilotControl` went out of release builds: a modified client can
+switch on the AI pilot for its own hull, and the AI writes the same input a human does. `MovementPlausibilityMonitor`
+(the T5 host check) now also measures how each nose moves (`SteeringProfile`): the share of 10 Hz samples held still
+(under 2 deg/s) and the mean change in turn rate. The turn-end summary (ArcadeMatch channel) logs both for every guest
+and every AI hull. With `aiLikeMaxIdlePercent` and `aiLikeMaxTurnJerk` set in a `Resources/MovementPlausibilityConfig`
+asset, a guest at or under both after 60 s of flying raises one `AiLikeSteering` signal per turn. **Observe only**: no
+asset exists, so both limits are 0 and nothing is judged. Crew vessels, guests riding another hull, AI pilots and the
+host's own hull are never judged. A pilot swap restarts the measure.
+
+**Verified without the editor:** `unity_refcompile` player: 88 assemblies, 0 errors. Editor config: the new
+`SteeringProfileTests` compile (the 3 errors are the unchanged PlayMode usings in the facade). The test scenarios were
+re-run in Python: continuous correction gives 0% still and a jerk of 1.6; stop-and-flick gives 77% still and a jerk of
+138. Amoebius port build: no errors in the changed files; a planted error in `SteeringProfile` was caught.
+
+**Test in the editor:**
+1. `SteeringProfileTests` pass.
+2. Arena match, MPPM host + one guest, ArcadeMatch channel on (FrogletTools > Toolbox > Logging). At turn end the
+   summary lists each hull with "% still, deg/s2, s"; AI hulls read near 0% still. Write down the AI and human values
+   for a few hulls: they set the two limits.
+3. Guest takes an AI teammate's hull (pilot swap): the guest's steering restarts; no signal.
+4. Crew vessel (Wrasse and Grouper, Goby and Pistol) flown by a guest: listed as "(not judged)".
+
+### 🔴 Fair play: Steam sign-in on PC, linked to the existing account (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T1, the Steam part. New package `com.rlabrecque.steamworks.net` 2025.164.1 (Steamworks.NET,
+MIT, git package; approved by Shombith, 2026-10-25). `SteamPlatform` starts the Steam API on Windows, macOS and Linux
+only (a shell elsewhere), pumps its callbacks and issues the Web API ticket. `AuthenticationServiceFacade` (Shombith's auth)
+now: with no cached session, signs in WITH Steam (`SteamSignIn.TrySignInAsync`), falling back to anonymous; with a cached
+session, resumes it anonymously as before and then links Steam in the background (`SteamSignIn.LinkInBackground`). A
+refused Steam attempt does not raise `OnSignInFailed`. **Switched off**: `Resources/SteamConfig.asset` ships app id 0
+and `signInWithSteam` off, so nothing changes until both are set. Apple and Google sign-in are not done (they need their
+own plugins).
+
+**Verified without the editor:** `unity_refcompile` player and player-dev: **88 assemblies, 0 errors** (Steamworks.NET
+fetched at its locked commit); planted errors in `SteamPlatform` and `SteamCallbackPump` caught, so the guarded Steam code
+is really compiled against Steamworks.NET. webgl config (no standalone defines): 0 errors, the shell compiles. Editor
+config: the 3 errors are the unobtainable `Unity.Multiplayer.PlayMode` usings already in the facade (lines 9, 423, 426,
+unchanged; `MultiplayerSetup.cs` shows the same three). Amoebius port build (auth shim grown, separate commit): no errors
+in the changed files; the 13 left are in files this branch does not touch. Nothing run in Play mode, no Steam client here.
+
+**Test in the editor (needs the Steam client running and signed in, and the app id):**
+1. Edit-mode tests `SteamSignInTests` pass (the shipped config is off).
+2. With the shipped config, Play: sign-in is anonymous exactly as before; the console has no `[Steam]` line.
+3. Set the app id in `Resources/SteamConfig` and tick **Sign In With Steam** (local only, do not commit), enable the
+   Steam provider in the UGS dashboard (`Tools/UGS/README.md`, "Switching on Steam sign-in"). Clear the session token
+   (FrogletTools auth reset, or a fresh MPPM profile) and Play: the Boot channel shows `Steam=True`, sign-in succeeds,
+   and the dashboard player has a Steam identity.
+4. Play again with the cached session from an older anonymous account: it resumes the same player id and then links
+   (`[Steam] Linked Steam to this account.` on the Boot channel); the dashboard player gains the Steam identity.
+5. Quit Steam and Play: one `[Steam] Steam is not available` warning and an anonymous sign-in, no failure screen.
+6. Wrong provider setup (Steam provider off in the dashboard): one `UGS refused the Steam sign-in` warning, then an
+   anonymous sign-in, and the Authentication scene never shows its failure state.
+7. Windows player build: `steam_api64.dll` is in the build's Plugins folder.
+
+### 🔴 Fair play: Report and Block on the player profile popup (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T8. New package `com.unity.services.moderation` 1.1.0 (approved by Shombith, 2026-10-24).
+`PlayerReports.ReportAsync` sends a UGS Moderation report (Cheating -> `hacking`, Offensive name -> `player name`,
+Trolling -> `sabotage`), one per reported player per 600 s. `FriendProfilePopup` gains **Report** and **Block**: with no
+controls wired in the scene, it builds them (and three reason buttons) at start from copies of its Invite control,
+with Invite's listeners switched off. Report opens the reasons; a reason sends and the button reads "Reported". Block
+calls `FriendsServiceFacade.BlockPlayerAsync` and reads "Blocked". All words and the cooldown are in
+`Resources/PlayerReportConfig.asset`. Not gated.
+
+**Verified without the editor:** `unity_refcompile` player: **87 assemblies, 0 errors, 0 unobtainable** (the fetcher now
+falls back to the registry tarball, so Moderation, Multiplayer, Friends, Leaderboards and Play Mode compile for real);
+a planted error in the Moderation call was caught. Editor config: 3 errors, all in unchanged files. Amoebius port
+build (Moderation stub, separate commit): clean for the changed files, planted errors in `PlayerReports`,
+`FriendProfilePopup` and `MatchReporter` caught. Nothing run in Play mode.
+
+**Test in the editor (Menu_Main, two accounts in MPPM):**
+1. Hover another player's avatar in the presence list or party: the popup shows Report and Block beside Join/Invite,
+   laid out like Invite. **Look at the layout**: the copies sit in the Invite row's parent; if it looks crowded, wire
+   dedicated controls in the popup's "Report and Block" fields instead.
+2. Report > Cheating: the reasons replace the buttons, then Report reads "Reported" and is inert; the report appears
+   in the UGS Moderation dashboard (after `Tools/UGS/README.md` T8 step 1).
+3. Pressing Invite still invites; pressing Report never invites (Invite's listeners are off on the copies).
+4. Block: reads "Blocked"; the friends service lists the player as blocked.
+5. Gamepad: the new buttons are reachable with the D-pad.
+
+### 🔴 Fair play: every player's game hides offensive names it receives (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T7. `DisplayNameValidator.ForDisplay` judges a name received from another player on its words
+alone (the slur filter and the reserved team names, ignoring length and format a modified game can skip) and shows the
+authored `DisplayNameValidationConfigSO.hiddenNameReplacement` (`Pilot {tag}`, `{tag}` = 4 hex digits from the name,
+the same on every machine) instead. Applied where other players' names enter the game: `Player.Name` (from `NetName`),
+`PartyPlayerData.DisplayName` (presence lobby), `PartyInviteData.HostDisplayName`, the friends list, the weekly
+leaderboard rows. Not gated: clean names are unchanged.
+
+**Verified without the editor:** `unity_refcompile` player: 0 project errors; editor config: 3 errors, all in unchanged
+files (the unobtainable Multiplayer Play Mode package). Port build: no errors in the changed files. Four new
+`DisplayNameValidatorTests` (`ForDisplay_*`) compile; **not run**. Logging and conditional-compilation gates OK.
+
+**Test in the editor:**
+1. Test Runner > EditMode > `DisplayNameValidatorTests`: all pass, including the four `ForDisplay_*` tests.
+2. MPPM host + guest. In the guest, set `NetName` to `Admin` through the Inspector on its Player (stands in for a
+   modified game): the host's scoreboard, presence list and party UI show `Pilot ` plus four hex digits; the score still
+   attributes to that player.
+3. Normal names (yours, `Pilot9898`-style defaults, AI names) show unchanged everywhere.
+
+### 🔴 Fair play: match reports from every player (quits, host results), gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T9 and T4. `MatchReporter` (attached by `MultiplayerMiniGameControllerBase.OnNetworkSpawn`
+on every peer when `MatchReportGate.Enabled`) sends `start` at the first turn and `end` with the final scores (by UGS
+id) and the winner at `OnWinnerCalculated`, keyed by `gameData.MatchId`. `Tools/UGS/CloudCode/match-report.js` counts
+quits and compares reports. **Gate off:** nothing is attached and behaviour is unchanged.
+
+**Verified without the editor:** `unity_refcompile` player: 0 project errors, none in the changed files; a planted
+error in `MatchReporter.cs` was caught. Port build: no errors in the changed files. `match-report.test.cjs`: 9 passed;
+removing the quit count fails it.
+
+**Test in the editor** (after `Tools/UGS/README.md` "Switching on match reports" steps 1-3, MPPM host + 1 guest):
+1. Play a race to the end: both players' `FAIRPLAY_CONDUCT` show started 1, finished 1, left 0; the host has no
+   `FAIRPLAY_SIGNALS`.
+2. Start another race and quit the guest (close its window), then start a third: the guest shows left 1, leave
+   rate 0.5.
+3. AI backfill seats never appear in `players` or `scores`.
+4. With ArcadeMatch logging on, no `[MatchReport]` refusals in a normal match.
+
+### 🔴 Fair play: server-checked weekly leaderboard, gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T2. `Tools/UGS/CloudCode/weekly-score.js` checks a weekly-challenge time (known board,
+at least 20 s, 20 s between posts, 200 a week) and posts it with the same period and avatar metadata the board reader
+uses. `WeeklyChallengeLeaderboardService.SubmitToBoardAsync` sends through it when `ServerScoreGate.Enabled`
+(`ServerScores.cs`) is true; `Tools/UGS/AccessControl/project-policy.json` then denies direct writes. **Gate off:**
+behaviour is unchanged.
+
+**Verified without the editor:** `unity_refcompile` player OK; this file sits in the Leaderboards
+unobtainable-package bucket, and every error listed for it is a Leaderboards type (none from the new method). The port
+build (with its Leaderboards and Cloud Code stubs) compiles it with no errors. `weekly-score.test.cjs`: 5 passed;
+removing the time floor fails it.
+
+**Test in the editor** (after `Tools/UGS/README.md` T2 steps 1-3 on the development environment):
+1. Complete this week's challenge: the time appears on the board as before, with your avatar.
+2. Weekly test mode, complete again within 20 s: no new row; ArcadeMatch/WeeklyChallenge log says `too_soon`.
+3. With the policy applied and the gate OFF in another build: the submit fails with a 403 warning (proves the policy).
+
+### 🔴 Fair play: server-owned crystal wallet, gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T3 (`Docs/AntiCheat/README.md` §8b, `Tools/UGS/README.md`). New package
+`com.unity.services.cloudcode` 2.10.4 (flagged and approved by Shombith, 2026-10-24). The Cloud Code script
+`Tools/UGS/CloudCode/economy.js` owns the wallet in the protected key `PLAYER_ECONOMY`. `ServerEconomy.cs` calls it;
+`PlayerDataService` applies every change locally, then takes the server's wallet when the last answer arrives.
+`DailyToyActivity` claims its reward through the new `PlayerDataService.ClaimReward`. **`ServerEconomyGate.Enabled` is
+false**: until the script is deployed, behaviour is unchanged and nothing calls Cloud Code.
+
+**Verified without the editor:** `unity_refcompile` player: 0 errors in project code, with the Cloud Code package
+fetched and compiled; a planted error in `ServerEconomy.cs` was caught. `node Tools/UGS/CloudCode/economy.test.cjs`:
+11 passed, and removing the balance check made it fail. The Amoebius port build (separate Port-only commit, a
+Cloud Code stub) compiles the changed files with no errors.
+
+**Test in the editor:**
+1. Open the project: Package Manager resolves Cloud Code 2.10.4 with no errors, and `packages-lock.json` gains no
+   other change.
+2. With the gate OFF: earn placement crystals, buy a hangar upgrade, start today's toy activity. The balance moves
+   exactly as before, and the Console shows no `[ServerEconomy]` lines.
+3. Deploy `economy.js` to the **development** environment (`Tools/UGS/README.md` steps 2-3), set the gate ON, and sign
+   in to that environment.
+4. First sign-in: the balance stays what it was (one-time migration, capped at 20000).
+5. Finish a match: the reward appears at once and stays after the server answer. Finish another within 30 s
+   (e.g. quit and replay fast): the second reward appears, then the balance drops back (`too_soon`).
+6. Toolbox crystal field (development environment): crystals are added and stay.
+7. Start today's toy activity twice: paid once.
+8. Edit `PLAYER_PROFILE.Economy.CrystalBalance` in the dashboard to 999999, restart: the game shows the server balance.
+
+### 🔴 Fair play: host measures guests' movement; PilotControl out of release builds (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T5 and T6 (`Docs/AntiCheat/README.md` §8b). `MovementPlausibilityMonitor` is attached
+by `ServerPlayerVesselInitializer.OnNetworkSpawn` on the host. Ten times a second it measures each guest-owned hull's
+path speed over a 1 s window and counts discontinuities (respawns, wormholes, warps, teleports). It only OBSERVES
+until `Resources/MovementPlausibilityConfig` (a `MovementPlausibilityConfigSO`, not authored yet) sets per-hull
+ceilings; then a sustained excess raises a `FairPlaySignal` (never a kick). The host's own hull is not judged; AI
+hulls are measured as calibration. `PilotControl` (the Third Eye's You / AI test tool) is now inside
+`#if UNITY_EDITOR || DEVELOPMENT_BUILD`, like its two callers.
+
+**Verified without the editor:** `unity_refcompile` player (release) and player-dev: 0 errors in project code, none of the
+230 unobtainable-package errors in a changed file. The port build compiles the new bodies and caught a planted error in
+the monitor. `check_console_logging.py` and `check_conditional_compilation.py`: OK. Nothing run in Play mode.
+
+**Test in the editor (MPPM, 2 players + AI backfill, Skim Race or any race):**
+1. FrogletTools > Toolbox > Logging: turn on **ArcadeMatch**.
+2. Play one race as host + one virtual player. At the turn's end the host logs
+   `[FairPlay] movement this turn`: one line per guest hull and per AI hull, with the fastest sustained speed and
+   jumps. Expect believable numbers (no zeros for a hull that flew, no line for the host's own hull).
+3. No `[FairPlay] signal` lines appear (no ceilings authored).
+4. Create the config (Create > ScriptableObjects > Fair Play > Movement Plausibility Config) in `Assets/Resources/`
+   named `MovementPlausibilityConfig`, give the guest's hull a ceiling BELOW its logged maximum, play again: a
+   `[FairPlay] signal: SustainedSpeed ...` line appears for the guest, at most once per 30 s. Delete the test asset.
+5. Profiler: `MovementPlausibilityMonitor.Update` allocates 0 B per frame after the first samples.
+6. Third Eye's You / AI toggle still works in the editor; a release (non-development) player build compiles.
+
 ### 🔴 The AI Dolphin's Switchback drive, one per intensity (`Ys-bleeding-edge`, 2026-10-26, the AI learning sweep) — NOT EDITOR-VERIFIED
 
 **What landed:** `AIBoostPolicySO.ForMode(policy, mode, intensity)` loads `<policy>_<mode>_I<n>` before the mode's
