@@ -39,6 +39,7 @@ Assets/_Scripts/Tests/Editor/LobbyPropertyWriterRetryTests.cs
 Assets/_Scripts/Tests/Editor/PartyPushAndVoidedReadTests.cs
 Assets/_Scripts/Tests/Editor/PresencePushTests.cs
 Assets/_Scripts/Tests/Editor/AbsenceStrikesTests.cs
+Assets/_Scripts/Tests/Editor/DepartureLeaveTests.cs
 Assets/_Scripts/Tests/Editor/PartyRosterTests.cs
 Assets/_Scripts/Tests/Editor/RaceRankToastDriverTests.cs
 Assets/_Scripts/Tests/Editor/RegattaTeamPlayTests.cs
