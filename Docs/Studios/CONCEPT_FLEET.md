@@ -628,3 +628,45 @@ records Keep / Drop and the feel of the relay, the fuse and the digest on the De
 the levels, a course of its own, bodies via `/vessel-model`, and only then the Unity clone by `/artifact-to-unity`
 with the Tide Run (`/arcadegame`) and the four abilities.
 
+
+### 11.4 The ability kit (round 2 proposal, 2026-10-27, Yash: "get inspired from our other 21 vessels in game, and my 10 prototypes")
+
+Read from the 21 shipped element maps (`Assets/Resources/ElementalAbilityMaps/*.asset`) and the ten concept prototypes
+(Gibbon, Flea, Albatross, Remora, Dragonfly, Mole, Marlin, Eel, Octopus, Gecko). **Each zooid owns one element**, so
+the vessel still has the fleet's four: the Bell Space, the Sting Charge, the Bract Mass, the colony Time. Each zooid has
+a passive and two triggers; B calls the colony from any zooid (proposal; today LT calls it). The page carries the same
+table as data (`KIT` in `siphonophore-studio.js`, Vessel Config > Ability kit), each row marked **in the sim**, **in
+part** or **proposal**.
+
+| Part | Input | Ability | What it does | From | State |
+|---|---|---|---|---|---|
+| Bell (Space) | passive | Lantern | Lights every dark crystal in reach; Space x1 to x1.8 | Dolphin Echo Sight, Angler Paint | in the sim |
+| | RT | Pulse Jet | Hold to inhale, release to jet; on the beat of the last two pulses the chain grows x1.1 a pulse to x1.8; a pulse doubles the lantern for 1 s | Octopus | in part (tap pulse) |
+| | LT | Slipstream | Hold to lead: the Sting and the Bract form up in its wake, one, two, three, drafting at its speed x1.3 | Remora, Jacks The Call | proposal |
+| | L5 | Beacon | A pulse lights the whole window | Dolphin Pilot Echo | in the sim |
+| Sting (Charge) | RT | Nematocyst Volley | Aimed venom to 160 u; breaks a lit crystal's husk (Charge x1 to x3 prisms a round), else smashes mass | Sparrow Pulsefire, Urchin Chain Spikes | in the sim |
+| | LT | Tentacle Lash | The Sting streams a tentacle of its trail; hold to coil (turn x2), let go to whip it straight, cutting mass; a rival hull struck loses petals, which spill as crystals | Eel, Thresher, Wrasse Kite Ram | proposal |
+| | passive | Reel | A hit on a target over 120 u away pulls the Sting to it like a bungee: the slowest zooid catches up by hitting things | Gibbon, Shrike Void Sling | proposal |
+| | L5 | Contagion | A husk the venom opens poisons the next husk in the window | Manta Contagion, Urchin Overcharge | proposal |
+| Bract (Mass) | RT | Net Cast | Catches freed crystals in reach into the hold (3); Mass x1 to x1.6 | Jacks netting, Angler Lure | in the sim |
+| | LT | Bract Shell | Super-shielded plates, open ahead, clear the mass they meet; let go and they drop as danger prisms behind the hold | Orca Danger Shield, Rhino afterimages | in part (clears mass) |
+| | passive | Anchor | Stopped on mass it digs in: net reach x2, the others dock in half the time; the colony forms where it sits | Grizzly Dig In, Shrike Nest, Gecko | in part (gather at the Bract) |
+| | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in part (hold +1) |
+| Colony (Time) | passive | Digest | One held crystal into the score every 2 s; Time x1 to x0.5 | its own | in the sim |
+| | Helm RT | Ram Spool | Hold to wind up; at full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit | Rhino Ramp Spool and Breaker, Thresher | in part (tap pulse) |
+| | Helm LT | Scatter | Hold to split; let go and the three are flung x1.4 along the stick, each to its own next crystal | Remora sling, Gecko hop, Butterfly Fold | in part (hold to split) |
+| | Lance RT | Siphon Lance | Aimed hitscan to 400 u, cuts mass and wall cells | Shrike Void Lance, Serpent Sniper | in the sim |
+| | Ward LT | Colony Shell | The hull ploughs the mass it meets | Grizzly Rush, Brittle Star Speed | in the sim |
+| | Ward RT | Chain Wake | The colony lays its body behind it as a short chain of shielded prisms | Eel body, Brittle Star corner trails | proposal |
+| | L5 | Surge | After a split the zooids keep the colony's speed for 3 s | Remora sling, Urchin Slipstream | in the sim |
+
+**Why it is one vessel (the combos no single zooid finishes):** light, venom, net, digest (each verb is the next one's
+condition); lash, Trawl, digest (the Sting knocks a rival's petals loose as crystals, the Bract nets them, the colony
+digests them); Slipstream carries the slow pair (the march is a Bell ability); Anchor sets the fuse point and the
+Shell's danger drop covers the docking; the Bell's pulse chain carries into the colony's spool; Scatter lands the three
+on the window's three crystals.
+
+**Rules it keeps:** PvP is petals only (the lash takes petals, and every scored hit silences per `SILENCE.md`); one
+scaled parameter per element; the AI writes inputs only. **Decision needed (designer):** which proposals to fly next
+(suggested order: Slipstream, Tentacle Lash with Trawl, Pulse Jet's beat, Ram Spool), and whether B as the shared
+fuse call frees LT well enough on a phone.
