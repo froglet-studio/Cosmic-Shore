@@ -37,7 +37,9 @@ the only reason an entry is allowed.
 WHAT THIS DOES NOT PROVE.
 
 That a count under the limit is cheap enough on every device, or that a config's membrane is the
-one a scene actually shows (a mode may scale a preview shell, ModePreviewArena does). It is the
+one a scene actually shows (a mode may scale a preview shell, ModePreviewArena does). A component a
+prefab VARIANT adds to its root (m_AddedComponents) is not read: no shipped membrane or cytoplasm
+variant does that, and a variant that adds a CapsuleMembrane would be read by its scale instead. It is the
 static cube law against the shipped YAML, nothing more. The fix it points at is the config's
 `CytoplasmShardDistance` (scale it with the radius: 120 x R / 1200 keeps the standard count).
 
@@ -60,7 +62,7 @@ SNOW_CHANGER_SCRIPT = "Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChan
 
 STANDARD_RADIUS = 1200.0      # the standard cell (CapsuleMembrane.prefab)
 STANDARD_SPACING = 120.0      # SnowChanger.prefab's shardDistance
-LIMIT_FACTOR = 3.0            # fail above ~12,566 shards
+LIMIT_FACTOR = 3.0            # fail above 12,567 shards
 
 
 def shard_count(radius, spacing):
@@ -107,7 +109,7 @@ def ref(text, field):
     return int(m.group(1)), m.group(2)
 
 
-def int_field(text, field):
+def number_field(text, field):
     m = re.search(r"^  " + field + r": (-?[\d.eE+]+)\s*$", text, re.M)
     return float(m.group(1)) if m else None
 
@@ -244,7 +246,7 @@ def evaluate(configs, prefabs):
         if radius is None:
             rows.append((path, None, None, None, f"membrane prefab {mem[1]} not readable"))
             continue
-        override = int_field(text, "CytoplasmShardDistance") or 0
+        override = number_field(text, "CytoplasmShardDistance") or 0
         spacing = override if override > 0 else prefabs.shard_distance(cyto[1])
         if spacing is None:
             rows.append((path, radius, None, None, f"cytoplasm prefab {cyto[1]} has no SnowChanger"))
