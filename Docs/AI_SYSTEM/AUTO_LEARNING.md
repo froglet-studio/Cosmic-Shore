@@ -18,7 +18,7 @@ or leaves it to the sweep below.
 | New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, every hour | `Tools/Build/ai_learn.py --run` |
 | The AI's numbers change for that mode only | the learners (`<asset>_<Mode>` variants) | `Assets/Resources/AIBoostPolicies/`, `Assets/Resources/RaceLines/`, `SkimRaceAIConfig_Regatta` |
 | What changed, and whether the AI now races like the person | the sweep | `Docs/Reports/AI_LEARNING.md` |
-| It reaches the person's editor | the person pulls `Ys-bleeding-edge` as usual | - |
+| It reaches the person's editor | `Ys-bleeding-edge` is merged into `bleeding-edge` (a pull request), and the person pulls it. Yash's editor ran `bleeding-edge` on 2026-10-26 (his load reports' `gitBranch`), so a sweep change reaches his races only after that merge | - |
 
 `ai_learn.py` remembers what it has learned from (`Docs/AI_SYSTEM/ai_learning_seen.json`), so an hour with no new
 race writes nothing. Only a race a learner actually read is remembered as learned: one in a mode on hold or of a hull
@@ -36,7 +36,14 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 1. `git fetch origin`, check out `Ys-bleeding-edge`, merge `origin/Ys-bleeding-edge` (merge, never rebase).
 2. `python3 Tools/Build/ai_learn.py`. **0 new flights: stop.** No commit, no message.
 3. `python3 Tools/Build/ai_learn.py --run`, then read `Docs/Reports/AI_LEARNING.md`.
-4. For each mode with new flights, judge whether the AI races well enough to win against the person:
+4. For each mode with new flights, judge whether the AI races well enough to win against the person. **A race counts
+   only if the editor that flew it HAD the AI's change**, not just if it came later: the play session's load report
+   (`BugLedger/shared/reports/<user>/load/load_<scene>_<time>_*.json`, the nearest one before the race) names its
+   `gitBranch` and `gitCommitHash`; `git merge-base --is-ancestor <the AI's commit> <that hash>`. A race flown on a
+   build without the change measures the OLD AI (2026-10-26: Breakwater's new boost bands were 70 minutes old on
+   `Ys-bleeding-edge` and absent from Yash's `bleeding-edge` build).
+   The rival report's circling counts only time near the ring while NOT closing on it (a slow hull on long legs spends
+   seconds inside 250 u on a straight approach), and "boosted" needs the boosting or discharging bit as well:
    - It finishes, its rings per minute are near the person's, and it barely circles or stalls: the learned numbers
      are the whole job.
    - It circles, stalls, threads few rings or is far slower: numbers alone will not fix that. Diagnose it with the
