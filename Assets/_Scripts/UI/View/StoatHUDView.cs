@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,8 +13,10 @@ namespace CosmicShore.UI
     /// <list type="number">
     /// <item><b>Ripple</b> (charge) — how big a ripple letting go RIGHT NOW would throw: the open pair's separation as a
     /// share of the largest ripple. Empty with no pair held.</item>
-    /// <item><b>Mode</b> (mass) — 1 in Mass mode, 0 in Time mode, eased: a SWITCH moving between its two ends, never a
-    /// meter being spent (the Butterfly's Mass card).</item>
+    /// <item><b>Mode</b> (mass) — 1 in Mass mode, 0.5 in Hybrid, 0 in Time mode, eased: a SWITCH moving between its
+    /// ends, never a meter being spent (the Butterfly's Mass card). The card's ICON follows the mode too
+    /// (<see cref="SetModeIcon"/>), so the mode B is in reads at a glance on every device - on a phone the card is the
+    /// button that switches it.</item>
     /// <item><b>Accretion</b> (space) — how far the open pair has grown on what its sink swallowed (Space 5); empty
     /// without the upgrade.</item>
     /// <item><b>Time</b> — in Mass mode the pathfinder's boost (how much of the warp's speed-up is on); in Time mode,
@@ -42,6 +45,17 @@ namespace CosmicShore.UI
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
+        [Header("Mode icons (the Mass card's icon follows the mode B is in; empty = the card keeps its authored icon)")]
+        [Tooltip("Mass mode: the field trajectory - the dipole and the thick trail.")]
+        [SerializeField] Sprite massModeIcon;
+        [Tooltip("Time mode: the catch sling - the orbit.")]
+        [SerializeField] Sprite timeModeIcon;
+        [Tooltip("Hybrid mode: the catch sling with a short path.")]
+        [SerializeField] Sprite hybridModeIcon;
+
+        StoatModeExecutor.Mode? _shownMode;
+        Sprite _authoredModeIcon;   // the card's own icon, shown for a mode whose slot is empty
+
         /// <summary>Seat every readout at rest. Idempotent: it re-runs on a vessel swap.</summary>
         public override void Initialize()
         {
@@ -49,6 +63,8 @@ namespace CosmicShore.UI
             Seat(modeGauge, 1f);
             Seat(accretionGauge, 0f);
             Seat(timeGauge, 0f);
+            _shownMode = null;
+            SetModeIcon(StoatModeExecutor.Mode.Mass);
         }
 
         void Seat(Image gauge, float fill)
@@ -60,6 +76,22 @@ namespace CosmicShore.UI
 
         public void SetRipple(float charge01) => Push(rippleGauge, charge01, false);
         public void SetMode(float massMode01) => Push(modeGauge, massMode01, false);
+
+        /// <summary>The Mass card's icon for <paramref name="mode"/>; a no-op while the mode is unchanged.</summary>
+        public void SetModeIcon(StoatModeExecutor.Mode mode)
+        {
+            if (_shownMode == mode) return;
+            var sprite = mode switch
+            {
+                StoatModeExecutor.Mode.Time => timeModeIcon,
+                StoatModeExecutor.Mode.Hybrid => hybridModeIcon,
+                _ => massModeIcon,
+            };
+            if (!TryGetAbilityIcon(Element.Mass, out var icon) || !icon) return;
+            if (!_authoredModeIcon) _authoredModeIcon = icon.sprite;
+            icon.sprite = sprite ? sprite : _authoredModeIcon;
+            _shownMode = mode;
+        }
         public void SetAccretion(float accretion01) => Push(accretionGauge, accretion01, false);
         /// <summary>The Time card: <paramref name="fill01"/>, in the ready colour while <paramref name="ready"/>.</summary>
         public void SetTime(float fill01, bool ready) => Push(timeGauge, fill01, ready);

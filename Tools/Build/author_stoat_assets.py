@@ -1533,7 +1533,10 @@ def hud_variant_from_donor(donor: str) -> str:
                   "  timeGauge: {fileID: 7700000000000001233}\n"
                   f"  gaugeColor: {color(0.59, 0.65, 0.76)}\n"
                   f"  readyColor: {color(157 / 255, 1, 46 / 255)}\n"
-                  "  colorBlendRate: 15\n", view)
+                  "  colorBlendRate: 15\n" +
+                  "".join(f"  {field}: {{fileID: 21300000, guid: {stoat_icon_guid(name)}, type: 3}}\n" for field, name in
+                          (("massModeIcon", "Stoat_ModeMass.png"), ("timeModeIcon", "Stoat_ModeTime.png"),
+                           ("hybridModeIcon", "Stoat_ModeHybrid.png"))), view)
     set_doc(docs, "5875684227236902712", view)
     # The gauges: Charge and Space reuse the Thresher's two (renamed); Mass and Time get their own.
     for fid, name in (("7700000000000001200", "RippleGauge"), ("7700000000000001210", "AccretionGauge")):
