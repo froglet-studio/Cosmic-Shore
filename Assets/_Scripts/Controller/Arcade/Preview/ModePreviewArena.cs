@@ -78,11 +78,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Build the arena for <paramref name="definition"/> at <paramref name="origin"/>.
         /// <paramref name="template"/> is any live cell to clone the prefab and runtime shape from
-        /// - normally the scene's own cell.
+        /// - normally the scene's own cell. <paramref name="prismStride"/> overrides the library's
+        /// flight thinning (1 = every prism, as a match lays them; 0 = the library's
+        /// <see cref="ModePreviewLibrarySO.FlightPrismStride"/>) - a replay stands the arena a race
+        /// was flown in, so it asks for its own density (<c>Docs/REPLAYS.md</c>).
         /// </summary>
         public bool Stand(ModePreviewDefinitionSO definition, CellConfigDataSO config, Cell template,
                           GameObject cellPrefab, Vector3 origin, Container container = null,
-                          int intensity = 1)
+                          int intensity = 1, int prismStride = 0)
         {
             if (IsStanding) return false;
 
@@ -154,7 +157,8 @@ namespace CosmicShore.Gameplay
             // method; the track structure below builds inside an explicit scope.
             int stride = 1;
             var previewLibrary = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
-            if (previewLibrary) stride = previewLibrary.FlightPrismStride;
+            if (prismStride > 0) stride = prismStride;
+            else if (previewLibrary) stride = previewLibrary.FlightPrismStride;
             Cell.SatellitePrismStride = stride;
 
             if (!Cell.InitializeSatellite(config))

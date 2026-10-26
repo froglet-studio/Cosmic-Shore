@@ -14480,6 +14480,99 @@ verification, steps 2-9. The short version:
 4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
+## 🔴 Match replays on Will's Theater + AstroLeague goal replay port (2026-10-15, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session, so `/verify-unity` could not run. Checked offline only: `Tools/Build/unity_refcompile/run.sh`
+player (0 errors in project code, no changed file in any unverified bucket) and editor (0 errors in changed files; the 3
+known `AuthenticationServiceFacade` MPPM errors); `ReplayStoreTests` compiled and RUN outside Unity with Roslyn + the
+cached NUnit (20/20; negative control: an overwrite and an open path guard fail 7); the out-of-editor gates. Design:
+`Docs/REPLAYS.md`, `Docs/THEATER.md`.
+
+1. **Theater itself** (Will Bogen's P0, never opened in Unity after his last fixes): run `Docs/THEATER.md` §7's list.
+   Press 9, 9; a file lands in `<repo>/Recordings/`; press 8; the world and its prisms are in shot and the HUD is gone;
+   press 1 and fly the free camera; press 2 and a loop returns to the same vantage; press 8 and the HUD and live ships
+   come back.
+2. **Regatta records itself.** Arcade > Regatta, race to the end screen. **Pass:** `<repo>/Recordings/` holds
+   `Regatta_<date>_<time>.cstheater` and `Regatta_<date>_<time>.replay.json`; the JSON lists every pilot (yours has
+   `"IsLocal": true`), `"HasResults": true`, and its winner and scores match the scoreboard.
+3. **Watch it.** Still in the Regatta scene after that race, press 8. **Pass:** the Theater plays that race; the ghosts
+   are the right hulls in their domain colours; Free / Pilot / Orbit / Chase all work.
+4. **Leaving keeps the replay.** Leave a Regatta race from the pause menu mid-race. **Pass:** a replay is still saved,
+   with `"EndedBecause": "left the match"` and `"HasResults": false`.
+5. **Retention.** Create `Resources/ReplayConfig` with Keep Newest = 2 and race three times, after making one hand
+   recording with 9. **Pass:** exactly the two newest replay pairs remain, and the hand-made recording is untouched.
+6. **Only the configured modes record.** Play a Skim Race. **Pass:** no new replay.
+7. **Online.** Host and guest race Regatta together. **Pass:** each machine saves its own replay of the race.
+8. **AstroLeague goal replay** (ported onto Theater's poses and interpolation). Score a goal. **Pass:** the ghost ball
+   blooms in, retraces the shot on the broadcast camera, shrinks out, and the gameplay camera comes back, as before.
+9. **Cloud index.** Signed in, after a Regatta replay: the UGS dashboard shows player data key `REPLAY_INDEX` holding
+   that replay's summary (no frames).
+
+## 🔴 Replay browser, Arcade Replays button and playback HUD (2026-10-24, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session, so `/verify-unity` could not run. Checked offline only: refcompile player (0 errors in
+project code) and editor (the 3 known `AuthenticationServiceFacade` errors, 0 in changed files); `ReplayCommandTests`
+RUN outside Unity with Roslyn + the cached NUnit (17/17) and `ReplayStoreTests` re-run (20/20);
+`author_menu_replays.py --check` / `--self-test` (8 planted defects caught), `author_menu_arcade.py --self-test` (20,
+including the new Replays one); the two Menu_Main generators proven order-independent; the out-of-editor gates. Design:
+`Docs/REPLAYS.md` section 6. Needs a finished Regatta replay on the device first (the list above, item 2).
+
+1. **The button.** Open the Arcade. **Pass:** REPLAYS sits left of BACK in the header, in the same style; it opens the
+   Replays window; B closes it back to the Arcade (not to Home).
+2. **The list.** **Pass:** the Regatta replay is the first row, newest first: "Regatta", the date and length, "Winner:
+   <name>" (or "No final results" for a race you left), pilots and intensity; the pad lands on its WATCH; D-pad down walks
+   the rows and the list scrolls to follow; the right stick scrolls; with no replays the empty line shows instead.
+3. **Watch from the menu.** Press WATCH. **Pass:** the menu disappears; the race plays as ghosts with the HUD over it
+   (title, time counting up, scrub bar moving); no menu button reacts to the pad underneath. (Since 2026-10-24 the ghosts
+   race inside the arena - the next entry, "Replays inside the arena".)
+4. **Controls.** **Pass:** A pauses / plays (the button reads PLAY while paused); LB / RB skip 5 s; LT / RT halve /
+   double the speed between x0.25 and x4; D-pad left / right change the shot (the readout says FREE, PILOT, ORBIT,
+   CHASE) and up / down the pilot; on Free the pilot name hides and the sticks fly the camera; dragging the scrub bar
+   seeks; each HUD button does the same with the mouse or a touch.
+5. **Leaving.** Press B (and again with EXIT, and Escape). **Pass:** the replay ends, the menu and its camera come back
+   exactly as they were (the lava-lamp vessel visible, the music still playing), focus is on the row you watched, and
+   that same B press did NOT also close the Replays window.
+6. **Delete.** Press DELETE once: it reads CONFIRM; wait 3 s: it reads DELETE again. Press it twice. **Pass:** the row
+   and both files in `<repo>/Recordings/` are gone; the next row takes focus.
+7. **Another device.** Signed in on a second device (or after deleting the local files of a replay still in
+   `REPLAY_INDEX`). **Pass:** an ON YOUR OTHER DEVICES section lists it with "Recorded on another device" and no buttons.
+8. **A broken file.** Delete a replay's `.cstheater` but keep its `.replay.json`, reopen the window. **Pass:** the row is
+   gone (the store skips orphans); corrupt the `.cstheater` instead: WATCH shows "That replay could not be opened." and
+   a `[Replay] Cannot watch` warning names the reason.
+9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
+   black screen), and the Theater's own playback runs.
+
+## 🔴 Replays inside the arena (2026-10-24, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+WATCH now stands the race's own arena - the mode preview's satellite cell with the config the match ran (Regatta's
+rails), its rings - 120,000 units down -Z, shifts the ghosts onto it and plays there (`Docs/REPLAYS.md` §6.1). No Unity
+CLI in the session, so `/verify-unity` could not run. Checked offline: refcompile player (0 errors in project code) and
+editor (the 3 known errors, 0 in changed files); `ReplayStagePlacementTests` 4/4 run with Roslyn + NUnit (negative
+control: a flipped shift fails one), `ReplayStoreTests` 20/20, `ReplayCommandTests` 17/17; `author_menu_replays.py`
+`--self-test` 9/9 planted defects caught; the gates. Needs a Regatta replay recorded AFTER this change (the recording
+now carries its cell config and the summary its `ArenaOrigin`); an older one still plays in the arena of its
+intensity.
+
+1. **The arena builds.** Arcade > REPLAYS > WATCH. **Pass:** "Building the arena" shows over the dimmed menu for a few
+   seconds, then the race plays with the three Regatta rails and the gate rings around the ghosts; the menu's own world
+   (the lava lamp, its cell) is nowhere in shot.
+2. **The ghosts are ON the course.** Watch the start and a few corners on Chase and Orbit. **Pass:** the ghosts start on
+   the start line and thread the rings; an Urchin's ghost rides along its rail, not beside it. (A ghost offset from the
+   course by a constant distance means the arena origin is wrong - check the summary's `ArenaOrigin`.)
+3. **Full rails.** **Pass:** the rails are continuous ribbons as in the match, not dotted (Arena Prism Stride 1).
+4. **Cancel while building.** Press WATCH, then B (and again with CANCEL, and Escape) while "Building the arena" shows.
+   **Pass:** back on the list at once, no error, no status line; WATCH again works.
+5. **Leaving tears it down.** Leave a replay, open the Hierarchy. **Pass:** `ModePreviewArena` and `ReplayStage
+   (Regatta)` are gone within a few seconds; the lava lamp's trails still work (the pool survived); no frame hitch on
+   the way back worth noticing.
+6. **Back to back.** Watch, leave, watch again five times. **Pass:** each build and teardown is clean, the Console stays
+   clear, memory does not climb (Profiler > Memory, total used).
+7. **Next to the preview.** Open a card's configure window so its preview stands, close it, then watch a replay at once.
+   **Pass:** both satellites come and go without touching each other.
+8. **No arena available.** Temporarily set Arena Build Timeout Seconds to 5 on a Resources/ReplayConfig and watch.
+   **Pass:** a `[Replay] ... did not finish building` warning, and the race plays on the dark stage instead.
+9. **Performance.** Profile a replay inside the arena. **Pass:** frame time comparable to watching the Regatta match
+   itself; if the build hitches the menu, raise Arena Prism Stride and note the number.
 
 ## 🔴 2026-10-17 — Bleeding-edge merge + first-login guide on the rev-3 menu (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
