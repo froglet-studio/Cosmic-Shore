@@ -51,6 +51,30 @@ Sign conventions (Unity, verified): positive about up = yaw right; positive abou
 maps right→up). Note `BarrelRollController`'s header comment states this backwards —
 do not copy it (follow-up below).
 
+### The wings swing with the sword (Garrett, 2026-10-26: "bring the wings into the rhino's sword animations")
+
+`RhinoAnimation` lays a SWORD LAYER on both front wings (and so on the pods and back plates
+they carry) after the flight puppetry has run: it reads the pose the executor last wrote
+(`ShieldSwipeActionExecutor.CurrentPose`, the same channels a combo flourish fills) and turns
+each wing about its own pivot by `swordFollowYawDegrees · sin(yaw)` (20), `swordFollowRollDegrees ·
+sin(roll)` (30) and `swordFollowPitchDegrees · sin(pitch)` (25), composed in the blade's order
+and in the blade's own frame (`PoseFrame`, the fuselage), so the wings swing, bank and bow the
+way the blade does; a lunge (`thrust`) sweeps both wings back by `swordLungeSweepDegrees` (20)
+per unit, mirrored. The sines keep the lean continuous through a flourish that spins the blade
+a full turn and through the wrap at its end. The layer is lifted off before the puppetry eases
+the wings and laid back on after, so the flight pose never smooths toward the sword's. Every peer
+poses the blade from the same mirrors, so every peer leans the same wings. A hull with
+`RhinoAnimation` and no swipe executor (the Jacks) has no layer. The four numbers are fields on
+`RhinoAnimation` in `Rhino.prefab`.
+
+### Framing: the Rhino sits low in its camera (2026-10-26)
+
+The chase camera looks at the vessel's root, and a 60–240-unit blade standing up off the nose
+filled the top of the frame. `RhinoCameraSettingsSO.lookAheadLift` is **12**: the camera looks
+12 units above the hull, so the Rhino sits lower on screen and the blade spans roughly −10° to
++16° about the centre at rest length (from −70, 60° FOV). The hull itself is not moved: the
+prism trail, the hull colliders, the AI's aim and the sword's pivot all stay on the root.
+
 ## Input paths
 
 - **Mirrors (every peer, every device but touch — 2026-10-16)**:
@@ -434,6 +458,11 @@ there but a stepped sword falsifies this analysis; 0/1 there confirms the driver
    owner is feathering (analog pose from the replicated mirrors, since 2026-10-16 — it used to
    show full binary swings). A keyboard Rhino shows its rate-limited swing on both clients.
 4. Turn end / vessel swap mid-pull: sword snaps back to its authored rest pose.
+5. Wings follow the sword: feather RT then LT and both. The front wings (with the pods) swing
+   and bank with the swipe and bow with the chop; a tap combo (RR, RLR, …) carries them through
+   the flourish and back. Flying without the triggers, the wings fold exactly as before.
+6. Framing: the Rhino sits below the centre of its chase camera and the resting blade reads
+   roughly centred. Too low or too high is `lookAheadLift` on `RhinoCameraSettingsSO`.
 
 ### Swing velocity model + debris retune (this branch — needs a human at the editor)
 
