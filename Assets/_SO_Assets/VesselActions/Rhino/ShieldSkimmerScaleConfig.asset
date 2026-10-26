@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 179e407d1d9d40babefd4e314ae7e59f, type: 3}
   m_Name: ShieldSkimmerScaleConfig
   m_EditorClassIdentifier: 
-  baseScale: 30
-  maxScale: 120
+  baseScale: 24
+  maxScale: 96
   prismGrowSpeed: 30
   shrinkSpeed: 10
   crystalBurstFactorAtFullEnergy: 4
