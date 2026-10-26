@@ -21466,6 +21466,13 @@ errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
       at a constant 20 blows/s).
 - [ ] Other swarms (the research plans, the ecology swarm) show no new shields.
 
+## 🔴 2026-10-26 — ResourceSystem.Reset tolerates Unity's edit-mode Reset message (`cece/exciting-thompson-wdi3wm`, salvaged from `cece/inspiring-einstein-k6syi5` a109b25848) (unverified: no Unity CLI in the session)
+
+`ResourceSystem.Reset()` shares its name with Unity's edit-mode `Reset` message, which the editor sends the instant
+the component is added, before `Resources` exists. The method now returns when `Resources` is null.
+
+- [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
+- [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
 ## Rev 20 G: the arcade configure window - pedestals, LB / RB intensity, START (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 `Docs/MENU_REDESIGN_B.md` section 74; approved board `R20ConfigureG2` on the Menu Redesign B canvas. No Unity editor in
