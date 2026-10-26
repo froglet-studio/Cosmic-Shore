@@ -174,6 +174,15 @@
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073156.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073344.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073659.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
-  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073849.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)"
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073849.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_060823.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061008.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061207.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061658.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061906.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_054731.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_055048.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_055458.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_055603.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy"
  }
 }
