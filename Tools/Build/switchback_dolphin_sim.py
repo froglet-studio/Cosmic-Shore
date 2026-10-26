@@ -76,9 +76,10 @@ PEAK_MARGIN, MIN_DIS, MIN_GAIN, MAX_HOLD, GRACE, UP_TO_SPEED = 3.0, 0.2, 30.0, 4
 
 def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, trace=None, lead_inside=None, drive=None,
          cfg=None):
-    """drive: None (no charge economy: cruise only) or a SHIPPED_DRIVE / LEARNED_DRIVE dict: the charge economy of
-    dolphin_drive_sim.py (a drift banks charge and freezes the speed; letting go discharges toward cruise x m x m) with
-    ChargeBoostAIPolicySO's drive (let go on a lined-up straight once the meter is full enough; hold the next commit off
+    """drive: None (no charge economy: cruise only) or a SHIPPED_DRIVE / LEARNED_DRIVE dict (an optional "peak": False
+    lets each discharge run out instead of drifting again at its peak, a what-if: the game re-drifts at the peak): the
+    charge economy of dolphin_drive_sim.py (a drift banks charge and freezes the speed; letting go discharges toward
+    cruise x m x m) with ChargeBoostAIPolicySO's drive (let go on a lined-up straight once the meter is full enough; hold the next commit off
     until the discharge peaks) and AIPilot's commit floor (no commit under 0.9 of the throttle target)."""
     """regatta_fix: the steering AICommitFromApproachPoint turns on, which since 2026-10-26 includes the approach point
     kept inside the commit radius (lead_inside defaults to regatta_fix; pass it to test either half alone)."""
@@ -133,7 +134,7 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
             was_dis = discharging
             if hold:
                 since = t - held_at
-                if (discharging and since >= MIN_DIS and v >= target_speed() - PEAK_MARGIN) or \
+                if (discharging and drive.get("peak", True) and since >= MIN_DIS and v >= target_speed() - PEAK_MARGIN) or \
                         (not discharging and since > GRACE) or since > MAX_HOLD:
                     hold = False
             elif drifting and not extending:
