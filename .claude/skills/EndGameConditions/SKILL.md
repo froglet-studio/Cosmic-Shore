@@ -29,17 +29,23 @@ at runtime via `Resources.Load`.
     legitimate per-scene fields — they are *inputs* to the auto-calc, not the resolved count.
     To change how long a race runs you can either retune laps there or set an explicit count
     here; setting a count here wins outright.
-  - **Joust** — `0` → `EndConditionOverridesSO.DefaultJoustCount` (3).
+  - **Joust** — `0` → `EndConditionOverridesSO.DefaultJoustCount` (2).
   - **Brood Rush (Nucleus Rush)** — `0` → `EndConditionOverridesSO.DefaultBroodRushWaveTarget` (3):
     claimed fauna waves a domain needs to win (resolved by `BroodRushWaveTurnMonitor.StartMonitor`
     → `GameDataSO.GoalTargetCount`, synced by NetworkVariable).
-  - **Rampage** — `0` → `EndConditionOverridesSO.DefaultRampagePrismTarget` (2000): hostile prisms
-    (another domain's mass) a domain must destroy to win (resolved by
-    `RampagePrismTurnMonitor.StartMonitor` → `GameDataSO.PrismTargetCount`, synced by NetworkVariable).
+  - **Rampage** — PER INTENSITY since 2026-10-26: `rampagePrismTargetByIntensity` (2000 / 1700 /
+    1300 / 1000; element 0 is intensity 1), and a missing or `0` rung falls back to the scalar
+    `rampagePrismTarget` → `DefaultRampagePrismTarget` (2000) - Cleave's pattern. Hostile prisms
+    (another domain's mass) a domain must destroy to win (resolved on the server by
+    `RampagePrismTurnMonitor.StartMonitor` from `SelectedIntensity` → `GameDataSO.PrismTargetCount`,
+    synced by NetworkVariable).
+  - **Dog Fight / Grizzly Charge** — both race on `DogFightPointTurnMonitor`, which picks the key by
+    `gameData.GameMode`: `dogFightPointTarget` (default 40) for Dog Fight, `grizzlyChargePointTarget`
+    (default 90) for Grizzly Charge. They shared Dog Fight's key until 2026-10-26.
   - **Skein** — `0` → `EndConditionOverridesSO.DefaultSkeinRingTarget` (24): rings in the
     Urchin cable course, which is both the finish line and the number of rings laid. See
     "Gate races" below for why this number is not free to change.
-  - **Headlong** — `0` → `EndConditionOverridesSO.DefaultHeadlongGateTarget` (24): gate
+  - **Headlong** — `0` → `EndConditionOverridesSO.DefaultHeadlongGateTarget` (40): gate
     THREADINGS, i.e. laps x rings. See "Gate races" below.
   - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
     "race to N" win target: the first DOMAIN whose cumulative `{2,1,0}` placement points reach it
@@ -86,10 +92,19 @@ networking.
    effective value and saves on edit.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
-Defaults shipped (match the pre-tool scene/asset values, so behavior is unchanged until edited):
-SkimRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `2000`,
-Skein `24`, Headlong `24`. The window draws a row for every Live field on the SO; the asset itself
-is the authority for the rest of the modes' shipped values.
+Defaults shipped (re-aimed at an experienced ~90 s match on 2026-10-26 - the measurements, every
+before/after value and what is still an estimate are in `Docs/ARCADE_MATCH_LENGTH.md`; read it before
+moving a target): SkimRace `0` (auto; scene laps 3/3/1/1), Crystal Capture `14`, Joust `2`,
+Maelstrom `6`, Brood Rush `3`, Rampage `2000/1700/1300/1000`, Cleave `950/950/1000/1000`, Dog Fight
+`40`, Grizzly Charge `90`, Skein `24`, Headlong `40`. The window draws a row for every Live field on
+the SO; the asset itself is the authority for the rest of the modes' shipped values.
+
+**A target is a FUNCTION the comeback reads.** `bonusLevels = deficit x rate`, so a mode's
+`ComebackRatePerScoreDeficit` is sized against its target; when a target moves, move the rate so a
+quarter-of-target deficit buys the same element levels (each generator records that number and
+asserts at least one level). And a mode with an `author_<mode>_assets.py` owns its target: change the
+generator constant, the SO `Default*` and initialiser, and the asset's Live and `*Build` values
+together, then run the generator - changing the asset alone is reverted by the next run.
 
 ## Gate races (Skein, Headlong, and the other GateRaceController modes)
 
@@ -103,7 +118,7 @@ a gate that is not there. Each mode's key and what the one number means:
 |---|---|---|---|
 | Skein | `skeinRingTarget` | rings laid on the cable AND rings to thread | 24 |
 | Breakwater | `breakwaterStationTarget` + `breakwaterLaps` | crossings = 1 + (stations - 1) x laps: a start gate, then the circuit every lap. TWO authored inputs, one derived target (`GetBreakwaterCrossingTarget`); the window has a row for each and shows the derived crossings under "Effective now" | 15 stations, 2 laps = 29 |
-| Headlong | `headlongGateTarget` | threadings = laps x rings; rings per lap = ceil(target / laps), laps = `HeadlongController.laps` in `MinigameHeadlong.unity` (3) | 24 (3 x 8) |
+| Headlong | `headlongGateTarget` | threadings = laps x rings; rings per lap = ceil(target / laps), laps = `HeadlongController.laps` in `MinigameHeadlong.unity` (5) | 40 (5 x 8) |
 
 Both are ONE count each, so each has one row in the window ("Skein - Ring Target", "Headlong -
 Gate Target (laps x rings)"). Headlong's lap count is a per-scene input to the course shape, the

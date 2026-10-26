@@ -815,7 +815,7 @@ been run in the editor.** See `_Scripts/Controller/Arcade/BREAKWATER.md`.
 as a mode: nobody has to learn a button. Skim the reef to arm bombs, graze wildlife and rival
 Mantas to plant them (silently — no indication to the target, ONE bomb per target so a tag is
 also DENIAL), then reach a crystal before the fuses burn down and **Kabloom** the whole board
-at once. It is the family's first **timed highest-score** mode: a **120-second round** (the
+at once. It is the family's first **timed highest-score** mode: a **90-second round** (120 until 2026-10-26; the
 scene's `NetworkTimeBasedTurnMonitor` is the only end condition), scored on the new
 `ScoringMetric.VolumeDestroyed` (hostile prism VOLUME, domain-summed — the Manta's kit is about
 volume) with **fuses beaten** as the tiebreaker (`IRoundStats.FusesBeaten`, the fourth instance

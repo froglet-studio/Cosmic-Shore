@@ -657,7 +657,10 @@ def _self_test() -> int:
     with open(os.path.join(ROOT, "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs"),
               encoding="utf-8") as fh:
         redline = fh.read()
-    expect(cs_field_default(redline, "laps") == "3",
+    with open(os.path.join(ROOT, "Assets/_Scripts/Controller/Arcade/Redline/RedlineCourseSource.cs"),
+              encoding="utf-8") as fh:
+        _const = re.search(r"const int DefaultLaps = (\d+);", fh.read())
+    expect(_const is not None and cs_field_default(redline, "laps") == _const.group(1),
            "cs_field_default follows `laps = RedlineCourseSource.DefaultLaps` to its const")
     expect(cs_field_default("int laps = NoSuchClassEver.DefaultLaps;", "laps") is None,
            "cs_field_default: a constant of a class that does not exist is not a default")
