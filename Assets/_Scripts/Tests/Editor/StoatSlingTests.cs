@@ -397,6 +397,18 @@ namespace CosmicShore.Tests
         };
 
         [Test]
+        public void Orbit_TheCircleStaysClearOfTheRepulsor()
+        {
+            // The pair is 2 x catchSide = 90 u across: a 150 u circle reaches round the repulsor and swings the hull past
+            // its side (the 2026-10-27 playtest). At 0.8 of the pair it is 72 u at most; a tight circle is untouched.
+            Assert.AreEqual(72f, StoatSlingMath.ClearOfRepulsor(150f, 90f, 0.8f), 1e-4f);
+            Assert.AreEqual(40f, StoatSlingMath.ClearOfRepulsor(40f, 90f, 0.8f), 1e-4f);
+            Assert.AreEqual(150f, StoatSlingMath.ClearOfRepulsor(150f, 90f, 0f), 1e-4f, "0 = no limit");
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            StringAssert.Contains("  holdAtCatch: 1\n  orbitEaseRate: 0.8\n  whiteClear: 0.8\n", text);
+        }
+
+        [Test]
         public void ModeCycle_BStepsMassTimeDriveAndBack()
         {
             Assert.AreEqual(StoatModeExecutor.Mode.Time, StoatModeExecutor.Next(StoatModeExecutor.Mode.Mass));

@@ -494,6 +494,9 @@
     closeSpeed: 40, closeRamp: 0.6, holdCap: 12, vesselTide: 0.08, releaseDamping: 1.5,
     // the dipole sling (round 6 — the studio's; the game still runs the orbit sling)
     dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 1.5, dpCatchDeg: 50, dpSettle: 3, dpGrip: 2,
+    // the catch's control (round 17, the orbit review): whether being inside the circle catches at once, whether the circle
+    // you are held on starts where you were caught (and eases to the squeeze's circle), how far it may reach toward the white hole
+    dpCatchInside: 1, dpHoldAtCatch: 1, dpRadiusEase: 0.8, dpWhiteClear: 0.8,
     dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2, dpCarry: 0.4, dpFlowFade: 5, dpFlowCap: 1.5, dpKickSweep: 0,
     // the catch sling's pace and timing (2026-10-14): the field's warp while the black hole holds you (the same ftBoost, ftRise,
     // ftFade), and the game's 90 deg release window (StoatSlingConfig sweetSpot*), brought back here so the artifact is the source
@@ -560,6 +563,10 @@
     ['D', 'dpRsMax', 'Horizon, buried (u)', 1, 15, 0.1],
     ['D', 'dpCaptureX', 'Catches you within (× circle)', 1, 3, 0.05],
     ['D', 'dpCatchDeg', 'Catches once off the nose by (°)', 0, 90, 1],
+    ['D', 'dpCatchInside', 'Inside the circle catches at once (1) or only as you pass it (0)', 0, 1, 1],
+    ['D', 'dpHoldAtCatch', 'Held where you were caught (1) or snapped to the circle (0)', 0, 1, 1],
+    ['D', 'dpRadiusEase', 'Held circle eases to the squeeze\'s at (/s)', 0, 5, 0.05],
+    ['D', 'dpWhiteClear', 'Circle at most this share of the black-to-white distance (0 = no limit)', 0, 1.5, 0.05],
     ['D', 'dpSettle', 'Settles onto the circle (/s)', 0.2, 12, 0.1],
     ['D', 'dpGrip', 'Engine holds speed in grip (/s)', 0, 10, 0.1],
     ['D', 'dpMaxTurn', 'Longest hold (° round)', 45, 1080, 15],
@@ -1503,7 +1510,7 @@
     pairs.push(myPair);
     spawnWave('in', rep);
     if (raceStats && race === 'running') raceStats.slings++;
-    slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, reach: 0, t: 0, gain0: gravSpeed };
+    slingDipole = { side, pair: myPair, q, turned: 0, sweep: 0, captured: false, rc: 0, rHold: 0, reach: 0, t: 0, gain0: gravSpeed };
     slings++; runStyles.add('A');
     if (stance) stance = false;
   }
@@ -1519,14 +1526,20 @@
     pr.rsR = Math.max(0.02, dipoleRs(sd.q) * P.whSizeX * bW); pr.SR = dipoleS(sd.q) * P.dpWhite * bW;
     // The circle is the one at the ENGINE's speed — the speed its grip holds you at — not the fall-in speed of the moment.
     sd.rc = holdRadius(pr.S * GM_PER_STRENGTH, Math.max(speed + flow, 10), pr.rs);
+    // keep the circle off the white hole: past dpWhiteClear x the poles' distance it would swing you round the white hole
+    if (P.dpWhiteClear > 0) sd.rc = Math.min(sd.rc, Math.max(pr.rs * 2, P.dpWhiteClear * pr.att.distanceTo(pr.rep)));
     sd.reach = P.dpCaptureX * sd.rc;
+    if (sd.captured && sd.rHold > 0) sd.rHold += (sd.rc - sd.rHold) * (1 - Math.exp(-Math.max(0, P.dpRadiusEase) * dt));
     // It catches you as you PASS it — within reach and off to your side rather than still dead ahead — or as soon as you
     // are inside its circle (a heavy hole bends your nose onto itself, so it would never get off to your side).
     if (!sd.captured && !stopped) {
       basis(); tv.subVectors(pr.att, hull.position); const d = tv.length();
-      if (d <= sd.reach && (d <= sd.rc || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; rPrev.subVectors(hull.position, pr.att); if (raceStats) { raceStats.catches++; raceStats.reachSum += d; raceStats.rcSum += sd.rc; raceStats.rcMin = Math.min(raceStats.rcMin, sd.rc); } }
+      if (d <= sd.reach && ((P.dpCatchInside >= 0.5 && d <= sd.rc) || tv.dot(fwd) <= d * Math.cos(P.dpCatchDeg * Math.PI / 180))) { sd.captured = true; sd.rHold = d; rPrev.subVectors(hull.position, pr.att); if (raceStats) { raceStats.catches++; raceStats.reachSum += d; raceStats.rcSum += sd.rc; raceStats.rcMin = Math.min(raceStats.rcMin, sd.rc); } }
     }
   }
+  // The circle the grip holds you on: the squeeze's (sd.rc), or (dpHoldAtCatch) the distance you were caught at, easing
+  // toward the squeeze's at dpRadiusEase /s - no snap, so the catch keeps the line you flew in on.
+  function heldRadius(sd) { return P.dpHoldAtCatch >= 0.5 && sd.rHold > 0 ? sd.rHold : sd.rc; }
   function releaseDipole(auto) {
     const sd = slingDipole; if (!sd) return;
     sd.pair.held = false;
@@ -1628,7 +1641,7 @@
       tv.subVectors(p, pr.att); const d = tv.length();
       if (d > 1e-3) {
         tv.divideScalar(d);
-        p.addScaledVector(tv, (sd.rc - d) * k);
+        p.addScaledVector(tv, (heldRadius(sd) - d) * k);
         basis();
         const radial = fwd.dot(tv);
         tv2.copy(fwd).addScaledVector(tv, -radial);
@@ -2003,7 +2016,7 @@
     if (sd) {
       basis(); tv.subVectors(hull.position, sd.pair.att); tv2.crossVectors(tv, fwd);
       if (tv2.lengthSq() < 1e-6) tv2.copy(up); tv2.normalize();
-      for (const [l, r] of [[holdLoop, sd.rc], [reachLoop, sd.reach]]) { l.position.copy(sd.pair.att); l.quaternion.setFromUnitVectors(ZAX, tv2); l.scale.setScalar(Math.max(r, 0.1)); }
+      for (const [l, r] of [[holdLoop, sd.captured ? heldRadius(sd) : sd.rc], [reachLoop, sd.reach]]) { l.position.copy(sd.pair.att); l.quaternion.setFromUnitVectors(ZAX, tv2); l.scale.setScalar(Math.max(r, 0.1)); }
       holdLoop.material.opacity = sd.captured ? 0.95 : 0.55;
     }
     if (!pr) return;
@@ -4123,6 +4136,10 @@
     dpRsMin: { scene: 'sling', cfg: { q: 0.08 }, d: 'The black hole\'s size (its horizon radius) at the lightest squeeze. Size is what you see and what you can fall into — not how hard it pulls.', lo: 'Smaller at a light touch.', hi: 'Bigger at a light touch: easier to see, easier to fall into.' },
     dpRsMax: { scene: 'sling', cfg: { q: 1 }, d: 'The black hole\'s size at a full squeeze. Keep it modest: the strength is the mass, not the size.', lo: 'Smaller when buried: more mass than sphere.', hi: 'Bigger when buried: dramatic, and easier to fall into.' },
     dpCaptureX: { scene: 'sling', cfg: { q: 0.5 }, d: 'How far out the black hole can catch you, as a multiple of its hold circle (the solid ring). The faint ring is this reach: pass inside it and you are caught.', lo: 'It must be passed closer to catch you.', hi: 'It catches you from further away.' },
+    dpCatchInside: { scene: 'sling', cfg: { q: 0.7 }, d: 'On (1, round 6): being anywhere inside the hold circle catches you at once, so a deep squeeze grabs you while the hole is still far ahead. Off (0): it catches you only as you pass it (off your nose by the catch angle), where you chose to fly.', lo: 'Caught only as you pass.', hi: 'Caught as soon as you are inside the circle.' },
+    dpHoldAtCatch: { scene: 'sling', cfg: { q: 0.7 }, d: 'Off (0, round 6): the moment it catches you, you are pulled onto its hold circle at the settle rate, however far that is from where you were. On (1): you are held at the distance you were caught at, and that circle eases toward the squeeze\'s at the rate below. No sideways yank.', lo: 'Snapped onto the circle.', hi: 'Held where you were caught.' },
+    dpRadiusEase: { scene: 'sling', cfg: { q: 0.7 }, d: 'With "held where you were caught" on: how fast the circle you are held on eases toward the squeeze\'s. Squeeze harder or lighter to tighten or widen the orbit, smoothly.', lo: 'The circle stays where you were caught.', hi: 'It moves to the squeeze\'s circle quickly.' },
+    dpWhiteClear: { scene: 'sling', cfg: { q: 1 }, d: 'The hold circle may be at most this share of the distance between the black and the white hole. A deep squeeze otherwise makes a circle wider than the pair (124 u against 90 u), which swings you round the white hole\'s side. 0 = no limit (round 6).', lo: 'Tight, always clear of the white hole.', hi: 'No limit.' },
     dpCatchDeg: { scene: 'sling', cfg: { q: 0.7 }, d: 'It only catches you once it is off to your side by at least this angle, so it grabs you AS you pass it rather than while it is still straight ahead.', lo: 'It grabs you earlier, while still more ahead of you.', hi: 'It waits until it is more beside you.' },
     dpSettle: { scene: 'sling', cfg: { q: 0.7 }, d: 'Once caught, how quickly you are eased onto the hold circle and your nose onto the direction round it.', lo: 'A softer capture: you drift onto the circle.', hi: 'A firmer snap onto the circle.' },
     dpGrip: { scene: 'sling', cfg: { q: 0.7 }, d: 'In the black hole\'s grip your engine holds its own speed: the extra speed from falling in is bled away at this rate, which is what keeps you going round instead of being flung out.', lo: 'The fall-in speed lingers: a wobblier first swing.', hi: 'Your speed is steadied sooner: a calmer circle.' },
@@ -4629,7 +4646,7 @@
   const BH_KEYS = ['bhGmPerStrength', 'bhHorizonPerStrength', 'bhInfluenceFloor', 'bhMaxInfluence', 'bhPrismAccelCap', 'bhPrismMaxSpeed', 'releaseDamping', 'bhPrismReturn', 'bhTideGain', 'bhTideMax', 'vesselTide', 'bhShadow', 'bhLensStrength', 'bhLensReach', 'bhLensFade', 'bhRingGlow', 'bhRingWidth'];
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
-  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'closeSpeed', 'closeRamp'];
+  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'dpCatchInside', 'dpHoldAtCatch', 'dpRadiusEase', 'dpWhiteClear', 'closeSpeed', 'closeRamp'];
   const V_KEYS = ['drLenMin', 'drLenMax', 'drLatMax', 'drTurnGain', 'drTurnMax', 'drWarpShare', 'drWarpExp', 'drKeyRamp', 'drAiNear', 'drAiFar', 'drAiCone', 'drAiLeanDeg'];
   const F_KEYS = SPEC.filter((r) => r[0] === 'F').map((r) => r[1]);
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];

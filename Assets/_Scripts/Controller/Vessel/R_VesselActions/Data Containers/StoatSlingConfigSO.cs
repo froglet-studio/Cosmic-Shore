@@ -73,6 +73,19 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("How hard a caught hull is held on the orbit's radius, per second.")]
         [SerializeField, Range(0.1f, 20f)] float radialCorrectionRate = 5f;
 
+        [Header("Time mode - the catch's control (2026-10-27, STOAT_DIPOLE.md §1b; the studio's dp* rows)")]
+        [Tooltip("On: the circle a caught hull is held on starts at the distance it was caught at and eases toward the " +
+                 "squeeze's at orbitEaseRate - no sideways yank onto a preset circle at the catch. Off: snapped onto the " +
+                 "squeeze's circle at radialCorrectionRate (round 6). Studio: dpHoldAtCatch.")]
+        [SerializeField] bool holdAtCatch = true;
+
+        [Tooltip("With holdAtCatch: how fast the held circle eases toward the squeeze's, per second. Studio: dpRadiusEase.")]
+        [SerializeField, Range(0f, 5f)] float orbitEaseRate = 0.8f;
+
+        [Tooltip("The orbit radius is at most this share of the distance between the poles (2 x catchSide): wider, the " +
+                 "circle reaches round the repulsor and swings the hull past its side. 0 = no limit. Studio: dpWhiteClear.")]
+        [SerializeField, Range(0f, 1.5f)] float whiteClear = 0.8f;
+
         [Header("Time mode - the poles (LIGHTER than Mass mode's)")]
         [Tooltip("The attractor's (and repulsor's) horizon, world units. Mass mode's dipole poles are 2.1 u; Time mode's " +
                  "pull nothing it orbits - the catch flies the orbit - so they are light (the user, 2026-10-14).")]
@@ -199,6 +212,9 @@ namespace CosmicShore.ScriptableObjects
         public float AiCatchGiveUpSeconds => Mathf.Clamp(aiCatchGiveUpSeconds, 0.5f, 10f);
         public float RadiusFollowRate => Mathf.Clamp(radiusFollowRate, 0.1f, 20f);
         public float RadialCorrectionRate => Mathf.Clamp(radialCorrectionRate, 0.1f, 20f);
+        public bool HoldAtCatch => holdAtCatch;
+        public float OrbitEaseRate => Mathf.Clamp(orbitEaseRate, 0f, 5f);
+        public float WhiteClear => Mathf.Clamp(whiteClear, 0f, 1.5f);
         public float SlingBoostMin => Mathf.Clamp(slingBoostMin, 0f, 3f);
         public float SlingBoostMax => Mathf.Clamp(slingBoostMax, 0f, 3f);
         public float SlingBoostSeconds => Mathf.Clamp(slingBoostSeconds, 0.1f, 5f);

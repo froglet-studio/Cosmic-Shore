@@ -236,7 +236,8 @@ namespace CosmicShore.Gameplay
         {
             // Space is reach: read live, never cached (vessel contract rule 2).
             float reach = config.OrbitReach.EvaluateLive(_status);
-            return StoatSlingMath.OrbitRadius(hold01, config.OrbitRadiusWide * reach, config.OrbitRadiusTight * reach, config.HoldExponent);
+            float radius = StoatSlingMath.OrbitRadius(hold01, config.OrbitRadiusWide * reach, config.OrbitRadiusTight * reach, config.HoldExponent);
+            return StoatSlingMath.ClearOfRepulsor(radius, 2f * config.CatchSide, config.WhiteClear);
         }
 
         /// <summary>
@@ -292,7 +293,9 @@ namespace CosmicShore.Gameplay
             var transformer = _status.VesselTransformer;
             if (!hull || !transformer || _pair.Black == null) return;
 
-            _orbitRadius = Mathf.Lerp(_orbitRadius, RadiusFor(_holds[(int)_orbitSide].Live), 1f - Mathf.Exp(-config.RadiusFollowRate * dt));
+            // Caught and held where it was caught (holdAtCatch), the circle eases to the squeeze's slowly; otherwise it follows.
+            float follow = _caught && config.HoldAtCatch ? config.OrbitEaseRate : config.RadiusFollowRate;
+            _orbitRadius = Mathf.Lerp(_orbitRadius, RadiusFor(_holds[(int)_orbitSide].Live), 1f - Mathf.Exp(-follow * dt));
             var centre = _pair.Black.transform.position;
 
             if (!_caught)
@@ -304,6 +307,8 @@ namespace CosmicShore.Gameplay
                 _caught = true;
                 _orbitAngle = 0f;
                 _lastRadial = hull.position - centre;
+                // Held where it was caught: no yank onto the squeeze's circle (the studio's dpHoldAtCatch).
+                if (config.HoldAtCatch) _orbitRadius = _lastRadial.magnitude;
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
                     $"[Stoat] caught at {_lastRadial.magnitude:F0} u (orbit {_orbitRadius:F0} u)");
             }
