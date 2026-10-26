@@ -49,9 +49,9 @@ Closed in practice: **B32** (seen recover twice). Waiting on more evidence: **B3
 2. ~~B31 again.~~ Done 2026-10-24: it was our own two reads in one second, not the SDK; retest on two machines.
 3. ~~Relay drops (bug 2).~~ Root-caused 2026-10-25 (B36): a ~10 s freeze. Next: profile the Bloomrush-to-menu load.
 4. Close T-20261015-ac73 (log collection works) and mark B32 fixed in BUGS.md.
-5. **Block 5 started 2026-10-26:** steps 1-5 of 9 are on `Ys-bleeding-edge` (voided reads counted and no longer
+5. **Block 5 started 2026-10-26:** steps 1-6 of 9 are on `Ys-bleeding-edge` (voided reads counted and no longer
    skipping our publish; a rejoin keeps a live party; both the party session and the presence lobby push their
-   roster changes, and a pushed removal rejoins at once). It was built once, in August, on the old `Ys-bleeding-edge` (`Ys-rescue-2026-08-24`).
+   roster changes, a pushed removal rejoins at once, and our party size goes out the frame the party changes). It was built once, in August, on the old `Ys-bleeding-edge` (`Ys-rescue-2026-08-24`).
    Port its design in order, and port Garrett's part J fixes (the bounce notice that never shows, dropping out of
    a match, Add Friend). `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` (2026-10-26) lists what to take, what not to, and
    27 old multiplayer branches that can be deleted with nothing lost.

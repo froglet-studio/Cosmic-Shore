@@ -62,7 +62,8 @@ this one.
    **without** a fetch (4022675284's shape, not 8a14679585's `RefreshAsync` per push). Evict by departed id at
    once (a510bd5128). Send `RemovedFromSession`/`Deleted` into the existing
    `PresenceErrorForcesRejoin`/`SchedulePresenceRejoin`. About 300 lines, in a new class.
-6. **Republish the moment the roster moves** (111676ba22): a flag plus a drain. Today the immediate publish
+6. **Done 2026-10-26** (hooked to `PartyMembers`' own `OnItemCountChanged` / `OnCleared`, since `OnPartyRosterChanged`
+   is not on this line; the optional coalesced channel was not ported). **Republish the moment the roster moves** (111676ba22): a flag plus a drain. Today the immediate publish
    happens only on launch and scene load (`HostConnectionService.cs:2697`), so partyCount lags a poll. About 40
    lines. Optionally the coalesced `OnPartyRosterChanged` channel (f6aecb6a5b + 4aece9257f + 9ee67e5f2a as one
    unit; today one change repaints `FriendsListPanel` three times).

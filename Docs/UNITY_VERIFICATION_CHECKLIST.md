@@ -3887,6 +3887,22 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Party: Block 5 step 6 - our party size goes out the frame the party changes (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 6, from the August work's 111676ba22):
+`HostConnectionService` hooks `connectionData.PartyMembers`' `OnItemCountChanged` and `OnCleared` (subscribed with the
+other subscriptions, unsubscribed in `OnDestroy`); a change sets `_rosterMovedSincePublish`, and `Update` drains it into
+`PublishPresenceImmediateAsync` once the lobby mutex is free. Before, a new party size reached peers only on the next
+good poll.
+**Verified without the editor:** 3 tests in `PresencePushTests` (removing the drain fails the first); the full
+edit-mode suite on Amoebius 647/651 (the 4 known failures); `unity_refcompile` player and editor OK; the Amoebius
+player build. Amoebius's `ScriptableList.Clear` also raises `OnItemCountChanged` (Soap's does not), so the Clear test
+cannot prove the `OnCleared` hook there. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 12 `PresencePushTests` pass in the Test Runner (in Unity the Clear test does depend on the `OnCleared` hook).
+2. Three MPPM players: P1 invites P2. P3's online list shows P1's party size go 1/4 → 2/4 within about a second.
+   P2 leaves: P3 sees 2/4 → 1/4 as fast.
+
 ### 🔴 Party: Block 5 step 5 - the presence lobby's push (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 5): `PresencePushChannel` listens to the presence

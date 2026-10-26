@@ -152,7 +152,7 @@ their symptoms. The Sessions SDK already opens a Wire subscription per lobby and
 `PlayerPropertiesChanged`, `PlayerJoined`, `PlayerLeft`, `SessionPropertiesChanged`, `Deleted`,
 `RemovedFromSession`, `StateChanged`. We subscribe to **two** and poll instead.
 
-**Progress:** steps 1-5 of the audit's port order landed 2026-10-26 (`Ys-bleeding-edge`), the presence push included; step 6 (republish on a roster move) is next, then relaxing the poll (step 8).
+**Progress:** steps 1-6 of the audit's port order landed 2026-10-26 (`Ys-bleeding-edge`), the presence push and the republish on a roster move included; step 7 (two-strike eviction) is next, then relaxing the poll (step 8).
 
 **August already built this** on the old `Ys-bleeding-edge` (saved as `Ys-rescue-2026-08-24`), with MPPM
 measurements: port its design in the order of `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2, and read §3 first (the
