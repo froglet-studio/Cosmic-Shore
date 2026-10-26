@@ -106,6 +106,31 @@ asserts at least one level). And a mode with an `author_<mode>_assets.py` owns i
 generator constant, the SO `Default*` and initialiser, and the asset's Live and `*Build` values
 together, then run the generator - changing the asset alone is reverted by the next run.
 
+## Retuning a target for match LENGTH (learned 2026-10-26, `Docs/ARCADE_MATCH_LENGTH.md`)
+
+- **Measure first, from the flights.** Every editor match is on `origin/bugledger/*` as
+  `flight_<Mode>_*.json` (`Tools/Build/learn_from_flights.py` `flights_on_branches()`): `raceSeconds`,
+  `finished`, `raceTarget`, the end-of-match `result` table (winner time, what the others had left) and a
+  10 Hz `rings` column, which gives time-to-first-gate plus seconds per gate even for an unfinished race.
+  `time ~= lead-in + (N - 1) x pace` is how a gate count is sized.
+- **In a circuit race the length lever is LAPS.** Headlong, Redline, Grizzly Time, Thresher Time, Slingshot,
+  Warpline and Wrasse Run lay `ceil(target / laps)` rings on a fixed-radius loop, so lowering the target thins
+  rings and barely moves the time. Move the generator's `LAPS`, `<Mode>CourseSource.DefaultLaps`, the scene
+  controller's `laps:` and the SO default together. Switchback, Waystation and Breakwater get longer with more
+  gates; Skein does neither (see below).
+- **A generator that stands down on a committed scene does NOT patch it.** `committed_scene()` only checks that
+  its authored blocks are present, so a moved constant (`laps:`, a monitor's `duration:`) fails `--check` with
+  "authored block no longer in the committed scene" until you edit that one scene line by hand. That failure is
+  the gate working.
+- **SkimRace laps are part of the Skim Race AI's track fingerprint.** Changing `lapsPerIntensity` for an
+  intensity with a matching tuned policy puts the game on the general policy until
+  `Tools/Build/skimrace_retune.py <I>` runs (needs dotnet). Run `skimrace_track_fingerprint.py --check` before
+  and after.
+- **Two modes can share a monitor and a key.** Grizzly Charge runs `DogFightPointTurnMonitor`; it now has its
+  own key, but check the scene's monitor script before assuming a key is one mode's.
+- **Weekly Challenge objectives must stay at or under the target** (`WeeklyChallengeTests`); read
+  `Resources/WeeklyChallengeCatalog.asset` before lowering one.
+
 ## Gate races (Skein, Headlong, and the other GateRaceController modes)
 
 A gate race has no per-mode turn monitor. `RaceGateTurnMonitor` asks the scene's
