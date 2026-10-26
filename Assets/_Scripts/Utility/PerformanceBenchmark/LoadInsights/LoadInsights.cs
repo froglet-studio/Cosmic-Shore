@@ -93,7 +93,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string s_sceneFrom = "", s_sceneTo = "", s_gameMode = "";
         static int s_intensity, s_totalPlayers, s_humanPlayers, s_aiBackfill;
         static bool s_isMultiplayer;
-        static bool s_menuReturn;
+        static string s_loadKind = "launch";   // LoadInsightReport.loadKind: "launch", "menuReturn" or "boot"
 
         /// <summary>The most recently completed (or recovered) report this session.</summary>
         public static LoadInsightReport LastReport { get; private set; }
@@ -103,8 +103,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         public static bool IsRecording => s_recording;
 
-        /// <summary>True while the open recording is a return to the menu (<see cref="BeginLoad"/>'s menuReturn).</summary>
-        public static bool IsRecordingMenuReturn => s_recording && s_menuReturn;
+        /// <summary>
+        /// True while the open recording ends when the menu shows: a return to the menu (<see cref="BeginLoad"/>'s
+        /// menuReturn) or the boot's own menu load (<see cref="BeginBootLoad"/>). Landing in the menu is the point
+        /// of these, so neither is aborted for it.
+        /// </summary>
+        public static bool IsRecordingMenuLoad => s_recording && s_loadKind != "launch";
 
         /// <summary>
         /// Whether a load starting now is recorded: Record Insight Mode is armed by hand, OR the game is online
@@ -173,7 +177,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// a cell swap and the return to the menu (<paramref name="menuReturn"/>, ended when the menu shows);
         /// a second call while recording abandons the first as superseded.
         /// </summary>
-        public static void BeginLoad(string trigger, bool menuReturn = false)
+        public static void BeginLoad(string trigger, bool menuReturn = false) =>
+            Begin(trigger, menuReturn ? "menuReturn" : "launch");
+
+        /// <summary>
+        /// Starts recording the boot's load of the menu (loadKind "boot"), ended when the menu shows. The boot loads
+        /// the menu with the Relay host already up, and a 10.4 s frame there dropped it (B36, the 26 Oct sweep).
+        /// </summary>
+        public static void BeginBootLoad(string trigger) => Begin(trigger, "boot");
+
+        static void Begin(string trigger, string loadKind)
         {
             if (!HostAvailable || !ShouldRecord) return;
             if (s_recording) CompleteInternal($"Superseded by new load ({trigger})", aborted: true);
@@ -198,7 +211,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 s_gameMode = "";
                 s_intensity = 0; s_totalPlayers = 0; s_humanPlayers = 0; s_aiBackfill = 0;
                 s_isMultiplayer = false;
-                s_menuReturn = menuReturn;
+                s_loadKind = loadKind;
 
                 s_startTs = Stopwatch.GetTimestamp();
                 s_generation++;
@@ -597,7 +610,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var report = new LoadInsightReport
             {
                 trigger = s_trigger,
-                loadKind = s_menuReturn ? "menuReturn" : "launch",
+                loadKind = s_loadKind,
                 completionReason = reason,
                 sceneFrom = s_sceneFrom,
                 sceneTo = string.IsNullOrEmpty(s_sceneTo) ? SafeActiveSceneName() : s_sceneTo,
