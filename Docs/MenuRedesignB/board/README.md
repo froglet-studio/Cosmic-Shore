@@ -273,6 +273,24 @@ canvas's `project/` files (Artifact read) into this folder.
 - [`R25VoyageB.dc.html`](R25VoyageB.dc.html) - Tandava: vessel strip, intensity as a signal sign
 - [`R25Notes.dc.html`](R25Notes.dc.html) - Rev 25 notes
 
+### Rev 26 - Codex  (page `rev26`)
+
+Copied 2026-10-26 from canvas version `1793053142-1742`. Every number on these boards is the shipped value (Codex.asset,
+SO_Captain_*, element_ability_table.py). Discovery, the counts, the NEW badges and the artifacts are the proposed shape:
+the game has none of them yet (`Docs/MENU_REDESIGN_B.md` section 87).
+
+- [`R26CodexHome.dc.html`](R26CodexHome.dc.html) - Rev 26 - Codex front page: seven chapters, recently found, closest to complete
+- [`R26CodexEthirions.dc.html`](R26CodexEthirions.dc.html) - Rev 26 - Ethirions: the five crystals, Charge open
+- [`R26CodexElements.dc.html`](R26CodexElements.dc.html) - Rev 26 - Elements: what each element wakes on every hull, Mass open
+- [`R26CodexFauna.dc.html`](R26CodexFauna.dc.html) - Rev 26 - Ecology > Fauna: the food web, Shark open (NEW)
+- [`R26CodexFlora.dc.html`](R26CodexFlora.dc.html) - Rev 26 - Ecology > Flora: sixteen plants, Arbor open with its elemental laws
+- [`R26CodexPilots.dc.html`](R26CodexPilots.dc.html) - Rev 26 - Pilots: one per element per hull, Shrapnel open
+- [`R26CodexVessels.dc.html`](R26CodexVessels.dc.html) - Rev 26 - Vessels: four abilities and their level-5 upgrades, Sparrow open
+- [`R26CodexArtifacts.dc.html`](R26CodexArtifacts.dc.html) - Rev 26 - Artifacts (proposed: no artifact data in the game yet)
+- [`R26CodexTools.dc.html`](R26CodexTools.dc.html) - Rev 26 - Tools: Pilot / World / Creation, Connect the Dots open
+- [`R26CodexDiscovery.dc.html`](R26CodexDiscovery.dc.html) - Rev 26 - Discovery: the in-match toast when you meet something new
+- [`R26Notes.dc.html`](R26Notes.dc.html) - Rev 26 - notes
+
 ### Item boards (before the paged rounds)
 
 - [`HomeOffline.dc.html`](HomeOffline.dc.html) - Item 6 · Home · offline, asking to go online
