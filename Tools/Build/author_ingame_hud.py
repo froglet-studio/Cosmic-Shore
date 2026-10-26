@@ -773,8 +773,12 @@ SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), 
     ("LeaveLobby", "Leave lobby", "Default", "B", 5, 260),
 ]
 SB_HEADER = "ScoreboardTeamHeader"
-P.PREFABS = tuple(P.PREFABS) + (SB_HEADER,)
+SB_VSROW = "ScoreboardVersusRow"           # Rev 23 D: a team's row, half the ladder's width
+P.PREFABS = tuple(P.PREFABS) + (SB_HEADER, SB_VSROW)
+VS_ROW_W, VS_COL_GAP = 660, 80             # two columns of 660 and the VS between them fill the ladder's 1400
+VS_HEAD_H = 92                             # the team's head above its rows: name, status, score and its rule
 S.update(header=script_guid("Assets/_Scripts/UI/ScoreboardTeamHeader.cs"),
+         versus=script_guid("Assets/_Scripts/UI/ScoreboardVersusView.cs"),
          strip=script_guid("Assets/_Scripts/UI/ScoreboardRewardStrip.cs"),
          roster=script_guid("Assets/_Scripts/UI/Elements/RematchVoteRoster.cs"))
 # Docs/UI_COLOR_RULES.md (Garrett, 2026-10-24): no element colours and no element rims anywhere in the UI, and the
@@ -828,7 +832,13 @@ def build_row():
         .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=20, ph=20))
     amt = data.child(N("Data/Amount", "Amount", R(size=(110, 36))))
     amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=110, ph=36))
-    root.add("card", 114, lambda ctx, go: K.mono(go, S["card"],
+    root.add("card", 114, card_body)
+    return root
+
+
+def card_body(ctx, go):
+    """PlayerScoreCard on a row (the ladder's and the versus row): the same parts under the same keys."""
+    return (K.mono(go, S["card"],
         f"  playerAvatarImage: {{fileID: {ctx.c('Ring/Clip/Avatar', 'img')}}}\n"
         f"  playerNameText: {{fileID: {ctx.c('Name', 'tmp')}}}\n  playerScoreText: {{fileID: {ctx.c('Score', 'tmp')}}}\n"
         "  backgroundImage: {fileID: 0}\n"
@@ -846,6 +856,47 @@ def build_row():
         f"  localGlassTintToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
         f"  wonBorderMaterial: {NO_ROW_RIM}\n  lostBorderMaterial: {NO_ROW_RIM}\n  localBorderMaterial: {NO_ROW_RIM}\n"
         f"  animSettings: {K.ref(11400000, ANIM_SETTINGS, 2)}\n"))
+
+
+def build_versus_row():
+    """Rev 23 D: a team's row in the versus layout - the ladder row's parts at half its width: rank, face, the name with
+    the pilot's line and counts stacked under it, the score, the reward."""
+    w = VS_ROW_W
+    root = N("root", SB_VSROW, R(size=(w, ROW_HT)))
+    root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=w))
+    glass = root.child(N("Glass", "Glass", STRETCH))
+    glass.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.8), K.kit_sprite("kit_sliver14_fill"), True))
+    bord = root.child(N("Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True))
+    stripe = root.child(N("Stripe", "TeamStripe", HM.TL(0, 12, 4, ROW_HT - 24)))
+    stripe.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    share = root.child(N("Share", "Share", R((0, 0), (0.5, 0), (0, 0), (0, 3), (0, 0))))
+    share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"))).add("th", 114, H.themed("NeutralLightest"))
+    rank = root.child(N("Rank", "Rank", HM.TL(18, 21, 40, 42)))
+    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight")))
+    ring = root.child(N("Ring", "Ring", HM.TL(64, 16, 52, 52)))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_oct_fill"), True))
+    clip = ring.child(N("Ring/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)).add("mask", 114, A.mask(False))
+    av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
+    av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
+    name_w = w - 132 - 270
+    name = root.child(N("Name", "Name", HM.TL(132, 8, name_w, 30)))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("Pilot", "H3", tok("TextLight"))))
+    dom = root.child(N("Domain", "Domain", HM.TL(132, 40, name_w, 16)))
+    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "Label", tok("NeutralLightest"))))
+    sec = root.child(N("Secondary", "Secondary", HM.TL(132, 58, name_w, 18)))
+    sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("", "BodySmall", tok("TextLight"))))
+    score = root.child(N("Score", "Score", HM.TR(118, 21, 150, 42)))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right"))
+    data = root.child(N("Data", "DataPanels", HM.TR(16, 21, 96, 42)))
+    data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 5, (0, 0), (0, 0)))
+    glyph = data.child(N("Data/Glyph", "Glyph", R(size=(18, 18))))
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=18, ph=18))
+    amt = data.child(N("Data/Amount", "Amount", R(size=(70, 36))))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=70, ph=36))
+    root.add("card", 114, card_body)
     return root
 
 
@@ -908,6 +959,58 @@ def reward_strip(root):
     return strip
 
 
+def versus_side(vs, key, right):
+    """One team: its name in its colour and WINNER (or nothing) under it, its score on the right, a rule in its colour,
+    then its rows."""
+    col = vs.child(N(key, key.rsplit("/", 1)[-1], HM.TR(0, 56, VS_ROW_W, LIST_H - 56) if right else HM.TL(0, 56, VS_ROW_W, LIST_H - 56)))
+    name = col.child(N(f"{key}/Name", "Name", HM.TL(0, 0, 340, 50)))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("JADE", "H1", "TextLight", 40, align="left"))
+    H.label(col.child(N(f"{key}/Status", "Status", HM.TL(2, 52, 300, 18))), "Winner", "Label", "NeutralLightest")
+    score = col.child(N(f"{key}/Score", "Score", HM.TR(0, 4, 300, 60)))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("", "H1", "TextLight", 48, align="right"))
+    rule = col.child(N(f"{key}/Rule", "Rule", R((0, 1), (1, 1), (0, -(VS_HEAD_H - 14)), (0, 2), (0.5, 1))))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    rows = col.child(N(f"{key}/Rows", "Rows", R((0, 1), (1, 1), (0, -VS_HEAD_H), (0, 0), (0.5, 1))))
+    rows.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
+    return col
+
+
+def versus_layout(root):
+    """Rev 23 D (Shombith, 2026-10-26: "For scoreboard I liked D"): where the ladder sits, the two teams face to face -
+    the winner on the left - with the share bar across the top and VS between them. Hidden until a two-team match
+    (ScoreboardVersusView); the ladder keeps every other match."""
+    vs = root.child(N("Versus", "Versus", R((0.5, 1), (0.5, 1), (0, -196), (LIST_W, LIST_H), (0.5, 1))))
+    vs.add("cg", 225, H.canvas_group(False))
+    share = vs.child(N("Versus/Share", "Share", HM.TL(0, 0, LIST_W, 40)))
+    share.add("cg", 225, H.canvas_group(True))
+    track = share.child(N("Versus/Share/Bar", "Bar", HM.TL(0, 0, LIST_W, 10)))
+    for side, r in (("Left", R((0, 0), (0.5, 1), (-1, 0), (-2, 0))), ("Right", R((0.5, 0), (1, 1), (1, 0), (-2, 0)))):
+        track.child(N(f"Versus/Share/Bar/{side}", side, r)).add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    H.label(share.child(N("Versus/Share/LeftLine", "LeftLine", HM.TL(0, 18, 600, 18))), "Ruby 52%", "Label", "TextLight")
+    H.label(share.child(N("Versus/Share/RightLine", "RightLine", HM.TR(0, 18, 600, 18))), "Jade 48%", "Label", "NeutralLightest",
+            align="right")
+    vs_word = vs.child(N("Versus/Vs", "Vs", HM.TL(VS_ROW_W, 56 + 14, VS_COL_GAP, 40)))
+    vs_word.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("VS", "H2", tok("NeutralLightest"), align="center"))
+    versus_side(vs, "Versus/Left", False)
+    versus_side(vs, "Versus/Right", True)
+
+    def body(ctx, go):
+        sides = ""
+        for side in ("Left", "Right"):
+            k = f"Versus/{side}"
+            sides += (f"  - nameText: {{fileID: {ctx.c(f'{k}/Name', 'tmp')}}}\n    statusText: {{fileID: {ctx.c(f'{k}/Status', 'tmp')}}}\n"
+                      f"    scoreText: {{fileID: {ctx.c(f'{k}/Score', 'tmp')}}}\n    rule: {{fileID: {ctx.c(f'{k}/Rule', 'img')}}}\n"
+                      f"    rows: {{fileID: {ctx.rt(f'{k}/Rows')}}}\n    shareFill: {{fileID: {ctx.c(f'Versus/Share/Bar/{side}', 'img')}}}\n"
+                      f"    shareText: {{fileID: {ctx.c(f'Versus/Share/{side}Line', 'tmp')}}}\n")
+        return K.mono(go, S["versus"],
+                      f"  group: {{fileID: {ctx.c('Versus', 'cg')}}}\n  ladderGroup: {{fileID: {ctx.c('List', 'cg')}}}\n"
+                      "  sides:\n" + sides
+                      + f"  shareGroup: {{fileID: {ctx.c('Versus/Share', 'cg')}}}\n  shareGap: 4\n  loserShareAlpha: 0.6\n"
+                      "  winnerWord: Winner\n  loserWord: \n  shareTemplate: '{domain} {percent}%'\n")
+    vs.add("versus", 114, body)
+    return vs
+
+
 def build_panel():
     root = N("root", SB_PANEL, STRETCH)
     scrim = root.child(N("Scrim", "Scrim", STRETCH))
@@ -926,9 +1029,11 @@ def build_panel():
         .add("in", 114, HM.M.entrance("GrowX", delay=0.3))
     view = root.child(N("List", "List", R((0.5, 1), (0.5, 1), (0, -196), (LIST_W, LIST_H), (0.5, 1))))
     view.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("rmask", 114, A.rect_mask()).add("scroll", 114, A.scroll_rect("List/Content", "List", 30))
+        .add("rmask", 114, A.rect_mask()).add("scroll", 114, A.scroll_rect("List/Content", "List", 30)) \
+        .add("cg", 225, H.canvas_group(True))
     content = view.child(N("List/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
+    versus_layout(root)
     stats = root.child(N("Stats", "Stats", R((0.5, 1), (0.5, 1), (0, -712), (LIST_W, 40), (0.5, 1))))
     stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 24, 3, (1, 1), (0, 0))) \
         .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.5))
@@ -956,7 +1061,8 @@ def build_panel():
 
 def sb_prefabs():
     out = {}
-    for name, build in ((SB_ROW, build_row), (SB_HEADER, build_header), (SB_STAT, build_stat), (SB_PANEL, build_panel)):
+    for name, build in ((SB_ROW, build_row), (SB_VSROW, build_versus_row), (SB_HEADER, build_header), (SB_STAT, build_stat),
+                        (SB_PANEL, build_panel)):
         out[sb_path(name)] = P.prefab_text(build(), name)
         out[sb_path(name) + ".meta"] = K.PREFAB_META.format(g=P.asset_guid(name))
     return out
@@ -1005,6 +1111,7 @@ def patch_scoreboard(p):
     K.emit_instance(p.ctx, K.Instance("Score", SB_PANEL, guid, "ScoreboardPanel", STRETCH, ()), host_rt, out)
     retired = set()
     C.STUB_KIND.setdefault("strip", (114, S["strip"]))
+    C.STUB_KIND.setdefault("versus", (114, S["versus"]))
 
     def stub(key, kind):
         src = fk(key)
@@ -1028,7 +1135,7 @@ def patch_scoreboard(p):
                              ("playAgainButton", "Sb/PlayAgain#go", "go"), ("playAgainLabel", "Sb/PlayAgain/Label#tmp", "tmp"),
                              ("mainMenuButton", "Sb/MainMenu#go", "go"), ("leaveLobbyButton", "Sb/LeaveLobby#go", "go"),
                              ("continueButton", "Sb/Continue#go", "go"), ("modeText", "Header/Mode#tmp", "tmp"),
-                             ("rewardStrip", "Reward#strip", "strip")):
+                             ("rewardStrip", "Reward#strip", "strip"), ("versusView", "Versus#versus", "versus")):
         fid, doc = stub(key, kind)
         refs[field] = fid
         if doc not in out:
@@ -1048,6 +1155,7 @@ def patch_scoreboard(p):
     d = set_field(d, "statRowPrefab", sb_ref(SB_STAT, "root#stat"))
     d = set_field(d, "playerCardPrefab", sb_ref(SB_ROW, "root#card"))
     d = set_field(d, "teamHeaderPrefab", sb_ref(SB_HEADER, "root#header"))
+    d = set_field(d, "versusRowPrefab", sb_ref(SB_VSROW, "root#card"))
     d = set_field(d, "wireButtonsInCode", "1")
     p.replace(sb, d)
 
@@ -1515,6 +1623,26 @@ def validate(files):
     sbd = next(d for d in docs.values() if f"guid: {S['scoreboard']}" in d)
     assert f"  teamHeaderPrefab: {sb_ref(SB_HEADER, 'root#header')}" in sbd, "Scoreboard.teamHeaderPrefab is not the team header"
     assert re.search(r"^  rewardStrip: \{fileID: [1-9-]", sbd, re.M), "Scoreboard.rewardStrip is not wired"
+    # Rev 23 D: the team-versus layout - the view reached from the Scoreboard, its two sides wired, the ladder's list it
+    # steps aside for, and the half-width row it spawns.
+    m = re.search(r"^  versusView: \{fileID: (-?\d+)\}", sbd, re.M)
+    assert m and m.group(1) in docs and f"guid: {P.asset_guid(SB_PANEL)}" in docs[m.group(1)], \
+        "Scoreboard.versusView is not wired into ScoreboardPanel (every match would stay the ladder)"
+    assert f"  versusRowPrefab: {sb_ref(SB_VSROW, 'root#card')}" in sbd, "Scoreboard.versusRowPrefab is not the versus row"
+    vsd = spd[str(fk("Versus#versus"))]
+    assert f"  ladderGroup: {{fileID: {fk('List#cg')}}}\n" in vsd and f"  group: {{fileID: {fk('Versus#cg')}}}\n" in vsd, \
+        "ScoreboardVersusView does not swap with the ladder's list"
+    for side in ("Left", "Right"):
+        for f, key in (("nameText", f"Versus/{side}/Name#tmp"), ("scoreText", f"Versus/{side}/Score#tmp"),
+                       ("rows", f"Versus/{side}/Rows#rt"), ("shareFill", f"Versus/Share/Bar/{side}#img")):
+            assert f"{f}: {{fileID: {fk(key)}}}" in vsd, f"ScoreboardVersusView's {side} side: {f} is not wired"
+    vrow = files[sb_path(SB_VSROW)]
+    check_local_refs(sb_path(SB_VSROW), vrow)
+    vcard = docs_of(vrow)[str(K.FileIds(SB_VSROW)("root#card"))]
+    for f in ("playerAvatarImage", "playerNameText", "playerScoreText", "rankText", "secondaryStatText", "shareBar"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, vcard, re.M), f"ScoreboardVersusRow: {f} is not wired"
+    assert f"m_SizeDelta: {{x: {VS_ROW_W}, y: {ROW_HT}}}" in vrow and 2 * VS_ROW_W + VS_COL_GAP == LIST_W, \
+        "the versus columns no longer fit the ladder's width"
 
     assert "  m_Name: ThumbCursors\n" not in cv, "the dead ThumbCursors subtree survives"
     # Follow-up - toast container
@@ -1655,6 +1783,11 @@ def self_test(files):
             docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))].replace("  activationButton: 5\n", "  activationButton: 6\n")))),
         ("the scoreboard row a full team fill", lambda f: f.__setitem__(sb_path(SB_ROW), f[sb_path(SB_ROW)].replace(
             "  backgroundImage: {fileID: 0}\n", f"  backgroundImage: {{fileID: {K.FileIds(SB_ROW)('Glass#img')}}}\n", 1))),
+        ("the versus view unwired", lambda f: f.__setitem__(CANVAS, re.sub(r"(  versusView: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
+        ("the versus layout not stepping the ladder aside", lambda f: f.__setitem__(sb_path(SB_PANEL), re.sub(
+            r"(  ladderGroup: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[sb_path(SB_PANEL)]))),
+        ("a versus side with nowhere for its rows", lambda f: f.__setitem__(sb_path(SB_PANEL), re.sub(
+            r"(    rows: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[sb_path(SB_PANEL)], count=1))),
         ("the reward strip unwired", lambda f: f.__setitem__(CANVAS, re.sub(r"(  rewardStrip: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
         ("the local scoreboard row lit with the selection rim", lambda f: f.__setitem__(sb_path(SB_ROW), f[sb_path(SB_ROW)].replace(
             f"  localBorderMaterial: {NO_ROW_RIM}\n", f"  localBorderMaterial: {mat_ref(HM.M._lattice_guid('selection_rim_mat'))}\n"))),

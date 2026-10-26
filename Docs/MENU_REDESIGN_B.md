@@ -3356,3 +3356,29 @@ R24Borders, R24Notes), copied into `Docs/MenuRedesignB/board/`.
   unwired, the rail missing a line, the card mounted in Menu_Main again), `gates.sh` all OK, and a rect render of the
   prefab. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 24 Hangar".
 
+## 76. The scoreboard is Rev 23 option D, team versus (built 2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "For scoreboard I liked D". Board: R23ScoreD ("Rev 23 - Scoreboard", copy in
+`Docs/MenuRedesignB/board/`).
+
+- **When.** `ScoreboardLadder.BuildVersus` (pure, `ScoreboardLadderTests`) returns the two sides for a match of exactly two
+  domains where at least one fields two or more pilots (2v2, 3v1, 3v3); a free-for-all, a 1v1 or three teams return null
+  and the board stays the Rev 8 B ladder (§49), unchanged. The winner is always the left side.
+- **A side.** Its name in its domain colour (domain colours are for teams, as on every board), WINNER under the winner
+  (`ScoreboardVersusView.winnerWord`; `loserWord` empty), its score - the time every member shares, else the members'
+  whole-number scores added, else nothing - a rule in its colour, then its pilots as `ScoreboardVersusRow` rows (the
+  ladder row's parts at 660 wide: rank, face, name with the pilot line and counts stacked under it, score, reward). A
+  shared team time is said once in the head and the rows drop it, as the ladder's header did.
+- **The share bar** across the top splits the count the two teams' secondary lines carry ("14 Crystals"), the loser's
+  part at 60 % alpha, with "{domain} {percent}%" under each end (`shareTemplate`); hidden when any line has no number.
+- **Unchanged:** the header (mode line, banner, rule), the stats strip, PLAY AGAIN / CONTINUE / MAIN MENU / LEAVE LOBBY
+  with the rematch faces, the reward strip counting the wallet, the crystal award path. They keep their Rev 8 places
+  (buttons left, reward right); the D board drew them the other way round - say if that should follow.
+- **Wiring.** `author_ingame_hud.py`: the `Versus` layout in ScoreboardPanel (hidden by default; the ladder's `List` gained
+  a CanvasGroup to step aside), `ScoreboardVersusRow.prefab`, and `Scoreboard.versusView` / `versusRowPrefab` set on
+  GameCanvas. Every mode's board is GameCanvas's; the benchmark stress scene's own Scoreboard keeps the ladder.
+- **Proof without an editor:** refcompile player and editor OK, Amoebius builds, `BuildVersus` run under .NET against
+  the real source (10 checks), `author_ingame_hud.py --check` / `--self-test` (new controls: the view unwired, the ladder
+  not stepping aside, a side with nowhere for its rows), `gates.sh` all OK, a rect render of the panel. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Scoreboard D".
+

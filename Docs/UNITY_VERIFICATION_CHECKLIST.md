@@ -16064,6 +16064,22 @@ the cloud session. Proven offline: refcompile (player + editor OK), Amoebius bui
 - [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
 - [ ] Arena and Maelstrom windows are unchanged.
 
+## Scoreboard D, team versus (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
+`ScoreboardLadder.BuildVersus` run under .NET against the real source, `author_ingame_hud.py --check` / `--self-test`,
+`gates.sh`, a rect render of `ScoreboardPanel.prefab`.
+
+1. Skim Race 2v2 (you and an AI on Ruby, two AIs on Jade) to the end. **Pass:** the board shows the two teams side by
+   side, the winner on the left with WINNER under its coloured name and its race time once in the head; each team's
+   pilots under it (rank, face, name, "Ruby - Squirrel", "14 Crystals"); VS between the columns; across the top a bar
+   split by the teams' crystals with "Ruby 52%" / "Jade 48%" under its ends.
+2. A mode where each pilot has their own whole-number score (Crystal Capture 2v2). **Pass:** each head shows the team's
+   total and every row keeps its own score.
+3. A free-for-all (every pilot on their own domain) and a 1v1. **Pass:** the Rev 8 ladder, exactly as before; no VS, no bar.
+4. 3v1. **Pass:** versus, the lone pilot's column shows one row.
+5. PLAY AGAIN / MAIN MENU, the rematch faces and the reward strip count-up all still work and nothing overlaps the columns.
+
 ## Rev 24 Hangar, element flowers on the arcade cards, the AI difficulty row on every card, the now-playing card gone (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
