@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three mega forms that combine into one omega form with three seats (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** a first Unity clone of the Vessel Studio's Omega Crews lab (`Docs/Studios/VesselStudio/omega.html`,
+CONCEPT_FLEET.md §10) for Yash to test: `OmegaMath` (the page's omegaFlight, slotOf, dock ease, meter, element mults,
+finisher cone, line for line; `OmegaMathTests` holds it to goldens from the page's own code), `OmegaCrew` on each hull's
+root (the Orca's lifecycle: forms, seats, the meter, the members' moves, the crew weapon, the finisher, input-only AI
+seats), `OmegaVesselTransformer` (the Stoat's two-stick flight with cruise and turn rates switched per form),
+`OmegaCrewView` (placeholder member bodies, struts, fire, the finisher cone), `OmegaCrystalEffectSO` in the shared
+`OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three Stoat-clone prefabs by
+`Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green, 23 negative controls). The Unity CLI was not
+available in the session, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the
+only compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
+
+**Test (Menu_Main > freestyle > Toy Box > Vessel Changer > Warden; then Bulwark, Tempest):**
+1. **Apart.** The Stoat hull with two faceted bodies flying beside it (one each side, a little behind), in your domain colour.
+   They keep up through turns and boosts. The Mass card reads half; the Space card fills as they close in.
+2. **The hull member's move (RT).** Warden as the Stoat: a boost burst (x2 for 1.2 s, then 4 s cool: the Charge card
+   refills). D-pad right (or the right arrow): you are the Thresher; the hull jumps to that body's pose and the body left
+   behind takes yours. RT held near mass: prisms ahead are destroyed with a lit bar to the strike. D-pad right again: the
+   Butterfly (a boost). Bulwark: Rhino sweep, Grizzly charge-and-release burst (an explosion at 140 u), Scarab dash.
+   Tempest: Squirrel boost, Sparrow guns (the nearest prism on the nose line), Manta boost.
+3. **Combine.** With the Mass card past a third and both bodies close (the Space card full), hold LT: the two bodies dock onto
+   the hull over about 1.6 s (one 9 u above and 4 back, one 8 u below and 6 back), struts appear, the hull flies faster with
+   wider turns (Warden cruise ~71, Tempest ~89) and bulldozes mass it touches. The Mass card now drains.
+4. **Seats combined.** D-pad right: Arms. Your flight input stops and the hull's AI flies; the mouse / right stick / W A S D
+   turn a thin bar from the hull (the turret line, bounded); RT fires the crew weapon down it (Warden whip, Bulwark
+   cannon with charge, Tempest guns). D-pad right: Core. LT holds the shield (the Mass card drains faster, mass touched
+   dies). With the Mass card near full, RT fires the finisher: the mass in a cone ahead dies, a big blast, and the crew
+   splits round you (one body ahead, two behind to the sides) at nine tenths of the speed; you fly your member again.
+5. **Split on purpose.** As Helm, hold LT half a second: the crew splits. Let the Mass card run out combined: it splits.
+6. **AI seats.** As Helm combined, the Arms AI turns the bar onto mass ahead and fires; the Core AI shields when mass is
+   about to hit. As Arms or Core, the AI Helm flies the hull (it never splits by choice).
+7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars and cones disappear; the console shows no
+   errors from the crew.
+
+**PASS:** every step as described, no console errors. **FAIL:** a body that drifts away or never docks · a swap that leaves
+the hull where it was · a combine that never ends · RT doing nothing in a seat · input still live in Arms / Core · a bar or
+body left behind after a vessel swap.
+
 ### 🔴 Racing AIs fly the waypoints, never a crystal (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `GateRaceController.AIDetoursForCrystals` (false) gates the on-the-way crystal detour, so no gate race's
