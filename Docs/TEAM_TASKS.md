@@ -2048,7 +2048,7 @@ directly. The owner named first is the person the task waits on.
 ### T-20261022-9bbd · open · dev · Fair play
 - **Task:** Server authority for scores and currency: UGS Access Control denies players' direct Leaderboards and Cloud Save writes; Cloud Code validates the weekly-challenge time against the course and applies currency earn/spend (today the client posts any time >= 0 and writes its own balance)
 - **Done when:** A direct AddPlayerScoreAsync or Cloud Save balance write from a client returns 403, and a valid run still posts through Cloud Code
-- **Who can take it:** Shombith (UGS, backend owner); Yash (leaderboards UI)
+- **Who can take it:** Yash (Cloud Code, for now; Shombith, 2026-10-26); Shombith owns the backend: nothing goes to it without him
 - **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.2
 
@@ -2085,14 +2085,14 @@ directly. The owner named first is the person the task waits on.
 ### T-20261024-af9e · open · dev · Fair play
 - **Task:** HIGH (Threat Board T4): every player reports the match result (scores, winner, duration) to Cloud Code; a host whose result disagrees with its guests' is a signal, and no reward is granted from an unchecked result
 - **Done when:** A 4-player match writes four reports; a host-side score edit in a test build is flagged
-- **Who can take it:** Shombith (Cloud Code, backend owner); Yash (party / Netcode, the in-match side)
+- **Who can take it:** Yash (Cloud Code, for now; Shombith, 2026-10-26); Shombith owns the backend: nothing goes to it without him; Yash also has the in-match side
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.2; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
 
 ### T-20261024-9d7c · open · dev · Fair play
 - **Task:** HIGH (Threat Board T9): count leaves per match per account (mid-match guest leave, host quit); expose a leave rate so repeat quitters can later be matched together
 - **Done when:** Leave rate is recorded server-side for a test account that quits three matches
-- **Who can take it:** Shombith (Cloud Code, backend owner); Yash (party layer)
+- **Who can take it:** Yash (Cloud Code, for now; Shombith, 2026-10-26); Shombith owns the backend: nothing goes to it without him; Yash also has the party layer
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.4; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
 
@@ -2383,21 +2383,21 @@ directly. The owner named first is the person the task waits on.
 ### T-20261024-c755 · open · setup · Fair play
 - **Task:** Deploy the server-owned crystal wallet: run node Tools/UGS/CloudCode/economy.test.cjs, deploy Tools/UGS/CloudCode/economy.js with the UGS CLI to the development environment, set ServerEconomyGate.Enabled = true in a test build and run the 'Server-owned wallet' editor checks; then production
 - **Done when:** Checklist entry 'Fair play: server-owned crystal wallet' is green on development, and the gate ships on with production deployed
-- **Who can take it:** Shombith (UGS, backend owner)
+- **Who can take it:** Yash (Cloud Code, for now; Shombith, 2026-10-26); Shombith owns the backend: nothing goes to it without him
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
 
 ### T-20261024-a954 · open · setup · Fair play
 - **Task:** Deploy the server-checked weekly leaderboard: run weekly-score.test.cjs, deploy Tools/UGS/CloudCode/weekly-score.js, set ServerScoreGate.Enabled = true AND apply Tools/UGS/AccessControl/project-policy.json together (development first), then production
 - **Done when:** Checklist entry 'server-checked weekly leaderboard' is green; a direct client AddPlayerScoreAsync returns 403
-- **Who can take it:** Shombith (UGS, backend owner)
+- **Who can take it:** Yash (Cloud Code, for now; Shombith, 2026-10-26); Shombith owns the backend: nothing goes to it without him
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
 
 ### T-20261024-1948 · open · setup · Fair play
 - **Task:** Deploy match reports: run match-report.test.cjs, deploy Tools/UGS/CloudCode/match-report.js (development first), set MatchReportGate.Enabled = true in a test build and run the 'Match reports' editor checks, then production
 - **Done when:** Checklist entry 'Fair play: match reports' is green; a quit guest shows left 1 in FAIRPLAY_CONDUCT
-- **Who can take it:** Shombith (UGS, backend owner)
+- **Who can take it:** Yash (Cloud Code, for now; Shombith, 2026-10-26); Shombith owns the backend: nothing goes to it without him
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
 
@@ -2446,6 +2446,6 @@ directly. The owner named first is the person the task waits on.
 ### T-20261025-cebb · open · decision · Fair play
 - **Task:** Fair play - R10 phase C: may the human-vs-AI flight classifier train on HumanFlightRecorder flights and the AI pilots' flights (Docs/AI_SYSTEM/AI_DATA_IN_UGS.md)? It would read them without trimming or replacing them, and needs the players' own consent question before any release-build sample (Docs/AntiCheat/README.md 4.4)
 - **Done when:** Yash and Garrett have said yes or no, and the answer is written in Docs/AntiCheat/README.md 4.4
-- **Who can take it:** Shombith (where the data is stored, backend owner); Yash and Garrett (own the AI flight data)
+- **Who can take it:** Yash (may set up the flight data for the classifier if he wants to) and Garrett (own the AI flight data); Yash goes through Shombith before posting anything into the backend (Shombith, 2026-10-26)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md

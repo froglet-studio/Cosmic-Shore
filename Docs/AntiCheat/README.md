@@ -167,7 +167,8 @@ That is a labelled dataset of *human* and *our-AI* flights for free, so the clas
 before the first bot farm exists. (The recorder is editor and development builds only today, and the team already
 decided players get their own consent question before it ships; the release-build anti-cheat sample is a smaller,
 separate stream, §4.7. It never replaces or trims the AI training flights, which stay whole under
-`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`; ask Yash or Garrett before the classifier reads them, and Shombith, who owns where they are stored.)
+`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`; ask Yash or Garrett before the classifier reads them. Yash may set the classifier's data up; anything posted into
+the backend goes through Shombith first, who owns where it is stored, Shombith 2026-10-26.)
 
 What each behaviour looks like to the watcher:
 

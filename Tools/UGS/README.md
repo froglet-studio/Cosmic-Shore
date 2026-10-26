@@ -4,6 +4,9 @@ Server-side code the game calls through Unity Gaming Services. It runs on Unity'
 player's device, so a modified game cannot change what it decides. Part of the fair-play work
 (`Docs/AntiCheat/README.md`).
 
+**Who:** Shombith owns the backend. Yash takes the Cloud Code work for now (Shombith, 2026-10-26); every deploy, policy
+or write to the backend goes through Shombith first.
+
 | File | What it does | Threat Board |
 |---|---|---|
 | `CloudCode/economy.js` | Owns the crystal wallet in the protected Cloud Save key `PLAYER_ECONOMY`: earn, spend and once-only claims, each checked against `RULES` at the top of the file | T3 |
