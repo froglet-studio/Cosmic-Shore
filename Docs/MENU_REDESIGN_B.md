@@ -3685,3 +3685,35 @@ icon we can glow the podium below more to see it."
 - `author_menu_configure.py --check` and `--self-test`. Two new plants are both caught: the outline sprite back on the
   pedestal, and `podiumGlow` unwired. The validator also asserts that the podium breathes.
 - `gates.sh`, including the player and editor reference compiles.
+
+## 87. Rev 26 mockups: the Codex (2026-10-26, awaiting board approval)
+
+**Asked (Shombith):** "Bring up the codex from the design board and create mockups there of how codex with eithirions
+and everything and details about all pilots and artifacts and elements and everything will show."
+
+**On the canvas:** page "Rev 26 - Codex" of Menu Redesign B (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with
+a copy in `Docs/MenuRedesignB/board/R26*.dc.html`. Eleven boards:
+- the front page;
+- one board per chapter: Ethirions, Elements, Ecology > Fauna, Ecology > Flora, Pilots, Vessels, Artifacts, Tools;
+- the in-match discovery toast;
+- notes.
+
+Each chapter screen keeps the Hangar's split: the grid on the left and the open page on the right. LB / RB step the
+chapters. CODEX is the top bar's first tab (section 84).
+
+**Data:** every number on the boards is the shipped value, from these sources:
+- Ethirions, ecology and tools: `Assets/Resources/Codex.asset` (`CodexSO`, Garrett's, `Docs/CODEX.md`). The art is
+  the baked `Assets/_Graphics/Codex/` portraits.
+- Pilots: `SO_Captain_<Hull>_<Element>`, for the name, flavour line, signature, how the AI flies and the portrait.
+- Vessels and elements: `element_ability_table.py`, for each ability and its level-5 upgrade. The art is the Hangar
+  card art.
+
+**Proposed, not in the game:**
+- Discovery. `Docs/CODEX.md` section 5 says every entry ships unlocked, and nothing reads `UnlockedByDefault` or
+  `DiscoveryKey` yet. The counts, the NEW badges, the silhouettes and the toast all assume discovery.
+- Artifacts. There is no artifact data in the game; the two shown come from the Rev 24 Hangar board.
+- Descriptions. The Codex asset's descriptions are blank, so they show as [bracketed] slots.
+- Copy. Each element's one-line meaning ("the strike you carry", "what you build", "how far you reach", "how fast you
+  move") is proposed wording, read off the fleet's ability table.
+
+Nothing is built in Unity until a board is approved.
