@@ -180,6 +180,12 @@ Recorded in [`TOOLING_DECISIONS.md`](TOOLING_DECISIONS.md) §6 by Shombith, who 
 Sessions no longer ask whether these tools helped. [`TOOLING_FEEDBACK.md`](TOOLING_FEEDBACK.md) keeps what people
 volunteer.
 
+**One shipping process (Garrett, 2026-10-26).** `/ship` (with its `quick`, `deep`, `tools` and `promote` lanes) is the
+one way a branch reaches `bleeding-edge`. `/to-bleeding-edge`, written on 2026-10-15 for Yash's repeated promotion of
+`Ys-bleeding-edge`, duplicated `/ship`'s merge, gates, push and PR steps without either skill naming the other; it is
+now an alias of `/ship promote [branch]`, and its conflict rules and `gates.sh` live in `/ship` §1.5. Yash is asked to
+promote through `/ship promote` (task T-20261026-16e6) so the two habits cannot drift apart again.
+
 **Everyone is told, not only Claude.** Two hooks show the person a notice once per session:
 - `team_context.py`:
   - on the first prompt, whatever it is about: who the team is, that Claude checks who works where, and the tools

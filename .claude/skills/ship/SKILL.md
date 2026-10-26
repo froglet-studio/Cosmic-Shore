@@ -17,8 +17,9 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 | A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5, and keeps §3.55's minimum (the lab's CATALOG row plus any costly lesson). |
 | A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, a mechanical refactor-opportunity sweep (D8) over §3.6, and a lab audit (D9) over §3.55. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
+| PROMOTE an integration branch that was already reviewed PR by PR (Yash's `Ys-bleeding-edge`) | `/ship promote [branch]` | Runs §1.5 (merge bleeding-edge in, resolve, gates, push) and §5-§5.5 (the PR, CI) and nothing else - no review, no go/no-go. Was `/to-bleeding-edge`, folded in 2026-10-26 (Garrett: one shipping process, "to avoid confusion, drift"); that name stays as an alias. |
 
-`/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`).
+`/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`, `/ship promote <branch>`).
 
 **§2.5 is in every mode. Speed comes out of review depth, never out of the gate** — a
 fast path that can silently drop a tool's output is the exact failure this protocol
@@ -136,8 +137,67 @@ run the `/reorient` skill first and act on its verdict before shipping.
   includes the shape where each side DELETED different adjacent documents. Git then pairs one side's deleted
   object against the other's surviving neighbour, and every "keep both" builds an object out of two. (2026-10-18:
   the Rhino rig swap against bleeding-edge's HUD cleanup, 74 deletions and 0 genuine conflicts.)
-- **Merge the base branch in before reviewing**, so you resolve conflicts rather than
+- **Merge the base branch in before reviewing** (§1.5), so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
+
+## 1.5 Merge bleeding-edge in, resolve, gate, push (every mode that opens a PR; the whole of `/ship promote`)
+
+`$BRANCH` is the branch being shipped: the current one, or the argument of `/ship promote <branch>`. Stop and
+ask if it is empty (a detached HEAD), `bleeding-edge` itself, or a protected branch (`main`, `development`).
+A branch reaches `bleeding-edge` **only through a pull request** - it is Garrett's branch, protected, and the
+`Bleeding-edge guard` workflow reviews what lands there - and all conflict resolution happens on `$BRANCH`, so
+the PR always merges cleanly.
+
+**Fetch and look.**
+```bash
+git fetch origin bleeding-edge "$BRANCH"
+git rev-list --left-right --count origin/bleeding-edge...origin/$BRANCH   # "<behind> <ahead>"
+git log --no-merges --format='%h %an %s' origin/bleeding-edge..origin/$BRANCH
+```
+- The remote `$BRANCH` may be gone: GitHub deletes a head branch when its PR merges. Local commits not yet in
+  bleeding-edge: push them, which recreates it. None: nothing to promote. To restart it from bleeding-edge keeping
+  unmerged local work: `git checkout -B "$BRANCH" origin/bleeding-edge`, then cherry-pick or merge the work back.
+- `ahead = 0` means nothing to promote: say so and stop.
+- Check out `$BRANCH` and fast-forward it (`git merge --ff-only origin/$BRANCH`). Never rebase or force-push a
+  shared branch: other sessions push all day.
+- **If `$BRANCH` is someone else's branch, confirm with the person before pushing a merge onto it**
+  (`who_works_where.py` shows who drove it).
+
+**Merge bleeding-edge in and resolve every conflict keeping both sides' intent** - the two branches are
+different people's work.
+```bash
+git merge --no-ff --no-commit origin/bleeding-edge
+git diff --name-only --diff-filter=U        # the conflicted files
+```
+- Before choosing a side, read both sides' commits: `git log --oneline origin/bleeding-edge -- <file>`, and the
+  same on `$BRANCH`.
+- **Generated files**: regenerate them with their tool, never hand-merge (`Docs/perf/status.json`, the
+  who-works-where map, studio previews, cards, any `author_*` output).
+- **Shared numbers** (enum values, `GameModes` ids, GUIDs, Netcode hashes): if both sides claimed the same one,
+  stop and ask the person. Renumbering serialized values breaks assets.
+- **Scenes and prefabs**: per OBJECT, never per line (§1 above, `/asset-surgery`); never hand-merge YAML
+  overrides you do not understand - take one side whole and name in the PR what the other side changed so its
+  owner re-applies it, or ask.
+- **Docs and logs** (`Docs/TEAM_TASKS.md`, `UNITY_VERIFICATION_CHECKLIST.md`, sync logs): keep every row from
+  both sides.
+- **Same logic changed on both sides**, where picking either loses behaviour: ask the person.
+- Commit: `merge: bleeding-edge (<short sha>, #<PR>) into <$BRANCH> before the PR`, listing each conflict and
+  how it was resolved, ending with the attribution lines.
+
+**Gates on the merged tree.**
+```bash
+bash .claude/skills/ship/gates.sh
+```
+It runs the static checks `bleeding-edge-guard.yml` runs, every `author_*` generator's `--check`, and the
+headless reference compile only when a .NET SDK is already present (it prints SKIP otherwise - §0.05 stands:
+never stand a compiler up for a ship, and a SKIP is not a failure). Player config must report `RESULT: OK`;
+editor config gates only files changed since bleeding-edge (its standing 3 errors in
+`AuthenticationServiceFacade.cs` come from a package that cannot be fetched). Fix anything red on `$BRANCH`
+before the PR - the root cause, never a skipped check. Read exit codes as §0.05 says (bare, not through a pipe).
+
+**Push.** `git push -u origin "$BRANCH"`. Rejected because someone pushed meanwhile: `git fetch origin
+"$BRANCH"`, `git merge origin/$BRANCH`, re-run the gates if the new commits touched C#, push again. Network
+failures: retry 4 times, waiting 2 s, 4 s, 8 s, 16 s.
   **`git fetch` the base again right before you open the PR, and treat a moved tip as a
   SECOND merge, not a formality.** `git merge-base origin/<base> HEAD` equalling the base's
   tip is the test; if it does not, you are about to open a PR that is already behind. One
@@ -986,7 +1046,16 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   were kept and why — §2.5), **Follow-ups** list, collider/perf impact where the ecology
   gate applies.
 - Base is `bleeding-edge` unless told otherwise. Do not subscribe to PR activity to watch
-  CI (§0.05); subscribe only if the human asks you to follow the review.
+  CI (§0.05); subscribe only if the human asks you to follow the review - or when the harness you run in says
+  a PR you opened is yours to drive to green, which overrides this line.
+- **`/ship promote` PR shape** (an integration branch carrying many already-merged PRs): look for an open PR
+  first (`list_pull_requests` with `head: froglet-studio:$BRANCH`, `base: bleeding-edge`, `state: open`) and
+  refresh its title and body rather than opening a second. Title `merge(<$BRANCH>): <the 3-5 headline changes>`.
+  Body, in order: the ahead count, the bleeding-edge commit merged in first and the conflicts resolved; what it
+  carries, grouped by area with short shas; verification (the gates.sh result, the compile numbers when it ran,
+  or plainly that nothing compiled); to test by hand, one line per changed behaviour; Affects; the footer. When
+  the PR merges, confirm it landed with `git merge-base --is-ancestor origin/$BRANCH origin/bleeding-edge`, and
+  say GitHub may have deleted `$BRANCH`. **Never approve or merge the PR yourself**: the person or Garrett does.
 - **Before pushing MORE work onto the branch of a PR you already opened, confirm the PR is still
   OPEN** (`pull_request_read` → `merged`/`state`), right before the push, not at the start of the
   task. A human can merge at any moment, and a commit pushed after the merge lands on a branch

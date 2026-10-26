@@ -2244,3 +2244,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (or Garrett on his next Sparrow flight)
 - **Added:** 2026-10-26 by Claude session cece/loving-ptolemy-4715w4 (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/sheets/sparrow_turret_stance.png, Tools/Build/icon_kit/specs/sparrow.py, Assets/_Scripts/UI/View/SparrowHUDView.cs
+
+### T-20261026-16e6 · open · decision · tooling
+- **Task:** Yash: promote Ys-bleeding-edge through '/ship promote Ys-bleeding-edge' from now on - /to-bleeding-edge is an alias of it since 2026-10-26 (its conflict rules and gates.sh moved into .claude/skills/ship/SKILL.md 1.5), so there is one shipping process and the two cannot drift apart. Read the folded section once and say whether anything the old command did is missing
+- **Done when:** One promotion of Ys-bleeding-edge has gone through /ship promote, and any gap Yash finds is fixed in /ship (never by reviving the old skill)
+- **Who can take it:** Yash
+- **Added:** 2026-10-26 by Claude session cece/loving-ptolemy-4715w4 (Garrett asked: 'nudge Yash to unify his process to avoid confusion, drift') (`cece/loving-ptolemy-4715w4`)
+- **See:** .claude/skills/ship/SKILL.md (0 and 1.5), .claude/skills/to-bleeding-edge/SKILL.md, Docs/TEAM.md 'One shipping process'
