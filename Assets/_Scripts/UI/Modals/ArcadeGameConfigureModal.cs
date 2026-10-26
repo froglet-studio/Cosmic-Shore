@@ -725,6 +725,7 @@ namespace CosmicShore.UI
             {
                 arena.OnVesselCycleRequested   += HandleVesselCycleRequested;
                 arena.OnVesselConfirmRequested += HandleVesselConfirmRequested;
+                arena.OnVesselChangeRequested  += HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    += HandleVesselPickRequested;
             }
 
@@ -770,6 +771,7 @@ namespace CosmicShore.UI
             {
                 arena.OnVesselCycleRequested   -= HandleVesselCycleRequested;
                 arena.OnVesselConfirmRequested -= HandleVesselConfirmRequested;
+                arena.OnVesselChangeRequested  -= HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    -= HandleVesselPickRequested;
             }
 
@@ -1682,15 +1684,17 @@ namespace CosmicShore.UI
                 var taken = TakenHullsForAiSeat(ordinal);
                 arena.ShowHullStrip(_availableShips, shown ? _availableShips.FindIndex(v => v && v.Class == shown.Class) : -1,
                                     v => taken.Contains(v.Class), confirmed: false);
+                RefreshSeatLineup();     // the seat the strip picks for is lit, and stands on its new hull
                 return;
             }
 
             var ship = _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count
                 ? _availableShips[_availableShipIndex]
                 : null;
-            arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed);
+            arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed, canChange: !_localPlayerReady);
             arena.ShowHullStrip(_availableShips, _availableShipIndex,
                                 v => IsHullHeldByOtherPilot(v.Class), _vesselConfirmed);
+            RefreshSeatLineup();
         }
 
         /// <summary>A tap on the hull strip: show that hull, unless the pick is already made, a claim
@@ -1754,6 +1758,19 @@ namespace CosmicShore.UI
             if (TryBeginArenaHullClaim(_availableShips[_availableShipIndex])) return;
 
             ConfirmVesselNow();
+        }
+
+        /// <summary>CHANGE: take the pilot's claim back so they can pick another hull. Only their own hull, and only
+        /// while they are not ready - a ready pilot's hull is part of what the others are waiting on.</summary>
+        void HandleVesselChangeRequested()
+        {
+            if (_vesselSeat != OwnVesselSeat || !_vesselConfirmed || _localPlayerReady) return;
+
+            _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            RefreshVesselPicker();
+            RefreshStartAvailability();
         }
 
         void ConfirmVesselNow()
@@ -2815,6 +2832,7 @@ namespace CosmicShore.UI
             // Show "Waiting for others..." and hide the Start button
             _localPlayerReady = true;
             if (_activePanel) _activePanel.SetReadyUpState(true);
+            if (RequiresVesselConfirmation) RefreshVesselPicker();   // a ready pilot's CHANGE leaves
             RefreshRoster();
 
             // Tell the server this player is ready
@@ -3365,6 +3383,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             if (_activePanel) _activePanel.SetReadyUpState(false);
+            if (RequiresVesselConfirmation) RefreshVesselPicker();   // no longer ready: CHANGE is offered again
         }
 
         #endregion

@@ -470,6 +470,31 @@ namespace CosmicShore.UI
             if (seatLineup && !available) seatLineup.SetDifficulty(null);
         }
 
+        /// <summary>
+        /// Whether this card's AI reads the difficulty. Rev 7 (approved 2026-10-17: "the AI difficulty row shows, unlocked,
+        /// wherever the mode supports it"): the row is on every card; where the mode's AI has one level it shows LOCKED -
+        /// dimmed, out of pad navigation, on the default - and the AI seats name no difficulty.
+        /// </summary>
+        public virtual void SetAIDifficultyOffered(bool offered)
+        {
+            _aiDifficultyOffered = offered;
+            if (aiDifficultyPicker)
+            {
+                aiDifficultyPicker.SetInteractable(_hostControlsInteractable && offered);
+                if (aiDifficultyPicker.TryGetComponent(out CanvasGroup group) && group.alpha > 0f)
+                {
+                    group.alpha = offered ? 1f : lockedAIDifficultyAlpha;
+                    group.interactable = offered;
+                }
+            }
+            if (seatLineup && !offered) seatLineup.SetDifficulty(null);
+        }
+
+        [Tooltip("The AI difficulty row's opacity on a card whose AI has one level (the row shows there, locked).")]
+        [SerializeField, Range(0f, 1f)] float lockedAIDifficultyAlpha = 0.4f;
+        bool _aiDifficultyOffered = true;
+        bool _hostControlsInteractable = true;
+
         /// <summary>Light <paramref name="difficulty"/> on the row. Draws only; raises nothing, so
         /// the modal can mirror the host's pick on a guest without it echoing back.</summary>
         public virtual void ShowAIDifficulty(CosmicShore.Data.AIDifficulty difficulty)
@@ -501,7 +526,8 @@ namespace CosmicShore.UI
                 if (uiButton) uiButton.interactable = interactable;
             }
 
-            if (aiDifficultyPicker) aiDifficultyPicker.SetInteractable(interactable);
+            _hostControlsInteractable = interactable;
+            if (aiDifficultyPicker) aiDifficultyPicker.SetInteractable(interactable && _aiDifficultyOffered);
         }
 
         /// <summary>Bring this panel up, opening its own window when it has one.</summary>

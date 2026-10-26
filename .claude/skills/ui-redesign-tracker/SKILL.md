@@ -73,6 +73,18 @@ Summarise: task, status, criteria met vs total, deviations, new queue entries, w
 
 **T6** — The Aldrich migration is an estimate. If it was executed, that is a significant deviation — roughly 1,670 references moved without design sign-off.
 
+**T7 — a layout group with `childControl` OFF reads a child's CURRENT rect, so a self-sizing child lags one pass**
+(claude/new-session-76hnyc, 2026-10-26). A `KitButton` sizes itself with its own ContentSizeFitter. A wrapper whose
+layout group does not control the child's width reads the button's rect, which the fitter sets later in the same pass.
+So a JOIN that turns into SPECTATE keeps JOIN's slot and spills out of the drawer. Make the wrapper control the child's
+width (`author_menu_arcade.wrap_slot`). The same fitter is why a KitButton dropped into a fixed slot (the configure
+strip's `<` `>`) grows past the slot onto its neighbours: use a fixed-size plain button there.
+
+**T8 — the offline rect renderer models layout groups, but not ContentSizeFitters and not Button transitions.** A clean
+"0 overlaps" from it says nothing about a self-sizing button's real width, and nothing about a tile whose outline its
+component hides at runtime (`KitTile.borderAtRest`). When a fix turns on either of those, assert it in the generator
+(the configure strip asserts its arrows are plain fixed buttons) instead of trusting the render.
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:

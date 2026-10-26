@@ -62,6 +62,15 @@ ARK_RT = "4100490384345192841"
 ARK_IMAGE = "1229040209808752503"
 ARK_GATE = "5340227408031961628"
 DISABLED_BEFORE, DISABLED_AFTER = "0100000003000000", "03000000"   # [ARK=1, PORT=3] -> [PORT]
+
+
+def ark_open(switcher_doc):
+    """ARK out of disabledScreens and PORT still in it. Other screens may be locked beside PORT (CODEX, section 84 of
+    Docs/MENU_REDESIGN_B.md), so the list is read, not matched whole."""
+    import re as _re
+    m = _re.search(r"^  disabledScreens: ([0-9a-f]*)$", switcher_doc, _re.M)
+    ids = [int.from_bytes(bytes.fromhex(m.group(1)[i:i + 8]), "little") for i in range(0, len(m.group(1)), 8)] if m else []
+    return 1 not in ids and 3 in ids
 # The converter's own documents: a readable family, unique in the file, inside a signed int64.
 NEW_GO, NEW_RT, NEW_VIEW = "7700130000000000001", "7700130000000000002", "7700130000000000003"
 INT64_MAX = 9223372036854775807
@@ -191,7 +200,8 @@ def edit_scene(text, view_guid):
         text = text[:start] + text[start:end].replace(old, new, 1) + text[end:]
 
     # 1. The Ark screen opens.
-    replace_in(SWITCHER, f"  disabledScreens: {DISABLED_BEFORE}\n", f"  disabledScreens: {DISABLED_AFTER}\n", "disabledScreens")
+    if not ark_open(docs(text)[SWITCHER][1]):   # a spent one-shot stands down once ARK is open
+        replace_in(SWITCHER, f"  disabledScreens: {DISABLED_BEFORE}\n", f"  disabledScreens: {DISABLED_AFTER}\n", "disabledScreens")
     # 2. The design mockup background goes dark (the component stays, switched off).
     replace_in(ARK_IMAGE, "  m_Enabled: 1\n", "  m_Enabled: 0\n", "ArkScreen Image")
     # 3. The offline gate goes: its document and its m_Component entry.
@@ -264,8 +274,8 @@ def validate_scene(before, after, view_guid, current=None):
         raise SystemExit("the converter's view names the wrong script")
     if re.search(rf"\b{ARK_GATE}\b", after):
         raise SystemExit("the Ark screen's OfflineUIGate survives somewhere")
-    if f"disabledScreens: {DISABLED_AFTER}\n" not in d[SWITCHER][1]:
-        raise SystemExit("ARK is still disabled")
+    if not ark_open(d[SWITCHER][1]):
+        raise SystemExit("ARK is still disabled (or PORT opened)")
     new = dangling(after) - dangling(before)
     if new:
         raise SystemExit(f"the edit leaves {len(new)} new dangling reference(s): {sorted(new)[:5]}")
