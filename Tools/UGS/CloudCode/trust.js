@@ -18,12 +18,25 @@
 // notice once one is owed (after RULES.noticeAfterMatches Undertow matches for cheating or automation; at once for a
 // restriction a person made). Never the stage, the score or the reasons.
 //
-// Params: action ("status" | "appeal" | "samePool"), text (appeal), otherId (samePool)
-// Returns: status -> { ok, lobby, board, notice }; appeal -> { ok, reason, appeal }; samePool -> { ok, same }
+// The pool pass (a host checking a guest without anyone learning who is flagged): every `status` issues a fresh
+// random pass, which the client shows only to a party it joins (a party-session player property). A host asks
+// `verifyGuest` with the guest's id and pass; the server answers only for a pass that guest really holds, so nobody can
+// ask about an account that has not joined their party. A flagged guest caught in a shore host's party gets a
+// `pool_bypass` signal (the server checked it itself, nothing the host claimed), which keeps it in the Undertow.
+//
+// Params: action ("status" | "appeal" | "verifyGuest"), text (appeal), guestId and pass (verifyGuest)
+// Returns: status -> { ok, lobby, board, notice, pass }; appeal -> { ok, reason, appeal };
+//          verifyGuest -> { ok, verified, same }
 //
 // Tests: node Tools/UGS/CloudCode/trust.test.cjs
 
 const { DataApi } = require("@unity-services/cloud-save-1.4");
+// A pass is a random token. Node's crypto when the Cloud Code runtime offers it (it is a Node runtime), otherwise a
+// Math.random token: either is unguessable enough for "show this to your party", and neither is a secret key.
+function newPass() {
+  try { return require("crypto").randomBytes(16).toString("hex"); }
+  catch (e) { return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join(""); }
+}
 
 const SIGNALS_KEY = "FAIRPLAY_SIGNALS";
 const CONDUCT_KEY = "FAIRPLAY_CONDUCT";
@@ -34,7 +47,7 @@ const QUEUE_KEY = "queue";
 
 const RULES = {
   decayDays: 30,              // a signal older than this no longer counts (clean play earns trust back)
-  weights: { host_result_mismatch: 120, around_the_clock: 80, repetitive_results: 100 },
+  weights: { host_result_mismatch: 120, around_the_clock: 80, repetitive_results: 100, pool_bypass: 300 },
   watchAt: 100,
   undertowAt: 300,
   quit: { minMatches: 10, rate: 0.5 },   // over the last 20 matches (match-report.js RULES.recentMatches)
@@ -43,10 +56,12 @@ const RULES = {
   shadowBoardSuffix: "_undertow",
   // The Code of Conduct rule a notice names (Docs/Legal/CODE_OF_CONDUCT_TEMPLATE.md "The rules").
   rule: { cheating: 1, automated: 2, exploit: 3, quitting: 6 },
-  kindOf: { host_result_mismatch: "cheating", around_the_clock: "automated", repetitive_results: "automated" },
+  kindOf: { host_result_mismatch: "cheating", around_the_clock: "automated", repetitive_results: "automated", pool_bypass: "cheating" },
   appealMaxChars: 500,
   adultAge: 18,
   queueMax: 500,
+  verifyPerHour: 30,          // verifyGuest calls one host may make an hour
+  maxSignals: 50,             // match-report.js RULES.maxSignals
 };
 
 const DAY = 86400000;
@@ -173,7 +188,22 @@ function reply(t, nowMs) {
       appeal: t.appeal ? t.appeal.state : "none",
     };
   }
-  return { ok: true, lobby, board, notice };
+  return { ok: true, lobby, board, notice, pass: t.pass || "" };
+}
+
+// Pure: a host's question about a guest. Answers only for the pass the guest holds now.
+function verify(host, guest, pass) {
+  if (!guest || !guest.pass || typeof pass !== "string" || pass !== guest.pass) return { ok: true, verified: false, same: false };
+  return { ok: true, verified: true, same: poolOf(host.stage) === poolOf(guest.stage) };
+}
+
+// Pure: the hourly limit on verifyGuest, kept in the host's own record.
+function allowVerify(t, nowMs) {
+  const hour = Math.floor(nowMs / 3600000);
+  if (!t.verifyWindow || t.verifyWindow.hour !== hour) t.verifyWindow = { hour, count: 0 };
+  if (t.verifyWindow.count >= RULES.verifyPerHour) return false;
+  t.verifyWindow.count++;
+  return true;
 }
 
 // Pure: an appeal. One open at a time; the text is short and kept for the reviewer only.
@@ -207,6 +237,17 @@ async function saveTrust(api, projectId, playerId, value, writeLock) {
   await api.setPrivateCustomItem(projectId, trustId(playerId), body);
 }
 
+async function addSignal(api, projectId, playerId, signal) {
+  const res = await api.getProtectedItems(projectId, playerId, [SIGNALS_KEY]);
+  const row = res && res.data && res.data.results ? res.data.results.find((r) => r.key === SIGNALS_KEY) : null;
+  const signals = row && Array.isArray(row.value) ? row.value : [];
+  signals.push(signal);
+  if (signals.length > RULES.maxSignals) signals.splice(0, signals.length - RULES.maxSignals);
+  const body = { key: SIGNALS_KEY, value: signals };
+  if (row && row.writeLock) body.writeLock = row.writeLock;
+  await api.setProtectedItem(projectId, playerId, body);
+}
+
 async function updateQueue(api, projectId, playerId, op, t, nowMs) {
   const res = await api.getPrivateCustomItems(projectId, QUEUE_ID, [QUEUE_KEY]);
   const row = res && res.data && res.data.results ? res.data.results.find((r) => r.key === QUEUE_KEY) : null;
@@ -227,12 +268,21 @@ module.exports = async ({ params, context, logger }) => {
   const nowMs = Date.now();
   const action = params.action || "status";
 
-  if (action === "samePool") {
-    // A host checking a guest before a match: same pool or not, nothing more.
-    if (typeof params.otherId !== "string" || params.otherId.length === 0 || params.otherId.length > 64) return { ok: false, same: false };
-    const mine = (await loadTrust(api, projectId, playerId)).value;
-    const theirs = (await loadTrust(api, projectId, params.otherId)).value;
-    return { ok: true, same: poolOf(mine.stage) === poolOf(theirs.stage) };
+  if (action === "verifyGuest") {
+    if (typeof params.guestId !== "string" || params.guestId.length === 0 || params.guestId.length > 64 || params.guestId === playerId)
+      return { ok: false, verified: false, same: false };
+    const hostRec = await loadTrust(api, projectId, playerId);
+    if (!allowVerify(hostRec.value, nowMs)) return { ok: false, reason: "rate_limited", verified: false, same: false };
+    try { await saveTrust(api, projectId, playerId, hostRec.value, hostRec.writeLock); } catch (e) { /* the count is best effort */ }
+    const guest = (await loadTrust(api, projectId, params.guestId)).value;
+    const out = verify(hostRec.value, guest, params.pass);
+    // A flagged guest in a shore party: the server's own fact, so it is evidence. A flagged host taking a shore guest is
+    // already isolated from the shore by its lobby; the guest is not at fault.
+    if (out.verified && !out.same && poolOf(guest.stage) !== RULES.pools.shore && poolOf(hostRec.value.stage) === RULES.pools.shore) {
+      try { await addSignal(api, projectId, params.guestId, { kind: "pool_bypass", at: nowMs, host: playerId }); }
+      catch (e) { logger.warning(`pool_bypass not recorded: ${e.message}`); }
+    }
+    return out;
   }
 
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -244,6 +294,7 @@ module.exports = async ({ params, context, logger }) => {
       out = appeal(t, params.text, nowMs);
       if (out.ok && !t.queued) { t.queued = true; queueOp = "add"; }
     } else if (action === "status") {
+      t.pass = newPass();   // a fresh pass every sign-in; the old one stops verifying
       const signals = await loadProtected(api, projectId, playerId, SIGNALS_KEY);
       const conduct = await loadProtected(api, projectId, playerId, CONDUCT_KEY);
       const age = await loadProtected(api, projectId, playerId, AGE_KEY);
@@ -271,7 +322,8 @@ module.exports = async ({ params, context, logger }) => {
 module.exports.params = {
   action: { type: "String", required: false },
   text: { type: "String", required: false },
-  otherId: { type: "String", required: false },
+  guestId: { type: "String", required: false },
+  pass: { type: "String", required: false },
 };
 
-module.exports._test = { emptyTrust, applyReview, evaluate, step, reply, appeal, poolOf, lobbyOf, trustId, RULES };
+module.exports._test = { emptyTrust, applyReview, evaluate, step, reply, appeal, verify, allowVerify, poolOf, lobbyOf, trustId, RULES };

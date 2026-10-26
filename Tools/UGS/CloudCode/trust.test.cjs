@@ -8,6 +8,7 @@ const priv = new Map();   // "customId/key" -> { value, writeLock }
 let lock = 0;
 const conflict = () => { const e = new Error("conflict"); e.response = { status: 409 }; return e; };
 class FakeDataApi {
+  async setProtectedItem(_p, player, body) { prot.set(player + "/" + body.key, JSON.parse(JSON.stringify(body.value))); }
   async getProtectedItems(_p, player, keys) {
     return { data: { results: keys.filter((k) => prot.has(player + "/" + k)).map((k) => ({ key: k, value: prot.get(player + "/" + k) })) } };
   }
@@ -26,7 +27,7 @@ Module._load = function (req) {
   return realLoad.apply(this, arguments);
 };
 const script = require(path.join(__dirname, "trust.js"));
-const { emptyTrust, step, appeal, evaluate, RULES } = script._test;
+const { emptyTrust, step, appeal, evaluate, verify, allowVerify, RULES } = script._test;
 const logger = { info() {}, warning() {} };
 const call = (player, params) => script({ params, context: { projectId: "p", playerId: player }, logger });
 const trustOf = (player) => (priv.get("fp-" + player + "/trust") || {}).value;
@@ -128,19 +129,41 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     assert.equal(appeal(t, "again", NOW).reason, "already_open");
   });
 
-  await test("the whole script: status stores the record privately and queues the account; appeal; samePool", async () => {
+  await test("a host learns nothing without the guest's own pass", () => {
+    const host = emptyTrust(), guest = emptyTrust(); guest.stage = "undertow"; guest.pass = "abc";
+    assert.deepEqual(verify(host, guest, "wrong"), { ok: true, verified: false, same: false });
+    assert.deepEqual(verify(host, guest, undefined), { ok: true, verified: false, same: false });
+    assert.deepEqual(verify(host, guest, "abc"), { ok: true, verified: true, same: false });
+  });
+
+  await test("a host may verify 30 guests an hour", () => {
+    const t = emptyTrust(); let ok = 0;
+    for (let i = 0; i < 40; i++) if (allowVerify(t, NOW)) ok++;
+    assert.equal(ok, RULES.verifyPerHour);
+    assert.equal(allowVerify(t, NOW + 3600000), true, "and the next hour starts again");
+  });
+
+  await test("the whole script: status stores the record privately and queues the account; appeal; verifyGuest", async () => {
     prot.set("bad/FAIRPLAY_SIGNALS", [sig("host_result_mismatch", 1), sig("host_result_mismatch", 2), sig("repetitive_results", 3)]);
     prot.set("bad/FAIRPLAY_AGE", { birthYear: 1990 });
     const realNow = Date.now; Date.now = () => NOW;
     try {
       const r = await call("bad", { action: "status" });
-      assert.deepEqual(Object.keys(r).sort(), ["board", "lobby", "notice", "ok"], "the client never sees the stage, score or reasons");
+      assert.deepEqual(Object.keys(r).sort(), ["board", "lobby", "notice", "ok", "pass"], "the client never sees the stage, score or reasons");
+      assert.match(r.pass, /^[0-9a-f]{32}$/);
       assert.equal(r.lobby, "_u1"); assert.equal(trustOf("bad").stage, "undertow"); assert.deepEqual(queue(), ["bad"]);
       const a = await call("bad", { action: "appeal", text: "please look again" });
       assert.equal(a.ok, true); assert.equal(trustOf("bad").appeal.state, "open");
       await call("good", { action: "status" });
-      assert.equal((await call("bad", { action: "samePool", otherId: "good" })).same, false);
-      assert.equal((await call("good", { action: "samePool", otherId: "nobody-yet" })).same, true);
+      const badPass = (await call("bad", { action: "status" })).pass;
+      assert.equal((await call("good", { action: "verifyGuest", guestId: "bad", pass: r.pass })).verified, false, "an old pass stops working");
+      const v = await call("good", { action: "verifyGuest", guestId: "bad", pass: badPass });
+      assert.deepEqual(v, { ok: true, verified: true, same: false });
+      assert.equal(prot.get("bad/FAIRPLAY_SIGNALS").at(-1).kind, "pool_bypass", "the server records the bypass against the flagged guest");
+      const goodPass = trustOf("good").pass;
+      const w = await call("bad", { action: "verifyGuest", guestId: "good", pass: goodPass });
+      assert.equal(w.same, false);
+      assert.notEqual(prot.get("good/FAIRPLAY_SIGNALS")?.at?.(-1)?.kind, "pool_bypass", "a shore guest of a flagged host is not at fault");
     } finally { Date.now = realNow; }
   });
 

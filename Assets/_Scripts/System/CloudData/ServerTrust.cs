@@ -14,6 +14,13 @@ namespace CosmicShore.Core
     public static class FairPlayTrustGate
     {
         public static readonly bool Enabled = false;
+
+        /// <summary>
+        /// Whether a party host removes a guest whose pool pass is missing or does not verify. Off at first: a guest on
+        /// a build from before the pass (or one whose sign-in could not reach the server) has none, and removing them
+        /// would punish the honest. A guest whose pass verifies as another pool is removed either way.
+        /// </summary>
+        public static readonly bool RemoveUnverifiedGuests = false;
     }
 
     /// <summary>
@@ -47,7 +54,28 @@ namespace CosmicShore.Core
             public string lobby;
             public string board;
             public Notice notice;
+            public string pass;
         }
+
+        [Serializable]
+        class VerifyResult
+        {
+            public bool ok;
+            public bool verified;
+            public bool same;
+        }
+
+        /// <summary>What a host learns about a guest from the guest's pass.</summary>
+        public enum GuestCheck
+        {
+            Unknown = 0,       // the server could not be asked (gate off, offline, rate limited)
+            SamePool = 1,
+            OtherPool = 2,
+            Unverified = 3,    // no pass, or one the guest does not hold
+        }
+
+        /// <summary>The party-session player property that carries this account's pool pass to its party.</summary>
+        public const string PassPropertyKey = "fp_pass";
 
         [Serializable]
         class AppealResult
@@ -63,6 +91,12 @@ namespace CosmicShore.Core
         /// <summary>Appended to a weekly board's id for this account's own times: empty on the shore.</summary>
         public static string BoardSuffix { get; private set; } = string.Empty;
 
+        /// <summary>
+        /// This sign-in's pool pass: shown only to a party this account joins, so its host can ask the server whether
+        /// the account belongs in its pool. Empty while the gate is off.
+        /// </summary>
+        public static string Pass { get; private set; } = string.Empty;
+
         /// <summary>The notice the server says is owed, or null.</summary>
         public static Notice Current { get; private set; }
 
@@ -74,6 +108,7 @@ namespace CosmicShore.Core
         {
             LobbySuffix = string.Empty;
             BoardSuffix = string.Empty;
+            Pass = string.Empty;
             Current = null;
             OnNoticeChanged = null;
         }
@@ -96,6 +131,7 @@ namespace CosmicShore.Core
                 if (result is not { ok: true }) return;
                 LobbySuffix = Sanitize(result.lobby);
                 BoardSuffix = Sanitize(result.board);
+                Pass = IsPass(result.pass) ? result.pass : string.Empty;
                 var notice = result.notice != null && !string.IsNullOrEmpty(result.notice.kind) ? result.notice : null;
                 Current = notice;
                 OnNoticeChanged?.Invoke(notice);
@@ -104,6 +140,42 @@ namespace CosmicShore.Core
             {
                 CSDebug.LogWarning($"[FairPlay] Trust status could not reach the server ({e.Message}); keeping the last answer.");
             }
+        }
+
+        /// <summary>
+        /// A party host asks about a guest who joined, with the pass the guest put on its party-session properties.
+        /// The answer covers only that guest, and only if the pass is really theirs.
+        /// </summary>
+        public static async UniTask<GuestCheck> VerifyGuestAsync(string guestId, string guestPass)
+        {
+            if (!FairPlayTrustGate.Enabled || string.IsNullOrEmpty(guestId)) return GuestCheck.Unknown;
+            if (!IsPass(guestPass)) return GuestCheck.Unverified;
+            try
+            {
+                var result = await CloudCodeService.Instance
+                    .CallEndpointAsync<VerifyResult>(Endpoint, new Dictionary<string, object>
+                    {
+                        { "action", "verifyGuest" }, { "guestId", guestId }, { "pass", guestPass },
+                    })
+                    .AsMainThread();
+                if (result is not { ok: true }) return GuestCheck.Unknown;
+                if (!result.verified) return GuestCheck.Unverified;
+                return result.same ? GuestCheck.SamePool : GuestCheck.OtherPool;
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[FairPlay] Could not check a guest's pool ({e.Message}); leaving them in the party.");
+                return GuestCheck.Unknown;
+            }
+        }
+
+        /// <summary>A pass is 32 lowercase hex digits; anything else is no pass.</summary>
+        public static bool IsPass(string pass)
+        {
+            if (string.IsNullOrEmpty(pass) || pass.Length != 32) return false;
+            foreach (char c in pass)
+                if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return false;
+            return true;
         }
 
         /// <summary>Opens an appeal with the player's own words (trimmed by the server). True when it is open.</summary>

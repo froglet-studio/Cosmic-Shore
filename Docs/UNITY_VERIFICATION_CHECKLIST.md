@@ -95,6 +95,10 @@ player, editor and webgl: 0 errors in project code; planted errors in the overla
 6. Reviewer: add `review: {decision: "clear"}` to its record; next sign-in it is back in `PRESENCE_LOBBY`, no notice,
    out of the queue. `restrict` with an `until` date: the notice shows at once with the date.
 7. Pad: A/B work on the notice; Esc closes it unless the appeal text box is focused.
+8. Pool pass (added 2026-10-26): with a shore host and a test client forced into the Undertow, make the Undertow client
+   join the shore host's party anyway (edit its lobby suffix to empty in the debugger): the host's Party log shows
+   `pool check: OtherPool - removing` and the guest leaves the party; the guest's `FAIRPLAY_SIGNALS` gains `pool_bypass`.
+   A normal shore guest shows `pool check: SamePool` and stays.
 
 ### 🔴 Fair play: minors are never penalised automatically (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
 

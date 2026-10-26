@@ -87,6 +87,17 @@ namespace CosmicShore.Tests
         public void TrustGate_ShipsOff()
         {
             Assert.IsFalse(FairPlayTrustGate.Enabled);
+            Assert.IsFalse(FairPlayTrustGate.RemoveUnverifiedGuests, "a guest without a pass is not removed until every build carries one");
+        }
+
+        [Test]
+        public void PoolPass_IsExactly32LowercaseHexDigits()
+        {
+            Assert.IsTrue(FairPlayTrust.IsPass("0123456789abcdef0123456789abcdef"));
+            Assert.IsFalse(FairPlayTrust.IsPass(null));
+            Assert.IsFalse(FairPlayTrust.IsPass("0123456789ABCDEF0123456789ABCDEF"));
+            Assert.IsFalse(FairPlayTrust.IsPass("0123456789abcdef"));
+            Assert.IsFalse(FairPlayTrust.IsPass("0123456789abcdef0123456789abcdeg"));
         }
     }
 }

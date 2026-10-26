@@ -209,8 +209,13 @@ twin-board suffix and a notice when one is owed. The client appends the suffix t
 (`FairPlayTrust`, `PresenceLobbyService`), so an unflagged account joins exactly the lobby it always did. Weights,
 thresholds and the 30-day decay are `trust.js` `RULES`. A person decides by editing the record's `review` field in the
 dashboard; the review queue is private custom data `fairplay-review` (Tools/UGS/README.md). **Stated limit:** the
-lobby is chosen by the client, so a modified client can still join the shore lobby; a host can ask `samePool` about a
-guest (not wired into the party layer yet), and the server checks (results, scores, rewards) never depend on routing.
+lobby is chosen by the client, so a modified client can still join the shore lobby. **Closed for parties
+(2026-10-26):** each sign-in gets a random pool pass, which the client shows only to a party it joins (a member-only
+party-session property). The host asks `verifyGuest` about that pass and removes a guest the server places in another
+pool (`HostConnectionService.CheckJoinedMemberPoolAsync`); the server records `pool_bypass` against the flagged guest.
+Nobody can ask about an account that has not joined their party, so the check reveals no one's flag. A guest with no
+pass (an older build) stays until `FairPlayTrustGate.RemoveUnverifiedGuests` is turned on. The server checks (results,
+scores, rewards) never depended on routing.
 
 **Routing reads the record on the server.** The game has no stranger matchmaking (parties form inside the presence
 lobby), so a Cloud Code call at sign-in tells the client which presence lobby to join. If UGS Matchmaker is adopted
@@ -357,7 +362,8 @@ Each phase stands on its own and is worth doing even if the next never happens.
    shows client cheats.
 2. Online play requires a platform sign-in (Steam, Apple, Google); offline and solo stay anonymous.
 3. Paid content is never locked by a fair-play measure.
-4. One named person reviews flagged accounts and appeals.
+4. One named person reviews flagged accounts and appeals. **Decided 2026-10-26: Shombith** reviews the queue and
+   appeals (how: `Tools/UGS/README.md`, "Reviewing fair-play accounts").
 
 **For counsel:** the eight questions at the end of [`LEGAL.md`](LEGAL.md) §4. The two that change the design most:
 whether the 3-match delay can stand for EU and UK players flagged for cheating (question 4), and whether the

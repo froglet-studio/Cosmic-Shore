@@ -130,7 +130,9 @@ Nothing restricts ranked or public play without a person (GDPR Art. 22; `Docs/An
      until the date (the Undertow pool and the twin boards); the player is told at once. Paid content is never touched.
 4. The account's next sign-in applies the decision once (`review.appliedAt` is stamped) and removes it from the queue.
 
-Who reviews is the open owner decision in `Docs/AntiCheat/README.md` §8 (one named person).
+**Who reviews: Shombith** (decided 2026-10-26, `Docs/AntiCheat/README.md` §8). A routine: open the queue once a day
+while the gate is on; decide each entry; answer every open appeal within a week (the Code of Conduct promises a person
+looks at it).
 
 ## Switching on Steam sign-in (T1)
 
