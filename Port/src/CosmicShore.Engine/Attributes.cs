@@ -100,10 +100,11 @@ namespace CosmicShore.Engine
     }
 
 
-    /// <summary>Declares component dependencies (enforced by editor tooling later; inert at runtime).
-    /// Named as Unity names it (<c>UnityEngine.RequireComponent</c>, no Attribute suffix) so game code that names
-    /// the type itself - <c>(RequireComponent)attrs[i]</c>, <c>typeof(RequireComponent)</c> (TheaterGhost) - compiles here
-    /// too; <c>[RequireComponent(...)]</c> resolves either way.</summary>
+    /// <summary>
+    /// Declares component dependencies (enforced by editor tooling later; inert at runtime). Named as Unity names it,
+    /// with no Attribute suffix, so game code that reads the rules (<c>(RequireComponent)attrs[i]</c>,
+    /// <c>typeof(RequireComponent)</c>: TheaterGhost, CrystalDepthPrismBenchmarkWindow) compiles unchanged.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class RequireComponent : Attribute
     {

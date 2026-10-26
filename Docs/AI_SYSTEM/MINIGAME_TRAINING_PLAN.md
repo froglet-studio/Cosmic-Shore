@@ -38,7 +38,7 @@ From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one who
 |---|---|---|---|
 | **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
-| Stoat | Warpline (also Slingshot) | gate race, field pairs | 4 hand-flown races (I1-I2). AI on hold for Garrett's configuration |
+| Stoat | Warpline (also Slingshot) | gate race, field pairs | 11 hand-flown races (I1-I3). Retrained 2026-10-26: the Regatta steering and the pair and sling numbers learned from Yash (`WARPLINE.md` §3.1) |
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
 | Urchin | Skein | gate race on rails | none yet |
@@ -231,7 +231,7 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races). **Boost, 2026-10-26:** on the legs, let go 1.25 s before each station (`BREAKWATER.md` "The boost"; offline 79-82 s a lap against 110-131 s, no station clipped) |
 | Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned per intensity (§3.6-3.7); no crystals: a racing AI flies the gates only (§6.1) |
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
-| Stoat / Warpline | the field pair's warp | on hold for Garrett's configuration |
+| Stoat / Warpline | the field pair's warp; the sling | pairs and slings learned from Yash (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`, 2026-10-26) |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
 | Manta / Redline | Soar | the Soar executor's bands |
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
