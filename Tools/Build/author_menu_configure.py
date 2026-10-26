@@ -1154,9 +1154,15 @@ PILOTS_BODY_H = TILE_H + 10 + 2 * (SEAT_H + 6)
 AI_ROW_H = 30 + AI_BTN_H
 
 
+def ai_row_h(kind):
+    """The Rev 4 AI row: caption over the plates; the Maelstrom's is the one-line compact row (its column also holds
+    the Format section, and the two-line row left no room for a crowded domain above BOTTOM)."""
+    return G_ACT_H if kind == "maelstrom" else AI_ROW_H
+
+
 def column_height(kind):
     """The settings column hugs its sections (never past SET_H, the room above the launch row)."""
-    ai = AI_ROW_GAP + AI_ROW_H if kind != "maelstrom" else 0
+    ai = AI_ROW_GAP + ai_row_h(kind)   # every window, the Maelstrom included (every mode offers the difficulty, 2026-10-26)
     secs = [INTENSITY_SEC_H, SEC_HEAD + PILOTS_BODY_H + ai]
     secs += [SEC_HEAD + 4 * FORMAT_ROW_H] if kind == "maelstrom" else [HULL_SEC_H if kind == "arena" else VESSEL_SEC_H]
     h = 2 * PAD + sum(secs) + SEC_GAP * (len(secs) - 1)
@@ -1179,16 +1185,16 @@ def steps_row(chrome, kind):
                                 TL(i * (NODE_W + NODE_GAP), SEC_HEAD, NODE_W, NODE_H),
                                 [("root#in", "staggerIndex", i + 2, None)]))
     y += INTENSITY_SEC_H + SEC_GAP
-    ph = SEC_HEAD + PILOTS_BODY_H + (AI_ROW_GAP + AI_ROW_H if kind != "maelstrom" else 0)
+    ph = SEC_HEAD + PILOTS_BODY_H + AI_ROW_GAP + ai_row_h(kind)
     cp = section(steps, keys[2], y, ph, "Pilots", "1 of 4", 3 if kind == "maelstrom" else 2)
     for i, (dname, dval) in enumerate(DOMAINS):
         cp.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
                                 TL(i * (COL_W + COL_GAP), SEC_HEAD, COL_W, TILE_H + 6 + SEAT_H),
                                 [("root#dtile", "domain", dval, None), ("root#in", "staggerIndex", i + 6, None)]))
-    # Every Arena card offers the row too since bleeding-edge 2026-10-16; the panel still shows it only
-    # where AIDifficultyRules.IsOfferedFor says the mode's AI reads it.
-    if kind in ("arcade", "arena"):
-        ai_row(cp, SET_W - 2 * PAD, SEC_HEAD + PILOTS_BODY_H + AI_ROW_GAP)
+    # Every window carries the row: every mode offers the difficulty (AIDifficultyRules.IsOfferedFor, Yash 2026-10-26),
+    # the Maelstrom's included - its rounds keep the host's pick as they keep the AI seats.
+    ai_row(cp, AIC_W if kind == "maelstrom" else SET_W - 2 * PAD, SEC_HEAD + PILOTS_BODY_H + AI_ROW_GAP,
+           compact_x=0 if kind == "maelstrom" else None)
     y += ph + SEC_GAP
     # The vessel comes LAST, under the pilots (Yash, 2026-10-25: intensity on top, the vessel panel below):
     # on the Arena it is the shared vessel panel, picking the hull of whichever seat above was tapped.
@@ -1514,7 +1520,7 @@ def pilots_fit_body(ctx, go, kind, keys):
     return mono(go, S["fit"],
                 f"  pilotsSection: {ref(ctx.rt(keys[2]))}\n"
                 + refs("columns", [ctx.iref(f"Domain{d}", "root#dtile") for d, _ in DOMAINS])
-                + f"  aiRow: {ref(ctx.c('AIRow', 'cg') if kind != 'maelstrom' else 0)}\n"
+                + f"  aiRow: {ref(ctx.c('AIRow', 'cg'))}\n"
                 f"  rowGap: {AI_ROW_GAP}\n"
                 + refs("below", [ctx.rt(k) for k in moved])
                 + f"  maxGrowth: {fmt(max_growth(kind))}\n"
@@ -1599,7 +1605,7 @@ def check_pilots_fit():
         # One domain column holds at most every seat; a launchable Arena match keeps a pilot in a second domain,
         # which also counts toward filling the match (the open seat goes when it is full).
         others = 1 if kind == "arena" and arena_min_domains() >= 2 else 0
-        rooms = [PILOTS_BODY_H] if kind == "maelstrom" else [PILOTS_BODY_H, PILOTS_BODY_H + AI_ROW_GAP + AI_ROW_H]
+        rooms = [PILOTS_BODY_H, PILOTS_BODY_H + AI_ROW_GAP + ai_row_h(kind)]
         most = max_growth(kind)
         for elsewhere, cap in ((others, most), (0, most + 1080 - BOTTOM - 8)):
             for seats in range(ceiling - elsewhere + 1):
@@ -1691,8 +1697,7 @@ def panel_body(ctx, go, kind):
               f"  seatValueText: {ref(ctx.c(f'Step{step_pil}/Value', 'tmp'))}\n"
               f"  pilotsChipText: {ref(0 if g else ctx.c('Chips/Pilots/Label', 'tmp'))}\n"
               f"  readyLabel: {ref(0 if g else ctx.go('Status/Ready'))}\n")
-    if kind in ("arcade", "arena"):
-        fields += f"  aiDifficultyPicker: {ref(ctx.c('AIRow', 'picker'))}\n"
+    fields += f"  aiDifficultyPicker: {ref(ctx.c('AIRow', 'picker'))}\n"
     if kind in ("arcade", "arena"):
         fields += (f"  previewWindow: {ref(ctx.c('Preview', 'window'))}\n"
                    f"  controlsPanel: {ref(ctx.c('Controls', 'controls'))}\n"
@@ -2467,8 +2472,7 @@ def validate_prefabs(files):
                 f"{view}: ConfigurePilotsFit needs the three domain columns"
             moved = re.findall(r"^  - \{fileID: (-?\d+)\}", fit.split("  below:")[1].split("  maxGrowth:")[0], re.M)
             assert len(moved) == 4 and "0" not in moved, f"{view}: ConfigurePilotsFit must move the next section and the launch row"
-            if kind != "maelstrom":
-                wired(text, fit, "aiRow", 225, view)
+            wired(text, fit, "aiRow", 225, view)
             assert f"  maxGrowth: {fmt(max_growth(kind))}\n" in fit, f"{view}: ConfigurePilotsFit's maxGrowth is not the room above BOTTOM"
         cls, body = comp_doc(text, V("root#panel"))
         assert body and S[PANEL_CLASS[kind]] in body, f"{view}: the root carries no {PANEL_CLASS[kind]} launch panel"
@@ -2488,13 +2492,11 @@ def validate_prefabs(files):
         assert len(tiles) == 3 and all(A.kind_of(text, t) == (114, S["dtile"]) for t in tiles), \
             f"{view}: needs the three domain tiles"
         assert "  hostModal: {fileID: 0}\n" in body, f"{view}: hostModal must stay empty in the prefab (scene-only)"
-        if kind in ("arcade", "arena"):
-            # Bleeding-edge's AI difficulty row: the Arcade's (Skim Race / Slingshot / Warpline, merged
-            # 2026-10-15) and, since 2026-10-16, every Arena card's.
-            wired(text, body, "aiDifficultyPicker", S["aipicker"], view)
-            _, pick = comp_doc(text, V("AIRow#picker"))
-            assert pick.count("  - Difficulty: ") == len(AI_LEVELS) and "Button: {fileID: 0}" not in pick, \
-                f"{view}: the AI difficulty row needs Easy, Medium, Hard and Legendary, each with its button"
+        # The AI difficulty row, on every window: every mode offers it (AIDifficultyRules.IsOfferedFor, 2026-10-26).
+        wired(text, body, "aiDifficultyPicker", S["aipicker"], view)
+        _, pick = comp_doc(text, V("AIRow#picker"))
+        assert pick.count("  - Difficulty: ") == len(AI_LEVELS) and "Button: {fileID: 0}" not in pick, \
+            f"{view}: the AI difficulty row needs Easy, Medium, Hard and Legendary, each with its button"
         doms = []
         for d, _ in DOMAINS:
             m = re.search(r"target: \{fileID: (\d+), guid: " + asset_guid("ConfigureDomainColumn") +

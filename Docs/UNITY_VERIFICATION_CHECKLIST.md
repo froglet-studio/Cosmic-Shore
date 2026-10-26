@@ -16509,3 +16509,16 @@ No Unity editor, `unity` CLI or .NET SDK in the session, so no compile ran. Veri
 6. Play Headlong or Redline. **Pass:** the HUD counts 40 gates over 5 laps of 8 rings.
 7. Time one match of each mode the doc's table marks "estimate", flown by an experienced pilot. **Pass:** each
    lands within ~60-120 s; record the times in `Docs/ARCADE_MATCH_LENGTH.md` §2.
+
+## 🔴 2026-10-26 — AI difficulty on every mode (unverified: no Unity editor in the session)
+
+**Files:** `AIDifficulty.cs` (`IsOfferedFor` = every mode but Random; `UsesPilotBelief` = every mode without its own
+handicap), `GateRaceController.ArmRacer` (drops the autopilot belief when it installs its ring handicap), the Maelstrom
+configure view (compact AI row, `author_menu_configure.py`). EditMode: `AIDifficultyRulesTests`.
+
+1. Open several cards that never had the row - Joust, Rampage, Cleave, Switchback, Skein, Headlong, Hijack, Dog Fight:
+   Easy / Medium / Hard / Legendary shows on each, lights when pressed, and a guest sees the host's pick.
+2. Switchback (a gate race) on Easy vs Legendary: Easy notices rings late and overshoots some; Legendary threads cleanly.
+   Third Eye on an Easy AI: it shows a ring handicap and no autopilot belief (one handicap, not two).
+3. Joust or Dog Fight on Easy vs Legendary: the Easy AI reacts late and sometimes flies off to one side of its target.
+4. Maelstrom: the compact AI row sits under the domain columns, clear of Format; the pick holds across rounds.
