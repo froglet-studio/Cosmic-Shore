@@ -257,7 +257,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 18 · Mass, Time, Gate</span>
+    <span class="round">Round 19 · Mass, Time, Wormhole</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
@@ -343,8 +343,9 @@
         <div class="seg" role="group" aria-label="Sling mode" id="slingSegMain">
           <button type="button" data-sling="field" aria-pressed="true">Mass: field trajectory</button>
           <button type="button" data-sling="dipole" aria-pressed="false">Time: catch sling</button>
-          <button type="button" data-sling="gate" aria-pressed="false">Gate: the warp gate</button>
+          <button type="button" data-sling="gate" aria-pressed="false">Gate: the wormhole</button>
         </div>
+        <div class="btns" style="margin-top:6px"><button class="pick watchGateAi" type="button" title="Gate mode, the AI on your hull, the Follow camera: watch it shape and ride wormholes round the course. Add rivals with + in Players to see theirs too.">Watch the AI fly the wormhole</button></div>
         <p class="src" style="margin-top:4px" id="mainP">Squeeze depth = the black hole's strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.</p>
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
         <p class="src" id="portalSrc"></p>
@@ -394,9 +395,9 @@
       <details class="card" id="grp-D" open><summary>Dipole sling <small>round 6</small></summary><div class="rows"></div>
         <p class="src"><b>Press</b>: the black hole is laid <i>ahead</i> and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side; neither moves. <b>Squeeze depth</b> (read live; curve from Squeeze) sets the strength between <i>a touch</i> and <i>buried</i> (GM = 20,000 × strength, the game's unit) and the horizon between its two sizes; the white hole mirrors both and pushes with <i>push</i> × the pull, softened over twice its horizon. The <b>hold radius</b> is the circle on which the pull exactly bends you round at your speed, GM = v²(r − r<sub>s</sub>)²/r: heavier, wider. Pass within <i>catches you</i> × that circle, with it off your nose by at least <i>catches once</i> (or once you are inside the circle), and you are in its grip: the engine holds your speed and you settle onto the circle and go round for as long as you hold, up to <i>longest hold</i>. Outside it the pull only bends you. <b>Let go</b>: it lets go of you, and you leave on the tangent with a boost of speed × (<i>a touch</i> … <i>buried</i>) by the squeeze; the pair falls together and annihilates. Stepped at 4 ms; diving through the portal keeps only the speed you had before the dive.</p>
         <div class="btns"><button class="pick" type="button" data-reset="D">Reset</button></div></details>
-      <details class="card" id="grp-V" open><summary>Gate mode <small>round 18 · T's third press</small></summary><div class="rows"></div>
-        <p class="src"><b>A warp gate.</b> Press a trigger and a black hole opens <i>ahead of your nose</i>, its white hole further along the same line. <b>Squeeze deeper</b> and the white hole slides out: a longer gate is a longer jump. <b>Fly into the black hole</b> and you come out of the white hole, heading the way you went in, and your flight warps for a few seconds: fully for a long gate entered straight down its line, less for a short one or an angled entry. Held, the gate lasts a few seconds; <b>let go</b> and it falls together in under a second and annihilates. One gate at a time. The game: <code>StoatGateMath</code>, <code>StoatModeAction</code> gate* fields.</p>
-        <div class="btns"><button class="pick" type="button" data-reset="V">Reset</button></div></details>
+      <details class="card" id="grp-V" open><summary>Gate mode <small>round 19 · the wormhole · T's third press</small></summary><div class="rows"></div>
+        <p class="src"><b>A wormhole slingshot.</b> Press a trigger and a black hole opens <i>ahead of your nose</i>; a wormhole runs from it to its white hole, drawn as a wireframe while you shape it. <b>LT</b> sets how far apart the mouths are: squeezed, the wormhole gets <b>shorter</b> (and a little wider). <b>RT</b> sets the throat: squeezed, <b>wider</b>. <b>The stick bends it</b> while you hold (the Stoat keeps its line into the mouth): a <b>thick, short</b> wormhole bends far, 90&deg; and more, for turning; a <b>thin, long</b> one runs nearly straight and warps you hardest after it, for distance. <b>Fly into the black hole</b>: space bends in, the throat carries you along its curve, faster in the middle, and slings you out of the white hole (space bending back out) on its heading, warped. Held, it lasts a few seconds; <b>let go</b> and both mouths fall together in under a second and annihilate. One at a time. Studio only for now: the game still runs round 18's straight gate (<code>StoatGateMath</code>).</p>
+        <div class="btns"><button class="pick watchGateAi" type="button" title="Gate mode, the AI on your hull, the Follow camera: watch it shape and ride wormholes round the course (any setting you change shows on its next wormhole). Add rivals with + in Players to see theirs too.">Watch the AI fly it</button><button class="pick" type="button" data-reset="V">Reset</button></div></details>
       <details class="card" id="grp-F" open><summary>Field trajectory <small>round 15 · lab-only</small></summary><div class="rows"></div>
         <p class="src"><b>No catch, no hold circle.</b> The pair is only a field: the black hole's pull GM/(r − r<sub>s</sub>)² and the white hole's softened push, capped at the force ceiling. It bends your nose and speeds you up or slows you along it; the engine pulls that gravity speed back toward cruise at <i>engine holds speed</i>. <b>The poles are fixed</b> (<i>pole strength</i>, <i>horizon</i>, <i>white hole push</i>). <b>Squeeze</b> either trigger and the pair opens <i>ahead</i> of you with the poles together. Then the two triggers place them (each on the squeeze curve): the <b>difference</b> between the triggers pulls them apart <b>sideways</b> (up to <i>sideways</i> u for one full trigger, the black hole on the deeper trigger's side), and the <b>sum</b> pulls them apart <b>lengthways</b> (up to <i>lengthways</i> u with both full), the black hole always the nearer, so you shoot into the sink and out of the source. One trigger gives a slight diagonal; both full put the black hole dead ahead and the white hole further ahead on the same line. The separation is the dipole moment. Ease off and the poles come back together; let go of both and they meet and annihilate, so there is only ever one pair. <b>The line</b> is your path on your current inputs, drawn as evenly spaced dots (<i>dot size</i>, <i>gap</i>) from just ahead of the nose, run with the flight's own step: <span style="color:#96a6c2">blue-grey</span> while the poles leave it alone, <b style="color:#9dff2e">lime</b> as soon as they <b>warp it at all</b> (bend it by <i>boost once … bend</i> in total) or it goes <b>through the wormhole</b>. While it is lime you travel down it at <i>loop boost</i> ×: the boost runs your own flight faster (steering, engine and field together), so you reach each point of the line sooner and the line does not change. It stops where it would loop back onto itself. In this mode the Stoat turns at <i>pitch &amp; yaw in this mode</i> × its shipped rate, so the pair does more of the turning. Force ceiling and fastest bend come from the <b>Dipole</b> tab.</p>
         <div class="btns"><button class="pick primary" type="button" id="ftScanBtn">Scan headings</button><button class="pick" type="button" id="ftBatchBtn">Score the field</button><span class="hint" id="ftNote" style="margin:0">no drawing</span></div>
@@ -487,6 +488,11 @@
     // Gate mode (StoatModeAction gate* / autopilotGate*, 2026-10-27): T's third press, the warp gate
     gtAhead: 90, gtLenMin: 120, gtLenMax: 600, gtMouth: 5, gtHoldMax: 3, gtCollapse: 0.8, gtAimCone: 25, gtWarpShare: 1.5,
     gtBoostSeconds: 2.5, gtKeyRamp: 0.5, gtFunnel: 30, gtFunnelRate: 4, gtAiMin: 300, gtAiCone: 12,
+    // round 19, the wormhole slingshot (studio only): the throat RT opens, how much LT also widens it, the most a wormhole
+    // bends and how much of that comes from LT's shortness, the mouths' flare, how much a fat one cuts the warp after it,
+    // and the ride through (x your speed, faster at the throat). gtAimCone / gtAiCone are round 18's, kept for the game.
+    gtThroatMin: 3, gtThroatMax: 40, gtLtWiden: 0.5, gtTurnMax: 120, gtTurnLenShare: 0.5, gtMouthFlare: 2, gtFatCut: 0.65,
+    gtTubeSpeed: 2.5, gtThroatRush: 1, gtAheadSeconds: 1.2, gtAiMinTurn: 120,
     // the squeeze (StoatSlingConfig)
     holdExponent: 1.5, holdRamp: 3,
     // A: the orbit sling and the drift pair (StoatSlingConfig + BlackHoleConfig)
@@ -581,20 +587,29 @@
     ['D', 'dpFlowCap', 'Most momentum (× cruise)', 0, 5, 0.05],
     ['D', 'dpKickSweep', 'Full kick only after going round (°, 0 = always)', 0, 360, 5],
     ['D', 'dpWarp', 'Warp while caught (share of the loop boost, 0 = none)', 0, 1.5, 0.05],
-    ['V', 'gtAhead', 'Black hole opens ahead of the nose (u)', 20, 400, 5],
-    ['V', 'gtLenMin', 'Gate length at a light squeeze (u)', 20, 600, 10],
-    ['V', 'gtLenMax', 'Gate length fully squeezed (u)', 60, 1500, 10],
-    ['V', 'gtMouth', 'Black hole mouth radius (u)', 2, 40, 0.5],
-    ['V', 'gtHoldMax', 'Held, the gate lasts at most (s)', 0.5, 10, 0.1],
+    ['V', 'gtAheadSeconds', 'Black hole opens this much flight ahead (s)', 0.3, 4, 0.05],
+    ['V', 'gtAhead', '...but at most (u) ahead', 20, 400, 5],
+    ['V', 'gtLenMax', 'Mouths apart, LT untouched (u)', 60, 1500, 10],
+    ['V', 'gtLenMin', 'Mouths apart, LT fully squeezed (u)', 20, 600, 10],
+    ['V', 'gtThroatMin', 'Throat radius, RT untouched (u)', 1, 40, 0.5],
+    ['V', 'gtThroatMax', 'Throat radius, RT fully squeezed (u)', 5, 120, 1],
+    ['V', 'gtLtWiden', 'LT also widens the throat (share)', 0, 1, 0.05],
+    ['V', 'gtTurnMax', 'Fattest wormhole bends up to (°)', 0, 180, 5],
+    ['V', 'gtTurnLenShare', 'Of the bend, the share from LT\'s shortness', 0, 1, 0.05],
+    ['V', 'gtMouthFlare', 'Mouth radius (× throat)', 1, 5, 0.1],
+    ['V', 'gtMouth', 'Smallest mouth that takes you in (u)', 2, 40, 0.5],
+    ['V', 'gtTubeSpeed', 'Ride through (× your speed)', 0.5, 8, 0.1],
+    ['V', 'gtThroatRush', 'Faster at the throat (+ share)', 0, 3, 0.05],
+    ['V', 'gtWarpShare', 'Top warp after it (share of the loop boost)', 0, 3, 0.05],
+    ['V', 'gtFatCut', 'A fat wormhole cuts that warp by (share)', 0, 1, 0.05],
+    ['V', 'gtBoostSeconds', 'Warp after the white hole (s)', 0, 8, 0.1],
+    ['V', 'gtHoldMax', 'Held, it lasts at most (s)', 0.5, 10, 0.1],
     ['V', 'gtCollapse', 'Let go, it falls together in (s)', 0.2, 3, 0.05],
-    ['V', 'gtAimCone', 'Full boost within this of the gate\'s line (°)', 5, 90, 1],
-    ['V', 'gtWarpShare', 'Top warp (share of the loop boost)', 0, 3, 0.05],
-    ['V', 'gtBoostSeconds', 'Warp after a jump (s)', 0, 8, 0.1],
     ['V', 'gtKeyRamp', 'Key / touch: full squeeze after (s)', 0.05, 3, 0.05],
     ['V', 'gtFunnel', 'The black hole draws you onto its mouth within (u)', 0, 120, 1],
     ['V', 'gtFunnelRate', '...at (/s)', 0, 20, 0.1],
-    ['V', 'gtAiMin', 'AI: opens a gate with its ring at least (u) away', 50, 2000, 10],
-    ['V', 'gtAiCone', 'AI: ...and within (°) of its nose', 2, 90, 1],
+    ['V', 'gtAiMin', 'AI: opens a straight wormhole with its ring at least (u) away', 50, 2000, 10],
+    ['V', 'gtAiMinTurn', 'AI: ...a bending one from (u) away', 50, 2000, 10],
     ['D', 'dpWarpHeld', 'Warp from the press (1) or only once caught (0)', 0, 1, 1],
     ['D', 'dpSweetDeg', 'Best release, degrees round (0 = off)', 0, 360, 5],
     ['D', 'dpSweetHalf', 'Full kick within (± °)', 0, 90, 1],
@@ -1337,13 +1352,17 @@
     // at one pace; only the field turns at ftTurnScale.
     // Gate mode warps the flight after a jump the way the field does (the whole flight, so the path stays the path).
     const inField = style === 'A' && slingMode === 'field', inCatch = style === 'A' && isCatch(slingMode), inGate = style === 'A' && slingMode === 'gate';
+    // The wormhole (Gate mode): the stick bends it while it is shaping, so the hull holds its line into the mouth; in the
+    // throat the wormhole flies you.
+    if (inGate && ftLive.gate) { ftLive.gate.sx = XSum; ftLive.gate.sy = -YSum; }
     if (inGate) gateHold(dt);
+    const gNow = inGate ? ftLive.gate : null, gShape = !!(gNow && gNow.state === 'shaping'), gTube = !!(gNow && gNow.state === 'tube');
     const warp = inField || inCatch || inGate ? ftMul : 1, kdt = dt * warp;
-    const turn = P.pitchYaw * (inField ? P.ftTurnScale : 1);
+    const turn = P.pitchYaw * (inField ? P.ftTurnScale : 1) * (gShape || gTube ? 0 : 1);
     if (race !== 'ready') {
       dq.setFromAxisAngle(X, -YSum * turn * rad * kdt); hull.quaternion.multiply(dq);    // Unity +X = nose down; three +X = nose up
       dq.setFromAxisAngle(Y, -XSum * turn * rad * kdt); hull.quaternion.multiply(dq);
-      dq.setFromAxisAngle(Zn, YDiff * P.roll * rad * kdt); hull.quaternion.multiply(dq);
+      dq.setFromAxisAngle(Zn, YDiff * P.roll * rad * kdt * (gTube ? 0 : 1)); hull.quaternion.multiply(dq);
       hull.quaternion.normalize();
     }
     basis();
@@ -1378,7 +1397,8 @@
     }
 
     if (!dipoleFlying) p0.copy(hull.position);
-    if (dipoleFlying) {
+    if (gTube) gateTransit(dt);
+    else if (dipoleFlying) {
       // the dipole moved the hull itself, in small steps (stepDipoleForce); add only the other channels
       tv2.copy(vg).add(vf); hull.position.addScaledVector(tv2, dt);
       basis(); velNow.copy(fwd).multiplyScalar((speed + gravSpeed + flow) * warp).add(tv2);
@@ -1401,11 +1421,12 @@
         if (err <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) { if (curRival) { if (curRival.finishT == null) curRival.finishT = raceT - dt; } else finishRace(); } }
       }
     }
+    if (inGate && !gTube) gateEnter();
     // Through the pair. A (BlackHoleVesselPull.TryCarryThrough): cross the black hole's horizon and come out of the
     // white hole at the point reflection, just outside its horizon, heading kept — outward there. B: either mouth
     // carries you out of the other by a pure translation.
     for (const w of W) {
-      if (!portal[w.style]) continue;
+      if (!portal[w.style] || w.pr.gate) continue;   // a wormhole carries you itself (gateEnter / gateTransit)
       if (w.style === 'A' && w.sign < 0) continue;       // A: only the attractor swallows; its repulsor only emits
       if (w.style === 'B' && (!w.pr.owned || w.amp < 0.15)) continue;
       if (hull.position.distanceTo(w.p) > w.rs) continue;
@@ -1425,7 +1446,6 @@
         }
       } else delta = tv3.subVectors(w.other, w.p);
       hull.position.add(delta); if (!curPilot) { cam.position.add(delta); camLook.add(delta); portalFlash = 1; }
-      if (w.pr.gate) gateJumped(w.pr);   // through your own gate: the warp it earned
       break;
     }
     collectCrystals();
@@ -1670,65 +1690,155 @@
   function newFtLive() { return { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0, jumps: new Int32Array(8), nj: 0, thru: false, warm: 0, gate: null, gT: 0, gQ: 0 }; }
   // The catch sling flies in Time mode ('dipole') only; Gate mode ('gate') lays its own pair (layGate).
   const isCatch = (m) => m === 'dipole';
-  // Gate mode (T's third press, 2026-10-27; the game's StoatGateMath and StoatSlingExecutor's gate, line for line): a WARP
-  // GATE. A press opens a black hole gtAhead u ahead of the nose and its white hole further along the same line; the
-  // deeper squeeze slides the white hole out (gtLenMin -> gtLenMax): a longer gate, a longer jump. Fly into the black
-  // hole's mouth (gtMouth) and you come out of the white hole heading the way you went in, and the flight clock warps for
-  // gtBoostSeconds - fully for a long gate entered straight down its line (gtAimCone), less otherwise (gateQuality). Held,
-  // it lasts gtHoldMax s; let go, it falls together in gtCollapse s and annihilates. One gate at a time, so no spam. The
-  // pair has no pull (S 0): it is a gate, not a field. Per pilot: ftLive.gate, the boost in ftLive.gT / ftLive.gQ.
-  const gateLen = (q) => P.gtLenMin + (Math.max(P.gtLenMin, P.gtLenMax) - P.gtLenMin) * squeezeT(q);
+  // Gate mode (T's third press; round 19, 2026-10-27, the team's wormhole): a WORMHOLE SLINGSHOT, not a teleport. A
+  // press opens a black hole gtAhead u ahead of the nose; a wormhole runs from it to its white hole. Fly into the black
+  // hole and its throat carries you along its curve (space bends in at the black hole, out at the white hole) and slings
+  // you out of the white hole on the curve's last heading, warped. The triggers shape it: LT sets how far apart the two
+  // mouths are (squeezed: SHORTER, gtLenMax -> gtLenMin, and a little wider, gtLtWiden), RT sets the throat (squeezed:
+  // WIDER, gtThroatMin -> gtThroatMax). The stick says which way it bends: while the gate is shaping the stick bends the
+  // wormhole instead of turning the hull. The shape says how far: a thick, short wormhole bends up to gtTurnMax (a 90 deg
+  // turn and more, LT alone gives about 90), a thin, long one runs nearly straight and warps you hardest after it
+  // (gtFatCut). Held it lasts gtHoldMax s; let go, both mouths fall together along the curve in gtCollapse s and
+  // annihilate. One gate at a time. The wireframe (updateWormholes) shows the shape as you make it. Studio only: the
+  // game still runs round 18's straight gate (StoatGateMath) until this is decided.
+  // Per pilot: ftLive.gate = { pair, state: shaping | closing | tube | done, sx, sy (the stick), s (along it) }; the
+  // shape lives on the pair (pr.wh), so every pilot's wormhole is drawn.
+  const whA = new V3(), whB = new V3(), whC = new V3(), whD = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
+  // The shape the triggers and the stick ask for: mouths apart (L), throat radius (b), mouth radius (M), turn (rad).
+  function whShape(lq, rq, sx, sy) {
+    const short01 = squeezeT(lq), wide01 = squeezeT(rq);
+    const throat01 = clamp01(wide01 + Math.max(0, P.gtLtWiden) * short01);
+    const fat = clamp01(P.gtTurnLenShare * short01 + (1 - P.gtTurnLenShare) * throat01);
+    const L = Math.max(10, P.gtLenMax - (P.gtLenMax - P.gtLenMin) * short01);
+    // the stick picks the way; a quarter of its travel already bends it fully (one stick of the dual-stick mix is ~0.3)
+    const m = Math.min(1, Math.hypot(sx, sy));
+    const theta = Math.max(0, P.gtTurnMax) * Math.PI / 180 * fat * clamp01((m - 0.05) / 0.2);
+    const R = theta > 1e-3 ? L / theta : Infinity;
+    const b = Math.min(P.gtThroatMin + (P.gtThroatMax - P.gtThroatMin) * throat01, 0.6 * R);
+    const M = Math.min(b * Math.max(1, P.gtMouthFlare) + 6, Math.max(b, 0.95 * R));
+    return { L, b, M, theta, fat, m };
+  }
+  // s u along the centreline: an arc from the black hole leaving along t0, bending toward side by theta over L.
+  function whAt(wh, s, outP, outT) {
+    if (wh.theta < 1e-4) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
+    const k = wh.theta / Math.max(1e-6, wh.L), R = 1 / k, a = k * s;
+    outP.copy(wh.A).addScaledVector(wh.t0, R * Math.sin(a)).addScaledVector(wh.side, R * (1 - Math.cos(a)));
+    if (outT) outT.copy(wh.t0).multiplyScalar(Math.cos(a)).addScaledVector(wh.side, Math.sin(a));
+    return outP;
+  }
+  // The frame round the centreline at s: N toward the bend's centre, Bn across it (constant).
+  function whFrame(wh, s, N, Bn) {
+    const a = wh.theta / Math.max(1e-6, wh.L) * s;
+    N.copy(wh.side).multiplyScalar(Math.cos(a)).addScaledVector(wh.t0, -Math.sin(a));
+    Bn.crossVectors(wh.t0, wh.side).normalize();
+  }
+  // The throat's radius at s: a hyperboloid, wide at the mouths, narrowest mid-way; falling together shrinks it.
+  function whRadius(wh, s) {
+    const span = Math.max(1e-3, wh.s1 - wh.s0), u = (s - wh.s0) / span, k = Math.min(1, span / wh.L);
+    const b = wh.b * k, M = Math.max(b, wh.M * k);
+    return Math.sqrt(b * b + (M * M - b * b) * (2 * u - 1) ** 2);
+  }
+  // The pair's holes sit on the live mouths.
+  function whSync(pr) {
+    const wh = pr.wh; whAt(wh, wh.s0, pr.att); whAt(wh, wh.s1, pr.rep);
+    const k = Math.min(1, (wh.s1 - wh.s0) / wh.L);
+    pr.rs = pr.rsR = 1.2 * Math.max(0.2, k);   // small: the wireframe is the wormhole; a big horizon's lens would black out the mouth you fly at
+  }
   function gateSqueeze() { return Math.max(holds.L.on ? holds.L.live : 0, holds.R.on ? holds.R.live : 0); }
-  function layGate(side) {
+  function layGate() {
     if (mode !== 'fly' || race === 'ready') return;
+    if (ftLive.gate && ftLive.gate.state === 'shaping' && ftLive.gate.pair.alive) return;   // the other trigger shapes this one
     if (myPair && myPair.alive) { blockFlash = 1.6; return; }   // one gate at a time: none until the last has vanished
     basis();
-    const att = hull.position.clone().addScaledVector(fwd, P.gtAhead), rep = att.clone().addScaledVector(fwd, gateLen(holds[side].live));
+    // the mouth opens gtAheadSeconds of flight ahead (at most gtAhead u): a second or so to shape it, at any speed
+    const ahead = Math.max(20, Math.min(P.gtAhead, Math.max(1, speed + flow) * Math.max(0.1, P.gtAheadSeconds)));
+    const wh = { A: hull.position.clone().addScaledVector(fwd, ahead), t0: fwd.clone(), side: right.clone(), s0: 0, t: 0 };
+    Object.assign(wh, whShape(holds.L.on ? holds.L.live : 0, holds.R.on ? holds.R.live : 0, 0, 0)); wh.s1 = wh.L;
+    const att = wh.A.clone(), rep = whAt(wh, wh.L, new V3());
     myPair = new Pair('A', att.clone().add(rep).multiplyScalar(0.5), fwd, up, 0, true,
-      { rs: P.gtMouth, held: true, autoLetGo: P.gtHoldMax, dipole: { att, rep, rsR: P.gtMouth, SR: 0 } });
-    myPair.gate = true; myPair.gAxis = fwd.clone();
+      { rs: P.gtMouth, held: true, dipole: { att, rep, rsR: P.gtMouth, SR: 0 } });
+    myPair.gate = true; myPair.wh = wh; whSync(myPair);
     pairs.push(myPair); spawnWave('in', rep);
-    ftLive.gate = { pair: myPair, side };
+    ftLive.gate = { pair: myPair, state: 'shaping', sx: 0, sy: 0, s: 0 };
     if (raceStats && race === 'running') raceStats.slings++;
     slings++; runStyles.add('A');
     if (stance) stance = false;
   }
-  // Every frame of a pilot's flight: the held gate stretches with the squeeze; let go (or held past gtHoldMax), it closes
-  // in gtCollapse s; fly into its mouth and you jump.
+  // Every frame of a pilot's flight, before the steering: while held, the wormhole takes the triggers' shape and bends the
+  // way the stick points (the hull's frame now); let go or held past gtHoldMax, it falls together; ridden through, it
+  // falls together behind you. Near its mouth the black hole draws you onto it (gtFunnel, gtFunnelRate).
   function gateHold(dt) {
     const g = ftLive.gate; if (!g) return;
-    const pr = g.pair; if (!pr.alive) { ftLive.gate = null; return; }
-    if (pr.held && !pr.dying && (holds.L.on || holds.R.on)) pr.rep.copy(pr.att).addScaledVector(pr.gAxis, gateLen(gateSqueeze()));
-    else if (pr.held) pr.held = false;
-    if (!pr.held && !pr.closeSpd) pr.closeSpd = Math.max(1, 0.5 * pr.att.distanceTo(pr.rep) / Math.max(0.05, P.gtCollapse));
-    // The black hole's pull, felt by its owner: within gtFunnel, ahead of you, your sideways miss closes at gtFunnelRate
-    // /s, so a gate laid along your nose takes you in (StoatGateMath.FunnelStep).
-    if (!pr.dying && !g.used && race === 'running' && !stopped) {
-      basis(); const to = tv.subVectors(pr.att, hull.position), d = to.length(), along = to.dot(fwd);
-      if (d < P.gtFunnel && along > 0) hull.position.addScaledVector(to.addScaledVector(fwd, -along), 1 - Math.exp(-Math.max(0, P.gtFunnelRate) * dt));
+    const pr = g.pair, wh = pr.wh; if (!pr.alive) { ftLive.gate = null; return; }
+    if (pr.dying) return;
+    wh.t += dt;
+    if (g.state === 'shaping') {
+      if (!(holds.L.on || holds.R.on) || wh.t >= P.gtHoldMax) g.state = 'closing';
+      else {
+        basis();
+        const sh = whShape(holds.L.on ? holds.L.live : 0, holds.R.on ? holds.R.live : 0, g.sx, g.sy);
+        if (sh.m >= 0.05) {
+          whC.copy(right).multiplyScalar(g.sx).addScaledVector(up, g.sy); whC.addScaledVector(wh.t0, -whC.dot(wh.t0));
+          if (whC.lengthSq() > 1e-8) wh.side.copy(whC.normalize());
+        }
+        Object.assign(wh, sh); wh.s0 = 0; wh.s1 = wh.L;
+      }
+    }
+    if (g.state === 'closing' || g.state === 'done') {   // both mouths fall together along the curve, to its middle
+      const rate = wh.L / Math.max(0.05, P.gtCollapse);
+      wh.s0 += 0.5 * rate * dt; wh.s1 -= 0.5 * rate * dt;
+      if (wh.s1 - wh.s0 <= 2) { const mid = 0.5 * (wh.s0 + wh.s1); wh.s0 = wh.s1 = mid; whSync(pr); pr.startDying(); return; }
+    }
+    whSync(pr);
+    if ((g.state === 'shaping' || g.state === 'closing') && race === 'running' && !stopped) {
+      basis(); whAt(wh, wh.s0, whA); const to = whD.subVectors(whA, hull.position), d = to.length(), along = to.dot(fwd);
+      if (d < Math.max(P.gtFunnel, whRadius(wh, wh.s0)) && along > 0) hull.position.addScaledVector(to.addScaledVector(fwd, -along), 1 - Math.exp(-Math.max(0, P.gtFunnelRate) * dt));
     }
   }
-  // How good a jump is, 0..1 (StoatGateMath.Quality): your heading against the gate's line, times its length.
-  function gateQuality(entryFwd, att, rep) {
-    const axis = tv3.subVectors(rep, att), len = axis.length(); if (len < 1e-3) return 0;
-    const ang = Math.acos(Math.max(-1, Math.min(1, entryFwd.dot(axis) / len))) * 180 / Math.PI;
-    const aim = clamp01(1 - ang / Math.max(1, P.gtAimCone));
-    const len01 = clamp01((len - P.gtLenMin) / Math.max(1, P.gtLenMax - P.gtLenMin));
-    return aim * (0.4 + 0.6 * len01);
+  // After the step: crossing the black hole's mouth, within its radius, starts the ride. Where you crossed it is kept,
+  // scaled with the throat, so you dive in toward the throat and swing back out at the white hole.
+  function gateEnter() {
+    const g = ftLive.gate; if (!g || (g.state !== 'shaping' && g.state !== 'closing') || !g.pair.alive || g.pair.dying) return;
+    const wh = g.pair.wh; whAt(wh, wh.s0, whA, whB);
+    const d0 = whC.subVectors(p0, whA).dot(whB), d1 = whD.subVectors(hull.position, whA).dot(whB);
+    if (!(d0 < 0 && d1 >= 0)) return;
+    whC.copy(p0).lerp(hull.position, d0 / (d0 - d1)).sub(whA);
+    const rIn = Math.max(P.gtMouth, whRadius(wh, wh.s0));
+    if (whC.length() > rIn) return;
+    whFrame(wh, wh.s0, whN, whBn);
+    g.oN = whC.dot(whN); g.oB = whC.dot(whBn); g.rIn = Math.max(1e-3, whRadius(wh, wh.s0));
+    basis(); whQ.setFromUnitVectors(fwd, whB); g.q0 = whQ.clone().multiply(hull.quaternion); g.sIn = wh.s0; g.s = wh.s0;
+    g.state = 'tube'; portalFlash = curPilot ? portalFlash : 1;
   }
-  // Carried through your own gate (the through-the-pair step above, BlackHoleVesselPull.TryCarryThrough in the game): the
-  // warp the jump earned - your heading is the one you went in with.
-  function gateJumped(pr) {
-    const g = ftLive.gate; if (!g || g.pair !== pr || g.used) return;
-    basis();
-    g.used = true; ftLive.gQ = gateQuality(fwd, pr.att, pr.rep); ftLive.gT = Math.max(0, P.gtBoostSeconds);
-    pr.held = false;   // through: it closes behind you
+  // In the throat: carried along the curve at gtTubeSpeed x your speed, fastest at the throat (gtThroatRush), turned
+  // with it; out of the white hole, slung on its heading (gateOut).
+  function gateTransit(dt) {
+    const g = ftLive.gate, wh = g.pair.wh;
+    const u = clamp01((g.s - wh.s0) / Math.max(1e-3, wh.s1 - wh.s0));
+    const v = Math.max(speed + flow, P.cruise) * Math.max(0.1, P.gtTubeSpeed) * (1 + Math.max(0, P.gtThroatRush) * Math.sin(Math.PI * u));
+    g.s = Math.min(wh.s1, g.s + v * dt);
+    whAt(wh, g.s, whA, whB); whFrame(wh, g.s, whN, whBn);
+    const sc = whRadius(wh, g.s) / g.rIn;
+    hull.position.copy(whA).addScaledVector(whN, g.oN * sc).addScaledVector(whBn, g.oB * sc);
+    whQ.setFromAxisAngle(whBn, wh.theta / Math.max(1e-6, wh.L) * (g.s - g.sIn)); hull.quaternion.copy(whQ).multiply(g.q0).normalize();
+    velNow.copy(whB).multiplyScalar(v);
+    if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
+    if (g.s >= wh.s1 - 1e-6) gateOut(g);
+  }
+  // Out of the white hole: the warp it earned, at once - most for a thin, long wormhole (gtFatCut), held gtBoostSeconds.
+  function gateOut(g) {
+    const wh = g.pair.wh;
+    g.state = 'done'; g.used = true;
+    ftLive.gQ = clamp01(1 - Math.max(0, P.gtFatCut) * wh.fat); ftLive.gT = Math.max(0, P.gtBoostSeconds);
+    const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.gtWarpShare);
+    ftMul = Math.max(ftMul, 1 + (top - 1) * ftLive.gQ);
     if (raceStats && race === 'running') { raceStats.catches++; raceStats.sweepSum += ftLive.gQ; }
-    lastGate = { q: ftLive.gQ, len: Math.round(pr.att.distanceTo(pr.rep)) }; slingFlash = 1.6;
+    lastGate = { q: ftLive.gQ, len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI), warp: ftMul }; slingFlash = 1.6;
   }
   let lastGate = null;
-  // The warp after a jump (StoatGateMath.StepWarp): up to its quality's share of the top at ftRise /s, held gtBoostSeconds,
-  // then down over ftFade s. The line is your flight ahead (lime while warped), to aim the next gate.
+  // The warp after the white hole (StoatGateMath.StepWarp): its quality's share of the top, held gtBoostSeconds, then down
+  // over ftFade s. The line is your flight ahead (lime while warped); while you shape or ride a wormhole the wireframe
+  // shows the line instead.
   function stepGateBoost(dt) {
     ftLive.nj = 0; ftLive.thru = false; ftLive.end = 'none';
     const on = race === 'running' && !stopped && !stance;
@@ -1738,7 +1848,8 @@
     if (!on) ftMul = 1;
     else if (target > ftMul) ftMul += (target - ftMul) * (1 - Math.exp(-Math.max(0.1, P.ftRise) * dt));
     else ftMul = target + (ftMul - target) * Math.exp(-dt / Math.max(0.01, P.ftFade));
-    if (!on) { ftLive.n = 0; ftLive.lime = false; ftLive.warm = 0; return; }
+    const g = ftLive.gate, riding = g && (g.state === 'shaping' || g.state === 'tube');
+    if (!on || riding) { ftLive.n = 0; ftLive.lime = false; ftLive.warm = 0; return; }
     ftKin.v = speed; ftKin.vT = ftThrottleTarget; ftKin.mul = 1; ftKin.flow = flow; ftKin.g = gravSpeed; ftKin.portal = false;
     fieldPath(P, null, hull.position, hull.quaternion, ftKin, ftRates, ftLive, null, 0);
     ftLive.warm = top > 1.001 ? clamp01((ftMul - 1) / (top - 1)) : 0; ftLive.lime = ftLive.warm >= 0.5;
@@ -2033,7 +2144,7 @@
   const holdLoop = circleLoop(0xb9a4ff), reachLoop = circleLoop(0x8a7fc0);
   reachLoop.material.opacity = 0.35;
   function updateAxisLine() {
-    let pr = null; for (const q of pairs) if (q.owned && q.dipole && q.alive) pr = q;
+    let pr = null; for (const q of pairs) if (q.owned && q.dipole && q.alive && !q.gate) pr = q;
     axisLine.visible = !!pr && mode === 'fly';
     const sd = slingDipole;
     holdLoop.visible = reachLoop.visible = !!sd && mode === 'fly' && !stopped;
@@ -2047,6 +2158,84 @@
     const a = axisLine.geometry.attributes.position;
     a.setXYZ(0, pr.att.x, pr.att.y, pr.att.z); a.setXYZ(1, pr.rep.x, pr.rep.y, pr.rep.z); a.needsUpdate = true;
     axisLine.computeLineDistances(); axisLine.geometry.computeBoundingSphere();
+  }
+
+  // The wormhole's wireframe, for every pilot's gate: rings round the throat (a hyperboloid - wide at the mouths,
+  // narrowest mid-way) and lines along it, violet at the black hole shading to white at the white hole; at each mouth the
+  // sheet of space it opens from, bending IN round the black hole and OUT round the white hole; and in lime the line you
+  // will fly - into the mouth, through the throat, and on along the white hole's heading.
+  const WH_RINGS = 22, WH_SEG = 24, WH_LONG = 12, WH_FLARE = 4, WH_PATH = 40;
+  const WH_PER = WH_RINGS * WH_SEG * 2 + WH_LONG * (WH_RINGS - 1) * 2 + 2 * (WH_FLARE * WH_SEG * 2 + WH_LONG * WH_FLARE * 2) + (WH_PATH + 6) * 2;
+  const WH_MAXV = 6 * WH_PER, whPos = new Float32Array(WH_MAXV * 3), whCol = new Float32Array(WH_MAXV * 3);
+  const whGeo = new THREE.BufferGeometry();
+  whGeo.setAttribute('position', new THREE.BufferAttribute(whPos, 3)); whGeo.setAttribute('color', new THREE.BufferAttribute(whCol, 3));
+  const whLines = new THREE.LineSegments(whGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false }));
+  whLines.frustumCulled = false; whLines.renderOrder = 5; scene.add(whLines);
+  const WH_IN = new THREE.Color(0x8a6bff), WH_OUT = new THREE.Color(0xe8f8ff), WH_LIME = new THREE.Color(0x9dff2e), whCc = new THREE.Color();
+  const wp1 = new V3(), wp2 = new V3(), wt1 = new V3(), wn1 = new V3(), wb1 = new V3(), wq1 = new V3(), wq2 = new V3();
+  let whNv = 0;
+  function whPut(p, c, a) {
+    if (whNv >= WH_MAXV) return;
+    const i = whNv * 3; whPos[i] = p.x; whPos[i + 1] = p.y; whPos[i + 2] = p.z; whCol[i] = c.r * a; whCol[i + 1] = c.g * a; whCol[i + 2] = c.b * a; whNv++;
+  }
+  // A point on the wireframe: x along the centreline (s), at angle phi, radius r, pushed back along the heading by back.
+  function whSurf(wh, s, phi, r, back, out) {
+    whAt(wh, s, out, wt1); whFrame(wh, s, wn1, wb1);
+    return out.addScaledVector(wn1, r * Math.cos(phi)).addScaledVector(wb1, r * Math.sin(phi)).addScaledVector(wt1, back);
+  }
+  function whDraw(pr) {
+    const wh = pr.wh, g = (pr.pilot === curPilot ? ftLive.gate : null), a0 = pr.pilot ? 0.45 : 1;
+    const span = wh.s1 - wh.s0; if (span < 0.5) return;
+    const dieA = pr.dying ? Math.max(0, 1 - pr.dieT / Math.max(0.01, P.dieS)) : 1, A = a0 * dieA;
+    const ringS = (i) => wh.s0 + span * i / (WH_RINGS - 1), colAt = (u) => whCc.copy(WH_IN).lerp(WH_OUT, u);
+    for (let i = 0; i < WH_RINGS; i++) {   // the throat's rings
+      const s = ringS(i), r = whRadius(wh, s), c = colAt(i / (WH_RINGS - 1)), a = A * (0.35 + 0.65 * Math.abs(2 * i / (WH_RINGS - 1) - 1));
+      for (let j = 0; j < WH_SEG; j++) {
+        whPut(whSurf(wh, s, j / WH_SEG * Math.PI * 2, r, 0, wp1), c, a); whPut(whSurf(wh, s, (j + 1) / WH_SEG * Math.PI * 2, r, 0, wp1), c, a);
+      }
+    }
+    for (let j = 0; j < WH_LONG; j++) {   // lines along it
+      const phi = j / WH_LONG * Math.PI * 2;
+      for (let i = 0; i < WH_RINGS - 1; i++) {
+        const s1 = ringS(i), s2 = ringS(i + 1);
+        whPut(whSurf(wh, s1, phi, whRadius(wh, s1), 0, wp1), colAt(i / (WH_RINGS - 1)), A * 0.8); whPut(whSurf(wh, s2, phi, whRadius(wh, s2), 0, wp1), colAt((i + 1) / (WH_RINGS - 1)), A * 0.8);
+      }
+    }
+    // The sheet of space at each mouth: it leaves the mouth along the throat and flattens out, bending away from it - in
+    // round the black hole (behind its mouth), out round the white hole (beyond its mouth).
+    for (const end of [0, 1]) {
+      const s = end ? wh.s1 : wh.s0, dir = end ? 1 : -1, r0 = whRadius(wh, s), c = end ? WH_OUT : WH_IN;
+      const ringAt = (f) => ({ r: r0 * (1 + 1.6 * (1 - Math.cos(f * Math.PI / 2))), back: dir * r0 * 0.9 * Math.sin(f * Math.PI / 2) });
+      for (let e = 1; e <= WH_FLARE; e++) {
+        const f = e / WH_FLARE, q = ringAt(f), a = A * 0.55 * (1 - 0.6 * f);
+        for (let j = 0; j < WH_SEG; j++) { whPut(whSurf(wh, s, j / WH_SEG * Math.PI * 2, q.r, q.back, wp1), c, a); whPut(whSurf(wh, s, (j + 1) / WH_SEG * Math.PI * 2, q.r, q.back, wp1), c, a); }
+      }
+      for (let j = 0; j < WH_LONG; j++) {
+        const phi = j / WH_LONG * Math.PI * 2;
+        for (let e = 0; e < WH_FLARE; e++) {
+          const qa = ringAt(e / WH_FLARE), qb = ringAt((e + 1) / WH_FLARE), a = A * 0.5 * (1 - 0.6 * e / WH_FLARE);
+          whPut(whSurf(wh, s, phi, qa.r, qa.back, wp1), c, a); whPut(whSurf(wh, s, phi, qb.r, qb.back, wp1), c, a);
+        }
+      }
+    }
+    // The line you will fly: from the mouth (or where you are in the throat) to the white hole, then on its heading.
+    if (pr.dying || (g && g.state === 'done')) return;
+    const from = g && g.state === 'tube' ? g.s : wh.s0;
+    for (let i = 0; i < WH_PATH; i++) {
+      const sA = from + (wh.s1 - from) * i / WH_PATH, sB = from + (wh.s1 - from) * (i + 1) / WH_PATH;
+      whPut(whAt(wh, sA, wp1), WH_LIME, A); whPut(whAt(wh, sB, wp1), WH_LIME, A);
+    }
+    whAt(wh, wh.s1, wq1, wq2); const on = Math.max(80, 0.5 * wh.L);
+    for (let i = 0; i < 6; i += 2) {   // dashed, on along the white hole's heading
+      wp1.copy(wq1).addScaledVector(wq2, on * i / 6); wp2.copy(wq1).addScaledVector(wq2, on * (i + 1) / 6);
+      whPut(wp1, WH_LIME, A * 0.8); whPut(wp2, WH_LIME, A * 0.8);
+    }
+  }
+  function updateWormholes() {
+    whNv = 0;
+    if (mode === 'fly') for (const pr of pairs) if (pr.gate && pr.wh && pr.alive) whDraw(pr);
+    whGeo.setDrawRange(0, whNv); whLines.visible = whNv > 0;
+    whGeo.attributes.position.needsUpdate = true; whGeo.attributes.color.needsUpdate = true;
   }
 
   // The hull's spaghettification: BlackHoleWarp.VesselLogStretch (τ 0.9, ceiling ln 12, reach 6 r_s) × vesselTideScale.
@@ -2073,7 +2262,7 @@
     const pressed = raw > 0.05;
     if (pressed && !h.on) {
       h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : style === 'A' && slingMode === 'gate' ? 0 : style === 'A' && slingMode !== 'orbit' ? P.dpKeySqueeze : 0;
-      if (style === 'A') { if (isCatch(slingMode)) layDipole(side); else if (slingMode === 'field') layField(side); else if (slingMode === 'gate') layGate(side); else layOrbit(side); }   // A: the press lays the pair
+      if (style === 'A') { if (isCatch(slingMode)) layDipole(side); else if (slingMode === 'field') layField(side); else if (slingMode === 'gate') layGate(); else layOrbit(side); }   // A: the press lays the pair
     }
     if (h.on) {
       h.t += dt;
@@ -2323,6 +2512,36 @@
   function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, clean: 0, errSum: 0, errN: 0, misses: 0, relSum: 0, relN: 0, reachSum: 0, rcSum: 0, rcMin: Infinity, flowTop: 0, turnT: 0, gripT: 0, sweepSum: 0, gravTop: 0, prisms: 0, released: 0, limeT: 0, limeOn: 0, mulTop: 1 }; }
   const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
   const qInv = new THREE.Quaternion(), aiLoc = new V3(), aiOff = new V3(), aiAim = new V3();
+  // The AI's wormhole (input only, the triggers and the stick a person has): try mouths-apart lengths and turns, keep the
+  // one whose white hole leaves heading at the ring with room to spare (thin ones preferred: they warp hardest), and
+  // squeeze the triggers that shape it. A rookie (aiNoise) bends it off the mark. null: no wormhole fits this leg.
+  // turnOnly: a ring nearer than gtAiMin gets only a wormhole that bends at least 20 deg (a straight one is for long legs).
+  function aiGatePlan(loc, n, turnOnly) {
+    const ahead = Math.max(20, Math.min(P.gtAhead, Math.max(1, speed + flow) * Math.max(0.1, P.gtAheadSeconds)));
+    const tx = -loc.z, ty = Math.hypot(loc.x, loc.y), share = P.gtTurnLenShare, widen = Math.max(0, P.gtLtWiden), tmax = Math.max(1, P.gtTurnMax) * Math.PI / 180;
+    let best = null;
+    for (let i = 0; i <= 8; i++) {
+      const short01 = i / 8, L = Math.max(10, P.gtLenMax - (P.gtLenMax - P.gtLenMin) * short01);
+      const fatLo = clamp01(share * short01 + (1 - share) * Math.min(1, widen * short01)), fatHi = clamp01(share * short01 + (1 - share));
+      for (let j = 0; j <= 12; j++) {
+        const th = tmax * fatHi * j / 12, R = th > 1e-4 ? L / th : 0;
+        const x = ahead + (th > 1e-4 ? R * Math.sin(th) : L), y = th > 1e-4 ? R * (1 - Math.cos(th)) : 0;
+        const hx = Math.cos(th), hy = Math.sin(th), dx = tx - x, dy = ty - y, along = dx * hx + dy * hy;
+        if (along < 60) continue;
+        const err = Math.atan2(Math.abs(dx * hy - dy * hx), along), fat = th / tmax, score = err + 0.15 * fat;
+        if (fat < fatLo - 1e-6 && j > 0) continue;
+        if (turnOnly && th < 0.35) continue;   // thinner than LT alone makes it: not a shape the triggers give
+        if (err < 0.26 && (!best || score < best.score)) best = { score, short01, fat, fatLo };
+      }
+    }
+    if (!best) return null;
+    // straight: no stick; else the stick fully over and the throat that gives the bend (a rookie squeezes off the mark)
+    const m = best.fat > 1e-6 ? 1 : 0;
+    const throat01 = clamp01((best.fat - share * best.short01) / Math.max(1e-6, 1 - share));
+    const wide01 = clamp01(Math.max(0, throat01 - widen * best.short01) * (1 + n * (aiRand() - 0.5)));
+    const inv = (t) => Math.pow(clamp01(t), 1 / Math.max(0.01, P.holdExponent));
+    return { lq: Math.max(0.02, inv(best.short01)), rq: inv(wide01), m };
+  }
   function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
   function aiInput(dt) {
     const inp = { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
@@ -2363,19 +2582,22 @@
     if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
     let b = easeInv(pitchCmd), r = easeInv(rollCmd); if (invertY) { b = -b; r = -r; }
     inp.R.y = Math.max(-1, Math.min(1, (b + r) / 2)); inp.L.y = Math.max(-1, Math.min(1, (b - r) / 2));
-    if (style === 'A' && slingMode === 'gate') {   // the gate (StoatGateMath.AutopilotLength): open one on a long, straight leg, fly down it
-      const g = ftLive.gate, n = clamp01(P.aiNoise); let trig = 0;
-      if (g && g.pair.alive && !g.used && !g.pair.dying) {
-        trig = ai.q;   // hold the stretch and fly on for the ring: the gate lies along its nose, and the funnel takes it in
-      } else if (!g && !blind && P.aiSling > 0.5 && d > P.gtAiMin && turnDeg < P.gtAiCone) {
-        // a gate that ends short of the ring: the length it needs, back to the squeeze that gives it (a rookie misjudges it)
-        const want = Math.max(P.gtLenMin, Math.min(P.gtLenMax, (d - P.gtAhead - 80) * (1 + n * (aiRand() - 0.5))));
-        const t = clamp01((want - P.gtLenMin) / Math.max(1, P.gtLenMax - P.gtLenMin));
-        ai.q = Math.max(0.02, Math.pow(t, 1 / Math.max(0.01, P.holdExponent))); ai.side = 'R'; trig = ai.q;
+    if (style === 'A' && slingMode === 'gate') {   // the wormhole: shape one whose white hole heads at the ring, then ride it
+      const g = ftLive.gate; let lt = 0, rt = 0, bend = false;
+      if (g && g.state === 'shaping' && g.pair.alive && !g.pair.dying) { lt = ai.gL; rt = ai.gR; bend = true; }
+      else if (!g && !blind && P.aiSling > 0.5 && d > Math.min(P.gtAiMin, P.gtAiMinTurn)) {
+        const plan = aiGatePlan(loc, clamp01(P.aiNoise), d <= P.gtAiMin);
+        if (plan) { ai.gL = lt = plan.lq; ai.gR = rt = plan.rq; ai.gM = plan.m; bend = true; }
       }
-      inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
+      if (bend) {   // the stick bends the wormhole toward the ring, as far as the plan says (the hull holds its line)
+        const lh = Math.hypot(loc.x, loc.y), m = ai.gM || 0;
+        const yw = lh > 1e-6 ? loc.x / lh * m : 0, pt = lh > 1e-6 ? loc.y / lh * m : 0;
+        const sx = easeInv(yw); if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
+        let bb = easeInv(pt); if (invertY) bb = -bb; inp.R.y = inp.L.y = bb / 2;
+      }
+      inp.lt = lt; inp.rt = rt;
       trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
-      ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : trig > 0 ? 'pair' : 'ring';
+      ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : bend ? 'pair' : 'ring';
       lastInput = inp;
       return inp;
     }
@@ -3054,7 +3276,8 @@
       const i = slot++;
       U.wC.value[i].set(sx, sy, vz, 1);
       if (w.style === 'A') {
-        const thE = f * Math.tan(Math.min(1.2, Math.sqrt(2 * w.rs / D)));
+        // a wormhole's mouths lens as if never nearer than 80 u, so the mouth you fly at stays readable (the wireframe shows the bend)
+        const thE = f * Math.tan(Math.min(1.2, Math.sqrt(2 * w.rs / (w.pr && w.pr.gate ? Math.max(D, 80) : D))));
         U.wP.value[i].set(w.sign > 0 ? 1 : 2, ang(w.rs), 0, thE * thE * Math.max(0, w.sign > 0 ? P.bhLensStrength : P.whLensStrength));
         U.wM.value[i].set(f * Math.tan(Math.min(1.45, Math.atan(P.bhLensReach * w.rs / D))), 0, 0, 2.6 * w.rs);
       } else {
@@ -3143,7 +3366,7 @@
     wellMarkers(c, cam, 0, cw, ch, sc, font, W.filter((w) => w.pr.owned), true);
     // top-left: the pair being flown
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
-    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'CATCH SLING (Time mode, T)' : slingMode === 'gate' ? 'GATE (the warp gate, T)' : slingMode === 'field' ? 'FIELD TRAJECTORY (Mass mode, T)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
+    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'CATCH SLING (Time mode, T)' : slingMode === 'gate' ? 'GATE (the wormhole slingshot, T)' : slingMode === 'field' ? 'FIELD TRAJECTORY (Mass mode, T)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
     c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
     c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
@@ -3180,14 +3403,15 @@
     if (style === 'A' && slingMode === 'gate' && race === 'running' && !stopped) {
       const lime = '#9dff2e', g = ftLive.gate, boosting = ftLive.gT > 0;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText('JUMP · ' + lastGate.len + ' u · ' + Math.round(lastGate.q * 100) + '% boost', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
-      if (g && g.pair.alive && !g.used) {
-        basis(); const pr = g.pair, len = Math.round(pr.att.distanceTo(pr.rep)), q = gateQuality(fwd, pr.att, pr.rep);
-        c.fillStyle = pr.held ? colA : '#ffb347';
-        c.fillText((pr.held ? 'GATE ' : 'GATE CLOSING ') + len + ' u  ·  black hole ' + Math.round(hull.position.distanceTo(pr.att)) + ' u  ·  aim ' + Math.round(q * 100) + '%', cw / 2, tY + pad + 14 * sc);
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText('SLINGSHOT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · × ' + lastGate.warp.toFixed(1), cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (g && g.pair.alive && !g.pair.dying && g.state !== 'done') {
+        const wh = g.pair.wh, txt = 'WORMHOLE ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°';
+        c.fillStyle = g.state === 'tube' ? lime : g.state === 'shaping' ? colA : '#ffb347';
+        c.fillText(g.state === 'tube' ? 'IN THE THROAT  ·  ' + txt : g.state === 'shaping' ? txt + '  ·  max ' + Math.round(P.gtTurnMax * wh.fat) + '°' : 'WORMHOLE CLOSING', cw / 2, tY + pad + 14 * sc);
+        if (g.state === 'shaping') { c.font = font(12, 600); c.fillStyle = dim; c.fillText('LT shorter + wider  ·  RT wider throat  ·  stick bends it  ·  fly into the black hole', cw / 2, tY + pad + 30 * sc); }
       } else {
         c.fillStyle = boosting ? lime : dim;
-        c.fillText(boosting ? '× ' + ftMul.toFixed(1) + '  ·  warped ' + ftLive.gT.toFixed(1) + ' s' : 'GATE · squeeze LT or RT to open one ahead, deeper for longer', cw / 2, tY + pad + 14 * sc);
+        c.fillText(boosting ? '× ' + ftMul.toFixed(1) + '  ·  warped ' + ftLive.gT.toFixed(1) + ' s' : 'WORMHOLE · squeeze LT (shorter) or RT (wider) to open one ahead · stick bends it', cw / 2, tY + pad + 14 * sc);
       }
     }
     if (style === 'A' && slingMode === 'field' && race === 'running' && !stopped) {
@@ -3228,7 +3452,7 @@
     }
     if (styleFlash > 0) { c.globalAlpha = Math.min(1, styleFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = styleFlashCol; c.fillText(styleFlashText, cw / 2, ch * 0.62); c.globalAlpha = 1; }
     if (blockFlash > 0) { c.globalAlpha = Math.min(1, blockFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffb347'; c.fillText('ONE PAIR AT A TIME — wait for this one to vanish', cw / 2, ch * 0.45); c.globalAlpha = 1; }
-    if (myPair && myPair.alive && myPair.dipole && !myPair.field && !slingDipole && !(slingFlash > 0)) {
+    if (myPair && myPair.alive && myPair.dipole && !myPair.field && !myPair.gate && !slingDipole && !(slingFlash > 0)) {
       const pr = myPair; c.textAlign = 'center'; c.font = font(12, 600); c.fillStyle = dim;
       c.fillText(pr.dying ? 'annihilating — the mass leaves as a gravitational wave' : 'the pair is closing', cw / 2, tY + pad + 14 * sc);
     }
@@ -3330,7 +3554,7 @@
         (style === 'A' && slingMode === 'field'
           ? '<p><b>The field trajectory.</b> <b>Squeeze</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways (the black hole on the deeper trigger\'s side), their sum lengthways (the black hole always nearer, the white hole beyond). Ease off and they come together; let go of both and they annihilate. Nothing catches you: the line from your nose is the path your inputs fly through their field. Whenever the poles bend that path at all, or it runs <b style="color:#9dff2e">through the wormhole</b>, it turns lime and you travel down it ' + P.ftBoost + '× faster; the line does not move.</p>'
           : style === 'A' && slingMode === 'gate'
-          ? '<p><b>Gate mode</b> (T\'s third press; the game\'s B): a warp gate. <b>Squeeze</b> <kbd>LT</kbd> or <kbd>RT</kbd> and a black hole opens ahead of your nose with its white hole further along the same line; <b>squeeze deeper</b> and the white hole slides out (' + P.gtLenMin + ' to ' + P.gtLenMax + ' u). <b>Fly into the black hole</b>: you come out of the white hole and warp for ' + P.gtBoostSeconds + ' s, most for a long gate entered straight down its line. Let go and it falls together in ' + P.gtCollapse + ' s. One gate at a time.</p>'
+          ? '<p><b>Gate mode</b> (T\'s third press; the game\'s B): a wormhole slingshot. <b>Squeeze</b> <kbd>LT</kbd> or <kbd>RT</kbd> and a black hole opens ahead of your nose, a wireframe wormhole running from it to its white hole. <b>LT</b> makes it shorter (' + P.gtLenMax + ' down to ' + P.gtLenMin + ' u) and a little wider; <b>RT</b> widens the throat; <b>the stick bends it</b> (the Stoat holds its line meanwhile) - thick and short bends up to ' + P.gtTurnMax + '&deg;, thin and long runs straight and warps hardest. <b>Fly into the black hole</b>: the throat carries you round its curve and slings you out of the white hole on its heading, warped for ' + P.gtBoostSeconds + ' s. Let go and it falls together in ' + P.gtCollapse + ' s. One at a time.</p>'
           : style === 'A' && slingMode === 'dipole'
           ? '<p><b>The dipole sling.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a small black hole appears ahead on that side, its white hole ahead on the other. <b>How deep</b> you squeeze is its strength; the solid circle is where it would hold you, the faint one how far out it can catch you. Fly past it: once it catches you, you stay in its grip and go round for as long as you <b>hold</b>. <b>Let go</b> and you slingshot out on the tangent with a boost; the pair falls together and annihilates.</p>'
           : style === 'A'
@@ -3339,8 +3563,9 @@
         (layout === 'phone'
           ? ''
           : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
-        '<div class="btns"><button class="pick primary" type="button" id="startBtn">Start</button></div>';
+        '<div class="btns"><button class="pick primary" type="button" id="startBtn">Start</button><button class="pick" type="button" id="watchGateStart" title="Gate mode, the AI on your hull, the Follow camera">Watch the AI fly the wormhole</button></div>';
       $('startBtn').addEventListener('click', startRace);
+      $('watchGateStart').addEventListener('click', watchGateAi);
     } else {
       const best = bestFor(style === 'A' && slingMode === 'field' ? 'F' : style);
       box.innerHTML = '<h2>Finished · ' + fmtTime(lastRun.time) + '</h2>' +
@@ -4183,20 +4408,29 @@
     dpCarry: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How much of the release kick you KEEP as momentum instead of a punch that fades. Kept momentum stacks over a chain of slings — this is how a skilled pilot climbs past cruise and stays there.', lo: 'All punch: fast for a moment, then back to cruise.', hi: 'All momentum: a smaller jump that lasts.' },
     dpFlowFade: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How long kept momentum takes to fade (to about a third). Sling again before it is gone and the next kick builds on it.', lo: 'Momentum bleeds off quickly.', hi: 'Momentum lingers — chains stack high.' },
     dpFlowCap: { scene: 'sling', cfg: { q: 1, release: 180, T: 9 }, d: 'The most momentum you can carry, as a multiple of cruise speed. It is the ceiling a perfect chain of slings climbs to.', lo: 'A low ceiling.', hi: 'A high ceiling: 60 cruise + 1.5 × 60 = 150 u/s of lasting speed.' },
-    gtAhead: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: how far ahead of your nose the black hole opens. Close is easy to hit; far gives you time to line up. The game: StoatModeAction gateAhead.', lo: 'Right in front of you.', hi: 'Far ahead.' },
-    gtLenMin: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the black hole to white hole distance at the lightest squeeze. The jump skips it. The game: StoatModeAction gateLengthMin.', lo: 'Short hops.', hi: 'Long hops even at a touch.' },
-    gtLenMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the gate\'s length fully squeezed. A longer gate is a longer jump and a stronger warp after it. The game: StoatModeAction gateLengthMax.', lo: 'Modest jumps.', hi: 'Huge jumps.' },
-    gtMouth: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the black hole\'s mouth, the radius you must fly into to jump. The game: StoatModeAction gateMouthRadius.', lo: 'Precise: thread it.', hi: 'Forgiving.' },
-    gtHoldMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: held, a gate stays open at most this long, then falls together on its own. The game: StoatModeAction gateHoldMaxSeconds.', lo: 'Use it or lose it.', hi: 'Long to line up.' },
-    gtCollapse: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: let go (or through it), the gate falls together and annihilates in this long. The game: StoatModeAction gateCollapseSeconds.', lo: 'Gone at once.', hi: 'Lingers.' },
-    gtAimCone: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the full warp needs your heading within this of the gate\'s line as you enter; it falls to nothing at this angle. The game: StoatModeAction gateAimConeDegrees.', lo: 'Aim must be exact.', hi: 'Any entry pays.' },
-    gtWarpShare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the warp after a perfect jump, as a share of the loop boost (Time scales it). The game: StoatModeAction gateWarpShare.', lo: 'A small push.', hi: 'A sprint.' },
-    gtBoostSeconds: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: how long the warp after a jump holds before it fades. The game: StoatModeAction gateBoostSeconds.', lo: 'A burst.', hi: 'A long leg.' },
-    gtFunnel: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: within this of the black hole, still ahead of you, its pull draws you sideways onto the line into its mouth: aim near it and it takes you in. The game: StoatModeAction gateFunnelRadius.', lo: 'Thread the mouth yourself.', hi: 'It takes you in from wide.' },
+    gtAhead: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the furthest ahead of your nose the black hole (the wormhole\'s way in) opens; round 19 opens it gtAheadSeconds of flight ahead, up to this. The game: StoatModeAction gateAhead.', lo: 'Right in front of you.', hi: 'Far ahead when fast.' },
+    gtAheadSeconds: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): the black hole opens this much flight ahead of your nose, so you have about this long to shape the wormhole before you are in it, at any speed.', lo: 'In at once.', hi: 'Long to shape it.' },
+    gtLenMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19): how far apart the two mouths are with LT untouched - the longest, straightest wormhole, the long-distance one. The game: StoatModeAction gateLengthMax (round 18 used it as the fully squeezed length).', lo: 'Short even at rest.', hi: 'Huge straight runs.' },
+    gtLenMin: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19): how far apart the mouths are with LT fully squeezed - the short wormhole, the one for turning. The game: StoatModeAction gateLengthMin.', lo: 'Very short and sharp.', hi: 'Never short.' },
+    gtThroatMin: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): the throat\'s radius with RT untouched. A thin throat bends little and warps you hardest after it.', lo: 'A needle.', hi: 'Thick even at rest.' },
+    gtThroatMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): the throat\'s radius with RT fully squeezed. A thick throat bends far (with the stick) and is easy to fly into.', lo: 'Never very thick.', hi: 'A huge tunnel.' },
+    gtLtWiden: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much LT, as it shortens the wormhole, also widens its throat (a share of RT\'s full range). At 0.5, LT alone makes it short and half as wide as it can be: about a 90 deg turn.', lo: 'LT only shortens.', hi: 'LT shortens and widens fully.' },
+    gtTurnMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): the bend of the fattest wormhole (LT and RT both full) with the stick fully over. A thinner or longer one bends less; the stick says which way and how much of that.', lo: 'Wormholes run straight.', hi: 'U-turns.' },
+    gtTurnLenShare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much of the bend comes from LT\'s shortness, the rest from the throat\'s width.', lo: 'Only the width bends it.', hi: 'Only the shortness bends it.' },
+    gtMouthFlare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): the mouth\'s radius as a multiple of the throat (+6 u): space bends in from this wide at the black hole and back out at the white hole. Where you cross the mouth is kept, scaled down to the throat and back.', lo: 'A straight tube.', hi: 'Wide funnels.' },
+    gtMouth: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the smallest mouth that takes you in, whatever the throat, and the most the black hole is drawn. The game: StoatModeAction gateMouthRadius.', lo: 'Thread a thin one exactly.', hi: 'Always forgiving.' },
+    gtTubeSpeed: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how fast the throat carries you, as a multiple of your speed (at least cruise).', lo: 'A slow ride.', hi: 'Through in a blink.' },
+    gtThroatRush: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much faster the ride is at the throat than at the mouths: you fall in, rush through and climb out.', lo: 'Even speed.', hi: 'A rush at the throat.' },
+    gtWarpShare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the warp out of the white hole of the thinnest wormhole, as a share of the loop boost (Time scales it). The game: StoatModeAction gateWarpShare.', lo: 'A small push.', hi: 'A sprint.' },
+    gtFatCut: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much a fat wormhole cuts the warp after it. Thin and long: the full warp, for distance; fat and short: less warp, but the turn.', lo: 'Every wormhole warps the same.', hi: 'Fat ones barely warp.' },
+    gtBoostSeconds: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: how long the warp out of the white hole holds before it fades. The game: StoatModeAction gateBoostSeconds.', lo: 'A burst.', hi: 'A long leg.' },
+    gtHoldMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: held, a wormhole stays open at most this long, then falls together on its own. The game: StoatModeAction gateHoldMaxSeconds.', lo: 'Use it or lose it.', hi: 'Long to shape it.' },
+    gtCollapse: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: let go (or ridden through), both mouths fall together along the wormhole and annihilate in this long. The game: StoatModeAction gateCollapseSeconds.', lo: 'Gone at once.', hi: 'Lingers.' },
+    gtKeyRamp: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode on keys and touch: a held key or button reaches a full squeeze after this long. The game: StoatModeAction gateKeyRampSeconds.', lo: 'Snappy.', hi: 'Gradual.' },
+    gtFunnel: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: within this (or the mouth, if wider) of the black hole and still ahead of you, its pull draws you sideways onto its mouth. The game: StoatModeAction gateFunnelRadius.', lo: 'Thread the mouth yourself.', hi: 'It takes you in from wide.' },
     gtFunnelRate: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: how fast the black hole closes your sideways miss, per second. The game: StoatModeAction gateFunnelRate.', lo: 'A gentle pull.', hi: 'A snap onto the line.' },
-    gtKeyRamp: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode on keys and touch: a held key or button reaches a full squeeze (the longest gate) after this long. The game: StoatModeAction gateKeyRampSeconds.', lo: 'Snappy.', hi: 'Gradual.' },
-    gtAiMin: { scene: 'field', cfg: { D: 300 }, d: 'The AI opens a gate only with its ring at least this far away. The game: StoatModeAction autopilotGateMinDistance.', lo: 'Gates for every leg.', hi: 'Only the long legs.' },
-    gtAiCone: { scene: 'field', cfg: { D: 300 }, d: 'The AI opens a gate only with its ring within this of its nose: the gate runs along the nose. The game: StoatModeAction autopilotGateConeDegrees.', lo: 'Lined up first.', hi: 'Gates off the line.' },
+    gtAiMin: { scene: 'field', cfg: { D: 300 }, d: 'The AI opens a straight (thin, long) wormhole only with its ring at least this far away. The game: StoatModeAction autopilotGateMinDistance.', lo: 'Wormholes for every leg.', hi: 'Only the long legs.' },
+    gtAiMinTurn: { scene: 'field', cfg: { D: 300 }, d: 'Round 19, studio only: the AI opens a wormhole that BENDS (20 deg or more, toward its ring) from this far away - its turning tool on the hairpins.', lo: 'Bends for every ring.', hi: 'Only straight ones.' },
     dpWarp: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'The catch sling\'s pace. While the black hole has caught you, your own flight runs faster — the same time warp the field trajectory gives a lime path (its Loop boost, arriving and fading at its rates) — so going round the hole is as fast as flying the field. This is the share of that boost the catch gets: 1 = the same pace as the field, 0 = no warp (round 6).', lo: 'Slower round the hole.', hi: 'Faster round the hole.' },
     dpWarpHeld: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'When the catch sling\'s warp starts. 1: as soon as the pair is laid and held — flying at the black hole is already fast, as in the field, where any bend of your path warps it. 0: only once the black hole has caught you.', lo: 'Fast only on the orbit.', hi: 'Fast from the press.' },
     dpSweetDeg: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'The game\'s timing rule for the catch sling: the whole kick is paid for a release this many degrees round the black hole (90 = a quarter turn: out on a tangent square to the way you came in). A release never caught pays nothing. 0 turns the window off and the older rule (Full kick only after going round) applies.', lo: 'Let go earlier in the swing.', hi: 'Let go later in the swing.' },
@@ -4484,7 +4718,7 @@
     document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
     $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode !== 'orbit' && slingMode !== 'gate'); $('grp-V').hidden = !(s === 'A' && slingMode === 'gate');
     const fieldOn = s === 'A' && slingMode === 'field';
-    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : s === 'A' && slingMode === 'gate' ? 'Gate mode (the warp gate)' : 'The catch sling (Time mode; the dipole sling)';
+    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : s === 'A' && slingMode === 'gate' ? 'Gate mode (the wormhole slingshot)' : 'The catch sling (Time mode; the dipole sling)';
     $('mainP').innerHTML = fieldOn
       ? 'Squeeze a trigger: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways, the sum lengthways (black hole nearer, white hole beyond); let go of both and they close and annihilate. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you; whenever the poles <b style="color:#9dff2e">warp it at all</b> it turns lime and you travel down it 3× faster. Settings: the <b>Field</b> tab.'
       : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
@@ -4503,7 +4737,7 @@
     if (mode !== 'fly') return;
     if (style !== 'A') setStyle('A');
     setSlingMode(slingMode === 'field' ? 'dipole' : slingMode === 'dipole' ? 'gate' : 'field');   // Mass -> Time -> Gate -> Mass, the game's B
-    toast(slingMode === 'field' ? 'Mass mode: the field trajectory (T switches)' : slingMode === 'dipole' ? 'Time mode: the catch sling (T switches)' : 'Gate mode: the warp gate (T switches)');
+    toast(slingMode === 'field' ? 'Mass mode: the field trajectory (T switches)' : slingMode === 'dipole' ? 'Time mode: the catch sling (T switches)' : 'Gate mode: the wormhole slingshot (T switches)');
   }
   function setSlingMode(m) {
     slingMode = m === 'orbit' ? 'orbit' : m === 'field' ? 'field' : m === 'gate' ? 'gate' : 'dipole';
@@ -4555,6 +4789,15 @@
   }
   $('aiOn').addEventListener('change', (e) => { aiOn = e.target.checked; aiRestartT = 0; if (aiOn) { if (mode !== 'fly') setMode('fly'); if (race !== 'running') { spawn(); startRace(); } } else { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); } showOverlay(); });
   $('camMode').addEventListener('change', (e) => { camMode = e.target.value; snapCam = true; });
+  // Gate panel: one press to watch the AI race with wormholes (Gate mode, AI on your hull, the Follow camera).
+  function watchGateAi() {
+    if (style !== 'A') setStyle('A');
+    if (slingMode !== 'gate') setSlingMode('gate');
+    const cb = $('aiOn'); if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    if (racePanelRef) racePanelRef.set('camera', 'Follow'); else { camMode = 'follow'; snapCam = true; }
+    toast('The AI flies the wormhole: it bends one at each ring it can (Follow camera, C to change)');
+  }
+  document.querySelectorAll('.watchGateAi').forEach((b) => b.addEventListener('click', watchGateAi));
   $('simSpeed').addEventListener('change', (e) => { simSpeed = parseFloat(e.target.value) || 1; });
   // ---- the universal AI race config panel (VesselStudio/ai_race_panel.js, /vessel-studio D17) ----
   // It drives the controls above (kept, hidden) so every existing path stays the one way in.
@@ -4681,7 +4924,7 @@
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
   const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'dpCatchInside', 'dpHoldAtCatch', 'dpRadiusEase', 'dpWhiteClear', 'closeSpeed', 'closeRamp'];
-  const V_KEYS = ['gtAhead', 'gtLenMin', 'gtLenMax', 'gtMouth', 'gtHoldMax', 'gtCollapse', 'gtAimCone', 'gtWarpShare', 'gtBoostSeconds', 'gtKeyRamp', 'gtFunnel', 'gtFunnelRate', 'gtAiMin', 'gtAiCone'];
+  const V_KEYS = ['gtAheadSeconds', 'gtAhead', 'gtLenMin', 'gtLenMax', 'gtThroatMin', 'gtThroatMax', 'gtLtWiden', 'gtTurnMax', 'gtTurnLenShare', 'gtMouthFlare', 'gtMouth', 'gtTubeSpeed', 'gtThroatRush', 'gtWarpShare', 'gtFatCut', 'gtBoostSeconds', 'gtHoldMax', 'gtCollapse', 'gtKeyRamp', 'gtFunnel', 'gtFunnelRate', 'gtAiMin', 'gtAiMinTurn'];
   const F_KEYS = SPEC.filter((r) => r[0] === 'F').map((r) => r[1]);
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
@@ -4846,7 +5089,7 @@
     } else simStep(dt, pilotInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
-    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
+    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); updateWormholes(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================

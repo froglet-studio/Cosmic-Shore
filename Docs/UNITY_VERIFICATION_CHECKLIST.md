@@ -4035,6 +4035,49 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Party: Block 5 step 9 - leave on quit and background (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 9, from the August work's 52b8f5f656): the only
+leave was an async `OnDestroy` that Unity does not wait for, so a quitting player stayed in everyone's online list
+for ~30 s. `ApplicationLifecycleManager` now holds `Application.wantsToQuit` once while its `OnAppQuitRequested`
+subscribers' work runs (at most `QUIT_DRAIN_SECONDS`, 1.5 s; at once when nothing subscribes), then quits through
+`DesktopPlatformServices.Quit`. `HostConnectionService` leaves the presence lobby and the party session on quit
+(bounded to 1.2 s), leaves the presence lobby only on a mobile background, and rejoins on resume. `OnDestroy`'s leave
+stays as the backstop, skipped when the lobby is already gone.
+**Verified without the editor:** 7 `DepartureLeaveTests`; dropping the hold, letting a second click drain again,
+quitting without the party leave, leaving the party on background, marking the background Disconnected, or not
+rejoining on resume each fails a test. The full edit-mode suite on Amoebius 673/677 (the 4 known failures);
+`unity_refcompile` player and editor OK; the Amoebius player build; the console-logging and conditional-compilation
+gates. `/verify-unity` is not available in the cloud session.
+**Verify in a build** (stopping Play in the Editor raises no quit request, so this needs players):
+1. The 7 `DepartureLeaveTests` pass in the Test Runner.
+2. Two Windows builds online in the menu: close one with the window's X. It leaves the other's online list within
+   about a second (was ~30 s), and the close takes at most 1.5 s.
+3. On a phone, background the app for 10 s: the other player's list drops it; bring it back: it reappears within
+   about 2 s, still in its party.
+
+### 🔴 Party: Block 5 step 8 - one 20 s safety poll under the pushes (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 8): the presence and party pushes (steps 4-5) carry
+every change, so `LobbyRefreshScheduler` became one safety poll: every `SAFETY_POLL_SECONDS` (20 s, +-10%), in the menu
+and in a match, a tick reads the presence lobby, runs the converge and reads the party session, the pacer holding the
+two reads a second apart. The boost window, the 6 s party-read timer, the 4 s converge timer and the 10 s in-match
+tick are gone; a push sync no longer GETs. The first poll comes 2 s after a presence join.
+**Verified without the editor:** `PartyRefreshRecoveryTests` (cadence, the post-join fire, the read budget),
+`PresencePushTests` (every poll converges; `Update` reads only on the safety tick, in any scene),
+`PartyPushAndVoidedReadTests` (the post-join poll) and `AbsenceStrikesTests` (a push sync does no GET); restoring the
+4 s converge timer, the in-match tick, a GET on push syncs or dropping the post-join fire each fails a test. The full
+edit-mode suite on Amoebius 666/670 (the 4 known failures); `unity_refcompile` player and editor OK; the Amoebius
+player build; the console-logging and conditional-compilation gates. `/verify-unity` is not available in the cloud
+session.
+**Verify in editor:**
+1. The party test suites above pass in the Test Runner.
+2. Two MPPM players in the menu: each appears in the other's online list within about 2 s of joining; an invite
+   arrives within about a second (by push); accept, and both party panels fill within about a second.
+3. After Play, `net_logs.py show 1`: `reads` is about 6 a minute per player in a party, 3 solo (was about 50), `429s` near 0, and
+   `presence pushes` / `party pushes` above 0.
+4. Leave a player in a match for a minute: the other's online list still shows them "in game".
+
 ### 🔴 Load Time Insights: the boot's menu load is timed while online (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (B36 addendum, the 26 Oct multiplayer sweep): a 10.4 s frame in the boot's load of Menu_Main dropped

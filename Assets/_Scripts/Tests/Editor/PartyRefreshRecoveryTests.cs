@@ -14,8 +14,8 @@ namespace CosmicShore.Tests
     /// (Caleb and ys1, 2026-10-16). Each test pins the decision where it is made, with no
     /// NetworkManager and no UGS:
     /// <list type="bullet">
-    /// <item>B31: the party session is read at most every 6 s, so the refresh stays under UGS Lobby's
-    /// 1 GET/s/player (it was 1.33/s: a 429 about every 10 s while a party existed).</item>
+    /// <item>B31: the refresh stays under UGS Lobby's 1 GET/s/player (it was 1.33/s: a 429 about every 10 s
+    /// while a party existed); since Block 5 step 8 it is one 20 s safety poll under the pushes.</item>
     /// <item>B32: leaving the shared presence lobby deletes it only when we are alone in it; a lobby
     /// that is gone is rejoined at once; a rejoin takes the party out of Reconnecting.</item>
     /// <item>B33: a new Play starts with no session, no offline flag and no party flags from the last.</item>
@@ -65,39 +65,47 @@ namespace CosmicShore.Tests
 
         // ── B31: the refresh's GETs fit UGS Lobby's 1 GET/s/player ───────────────────────────
 
+        // Block 5 step 8: the pushes carry every change, so the poll became one safety tick that reads both
+        // lobbies once. It replaced a 1.5 s tick (1.1 s boosted), a 6 s party read and a 4 s converge.
+
         [Test]
-        public void PartySessionPoll_IsTakenAtMostOncePerInterval()
+        public void SafetyPoll_FiresOncePerJitteredTwentySeconds()
         {
-            var s = new LobbyRefreshScheduler(1.5f);
-            Assert.IsTrue(s.TryTakePartySessionPoll(100f, boosted: false), "the first tick reads the party session");
-            Assert.IsFalse(s.TryTakePartySessionPoll(101.5f, boosted: false), "the next 1.5 s tick does not (negative control)");
-            Assert.IsFalse(s.TryTakePartySessionPoll(105.9f, boosted: false));
-            Assert.IsTrue(s.TryTakePartySessionPoll(106f, boosted: false), "6 s later it reads again");
+            var s = new LobbyRefreshScheduler(LobbyRefreshScheduler.SAFETY_POLL_SECONDS);
+            float lo = LobbyRefreshScheduler.SAFETY_POLL_SECONDS * (1f - LobbyRefreshScheduler.INTERVAL_JITTER_FRACTION);
+            float hi = LobbyRefreshScheduler.SAFETY_POLL_SECONDS * (1f + LobbyRefreshScheduler.INTERVAL_JITTER_FRACTION);
+            for (int round = 0; round < 20; round++)
+            {
+                float t = 0f;
+                while (!s.ShouldFireNow(0.1f)) t += 0.1f;
+                t += 0.1f;
+                Assert.GreaterOrEqual(t, lo - 0.11f, $"round {round}: never sooner than {lo} s");
+                Assert.LessOrEqual(t, hi + 0.11f, $"round {round}: never later than {hi} s");
+            }
         }
 
         [Test]
-        public void PartySessionPoll_WaitsLongerWhileBoosted()
+        public void SafetyPoll_ComesSoonAfterAJoin()
         {
-            var s = new LobbyRefreshScheduler(1.5f);
-            Assert.IsTrue(s.TryTakePartySessionPoll(0f, boosted: true));
-            Assert.IsFalse(s.TryTakePartySessionPoll(LobbyRefreshScheduler.PARTY_SESSION_POLL_SECONDS, boosted: true),
-                "boosted, the presence poll spends the budget; the party read waits");
-            Assert.IsTrue(s.TryTakePartySessionPoll(LobbyRefreshScheduler.PARTY_SESSION_POLL_BOOSTED_SECONDS, boosted: true));
+            var s = new LobbyRefreshScheduler(LobbyRefreshScheduler.SAFETY_POLL_SECONDS);
+            Assert.IsFalse(s.ShouldFireNow(1f));
+            s.FireAfter(LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS);
+            Assert.IsFalse(s.ShouldFireNow(LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS - 0.1f), "not before the settle");
+            Assert.IsTrue(s.ShouldFireNow(0.2f), "the online list fills two seconds after a join, not twenty");
+            Assert.IsFalse(s.ShouldFireNow(1f), "then back to the safety cadence");
         }
 
         [Test]
-        public void RefreshCadence_StaysUnderOneGetPerSecond_AtRestAndBoosted()
+        public void SafetyPoll_StaysFarUnderTheReadCap()
         {
             const float limit = 1f; // UGS Lobby: Get 1 req/s per player
-            float atRest = 1f / 1.5f + 1f / LobbyRefreshScheduler.PARTY_SESSION_POLL_SECONDS;
-            float boosted = 1f / LobbyRefreshScheduler.BOOSTED_INTERVAL_SECONDS
-                            + 1f / LobbyRefreshScheduler.PARTY_SESSION_POLL_BOOSTED_SECONDS;
-            Assert.Less(atRest, limit, $"at rest {atRest:0.00} GETs/s");
-            Assert.Less(boosted, limit, $"boosted {boosted:0.00} GETs/s");
+            float fastest = LobbyRefreshScheduler.SAFETY_POLL_SECONDS * (1f - LobbyRefreshScheduler.INTERVAL_JITTER_FRACTION);
+            float perSecond = 2f / fastest; // the presence read and the party read, once per tick
+            Assert.Less(perSecond, 0.15f * limit, $"{perSecond:0.000} GETs/s");
 
-            // The cadence Caleb's log measured: presence and party every 1.5 s tick, 0.75 s boosted.
-            Assert.Greater(1f / 1.5f + 1f / 1.5f, limit, "the old cadence was over the limit (negative control)");
-            Assert.Greater(1f / 0.75f, limit, "the old boost alone was over it");
+            // What it replaced (B31): presence every 1.5 s plus the party every 6 s, 1.1 s / 15 s while boosted.
+            Assert.Greater(1f / 1.5f + 1f / 6f, 0.8f, "the old resting cadence spent 83% of the cap (negative control)");
+            Assert.Greater(1f / 1.1f + 1f / 15f, 0.95f, "and the boost 98% of it");
         }
 
         // B31 again (2026-10-24): the average was under the cap, but the presence and party reads went
@@ -129,17 +137,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, LobbyReadPacer.SecondsUntilNextRead(), "the Play-start reset frees the slot");
             Assert.IsNotNull(typeof(LobbyReadPacer).GetMethod("Reset", BindingFlags.NonPublic | BindingFlags.Static)
                 ?.GetCustomAttribute<RuntimeInitializeOnLoadMethodAttribute>(), "Reset runs when Play starts");
-        }
-
-        [Test]
-        public void PartyPollDue_IsAQuestion_TheTickThenTakesIt()
-        {
-            var s = new LobbyRefreshScheduler(1.5f);
-            Assert.IsTrue(s.IsPartySessionPollDue(100f), "due: this tick reads the party session, not the presence lobby");
-            Assert.IsTrue(s.IsPartySessionPollDue(100f), "asking does not claim it");
-            Assert.IsTrue(s.TryTakePartySessionPoll(100f, boosted: false));
-            Assert.IsFalse(s.IsPartySessionPollDue(101.5f), "the next ticks read the presence lobby (negative control)");
-            Assert.IsTrue(s.IsPartySessionPollDue(106f));
         }
 
         // ── B32: the shared presence lobby survives its host leaving ─────────────────────────
