@@ -119,6 +119,22 @@ NOT run: `RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_E
    discharges at about half charge); at I3 it is the mode's.
 2. The AI Dolphins circle less at I4 than in the 2026-10-26 04:09 race (23 s circling, 50 s on gate 4).
 
+### 🔴 Breakwater: the AI Sparrows boost on the legs (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `SparrowAIBoostPolicy_Breakwater` boost bands: align 45 / 60 deg, stick bands 1, engage 2 s, release
+1.25 s (were 12 / 25, 0.35 / 0.6, 1.5, 0.5). In Yash's two 2026-10-26 races the AI Sparrows ran a median 35-40 u/s
+against his 135 u/s. `learn_drives_from_flights.FLOORS` keeps a learned release at 1.25 s or more in Breakwater. The
+races predate the steering fix (`3ac0ac3c5d`), so this is the first time both run together.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files; `switchback_dolphin_sim --self-test`
+and `--mode Breakwater` (base bands 110-131 s a lap, these 79-82 s, 0 stations through the danger weave, on all seven
+recorded courses); `learn_drives_from_flights --self-test`. NOT run: `MinigameAbilityAITests` in Unity.
+
+**Verify in editor:**
+1. Run `MinigameAbilityAITests` (EditMode): `TheBreakwaterVariant_BoostsOnTheLegs_AndLetsGoBeforeEachStation` passes.
+2. Breakwater I1 and I4 against two AI Sparrows: they boost on the long legs (Third Eye shows the boost) and slow
+   before each station; they thread the eye, not the danger weave, and keep up with a person who boosts.
+
 ### 🔴 Waystation: the AI Butterfly flies Regatta's gate steering (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `WaystationController.AICommitFromApproachPoint => true`. In Caleb's two recorded races the AI Butterfly
