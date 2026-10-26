@@ -608,6 +608,10 @@ namespace CosmicShore.Gameplay
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
                 SyncLocalIdentity();
 
+                // Fair play (phase B): which presence lobby this account joins. A no-op while the trust gate is
+                // off; on failure it keeps the last answer, so it never blocks the join.
+                await CosmicShore.Core.FairPlayTrust.RefreshAsync();
+
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
 
                 // Apply post-join state now that the lobby reference is live.
