@@ -247,7 +247,8 @@
         "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
         "Docs/Studios/CREW_VESSEL_LAB.md",
         "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
-        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+        "Docs/Studios/CREW_OF_FOUR_LAB.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md"
       ],
       "artifacts": [
         {
@@ -432,7 +433,21 @@
         "flea",
         "dragonfly",
         "albatross",
-        "web-slinger"
+        "web-slinger",
+        "omega",
+        "omega crews",
+        "omega crew",
+        "warden",
+        "bulwark",
+        "tempest",
+        "supervessel",
+        "supervessels",
+        "combiner",
+        "combiner vessels",
+        "mega form",
+        "omega form",
+        "vessel ids",
+        "vessel id ledger"
       ],
       "owner": "Yash",
       "people": [
@@ -444,21 +459,47 @@
         "the core four"
       ],
       "branch": "Ys-bleeding-edge",
-      "branchNote": "browser prototypes in the Vessel Studio; nothing in Unity yet",
-      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17); Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross. Round 2 runs one vessel per session; the Gibbon (now a web-slinger) is the only one done.",
+      "branchNote": "browser prototypes in the Vessel Studio; the Flea is in Unity on claude/flea-vessel, the Omega crews in Unity on Ys-bleeding-edge (2026-10-26); nothing of it on bleeding-edge",
+      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17; Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross), then the Omega crews (2026-10-26: three combiner crew vessels, Warden / Bulwark / Tempest, each three fleet members with mega forms that dock into one omega form with three seats). The Flea (24) and the Omega crews (25-27) are cloned into Unity; the vessel id ledger lives in Docs/Studios/CONCEPT_FLEET.md section 0.",
       "paths": [
         "Docs/Studios/CONCEPT_FLEET.md",
         "Docs/Studios/VesselStudio/vessels",
         "Docs/Studios/VesselStudio/studio-kinds.js",
         "Docs/Studios/VesselStudio/studio-vessel.js",
-        ".claude/skills/vessel-studio/vessel_pages.py"
+        ".claude/skills/vessel-studio/vessel_pages.py",
+        "Docs/Studios/VesselStudio/omega.html",
+        "Docs/Studios/VesselStudio/omega-studio.js",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaMath.cs",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrew.cs",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrewView.cs",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrewConfigSO.cs",
+        "Assets/_Scripts/Controller/Vessel/OmegaVesselTransformer.cs",
+        "Assets/_Scripts/UI/Controller/OmegaHUDController.cs",
+        "Assets/_Scripts/Tests/Editor/OmegaMathTests.cs",
+        "Tools/Build/author_omega_assets.py",
+        "Assets/_SO_Assets/VesselActions/Omega",
+        "Assets/_Prefabs/Spacevessels/Warden.prefab",
+        "Assets/_Prefabs/Spacevessels/Bulwark.prefab",
+        "Assets/_Prefabs/Spacevessels/Tempest.prefab",
+        "Assets/_Scripts/Controller/Vessel/FleaMath.cs",
+        "Assets/_Scripts/Controller/Vessel/FleaVesselTransformer.cs",
+        "Tools/Build/author_flea_assets.py",
+        "Assets/_Prefabs/Spacevessels/Flea.prefab",
+        "Tools/Build/studio_to_unity/clones.json"
       ],
       "docs": [
-        "Docs/Studios/CONCEPT_FLEET.md"
+        "Docs/Studios/CONCEPT_FLEET.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md",
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/FLEA.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
       ],
       "artifacts": [
         {
           "name": "Vessel Studio (the concept fleet row)",
+          "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
+        },
+        {
+          "name": "Omega Crews lab (the studio's Omega Crews bay)",
           "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
         }
       ],
@@ -471,11 +512,14 @@
         "Vessel Studio / Albatross",
         "Vessel Studio / Dragonfly",
         "Vessel Studio / Marlin",
-        "Vessel / Tether"
+        "Vessel / Tether",
+        "Vessel Studio / Omega crews",
+        "Vessel / Omega crews"
       ],
       "test": [
-        "Open the Vessel Studio artifact, the concept fleet row.",
-        "Fly a vessel; record Keep / Drop on its Decisions tab."
+        "Open the Vessel Studio artifact, the concept fleet row (ten vessels) or the Omega Crews bay; fly a vessel; record Keep / Drop on its Decisions tab.",
+        "Unity, Ys-bleeding-edge: Menu_Main freestyle, Toy Box, Vessel Changer, Warden / Bulwark / Tempest: the hand test in Docs/UNITY_VERIFICATION_CHECKLIST.md (the Omega crews section).",
+        "Unity, claude/flea-vessel: the Flea from the same Vessel Changer (FLEA.md section 6)."
       ]
     },
     "android-build": {

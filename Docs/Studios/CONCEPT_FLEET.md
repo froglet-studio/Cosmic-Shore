@@ -15,6 +15,49 @@ pages, the hub's cards and the catalog entries (`--check` is the drift gate). No
 a lab-only proposal, shown with its recipe value in each page's Vessel Config > Mechanic. The only shipped numbers are the
 game's own Skim Race courses, the course every concept is raced on.
 
+## 0. Building vessels together, asynchronously (the rule for every vessel and supervessel session)
+
+Several sessions build vessels at once, on different branches, for different people. They stay out of each other's
+way by reading and writing the SAME records, in this order, at the start and the end of every vessel session:
+
+1. **The id ledger below** (and `VesselClassType.cs` on `bleeding-edge` AND every in-flight branch: `git fetch origin`,
+   then `git grep -n "= <id>," origin/<branch> -- Assets/_Scripts/Data/Enums/VesselClassType.cs`). Claim an id by adding
+   the enum row AND the ledger row in the same commit, on your branch, before anything else is built on it. Never reuse
+   an id another branch claimed, merged or not (enum 14 was taken twice on 2026-10-13: 110 conflicts).
+2. **This file**: one section per vessel or crew (the design, what the lab measured, Found, Decisions needed, the Unity
+   clone). Add yours; update the status line of a vessel you touched. The report for people is built from it:
+   `python3 Tools/Build/team_report.py area concept-fleet --write` (`Docs/Reports/CONCEPT_FLEET.md`).
+3. **The Vessel Studio artifact** (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa): one page per vessel, published
+   into the ONE artifact from the repo copy (`/vessel-studio` §4); its Decisions tab is where a person records Keep /
+   Drop, and `/artifact-to-unity` reads them. Never a second artifact.
+4. **Unity**: a `Tools/Build/author_<vessel>_assets.py` generator that owns the prefab and every registration
+   (`--check`, `--self-test`), a design doc beside the code (`R_VesselActions/<VESSEL>.md` or `Crew/<CREW>.md`), the hand
+   test in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, `studio_to_unity/clones.json`. Say in the commit who else works there
+   (`Affects:`; `python3 Tools/Build/who_works_where.py query <paths>`), and build on their pattern rather than a new one
+   (the Flea and the Omega crews are Stoat clones; the crews use the Orca's seat plumbing).
+5. **Hand-offs**: a test, a decision or content for someone else goes on Froglet Tasks through `/team-tasks suggest`
+   (it waits for the person's approval; never filed on its own, never assigned). One ticket per branch.
+
+### The vessel id ledger (VesselClassType; re-check the branches before claiming)
+
+| Id | Vessel | Where | Since |
+|---|---|---|---|
+| -1, 0 | Any, Random | meta | |
+| 1-17 | Manta, Dolphin, Rhino, Urchin, Grizzly, Squirrel, Serpent, Termite, Falcon, Shrike, Sparrow, Scarab (12), Butterfly, Thresher, Stoat, Brittle Star, Angler | `bleeding-edge` | `Docs/claude/ABOUT_PROJECT.md` |
+| 18 | Goby (Goby and Pistol) | `bleeding-edge` | 2026-10-15 |
+| 19 | Wrasse (Wrasse and Grouper) | `bleeding-edge` | 2026-10-17 |
+| 20 | Orca (4 seats) | `bleeding-edge` | 2026-10-20 |
+| 21 | Starling | `bleeding-edge` | 2026-10-21 |
+| 22 | Jacks | `bleeding-edge` | 2026-10-21 |
+| 23 | Honeyguide (Honeyguide and Ratel) | `bleeding-edge` | 2026-10-21 |
+| 24 | Flea | `claude/flea-vessel` (Garrett's branch, unmerged) | 2026-10-24 |
+| 25 | Warden (Omega crew: Stoat, Thresher, Butterfly) | `Ys-bleeding-edge` | 2026-10-26 |
+| 26 | Bulwark (Omega crew: Rhino, Grizzly, Scarab) | `Ys-bleeding-edge` | 2026-10-26 |
+| 27 | Tempest (Omega crew: Squirrel, Sparrow, Manta) | `Ys-bleeding-edge` | 2026-10-26 |
+| **28** | **next free** (the Tether / Gibbon, the Dragonfly, the Marlin and the Albatross have none yet) | | |
+
+An id a branch claims and then abandons is released only when that branch is deleted; say so here.
+
 ## 1. How to playtest (the owner's round)
 
 1. Open the artifact (phone or PC). Each new vessel has a card in the hub under **New vessels - the concept fleet**.
