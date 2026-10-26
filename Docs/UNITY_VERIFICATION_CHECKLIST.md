@@ -16733,3 +16733,21 @@ configure view (compact AI row, `author_menu_configure.py`). EditMode: `AIDiffic
    Third Eye on an Easy AI: it shows a ring handicap and no autopilot belief (one handicap, not two).
 3. Joust or Dog Fight on Easy vs Legendary: the Easy AI reacts late and sometimes flies off to one side of its target.
 4. Maelstrom: the compact AI row sits under the domain columns, clear of Format; the pick holds across rounds.
+
+## 🔴 2026-10-26 — Per-mode intro cameras, shuffled within families (unverified: no Unity editor in the session)
+
+**Files:** `PreGameCinematicController.cs` (new `Play(center, pilot, mode, vessels, accent)`), `IntroCamera*.cs`
+under `Assets/_Scripts/UI/PreGameCinematic/`, `Resources/IntroCameraLibrary.asset` (`author_intro_cameras.py`),
+the `MiniGameHUD` call site. EditMode: `IntroCameraTests`. Verified offline: reference compile (player and editor
+configs, 0 errors, negative control fired), `author_intro_cameras.py --check` and `--self-test`. Design:
+`Docs/IntroCameras/README.md`.
+
+1. Run `IntroCameraTests`. **Pass:** green.
+2. Play Skim Race, Headlong, Dog Fight, Rampage, Wildlife Liberation and Hijack (one per family). **Pass:** each
+   opens with letterbox bars and its own title, tagline, objective and lower third, the camera frames the arena
+   (never inside geometry for long, never pointed at empty space), and the hand-off lands behind the vessel with
+   the normal field of view. Skip (button and pad South) cuts to the pilot in 0.3 s and the bars and captions go.
+3. Rematch one gate race three times. **Pass:** a different intro each time, never the same one twice in a row.
+4. Play Tandava. **Pass:** the old orbit, no bars, no captions.
+5. If intros fly too close or too far in most arenas, change `scaleMultiplier` on the library asset (through the
+   generator) and note the value here.
