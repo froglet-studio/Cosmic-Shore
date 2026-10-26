@@ -543,6 +543,9 @@ namespace CosmicShore.UI
                 case GameModes.Tandava:
                     // the swarm: one opponent loose in a closed cell - "where is it" is the whole question
                     return CreateProviderComponent<TandavaObjectiveProvider>("ObjectiveProvider_Tandava");
+                case GameModes.TandavaSevering:
+                    // Tandava's fork (Voyage 2): the same question, asked of its own controller
+                    return CreateProviderComponent<TandavaSeveringObjectiveProvider>("ObjectiveProvider_TandavaSevering");
                 default:
                     return null;
             }

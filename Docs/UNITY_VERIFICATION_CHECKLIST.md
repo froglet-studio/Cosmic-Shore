@@ -155,6 +155,44 @@ nothing here has been seen in play.
 0.35 · `surgeCameraDistanceScale` 2 · `surgeCameraBlendSeconds` 0.6; `RhinoVesselSurgeByCrystalEffect.asset`
 `surgeSeconds` 8. The blade length is the blade root's `m_LocalScale.y` in `Rhino.prefab` (24).
 
+---
+
+### 🔴 Racing AIs fly the waypoints, never a crystal (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `GateRaceController.AIDetoursForCrystals` (false) gates the on-the-way crystal detour, so no gate race's
+AI steers at a crystal any more, whatever its scene's `aiCrystalDetourSlack` (200-220 u) says. Regatta's own override
+removed (now the base rule). `RegattaNoCrystalTargetTests` became `RaceAIWaypointsOnlyTests`. Why:
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §6.1.
+
+**Verified without the editor:** reference compile player OK, editor no errors in changed files; gates.sh. NOT run:
+`RaceAIWaypointsOnlyTests` (EditMode).
+
+**Verify in editor:**
+1. Run `RaceAIWaypointsOnlyTests` (EditMode): both pass.
+2. Play Switchback with AI Dolphins and watch one in FrogletTools > AI > Third Eye: its phase is only Approach / Through
+   ring N (never "Crystal on the way"), and it flies past crystals beside its line.
+3. The same in Breakwater (AI Sparrows) and Headlong.
+
+---
+
+### 🔴 The Sparrow's rocket learned from Yash's shots; Switchback's I3 drive from every intensity (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `SparrowAIBoostPolicy_Breakwater`'s "clear the way" rocket now fires from 138-354 u of a station
+(was 60-220) with the nose within 15.9 deg (was 4), learned from Yash's 12 rocket presses; `DolphinAIBoostPolicy_Switchback`
+(what I3 flies) relearned from the fastest race of each intensity (spend 0.92, was 0.96). Learner only otherwise:
+rocket presses, Breakwater's lead-in ring count, each intensity learned from its current course
+(`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.7, §6). No C# change.
+
+**Verified without the editor:** `learn_drives_from_flights.py --self-test` OK; `--check` OK for Switchback, Breakwater,
+Regatta, Bloomrush; Regatta's and Bloomrush's learned numbers identical before and after. NOT run in Unity.
+
+**Verify in editor** (the sweep reads the answers from the next races on its own):
+1. Breakwater as the Sparrow with AI Sparrows: an AI fires its rocket at a station from roughly 140-350 u out, nose
+   roughly on it, once per station, and threads the hole it made.
+2. Switchback I3 with AI Dolphins: the Third Eye drive readout says "spends at 92%".
+
+---
+
 ### 🔴 Fair play: minors are never penalised automatically (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board R13. The age screen asked a birth year but kept only "13 or older"
@@ -387,6 +425,22 @@ NOT run: `RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_E
 1. Switchback I4 with AI Dolphins: the Third Eye readout's drive is `DolphinAIBoostPolicy_Switchback_I4`'s numbers (it
    discharges at about half charge); at I3 it is the mode's.
 2. The AI Dolphins circle less at I4 than in the 2026-10-26 04:09 race (23 s circling, 50 s on gate 4).
+
+### 🔴 Breakwater: the AI Sparrows boost on the legs (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `SparrowAIBoostPolicy_Breakwater` boost bands: align 45 / 60 deg, stick bands 1, engage 2 s, release
+1.25 s (were 12 / 25, 0.35 / 0.6, 1.5, 0.5). In Yash's two 2026-10-26 races the AI Sparrows ran a median 35-40 u/s
+against his 135 u/s. `learn_drives_from_flights.FLOORS` keeps a learned release at 1.25 s or more in Breakwater. The
+races predate the steering fix (`3ac0ac3c5d`), so this is the first time both run together.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files; `switchback_dolphin_sim --self-test`
+and `--mode Breakwater` (base bands 110-131 s a lap, these 79-82 s, 0 stations through the danger weave, on all seven
+recorded courses); `learn_drives_from_flights --self-test`. NOT run: `MinigameAbilityAITests` in Unity.
+
+**Verify in editor:**
+1. Run `MinigameAbilityAITests` (EditMode): `TheBreakwaterVariant_BoostsOnTheLegs_AndLetsGoBeforeEachStation` passes.
+2. Breakwater I1 and I4 against two AI Sparrows: they boost on the long legs (Third Eye shows the boost) and slow
+   before each station; they thread the eye, not the danger weave, and keep up with a person who boosts.
 
 ### 🔴 Waystation: the AI Butterfly flies Regatta's gate steering (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -3924,6 +3978,88 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
 2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
+### 🔴 Party: Block 5 step 7 - two absent reads before a player is removed (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 7, from the August work's c9c6db1772): one short
+read used to remove a player from the online list (`HostConnectionService.RefreshOnlinePlayersDiff`) and the party
+(`PartyMemberService.SyncFromSession`). Both now go through `AbsenceStrikes`: a player missing from a server read gets a
+strike, two in a row removes them, a sighting clears it. Re-reading the SDK's copy (a push tick, a party tick between
+GETs) adds no strike. A departure the service states removes at once: `PresencePushChannel` and `PartySessionService`
+collect `PlayerHasLeft` / `PlayerLeaving` ids (`DepartureReports`, `TakeDepartures` on both interfaces), and a member
+turning spectator still goes at once. An outgoing invite clears when its target leaves the online list, not on the
+first short read.
+**Verified without the editor:** 15 tests in `AbsenceStrikesTests`; seven negative controls (removing on one read,
+counting local-copy ticks, not passing the party departures, the presence channel or the party session not reporting,
+the invite clean-up ignoring the list, a spectator not counted as stated) each fail a test. The full edit-mode suite
+on Amoebius 662/666 (the 4 known failures); `unity_refcompile` player and editor OK; the Amoebius player build; the
+console-logging and conditional-compilation gates. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 15 `AbsenceStrikesTests` pass in the Test Runner.
+2. Three MPPM players in the menu: the online list no longer blinks a player out and back in while nobody leaves
+   (most visible in the first minute, when voided reads are commonest).
+3. P1 invites P2, P2 accepts, then P2 leaves the party: P2 leaves P1's party slots within about a second (stated
+   departure). Stop P3's Play outright: P3 leaves the other online lists within two reads (a few seconds), or at once
+   when UGS pushes the leave.
+
+### 🔴 Party: Block 5 step 6 - our party size goes out the frame the party changes (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 6, from the August work's 111676ba22):
+`HostConnectionService` hooks `connectionData.PartyMembers`' `OnItemCountChanged` and `OnCleared` (subscribed with the
+other subscriptions, unsubscribed in `OnDestroy`); a change sets `_rosterMovedSincePublish`, and `Update` drains it into
+`PublishPresenceImmediateAsync` once the lobby mutex is free. Before, a new party size reached peers only on the next
+good poll.
+**Verified without the editor:** 3 tests in `PresencePushTests` (removing the drain fails the first); the full
+edit-mode suite on Amoebius 647/651 (the 4 known failures); `unity_refcompile` player and editor OK; the Amoebius
+player build. Amoebius's `ScriptableList.Clear` also raises `OnItemCountChanged` (Soap's does not), so the Clear test
+cannot prove the `OnCleared` hook there. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 12 `PresencePushTests` pass in the Test Runner (in Unity the Clear test does depend on the `OnCleared` hook).
+2. Three MPPM players: P1 invites P2. P3's online list shows P1's party size go 1/4 → 2/4 within about a second.
+   P2 leaves: P3 sees 2/4 → 1/4 as fast.
+
+### 🔴 Party: Block 5 step 5 - the presence lobby's push (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 5): `PresencePushChannel` listens to the presence
+lobby's `PlayerJoined` / `PlayerHasLeft` / `PlayerPropertiesChanged` (roster dirty) and `RemovedFromSession` /
+`Deleted` (membership lost), flag only. Every `_activeLobby` change in `PresenceLobbyService` goes through
+`SetActiveLobby`; the channel detaches before our own leave or delete. `HostConnectionService.Update` drains a roster
+push into `RefreshAsync(fetchFromServer: false)` (no GET, no converge query, no party poll, the watchdog untouched;
+counted `PresencePush`) and a membership loss into an immediate rejoin. `net_logs.py show` prints `party pushes N
+presence pushes N`. Amoebius's `ISession` gained `RemovedFromSession` (`023d5c55db`, Port only).
+**Verified without the editor:** `PresencePushTests` (9; dropping the detach-before-leave, letting a push tick read,
+or dropping the immediate rejoin each fails its test) and the full edit-mode suite on Amoebius 644/648 (the 4 known
+SceneTransitionManager / AppManagerBootstrap failures); Port tests 105/105; `net_logs.py --self-test`;
+`unity_refcompile` player and editor OK; the Amoebius player build. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 9 `PresencePushTests` pass in the Test Runner.
+2. Two MPPM players in the menu: start P2's Play after P1's. P2 appears in P1's online list within about a second
+   (before, the next 1.5 s poll). Stop P2: it leaves P1's list as soon as UGS drops it.
+3. After Play, `net_logs.py show 1`: each player's summary line has `presence pushes N` with N > 0.
+4. Leave a party and return to the menu: no "removed us or was deleted - rejoining" warning (our own leave must not
+   read as being thrown out).
+
+### 🔴 Party: Block 5 steps 1-4 - voided reads counted, publish independent of the read, rejoin keeps the party, party session push (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2, ported from August's `Ys-rescue-2026-08-24`):
+`HostConnectionService.RefreshAsync` reads in its own `try`; a benign (stale-index) read is counted
+(`UgsRequestCounter.Benign`) and the party sync and our publish still run. The party-session read's benign fault
+is counted and still syncs from `ISession.Players`. `ApplyPostLobbyJoinState` clears the roster only with no live
+party session; `SeedLocalPlayer` is idempotent. `PartySessionService` subscribes `PlayerJoined` / `PlayerHasLeft` /
+`PlayerPropertiesChanged` (flag only); `Update` drains it into `SyncPartyRosterFromPushAsync` (counted as
+`PartyRosterPush`). `net_logs.py show` prints `voided N` and `pushes N`. Amoebius's `ISession` gained the three
+events (`6757fc61d9`, Port only).
+**Verified without the editor:** `PartyPushAndVoidedReadTests` (8; each of the three fixes reverted fails its test)
+and the full edit-mode suite on Amoebius 635/639 (the 4 known SceneTransitionManager / AppManagerBootstrap
+failures); Port tests 105/105; `net_logs.py --self-test`; `unity_refcompile` player OK, editor only the 3 standing
+errors. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 8 `PartyPushAndVoidedReadTests` pass in the Test Runner (they use `DispatchProxy` for stand-in sessions).
+2. Two MPPM players: P2 accepts P1's invite. P1's arcade lobby shows P2 within about a second (before, up to one
+   refresh tick, 1.5-6 s). After Play, `net_logs.py show 1` prints `pushes N` (N > 0) for both.
+3. In a party, pause the editor 12 s (the presence lobby may rejoin when you resume): the party roster stays,
+   with no blanked slots and no second copy of yourself.
+4. Ten minutes in a party: `voided N` on the summary line is the stale-index baseline the later steps are judged by.
 
 ### 🔴 Party: B31 addendum - a lobby write's read is retried on a 429 (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
@@ -15958,6 +16094,21 @@ of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in chan
 2. In the capture: no `PoolMiss.Squirrel Prism` row (was 1.71 ms/frame in Thresher Time), `PoolRefill.Squirrel Prism`
    present; trails look the same.
 
+## 🔴 2026-10-26 — Configure: the AI pilots row stays hidden where it is not offered, and the domain columns never cover it (unverified: no Unity editor in the session)
+
+**Files:** `Assets/_Scripts/UI/Kit/KitVisibility.cs` (a hide finishes the part's `KitEntrance` first),
+`Assets/_Scripts/UI/Elements/Configure/ConfigurePilotsFit.cs` (on each Configure view's `Steps`, authored by
+`Tools/Build/author_menu_configure.py`). EditMode: `KitVisibilityTests`, `ConfigurePilotsFitTests`.
+
+1. Menu > Arcade > Skim Race: the AI pilots row shows; Easy and Hard light when pressed. Back, open Joust: no AI
+   pilots row. Back to Skim Race: the row is there and clickable.
+2. Skim Race, + AI on Jade until it holds 3-4 pilots: the Jade column grows, the AI pilots row moves down under it,
+   the Vessel section and the launch row (status, chips, START) move down with it; nothing overlaps. Kick the AIs:
+   everything moves back.
+3. Arena > Broadside (or Brood Rush), + AI on one domain until it holds 4-5 pilots: the seat rows tighten (shorter,
+   closer) once START would pass the bottom margin; the Easy / Medium / Hard buttons stay clear and clickable.
+4. Maelstrom: 3-4 pilots in one domain push Format and the launch row down; nothing overlaps.
+
 ## Tandava: the vessel picker from the Voyage window (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the cloud session. Proven offline: refcompile (player; editor config's 3 errors are bleeding-edge's,
@@ -15982,3 +16133,104 @@ errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
 - [ ] A Rhino assault from the hatch no longer shatters the Great Serpent in under 20 s; time it (the model says ~50 s
       at a constant 20 blows/s).
 - [ ] Other swarms (the research plans, the ecology swarm) show no new shields.
+
+## Rev 20 G: the arcade configure window - pedestals, LB / RB intensity, START (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`Docs/MENU_REDESIGN_B.md` section 74; approved board `R20ConfigureG2` on the Menu Redesign B canvas. No Unity editor in
+the cloud session. Proven offline: refcompile (player + editor OK), Amoebius builds, `author_menu_configure.py --check`
+/ `--self-test`, `author_ui_kit_sprites.py --check` / `--self-test`, `check_generated_assets.py`, `check_ui_colors.py`.
+- [ ] Open any arcade card (Scurry): preview + description left; right column = controls (hull named, two columns),
+      the intensity / pilots panel, START full width at the foot. No summary chips, no "Ready to launch".
+- [ ] Intensity: the numeral reads the picked level (I-IV); LB / RB step it; the pips light up to it; a locked level
+      shows its lock line and pressing toward it gives the locked feedback; clicking a pip picks it.
+- [ ] Pilots solo: your portrait on a pool of your team's colour, "Host" under you; three open seats. Press an open
+      seat / ADD AI PILOT / X: an AI appears with a roster portrait, "AI pilot", on the team with the fewest pilots.
+- [ ] Focus your team label and press left / right (or click its arrows): your team and pool colour change; the
+      match launches on that team. As host, do the same on an AI's seat; its team changes and stays.
+- [ ] ✕ on an AI removes it (refused while the card's minimum needs the seat).
+- [ ] With a friend in the party: their portrait and name show; a guest cannot add or move AI; after Ready the guest
+      sees "Waiting for others...".
+- [ ] A card that offers AI difficulty (Skim Race): the Easy / Medium / Hard row shows beside ADD AI PILOT and the AI
+      seats read "Medium AI"; on Scurry the row is hidden and they read "AI".
+- [ ] START launches on a press (no hold). The controls panel does NOT jump when the difficulty row shows.
+- [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
+- [ ] Arena and Maelstrom windows are unchanged.
+
+## Menu_Main slide lag: masks sleep while nothing under them can be seen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds, every menu generator `--check` / `--self-test`, `check_generated_assets.py`.
+
+1. Open Menu_Main, enter Play (Release code optimization, Third Eye closed), let it settle on Home past the 4-minute auto-capture, stop Play and send the capture. **Pass:** `ClipperRegistry.Cull` well under 1 ms (3.4-4.0 ms in the 10-25/26 captures, 0.3 ms on 10-18).
+2. Slide Home -> Hangar -> Ark -> Profile and back with LB/RB and the nav. **Pass:** every screen draws fully on arrival, nothing stays blank or half-clipped, no content shows from a neighbouring screen during the slide.
+3. On a notched phone or a Simulator device with a safe area: **Pass:** each screen's background still reaches the screen edges (the slot mask is padded out to the slot).
+4. Open and close the Arcade, Arena, Toy Box, Voyage and Settings windows; scroll the Arcade grid. **Pass:** cards and art bands clip correctly at the viewport edge on the first frame the window is visible.
+5. Freestyle (Select) and back. **Pass:** the hub reappears fully drawn.
+
+## Tandava: Severing (Voyage 2) - the fork of Tandava with PR #1046's severing work
+
+Before these, check that **Tandava (Voyage 1) is unchanged**: its card, its scene and its creature behave exactly as on
+bleeding-edge, with no Severed, no wound narration and no chimera. Everything below is played from the Voyage window's
+SECOND card. The fork's ladder plans are Tandava's, armoured since 2026-10-26: the cut tests need two hits per Mass member.
+
+### QA-TANDAVA-21 — Severing: cut it in two and the piece crawls off (`TandavaSevering/TANDAVA_SEVERING.md` §3.11)
+
+Mode **Tandava: Severing** (Voyage 2, `GameModes.TandavaSevering`, scene `MinigameTandavaSevering`; Set sail on the Voyage window's second card). New C#: `TandavaSeveringSever` (the piece finder), `TandavaSeveringController.Severing.cs`, the
+release / graft seams in `SwarmTickJob` and `SwarmFauna`, `ISwarmSeedGraft`; toasts 148-150. Headless only: harness
+T20-T26 pass, `unity_refcompile` 0 project errors; never seen in the Editor.
+
+1. **A clean cut.** Fly straight through a roaming Great Serpent about a third of the way up from its tail, fast, in one
+   pass. The tail third must come away as its OWN small swarm (no pop: the same tadpoles, where they were, nothing dies)
+   and swim off away from the body. The narrator: "You cut it in two..." A goal row appears: "The Severed - home in 0:40".
+2. **Not every cut.** Nibble its tail a few tadpoles at a time: nothing parts. Strike it mid-lunge or in the dance:
+   nothing parts. Only one Severed at a time.
+3. **The piece lives.** The Severed eats on its own, regrows, and when it is fed (or its clock runs out) the row reads
+   "crawling home - cut it off" and it swims back. Touching the body, it grafts back on and the row goes ("...found its
+   way home").
+4. **Kill the piece.** Cut the Severed to nothing before it gets home: the row goes, and the body has lost those members
+   for good.
+5. **Heir.** Cut the BODY away to nothing while the Severed lives: the Severed becomes the creature ("...it remembers the
+   shape"), regrows into the form the body wore, and the HUD's form row carries on.
+6. **Two peers (MPPM host + client).** The client sees its own Severed part from the same place within a second, and it
+   follows the server's (it may drift and be nudged).
+   **Late join:** sever the host's creature, THEN connect a second client. Within a few seconds of its body catching up,
+   that client's own Severed parts near the host's piece (one, not two), and follows it home.
+7. **Budgets.** Physics debugger during a sever: proxies and colliders stay under the ceilings.
+
+**PASS:** the cut piece leaves as a second swarm, lives, comes home or dies or takes over; nothing pops. **FAIL:** a
+piece from a nibble, a lunge or the dance · the cut members vanish or bloom in from nothing · two Severed at once ·
+the match ends while the Severed lives and the body is gone · a client's Severed missing or in another place.
+
+### QA-TANDAVA-22 — Wound memory: it will not die the same way twice (`TandavaSevering/TANDAVA_SEVERING.md` §3.12)
+
+Director-only (`TandavaSeveringDirectorCore`: `TandavaSeveringWound`, the Learn* settings); toast 151. Headless only: harness `tandava-severing` T11 and
+T27-T29 pass; never seen in the Editor.
+
+1. **The table.** Strike it at its first meal hard enough to break it: "It remembers being struck at the table..." Its
+   next meals are at plants farther from you and it bolts after a smaller cut. Striking every meal and nothing else
+   should stop working; striking at the table AND running it down when it bolts should still win.
+2. **The lunge.** Let it lunge at you and punish each lunge: after a few, "It remembers what its lunges cost..." and it
+   lunges noticeably less.
+3. **The chase.** Harry it while it roams: "It remembers being run down..." and it reacts to you from farther away.
+4. **The second sever.** Sever it twice: the second Severed's clock starts shorter (about 0:24 instead of 0:40), and the
+   narrator says it learned.
+5. Each line is said once per match.
+
+**PASS:** each lesson is narrated once and its change is visible. **FAIL:** a line repeats · it becomes unbeatable
+(note what you tried) · a lesson with no visible change.
+
+### QA-TANDAVA-23 — The whale-jelly chimera: torn between two animals (`TandavaSevering/TANDAVA_SEVERING.md` §3.13)
+
+Director (`TandavaSeveringPhase.Chimera` / `ChimeraTurning`), two new plans (`chimera_whale`, `chimera_jelly`, grown by the
+hybrid NCA), `TandavaSeveringController` HUD and toast 152. Headless only: harness `tandava-severing` T30-T32 pass; never seen in the Editor.
+
+1. **It becomes the chimera.** Let the Many-Headed Serpent bank and rise. Instead of rising at once it reshapes into a
+   long whale-like body: "It is tearing between shapes..." The form row reads "Whale-Jelly Chimera", the mood "Unstable".
+2. **It turns.** Every ~6 s it re-sorts between a whale wrapped in a jelly shell with a bell at the head, and a whale
+   with a jelly stripe down its back. The re-sort must look like the same tadpoles moving, not members popping.
+3. **The window.** During each turn the mood reads "Turning - it cannot heal"; members cut then do not regrow until the
+   turn ends. Wear it to about half its body between turns: it must NOT shatter until it turns, then it shatters.
+4. **Cut it.** A pass through its middle parts a Severed; a pass through the thin tail does not.
+5. **It rises.** About 24 s after it began it rises into the Lord of the Dance where it drifted to, gold burst and all.
+
+**PASS:** both shapes read as a whale/jelly mix, the turns are smooth, it rises after ~24 s. **FAIL:** a blob · members
+pop at a turn · it never rises · it heals mid-turn.

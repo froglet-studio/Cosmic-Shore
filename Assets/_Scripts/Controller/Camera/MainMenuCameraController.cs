@@ -641,7 +641,7 @@ namespace CosmicShore.Gameplay
             // the vessel points straight up/down so the framing never flips.
             if (target && MenuCameraConfigSO.TryGetYawAnchor(targetRot, out var yawAnchor))
                 _trailYawAnchor = yawAnchor;
-            Quaternion offsetAnchor = config.yawOnlyOffset ? _trailYawAnchor : targetRot;
+            Quaternion offsetAnchor = config.YawOnlyOffset ? _trailYawAnchor : targetRot;
 
             _orbitPhaseDeg = Mathf.Repeat(_orbitPhaseDeg + config.OrbitDegreesPerSecond * dt, 360f);
 
@@ -669,7 +669,7 @@ namespace CosmicShore.Gameplay
                     : Quaternion.Slerp(_rigRot, lookRotation, 1f - Mathf.Exp(-rotationSharpness * dt));
             }
 
-            float fovTarget = config.fieldOfView > 0f ? config.fieldOfView : GameplayFov();
+            float fovTarget = config.FieldOfView > 0f ? config.FieldOfView : GameplayFov();
             _rigFov = Mathf.Lerp(_rigFov, fovTarget, 1f - Mathf.Exp(-FovGlideSharpness * dt));
 
             _switchGlide = Mathf.MoveTowards(_switchGlide, 0f, dt / Mathf.Max(0.1f, _configGlideDuration));
@@ -775,7 +775,7 @@ namespace CosmicShore.Gameplay
 
             // TryGetLocalCrystal rather than the CrystalTransform property: this reads once per
             // frame, and the out-parameter form says "there is no crystal" without a second walk.
-            if (config.lavaLampAimAtCrystal && _cellData && _cellData.TryGetLocalCrystal(out var crystal) && crystal)
+            if (config.LavaLampAimAtCrystal && _cellData && _cellData.TryGetLocalCrystal(out var crystal) && crystal)
                 return crystal.transform.position;
 
             return framingCenter;

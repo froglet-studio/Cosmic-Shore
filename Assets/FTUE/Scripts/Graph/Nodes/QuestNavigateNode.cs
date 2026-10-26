@@ -32,7 +32,8 @@ namespace CosmicShore.Core
         public override string EditorSummary => $"→ {target}";
 
         [Tooltip("Menu destination to navigate to.")]
-        public QuestNavTarget target = QuestNavTarget.ArcadeModal;
+        [SerializeField] QuestNavTarget target = QuestNavTarget.ArcadeModal;
+        public QuestNavTarget Target => target;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

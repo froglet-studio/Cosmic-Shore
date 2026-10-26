@@ -273,6 +273,11 @@ Switchback is **not** in `ServerPlayerVesselInitializerWithAI`'s seek-players se
 steering hook is correct here — unlike Rampage and Salvo, whose objective IS a crystal and whose
 AI must keep the platform's crystal seeking.
 
+> **Retired 2026-10-26 (Yash):** *"while playing any racing game mode, AI should not go for crystals. It should only
+> focus on waypoints. If the crystals are the waypoints, then go for crystals."* No gate race detours for a crystal now:
+> `GateRaceController.AIDetoursForCrystals` is false in code, so the scene's `aiCrystalDetourSlack` is read only by a
+> mode that opts in (none does). Test: `RaceAIWaypointsOnlyTests`. The paragraph below is the history.
+
 **But the hook still disarms the blast, so the AI gets a crystal detour.** Installing an external
 target provider *replaces* `AIPilot`'s own crystal seeking outright — the trap The Bends records —
 and a crystal is the Dolphin's only blast trigger, so a racing AI would never once fire the

@@ -206,6 +206,20 @@ namespace CosmicShore.Gameplay
         private bool   _joining;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
+
+        // Block 5 step 6: the party roster moved since our last publish. Set by PartyMembers' own change
+        // events (main thread: every mutation of that list runs there) and drained in Update, which only
+        // gets that far with the lobby mutex free. A flag, not an inline publish: the roster moves inside
+        // RefreshAsync and the member scans, which already hold the mutex the publish waits on.
+        private bool   _rosterMovedSincePublish;
+        private ScriptableListPartyPlayerData _rosterList;
+
+        // Block 5 step 7: two absent reads before a player leaves a list (AbsenceStrikes). The online
+        // list's strikes live here; the party list's live in PartyMemberService. The departure sets are
+        // per-diff scratch, filled from each service's push.
+        private readonly AbsenceStrikes   _onlineAbsences   = new();
+        private readonly HashSet<string>  _onlineDepartures = new();
+        private readonly HashSet<string>  _partyDepartures  = new();
         private bool   _partyLeaveSubscribed;
         private bool   _handlingDefiniteSessionGone;
         private float  _rateLimitBackoffUntil;
@@ -470,6 +484,41 @@ namespace CosmicShore.Gameplay
 
             ExpireOutgoingInvites();
 
+            // Block 5: the party session pushed a roster change (a join, a leave, a property). Sync
+            // from its Players now instead of on the next poll tick; consumed only once the mutex
+            // is free, so a busy frame leaves the flag set for the next one.
+            if (_partySessionService.ActiveSession != null && _partySessionService.ConsumeRosterChanged())
+            {
+                SyncPartyRosterFromPushAsync().Forget();
+                return;
+            }
+
+            // Block 5 step 5: the presence lobby's own pushes. Leaving it to the accept/leave flow
+            // while a party transition owns the session refs (the flags stay set until it ends).
+            bool transitioning = PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning;
+            if (!transitioning && _lobbyService.ConsumeMembershipLost())
+            {
+                // UGS removed us from the lobby or deleted it: the fact itself, not the three failed
+                // reads the watchdog infers it from, so rejoin now.
+                HandlePresenceMembershipLost();
+                return;
+            }
+            if (_rosterMovedSincePublish)
+            {
+                // Block 5 step 6 (the August work's 111676ba22): our party size reaches peers now, not on
+                // the next good poll. PublishPartyStateIfChangedAsync skips the write if nothing moved.
+                _rosterMovedSincePublish = false;
+                PublishPresenceImmediateAsync().Forget();
+                return;
+            }
+            if (!transitioning && _lobbyService.ConsumeRosterDirty())
+            {
+                // Someone arrived, left or changed status. The SDK already patched the lobby we hold,
+                // so this refresh reads nothing - menu or match alike, it is an in-memory diff.
+                RefreshAsync(fetchFromServer: false).Forget();
+                return;
+            }
+
             if (!IsOnMenuScene())
             {
                 if (Time.unscaledTime < _nextInGameRefreshAllowed) return;
@@ -498,6 +547,7 @@ namespace CosmicShore.Gameplay
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
+            UnsubscribeFromRosterChanges();
             UnsubscribeFromPartySessionEvents();
 
             if (bootStatusRetryRequestedEvent != null)
@@ -603,6 +653,7 @@ namespace CosmicShore.Gameplay
             {
                 SubscribeToProfileChanges();
                 SubscribeToGameLaunch();
+                SubscribeToRosterChanges();
                 SubscribeToPartySessionEvents();
 
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
@@ -1454,7 +1505,13 @@ namespace CosmicShore.Gameplay
         // ║  Refresh Loop                                                     ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        private async UniTaskVoid RefreshAsync()
+        /// <param name="fetchFromServer">
+        /// False on a push tick (Block 5 step 5): the presence lobby pushed a change the SDK has already
+        /// applied, so the tick re-reads what we hold with no GET, no converge query and no party poll,
+        /// and neither clears nor feeds the error watchdog - that measures the connection, which only a
+        /// read exercises (the August work's 4022675284).
+        /// </param>
+        private async UniTaskVoid RefreshAsync(bool fetchFromServer = true)
         {
             if (_lobbyService.ActiveLobby == null) return;
 
@@ -1475,72 +1532,99 @@ namespace CosmicShore.Gameplay
             if (!await _lobbyMutex.WaitAsync(0))
                 return;
 
+            if (!fetchFromServer)
+                UgsRequestTelemetry.Count(UgsRequestCounter.PresencePush);
+
             bool shouldReconnect = false;
             try
             {
-                // B31: one lobby read per tick. When the party session is due its read, this tick
-                // skips the presence read and works from the presence lobby as last read; the two
-                // back to back in one second was a 429 on every party read.
-                if (!PartyReadDueThisTick())
-                    await _lobbyService.RefreshAsync();
-
-                // Periodic self-heal: if a simultaneous-create split left us in our
-                // own presence lobby while a peer sits in theirs, converge everyone
-                // onto the canonical (smallest-id) lobby so discovery and invites
-                // work regardless of who started when.  Throttled well under the UGS
-                // query rate limit.  Presence lobby is lobby-only - this never
-                // touches NetworkManager / Relay / vessels.  Runs inside the lobby
-                // mutex (held for this refresh cycle) so the rejoin can't race a
-                // concurrent lobby write.
-                //
-                // Runs even while an invite is outstanding or a party has formed:
-                // the rejoin is state-preserving (BuildLivePresenceProperties via
-                // LivePropertySource re-publishes invite_payloads / joined_party /
-                // matchName), so migrating mid-handshake no longer drops in-flight
-                // invites. The old pause froze lobby splits exactly when a 3rd
-                // player was being invited into an existing party - the B4 failure
-                // (invite never delivered, partied rows vanish). See
-                // Docs/PresenceSystem/BUGS.md B4 and INVITE_ENHANCEMENTS.md Task 4.
-                if (Time.unscaledTime >= _nextConvergeAllowed)
+                // ── READ + DIFF ── (Block 5 step 2, from the August presence work's 791c6d0456)
+                // In its own try, so the SDK's stale-index fault (Benign; it voids 12-43% of reads in
+                // MPPM, mostly at startup) is absorbed HERE and no longer unwinds past the party sync
+                // and our own publish below: "my party size reaches my peers" stopped depending on a
+                // read we do not control. Every other class propagates to the outer catch unchanged.
+                bool readVoided = false;
+                try
                 {
-                    _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
-                    await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
+                    // B31: one lobby read per tick. When the party session is due its read, this tick
+                    // skips the presence read and works from the presence lobby as last read; the two
+                    // back to back in one second was a 429 on every party read.
+                    bool presenceRead = fetchFromServer && !PartyReadDueThisTick();
+                    if (presenceRead)
+                        await _lobbyService.RefreshAsync();
+
+                    // Periodic self-heal: if a simultaneous-create split left us in our
+                    // own presence lobby while a peer sits in theirs, converge everyone
+                    // onto the canonical (smallest-id) lobby so discovery and invites
+                    // work regardless of who started when.  Throttled well under the UGS
+                    // query rate limit.  Presence lobby is lobby-only - this never
+                    // touches NetworkManager / Relay / vessels.  Runs inside the lobby
+                    // mutex (held for this refresh cycle) so the rejoin can't race a
+                    // concurrent lobby write.
+                    //
+                    // Runs even while an invite is outstanding or a party has formed:
+                    // the rejoin is state-preserving (BuildLivePresenceProperties via
+                    // LivePropertySource re-publishes invite_payloads / joined_party /
+                    // matchName), so migrating mid-handshake no longer drops in-flight
+                    // invites. The old pause froze lobby splits exactly when a 3rd
+                    // player was being invited into an existing party - the B4 failure
+                    // (invite never delivered, partied rows vanish). See
+                    // Docs/PresenceSystem/BUGS.md B4 and INVITE_ENHANCEMENTS.md Task 4.
+                    // Fetch ticks only: the converge is a QuerySessions call, and a burst of pushes
+                    // must not become a burst of queries.
+                    if (fetchFromServer && Time.unscaledTime >= _nextConvergeAllowed)
+                    {
+                        _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
+                        await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
+                    }
+
+                    // Diff-based update - never Clear() + re-Add() (would flicker UI). Only a tick that
+                    // read the lobby from the server counts toward a removal (Block 5 step 7).
+                    if (connectionData.OnlinePlayers != null)
+                        RefreshOnlinePlayersDiff(serverRead: presenceRead);
+
+                    // Scan composite invite_payloads for lines targeting us - and notice when the
+                    // line behind the invite we last surfaced is GONE (see ForgetWithdrawnInvite).
+                    bool lastHostStillInviting = false;
+                    foreach (var p in _lobbyService.ActiveLobby.Players)
+                    {
+                        if (p.Id == connectionData.LocalPlayerId) continue;
+                        if (!TryFindIncomingInvite(p, out var invite)) continue;
+                        if (_lastFiredInvite.HasValue && _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
+                            lastHostStillInviting = true;
+                        TryRaiseIncomingInvite(invite);
+                    }
+                    ForgetWithdrawnInvite(lastHostStillInviting);
+
+                    // ── Presence-lobby party-join scan (host only) ──────────────
+                    // Clients advertise their party join via JOINED_PARTY_KEY so we
+                    // can detect them even when the party-session Players list is
+                    // still stale. This is the authoritative fast path for the
+                    // sender's arcade lobby list.
+                    if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
+                        ScanPresenceForJoinedPartyMembers();
+                }
+                catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Benign)
+                {
+                    // Block 5 step 1: counted, so a test log says how many reads were voided (it was an
+                    // empty branch, and a voided tick looked exactly like a healthy one).
+                    UgsRequestTelemetry.Count(UgsRequestCounter.Benign);
+                    readVoided = true;
                 }
 
-                // Diff-based update - never Clear() + re-Add() (would flicker UI).
-                if (connectionData.OnlinePlayers != null)
-                    RefreshOnlinePlayersDiff();
-
-                // Scan composite invite_payloads for lines targeting us - and notice when the
-                // line behind the invite we last surfaced is GONE (see ForgetWithdrawnInvite).
-                bool lastHostStillInviting = false;
-                foreach (var p in _lobbyService.ActiveLobby.Players)
-                {
-                    if (p.Id == connectionData.LocalPlayerId) continue;
-                    if (!TryFindIncomingInvite(p, out var invite)) continue;
-                    if (_lastFiredInvite.HasValue && _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
-                        lastHostStillInviting = true;
-                    TryRaiseIncomingInvite(invite);
-                }
-                ForgetWithdrawnInvite(lastHostStillInviting);
-
-                // ── Presence-lobby party-join scan (host only) ──────────────
-                // Clients advertise their party join via JOINED_PARTY_KEY so we
-                // can detect them even when the party-session Players list is
-                // still stale. This is the authoritative fast path for the
-                // sender's arcade lobby list.
-                if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
-                    ScanPresenceForJoinedPartyMembers();
+                // ── PARTY SYNC + PUBLISH ── run whether or not the read above was voided.
 
                 // A SPECTATOR sits in somebody else's session to watch it - the pilots in that
                 // session are not its party, so the member sync stands down (it would otherwise
                 // fill PartyMembers with the whole match and publish "IN PARTY 4/4" for a viewer).
-                if (_partySessionService.ActiveSession != null && !connectionData.IsSpectating)
+                // Fetch ticks only: the party session is another lobby, with its own push (step 4).
+                if (fetchFromServer && _partySessionService.ActiveSession != null && !connectionData.IsSpectating)
                     await RefreshPartyMembersAsync();
 
                 await PublishPartyStateIfChangedAsync();
 
-                _consecutiveRefreshErrors = 0;
+                // A voided read is no evidence the connection is healthy, and a push tick read nothing.
+                if (fetchFromServer && !readVoided) _consecutiveRefreshErrors = 0;
             }
             catch (Exception e)
             {
@@ -1553,8 +1637,10 @@ namespace CosmicShore.Gameplay
                 {
                     // SDK stale-index noise (the LobbyPatcher ArgumentOutOfRangeException and the
                     // SessionError.Unknown family it also surfaces through, Docs/PresenceSystem/BUGS.md
-                    // B1 / B6) self-corrects on the next refresh tick. Intentional: no log, no counter
-                    // increment, no state change.
+                    // B1 / B6) self-corrects on the next refresh tick. The read's own catch above takes
+                    // the read's; this one is the party sync or the publish. No log and no state change,
+                    // but counted (Block 5 step 1).
+                    UgsRequestTelemetry.Count(UgsRequestCounter.Benign);
                 }
                 else if (failure == UgsFailureClass.RateLimited)
                 {
@@ -1584,6 +1670,10 @@ namespace CosmicShore.Gameplay
                         return;
                     }
 
+                    // A push tick read nothing, so its fault (a publish) says nothing about the
+                    // connection: the next fetch tick is the one that counts.
+                    if (!fetchFromServer) return;
+
                     _consecutiveRefreshErrors++;
                     if (PresenceErrorForcesRejoin(failure, _consecutiveRefreshErrors))
                     {
@@ -1607,30 +1697,49 @@ namespace CosmicShore.Gameplay
             }
 
             if (shouldReconnect)
+                await RejoinPresenceAfterLossAsync();
+        }
+
+        /// <summary>
+        /// Block 5 step 5: the presence lobby removed us or was deleted (RemovedFromSession / Deleted
+        /// pushed). The same recovery the refresh watchdog runs after its consecutive errors, started
+        /// at once because the service stated the fact.
+        /// </summary>
+        private void HandlePresenceMembershipLost()
+        {
+            CSDebug.LogWarning("[HostConnectionService] The presence lobby removed us or was deleted - rejoining at once");
+            UgsRequestTelemetry.Count(UgsRequestCounter.PresenceForceReset);
+            _consecutiveRefreshErrors = 0;
+            _lobbyService.ForceReset();
+            _stateMachine.TryTransition(PartyState.Reconnecting);
+            RejoinPresenceAfterLossAsync().Forget();
+        }
+
+        /// <summary>Rejoins the presence lobby after it was lost (the watchdog's or a pushed loss).</summary>
+        private async UniTask RejoinPresenceAfterLossAsync()
+        {
+            // Surface the failure so any subscribed UI (boot status panel,
+            // in-menu reconnect banner) can show "Connection lost".  We do
+            // NOT call EnsurePartySessionAsync from this background
+            // loop - that path would shut down NetworkManager and respawn
+            // every menu vessel.  Relay re-creation is driven by an
+            // explicit user action (retry button) via the boot-status
+            // SOAP event → HandleBootStatusRetryRequested → EnsurePartySessionAsync,
+            // which keeps the user-visible recovery in one place.
+            _eventBus.RaiseHostConnectionLost();
+
+            try { await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers); }
+            catch (Exception e)
             {
-                // Surface the failure so any subscribed UI (boot status panel,
-                // in-menu reconnect banner) can show "Connection lost".  We do
-                // NOT call EnsurePartySessionAsync from this background
-                // loop - that path would shut down NetworkManager and respawn
-                // every menu vessel.  Relay re-creation is driven by an
-                // explicit user action (retry button) via the boot-status
-                // SOAP event → HandleBootStatusRetryRequested → EnsurePartySessionAsync,
-                // which keeps the user-visible recovery in one place.
-                _eventBus.RaiseHostConnectionLost();
+                CSDebug.LogWarning($"[HostConnectionService] Presence lobby rejoin threw ({e.GetType().Name}): {e.Message}");
+            }
 
-                try { await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers); }
-                catch (Exception e)
-                {
-                    CSDebug.LogWarning($"[HostConnectionService] Presence lobby rejoin threw ({e.GetType().Name}): {e.Message}");
-                }
-
-                if (_lobbyService.ActiveLobby == null)
-                    SchedulePresenceRejoin();
-                else
-                {
-                    ApplyPostLobbyJoinState();
-                    LeaveReconnecting();
-                }
+            if (_lobbyService.ActiveLobby == null)
+                SchedulePresenceRejoin();
+            else
+            {
+                ApplyPostLobbyJoinState();
+                LeaveReconnecting();
             }
         }
 
@@ -1868,9 +1977,10 @@ namespace CosmicShore.Gameplay
             _scheduler.Boost();
         }
 
-        private void RefreshOnlinePlayersDiff()
+        private void RefreshOnlinePlayersDiff(bool serverRead)
         {
             var freshPlayerIds = new HashSet<string>();
+            _lobbyService.TakeDepartures(_onlineDepartures);
 
             foreach (var p in _lobbyService.ActiveLobby.Players)
             {
@@ -1911,9 +2021,21 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // Block 5 step 7 (the August presence work's c9c6db1772): a player missing from one read is
+            // not gone. A short read is the SDK's stale-index fault, a read landing mid-change, or the
+            // converge having just swapped us into a lobby whose roster has not filled; removing on it
+            // emptied the online panel and refilled it a tick later. Removal takes
+            // AbsenceStrikes.ReadsBeforeRemoval consecutive absent server reads, or one when the lobby's
+            // push said the player left.
             for (int i = connectionData.OnlinePlayers.Count - 1; i >= 0; i--)
             {
-                if (!freshPlayerIds.Contains(connectionData.OnlinePlayers[i].PlayerId))
+                string id = connectionData.OnlinePlayers[i].PlayerId;
+                if (freshPlayerIds.Contains(id))
+                {
+                    _onlineAbsences.Seen(id);
+                    continue;
+                }
+                if (_onlineAbsences.Absent(id, _onlineDepartures.Contains(id), serverRead))
                     connectionData.OnlinePlayers.RemoveAt(i);
             }
 
@@ -1923,17 +2045,26 @@ namespace CosmicShore.Gameplay
             List<string> departed = null;
             foreach (var targetId in _inviteService.OutgoingTargets)
             {
-                if (!freshPlayerIds.Contains(targetId))
-                {
-                    departed ??= new List<string>();
-                    departed.Add(targetId);
-                }
+                if (freshPlayerIds.Contains(targetId)) continue;
+                // The same rule, read from the list rather than the strikes (the loop above forgets a
+                // player's strikes as it removes them): absent now AND no longer listed means the
+                // removal was served. A target never listed at all clears at once, as before.
+                if (ContainsOnlinePlayer(targetId)) continue;
+                departed ??= new List<string>();
+                departed.Add(targetId);
             }
             if (departed != null)
             {
                 foreach (var id in departed)
                     _ = ClearOutgoingInviteIfPresentAsync(id, "presence-leave");
             }
+        }
+
+        private bool ContainsOnlinePlayer(string playerId)
+        {
+            foreach (var p in connectionData.OnlinePlayers)
+                if (p.PlayerId == playerId) return true;
+            return false;
         }
 
         private PartyPlayerData ReadOnlinePlayerData(IReadOnlyPlayer p)
@@ -2029,6 +2160,36 @@ namespace CosmicShore.Gameplay
             && Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime >= SESSION_CREATION_GRACE_PERIOD_SECONDS
             && _scheduler.IsPartySessionPollDue(Time.unscaledTime);
 
+        /// <summary>
+        /// Block 5 step 4: the party session pushed a roster change. Sync the members from its Players
+        /// (the SDK applied the change before raising it, so no read is needed) and republish our own
+        /// party state at once, under the lobby mutex as every member sync runs. Update calls this only
+        /// with the mutex free, so the try-acquire succeeds; a mid-transition push is left to the
+        /// accept/leave flow that owns the session refs.
+        /// </summary>
+        private async UniTaskVoid SyncPartyRosterFromPushAsync()
+        {
+            if (connectionData.IsSpectating) return;
+            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning) return;
+            if (!await _lobbyMutex.WaitAsync(0)) return;
+            try
+            {
+                UgsRequestTelemetry.Count(UgsRequestCounter.PartyRosterPush);
+                await RefreshPartyMembersAsync();
+                if (_lobbyService.ActiveLobby != null)
+                    await PublishPartyStateIfChangedAsync();
+            }
+            catch (Exception e)
+            {
+                // The next poll tick syncs again; a push is only ever a faster path.
+                CSDebug.LogWarning($"[HostConnectionService] Party roster push sync failed ({e.GetType().Name}): {e.Message}");
+            }
+            finally
+            {
+                _lobbyMutex.Release();
+            }
+        }
+
         private async UniTask RefreshPartyMembersAsync(bool bypassGraceGate = false)
         {
             var tickSession = _partySessionService.ActiveSession;
@@ -2052,7 +2213,15 @@ namespace CosmicShore.Gameplay
             // reads here skipped its presence read (PartyReadDueThisTick), and LobbyReadPacer spaces
             // this read from any other.
             bool poll = bypassGraceGate || _scheduler.TryTakePartySessionPoll(Time.unscaledTime, _scheduler.IsBoosted);
-            try { if (poll) await _partySessionService.RefreshAsync(); }
+            bool serverRead = false;   // Block 5 step 7: only a GET that landed counts toward removing a member
+            try
+            {
+                if (poll)
+                {
+                    await _partySessionService.RefreshAsync();
+                    serverRead = true;
+                }
+            }
             catch (Exception e)
             {
                 // [stale-tick] The session this tick was polling is no longer the
@@ -2086,11 +2255,13 @@ namespace CosmicShore.Gameplay
                 // harmless SDK noise, self-corrects on the next tick; silence to match.
                 // See Docs/PresenceSystem/BUGS.md B1 / B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
                 // Session 1 finding #2.
+                // Block 5: counted, and NOT a return - the roster below syncs from ISession.Players as
+                // the SDK last applied it, which a voided read leaves intact. It used to skip the sync.
                 if (failure == UgsFailureClass.Benign)
-                    return;
+                    UgsRequestTelemetry.Count(UgsRequestCounter.Benign);
 
                 // [rate-limit] UGS throttled us - back off, keep ActiveSession.
-                if (failure == UgsFailureClass.RateLimited)
+                else if (failure == UgsFailureClass.RateLimited)
                 {
                     UgsRequestTelemetry.Count(UgsRequestCounter.RateLimited); // see the presence refresh's catch
                     CSDebug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
@@ -2103,7 +2274,7 @@ namespace CosmicShore.Gameplay
                 // showing a stale "in party" state. Auto-recover into a fresh solo
                 // session so the user is back in a functional menu with no manual
                 // action. See HandleDefiniteSessionGoneAsync.
-                if (failure == UgsFailureClass.Gone)
+                else if (failure == UgsFailureClass.Gone)
                 {
                     CSDebug.LogWarning(
                         $"[HostConnectionService] Party session gone server-side " +
@@ -2120,10 +2291,13 @@ namespace CosmicShore.Gameplay
                 // Session lifetime is owned by explicit user paths (LeavePartyAsync,
                 // kick, NM shutdown, user-tapped boot-status retry) and the
                 // [definite] auto-recovery above - not by background refresh ticks.
-                CSDebug.LogWarning(
-                    $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} - keeping session, will retry next tick");
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-                return;
+                else
+                {
+                    CSDebug.LogWarning(
+                        $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} - keeping session, will retry next tick");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    return;
+                }
             }
 
             // Resolve an authoritative local id; if we can't (signed out), skip this
@@ -2132,8 +2306,9 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(localId))
                 return;
 
+            _partySessionService.TakeDepartures(_partyDepartures);
             var joinedPlayerIds = _memberService.SyncFromSession(
-                _partySessionService.ActiveSession, localId);
+                _partySessionService.ActiveSession, localId, _partyDepartures, serverRead);
 
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join", callerHoldsLobbyMutex: true);   // RefreshPartyMembersAsync always runs under the lobby mutex
@@ -2323,7 +2498,13 @@ namespace CosmicShore.Gameplay
             connectionData.IsConnected         = true;
             connectionData.IsPresenceLobbyHost = lobby.IsHost;
 
-            _memberService.SeedLocalPlayer(clearFirst: true);
+            // Block 5 step 3 (RC-8, the August presence work's 8a14679585): a background presence rejoin
+            // (the refresh watchdog's, the backoff retry's, a converge migration) used to clear the
+            // whole party roster here while the party session, NetworkManager and the members were all
+            // still alive - ScriptableList.Clear raises no per-item OnItemRemoved, so the arcade lobby
+            // blanked its slots. Clear only with no live session; on the first join there is none yet,
+            // so boot is unchanged. SeedLocalPlayer is idempotent, so not clearing adds no second row.
+            _memberService.SeedLocalPlayer(clearFirst: _partySessionService.ActiveSession == null);
 
             _eventBus.RaiseHostConnectionEstablished();
         }
@@ -2695,6 +2876,29 @@ namespace CosmicShore.Gameplay
         }
 
         private void HandleGameLaunch() => PublishPresenceImmediateAsync().Forget();
+
+        /// <summary>
+        /// Block 5 step 6: republish when the party roster moves. Subscribed once; the list is a project
+        /// asset that outlives this service, so OnDestroy unsubscribes (a leaked handler would fire on a
+        /// destroyed component for the rest of the session).
+        /// </summary>
+        private void SubscribeToRosterChanges()
+        {
+            if (_rosterList != null || connectionData == null || connectionData.PartyMembers == null) return;
+            _rosterList = connectionData.PartyMembers;
+            _rosterList.OnItemCountChanged += MarkRosterMoved;
+            _rosterList.OnCleared          += MarkRosterMoved;
+        }
+
+        private void UnsubscribeFromRosterChanges()
+        {
+            if (_rosterList == null) return;
+            _rosterList.OnItemCountChanged -= MarkRosterMoved;
+            _rosterList.OnCleared          -= MarkRosterMoved;
+            _rosterList = null;
+        }
+
+        private void MarkRosterMoved() => _rosterMovedSincePublish = true;
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Helpers                                                          ║

@@ -86,6 +86,20 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(variant.ClearWayRocket, "the variant must fire the rocket at the stations");
             Assert.AreEqual("SkyBurstGunAction", variant.ClearWayRocket.name);
         }
+
+        [Test]
+        public void TheBreakwaterVariant_BoostsOnTheLegs_AndLetsGoBeforeEachStation()
+        {
+            // Tools/Build/switchback_dolphin_sim.py --mode Breakwater (2026-10-26): with the base bands (12 deg, stick 0.35)
+            // an AI Sparrow boosted 8-18% of a lap and took 110-131 s; with these, 41-45% and 79-82 s, no station clipped.
+            // Under a 0.9 s release runway the boosted hull reaches the station too fast to line up on its 18 u eye
+            // and clips the danger weave.
+            var variant = Resources.Load<HoldBoostAIPolicySO>("AIBoostPolicies/SparrowAIBoostPolicy_Breakwater");
+            Assert.IsNotNull(variant, "Breakwater's Sparrow drive variant is missing");
+            Assert.GreaterOrEqual(variant.AlignDegrees, 30f, "the boost must start on a leg, not only dead on the station");
+            Assert.GreaterOrEqual(variant.ReleaseRunwaySeconds, 1f, "let go early enough to line up on the eye");
+            Assert.Greater(variant.EngageRunwaySeconds, variant.ReleaseRunwaySeconds, "engage needs more runway than release");
+        }
     }
 }
 #endif

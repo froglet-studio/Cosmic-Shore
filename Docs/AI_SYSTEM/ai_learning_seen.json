@@ -1,6 +1,6 @@
 {
  "note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: when a learner changes, every flight is learned from again. Delete a line to relearn it. 'waiting' holds the flights no learner read yet (mode on hold, hull with no learner) and why: each is learned from once its reason goes away. A flight whose learner failed is in neither, so the next sweep tries it again.",
- "learners": "86a1ea5b48d3f017",
+ "learners": "e335b402a2411517",
  "flights": [
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Squirrel_20261016_110728.json",
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Squirrel_20261016_110924.json",
@@ -16,12 +16,14 @@
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Urchin_20261016_135105.json",
   "BugLedger/shared/reports/belac/flights/flight_SkimRace_Squirrel_20261019_102720.json",
   "BugLedger/shared/reports/belac/flights/flight_Switchback_Dolphin_20261019_102537.json",
+  "BugLedger/shared/reports/gradi/flights/flight_Cleave_Rhino_20261025_205000.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261021_074436.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_184626.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_213939.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_220619.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_222258.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_223711.json",
+  "BugLedger/shared/reports/gradi/flights/flight_Tandava_Squirrel_20261025_184835.json",
   "BugLedger/shared/reports/owner/flights/flight_Bloomrush_Manta_20261020_154841.json",
   "BugLedger/shared/reports/owner/flights/flight_Bloomrush_Manta_20261020_155806.json",
   "BugLedger/shared/reports/owner/flights/flight_Bloomrush_Manta_20261020_160346.json",
@@ -78,6 +80,8 @@
   "BugLedger/shared/reports/yskha/flights/flight_Bloomrush_Manta_20261026_045237.json",
   "BugLedger/shared/reports/yskha/flights/flight_Breakwater_Sparrow_20261026_032312.json",
   "BugLedger/shared/reports/yskha/flights/flight_Breakwater_Sparrow_20261026_033546.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Breakwater_Sparrow_20261026_064017.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Breakwater_Sparrow_20261026_064442.json",
   "BugLedger/shared/reports/yskha/flights/flight_Regatta_Scarab_20261025_215307.json",
   "BugLedger/shared/reports/yskha/flights/flight_Regatta_Scarab_20261025_215451.json",
   "BugLedger/shared/reports/yskha/flights/flight_Regatta_Scarab_20261025_215642.json",
@@ -127,6 +131,7 @@
   "BugLedger/shared/reports/yskha/flights/flight_Regatta_Stoat_20261026_001356.json",
   "BugLedger/shared/reports/yskha/flights/flight_Regatta_Urchin_20261017_031620.json",
   "BugLedger/shared/reports/yskha/flights/flight_Regatta_Urchin_20261017_031801.json",
+  "BugLedger/shared/reports/yskha/flights/flight_SkimRace_Squirrel_20261026_063140.json",
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_003155.json",
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_003338.json",
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_003519.json",
@@ -139,7 +144,10 @@
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_020302.json",
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040438.json",
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040647.json",
-  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040920.json"
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040920.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_052330.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_052519.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_052710.json"
  ],
  "waiting": {
   "BugLedger/shared/reports/belac/flights/flight_Waystation_Butterfly_20261020_164612.json": "report: its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller (ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet",
@@ -164,12 +172,22 @@
   "BugLedger/shared/reports/owner/flights/flight_WrasseRun_Wrasse_20261022_230653.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
   "BugLedger/shared/reports/owner/flights/flight_WrasseRun_Wrasse_20261022_231022.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
   "BugLedger/shared/reports/owner/flights/flight_WrasseRun_Wrasse_20261022_231355.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+  "BugLedger/shared/reports/yskha/flights/flight_GrizzlyTime_Grizzly_20261026_062737.json": "report: its AI bombs through GrizzlyTriggerBombConfigSO's autopilot fields, which do not load per mode, and jtgjones's grizzly-v3 is reworking the bomb triggers (15 unmerged commits): learn it once that lands",
   "BugLedger/shared/reports/yskha/flights/flight_ScarabScramble_Scarab_20261026_030856.json": "report: ScarabAIBoostPolicy is switched off in ScarabScramble (disabledInModes)",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_072749.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073008.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073156.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073344.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
   "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073659.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
-  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073849.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)"
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261025_073849.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_060823.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061008.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061207.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061658.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_Warpline_Stoat_20261026_061906.json": "hold: the Stoat's AI waits for Garrett's configuration (issue 1198)",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_054731.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_055048.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_055458.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
+  "BugLedger/shared/reports/yskha/flights/flight_WrasseRun_Wrasse_20261026_055603.json": "report: its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy"
  }
 }

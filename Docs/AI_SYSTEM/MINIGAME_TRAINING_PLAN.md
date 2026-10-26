@@ -42,7 +42,7 @@ From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one who
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
 | Urchin | Skein | gate race on rails | none yet |
-| Sparrow | Breakwater | gate race through breakwaters | 5 hand-flown (I1, I4). The AI stalls after a few rings (ticket T-20261015-cb8f) |
+| Sparrow | Breakwater | gate race through breakwaters | 7 hand-flown (I1, I4). The steering fix and the rocket that clears the way are in, the rocket's range and aim learned from Yash's shots (§6) |
 | Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
 | Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
 | Serpent | **none** | - | no racing minigame of its own yet: one has to be made or chosen |
@@ -170,6 +170,39 @@ the mode's variant (MIN_FINISHED still applies, so I3, with no races, flies the 
 `RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_ElseTheModes`. Not run in Unity
 (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 
+### 3.7 Each intensity learns from its current course; the mode variant from every intensity (2026-10-26)
+
+Two holes in §3.6's per-intensity learning, closed in `learn_drives_from_flights.py` (`AUTO_LEARNING.md` §7):
+- **A retuned ladder is a different race.** The newest flight's mouth radius now decides an intensity's course
+  (`on_current_course`), and races on the course it replaced are left out. Switchback's three I4 races on the 4.3 u
+  mouths no longer teach I4; the one on the new 20 u course does not reach three, so `_I4` stays as §3.6 wrote it
+  until it does. (Offline it is still the best I4 drive the learner has made: 144.7 s on the new course.)
+- **The mode variant is what I3 flies**, and learned from the three fastest races it was I1's numbers again. In a
+  `PER_INTENSITY_MODES` mode it now learns from the fastest race of each intensity (`fastest_each_intensity`): spend at
+  0.92, a 24.9 deg cone, 0.84 s of runway. On the I4 course that takes 197.8 s against 231.6 s for I1's numbers. No
+  other mode's learning changes (Regatta's, Bloomrush's and Breakwater's numbers are identical before and after).
+
+The offline model (`switchback_dolphin_sim.py`, Regatta steering, the charge drive; seconds summed over the courses,
+an unfinished race counted as 300 s plus 10 per ring left; the person's sum in brackets):
+
+| Drive | I1, 6 courses (501) | I2, 5 old-ladder courses (618) | I4, the new course (120) |
+|---|---:|---:|---:|
+| One Switchback variant (before §3.6) | 488.8 | 930.1 | 163.0 |
+| I1's numbers everywhere | 464.6 | 900.8 | 231.6 |
+| **Each intensity's own** (`_I1`, `_I2`, `_I4`) | **464.6** | **834.0** | **144.7** |
+| The mode variant learned from every intensity (I3) | 491.6 | 1001.7 | 197.8 |
+
+**What still costs the Dolphin its I2 and I4 races** is the discharge carried into the mouth: the AI misses 64 of
+I2's 28 u mouths across five races and 12 of I4's in one, where a Dolphin that never discharges misses none (and is
+twice as slow at I1). Most misses come at cruise speed, after an earlier overshoot and break-off: the speed starts the
+cascade, the steering after it finishes it. Two leads, offline only, for when the new-ladder races are in:
+- the I4 numbers (spend at 0.50, a smaller and earlier pulse) took 560.8 s at I2 against the I2 variant's 834.0;
+- letting each discharge run out instead of drifting again at its peak (the drift freezes the peak speed) took I2 to
+  548.5 s with no miss, and the I4 course to 126.0 s. The game always re-drifts at the peak
+  (`ChargeBoostAIPolicySO`), so this would be a code change; the model's `"peak": False` what-if measures it.
+
+Neither is shipped: the next races at I2 and I4 on the new ladder decide.
+
 ## 4. The end state: Regatta rebuilt from the trained vessels
 
 Once two to four vessels race at their best in their own minigames:
@@ -195,8 +228,8 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 
 | Vessel / minigame | The ability that wins the race | AI today |
 |---|---|---|
-| **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races) |
-| Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned (§3.4); blast through the crystal detour |
+| **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races). **Boost, 2026-10-26:** on the legs, let go 1.25 s before each station (`BREAKWATER.md` "The boost"; offline 79-82 s a lap against 110-131 s, no station clipped) |
+| Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned per intensity (§3.6-3.7); no crystals: a racing AI flies the gates only (§6.1) |
 | Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
 | Stoat / Warpline | the field pair's warp | on hold for Garrett's configuration |
 | Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
@@ -204,16 +237,38 @@ pattern: one drive per hull per minigame, its numbers learned from people's race
 | Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
 | Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
 
+### 6.1 A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26)
+
+> "While playing any racing game mode, AI should not go for crystals. It should only focus on waypoints. If the
+> crystals are the waypoints, then go for crystals. [...] I figured out the AI dolphins were collecting crystals more
+> than going through the waypoints to win the race."
+
+Every gate race (Switchback, Breakwater, Headlong, Redline, Warpline, Slingshot, Skein, Waystation, Grizzly Time,
+Thresher Time, Wrasse Run) let an AI swing up to 200-220 u off its line for any crystal near its route
+(`aiCrystalDetourSlack`, serialized in each scene); only Regatta had opted out. Taking a crystal skips the approach to
+the next mouth, so in Switchback a Dolphin that took one usually missed the gate after it. Now
+`GateRaceController.AIDetoursForCrystals` is false for every gate race, in code: the AI flies the course's waypoints
+and nothing else, whatever the scene says. A mode whose race needs a crystal (one that IS a waypoint, or one the vessel
+cannot finish without) overrides it to true; none does today. The cost: an AI Dolphin no longer fires its crystal blast
+in a race. Test: `RaceAIWaypointsOnlyTests`.
+
+Modes whose crystals ARE the objective keep them: Skim Race (its crystal count ends the race), Tollway (an omni
+crystal forges the ball), The Bends, Rampage and the crystal modes. Sirocco already steers for mass, not crystals.
+
 **Breakwater's steering, first.** The AI Sparrows threaded about 1 station a minute in Yash's five races, circling 56%
 of the race: the 280 u approach point lay outside the 240 u commit radius, Switchback's defect. `BreakwaterController`
 now flies the Regatta steering too. Offline on the five courses (`switchback_dolphin_sim.py`, `SPARROW_BREAKWATER`):
 stuck on three of five and through the danger weave at 12-13 of 15 stations on the other two before; every station
 threaded through the eye after.
 
-**What the next races teach.** Tonight's Sparrow races (shooting the stations open) had not reached the ledger when
-this was written. When they do: the rocket's range and aim, and when the guns run, are measured from them the way the
-Dolphin's discharge was (`buttonEvents`: input 2 is the rocket, input 1 the guns, input 7 the boost), and written into
-the Breakwater variant. The same loop then gives each vessel above its own ability rule in its own minigame.
+**The rocket, learned from Yash's shots (2026-10-26).** His Breakwater races fired the rocket 12 times, from 138-354 u
+of the station (p10 / p90) and about 16 deg off the nose. `learn_drives_from_flights.py` now measures any policy's
+extra press the same way (`measure_presses`: the press's distance to the ring and its nose angle) and wrote them into
+`SparrowAIBoostPolicy_Breakwater`: `rocketMinRange` 138.3 (was 60), `rocketMaxRange` 353.6 (220), `rocketAimDegrees`
+15.9 (4). It also counts Breakwater's 29 rings as station 0 once and stations 1-14 twice (`ring_index`); before, the
+lead-in shifted every ring after the first lap and no Breakwater race measured. The guns stay on the timer: Yash held
+them 56-73% of a race, which is what the timer already gives. The same loop then gives each vessel above its own
+ability rule in its own minigame.
 
 ## 5. What is done, what is next
 
@@ -224,6 +279,8 @@ the Breakwater variant. The same loop then gives each vessel above its own abili
   3. The first Switchback Dolphin numbers are written (§3.4). They came from I1 and I2 on the old ladder, so the next
      races re-learn them.
   None of it has been run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+- **Done (2026-10-26, later):** a drive per intensity (§3.6), learned from each intensity's current course with the
+  mode variant from every intensity (§3.7); the Sparrow's rocket learned from Yash's shots (§6).
 - **Next:** Yash plays Switchback at each intensity, repeatedly. Nothing else: every race is relearned from within the
   hour by the AI learning sweep (`AUTO_LEARNING.md`), which also checks the AI's pace and fixes what numbers cannot.
   Then the next vessel.

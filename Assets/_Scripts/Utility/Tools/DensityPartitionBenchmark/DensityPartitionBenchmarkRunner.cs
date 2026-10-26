@@ -57,16 +57,19 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                  "consumption volume: consumeRadius (40m) + goalOrbitRadius (60m) + boid " +
                  "separation spread. 150m is a representative value - the algorithm only has " +
                  "to land within this of enemy mass for the swarm to sweep the rest.")]
-        [Min(20f)] public float groundTruthSmoothingRadius = 150f;
+        [SerializeField, Min(20f)] float groundTruthSmoothingRadius = 150f;
+        public float GroundTruthSmoothingRadius => groundTruthSmoothingRadius;
 
         [Tooltip("If true, ground truth weights each prism by Volume instead of counting 1. " +
                  "Keep false to grade against the current production semantics (count-only).")]
-        public bool groundTruthMassWeighted = false;
+        [SerializeField] bool groundTruthMassWeighted = false;
+        public bool GroundTruthMassWeighted => groundTruthMassWeighted;
 
         [Header("Run controls")]
         [Tooltip("Run a warm-up pass (results discarded) before timing the real pass. " +
                  "Reduces JIT startup bias for short scenarios.")]
-        public bool warmupPass = true;
+        [SerializeField] bool warmupPass = true;
+        public bool WarmupPass => warmupPass;
 
         [Header("Output")]
         [Tooltip("Last rendered report. Populated by RunAllAndDump(). Editor 'Copy to Clipboard' " +

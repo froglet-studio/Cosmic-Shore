@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# The gates /to-bleeding-edge runs on the merged tree before the PR: the static checks
-# bleeding-edge-guard.yml runs, every asset generator's --check, and the headless reference
-# compile (player + editor). Prints one line per check and a final verdict; exit 1 on any failure.
-# A READER script: it writes nothing into the repo.
+# The gates /ship runs on the merged tree before the PR (SKILL.md 1.5): the static checks
+# bleeding-edge-guard.yml runs, every asset generator's --check, and - only when a .NET SDK is
+# already present - the headless reference compile (player + editor). Prints one line per check and
+# a final verdict; exit 1 on any failure. A READER script: it writes nothing into the repo.
+# (Was .claude/skills/to-bleeding-edge/gates.sh until 2026-10-26, when /to-bleeding-edge folded into /ship.)
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 export DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"

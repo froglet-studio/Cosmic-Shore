@@ -69,7 +69,7 @@ isn't juicy enough.
 
 Petal flare on unlock via `OnUpgradeStateChanged` (juice in `ElementalBarsConfigSO`); ability-icon
 row only in the branch's final view-binding shape with authored sprites; unlocked-state icons;
-Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now the roll-charge pip, `SparrowHUDView.SetRollCharge`; still open: shielded turret, piercing, domain-safe). Clean up dead code
+Sparrow HUD indicators (~~roll armed~~ RETIRED 2026-10-26 — the roll-charge pip was unbound from the Time card, Garrett: "its cooldown is so low"; ~~shielded turret~~ SHIPPED 2026-10-26 — the Mass card's rounds become shielded octahedrons at Mass 5, `SparrowHUDView.SetAbilityUpgraded`; still open: piercing, domain-safe). Clean up dead code
 (`ElementPipsView`, `SparrowAnimationController` or adopt it properly, `AIGunner`,
 `ExplodableProjectile`, `StopGunsAction`, `SparrowExhaustProjectile.prefab`).
 

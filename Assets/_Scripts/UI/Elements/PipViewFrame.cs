@@ -42,7 +42,7 @@ namespace CosmicShore.UI
             if (!_graphic && !Build()) return;
 
             var style = Style();
-            float scale = Screen.height / Mathf.Max(1f, style ? style.referenceHeight : 1080f);
+            float scale = Screen.height / Mathf.Max(1f, style ? style.ReferenceHeight : 1080f);
             if (!_visible) { _graphic.gameObject.SetActive(true); _visible = true; }
             if (px == _shownPixels && Mathf.Approximately(scale, _shownScale)) return;
             _shownPixels = px;
@@ -81,7 +81,7 @@ namespace CosmicShore.UI
                 s_canvas = root.AddComponent<Canvas>();
                 s_canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 var style = Style();
-                s_canvas.sortingOrder = style ? style.sortingOrder : -10;
+                s_canvas.sortingOrder = style ? style.SortingOrder : -10;
             }
             var go = new GameObject("PipFrame", typeof(RectTransform));
             go.transform.SetParent(s_canvas.transform, false);
@@ -99,14 +99,14 @@ namespace CosmicShore.UI
         void ApplyStyle(PipFrameStyleSO style, float scale)
         {
             var theme = style ? style.theme : null;
-            var edge = UITheme.Resolve(theme, style ? style.edgeColor : UIColorToken.TextLight);
-            edge.a *= style ? style.edgeAlpha : 0.85f;
-            var chrome = UITheme.Resolve(theme, style ? style.chromeColor : UIColorToken.SurfaceDark);
-            chrome.a *= style ? style.chromeAlpha : 1f;
+            var edge = UITheme.Resolve(theme, style ? style.EdgeColor : UIColorToken.TextLight);
+            edge.a *= style ? style.EdgeAlpha : 0.85f;
+            var chrome = UITheme.Resolve(theme, style ? style.ChromeColor : UIColorToken.SurfaceDark);
+            chrome.a *= style ? style.ChromeAlpha : 1f;
             float edgeWidth = Mathf.Max(1f, UITheme.BorderWidth(theme, emphasis: false) * scale);
             float chromeWidth = Mathf.Max(1f, UITheme.BorderWidth(theme, emphasis: true) * scale);
-            float sliver = UITheme.Sliver(theme, style ? style.largeSliver : true) * scale;
-            _graphic.SetStyle(edge, edgeWidth, chrome, chromeWidth, sliver, style && style.flipSliver);
+            float sliver = UITheme.Sliver(theme, style ? style.LargeSliver : true) * scale;
+            _graphic.SetStyle(edge, edgeWidth, chrome, chromeWidth, sliver, style && style.FlipSliver);
         }
 
         static PipFrameStyleSO Style()

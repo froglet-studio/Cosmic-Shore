@@ -44,6 +44,9 @@ I1, 20 u at I4) a drive hull's policy is also learned from each intensity's own 
 `<policy>_<mode>_I<n>` (AIBoostPolicySO.ForMode(policy, mode, intensity)), started from the mode's variant. The mode-wide
 variant is learned from the fastest races, which are the easiest intensity's, and its numbers threw the I4 mouths
 (switchback_dolphin_sim.py: 232 s and 31 missed mouths on the I4 course, 148 s and 12 with the I4 races' own numbers).
+An intensity learns only from its CURRENT course (on_current_course: the newest flight's mouth radius), never from the
+course a retuned ladder replaced; the mode-wide variant, which the intensities without their own fly, learns from the
+fastest race of each intensity (fastest_each_intensity), not the easiest intensity's three.
 """
 import argparse
 import datetime
@@ -98,7 +101,13 @@ POLICY_CLASSES = {
                             "fields": {"alignDegrees": "alignDegrees", "stickBand": "stickBand",
                                        "engageRunwaySeconds": "engageRunwaySeconds", "releaseAlignDegrees": "releaseAlignDegrees",
                                        "releaseStickBand": "releaseStickBand", "releaseRunwaySeconds": "releaseRunwaySeconds",
-                                       "minHoldSeconds": "minHoldSeconds", "minRestSeconds": "minRestSeconds"}},
+                                       "minHoldSeconds": "minHoldSeconds", "minRestSeconds": "minRestSeconds"},
+                            # The "clear the way" rocket (2026-10-26, Yash: shoot the station open to race through it):
+                            # presses of the input bound to the hull's SkyBurst rocket, measured at the press against the
+                            # next ring. Read from EVERY race of the person's (rockets are rare), not only the fastest.
+                            "extra": {"verb": "rocket (clear the way)", "signal": ("press", "FireGunActionSO", "SkyBurst"),
+                                      "fields": {"rocketMinRange": "pressDistLow", "rocketMaxRange": "pressDistHigh",
+                                                 "rocketAimDegrees": "pressNoseMedian"}}},
     "PelletBoostAIPolicySO": {"verb": "pellet", "signal": ("press", "ConsumeBoostActionSO"), "drives": "ConsumeBoostActionSO",
                               "fields": {"alignDegrees": "alignDegrees", "stickBand": "stickBand",
                                          "engageRunwaySeconds": "engageRunwaySeconds",
@@ -187,12 +196,30 @@ def resolve_hull(hull):
     drives = spec.get("drives")
     if drives and not any(drives == cls for v in bound.values() for cls, _ in v):
         spec["why"] = f"its boost policy {policy} ({cls}) presses {drives}, which this hull does not bind - the drive cannot act"
+    def press_input(signal):
+        want_cls, want_name = signal[1], (signal[2] if len(signal) > 2 else "")
+        return next((ie for ie, v in sorted(bound.items()) if any(c == want_cls and want_name in n for c, n in v)), None)
+
     if spec["signal"][0] == "press":
-        want_cls = spec["signal"][1]
-        want_name = spec["signal"][2] if len(spec["signal"]) > 2 else ""
-        spec["input"] = next((ie for ie, v in sorted(bound.items())
-                              if any(cls == want_cls and want_name in name for cls, name in v)), None)
+        spec["input"] = press_input(spec["signal"])
+    if spec.get("extra"):
+        spec["extra"] = dict(spec["extra"], input=press_input(spec["extra"]["signal"]))
     return spec
+
+
+def measure_presses(flights, extra, held=False):
+    """A press verb's moment: where the next ring was when the button went down - its distance (low and high) and how
+    far it sat off the NOSE (a round leaves along the nose)."""
+    eps = []
+    for f, S in flights:
+        e, _ = verb_episodes(f, S, extra, held)
+        eps += [ep[0] for ep in e]
+    m = {"episodes": len(eps)}
+    if len(eps) >= MIN_EPISODES:
+        m["pressDistLow"] = pct([x["dist"] for x in eps], 0.1)
+        m["pressDistHigh"] = pct([x["dist"] for x in eps], 0.9)
+        m["pressNoseMedian"] = pct([x["nose"] for x in eps], 0.5)
+    return m
 
 
 def all_hulls():
@@ -279,7 +306,21 @@ RANGES = {
     "dashCooldownSeconds": (0.2, 10.0),
     "plantMinTurnDegrees": (0.0, 180.0), "plantMinDistance": (0.0, 2000.0), "releaseConeDegrees": (1.0, 90.0),
     "maxPlantSeconds": (0.2, 20.0), "slingIntervalSeconds": (0.0, 20.0),
+    "rocketMinRange": (0.0, 2000.0), "rocketMaxRange": (1.0, 2000.0), "rocketAimDegrees": (0.0, 45.0),
 }
+
+
+# Floors a learned value never goes under in one mode, each measured offline. Breakwater's Sparrow: a boosted hull that lets
+# go under 0.9 s from a station reaches it too fast to line up on the 18 u eye and clips the danger weave
+# (switchback_dolphin_sim.py --mode Breakwater, 2026-10-26); people hold the boost all race and steer it by hand.
+FLOORS = {("Sparrow", "Breakwater"): {"releaseRunwaySeconds": 1.25}}
+
+
+def apply_floors(hull, mode, learned):
+    for field, floor in FLOORS.get((hull, mode), {}).items():
+        if field in learned and learned[field] < floor:
+            learned[field] = floor
+    return learned
 
 
 def clamp(key, v):
@@ -309,6 +350,17 @@ def guid(key):
 
 # ---------------------------------------------------------------- one flight -> samples the AI's way
 
+def ring_index(k, n, target):
+    """The ring a pilot on k crossings flies at, for a course of n rings raced over target crossings
+    (GateRaceController.RingIndexFor): a lapped course loops (Regatta: 24 = 3 x 8); a course with ONE lead-in ring raced
+    1 + (n - 1) x laps times loops past it (Breakwater: 29 = 1 + 14 x 2, station 0 once); an open course is in order."""
+    if n <= 1:
+        return 0
+    if target > n and target % n != 0 and (target - 1) % (n - 1) == 0:
+        return 0 if k == 0 else 1 + (k - 1) % (n - 1)
+    return k % n
+
+
 def rings_of(f):
     """{ring index: (position, radius)} from the flight's own ringList, else the course generator's rings."""
     rl = f.get("ringList") or []
@@ -328,6 +380,23 @@ def nearest(p, flat, stride):
         if d < bd:
             best, bd = q, d
     return best
+
+
+def mouth_of(f):
+    """The course's mouth radius (the median ring radius of the flight's ringList, to 0.1 u), or None without one."""
+    radii = sorted(r[7] for r in (f.get("ringList") or []) if len(r) > 7)
+    return round(radii[len(radii) // 2], 1) if radii else None
+
+
+def on_current_course(flights):
+    """The flights flown on the newest course of their intensity: those whose mouth matches the newest flight's. A
+    retuned ladder (Switchback's I2 mouth went from 28 to 48 u and its I4 from 4.3 to 20 on 2026-10-26) is a different
+    race, so an intensity's own variant is never learned from the course it replaced. Flights without a ringList stay."""
+    if not flights:
+        return flights
+    newest = max(flights, key=lambda fs: (str(fs[0].get("date") or ""), fs[0].get("name") or ""))
+    mouth = mouth_of(newest[0])
+    return [fs for fs in flights if mouth is None or mouth_of(fs[0]) in (None, mouth)]
 
 
 def is_race(f):
@@ -363,7 +432,7 @@ def samples_of(f):
         g = lambda k, d=0.0: float(r[ix[k]]) if k in ix and ix[k] < len(r) and r[ix[k]] is not None else d
         p = (g("x"), g("y"), g("z"))
         if rings:
-            ring = rings.get(int(g("rings")) % n)
+            ring = rings.get(ring_index(int(g("rings")), n, int(f.get("raceTarget") or n)))
             if ring is None:
                 continue
             aim = ring[0]
@@ -656,16 +725,30 @@ def measure_urchin(f, S, held=False):
 
 # ---------------------------------------------------------------- learning per hull
 
-def learn_hull(hull, flights):
-    """flights: [(flight, samples)]. The person's numbers from the fastest MIN_FINISHED finished races, the AI's
-    (held) from all of them, and what would be written."""
+def fastest_each_intensity(done):
+    """Finished races, fastest first, but the fastest race of EVERY intensity before the second of any. Times are only
+    comparable on one course: ranked plainly, the easiest intensity's races always win. In a PER_INTENSITY_MODES mode the
+    mode-wide variant is what the intensities without their own fly, and learned that way it was how a person flies I1 -
+    in Switchback, a full-charge spend that misses I4's 20 u mouths (2026-10-26). Only those modes rank this way."""
+    seen, firsts, rest = set(), [], []
+    for fs in done:   # already fastest first
+        n = int(fs[0].get("intensity") or 0)
+        (rest if n in seen else firsts).append(fs)
+        seen.add(n)
+    return firsts + rest
+
+
+def learn_hull(hull, flights, each_intensity=False):
+    """flights: [(flight, samples)]. The person's numbers from the fastest MIN_FINISHED finished races (each_intensity:
+    the fastest of every intensity first, fastest_each_intensity), the AI's (held) from all of them, and what would be
+    written."""
     spec = HULLS[hull]
     done = sorted([fs for fs in flights if completed(fs[0])], key=lambda fs: fs[0].get("raceSeconds") or 1e9)
     # A race learns from its fastest MIN_FINISHED. A match without rings has no time to rank by: it learns from the
     # matches the person WON (the flight's "result", recorded since 2026-10-26) once there are MIN_FINISHED of them,
     # else from every complete one.
     if all(is_race(f) for f, _ in done):
-        used = done[:MIN_FINISHED]
+        used = (fastest_each_intensity(done) if each_intensity else done)[:MIN_FINISHED]
     else:
         won = [fs for fs in done if (fs[0].get("result") or {}).get("youWon")]
         used = won if len(won) >= MIN_FINISHED else done
@@ -697,6 +780,17 @@ def learn_hull(hull, flights):
         for field, key in spec["fields"].items():
             if person.get(key) is not None:
                 learned[field] = clamp(field, person[key])
+        extra = spec.get("extra")
+        if extra and extra.get("input") is not None:
+            mine = [(f, S) for f, S in flights]
+            pr, ai_pr = measure_presses(mine, extra), measure_presses(flights, extra, held=True)
+            person.update({"rocket " + k: v for k, v in pr.items()})
+            ai.update({"rocket " + k: v for k, v in ai_pr.items()})
+            for field, key in extra["fields"].items():
+                if pr.get(key) is not None:
+                    learned[field] = clamp(field, pr[key])
+            if "rocketMinRange" in learned and "rocketMaxRange" in learned:
+                learned["rocketMaxRange"] = max(learned["rocketMaxRange"], learned["rocketMinRange"] + 1.0)
         if "releaseAlignDegrees" in learned:   # hysteresis, as below
             learned["releaseAlignDegrees"] = max(learned["releaseAlignDegrees"], learned.get("alignDegrees", 0))
             learned["releaseStickBand"] = max(learned.get("releaseStickBand", 0), learned.get("stickBand", 0))
@@ -740,6 +834,7 @@ def learn_hull(hull, flights):
             learned["releaseAlignDegrees"] = max(learned["releaseAlignDegrees"], learned.get("alignDegrees", 0))
             learned["releaseStickBand"] = max(learned.get("releaseStickBand", 0), learned.get("stickBand", 0))
             learned["releaseRunwaySeconds"] = min(learned["releaseRunwaySeconds"], learned.get("engageRunwaySeconds", 6))
+    apply_floors(hull, MODE, learned)
     if why is None and len(done) < MIN_FINISHED:
         why = f"{len(done)} finished race(s) or complete match(es); nothing is written below {MIN_FINISHED}"
     elif why is None and not learned:
@@ -817,6 +912,12 @@ def write_variant(hull, learned, intensity=None):
     return paths
 
 
+def base_asset_of(variant_file):
+    """The base asset of a variant: <asset>_<mode>.asset, any mode, or <asset>_<mode>_I<n>.asset (an intensity's)."""
+    stem = re.sub(r"_I\d+$", "", variant_file[:-len(".asset")])
+    return stem[:stem.rfind("_")] + ".asset"
+
+
 def check():
     """The written variants: each policy variant has its base's script and fields, every value inside its range."""
     problems = []
@@ -829,8 +930,7 @@ def check():
         text = open(os.path.join(OUT_DIR, fn), encoding="utf-8").read()
         if not os.path.exists(os.path.join(OUT_DIR, fn + ".meta")):
             problems.append(f"{fn}: no .meta")
-        stem = re.sub(r"_I\d+$", "", fn[:-len(".asset")])   # <asset>_<mode>_I<n>: an intensity's variant
-        base = stem[:stem.rfind("_")] + ".asset"   # <asset>_<mode>.asset, any mode
+        base = base_asset_of(fn)
         base_path = next((os.path.join(d, base) for d in (POLICY_DIR, STOAT_DIR) if os.path.exists(os.path.join(d, base))), None)
         if base_path:
             bt = open(base_path, encoding="utf-8").read()
@@ -860,6 +960,9 @@ def report(results, wrote):
         lines.append(f"### {R['hull']}{' at ' + R['label'] + ' alone' if R.get('label') else ''} ({HULLS[R['hull']]['verb']})\n")
         lines.append(f"{R['flights']} editor flight(s), {R['finished']} finished; learned from: "
                      + (", ".join(os.path.basename(u) for u in R["used"]) or "-") + "\n")
+        if R.get("retired"):
+            lines.append(f"{R['retired']} more race(s) here were flown on a retired course (another mouth radius) and are "
+                         "left out; the variant already written stays until this course has its own.\n")
         if R.get("intensities"):
             lines.append("By intensity (flights / finished): " + ", ".join(
                 f"I{i} {n} / {d}" for i, (n, d) in sorted(R["intensities"].items())) + "\n")
@@ -986,14 +1089,25 @@ def run(sources, write):
             n, d = R["intensities"].get(int(f.get("intensity") or 0), (0, 0))
             R["intensities"][int(f.get("intensity") or 0)] = (n + 1, d + (1 if completed(f) else 0))
         results.append(R)
+    if MODE in PER_INTENSITY_MODES:
+        # The mode-wide variant is what the intensities WITHOUT their own fly, so it learns from the fastest race of each
+        # intensity (fastest_each_intensity), not the three fastest overall, which are always the easiest intensity's.
+        for k, R in enumerate(results):
+            if "policy" in HULLS[R["hull"]] and by_hull.get(R["hull"]):
+                spread = learn_hull(R["hull"], by_hull[R["hull"]], each_intensity=True)
+                spread["intensities"] = R["intensities"]
+                results[k] = spread
     wrote = [p for R in results if write and R["learned"] for p in write_variant(R["hull"], R["learned"])]
     if MODE in PER_INTENSITY_MODES:
         for h, fl in by_hull.items():
             if "policy" not in HULLS[h]:
                 continue
             for i in sorted({int(f.get("intensity") or 0) for f, _ in fl} - {0}):
-                R = learn_hull(h, [(f, S) for f, S in fl if int(f.get("intensity") or 0) == i])
+                at_i = [(f, S) for f, S in fl if int(f.get("intensity") or 0) == i]
+                current = on_current_course(at_i)   # never the course a retuned ladder replaced
+                R = learn_hull(h, current)
                 R["hull"], R["label"] = h, f"I{i}"
+                R["retired"] = len(at_i) - len(current)
                 R["intensities"] = {}
                 results.append(R)
                 if write and R["learned"]:
@@ -1015,9 +1129,38 @@ def run(sources, write):
 
 # ---------------------------------------------------------------- self-test
 
+def self_test_rocket_and_rings():
+    """ring_index on a lead-in course and the rocket's press measure (2026-10-26)."""
+    assert [ring_index(k, 15, 29) for k in (0, 1, 14, 15, 28)] == [0, 1, 14, 1, 14], "Breakwater: station 0 once, then 1-14 twice"
+    assert [ring_index(k, 8, 24) for k in (0, 7, 8, 23)] == [0, 7, 0, 7], "Regatta: three laps of eight"
+    assert base_asset_of("DolphinAIBoostPolicy_Switchback_I4.asset") == "DolphinAIBoostPolicy.asset", "intensity variant"
+    assert base_asset_of("SparrowAIBoostPolicy_Breakwater.asset") == "SparrowAIBoostPolicy.asset", "mode variant"
+    ring = lambda r: [[0, 0, 0, 0, 0, 0, 1, r], [1, 0, 0, 500, 0, 0, 1, r]]
+    old = [({"date": f"2026-10-26T01:0{i}", "name": f"old{i}", "ringList": ring(4.29)}, None) for i in range(3)]
+    new = [({"date": "2026-10-26T04:09", "name": "new", "ringList": ring(20.0)}, None)]
+    assert on_current_course(old + new) == new, "a retired ladder's races are left out of the intensity's variant"
+    assert on_current_course(old) == old, "no newer course: every race is the current one"
+    races = [({"intensity": i, "raceSeconds": t}, None) for i, t in ((1, 60), (1, 69), (1, 75), (2, 80), (4, 120))]
+    assert [fs[0]["raceSeconds"] for fs in fastest_each_intensity(races)][:3] == [60, 80, 120], \
+        "the mode's variant learns from the fastest race of each intensity, not three I1 races"
+    assert on_current_course(old + [({"date": "2026-10-27", "name": "bare"}, None)]) == old + [({"date": "2026-10-27", "name": "bare"}, None)], \
+        "a flight with no ringList never decides the course"
+    assert [ring_index(k, 20, 20) for k in (0, 19)] == [0, 19], "Switchback: open, in order"
+    S = [{"t": i * 0.1, "held": False, "dist": 100.0 + 10 * i, "nose": float(i % 10)} for i in range(100)]
+    events = [[i * 0.1, 2, 1] for i in range(0, 100, 10)] + [[i * 0.1 + 0.05, 2, 0] for i in range(0, 100, 10)]
+    events.sort()
+    extra = {"signal": ("press", "FireGunActionSO", "SkyBurst"), "input": 2}
+    m = measure_presses([({"buttonEvents": events}, S)], extra)
+    assert m["episodes"] == 10 and abs(m["pressDistLow"] - 190) < 1e-6 and abs(m["pressDistHigh"] - 910) < 1e-6, m
+    assert m["pressNoseMedian"] == 0.0, m
+    few = measure_presses([({"buttonEvents": events[:6]}, S)], extra)
+    assert "pressDistHigh" not in few, "under MIN_EPISODES presses nothing is learned"
+
+
 def self_test():
     """Synthetic Regatta flights whose pilots follow KNOWN rules: the learner must recover them, and a pilot that
     ignores the rule must not produce the same numbers (negative control)."""
+    self_test_rocket_and_rings()
     import random
     rng = random.Random(7)
     ring_list = [[i, 600.0 * (i + 1), 0.0, 0.0, 1, 0, 0, 60.0] for i in range(40)]   # ring k is the one ahead after k threaded
@@ -1221,6 +1364,10 @@ def self_test():
             assert "cornerSpeed: 333" not in text and "alignDegrees: 7.0" in text, "no mode variant: the base"
         finally:
             OUT_DIR = keep
+
+    floored = apply_floors("Sparrow", "Breakwater", {"releaseRunwaySeconds": 0.3, "alignDegrees": 20.0})
+    assert floored == {"releaseRunwaySeconds": 1.25, "alignDegrees": 20.0}, floored
+    assert apply_floors("Sparrow", "Regatta", {"releaseRunwaySeconds": 0.3}) == {"releaseRunwaySeconds": 0.3}
 
     print("learn_drives_from_flights self-test: OK (Rhino and Dolphin starts / stops recovered, a random pilot rejected; "
           "Dolphin charge 0.80; Manta bands 0.50 / 0.80 recovered; under 3 finished races, unfinished races and AI-held "

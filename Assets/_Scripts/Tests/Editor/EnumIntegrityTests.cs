@@ -174,9 +174,11 @@ namespace CosmicShore.Tests
             // 62 -> 63 on 2026-10-20: WrasseRun (68), the Wrasse and Grouper's race (67 is SerpentCharge's,
             // in flight on another branch).
             // 63 -> 64 on 2026-10-25: Tandava (69), the co-op swarm hunt - authored as 62 on its branch, renumbered at
-            // the merge (the seventh collision). When SerpentCharge (67) lands this becomes 65.
+            // the merge (the seventh collision).
+            // 64 -> 65 on 2026-10-26: TandavaSevering (70), Voyage 2 - Tandava's fork with the severing work. When
+            // SerpentCharge (67) lands this becomes 66.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(64, values.Length,
+            Assert.AreEqual(65, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

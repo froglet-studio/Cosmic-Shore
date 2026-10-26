@@ -107,7 +107,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far ahead of the vessel, along its COURSE, the switch ring appears. FLAT: " +
                  "the ElementalFloat is authored disabled because SPACE now owns the forged " +
                  "ball's size. Do not re-enable it without moving ball size off Space.")]
-        public ElementalFloat placementDistance = new(150f);
+        [SerializeField] ElementalFloat placementDistance = new(150f);
+        public ElementalFloat PlacementDistance => placementDistance;
 
         [Tooltip("Ring radius at scale 1 (world units). 2026-08-24: raised 20% (20 -> 24) and " +
                  "the interior Vogel-spiral fill was removed — the ring now blooms in empty, " +
@@ -115,7 +116,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float ringRadius = 24f;
 
         [Tooltip("Structure size multiplier. MASS element: enable with Min 1 / Max 2.5.")]
-        public ElementalFloat switchScale = new(1f);
+        [SerializeField] ElementalFloat switchScale = new(1f);
+        public ElementalFloat SwitchScale => switchScale;
 
         [Tooltip("How far off the flight path a LIVING PLANT'S HEART may sit and still be " +
                  "claimable as this ring's anchor (ScarabSwitchAnchors). A Scarab's switch grafts " +

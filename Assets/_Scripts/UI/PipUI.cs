@@ -9,7 +9,8 @@ namespace CosmicShore.UI
     {
 
         bool isSmall = true;
-        public bool mirrored = true;
+        [SerializeField] bool mirrored = true;
+        public bool Mirrored => mirrored;
 
         [SerializeField] Vector3 smallScale = new Vector3(1, 1, 1);
         [SerializeField] Vector3 largeScale = new Vector3(2, 2, 1);

@@ -282,12 +282,13 @@ after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolp
 **No AI targets a crystal in Regatta (2026-10-17, Yash):** *"in Regatta no AI should target an omni crystal; only
 the waypoints of the track."*
 - **The rule:** every Regatta AI steers for the course's rings, and for its rail while it rides one.
-- **How:** `RegattaController.AICrystalDetourSlack` is 0 in code. Every other gate race still lets an AI swing up to
-  `aiCrystalDetourSlack` (220 u in the scenes) for a crystal on its way, and `MinigameRegatta.unity` serializes 220
-  too. The code value wins, so no scene edit can turn the detour back on.
+- **How:** since 2026-10-26 the rule is every gate race's (Yash: "while playing any racing game mode, AI should not go
+  for crystals"): `GateRaceController.AIDetoursForCrystals` is false in code, so `aiCrystalDetourSlack` (220 u in the
+  scenes) is read only by a mode that opts in, and none does. No scene edit can turn the detour back on. (2026-10-17 to
+  10-26 it was Regatta's own override, `RegattaController.AICrystalDetourSlack` = 0.)
 - **Why:** in Yash's editor flights, rival AIs came within 20 u of crystals whenever the recording could see one (the
   Manta, Dolphin, Sparrow and Serpent beside omni crystals; the Rhino beside others).
-- **Test:** `RegattaNoCrystalTargetTests`, with Headlong as the negative control.
+- **Test:** `RaceAIWaypointsOnlyTests` (was `RegattaNoCrystalTargetTests`), with an opted-in mode as the negative control.
 - **The Squirrel** already aimed only at rings (`RegattaRingObjective`). The Third Eye's "Crystal on the way" phase
   no longer appears in Regatta.
 

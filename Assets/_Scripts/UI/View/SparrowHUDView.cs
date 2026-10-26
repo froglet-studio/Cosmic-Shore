@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -24,36 +25,62 @@ namespace CosmicShore.UI
                  "ordinary step because it is the beat worth seeing.")]
         [SerializeField] private float missileChargeResetTweenDuration = 0.3f;
 
-        [Header("Strafing Roll Charge")]
-        [Tooltip("The ring on the boost ability icon. This is NOT a gauge — the boost has no heat and " +
-                 "no meter any more. It is a binary charge pip for the strafing roll: full = a roll is " +
-                 "available on this boost press, empty = it has been spent. The next boost press " +
-                 "re-arms it.")]
-        [FormerlySerializedAs("boostFill")]
-        [SerializeField] private Image rollChargeIndicator;
+        [Header("Afterburner - the Time card")]
+        [Tooltip("The Sparrow itself, seen from above (its real mesh, nose right): the part that TEACHES " +
+                 "the card. Painted in the pilot's domain colour, and SWAPPED between the two sprites " +
+                 "below as the boost is held and released - the hull folds its fans for speed, which is " +
+                 "the ability. The plate under it shows no meter: the boost is indefinite, and the " +
+                 "strafing roll's armed pip that filled it was retired on 2026-10-26 (Garrett: \"lets " +
+                 "not show that that is armed because its cooldown is so low\").")]
+        [SerializeField] private Image afterburnerHullIcon;
+        [Tooltip("The hull at rest: fans spread (Sparrow_AfterburnerRest).")]
+        [SerializeField] private Sprite afterburnerRestSprite;
+        [Tooltip("The hull boosting: fans folded, the SpeedUp take (Sparrow_AfterburnerHullBoost).")]
+        [SerializeField] private Sprite afterburnerBoostSprite;
+        [Tooltip("The exhaust part behind the hull, so the card says MOTION even at rest (Garrett " +
+                 "2026-10-26: \"show some jets coming out of the sparrow so the default state communicates " +
+                 "motion\"). Tinted the HUD's BLUE (the shared config's BlueColor - \"give them a blue tint\"), " +
+                 "never the domain colour; swapped with the hull: short idling plumes at rest, nearly twice " +
+                 "as long while boosting.")]
+        [SerializeField] private Image afterburnerJetsIcon;
+        [SerializeField] private Sprite afterburnerJetsRestSprite;
+        [SerializeField] private Sprite afterburnerJetsBoostSprite;
+        [Tooltip("Shared colour spec; the jets wear its blueColor. Loaded from Resources when left empty; " +
+                 "never author a second copy of the colour.")]
+        [SerializeField] private ElementalBarsConfigSO barsConfig;
+        [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
+        [Tooltip("Fallback jets colour when the shared config cannot be resolved.")]
+        [SerializeField] private Color afterburnerJetsFallbackColor = new(0.22f, 0.51f, 1f, 1f);
+        [Tooltip("Scale punch on the hull the instant it folds, so the fold reads even at a glance.")]
+        [SerializeField, Min(0f)] private float afterburnerFoldPunchScale = 0.2f;
+        [SerializeField, Min(0.01f)] private float afterburnerFoldPunchDuration = 0.25f;
+        [Tooltip("Fallback colour of the hull part until the controller pushes the pilot's domain colour.")]
+        [SerializeField] private Color afterburnerHullFallbackColor = Color.white;
 
-        // NOTE: deliberately NOT [FormerlySerializedAs] off the retired boost-gauge colours - those
-        // were authored white / white / red, so inheriting them would paint "armed" and "spent"
-        // identically. The stale overrides are deleted from Sparrow.prefab; these are the record.
-        [Tooltip("Ring colour while a strafing roll is available.")]
-        [SerializeField] private Color rollArmedColor = new(0.55f, 0.9f, 1f, 1f);
-
-        [Tooltip("Ring colour once the roll has been spent (until the next boost press re-arms it).")]
-        [SerializeField] private Color rollSpentColor = new(0.35f, 0.4f, 0.45f, 0.5f);
-
-        [Header("Strafing Roll Animation")]
-        [Tooltip("Seconds the ring takes to wipe empty when the roll is spent / fill when re-armed. " +
-                 "Nothing pops in or out.")]
-        [FormerlySerializedAs("boostFillTweenDuration")]
-        [SerializeField] private float rollChargeTweenDuration = 0.15f;
-
-        [Tooltip("Scale punch played on the ring the instant a roll is spent, so the consume reads even " +
-                 "at the edge of vision.")]
-        [SerializeField] private float rollSpendPunchScale = 0.3f;
-
-        [Header("Weapon Mode")]
         [SerializeField] private Image weaponModeIcon;
         [SerializeField] private Sprite[] weaponModeIcons = new Sprite[2];
+
+        [Header("Turret Stance - the Mass card")]
+        [Tooltip("The Sparrow itself, stopped (fans spread), from above, nose right - its real mesh " +
+                 "(Sparrow_TurretStanceHull). Painted in the pilot's domain colour.")]
+        [SerializeField] private Image stanceHullIcon;
+        [Tooltip("The rounds leaving both gun pods - a round, then the same round swollen, because Mass is " +
+                 "the substance of what you fire. A GHOST while flying, solid once the stance is taken " +
+                 "(the stationary-mode event), and at Mass 5 the shielded sprite in the domain's shielded " +
+                 "colour: fired prisms arrive shielded, and a shielded prism reads as an octahedron " +
+                 "(Garrett 2026-10-26: \"b is good\").")]
+        [SerializeField] private Image stanceRoundsIcon;
+        [Tooltip("The rounds as bare prisms (Sparrow_TurretStanceRounds).")]
+        [SerializeField] private Sprite stanceRoundsSprite;
+        [Tooltip("The rounds at Mass 5: octahedrons (Sparrow_TurretStanceRoundsShielded).")]
+        [SerializeField] private Sprite stanceRoundsShieldedSprite;
+        [Tooltip("Alpha of the rounds while the stance is NOT held - a ghost of what the stance fires.")]
+        [SerializeField, Range(0f, 1f)] private float stanceRoundsGhostAlpha = 0.6f;
+        [Tooltip("Scale punch on the rounds the instant the stance is taken.")]
+        [SerializeField, Min(0f)] private float stancePunchScale = 0.2f;
+        [SerializeField, Min(0.01f)] private float stancePunchDuration = 0.25f;
+        [Tooltip("Fallback colour of the hull and the bare rounds until the controller pushes the pilot's domain colour.")]
+        [SerializeField] private Color stanceFallbackColor = Color.white;
 
         [Header("Gun Heat")]
         [Tooltip("Thickness, in canvas units, of the marks drawn across the guns card's heat " +
@@ -72,8 +99,15 @@ namespace CosmicShore.UI
         [SerializeField] private float blockedPulseDuration = 0.4f;
 
         readonly Dictionary<InputEvents, Tween> _blockTweens = new();
-        private Tween _rollChargeTween;
-        private Tween _rollPunchTween;
+        private Tween _afterburnerPunchTween;
+        private bool _boosting;
+        private Color _afterburnerHullColor = Color.white;
+
+        private Tween _stancePunchTween;
+        private bool _inStance;
+        private bool _stanceShielded;
+        private Color _stanceColor = Color.white;
+        private Color _stanceShieldedColor = new(0f, 0f, 0f, 0f);   // alpha 0 = not resolved yet: keep the domain colour
         private Tween _missileChargeTween;
         private float _missileCharge = -1f;
 
@@ -88,12 +122,34 @@ namespace CosmicShore.UI
             if (missileIcon)
                 missileIcon.enabled = false;
 
-            if (rollChargeIndicator)
+            // The hull part sits at rest, fans spread, in the fallback colour until the controller's
+            // first push names the pilot's domain.
+            _boosting = false;
+            _afterburnerHullColor = afterburnerHullFallbackColor;
+            if (afterburnerHullIcon)
             {
-                // Spent until the first boost press arms it — SparrowHUDController re-seeds from
-                // BarrelRollController.IsRollArmed right after this.
-                rollChargeIndicator.fillAmount = 0f;
-                rollChargeIndicator.color = rollSpentColor;
+                if (afterburnerRestSprite) afterburnerHullIcon.sprite = afterburnerRestSprite;
+                afterburnerHullIcon.color = _afterburnerHullColor;
+                afterburnerHullIcon.rectTransform.localScale = Vector3.one;
+            }
+            // The stance parts: the hull and ghost rounds in the fallback colour until the first push.
+            _inStance = false;
+            _stanceShielded = false;
+            _stanceColor = stanceFallbackColor;
+            if (stanceHullIcon) stanceHullIcon.color = _stanceColor;
+            if (stanceRoundsIcon)
+            {
+                if (stanceRoundsSprite) stanceRoundsIcon.sprite = stanceRoundsSprite;
+                stanceRoundsIcon.rectTransform.localScale = Vector3.one;
+            }
+            PaintStanceRounds();
+
+            if (afterburnerJetsIcon)
+            {
+                if (afterburnerJetsRestSprite) afterburnerJetsIcon.sprite = afterburnerJetsRestSprite;
+                if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
+                    barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+                afterburnerJetsIcon.color = barsConfig ? barsConfig.BlueColor : afterburnerJetsFallbackColor;
             }
 
             if (weaponModeIcon)
@@ -203,42 +259,100 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Strafing Roll Charge
-
+        #region Turret Stance
         /// <summary>
-        /// Shows whether the strafing roll is available right now. Driven by
-        /// <see cref="CosmicShore.Gameplay.BarrelRollController.OnRollChargeChanged"/> — the boost
-        /// itself is indefinite and has nothing to meter, so this ring is a binary charge pip, not a
-        /// gauge: full while the boost press's short arm window is live, empty once the roll is
-        /// spent OR the window lapses unfired. Only a real spend gets the punch — see
-        /// <see cref="CosmicShore.Data.RollChargeState"/>.
+        /// Everything the Mass card's parts carry: the hull and the bare rounds in the pilot's domain
+        /// colour, the shielded rounds in the domain's shielded colour (alpha 0 = unresolved, which
+        /// falls back to the domain colour), the rounds at ghost alpha until the stance is held.
         /// </summary>
-        public void SetRollCharge(RollChargeState state)
+        void PaintStanceRounds()
         {
-            if (!rollChargeIndicator) return;
-
-            bool armed = state == RollChargeState.Armed;
-
-            _rollChargeTween?.Kill();
-            _rollChargeTween = rollChargeIndicator
-                .DOFillAmount(armed ? 1f : 0f, rollChargeTweenDuration)
-                .SetEase(armed ? Ease.OutQuad : Ease.InQuad)
-                .SetLink(rollChargeIndicator.gameObject);
-
-            rollChargeIndicator.color = armed ? rollArmedColor : rollSpentColor;
-
-            // Spending the roll is the beat worth feeling; arming it rides the fill, and a window
-            // that lapsed unfired consumed nothing — punching there would announce a roll the
-            // pilot never got.
-            if (state != RollChargeState.Spent || rollSpendPunchScale <= 0f) return;
-
-            _rollPunchTween?.Kill();
-            rollChargeIndicator.rectTransform.localScale = Vector3.one;
-            _rollPunchTween = rollChargeIndicator.rectTransform
-                .DOPunchScale(Vector3.one * rollSpendPunchScale, rollChargeTweenDuration * 2f, 1, 0.5f)
-                .SetLink(rollChargeIndicator.gameObject);
+            if (!stanceRoundsIcon) return;
+            var c = _stanceShielded && _stanceShieldedColor.a > 0f ? _stanceShieldedColor : _stanceColor;
+            c.a = _inStance ? 1f : stanceRoundsGhostAlpha;
+            stanceRoundsIcon.color = c;
+            var sprite = _stanceShielded ? stanceRoundsShieldedSprite : stanceRoundsSprite;
+            if (sprite) stanceRoundsIcon.sprite = sprite;
         }
 
+        /// <summary>The pilot's domain colour for the hull and the bare rounds.</summary>
+        public void SetStanceColors(Color domain, Color shielded)
+        {
+            if (_stanceColor == domain && _stanceShieldedColor == shielded) return;
+            _stanceColor = domain;
+            _stanceShieldedColor = shielded;
+            if (stanceHullIcon) stanceHullIcon.color = domain;
+            PaintStanceRounds();
+        }
+
+        /// <summary>
+        /// Whether the turret stance is held (the stationary-mode event the controller already
+        /// subscribes to for the Space card's bullets-to-prisms swap). Taking it turns the ghost
+        /// rounds solid with a punch; releasing it fades them back.
+        /// </summary>
+        public void SetStance(bool inStance)
+        {
+            if (inStance == _inStance) return;
+            _inStance = inStance;
+            PaintStanceRounds();
+            if (!stanceRoundsIcon || !inStance || stancePunchScale <= 0f) return;
+            _stancePunchTween?.Kill();
+            stanceRoundsIcon.rectTransform.localScale = Vector3.one;
+            _stancePunchTween = stanceRoundsIcon.rectTransform
+                .DOPunchScale(Vector3.one * stancePunchScale, stancePunchDuration, 1, 0.5f)
+                .SetLink(stanceRoundsIcon.gameObject);
+        }
+
+        /// <summary>
+        /// The base call does the card's upgrade mark; Mass 5 also changes WHAT the stance fires, so
+        /// the rounds part swaps to its shielded shape and colour.
+        /// </summary>
+        public override void SetAbilityUpgraded(Element element, bool upgraded)
+        {
+            base.SetAbilityUpgraded(element, upgraded);
+            if (element != Element.Mass || upgraded == _stanceShielded) return;
+            _stanceShielded = upgraded;
+            PaintStanceRounds();
+        }
+        #endregion
+
+        #region Afterburner
+        /// <summary>
+        /// The pilot's domain colour for the hull part. A colour, not a state: the hull wears its
+        /// team at rest and boosting alike - what changes on this card is the SHAPE (the fold).
+        /// </summary>
+        public void SetAfterburnerHullColor(Color color)
+        {
+            if (_afterburnerHullColor == color) return;
+            _afterburnerHullColor = color;
+            if (afterburnerHullIcon) afterburnerHullIcon.color = color;
+        }
+
+        /// <summary>
+        /// Whether the boost is held right now, polled by the controller off the vessel's status.
+        /// The hull part swaps to its folded sprite while it is and back to the spread one when it
+        /// is not; the fold gets a small punch. The boost itself is indefinite and has nothing to
+        /// meter, so the card's plate stays bare.
+        /// </summary>
+        public void SetBoosting(bool boosting)
+        {
+            if (boosting == _boosting) return;
+            _boosting = boosting;
+            if (!afterburnerHullIcon) return;
+
+            var sprite = boosting ? afterburnerBoostSprite : afterburnerRestSprite;
+            if (sprite) afterburnerHullIcon.sprite = sprite;
+            var jets = boosting ? afterburnerJetsBoostSprite : afterburnerJetsRestSprite;
+            if (afterburnerJetsIcon && jets) afterburnerJetsIcon.sprite = jets;
+
+            if (!boosting || afterburnerFoldPunchScale <= 0f) return;
+            _afterburnerPunchTween?.Kill();
+            _stancePunchTween?.Kill();
+            afterburnerHullIcon.rectTransform.localScale = Vector3.one;
+            _afterburnerPunchTween = afterburnerHullIcon.rectTransform
+                .DOPunchScale(Vector3.one * afterburnerFoldPunchScale, afterburnerFoldPunchDuration, 1, 0.5f)
+                .SetLink(afterburnerHullIcon.gameObject);
+        }
         #endregion
 
         #region Gun Heat
@@ -422,8 +536,7 @@ namespace CosmicShore.UI
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            _rollChargeTween?.Kill();
-            _rollPunchTween?.Kill();
+            _afterburnerPunchTween?.Kill();
             _missileChargeTween?.Kill();
             foreach (var tween in _blockTweens.Values)
                 tween?.Kill();
