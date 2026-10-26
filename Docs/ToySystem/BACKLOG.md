@@ -708,3 +708,23 @@ Follow-ups, none blocking:
 - **The emblem's mini-Ark rebuild on domain change is streamer-paced** (live key = the local
   player's domain). If the rebuild ever reads as a pop, the fix is the emblem's cross-fade,
   which already exists for the core slot.
+
+## Toy Box portraits — follow-ups (2026-10-26, `cece/sharp-pascal-3frg3w`)
+
+The seven portraits are now drawn by `Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4). Rows only,
+measured at ship time; nothing here was changed on that branch.
+
+- **Inconsistency (fix): the codex's hull VARIANT icons are mostly the same picture.**
+  `md5sum Assets/_Graphics/Codex/tool_vessel-changer__*.png | sort | uniq -c -w32` → four files share
+  `dfa2ef07…` (Dolphin, Manta, Squirrel, Urchin) and two share `fd425b12…` (Scarab = Sparrow, the stale bake
+  CODEX.md §4.5 already names). They show only in the codex window's variant grid, not on the Toy Box. Re-running
+  FrogletTools ▸ UI ▸ Codex ▸ Bake on the Vessel Changer's variants in the editor should fix them, now that
+  `HarvestModel` handles skinned and procedural hulls; if it does not, the class-card renders
+  (`Tools/Build/vessel_model/render_cards.py`) are a model-true source to take them from instead.
+- **Report (orphan): `Assets/_Graphics/Codex/tool_arkway.png` is referenced by nothing.** Its guid
+  (`7c982fdd…`) has no hit in `Assets/` outside its own `.meta` (`git grep`); the Arkway page folded into Wander,
+  whose portrait is `tool_conveyor.png`. Delete it, or keep it if a page is coming back.
+- **Design question (Shombith's style-B Toy Box, not a fix): the toy accent stripes reuse team hues.** The 3 px
+  accent on each `ToyCard` is the toy's `AccentColor` (Vessel Changer `1, 0.85, 0.2` ≈ Gold; Domain Changer
+  `0.85, 0.3, 0.9` ≈ Ruby). `Docs/STYLE_FOUNDATION.md` §1 and §3 make colour information, and team colour data
+  only. The new portraits are white on purpose; whether the stripes should go neutral is the owner's call.
