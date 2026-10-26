@@ -310,6 +310,27 @@ def impact_container_asset() -> str:
     return text
 
 
+def sq(text: str) -> str:
+    """A YAML single-quoted scalar: a ': ' or an apostrophe in plain text breaks Unity's reader (2026-10-26: both did)."""
+    return "'" + text.replace("'", "''") + "'"
+
+
+def yaml_errors(path: str, text: str) -> "list[str]":
+    """Every document of a Unity YAML file must parse (check_generated_assets.py's [yaml] rule, run here too so this
+    generator's own --check catches what it writes)."""
+    try:
+        import yaml  # noqa: PLC0415
+    except ImportError:
+        return []
+    out = []
+    for body in re.split(r"^--- !u!\d+ &-?\d+.*$", text, flags=re.M)[1:]:
+        try:
+            yaml.safe_load(body)
+        except yaml.YAMLError as e:
+            out.append(f"{os.path.relpath(path, ROOT)} does not parse as YAML: {str(e).splitlines()[0]}")
+    return out
+
+
 def map_asset(c: CrewPaths) -> str:
     """Four OPEN slots: the page's element proposals (omega-studio.js ELEMENTS) are written down as proposals, not wired,
     because nobody signed them off (vessel skill section 3). Input 0 and an empty UpgradeLabel are the honest state."""
@@ -321,10 +342,11 @@ def map_asset(c: CrewPaths) -> str:
            f"  vesselClass: {c.class_id}\n  entries:\n")
     for element, name, param, scale, l5, tip in proposals:
         out += (f"  - Element: {element}\n    AbilityLabel: (open design slot)\n"
-                f"    AbilityDescription: '(open design slot) The Vessel Studio proposes \"{name}\": {tip} This element scales "
-                f"{param} {scale} at level 10 (OmegaMath.ElementMults). Not wired and not signed off - OMEGA_CREW.md section 7.'\n"
+                "    AbilityDescription: " + sq(f"(open design slot) The Vessel Studio proposes \"{name}\": {tip} This element scales "
+                                               f"{param} {scale} at level 10 (OmegaMath.ElementMults). Not wired and not signed off - "
+                                               "OMEGA_CREW.md section 7.") + "\n"
                 "    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel:\n"
-                f"    UpgradeDescription: '(open design slot) The studio proposes \"{l5}\". Do not invent one without sign-off.'\n")
+                "    UpgradeDescription: " + sq(f"(open design slot) The studio proposes \"{l5}\". Do not invent one without sign-off.") + "\n")
     return out
 
 
@@ -335,7 +357,7 @@ def class_asset(c: CrewPaths) -> str:
                                                                            "  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel\n") +
             f"  Class: {c.class_id}\n"
             f"  Name: {c.name}\n"
-            f"  Description: {c.description}\n"
+            f"  Description: {sq(c.description)}\n"
             "  CrewNames: []\n"
             "  CrewNameTemplate: '{0} and {1}'\n"
             "  SeatCount: 3\n"
@@ -522,6 +544,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     for c in PATHS.values():
         check_crew(files, c, errors)
     for path, want in owned_files().items():
+        if path.endswith(".asset"):
+            errors.extend(yaml_errors(path, want))
         have = files.get(path)
         if have != want:
             errors.append(f"{os.path.relpath(path, ROOT)} is {'missing' if have is None else 'drifted'} - run the tool")
