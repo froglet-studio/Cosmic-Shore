@@ -8,17 +8,18 @@ namespace CosmicShore.Gameplay
     /// UNGATED — no stance, no cooldown; the ONE gated act is the super-shield pop:
     /// <list type="bullet">
     /// <item>Normal / shielded prism — standard damage on contact (a shielded prism loses its
-    /// shield, a normal prism explodes), exactly like the generic skimmer damage effect. Under
-    /// the SPACE level-5 upgrade, <b>Breaker</b>, a shielded prism takes ONE slice instead of two:
-    /// the shield sheds and the core is cut in the same hit (<see cref="breakerElement"/>).</item>
-    /// <item>Super-shielded prism — POPPED only while the blade is ENERGIZED
+    /// shield, a normal prism explodes), exactly like the generic skimmer damage effect.</item>
+    /// <item>Super-shielded prism — POPPED only under the SPACE level-5 upgrade
+    /// (<see cref="superShieldUpgradeElement"/>, Garrett 2026-10-26: "the sword only destroys
+    /// supershielded prisms as the space L5 upgrade") AND while the blade is ENERGIZED
     /// (<see cref="IRhinoSwordState.IsEnergized"/>, the hold-the-chop-stance ritual), via the
     /// sanctioned mass-conserving teardown (DeactivateShields → devastating Damage, the
     /// AstroLeagueArena.ClearEdgeLining precedent). A non-energized blade BINDS in it rather
     /// than recoiling: this effect plays the entry beat (a dim denied-spark, the deflection
     /// jiggle, the punish thud), and <see cref="ShieldSkimmerScaleDriver"/> owns the rest for as
     /// long as the blade stays inside — slowed turning, a continued shudder, a haptic grind
-    /// (RHINO_ENERGY_SWORD.md § "Binding"). The old <see cref="BounceBack"/> recoil threw the
+    /// (RHINO_ENERGY_SWORD.md § "Binding"). A blade without the upgrade binds the same way,
+    /// energized or not. The old <see cref="BounceBack"/> recoil threw the
     /// ship around and is kept only behind <see cref="recoilWhenDenied"/> as an A/B switch. Set
     /// <see cref="popRequiresEnergizedBlade"/> false to pop ungated (the v2 debug behavior).</item>
     /// </list>
@@ -64,14 +65,14 @@ namespace CosmicShore.Gameplay
                  "either way, and a slice the budget cannot afford falls back to the explosion.")]
         [SerializeField] private bool sliceDestroyedPrisms = true;
 
-        [Header("Breaker (level-5 upgrade)")]
-        [Tooltip("Element whose level-5 upgrade makes the blade cut a SHIELDED prism in one slice " +
-                 "instead of two: the shield sheds and the core is cut in the same hit. Gated on the " +
-                 "replicated unlock bit (IsUpgradeActive), snapshotted per hit. Super-shielded mass is " +
-                 "untouched by this - it still needs an energized blade. None disables Breaker.")]
-        [SerializeField] private Element breakerElement = Element.Space;
-
         [Header("Super-shielded prisms")]
+        [Tooltip("Element whose level-5 upgrade lets the sword destroy SUPER-SHIELDED prisms at all " +
+                 "(the Rhino: Space). Without it the blade binds in hardened mass, energized or not. " +
+                 "Gated on the replicated unlock bit (IsUpgradeActive), snapshotted per hit - whether " +
+                 "a prism survives is an outcome every peer has to agree on. None = no upgrade needed " +
+                 "(the energize alone is the key, the pre-2026-10-26 behaviour).")]
+        [SerializeField] private Element superShieldUpgradeElement = Element.Space;
+
         [Tooltip("True (v3, the energize ritual): popping a super-shielded prism requires the blade " +
                  "to be ENERGIZED — hold the both-triggers chop stance to charge it. A non-energized " +
                  "blade binds in it (see Denied contact). False: the blade pops super-shields ungated (the v2 behavior, " +
@@ -130,11 +131,11 @@ namespace CosmicShore.Gameplay
 
             if (IsSuperShield(prismImpactee))
             {
-                // The supershield key: only an ENERGIZED blade pops hardened mass. With no
-                // sword state (non-Rhino skimmer reusing the asset) the blade can never be
-                // energized, so the contact recoils — the pre-sword baseline behavior.
+                // The supershield key: only an UPGRADED (Space L5), ENERGIZED blade pops hardened
+                // mass. With no sword state (non-Rhino skimmer reusing the asset) the blade can
+                // never be energized, so the contact binds — the pre-sword baseline behavior.
                 bool energized = sword is { IsEnergized: true };
-                if (popRequiresEnergizedBlade && !energized)
+                if (!SuperShieldUpgradeActive(status) || (popRequiresEnergizedBlade && !energized))
                 {
                     sword?.NotifyPopDenied(prism.transform.position);
                     if (recoilWhenDenied)
@@ -158,13 +159,6 @@ namespace CosmicShore.Gameplay
                 sword?.NotifyPrismDestroyed(superShielded: true, prism.transform.position);
                 return;
             }
-
-            // Breaker: shed a SHIELDED prism's shield first, so the ordinary cut below kills the
-            // core in the same hit instead of only popping the shield. Through IsUpgradeActive
-            // (the replicated unlock bit), not a raw level read - whether a prism survives is an
-            // outcome every peer has to agree on.
-            if (prism.prismProperties is { IsShielded: true } && BreakerActive(status))
-                ShedShield(prism, velocity);
 
             if (TryResolveCut(impactor, status, prism.transform.position, velocity, out var cutPoint, out var cutNormal))
             {
@@ -224,15 +218,17 @@ namespace CosmicShore.Gameplay
                 prism.Damage(contactVelocity * inertia, status.Domain, status.PlayerName, devastate: true);
         }
 
-        bool BreakerActive(IVesselStatus status)
+        /// <summary>The level-5 upgrade that lets the sword destroy super-shielded prisms (the
+        /// Rhino's Space). Through IsUpgradeActive (the replicated unlock bit), not a raw level read.</summary>
+        bool SuperShieldUpgradeActive(IVesselStatus status)
         {
-            if (breakerElement == Element.None) return false;
+            if (superShieldUpgradeElement == Element.None) return true;
             var abilities = status.ElementalAbilityHandler;
-            return abilities && abilities.IsUpgradeActive(breakerElement);
+            return abilities && abilities.IsUpgradeActive(superShieldUpgradeElement);
         }
 
-        /// <summary>Drops a prism's shield (either tier) as explosion debris on the same terms
-        /// the kill that follows hands the core, and clears the shield flag synchronously.</summary>
+        /// <summary>Drops a prism's super-shield as explosion debris on the same terms the kill
+        /// that follows hands the core, and clears the shield flag synchronously.</summary>
         void ShedShield(Prism prism, Vector3 contactVelocity)
         {
             if (proportionalDebris)

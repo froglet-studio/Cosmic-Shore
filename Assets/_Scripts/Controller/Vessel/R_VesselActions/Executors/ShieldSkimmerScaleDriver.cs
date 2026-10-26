@@ -26,10 +26,10 @@ namespace CosmicShore.Gameplay
     /// <c>EnergizeHoldSeconds</c> (divided by <c>touchEnergizeRateMultiplier</c> for a human on a phone)
     /// ignites the blade (no cost; the cooldown is the only limit): while
     /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
-    /// binding. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
+    /// binding, once the SPACE level-5 upgrade is active (RhinoSkimmerDamagePrismEffectSO). Leaving
+    /// the stance starts the <c>EnergizedTailSeconds</c> countdown, then
     /// <c>EnergizeCooldownSeconds</c> locks re-charging. The tail runs out once started - taking
-    /// the stance again does not re-light it - UNLESS the CHARGE level-5 upgrade, <b>Live Wire</b>,
-    /// is active: then every return to the stance holds the blade lit again. On the ignition edge
+    /// the stance again does not re-light it. On the ignition edge
     /// the standing blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the
     /// shell-tier pairs) so a super-shielded prism already resting against the blade pops without
     /// needing a fresh OnTriggerEnter.
@@ -362,7 +362,7 @@ namespace CosmicShore.Gameplay
                     {
                         // A surge holds the blade whatever the fingers do. When it ends it hands
                         // over to the ordinary rules with the tail already spent, so the blade
-                        // goes out next frame unless Live Wire lets the stance hold it.
+                        // goes out next frame.
                         if (now < _surgeEnd) break;
                         _surging = false;
                         _tailCounting = true;
@@ -370,7 +370,7 @@ namespace CosmicShore.Gameplay
                         break;
                     }
 
-                    if (_inStance && (!_releasedSinceIgnition || LiveWireActive()))
+                    if (_inStance && !_releasedSinceIgnition)
                     {
                         _tailCounting = false; // holding the stance keeps it lit
                     }
@@ -393,11 +393,6 @@ namespace CosmicShore.Gameplay
                     break;
             }
         }
-
-        /// <summary>CHARGE level-5, <b>Live Wire</b>: a return to the stance re-lights the tail.
-        /// Through the replicated unlock bit, though only the owner evaluates it - the phase it
-        /// decides is what replicates.</summary>
-        bool LiveWireActive() => config.LiveWireActive(_skimmer ? _skimmer.VesselStatus : null);
 
         /// <summary>A non-owning peer: take the phase and the surge from the owner's relay. The phase
         /// goes through <see cref="SetEnergizePhase"/>, so the ignition re-dispatch, the FX and the

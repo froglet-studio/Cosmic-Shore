@@ -18,7 +18,6 @@ MonoBehaviour:
   touchEnergizeRateMultiplier: 2
   energizedTailSeconds: 5
   energizeCooldownSeconds: 5
-  liveWireUpgradeElement: 1
   surgeRingSwordCount: 8
   surgeRingUnfurlSeconds: 0.35
   surgeCameraDistanceScale: 2

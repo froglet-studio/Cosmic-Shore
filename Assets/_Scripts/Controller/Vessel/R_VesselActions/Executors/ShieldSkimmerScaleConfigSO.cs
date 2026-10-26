@@ -5,7 +5,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Tuning for the Rhino sword (RHINO_ENERGY_SWORD.md): the energize ritual (the supershield key,
-    /// and its Live Wire level-5), how the Space length eases and how far the camera follows it, the
+    /// with the Space level-5 upgrade), how the Space length eases and how far the camera follows it, the
     /// omni-crystal surge's sword ring and camera, and every blade-look/juice knob (energized danger
     /// red, impact flashes, crackle, camera shake). There is no energy (2026-10-26). The blade's
     /// LENGTH range is Space's: Skimmer.Scale on Rhino.prefab (24 at rest, 40 at Space 10).
@@ -36,16 +36,10 @@ namespace CosmicShore.Gameplay
                  "(RhinoSwordNetworkRelay), so every peer ignites on the same edge.")]
         [SerializeField, Min(0.01f)] private float touchEnergizeRateMultiplier = 2f;
         [Tooltip("Seconds the blade stays energized AFTER leaving the stance. Holding the stance " +
-                 "from ignition keeps it lit; once let go the tail runs out whatever the fingers do - " +
-                 "unless Live Wire (below) is active.")]
+                 "from ignition keeps it lit; once let go the tail runs out whatever the fingers do.")]
         [SerializeField] private float energizedTailSeconds = 5f;
         [Tooltip("Seconds of cooldown after the energized tail before the blade can charge again.")]
         [SerializeField] private float energizeCooldownSeconds = 5f;
-
-        [Tooltip("Element whose level-5 upgrade, LIVE WIRE, lets a return to the stance re-light the " +
-                 "energized tail - a blade kept lit for as long as the pilot keeps coming back to the " +
-                 "chop. Gated on the replicated unlock bit. None disables it.")]
-        [SerializeField] private Element liveWireUpgradeElement = Element.Charge;
 
         [Header("Omni-crystal Surge - the sword ring and camera")]
         [Tooltip("Swords in the ring a surge raises round the hull, the pilot's own blade included " +
@@ -165,16 +159,6 @@ namespace CosmicShore.Gameplay
             touchPilot ? Mathf.Max(0.01f, EnergizeHoldSeconds / TouchEnergizeRateMultiplier) : EnergizeHoldSeconds;
         public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
-        public Element LiveWireUpgradeElement => liveWireUpgradeElement;
-
-        /// <summary>CHARGE level-5, Live Wire: is it active on this vessel? Through the replicated unlock
-        /// bit (IsUpgradeActive), never a raw level read.</summary>
-        public bool LiveWireActive(IVesselStatus status)
-        {
-            if (liveWireUpgradeElement == Element.None) return false;
-            var abilities = status?.ElementalAbilityHandler;
-            return abilities && abilities.IsUpgradeActive(liveWireUpgradeElement);
-        }
 
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color RestingBladeColor    => restingBladeColor;

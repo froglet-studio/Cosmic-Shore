@@ -1,5 +1,16 @@
 # Rhino Energy Sword — ungated blade, the energize ritual, energy meter, the omni-crystal surge
 
+> **2026-10-26 (Garrett), third round: the two L5s are the sword's two keys.** "Have the sword only
+> destroy supershielded prisms as the space L5 upgrade. Have the sword only steal as the charge L5
+> upgrade." So: **Space L5 = Shield Breaker** — the sword can pop super-shielded prisms at all
+> (`RhinoSkimmerDamagePrismEffectSO.superShieldUpgradeElement`), still with an energized blade;
+> without it the blade binds, energized or not. **Charge L5 = Sword Steal** — a sword hit on a
+> rival vessel pockets the petals (`RhinoSwordStealBySkimmerEffect.stealUpgradeElement`); below it
+> the same petals are EJECTED as crystals at the strike, so the hit still scores and conserves.
+> The old L5s are deleted: **Breaker** (shielded prism in one slice) and **Live Wire** (a return to
+> the stance re-lights the tail). The Charge ability is renamed **Energize** (the energize, plus
+> Charge's scaling of how many petals a hit takes).
+
 > **2026-10-26 (Garrett), second round: NO ENERGY; Charge steals; Space alone sets the length.**
 > "Omnicrystal doesn't need the element buff, lets discard the whole notion of energy as a resource
 > on the rhino. Charge should control the amount of crystals stolen from vessels with the sword.
@@ -28,7 +39,7 @@ Layers the **energize ritual** (the supershield key), the **Space-driven length*
 **FX pass** onto the Rhino's swordsmanship (the pose/analog-swipe rig is in
 `RHINO_SHIELD_SWIPE.md` — read it first). Ordinary cutting is **ungated**: no stance, no
 cooldown — the sword always damages prisms on contact. The ONE gated act is popping a
-SUPER-shielded prism, which requires the blade to be **ENERGIZED**.
+SUPER-shielded prism, which requires the **Space level-5 upgrade** and the blade to be **ENERGIZED**.
 
 **Design history (do not relitigate):** a first iteration gated ALL damage behind an energize
 stance + a slash cooldown; that shipped a sword that mostly didn't cut and was **rejected — never
@@ -43,11 +54,10 @@ only** — the rejection covers NORMAL damage gating, not the hardened-target ri
 |---|---|---|
 | Normal prism | any | **SLICED** — cut along the plane the blade swept through it; the halves part, open and dissolve from the cut face (§ "The slice"). Falls back to the ordinary explosion, debris thrown at the **contact velocity** (below), whenever the slice cannot be drawn |
 | Shielded prism | any | Shield pops, prism survives (standard `Prism.Damage` semantics) |
-| Shielded prism, **Breaker** active (SPACE level 5) | any | **One slice**: the shield sheds AND the core is cut in the same hit (`breakerElement`, gated on `IsUpgradeActive(Space)`; Garrett, 2026-10-13). Restorable like any ordinary sword kill — Breaker sheds the shield first rather than devastating. Super-shielded mass is unaffected |
-| **Super-shielded prism** | **ENERGIZED** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Slice(devastate: true)` (the armour shatters, the core is CUT; unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
-| **Super-shielded prism** | not energized | **BINDS** — no recoil, no spin. The blade sticks in the armour: a dim **denied spark**, the prism **jiggles**, a **punish thud**, and while the blade stays inside the vessel's **rotation rate is dragged down** and the pilot feels a **grind** (§ "Binding"). The prism survives. |
+| **Super-shielded prism** | **ENERGIZED**, **Space L5** active | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Slice(devastate: true)` (the armour shatters, the core is CUT; unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
+| **Super-shielded prism** | not energized, or no Space L5 | **BINDS** — no recoil, no spin. The blade sticks in the armour: a dim **denied spark**, the prism **jiggles**, a **punish thud**, and while the blade stays inside the vessel's **rotation rate is dragged down** and the pilot feels a **grind** (§ "Binding"). The prism survives. |
 | One of this sword's own **afterimages** | any | **SLICED like any prism** once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett, 2026-10-17: *"not immune to our destruction"*; it was never cut before). `IRhinoSwordState.IsOwnAfterimage` survives only for the AI's aim. Watch item: one energize plus self-cuts can refill the meter — the lever is energy-per-own-afterimage, not immunity (`RHINO_SWORD_AFTERIMAGE.md` §3) |
-| Another **vessel** | any | The sword also **steals petals**: `RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`) sits in the sword's container and runs only for a hit `VesselCombatHitBySword` admits (PvP is petals only) — the sword does drain an opponent |
+| Another **vessel** | any | The sword takes **petals**: `RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`) sits in the sword's container and runs only for a hit `VesselCombatHitBySword` admits (PvP is petals only). With the **Charge L5** upgrade it STEALS them (they land on the Rhino); below it they are EJECTED as crystals at the strike (`stealUpgradeElement`, 2026-10-26) |
 
 `popRequiresEnergizedBlade` (default **on** — the ritual IS the design) replaces v2's
 `destroySuperShielded`: flip it off on the asset to restore the v2 ungated pop as a designer
@@ -113,7 +123,7 @@ Charging ── stance broken ──► Idle
 Charging ── hold met ──► ENERGIZED (IGNITION burst; costs nothing since 2026-10-26)
 Energized ── stance held since ignition ──► stays lit
 Energized ── stance left ──► tail: stays lit energizedTailSeconds (5 s), then runs out
-             (re-taking the stance does NOT re-light it — unless Charge L5 Live Wire is active)
+             (re-taking the stance does NOT re-light it)
 tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
 ```
 
@@ -121,9 +131,8 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
   refreshed an energized blade with no gate, so a chop every few seconds kept any blade lit
   forever for one payment. Now `ShieldSkimmerScaleDriver.UpdateEnergize` holds the blade lit
   from the stance only until the first release (`_releasedSinceIgnition`); after that the tail
-  counts down whatever the fingers do. **Live Wire** (CHARGE level 5,
-  `ShieldSkimmerScaleConfigSO.liveWireUpgradeElement` = Charge, gated through
-  `IsUpgradeActive`) restores the refresh: every return to the stance holds the blade lit again.
+  counts down whatever the fingers do. (Charge L5 **Live Wire** restored the refresh until
+  2026-10-26, when Charge's L5 became the sword's steal and Live Wire was deleted.)
 - **Who decides (2026-10-16).** The machine that OWNS the vessel (the pilot's, or the server
   for an AI) runs this state machine; `RhinoSwordNetworkRelay` (a `NetworkBehaviour` on the
   Rhino root, owner-write `n_state` — the phase nibble plus a surge bit; `n_energy` went with the
@@ -353,7 +362,7 @@ the unchanged `RhinoVesselExplosionByCrystalEffect` blast), which calls
   `RHINO_SWORD_AFTERIMAGE.md`) — from the pilot's blade only, not the copies.
 
 When the surge ends it hands over to the ordinary rules with the tail already spent, so the
-blade goes out the next frame (unless Live Wire is active and the stance is held), the ring folds
+blade goes out the next frame, the ring folds
 away, the camera eases back, and the normal 5 s afterimage window follows. The surge is
 owner-authoritative (`Surge` is a no-op off the authority); the relay's surge bit raises the ring
 on every other peer, and because every peer poses the blade from the replicated trigger mirrors,
@@ -599,6 +608,7 @@ and `elementBoost` are DELETED (2026-10-26). The ring and camera knobs are the `
 `ShieldSkimmerScaleConfig.asset` above.
 
 On `RhinoSwordStealBySkimmerEffect.asset`: `stealScale` Charge ×1 → ×2.5, floor ×1 (2026-10-26);
+`stealUpgradeElement` Charge (the steal is the Charge L5; below it the petals are ejected);
 `debuffMagnitude` / `buffMagnitude` are derived by `author_combat_debuff_magnitudes.py`.
 
 The blade's length range is Space's: the `Skimmer.Scale` override on `Rhino.prefab` (`Min` 24,
@@ -615,14 +625,15 @@ which had no knobs, is deleted.)
    gauge fill, no brightening, no growth). Gain Space levels (crystals, or `SpaceTestHarness` on
    the Rhino's `ResourceSystem`): the blade eases longer, 24 → 40 at level 10, and the camera
    pulls back with it so the blade stays the same size on screen.
-3a. **Charge = steal:** hit a rival vessel with the sword at Charge 0, then at Charge 10 — the
-   second hit takes ~2.5x the petals.
+3a. **Charge L5 = steal:** hit a rival vessel with the sword at Charge 0 — the victim loses
+   petals, but they burst out as crystals at the strike and the Rhino's levels do not move. At
+   Charge 5 the same hit lands them on the Rhino (and Charge 10 takes ~2.5x Charge 0's amount).
 4. **Energize ritual:** pull BOTH triggers fully and hold the centered chop (no meter to fill
    first) — the Charge gauge fills over ~1 s of rising anticipation arcs, then the blade IGNITES:
    danger red + a crackle burst along the whole blade, the gauge full, and the Charge card lights. Holding the stance from
    ignition keeps it lit. Release the stance — the blade stays lit ~5 s, cools, and can't
    re-charge for ~5 s more. **Re-taking the stance during the tail must NOT re-light it**
-   (2026-10-16); with Charge at level 5 (Live Wire) it must.
+   (2026-10-16), at any Charge level (Live Wire is deleted, 2026-10-26).
 5. **Super-shield, not energized — the BIND:** slash into a super-shielded (Stella-Octangula)
    prism (the Skim Race track lining or any super-shielded arena mass) with a gamepad. Expect:
    **no** shove and **no** spin — the ship keeps its line; a dim spark, the prism visibly
@@ -633,8 +644,9 @@ which had no knobs, is deleted.)
    motors — judge the haptics with a pad.
 5b. **A/B:** tick `recoilWhenDenied` on `RhinoSkimmerDamagePrismEffect.asset` — the old recoil
    returns exactly; untick to restore the bind.
-6. **Super-shield, energized:** same prism with the blade lit — it pops on contact (24-face
-   shatter + explode-out), big blade flash + short camera shake.
+6. **Super-shield, energized:** same prism with the blade lit — below Space 5 it still BINDS
+   (step 5). At Space 5 (Shield Breaker) it pops on contact (24-face shatter + explode-out), big
+   blade flash + short camera shake.
 7. **The resting-prism edge:** park the blade inside a super-shielded prism (bound), then
    energize while still touching — the prism must pop the instant ignition lands, no re-approach
    needed. A merely-SHIELDED prism resting in the blade at ignition must keep its core (no free
@@ -714,9 +726,11 @@ for lack of control by having it go quicker."*
 
 - ~~**The Space row is EMPTY (2026-10-26).**~~ **Resolved the same day:** Space alone sets the
   blade's length again (24 → 40), and the camera follows it.
-- **Charge's level-5 is still Live Wire** (an energize upgrade) while Charge now scales the
-  STEAL. It works as shipped, but the L5 no longer upgrades the thing the element scales; a
-  steal-side L5 (e.g. a hit that steals from every rival the ring touches) is a design call.
+- ~~**Charge's level-5 is still Live Wire** while Charge scales the STEAL.~~ **Resolved
+  2026-10-26:** the steal itself is Charge's L5 (below it the petals are ejected).
+- **The AI does not know about Shield Breaker.** `RhinoSwordAutopilot` still energizes when
+  super-shielded mass is near, whatever its Space level; below Space 5 that energize only lays
+  afterimages. Harmless, but an AI tuned for it would skip the hardened-mass trigger below Space 5.
 - **Surge ring edges** (§ "The omni-crystal Surge"): a copy's kill sparks on the pilot's blade
   (one FX controller — give each copy a light spark if it reads wrong); the copies have no swept
   tier; the 0.35 s fan-out overlaps the blade (a brief free Breaker on shielded prisms — gate the

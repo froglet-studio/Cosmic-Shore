@@ -12,9 +12,9 @@ namespace CosmicShore.UI
     /// BothSticksAction: hold both to energize, swing to cut; the afterimages follow the energize).
     /// Time wears the sticks-apart glyph, set here because a gesture has no map input.</para>
     ///
-    /// <para><b>CHARGE card</b> - the sword's STEAL (Charge scales how many petals a sword hit takes;
-    /// 2026-10-26) and its energize, which the card is bound to (the both-triggers stance; its
-    /// level-5, Live Wire, keeps an energized blade lit). The card is lit while the blade is
+    /// <para><b>CHARGE card</b> - the sword's ENERGIZE, which the card is bound to (the both-triggers
+    /// stance), and how many petals a sword hit takes (Charge scales it; its level-5, Sword Steal,
+    /// lands them on the Rhino instead of ejecting them; 2026-10-26). The card is lit while the blade is
     /// energized, the recharge veil sweeps over it through the energize cooldown, and an authored
     /// gauge (if the row has one) shows the energize: filling as the stance is held, full while
     /// lit, draining over the let-go tail (<see cref="ShieldSkimmerScaleDriver.EnergizeGauge01"/>).
