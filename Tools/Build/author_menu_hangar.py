@@ -219,7 +219,16 @@ def ref(fid):
 # HangarVesselTile.prefab - a variant of KitTile
 # --------------------------------------------------------------------------------------------
 
-TILE_H = 64
+# Rev 25 round 2 (Shombith 2026-10-26: "Left side vessel holders should use the open border card as well. The mockup's
+# vessels were colorful and looked way better"): each vessel is a card in the Hangar's open angled border (its body and
+# outline are kit sprites drawn at this size, so KitTile still swaps the outline on selection), the hull large on top
+# drawn with Hull_Lit.mat (the arcade card's treatment: lifted toward a cool grey and edged in white, so the fleet's
+# dark hulls read on the navy body), the name and status under it - never on the picture.
+TILE_W, TILE_H = 220, 124                     # author_ui_kit_sprites.TILE_W / TILE_H: the open card's sprites
+TILE_ART_TOP, TILE_ART_H, TILE_ART_SPRITE = 8, 62, 104             # the hull, from the card's top
+TILE_NAME_Y, TILE_STATUS_Y = 28, 8           # the name and status rows, from the card's foot
+HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
+WINDOW_BACKDROP_ALPHA = 0.95                  # author_menu_arcade.WINDOW_BACKDROP_ALPHA (asserted by that generator's load)
 
 
 def tile_variant_text():
@@ -230,17 +239,37 @@ def tile_variant_text():
     def d(key):
         return derived(K.source_fid("KitTile", key), pid)
 
+    def rect_mods(key, amin, amax, pivot, pos, size):
+        return [(key, "m_AnchorMin.x", amin[0]), (key, "m_AnchorMin.y", amin[1]), (key, "m_AnchorMax.x", amax[0]),
+                (key, "m_AnchorMax.y", amax[1]), (key, "m_Pivot.x", pivot[0]), (key, "m_Pivot.y", pivot[1]),
+                (key, "m_AnchoredPosition.x", pos[0]), (key, "m_AnchoredPosition.y", pos[1]),
+                (key, "m_SizeDelta.x", size[0]), (key, "m_SizeDelta.y", size[1])]
+
+    sprite = lambda name: ("ref", f"{{fileID: 21300000, guid: {K.kit_sprite(name)}, type: 3}}")
+    lean_room = 16 + 14                        # the right side leans in 14 at the floor
     mods = [("root#go", "m_Name", "HangarVesselTile"),
-            ("root#rt", "m_SizeDelta.x", 330), ("root#rt", "m_SizeDelta.y", TILE_H),
-            ("Art#rt", "m_AnchoredPosition.x", 14), ("Art#rt", "m_SizeDelta.x", 48), ("Art#rt", "m_SizeDelta.y", 48),
-            ("Lock#rt", "m_AnchoredPosition.x", 38), ("Lock#rt", "m_SizeDelta.x", 26), ("Lock#rt", "m_SizeDelta.y", 26),
-            ("Name#rt", "m_AnchoredPosition.x", 31), ("Name#rt", "m_AnchoredPosition.y", 10),
-            ("Name#rt", "m_SizeDelta.x", -86), ("Name#rt", "m_SizeDelta.y", 24),
-            ("Status#rt", "m_AnchoredPosition.x", 31), ("Status#rt", "m_AnchoredPosition.y", -12),
-            ("Status#rt", "m_SizeDelta.x", -86), ("Status#rt", "m_SizeDelta.y", 18)]
-    lines = "".join(f"    - target: {K.ref(K.source_fid('KitTile', k), base)}\n      propertyPath: {p}\n"
-                    f"      value: {K.f32(v) if not isinstance(v, str) else v}\n      objectReference: {{fileID: 0}}\n"
-                    for k, p, v in mods)
+            ("root#rt", "m_SizeDelta.x", TILE_W), ("root#rt", "m_SizeDelta.y", TILE_H),
+            ("Fill#img", "m_Sprite", sprite("kit_open_tile_fill")), ("Fill#img", "m_Type", 0),
+            ("Border#img", "m_Sprite", sprite("kit_open_tile_line1")), ("Border#img", "m_Type", 0),
+            ("FocusRing#img", "m_Sprite", sprite("kit_open_tile_line2")), ("FocusRing#img", "m_Type", 0),
+            ("root#tile", "borderSelectedSprite", sprite("kit_open_tile_line2")),
+            ("root#tile", "borderUnselectedSprite", sprite("kit_open_tile_line1")),
+            ("Art#img", "m_Material", ("ref", f"{{fileID: 2100000, guid: {HULL_LIT_MAT}, type: 2}}"))]
+    # The card icons carry wide clear margins (the hull is about 60 % of the square), so the art is drawn larger than its
+    # band: the hull fills the band and only clear pixels cross into the word rows.
+    mods += rect_mods("Art#rt", (0.5, 1), (0.5, 1), (0.5, 0.5), (-8, -(TILE_ART_TOP + TILE_ART_H / 2)), (TILE_ART_SPRITE, TILE_ART_SPRITE))
+    mods += rect_mods("Lock#rt", (1, 1), (1, 1), (1, 1), (-22, -16), (20, 20))
+    mods += rect_mods("Name#rt", (0, 0), (1, 0), (0, 0), (14, TILE_NAME_Y), (-14 - lean_room, 24))
+    mods += rect_mods("Status#rt", (0, 0), (1, 0), (0, 0), (14, TILE_STATUS_Y), (-14 - lean_room, 18))
+    assert TILE_ART_TOP + TILE_ART_H <= TILE_H - (TILE_NAME_Y + 24), "the hull would sit on the vessel's name"
+
+    def mod_line(k, p, v):
+        if isinstance(v, tuple):
+            return (f"    - target: {K.ref(K.source_fid('KitTile', k), base)}\n      propertyPath: {p}\n"
+                    f"      value: \n      objectReference: {v[1]}\n")
+        return (f"    - target: {K.ref(K.source_fid('KitTile', k), base)}\n      propertyPath: {p}\n"
+                f"      value: {K.f32(v) if not isinstance(v, str) else v}\n      objectReference: {{fileID: 0}}\n")
+    lines = "".join(mod_line(k, p, v) for k, p, v in mods)
     tile_c, cg_c, le_c, in_c = F("root#hangarTile"), F("root#cg"), F("root#le"), F("root#in")
     root_go = d("root#go")
     added = "".join(f"    - targetCorrespondingSourceObject: {K.ref(K.source_fid('KitTile', 'root#go'), base)}\n"
@@ -314,8 +343,12 @@ GAME_LISTS = [K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset")
 ELEMENTS = [("Charge", 1), ("Mass", 2), ("Space", 3), ("Time", 4)]
 TAB_NAMES = ["Abilities", "Upgrades", "Games", "Pilots", "Artifacts"]
 # Rev 24 (Shombith 2026-10-26, option C taken forward): three tabs on Y, OVERVIEW's three parts on LB / RB.
-GROUPS = [("Overview", 0, 3), ("Pilots", 3, 1), ("Artifacts", 4, 1)]
-PARTS = TAB_NAMES[:3]
+# Rev 25 round 2 (Shombith 2026-10-26: "Overview, Abilities, Upgrades, Games, Pilots and artifacts all are on the same
+# tab nav bars"): one row of five tabs between LB and RB, every page its own tab (a group of one, so the header still
+# follows the tab). LB / RB step through all five; Y is free.
+GROUPS = [(name, i, 1) for i, name in enumerate(TAB_NAMES)]
+PARTS = ()
+TAB_ROLE, TAB_PAD, TAB_GAP = "Body", 12, 10
 SIDE = 40                                   # the screen's side margins
 LIST_W = 230                                # the vessel list, on the left
 DOSSIER_W, DOSSIER_H, DOSSIER_TOP = 710, 890, 150   # author_ui_kit_sprites.CRADLE_W / _H: the open cradle's fill
@@ -323,7 +356,7 @@ CENTRE_L, CENTRE_R = SIDE + LIST_W + 20, SIDE + DOSSIER_W + 30
 HEADER_TOP, CENTRE_TOP, BOTTOM = 100, 270, 40
 PAD = 30                                    # the dossier's content inset
 PAD_R = 60                                  # a page's right inset: clears the right side leaning in to the floor
-PAGE_TOP_PARTS, PAGE_TOP, PAGE_BOTTOM = 128, 84, 30
+PAGE_TOP_PARTS, PAGE_TOP, PAGE_BOTTOM = 84, 84, 30
 VIBE_W, VIBE_H, VIBE_SEGMENTS = 540, 124, 10
 # The Rail border (R24Borders "2 Rail"): Bracket_Large's open cradle, closed on the right by a chamfered rail that stops
 # short of the tabs, with a corner mark. Lines in y-down dossier units.
@@ -773,23 +806,15 @@ def keycap(key, caption):
 
 
 def tab_header(panel):
-    """Rev 24: OVERVIEW, PILOTS, ARTIFACTS along the top (Y steps them), and under them OVERVIEW's parts between their LB and
-    RB keycaps - Abilities, Upgrades, Games - shown only while OVERVIEW is."""
+    """One row along the top, above the rail: LB, the five tabs, RB (Rev 25 round 2). LB / RB step the tabs."""
     head = panel.child(N("Tabs/Header", "Header", R((0, 1), (1, 1), (0, -8), (-2 * PAD, 52), (0.5, 1))))
-    head.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 26, 3, (0, 0), (0, 0)))
+    head.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), TAB_GAP, 3, (0, 0), (0, 0)))
+    head.children.append(keycap("PartsLeftKeycap", "LB"))
     for name, _, _ in GROUPS:
-        text_tab(head, f"Tabs/Header/{name}", name, name.upper(), "H3", K.label_width(name.upper(), "H3") + 12, 52)
-    hint = panel.child(N("Tabs/Hint", "TabHint", R((1, 1), None, (-PAD, -8), (120, 52), (1, 1))))
-    hint.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
-    hint.children.append(keycap("TabKeycap", "Y"))
-    label(hint.child(N("Tabs/Hint/Label", "Label", R(size=(K.label_width("TAB", "Label"), K.line_height("Label"))))),
-          "TAB", "Label", "NeutralLightest")
-    parts = panel.child(N("Tabs/Parts", "Parts", R((0, 1), (1, 1), (0, -76), (-2 * PAD, 40), (0.5, 1))))
-    parts.add("cg", 225, canvas_group(True)).add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (0, 0), (0, 0)))
-    parts.children.append(keycap("PartsLeftKeycap", "LB"))
-    for name in PARTS:
-        text_tab(parts, f"Tabs/Parts/{name}", name, name.upper(), "ButtonSmall", K.label_width(name.upper(), "ButtonSmall") + 20, 40)
-    parts.children.append(keycap("PartsRightKeycap", "RB"))
+        text_tab(head, f"Tabs/Header/{name}", name, name.upper(), TAB_ROLE, K.label_width(name.upper(), TAB_ROLE) + TAB_PAD, 52)
+    head.children.append(keycap("PartsRightKeycap", "RB"))
+    width = sum(K.label_width(n.upper(), TAB_ROLE) + TAB_PAD for n, _, _ in GROUPS) + 2 * 40 + TAB_GAP * (len(GROUPS) + 1)
+    assert width <= DOSSIER_W - 2 * PAD - 20, f"the tab row runs into the rail's corner ({width})"
 
 
 def build_tabs(panel):
@@ -807,7 +832,7 @@ def build_tabs(panel):
             entries += f"  - button: {button}\n    page: {ref(ctx.c(f'Tabs/{name}', 'cg'))}\n    pageLogic: {logic}\n"
         groups = ""
         for name, first, count in GROUPS:
-            parts = ref(ctx.c("Tabs/Parts", "cg")) if count > 1 else "{fileID: 0}"
+            parts = "{fileID: 0}"
             if name == "Artifacts":
                 words = ("    kickerTemplate: \"{vessel} \\xB7 1 SLOT\"\n    titleTemplate: ARTIFACTS\n"
                          "    lineTemplate: A real upgrade to a knob the elements do not reach. Carry one and you can lose it.\n")
@@ -815,6 +840,7 @@ def build_tabs(panel):
                 words = "    kickerTemplate: \n    titleTemplate: \n    lineTemplate: \n"
             groups += (f"  - button: {ref(ctx.c(f'Tabs/Header/{name}', 'tab'))}\n    firstPage: {first}\n    pageCount: {count}\n"
                        f"    partsRow: {parts}\n" + words)
+        assert not PARTS, "a parts row is back: every page is its own tab on the one row"
         return K.mono(go, TABS_SCRIPT,
                       "  tabs:\n" + entries + "  groups:\n" + groups
                       + f"  headerKickerText: {ref(ctx.c('Header/Kicker', 'tmp'))}\n"
@@ -822,7 +848,7 @@ def build_tabs(panel):
                       f"  headerLineText: {ref(ctx.c('Header/Line', 'tmp'))}\n"
                       "  swapSeconds: 0.32\n  travel: 60\n  skewDegrees: 6\n"
                       f"  scanLine: {ref(ctx.rt('Tabs/Scan'))}\n  scanGroup: {ref(ctx.c('Tabs/Scan', 'cg'))}\n"
-                      "  scanTravel: 720\n  shoulderInput: 1\n  northInput: 1\n")
+                      "  scanTravel: 720\n  shoulderInput: 1\n  northInput: 0\n")
     panel.add("tabs", 114, body)
     return pages
 
@@ -885,10 +911,8 @@ def hangar_bay(clip):
     the ambient loops re-batch only the bay (and sleep while the Hangar is hidden, KitSightline)."""
     bay = clip.child(N("Hero/Clip/Bay", "Bay", STRETCH))
     bay.add("canvas", 223, nested_canvas())
-    glow_img(bay, "Hero/Clip/Bay/Deep", "Deep", R(size=(900, 620)), "ControlActive", 0.16)
-    glow_img(bay, "Hero/Clip/Bay/RimL", "RimLeft", R((0, 0.5), None, (60, 40), (620, 640)), "SurfaceLight", 0.55)
-    glow_img(bay, "Hero/Clip/Bay/RimR", "RimRight", R((1, 0.5), None, (-60, 60), (620, 640)), "ControlActive", 0.22)
-    glow_img(bay, "Hero/Clip/Bay/Pool", "FloorPool", R((0.5, 0), None, (0, 96), (700, 130)), "ControlActive", 0.32)
+    # Rev 25 round 2 (Shombith 2026-10-26: "In the middle remove the hued image behind the vessel"): the deep glow, the two
+    # coloured rim lights and the floor pool are gone; the vessel stands on the sea with only its floor rings.
     for i, (w, h) in enumerate(((640, 120), (480, 90), (330, 62))):
         ring = glow_img(bay, f"Hero/Clip/Bay/Ring{i}", f"Ring{i}", R((0.5, 0), None, (0, 96), (w, h)), "ControlActive", 0.5,
                         K.kit_sprite("kit_hex_line2"))
@@ -941,6 +965,12 @@ def build_view(row_guid):
     root = N("root", "HangarView", STRETCH)
     # §70 (Shombith 2026-10-25: "Hangar should have it too"): the sea behind the whole screen, under the top bar, first so
     # every zone draws over it. Its wash dims the menu world behind the Hangar the way a hub window's veil does.
+    # Rev 25 round 2 (Shombith 2026-10-26: "Hangar screen whole bg is too transparent. Make the bg look like the arcade
+    # bg"): the Arcade window's backdrop exactly - the near-opaque veil (author_menu_arcade.WINDOW_BACKDROP_ALPHA), then
+    # the sea lines over it.
+    veil = root.child(N("Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84))))
+    veil.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", WINDOW_BACKDROP_ALPHA), raycast=True)) \
+        .add("th", 114, themed("SurfaceBlack", WINDOW_BACKDROP_ALPHA))
     sea = root.child(N("Sea", "Sea", R((0, 0), (1, 1), (0, -42), (0, -84))))
     sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_WINDOW_MAT))
 
@@ -1019,8 +1049,9 @@ def build_view(row_guid):
         .add("th", 114, themed("Purchase", 0.0)).add("le", 114, le(ignore=True, pw=20, ph=20))
     label(chip.child(N("Hero/Chip/Label", "Label", R(size=(K.label_width("OWNED", "Label"), K.line_height("Label"))))),
           "Owned", "Label", "TextLight")
-    label(hero.child(N("Hero/Turn", "TurnHint", R((1, 1), None, (0, -8), (360, 18), (1, 1)))),
-          "Drag or right stick to turn", "Label", "NeutralLightest", align="right")
+    # At the stage's foot, under the floor rings (Rev 25 round 2: nothing written over a picture).
+    label(hero.child(N("Hero/Turn", "TurnHint", R((0.5, 0), None, (0, 4), (360, 18), (0.5, 0)))),
+          "Drag or right stick to turn", "Label", "NeutralLightest", align="center")
 
     # Rev 24 ("for the vibe they look like sliders ... they can be like bars"): each of the vessel's three scales is a row
     # of segments, lit from the left up to its value.
@@ -1042,8 +1073,10 @@ def build_view(row_guid):
         + "    thumb: {fileID: 0}\n    fill: {fileID: 0}\n" for i in range(3))
         + f"  litToken: {K.TOKEN_INDEX['TextLight']}\n  unlitToken: {K.TOKEN_INDEX['SurfaceDark']}\n"))
 
-    # Over the stage's lower right, above the vibe bars, so the two never meet on a narrower screen (16:10 is 1728 wide).
-    slot = cz.child(N("Unlock", "Unlock", R((1, 0), None, (0, VIBE_H + 16), (300, 60), (1, 0))))
+    # At the stage's top right, across from the status chip (Rev 25 round 2: it sat on the floor rings). Chip and button
+    # together stay inside the centre zone at 16:10 (1728 wide).
+    slot = cz.child(N("Unlock", "Unlock", R((1, 1), None, (0, -2), (300, 60), (1, 1))))
+    assert 110 + 300 + 20 <= 1728 - CENTRE_L - CENTRE_R, "the status chip and UNLOCK meet at 16:10"
     locked = slot.child(N("Unlock/Locked", "Locked", STRETCH)).add("cg", 225, canvas_group(False))
     locked.children.append(button_instance("UnlockButton", "UnlockButton", "Purchase", False, "UNLOCK - 4000", icon=True))
     owned = slot.child(N("Unlock/Owned", "Owned", STRETCH)).add("cg", 225, canvas_group(True))
@@ -1353,14 +1386,16 @@ def validate_prefabs(files, guids):
         assert f"button: {button}\n    page: {{fileID: {hv(f'Tabs/{name}#cg')}}}" in pages_part, f"page {name}: button or page unwired"
         if name != "Artifacts":
             assert f"pageLogic: {{fileID: {hv(f'Tabs/{name}#logic')}}}" in pages_part, f"page {name}: page logic unwired"
-    assert groups_part.count("  - button: ") == len(GROUPS), "HangarTabsView must name three tabs (OVERVIEW, PILOTS, ARTIFACTS)"
+    assert groups_part.count("  - button: ") == len(TAB_NAMES), "HangarTabsView must name five tabs on the one row"
     for name, first, count in GROUPS:
-        parts = f"{{fileID: {hv('Tabs/Parts#cg')}}}" if count > 1 else "{fileID: 0}"
+        parts = "{fileID: 0}"
         assert (f"  - button: {{fileID: {hv(f'Tabs/Header/{name}#tab')}}}\n    firstPage: {first}\n    pageCount: {count}\n"
                 f"    partsRow: {parts}\n") in groups_part, f"tab {name}: button, pages or parts row wrong"
     for field, key in (("headerKickerText", "Header/Kicker"), ("headerTitleText", "Header/Title"), ("headerLineText", "Header/Line")):
         assert f"  {field}: {{fileID: {hv(f'{key}#tmp')}}}\n" in tabs, f"HangarTabsView.{field} unwired (the header would not follow the tab)"
-    assert "  northInput: 1\n" in tabs, "Y no longer steps the tabs"
+    assert "  northInput: 0\n" in tabs and "  shoulderInput: 1\n" in tabs, "LB / RB step the tabs; Y is free"
+    assert "m_Name: Parts\n" not in view and "m_Name: TabHint\n" not in view, \
+        "a second tab row is back (Shombith: all the tabs on the same bar)"
     check_flowers(view)
     # The pages clear the right side where it leans in: at a page's floor the side is RAIL_LEAN x (how far below the
     # knee) in from the edge, and the fill is the sprite drawn at exactly the dossier's size.
@@ -1551,8 +1586,8 @@ def self_test(current, files, guids):
             r"(\n  upgradeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "a flower petal turned out of place": view_plant(lambda t: t.replace(
             "m_LocalEulerAnglesHint: {x: 0, y: 0, z: -144}", "m_LocalEulerAnglesHint: {x: 0, y: 0, z: -140}", 1)),
-        "OVERVIEW's parts row unwired": view_plant(lambda t: t.replace(
-            f"    partsRow: {{fileID: {K.FileIds('HangarView')('Tabs/Parts#cg')}}}", "    partsRow: {fileID: 0}", 1)),
+        "a second tab row back": view_plant(lambda t: t.replace("m_Name: Header\n", "m_Name: Parts\n", 1)),
+        "Y stepping the tabs again": view_plant(lambda t: t.replace("  northInput: 0\n", "  northInput: 1\n", 1)),
         "the header not following the tab": view_plant(lambda t: re.sub(
             r"(\n  headerTitleText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "a vibe segment unwired": view_plant(lambda t: re.sub(r"(\n    segments:\n    - )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),

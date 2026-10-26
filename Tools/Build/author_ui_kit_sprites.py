@@ -34,6 +34,9 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
     kit_cradle_card                          the Rev 25 configure card's body (the same open cradle, 920 x 538,
                                              leaning in 40 at the floor): faint at the top rather than clear, so the
                                              card's first section still reads as on the card
+    kit_open_tile_{fill,line1,line2}         the Hangar's vessel-list card (220 x 124): the same open angled border
+                                             at a tile's size - its body, and its outline at the hairline and the
+                                             selected stroke (KitTile swaps the two), with the corner mark
     kit_corner_tri                           the 22-unit right triangle in a panel's bottom-left corner (the old
                                              Hangar's corner mark)
 
@@ -99,10 +102,15 @@ CRADLE_TEXELS = 0.5          # a soft fill: half a texel per unit, 355 x 445
 CRADLE_RAMP = ((0.0, 0.0), (110.0, 0.72), (0.6 * CRADLE_H, 0.9), (float(CRADLE_H), 0.95))
 # The Rev 25 configure card (author_menu_configure.G_SET_W / G_CFG_H): the Hangar's cradle at the card's size, its
 # foot leaning in less (the R25 boards' open panel) and its top faint instead of clear.
-CARD_W, CARD_H = 920, 536
+CARD_W, CARD_H = 680, 578
 CARD_LEAN, CARD_KNEE = 40, 0.46
 CARD_RAMP = ((0.0, 0.3), (90.0, 0.78), (0.6 * CARD_H, 0.9), (float(CARD_H), 0.95))
 CORNER_TRI = 22              # the corner mark's legs, canvas units
+# The Hangar's vessel-list card (author_menu_hangar.TILE_W / TILE_H): the open border at a tile's size. Drawn simple
+# (one size), two texels a unit, so the outline is crisp.
+TILE_W, TILE_H = 220, 124
+TILE_LEAN, TILE_KNEE, TILE_CHAMFER, TILE_RAIL, TILE_STUB, TILE_CORNER = 14, 0.46, 12, 0.62, 0.62, 9
+TILE_RAMP = ((0.0, 0.55), (40.0, 0.85), (float(TILE_H), 0.95))
 # The outline sprites carry a soft INNER glow under the band (the owner, 2026-10-17: "make the
 # borders glow everywhere in the menu"). Baked into the texture, so every kit border glows in its
 # own tint at zero runtime cost. It runs GLOW_U units inward from the band's inner edge, inside the
@@ -344,15 +352,46 @@ def cradle_inside(xs, ys, dims=HANGAR_CRADLE):
     return (xs >= 0) & (xs <= right) & (ys >= 0) & (ys <= ch)
 
 
-def build_cradle_fill(dims=HANGAR_CRADLE):
-    w_tex, h_tex = int(dims[0] * CRADLE_TEXELS), int(dims[1] * CRADLE_TEXELS)
+def build_cradle_fill(dims=HANGAR_CRADLE, texels=CRADLE_TEXELS):
+    w_tex, h_tex = int(dims[0] * texels), int(dims[1] * texels)
     n = 4
-    xs = ((np.arange(w_tex * n) + 0.5) / n / CRADLE_TEXELS)[None, :]
-    ys = ((np.arange(h_tex * n) + 0.5) / n / CRADLE_TEXELS)[:, None]
+    xs = ((np.arange(w_tex * n) + 0.5) / n / texels)[None, :]
+    ys = ((np.arange(h_tex * n) + 0.5) / n / texels)[:, None]
     depth, level = zip(*dims[4])
     ramp = np.interp(ys, depth, level)
     a = cradle_inside(xs, ys, dims) * ramp
     return a.reshape(h_tex, n, w_tex, n).mean(axis=(1, 3)), 0
+
+
+def tile_points(hw):
+    """The open card's outline (canvas units, y down), inset by half the stroke so it stays inside the texture."""
+    w, h = TILE_W - hw, TILE_H - hw
+    return [(hw, TILE_H * TILE_STUB), (hw, h), (w - TILE_LEAN, h), (w, TILE_H * TILE_KNEE), (w, TILE_CHAMFER),
+            (w - TILE_CHAMFER, hw), (TILE_W * TILE_RAIL, hw)]
+
+
+def build_open_tile_fill():
+    a, _ = build_cradle_fill((TILE_W, TILE_H, TILE_LEAN, TILE_KNEE, TILE_RAMP), TEXELS_PER_UNIT)
+    return a, 0
+
+
+def build_open_tile_line(width):
+    tw, th = TILE_W * TEXELS_PER_UNIT, TILE_H * TEXELS_PER_UNIT
+    n = 4
+    xs = ((np.arange(tw * n) + 0.5) / n / TEXELS_PER_UNIT)[None, :]
+    ys = ((np.arange(th * n) + 0.5) / n / TEXELS_PER_UNIT)[:, None]
+    hw = width / 2.0
+    pts = tile_points(hw)
+    d = np.full((th * n, tw * n), 1e9)
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        vx, vy = x1 - x0, y1 - y0
+        L2 = vx * vx + vy * vy
+        t = np.clip(((xs - x0) * vx + (ys - y0) * vy) / L2, 0, 1)
+        d = np.minimum(d, np.hypot(xs - (x0 + t * vx), ys - (y0 + t * vy)))
+    on = (d <= hw).astype(float)
+    tri = (xs <= TILE_CORNER - (TILE_H - ys)) & (ys >= TILE_H - TILE_CORNER)
+    on = np.maximum(on, tri.astype(float))
+    return on.reshape(th, n, tw, n).mean(axis=(1, 3)), 0
 
 
 def build_corner_tri():
@@ -406,6 +445,12 @@ def sprite_set():
     out.append(("kit_cradle_card", a, (0, 0, 0, 0), dict(cradle=CARD_CRADLE)))
     a, _ = build_corner_tri()
     out.append(("kit_corner_tri", a, (0, 0, 0, 0), dict(corner_tri=True)))
+    a, _ = build_open_tile_fill()
+    out.append(("kit_open_tile_fill", a, (0, 0, 0, 0), dict(cradle=(TILE_W, TILE_H, TILE_LEAN, TILE_KNEE, TILE_RAMP),
+                                                            texels=TEXELS_PER_UNIT)))
+    for k in (1, 2):
+        a, _ = build_open_tile_line(k)
+        out.append((f"kit_open_tile_line{k}", a, (0, 0, 0, 0), dict(open_tile=k)))
     return out
 
 
@@ -516,9 +561,18 @@ def check_sprite(name, alpha, border, meta):
         assert row[len(row) // 2] > 0.95, f"{name}: the streak must be solid in the middle"
     elif meta.get("spark_v"):
         check_sprite(name, alpha.T, border, dict(spark=True))
+    elif meta.get("open_tile"):
+        assert alpha.shape == (TILE_H * TEXELS_PER_UNIT, TILE_W * TEXELS_PER_UNIT), f"{name}: wrong size"
+        t = TEXELS_PER_UNIT
+        assert alpha[: 20 * t, : 40 * t].max() < 0.01, f"{name}: the card must be open at its top-left"
+        assert alpha[-1, -1] < 0.01, f"{name}: the right side leans in - the bottom-right corner must be empty"
+        assert alpha[-1, 40 * t] > 0.5, f"{name}: the floor line is missing"
+        assert alpha[-2, 1] > 0.9, f"{name}: the corner mark is missing"
+        assert alpha[int(TILE_H * 0.3) * t, w // 2] < 0.01, f"{name}: an outline must be hollow"
     elif meta.get("cradle"):
         cw, ch, lean_u, _, ramp = meta["cradle"]
-        assert alpha.shape == (int(ch * CRADLE_TEXELS), int(cw * CRADLE_TEXELS)), f"{name}: wrong size"
+        texels = meta.get("texels", CRADLE_TEXELS)
+        assert alpha.shape == (int(ch * texels), int(cw * texels)), f"{name}: wrong size"
         assert abs(alpha[0].max() - ramp[0][1]) < 0.02, f"{name}: the top is not the ramp's first level"
         assert alpha[-1, 0] > 0.9, f"{name}: the floor's left corner must be solid"
         assert alpha[-1, -1] == 0, f"{name}: the right side's foot leans in - the bottom-right corner must be empty"
@@ -526,7 +580,7 @@ def check_sprite(name, alpha, border, meta):
         col = alpha[:, 0]
         assert np.all(np.diff(col) >= -1e-9), f"{name}: the body must not get lighter toward the floor"
         floor = alpha[-2]
-        lean = (w - 1 - np.nonzero(floor > 0.5)[0].max()) / CRADLE_TEXELS
+        lean = (w - 1 - np.nonzero(floor > 0.5)[0].max()) / texels
         assert abs(lean - lean_u) <= 4, f"{name}: the foot leans in {lean:.1f} units, expected {lean_u}"
     elif meta.get("corner_tri"):
         assert alpha[-1, 0] == 1.0 and alpha[0, -1] == 0.0, f"{name}: solid in the bottom-left, clear in the top-right"

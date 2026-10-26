@@ -16110,6 +16110,23 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Round 2: Hangar (opaque, open-border list, one tab row), arcade card flower, configure card (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline: reference compile, the generators' `--check` / `--self-test`, `gates.sh`, and
+an offline render of every changed prefab (no text on an image, no text past its box). Docs/MENU_REDESIGN_B.md section 80.
+
+1. Open the Hangar. **Pass:** the menu world no longer shows through (the same backdrop as the Arcade window); no blue glow
+   behind the vessel; the vibe bars read clearly; one tab row LB ABILITIES UPGRADES GAMES PILOTS ARTIFACTS RB, LB / RB step
+   through all five and wrap, and the header names the pilot on PILOTS and the slot on ARTIFACTS.
+2. The vessel list. **Pass:** every vessel is an open angled card (no top-left edge, the right side leaning in), the hull
+   large on top, name and Owned / Locked under it; the selected card's outline is blue and thicker; the list scrolls.
+3. A locked vessel. **Pass:** UNLOCK sits at the stage's top right, never on the floor rings or the vibe bars, at 16:10 too.
+4. The Arcade grid. **Pass:** each card's element flower sits on the right of its body, small, level with the title; Brood
+   Rush shows two stacked.
+5. Open Scurry, then Brood Rush. **Pass:** the preview is the old size (left two thirds); the controls panel is short; the
+   card under it holds intensity, the pilots, (Arena) the vessel strip with CLAIM, ADD AI PILOT and the AI row; no name,
+   status or team sits on a portrait or a hull; nothing of the Arcade window shows through behind.
+
 ## Friends drawer: people glyph, no maximise (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Verified offline: reference compile, Amoebius builds, `author_menu_friends_drawer.py --check` / `--self-test`, `gates.sh`.

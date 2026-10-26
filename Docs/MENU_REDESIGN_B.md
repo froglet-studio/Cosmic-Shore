@@ -3446,3 +3446,44 @@ maximise buttons).
 The same mistake was on the cell-change loading screen (section 47.4): its four build steps ("Laying prisms" ...) wore
 the Mass, Time, Charge and Space glyphs. They now wear none (`EnvironmentLoadVeilContent.stepGlyphs` is empty; the veil
 already drew a step without one), and `author_load_veil_content.py` fails if an element glyph comes back.
+
+## 80. Round 2 on Rev 24 / 25: the Hangar, the arcade card, the configure card (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the editor screenshots of sections 75 and 78: "Hangar screen whole bg is too transparent. Make the bg
+look like the arcade bg ... Left side vessel holders should use the open border card as well ... In the middle remove the
+hued image behind the vessel ... Vibe tab - I do not even notice it because of the transparency ... Overview, Abilities,
+Upgrades, Games, Pilots and artifacts all are on the same tab nav bars"; "The elemental icon can go on the right side and
+you can resize it a bit smaller"; "Game configuration card - worst - Bring the old preview card size. The controls tab does
+not need to be that big. We can make the detail view bigger also see texts are overlapping with images".
+
+**Hangar** (`author_menu_hangar.py`):
+- The backdrop is the Arcade window's: the 0.95 SurfaceBlack veil, then the sea lines. The vibe bars now read against it.
+- The bay's deep glow, its two coloured rim lights and the floor pool are gone; the vessel stands on its floor rings.
+- One tab row, LB to RB: ABILITIES, UPGRADES, GAMES, PILOTS, ARTIFACTS. Every page is its own tab (a group of one, so the
+  header still follows the tab); LB / RB step through all five (`HangarTabsView.StepPart` steps groups from a one-page
+  group); Y is free. The OVERVIEW group and the second row are gone - the three pages were OVERVIEW.
+- The vessel list is open-border cards (220 x 124): `kit_open_tile_fill` / `_line1` / `_line2`, new kit sprites drawn at the
+  card's size, so KitTile still swaps the outline on selection. The hull is large on top, drawn with `Hull_Lit.mat` (the
+  arcade card's treatment), the name and status under it.
+- UNLOCK moved to the stage's top right and the turn hint to its foot: they sat on the floor rings.
+- **Colour:** the mockup's colourful hulls were crops of the artist files' clay contact sheets (`Docs/VesselModels/sheets`,
+  tan body, lime engine). The fleet's card art follows `Docs/VesselModels/COLOR.md` (lime is never on a vessel; the class
+  livery is neutral), so the cards show the shipped renders, lifted by `Hull_Lit`. Colourful card art is a re-render in
+  `render_cards.py` and a colour-language decision, not a UI change.
+
+**Arcade card** (`author_menu_arcade.py`): the genre flower moved to the body's right edge, 34 across (was 46 beside the
+hull); a two-genre card stacks two, centred, and the title takes the line between the hull and the flowers.
+
+**Configure** (`author_menu_configure.py`):
+- The preview is 1100 x 620 again and the right column 680 (Rev 25's 860 / 920 is undone).
+- The controls are one compact panel (144): the hull's name and CONTROLS on one row, two rows of three controls under it.
+- The card takes the rest of the column (578 tall); the pedestals take what the other sections leave (Arcade 358, Arena 216).
+- A pedestal stretches: its pictures (the portrait over the hull on its pool) share the region above the words in fractions,
+  and the words (name, status, team) sit in fixed rows at its foot, so no word sits on a picture. The AI tag is gone (the
+  status line says AI).
+- The vessel strip is six tiles across the card under a caption row that holds the hull's name and CLAIM.
+- The window's veil is opaque: the Arcade window's title and cards read through the 0.95 one.
+
+**How this round was checked:** an offline renderer of the generated prefabs (nested prefabs and their overrides, layout
+groups, sprites, TMP text, masks) drew every changed screen, and it reports any text on an art image and any text wider
+than its box; the final renders report none. The renderer lives in the session scratchpad, not the repo.

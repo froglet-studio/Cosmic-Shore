@@ -854,7 +854,7 @@ PORTRAIT_BOB_MAT = M._lattice_guid("card_portrait_bob_mat")
 ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay inside the overscan margin
 HULL_ICON = 60                         # the hull, lit (Hull_Lit.mat) - no plate behind it (section 73)
 HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
-FLOWER = 46                            # the petals reach 0.42 of the sprite from its centre: the flower reads about 39 across
+FLOWER = 34                            # the petals reach 0.42 of the sprite from its centre: the flower reads about 29 across
 
 
 def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
@@ -915,14 +915,20 @@ def build_card(placeholder_art):
     # The body: the hull, the name, the petals.
     hull_icon(root, "VesselChip", R((0, 0), None, (12, BODY_H / 2), (HULL_ICON, HULL_ICON), (0, 0.5)), "VesselIcon", HULL_ICON)
     text_x = 12 + HULL_ICON + 12
-    title = root.child(N("Title", "Title", R((0, 0), (1, 0), (text_x / 2 - 8, BODY_H / 2 + 14), (-text_x - 16, 30), (0.5, 0.5))))
+    flowers_w = 12 + FLOWER + 8
+    title = root.child(N("Title", "Title", R((0, 0), (1, 0), ((text_x - flowers_w) / 2, BODY_H / 2), (-(text_x + flowers_w), 30),
+                                             (0.5, 0.5))))
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
     # Rev 24 (Shombith 2026-10-26): the genre's element as the HUD's whole flower, filled to the level the player bought
     # for it on the mode's hull in the Hangar (GameCard.GenreFlower; every element starts at 1). A two-genre mode draws two.
+    # On the body's right edge, small (Shombith 2026-10-26: "The elemental icon can go on the right side and you can resize
+    # it a bit smaller"): a column centred in the body, so one flower sits in the middle and two stack (the card hides the
+    # second by SetActive, which the layout skips).
+    col = root.child(N("Flowers", "Flowers", R((1, 0), None, (-12, BODY_H / 2), (FLOWER, BODY_H - 8), (1, 0.5))))
+    col.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 4, (0, 0), (0, 0)))
     for i, key in enumerate(("Flower", "FlowerSecondary")):
-        H.element_flower(root, key, "GenreFlower" if i == 0 else "GenreFlowerSecondary",
-                         R((0, 0), None, (text_x - 6 + i * (FLOWER + 6), BODY_H / 2 - 20), (FLOWER, FLOWER), (0, 0.5)),
+        H.element_flower(col, key, "GenreFlower" if i == 0 else "GenreFlowerSecondary", R(size=(FLOWER, FLOWER)),
                          ("Time", "Space")[i], active=i == 0)
 
     # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).

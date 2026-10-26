@@ -27,10 +27,11 @@ namespace CosmicShore.UI
     }
 
     /// <summary>
-    /// The Hangar's right-hand panel. Rev 24 (Shombith, 2026-10-26, option C taken forward): three tabs - OVERVIEW, PILOTS,
-    /// ARTIFACTS - stepped with Y, and OVERVIEW's three parts - Abilities, Upgrades, Games - stepped with LB / RB ("LB and
-    /// RB changes the overview parts only"). The header above the vessel follows the tab: the vessel on OVERVIEW, the
-    /// pilot on PILOTS, the slot on ARTIFACTS ("the header text can change as per the tab we are in").
+    /// The Hangar's right-hand panel. Rev 25 (Shombith, 2026-10-26: "Overview, Abilities, Upgrades, Games, Pilots and
+    /// artifacts all are on the same tab nav bars"): one row of tabs, each page its own tab (a group of one), LB / RB
+    /// stepping through all of them. Rev 24 grouped them - OVERVIEW's parts on LB / RB and the groups on Y - and a group
+    /// of several pages still works that way. The header above the vessel follows the tab: the vessel on its own pages,
+    /// the pilot on PILOTS, the slot on ARTIFACTS ("the header text can change as per the tab we are in").
     ///
     /// <para>Underneath it is still one strip of pages (<see cref="tabs"/>, left to right), each group a run of them
     /// (<see cref="groups"/>). A swap is one short beat: the underline glides to the new tab (KitTextTab), the old page
@@ -285,13 +286,13 @@ namespace CosmicShore.UI
             }
         }
 
-        /// <summary>LB / RB: the next part of the tab on screen, wrapping inside it; a one-page tab has no parts.</summary>
+        /// <summary>LB / RB: the next part of the tab on screen, wrapping inside it; from a one-page tab, the next tab.</summary>
         void StepPart(int step)
         {
             if (groups.Length == 0) { Show(_current + step); return; }
             if (_group < 0) return;
             var g = groups[_group];
-            if (g.pageCount <= 1) return;
+            if (g.pageCount <= 1) { ShowGroup(_group + step); return; }
             int offset = ((_current - g.firstPage + step) % g.pageCount + g.pageCount) % g.pageCount;
             Show(g.firstPage + offset);
         }
