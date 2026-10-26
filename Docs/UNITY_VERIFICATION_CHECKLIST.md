@@ -16142,3 +16142,16 @@ hybrid NCA), `TandavaSeveringController` HUD and toast 152. Headless only: harne
 
 **PASS:** both shapes read as a whale/jelly mix, the turns are smooth, it rises after ~24 s. **FAIL:** a blob · members
 pop at a turn · it never rises · it heals mid-turn.
+
+## 🔴 2026-10-26 — AI difficulty: Easy / Medium / Hard / Legendary (unverified: no Unity editor in the session)
+
+**Files:** `AIDifficulty.cs` (`Legendary = 4`), `SkimRaceDifficultySO.cs` + `Resources/SkimRaceDifficulty.asset` (Hard
+0.12 s / 0.02, Legendary = no handicap), the Configure views' AI rows (`author_menu_configure.py`). EditMode:
+`AIDifficultyRulesTests`, `SkimRaceHandicapTests`.
+
+1. Arcade > Skim Race: the row beside ADD AI PILOT shows Easy, Medium, Hard, Legendary; no plate overlaps ADD AI
+   PILOT; each lights when pressed; the AI seats read "Legendary AI" etc. Pad left / right steps through all four.
+2. Race once on Easy and once on Legendary with two AIs: Easy turns in late and overshoots crystals; Legendary takes
+   every crystal cleanly. Hard sits between (a rare overshoot).
+3. Arena > Broadside or Regatta: the Rev 4 row shows four equal plates; Legendary works the same way.
+4. Back out and reopen the card: the pick is remembered (Legendary included). A guest sees the host's pick.
