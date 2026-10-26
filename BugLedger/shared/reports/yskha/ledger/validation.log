@@ -218,3 +218,8 @@
 2026-10-26T15:38:16.716Z E-b44884c449: fix cb51edde0 taken (PlayMode); needs 2 clean run(s)
 2026-10-26T15:38:16.786Z E-ed5bf7a724: fix cb51edde0 taken (PlayMode); needs 2 clean run(s)
 2026-10-26T15:49:36.863Z PlayMode session ended (657s play run, exiting play mode): 2 fix(es) waiting; counted: E-b44884c449 1/2 E-ed5bf7a724 1/2; fired: E-c8e2f49696
+2026-10-26T15:51:36.461Z EditMode session ended (13min editor span, script reload): 2 fix(es) waiting; counted: none; fired: E-c8e2f49696
+2026-10-26T15:52:07.282Z editor load: play=False capture=True minPlay=15s issues=18
+2026-10-26T15:57:28.635Z editor load: play=False capture=True minPlay=15s issues=18
+2026-10-26T16:00:21.569Z editor load: play=False capture=True minPlay=15s issues=18
+2026-10-26T16:09:34.652Z PlayMode session ended (398s play run, exiting play mode): 2 fix(es) waiting; counted: E-b44884c449 2/2 E-ed5bf7a724 2/2; fired: E-c8e2f49696

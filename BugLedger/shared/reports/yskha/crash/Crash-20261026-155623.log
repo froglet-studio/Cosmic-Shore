@@ -1,0 +1,1264 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-26 15:56:23 (next editor launch after the abnormal exit)
+session:        20261025-235014974  (pid 11356, Unity 6000.3.17f1)
+started:        2026-10-25T23:50:14.982Z UTC
+last heartbeat: 2026-10-26T02:49:08.204Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~45s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261025-235014974.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261025-221810732
+started: 2026-10-25T22:18:10.734Z UTC
+unity:   6000.3.17f1
+pid:     11356
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[03:52:03.108] ---- domain reload begins (script compilation / play-mode transition) ----
+ic-Shore\Logs\CrashDetector\HangDump-20261025-221853440.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[03:56:59.443] ---- domain reload begins (script compilation / play-mode transition) ----
+[03:53:07.951] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261025-222222111.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[03:57:11.711] ---- domain reload begins (script compilation / play-mode transition) ----
+String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.Boolean anonymous, System.IO.FileOptions options) [0x0019e] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.IO.FileOptions options) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.FileStream..ctor(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,int,System.IO.FileOptions)
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding, System.Int32 bufferSize) [0x00055] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.StreamWriter..ctor(string,bool,System.Text.Encoding)
+  at System.IO.File.WriteAllText (System.String path, System.String contents, System.Text.Encoding encoding) [0x00034] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.StateCache`1[T].SaveJsonState (System.String filePath, T value) [0x00014] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.StateCache`1[T].SetState (UnityEngine.Hash128 key, T obj) [0x00059] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000265f15d235e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000265f15d2163 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000265f15d1e1b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:53:07.841] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261025-222222147.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[04:02:26.381] ---- entering play mode ----
+[04:02:29.890] ---- play mode running ----
+[04:03:33.359] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-sh[04:34:44.689] ---- domain reload begins (script compilation / play-mode transition) ----
+s PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001c4ac72ed3e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001c4ac72eb43 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001c4ac72e7fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[04:21:30.984] ---- leaving play mode ----
+[04:21:38.299] ---- edit mode restored ----
+[04:34:27.475] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261025-222706769.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[04:34:28.027] ---- domain reload begins (script compilation / play-mode transition) ----
+[04:34:41.389] [EditMode] Error: Problem detected while importing the Prefab file: 'Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab'.
+The file might be corrupt or have a missing Variant parent or nested Prefabs. See details below.
+Errors:
+	GameObject 'Drift' does not reference component MonoBehaviour. Fixing.
+
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5848 (Unity) ErrorsAndWarningsCapture::LogAsOneMessage
+        0x00007ffb87402a91 (Unity) PrefabImporter::GenerateAssetData
+        0x00007ffb88abf88e (Unity) ImportToObjects
+        0x00007ffb88abe712 (Unity) ImportAsset
+        ...
+[04:37:56.468] ---- domain reload begins (script compilation / play-mode transition) ----
+ic-Shore\Logs\CrashDetector\HangDump-20261025-230450035.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[04:40:04.535] ---- entering play mode ----
+[04:40:07.908] ---- play mode running ----
+[04:40:28.906] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb[05:20:23.288] ---- domain reload begins (script compilation / play-mode transition) ----
+trace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[04:40:28.909] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[04:40:28.909] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[04:40:28.911] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[04:48:04.828] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping instance never stops, so release() never frees it and one immortal voice leaks PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001c5de3b4cee (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001c5de3b48a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001c5de3b455b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[04:52:49.391] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[04:52:49.392] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[04:52:49.393] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[04:52:49.394] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[04:56:39.323] ---- leaving play mode ----
+[04:56:46.294] ---- edit mode restored ----
+[05:19:31.238] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261025-230805018.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[05:19:43.233] ---- domain reload begins (script compilation / play-mode transition) ----
+[05:20:36.134] ---- entering play mode ----
+[05:20:44.941] ---- play mode running ----
+[05:21:01.313] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[05:21:01.315] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:21:01.316] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:21:01.318] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:22:35.194] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping instance never stops, so release() never frees it and one immortal voice leaks PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:28:16.883] ---- leaving play mode ----
+[05:28:19.103] ---- edit mode restored ----
+[05:38:30.654] ---- entering play mode ----
+[05:38:34.190] ---- play mode running ----
+[05:38:51.732] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[05:38:51.733] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:38:51.734] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:38:51.736] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:38:53.929] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[05:43:10.071] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[05:43:10.073] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:43:10.073] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:43:10.074] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:56:06.906] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[05:56:06.906] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:56:06.907] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[05:56:06.908] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:19:20.222] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[06:19:20.223] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:19:20.223] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:19:20.224] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:20:03.410] ---- leaving play mode ----
+[06:20:07.940] ---- edit mode restored ----
+[06:20:49.474] ---- entering play mode ----
+[06:21:00.424] ---- play mode running ----
+[06:21:10.867] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[06:21:10.868] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:21:10.868] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:21:10.870] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:21:13.038] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[06:27:40.172] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[06:27:40.172] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:27:40.173] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:27:40.174] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:31:52.293] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[06:31:52.294] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:31:52.295] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:31:52.296] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:45:08.117] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[06:45:08.118] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:45:08.119] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:45:08.119] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:57:26.654] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Menu_Main.unity'.
+Check the following logs for more details.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb86b41ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffb86b45e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[06:57:26.656] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:57:26.657] [PlayMode] Error: GameObject 'Border' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:57:26.658] [PlayMode] Error: GameObject 'Gear' does not reference component MonoBehaviour. Fixing.
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb864f5ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffb86b41e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffb86b44322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffb86b42e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[06:57:51.335] ---- leaving play mode ----
+[06:57:55.455] ---- edit mode restored ----
+[08:18:22.031] [EditMode] Error: connection.state_change
+oldState=Connecting newState=Failed error=Relay process exited (exit code 1073807364)
+        0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffb8631587f (Unity) DebugStringToFile
+        0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x000001c6515b1c6b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaWithDomain (CosmicShore.Gameplay.Cell,CosmicShore.Gameplay.Fauna,UnityEngine.Vector3,CosmicShore.Data.Domains,System.Nullable`1<UnityEngine.Vector3>,CosmicShore.Utility.FaunaConfigurationSO) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:362)
+0x000001c6515b0f9b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaBanded (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO,CosmicShore.Data.Domains,UnityEngine.Vector3,System.Nullable`1<UnityEngine.Vector3>) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:538)
+0x000001c65159ef7b (Mono JIT Code) CosmicShore.Gameplay.RandomLifeSpawner/<SpawnFaunaPopulation>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs:305)
+0x000001c510cef3d1 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x000001c510cef5e0 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86a9483b (Unity) Coroutine::Run
+0x00007ffb86ac033c (Unity) MonoBehaviour::TryCreateAndRunCoroutine
+0x00007ffb86a935a8 (Unity) Coroutine::HandleIEnumerableCurrentReturnValue
+0x00007ffb86a94647 (Unity) Coroutine::ProcessCoroutineCurrent
+0x00007ffb86a94989 (Unity) Coroutine::Run
+0x00007ffb86a926a2 (Unity) Coroutine::ContinueCoroutine
+0x00007ffb8665a0f8 (Unity) DelayedCallManager::Update
+0x00007ffb86a6c86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007ffb86a4abef (Unity) ExecutePlayerLoop
+0x00007ffb86a4ad65 (Unity) ExecutePlayerLoop
+0x00007ffb86a4fc0f (Unity) PlayerLoop
+0x00007ffb873c56da (Unity) EditorPlayerLoop::Execute
+0x00007ffb873dc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffb873de78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffb873d866d (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c4a3057e0e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001c4a3057aad (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001c6087c88bb (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:480)
+0x000001c6515f089b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000001c6515ef7eb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000001c6515ef08b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:174)
+0x000001c6515b1c6b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaWithDomain (CosmicShore.Gameplay.Cell,CosmicShore.Gameplay.Fauna,UnityEngine.Vector3,CosmicShore.Data.Domains,System.Nullable`1<UnityEngine.Vector3>,CosmicShore.Utility.FaunaConfigurationSO) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:362)
+0x000001c6515b0f9b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaBanded (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO,CosmicShore.Data.Domains,UnityEngine.Vector3,System.Nullable`1<UnityEngine.Vector3>) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:538)
+0x000001c65159ef7b (Mono JIT Code) CosmicShore.Gameplay.RandomLifeSpawner/<SpawnFaunaPopulation>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs:305)
+0x000001c510cef3d1 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x000001c510cef5e0 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86a9483b (Unity) Coroutine::Run
+0x00007ffb86ac033c (Unity) MonoBehaviour::TryCreateAndRunCoroutine
+0x00007ffb86a935a8 (Unity) Coroutine::HandleIEnumerableCurrentReturnValue
+0x00007ffb86a94647 (Unity) Coroutine::ProcessCoroutineCurrent
+0x00007ffb86a94989 (Unity) Coroutine::Run
+0x00007ffb86a926a2 (Unity) Coroutine::ContinueCoroutine
+0x00007ffb8665a0f8 (Unity) DelayedCallManager::Update
+0x00007ffb86a6c86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007ffb86a4abef (Unity) ExecutePlayerLoop
+0x00007ffb86a4ad65 (Unity) ExecutePlayerLoop
+0x00007ffb86a4fc0f (Unity) PlayerLoop
+0x00007ffb873c56da (Unity) EditorPlayerLoop::Execute
+0x00007ffb873dc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffb873de78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffb873d866d (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c4a3057e0e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001c4a3057aad (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001c6087c88bb (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:480)
+0x000001c6515f089b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000001c6515ef7eb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000001c6515ef08b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:174)
+0x000001c6515b1c6b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaWithDomain (CosmicShore.Gameplay.Cell,CosmicShore.Gameplay.Fauna,UnityEngine.Vector3,CosmicShore.Data.Domains,System.Nullable`1<UnityEngine.Vector3>,CosmicShore.Utility.FaunaConfigurationSO) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:362)
+0x000001c6515b0f9b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaBanded (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO,CosmicShore.Data.Domains,UnityEngine.Vector3,System.Nullable`1<UnityEngine.Vector3>) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:538)
+0x000001c65159ef7b (Mono JIT Code) CosmicShore.Gameplay.RandomLifeSpawner/<SpawnFaunaPopulation>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs:305)
+0x000001c510cef3d1 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x000001c510cef5e0 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86a9483b (Unity) Coroutine::Run
+0x00007ffb86ac033c (Unity) MonoBehaviour::TryCreateAndRunCoroutine
+0x00007ffb86a935a8 (Unity) Coroutine::HandleIEnumerableCurrentReturnValue
+0x00007ffb86a94647 (Unity) Coroutine::ProcessCoroutineCurrent
+0x00007ffb86a94989 (Unity) Coroutine::Run
+0x00007ffb86a926a2 (Unity) Coroutine::ContinueCoroutine
+0x00007ffb8665a0f8 (Unity) DelayedCallManager::Update
+0x00007ffb86a6c86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007ffb86a4abef (Unity) ExecutePlayerLoop
+0x00007ffb86a4ad65 (Unity) ExecutePlayerLoop
+0x00007ffb86a4fc0f (Unity) PlayerLoop
+0x00007ffb873c56da (Unity) EditorPlayerLoop::Execute
+0x00007ffb873dc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffb873de78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffb873d866d (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c4a3057e0e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001c4a3057aad (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001c6087c88bb (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:480)
+0x000001c6515f089b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000001c6515ef7eb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000001c6515ef08b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:174)
+0x000001c6515b1c6b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaWithDomain (CosmicShore.Gameplay.Cell,CosmicShore.Gameplay.Fauna,UnityEngine.Vector3,CosmicShore.Data.Domains,System.Nullable`1<UnityEngine.Vector3>,CosmicShore.Utility.FaunaConfigurationSO) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:362)
+0x000001c6515b0f9b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaBanded (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO,CosmicShore.Data.Domains,UnityEngine.Vector3,System.Nullable`1<UnityEngine.Vector3>) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:538)
+0x000001c65159ef7b (Mono JIT Code) CosmicShore.Gameplay.RandomLifeSpawner/<SpawnFaunaPopulation>d__8:MoveNext () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs:305)
+0x000001c510cef3d1 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x000001c510cef5e0 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86a9483b (Unity) Coroutine::Run
+0x00007ffb86ac033c (Unity) MonoBehaviour::TryCreateAndRunCoroutine
+0x00007ffb86a935a8 (Unity) Coroutine::HandleIEnumerableCurrentReturnValue
+0x00007ffb86a94647 (Unity) Coroutine::ProcessCoroutineCurrent
+0x00007ffb86a94989 (Unity) Coroutine::Run
+0x00007ffb86a926a2 (Unity) Coroutine::ContinueCoroutine
+0x00007ffb8665a0f8 (Unity) DelayedCallManager::Update
+0x00007ffb86a6c86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007ffb86a4abef (Unity) ExecutePlayerLoop
+0x00007ffb86a4ad65 (Unity) ExecutePlayerLoop
+0x00007ffb86a4fc0f (Unity) PlayerLoop
+0x00007ffb873c56da (Unity) EditorPlayerLoop::Execute
+0x00007ffb873dc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffb873de78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffb873d866d (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c510c0d2ee (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x000001c65158a05e (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x000001c651589f33 (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object,UnityEngine.Object) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:487)
+0x000001c651588ed3 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:421)
+0x000001c65125d60b (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:358)
+0x000001c65125d12a (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x000001c65125cb68 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:72)
+0x000001c651587423 (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffectSO.cs:80)
+0x000001c6512e6958 (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:317)
+0x000001c6515862cf (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:AcceptImpacteeFromShellContact (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:195)
+0x000001c651286893 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:ResolveContacts (CosmicShore.Gameplay.PrismSpatialIndex) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:509)
+0x000001c65127f07b (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:325)
+0x000001c70583e008 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86ab1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffb86ab1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffb8665308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffb86659f1a (Unity) BehaviourManager::Update
+0x00007ffb86a6c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffb86a4abef (Unity) ExecutePlayerLoop
+0x00007ffb86a4ad65 (Unity) ExecutePlayerLoop
+0x00007ffb86a4fc0f (Unity) PlayerLoop
+0x00007ffb873c56da (Unity) EditorPlayerLoop::Execute
+0x00007ffb873dc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffb873de78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffb873d866d (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+Analytics Dispatcher is already flushing.
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c4a3057e0e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001c4a3057aad (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001c60a42f0a3 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000001c60a42ee36 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x000001c60b8429c9 (Mono JIT Code) CosmicShore.Core.UgsAnalyticsSink:Flush () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs:120)
+0x000001c60b84272a (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:Flush () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:606)
+0x000001c60b841e7b (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:HandleAppQuitting () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:808)
+0x000001c50e6d1797 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001c60a420272 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:70)
+0x000001c60b841c4b (Mono JIT Code) CosmicShore.Core.ApplicationLifecycleManager:OnApplicationQuit () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs:85)
+0x000001c70583e008 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86ab6f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007ffb86515010 (Unity) GameObject::SendMessageAny
+0x00007ffb86a3bc42 (Unity) SendMessageToEveryone
+0x00007ffb86a6f65a (Unity) NotifyPlayerQuit
+0x00007ffb873db7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffb873dd4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffb873d896c (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+Container Menu_Main (-106908633) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c4a3057e0e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001c4a3057aad (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001c60a42f0a3 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000001c60a42ee36 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x000001c60b84621b (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:321)
+0x000001c60b845fa3 (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:109)
+0x000001c50e6d1797 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001c60b84341b (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000001c7055a4445 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86ba2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffb8607ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffb86a6f689 (Unity) NotifyPlayerQuit
+0x00007ffb873db7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffb873dd4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffb873d896c (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[Multiplayer]: NetworkManagerSession.StopAsync: Called after dispose.
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c60b858114 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object,UnityEngine.Object)
+0x000001c60b857ea4 (Mono JIT Code) Unity.Services.Multiplayer.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:18)
+0x000001c60b857d53 (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogWarning (object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:38)
+0x000001c60b857c2b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,UnityEngine.Object,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:48)
+0x000001c60b8579db (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:43)
+0x000001c60b856453 (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/NetworkManagerSession.cs:250)
+0x000001c5de406e12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c60b856083 (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession:StopAsync (System.Threading.CancellationToken)
+0x000001c60b855d8b (Mono JIT Code) Unity.Services.Multiplayer.GameObjectsNetcodeNetworkHandler:StopAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/GameObjectsNetcodeNetworkHandler.cs:121)
+0x000001c60b84de6f (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:727)
+0x000001c5de406e12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c60b84da83 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:ResetAsync ()
+0x000001c60b84d4b3 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:129)
+0x000001c5de406e12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c60b84d253 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:Unity.Services.Multiplayer.IModule.LeaveAsync ()
+0x000001c60b84c79f (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:776)
+0x000001c5de406e12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c60b84c213 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveModulesAsync ()
+0x000001c60b84a0db (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:818)
+0x000001c5de406e12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c60b848c63 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveAsync ()
+0x000001c60b848533 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:1234)
+0x000001c5de401c32 (Mono JIT Code) System.Runtime.CompilerServices.AsyncVoidMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c60b84821b (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:OnQuitting ()
+0x000001c50e6d1797 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001c60b84341b (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000001c7055a4445 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86ba2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffb8607ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffb86a6f689 (Unity) NotifyPlayerQuit
+0x00007ffb873db7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffb873dd4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffb873d896c (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[Wire - ws#]: [26-10-2026 06:57:53] FATAL <>c__DisplayClass169_0.<startReceiving>b__2:2577 The header part of a frame could not be read.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (string,object)
+UnityWebSocketSharp.Logger:defaultOutput (UnityWebSocketSharp.LogData,string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:231)
+UnityWebSocketSharp.Logger:output (string,UnityWebSocketSharp.LogLevel) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:249)
+UnityWebSocketSharp.Logger:Fatal (string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:316)
+UnityWebSocketSharp.WebSocket/<>c__DisplayClass169_0:<startReceiving>b__2 (System.Exception) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/WebSocket.cs:2577)
+UnityWebSocketSharp.Ext/<>c__DisplayClass51_0:<ReadBytesAsync>b__0 (System.IAsyncResult) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Ext.cs:812)
+System.Threading.Tasks.TaskToApm/<>c__DisplayClass3_0:<InvokeCallbackWhenTaskCompletes>b__0 ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)
+Mono.Net.Security.MobileAuthenticatedStream/<StartOperation>d__57:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<Mono.Net.Security.AsyncProtocolResult>:TrySetResult (Mono.Net.Security.AsyncProtocolResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Mono.Net.Security.AsyncProtocolResult>:SetResult (Mono.Net.Security.AsyncProtocolResult)
+Mono.Net.Security.AsyncProtocolRequest/<StartOperation>d__23:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>:TrySetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.VoidTaskResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetResult (System.Threading.Tasks.Task`1<System.Threading.Tasks.VoidTaskResult>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetResult ()
+Mono.Net.Security.AsyncProtocolRequest/<ProcessOperation>d__24:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<System.Nullable`1<int>>:TrySetResult (System.Nullable`1<int>)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Nullable`1<int>>:SetResult (System.Nullable`1<int>)
+Mono.Net.Security.AsyncProtocolRequest/<InnerRead>d__25:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetResult (int)
+Mono.Net.Security.MobileAuthenticatedStream/<InnerRead>d__66:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<int>:TrySetResult (int)
+System.Threading.Tasks.ValueTask`1/ValueTaskSourceAsTask/<>c<int>:<.cctor>b__4_0 (object)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:InvokeContinuation (System.Action`1<object>,object,bool)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:OnCompleted (System.Net.Sockets.SocketAsyncEventArgs)
+System.Net.Sockets.SocketAsyncEventArgs:Complete_internal ()
+System.Net.Sockets.Socket/<>c:<.cctor>b__367_10 (System.IAsyncResult)
+System.Net.Sockets.SocketAsyncResult/<>c:<Complete>b__27_0 (object)
+System.Threading.QueueUserWorkItemCallback:System.Threading.IThreadPoolWorkItem.ExecuteWorkItem ()
+System.Threading.ThreadPoolWorkQueue:Dispatch ()
+System.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()
+
+(Filename: ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs Line: 231)
+
+Unloading 4 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            5.651 ms
+	Integration:            879.195 ms
+	Integration of assets:  0.006 ms
+	Thread Wait Time:       0.017 ms
+	Total Operation Time:   884.869 ms
+Unloading 24242 unused Assets / (45.0 MB). Loaded Objects now: 36204.
+Memory consumption went from 0.93 GB to 0.88 GB.
+Total: 435.666100 ms (FindLiveObjects: 4.485000 ms CreateObjectMapping: 9.412200 ms MarkObjects: 399.950300 ms  DeleteObjects: 21.817300 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[BugLedger] Sent to Claude automatically: 4 AI training record(s): Sparrow in Breakwater, Squirrel in SkimRace, Grizzly in GrizzlyTime; 8 load timing report(s). Nothing in your project or branch changed.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugHuntAutoSend:AskAfterPlay () (at Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs:146)
+CosmicShore.Editor.BugHuntAutoSend:AskWhenPeersLanded () (at Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs:57)
+UnityEditor.EditorApplication:Internal_CallDelayFunctions ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs Line: 146)
+
+[BugLedger] Sent to Claude: 15 open error(s) and 12 report file(s) on branch bugledger/yskha. Ask Claude to fix them, or wait for the daily sweep.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedgerSender:SendOnce (CosmicShore.Editor.BugLedgerSender/Context,int) (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:261)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass13_0:<SendInBackground>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:91)
+CosmicShore.Editor.BugLedgerSender/<>c__DisplayClass17_0:<Start>b__0 () (at Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs:163)
+System.Threading.ThreadHelper:ThreadStart_Context (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object)
+System.Threading.ThreadHelper:ThreadStart ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs Line: 261)
+
+Asset Pipeline Refresh (id=0d323991a0efbd24ebc54d4069945d6c): Total: 0.015 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Project ID request failed, Reason: The requested URL returned error: 401 (401).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 401
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "auG3A8qb"... (expires: 2026-10-26T03:53:23Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Asset Pipeline Refresh (id=aee1b21feea3cd947a6ba894ba892f2a): Total: 0.010 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+IPCStream (Upm-11356): IPC stream failed to read (Not connected)
+connection.state_change
+oldState=Connecting newState=Failed error=Relay process exited (exit code 1073807364)
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb861d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001c4a3058ece (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001c4a3058cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001c4a305898b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001c6087c8a6e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001c4a3057e0e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001c674c10ffa (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x000001c62afcdcb3 (Mono JIT Code) Unity.AI.Tracing.ConsoleSink:LogToConsole (string,string,System.Exception) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceSinks.cs:307)
+0x000001c62afcca33 (Mono JIT Code) Unity.AI.Tracing.ConsoleSink:Write (Unity.AI.Tracing.TraceEvent) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceSinks.cs:277)
+0x000001c4d7f5e1ba (Mono JIT Code) Unity.AI.Tracing.TraceWriter:WriteEventInternal (string,string,Unity.AI.Tracing.TraceEventOptions,string,System.Nullable`1<int>) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceWriter.cs:373)
+0x000001c4d7f5b9f3 (Mono JIT Code) Unity.AI.Tracing.TraceWriter:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceWriter.cs:297)
+0x000001c5b83d392b (Mono JIT Code) Unity.AI.Tracing.Trace:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/Trace.cs:79)
+0x000001c5b83d7b5b (Mono JIT Code) Unity.Relay.Editor.RelayService:TransitionTo (Unity.Relay.Editor.RelayStatus,string) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:1226)
+0x000001c62afcaacb (Mono JIT Code) Unity.Relay.Editor.RelayService/<ConnectWebSocketAsync>d__102:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:675)
+0x000001c5de406e12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c62afc9b93 (Mono JIT Code) Unity.Relay.Editor.RelayService:ConnectWebSocketAsync ()
+0x000001c62afc9013 (Mono JIT Code) Unity.Relay.Editor.RelayService/<ReconnectAsync>d__92:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:414)
+0x000001c5de406e12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x000001c62afc7ff3 (Mono JIT Code) Unity.Relay.Editor.RelayService:ReconnectAsync ()
+0x000001c5de2acdeb (Mono JIT Code) Unity.Relay.Editor.RelayService:Update () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:1294)
+0x000001c553179e18 (Mono JIT Code) UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+0x000001c70563cf65 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffb81456c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffb81398984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffb81398a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffb86b9fdd4 (Unity) scripting_method_invoke
+0x00007ffb86ba6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffb86ba2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffb8718bcbb (Unity) Scripting::UnityEditor::EditorApplicationProxy::Internal_CallUpdateFunctions
+0x00007ffb87809d27 (Unity) SceneTracker::Update
+0x00007ffb873d846d (Unity) Application::TickTimer
+0x00007ffb871b9f7c (Unity) MainMessageLoop
+0x00007ffb871c1a12 (Unity) UnityMain
+0x00007ff609372f2a (Unity) __scrt_common_main_seh
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+Scanning for USB devices : 14.841ms
+Unexpected transport error from import worker 2 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker2.log
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb88bb0ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffb88bbda2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffb88b80207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffb88b82aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffb88b790c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffb88b83f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffb88b90867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffb88b7ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffb88b7dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffb88b8d809 (Unity) IOService::Run
+0x00007ffb88b8e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffb87b92b80 (Unity) Thread::RunThreadWrapper
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 2: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker2.log
+Scanning for USB devices : 14.659ms
+Unexpected transport error from import worker 0 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker0.log
+0x00007ffb86364e2e (Unity) StackWalker::ShowCallstack
+0x00007ffb87b9f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffb87b9fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffb8631587f (Unity) DebugStringToFile
+0x00007ffb88bb0ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffb88bbda2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffb88b80207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffb88b82aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffb88b790c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffb88b83f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffb88b90867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffb88b7ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffb88b7dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffb88b8d809 (Unity) IOService::Run
+0x00007ffb88b8e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffb87b92b80 (Unity) Thread::RunThreadWrapper
+0x00007ffc54a0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffc55afee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 0: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker0.log
+Scanning for USB devices : 11.380ms
+Scanning for USB devices : 11.511ms
+Scanning for USB devices : 10.900ms
+Scanning for USB devices : 11.181ms
+IPCStream (hubIPCService): IPC stream failed to read (Not connected)
+Scanning for USB devices : 10.534ms
+Scanning for USB devices : 9.558ms
+
