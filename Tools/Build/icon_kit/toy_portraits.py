@@ -3,7 +3,7 @@
 
     python3 Tools/Build/icon_kit/toy_portraits.py --preview   # render, gate, sheet; nothing under Assets/ changes
     python3 Tools/Build/icon_kit/toy_portraits.py             # ... and write the PNGs (metas and guids kept)
-    python3 Tools/Build/icon_kit/toy_portraits.py --check     # drift gate: re-render and compare to the committed PNGs
+    python3 Tools/Build/icon_kit/toy_portraits.py --check     # drift gate: re-render, compare to the PNGs on disk (reads only)
 
 Where they show: the app shell's Toy Box grid (`ToyCard.prefab`'s 128 px Portrait, through `ToyPortraitLibrary`),
 the Today's-activity card, and the codex's Tool pages - one sprite per toy, resolved from `Codex.asset`'s entry
@@ -21,14 +21,14 @@ The bar is Garrett's (2026-10-25): "the icons are teaching the ability". Each po
 "pick one of these" toys share one grammar - the thing you get SOLID, the others as GHOSTS beside it - so the
 Pilot row reads as one family:
 
-  Vessel Changer   a Squirrel (solid) and a Sparrow (ghost) with the swap between them: fly through, change ship
+  Vessel Changer   a Squirrel (solid) and a Dolphin (ghost), both from above, with the swap between them: change ship
   Domain Changer   a fan of three swatch chips, the front one solid with your hull cut out of it: pick your colour
-  Element Charger  the four element petals (Charge, Mass, Space, Time - the HUD order) each rising out of its ghost:
-                   the row of crystals the toy blooms, and what flying one does to that element
+  Element Charger  the HUD's element flower with the four petal shapes (Charge, Mass, Space, Time), each grown most of
+                   the way out of its ghost: what flying one of the toy's crystals does to that element
   Cell Selector    the cell you pick, solid, its crystal at the nucleus, between two ghost cells: pick a world
   Wander           your hull leaving through a gap in the cell membrane onto a path of prisms that runs on into the
                    distance: leave the cell, the world is built ahead of you
-  Connect the Dots a star traced dot to dot, the last stroke still a ghost: fly the dots and your trail paints it
+  Connect the Dots a star traced dot to dot, the last strokes still a ghost: fly the dots and your trail paints it
   Spawn Matrix     a creature, a plant and a hull standing on one release bench: the three kingdoms you release
 """
 import hashlib
@@ -59,6 +59,7 @@ PETALS = os.path.join(ROOT, "Assets", "Resources", "ElementPetals")
 OUT_SIZE = 512
 GHOST = 0.6                 # VOCABULARY.md: 0.5 sits on the gates' threshold and vanishes small
 TOLERANCE = 2
+BEFORE_REF = "74d0ec8fc6"   # the last commit with the baked emblems: the sheet's BEFORE column reads them from here
 
 SQUIRREL = "Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx"
 DOLPHIN = "Assets/_Models/Vessel Models/dolphin_shapekey_with_animations.fbx"   # the live model (specs/dolphin.py)
@@ -150,7 +151,7 @@ def domain_changer():
     return [(sides, GHOST), (front & ~hull, 1.0)]
 
 
-ELEMENTS = ("Charge", "Mass", "Space", "Time")   # ElementChargerToy.Elements: the HUD's left-to-right order
+ELEMENTS = ("Charge", "Mass", "Space", "Time")   # ElementChargerToy.Elements (the HUD order), laid clockwise from the top
 
 
 def element_charger():
@@ -159,7 +160,7 @@ def element_charger():
     solids, ghosts = C.empty(), C.empty()
     c = (64.0, 64.0)
     for i, e in enumerate(ELEMENTS):
-        d = -90.0 + 90.0 * i                       # Charge up, then clockwise: the flower's own order
+        d = -90.0 + 90.0 * i                       # Charge at the top, then clockwise
         a = math.radians(d)
         tip = (c[0] + math.cos(a) * 9, c[1] + math.sin(a) * 9)
         full = petal(e, tip, d, 48)
@@ -256,7 +257,7 @@ def render(layers, size):
 # ---------------------------------------------------------------------------- the codex: which file is each toy's
 
 def codex_entries():
-    """{entry id: {"name", "tagline", "accent", "image_guid", "image_line"}} for the Tool pages of Codex.asset."""
+    """{entry id: {"name", "tagline", "accent", "image_guid"}} for the Tool pages of Codex.asset."""
     text = open(CODEX, encoding="utf-8").read()
     out = {}
     for m in re.finditer(r"^  - Id: (tool\.[\w-]+)\n(.*?)(?=^  - Id: |\Z)", text, re.M | re.S):
@@ -317,10 +318,12 @@ def bind_codex(entry_id, guid):
     return True
 
 
-def committed(png):
+def before_image(png):
+    """The portrait as it was before this generator drew it (BEFORE_REF), so the sheet keeps showing what was replaced
+    however often it is re-run; None for a toy that had no portrait then (the Element Charger)."""
     rel = os.path.relpath(png, ROOT)
     try:
-        data = subprocess.run(["git", "-C", ROOT, "show", f"HEAD:{rel}"], capture_output=True, check=True).stdout
+        data = subprocess.run(["git", "-C", ROOT, "show", f"{BEFORE_REF}:{rel}"], capture_output=True, check=True).stdout
         return Image.open(io.BytesIO(data)).convert("RGBA")
     except (subprocess.CalledProcessError, OSError):
         return None
@@ -447,7 +450,7 @@ def main(argv):
             bad += 1
             continue
         png = target_png(toy["entry"], entry, idx)
-        before = committed(png)
+        before = before_image(png)
         rows.append((toy["entry"], entry, before, im))
         renders.append((toy, entry, png, im))
         if check:
@@ -458,10 +461,10 @@ def main(argv):
             elif entry["image_guid"] is None:
                 print(f"  DRIFT {toy['entry']} has no Image in Codex.asset")
                 drift += 1
-    print(f"  sheet: {os.path.relpath(draw_sheet(rows, SHEET), ROOT)}")
     if check:
         print(f"  {'no drift' if not drift else str(drift) + ' portrait(s) drifted'}")
         return 1 if (drift or bad) else 0
+    print(f"  sheet: {os.path.relpath(draw_sheet(rows, SHEET), ROOT)}")
     if preview:
         return 1 if bad else 0
     if bad:
