@@ -346,6 +346,48 @@ platform's point-in-horizon test each frame: a very fast, off-centre pass (×4 w
 mouth; the funnel centres the approach. **Not done:** `gateModeEvent` ships empty; the icon is a placeholder; not yet
 flown in the Unity Editor. The studio's line is 600 u and Unity's 1200 u (the existing `pathLength` drift).
 
+## 1g. Round 19 (studio only) — the wormhole slingshot (2026-10-27)
+
+**The team's call** (relayed by Yash, 2026-10-27): the pair should not teleport the vessel, it should **slingshot** it —
+extra boost and a trajectory. Between the two holes is a wormhole: space bends **inward** at the black hole and
+**outward** at the white hole. **LT** sets the distance between the two mouths, **RT** the throat's width. A thick
+wormhole swings you in and out: a turn (70–90° and more); a thin one is a long straight boost for distance. *"Create a
+wireframe to show me this geometry ... pressing the left trigger, it's making it more shorter and wider."*
+
+**Built in the Vessel Studio first** (the artifact leads; Unity still runs §1f's straight gate until this is decided and
+cloned with `/artifact-to-unity`). The studio's `whShape` / `whAt` / `gateHold` / `gateEnter` / `gateTransit` /
+`gateOut` / `updateWormholes`:
+
+| | |
+|---|---|
+| **Press** LT or RT | the black hole opens `gtAheadSeconds` 1.2 s of flight ahead (at most `gtAhead` 90 u); a wormhole runs from it to its white hole. The other trigger shapes the same one. One at a time |
+| **LT** | mouths apart: untouched `gtLenMax` 600 u → fully squeezed `gtLenMin` 120 u, and the throat widens by `gtLtWiden` 0.5 of RT's range — LT alone makes it short and wide |
+| **RT** | the throat's radius: `gtThroatMin` 3 → `gtThroatMax` 40 u. The mouths are `gtMouthFlare` 2 × the throat + 6 u (a hyperboloid: wide at the mouths, narrowest mid-way) |
+| **Stick** | while shaping, the stick picks which way it bends (the hull holds its line into the mouth; a quarter of the stick's travel bends it fully). How far: `gtTurnMax` 120° × fatness, fatness = `gtTurnLenShare` 0.5 × LT's shortness + 0.5 × the throat. **LT alone: 90°; RT alone: 60° over a long arc; both: 120°**; neutral stick: straight |
+| **Fly into the black hole** | crossing its mouth starts the ride: the throat carries you round its curve at `gtTubeSpeed` 2.5 × your speed, `gtThroatRush` +100 % at the throat; where you crossed the mouth is kept, scaled with the throat (you dive in toward it and swing back out) |
+| **Out of the white hole** | your heading is the curve's last; the flight clock warps at once to `1 + (Boost − 1) × gtWarpShare 1.5 × q`, q = 1 − `gtFatCut` 0.65 × fatness (thin and long ×4, LT alone ×2.5, the fattest ×2), held `gtBoostSeconds` 2.5 s |
+| **Held / let go** | held it lasts `gtHoldMax` 3 s; let go (or ridden through) both mouths fall together along the curve to its middle in `gtCollapse` 0.8 s and annihilate (measured: gone 1.5 s after a release, the annihilation included) |
+
+**The wireframe:** rings round the throat and lines along it, violet at the black hole shading to white at the white
+hole; at each mouth the sheet of space it opens from, bending in round the black hole and out round the white hole; in
+lime the line you will fly, on along the white hole's heading. The mouths lens as if never nearer than 80 u, so the
+mouth you fly at stays readable. The HUD reads the shape live: length, throat, the turn and the most this shape can turn.
+
+**Measured** (headless, touch at half throttle): LT full + stick: in at 0.35 s, out at 0.87 s, **turned 90°**, ×2.5;
+RT full + stick: 60°, ×3.0, 722 u covered; both full + stick: **120°**, ×2.0; LT and RT half, stick left: 53°, ×3.1.
+
+**The AI** (input only): with its ring past `gtAiMinTurn` 120 u it tries 9 lengths × 13 bends, keeps the one whose white
+hole leaves heading within 15° of the ring with 60 u to spare (thinner preferred: they warp harder), and squeezes the
+triggers and holds the stick that make it; a straight one only for rings past `gtAiMin` 300 u. A rookie squeezes the
+throat off the mark. **Scorecard** (Hard, seed 1; Mass / Time / Gate round 19, s): circuit I1 54.0 / 60.4 / **50.0**,
+I2 59.6 / 53.8 / **49.6**, I3 51.5 / 77.2 / **49.1**, I4 **49.2** / 79.5 / 62.4; hairpins I1–I4 **31–39** / 66–95 /
+44–53. Round 18's gate did 53.0 on circuit I2 and 61–71 on the hairpins: the bend made Gate the turning tool the team
+asked for, and Mass keeps the tight hairpins.
+
+**To decide before Unity:** the shape (these numbers), and whether the stick bending the wormhole (rather than turning the
+hull) feels right while shaping. **Not modelled:** the network (the shape would have to replicate: two triggers and a
+stick direction); a sound.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
