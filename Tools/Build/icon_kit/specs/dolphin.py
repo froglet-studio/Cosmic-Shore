@@ -51,7 +51,7 @@ REBIND = [
                                  children=[("ChargeFillHull", "Dolphin_ChargeFill", "driftHullIcon"),
                                            ("ChargeFillGauge", None, "driftBoostIcon")],
                                  binding=dict(element=4, gauge="ChargeFillGauge"),
-                                 fields={"chargeSteps": "[]"})),
+                                 fields={"chargeSteps": None})),   # the C# field is gone: the key goes too
 ]
 
 

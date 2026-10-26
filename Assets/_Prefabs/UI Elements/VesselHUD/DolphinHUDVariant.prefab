@@ -301,7 +301,6 @@ MonoBehaviour:
   blastCountText: {fileID: 7710000000000000063}
   driftBoostIcon: {fileID: 605750744958568196}
   driftHullIcon: {fileID: 301810735297330543}
-  chargeSteps: []
 --- !u!1 &4452073075482127087
 GameObject:
   m_ObjectHideFlags: 0
