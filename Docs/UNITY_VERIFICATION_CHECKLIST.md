@@ -65,6 +65,15 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race Mentor tips (`claude/training-ftue-mbxf1o`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+`Assets/_SO_Assets/Drills/Tips/Tips_SkimRace.asset`, mapped in `DrillLibrary.modeTips` (mode 33). Data only, no code.
+Draft copy for Caleb to edit in the inspector.
+
+**Verify in editor:**
+1. Open Skim Race, press FLY, finish or skip the Lesson: the Mentor says the four Skim Race lines (skim, crystal
+   rings, carry the speed, own trail) among the ability tips, each reading true in play.
+
 ### 🟢 Microgame preview flies a card whose hull differs from the menu's (`claude/training-ftue-mbxf1o`, 2026-10-20) — VERIFIED IN EDITOR by Caleb, 2026-10-21 (all four steps)
 
 Caleb's play test (Bug Ledger E-1eea72bc60): Waystation's FLY showed "LEVEL PREVIEW NOT AVAILABLE",

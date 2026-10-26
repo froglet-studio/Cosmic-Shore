@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3ad6d4674ab419a88260ad2eec9aacb, type: 3}
+  m_Name: Tips_SkimRace
+  m_EditorClassIdentifier: 
+  tips:
+  - Id: skimrace-skim
+    Prompt: 'Skim close to the track to build speed. Touching it costs all of it.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 1
+    Priority: 0
+    DwellSeconds: 0
+    Moment:
+      rid: -2
+  - Id: skimrace-crystals
+    Prompt: 'Fly through the ring around your own colour''s crystal. The next one lights up further along.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 1
+    Priority: 10
+    DwellSeconds: 0
+    Moment:
+      rid: -2
+  - Id: skimrace-carry
+    Prompt: 'Every crystal adds a burst of speed. Keep skimming after it to hold on to it.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 2
+    Priority: 0
+    DwellSeconds: 0
+    Moment:
+      rid: -2
+  - Id: skimrace-own-trail
+    Prompt: 'Your own trail turns solid behind you. On later laps, keep off the line you flew before.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 2
+    Priority: 10
+    DwellSeconds: 0
+    Moment:
+      rid: -2
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }

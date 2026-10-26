@@ -678,9 +678,12 @@ because first login lands on that card. `--self-test` has 4 negative controls.
 
 First reading: 12 of 35 cards are fully covered. Every hull has an ability map and every card but
 Maelstrom (its own preview host, no drill) has a flyable preview, so phase 5's gap is authored Mentor
-tips. **`--check` is red on one card: Skim Race**, in the rotation and its fallback, with no tips
-(its metric is `Crystals`, which has no list). The script is not named `check_*`, so it does not
-redden the repo-wide sweep until that list exists.
+tips. `--check` was red on one card, Skim Race (in the rotation and its fallback, no tips; its metric
+is `Crystals`, which Scurry shares across three hulls). **2026-10-26: `Tips_SkimRace` (four draft
+lines about the Squirrel's skim, the crystal rings, carrying a pickup's speed and the hull's own
+trail, checked against `Docs/SKIM_RACE_AI.md` §1-2, not against play) is seeded as a mode list, and
+`--check` is green: 13 of 35.** The script is not named `check_*`, so it stays out of the repo-wide
+sweep.
 
 ## 11. Still open
 

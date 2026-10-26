@@ -45,7 +45,7 @@ SCHEME = {"TwoThumb": 0, "OneThumb": 1}
 CONTROL = {"Steer": 0, "Throttle": 1, "Drift": 2}
 TIER = {"ShipBasics": 0, "WinTheMode": 1, "WinFaster": 2}
 METRIC = {"SwitchesThreaded": 9}
-MODE = {"Switchback": 45, "Headlong": 49, "Breakwater": 50, "Skein": 51, "Redline": 53,
+MODE = {"SkimRace": 33, "Switchback": 45, "Headlong": 49, "Breakwater": 50, "Skein": 51, "Redline": 53,
         "Regatta": 56, "Waystation": 58}
 HINT = {"PadButtonSouth": 1, "PadButtonEast": 3, "PadButtonWest": 4, "PadRightShoulder": 6,
         "PadLeftTrigger": 7, "PadRightTrigger": 8}
@@ -165,6 +165,19 @@ TIP_LISTS = {
              prompt="{ability:Time} jumps you along the way you are facing, and cannot be aimed once it starts."),
         dict(id="waystation-exit", tier="WinFaster", prio=50, moment=GATE_SOON,
              prompt="Thread a cluster's last ring lined up on the next cluster. That line is your jump."),
+    ]),
+    # Skim Race is in the Game of the Week rotation and is its fallback, so first login can land on it
+    # (training_coverage.py --check). Its metric is Crystals, which Scurry shares across three hulls,
+    # so these are a MODE list: they name the Squirrel's own skim and the race's crystals.
+    f"{TIP_DIR}/Tips_SkimRace.asset": ("mode", "SkimRace", [
+        dict(id="skimrace-skim", tier="WinTheMode", prio=0,
+             prompt="Skim close to the track to build speed. Touching it costs all of it."),
+        dict(id="skimrace-crystals", tier="WinTheMode", prio=10,
+             prompt="Fly through the ring around your own colour's crystal. The next one lights up further along."),
+        dict(id="skimrace-carry", tier="WinFaster", prio=0,
+             prompt="Every crystal adds a burst of speed. Keep skimming after it to hold on to it."),
+        dict(id="skimrace-own-trail", tier="WinFaster", prio=10,
+             prompt="Your own trail turns solid behind you. On later laps, keep off the line you flew before."),
     ]),
     f"{TIP_DIR}/Tips_Regatta.asset": ("mode", "Regatta", [
         dict(id="regatta-rails", tier="WinTheMode", prio=50,

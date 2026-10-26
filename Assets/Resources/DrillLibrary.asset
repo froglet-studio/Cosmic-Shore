@@ -46,6 +46,9 @@ MonoBehaviour:
   - Mode: 56
     Tips: {fileID: 11400000, guid: bd1bd5e2ac6443c83ce8e7dc43ed5c95, type: 2}
     ReplacesMetricTips: 0
+  - Mode: 33
+    Tips: {fileID: 11400000, guid: 84f76810418736208681ae374c3ef84b, type: 2}
+    ReplacesMetricTips: 0
   advancedTips: {fileID: 0}
   abilityTipTemplate: 'Did you know? {ability:E} is on {glyph:E}. {abilityDescription:E}'
   mentorDwellSeconds: 6
