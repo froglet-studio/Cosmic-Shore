@@ -60,6 +60,28 @@ namespace CosmicShore.UI
         [SerializeField] private Image weaponModeIcon;
         [SerializeField] private Sprite[] weaponModeIcons = new Sprite[2];
 
+        [Header("Turret Stance - the Mass card")]
+        [Tooltip("The Sparrow itself, stopped (fans spread), from above, nose right - its real mesh " +
+                 "(Sparrow_TurretStanceHull). Painted in the pilot's domain colour.")]
+        [SerializeField] private Image stanceHullIcon;
+        [Tooltip("The rounds leaving both gun pods - a round, then the same round swollen, because Mass is " +
+                 "the substance of what you fire. A GHOST while flying, solid once the stance is taken " +
+                 "(the stationary-mode event), and at Mass 5 the shielded sprite in the domain's shielded " +
+                 "colour: fired prisms arrive shielded, and a shielded prism reads as an octahedron " +
+                 "(Garrett 2026-10-26: \"b is good\").")]
+        [SerializeField] private Image stanceRoundsIcon;
+        [Tooltip("The rounds as bare prisms (Sparrow_TurretStanceRounds).")]
+        [SerializeField] private Sprite stanceRoundsSprite;
+        [Tooltip("The rounds at Mass 5: octahedrons (Sparrow_TurretStanceRoundsShielded).")]
+        [SerializeField] private Sprite stanceRoundsShieldedSprite;
+        [Tooltip("Alpha of the rounds while the stance is NOT held - a ghost of what the stance fires.")]
+        [SerializeField, Range(0f, 1f)] private float stanceRoundsGhostAlpha = 0.6f;
+        [Tooltip("Scale punch on the rounds the instant the stance is taken.")]
+        [SerializeField, Min(0f)] private float stancePunchScale = 0.2f;
+        [SerializeField, Min(0.01f)] private float stancePunchDuration = 0.25f;
+        [Tooltip("Fallback colour of the hull and the bare rounds until the controller pushes the pilot's domain colour.")]
+        [SerializeField] private Color stanceFallbackColor = Color.white;
+
         [Header("Gun Heat")]
         [Tooltip("Thickness, in canvas units, of the marks drawn across the guns card's heat " +
                  "gauge at each phase transition of the spread curve (accuracy lost, each cap " +
@@ -80,6 +102,12 @@ namespace CosmicShore.UI
         private Tween _afterburnerPunchTween;
         private bool _boosting;
         private Color _afterburnerHullColor = Color.white;
+
+        private Tween _stancePunchTween;
+        private bool _inStance;
+        private bool _stanceShielded;
+        private Color _stanceColor = Color.white;
+        private Color _stanceShieldedColor = new(0f, 0f, 0f, 0f);   // alpha 0 = not resolved yet: keep the domain colour
         private Tween _missileChargeTween;
         private float _missileCharge = -1f;
 
@@ -104,6 +132,18 @@ namespace CosmicShore.UI
                 afterburnerHullIcon.color = _afterburnerHullColor;
                 afterburnerHullIcon.rectTransform.localScale = Vector3.one;
             }
+            // The stance parts: the hull and ghost rounds in the fallback colour until the first push.
+            _inStance = false;
+            _stanceShielded = false;
+            _stanceColor = stanceFallbackColor;
+            if (stanceHullIcon) stanceHullIcon.color = _stanceColor;
+            if (stanceRoundsIcon)
+            {
+                if (stanceRoundsSprite) stanceRoundsIcon.sprite = stanceRoundsSprite;
+                stanceRoundsIcon.rectTransform.localScale = Vector3.one;
+            }
+            PaintStanceRounds();
+
             if (afterburnerJetsIcon)
             {
                 if (afterburnerJetsRestSprite) afterburnerJetsIcon.sprite = afterburnerJetsRestSprite;
@@ -219,6 +259,63 @@ namespace CosmicShore.UI
 
         #endregion
 
+        #region Turret Stance
+        /// <summary>
+        /// Everything the Mass card's parts carry: the hull and the bare rounds in the pilot's domain
+        /// colour, the shielded rounds in the domain's shielded colour (alpha 0 = unresolved, which
+        /// falls back to the domain colour), the rounds at ghost alpha until the stance is held.
+        /// </summary>
+        void PaintStanceRounds()
+        {
+            if (!stanceRoundsIcon) return;
+            var c = _stanceShielded && _stanceShieldedColor.a > 0f ? _stanceShieldedColor : _stanceColor;
+            c.a = _inStance ? 1f : stanceRoundsGhostAlpha;
+            stanceRoundsIcon.color = c;
+            var sprite = _stanceShielded ? stanceRoundsShieldedSprite : stanceRoundsSprite;
+            if (sprite) stanceRoundsIcon.sprite = sprite;
+        }
+
+        /// <summary>The pilot's domain colour for the hull and the bare rounds.</summary>
+        public void SetStanceColors(Color domain, Color shielded)
+        {
+            if (_stanceColor == domain && _stanceShieldedColor == shielded) return;
+            _stanceColor = domain;
+            _stanceShieldedColor = shielded;
+            if (stanceHullIcon) stanceHullIcon.color = domain;
+            PaintStanceRounds();
+        }
+
+        /// <summary>
+        /// Whether the turret stance is held (the stationary-mode event the controller already
+        /// subscribes to for the Space card's bullets-to-prisms swap). Taking it turns the ghost
+        /// rounds solid with a punch; releasing it fades them back.
+        /// </summary>
+        public void SetStance(bool inStance)
+        {
+            if (inStance == _inStance) return;
+            _inStance = inStance;
+            PaintStanceRounds();
+            if (!stanceRoundsIcon || !inStance || stancePunchScale <= 0f) return;
+            _stancePunchTween?.Kill();
+            stanceRoundsIcon.rectTransform.localScale = Vector3.one;
+            _stancePunchTween = stanceRoundsIcon.rectTransform
+                .DOPunchScale(Vector3.one * stancePunchScale, stancePunchDuration, 1, 0.5f)
+                .SetLink(stanceRoundsIcon.gameObject);
+        }
+
+        /// <summary>
+        /// The base call does the card's upgrade mark; Mass 5 also changes WHAT the stance fires, so
+        /// the rounds part swaps to its shielded shape and colour.
+        /// </summary>
+        public override void SetAbilityUpgraded(Element element, bool upgraded)
+        {
+            base.SetAbilityUpgraded(element, upgraded);
+            if (element != Element.Mass || upgraded == _stanceShielded) return;
+            _stanceShielded = upgraded;
+            PaintStanceRounds();
+        }
+        #endregion
+
         #region Afterburner
         /// <summary>
         /// The pilot's domain colour for the hull part. A colour, not a state: the hull wears its
@@ -250,6 +347,7 @@ namespace CosmicShore.UI
 
             if (!boosting || afterburnerFoldPunchScale <= 0f) return;
             _afterburnerPunchTween?.Kill();
+            _stancePunchTween?.Kill();
             afterburnerHullIcon.rectTransform.localScale = Vector3.one;
             _afterburnerPunchTween = afterburnerHullIcon.rectTransform
                 .DOPunchScale(Vector3.one * afterburnerFoldPunchScale, afterburnerFoldPunchDuration, 1, 0.5f)

@@ -220,8 +220,9 @@ the drift angle, over the card's PLATE GAUGE (the eleven-step ring retired: "the
 have the whole lower totem fill with the consistency of other resources"). Charge, Mass and Space stay live readouts.
 Then the **Sparrow's Time card** (2026-10-26): the hull in its own SpeedUp take - fans folded - skinned offline
 (`mesh_pose.py`), nose right, over a bare plate (the roll pip retired), with white exhaust plumes so the rest state
-moves; the view swaps hull and jets on the live boost flag. Next: the Sparrow's Mass, Space and Charge cards, then
-the eleven placeholders.
+moves; the view swaps hull and jets on the live boost flag. The **Sparrow's Mass card**: the stopped hull firing swelling
+rounds from both pods - a ghost while flying, solid in the stance, shielded octahedrons at Mass 5. Next: the
+Sparrow's Space and Charge cards, then the eleven placeholders.
 
 | Round | What | Why first |
 |---|---|---|

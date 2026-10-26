@@ -204,3 +204,11 @@ vessel silhouette."
     a ship at full burn - the plumes lengthen with the fold. The jets are their own untinted part (`AfterburnerJets`,
     rest/boost sprites) so the domain colour stays on the hull; the hull sits right of centre to leave them room
     (box 94 at cx 74). `plume()` in the spec: a tapered bar, chamfered at the engine, square at the tip.
+38. **A ghost is the ability's PROMISE; the state turns it real.** The Sparrow's Mass card (Turret Stance) fires
+    swelling rounds from both pods: while flying the rounds are a ghost (alpha 0.6) of what the stance will fire,
+    taking the stance turns them solid with a punch, and Mass 5 swaps them to octahedrons in the domain's shielded
+    colour - the same shape rule as the Squirrel's shielded drift trail, so "shielded" is one shape fleet-wide.
+    Garrett: "b is good" (both pods at their real spacing over one centreline stream). The upgrade hook is
+    `SetAbilityUpgraded(element, upgraded)` on the view, so an L5 that changes WHAT the act makes changes the
+    card's part, not only its mark. A rebind `old=` step is retired once its icon's Image becomes a container
+    (the sprite is cleared, so no reference remains to keep).

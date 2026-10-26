@@ -160,7 +160,8 @@ namespace CosmicShore.UI
         private void HandleStationaryModeChanged(bool isStationary)
         {
             if (!view) return;
-            view.SetWeaponMode(isStationary);
+            view.SetWeaponMode(isStationary);   // the Space card: bullets <-> prism rounds
+            view.SetStance(isStationary);       // the Mass card: the ghost rounds turn solid
         }
 
         /// <summary>
@@ -172,7 +173,9 @@ namespace CosmicShore.UI
         void PushAfterburner()
         {
             if (!view || _vesselStatus == null) return;
-            view.SetAfterburnerHullColor(ResolveDomainSignalColor());
+            var domain = ResolveDomainSignalColor();
+            view.SetAfterburnerHullColor(domain);
+            view.SetStanceColors(domain, ResolveShieldedColor());
             view.SetBoosting(_vesselStatus.IsBoosting);
         }
 
@@ -181,6 +184,15 @@ namespace CosmicShore.UI
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;
             if (colorSet == null || _vesselStatus == null) return Color.white;
             return colorSet.GetDomainSignalColor(_vesselStatus.Domain);
+        }
+
+        // The domain's SHIELDED colour for the Mass card's level-5 rounds; alpha 0 until the palette
+        // resolves (the view keeps the domain colour), never a plausible stand-in (Docs/PALETTE.md 2.8).
+        Color ResolveShieldedColor()
+        {
+            var theme = _gameData?.ThemeManagerData;
+            if (theme == null || _vesselStatus == null || _vesselStatus.Domain == Domains.Blue) return new Color(0f, 0f, 0f, 0f);
+            return theme.GetShieldedSignalColor(_vesselStatus.Domain);
         }
 
         /// <summary>

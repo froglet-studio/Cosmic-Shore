@@ -2237,3 +2237,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (or Garrett on his next Sparrow flight)
 - **Added:** 2026-10-26 by Claude session cece/loving-ptolemy-4715w4 (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/sheets/sparrow_afterburner.png, Tools/Build/icon_kit/specs/sparrow.py, Assets/_Scripts/UI/View/SparrowHUDView.cs, Assets/_Scripts/UI/Controller/SparrowHUDController.cs
+
+### T-20261026-8f32 · open · test · hud
+- **Task:** Sparrow Mass card: in SparrowHUDVariant.prefab the Mass icon is a container over StanceRounds and StanceHull - confirm it compiles and draws: the rounds are a ghost while flying, turn solid (with a punch) when the turret stance is taken, and become octahedrons in the domain's shielded colour at Mass 5; the hull wears the domain colour
+- **Done when:** A Sparrow flight shows the Mass card's rounds fade in when the stance is taken and swap to octahedrons once Mass reaches 5; no console errors on the HUD
+- **Who can take it:** Yash (or Garrett on his next Sparrow flight)
+- **Added:** 2026-10-26 by Claude session cece/loving-ptolemy-4715w4 (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/sparrow_turret_stance.png, Tools/Build/icon_kit/specs/sparrow.py, Assets/_Scripts/UI/View/SparrowHUDView.cs

@@ -5,8 +5,12 @@
                              the count reads as "n of 4" and the card's own sprite is the full rack
                              (before: three 32 px rockets, then a three-rung ladder with a dark decagon PLATE
                              baked into the art, sitting on the lockup's own plate)
-  Mass    Turret Stance      the hull planted on a base, a prism leaving its nose and swelling as it flies
-                             (before: a generic "swap" arrow pair)
+  Mass    Turret Stance      the Sparrow from above (fans spread: it has STOPPED), firing PRISM rounds from both
+                             gun pods at their real spacing - a round, then the same round swollen (Mass is the
+                             substance). Live parts: the rounds are a GHOST while flying, solid in the stance
+                             (the stance event), and at Mass 5 they become octahedrons in the domain's shielded
+                             colour (the upgrade hook) - Garrett 2026-10-26: "b is good". (before: round 2's hull
+                             planted on a base with a prism leaving its nose; before that a "swap" arrow pair)
   Space   Pulsefire Cannons  the volley: three bullets in a diagonal line; the weapon-mode PAIR the view swaps
                              (SetWeaponMode): bullets while moving, prism rounds in the stance
                              (before: a 32 px bullet, and a FLAME for the stance)
@@ -22,8 +26,8 @@
 Ladder and weapon-mode sprites live in Ladder/ and Modes/; the ladder is family=False (rungs are variants).
 """
 import mesh_silhouette
-from canvas import fill, rect, rotate
-from motifs import hull, prism
+from canvas import empty, fill, rect, rotate
+from motifs import block, hull, prism
 
 HULL = "Sparrow"
 VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/SparrowHUDVariant.prefab"
@@ -62,6 +66,40 @@ def plume(x0, y, length, w0=8, w1=3):
 def jets(state):
     m = plume(AB_JET_X0, AB_JET_Y[0], AB_JET_LEN[state])
     return m | plume(AB_JET_X0, AB_JET_Y[1], AB_JET_LEN[state])
+
+
+# ---- Turret Stance (Mass): the stopped hull and the rounds from both pods
+TS_HULL = dict(box=80, cx=46.0, cy=64.0)
+TS_POD_Y = (45, 83)                 # the gun pods at x +-3.0 of the 6.25 half-width, at this box: +-19 px
+TS_ROUND = ((92, dict(w=8, h=5, dp=3), 6), (109, dict(w=13, h=9, dp=4), 10))   # (cx, block, octahedron s): a round, then swollen
+
+
+def turret_stance_hull():
+    """The hull part: the Sparrow stopped, fans spread (the rest pose)."""
+    return sparrow(None, **TS_HULL)
+
+
+def turret_stance_rounds():
+    """The rounds part: bare prisms (blocks) from both pods, the second swollen."""
+    m = empty()
+    for y in TS_POD_Y:
+        for cx, b, _s in TS_ROUND:
+            m |= block(cx, y, **b)
+    return m
+
+
+def turret_stance_rounds_shielded():
+    """The rounds at Mass 5: octahedrons - a shielded prism reads as a diamond (the Squirrel's drift trail)."""
+    m = empty()
+    for y in TS_POD_Y:
+        for cx, _b, s_ in TS_ROUND:
+            m |= prism(cx, y, s_)
+    return m
+
+
+def turret_stance():
+    """The card's sprite (sheets, any single-image surface): in the stance, bare rounds flying."""
+    return turret_stance_hull() | turret_stance_rounds()
 
 
 def afterburner_hull_rest():
@@ -115,14 +153,6 @@ def rockets(n, total=4):
     return [(solid, 1.0), (ghost, 0.6)]   # a ghost at exactly 0.5 sits on the gates' threshold and vanishes at 40 px
 
 
-def turret_stance():
-    base = rect(30, 108, 98, 118)
-    body = hull(64, 90, 30, heading=-90)
-    small = prism(64, 52, 12)
-    big = prism(64, 20, 15) & rect(0, 6, 128, 128)
-    return base | body | small | big
-
-
 def _diagonal(shape_at):
     m = rect(0, 0, 0, 0)
     for x, y, s in ((30, 98, 0.8), (64, 64, 1.0), (98, 30, 1.2)):
@@ -142,7 +172,14 @@ def prism_rounds():
 
 
 ICONS = [
-    dict(name="Sparrow_TurretStance", element="Mass", act="Turret Stance", draw=turret_stance, before=ART + "New_Sparrow/swap weapon  icon.png"),
+    dict(name="Sparrow_TurretStance", element="Mass", act="Turret Stance: the stopped Sparrow firing swelling rounds from both pods (composite)", draw=turret_stance,
+         exempt={"gap": "Garrett 2026-10-26 - the real mesh", "components": "a hull and four rounds", "specks": "the blocks' seam slivers"}),
+    dict(name="Sparrow_TurretStanceHull", element="Mass", act="Turret Stance: the hull part (stopped, fans spread)", draw=turret_stance_hull, subdir="Parts", family=False,
+         exempt={"gap": "the real mesh", "box_fill": "a part: the hull leaves room for the rounds", "in_box": "a part"}),
+    dict(name="Sparrow_TurretStanceRounds", element="Mass", act="Turret Stance: the rounds part, bare prisms (ghost while flying, solid in the stance)", draw=turret_stance_rounds, subdir="Parts", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds", "specks": "seam slivers", "gap": "seams", "thin": "seams", "at40": "the seams close at 40 px, the blocks stay"}),
+    dict(name="Sparrow_TurretStanceRoundsShielded", element="Mass", act="Turret Stance: the rounds part at Mass 5 (octahedrons, the shielded colour)", draw=turret_stance_rounds_shielded, subdir="Parts", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds"}),
     dict(name="Sparrow_Cannons", element="Space", act="Pulsefire Cannons", draw=cannons, before=ART + "New_Sparrow/bullet icon.png"),
     dict(name="Sparrow_Afterburner", element="Time", act="Afterburner: the Sparrow folded at full burn (composite: the boost hull + jets)", draw=afterburner,
          exempt={"components": "a hull and two plumes", "gap": "the real mesh"}),
@@ -166,7 +203,8 @@ ICONS = [
 
 REBIND = [
     dict(file=VARIANT, old="7aededbf59d8deb4fb340521261c6efa", icon="Sparrow_Rockets_4", expect=1),      # missiles icon (the card)
-    dict(file=VARIANT, old="4a5259289f0bdff46a3c22300b3933d7", icon="Sparrow_TurretStance", expect=1),   # swap weapon icon
+    # (the swap-weapon placeholder 4a5259... that Sparrow_TurretStance replaced in round 2 is gone from the prefab: the Mass
+    #  card's Image is a container now, its sprite cleared by the pair step below, so there is no reference to keep)
     dict(file=VARIANT, old="6da9cfe8d216bd84695e3b4c71bfa533", icon="Sparrow_Cannons", expect=2),        # bullet icon: the card AND weaponModeIcons[0]
     dict(file=VARIANT, old="50344d4701b0890479c9a02018960d9b", icon="Sparrow_PrismRounds", expect=1),    # fire icon: weaponModeIcons[1]
     dict(file=VARIANT, old="f0197e0a2ce38654ea3d882fff64967a", icon="Sparrow_Afterburner", expect=2),    # boost icon: the Time card and the legacy BoostIcon image
@@ -185,4 +223,11 @@ REBIND = [
                                          "rollChargeIndicator": None, "rollArmedColor": None, "rollSpentColor": None,
                                          "rollChargeTweenDuration": None, "rollSpendPunchScale": None})),
     dict(file=VARIANT, deactivate="6877628874251343197"),
+    # The Mass card: the icon Image becomes a container over the rounds part (ghost / solid / shielded, swapped and
+    # faded by the view) and the hull part (domain colour).
+    dict(file=VARIANT, pair=dict(container="6611959372928416812", view="7983934951929746178", after="afterburnerJetsBoostSprite",
+                                 children=[("StanceRounds", "Sparrow_TurretStanceRounds", "stanceRoundsIcon"),
+                                           ("StanceHull", "Sparrow_TurretStanceHull", "stanceHullIcon")],
+                                 fields={"stanceRoundsSprite": ("icon", "Sparrow_TurretStanceRounds"),
+                                         "stanceRoundsShieldedSprite": ("icon", "Sparrow_TurretStanceRoundsShielded")})),
 ]
