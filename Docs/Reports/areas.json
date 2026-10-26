@@ -247,8 +247,7 @@
         "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
         "Docs/Studios/CREW_VESSEL_LAB.md",
         "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
-        "Docs/Studios/CREW_OF_FOUR_LAB.md",
-        "Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md"
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
       ],
       "artifacts": [
         {
@@ -447,7 +446,13 @@
         "mega form",
         "omega form",
         "vessel ids",
-        "vessel id ledger"
+        "vessel id ledger",
+        "siphonophore",
+        "voltron",
+        "voltron vessel",
+        "the colony",
+        "zooids",
+        "tide run"
       ],
       "owner": "Yash",
       "people": [
@@ -459,8 +464,8 @@
         "the core four"
       ],
       "branch": "Ys-bleeding-edge",
-      "branchNote": "browser prototypes in the Vessel Studio; the Flea is in Unity on claude/flea-vessel, the Omega crews in Unity on Ys-bleeding-edge (2026-10-26); nothing of it on bleeding-edge",
-      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17; Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross), then the Omega crews (2026-10-26: three combiner crew vessels, Warden / Bulwark / Tempest, each three fleet members with mega forms that dock into one omega form with three seats). The Flea (24) and the Omega crews (25-27) are cloned into Unity; the vessel id ledger lives in Docs/Studios/CONCEPT_FLEET.md section 0.",
+      "branchNote": "browser prototypes in the Vessel Studio; the Flea is in Unity on claude/flea-vessel; the three Unity Omega crews were removed on 2026-10-27; the Siphonophore (the Voltron vessel) is a page only",
+      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17; Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross), the Omega crews lab (2026-10-26, superseded) and the Siphonophore (2026-10-27): a Voltron vessel designed from the ground up, three zooids that light, open and net, and one colony that digests and rams, taking turns by design. The Flea (24) is cloned into Unity; the vessel id ledger lives in Docs/Studios/CONCEPT_FLEET.md section 0.",
       "paths": [
         "Docs/Studios/CONCEPT_FLEET.md",
         "Docs/Studios/VesselStudio/vessels",
@@ -469,15 +474,6 @@
         ".claude/skills/vessel-studio/vessel_pages.py",
         "Docs/Studios/VesselStudio/omega.html",
         "Docs/Studios/VesselStudio/omega-studio.js",
-        "Assets/_Scripts/Controller/Vessel/Crew/OmegaMath.cs",
-        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrew.cs",
-        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrewView.cs",
-        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrewConfigSO.cs",
-        "Assets/_Scripts/Controller/Vessel/OmegaVesselTransformer.cs",
-        "Assets/_Scripts/UI/Controller/OmegaHUDController.cs",
-        "Assets/_Scripts/Tests/Editor/OmegaMathTests.cs",
-        "Tools/Build/author_omega_assets.py",
-        "Assets/_SO_Assets/VesselActions/Omega",
         "Assets/_Prefabs/Spacevessels/Warden.prefab",
         "Assets/_Prefabs/Spacevessels/Bulwark.prefab",
         "Assets/_Prefabs/Spacevessels/Tempest.prefab",
@@ -485,11 +481,12 @@
         "Assets/_Scripts/Controller/Vessel/FleaVesselTransformer.cs",
         "Tools/Build/author_flea_assets.py",
         "Assets/_Prefabs/Spacevessels/Flea.prefab",
-        "Tools/Build/studio_to_unity/clones.json"
+        "Tools/Build/studio_to_unity/clones.json",
+        "Docs/Studios/VesselStudio/siphonophore.html",
+        "Docs/Studios/VesselStudio/siphonophore-studio.js"
       ],
       "docs": [
         "Docs/Studios/CONCEPT_FLEET.md",
-        "Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md",
         "Assets/_Scripts/Controller/Vessel/R_VesselActions/FLEA.md",
         "Docs/UNITY_VERIFICATION_CHECKLIST.md"
       ],
@@ -513,13 +510,11 @@
         "Vessel Studio / Dragonfly",
         "Vessel Studio / Marlin",
         "Vessel / Tether",
-        "Vessel Studio / Omega crews",
-        "Vessel / Omega crews"
+        "Vessel Studio / Siphonophore"
       ],
       "test": [
-        "Open the Vessel Studio artifact, the concept fleet row (ten vessels) or the Omega Crews bay; fly a vessel; record Keep / Drop on its Decisions tab.",
-        "Unity, Ys-bleeding-edge: Menu_Main freestyle, Toy Box, Vessel Changer, Warden / Bulwark / Tempest: the hand test in Docs/UNITY_VERIFICATION_CHECKLIST.md (the Omega crews section).",
-        "Unity, claude/flea-vessel: the Flea from the same Vessel Changer (FLEA.md section 6)."
+        "Open the Vessel Studio artifact: the Siphonophore bay (fly a zooid, hold LT with the others near to fuse, swap seats with left / right; the Scorecard's two controls must both DNF) or the concept fleet row; record Keep / Drop on the Decisions tab.",
+        "Unity, claude/flea-vessel: the Flea from the Toybox's Vessel Changer (FLEA.md section 6)."
       ]
     },
     "android-build": {

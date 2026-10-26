@@ -103,44 +103,6 @@ offline 0 of 11 recorded courses finished before, 11 of 11 after. NOT run: `Swit
 
 ---
 
-### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three vessels marching as one formation with a mobility, an attack and a defence seat (`Ys-bleeding-edge`, 2026-10-26, round 2) — NOT EDITOR-VERIFIED
-
-**What landed:** the Vessel Studio's Omega Crews lab cloned into the game (`Docs/Studios/VesselStudio/omega.html`,
-CONCEPT_FLEET.md §10), rebuilt after Yash's first test the same day ("an aligned flock of three ... the manoeuvre will be
-done by the Stoat, the shooting by the right vessel, the left one will protect"): `OmegaMath` (the page's arithmetic,
-line for line, goldens from the page's own code in `OmegaMathTests`), `OmegaCrew` on each hull's root (the formation,
-the three seats, the moves, the shield and the ward, input-only AI seats; the Orca's lifecycle), `OmegaVesselTransformer`
-(always the mobility vessel's cruise and turn rates, a boost channel), `OmegaCrewView` (placeholder bodies, aim bar,
-fire, shield shards, ward shell; the colour on the material, which fixes the black bodies of the first test),
-`OmegaCrystalEffectSO` in the shared `OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three
-Stoat-clone prefabs by `Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green). The Unity CLI was not
-available, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the only
-compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
-
-**Test (Menu_Main > freestyle > Toy Box > Vessel Changer > Warden; then Bulwark, Tempest):**
-1. **The formation.** The Stoat hull leads; two faceted bodies in your domain colour (not black) ride 18 u to each side and
-   10 u behind, and keep exactly those places through turns, rolls and boosts. The Mass card reads half.
-2. **The mobility seat.** RT: the Stoat's sling boost, the whole formation speeds up for 1.2 s, then the Charge card
-   refills over 4 s. Bulwark: the Scarab's dash. Tempest: the Squirrel's boost.
-3. **Swap to the attacker.** D-pad right (or the right arrow): the hull jumps to the right-hand place and the camera with
-   it; the Stoat's place now shows a body; the AI steers the formation and your flight sticks no longer turn it. The
-   right stick, the mouse or W A S D turn a thin bar from the hull (the turret, bounded); RT fires down it: Warden guns
-   (the nearest prism on the line dies, a bar to it), Bulwark cannon (hold, release: a burst at 140 u), Tempest wrecking
-   ball (held near mass, it smashes it).
-4. **Swap to the defender.** D-pad right again: the hull takes the left-hand place. LT: eight shards orbit the formation,
-   every hostile prism within 40 u of its centre dies, the Mass card drains and the Space card lights. RT: a shell swells
-   round the formation and mass within 60 u dies; the Space card then refills over 3 s. With the Mass card empty neither works.
-5. **Back to the leader.** D-pad left twice: the hull leads again and your sticks fly. The cursor is free again (it
-   locks for mouse aim in the attack seat).
-6. **AI seats.** In the mobility seat, the attacker's bar turns onto mass ahead and fires on its own; the defender's
-   shield comes up when mass is about to hit the formation.
-7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars, shards and shells disappear; the
-   console shows no errors from the crew.
-
-**PASS:** every step as described, no console errors. **FAIL:** a body that is black, drifts or lags · a swap that leaves
-the hull where it was or the camera behind · flight sticks still steering in the attack or defence seat · RT doing nothing
-in a seat · a body left behind after a vessel swap.
-
 ### 🔴 Rhino round 2: no energy; Charge steals; Space alone sets the length (camera follows); combo toasts, AI combos, ramp line on the Time card (`cece/wonderful-knuth-rzv8qp`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "Omnicrystal doesn't need the element buff, lets discard the whole notion of energy as
