@@ -39,7 +39,7 @@ this one.
 
 **Port order.** Bring the design, not the files. `UgsRequestPolicy`, `LobbyReadPacer` and the 400-line rule stay.
 
-**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-8 are done (below, each marked); step 9 is next.
+**Progress (2026-10-26, `Ys-bleeding-edge`):** all nine steps are done (below, each marked); what is left is the owner's MPPM retest (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, one entry per step).
 
 1. **Done 2026-10-26.** **Count voided ticks** (44587a2fa4). The benign branch at `HostConnectionService.cs:1552` and `:2089` is
    empty, and `UgsRequestCounter.Benign` is never counted, so a voided tick looks healthy. About 5 lines;
@@ -83,7 +83,12 @@ this one.
    the net, and the watchdog's three failed reads take ~60 s (a pushed removal or deletion still rejoins at once).
    The re-measure is the next multiplayer test log (`reads`, `429s`, `voided`, pushes). **Then relax:** delete the boost window, the 4 s converge and the per-tick reads, and keep one 20 s ±
    jitter safety poll. Re-measure with step 1's counter.
-9. **Explicit leave on quit and background** (52b8f5f656). There is no `wantsToQuit` handler
+9. **Done 2026-10-26** (the drain is a `Func<UniTask>` event, so the quit waits only as long as the leaves take,
+   at most 1.5 s, and goes at once when nothing is held; the August SOAP channel and its asset were not ported, as
+   nothing in the inspector listens for it). Quit leaves the presence lobby and the party session; background
+   (mobile only: desktop builds run in the background) leaves the presence lobby only and rejoins on resume, after
+   the leave if it is still in flight. Not covered: stopping Play in the Editor (Unity raises no quit request; the
+   `OnDestroy` backstop still runs), a crash, a hard kill. **Explicit leave on quit and background** (52b8f5f656). There is no `wantsToQuit` handler
    (`ApplicationLifecycleManager.cs:69-87`); the only leave is an async-void `OnDestroy`
    (`HostConnectionService.cs:485-515`), and its own message admits about 30 s. A push only fans out a leave
    if the leaver actually leaves. About 230 lines.
