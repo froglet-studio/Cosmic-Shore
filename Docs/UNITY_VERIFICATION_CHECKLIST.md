@@ -15892,3 +15892,72 @@ errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
 - [ ] A Rhino assault from the hatch no longer shatters the Great Serpent in under 20 s; time it (the model says ~50 s
       at a constant 20 blows/s).
 - [ ] Other swarms (the research plans, the ecology swarm) show no new shields.
+
+## Tandava: Severing (Voyage 2) - the fork of Tandava with PR #1046's severing work
+
+Before these, check that **Tandava (Voyage 1) is unchanged**: its card, its scene and its creature behave exactly as on
+bleeding-edge, with no Severed, no wound narration and no chimera. Everything below is played from the Voyage window's
+SECOND card. The fork's ladder plans are Tandava's, armoured since 2026-10-26: the cut tests need two hits per Mass member.
+
+### QA-TANDAVA-21 — Severing: cut it in two and the piece crawls off (`TandavaSevering/TANDAVA_SEVERING.md` §3.11)
+
+Mode **Tandava: Severing** (Voyage 2, `GameModes.TandavaSevering`, scene `MinigameTandavaSevering`; Set sail on the Voyage window's second card). New C#: `TandavaSeveringSever` (the piece finder), `TandavaSeveringController.Severing.cs`, the
+release / graft seams in `SwarmTickJob` and `SwarmFauna`, `ISwarmSeedGraft`; toasts 148-150. Headless only: harness
+T20-T26 pass, `unity_refcompile` 0 project errors; never seen in the Editor.
+
+1. **A clean cut.** Fly straight through a roaming Great Serpent about a third of the way up from its tail, fast, in one
+   pass. The tail third must come away as its OWN small swarm (no pop: the same tadpoles, where they were, nothing dies)
+   and swim off away from the body. The narrator: "You cut it in two..." A goal row appears: "The Severed - home in 0:40".
+2. **Not every cut.** Nibble its tail a few tadpoles at a time: nothing parts. Strike it mid-lunge or in the dance:
+   nothing parts. Only one Severed at a time.
+3. **The piece lives.** The Severed eats on its own, regrows, and when it is fed (or its clock runs out) the row reads
+   "crawling home - cut it off" and it swims back. Touching the body, it grafts back on and the row goes ("...found its
+   way home").
+4. **Kill the piece.** Cut the Severed to nothing before it gets home: the row goes, and the body has lost those members
+   for good.
+5. **Heir.** Cut the BODY away to nothing while the Severed lives: the Severed becomes the creature ("...it remembers the
+   shape"), regrows into the form the body wore, and the HUD's form row carries on.
+6. **Two peers (MPPM host + client).** The client sees its own Severed part from the same place within a second, and it
+   follows the server's (it may drift and be nudged).
+   **Late join:** sever the host's creature, THEN connect a second client. Within a few seconds of its body catching up,
+   that client's own Severed parts near the host's piece (one, not two), and follows it home.
+7. **Budgets.** Physics debugger during a sever: proxies and colliders stay under the ceilings.
+
+**PASS:** the cut piece leaves as a second swarm, lives, comes home or dies or takes over; nothing pops. **FAIL:** a
+piece from a nibble, a lunge or the dance · the cut members vanish or bloom in from nothing · two Severed at once ·
+the match ends while the Severed lives and the body is gone · a client's Severed missing or in another place.
+
+### QA-TANDAVA-22 — Wound memory: it will not die the same way twice (`TandavaSevering/TANDAVA_SEVERING.md` §3.12)
+
+Director-only (`TandavaSeveringDirectorCore`: `TandavaSeveringWound`, the Learn* settings); toast 151. Headless only: harness `tandava-severing` T11 and
+T27-T29 pass; never seen in the Editor.
+
+1. **The table.** Strike it at its first meal hard enough to break it: "It remembers being struck at the table..." Its
+   next meals are at plants farther from you and it bolts after a smaller cut. Striking every meal and nothing else
+   should stop working; striking at the table AND running it down when it bolts should still win.
+2. **The lunge.** Let it lunge at you and punish each lunge: after a few, "It remembers what its lunges cost..." and it
+   lunges noticeably less.
+3. **The chase.** Harry it while it roams: "It remembers being run down..." and it reacts to you from farther away.
+4. **The second sever.** Sever it twice: the second Severed's clock starts shorter (about 0:24 instead of 0:40), and the
+   narrator says it learned.
+5. Each line is said once per match.
+
+**PASS:** each lesson is narrated once and its change is visible. **FAIL:** a line repeats · it becomes unbeatable
+(note what you tried) · a lesson with no visible change.
+
+### QA-TANDAVA-23 — The whale-jelly chimera: torn between two animals (`TandavaSevering/TANDAVA_SEVERING.md` §3.13)
+
+Director (`TandavaSeveringPhase.Chimera` / `ChimeraTurning`), two new plans (`chimera_whale`, `chimera_jelly`, grown by the
+hybrid NCA), `TandavaSeveringController` HUD and toast 152. Headless only: harness `tandava-severing` T30-T32 pass; never seen in the Editor.
+
+1. **It becomes the chimera.** Let the Many-Headed Serpent bank and rise. Instead of rising at once it reshapes into a
+   long whale-like body: "It is tearing between shapes..." The form row reads "Whale-Jelly Chimera", the mood "Unstable".
+2. **It turns.** Every ~6 s it re-sorts between a whale wrapped in a jelly shell with a bell at the head, and a whale
+   with a jelly stripe down its back. The re-sort must look like the same tadpoles moving, not members popping.
+3. **The window.** During each turn the mood reads "Turning - it cannot heal"; members cut then do not regrow until the
+   turn ends. Wear it to about half its body between turns: it must NOT shatter until it turns, then it shatters.
+4. **Cut it.** A pass through its middle parts a Severed; a pass through the thin tail does not.
+5. **It rises.** About 24 s after it began it rises into the Lord of the Dance where it drifted to, gold burst and all.
+
+**PASS:** both shapes read as a whale/jelly mix, the turns are smooth, it rises after ~24 s. **FAIL:** a blob · members
+pop at a turn · it never rises · it heals mid-turn.

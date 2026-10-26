@@ -145,21 +145,67 @@ def build_card():
 
 QUEST_LIST = "5eee61facaac4bb46b9e9892512f74cb"          # GameModeQuestList.asset (SO_UnlockList), the Profile's before
 TANDAVA_CARD = "a7460784ce7229f7440d35280ae4b04f"        # Games/_Archive/ArcadeGameTandava.asset (author_tandava_assets VOYAGE)
+# Voyage 2 (Garrett, 2026-10-26: the severing work "contained on a second voyage card in the voyages"): Tandava's fork,
+# GameModes.TandavaSevering - Games/_Archive/ArcadeGameTandavaSevering.asset (author_tandava_severing_assets.py)
+SEVERING_CARD = "b6df7010e0f34e18798473f6c68f26a4"
 SLIDER = P.SLIDER
 COLUMN_GAP, HEAD_H = 40, 30
-VOYAGES_W, FEATURE_H, LOCKED_H, VOYAGE_GAP, LOCKED_VOYAGES, FORM_ROW = 480, 556, 104, 16, 2, 24
+VOYAGES_W, FEATURE_H, LOCKED_H, VOYAGE_GAP, LOCKED_VOYAGES, FORM_ROW = 480, 556, 104, 16, 1, 24
+OPEN_VOYAGES = 2   # Voyage 1 (Tandava) and Voyage 2 (Tandava: Severing); the locked ones are numbered after them
 EPISODES_W = 1760 - VOYAGES_W - COLUMN_GAP
 TRACK_TOP, QUEST_GAP, QUEST_H, QUEST_ART_H = 78, 16, 500, 140
 QUEST_W = (EPISODES_W - 56 - 4 * QUEST_GAP) // 5
 EPISODE_H, EPISODE_GAP, LOCKED_EP_H = TRACK_TOP + QUEST_H + 22, 16, 64
 FORMS = (("Great Serpent", "eats coiled, wrapped or in a figure-eight"), ("Many-Headed Serpent", "every head rears, then strikes"),
          ("Lord of the Dance", "rises in a halo of 12 rings to a drum"), ("Antlion", "lunges with its jaws wide"))
+# Voyage 2's creature climbs the same ladder, and on its way up to the dance it tears between a whale and a jelly
+SEVERING_FORMS = (FORMS[0], FORMS[1], ("Whale-Jelly Chimera", "torn between two shapes"), FORMS[2], FORMS[3])
 
 
 def panel_frame(node, key, accent="SurfaceDark"):
     """The Rev 10 panel: a cut-corner glass frame with corner brackets."""
     C.frame(node, f"{key}/Frame", 14, "SurfaceVeryDark", accent, fill_alpha=0.86)
     M.bracket_nodes(node, f"{key}/Bracket")
+
+
+def open_voyage(content, key, eyebrow, card, forms, button_key):
+    """An open voyage: the card's art full bleed, a fade at the foot, OPEN, its eyebrow, its forms, its name (VoyageView
+    draws it from the card) and SET SAIL. Voyage 1's keys are "Featured/..." (unchanged since Rev 13)."""
+    feat = content.child(N(key, key, R((0, 1), None, (0, 0), (VOYAGES_W, FEATURE_H), (0, 1))))
+    feat.add("le", 114, le(ph=FEATURE_H))
+    clip = feat.child(N(f"{key}/Clip", "Clip", STRETCH))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))).add("mask", 114, A.rect_mask())
+    art = clip.child(N(f"{key}/Clip/Art", "Art", STRETCH))
+    art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None)) \
+        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], ""))
+    image_node(clip, f"{key}/Clip/Fade", "Fade", R((0, 0), (1, 0), (0, FEATURE_H * 0.36), (0, FEATURE_H * 0.72), (0.5, 0.5)),
+               "SurfaceBlack", K.kit_sprite("kit_fade_v"), alpha=0.96)
+    image_node(feat, f"{key}/Border", "Border", STRETCH, "SurfaceLight", K.kit_sprite("kit_sliver14_line1"), True)
+    chip = feat.child(N(f"{key}/Open", "Open", TL(20, 18, 70, 26)))
+    C.frame(chip, f"{key}/Open/Frame", 10, "SurfaceBlack", "Cta", fill_alpha=0.6)
+    label(chip.child(N(f"{key}/Open/Label", "Label", STRETCH)), "Open", "Label", "Cta", align="center")
+    label(feat.child(N(f"{key}/Eyebrow", "Eyebrow", C.TR(20, 22, 160, 18))), eyebrow, "Label", "TextLight", align="right")
+    w, h = K.button_size("SET SAIL")
+    sail = feat.child(N(f"{key}/SetSail", "SetSail", R((0, 0), (1, 0), (0, 22), (-48, h), (0.5, 0))))
+    sail.children.append(P.kit_button(button_key, "SetSailButton", "Cta", "SET SAIL", STRETCH, opaque=True))
+    forms_y = 22 + h + 18
+    for i, (name, _) in enumerate(reversed(forms)):
+        k = f"{key}/Forms/Form{len(forms) - i}"
+        first = i == len(forms) - 1
+        f = feat.child(N(k, f"Form{len(forms) - i}", R((0, 0), (1, 0), (0, forms_y + i * FORM_ROW + FORM_ROW / 2), (-48, FORM_ROW), (0.5, 0.5))))
+        image_node(f, f"{k}/Node", "Node", R((0, 0.5), None, (0, 0), (14, 12), (0, 0.5)), "TextLight" if first else "SurfaceLight",
+                   K.kit_sprite("kit_hex_fill"))
+        label(f.child(N(f"{k}/Name", "Name", R((0, 0), (1, 1), (12, 0), (-24, 0)))), name, "BodySmall",
+              "TextLight" if first else "NeutralLightest")
+    t = feat.child(N(f"{key}/Title", "Title", R((0, 0), (1, 0), (0, forms_y + len(forms) * FORM_ROW + 12 + 31), (-48, 62), (0.5, 0.5))))
+    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Voyage", "Display", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("Display", "TextLight", driven=True))
+    feat.add("voyage", 114, lambda ctx, go: mono(go, S["voyage"],
+             f"  voyage: {K.ref(11400000, card, 2)}\n  configureModal: {{fileID: 0}}\n"
+             f"  art: {ref(ctx.c(f'{key}/Clip/Art', 'img'))}\n"
+             f"  titleText: {ref(ctx.c(f'{key}/Title', 'tmp'))}\n"
+             "  descriptionText: {fileID: 0}\n"
+             f"  setSailButton: {ref(ctx.iref(button_key, 'root#button'))}\n"))
 
 
 def build_view():
@@ -192,45 +238,12 @@ def build_view():
     content = vp.child(N("Voyages/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), VOYAGE_GAP, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
 
-    # Tandava: the art full bleed, a fade at the foot, OPEN, its name, its four forms, SET SAIL.
-    feat = content.child(N("Featured", "Featured", R((0, 1), None, (0, 0), (VOYAGES_W, FEATURE_H), (0, 1))))
-    feat.add("le", 114, le(ph=FEATURE_H))
-    clip = feat.child(N("Featured/Clip", "Clip", STRETCH))
-    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))).add("mask", 114, A.rect_mask())
-    art = clip.child(N("Featured/Clip/Art", "Art", STRETCH))
-    art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None)) \
-        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], ""))
-    image_node(clip, "Featured/Clip/Fade", "Fade", R((0, 0), (1, 0), (0, FEATURE_H * 0.36), (0, FEATURE_H * 0.72), (0.5, 0.5)),
-               "SurfaceBlack", K.kit_sprite("kit_fade_v"), alpha=0.96)
-    image_node(feat, "Featured/Border", "Border", STRETCH, "SurfaceLight", K.kit_sprite("kit_sliver14_line1"), True)
-    chip = feat.child(N("Featured/Open", "Open", TL(20, 18, 70, 26)))
-    C.frame(chip, "Featured/Open/Frame", 10, "SurfaceBlack", "Cta", fill_alpha=0.6)
-    label(chip.child(N("Featured/Open/Label", "Label", STRETCH)), "Open", "Label", "Cta", align="center")
-    label(feat.child(N("Featured/Eyebrow", "Eyebrow", C.TR(20, 22, 160, 18))), "Voyage 1", "Label", "TextLight", align="right")
-    w, h = K.button_size("SET SAIL")
-    sail = feat.child(N("Featured/SetSail", "SetSail", R((0, 0), (1, 0), (0, 22), (-48, h), (0.5, 0))))
-    sail.children.append(P.kit_button("SetSail", "SetSailButton", "Cta", "SET SAIL", STRETCH, opaque=True))
-    forms_y = 22 + h + 18
-    for i, (name, _) in enumerate(reversed(FORMS)):
-        k = f"Featured/Forms/Form{len(FORMS) - i}"
-        first = i == len(FORMS) - 1
-        f = feat.child(N(k, f"Form{len(FORMS) - i}", R((0, 0), (1, 0), (0, forms_y + i * FORM_ROW + FORM_ROW / 2), (-48, FORM_ROW), (0.5, 0.5))))
-        image_node(f, f"{k}/Node", "Node", R((0, 0.5), None, (0, 0), (14, 12), (0, 0.5)), "TextLight" if first else "SurfaceLight",
-                   K.kit_sprite("kit_hex_fill"))
-        label(f.child(N(f"{k}/Name", "Name", R((0, 0), (1, 1), (12, 0), (-24, 0)))), name, "BodySmall",
-              "TextLight" if first else "NeutralLightest")
-    t = feat.child(N("Featured/Title", "Title", R((0, 0), (1, 0), (0, forms_y + len(FORMS) * FORM_ROW + 12 + 31), (-48, 62), (0.5, 0.5))))
-    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Voyage", "Display", tok("TextLight")))) \
-        .add("kt", 114, K.kit_text("Display", "TextLight", driven=True))
-    feat.add("voyage", 114, lambda ctx, go: mono(go, S["voyage"],
-             f"  voyage: {K.ref(11400000, TANDAVA_CARD, 2)}\n  configureModal: {{fileID: 0}}\n"
-             f"  art: {ref(ctx.c('Featured/Clip/Art', 'img'))}\n"
-             f"  titleText: {ref(ctx.c('Featured/Title', 'tmp'))}\n"
-             "  descriptionText: {fileID: 0}\n"
-             f"  setSailButton: {ref(ctx.iref('SetSail', 'root#button'))}\n"))
+    # Tandava: the art full bleed, a fade at the foot, OPEN, its name, its four forms, SET SAIL. Voyage 2 is the same card.
+    open_voyage(content, "Featured", "Voyage 1", TANDAVA_CARD, FORMS, "SetSail")
+    open_voyage(content, "Voyage2", "Voyage 2", SEVERING_CARD, SEVERING_FORMS, "SetSail2")
 
     # The voyages still to come: locked, no art, no name yet - the number and a lock.
-    for n in range(2, 2 + LOCKED_VOYAGES):
+    for n in range(1 + OPEN_VOYAGES, 1 + OPEN_VOYAGES + LOCKED_VOYAGES):
         k = f"Voyage{n}"
         v = content.child(N(k, k, R((0, 1), None, (0, 0), (VOYAGES_W, LOCKED_H), (0, 1))))
         v.add("le", 114, le(ph=LOCKED_H))
