@@ -4,11 +4,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Tuning for the Rhino energy sword (RHINO_ENERGY_SWORD.md): the energize ritual (the
-    /// supershield key, and its Live Wire level-5), the omni-crystal surge's sword ring and camera,
-    /// and every blade-look/juice knob (heat ramp, energized white-hot, impact flashes, crackle,
-    /// camera shake). The blade's SIZE is not here: it never changes at runtime (2026-10-26, no
-    /// resizing) and is the blade root's authored scale in Rhino.prefab.
+    /// Tuning for the Rhino sword (RHINO_ENERGY_SWORD.md): the energize ritual (the supershield key,
+    /// and its Live Wire level-5), how the Space length eases and how far the camera follows it, the
+    /// omni-crystal surge's sword ring and camera, and every blade-look/juice knob (energized danger
+    /// red, impact flashes, crackle, camera shake). There is no energy (2026-10-26). The blade's
+    /// LENGTH range is Space's: Skimmer.Scale on Rhino.prefab (24 at rest, 40 at Space 10).
     /// One shared asset (`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`)
     /// drives every Rhino, read by <see cref="ShieldSkimmerScaleDriver"/> and
     /// <see cref="RhinoSwordFXController"/>.
@@ -18,9 +18,15 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Skimmer/ShieldSkimmerScaleConfigSO")]
     public sealed class ShieldSkimmerScaleConfigSO : ScriptableObject
     {
+        [Header("Length (Space alone) and the camera that follows it")]
+        [Tooltip("World units/sec the blade eases toward its Space length when the Space level changes.")]
+        [SerializeField, Min(0.01f)] private float spaceLengthEaseSpeed = 30f;
+        [Tooltip("How much of the blade's growth the local pilot's camera follows: 1 = it pulls back in " +
+                 "proportion (a blade 1.67x its resting length puts the camera 1.67x as far back, so the " +
+                 "blade reads the same size on screen); 0 = the camera never moves for it.")]
+        [SerializeField, Range(0f, 1f)] private float cameraFollowsBladeLength = 1f;
+
         [Header("Energize (hold the both-triggers chop stance — the supershield key)")]
-        [Tooltip("Fraction of max energy consumed each time the blade energizes.")]
-        [SerializeField, Range(0f, 1f)] private float energizeCostFraction = 0.1f;
         [Tooltip("Seconds the lower/chop stance must be held to energize.")]
         [SerializeField] private float energizeHoldSeconds = 1f;
         [Tooltip("PHONE ONLY: how many times FASTER the energize charge fills for a human flying on touch. " +
@@ -55,22 +61,15 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds the camera takes to move into the surge framing, and back out of it.")]
         [SerializeField, Min(0.01f)] private float surgeCameraBlendSeconds = 0.6f;
 
-        [Header("Blade Look — heat ramp")]
+        [Header("Blade Look — resting colour")]
         [Tooltip("Brightness multiplier always applied to the blade's colour. Bloom (threshold 0.2, clamp 0.5) " +
-                 "does the rest, so this compounds with fullEnergyBrightness FAST - past ~3 combined the " +
-                 "blade stops reading as a blade and becomes a white blob.")]
+                 "does the rest - past ~3 the blade stops reading as a blade and becomes a white blob.")]
         [SerializeField] private float visibilityMultiplier = 1.2f;
         [Tooltip("The blade's RESTING colour — deliberately NOT the pilot's domain colour: the sword " +
                  "friendly-fires, so a team-coloured blade would read as safe to allies. White-hot says " +
                  "'this cuts anything'. (Authored here, not read off FresnelMaterial, so the blade's " +
                  "meaning can never drift with a shared material's tint.)")]
         [ColorUsage(true, true)] [SerializeField] private Color restingBladeColor = Color.white;
-        [Tooltip("Colour the blade blends toward as stored energy fills. Keep it the SAME HUE as the " +
-                 "resting colour — energy is read as BRIGHTNESS (fullEnergyBrightness); HUE is reserved " +
-                 "for the energized state below, so the two signals can never be confused.")]
-        [ColorUsage(true, true)] [SerializeField] private Color fullEnergyColor = Color.white;
-        [Tooltip("Extra brightness multiplier at FULL energy (lerped from 1 at empty). Keep ≤4 — bloom clamps beyond that.")]
-        [SerializeField] private float fullEnergyBrightness = 1.8f;
 
         [Header("Blade Look — energized (the danger colour)")]
         [Tooltip("Blade colour while ENERGIZED — the shared DANGER colour (SO_ColorSet.Danger, the same " +
@@ -118,7 +117,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Shake intensity when the sword pops a super-shielded prism.")]
         [SerializeField] private float popShakeIntensity = 1.2f;
         [SerializeField] private float popShakeDuration = 0.25f;
-        [Tooltip("Shake intensity when a FULL-energy surge raises the sword ring (lerped from 0 by the energy).")]
+        [Tooltip("Shake intensity when a surge raises the sword ring.")]
         [SerializeField] private float burstShakeMaxIntensity = 2.5f;
         [SerializeField] private float burstShakeDuration = 0.4f;
 
@@ -155,7 +154,8 @@ namespace CosmicShore.Gameplay
         public float SurgeRingUnfurlSeconds   => Mathf.Max(0.01f, surgeRingUnfurlSeconds);
         public float SurgeCameraDistanceScale => Mathf.Max(1f, surgeCameraDistanceScale);
         public float SurgeCameraBlendSeconds  => Mathf.Max(0.01f, surgeCameraBlendSeconds);
-        public float EnergizeCostFraction    => Mathf.Clamp01(energizeCostFraction);
+        public float SpaceLengthEaseSpeed     => Mathf.Max(0.01f, spaceLengthEaseSpeed);
+        public float CameraFollowsBladeLength => Mathf.Clamp01(cameraFollowsBladeLength);
         public float EnergizeHoldSeconds     => Mathf.Max(0.01f, energizeHoldSeconds);
         public float TouchEnergizeRateMultiplier => Mathf.Max(0.01f, touchEnergizeRateMultiplier);
 
@@ -178,8 +178,6 @@ namespace CosmicShore.Gameplay
 
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color RestingBladeColor    => restingBladeColor;
-        public Color FullEnergyColor      => fullEnergyColor;
-        public float FullEnergyBrightness => Mathf.Max(1f, fullEnergyBrightness);
 
         public Color EnergizedColor         => energizedColor;
         public float ColorTransitionSeconds => Mathf.Max(0.0001f, colorTransitionSeconds);
@@ -217,8 +215,8 @@ namespace CosmicShore.Gameplay
         // the one class of hit they cannot answer with flying. It also mutated THIS asset, and
         // ONE asset drives every Rhino, so shooting one pilot shrank every Rhino's sword in the
         // match. What a weapon may take from another pilot is their elemental PETALS.
-        // The `_maxScaleMultiplier` runtime state went with it, and on 2026-10-26 the blade stopped
-        // resizing altogether (the energy length, the Space length and the surge burst). Do not
-        // reintroduce a debuff, or a size, here.
+        // The `_maxScaleMultiplier` runtime state went with it, and on 2026-10-26 the blade's length
+        // became Space's alone (no energy length, no surge burst). Do not reintroduce a debuff, or a
+        // second source of size, here.
     }
 }

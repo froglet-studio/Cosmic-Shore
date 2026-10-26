@@ -13,5 +13,3 @@ MonoBehaviour:
   m_Name: RhinoVesselSurgeByCrystalEffect
   m_EditorClassIdentifier: 
   surgeSeconds: 8
-  energyFill: 1
-  elementBoost: 0.2

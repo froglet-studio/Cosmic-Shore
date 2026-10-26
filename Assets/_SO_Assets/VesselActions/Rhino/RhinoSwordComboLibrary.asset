@@ -20,6 +20,7 @@ MonoBehaviour:
   finisherLockoutFraction: 0.7
   blendInSeconds: 0.06
   blendOutSeconds: 0.18
+  comboToastTemplate: '{name}'
   combos:
   - sequence: RR
     energized: 0

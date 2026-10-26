@@ -1,5 +1,11 @@
 # Rhino kit, 2026-10-16: Afterimage, Live Wire, Momentum and the Surge
 
+> **2026-10-26 (Garrett): the Rhino has NO ENERGY.** The meter, the energy banked per cut, the energize
+> cost and the surge's fill and element buff are gone; **Charge** scales the sword's petal STEAL
+> (×1 → ×2.5); **Space alone** sets the blade length (24 → 40) and the camera follows it; the omni-crystal
+> Surge is an 8 s energized sword ring. Energy passages below are history - the current rules are
+> `RHINO_ENERGY_SWORD.md` § "No energy (2026-10-26) — and Length: Space alone".
+
 Garrett, 2026-10-16, closing the Rhino's open design slots:
 
 - *"after leaving the energized state your sword leaves a trail of prisms that appear like after
@@ -24,9 +30,9 @@ two-trigger chip). Time stays `Input: 0`, the passive sentinel (the ramp gesture
 
 | Element | Ability | What the element scales | Level 5 |
 |---|---|---|---|
-| Charge | **Sword Energy** | energy banked per cut and per super-shield pop, x1 at rest -> x2 at level 10, floored x0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, read live on the owner) | **Live Wire** - a return to the chop stance re-lights the energized tail (`ShieldSkimmerScaleConfigSO.LiveWireActive`) |
+| Charge | **Sword Steal** (was Sword Energy until 2026-10-26) | petals a sword hit steals from a rival, x1 at rest -> x2.5 at level 10, floored x1 (`RhinoSwordStealBySkimmerEffect.stealScale`) | **Live Wire** - a return to the chop stance re-lights the energized tail (`ShieldSkimmerScaleConfigSO.LiveWireActive`) |
 | Mass | **Afterimage** | afterimage VOLUME, x1 -> x2.5, floored x0.25, read at the REPLICATED level (`RhinoSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`RhinoSwordAfterimageConfigSO.DangerActive`) |
-| Space | **Blade Reach** | the blade's resting length, 24 -> 40 (`Skimmer.Scale` on the Rhino's ForceFieldSkimmer instance; energy grows it on top toward 96) | **Breaker** (2026-10-13) - a shielded prism is cut in one slice (`RhinoSkimmerDamagePrismEffectSO.breakerElement`) |
+| Space | **Blade Reach** | the blade's length, 24 -> 40 (`Skimmer.Scale` on the Rhino's ForceFieldSkimmer instance) - Space ALONE since 2026-10-26, with the camera following it | **Breaker** (2026-10-13) - a shielded prism is cut in one slice (`RhinoSkimmerDamagePrismEffectSO.breakerElement`) |
 | Time | **Ramp Spool** | the ramp's wind-up, 220 u/s per second x1 -> x2.5, floored x0.5 | **Momentum** - above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino's elements |
 
 Every gate goes through `IsUpgradeActive` (the replicated unlock bits), never a raw level read.
@@ -211,10 +217,10 @@ deleted (`ABILITY_LOCKUP.md`).
 | Shape | `segmentLength` / `maxSegments` / `lengthCoverage` / `width` / `thickness` | 10 / 6 / 0.9 / 2 / 0.8 |
 | Collider delay | `colliderDelaySeconds` | 0.1 s |
 | Mass volume | `massVolumeMultiplier` | x1 -> x2.5, floor x0.25 |
-| Charge energy | `RhinoSkimmerDamagePrismEffect.chargeEnergyGainMultiplier` | x1 -> x2, floor x0.5 |
+| Charge steal | `RhinoSwordStealBySkimmerEffect.stealScale` | x1 -> x2.5, floor x1 |
 | Momentum | `VesselElementalImmunity.topSpeedFraction` (Rhino root) | 0.7 |
-| Surge | `RhinoVesselSurgeByCrystalEffect` `surgeSeconds` / `energyFill` / `elementBoost` | 6 / 1 / 0.2 |
-| AI sword | `RhinoSwordAutopilot` think / stroke / rest / margin / when-full | 0.15 / 0.3 / 0.45 / 0.05 / 0.75 |
+| Surge | `RhinoVesselSurgeByCrystalEffect` `surgeSeconds` | 8 (no fill, no element buff since 2026-10-26) |
+| AI sword | `RhinoSwordAutopilot` think / stroke / rest / energize crowd / combo chance / finisher chance / tap / gap / combo rest | 0.15 / 0.3 / 0.45 / 6 / 0.35 / 0.4 / 0.08 / 0.1 / 0.9 |
 | AI ramp | `RhinoAIBoostPolicy` `cornerSpeed` / `minCornerSpeed` / `minSpeedGain` / `cornerReleaseDegrees` / `minRearmSeconds` | 600 / 160 / 50 / 30° / 0.5 s (align / runway: fleet defaults) |
 
 Budget: at most 16 x 6 = 96 prisms per window, each <= 2 x 0.8 x 10 = 16 volume at rest (x2.5 at

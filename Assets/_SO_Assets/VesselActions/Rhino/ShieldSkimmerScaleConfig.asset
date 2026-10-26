@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 179e407d1d9d40babefd4e314ae7e59f, type: 3}
   m_Name: ShieldSkimmerScaleConfig
   m_EditorClassIdentifier: 
-  energizeCostFraction: 0.1
+  spaceLengthEaseSpeed: 30
+  cameraFollowsBladeLength: 1
   energizeHoldSeconds: 1
   touchEnergizeRateMultiplier: 2
   energizedTailSeconds: 5
@@ -24,8 +25,6 @@ MonoBehaviour:
   surgeCameraBlendSeconds: 0.6
   visibilityMultiplier: 1.2
   restingBladeColor: {r: 1, g: 1, b: 1, a: 1}
-  fullEnergyColor: {r: 1, g: 1, b: 1, a: 1}
-  fullEnergyBrightness: 1.8
   energizedColor: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 1}
   colorTransitionSeconds: 0.25
   igniteCrackleIntensity: 2.5

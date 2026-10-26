@@ -6,8 +6,8 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Rhino's omni-crystal Surge (RHINO_ENERGY_SWORD.md § "The omni-crystal Surge"): the ring's
-    /// fan-out angles and the camera's surround framing, the two pieces of math the state's look rests on.
+    /// The Rhino's sword camera and omni-crystal Surge (RHINO_ENERGY_SWORD.md): the ring's fan-out angles,
+    /// the camera's surround framing, and how far the camera pulls back as Space lengthens the blade.
     /// </summary>
     [TestFixture]
     public class RhinoSurgeSwordRingTests
@@ -65,6 +65,26 @@ namespace CosmicShore.Tests
             var framed = CustomCameraController.SurroundOffset(offset, 1f, 1f);
             Assert.AreEqual(0f, framed.y, 1e-4f);
             Assert.AreEqual(-50f, framed.z, 1e-3f);
+        }
+
+        [Test]
+        public void ReachDistance_AtRestLength_IsTheAuthoredDistance()
+        {
+            Assert.AreEqual(1f, RhinoSwordCamera.ReachDistanceScale(1f, 1f), 1e-6f);
+        }
+
+        [Test]
+        public void ReachDistance_FullFollow_PullsBackInProportion()
+        {
+            // Space 10: a 40-unit blade over the 24-unit rest, so the camera sits 40/24 as far back.
+            Assert.AreEqual(40f / 24f, RhinoSwordCamera.ReachDistanceScale(40f / 24f, 1f), 1e-5f);
+        }
+
+        [Test]
+        public void ReachDistance_NoFollow_NeverMoves_AndNeverComesNearer()
+        {
+            Assert.AreEqual(1f, RhinoSwordCamera.ReachDistanceScale(40f / 24f, 0f), 1e-6f);
+            Assert.AreEqual(1f, RhinoSwordCamera.ReachDistanceScale(0.5f, 1f), 1e-6f);   // a deficit band never pulls in
         }
 
         [Test]

@@ -241,6 +241,20 @@ namespace CosmicShore.Gameplay
         private float _surroundDistanceScale = 1f;
 
         /// <summary>
+        /// A vessel-owned multiplier on the camera's distance (and its look point), applied at the point of
+        /// use like <see cref="SurroundFraming01"/>: 1 = the authored framing. Driven only by the Rhino, whose
+        /// camera pulls back as Space lengthens its sword (<c>RhinoSwordCamera</c>, Garrett 2026-10-26: "Space
+        /// alone can grow the sword, but move the camera accordingly"). Scaling the look point with the
+        /// offset keeps the hull where it sat on screen. Reset with the follow target.
+        /// </summary>
+        public float VesselDistanceScale
+        {
+            get => _vesselDistanceScale;
+            set => _vesselDistanceScale = Mathf.Max(0.01f, value);
+        }
+        private float _vesselDistanceScale = 1f;
+
+        /// <summary>
         /// The surround framing applied to an offset: blend toward straight behind (or straight ahead, under the
         /// rear view's mirror) at the offset's own length, then scale the distance. Pure, so it is tested directly.
         /// </summary>
@@ -437,10 +451,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private Vector3 EffectiveOffset => SurroundedOffset * FramingScale;
 
-        /// <summary>The authored offset with the surround framing (<see cref="SurroundFraming01"/>); never during a placement.</summary>
+        /// <summary>The authored offset with the vessel's distance scale (<see cref="VesselDistanceScale"/>) and
+        /// the surround framing (<see cref="SurroundFraming01"/>); neither during a placement.</summary>
         private Vector3 SurroundedOffset => PlacementAnchor.HasValue
             ? AuthoredOffset
-            : SurroundOffset(AuthoredOffset, _surroundFraming01, _surroundDistanceScale);
+            : SurroundOffset(AuthoredOffset, _surroundFraming01, _surroundDistanceScale) * _vesselDistanceScale;
 
         /// <summary>The authored offset with the height scale and rear-view mirror, before <see cref="FramingScale"/>.</summary>
         private Vector3 AuthoredOffset =>
@@ -478,7 +493,8 @@ namespace CosmicShore.Gameplay
             if (PlacementAnchor.HasValue || !_followTarget || (_lookAhead == 0f && _lookLift == 0f)) return followPoint;
             float ahead = RearView ? -_lookAhead : _lookAhead;
             // The surround framing looks at the hull itself, so it sits in the middle of the frame.
-            Vector3 lookLocal = new Vector3(0f, _lookLift * _followHeightScale, ahead) * (1f - _surroundFraming01);
+            Vector3 lookLocal = new Vector3(0f, _lookLift * _followHeightScale, ahead)
+                                * ((1f - _surroundFraming01) * _vesselDistanceScale);
             float s = FramingScale;
             if (!Mathf.Approximately(s, 1f)) lookLocal = FramedLook(SurroundedOffset, lookLocal, s);
             return followPoint + frame * (lookLocal * warp);
@@ -922,6 +938,7 @@ namespace CosmicShore.Gameplay
                 _followHeightScale = 1f;
                 _surroundFraming01 = 0f;
                 _surroundDistanceScale = 1f;
+                _vesselDistanceScale = 1f;
                 _spectate = null;
                 _spectateBlend = 0f;
                 MaxFollowTurnRate = 0f;

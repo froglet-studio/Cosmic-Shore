@@ -32,10 +32,7 @@ namespace CosmicShore.Gameplay
     /// blade is posed from the replicated trigger mirrors, so every peer raises the same ring in the same
     /// pose and cuts against its own copy, exactly as it already does for the blade.</para>
     ///
-    /// <para><b>The camera</b> (the local human pilot only): eases into
-    /// <see cref="CustomCameraController.SurroundFraming01"/> - straight back by
-    /// <see cref="ShieldSkimmerScaleConfigSO.SurgeCameraDistanceScale"/>, re-centred on the hull - and back
-    /// out when the surge ends.</para>
+    /// <para><b>The camera</b> is <see cref="RhinoSwordCamera"/>'s (the driver ticks it beside this).</para>
     /// </summary>
     public sealed class RhinoSurgeSwordRing
     {
@@ -48,9 +45,6 @@ namespace CosmicShore.Gameplay
         MeshRenderer _bladeBody;
         string _bodyPath;      // the blade body renderer's path under the blade root ("" = the root)
         float _open01;         // 0 = folded into the blade (hidden), 1 = fully fanned out
-        float _camera01;       // 0 = authored framing, 1 = the surround framing
-        bool _cameraWritten;   // this ring last wrote a non-zero framing, so the release is owed
-        CustomCameraController _camera;
         bool _warned;
 
         struct Copy
@@ -87,7 +81,6 @@ namespace CosmicShore.Gameplay
             if (!_blade || config == null) return;
 
             _open01 = Mathf.MoveTowards(_open01, surging ? 1f : 0f, dt / config.SurgeRingUnfurlSeconds);
-            TickCamera(surging, config, status, dt);
 
             if (_open01 <= 0f)
             {
@@ -112,18 +105,16 @@ namespace CosmicShore.Gameplay
             Pose(config.SurgeRingSwordCount);
         }
 
-        /// <summary>Fold the ring away and hand the camera back now (the driver's disable / pool path).</summary>
+        /// <summary>Fold the ring away now (the driver's disable / pool path).</summary>
         public void Collapse()
         {
             _open01 = 0f;
             if (_holder) _holder.SetActive(false);
-            ReleaseCamera();
         }
 
         /// <summary>Destroy the copies (the driver's destroy path).</summary>
         public void Dispose()
         {
-            ReleaseCamera();
             if (_holder) Object.Destroy(_holder);
             _holder = null;
             _copies.Clear();
@@ -232,46 +223,6 @@ namespace CosmicShore.Gameplay
             string path = t.name;
             for (var p = t.parent; p && p != root; p = p.parent) path = p.name + "/" + path;
             return t.IsChildOf(root) ? path : null;
-        }
-
-        // ── camera (local human pilot only) ───────────────────────────────────
-
-        void TickCamera(bool surging, ShieldSkimmerScaleConfigSO config, IVesselStatus status, float dt)
-        {
-            bool pilot = status?.Player != null && status.IsLocalUser && !status.IsInitializedAsAI
-                         && (status.AIPilot == null || !status.AIPilot.AutoPilotEnabled);
-            _camera01 = Mathf.MoveTowards(_camera01, surging && pilot ? 1f : 0f, dt / config.SurgeCameraBlendSeconds);
-
-            if (_camera01 <= 0f)
-            {
-                ReleaseCamera();
-                return;
-            }
-
-            var cam = ResolveCamera();
-            if (!cam) return;
-            float eased = _camera01 * _camera01 * (3f - 2f * _camera01);
-            cam.SurroundFraming01 = eased;
-            cam.SurroundDistanceScale = config.SurgeCameraDistanceScale;
-            _cameraWritten = true;
-        }
-
-        void ReleaseCamera()
-        {
-            _camera01 = 0f;
-            if (!_cameraWritten) return;
-            _cameraWritten = false;
-            var cam = _camera ? _camera : ResolveCamera();
-            if (!cam) return;
-            cam.SurroundFraming01 = 0f;
-            cam.SurroundDistanceScale = 1f;
-        }
-
-        CustomCameraController ResolveCamera()
-        {
-            if (_camera && _camera.isActiveAndEnabled) return _camera;
-            _camera = CameraManager.Instance != null ? CameraManager.Instance.GetActiveController() as CustomCameraController : null;
-            return _camera;
         }
     }
 }
