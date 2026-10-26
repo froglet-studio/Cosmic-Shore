@@ -10,7 +10,7 @@ namespace CosmicShore.UI
     /// The UI card view for individual items in the vessel selection nav bar of the hangar
     /// 
     /// </summary>
-    public class HangarShipSelectNavLink : NavLink
+    public class HangarVesselSelectNavLink : NavLink
     {
         /// <summary>
         /// The dynamic UI components of the card UI

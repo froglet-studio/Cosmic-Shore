@@ -83,6 +83,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Seconds of GEOMETRY in the window — the shader's window.</summary>
         protected float MorphSeconds => _morphSeconds;
 
+        /// <summary>
+        /// The frame the morph mesh's vertices are drawn in: the BODY copy's transform, never this object's.
+        /// The two differ whenever the crystal's model is posed under its root —
+        /// <see cref="CrystalDepthPrisms"/> turns every model child to the crystal's own random pose
+        /// (<see cref="CrystalPoseJitter"/>), and <see cref="Adopt"/> copies that local pose so frame 0 IS the
+        /// crystal. A target resolved in the root's frame then lands turned by that pose: the whole ring
+        /// tilted, until the real one is revealed and it reads as a shift. Every target goes through this.
+        /// </summary>
+        protected Transform BodyFrame => _body.Count > 0 && _body[0] ? _body[0].transform : transform;
+
         /// <summary>The cage the body draws — the source every morph mesh is built from.</summary>
         protected Mesh SourceMesh =>
             _body.Count > 0 && _body[0] && _body[0].TryGetComponent<MeshFilter>(out var f) ? f.sharedMesh : null;
@@ -233,7 +243,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Holds the crystal still, as it was, for up to the config's grace while the
         /// target is not known yet. Past it the crystal fades out, loudly.</summary>
         protected void BeginWaiting() =>
-            _giveUpAt = Time.time + Mathf.Max(0.05f, Config.targetGraceSeconds);
+            _giveUpAt = Time.time + Mathf.Max(0.05f, Config.TargetGraceSeconds);
 
         /// <summary>
         /// Puts <paramref name="morphMesh"/> on every body renderer and writes the ONE stamp that
@@ -252,13 +262,13 @@ namespace CosmicShore.Gameplay
                                    "will show a colour change.");
 
             _startTime = PrismClock.Now;
-            _morphSeconds = Config.duration * Mathf.Clamp01(Config.morphFraction);
+            _morphSeconds = Config.Duration * Mathf.Clamp01(Config.MorphFraction);
             _stamped = true;
             _fading = false;
 
             // The shader's window is the GEOMETRY half only, so the LAST staggered face has landed
             // by the time the dissolve starts — a stagger is only free if it finishes first.
-            var morph = new Vector3(_startTime, _morphSeconds, Mathf.Clamp01(Config.stagger));
+            var morph = new Vector3(_startTime, _morphSeconds, Mathf.Clamp01(Config.Stagger));
             for (int i = 0; i < _body.Count; i++)
             {
                 _body[i].GetPropertyBlock(_bodyBlocks[i]);
@@ -277,7 +287,7 @@ namespace CosmicShore.Gameplay
             float g = Mathf.Clamp01(elapsed / Mathf.Max(1e-4f, _morphSeconds));
 
             // Overlays leave early: they are not the cage and have nowhere to land.
-            float o = Mathf.Clamp01(g / Mathf.Max(1e-4f, Config.overlayFadeFraction));
+            float o = Mathf.Clamp01(g / Mathf.Max(1e-4f, Config.OverlayFadeFraction));
             SetOverlayOpacity(1f - o * o * (3f - 2f * o));
 
             // Colour pair, converged BEFORE the hand-off so the two surfaces already agree when
@@ -293,7 +303,7 @@ namespace CosmicShore.Gameplay
 
                 if (_haveTargetColour)
                 {
-                    float c = Mathf.Clamp01(g / Mathf.Max(0.1f, Mathf.Clamp01(Config.colourBlendFraction)));
+                    float c = Mathf.Clamp01(g / Mathf.Max(0.1f, Mathf.Clamp01(Config.ColourBlendFraction)));
                     c = c * c * (3f - 2f * c);
                     for (int i = 0; i < _body.Count; i++)
                     {
@@ -319,7 +329,7 @@ namespace CosmicShore.Gameplay
 
             if (_handedOff)
             {
-                float tail = Mathf.Max(1e-4f, Config.duration - _morphSeconds);
+                float tail = Mathf.Max(1e-4f, Config.Duration - _morphSeconds);
                 float d = Mathf.Clamp01((elapsed - _morphSeconds) / tail);
                 SetBodyOpacity(1f - d * d * (3f - 2f * d));
                 if (d >= 1f) Destroy(gameObject);
@@ -341,7 +351,7 @@ namespace CosmicShore.Gameplay
                 OnGaveUp();
             }
 
-            float fade = Mathf.InverseLerp(_giveUpAt, _giveUpAt + Config.duration, Time.time);
+            float fade = Mathf.InverseLerp(_giveUpAt, _giveUpAt + Config.Duration, Time.time);
             SetBodyOpacity(1f - fade);
             SetOverlayOpacity(1f - fade);
             if (fade >= 1f) Destroy(gameObject);

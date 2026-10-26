@@ -25,7 +25,8 @@ WHAT IT CHECKS (per changed asset; modified files report only findings their bas
     script    m_Script -> a .cs whose file name is a non-abstract, non-generic class deriving
               MonoBehaviour (on a GameObject) or ScriptableObject (in an .asset)
     field     every serialized key exists on the class or a base (recursing into [Serializable]
-              classes/structs and lists of them; [FormerlySerializedAs] names count)
+              classes/structs and lists of them, a UnityEvent's persistent calls included;
+              [FormerlySerializedAs] names and #if UNITY_EDITOR fields, a package's too, count)
     enum      every enum-typed value is a declared member (not checked for [Flags])
     type      a reference in a field typed as a project class points at an object of that class
     override  PrefabInstance modifications: the target exists in the source prefab and the
@@ -876,6 +877,56 @@ def self_test(schema, base):
     hit = [f for f in found if f[0] == "field" and "`references`" in f[2]]
     print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "a plain `references` key is still a dead field", hit[0][2][:110] if hit else ""))
     ok &= bool(hit)
+    # Fields the schema reads from outside the project: a one-component prefab on a PROJECT script (a
+    # package script's fields are never judged) must be clean, and a defect planted in it still caught.
+    def project_script(base_cls, unless=None):
+        for full, t in schema.types.items():
+            if (t["kind"] == "Class" and t["files"] and base_cls in t["bases"] and unless not in t["bases"]
+                    and not (t["isAbstract"] or t["isGeneric"])):
+                f = os.path.relpath(t["files"][0], ROOT)
+                if os.path.basename(f) == t["name"] + ".cs" and os.path.exists(os.path.join(ROOT, f + ".meta")):
+                    return full, META_GUID.search(open(os.path.join(ROOT, f + ".meta")).read()).group(1)
+        raise AssertionError("self-test fixture drifted: no project class derives " + base_cls)
+
+    def one_component(guid, body):
+        return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n"
+                "--- !u!1 &100\nGameObject:\n  m_Component:\n  - component: {fileID: 200}\n  m_Name: Fixture\n"
+                "--- !u!114 &200\nMonoBehaviour:\n  m_GameObject: {fileID: 100}\n  m_Enabled: 1\n"
+                "  m_Script: {fileID: 11500000, guid: " + guid + ", type: 3}\n" + body)
+    # 1. a Button's m_OnClick: the persistent-call body is declared on the engine's UnityEventBase (CoreModule)
+    btn = project_script("UnityEngine.UI.Button")
+    call_yaml = one_component(btn[1],
+                              "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls:\n"
+                              "      - m_Target: {fileID: 200}\n"
+                              "        m_TargetAssemblyTypeName: " + btn[0] + ", Assembly-CSharp\n"
+                              "        m_MethodName: set_interactable\n        m_Mode: 6\n        m_Arguments:\n"
+                              "          m_ObjectArgument: {fileID: 0}\n"
+                              "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n"
+                              "          m_IntArgument: 0\n          m_FloatArgument: 0\n          m_StringArgument: \n"
+                              "          m_BoolArgument: 0\n        m_CallState: 2\n")
+    # 2. a package's #if UNITY_EDITOR [SerializeField] (NetworkBehaviour.ShowTopMostFoldoutHeaderGroup): the
+    #    editor writes it, so it is a field - of its own class only (NetworkTransformExpanded is not one here)
+    net = project_script("Unity.Netcode.NetworkBehaviour", unless="Unity.Netcode.Components.NetworkTransform")
+    net_yaml = one_component(net[1], "  ShowTopMostFoldoutHeaderGroup: 1\n")
+    fixture = "Assets/_Prefabs/SelfTestFixture.prefab"
+    for kind, needle, label, text in [
+            (None, None, "a valid persistent call on a Button's m_OnClick", call_yaml),
+            ("field", "`m_MethodNam`", "misspelled key inside a persistent call", call_yaml.replace("m_MethodName:", "m_MethodNam:")),
+            ("field", "`m_PersistentCals`", "misspelled m_PersistentCalls under m_OnClick", call_yaml.replace("m_PersistentCalls:", "m_PersistentCals:")),
+            ("enum", "m_CallState = 7", "persistent call state out of range", call_yaml.replace("m_CallState: 2", "m_CallState: 7")),
+            (None, None, "a package's editor-only field on a NetworkBehaviour", net_yaml),
+            ("field", "`NetworkTransformExpanded`", "another package class's editor-only field",
+             net_yaml.replace("ShowTopMostFoldoutHeaderGroup:", "NetworkTransformExpanded:"))]:
+        found, _ = run_audit(Tree(ROOT, {fixture: text, fixture + ".meta": "fileFormatVersion: 2\nguid: " + "5e1f7e57" * 4 + "\n"}),
+                             schema, base, [fixture], [], [], lambda r: None)
+        mine = [f for f in found if f[1] == fixture]
+        if kind is None:
+            print("  [%s] %-60s %s" % ("FALSE HIT" if mine else "ok", label, mine[0][2][:110] if mine else ""))
+            ok &= not mine
+        else:
+            hit = [f for f in mine if f[0] == kind and needle in f[2]]
+            print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", label, hit[0][2][:110] if hit else ""))
+            ok &= bool(hit)
     # a deleted file still referenced
     found, _ = run_audit(Tree(ROOT, deleted=[cfg + ".meta"]), schema, base, added[2:], [],
                          [(cfg + ".meta", meta_guid(tree0, cfg))], lambda r: None)

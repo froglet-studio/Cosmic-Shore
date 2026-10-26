@@ -43,7 +43,7 @@ VIEW_PLAN = dict(pitch=0, yaw=0, dilate_px=1.0, mirror=False)
 # of the sparrow so the default state communicates motion and doesn't just look like the vessel silhouette"). The
 # engine faces sit at the blade end of the mesh (the dossier: z +2.7, behind the six nose blades), which is the LEFT
 # end here - the jets stream from under the blades, two plumes close together on the centreline, in the HUD's BLUE
-# (ElementalBarsConfigSO.blueColor, the view tints the part): "give them a blue tint".
+# (ElementalBarsConfigSO.BlueColor, the view tints the part): "give them a blue tint".
 AB_HULL = dict(box=90, cx=76.0, cy=64.0)
 AB_JET_Y = (64 - 7, 64 + 7)             # "bring the jets together" (Garrett 2026-10-26): a 6 px gap at the engines
 AB_JET_X0 = 32                       # where the plumes leave the hull's tail end

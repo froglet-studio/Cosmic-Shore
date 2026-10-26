@@ -559,9 +559,7 @@ still draws them.
 | Component | Class | Purpose |
 |---|---|---|
 | In-game HUD | `SkimRaceHUD` (extends `MultiplayerHUD`) | Per-player crystal count cards; subscribes to `OnOmniCrystalsCollectedChanged` |
-| HUD View | `SkimRaceHUDView` (extends `MiniGameHUDView`) | Visual layout for SkimRace HUD |
 | Scoreboard | `Scoreboard` (base — `SkimRaceScoreboard` was deleted in the scoring refactor; lives inside the GameCanvas-SkimRace prefab, `gameController` + nav buttons wired via scene overrides) | End-game player ranking display |
-| Stats Provider | `SkimRaceStatsProvider` (extends `ScoreboardStatsProvider`) | Provides clean streak, drift, joust stats for scoreboard (WIP) |
 | End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
 | Player Stats | `SkimRacePlayerStatsProfile` | Cloud-saved best race times by mode+intensity key |
 
@@ -602,9 +600,7 @@ ugsStatsManager.ReportSkimRaceStats(
 | Base multiplayer mini-game | `MultiplayerMiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Base mini-game controller | `MiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Score tracker | `SkimRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
-| Stats provider | `SkimRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| Base crystal monitor | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Waypoint track (per-intensity waypoints, ribbon normals, crystals per lap, marked waypoints) | `SpawnableWaypointTrack.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Crystal drawn + collected as a race ring (§7a) | `CrystalRaceRing.cs` | `_Scripts/Controller/Arcade/Racing/` |
@@ -615,7 +611,6 @@ ugsStatsManager.ReportSkimRaceStats(
 | I4 layout tests (on the baked preview prefab) | `SkimRaceRelativityTrackTests.cs` | `_Scripts/Tests/Editor/` |
 | End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `SkimRaceHUD.cs` | `_Scripts/UI/` |
-| HUD view | `SkimRaceHUDView.cs` | `_Scripts/UI/` |
 | Scoreboard | `Scoreboard.cs` (base — per-mode subclass deleted) | `_Scripts/UI/` |
 | Player stats profile | `SkimRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
 | Elemental comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |

@@ -12,12 +12,19 @@ namespace CosmicShore.UI
     /// <para>A part that sits in a layout group also carries a <see cref="LayoutElement"/>; while it
     /// is hidden that element ignores layout, so the row or column closes up around it instead of
     /// keeping an empty gap.</para>
+    ///
+    /// <para>A hide first finishes the part's own <see cref="KitEntrance"/>. An entrance holds the
+    /// group at alpha 0 through its delay, so a hide written then reads as "nothing changed" and the
+    /// entrance fades the part back up to its old alpha - visible, but with raycasts and
+    /// interactable still off. That is how the configure window's AI pilots row (Easy / Medium /
+    /// Hard) came back dead on every card that does not offer it, after one that did.</para>
     /// </summary>
     public static class KitVisibility
     {
         public static void SetShown(CanvasGroup group, bool shown)
         {
             if (!group) return;
+            if (!shown && group.TryGetComponent(out KitEntrance entrance)) entrance.Finish();
             group.alpha = shown ? 1f : 0f;
             group.interactable = shown;
             group.blocksRaycasts = shown;

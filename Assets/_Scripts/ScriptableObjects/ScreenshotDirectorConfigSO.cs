@@ -31,33 +31,39 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Height of the captured image in pixels; width follows the window's aspect, so a " +
                  "capture is framed exactly like what is on screen. 2160 is 4K-tall.")]
-        [Range(480, 4320)] public int captureHeight = 2160;
+        [SerializeField, Range(480, 4320)] int captureHeight = 2160;
+        public int CaptureHeight => captureHeight;
 
         [Header("Render")]
         [Tooltip("Layers kept OUT of the shot. Screen-space UI never reaches a RenderTexture at " +
                  "all, so this is what excludes WORLD-space UI - the 3D UI layer.")]
-        public LayerMask excludedLayers = (1 << 5) | (1 << 6); // UI, 3D UI
+        [SerializeField] LayerMask excludedLayers = (1 << 5) | (1 << 6); // UI, 3D UI
+        public LayerMask ExcludedLayers => excludedLayers;
 
         [Tooltip("Adopt the gameplay camera's post-processing, anti-aliasing and shadows. Off " +
                  "renders the raw scene, which is faster and flatter and rarely what you want.")]
-        public bool matchGameQuality = true;
+        [SerializeField] bool matchGameQuality = true;
+        public bool MatchGameQuality => matchGameQuality;
 
         [Tooltip("Hold the prism occlusion corridor closed for the capture frame. ON is almost " +
                  "always right: the corridor dissolves mass between the CAMERA and the ship, and a " +
                  "capture camera looking from somewhere the pilot is not would punch a hole " +
                  "through the trail the shot is of. See Docs/SCREENSHOT_DIRECTOR.md.")]
-        public bool holdOcclusionCorridor = true;
+        [SerializeField] bool holdOcclusionCorridor = true;
+        public bool HoldOcclusionCorridor => holdOcclusionCorridor;
 
         [Header("Pairs")]
         [Tooltip("Two vessels this far apart (world units) are a PAIR worth photographing " +
                  "together. Below the floor they overlap into one blob; above the ceiling a shot " +
                  "framing both has to pull so far back that neither reads as a ship.")]
-        public Vector2 pairSeparation = new Vector2(10f, 30f);
+        [SerializeField] Vector2 pairSeparation = new Vector2(10f, 30f);
+        public Vector2 PairSeparation => pairSeparation;
 
         [Tooltip("How often to take the pair shot WHEN a pair is actually available. 1 = always, " +
                  "0 = never (the Pair concepts are then dead weight). Two ships close together is " +
                  "the rarer and more interesting moment, so this is deliberately high.")]
-        [Range(0f, 1f)] public float pairChance = 0.85f;
+        [SerializeField, Range(0f, 1f)] float pairChance = 0.85f;
+        public float PairChance => pairChance;
 
         [Header("Vessel mark")]
         [Tooltip("Let the vessel vision band mark the ships in a capture, INCLUDING your own - " +
@@ -83,11 +89,13 @@ namespace CosmicShore.ScriptableObjects
                  "mass between the lens and the subject. 1 disables the search. The CONCEPT is " +
                  "rolled once and only the vantage within it is re-rolled, so this changes where " +
                  "the shot is taken from and never what kind of shot it is.")]
-        [Range(1, 24)] public int clearShotSamples = 6;
+        [SerializeField, Range(1, 24)] int clearShotSamples = 6;
+        public int ClearShotSamples => clearShotSamples;
 
         [Tooltip("Stop searching as soon as a vantage is this clear (prisms in the way). 0 = " +
                  "keep looking until something is perfectly clear or the samples run out.")]
-        [Min(0)] public int clearShotAcceptOccluders = 0;
+        [SerializeField, Min(0)] int clearShotAcceptOccluders = 0;
+        public int ClearShotAcceptOccluders => clearShotAcceptOccluders;
 
         [Header("Concepts")]
         [Tooltip("Rolled per capture, weighted. Add your own - a concept is only ranges.")]

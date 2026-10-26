@@ -4,6 +4,9 @@
 
 ### FTUE (First-Time User Experience) — the QUEST GRAPH
 
+> **Shombith leads activation; Caleb heads FTUE with him; no one else is on it** (Shombith, 2026-10-26). Name them on any
+> FTUE or activation task.
+>
 > **Activation work starts at `Docs/ACTIVATION.md`**: every onboarding plan and its status, who is on
 > what, the `ftue_*` analytics events, and the redesign (first-login spotlight guide, Lesson, Mentor,
 > ghost demo) - `Docs/ModePreview/TRAINING_PLAN.md`, merged into `Ys-bleeding-edge` 2026-10-15.
@@ -88,7 +91,7 @@ whether it is ENFORCED.
 Custom dialogue system spanning two locations:
 
 - **Editor & assets**: `Assets/_Scripts/DialogueSystem/` — animation controllers, shader graphs (SpriteAnimation, UI_NoiseDissolve), SO dialogue data assets, prefab
-- **Runtime code**: `Assets/_Scripts/System/Runtime/` — `DialogueManager`, `DialogueEventChannel`, `DialogueUIAnimator`, `DialogueViewResolver`, `DialogueAudioBatchLinker`
+- **Runtime code**: `Assets/_Scripts/System/Runtime/` — `DialogueEventChannel`, `DialogueUIAnimator`, `DialogueViewResolver`, `DialogueAudioBatchLinker`
 - **Models**: `Assets/_Scripts/System/Runtime/Models/` — `DialogueLine`, `DialogueSet`, `DialogueSetLibrary`, `DialogueSpeaker`, `DialogueVisuals`, `DialogueModeType`, `IDialogueService`, `IDialogueView`, `IDialogueViewResolver`
 - **Views**: `InGameRadioDialogueView`, `MainMenuDialogueView`, `RewardDialogueView`
 - **Editor tools**: `DialogueEditorWindow`, `DialogueLineDrawer` (in `_Scripts/Editor/`)

@@ -42,9 +42,9 @@ NAVY = (14, 20, 44, 255)
 PLATE = (0, 4, 31, 255)
 FIXED = {
     "white": (255, 255, 255, 255),
-    "blue": (56, 130, 255, 255),       # ElementalBarsConfigSO.blueColor
-    "lime": (150, 235, 41, 255),       # ElementalBarsConfigSO.limeColor
-    "danger": (255, 84, 26, 255),      # ElementalBarsConfigSO.fireColor - the danger tint the Squirrel's joust opponent wears
+    "blue": (56, 130, 255, 255),       # ElementalBarsConfigSO.BlueColor
+    "lime": (150, 235, 41, 255),       # ElementalBarsConfigSO.LimeColor
+    "danger": (255, 84, 26, 255),      # ElementalBarsConfigSO.FireColor - the danger tint the Squirrel's joust opponent wears
 }
 # the domains' SHIELDED signal colours as the sheet samples them (the live value is ThemeManagerData.GetShieldedSignalColor)
 SHIELDED = {"jade": (104, 164, 255, 255), "ruby": (230, 127, 255, 255), "gold": (255, 214, 120, 255), "blue": (160, 180, 255, 255)}

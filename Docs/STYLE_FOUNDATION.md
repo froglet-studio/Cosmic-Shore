@@ -198,7 +198,7 @@ Elemental glyphs match the vessel-HUD petal geometry — one system, not two.
 
 **Elements have no colour (LOCKED, Garrett 2026-10-24).** The team colours in §3 never stand for an element:
 jade is not Time, gold is not Charge, blue is not Mass, ruby is not Space. An element is told by shape and
-position only. The lockup's rev 3 element colouring is OFF (`check_element_colour.py`); see
+position only. The lockup's rev 3 element colouring is OFF (`check_ui_colors.py`, `Docs/UI_COLOR_RULES.md`); see
 `Docs/claude/VESSEL_HUD_AND_ELEMENTS.md` "Elements have no colour".
 
 **Objective glyphs (art present, unwired).** Nine line-weight monochrome silhouettes, one per

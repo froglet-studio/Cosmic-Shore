@@ -19,7 +19,7 @@ can show it near 40.
 | Round things | allowed (discs, rings as 96-gons) - round CORNERS are not | a bomb is round; its neck is square |
 | Fill | filled silhouette first; line-weight only for the secondary element | a hairline icon disappears under the veil |
 | Colour | pure white, shape in alpha; 50 % alpha only for a GHOST (previous position, second mode) | the HUD tints by STATE (armed, spent, danger) and by TEAM (a stolen prism, a locked crystal); never by element, never baked |
-| Element | never drawn on the icon, and never a colour | the flower above owns it; "jade is not time, gold is not charge" (Garrett 2026-10-24, LOCKED - `check_element_colour.py`) |
+| Element | never drawn on the icon, and never a colour | the flower above owns it; "jade is not time, gold is not charge" (Garrett 2026-10-24, LOCKED - `Docs/UI_COLOR_RULES.md`, `check_ui_colors.py`) |
 | Motion | a shape: a lean, a swept band, one chamfered bar, a displaced ghost | three speed lines are every boost in the fleet |
 | Negative space | prefer a cut to a stroke: a crescent makes a sphere, a hole makes a blast's core, a notch makes a reticle | the Starlings' Opposing Mass is the pattern |
 | Family | a hull's four share weight, box and vocabulary and differ in silhouette (IoU ≤ 0.75 at 24 px) | four fonts on one HUD read as four games |

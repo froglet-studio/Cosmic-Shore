@@ -90,6 +90,22 @@ namespace CosmicShore.UI
         /// player opening the same receipt twice.
         /// </summary>
         public List<string> RedeemedOrderIds = new();
+
+        /// <summary>
+        /// The Hangar's bought elemental levels (<c>HangarUpgradeStore</c>): one entry per vessel and element
+        /// with a level above 0. Here, beside the balance, because they are paid for with it: the debit and the
+        /// level go up in the same save, so a reinstall or a second device keeps both.
+        /// </summary>
+        public List<HangarUpgradeLevel> HangarUpgrades = new();
+    }
+
+    /// <summary>One bought Hangar level. Vessel and Element are the enums' stored values.</summary>
+    [Serializable]
+    public class HangarUpgradeLevel
+    {
+        public int Vessel;
+        public int Element;
+        public int Level;
     }
 
     /// <summary>Account timeline and last-known client facts. Retention/segmentation denominators.</summary>

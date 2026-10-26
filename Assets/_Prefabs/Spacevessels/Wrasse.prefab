@@ -709,7 +709,7 @@ MonoBehaviour:
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 5466809915974853214}
-  boostPolicy: {fileID: 11400000, guid: 193cc98fcde34143a71e79c5ccdaa1f4, type: 2}
+  boostPolicy: {fileID: 0}
 --- !u!114 &9172070623654400206
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -150,7 +150,11 @@ directory per working tree, so several worktrees can share a TMPDIR without read
 Package assemblies (and the `UnityEngine.UnityConsentModule` stub) are shared in
 `$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
 compilation, once with the player defines and once adding `UNITY_EDITOR`, and writes every type's serialized
-fields, bases and enum members. `Tools/Build/check_generated_assets.py` audits YAML assets against that output,
+fields, bases and enum members (project and package types, uGUI/TMP, and the engine's `UnityEngine.Events`,
+whose `UnityEventBase.m_PersistentCalls` is the body of every UnityEvent field). Package DLLs are player builds,
+so each package's own sources (its `_packages/<name>.rsp`) are parsed once more with `UNITY_EDITOR` for the
+fields only the editor has, which is what writes assets (Netcode's `ShowTopMostFoldoutHeaderGroup` on every
+`NetworkBehaviour`, `NetworkTransformExpanded`, `NetworkAnimatorExpanded`). `Tools/Build/check_generated_assets.py` audits YAML assets against that output,
 so run this tool before it.
 
 
@@ -183,3 +187,12 @@ it gets an entry: add one only for documented Unity API, with the version that i
   reports `audited 0 added + 0 modified` and passes without having read your assets. Fix: reuse
   `changed_since()` and read changed assets from the working tree. The audit's base-relative
   "new findings only" filter needs the base blob, which `git show <merge-base>:<path>` still gives.
+
+## Registry fallback (2026-10-24)
+
+`fetch.py` clones each registry package from its needle-mirror tag. When the mirror does not carry a package (first
+seen with `com.unity.services.moderation`), it now downloads that version's tarball from `packages.unity.com` instead,
+where the sandbox can reach it. In the first run with the fallback, every package that used to land in the
+"unobtainable" bucket (Multiplayer, Friends, Leaderboards, Multiplayer Play Mode, Widgets) fetched and compiled:
+87 assemblies, 0 project errors, 0 unobtainable. Where the registry is unreachable, the result is `UNAVAILABLE` as before.
+

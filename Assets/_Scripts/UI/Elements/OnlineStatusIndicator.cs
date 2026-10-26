@@ -88,8 +88,8 @@ namespace CosmicShore.UI
 
         bool IsOffline => _gameData != null && _gameData.IsOfflineSession;
 
-        Color OnlineColor => _palette != null ? _palette.limeColor : new Color(0.59f, 0.92f, 0.16f, 1f);
-        Color OfflineColor => _palette != null ? _palette.greyColor : new Color(0.51f, 0.51f, 0.54f, 1f);
+        Color OnlineColor => _palette != null ? _palette.LimeColor : new Color(0.59f, 0.92f, 0.16f, 1f);
+        Color OfflineColor => _palette != null ? _palette.GreyColor : new Color(0.51f, 0.51f, 0.54f, 1f);
 
         void Awake()
         {

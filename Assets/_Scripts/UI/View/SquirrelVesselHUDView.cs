@@ -482,7 +482,7 @@ namespace CosmicShore.UI
             skimSelfIcon.color = _playerDomainColor;
             if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
                 barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
-            skimAheadIcon.color = barsConfig ? barsConfig.blueColor : Color.white;
+            skimAheadIcon.color = barsConfig ? barsConfig.BlueColor : Color.white;
         }
 
         /// <summary>Both joust hulls are wired - the Charge icon is a transparent container over them.</summary>
@@ -495,7 +495,7 @@ namespace CosmicShore.UI
             {
                 if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
                     barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
-                return barsConfig ? barsConfig.limeColor : joustFlashColor;
+                return barsConfig ? barsConfig.LimeColor : joustFlashColor;
             }
         }
 

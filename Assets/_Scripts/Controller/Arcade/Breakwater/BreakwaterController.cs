@@ -45,6 +45,19 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Breakwater";
 
+        /// <summary>
+        /// Breakwater flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>), as
+        /// Switchback does since 2026-10-26: Breakwater is the Sparrow's training minigame
+        /// (Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md). With the shipped steering the 280 u approach point sat outside the
+        /// 240 u commit radius on any leg over 700 u, and the AI Sparrows circled it: about 1 station a minute, circling
+        /// 56% of the race in Yash's five recorded races (2026-10-20), stuck at station 1 for 71-106 s at I4. Offline on
+        /// those five courses (<c>Tools/Build/switchback_dolphin_sim.py</c>, SPARROW_BREAKWATER): stuck on three of
+        /// five and through the danger weave at 12-13 of 15 stations on the other two; with it, every station threaded
+        /// through the 18 u eye. The approach point now lies inside the commit radius (ApproachLeadFor) and the line is
+        /// through the station's centre, which is the eye.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
         /// <summary>The course: a start gate (the platform's one lead-in) plus a closed circuit.
         /// See the class summary - the single lead-in is the whole of what this mode needed the
         /// shared platform to learn.</summary>

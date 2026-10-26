@@ -577,9 +577,10 @@ def fingerprint(items):
 
 
 # Packages that are not reachable from this sandbox (no mirror): files that `using` them can only be
-# checked for errors that do not involve their types.
+# checked for errors that do not involve their types. Matched case-sensitively, so each namespace is listed
+# with its real casing (Play Mode's is `Unity.Multiplayer.PlayMode`).
 UNOBTAINABLE_NAMESPACES = ["Unity.Services.Multiplayer", "Unity.Services.Friends", "Unity.Services.Leaderboards",
-                           "Unity.Multiplayer.Playmode", "Unity.Multiplayer.Widgets"]
+                           "Unity.Multiplayer.Playmode", "Unity.Multiplayer.PlayMode", "Unity.Multiplayer.Widgets"]
 MISSING_CODES = {"CS0246", "CS0234", "CS0103", "CS1069", "CS0012", "CS0538"}
 # In a file that uses an unobtainable package, these are cascades of its unresolved types too
 # (`out var x` from an unknown TryGetValue -> CS0165, `unknown.Count > 0` -> CS0019, ...).

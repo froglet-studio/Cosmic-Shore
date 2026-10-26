@@ -4405,7 +4405,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7166f002ea9a46f5a23f27aa0d9aaa55, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.UrchinVesselHUDController
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.UrchinHUDController
   baseView: {fileID: 568750422454501384}
   _iconSetSwitcher: {fileID: 0}
   view: {fileID: 568750422454501384}

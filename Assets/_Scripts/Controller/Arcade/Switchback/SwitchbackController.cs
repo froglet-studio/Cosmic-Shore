@@ -32,9 +32,53 @@ namespace CosmicShore.Gameplay
                  "pilot is equidistant from - which is what makes the start fair.")]
         [SerializeField, Min(1f)] float firstGateDistance = SwitchbackCourseSource.DefaultFirstGateDistance;
 
+        [Header("Course features (intensity 3 and 4)")]
+        [Tooltip("Lays the skim walls of intensity 3 and the danger prisms of intensity 4 along the course " +
+                 "(SwitchbackFeatures). Intensities 1 and 2 lay nothing.")]
+        [SerializeField] SpawnableSwitchbackFeatures featuresPrefab;
+
+        /// <summary>u a course feature keeps outside the nucleus.</summary>
+        const float NucleusMargin = 30f;
+
         protected override string ModeName => "Switchback";
+
+        /// <summary>
+        /// Switchback flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>): commit no
+        /// earlier than the approach point, which now always lies inside the commit radius; aim through the ring's CENTRE
+        /// from where the pilot is; re-attack at once after a missed mouth. Switchback is the Dolphin's training minigame
+        /// (Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md, Yash 2026-10-26), and with the shipped steering its AI Dolphins
+        /// threaded 0-2 of 20 rings in every recorded race: they orbited gate 0's approach point (outside the commit
+        /// radius), and a drift committed off-axis locked a line beside the mouth. Offline on the six recorded courses
+        /// (<c>Tools/Build/switchback_dolphin_sim.py</c>): 0 rings on each before, 20 of 20 on each after.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
 
         protected override RaceCourseSource CreateCourseSource() =>
             new SwitchbackCourseSource { FirstGateDistance = firstGateDistance };
+
+        /// <summary>
+        /// Intensity 3's skim walls and intensity 4's danger prisms, hung on the course on every peer from the course
+        /// every peer received (Breakwater's stations are the same shape). Nothing below intensity 3.
+        /// </summary>
+        protected override void OnCourseRaised()
+        {
+            int intensity = Intensity;
+            if (!SwitchbackFeatures.HasFeatures(intensity)) return;
+            if (!featuresPrefab)
+            {
+                CSDebug.LogError("[Switchback] No features prefab assigned - intensity " + intensity + " is missing its " +
+                                 (intensity == 3 ? "skim walls" : "danger prisms") +
+                                 ". Assign SpawnableSwitchbackFeatures on the controller.");
+                return;
+            }
+
+            var features = Instantiate(featuresPrefab, transform);
+            features.name = "SwitchbackFeatures";
+            // The nucleus sits inside the course's inner shell (inner = nucleus x innerRadiusNucleusFactor).
+            ResolveShell(out float inner, out _);
+            features.SetCourse(_course, intensity, ResolveCellCentre(), inner / innerRadiusNucleusFactor + NucleusMargin);
+            var container = features.Spawn(intensity);
+            if (container) container.name = "SwitchbackFeatures (prisms)";
+        }
     }
 }

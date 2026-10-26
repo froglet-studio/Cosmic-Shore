@@ -24,29 +24,29 @@ MonoBehaviour:
     UpgradeLabel: 'Attack'
     UpgradeDescription: 'The herd goes for rivals near it and bites any it touches.'
   - Element: 2
-    AbilityLabel: 'Breeding'
-    AbilityDescription: 'Mass sets how fast the herd breeds: a birth takes the species'' own feeds at -5 and a third of them at 15. The herd never starves below its minimum size.'
-    Input: 0
+    AbilityLabel: 'The Call'
+    AbilityDescription: 'Herding, call the herd to the point between the jacks. Netting, toggle whether your creatures are drawn to the plane. Mass sets how fast the herd breeds: a birth takes the species'' own feeds at -5 and a third of them at 15, and the herd never starves below its minimum size.'
+    Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Mass Clusters'
     UpgradeDescription: 'Every few seconds a creature of the herd lays a cluster of your mass.'
   - Element: 3
-    AbilityLabel: 'Herding Ring'
-    AbilityDescription: 'Space widens the ring both jacks and the decoy push the herd out of; it is never smaller than a big thumb.'
-    Input: 0
+    AbilityLabel: 'Wide'
+    AbilityDescription: 'Herding, zoom out to the whole cell and back. Space widens the ring both jacks and the decoy push the herd out of; it is never smaller than a big thumb.'
+    Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Eat Shields'
     UpgradeDescription: 'The herd eats shielded prisms.'
   - Element: 4
-    AbilityLabel: 'Herd Speed'
-    AbilityDescription: 'Time sets how fast the herd swims. The jacks'' call (A) pulls the herd to them for a moment, on a long cooldown.'
-    Input: 7
+    AbilityLabel: 'Decoys'
+    AbilityDescription: 'Herding, pull a trigger to lay the decoy at the jack on that side (on a phone, lift a thumb). Netting, pull a trigger to rush to the decoy at speed. There is always one decoy. Time makes the herd faster.'
+    Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Flying Decoy'
-    UpgradeDescription: 'Flying, the jacks leave the decoy where they are (X), so they can jump back to it.'
+    UpgradeLabel: 'Second Decoy'
+    UpgradeDescription: 'A second decoy: each trigger has its own, laid by it while herding and rushed to by it while netting.'

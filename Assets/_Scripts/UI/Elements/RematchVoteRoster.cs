@@ -588,14 +588,14 @@ namespace CosmicShore.UI
 
         Sprite AvatarSprite(IPlayer player)
         {
-            if (profileIcons == null || profileIcons.profileIcons == null ||
-                profileIcons.profileIcons.Count == 0)
+            if (profileIcons == null || profileIcons.ProfileIcons == null ||
+                profileIcons.ProfileIcons.Count == 0)
                 return null;
 
             int id = player?.AvatarId ?? 0;
-            for (int i = 0; i < profileIcons.profileIcons.Count; i++)
-                if (profileIcons.profileIcons[i].Id == id) return profileIcons.profileIcons[i].IconSprite;
-            return profileIcons.profileIcons[0].IconSprite;
+            for (int i = 0; i < profileIcons.ProfileIcons.Count; i++)
+                if (profileIcons.ProfileIcons[i].Id == id) return profileIcons.ProfileIcons[i].IconSprite;
+            return profileIcons.ProfileIcons[0].IconSprite;
         }
 
         /// <summary>

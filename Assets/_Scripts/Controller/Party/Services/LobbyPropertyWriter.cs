@@ -59,6 +59,12 @@ namespace CosmicShore.Gameplay
             _policy = policy ?? UgsRequestPolicy.CreateDefault();
         }
 
+        /// <summary>The lobby read before a write and around a save. Tests substitute it.</summary>
+        internal Func<ISession, UniTask> Refresh { get; set; } = LobbyReadPacer.RefreshAsync;
+
+        /// <summary>The save of the local player's properties. Tests substitute it.</summary>
+        internal Func<ISession, UniTask> Save { get; set; } = lobby => lobby.SaveCurrentPlayerDataAsync().AsMainThread();
+
         // ─────────────────────────────────────────────────────────────────────
         // Public mutexes
         //
@@ -118,8 +124,9 @@ namespace CosmicShore.Gameplay
                 // Refresh before writing - the SDK's player-index cache can be
                 // stale, causing SaveCurrentPlayerDataAsync to fail silently if
                 // the local player's index moved since the last refresh.
-                UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-                await lobby.RefreshAsync().AsMainThread();
+                // Under the policy like the save: a 429 here dropped the whole write (the identity
+                // republish at party start, Shombith's and Gradi's 25 Oct logs).
+                await _policy.ExecuteAsync(null, () => Refresh(lobby));
                 setProperty();
                 await SaveAsync(lobby);
             }
@@ -153,18 +160,16 @@ namespace CosmicShore.Gameplay
             {
                 if (!firstAttempt)
                 {
-                    UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-                    try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort resync before the retry */ }
+                    try { await Refresh(lobby); } catch { /* best-effort resync before the retry */ }
                 }
                 firstAttempt = false;
-                await lobby.SaveCurrentPlayerDataAsync().AsMainThread();
+                await Save(lobby);
             });
 
             // Post-save refresh: keeps the SDK's cached state in sync with the server. Reduces
             // the window where WebSocket deltas reference stale player indices (root cause of
             // the harmless ArgumentOutOfRangeException in LobbyPatcher).
-            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-            try { await lobby.RefreshAsync().AsMainThread(); }
+            try { await Refresh(lobby); }
             catch { /* polling corrects on next cycle */ }
         }
     }

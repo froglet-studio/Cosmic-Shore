@@ -113,7 +113,8 @@ That is wrong: two 55° rotations compose into a 110° corner between two **plac
 course generates, every gate is inside the shell, gate 1 is on the pole, no two mouths come
 within a ring diameter, and **every corner clears the Dolphin's turning circle at BOOST** — the
 Dubins condition `leg > 2R·sin(turn)` at `R = 180.7u` (347 u/s over 110°/s), the state in which a
-racer is least able to correct.
+racer is least able to correct. The hairpins of intensity 2-4 are the exception by design: they
+are checked against their own band instead, because a drift is how they are flown.
 
 ## The start is provably fair
 
@@ -195,30 +196,41 @@ grants no domain, and it makes two pilots flying side by side see different worl
 
 ## Intensity is the COURSE, not the arena
 
-One cell at every level. What climbs is how hard the gates are to fly:
+One cell at every level. Since 2026-10-26 (Yash, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.3) each level
+adds ONE demand on the Dolphin's three verbs - drift, skim, discharge - instead of only shrinking the mouth:
 
-| intensity | ring radius | mouth ⌀ | leg length | max corner | axis jitter | presentation cap |
+| intensity | name | mouth radius (⌀) | legs | ordinary corner | hairpins | course features |
 |---|---|---|---|---|---|---|
-| 1 | 72.00 | 144.0 | 420–680 | 45° | 30° | 50° |
-| 2 | 28.12 | 56.2 | 400–650 | 50° | 40° | 55° |
-| 3 | 10.98 | 22.0 | 380–620 | 55° | 50° | 60° |
-| 4 | 4.29 | 8.6 | 360–580 | 60° | 60° | 65° |
+| 1 | Learn to fly | 72 (144) | 420–620 | ≤ 40° | none | none |
+| 2 | Carve | 48 (96) | 400–650 | ≤ 45° | every 2nd corner, 90–150° | none |
+| 3 | Charge economy | 32 (64) | 460–720 | ≤ 50° | every 3rd corner, 90–130° | **skim walls** on every 2nd leg |
+| 4 | Gauntlet | 20 (40) | 360–520 | ≤ 55° | every 2nd corner, 110–150° | **danger prisms** just off every leg's line |
 
-**The mouth ladder is derived, not tabled.** Both ends are anchored and the middle is
-interpolated geometrically (each level 2.56× tighter than the last). Level 1 stays at the
-play-tested 72. Level 4 is `DolphinHullRadius × NarrowestMouthClearance` = 2.86 × 1.5 = **4.29** —
-barely bigger than the ship, which is what intensity means here. `DolphinHullRadius` is
-**measured**, not guessed: the eight corners of all eleven hull box colliders on `Dolphin.prefab`,
-pushed through their transform chains to the vessel root (root scale 1), give a hull of
-5.29 × 1.23 × 5.30 and a worst-corner distance of **2.860** on `TopNose`. The circumscribing
-radius rather than the half-width, because a pilot may be rolled to any angle when they arrive.
+Axis jitter climbs 15 / 25 / 30 / 40° and the presentation cap 40 / 50 / 55 / 60°. The numbers live in
+`SwitchbackCourseSettings.ForIntensity` and `SwitchbackCourseSettings.RingRadiusForIntensity`.
 
-Geometric rather than linear because the ends are an order of magnitude apart: linear would spend
-three levels barely narrowing and then fall off a cliff, where a constant ratio makes every step
-the same increment. The cost of anchoring both ends is that **level 2 is a big drop from level 1**
-(72 → 28) — arithmetic rather than a judgement. `NarrowestMouthClearance` is the one dial to
-retune if that reads as a cliff. `SwitchbackCourseTests` asserts the ladder's shape and that every
-level still clears the ship, rather than restating the numbers.
+- **I1 teaches steering** through gates. 30° corners were tried first and failed all 400 seeds: a course that
+  gentle cannot stay inside the 480–1080 shell. 40° with 420–620 u legs generates every seed.
+- **I2 teaches the drift.** A hairpin (`SwitchbackCourse.IsHairpinCorner`) is a corner the Dolphin's 110°/s cannot
+  make at boost; only a drift carves it. The hairpin is drawn inside its band rather than steered back off the shell
+  wall, and its gate faces the leg you arrive on (a hairpin's flow bisector would stand the gate edge-on to it).
+  Hairpins are exempt from the boost-circle test, which is the point of them.
+- **I3 teaches charge economy**: a wall of plain prisms 26 u beside the line over the middle half of every second
+  leg - skim along it to bank charge, spend it down the straight after.
+- **I4 is risk against reward**: three danger prisms 12 u off the straight line at the middle of every leg, on
+  alternating sides. The shortest line brushes them; a wider one is safe and slower.
+
+The mouths keep the same order without the old cliff (the geometric ladder went 72 → 28 → 11 → 4.3, and the I4 mouth
+was 1.5 hull radii - no room to drift through it). The tightest is now 7 hull radii; `SwitchbackCourseTests` asserts it
+stays between 5 and 10 and that no step tightens by more than 0.6×.
+
+**The course features are a pure function of the course.** `SwitchbackFeatures.Layout(course, intensity, centre,
+clearRadius)` returns the prisms, `SpawnableSwitchbackFeatures` (prefab `_Prefabs/Spawnables/SpawnableSwitchbackFeatures`,
+`featuresPrefab` on the controller) lays them in `OnCourseRaised` on every peer, from the course every peer received -
+Breakwater's stations are the same shape. Everything is `Domains.Blue`. The course is random, so another leg or gate can
+pass anywhere near a feature: a prism is dropped when it would sit within 30 u of a gate's rim, closer to ANY leg's line
+than 0.9 of its own offset, or inside the nucleus plus 30 u. Over 400 seeds: I3 lays 165–219 wall prisms (mean 190),
+I4 48–54 danger prisms. `SwitchbackFeaturesTests` holds all of it.
 
 Gate **count** is deliberately constant, because it is the end-game target and is authored in one
 place — so a match is the same length at every level and the four are comparable. Same reasoning as
@@ -255,6 +267,8 @@ Cleave and Dog Fight record. Which side is "behind" is **latched** when the gate
 not recomputed: a pilot that drifts just past the plane without threading would otherwise see the
 sides swap and swing away (Dog Fight's break-off lesson).
 
+**Since 2026-10-26 the AI flies Regatta's gate steering**: see "The Regatta steering, on since 2026-10-26" below.
+
 Switchback is **not** in `ServerPlayerVesselInitializerWithAI`'s seek-players set. Installing the
 steering hook is correct here — unlike Rampage and Salvo, whose objective IS a crystal and whose
 AI must keep the platform's crystal seeking.
@@ -271,6 +285,24 @@ the way" is monotone in progress and stops holding the instant the pilot is past
 the detour cannot become an orbit. The registry scan is throttled to `aiCrystalScanSeconds`
 (0.5s) and filters to `Crystal.CrystalManager != null`, the same filter `RampageObjectiveProvider`
 records: `Crystal.Active` also holds every lifeform heart the food web drops.
+
+### The Regatta steering, on since 2026-10-26 (the Dolphin's training minigame)
+
+`SwitchbackController` overrides `AICommitFromApproachPoint` to true (the scene switch stays as it was). In people's
+races the AI Dolphins threaded 0-2 of 20 rings, and two things caused it:
+- **The approach point sat outside the commit radius.** On any leg over 650 u the point behind the ring is the full
+  `aiApproachLead` (300 u) out, beyond `aiCommitDistance` (260 u). A pilot reaching it was still "approaching" and
+  steered at the point it sat on. The Dolphin's 35 u turning circle kept it 265-335 u out, so it never committed: it
+  circled gate 0 for the whole race. With the switch on, `GateRaceController.ApproachLeadFor` keeps the approach point
+  at most 0.8 of the commit radius.
+- **A drift committed off-axis missed the mouth.** The far-side point on the ring's axis is off the line from where the
+  Dolphin commits, and a commit drift locks its course on it. The switch puts the through point on the line from the
+  pilot through the ring's CENTRE, and re-attacks at once after a missed mouth (`Arcade/REGATTA.md` §6, 2026-10-17).
+
+Offline on the six recorded courses (`Tools/Build/switchback_dolphin_sim.py`): 0 rings on every one before, 20 of 20
+on every one after. The Dolphin's charge drive in Switchback uses numbers learned from Yash's races
+(`DolphinAIBoostPolicy_Switchback`, `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`); the plan is
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`. Garrett's other gate races keep their scene switch.
 
 ## Crystals, and the interference they buy
 
@@ -323,6 +355,8 @@ wedge on a build that will not happen.
 | Launch-panel objective icon | `Assets/Resources/ModeControlsLibrary.asset` metric 9 |
 | Objective glyph | `_Graphics/UI/Objectives/objective_switches_threaded.png` |
 | Cell / spawn profile | The Skim Race cell's assets, referenced verbatim — **not** forked |
+| Course features (I3 walls, I4 danger) | `_Prefabs/Spawnables/SpawnableSwitchbackFeatures.prefab` |
+| The AI's boost numbers in this mode | `Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset` (written by `learn_drives_from_flights.py --mode Switchback`) |
 
 Every Switchback-owned asset is authored by `Tools/Build/author_switchback_assets.py`
 (deterministic GUIDs, idempotent, validates before writing). **Re-tune there and re-run** rather
@@ -381,8 +415,13 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
    Their domain's score climbs.
 10. **Comeback.** Let one domain fall ~5 gates behind: the trailing pilots' element flowers fill
     ~2 levels.
-11. **Intensity.** Compare 1 and 4: the rings are visibly smaller and the course visibly twistier
-    at 4, and the gate count is the same 20 at both.
+11. **Intensity (the 2026-10-26 ladder).** I1: wide rings, gentle corners, nothing else. I2: every
+    second corner is a hairpin you need a drift for. I3: walls of plain prisms beside every second
+    leg, never across a gate or another leg. I4: small clusters of red danger prisms just off every
+    leg's line. The gate count is 20 at every level, and the console is silent (a missing
+    `featuresPrefab` logs `[Switchback] No features prefab assigned` at I3 and I4).
+16. **The AI Dolphins race.** At I2 with two Medium AI Dolphins, they thread most of the 20 rings
+    (they threaded 0–2 before the steering fix) and drift through the hairpins.
 12. **Interference.** Collect a seeded omni crystal and put the blast cone on a rival: they take
     the all-element debuff for 4s. It does not change either pilot's gate count.
 13. **Regression — Rampage unchanged.** Launch Rampage: cactus forest, four intensity configs,

@@ -91,7 +91,9 @@ namespace CosmicShore.Editor
                 // records that reach a branch (learn_from_flights.py). The question names each vessel and mode.
                 // A multiplayer test's logs (NetTestLogs) ask too, from the main editor only: the virtual players'
                 // files land in its folder, and one question per test is the point.
-                int newCaptures = 0, newFlights = 0, newNetLogs = 0;
+                // A Load Time Insights report asks too: online play records every load by itself (B36), and the
+                // multiplayer sweep reads them beside the test's net logs (net_logs.py show).
+                int newCaptures = 0, newFlights = 0, newNetLogs = 0, newLoads = 0;
                 var records = new List<string>();
                 var peers = new List<string>();
                 bool clone = NetTestLogs.IsClone;
@@ -105,6 +107,8 @@ namespace CosmicShore.Editor
                         string peer = DescribePeer(Path.GetFileName(report.Source));
                         if (!peers.Contains(peer)) peers.Add(peer);
                     }
+                    else if (report.Kind == "load" && asked.Add("load:" + Path.GetFileName(report.Source)))
+                        newLoads++;
                     else if (report.Kind == "flights" && asked.Add("flights:" + Path.GetFileName(report.Source)))
                     {
                         newFlights++;
@@ -113,7 +117,7 @@ namespace CosmicShore.Editor
                     }
                 }
 
-                if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0 && newNetLogs == 0)
+                if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0 && newNetLogs == 0 && newLoads == 0)
                 {
                     // Nothing to ask about, but a clean run counted toward a fix: tell Claude without
                     // asking (issues and the validation trail only), so "is it fixed?" has a true answer.
@@ -133,6 +137,7 @@ namespace CosmicShore.Editor
                 if (newCaptures > 0) sent.Add($"{newCaptures} performance capture(s)");
                 if (newNetLogs > 0) sent.Add($"the multiplayer test's logs from {Players(peers)}");
                 if (newFlights > 0) sent.Add($"{newFlights} AI training record(s): {string.Join(", ", records)}");
+                if (newLoads > 0) sent.Add($"{newLoads} load timing report(s)");
                 LastSent = string.Join("; ", sent);
                 BugLedgerSender.SendInBackground();
                 // A confirmation, never a question (Yash, 2026-10-17): it says what went, whether it arrived, and opens

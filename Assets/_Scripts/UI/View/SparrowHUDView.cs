@@ -39,7 +39,7 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite afterburnerBoostSprite;
         [Tooltip("The exhaust part behind the hull, so the card says MOTION even at rest (Garrett " +
                  "2026-10-26: \"show some jets coming out of the sparrow so the default state communicates " +
-                 "motion\"). Tinted the HUD's BLUE (the shared config's blueColor - \"give them a blue tint\"), " +
+                 "motion\"). Tinted the HUD's BLUE (the shared config's BlueColor - \"give them a blue tint\"), " +
                  "never the domain colour; swapped with the hull: short idling plumes at rest, nearly twice " +
                  "as long while boosting.")]
         [SerializeField] private Image afterburnerJetsIcon;
@@ -149,7 +149,7 @@ namespace CosmicShore.UI
                 if (afterburnerJetsRestSprite) afterburnerJetsIcon.sprite = afterburnerJetsRestSprite;
                 if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
                     barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
-                afterburnerJetsIcon.color = barsConfig ? barsConfig.blueColor : afterburnerJetsFallbackColor;
+                afterburnerJetsIcon.color = barsConfig ? barsConfig.BlueColor : afterburnerJetsFallbackColor;
             }
 
             if (weaponModeIcon)

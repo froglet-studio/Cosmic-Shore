@@ -849,8 +849,7 @@ namespace CosmicShore.Gameplay
 
         protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
-            Renderer renderer = model.GetComponent<Renderer>();
-            if (renderer == null)
+            if (!model.TryGetComponent(out Renderer renderer))
                 yield break;
 
             // The theme's per-domain material sets are populated at runtime by ThemeManager; a

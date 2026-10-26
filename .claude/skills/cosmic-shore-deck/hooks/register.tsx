@@ -28,7 +28,7 @@ const GATES: ReadonlyArray<readonly [string, readonly string[]]> = [
   ['Switch label collisions', ['python3', 'Tools/Build/check_switch_label_collisions.py']],
   ['Enum member references', ['python3', 'Tools/Build/check_enum_member_references.py']],
   ['Self-referential locals', ['python3', 'Tools/Build/check_self_referential_locals.py']],
-  ['Team tasks board', ['python3', 'Tools/Build/team_tasks.py', '--check']],
+  ['Team tasks tool', ['python3', 'Tools/Build/team_tasks.py', '--self-test']],
 ]
 
 type Job = 'Team' | 'Gates' | 'Compile' | 'Sync'

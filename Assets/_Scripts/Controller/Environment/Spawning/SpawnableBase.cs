@@ -233,8 +233,7 @@ namespace CosmicShore.Gameplay
         {
             if (leafPrefab == null) return;
 
-            var prismComponent = leafPrefab.GetComponent<Prism>();
-            if (prismComponent != null)
+            if (leafPrefab.TryGetComponent(out Prism prismComponent))
             {
                 foreach (var td in trailData)
                 {
@@ -295,8 +294,7 @@ namespace CosmicShore.Gameplay
             bool isLoop = false, Domains? trailDomain = null)
         {
             if (leafPrefab == null) return;
-            var prism = leafPrefab.GetComponent<Prism>();
-            if (prism != null)
+            if (leafPrefab.TryGetComponent(out Prism prism))
                 SpawnPrismTrail(points, container, prism, isLoop, trailDomain);
         }
 

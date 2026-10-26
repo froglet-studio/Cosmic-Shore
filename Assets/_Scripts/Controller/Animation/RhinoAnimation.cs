@@ -13,6 +13,23 @@ namespace CosmicShore.Gameplay
         [SerializeField] float animationScaler = 25f;
         [SerializeField] float yawAnimationScaler = 80f;
 
+        [Header("Sword Follow")]
+        [Tooltip("The Rhino's sword swing. The wings (and the pods they carry) lean with the blade's pose: its " +
+                 "sideways swipe, its chop and every combo flourish. Found on the vessel when empty; a hull with " +
+                 "no sword (the Jacks) keeps its wings on the flight puppetry alone.")]
+        [SerializeField] ShieldSwipeActionExecutor swordSwing;
+        [Tooltip("Degrees each wing turns about the vessel's up with the blade's swipe yaw, at the blade's full " +
+                 "sideways sweep (90 degrees). Same sense as the blade, so the wings swing with it.")]
+        [SerializeField] float swordFollowYawDegrees = 20f;
+        [Tooltip("Degrees each wing rolls with the blade's swipe roll, at 90 degrees of blade roll: the hull " +
+                 "banks into the cut.")]
+        [SerializeField] float swordFollowRollDegrees = 30f;
+        [Tooltip("Degrees each wing pitches with the blade's chop, at 90 degrees of blade pitch (the full " +
+                 "both-triggers chop is 65): the wings bow into the strike.")]
+        [SerializeField] float swordFollowPitchDegrees = 25f;
+        [Tooltip("Degrees both wings sweep back per unit of a combo's lunge (thrust), mirrored left and right.")]
+        [SerializeField] float swordLungeSweepDegrees = 20f;
+
         // The DRAWN hull is the rigged model (rhino_shapekey_with_animations.fbx, nested under
         // 'Rhino_Test (1)' since 2026-10-18): a 'fuse' body, front armour plates 'wing1.*' carrying
         // the back plates 'wing2.*' and the disc engines 'jet.*'. The puppetry still turns the
@@ -38,6 +55,12 @@ namespace CosmicShore.Gameplay
         readonly BoneFollower[] _followers = new BoneFollower[4];
         int _followerCount;
 
+        // The sword layer rides ON TOP of the flight puppetry: the puppetry eases each wing's
+        // localRotation toward its target, so the layer is lifted off before it runs (it eases the
+        // flight pose, never the sword's) and laid back on after.
+        Quaternion _leftWingFlight, _rightWingFlight;
+        bool _swordLayered;
+
         public override void Initialize(IVesselStatus vesselStatus)
         {
             // The model is found, not wired: its sub-objects' fileIDs exist only after Unity imports
@@ -46,6 +69,7 @@ namespace CosmicShore.Gameplay
             // bounds, so it must not be culled on them.
             if (!SkinnedMeshRenderer) SkinnedMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>(true);
             if (SkinnedMeshRenderer) SkinnedMeshRenderer.updateWhenOffscreen = true;
+            if (!swordSwing) swordSwing = GetComponentInChildren<ShieldSwipeActionExecutor>(true);
             base.Initialize(vesselStatus);
         }
 
@@ -89,8 +113,61 @@ namespace CosmicShore.Gameplay
 
         protected override void Update()
         {
+            LiftSwordLayer();
             base.Update();
+            LaySwordLayer();
             FollowParts();
+        }
+
+        void LiftSwordLayer()
+        {
+            if (!_swordLayered) return;
+            if (LeftWing) LeftWing.localRotation = _leftWingFlight;
+            if (RightWing) RightWing.localRotation = _rightWingFlight;
+            _swordLayered = false;
+        }
+
+        /// <summary>
+        /// Leans both wings with the blade. Each channel goes through a sine, so the lean peaks at
+        /// 90 degrees of blade and stays continuous through a flourish that spins the blade a full
+        /// turn and through the wrap the executor applies when the flourish ends. The turn is
+        /// composed in the blade's order (yaw, roll, pitch) and in the blade's own frame, then
+        /// carried into each wing's parent space, so the wings swing the way the sword does.
+        /// </summary>
+        void LaySwordLayer()
+        {
+            if (!swordSwing) return;
+            var frame = swordSwing.PoseFrame;
+            if (!frame) return;
+
+            var pose = swordSwing.CurrentPose;
+            float yaw = swordFollowYawDegrees * Mathf.Sin(pose.yaw * Mathf.Deg2Rad);
+            float roll = swordFollowRollDegrees * Mathf.Sin(pose.roll * Mathf.Deg2Rad);
+            float pitch = swordFollowPitchDegrees * Mathf.Sin(pose.pitch * Mathf.Deg2Rad);
+            float sweep = swordLungeSweepDegrees * Mathf.Clamp(pose.thrust, -1f, 1f);
+
+            // Right wing: +yaw about up swings its tip aft; the left wing mirrors it.
+            if (LeftWing) _leftWingFlight = LeanWing(LeftWing, frame, yaw - sweep, roll, pitch);
+            if (RightWing) _rightWingFlight = LeanWing(RightWing, frame, yaw + sweep, roll, pitch);
+            _swordLayered = true;
+        }
+
+        /// <summary>Lays the lean on <paramref name="wing"/> and returns its flight pose.</summary>
+        static Quaternion LeanWing(Transform wing, Transform frame, float yaw, float roll, float pitch)
+        {
+            Quaternion flight = wing.localRotation;
+            Quaternion turn = Quaternion.AngleAxis(yaw, Vector3.up)
+                            * Quaternion.AngleAxis(roll, Vector3.forward)
+                            * Quaternion.AngleAxis(pitch, Vector3.right);
+            if (wing.parent && wing.parent != frame)
+            {
+                // The blade's frame expressed in the wing's parent space (the identity on the
+                // shipped prefab, where both hang off the fuselage).
+                Quaternion toParent = Quaternion.Inverse(wing.parent.rotation) * frame.rotation;
+                turn = toParent * turn * Quaternion.Inverse(toParent);
+            }
+            wing.localRotation = turn * flight;
+            return flight;
         }
 
         /// <summary>Places every drawn bone where its puppeted part carries it. Per frame, no allocation.</summary>

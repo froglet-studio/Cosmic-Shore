@@ -119,7 +119,7 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
 - A gauge sprite (the Urchin's charge ring) is not an ability icon: it is a bare ring on purpose.
   Check `author_<hull>_hud.py` before calling a ring "generic".
 - **Elements have no colour** (LOCKED, Garrett 2026-10-24): never a colour per element on a card, a blob, an
-  edge, an icon or a sheet; the four domain colours are team identity only. `check_element_colour.py`.
+  edge, an icon or a sheet; the four domain colours are team identity only. `Docs/UI_COLOR_RULES.md`, gated by `check_ui_colors.py`.
 - **Measure the HUD first.** On the older hulls a card is often a live readout (a generated graphic, a jaw pair,
   a step ring, a sprite ladder); a sprite swap polishes none of that. A ladder or a step ring is a HOW-MUCH
   drawn as shapes: move it to the plate gauge (the Dolphin's Time card) rather than redrawing its rungs; the
@@ -152,7 +152,7 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
    (`ColorSet.GetDomainSignalColor`, `ThemeManagerData.GetShieldedSignalColor`; alpha 0 until resolved).
 5. **Editor wirer**: if `VesselAbilityRowWirer.cs` builds this hull's slots, teach it the parts so a re-run is a no-op.
 6. **Gates**: `author.py <hull>` then `--check`, `verify.py --self-test`, `check_console_logging.py`,
-   `check_conditional_compilation.py`, `check_element_colour.py`; read the states sheet.
+   `check_conditional_compilation.py`, `check_ui_colors.py`; read the states sheet.
 7. **Record**: `LESSONS.md` (the owner's words first), `Docs/ABILITY_LOCKUP.md`'s gauge table if a gauge moved,
    `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` round status, a team task for the editor check
    (`team_tasks.py add --area hud --kind test ...`, Yash or the owner) - there is no Unity CLI in a cloud session,

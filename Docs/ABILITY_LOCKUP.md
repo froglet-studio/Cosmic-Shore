@@ -221,7 +221,7 @@ Charge/Mass/Space are authored `BothSticksAction` (`Input: 13`, the both-trigger
 follow from), which `InputHintBindingMap` now maps to `HintBinding.PadBothTriggers = 13` /
 `KeyBothShifts = 28` (a PLACEHOLDER L1+R1 composite glyph, `author_two_trigger_glyph.py`), and Time
 stays the passive sentinel with its sticks-apart chip (`PadSticksOutward = 14` /
-`KeySticksOutward = 29`) set explicitly by `RhinoVesselHUDController` through
+`KeySticksOutward = 29`) set explicitly by `RhinoHUDController` through
 `VesselHUDView.SetAbilityControlGlyph` — the one chip not derived from the map. The press path
 lights only the FIRST map entry bound to an input, so the both-triggers press lights Charge. The
 same mapping gave the Manta's Soar (Time, already `Input: 13`) its chip; it drew nothing before
@@ -296,7 +296,7 @@ file. Locked means *this vessel has not authored an icon for this slot* — a fa
 while a slot that is being **driven** is an ability that exists, whatever the row can draw of it.
 The veil never needed the icon anyway: it sizes itself on the ability **plate**, which a locked card
 has. The Serpent is the case that proved it. Its sniper's recharge was pushed correctly from
-`SerpentVesselHUDController` from the day the ability shipped and landed **nowhere** for three
+`SerpentHUDController` from the day the ability shipped and landed **nowhere** for three
 rounds of playtest, because that vessel binds 0/4 icons and `SetAbilityCooldown` early-returned on
 `slot.Locked`; the report each time was *"no cooldown indication"*, against a completely correct
 driver.
@@ -455,7 +455,7 @@ reference guard, exactly as this doc predicts, and the guard spared every branch
 still referenced — so the skimmer-size ring, slowed counter, slow-line flash, debuff/shock timer and
 the `LaserTargeting` / `Crystal` / `ForceField` indicators came back in the row's corner. The fix
 was not another sweep rule: the readout fields and their routines were deleted from
-`RhinoVesselHUDView`, `RhinoVesselHUDController`'s four SOAP channels went with them (two had no
+`RhinoVesselHUDView`, `RhinoHUDController`'s four SOAP channels went with them (two had no
 producer; two counted every Rhino's blasts, not this one's), and `BoostContainer`,
 `VesselImpactCooldown`, `TrailContainer` and the instance-added objects were removed from
 `RhinoHUDVariant` and `Rhino.prefab`. The Rhino now binds **4/4** (placeholder icons) and has no
@@ -681,7 +681,7 @@ The honest consequence, stated: the boost ring and the shielded ring are **nearl
 which positions carry diamonds. That is the family resemblance the design asks for, and **colour is
 what tells them apart**: the boost ring wears the palette's DANGER rim (it lays danger prisms) and
 this one wears the pilot's own domain's **shielded base face** at signal strength
-(`SO_ColorSet.GetShieldedSignalColor` → `ThemeManagerDataContainerSO` → `SquirrelVesselHUDController`
+(`SO_ColorSet.GetShieldedSignalColor` → `ThemeManagerDataContainerSO` → `SquirrelHUDController`
 → `VesselHUDView.SetOmniAbilityTint`).
 
 That accessor is the **fourth** `*SignalColor` sibling and exists for the reason the other three do
@@ -846,7 +846,7 @@ per-vessel art or wiring for a human to supply.
 | Squirrel | 4/4 + 2 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). Two non-elemental cards sit left of Charge: the **omni crystal** (emblem above, shielded-ring icon below) and the **drift** (no upper cell at all), chip **LT** |
 | Serpent | 1/4 | ✅ Time card bound (Solid Fuel Pellets — its four pips are the fuel tank); Charge/Mass/Space LOCKED. Its Charge card DOES draw the cooldown veil — a locked card has a plate, which is all the veil needs |
 | Manta | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
-| Rhino | **4/4** (2026-10-16, placeholder icons `Rhino_SwordEnergy` / `Afterimage` / `BladeReach` / `RampSpool`) | ✅ ensured at runtime. Charge card lit while the blade is energized (re-asserted every frame, so the 5 s tail after letting go of the stance stays lit) + a gauge filling with sword energy 0..1 + the energize-cooldown veil; Mass card lit while afterimages lay; Space passive; Time card lit while the ramp is BOOSTING, one flash when Momentum takes hold, and a gauge filling with speed / top speed (`ITopSpeedSource`). Both gauges (`ChargeGauge`, `TimeGauge`) authored into `RhinoHUDVariant.prefab` by `author_hull_ability_rows.py` (`RHINO_GAUGES`) 2026-10-17. Chips: the two-trigger L1+R1 glyph on Charge/Mass/Space (`BothSticksAction`), sticks-apart on Time (set by `RhinoVesselHUDController` through `VesselHUDView.SetAbilityControlGlyph`, since Time's map entry is the passive sentinel). Pre-lockup status cluster deleted. Not yet editor-verified |
+| Rhino | **4/4** (2026-10-16, placeholder icons `Rhino_SwordEnergy` / `Afterimage` / `BladeReach` / `RampSpool`) | ✅ ensured at runtime. Charge card lit while the blade is energized (re-asserted every frame, so the 5 s tail after letting go of the stance stays lit) + a gauge filling with sword energy 0..1 + the energize-cooldown veil; Mass card lit while afterimages lay; Space passive; Time card lit while the ramp is BOOSTING, one flash when Momentum takes hold, and a gauge filling with speed / top speed (`ITopSpeedSource`). Both gauges (`ChargeGauge`, `TimeGauge`) authored into `RhinoHUDVariant.prefab` by `author_hull_ability_rows.py` (`RHINO_GAUGES`) 2026-10-17. Chips: the two-trigger L1+R1 glyph on Charge/Mass/Space (`BothSticksAction`), sticks-apart on Time (set by `RhinoHUDController` through `VesselHUDView.SetAbilityControlGlyph`, since Time's map entry is the passive sentinel). Pre-lockup status cluster deleted. Not yet editor-verified |
 | Urchin | 4/4 | ✅ ensured at runtime (2026-10-06, `author_urchin_hud.py`); ammo fill = the Charge card's gauge, binary riding indicator = the Mass card's, Track recharge = the Space card's veil |
 
 **Row ownership is why `EnsureAbilityLockup` runs BEFORE `view.Initialize`.** Per-vessel views

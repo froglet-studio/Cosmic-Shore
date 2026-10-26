@@ -33,11 +33,16 @@ namespace CosmicShore.UI
                 Hide();
                 return;
             }
+            ShowRect(small.pixelRect);
+        }
+
+        /// <summary>Frame a rect of screen pixels (a view's on-screen button wears the same frame, <c>JacksView</c>).</summary>
+        public void ShowRect(Rect px)
+        {
             if (!_graphic && !Build()) return;
 
             var style = Style();
             float scale = Screen.height / Mathf.Max(1f, style ? style.referenceHeight : 1080f);
-            var px = small.pixelRect;
             if (!_visible) { _graphic.gameObject.SetActive(true); _visible = true; }
             if (px == _shownPixels && Mathf.Approximately(scale, _shownScale)) return;
             _shownPixels = px;
@@ -63,6 +68,9 @@ namespace CosmicShore.UI
             _graphic = null;
             _visible = false;
         }
+
+        /// <summary>The one overlay canvas the frames sit on (null until a frame is first shown), for a framed button's icon.</summary>
+        public static Canvas Canvas => s_canvas;
 
         bool Build()
         {

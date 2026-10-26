@@ -106,7 +106,7 @@ MonoBehaviour:
   rankText: {fileID: 223634516076546463}
   domainText: {fileID: 1048362013692566006}
   borderImage: {fileID: 656247365797675978}
-  localBorderToken: 17
+  localBorderToken: 0
   otherBorderToken: 5
   leaderRankToken: 0
   rankToken: 7
@@ -116,9 +116,10 @@ MonoBehaviour:
   glassToken: 4
   glassAlpha: 0.8
   localGlassTint: 0.35
-  wonBorderMaterial: {fileID: 2100000, guid: 9f1abcbc8aa960caa3b23dd527d91c6d, type: 2}
-  lostBorderMaterial: {fileID: 2100000, guid: 881923dc1d379f9d0b8b896100a7c907, type: 2}
-  localBorderMaterial: {fileID: 2100000, guid: 0defcded7bc8cac24aa943184e47ffed, type: 2}
+  localGlassTintToken: 7
+  wonBorderMaterial: {fileID: 0}
+  lostBorderMaterial: {fileID: 0}
+  localBorderMaterial: {fileID: 0}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
 --- !u!1 &545714264014442347
 GameObject:
@@ -206,7 +207,6 @@ GameObject:
   - component: {fileID: 386891099567817660}
   - component: {fileID: 68445876121662780}
   - component: {fileID: 656247365797675978}
-  - component: {fileID: 682063654503507931}
   m_Layer: 5
   m_Name: Border
   m_TagString: Untagged
@@ -253,7 +253,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2100000, guid: 9f1abcbc8aa960caa3b23dd527d91c6d, type: 2}
+  m_Material: {fileID: 0}
   m_Color: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -264,25 +264,13 @@ MonoBehaviour:
   m_Sprite: {fileID: 21300000, guid: e75ec5d5d015d1257b05414fdff6f954, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
-  m_FillCenter: 0
+  m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &682063654503507931
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1070322322809598292}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b403ee3874d54f79d0f27e7013879c0f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &753145941074150884
 GameObject:
   m_ObjectHideFlags: 0
@@ -417,7 +405,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.37254903, g: 0.9411765, b: 0.78431374, a: 1}
+  m_Color: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -447,7 +435,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  token: 16
+  token: 7
   alpha: 1
 --- !u!1 &728857159706527551
 GameObject:
@@ -1308,8 +1296,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4291358815
-  m_fontColor: {r: 0.37254903, g: 0.9411765, b: 0.78431374, a: 1}
+    rgba: 4294961638
+  m_fontColor: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1494,7 +1482,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.68235296, b: 0, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1524,7 +1512,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  token: 14
+  token: 11
   alpha: 1
 --- !u!114 &1096134862621079949
 MonoBehaviour:
@@ -1621,8 +1609,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294944895
-  m_fontColor: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
+    rgba: 4294961638
+  m_fontColor: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

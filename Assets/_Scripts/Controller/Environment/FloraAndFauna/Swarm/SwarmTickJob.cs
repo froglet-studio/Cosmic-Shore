@@ -82,6 +82,13 @@ namespace CosmicShore.Gameplay
         public int PuffWindupTicks;
         /// <summary>Ticks a locust shimmer holds before the dangerous quarter of the cloud moves on.</summary>
         public int LocustPhaseTicks = 20;
+        /// <summary>Tandava (TANDAVA.md §3): a Charge member whose plan well is authored DANGER tier (1) wears a danger
+        /// plate for as long as it holds that well - a designed body part (a feeding form's protectors), not a startle.
+        /// Off (every census-planned swarm) = only the strike state machine raises danger, as shipped: the research plans'
+        /// tier-1 marks stay unread. On, a scripted plan may also author a SHIELD well (2) on a non-Charge member - Tandava's
+        /// armour (2026-10-26: its Mass body is shielded in every pose but the ones it eats in, so a sword needs two slices);
+        /// the census planner's identity() never authors one, so no other swarm changes.</summary>
+        public bool PlanDanger;
         /// <summary>World radius around a vessel inside which a member becomes a real proxy.</summary>
         public float EngageRadius = 160f;
         /// <summary>Most proxies this swarm may hold (nearest first).</summary>
@@ -117,7 +124,13 @@ namespace CosmicShore.Gameplay
         int _killCount;
         readonly float[] _deposit = new float[4], _depositRun = new float[4];
         readonly object _inLock = new();
+        int _requestPlan = -1;
+        bool _requestPose;
         public bool WantStarvationVictim;
+        /// <summary>Tandava's levers (<see cref="IScriptedSwarmCore.SetLevers"/>), handed to the core at the start of every
+        /// tick: cruise and turn scales (1 = as authored) and the laying hold. Every other swarm leaves them at rest.</summary>
+        public float CruiseScale = 1f, TurnScale = 1f;
+        public bool HoldLaying;
 
         // ── front buffers (main thread reads after Collect) ──
         public SwarmInstance[] Instances;
@@ -271,6 +284,23 @@ namespace CosmicShore.Gameplay
             lock (_inLock) _deposit[element] += volume;
         }
 
+        /// <summary>Tandava: ask a scripted core (<see cref="IScriptedSwarmCore"/>) to commit form <paramref name="planIx"/>.
+        /// Main thread, any time; applied at the start of the next tick that STARTS after it, beside the queued kills.
+        /// A core that is not scripted ignores it.</summary>
+        public void RequestPlan(int planIx)
+        {
+            if (planIx < 0) return;
+            lock (_inLock) { _requestPlan = planIx; _requestPose = false; }
+        }
+
+        /// <summary>Tandava: <see cref="RequestPlan"/> for a POSE of the current body (a feed twin) - the commit keeps the
+        /// lay ease (<see cref="IScriptedSwarmCore.RequestPose"/>). Same thread rule.</summary>
+        public void RequestPose(int planIx)
+        {
+            if (planIx < 0) return;
+            lock (_inLock) { _requestPlan = planIx; _requestPose = true; }
+        }
+
         /// <summary>
         /// Round 11f (Docs/ECOLOGY_LOD.md §5): a collapsed swarm drifts rigidly by <paramref name="dSim"/> (sim units).
         /// Main thread, only while <see cref="State"/> is Idle (the worker owns the core while Running, and a Done
@@ -346,13 +376,25 @@ namespace CosmicShore.Gameplay
         void Run()
         {
             // inputs first, on the thread that owns the core now
-            int kills;
+            int kills, plan;
+            bool pose;
             lock (_inLock)
             {
                 kills = _killCount;
                 Array.Copy(_kills, _killsRun, kills);
                 _killCount = 0;
                 for (int e = 0; e < 4; e++) { _depositRun[e] = _deposit[e]; _deposit[e] = 0f; }
+                plan = _requestPlan; _requestPlan = -1;
+                pose = _requestPose; _requestPose = false;
+            }
+            if (Core is IScriptedSwarmCore scripted)
+            {
+                scripted.SetLevers(CruiseScale, TurnScale, HoldLaying);
+                if (plan >= 0)
+                {
+                    if (pose) scripted.RequestPose(plan);
+                    else scripted.RequestPlan(plan);
+                }
             }
             for (int q = 0; q < kills; q++) Core.Kill(_killsRun[q]);
             for (int e = 0; e < 4; e++) Core.Stomach[e] += _depositRun[e];
@@ -414,7 +456,12 @@ namespace CosmicShore.Gameplay
                 int eff = c.EffectiveElement(i);
                 var h = S.DefaultHalf[eff];
                 int tier = 0;
-                if (c.TryGetLook(i, eff, out var look, out int lt)) { h = look; if (eff == 0 && lt == 2) tier = 2; }
+                if (c.TryGetLook(i, eff, out var look, out int lt))
+                {
+                    h = look;
+                    // Charge: shield, or (a scripted plan) danger. Any other element: only a scripted plan's shield - armour.
+                    if (eff == 0 ? lt == 2 || (lt == 1 && S.PlanDanger) : S.PlanDanger && lt == 2) tier = lt;
+                }
                 if (_strikeEff[i] != eff) { _strikeEff[i] = (sbyte)eff; _strike[i] = 0; }
                 _strike[i] = StrikeState(eff, i, _tick, c.Startle[i], _strike[i], S);
                 bool shielded = tier == 2;   // the mass stays shielded while a puff shows danger (round 11d-2)

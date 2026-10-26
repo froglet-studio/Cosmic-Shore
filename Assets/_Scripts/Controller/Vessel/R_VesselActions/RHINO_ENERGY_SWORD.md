@@ -422,7 +422,7 @@ the skim pulse via `SkimmerHapticsByPrismEffect`. Audio is all free-riding on sa
 
 `ForcefieldCrackleController` + `ForcefieldCrackle.hlsl` were purpose-built for the base
 skimmer's SPHERE: impacts stored as unit directions, ripples measured as great-circle angles.
-On the blade's stretched capsule (built-in capsule mesh under the ~`(1.5, 30, 4.8)` blade
+On the blade's stretched capsule (built-in capsule mesh under the ~`(1.5, 24, 4.8)` blade
 scale) that collapses the whole blade length into the two poles. The adaptation:
 
 - **`ForcefieldCrackleCapsule_float`** (new entry in the same HLSL) measures in **world units**:
@@ -482,7 +482,7 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | The slice (death visual) | `Utility/Effects/PrismSlice.cs` (batch/budget/retire) · `Utility/PrismSliceGeometry.cs` (the stamps) · `_Graphics/Materials/Graphs/PrismSlice.hlsl` + `PrismSlice.shader` · `_Graphics/Materials/PrismSliceMaterial.mat` · `Resources/PrismSliceConfig.asset` · `Vessel/Prism.cs` (`Slice`) · `Prisms/PrismFactory.cs` (`SpawnExplosion` routes it) |
 | Owner-authoritative replication (energy, energize phase, surge bit) | `Controller/Vessel/RhinoSwordNetworkRelay.cs` (on the Rhino root) |
 | Omni-crystal Surge (fill, burst, 6 s energized, +2 levels to every element) | `ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs` → `_SO_Assets/Effects/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffect.asset` (in `RhinoImpactorDataContainer`). *The sword-side `RhinoSwordCrystalBurstEffectSO` + asset were deleted 2026-10-16.* |
-| AI sword hand (writes the trigger mirrors) | `Executors/RhinoSwordAutopilot.cs` (on the Rhino root) |
+| AI sword hand (writes the trigger mirrors) | `Controller/AI/Rhino/RhinoSwordAutopilot.cs` (on the Rhino root; moved 2026-10-25) |
 | Box-overlap re-apply (energize rising edge) | `ImpactEffects/Impactors/SkimmerImpactor.cs` (`ReapplyPrismEffectsToOverlapping`) |
 | Shell-pair re-dispatch (energize rising edge) | `Controller/Managers/PrismShellContactManager.cs` (`RedispatchPairsForOwner`) |
 | Capsule crackle surface mode | `Controller/Vessel/ForcefieldCrackleController.cs` (`CrackleSurface`) |
@@ -514,8 +514,8 @@ swing-model group `swingVelocityScale` 1 / `maxImpactSpeed` 0 / `proportionalDeb
 damage SOs and `PrismExplosion.prefab`'s speed band — see the swing-kinematics row in
 `CLAUDE.md`; `inertia` is not the lever on the proportional path).
 
-On `ShieldSkimmerScaleConfig.asset`: `baseScale` 30 (fallback; live base is the Space elemental
-scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
+On `ShieldSkimmerScaleConfig.asset`: `baseScale` 24 (fallback; live base is the Space elemental
+scale) · `maxScale` 96 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
 `energizeHoldSeconds` 1 · `touchEnergizeRateMultiplier` 2 (phone hold = 0.5 s) · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
 `liveWireUpgradeElement` Charge (the L5 that lets the stance re-light the tail) ·
 `crystalBurstFactorAtFullEnergy` 4 (the surge burst — the names predate the move) · `crystalBurstHoldSeconds` 2.5 · `crystalBurstGrowSpeed`

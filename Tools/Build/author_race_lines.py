@@ -35,8 +35,17 @@ RANGES = {"LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSp
           "MaxLookahead": (1, 2000)}
 # The starting values, per hull (why, in a word): big and fast flies far out and plays safer; agile flies closer and bolder.
 HULLS = {
-    "Rhino":   {"LaneShare": 0.80, "HullClearance": 18, "Risk": 0.40},   # the biggest hull, 840-1200 u/s on the ramp
-    "Manta":   {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.50},   # wide wings, 720 u/s Soar
+    # the biggest hull, 840-1200 u/s on the ramp. A longer look-ahead (2026-10-25), for the same nose lag as the Manta's:
+    # once the ramp fires on the line it reaches 450-585 u/s and missed I3/I4 mouths chasing a 0.35-0.8 s point
+    # (rhino_line_sim.py, lag on: 447.7 s I1-I4, 12 misses; 0.8 / 1.4 s: 405.4 s, none). REGATTA.md section 6.4.1.
+    "Rhino":   {"LaneShare": 0.80, "HullClearance": 18, "Risk": 0.40,
+                "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4},
+    # wide wings, 720 u/s Soar. A longer look-ahead (2026-10-25): an AI hull's nose follows its command at 1.5/s
+    # (VesselTransformer.LERP_AMOUNT), and chasing a point 0.35-0.8 s ahead through that lag pinned the Manta's stick,
+    # which drops its Soar (Tools/Build/manta_line_sim.py, nose="nose": I1-I4 697 s, I4 unfinished; 0.6 / 1.0 s: 280 s,
+    # no miss, fewer rail rams). REGATTA.md section 6.4.1.
+    "Manta":   {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.50,
+                "CarefulLookaheadSeconds": 0.6, "BoldLookaheadSeconds": 1.0},
     "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50},   # a drift locks its course: room to slide
     "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60},   # a 72 u turning circle at any warp
     "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50},

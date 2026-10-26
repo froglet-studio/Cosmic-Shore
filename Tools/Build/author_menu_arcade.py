@@ -90,6 +90,7 @@ S = dict(
     weekly=script("Assets/_Scripts/UI/Elements/WeeklyChallengeCard.cs"),
     audio=script("Assets/_Scripts/UI/MenuAudio.cs"),
     view=script("Assets/_Scripts/UI/Views/ArcadeExploreView.cs"),
+    dock=script("Assets/_Scripts/UI/Elements/Party/FriendsDrawerDock.cs"),
     runner=script("Assets/FTUE/Scripts/Graph/Runtime/QuestGraphRunner.cs"),
     gate=script("Assets/_Scripts/UI/Elements/OfflineUIGate.cs"),
     close=script("Assets/_Scripts/UI/Modals/ModalWindowCloseButton.cs"),
@@ -341,7 +342,7 @@ def tile_body(ring, fill, border, sliver, primary=(), unsel_primary="TextLight",
                     + refs("primaryGraphics", [f(x) for x in primary])
                     + f"  unselectedPrimaryToken: {K.TOKEN_INDEX[unsel_primary]}\n"
                     + refs("secondaryGraphics", [f(x) for x in secondary])
-                    + f"  lockedSecondaryToken: {K.TOKEN_INDEX['Purchase']}\n"
+                    + f"  lockedSecondaryToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
                     + refs("artGraphics", [f(x) for x in art])
                     + f"  lockGraphic: {ref(f(lock) if lock else 0)}\n"
                     + f"  lockLabel: {ref(f(lock_label) if lock_label else 0)}\n")
@@ -573,18 +574,18 @@ def build_slot():
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.55), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
     bord = empty.child(N("Empty/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    oct_nodes(empty, "Empty/PlusRing", SOCK_AV - 8, "ElementSpace")
+    oct_nodes(empty, "Empty/PlusRing", SOCK_AV - 8, "NeutralLightest")
     oct_nodes(empty, "Empty/PlusBack", SOCK_AV - 12, "SurfaceBlack")
     plus = empty.child(N("Empty/Plus", "Plus", R((0.5, 1), None, (0, -SOCK_AV_Y), (22, 22))))
     plus.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("ElementSpace"), K.chrome_sprite("chrome_plus"), preserve=True))
+        .add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_plus"), preserve=True))
     lab = empty.child(N("Empty/Label", "Label", R((0, 1), (1, 1), (0, -name_top - 4), (-12, 30), (0.5, 1))))
     lab.add("cr", 222, K.canvas_renderer()) \
-        .add("tmp", 114, ellipsis(text("Invite a friend", "Label", tok("ElementSpace"), align="center"))) \
-        .add("kt", 114, K.kit_text("Label", "ElementSpace", driven=True))
+        .add("tmp", 114, ellipsis(text("Invite a friend", "Label", tok("NeutralLightest"), align="center"))) \
+        .add("kt", 114, K.kit_text("Label", "NeutralLightest", driven=True))
     empty.add("tile", 114, tile_body(c("Empty/FocusRing", "img"), c("Empty/Fill", "img"), c("Empty/Border", "img"), 10,
                                      primary=[c("Empty/Plus", "img"), c("Empty/Label", "tmp")],
-                                     unsel_primary="ElementSpace"))
+                                     unsel_primary="NeutralLightest"))
 
     root.add("slot", 114, lambda ctx, go: mono(go, S["slot"],
              f"  avatarIcon: {ref(ctx.c('Occupied/Avatar/Icon', 'img'))}\n"
@@ -630,7 +631,7 @@ def build_request_row():
     text_columns(root, 84, "Pilot", "PARTY INVITE", "ControlActive", line_driven=True)
     btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (72, 32), (1, 0.5))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
-    btns.children.append(small_button("Accept", "Accept", "Space", None, icon="chrome_confirm", added=[row_scroll_into()]))
+    btns.children.append(small_button("Accept", "Accept", "Cta", None, icon="chrome_confirm", added=[row_scroll_into()]))
     btns.children.append(small_button("Decline", "Decline", "Cancel", None, icon="chrome_close", added=[row_scroll_into()]))
     root.add("row", 114, lambda ctx, go: mono(go, S["request"],
              f"  avatarIcon: {ref(ctx.c('Avatar/Icon', 'img'))}\n"
@@ -654,14 +655,14 @@ def build_online_row():
     # it are sized for the widest pair. The strip CONTROLS its slots' widths (from their preferred
     # size): reading each slot's own rect instead took its 60-wide placeholder until the slot's
     # fitter caught up, which drew JOIN over INVITE.
-    text_columns(root, 210, "Pilot", "ONLINE", "ElementSpace")
+    text_columns(root, 210, "Pilot", "ONLINE", "NeutralLightest")
     # Rev 7: the pilot's profile card opens on their avatar (pointer) and on any of the row's buttons (pad focus).
     row_comp, row_avatar = (lambda ctx: ctx.c("root", "row")), (lambda ctx: ctx.rt("Avatar/Icon"))
     profile_hit(root, "Avatar/Hit", R((0, 0.5), None, (20, 0), (40, 40)), row_comp, row_avatar)
     relay = ("profile", 114, profile_hover(row_comp, row_avatar))
     btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (202, 36), (1, 0.5))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (1, 0), (0, 0)))
-    for key, caption, variant, shown in (("Invite", "INVITE", "Space", True), ("Join", "JOIN", "Space", False)):
+    for key, caption, variant, shown in (("Invite", "INVITE", "Default", True), ("Join", "JOIN", "Cta", False)):
         slot = wrap_slot(btns, f"{key}Slot", f"{key}Slot", shown)
         slot.children.append(small_button(f"{key}Button", f"{key}Button", variant, caption, added=[row_scroll_into(), relay]))
     cancel = wrap_slot(btns, "CancelSlot", "CancelSlot", False)
@@ -708,7 +709,8 @@ OPEN_BOND_ALPHA = 0.35     # an open seat's bond (ArcadeLobbyList.openBondAlpha)
 # Arena, Toy Box and Mission windows.
 # 0.55 -> 0.75 on 2026-10-17 (the owner: "make the bg opaque by 20%"): still glass, but Home no longer
 # reads through behind a window's title and Back.
-WINDOW_BACKDROP_ALPHA = 0.75
+# 0.75 -> 0.95 on 2026-10-25 (Shombith, with the sea lines, §67: "make it 95% opaque").
+WINDOW_BACKDROP_ALPHA = 0.95
 # Rev 3: the four windows' body and header, shared. The left inset is a gutter for the friends control
 # drawn over every window (rev 3's 76 px handle on the left edge; since rev 6 the presence orb, ORB_*
 # below); the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.
@@ -721,6 +723,16 @@ WINDOW_HEADER = R((0, 1), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -108), (-(W
 EXPLORE_W = 1920 - WINDOW_LEFT - WINDOW_RIGHT      # at the 1920 reference width
 CONTENT_W = EXPLORE_W - 10 - 12                     # viewport inset, content padding
 EMPTY_LINE = "No one else is online right now. Pilots who come online show here, ready to invite."
+
+
+DOCK_GAP = 24
+
+
+def drawer_dock(root):
+    """§68: the hub window makes room for the open friends drawer - its Header and Body start right of it
+    (FriendsDrawerDock), so the cards move right. Shared by the Arcade, Arena, Mission and Toy Box windows."""
+    root.add("dock", 114, lambda ctx, go: mono(go, S["dock"],
+             f"  pushed:\n  - {ref(ctx.rt('Header'))}\n  - {ref(ctx.rt('Body'))}\n  gap: {DOCK_GAP}\n"))
 
 
 def section_header(parent, key, name, title, shown=True, count="0"):
@@ -744,11 +756,11 @@ def build_panel():
     top = inner.child(N("Top", "Top", R((0, 1), None, (0, 0), (ROW_W, 46), (0, 1))))
     top.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 8, 0, (1, 1), (1, 0))).add("le", 114, le(ph=46))
     head = top.child(N("Top/Header", "Header", R((0, 1), None, (0, 0), (ROW_W, 18), (0, 1)))).add("le", 114, le(ph=18))
-    label(head.child(N("Top/Header/Label", "Label", STRETCH)), "Your party", "Label", "ElementSpace")
-    label(head.child(N("Top/Header/Count", "Count", STRETCH)), "1 / 4", "Label", "ElementSpace", align="right")
+    label(head.child(N("Top/Header/Label", "Label", STRETCH)), "Your party", "Label", "NeutralLightest")
+    label(head.child(N("Top/Header/Count", "Count", STRETCH)), "1 / 4", "Label", "NeutralLightest", align="right")
     online = top.child(N("Top/Online", "OnlineCount", R((0, 1), None, (0, -26), (ROW_W, 20), (0, 1))))
     online.add("le", 114, le(ph=20)).add("hlg", 114, K.hv_layout(False, (1, 0, 0, 0), 10, 3, (0, 0), (0, 0)))
-    diamond = image_node(online, "Top/Online/Diamond", "Diamond", R((0, 0.5), None, (5, 0), (8, 8)), "ElementSpace")
+    diamond = image_node(online, "Top/Online/Diamond", "Diamond", R((0, 0.5), None, (5, 0), (8, 8)), "Cta")
     diamond.rot = 45
     label(online.child(N("Top/Online/Text", "Text", R((0, 0.5), None, (20, 0), (300, 20), (0, 0.5)))),
           "1 Player Online", "BodySmall", "NeutralLightest")
@@ -760,7 +772,7 @@ def build_panel():
         bond = mol.child(N(f"Bond{i + 2}", f"Bond{i + 2}", R((0.5, 0.5), None, socket_pos(0), (MOL_R, BOND_H), (0, 0.5))))
         bond.rot = angle
         bond.add("cr", 222, K.canvas_renderer()) \
-            .add("img", 114, M.material_image(tok("ElementSpace", OPEN_BOND_ALPHA), M.BOND_MAT)) \
+            .add("img", 114, M.material_image(tok("NeutralLightest", OPEN_BOND_ALPHA), M.BOND_MAT)) \
             .add("rim", 114, lambda ctx, go: mono(go, M.RIM_SCRIPT, ""))
     for i in range(4):
         x, y = socket_pos(i)
@@ -828,7 +840,58 @@ def build_panel():
 # ArcadeGameCard.prefab
 # --------------------------------------------------------------------------------------------
 
-CARD_W, CARD_H = 341, 218
+CARD_W, CARD_H = 341, 296
+# Rev 18 A (Docs/MENU_REDESIGN_B.md section 72, Shombith 2026-10-25 "implement a"): the art in a band on top, an opaque body
+# under it - the hull, the name, the genre petals. Nothing is written on the art. The art drifts slowly (Card_ArtDrift.mat)
+# inside a margin KitCoverImage draws it larger by. Section 73: the hull is lit (Hull_Lit.mat) instead of sitting on a
+# pale plate, and the body carries the sea lines (Sea_Panel.mat).
+ART_BAND_H = 200
+BODY_H = CARD_H - ART_BAND_H
+ART_OVERSCAN = 1.05
+ART_DRIFT_MAT = M._lattice_guid("card_art_drift_mat")
+PORTRAIT_BOB_MAT = M._lattice_guid("card_portrait_bob_mat")
+ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay inside the overscan margin
+HULL_ICON = 60                         # the hull, lit (Hull_Lit.mat) - no plate behind it (section 73)
+HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
+PETAL = 46                             # the petal sprite carries a wide transparent margin: the shape reads about 18
+
+
+def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
+    """An art Image drawn with one of the card picture materials (CardDrift.shader)."""
+    n = art_node(parent, key, name, r, sprite, preserve=preserve)
+    mat = material or ART_DRIFT_MAT
+    n.comps = [(k, cid, (lambda body: (lambda ctx, go: body(ctx, go).replace(
+        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {mat}, type: 2}}\n", 1)))(b))
+               if k == "img" else (k, cid, b) for k, cid, b in n.comps]
+    return n
+
+
+def art_band(parent, key, w, h, sprite):
+    """The card's art band: a RectMask2D the art drifts under, the art fitted COVER x ART_OVERSCAN."""
+    band = parent.child(N(f"{key}", "ArtBand", R((0, 1), (1, 1), (0, -h / 2), (0, h), (0.5, 0.5))))
+    band.add("mask", 114, rect_mask()) \
+        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c(key + '/Art', 'img'))}\n"
+                                                                f"  overscan: {ART_OVERSCAN}\n"))
+    drift_art(band, f"{key}/Art", "Art", R(size=(w * ART_OVERSCAN, w * ART_OVERSCAN * 510 / 768)), sprite)
+    return band
+
+
+def hull_icon(parent, key, r, icon_key, icon_size):
+    """The hull with no plate behind it (section 73, Shombith 2026-10-25: "dont like the white bg"): the near-black render
+    drawn with Hull_Lit.mat - lifted toward a cool grey and edged in white - so it reads on the navy body. `key` is a
+    plain holder (the arena chip's CanvasGroup and LayoutElement go on it); the icon is its `Icon` / `VesselIcon` child."""
+    holder = parent.child(N(key, "Hull", r))
+    drift_art(holder, icon_key, "VesselIcon" if icon_key == "VesselIcon" else "Icon", R(size=(icon_size, icon_size)), None,
+              material=HULL_LIT_MAT, preserve=True)
+    return holder
+
+
+def body_sea(parent, key, body_h):
+    """The sea inside a card's body (section 73: "the blue part can have the sea lines"): Sea_Panel.mat over the body,
+    under the words. Inside the card's clip, so the cut corner crops it."""
+    sea = parent.child(N(key, "Sea", R((0, 0), (1, 0), (0, body_h / 2), (0, body_h), (0.5, 0.5))))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_PANEL_MAT))
+    return sea
 
 
 def build_card(placeholder_art):
@@ -837,29 +900,39 @@ def build_card(placeholder_art):
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    # The card's cut-corner shape clips everything (stencil); the band clips the drifting art to the top.
     clip = root.child(N("Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
     clip.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
-        .add("mask", 114, mask(False)) \
-        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c('Clip/Art', 'img'))}\n"))
-    art_node(clip, "Clip/Art", "Art", R(size=(CARD_W, CARD_W * 510 / 768)), placeholder_art)
-    image_node(clip, "Clip/Fade", "Fade", R((0, 0), (1, 0), (0, 0), (0, 110), (0.5, 0)), "SurfaceBlack",
-               K.kit_sprite("kit_fade_v"))
+        .add("mask", 114, mask(False))
+    art_band(clip, "Clip/Band", CARD_W, ART_BAND_H, placeholder_art)
+    body_sea(clip, "Clip/Sea", BODY_H)
+    image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, BODY_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
 
-    chip = root.child(N("VesselChip", "VesselChip", R((0, 1), None, (12, -12), (44, 44), (0, 1))))
-    H.framed(chip, "VesselChip", 10, "SurfaceDark", "SurfaceLight")
-    art_node(chip, "VesselIcon", "VesselIcon", R(size=(38, 38)), None, preserve=True)
+    # The body: the hull, the name, the petals.
+    hull_icon(root, "VesselChip", R((0, 0), None, (12, BODY_H / 2), (HULL_ICON, HULL_ICON), (0, 0.5)), "VesselIcon", HULL_ICON)
+    text_x = 12 + HULL_ICON + 12
+    title = root.child(N("Title", "Title", R((0, 0), (1, 0), (text_x / 2 - 8, BODY_H / 2 + 14), (-text_x - 16, 30), (0.5, 0.5))))
+    title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
     for i, key in enumerate(("Petal", "PetalSecondary")):
         n = root.child(N(key, "GenrePetal" if i == 0 else "GenrePetalSecondary",
-                         R((0, 1), None, (64, -12 - i * 24), (22, 22), (0, 1))))
+                         R((0, 0), None, (text_x - 12 + i * 26, BODY_H / 2 - 18), (PETAL, PETAL), (0, 0.5))))
         n.add("cr", 222, K.canvas_renderer()).add("img", 114, lambda ctx, go: K.image(
             (1.0, 1.0, 1.0, 1.0), None, preserve=True)(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
 
+    # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
+    picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
+    picks.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 4, 3, (0, 0), (0, 0)))
+    pick = picks.child(N("Picks/Pick", "AvatarIcon", R(size=(24, 24))))
+    pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AVATAR_PLACEHOLDER, preserve=True)) \
+        .add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=24, ph=24))
     star = root.child(N("Star", "FavoriteStar", R((1, 1), None, (-6, -6), (44, 44), (1, 1))))
     star.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
-    glyph = image_node(star, "Star/Glyph", "Glyph", R(size=(24, 24)), "NeutralLightest", K.chrome_sprite("chrome_star"),
+    image_node(star, "Star/Disc", "Disc", R(size=(32, 32)), "SurfaceBlack", K.kit_sprite("kit_oct_fill"), alpha=0.7, preserve=True)
+    glyph = image_node(star, "Star/Glyph", "Glyph", R(size=(20, 20)), "NeutralLightest", K.chrome_sprite("chrome_star"),
                        preserve=True)
     star.add("audio", 114, menu_audio(5)) \
         .add("button", 114, lambda ctx, go: mono(go, BUTTON,
@@ -871,26 +944,16 @@ def build_card(placeholder_art):
              + refs("texts", []) + refs("graphics", [ctx.c("Star/Glyph", "th")])))
     assert glyph
 
-    lock = root.child(N("Lock", "Lock", R(pos=(0, 22), size=(30, 30))))
+    # Locked: the lock and its word in the middle of the art.
+    lock = root.child(N("Lock", "Lock", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 + 12), size=(30, 30))))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.0), K.chrome_sprite("chrome_lock"),
                                                                    preserve=True))
-    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, -6), size=(200, 18))))
+    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 - 16), size=(200, 18))))
     lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("LOCKED", "Label", tok("TextLight", 0.0), align="center")) \
         .add("kt", 114, K.kit_text("Label", "TextLight", driven=True))
 
-    bottom = root.child(N("Bottom", "Bottom", R((0, 0), (1, 0), (0, 12), (-28, 58), (0.5, 0))))
-    bottom.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 6, (1, 1), (0, 0)))
-    title = bottom.child(N("Bottom/Title", "Title", R((0, 0), None, (0, 0), (240, 58), (0, 0))))
-    title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Game", "H3", tok("TextLight"), valign="bottom", wrap=True)) \
-        .add("kt", 114, K.kit_text("H3", "TextLight", driven=True)).add("le", 114, le(mw=0, fw=1))
-    picks = bottom.child(N("Bottom/Picks", "AvatarSpace", R((0, 0), None, (0, 0), (22, 58), (0, 0))))
-    picks.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 4, 8, (0, 0), (0, 0))).add("le", 114, le(mw=0))
-    pick = picks.child(N("Bottom/Picks/Pick", "AvatarIcon", R(size=(22, 22))))
-    pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AVATAR_PLACEHOLDER, preserve=True)) \
-        .add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=22, ph=22))
-
     root.add("tile", 114, tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 14,
-                                    primary=[c("Bottom/Title", "tmp")], art=[c("Clip/Art", "img"), c("VesselIcon", "img")],
+                                    primary=[c("Title", "tmp")], art=[c("Clip/Band/Art", "img"), c("VesselIcon", "img")],
                                     lock=c("Lock", "img"), lock_label=c("LockLabel", "tmp"), sel_border="Selection",
                                     on_click=[lambda ctx: (ctx.c("root", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")]))
     root.add("card", 114, lambda ctx, go: mono(go, S["card"],
@@ -898,15 +961,15 @@ def build_card(placeholder_art):
              f"  StarIconActive: {K.sprite_ref(K.chrome_sprite('chrome_star_fill'))}\n"
              f"  StarIconInActive: {K.sprite_ref(K.chrome_sprite('chrome_star'))}\n"
              "  ExploreView: {fileID: 0}\n"
-             f"  GameTitle: {ref(ctx.c('Bottom/Title', 'tmp'))}\n"
-             f"  BackgroundImage: {ref(ctx.c('Clip/Art', 'img'))}\n"
+             f"  GameTitle: {ref(ctx.c('Title', 'tmp'))}\n"
+             f"  BackgroundImage: {ref(ctx.c('Clip/Band/Art', 'img'))}\n"
              f"  StarImage: {ref(ctx.c('Star/Glyph', 'img'))}\n"
              "  Index: 0\n"
              f"  VesselIcon: {ref(ctx.c('VesselIcon', 'img'))}\n"
              f"  VesselList: {K.ref(11400000, VESSEL_LIST, 2)}\n"
              f"  GenrePetal: {ref(ctx.c('Petal', 'img'))}\n"
              f"  GenrePetalSecondary: {ref(ctx.c('PetalSecondary', 'img'))}\n"
-             f"  AvatarSpace: {ref(ctx.rt('Bottom/Picks'))}\n"
+             f"  AvatarSpace: {ref(ctx.rt('Picks'))}\n"
              f"  ProfileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
              "  LocalPickBorder: {fileID: 0}\n"
              "  localPickBorderColor: {r: 0.45, g: 1, b: 0.85, a: 1}\n"
@@ -943,8 +1006,6 @@ def feature_card(parent, key, name, art, eyebrow, eyebrow_token, title, extra=No
     image_node(clip, f"{key}/Clip/Scrim", "Scrim", STRETCH, "SurfaceBlack", K.kit_sprite("kit_fade_h"))
     bord = n.child(N(f"{key}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
-    # Rev 6: the card's rim in the element its job comes from; KitTile's state tint keeps it dim until focused.
-    M.rim_border(bord, {"Weekly": "Time", "Maelstrom": "Omni"}.get(key, "Charge"))
     label(n.child(N(f"{key}/Eyebrow", "Eyebrow", R((0, 1), None, (26, -24), (420, 18), (0, 1)))), eyebrow, "Label", eyebrow_token)
     t = n.child(N(f"{key}/Title", "Title", R((0, 1), None, (26, -48), (600, 46), (0, 1))))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text(title, "H1", tok("TextLight"))) \
@@ -991,8 +1052,8 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     root = N("root", "ArcadeView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=WINDOW_BACKDROP_ALPHA)
-    # Rev 6: the living lattice over the glass (Lattice_Window.mat); it crystallises in as the window fades in.
-    root.child(M.window_lattice_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    # §67: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
+    root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     # Sibling order is FOCUS order: ScreenSwitcher.Refocus lands on the first live Selectable in
     # hierarchy order, so the explore scroll comes before the party panel (the Body lays them out
@@ -1027,7 +1088,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
             .add("tmp", 114, text(maelstrom_desc, "BodySmall", tok("TextLight"), valign="top", wrap=True)) \
             .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
 
-    wk = feature_card(feats, "Weekly", "WeeklyChallenge", weekly_art, "WEEKLY CHALLENGE", "ElementTime", "Skim Race",
+    wk = feature_card(feats, "Weekly", "WeeklyChallenge", weekly_art, "WEEKLY CHALLENGE", "NeutralLightest", "Skim Race",
                       weekly_extra)
     wk.add("weekly", 114, lambda ctx, go: mono(go, S["weekly"],
            f"  GameTitle: {ref(ctx.c('Weekly/Title', 'tmp'))}\n"
@@ -1056,6 +1117,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     # (author_menu_friends_drawer.py), so the explore scroll takes the whole body.
 
     header = root.child(N("Header", "Header", WINDOW_HEADER))
+    drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
           "NeutralLightest")
@@ -1392,6 +1454,27 @@ def check_profile_hovers(files):
     assert "  m_RaycastTarget: 1\n" in hit, "the online row's avatar hit area does not take the pointer"
 
 
+def check_card_a(card, name, band_key, card_w, band_h):
+    """Rev 18 A (section 72): the art drifts (Card_ArtDrift.mat) under a band that crops it, the drift never shows an edge;
+    section 73: the hull is lit (no plate) and the body carries the sea. Shared with author_menu_arena.py."""
+    F = K.FileIds(name)
+    _, art = doc_of(card, F(f"{band_key}/Art#img"))
+    assert art and f"m_Material: {{fileID: 2100000, guid: {ART_DRIFT_MAT}, type: 2}}" in art, \
+        f"{name}: the card art does not drift (Card_ArtDrift.mat)"
+    _, band = doc_of(card, F(f"{band_key}#cover"))
+    m = band and re.search(r"^  overscan: ([\d.]+)$", band, re.M)
+    assert m, f"{name}: the art band has no overscan - the drifting art would show its edge"
+    ov = float(m.group(1))
+    fit_w = max(card_w, band_h * 768 / 510) * ov
+    fit_h = max(card_w * 510 / 768, band_h) * ov
+    assert (fit_w - card_w) / 2 > ART_DRIFT_REACH[0] and (fit_h - band_h) / 2 > ART_DRIFT_REACH[1], \
+        f"{name}: overscan {ov} leaves less margin than the drift's reach {ART_DRIFT_REACH} - an edge would show"
+    _, mk = doc_of(card, F(f"{band_key}#mask"))
+    assert mk and RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
+    assert f"guid: {HULL_LIT_MAT}" in card, f"{name}: the hull is not lit (Hull_Lit.mat) - it vanishes on the navy body"
+    assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
+
+
 def validate_prefabs(files, guids):
     M.require_entrances(files, {prefab_path("ArcadeView"): 2, prefab_path("PartySlot"): 1})
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
@@ -1416,6 +1499,9 @@ def validate_prefabs(files, guids):
         assert want in friends, f"FriendsListPanel.{field} does not name the {name} row component"
     assert "  embedded: 1\n" in friends and "  listPartyMembers: 0\n" in friends, "the panel's lists must be embedded"
     check_profile_hovers(files)
+
+    check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
+                 ART_BAND_H)
 
     view = files[prefab_path("ArcadeView")]
     V = K.FileIds("ArcadeView")
@@ -1576,6 +1662,9 @@ def self_test(current, files, guids):
         "stub names an object missing from KitButtonSmall": prefab_plant(panel, lambda t: re.sub(
             r"(m_CorrespondingSourceObject: \{fileID: )\d+(, guid: " + K.prefab_guid("KitButtonSmall") + ")",
             r"\g<1>4242\2", t, count=1)),
+        "the card art standing still": prefab_plant(card, lambda t: t.replace(ART_DRIFT_MAT, "0" * 32)),
+        "the hull back to a dark render": prefab_plant(card, lambda t: t.replace(HULL_LIT_MAT, ART_DRIFT_MAT)),
+        "the art band with no overscan": prefab_plant(card, lambda t: re.sub(r"  overscan: [\d.]+\n", "  overscan: 1\n", t)),
         "lists not embedded": prefab_plant(panel, lambda t: t.replace("  embedded: 1\n", "  embedded: 0\n", 1)),
         "slot field unwired": prefab_plant(panel, lambda t: t.replace(f"  - {{fileID: {slot1}}}\n", "  - {fileID: 0}\n", 1)),
         "Back closes by persistent call": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(

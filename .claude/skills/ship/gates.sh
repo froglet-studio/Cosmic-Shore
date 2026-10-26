@@ -19,6 +19,10 @@ run() {   # run <label> <command...>
 run validate_project            python3 Tools/CI/validate_project.py
 run conditional_compilation     python3 Tools/Build/check_conditional_compilation.py --root Assets
 run console_logging             python3 Tools/Build/check_console_logging.py
+run fairplay_paid_content       python3 Tools/Build/check_fairplay_paid_content.py
+run fairplay_paid_self_test     python3 Tools/Build/check_fairplay_paid_content.py --self-test
+run fairplay_device_reads       python3 Tools/Build/check_fairplay_device_reads.py
+run fairplay_device_self_test   python3 Tools/Build/check_fairplay_device_reads.py --self-test
 run gamelist_scenes             python3 Tools/Build/check_gamelist_scenes.py
 run hud_onscreen                python3 Tools/Build/check_hud_onscreen.py
 run junie_skills                python3 Tools/Build/check_junie_skills.py

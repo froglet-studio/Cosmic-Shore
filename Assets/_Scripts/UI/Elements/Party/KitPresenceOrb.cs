@@ -26,7 +26,7 @@ namespace CosmicShore.UI
             public CanvasGroup group;
             [Tooltip("The member's avatar.")]
             public Image avatar;
-            [Tooltip("The octagon behind the avatar, painted the member's domain colour (Space while it is not known).")]
+            [Tooltip("The octagon behind the avatar, painted the member's domain colour (neutral blue while it is not known).")]
             public Image ring;
         }
 
@@ -48,7 +48,7 @@ namespace CosmicShore.UI
 
         [Header("You")]
         [SerializeField] private Image centreAvatar;
-        [Tooltip("The octagon behind your avatar, painted your domain colour (Space while it is not known).")]
+        [Tooltip("The octagon behind your avatar, painted your domain colour (neutral blue while it is not known).")]
         [SerializeField] private Image centreRing;
 
         [Header("Party")]
@@ -103,7 +103,9 @@ namespace CosmicShore.UI
 
         private void Refresh()
         {
-            Color space = UITheme.Resolve(theme, UIColorToken.ElementSpace);
+            // A domain not known yet is the neutral blue: an element's colour would claim a meaning (elements carry no
+            // colour in the UI, Docs/UI_COLOR_RULES.md).
+            Color unknown = UITheme.Resolve(theme, UIColorToken.NeutralLightest);
             int online = party ? party.RemoteOnlineCount : 0;
             if (_material) _material.SetFloat(OnlineId, Mathf.Min(online, maxDots));
             if (countText && online != _shownCount)
@@ -121,11 +123,11 @@ namespace CosmicShore.UI
                 if (isLocal)
                 {
                     if (centreAvatar) centreAvatar.sprite = avatar;
-                    if (centreRing) centreRing.color = domain ?? space;
+                    if (centreRing) centreRing.color = domain ?? unknown;
                     continue;
                 }
                 if (members == null || seat >= members.Length) continue;
-                ShowMember(seat++, avatar, domain ?? space);
+                ShowMember(seat++, avatar, domain ?? unknown);
             }
 
             for (int i = seat; members != null && i < members.Length; i++)

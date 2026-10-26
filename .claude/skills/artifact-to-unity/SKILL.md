@@ -20,8 +20,17 @@ game. The artifact is the one source of truth for a studio's parameters, their n
   **Record** in the studio's decision log: that saves every changed value (`settings.changed`) to the shared log the
   clone reads. If the user tuned something and did not record it, ask them to press Record (or paste "Copy log").
 
-**Amoebius too** (`/vessel-studio` D37): a studio feature that shows on the hub (a card, a panel, a button) also lands on
-Amoebius's VESSEL STUDIO page and Unity's studio home in the same change; `parity_gate.py` holds the cards to it.
+**A vessel crosses over with its mini-game and its abilities** (`/vessel-studio` D37, Yash 2026-10-25: "I wanna use
+artifacts to create prototypes, and then I directly wanna implement them in the game with their mini game"). The
+artifact holds three things for a new vessel, and a clone brings all three:
+1. **The vessel** (its studio page): the hull, ported per §2, offered in the Toybox's Vessel Changer.
+2. **Its mini-game** (the artifact's prototype of the mode built for it): a real mode by `/arcadegame` (GameModes id,
+   scene, card, intensity ladder, generator), its numbers from the artifact's page.
+3. **Its four abilities** (element, ability, input and level-5 upgrade per element, decided in the artifact): the
+   element map (`Assets/Resources/ElementalAbilityMaps/<Vessel>.asset`) and the ability wiring per `/vessel`.
+   An ability the artifact has not decided stays an open design slot (`/vessel` §3); never fill one to finish a port.
+If the artifact lacks one of the three, build it there first (`/vessel-studio`), then clone. No Amoebius step: studio
+work adds nothing to `Port/`.
 
 Load `/vessel-studio` for the studio side (pages, publishing, the decision log) and `/vessel` + `/vessel-ai` for the
 Unity side (the vessel contract, input-only AI). This skill is the bridge between them.

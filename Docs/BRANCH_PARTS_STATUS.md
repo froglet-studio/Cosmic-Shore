@@ -3,7 +3,7 @@
 **The one place to answer "what is the state of the A–M parts / the 2026-10-12 test plan?".** Update the
 tables below in the same commit that lands, tests or drops a part, and change the "as of" line.
 
-**As of 2026-10-14**, measured on `origin/Ys-bleeding-edge` and `origin/bleeding-edge`.
+**As of 2026-10-24**, measured on `origin/Ys-bleeding-edge` and `origin/bleeding-edge`.
 
 - **Source branch:** `cece/nice-brahmagupta-ojclij` (head `77a6c35b`, 2026-10-13). Thirteen independent parts, A to M.
 - **The test plan:** `Docs/BRANCH_TEST_PLAN_2026-10-12.md` **on that branch** (not on this one). It has every
@@ -18,9 +18,9 @@ tables below in the same commit that lands, tests or drops a part, and change th
 
 | Part | What | State | Next action | Who |
 |---|---|---|---|---|
-| A | CI gates and offline audit tools | **Landed on Ys-bleeding-edge** (7 of 12 commits; 5 superseded, see §2) | Steps 3, 9 on GitHub Actions; steps 4–6 in Unity; announce the generator gate | Anyone with Actions; editor tester; Garrett |
+| A | CI gates and offline audit tools | **Landed on Ys-bleeding-edge and bleeding-edge** (7 of 12 commits; 5 superseded, see §2) | Steps 3, 9 on GitHub Actions; steps 4–6 in Unity; announce the generator gate | Anyone with Actions; editor tester; Garrett |
 | B | Repo hygiene: untrack FMOD's cache, PR template | Not landed | Sound designer saves, builds and commits `Cosmic Shore.fspro` first, then push B | Sound designer |
-| C | Steam dual-app uploader, Playtest runbook | **Landed on Ys-bleeding-edge** (2 of 2) | Step 10 docs read-through; step 11 after Steamworks A2/A4 | Shombith, Garrett |
+| C | Steam dual-app uploader, Playtest runbook | **Landed on Ys-bleeding-edge and bleeding-edge** (2 of 2) | Step 10 docs read-through; step 11 after Steamworks A2/A4 | Shombith, Garrett |
 | D | Plans and docs only | Not landed | Last, with or after the parts it describes; then `/qa-backlog` | — |
 | E | AI training fixes, deployed tournament genome | Not landed | Editor steps | Editor tester |
 | F | Skim Race AI intensity-4 policy v2-i4 | Not landed | Editor steps | Editor tester |
@@ -30,10 +30,10 @@ tables below in the same commit that lands, tests or drops a part, and change th
 | J | Multiplayer QoL (friends, recent players, ready lights, invite inbox) | Not landed | Two-account editor steps | Two UGS accounts |
 | K | Leak and lifetime fixes | Not landed | Editor steps | Editor tester |
 | L | Heritable genome, off by default | Not landed | Editor steps + owner sign-off on the LOCKED rule and worm fission | Editor tester; Garrett |
-| M | Engine APIs the game's new code compiles against | **Landed on Ys-bleeding-edge** (2 of 2) | Nothing | — |
+| M | Engine APIs the game's new code compiles against | **Landed on Ys-bleeding-edge and bleeding-edge** (2 of 2) | Nothing | — |
 
-Nothing from this branch is on `bleeding-edge` yet: A, C and M reach it with the next Ys-bleeding-edge →
-bleeding-edge merge.
+A, C and M are on `bleeding-edge` too (measured 2026-10-24); no other part has landed anywhere, and the source
+branch has not moved since 2026-10-13.
 
 ## 2. What landed, and how it differs from the plan (2026-10-14, `9d9e7139`)
 

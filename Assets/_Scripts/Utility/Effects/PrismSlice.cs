@@ -124,6 +124,11 @@ namespace CosmicShore.Utility
         public static bool TryRequest(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Vector3 velocity, Vector3 cutPoint, Vector3 cutNormal)
         {
+            // A rotation that drifted off unit length (1.00001 after many prism-to-prism multiplications) makes
+            // Matrix4x4.TRS log "Quaternion To Matrix conversion failed" (Bug Ledger E-16d65ffecb and three more).
+            // Normalize once here; the cut geometry below reads the same rotation.
+            rotation = Quaternion.Normalize(rotation);
+
             // A device without Entities Graphics (Docs/PRISM_ANIMATION.md §4.11) has no carrier for the cut's
             // hand-written DOTS shader, so it refuses and the factory explodes the prism — which that device
             // does draw — instead of queueing halves that could never spawn.

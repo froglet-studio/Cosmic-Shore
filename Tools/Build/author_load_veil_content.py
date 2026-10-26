@@ -5,7 +5,7 @@ approved "Loading" board; the owner, 2026-10-17: "Black loading screen when chan
 
     Assets/Resources/UI/EnvironmentLoadVeilContent.asset   (EnvironmentLoadVeilContentSO)
         Every word EnvironmentLoadVeil shows - "Entering", "Loading", "Tip", the four build steps, a line under each
-        freestyle cell's name, the tips - plus the living lattice behind it (Lattice_Window.mat), the four element
+        freestyle cell's name, the tips - plus the sea behind it (Sea_Window.mat, §70), the four element
         glyphs the steps wear (Mass, Time, Charge, Space) and the two kit fonts. The veil is built in code, so it reads
         this asset from Resources.
 
@@ -106,7 +106,7 @@ def asset_text(words=WORDS, steps=STEPS, lines=CELL_LINES, tips=TIPS, glyph_orde
         out += [f"  - cellName: {q(name)}", f"    line: {q(line)}"]
     out.append("  tips:")
     out += [f"  - {q(t)}" for t in tips]
-    out.append(f"  lattice: {ref(2100000, M.LATTICE_WINDOW_MAT, 2)}")
+    out.append(f"  background: {ref(2100000, M.SEA_WINDOW_MAT, 2)}")
     out.append("  stepGlyphs:")
     out += [f"  - {K.sprite_ref(H.element_glyph(e))}" for e in glyph_order]
     out.append(f"  displayFont: {ref(K.ALDRICH[1], K.ALDRICH[0], 2)}")
@@ -181,9 +181,9 @@ def validate(files, known=None):
     assert text.isascii(), "non-ASCII text (the UI font has 97 glyphs)"
     glyphs = re.findall(r"guid: ([0-9a-f]{32})", block(text, "stepGlyphs"))
     assert glyphs == [H.element_glyph(e) for e in ELEMENTS], "the step glyphs are not Mass, Time, Charge, Space in step order"
-    assert f"  lattice: {ref(2100000, M.LATTICE_WINDOW_MAT, 2)}" in text, "the lattice is not Lattice_Window.mat"
+    assert f"  background: {ref(2100000, M.SEA_WINDOW_MAT, 2)}" in text, "the loading screen's background is not the sea (Sea_Window.mat, §70)"
     owned = known_guids()
-    for g in [M.LATTICE_WINDOW_MAT, K.ALDRICH[0], K.SEMIBOLD[0]] + glyphs:
+    for g in [M.SEA_WINDOW_MAT, K.ALDRICH[0], K.SEMIBOLD[0]] + glyphs:
         assert g in owned, f"guid {g} resolves to no asset"
 
 

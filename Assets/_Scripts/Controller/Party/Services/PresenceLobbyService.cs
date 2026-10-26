@@ -33,6 +33,8 @@ using System.Collections.Generic;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -144,6 +146,17 @@ namespace CosmicShore.Gameplay
         public async UniTask JoinOrCreateAsync(int maxPlayers)
         {
             if (_activeLobby != null) return;
+
+            // B37: with Unity Services not initialized (or nobody signed in) the SDK has no session
+            // service to call, and the query and the create each threw a bare NullReferenceException
+            // ("Could not create presence lobby: Object reference not set..."). Leave the lobby null
+            // instead: the caller's presence rejoin tries again with back-off (3 s up to 60 s).
+            string notReady = UgsNotReadyReason(ServicesState(), SignedIn());
+            if (notReady != null)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Not joining the presence lobby yet: {notReady}.");
+                return;
+            }
 
             CSDebug.LogVerbose(CSLogChannel.Party, "[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby");
             try
@@ -310,8 +323,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (_activeLobby == null) return;
-            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-            await _activeLobby.RefreshAsync().AsMainThread();
+            await LobbyReadPacer.RefreshAsync(_activeLobby);
         }
 
         /// <inheritdoc/>
@@ -496,9 +508,44 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                CSDebug.LogError($"[PresenceLobbyService] Could not create presence lobby: {e.Message}");
+                // B37: a failure the presence rejoin recovers from (a timeout, a 429, the SDK's own
+                // wrapped errors) is a warning; anything else is a fault in our code or in how we call the
+                // SDK, logged whole so the ledger keeps the frame that threw (it used to keep only the
+                // message, so the September NullReferenceException could never be traced).
+                if (CreateFailureIsRetryable(UgsRequestPolicy.Classify(e)))
+                    CSDebug.LogWarning($"[PresenceLobbyService] Could not create presence lobby ({e.GetType().Name}): {e.Message} - the presence rejoin tries again.");
+                else
+                    CSDebug.LogError($"[PresenceLobbyService] Could not create presence lobby: {e}");
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
+        }
+
+        /// <summary>
+        /// Why the presence lobby cannot be reached yet, or null when it can: Unity Services must be
+        /// initialized and a player signed in before the SDK has a session service to call (B37).
+        /// </summary>
+        internal static string UgsNotReadyReason(ServicesInitializationState state, bool signedIn)
+        {
+            if (state != ServicesInitializationState.Initialized) return $"Unity Services are {state}";
+            if (!signedIn) return "nobody is signed in";
+            return null;
+        }
+
+        /// <summary>A create failure the presence rejoin's back-off recovers from (B37).</summary>
+        internal static bool CreateFailureIsRetryable(UgsFailureClass failure) =>
+            failure is UgsFailureClass.Transient or UgsFailureClass.RateLimited
+                    or UgsFailureClass.Benign or UgsFailureClass.Cancelled;
+
+        static ServicesInitializationState ServicesState()
+        {
+            try { return UnityServices.State; }
+            catch { return ServicesInitializationState.Uninitialized; }
+        }
+
+        static bool SignedIn()
+        {
+            try { return AuthenticationService.Instance is { IsSignedIn: true }; }
+            catch { return false; }
         }
 
         /// <summary>

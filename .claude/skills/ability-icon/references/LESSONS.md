@@ -51,7 +51,7 @@ abilities are more locked in. lets get their icons polished."
 11. **Elements have no colour - LOCKED.** The lockup's rev 3 lava colours (Charge gold, Mass blue, Space violet,
     Time teal) were the domain palette read as elements; the sheet of round 1 repeated the mistake by washing
     each plate in "its element's" colour. Both are gone: `AbilityLockupStyle.asset` serialises
-    `elementColour: 0`, `check_element_colour.py` holds it (and lists the element->colour maps still in code with
+    `elementColour: 0`, `check_element_colour.py` held it until the 2026-10-26 merge, when it turned out `check_ui_colors.py` (Docs/UI_COLOR_RULES.md, the same rule relayed by Shombith the same day) already did: the icon gate was retired, theirs holds it (and lists the element->colour maps still in code with
     their owners), the sheet draws white on the plate. Rule text: `Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`
     "Elements have no colour".
 12. **Measure the HUD before deciding what an icon IS.** On these three hulls the "icon" is often a live
@@ -125,7 +125,7 @@ one thing right. then move on."
     lime." The Dolphin's jaw pair was the pattern: the card's icon Image becomes a transparent container (no
     sprite, alpha 0 - the lockup still kerns and punches it) over two stretched child Images; the view paints
     them from pushes it already receives (SetPlayerDomainColor, SetDangerTint) and snaps both to the shared
-    `ElementalBarsConfigSO.limeColor` on a joust. Neither tint is an element colour: a team claim and the fleet's
+    `ElementalBarsConfigSO.LimeColor` on a joust. Neither tint is an element colour: a team claim and the fleet's
     warning hue. `rebind.py` `pair=` builds the children in the prefab YAML with deterministic fileIDs and wires
     the view's fields; the kit writes three sprites (the pair in Pair/, each exempt from the whole-icon gates,
     and the white composite the Jousts objective box keeps). C# touched: SquirrelVesselHUDView - no Unity CLI in
@@ -134,7 +134,7 @@ one thing right. then move on."
     prisms touching and behind the skimmer the player's domain color. make the prisms in front of the skimmer the
     blue" and "i like b2 the best". The Time card's icon became a container over SkimSelf (hull, skimmer sphere,
     the prisms under it - domain colour, from the same push as the boost fill) and SkimAhead (the prisms ahead -
-    `ElementalBarsConfigSO.blueColor`, the HUD's one blue). Prisms are `motifs.block()` - a box from front-above
+    `ElementalBarsConfigSO.BlueColor`, the HUD's one blue). Prisms are `motifs.block()` - a box from front-above
     with its seams cut - after a notched band read as "the profile of a chocolate bar". The pair's `pair=` step
     inserts the view's fields after a named anchor (`after=`). Seam slivers trip the specks gate: exempt by name.
 29. **The ring stays white, and thinner.** A part the view never tints is still its own child (field None in the

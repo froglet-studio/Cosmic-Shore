@@ -13,19 +13,22 @@ namespace CosmicShore.UI
         Inactive = 1,
         /// <summary>Cancel; "coming soon" in the store.</summary>
         Cancel = 2,
-        /// <summary>Any spend - icon + amount. Drawn in Mass (rev 6: Mass is what you own).</summary>
+        /// <summary>Spends something: a purchase, an upgrade, any button that confirms using a resource. Gold, and gold
+        /// means nothing else (Garrett's palette, Docs/UI_COLOR_RULES.md).</summary>
         Purchase = 3,
-        /// <summary>Free / primary action.</summary>
+        /// <summary>Free / primary action. Lime: always categorically good.</summary>
         Cta = 4,
-        /// <summary>Launch a game. Drawn in Charge (rev 6). The opaque Play button is the one gradient fill in the menu (§1.4).</summary>
+        /// <summary>Launch a game: the call to action, in lime. The opaque Play button is the one gradient fill in the menu
+        /// (§1.4).</summary>
         Play = 5,
-        /// <summary>Destructive. Danger is a full-bleed fill only (§2), so it is always drawn opaque.</summary>
+        /// <summary>Destructive. Fire, for danger, caution and problems only. Always drawn opaque (§2).</summary>
         Danger = 6,
-        /// <summary>Rev 6: an action about something you own that is not a spend (equip, upgrade a preview).</summary>
+        /// <summary>Retired (rev 6 drew it in an element colour; elements carry no colour). Draws as <see cref="Default"/>.
+        /// Kept so serialized buttons keep their value.</summary>
         Mass = 7,
-        /// <summary>Rev 6: an action about people - invite, join, accept.</summary>
+        /// <summary>Retired, as <see cref="Mass"/>. Draws as <see cref="Default"/>.</summary>
         Space = 8,
-        /// <summary>Rev 6: an action about progress - claim, watch a record, see the leaderboard.</summary>
+        /// <summary>Retired, as <see cref="Mass"/>. Draws as <see cref="Default"/>.</summary>
         Time = 9,
     }
 
@@ -135,11 +138,8 @@ namespace CosmicShore.UI
             if (playGradient) playGradient.enabled = v == KitButtonVariant.Play && opaque;
         }
 
-        /// <summary>An element-coloured variant: outline + tint + element label, or an element fill with a dark label.</summary>
-        private Palette Element(UIColorToken token, bool opaque, Color dark) => opaque
-            ? new Palette(Token(token), Token(token), dark)
-            : new Palette(Token(token), Token(token, TintAlpha), Token(token));
-
+        /// <summary>The variant's colours by role (Docs/UI_COLOR_RULES.md): neutral blue, lime for the call to action,
+        /// gold for a spend, fire for danger.</summary>
         private Palette PaletteFor(KitButtonVariant v, bool opaque)
         {
             var dark = Token(UIColorToken.SurfaceBlack);
@@ -154,24 +154,21 @@ namespace CosmicShore.UI
                         ? new Palette(Token(UIColorToken.NeutralLightest), Token(UIColorToken.NeutralLightest), dark)
                         : new Palette(Token(UIColorToken.NeutralLightest), Token(UIColorToken.NeutralLightest, TintAlpha), Token(UIColorToken.TextLight));
                 case KitButtonVariant.Purchase:
-                case KitButtonVariant.Mass:
-                    return Element(UIColorToken.ElementMass, opaque, dark);
-                case KitButtonVariant.Space:
-                    return Element(UIColorToken.ElementSpace, opaque, dark);
-                case KitButtonVariant.Time:
-                    return Element(UIColorToken.ElementTime, opaque, dark);
+                    return opaque
+                        ? new Palette(Token(UIColorToken.Purchase), Token(UIColorToken.Purchase), dark)
+                        : new Palette(Token(UIColorToken.Purchase), Token(UIColorToken.Purchase, TintAlpha), Token(UIColorToken.Purchase));
                 case KitButtonVariant.Cta:
                     return opaque
                         ? new Palette(Token(UIColorToken.Cta), Token(UIColorToken.Cta), dark)
                         : new Palette(Token(UIColorToken.Cta), Token(UIColorToken.Cta, TintAlpha), Token(UIColorToken.Cta));
                 case KitButtonVariant.Play:
                 {
-                    // Rev 6: Play is Charge. The opaque fill runs Charge -> Charge halfway to white (the
-                    // KitGradient); its border is that lighter end. Transparent, the label is Charge too.
-                    var charge = Token(UIColorToken.ElementCharge);
+                    // Play is the call to action, in lime. The opaque fill runs lime -> lime halfway to white (the
+                    // KitGradient); its border is that lighter end. Transparent, the label is lime too.
+                    var cta = Token(UIColorToken.Cta);
                     return opaque
-                        ? new Palette(Color.Lerp(charge, Color.white, KitGradient.DefaultLighten), charge, dark)
-                        : new Palette(charge, Token(UIColorToken.ElementCharge, PlayTintAlpha), charge);
+                        ? new Palette(Color.Lerp(cta, Color.white, KitGradient.DefaultLighten), cta, dark)
+                        : new Palette(cta, Token(UIColorToken.Cta, PlayTintAlpha), cta);
                 }
                 case KitButtonVariant.Danger:
                     return new Palette(Token(UIColorToken.Danger), Token(UIColorToken.Danger), dark);

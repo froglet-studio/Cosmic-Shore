@@ -207,7 +207,7 @@ sheet, author) and `.claude/skills/ability-icon/` written, and the **Manta (4) a
 redrawn through the kit (`Docs/Icons/sheets/manta.png`, `urchin.png`), their old generators standing
 down on the PNGs. The Thresher was not round 2's proof after all: Garrett asked for the floor to be
 raised on the worst first, so the two "does not read" hulls went first. **Round 2 (2026-10-25):** Garrett's call on round 1 ("slightly better, not quite there") plus the LOCKED
-colour rule (elements have no colour; `check_element_colour.py`; the lockup's rev 3 element colouring OFF).
+colour rule (elements have no colour; `check_ui_colors.py` / `Docs/UI_COLOR_RULES.md`; the lockup's rev 3 element colouring OFF).
 **Squirrel** (Crystal Joust replaces the skull - also the Jousts metric icon; Skimming replaces the borrowed
 Sparrow boost icon; the drift pair replaces two teal placeholders; Boost Ring kept, Steal is generated) and
 **Sparrow** (Turret Stance, Cannons + the prism-rounds mode sprite, Afterburner, and a five-rung rocket ladder
@@ -252,3 +252,16 @@ style call) before the kit is built; the card backgrounds (`/cardart`) and the c
    what value the redundancy could provide.")
 3. **A hull's own silhouette is fair game where appropriate** - the Dolphin's jaw on its Space icon
    is the worked example.
+
+## 11. Refactor rows (measured at the 2026-10-26 ship; rows only, nothing changed on the branch)
+
+| Row | Measured | Question that settles it | Lives |
+|---|---|---|---|
+| `Squirrel_DriftHull` single-icon fallback: `driftingSprite` / `doubleDriftingSprite` on `SquirrelHUDVariant.prefab` are `{fileID: 0}` today (lines 3212-3213) and the pair path is wired, so `SquirrelVesselHUDView`'s whole-icon drift branch (driftColor / doubleDriftColor / LeanDriftIcon) has no live reader | `grep -n "driftingSprite:" SquirrelHUDVariant.prefab` → both 0 | Is any other HUD going to bind a single drift icon? If not, delete the fallback branch and the two sprite fields (a data migration: the prefab keys go in the same change) | `SquirrelVesselHUDView.cs` |
+| The eleven `Dolphin_UI/Charges*.png` step sprites are referenced by nothing | guid sweep over `.prefab/.asset/.unity`: 0 refs | Keep as the artist's art, or delete with their metas? The artist's call | `Assets/_Graphics/Design Assests/HUD UI/New_Dolphin/Dolphin_UI/` |
+| `Parts/Sparrow_AfterburnerRest.png` (the rest composite) is referenced by nothing; the HUD binds the hull and jets parts | guid sweep: 0 refs | Drop the composite from the spec, or keep it as the sheet's single image? | `Tools/Build/icon_kit/specs/sparrow.py` |
+| `options.py` is superseded by `states.py` `CARDS` (an options round is CARDS with one entry per candidate) | `grep -rl "import options"` → only itself | Delete it and the paragraph in SKILL.md §2 that still names it | `Tools/Build/icon_kit/options.py` |
+| `motifs.hull()` (the generic chevron the language now forbids as a subject) has one caller left, the Urchin's Track Projector nose | `grep "hull(" specs/*.py` → urchin.py:36 | Redraw the Urchin's four through the real mesh (round 5) and retire the motif | `Tools/Build/icon_kit/motifs.py` |
+| `Sparrow.prefab` still serializes `barrelRollController:` on `SparrowHUDController`, a field the C# no longer has | `grep -c barrelRollController Sparrow.prefab` → 1 | Harmless (Unity drops it on the next save); resave the prefab when it is next opened | `Assets/_Prefabs/Spacevessels/Sparrow.prefab` line 1514 |
+| `BarrelRollController.OnRollChargeChanged` has no subscriber since the roll pip retired | `grep "OnRollChargeChanged +="` → 0 | Keep the event (the roll's own state machine raises it; a future readout may listen) or delete it with `RollChargeState`? Garrett's call | `Assets/_Scripts/Controller/Vessel/BarrelRollController.cs` |
+| The `/ship` depth table and `/to-bleeding-edge` alias are two files for one lane | this branch | After Yash's first `/ship promote`, delete the alias file | `.claude/skills/to-bleeding-edge/SKILL.md` |

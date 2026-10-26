@@ -290,9 +290,17 @@ namespace CosmicShore.Engine.Rendering
         public ScriptableRenderer scriptableRenderer => _renderer ??= new ScriptableRenderer();
     }
 
+    /// <summary>
+    /// When a camera's volume stack is refreshed (UnityEngine.Rendering.VolumeFrameworkUpdateMode, URP): every frame by
+    /// the pipeline, only when a script calls <see cref="CameraExtensions.UpdateVolumeStack"/>, or as the pipeline asset
+    /// says. This engine's pipeline refreshes every frame, so UsePipelineSettings behaves as EveryFrame.
+    /// </summary>
+    public enum VolumeFrameworkUpdateMode { EveryFrame = 0, ViaScripting = 1, UsePipelineSettings = 2 }
+
     /// <summary>URP per-camera data (UniversalAdditionalCameraData).</summary>
     public class UniversalAdditionalCameraData : MonoBehaviour
     {
+        [SerializeField] VolumeFrameworkUpdateMode m_VolumeFrameworkUpdateModeOption = VolumeFrameworkUpdateMode.UsePipelineSettings;
         [SerializeField] bool m_RenderPostProcessing;
         [SerializeField] LayerMask m_VolumeLayerMask = 1;
         [SerializeField] bool m_RenderShadows = true;
@@ -311,6 +319,22 @@ namespace CosmicShore.Engine.Rendering
         public bool dithering { get; set; }
         public List<Camera> cameraStack { get; } = new();
 
+        /// <summary>The camera's update mode (<see cref="CameraExtensions.SetVolumeFrameworkUpdateMode"/> also manages the
+        /// local stack, as URP does).</summary>
+        public VolumeFrameworkUpdateMode volumeFrameworkUpdateMode
+        {
+            get => m_VolumeFrameworkUpdateModeOption;
+            set => m_VolumeFrameworkUpdateModeOption = value;
+        }
+
+        /// <summary>True when the pipeline refreshes this camera's volumes every frame; false for ViaScripting, whose
+        /// stack is the camera's own <see cref="volumeStack"/>, refreshed only by <see cref="CameraExtensions.UpdateVolumeStack"/>.</summary>
+        public bool requiresVolumeFrameworkUpdate => m_VolumeFrameworkUpdateModeOption != VolumeFrameworkUpdateMode.ViaScripting;
+
+        /// <summary>The camera's own volume stack (URP: created when the camera turns ViaScripting, or by
+        /// <see cref="CameraExtensions.UpdateVolumeStack"/>); null while the pipeline's shared stack serves it.</summary>
+        public VolumeStack volumeStack { get; set; }
+
         ScriptableRenderer _renderer;
         /// <summary>This camera's renderer: script-injected passes are enqueued on it.</summary>
         public ScriptableRenderer scriptableRenderer => _renderer ??= new ScriptableRenderer();
@@ -320,6 +344,33 @@ namespace CosmicShore.Engine.Rendering
     {
         public static UniversalAdditionalCameraData GetUniversalAdditionalCameraData(this Camera camera)
             => camera.GetComponent<UniversalAdditionalCameraData>() ?? camera.gameObject.AddComponent<UniversalAdditionalCameraData>();
+
+        public static VolumeFrameworkUpdateMode GetVolumeFrameworkUpdateMode(this Camera camera)
+            => camera.GetUniversalAdditionalCameraData().volumeFrameworkUpdateMode;
+
+        /// <summary>URP's rule: turning ViaScripting gives the camera its own stack; turning back to a per-frame mode drops it,
+        /// so the pipeline's shared stack serves the camera again.</summary>
+        public static void SetVolumeFrameworkUpdateMode(this Camera camera, VolumeFrameworkUpdateMode mode)
+        {
+            var data = camera.GetUniversalAdditionalCameraData();
+            bool before = data.requiresVolumeFrameworkUpdate;
+            data.volumeFrameworkUpdateMode = mode;
+            bool after = data.requiresVolumeFrameworkUpdate;
+            if (before && !after) data.volumeStack ??= new VolumeStack();
+            else if (!before && after) data.volumeStack = null;
+        }
+
+        /// <summary>Refresh the camera's own stack from the volumes it sees (its volume trigger, else the camera, and its
+        /// volume layer mask), creating the stack first if it has none - URP's CameraExtensions.UpdateVolumeStack.</summary>
+        public static void UpdateVolumeStack(this Camera camera) => camera.UpdateVolumeStack(camera.GetUniversalAdditionalCameraData());
+
+        public static void UpdateVolumeStack(this Camera camera, UniversalAdditionalCameraData data)
+        {
+            if (data == null) return;
+            data.volumeStack ??= new VolumeStack();
+            var trigger = data.volumeTrigger != null ? data.volumeTrigger : camera.transform;
+            data.volumeStack.Update(trigger.position, data.volumeLayerMask.value);
+        }
     }
 
     /// <summary>The render-graph submission context (opaque here).</summary>

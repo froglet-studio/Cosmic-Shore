@@ -90,6 +90,51 @@ namespace CosmicShore.Gameplay
             return _points[i];
         }
 
+        /// <summary>Distance along the line (it is closed, so forward wraps) from point <paramref name="from"/> to point
+        /// <paramref name="to"/>. Stops counting at <paramref name="limit"/>: the callers only ask "is it nearer than X".</summary>
+        public float DistanceAlong(int from, int to, float limit = float.MaxValue)
+        {
+            int n = _points.Length;
+            int i = Wrap(from), end = Wrap(to);
+            float d = 0f;
+            for (int step = 0; step < n && i != end && d <= limit; step++)
+            {
+                int j = Wrap(i + 1);
+                d += (_points[j] - _points[i]).magnitude;
+                i = j;
+            }
+            return d;
+        }
+
+        /// <summary>
+        /// Where a pilot on the line aims, given the ring it must thread next. Normally the look-ahead point
+        /// (<see cref="PointAhead"/> from <paramref name="nearest"/>). But a hull that steers at a point a look-ahead ahead
+        /// cuts the corner, and at a ring on a corner the straight line to that point crosses the ring's plane outside a
+        /// small mouth: a miss, then a swing round to re-attack. So when the ring's crossing point (the line point
+        /// nearest the ring's centre, <paramref name="ringIndex"/>) is nearer along the line than the look-ahead, AND the
+        /// chord to the look-ahead point would cross the ring's plane outside <paramref name="mouth"/> (the ring's radius
+        /// less the hull's room), the pilot aims at the crossing point instead, pushed straight on through it by what is
+        /// left of the look-ahead, so it flies at the mouth and on through. Where the chord already threads the mouth the
+        /// look-ahead stands, so the line is only bent where it would miss.
+        ///
+        /// <para>Measured offline (<c>Tools/Build/regatta_line_sim.py</c>, 2026-10-25, steering model at each hull's
+        /// recorded race speed): the Scarab at I3/I4 and the Manta at I4 missed 18-27 mouths a race on the plain
+        /// look-ahead and none with this; it costs at most 2.7 s anywhere else (Manta I3).</para>
+        /// </summary>
+        public Vector3 AimThroughRing(int nearest, float lookahead, Vector3 self, int ringIndex, Vector3 ringCentre,
+                                      Vector3 ringAxis, float mouth)
+        {
+            Vector3 free = PointAhead(nearest, lookahead);
+            float left = DistanceAlong(nearest, ringIndex, lookahead);
+            if (left > lookahead) return free;
+            if (RaceGateRing.PlaneCrossing(self, free, ringCentre, ringAxis, Mathf.Max(1f, mouth))
+                != GatePlaneCrossing.OutsideMouth)
+                return free;
+            Vector3 cross = this[ringIndex];
+            Vector3 on = cross - self;
+            return on.sqrMagnitude > 1e-4f ? cross + on.normalized * (lookahead - left) : free;
+        }
+
         /// <summary>Distance from <paramref name="p"/> to the nearest of <paramref name="rail"/>'s points: what a
         /// test or a reader measures the line's clearance with.</summary>
         public static float DistanceTo(IReadOnlyList<Vector3> rail, Vector3 p)

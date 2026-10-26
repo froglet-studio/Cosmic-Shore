@@ -61,7 +61,7 @@ SCRIPT_DIR = A("_Scripts", "Controller", "Environment", "FloraAndFauna", "Swarm"
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 TADPOLE_SRC = os.path.join(PREFAB_DIR, "TadPoleFauna.prefab")
 
-SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmEvoFateCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
+SCRIPTS = ["ISwarmCore", "ISwarmDirector", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmEvoFateCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
            "SwarmTadpoleFauna", "SwarmTickJob", "SwarmMemberRenderer"]
 # round 7: the GPU member shader (Docs/SWARM_FAUNA.md §14) and the palette its members wear
 GRAPHS_DIR = A("_Graphics", "Materials", "Graphs")
@@ -258,7 +258,7 @@ def script_guid(name):
 def plans_from_research():
     """The baked plans, or None when the research ref is not reachable from this clone."""
     try:
-        subprocess.run(["git", "-C", REPO, "rev-parse", "--verify", "-q", swarm_plans.RESEARCH_REF],
+        subprocess.run(["git", "-C", REPO, "rev-parse", "--verify", "-q", swarm_plans.RESEARCH_COMMIT + "^{commit}"],
                        check=True, capture_output=True)
     except subprocess.CalledProcessError:
         return None
@@ -278,7 +278,7 @@ def evo_rule_from_research():
     evo genome's output-gain switch (sw_out) is off - checked here, so a re-export with it on fails loudly."""
     import json
     try:
-        text = subprocess.run(["git", "-C", REPO, "show", f"{swarm_plans.RESEARCH_REF}:{EVO_RULE_SRC}"],
+        text = subprocess.run(["git", "-C", REPO, "show", f"{swarm_plans.RESEARCH_COMMIT}:{EVO_RULE_SRC}"],
                               check=True, capture_output=True, text=True).stdout
     except subprocess.CalledProcessError:
         return None
@@ -966,7 +966,7 @@ def report(rows, tot, eggs, L, baked):
     print(f"  round 11-10: builder colony member bodies (fortress, thieves, wearer hearts at their caps) "
           f"{tot['builder_bodies']:,.1f} volume, BindVirtualMass - counted by the ladder (Docs/BUILDERS_AND_THIEVES.md §10.4)")
     print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in L.items()))
-    print(f"  plans: {'re-baked from ' + swarm_plans.RESEARCH_REF if baked else 'research ref not reachable - committed plans kept'}")
+    print(f"  plans: {'re-baked from ' + swarm_plans.RESEARCH_REF + ' @ ' + swarm_plans.RESEARCH_COMMIT[:10] if baked else 'research commit not in this clone - committed plans kept'}")
 
 
 def stale(out):

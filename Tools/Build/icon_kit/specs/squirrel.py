@@ -102,7 +102,7 @@ def skim_ring():
 
 
 def skim_ahead():
-    """The prisms still AHEAD of the sphere - tinted the HUD's blue (ElementalBarsConfigSO.blueColor)."""
+    """The prisms still AHEAD of the sphere - tinted the HUD's blue (ElementalBarsConfigSO.BlueColor)."""
     m = empty()
     for x in SKIM_BLOCKS:
         if x > SKIM_REACH:

@@ -26,11 +26,23 @@ namespace CosmicShore.Tests
     {
         readonly List<Object> _made = new();
 
+        double _clock;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _clock = 1000;
+            LobbyReadPacer.Now = () => _clock;
+            LobbyReadPacer.Reset();
+        }
+
         [TearDown]
         public void TearDown()
         {
             foreach (var o in _made) if (o) Object.DestroyImmediate(o);
             _made.Clear();
+            LobbyReadPacer.Now = () => Time.realtimeSinceStartupAsDouble;
+            LobbyReadPacer.Reset();
         }
 
         T Make<T>() where T : ScriptableObject
@@ -86,6 +98,48 @@ namespace CosmicShore.Tests
             // The cadence Caleb's log measured: presence and party every 1.5 s tick, 0.75 s boosted.
             Assert.Greater(1f / 1.5f + 1f / 1.5f, limit, "the old cadence was over the limit (negative control)");
             Assert.Greater(1f / 0.75f, limit, "the old boost alone was over it");
+        }
+
+        // B31 again (2026-10-24): the average was under the cap, but the presence and party reads went
+        // out in the same second, and Caleb's and Gradi's logs refused 1,061 party reads against 12
+        // presence ones. Spacing is what UGS counts.
+
+        [Test]
+        public void ReadPacer_HoldsEveryReadAtLeastASecondAfterTheLast()
+        {
+            Assert.IsTrue(LobbyReadPacer.TryTakeTurn(), "the presence read goes out");
+            Assert.IsFalse(LobbyReadPacer.TryTakeTurn(), "the party read right behind it waits (it was the 429)");
+            _clock += 0.9;
+            Assert.IsFalse(LobbyReadPacer.TryTakeTurn(), "still inside UGS's one second");
+            Assert.AreEqual(LobbyReadPacer.MIN_SPACING_SECONDS - 0.9, LobbyReadPacer.SecondsUntilNextRead(), 1e-9);
+            _clock += 0.15;
+            Assert.IsTrue(LobbyReadPacer.TryTakeTurn(), "1.05 s after the last read it goes");
+            Assert.GreaterOrEqual(LobbyReadPacer.MIN_SPACING_SECONDS, 1.0, "never under UGS's 1 GET/s/player");
+        }
+
+        [Test]
+        public void ReadPacer_ARefusedTurnClaimsNothing_AndANewPlayStartsFree()
+        {
+            Assert.IsTrue(LobbyReadPacer.TryTakeTurn());
+            _clock += 0.5;
+            Assert.IsFalse(LobbyReadPacer.TryTakeTurn());
+            _clock += 0.55;
+            Assert.IsTrue(LobbyReadPacer.TryTakeTurn(), "the refused try at +0.5 s did not push the slot out");
+            LobbyReadPacer.Reset();
+            Assert.AreEqual(0, LobbyReadPacer.SecondsUntilNextRead(), "the Play-start reset frees the slot");
+            Assert.IsNotNull(typeof(LobbyReadPacer).GetMethod("Reset", BindingFlags.NonPublic | BindingFlags.Static)
+                ?.GetCustomAttribute<RuntimeInitializeOnLoadMethodAttribute>(), "Reset runs when Play starts");
+        }
+
+        [Test]
+        public void PartyPollDue_IsAQuestion_TheTickThenTakesIt()
+        {
+            var s = new LobbyRefreshScheduler(1.5f);
+            Assert.IsTrue(s.IsPartySessionPollDue(100f), "due: this tick reads the party session, not the presence lobby");
+            Assert.IsTrue(s.IsPartySessionPollDue(100f), "asking does not claim it");
+            Assert.IsTrue(s.TryTakePartySessionPoll(100f, boosted: false));
+            Assert.IsFalse(s.IsPartySessionPollDue(101.5f), "the next ticks read the presence lobby (negative control)");
+            Assert.IsTrue(s.IsPartySessionPollDue(106f));
         }
 
         // ── B32: the shared presence lobby survives its host leaving ─────────────────────────

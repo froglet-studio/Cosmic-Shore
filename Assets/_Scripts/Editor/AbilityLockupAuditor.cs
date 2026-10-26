@@ -119,31 +119,31 @@ namespace CosmicShore.Editor
         static int AuditStyle(AbilityLockupStyleSO style, StringBuilder report)
         {
             int problems = 0;
-            report.AppendLine($"STYLE  totem {style.plateWidth}x{style.PlateHeight}  " +
-                              $"(ability plate {style.abilityCellHeight}, gap {style.cellGap}, element plate " +
-                              $"{style.petalCellHeight}, imbalance {style.PlateImbalance:P0})  " +
-                              $"slant inset {style.trapezoidInset} edge {style.slantEdgeThickness}+{style.slantEdgeAntialias}aa " +
-                              $"wrap {style.slantEdgeWrap} " +
+            report.AppendLine($"STYLE  totem {style.PlateWidth}x{style.PlateHeight}  " +
+                              $"(ability plate {style.AbilityCellHeight}, gap {style.CellGap}, element plate " +
+                              $"{style.PetalCellHeight}, imbalance {style.PlateImbalance:P0})  " +
+                              $"slant inset {style.TrapezoidInset} edge {style.SlantEdgeThickness}+{style.SlantEdgeAntialias}aa " +
+                              $"wrap {style.SlantEdgeWrap} " +
                               $"(narrow edge {style.NarrowEdgeFraction:0.###} of wide)  " +
-                              $"icon {style.iconBoxSize}  flower {style.petalFlowerSize}  " +
-                              $"pitch {style.cardPitch} (gap {style.cardPitch - style.plateWidth:0.#})  " +
-                              $"margin R{style.rowMarginRight}/B{style.rowMarginBottom}  " +
+                              $"icon {style.IconBoxSize}  flower {style.PetalFlowerSize}  " +
+                              $"pitch {style.CardPitch} (gap {style.CardPitch - style.PlateWidth:0.#})  " +
+                              $"margin R{style.RowMarginRight}/B{style.RowMarginBottom}  " +
                               $"gauge inset {style.PlateEdgeReach}");
 
             // The plates are generated geometry, so the bloom is the only sprite left - and with the
             // rim retired it is also half the upgrade signal, which makes a missing one worse than
             // it used to be, not milder.
-            if (!style.bloomSprite) { report.AppendLine("  ✗ no bloomSprite - the upgrade loses its glow, " +
+            if (!style.BloomSprite) { report.AppendLine("  ✗ no bloomSprite - the upgrade loses its glow, " +
                                                         "and the plates are borderless, so half the signal " +
                                                         "would be the plate lift alone."); problems++; }
 
-            if (style.trapezoidInset * 2f >= style.plateWidth * 0.5f)
+            if (style.TrapezoidInset * 2f >= style.PlateWidth * 0.5f)
             {
-                report.AppendLine($"  ✗ trapezoidInset {style.trapezoidInset} collapses a {style.plateWidth} " +
+                report.AppendLine($"  ✗ trapezoidInset {style.TrapezoidInset} collapses a {style.PlateWidth} " +
                                   "plate past half its width - the totem becomes a pair of wedges.");
                 problems++;
             }
-            if (style.cellGap <= 0f)
+            if (style.CellGap <= 0f)
             {
                 report.AppendLine("  ✗ cellGap 0 - the gap IS the divider now, so the two plates would " +
                                   "fuse into one shape with no separation at all.");
@@ -155,36 +155,36 @@ namespace CosmicShore.Editor
             if (style.PlateImbalance > MaxPlateImbalance)
             {
                 report.AppendLine($"  ✗ the plates are {style.PlateImbalance:P0} out of balance " +
-                                  $"({style.abilityCellHeight} vs {style.petalCellHeight}); above " +
+                                  $"({style.AbilityCellHeight} vs {style.PetalCellHeight}); above " +
                                   $"{MaxPlateImbalance:P0} the totem stops reading as symmetric.");
                 problems++;
             }
 
-            if (style.slantEdgeThickness > 0f && style.slantEdgeColor.a <= 0f)
+            if (style.SlantEdgeThickness > 0f && style.SlantEdgeColor.a <= 0f)
             {
                 report.AppendLine("  ✗ the slant edge has thickness but no opacity - it would cost " +
                                   "geometry and draw nothing.");
                 problems++;
             }
-            if (style.slantEdgeThickness + style.slantEdgeAntialias > style.trapezoidInset)
+            if (style.SlantEdgeThickness + style.SlantEdgeAntialias > style.TrapezoidInset)
             {
                 report.AppendLine($"  ✗ the slant band reaches " +
-                                  $"{style.slantEdgeThickness + style.slantEdgeAntialias} inward against a " +
-                                  $"{style.trapezoidInset} slant - it would read as a chamfer, not an edge.");
+                                  $"{style.SlantEdgeThickness + style.SlantEdgeAntialias} inward against a " +
+                                  $"{style.TrapezoidInset} slant - it would read as a chamfer, not an edge.");
                 problems++;
             }
-            if (style.slantEdgeThickness > 0f && style.slantEdgeAntialias <= 0f)
+            if (style.SlantEdgeThickness > 0f && style.SlantEdgeAntialias <= 0f)
             {
                 report.AppendLine("  ✗ the slant band has no antialias feather - a generated diagonal " +
                                   "gets none from the canvas, so it will stair-step.");
                 problems++;
             }
 
-            float betweenCards = style.cardPitch - style.plateWidth;
-            if (betweenCards <= style.cellGap)
+            float betweenCards = style.CardPitch - style.PlateWidth;
+            if (betweenCards <= style.CellGap)
             {
                 report.AppendLine($"  ✗ cards sit {betweenCards:0.#} apart but a totem's own plates sit " +
-                                  $"{style.cellGap} apart - the row groups the wrong way and four cards " +
+                                  $"{style.CellGap} apart - the row groups the wrong way and four cards " +
                                   "read as one strip.");
                 problems++;
             }
@@ -194,12 +194,12 @@ namespace CosmicShore.Editor
             // display orders, so adding a core ability tightens this rather than invalidating it.
             int widestRow = VesselHUDView.AbilityDisplayOrder.Length +
                             VesselHUDView.CoreAbilityDisplayOrder.Length;
-            float fromRightEdge = (widestRow - 1) * style.cardPitch + style.plateWidth + style.rowMarginRight;
+            float fromRightEdge = (widestRow - 1) * style.CardPitch + style.PlateWidth + style.RowMarginRight;
             report.AppendLine($"       widest row {widestRow} cards → {fromRightEdge:0.#} px from the right " +
                               $"edge ({fromRightEdge / ReferenceWidth:P0} of a {ReferenceWidth:0} reference canvas)");
             if (fromRightEdge >= ReferenceWidth * 0.5f)
             {
-                float maxPitch = (ReferenceWidth * 0.5f - style.rowMarginRight - style.plateWidth) / (widestRow - 1);
+                float maxPitch = (ReferenceWidth * 0.5f - style.RowMarginRight - style.PlateWidth) / (widestRow - 1);
                 report.AppendLine($"  ✗ that crosses the middle of the screen, where the bottom-centre HUD " +
                                   $"lives, and on a narrower aspect it runs off the left. Max pitch at " +
                                   $"{widestRow} cards: {maxPitch:0.#}.");
@@ -214,22 +214,22 @@ namespace CosmicShore.Editor
                                   "draw with NO upper cell, which is the drift's shape, not its own.");
                 problems++;
             }
-            for (int i = 0; i < style.coreAbilityEmblems.Count; i++)
+            for (int i = 0; i < style.CoreAbilityEmblems.Count; i++)
             {
-                if (style.coreAbilityEmblems[i].sprite) continue;
-                report.AppendLine($"  ✗ coreAbilityEmblems[{i}] ({style.coreAbilityEmblems[i].ability}) " +
+                if (style.CoreAbilityEmblems[i].sprite) continue;
+                report.AppendLine($"  ✗ coreAbilityEmblems[{i}] ({style.CoreAbilityEmblems[i].ability}) " +
                                   "has no sprite - it declares an upper cell and then leaves it empty.");
                 problems++;
             }
 
-            if (!Mathf.Approximately(style.chipGap, style.cellGap))
+            if (!Mathf.Approximately(style.ChipGap, style.CellGap))
             {
-                report.AppendLine($"  ✗ chipGap {style.chipGap} has drifted from cellGap {style.cellGap} - " +
+                report.AppendLine($"  ✗ chipGap {style.ChipGap} has drifted from cellGap {style.CellGap} - " +
                                   "the chip is a third element in the same stack and should clear the " +
                                   "plate by the same distance the element plate does.");
                 problems++;
             }
-            if (style.PlateEdgeReach <= 0f && style.slantEdgeThickness > 0f)
+            if (style.PlateEdgeReach <= 0f && style.SlantEdgeThickness > 0f)
             {
                 report.AppendLine("  ✗ the gauge would sit flush with the plate outline and paint over " +
                                   "the slant band - the card loses its edge, but only on slots that " +
@@ -237,32 +237,32 @@ namespace CosmicShore.Editor
                 problems++;
             }
 
-            if (style.cooldownVeilColor.a <= 0f)
+            if (style.CooldownVeilColor.a <= 0f)
             {
                 report.AppendLine("  ✗ the cooldown veil is transparent - a recharging ability would " +
                                   "look identical to a ready one.");
                 problems++;
             }
-            if (style.cooldownReadyFlashColor.a <= style.pressFlashColor.a)
+            if (style.CooldownReadyFlashColor.a <= style.PressFlashColor.a)
             {
                 report.AppendLine("  ✗ the ready flash is no louder than an ordinary press - coming " +
                                   "back off cooldown is the beat the player is waiting for.");
                 problems++;
             }
 
-            if (style.petalFlowerSize > style.petalCellHeight - 4f)
+            if (style.PetalFlowerSize > style.PetalCellHeight - 4f)
             {
-                report.AppendLine($"  ✗ flower {style.petalFlowerSize} does not fit its {style.petalCellHeight} cell.");
+                report.AppendLine($"  ✗ flower {style.PetalFlowerSize} does not fit its {style.PetalCellHeight} cell.");
                 problems++;
             }
 
             // Measure the icon against the NARROW edge, not the wide one: the ability plate tapers
             // downward, so the tightest place the icon has to clear is its base, not its rect.
-            float cell = Mathf.Min(style.plateWidth * style.NarrowEdgeFraction, style.abilityCellHeight);
-            float margin = (cell - style.iconBoxSize) * 0.5f;
+            float cell = Mathf.Min(style.PlateWidth * style.NarrowEdgeFraction, style.AbilityCellHeight);
+            float margin = (cell - style.IconBoxSize) * 0.5f;
             if (margin < MinIconMarginPx)
             {
-                report.AppendLine($"  ✗ an icon drawn at {style.iconBoxSize} leaves {margin:0.#} of air " +
+                report.AppendLine($"  ✗ an icon drawn at {style.IconBoxSize} leaves {margin:0.#} of air " +
                                   $"against the ability plate's narrow edge ({cell:0.#}), min {MinIconMarginPx}.");
                 problems++;
             }
@@ -270,55 +270,55 @@ namespace CosmicShore.Editor
             // Mirrored plates want equal marks: the same mark in each lands on the same negative
             // space. Smaller is allowed, much smaller reads as an under-filled plate, larger inverts
             // what the row is built around.
-            if (style.petalFlowerSize > style.iconBoxSize)
+            if (style.PetalFlowerSize > style.IconBoxSize)
             {
-                report.AppendLine($"  ✗ flower {style.petalFlowerSize} is drawn LARGER than the icon " +
-                                  $"{style.iconBoxSize}.");
+                report.AppendLine($"  ✗ flower {style.PetalFlowerSize} is drawn LARGER than the icon " +
+                                  $"{style.IconBoxSize}.");
                 problems++;
             }
-            else if (style.petalFlowerSize < style.iconBoxSize * 0.75f)
+            else if (style.PetalFlowerSize < style.IconBoxSize * 0.75f)
             {
-                report.AppendLine($"  ✗ flower {style.petalFlowerSize} against icon {style.iconBoxSize} - " +
+                report.AppendLine($"  ✗ flower {style.PetalFlowerSize} against icon {style.IconBoxSize} - " +
                                   "in mirrored plates that reads as the upper plate being under-filled.");
                 problems++;
             }
 
             // The gauge that replaced every ring: a fill nobody can tell from its own track is the
             // exact failure the rings were retired for, so check the READ rather than the values.
-            float track = Luminance(style.gaugeTrackColor) * style.gaugeTrackColor.a;
-            float fill  = Luminance(style.gaugeFillColor)  * style.gaugeFillColor.a;
+            float track = Luminance(style.GaugeTrackColor) * style.GaugeTrackColor.a;
+            float fill  = Luminance(style.GaugeFillColor)  * style.GaugeFillColor.a;
             if (fill - track < 0.1f)
             {
                 report.AppendLine($"  ✗ the gauge fill (lum {fill:0.###}) does not read against its track " +
                                   $"(lum {track:0.###}) - the meter would be invisible.");
                 problems++;
             }
-            if (style.gaugeCellFraction <= 0f || style.gaugeCellFraction > 1f)
+            if (style.GaugeCellFraction <= 0f || style.GaugeCellFraction > 1f)
             {
-                report.AppendLine($"  ✗ gaugeCellFraction {style.gaugeCellFraction} is outside (0,1] - the " +
+                report.AppendLine($"  ✗ gaugeCellFraction {style.GaugeCellFraction} is outside (0,1] - the " +
                                   "gauge has no height, or overflows into the element cell.");
                 problems++;
             }
 
             // A control chip that reaches past the row's bottom margin is clipped off the screen,
             // which is how the hint placement failed three times before it was moved onto the card.
-            float chipReach = style.chipGap + style.chipHeight;
-            if (chipReach >= style.rowMarginBottom)
+            float chipReach = style.ChipGap + style.ChipHeight;
+            if (chipReach >= style.RowMarginBottom)
             {
                 report.AppendLine($"  ✗ the control chip reaches {chipReach:0.#}px below the card but the " +
-                                  $"row sits only {style.rowMarginBottom}px off the bottom - labels clip.");
+                                  $"row sits only {style.RowMarginBottom}px off the bottom - labels clip.");
                 problems++;
             }
 
-            if (style.pressFlashColor.a <= 0f || style.pressFlashDuration <= 0f)
+            if (style.PressFlashColor.a <= 0f || style.PressFlashDuration <= 0f)
             {
                 report.AppendLine("  ✗ the press flash is invisible or snaps - a fired ability would show " +
                                   "nothing, which is what the retired circular glow did.");
                 problems++;
             }
 
-            if (Luminance(style.lockedPlateColor) * style.lockedPlateColor.a >
-                Luminance(style.plateColor) * style.plateColor.a + 0.001f)
+            if (Luminance(style.LockedPlateColor) * style.LockedPlateColor.a >
+                Luminance(style.PlateColor) * style.PlateColor.a + 0.001f)
             {
                 report.AppendLine("  ✗ a LOCKED card is brighter than a live one - the row would advertise " +
                                   "abilities that do not exist yet.");
@@ -358,8 +358,8 @@ namespace CosmicShore.Editor
 
             var distinct = sizes.Select(x => Mathf.Round(x.size)).Distinct().ToList();
             string normalising = distinct.Count > 1
-                ? $"icons {string.Join("/", distinct.Select(d => d.ToString("0")))} → all drawn at {style.iconBoxSize}"
-                : $"icons {distinct[0]:0} → drawn at {style.iconBoxSize}";
+                ? $"icons {string.Join("/", distinct.Select(d => d.ToString("0")))} → all drawn at {style.IconBoxSize}"
+                : $"icons {distinct[0]:0} → drawn at {style.IconBoxSize}";
 
             report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} slot(s); {normalising}. " +
                               "Row position, pitch, cell size and host scale are taken over by the lockup.");
@@ -412,7 +412,7 @@ namespace CosmicShore.Editor
                 }
 
                 float authored = AuthoredIconSize(icon.rectTransform, out bool readable);
-                string size = readable ? $"{authored:0} → {style.iconBoxSize}" : "size unreadable";
+                string size = readable ? $"{authored:0} → {style.IconBoxSize}" : "size unreadable";
                 bool hasGauge = view.TryGetCoreAbilityGauge(ability, out var gauge) && gauge;
 
                 report.AppendLine($"             core card '{ability}' ({cell}, left of Charge): " +

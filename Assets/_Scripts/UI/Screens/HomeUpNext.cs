@@ -13,7 +13,8 @@ namespace CosmicShore.UI
     /// mode, objective, a live "Ends in" countdown and your best - and the current quest - its mode,
     /// the next goal and the intensity meter. Both read data the game already keeps
     /// (<see cref="WeeklyChallengeService"/>, <see cref="GameModeProgressionService"/>); the weekly card
-    /// opens the challenge in the Arcade's configure window, the quest card the Profile screen.
+    /// opens the challenge in the Arcade's configure window, the quest card the Voyage window (Rev 13: the quest track
+    /// moved there from the Profile).
     ///
     /// <para>A card whose service is missing or has nothing to show hides through its CanvasGroup
     /// (<see cref="KitVisibility"/>) rather than showing an empty frame.</para>
@@ -57,8 +58,8 @@ namespace CosmicShore.UI
         [Header("Words")]
         [SerializeField, Tooltip("The weekly best when nothing has been played this week. Empty shows nothing.")]
         string noBestText = "None yet";
-        [SerializeField, Tooltip("The quest line when its reward waits on the Profile.")]
-        string readyToClaimText = "Ready to claim on your Profile";
+        [SerializeField, Tooltip("The quest line when its reward waits in the Voyage window.")]
+        string readyToClaimText = "Ready to claim in Voyage";
         [SerializeField, Tooltip("The quest line for the next goal; {goal} is the quest's authored goal.")]
         string nextGoalTemplate = "Next: {goal}";
         [SerializeField, Tooltip("The quest line once every intensity is open.")]
@@ -102,7 +103,7 @@ namespace CosmicShore.UI
 
         void OpenQuest()
         {
-            if (screenSwitcher) screenSwitcher.OnClickProfileNav();
+            if (screenSwitcher) screenSwitcher.OnClickMissionNav();
         }
 
         // ── Weekly challenge ───────────────────────────────────────────────
@@ -149,7 +150,7 @@ namespace CosmicShore.UI
 
             var quest = list.Quests[index];
             var state = QuestFrontier.StateOf(list, index, service);
-            int maxIntensity = service.Config ? service.Config.maxIntensity : 4;
+            int maxIntensity = service.Config ? service.Config.MaxIntensity : 4;
             int unlocked = quest.FeatureKind == FeatureKind.GameMode ? Mathf.Max(1, service.GetMaxUnlockedIntensity(quest.GameMode)) : 0;
 
             Set(questTitleText, quest.DisplayName);
@@ -160,7 +161,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < questMeterSegments.Length; i++)
             {
                 if (!questMeterSegments[i]) continue;
-                questMeterSegments[i].SetToken(i < unlocked ? UIColorToken.ElementTime : UIColorToken.SurfaceDark);   // rev 6: progress is Time
+                questMeterSegments[i].SetToken(i < unlocked ? UIColorToken.Cta : UIColorToken.SurfaceDark);   // earned progress is good: lime
             }
             var card = CardFor(quest.GameMode);
             var art = card && card.CardBackground ? card.CardBackground : quest.Icon;

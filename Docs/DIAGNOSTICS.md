@@ -87,6 +87,14 @@ leaves evidence.
    no longer stands down at `beforeAssemblyReload` — it stamps the sentinel `DomainReload` and
    keeps running until the domain unload aborts it (handled; the journal flushes in `finally`),
    so a reload that wedges in "Run managed callbacks" still gets dumped.
+8. **Only the editor runs it** (2026-10-25). Unity's asset import workers are separate editor
+   processes in the same project that also run `[InitializeOnLoad]`, but never tick the editor
+   loop. Each one used to start a detector session of its own, read as "unresponsive" from its
+   first heartbeat, and when Unity retired the idle worker the next launch reported a crash
+   (yskha's Crash-20261026-034810: pid 16260 "unresponsive for ~5324s" while the editor, pid
+   7240, played on). The detector and the Bug Ledger both return at once when
+   `AssetDatabase.IsAssetImportWorkerProcess()` is true; reports written before this from a
+   worker read as long hangs in EditMode from a session nobody played in.
 
 Guard rails: an error storm is rate-capped (20/s, excess collapsed to one count), the journal is
 size-capped (drops with one marker past the cap), reports are pruned to a count, and the whole
@@ -212,13 +220,14 @@ same ledger issues. Keep it a pure function — no editor types, no statics with
 
 | Route | Id | How |
 |---|---|---|
-| **Auto-capture** | `E-…` | Every distinct error/exception/assert signature files itself, once — captured via `logMessageReceivedThreaded` into a background worker (the log path never blocks on file IO). A thousand repeats update one issue. |
+| **Auto-capture** | `E-…` | Every distinct error/exception/assert signature files itself, once — captured via `logMessageReceivedThreaded` into a background worker (the log path never blocks on file IO). A thousand repeats update one issue. Errors raised inside a Test Runner test are skipped (their stack carries NUnit / TestRunner frames): the Test Runner already judges them, and an expected one is declared with `LogAssert.Expect`. |
 | **Custom** | `C-…` | For anything auto-capture cannot see ("the quest screen is empty"): filed on the Team Bug Board artifact (no Unity needed) and imported by the daily sweep with `bug_ledger.py file`. |
 | **Tool findings** | `T-…` | `BugLedger.ReportFromTool` / `ReportToolFindings` — auditors and validators file their failures as tracked issues. The crash detector's File Bug button uses the same route. |
 
 Auto-capture guard rails: own `[BugLedger]`/`[CrashDetector]` console lines are excluded, a
 bounded queue absorbs storms (dedupe makes drops harmless), an **auto-issue cap** stops a runaway
-error generator from minting files, and occurrence updates are throttled to **one file write per
+error generator from minting files (it counts open issues seen in the last 30 days; counting every
+issue ever filed stopped a months-old ledger filing anything new), and occurrence updates are throttled to **one file write per
 issue per editor session** — so a published issue doesn't flip to pending-MOD on every single
 occurrence.
 
@@ -243,12 +252,19 @@ occurrence.
 - **Marked fixed by whoever fixed it** — in practice a Claude session, `bug_ledger.py mark-fixed`,
   which writes VALIDATING plus the fix commit onto the sender's `bugledger/<user>` branch. The
   editor adopts it only once that commit is in its HEAD (§ "Send to Claude").
+- **Compile errors close themselves.** An open `error CSnnnn:` issue is resolved at the first editor
+  load where the scripts compiled clean (`EditorUtility.scriptCompilationFailed` false): Unity loads no
+  new scripts while a compile error stands, so the load is the compiler's proof. A half-finished pull
+  or a branch switch had left 61 of them open across the shared ledgers. One that comes back is filed
+  again.
 - **Validation evidence** is scope-matched, and only counts while auto-capture is ON (a clean
   session proves nothing while nothing listens):
   - `PlayMode` issues: each play run ≥ the minimum length where the signature stays silent
     counts one clean session (a bounded queue drain runs before the verdict so an in-flight
     error can't be miscounted);
-  - `EditMode` issues: a full editor session ≥ the minimum length, credited at clean quit;
+  - `EditMode` issues: an editor span ≥ the minimum length, credited at clean quit and at each
+    script reload (a shorter span runs on into the next one; a credited span starts a new one, so
+    an error the reload itself raises lands in the new span and reopens the fix);
   - `Tool` issues: **the tool that filed it is the validator** — a FULL clean re-run of that tool
     resolves its validating findings (quota 1: a deterministic re-run is stronger evidence than
     any number of play sessions). Partial sweeps must not call `ReportToolFindings`.
@@ -327,6 +343,12 @@ frames are the stack walker, `DebugLogHandler`, `Logger` and `BenignLobbyLogFilt
 drops those and the native address prefix, so its first line is the code that logged. (The first
 shared "Rpc methods can only be invoked after starting the NetworkManager!" arrived with nothing
 but plumbing, so its sender could not be found.)
+Native frames with no managed method (Windows, mono, a plugin DLL) count as plumbing too. When ten
+SDK frames fill the excerpt before any `CosmicShore.` frame, the excerpt drops SDK frames to fit and
+ends with `...` and our first three frames (still under the 1,500-character cap the board keeps).
+An issue's stack is kept from its first sighting, except that one which names none of our frames
+is replaced by the first later excerpt that does, so issues filed by an older ledger fill in once
+their reporter pulls.
 
 **Older path, still read:** issues published before this into a branch's working-tree
 `BugLedger/shared/issues/` are still imported at load and still read by `collect`.
@@ -426,7 +448,9 @@ the bottom-left corner of every Scene view. It opens expanded once per editor st
   push as the after-play question) and **Release** (Code Optimization is Debug, so a capture would not count).
 - **No Capture button** (Yash, 2026-10-15: "captures should happen automatic"). `PerfAutoCapture` runs
   `capture <label> 15` by itself in Play, once per scene per session, after the scene's time from the status file
-  (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). It skips Debug code
+  (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). A scene whose time is
+  over 4 minutes (today only S2) also gets an early capture at 4 minutes, labelled `S2-4min`, so a shorter play test
+  still sends data (Yash, 2026-10-18); the sweep keeps its baseline apart from S2's. It skips Debug code
   optimization, a paused editor and the boot scenes. While playing, the badge shows its countdown. A new capture
   then goes to Claude by itself after Play. It costs one short hitch per scene (a 180-frame Profiler recording and a
   renderer census). Turn it off on one machine with the EditorPrefs key `CosmicShore.PerfAutoCapture.Off`.

@@ -489,7 +489,7 @@ namespace CosmicShore.UI
 
             // The free-for-all seed wears the same lime a full element flower does, read from the
             // one shared config rather than authored a second time here.
-            return barsConfig ? barsConfig.limeColor : crystalOmniColor;
+            return barsConfig ? barsConfig.LimeColor : crystalOmniColor;
         }
 
         /// <summary>
@@ -501,8 +501,8 @@ namespace CosmicShore.UI
         void ResolveProfileColors()
         {
             ResolveBarsConfig();
-            _profileRest = barsConfig ? barsConfig.greyColor : profileRestColor;
-            _profileEngaged = barsConfig ? barsConfig.whiteColor : profileEngagedColor;
+            _profileRest = barsConfig ? barsConfig.GreyColor : profileRestColor;
+            _profileEngaged = barsConfig ? barsConfig.WhiteColor : profileEngagedColor;
         }
 
         // ---------------------------------------------------------------
@@ -597,8 +597,8 @@ namespace CosmicShore.UI
         void ResolveTallyColors()
         {
             ResolveBarsConfig();
-            _pilotRest = barsConfig ? barsConfig.whiteColor : pilotCountColor;
-            _faunaRest = barsConfig ? barsConfig.blueColor : faunaCountColor;
+            _pilotRest = barsConfig ? barsConfig.WhiteColor : pilotCountColor;
+            _faunaRest = barsConfig ? barsConfig.BlueColor : faunaCountColor;
         }
 
         // ---------------------------------------------------------------
@@ -635,7 +635,7 @@ namespace CosmicShore.UI
             _jawLowerGraphic = jawLower ? jawLower.GetComponent<Graphic>() : null;
 
             ResolveBarsConfig();
-            _jawArmedColor = barsConfig ? barsConfig.limeColor : jawRestColor;
+            _jawArmedColor = barsConfig ? barsConfig.LimeColor : jawRestColor;
 
             if (_warnedArmingUnavailable) return;
 

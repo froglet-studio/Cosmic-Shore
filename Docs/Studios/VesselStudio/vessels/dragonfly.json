@@ -1,0 +1,147 @@
+{
+  "id": "dragonfly",
+  "order": 5,
+  "name": "Dragonfly",
+  "tagline": "the hoverer: strafe, stop dead, dash",
+  "round": "concept · round 1",
+  "accent": "#58e6d8",
+  "kind": "hover",
+  "chip": "concept · round 1",
+  "summary": "The hoverer. The only hull whose velocity has nothing to do with its nose: the left stick thrusts in any direction (strafe, forward, back), the right stick looks, A and B climb and sink, LT stops it dead. RT is a dash: 190 u/s for a quarter second in the direction you are pushing, three pips that regrow, and nothing can touch you mid-dash. Twin-stick arena movement in 3D.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "left stick thrusts any way · RT dash (3 pips, i-frames) · LT brake"
+    },
+    {
+      "k": "Hover",
+      "v": "75 u/s, stops in a second"
+    },
+    {
+      "k": "Dash",
+      "v": "190 u/s × 0.25 s, a pip every 1.2 s"
+    },
+    {
+      "k": "Why",
+      "v": "stamina dashes and strafes: Hades II, Silksong, ULTRAKILL, twin-stick arenas"
+    }
+  ],
+  "fantasy": "It does not fly, it hangs in the air and decides. Sidestep a trail, stare down a rival while sliding past, and dash through the gap nobody else fits.",
+  "why": "The stamina-gated dash with invulnerability frames is 2025's most-shipped movement feature (Hades II at 95 Metacritic, Silksong 7M in three months, ULTRAKILL's three pips), and omnidirectional strafing is the arena-shooter control scheme the whole fleet lacks: every Cosmic Shore hull flies nose-first. The Dragonfly is the dodge-duel vessel.",
+  "flight": {
+    "cruise": 75,
+    "pitchYaw": 150,
+    "roll": 130,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 190,
+    "chase": "nose"
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Thrust",
+      "param": "accel",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Afterburn",
+      "tip": "Charge is the thrust of the left stick."
+    },
+    "mass": {
+      "name": "Anchor",
+      "param": "brakeDrag",
+      "range": [
+        1,
+        1.5
+      ],
+      "l5": "Dead Stop",
+      "tip": "Mass is how hard the brake sits it down."
+    },
+    "space": {
+      "name": "Long Dash",
+      "param": "dashSpeed",
+      "range": [
+        1,
+        1.4
+      ],
+      "l5": "Blink",
+      "tip": "Space is how far a dash carries."
+    },
+    "time": {
+      "name": "Quick Pips",
+      "param": "dashRegen",
+      "range": [
+        1,
+        0.5
+      ],
+      "l5": "Triple Step",
+      "tip": "Time refills the dash pips faster."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Dancer",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Long dashes, fast pips: lives between dashes."
+    },
+    {
+      "name": "Brawler",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Strong thrust and a dead-stop brake: holds its ground."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "brake (hold)",
+    "rt": "dash (in the stick's direction)",
+    "a": "climb",
+    "b": "sink"
+  },
+  "notModelled": [
+    "The game's dual-stick mix does not apply: the Dragonfly needs its own input strategy (left stick = translation, right stick = look), the first in the fleet.",
+    "A dash's i-frames ignore hull contacts here; what they mean against a Grizzly blast or a danger prism is a design question."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Dragonfly). The Scarab's juke dash and the Sparrow's turret stance are the nearest shipped relatives."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

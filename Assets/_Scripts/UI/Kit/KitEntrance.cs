@@ -26,9 +26,10 @@ namespace CosmicShore.UI
     /// <see cref="KitMotion.StaggerDelay"/>; set <see cref="staggerBySibling"/> on a row template and
     /// every spawned row picks its own delay from where it lands.
     ///
-    /// <para>Alpha goes through this object's own <see cref="CanvasGroup"/>. If a <see cref="KitVisibility"/>
-    /// owner drives that same group, the owner must <see cref="Finish"/> the entrance before hiding
-    /// (a hide that lands mid-entrance is adopted anyway, see <see cref="ReconcileAlpha"/>).
+    /// <para>Alpha goes through this object's own <see cref="CanvasGroup"/>. A <see cref="KitVisibility"/>
+    /// hide finishes the entrance before it writes (a hide that lands mid-fade would be adopted by
+    /// <see cref="ReconcileAlpha"/>, but one that lands in the delay, while the entrance itself holds
+    /// alpha at 0, would not). Any other code that zeroes the group must call <see cref="Finish"/> first.
     /// Position and scale are offsets from the pose the object had when the entrance started, so a
     /// layout group that placed it is not fought. Alpha works the same way: the entrance fades up to
     /// the alpha the group had when it started, so a tile its owner dimmed or a part its owner hid

@@ -84,6 +84,7 @@ namespace CosmicShore.Engine.InputSystem
             c.delta.SetRaw(t.delta);
             c.startPosition.SetRaw(t.startScreenPosition);
             c.touchId.value = t.touchId;
+            c.startTime.value = t.startTime;
             c.phase = t.phase;
         }
 

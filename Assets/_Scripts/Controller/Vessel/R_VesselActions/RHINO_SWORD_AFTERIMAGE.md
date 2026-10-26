@@ -26,7 +26,7 @@ two-trigger chip). Time stays `Input: 0`, the passive sentinel (the ramp gesture
 |---|---|---|---|
 | Charge | **Sword Energy** | energy banked per cut and per super-shield pop, x1 at rest -> x2 at level 10, floored x0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, read live on the owner) | **Live Wire** - a return to the chop stance re-lights the energized tail (`ShieldSkimmerScaleConfigSO.LiveWireActive`) |
 | Mass | **Afterimage** | afterimage VOLUME, x1 -> x2.5, floored x0.25, read at the REPLICATED level (`RhinoSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`RhinoSwordAfterimageConfigSO.DangerActive`) |
-| Space | **Blade Reach** | the blade's resting length, 30 -> 50 (`Skimmer.Scale` on the ForceFieldSkimmer Variant; energy grows it on top toward 120) | **Breaker** (2026-10-13) - a shielded prism is cut in one slice (`RhinoSkimmerDamagePrismEffectSO.breakerElement`) |
+| Space | **Blade Reach** | the blade's resting length, 24 -> 40 (`Skimmer.Scale` on the Rhino's ForceFieldSkimmer instance; energy grows it on top toward 96) | **Breaker** (2026-10-13) - a shielded prism is cut in one slice (`RhinoSkimmerDamagePrismEffectSO.breakerElement`) |
 | Time | **Ramp Spool** | the ramp's wind-up, 220 u/s per second x1 -> x2.5, floored x0.5 | **Momentum** - above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino's elements |
 
 Every gate goes through `IsUpgradeActive` (the replicated unlock bits), never a raw level read.
@@ -173,13 +173,13 @@ gauge was authored.
 **Control chips (2026-10-17).** Charge, Mass and Space draw the two-trigger chip from their
 `Input: 13` (`HintBinding.PadBothTriggers = 13` / `KeyBothShifts = 28`; a PLACEHOLDER L1+R1
 composite, `Glyph_BothTriggers-PLACEHOLDER.png`, from `Tools/Build/author_two_trigger_glyph.py`;
-keyboard "L+R SHIFT"). Time is the passive sentinel, so `RhinoVesselHUDController` sets its
+keyboard "L+R SHIFT"). Time is the passive sentinel, so `RhinoHUDController` sets its
 sticks-apart chip explicitly (`VesselHUDView.SetAbilityControlGlyph` ->
 `AbilityLockupView.SetAbilityControlBinding`, `PadSticksOutward = 14` / `KeySticksOutward = 29`,
 `Thumbsticks_Outward.png`, keyboard "A + '"). The press path lights only the FIRST map entry bound
 to an input, so the both-triggers press lights Charge.
 
-`RhinoVesselHUDController` polls these with change detection, so no subscription can leak across a
+`RhinoHUDController` polls these with change detection, so no subscription can leak across a
 re-initialise. The pre-lockup status cluster that came back when the Rhino bound its first icon is
 deleted (`ABILITY_LOCKUP.md`).
 
@@ -197,8 +197,8 @@ deleted (`ABILITY_LOCKUP.md`).
 | `Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs`, `RhinoSkimmerDamagePrismEffect.asset` | Charge energy scaling; cuts own afterimages past the 1 s grace (since 2026-10-17) |
 | `Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs`, `RhinoVesselSurgeByCrystalEffect.asset` | the Surge |
 | `Vessel/VesselElementalImmunity.cs`, `Vessel/ITopSpeedSource.cs`, `Executors/RampBoostActionExecutor.cs` | Momentum |
-| `Executors/RhinoSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
-| `UI/Controller/RhinoVesselHUDController.cs` | the card states, both gauges, the Time chip |
+| `AI/Rhino/RhinoSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
+| `UI/Controller/RhinoHUDController.cs` | the card states, both gauges, the Time chip |
 | `Tests/Editor/RhinoSwordAfterimageTests.cs` | the segment tiling |
 
 ## Tuning knobs (first pass - never played)

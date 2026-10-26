@@ -248,6 +248,7 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 | Wrasse Kite | 2 | new body (2026-10-20, `specs/wrassekite.py`): the navigator's 16-unit kite, the first hull whose body is WEIGHTED along a spine (`spine.1` -> `spine.2` -> `tail`, smoothstep hat weights over a 41-station loft) so it swims without a hinge kink; one domain stripe snout to tail. Round 1's long vanes read as planks: ramp a long fin's height in from its front |
 | Marlin | 2 | SAVED FOR A SWORDSMAN since 2026-10-21 (Marlin and Jacks became the Jacks; no prefab draws it). Built as a new hull (2026-10-21, `specs/marlin.py`): Marlin and Jacks' billfish on the Rhino's flight rig, nested under the Rhino's fuselage part so `RhinoAnimation` carries it (rig inactive, its bones still turned). Spear, sail (`sail`), sickle fins that FOLLOW the Rhino's plates, crescent `tail.1` -> `tail.2`. Round 1's inset on the concave crescent folded over itself (hatching): paint a concave plate, do not inset it |
 | Jack | 3 | new body (2026-10-21, `specs/jack.py`, from the kite's spec and bones): seen from ABOVE in its view, so round 1 (a true-to-clade slim body) read as a line; widen what the camera looks down on and put domain on the BACK |
+| Pistol | 3 | new body (2026-10-25, `specs/pistol.py`, LESSONS 52): the Goby and Pistol's second seat, filmed SIDE-ON. Round 1 (a straight tube, flat rings, an egg claw, vertical struts) read as a wasp from the camera's side; round 2's curved boom with pleuron plates, bent struts and a cocked hammer read as a pistol shrimp. A hovering assembly from the first build (19 / 19 parts float). Not wired yet |
 
 ## 5. Modelling rules that keep being relearned
 
@@ -286,7 +287,7 @@ poses. After writing: re-run `fbx_probe`, `rest_compare`, `measure_vessel_models
 (reimport, `FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs`, `Audit Vessel
 Construction`, `Audit Vessel Tails and Jets`, re-bake `Bake Crystal Hull Fusions` where a
 vessel has fusion bakes, a flight) in `Docs/UNITY_VERIFICATION_CHECKLIST.md` and as a team task
-(`python3 Tools/Build/team_tasks.py add --area <Vessel> --kind test ...`, Yash has offered).
+(`/team-tasks add --area <Vessel> --kind test ...`, one ticket per branch; it names nobody until someone takes it).
 The Urchin and Rhino prefabs draw their rebuilt rigs since 2026-10-18 (`urchan_shapekey_with_animations.fbx`,
 `rhino_shapekey_with_animations.fbx`, four REAL morphs where the artist rigs had none). The swap was done by
 prefab surgery that does all three of a rig swap's jobs (Docs/VESSEL_CONSTRUCTION.md: geometry, materials,

@@ -305,6 +305,9 @@ def strip_sparrow_kit(text: str) -> str:
             d = re.sub(r"\{fileID: %s\}" % r, "{fileID: 0}", d)
         if f"guid: {ai_guid}, type: 3" in d:
             d = re.sub(r"(  abilities:)\n(?:  [- ] .*\n)+", r"\1 []\n", d)
+            # The Sparrow's boost policy presses a Boost the Wrasse does not bind; the Grouper's boost is KiteNavigator's
+            # (AIPilotWantsBoost), so the AIPilot names none (2026-10-26).
+            d = re.sub(r"^  boostPolicy: \{[^}]*\}\n", "  boostPolicy: {fileID: 0}\n", d, flags=re.M)
         if f"guid: {sparrow_tel}, type: 3" in d:
             d = d.replace(f"guid: {sparrow_tel}, type: 3", f"guid: {default_tel}, type: 3")
             for key in SPARROW_TELEMETRY_KEYS:
@@ -644,6 +647,9 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
         if not cond:
             errs.append(msg)
     want("  m_Name: Wrasse\n" in text, "Wrasse.prefab: the root is not named Wrasse")
+    want("  boostPolicy: {fileID: 0}\n" in text,
+         "Wrasse.prefab: the AIPilot names a boost policy - the Grouper's boost is KiteNavigator's (AIPilotWantsBoost), and "
+         "the Sparrow's policy it inherited presses a Boost the Wrasse does not bind")
     want("  _name: Wrasse\n" in text, "Wrasse.prefab: VesselStatus _name is not Wrasse")
     want(f"  vesselType: {WRASSE_CLASS_ID}\n" in text, f"Wrasse.prefab: vesselType is not {WRASSE_CLASS_ID}")
     want(f"  vesselType: {SPARROW_CLASS_ID}\n" not in text, "Wrasse.prefab: still carries the Sparrow's vesselType")

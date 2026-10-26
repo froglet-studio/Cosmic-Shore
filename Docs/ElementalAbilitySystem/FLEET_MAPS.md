@@ -337,7 +337,7 @@ All four abilities are passive or gesture-driven. Since 2026-10-17 Charge, Mass 
 authored `Input: 13` (`BothSticksAction` — hold both triggers to energize; the swing; the
 afterimages follow the energize) so their cards draw the two-trigger chip, and the energize press
 lights Charge (the first map entry bound to that input); Time stays `Input: 0` (the passive
-sentinel) and its sticks-apart chip is set by `RhinoVesselHUDController`. Nothing here has run in
+sentinel) and its sticks-apart chip is set by `RhinoHUDController`. Nothing here has run in
 the Unity editor yet. Detail: `R_VesselActions/RHINO_ENERGY_SWORD.md`,
 `RHINO_SWORD_AFTERIMAGE.md`, `RHINO_RAMP_BOOST.md`, `RHINO_PLOUGH.md`.
 
@@ -345,7 +345,7 @@ the Unity editor yet. Detail: `R_VesselActions/RHINO_ENERGY_SWORD.md`,
 |---|---|---|
 | Charge | **Sword Energy** — energy banked per cut ×1 at rest → ×2 at level 10, floored ×0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, new 2026-10-16) on 0.04 per prism kill and 0.12 per super-shield pop. Energy lengthens the blade toward `MaxScale` 120 and pays for the energize (cost 0.1, hold the both-triggers chop stance 1 s, 5 s tail after release, 5 s cooldown) | **Live Wire** — once the stance is let go the energized tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it (`ShieldSkimmerScaleConfigSO.liveWireUpgradeElement`, gated on `IsUpgradeActive(Charge)` in `ShieldSkimmerScaleDriver`). Without the upgrade there is no longer any refresh: the ungated one that kept a blade lit forever was removed the same day |
 | Mass | **Afterimage** — for 5 s after the energized blade goes out the sword lays prisms in its own shape and pose (one per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window, the blade cut into ≤ 6 segments of ≤ 10 u covering 90% of it; `RhinoSwordAfterimageConfig.asset`, first pass, never played). Mass scales their VOLUME ×1 → ×2.5, floored ×0.25 (`massVolumeMultiplier`), read at the REPLICATED level so every peer lays the same mass. Since 2026-10-17 the Rhino's own blade cuts its own afterimages like any prism once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett: *"not immune to our destruction"*); the hull still ploughs them. Tuning watch: one energize (0.1) plus self-cuts (≤ 16 × ≤ 6 × 0.04) can refill the meter — if playtest finds the loop too strong the lever is energy-per-own-afterimage, not immunity | **Danger Afterimages** — the afterimages are laid as DANGER prisms (`RhinoSwordAfterimageConfigSO.dangerUpgradeElement`, gated on `IsUpgradeActive(Mass)`, snapshotted per afterimage). A pilot flying into them takes what any danger prism does — the slow, the burn (opposing domain) or 4 s debuff (own), the boost reset; the input mute this row once flagged was deleted 2026-10-17 (`BACKLOG.md`) |
-| Space | **Blade Reach** — the blade's resting length 30 at rest → 50 at level 10 (`Skimmer.Scale` ElementalFloat on `ForceFieldSkimmer Variant`, read live by `ShieldSkimmerScaleDriver`); energy grows it on top toward 120 | **Breaker** — APPROVED + SHIPPED 2026-10-13: the sword cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaced the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 |
+| Space | **Blade Reach** — the blade's resting length 24 at rest → 40 at level 10 (`Skimmer.Scale` ElementalFloat on the Rhino's own `ForceFieldSkimmer Variant` instance, read live by `ShieldSkimmerScaleDriver`); energy grows it on top toward 96 (30 → 50 → 120 until the 20 % shortening of 2026-10-26) | **Breaker** — APPROVED + SHIPPED 2026-10-13: the sword cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaced the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 |
 | Time | **Ramp Spool** — ramp wind-up `accelerationPerSecond` 220 at rest → 550 at level 10, 110 at the −5 floor (`RampBoostActionSO.timeAccelerationMultiplier`, ×1 → ×2.5, floored ×0.5, read live since 2026-10-16 — it was snapshotted at first engage). Time does not raise the ceiling: cruise 50 × `maxBoostMultiplier` 16.8 = 840 u/s | **Momentum** — above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino's elements (`VesselElementalImmunity` on the root, `condition: WhileAboveTopSpeedFraction`, `upgradeGate: Time`, `wardedSources: DangerPrism`), so an opposing pilot's blast still lands. The Time card lights while the ramp is boosting and flashes once when Momentum takes hold (2026-10-17; it was lit only while the ward held) |
 
 **The bulldozer ignores mass — a design statement, not a gap.** The hull carries no
@@ -411,7 +411,7 @@ mechanic, not merely when magnification is.
 
 **One fleet-wide UI fix came out of the same round.** `AbilityLockupView.SetAbilityCooldown`
 refused a LOCKED card, so this vessel's recharge — pushed correctly from
-`SerpentVesselHUDController` from the day the ability shipped — landed nowhere for three rounds of
+`SerpentHUDController` from the day the ability shipped — landed nowhere for three rounds of
 playtest, because the Serpent binds 0/4 icons. It now draws (the veil sizes itself on the ability
 PLATE, which a locked card has). *An indicator that refuses to draw because its decoration is
 missing is indistinguishable from an indicator nobody is driving.*
@@ -481,7 +481,7 @@ nothing here touches it.
    mechanic was deleted, so that card had been showing a gauge nothing drove. ⚠ **Stated cost:
    the Squirrel now has no drift readout on the HUD at all** — `ElementalBarsView.JuiceDriftStart`
    exists, is fully written and is ALSO dead (no callers anywhere), so if drift feedback is wanted
-   back it is one line in `SquirrelVesselHUDController` pointing at the petal flowers instead of
+   back it is one line in `SquirrelHUDController` pointing at the petal flowers instead of
    at an ability icon.
 
 HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base

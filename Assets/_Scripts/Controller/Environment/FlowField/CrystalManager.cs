@@ -406,6 +406,9 @@ namespace CosmicShore.Gameplay
             return spawnPos;
         }
 
+        // a crystal this close to its new place is already there (the float round trip over the wire)
+        const float RelocatedInPlaceSqr = 1f;
+
         /// <summary>
         /// Update an existing crystal's position locally.
         /// </summary>
@@ -414,7 +417,8 @@ namespace CosmicShore.Gameplay
             if (!cellData.TryGetCrystalById(crystalId, out var crystal))
                 return;
 
-            crystal.DeactivateModels();
+            // already there (a carrier moved its own copy, CrystalManager.RelocateCrystal): no second bloom
+            if ((crystal.transform.position - newPos).sqrMagnitude > RelocatedInPlaceSqr) crystal.DeactivateModels();
             crystal.MoveToNewPos(newPos);
 
             cellData.OnCellItemsUpdated.Raise();
@@ -765,6 +769,14 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------
 
         public abstract void RespawnCrystal(int crystalId);
+
+        /// <summary>
+        /// Put crystal <paramref name="crystalId"/> at <paramref name="position"/> on every machine (the Jacks' net lets go
+        /// of the crystal it carried, Garrett, 2026-10-24: "all five crystals can be relocated using the net"). Unlike
+        /// <see cref="RespawnCrystal"/> the place is the caller's, not a spawn point. A crystal that is already there (the
+        /// carrier's own copy) just stays; one elsewhere blooms in at the new place.
+        /// </summary>
+        public abstract void RelocateCrystal(int crystalId, Vector3 position);
         public abstract void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams);
     }
 }
