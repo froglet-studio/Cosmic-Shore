@@ -381,6 +381,15 @@ applies to new abilities, new resources on the meter list, and anything that add
     CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
     (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
     them; reading either alone gives a confident wrong answer about which gate you are moving.
+    **When an L5 gates an outcome, find EVERY system that re-derives that outcome, and give them one
+    gate on the per-vessel state they all read.** Making the Rhino's super-shield pop the Space L5
+    (2026-10-26) first put the gate on the damage effect alone, and the review found
+    `ShieldSkimmerScaleDriver.UpdateBind` deciding "this blade can pop, so it is not bound" from
+    `IsEnergized` by itself, so an energized blade without the upgrade was refused the pop and then slid
+    through the prism with no drag. The ignition re-dispatch and the AI's "energize for hardened mass"
+    trigger had the same old condition. The fix was one bit on the sword
+    (`IRhinoSwordState.SuperShieldUpgradeActive`, authored on the sword's config) that all four read.
+    Grep the old CONDITION (`IsEnergized`), not just the effect you are gating.
 
 27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
     containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost

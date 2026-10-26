@@ -26,10 +26,10 @@ namespace CosmicShore.Gameplay
     /// <c>EnergizeHoldSeconds</c> (divided by <c>touchEnergizeRateMultiplier</c> for a human on a phone)
     /// ignites the blade (no cost; the cooldown is the only limit): while
     /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
-    /// binding. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
+    /// binding, once the SPACE level-5 upgrade is active (<see cref="SuperShieldUpgradeActive"/>). Leaving
+    /// the stance starts the <c>EnergizedTailSeconds</c> countdown, then
     /// <c>EnergizeCooldownSeconds</c> locks re-charging. The tail runs out once started - taking
-    /// the stance again does not re-light it - UNLESS the CHARGE level-5 upgrade, <b>Live Wire</b>,
-    /// is active: then every return to the stance holds the blade lit again. On the ignition edge
+    /// the stance again does not re-light it. On the ignition edge
     /// the standing blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the
     /// shell-tier pairs) so a super-shielded prism already resting against the blade pops without
     /// needing a fresh OnTriggerEnter.
@@ -38,7 +38,7 @@ namespace CosmicShore.Gameplay
     /// surge's length and raises a ring of trigger-driven sword copies round the hull with the
     /// camera pulled back onto it (<see cref="RhinoSurgeSwordRing"/>).
     ///
-    /// BINDING — a NON-energized blade inside super-shielded mass it cannot cut does not recoil;
+    /// BINDING — a blade inside super-shielded mass it cannot cut (not energized, or no Space L5) does not recoil;
     /// the armour DRAGS on it. While the shell tier reports the blade inside one or more live
     /// super-shielded prisms (<see cref="PrismShellContactManager.CollectSuperShieldedContactsForOwner"/>)
     /// the vessel's rotation rate (pitch, yaw AND roll) eases down to <c>BindTurnRateMultiplier</c>
@@ -178,6 +178,9 @@ namespace CosmicShore.Gameplay
 
         // ── IRhinoSwordState ──
         public bool IsEnergized => _energize == RhinoSwordEnergizePhase.Energized;
+        public bool SuperShieldUpgradeActive => config && config.SuperShieldUpgradeActive(_skimmer ? _skimmer.VesselStatus : null);
+        /// <summary>Energized AND upgraded: the only blade that pops super-shields rather than binding.</summary>
+        bool CanPopSuperShields => IsEnergized && SuperShieldUpgradeActive;
         public bool IsSurging => _surging;
 
         public bool IsOwnAfterimage(Prism prism) => afterimage && afterimage.IsMine(prism);
@@ -362,7 +365,7 @@ namespace CosmicShore.Gameplay
                     {
                         // A surge holds the blade whatever the fingers do. When it ends it hands
                         // over to the ordinary rules with the tail already spent, so the blade
-                        // goes out next frame unless Live Wire lets the stance hold it.
+                        // goes out next frame.
                         if (now < _surgeEnd) break;
                         _surging = false;
                         _tailCounting = true;
@@ -370,7 +373,7 @@ namespace CosmicShore.Gameplay
                         break;
                     }
 
-                    if (_inStance && (!_releasedSinceIgnition || LiveWireActive()))
+                    if (_inStance && !_releasedSinceIgnition)
                     {
                         _tailCounting = false; // holding the stance keeps it lit
                     }
@@ -393,11 +396,6 @@ namespace CosmicShore.Gameplay
                     break;
             }
         }
-
-        /// <summary>CHARGE level-5, <b>Live Wire</b>: a return to the stance re-lights the tail.
-        /// Through the replicated unlock bit, though only the owner evaluates it - the phase it
-        /// decides is what replicates.</summary>
-        bool LiveWireActive() => config.LiveWireActive(_skimmer ? _skimmer.VesselStatus : null);
 
         /// <summary>A non-owning peer: take the phase and the surge from the owner's relay. The phase
         /// goes through <see cref="SetEnergizePhase"/>, so the ignition re-dispatch, the FX and the
@@ -440,7 +438,8 @@ namespace CosmicShore.Gameplay
 
         void RedispatchStandingBladeContacts()
         {
-            if (!_skimmerImpactor) return;
+            // Without the Space L5 there is no pop to buy, and a replay would only re-thud the bind.
+            if (!_skimmerImpactor || !SuperShieldUpgradeActive) return;
             // Super-shielded only: the ignition buys the POP. Replaying every standing contact also
             // cut the core of any shielded prism resting in the blade - a free Breaker.
             _skimmerImpactor.ReapplyPrismEffectsToOverlapping(superShieldedOnly: true);
@@ -453,10 +452,10 @@ namespace CosmicShore.Gameplay
             var status = _skimmer ? _skimmer.VesselStatus : null;
 
             _bound.Clear();
-            // An energized blade POPS super-shields on contact (and the ignition edge re-dispatches
-            // standing contacts), so it is never bound — anything left in the pair set this frame
-            // is about to pop.
-            bool bound = !IsEnergized && _skimmerImpactor && _skimmer && _skimmer.IsInitialized
+            // An energized, UPGRADED (Space L5) blade POPS super-shields on contact (and the ignition
+            // edge re-dispatches standing contacts), so it is never bound — anything left in the pair
+            // set this frame is about to pop. Without the upgrade an energized blade binds too.
+            bool bound = !CanPopSuperShields && _skimmerImpactor && _skimmer && _skimmer.IsInitialized
                          && PrismShellContactManager.CollectSuperShieldedContactsForOwner(_skimmerImpactor, _bound) > 0;
 
             float target = bound ? config.BindTurnRateMultiplier : 1f;

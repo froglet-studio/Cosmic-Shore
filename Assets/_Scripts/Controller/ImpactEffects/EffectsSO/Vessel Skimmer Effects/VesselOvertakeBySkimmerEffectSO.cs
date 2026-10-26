@@ -44,6 +44,14 @@ namespace CosmicShore.Gameplay
     /// puts on a Strike - so the two hulls that land this verb take the same petals until one of them
     /// has earned the difference.</para>
     ///
+    /// <para><b>The steal can be a level-5 upgrade</b> (<see cref="stealUpgradeElement"/>): the
+    /// Rhino's sword only STEALS once its Charge level-5 upgrade is active (Garrett, 2026-10-26:
+    /// "have the sword only steal as the charge L5 upgrade"). Below it the same hit still costs the
+    /// victim the same petals, but they are knocked loose as crystals at the strike
+    /// (<see cref="ElementalTransferForm.Eject"/>) instead of landing on the thief - the hit still
+    /// scores and still conserves, the upgrade is the difference between knocking petals loose and
+    /// pocketing them. The Squirrel's joust authors None: it always steals.</para>
+    ///
     /// <para>Nothing happens to the faster (overtaking) vessel beyond being paid.</para>
     /// </summary>
     [CreateAssetMenu(
@@ -83,6 +91,13 @@ namespace CosmicShore.Gameplay
                  "one machine computes it; the replicated read is kept so the size of a steal " +
                  "never depends on which copy of the thief a machine is looking at.")]
         [SerializeField] private ElementalFloat stealScale = new(1f);
+
+        [Tooltip("Element whose level-5 upgrade the opponent branch needs to STEAL (the Rhino's " +
+                 "sword: Charge). Below it the same petals are knocked loose as crystals at the " +
+                 "strike (Eject) rather than moving onto the thief, so the hit still scores and " +
+                 "still conserves. Gated on the replicated unlock bit (IsUpgradeActive). None = " +
+                 "always steal (the Squirrel's joust).")]
+        [SerializeField] private Element stealUpgradeElement = Element.None;
 
         [Header("When it lands")]
         [Tooltip("ON (the Squirrel's joust): only the SLOWER vessel is affected, so the effect " +
@@ -192,7 +207,8 @@ namespace CosmicShore.Gameplay
         /// permanently and land on the overtaker's, classed VesselContact (the ward the reporter's
         /// gate already asked about), and a warded pilot yields nothing, so the thief is paid
         /// exactly what the victim lost (<c>ResourceSystem.AccrueElementalLoss</c> is the
-        /// authority). How much moves is the priced magnitude times the THIEF's element scale,
+        /// authority). Where <see cref="stealUpgradeElement"/> is authored and its upgrade is not
+        /// active, the same petals are EJECTED at the strike instead. How much moves is the priced magnitude times the THIEF's element scale,
         /// snapshotted once so all four elements move at one rate. Called only by
         /// <see cref="VesselCombatHitBySkimmerEffectSO"/>, on the thief's owner, for an admitted
         /// hit; the victim's owner settles it (<see cref="ElementalTransfer.ApplyAllAuthoritative"/>).
@@ -202,9 +218,21 @@ namespace CosmicShore.Gameplay
         {
             if (victim == null || attacker == null) return;
             float amount = -debuffMagnitude * StealScale(attacker);
-            ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, victim, attacker,
-                                                    amount, Vector3.zero,
-                                                    ElementalDebuffSources.VesselContact);
+            if (StealUnlocked(attacker))
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, victim, attacker,
+                                                        amount, Vector3.zero,
+                                                        ElementalDebuffSources.VesselContact);
+            else
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, attacker,
+                                                        amount, attacker.Course * attacker.Speed,
+                                                        ElementalDebuffSources.VesselContact);
+        }
+
+        bool StealUnlocked(IVesselStatus thief)
+        {
+            if (stealUpgradeElement == Element.None) return true;
+            var abilities = thief.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(stealUpgradeElement);
         }
 
         float StealScale(IVesselStatus thief) =>
