@@ -922,18 +922,16 @@ def scene_transform(text):
     doc = insert_field_before(doc, "episodePanel", "  refusalHost: {fileID: 0}")
     sc.replace(IDS["episodes"], doc)
 
-    # Rev 10: the now-playing card, last in the safe area (over every screen).
+    # The now-playing card (Rev 10) is off the menu (Shombith, 2026-10-26: "Remove this man ASAP"): its instance leaves
+    # Menu_Main's safe area. The prefab and NowPlayingCard stay for whoever brings a music surface back; the Audio Studio
+    # on the Profile still plays and picks the soundtrack.
     card = CardMount()
     for fid in list(sc.order):
         if fid in card.ids():
             sc.remove(fid)
     safe_rt = sc.rect_of(SAFE_AREA_GO)
-    anchor = safe_rt
-    for d in card.docs(safe_rt):
-        sc.insert_after(anchor, T.doc_fid(d), d)
-        anchor = T.doc_fid(d)
     kids = re.findall(r"\{fileID: (-?\d+)\}", (re.search(r"^  m_Children:\n((?:  - .*\n)*)", sc.docs[safe_rt], re.M) or [None, ""])[1] or "")
-    kids = [k for k in kids if k != card.stub] + [card.stub]
+    kids = [k for k in kids if k != card.stub]
     sc.replace(safe_rt, T.set_block(sc.docs[safe_rt], "m_Children", K.refs_list("m_Children", kids)))
 
     doc = sc.docs[IDS["old_modal"]]
@@ -1099,12 +1097,12 @@ def validate_rev10(files, sc):
     mount = ViewMount()
     screen = sc.docs[IDS["screen"]]
     assert f"  recordWindow: {{fileID: {mount.stub_fid('Record#record')}}}" in screen, "ProfileScreen.recordWindow is not the record window"
-    # The card, last in the safe area.
+    # The now-playing card is off the menu (2026-10-26): no instance of it in Menu_Main, nothing in the safe area naming it.
     card = CardMount()
     safe = sc.docs[sc.rect_of(SAFE_AREA_GO)]
     kids = re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)", safe, re.M).group(1))
-    assert kids and kids[-1] == card.stub, "the now-playing card is not last in Menu_Main's safe area"
-    assert f"m_SourcePrefab: {{fileID: 100100000, guid: {asset_guid('NowPlayingCard')}" in sc.docs[card.inst], "the card is not a NowPlayingCard"
+    assert card.stub not in kids and not sc.has(card.inst), "the now-playing card is back in Menu_Main"
+    assert f"guid: {asset_guid('NowPlayingCard')}" not in "".join(sc.docs.values()), "Menu_Main still instances the NowPlayingCard prefab"
     cardp = files[prefab_path("NowPlayingCard")]
     _, cb = A.doc_of(cardp, K.FileIds("NowPlayingCard")("root#card"))
     assert cb and S["nowplaying"] in cb and not re.search(r"^  (?!m_)\w+: \{fileID: 0\}", cb, re.M), "NowPlayingCard is not wired"
@@ -1174,6 +1172,8 @@ def self_test(files):
         ("a track without its sound name", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("    soundName: SKY FIRE\n", "", 1))),
         ("a sound name that is not in the FMOD event", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("soundName: SEVERITY", "soundName: SEVERITY 2", 1))),
         ("two tracks sharing an id", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("id: sky-fire", "id: space-gliding"))),
+        ("the now-playing card mounted in Menu_Main again", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            "  m_SourcePrefab: {fileID: 100100000, guid: ", f"  m_SourcePrefab: {{fileID: 100100000, guid: {asset_guid('NowPlayingCard')}, type: 3}}\n  m_X: {{fileID: 100100000, guid: ", 1))),
         ("the card rests on Home again", lambda f: f.__setitem__(prefab_path("NowPlayingCard"),
             f[prefab_path("NowPlayingCard")].replace("  restingOn:\n  - 2\n", "  restingOn:\n  - 5\n"))),
         ("a caption that breaks the YAML", lambda f: f.__setitem__(prefab_path("ProfileView"),
