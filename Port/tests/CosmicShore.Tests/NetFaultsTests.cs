@@ -29,6 +29,7 @@ namespace CosmicShore.Tests
             public event Action<string> PlayerJoined { add { } remove { } }
             public event Action<string> PlayerHasLeft { add { } remove { } }
             public event Action PlayerPropertiesChanged { add { } remove { } }
+            public event Action RemovedFromSession { add { } remove { } }
             public IReadOnlyList<IReadOnlyPlayer> Players => Array.Empty<IReadOnlyPlayer>();
             public IPlayer CurrentPlayer => null;
             public Task RefreshAsync() { Refreshes++; return Task.CompletedTask; }

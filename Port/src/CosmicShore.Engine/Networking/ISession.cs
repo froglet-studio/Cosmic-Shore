@@ -46,6 +46,10 @@ namespace CosmicShore.Engine.Networking
         /// this player's own write).</summary>
         event System.Action PlayerPropertiesChanged;
 
+        /// <summary>Raised when this player was removed from the session (kicked, or the service dropped
+        /// the membership); UGS surface subset, the party layer rejoins on it (Block 5).</summary>
+        event System.Action RemovedFromSession;
+
         /// <summary>
         /// The session roster (party-system arc: <c>PartyMemberService.SyncFromSession</c>
         /// reconciles the SOAP member list against it). The services phase maintains it live;

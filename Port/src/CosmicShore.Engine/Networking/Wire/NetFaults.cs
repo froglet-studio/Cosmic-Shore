@@ -182,6 +182,7 @@ namespace CosmicShore.Engine.Networking
         public event Action<string> PlayerJoined { add => _inner.PlayerJoined += value; remove => _inner.PlayerJoined -= value; }
         public event Action<string> PlayerHasLeft { add => _inner.PlayerHasLeft += value; remove => _inner.PlayerHasLeft -= value; }
         public event Action PlayerPropertiesChanged { add => _inner.PlayerPropertiesChanged += value; remove => _inner.PlayerPropertiesChanged -= value; }
+        public event Action RemovedFromSession { add => _inner.RemovedFromSession += value; remove => _inner.RemovedFromSession -= value; }
         public IReadOnlyList<IReadOnlyPlayer> Players => _inner.Players;
         public IPlayer CurrentPlayer => _inner.CurrentPlayer;
 

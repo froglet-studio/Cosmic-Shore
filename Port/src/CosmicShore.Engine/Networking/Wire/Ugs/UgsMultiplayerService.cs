@@ -223,6 +223,7 @@ namespace CosmicShore.Engine.Networking
             public event Action<string> PlayerJoined;
             public event Action<string> PlayerHasLeft;
             public event Action PlayerPropertiesChanged;
+            public event Action RemovedFromSession;
             public IReadOnlyList<IReadOnlyPlayer> Players => _view.Players;
             public IPlayer CurrentPlayer => _closed ? null : _view.Self;
             public IHostSession AsHost() => this;
@@ -258,7 +259,12 @@ namespace CosmicShore.Engine.Networking
                 if (_closed) return;
                 var rec = UgsLobbyMapping.ToRecord(lobby);
                 // Removed by the host: the lobby no longer lists this player.
-                if (rec.Players.All(p => p.Id != _self)) throw Gone(SessionError.NotInLobby, $"Not in session '{Id}' any more.");
+                if (rec.Players.All(p => p.Id != _self))
+                {
+                    var removed = Gone(SessionError.NotInLobby, $"Not in session '{Id}' any more.");
+                    RemovedFromSession?.Invoke();
+                    throw removed;
+                }
                 Apply(rec);
             }
 

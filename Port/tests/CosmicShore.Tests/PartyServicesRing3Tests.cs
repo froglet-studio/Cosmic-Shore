@@ -33,6 +33,7 @@ sealed class Ring3Session : IHostSession
     public event Action<string> PlayerJoined { add { } remove { } }
     public event Action<string> PlayerHasLeft { add { } remove { } }
     public event Action PlayerPropertiesChanged { add { } remove { } }
+    public event Action RemovedFromSession { add { } remove { } }
     public void RaisePlayerLeaving(string id) => PlayerLeaving?.Invoke(id);
     public List<IReadOnlyPlayer> Roster { get; } = new();
     public IReadOnlyList<IReadOnlyPlayer> Players => Roster;

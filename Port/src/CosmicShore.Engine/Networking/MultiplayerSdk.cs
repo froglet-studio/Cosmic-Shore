@@ -244,6 +244,7 @@ namespace CosmicShore.Engine.Networking
             public event Action<string> PlayerJoined { add { } remove { } }
             public event Action<string> PlayerHasLeft { add { } remove { } }
             public event Action PlayerPropertiesChanged { add { } remove { } }
+            public event Action RemovedFromSession { add { } remove { } }
             public IReadOnlyList<IReadOnlyPlayer> Players => _players;
             public IPlayer CurrentPlayer => _closed ? null : _self;
             public Task RefreshAsync() => Task.CompletedTask;

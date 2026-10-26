@@ -40,6 +40,7 @@ sealed class RingStubLobby : IHostSession
     public event Action<string> PlayerJoined { add { } remove { } }
     public event Action<string> PlayerHasLeft { add { } remove { } }
     public event Action PlayerPropertiesChanged { add { } remove { } }
+    public event Action RemovedFromSession { add { } remove { } }
     public List<IReadOnlyPlayer> Roster { get; } = new();
     public IReadOnlyList<IReadOnlyPlayer> Players => Roster;
     public RingStubCurrentPlayer Local { get; } = new();
