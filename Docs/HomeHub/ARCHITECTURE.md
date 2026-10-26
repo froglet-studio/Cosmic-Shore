@@ -1332,11 +1332,10 @@ tonemapper, so without it a shark is a blown-out white shape with no colour in i
 `volumeLayerMask` (the shape `ConnectingArenaPreview.AdoptUrpSettings` already uses); shadows and
 AA stay off, which is where the cost was.
 
-**The portraits ARE low-poly, and it is the bake, not the display.** `ToolPortraitBuilder.AddRing`
-rebuilt the toy's own 12 × 6 torus — sized for a ring seen from a vessel in flight — and drawn as a
-still at 330 px it is a dodecagon. The bake now tessellates at 48 × 12. **The portraits are baked
-assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > UI > Codex
-bake; nothing changes on screen until it is run.
+**The portraits were low-poly, and it was the bake, not the display** (superseded 2026-10-26).
+`ToolPortraitBuilder.AddRing` rebuilt the toy's own 12 × 6 torus, a dodecagon as a 330 px still.
+The baked emblem is gone now: a toy's portrait is a 2D glyph drawn at 512 px by
+`Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4), with no tessellation to get wrong.
 
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 

@@ -36,9 +36,10 @@ namespace CosmicShore.Editor.Codex
     {
         public const string OutputFolder = "Assets/_Graphics/Codex";
 
-        // Three subjects, and the third is unlike the other two: an ethirion and a lifeform are
-        // AUTHORED objects this photographs, while a TOOL has no prefab at all and is DRAWN from
-        // the same shape vocabulary the toy is built from at runtime. See BuildToolPortrait.
+        // Two subjects are photographed here: an ethirion and a lifeform are AUTHORED objects. A
+        // TOOL's portrait is not baked at all - it is drawn as a 2D glyph by
+        // Tools/Build/icon_kit/toy_portraits.py, which writes the same file this would. See CanBake.
+        public const string ToolPortraitAuthor = "Tools/Build/icon_kit/toy_portraits.py";
 
         /// <summary>Below this fraction of visible pixels a render is treated as failed.</summary>
         const float MinimumCoverage = 0.004f;
@@ -57,13 +58,19 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
-        /// Whether this entry can be illustrated at all. Asked here rather than at each call site
-        /// because "a prefab, OR a tool definition to draw from" is one rule and a second copy of
-        /// it is how a kingdom ends up with a Bake button that does nothing.
+        /// Whether this baker illustrates this entry. Asked here rather than at each call site
+        /// because a second copy of the rule is how a kingdom ends up with a Bake button that does
+        /// nothing - or, worse, one that undoes art made elsewhere.
+        ///
+        /// <para><b>A Tool page is never baked.</b> Its portrait is a 2D glyph that teaches what the
+        /// toy does, drawn by <see cref="ToolPortraitAuthor"/> into the same file. The emblem this
+        /// used to render (a ring round some spheres in the toy's accent) said "a station" and
+        /// nothing else, and a re-bake would put it back over the drawn art, so the baker stands
+        /// down here. A tool's VARIANT icons (a painting's strokes, a hull) still bake - see
+        /// <see cref="CanBake(CodexEntry, CodexVariant)"/>.</para>
         /// </summary>
         public static bool CanBake(CodexEntry entry) =>
-            entry != null &&
-            (entry.SourcePrefab || (entry.Kingdom == CodexKingdom.Tool && entry.SourceConfig));
+            entry != null && entry.Kingdom != CodexKingdom.Tool && entry.SourcePrefab;
 
         /// <summary>
         /// Whether this VARIANT has art of its own worth baking. Most do not, and that is by
@@ -79,6 +86,12 @@ namespace CosmicShore.Editor.Codex
         public static BakeResult Bake(CodexEntry entry, int size)
         {
             if (entry == null) return new BakeResult { Error = "No entry." };
+            if (entry.Kingdom == CodexKingdom.Tool)
+                return new BakeResult
+                {
+                    Error = $"'{entry.DisplayName}' is a Tool: its portrait is drawn by " +
+                            $"{ToolPortraitAuthor}, not baked.",
+                };
             if (!CanBake(entry))
                 return new BakeResult { Error = $"'{entry.DisplayName}' has no source asset to render." };
 
@@ -171,10 +184,6 @@ namespace CosmicShore.Editor.Codex
             {
                 temporaries = new List<Object>();
                 model = CodexVariantSubject.Build(entry, variant, flat, temporaries, out bounds);
-            }
-            else if (entry.Kingdom == CodexKingdom.Tool)
-            {
-                model = BuildToolPortrait(entry, flat, out bounds, out temporaries);
             }
             else
             {
@@ -365,33 +374,6 @@ namespace CosmicShore.Editor.Codex
         /// wings, belly and danger rods sit at real offsets on the prefab), so their meshes are
         /// the creature.</para>
         /// </summary>
-        /// <summary>
-        /// A TOOL is drawn, not photographed. It has no prefab — a toy is built at runtime from
-        /// its definition — so <see cref="ToolPortraitBuilder"/> renders it in the vocabulary the
-        /// toy itself is made of: its emblem's core and satellites inside its switch ring, in its
-        /// own authored accent.
-        ///
-        /// <para>The satellite count is the number of choices the entry says the tool offers, which
-        /// is the harvested variant count. The portrait therefore keeps saying something true as
-        /// toys gain and lose content, without the builder knowing what any of them do.</para>
-        /// </summary>
-        static GameObject BuildToolPortrait(CodexEntry entry, bool flat, out Bounds bounds,
-            out List<Object> temporaries)
-        {
-            temporaries = new List<Object>();
-            bounds = new Bounds(Vector3.zero, Vector3.zero);
-
-            // The same violet CodexWindow.AccentFor gives the Tools kingdom, so a toy that
-            // authored no accent still draws in the colour its own list row is striped with.
-            // Every shipped toy authors one, so this is the unauthored case rather than the norm.
-            var accent = entry.ResolveAccent(FrogletEditorPalette.Violet);
-            var root = ToolPortraitBuilder.Build(accent, entry.Variants.Count, flat, temporaries);
-            if (!root) return null;
-
-            Normalize(root.transform, out bounds);
-            return root;
-        }
-
         static GameObject BuildSubject(GameObject prefab, bool flat, out Bounds bounds,
             out List<Object> temporaries)
         {
@@ -750,14 +732,14 @@ namespace CosmicShore.Editor.Codex
         /// A shaded neutral material — the fill a silhouette bake uses. Deliberately LIT rather
         /// than flat-unlit: a codex icon has to read as a shape, and an unlit fill of one colour
         /// throws away every bit of form the model has. Internal so
-        /// <see cref="ToolPortraitBuilder"/> and <see cref="CodexVariantSubject"/> draw in the
-        /// same grey rather than carrying their own copies of it.
+        /// <see cref="CodexVariantSubject"/> draws in the same grey rather than carrying its own
+        /// copy of it.
         /// </summary>
         internal static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
 
         /// <summary>
         /// One tinted preview material, built through one shader-resolution chain. Shared with
-        /// <see cref="ToolPortraitBuilder"/>: two bakers resolving their own shader is two ways for
+        /// <see cref="CodexVariantSubject"/>: two bakers resolving their own shader is two ways for
         /// a project without URP-Lit to render differently.
         /// </summary>
         internal static Material BuildTintedMaterial(Color tint)
@@ -840,7 +822,7 @@ namespace CosmicShore.Editor.Codex
             foreach (var entry in entries)
             {
                 if (entry == null) continue;
-                paths.Add($"{OutputFolder}/{FileNameFor(entry)}.png");
+                if (CanBake(entry)) paths.Add($"{OutputFolder}/{FileNameFor(entry)}.png");
 
                 foreach (var variant in entry.Variants)
                     if (CanBake(entry, variant))
