@@ -633,8 +633,13 @@ def measure_stoat(S, held=False):
             eps.append({"press": S[start], "release": S[i - 1], "dur": S[i - 1]["t"] - S[start]["t"], "peak": peak,
                         "swept": swept, "tm": S[start]["tm"]})
             start = None
-    switches = [S[i] for i in range(1, len(S)) if S[i]["held"] == held and S[i]["tm"] != S[i - 1]["tm"] and S[i - 1]["tm"] >= 0]
-    into_time = [s for s in switches if s["tm"] == 1]
+    # Time (1) and Hybrid (2) fly the same catch sling, so they are one family here: a switch is Mass <-> the orbit, and a
+    # B press from Time to Hybrid (the cycle is Mass -> Time -> Hybrid -> Mass) is not a switch the AI learns from.
+    def fam(tm):
+        return 1 if tm >= 1 else tm
+    switches = [S[i] for i in range(1, len(S))
+                if S[i]["held"] == held and fam(S[i]["tm"]) != fam(S[i - 1]["tm"]) and S[i - 1]["tm"] >= 0]
+    into_time = [s for s in switches if fam(s["tm"]) == 1]
 
     def gaps(evts):
         return [b["t"] - a["t"] for a, b in zip(evts, evts[1:])]
@@ -655,7 +660,7 @@ def measure_stoat(S, held=False):
             "autopilotMaxHoldSeconds": pct([e["dur"] for e in mass], 0.95),
             "autopilotMaxOrbitDegrees": pct([e["swept"] for e in mass], 0.9),
         })
-    sling = [e for e in eps if e["tm"] == 1]
+    sling = [e for e in eps if e["tm"] >= 1]
     out["StoatSlingConfig"]["presses"] = len(sling)
     if len(sling) >= MIN_EPISODES:
         out["StoatSlingConfig"].update({

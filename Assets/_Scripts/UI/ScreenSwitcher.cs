@@ -1048,11 +1048,27 @@ namespace CosmicShore.UI
                 rt.pivot = new Vector2(0f, 0.5f);
                 rt.offsetMin = new Vector2(i * slot + inset.x, inset.y);
                 rt.offsetMax = new Vector2((i + 1) * slot - inset.z, -inset.w);
+                EnsureSlotMask(rt, inset);
             }
 
             _laidOutWidth = slot;
             _laidOutInsets = inset;
             ApplyBleeds(inset);
+        }
+
+        /// <summary>
+        /// Gives a screen its own <see cref="KitRectMask2D"/> spanning its whole slot (the negative padding
+        /// reaches past the safe rect to the slot edges, where the bleeds draw). Its graphics then register
+        /// with that mask rather than the strip's, and a screen slid off the strip stops re-culling them every
+        /// frame (Docs/PERFORMANCE_OPTIMIZATION.md, the 10-26 Menu_Main row). A screen that already carries
+        /// a RectMask2D keeps it.
+        /// </summary>
+        private static void EnsureSlotMask(RectTransform screen, Vector4 inset)
+        {
+            if (!screen.TryGetComponent(out RectMask2D mask))
+                mask = screen.gameObject.AddComponent<KitRectMask2D>();
+            if (mask is KitRectMask2D)
+                mask.padding = -inset;
         }
 
         /// <summary>

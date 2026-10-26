@@ -3246,3 +3246,60 @@ lines".
   white, the edge is brighter than the body), `author_ui_lattice.py` / `author_menu_arcade.py` / `author_menu_arena.py` /
   `author_menu_toybox.py` `--check` and `--self-test` (new controls: the hull left dark, the hull back to a dark render),
   every menu generator `--check`, `check_generated_assets.py`, `check_ui_colors.py`.
+
+## 74. Rev 19 / 20: the arcade configure window, option G (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the configure mockups: "It is too noisy. Keep the preview on the left and the description
+below. Move the controls to the right side, keep it at the top. Move the intensity and the team and AI selection below
+it ... Remove the slop below saying dolphin, pilot 2"; then, on Rev 19: "it [does not] show the avatar of the players or
+AI and how do I add them?"; then "Start and configuration is where I am disappointed, others are okay"; then, on Rev 20:
+"Go with G lovely. But remove the invite a friend button and remove the hold to launch just start is enough". Boards:
+the canvas's Rev 19 page (the layout) and Rev 20 page (configuration + START, six options; `R20ConfigureG2` is the
+approved one). Built in `author_menu_configure.py`, for the ARCADE window only (the Arena and Maelstrom windows keep the
+Rev 4 column, section 43, and are the follow-up).
+
+- **Layout.** The preview and its description stay on the left. The right column is, top to bottom: the controls (the
+  hull named over a two-column grid, `controls(cols=2)`), one glass panel holding intensity and the pilots, the line
+  that says why START cannot launch (or that the host waits for the others), and START.
+- **Removed.** The summary chips ("Dolphin · Intensity 1 · 2 pilots" - the slop), "Ready to launch", the vessel row
+  (the hull heads the controls now), START's sweep. The panel's `intensityValueText`, `intensityChipText`,
+  `pilotsChipText` and `readyLabel` are empty on this window (all optional in `ArcadeLaunchPanel`).
+- **Intensity: one numeral, LB / RB.** `IntensityStepper` draws the picked level as a big Roman numeral with four pips
+  under it (lit to the picked level) and the line that opens the next. The four `KitIntensityPip`s ARE the panel's
+  `intensityButtons`, so the modal drives them exactly as it drove the nodes; LB / RB and the two prompt buttons only
+  press the neighbouring pip (a locked one raises its locked event; a guest's non-interactable pips change nothing).
+  The shoulders are free under a configure (`ScreenSwitcher` slides hub windows only); the preview holding the stick
+  keeps them.
+- **Pilots: the lineup.** `ConfigureSeatLineup` + four `ConfigureSeatPedestal`s (new part prefab): every seat the
+  match holds, each pilot's portrait standing on a pool of their team's light (`kit_pool` / `kit_pool_rim`, tinted the
+  domain colour), name, status (Host / You / "Medium AI"), and the team underneath. An AI seat shows a portrait from
+  the AI roster (`MainAIProfileList`, stable per seat) and is named "AI pilot": the match draws its own pilot when it
+  spawns, so the seat promises no name. An open seat is the + octagon (`kit_oct_line2` family) - press it, the ADD AI
+  PILOT prompt under the lineup, or X, to add an AI. No invite button (Shombith): friends join through the party.
+  The ✕ on a placed AI removes it (host, while the match can spare the seat).
+- **Teams: focus a seat, then left / right** (Shombith's pick). `ConfigureTeamStepper` is a Selectable whose left /
+  right step the team instead of moving focus (up / down still navigate); its arrows do the same by pointer. Your own
+  seat sets your domain (`HandleDomainSelected`); the host steps a placed AI's (`MoveAiToDomain`, new: the placement
+  changes team where it stands). A new AI joins the team with the fewest pilots, a tie going away from your own
+  (`AddAiToLeastFilledTeam`). The teams offered are the Jade - Ruby - Gold prefix the card allows (`MaxDomainsAllowed`).
+- **The modal is unchanged underneath.** The lineup is a VIEW of the roster the domain tiles' chips show
+  (`ArcadeGameConfigureModal.SeatLineup.cs`); every action goes through the methods the tiles always used. The three
+  domain columns stay in the window, hidden (`SeatBook`, alpha 0, not interactable), because the modal keeps its chips
+  in their strips; Yash's in-flight `ConfigurePilotsFit` (Ys-bleeding-edge 5442765451) fits those columns and has
+  nothing left to act on here - Shombith chose to build G from bleeding-edge and let the second merge resolve it.
+- **AI difficulty** keeps its row, compact, beside ADD AI PILOT (shown only where the card's AI reads it), and the AI
+  seats name it.
+  Since 2026-10-26 the row has four plates, Easy / Medium / Hard / Legendary (`AI_LEVELS`; Docs/SKIM_RACE_AI.md
+  section 10): each compact plate is as wide as its word (`aic_btn_w`, Legendary 116 px) and the row ends 12 px clear
+  of ADD AI PILOT (asserted); the Arena's Rev 4 row splits its width four ways.
+- **START** is a full-width lime Play slab with the A prompt (`prompt_button`), pressed - no hold.
+- **`MinigameLaunchPanel`**: the controls block moves down to clear the AI difficulty row only when that row sits ABOVE
+  it (the old layout); with the controls above the row (here) it stays put.
+- **Proof without an editor.** refcompile player and editor configs OK, Amoebius builds; `author_menu_configure.py
+  --check` / `--self-test` (new controls: an invite control back, START held, START not the Play slab, the seat book
+  showing, a pip that is not an intensity button, the summary chips back, AI seats without portraits);
+  `author_ui_kit_sprites.py --check` / `--self-test` (the pool, its rim and the octagon outline, with controls);
+  `check_generated_assets.py`, `check_ui_colors.py`, `check_console_logging.py`. The look and the pad flow are owed
+  in the editor (checklist entry "Rev 20 G").
+
+- **With Yash's `ConfigurePilotsFit` (bleeding-edge #1563, merged in 2026-10-26).** It grows the Rev 4 Pilots section to its tallest domain column and moves the next section and START down with it. The arcade view no longer has that section (its pilots are the pedestal lineup, its domain columns a hidden seat book), so the fit is authored on the Arena and Maelstrom views only; a fit on the arcade view would move START and the lineup to fit columns nobody sees. `author_menu_configure.py` asserts the arcade view carries none, and its self-test plants one there (Yash's two plants now target the Arena view).

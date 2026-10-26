@@ -388,5 +388,63 @@ namespace CosmicShore.Tests
             StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
                 Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
         }
+
+        // ------------------------------------------------------------------ the three modes and Hybrid's carry (STOAT_DIPOLE.md §1f)
+
+        [Test]
+        public void ModeCycle_BStepsMassTimeHybridAndBack()
+        {
+            Assert.AreEqual(StoatModeExecutor.Mode.Time, StoatModeExecutor.Next(StoatModeExecutor.Mode.Mass));
+            Assert.AreEqual(StoatModeExecutor.Mode.Hybrid, StoatModeExecutor.Next(StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Next(StoatModeExecutor.Mode.Hybrid));
+        }
+
+        [Test]
+        public void ModeCycle_PressesToCountsTheWayRound()
+        {
+            Assert.AreEqual(0, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Time, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(2, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Time, StoatModeExecutor.Mode.Mass));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Hybrid, StoatModeExecutor.Mode.Mass));
+        }
+
+        [Test]
+        public void ModeCycle_TimeAndHybridFlyTheOrbit_MassDoesNot()
+        {
+            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Mass));
+            Assert.IsTrue(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Time));
+            Assert.IsTrue(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Hybrid));
+            Assert.AreEqual(0.5f, StoatModeExecutor.MassCardTarget(StoatModeExecutor.Mode.Hybrid));
+        }
+
+        [Test]
+        public void HybridCarry_APerfectReleaseCarriesTheWholeTime_AMissNothing()
+        {
+            Assert.IsTrue(StoatSlingMath.CarryHolds(2.4f, 1f, 2.5f));
+            Assert.IsFalse(StoatSlingMath.CarryHolds(2.6f, 1f, 2.5f));
+            Assert.IsTrue(StoatSlingMath.CarryHolds(1.0f, 0.5f, 2.5f));
+            Assert.IsFalse(StoatSlingMath.CarryHolds(1.3f, 0.5f, 2.5f));
+            Assert.IsFalse(StoatSlingMath.CarryHolds(0f, 0f, 2.5f), "a release outside the window carries nothing");
+            Assert.IsFalse(StoatSlingMath.CarryHolds(0f, -1f, 2.5f), "no release yet");
+            Assert.IsFalse(StoatSlingMath.CarryHolds(float.PositiveInfinity, 1f, 2.5f));
+        }
+
+        [Test]
+        public void HybridLine_WarmsWithTheTiming_LimeInTheWindowOrWhileCarrying()
+        {
+            Assert.AreEqual(0f, StoatSlingMath.HybridLineWarmth(0f, false));
+            Assert.Less(StoatSlingMath.HybridLineWarmth(0.9f, false), 1f);
+            Assert.AreEqual(1f, StoatSlingMath.HybridLineWarmth(1f, false));
+            Assert.AreEqual(1f, StoatSlingMath.HybridLineWarmth(0f, true));
+        }
+
+        [Test]
+        public void ModeAction_ShipsHybridsNumbers()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset");
+            StringAssert.Contains("hybridPathLengthShare: 0.5\n", text);
+            StringAssert.Contains("hybridCarrySeconds: 2.5\n", text);
+            StringAssert.Contains("hybridModeEvent:", text);
+        }
     }
 }

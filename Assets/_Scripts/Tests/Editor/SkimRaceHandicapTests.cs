@@ -192,17 +192,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Difficulty_HardIsTheUnhandicappedPilot_EasyErrsMoreThanMedium()
+        public void Difficulty_LegendaryIsTheUnhandicappedPilot_EachEasierLevelErrsMore()
         {
             var settings = ScriptableObject.CreateInstance<SkimRaceDifficultySO>();
-            Assert.IsTrue(settings.For(AIDifficulty.Hard).IsNone, "Hard flies the shipped policy with no mistakes");
+            Assert.IsTrue(settings.For(AIDifficulty.Legendary).IsNone, "Legendary flies the shipped policy with no mistakes");
 
             var easy = settings.For(AIDifficulty.Easy);
             var medium = settings.For(AIDifficulty.Medium);
+            var hard = settings.For(AIDifficulty.Hard);
             Assert.IsFalse(easy.IsNone);
             Assert.IsFalse(medium.IsNone);
+            Assert.IsFalse(hard.IsNone, "Hard makes a few mistakes; only Legendary makes none");
             Assert.GreaterOrEqual(easy.ReactionSeconds, medium.ReactionSeconds);
             Assert.GreaterOrEqual(easy.MistakeChance, medium.MistakeChance);
+            Assert.Greater(medium.ReactionSeconds, hard.ReactionSeconds);
+            Assert.Greater(medium.MistakeChance, hard.MistakeChance);
 
             // An unwritten value resolves to the default (Medium) before it is looked up.
             Assert.AreEqual(medium.MistakeChance, settings.For(default).MistakeChance);

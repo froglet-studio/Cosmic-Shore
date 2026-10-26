@@ -728,6 +728,7 @@ namespace CosmicShore.UI
                 arena.OnVesselPickRequested    += HandleVesselPickRequested;
             }
 
+            WireSeatLineup(_activePanel.SeatLineup);
             _activePanelWired = true;
         }
 
@@ -772,6 +773,7 @@ namespace CosmicShore.UI
                 arena.OnVesselPickRequested    -= HandleVesselPickRequested;
             }
 
+            UnwireSeatLineup(_activePanel.SeatLineup);
             _activePanelWired = false;
         }
 
@@ -1054,6 +1056,7 @@ namespace CosmicShore.UI
             _activePanel.SetSeatSummary(total, ceiling, spare, !IsClientMode && !_localPlayerReady);
 
             RefreshAIPreviewChips(total - humans);
+            RefreshSeatLineup();
         }
 
         /// <summary>
@@ -2190,6 +2193,7 @@ namespace CosmicShore.UI
             foreach (var chip in _aiChips)
                 if (chip) Destroy(chip.gameObject);
             _aiChips.Clear();
+            _aiSeatDomains.Clear();
 
             if (aiCount <= 0)
             {
@@ -2222,6 +2226,9 @@ namespace CosmicShore.UI
                     domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
                     totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
                 }
+
+                // The seat lineup draws every AI seat, whether or not a tile is there to hold its chip.
+                _aiSeatDomains.Add(domain);
 
                 var tile = FindTileForDomain(domain);
                 if (tile == null || tile.AvatarStripTransform == null) continue;
@@ -2580,6 +2587,7 @@ namespace CosmicShore.UI
             foreach (var chip in _aiChips)
                 if (chip) Destroy(chip.gameObject);
             _aiChips.Clear();
+            _aiSeatDomains.Clear();
             _aiChipSignature = null;
 
             if (_watchingPlayerSpawnEvent && gameData != null
@@ -2604,6 +2612,7 @@ namespace CosmicShore.UI
                     break;
                 }
             }
+            RefreshSeatLineup();
         }
 
         DomainInfoData FindTileForDomain(Domains d)
