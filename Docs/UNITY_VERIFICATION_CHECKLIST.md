@@ -14580,6 +14580,23 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
 9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
    black screen), and the Theater's own playback runs.
 
+## 🔴 My Replays in the Profile - the last 10 games (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+The replay work merged into Ys-bleeding-edge, plus MY REPLAYS in the Profile header and a last-10 rule
+(`Docs/REPLAYS.md`, "Where to find them"). No Unity CLI in the session, so `/verify-unity` could not run. Checked offline:
+refcompile player and editor 0 errors in project code; `author_menu_profile.py --self-test` (including "MY REPLAYS
+opening the wrong window") and `author_menu_replays.py --self-test`; the branch workflow's post-merge gates. Do the two
+entries below this one too ("Replays inside the arena", "Replay browser ...").
+
+1. **Find it without a match.** From Home, press the pilot avatar (or Y). **Pass:** the Profile shows MY REPLAYS left
+   of BACK, in the same style; D-pad to it and press A (or click it) and the "My replays" window opens with "Your last
+   10 games" beside the title; B closes it back to the Profile (not to Home).
+2. **The last 10.** Race Regatta 11 times (or copy 11 replay pairs into `<repo>/Recordings/`). **Pass:** the window
+   lists 10, newest first, and the folder holds the newest 10 pairs (the 11th oldest was pruned).
+3. **Watch from the Profile.** WATCH a row. **Pass:** "Building the arena", then the race inside Regatta's rails; B or
+   EXIT returns to the Profile's window with focus on that row.
+4. **Both doors, one window.** Open it from the Arcade's REPLAYS too. **Pass:** the same window and the same list.
+
 ## 🔴 Replays inside the arena (2026-10-24, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
 
 WATCH now stands the race's own arena - the mode preview's satellite cell with the config the match ran (Regatta's

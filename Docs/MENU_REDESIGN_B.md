@@ -3308,8 +3308,15 @@ Rev 4 column, section 43, and are the follow-up).
 
 Built on `claude/match-replays-5t3dbr` for match replays (`Docs/REPLAYS.md` section 6), without a board round:
 
+- **MY REPLAYS** sits left of **BACK** in the Profile header (2026-10-26, on Ys-bleeding-edge; Yash: "inside profiles
+  should have my replay area where I can choose the last 10 games"): a Default transparent KitButtonSmall like BACK,
+  carrying `OpenModalButton` (`author_menu_profile.py` `build_view`). No pad shortcut: the profile's pad buttons are
+  ControllerButtonPress with empty screen lists, so it is reached with the D-pad and A. Only its four objects were
+  spliced into `ProfileView.prefab`; the generator's pre-existing text-width drift there is left for its owner.
 - **REPLAYS** sits left of **BACK** in the Arcade header (`author_menu_arcade.py` `replays_button`), a Default
   transparent KitButton like Back, with `OpenModalButton` opening `ModalWindows.REPLAYS = 19` by type.
+- **The window is My Replays**: "My replays" in H1 with "Your last 10 games" (BodySmall) beside it; it lists the
+  newest 10 per section (`ReplayConfigSO.ListedReplays`, and the device keeps 10).
 - **The Replays window** (`author_menu_replays.py`) is the Credits window's frame (1200 x 900, dim, brackets, H1 title,
   Close B, thin ControlActive scrollbar) holding ON THIS DEVICE and ON YOUR OTHER DEVICES sections of framed rows (H3
   mode, BodySmall date and length, Body result, WATCH as an opaque Play button, DELETE as Default), and an empty line.
@@ -3318,4 +3325,5 @@ Built on `claude/match-replays-5t3dbr` for match replays (`Docs/REPLAYS.md` sect
   line naming the pad controls.
 
 Every word is an authored field (section 50). The Menu_Main instance sits just before Credits under ModalWindows; the
-two generators run in either order. Change anything here through the two generators, never in the scene.
+two generators run in either order. Change anything here through the generators (replays, profile, arcade), never in
+the scene.

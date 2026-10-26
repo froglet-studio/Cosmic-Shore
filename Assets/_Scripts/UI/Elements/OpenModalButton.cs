@@ -6,7 +6,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// A button that opens one modal by TYPE through <see cref="ScreenSwitcher.OpenModal"/> - the
-    /// Arcade header's Replays button is the first. The <see cref="MenuHubButton"/> rule without the
+    /// Profile's MY REPLAYS and the Arcade header's REPLAYS both open My Replays through it. The <see cref="MenuHubButton"/> rule without the
     /// hub's availability states: the button names a type and the switcher finds the window, so the
     /// switcher stays the one authority over the modal stack (gamepad B, the close sweeps). The window
     /// plays its own open sound, so the button plays none.

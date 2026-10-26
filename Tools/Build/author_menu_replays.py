@@ -20,8 +20,10 @@ window frame of Docs/MENU_REDESIGN_B.md, built the way author_menu_credits.py bu
         through shortcuts (ReplayPlaybackHud), because the sticks fly the replay camera.
 
     Assets/_Prefabs/UI Elements/Panels/ReplayBrowserModal.prefab
-        The window: CanvasGroup + Animator (Standard.controller) + ReplayBrowserModal (ModalType
-        REPLAYS = 19) on the root; the dim; the window frame and brackets; "Replays"; a status line;
+        My Replays - opened from the Profile header (author_menu_profile.py) and the Arcade header
+        (author_menu_arcade.py). The window: CanvasGroup + Animator (Standard.controller) +
+        ReplayBrowserModal (ModalType REPLAYS = 19) on the root; the dim; the window frame and
+        brackets; "My replays" and "Your last 10 games" beside it; a status line;
         Close (B); a scroll view whose column holds the empty state, the ON THIS DEVICE section and
         the ON YOUR OTHER DEVICES section (rows are instantiated into their lists at runtime), and
         a thin scrollbar. Every word a row or the HUD shows is a field on these components.
@@ -84,11 +86,13 @@ COL = "Window/Scroll/Viewport/Content"
 BROWSER_WORDS = dict(whenTemplate="{date} - {duration}", dateFormat="d MMM yyyy, HH:mm",
                      winnerTemplate="Winner: {winner}", noResultLine="No final results",
                      detailTemplate="{pilots} pilots - Intensity {intensity}",
-                     openFailedLine="That replay could not be opened.")
+                     openFailedLine="That replay could not be opened.",
+                     countTemplate="Your last {count} games")
+TITLE = "My replays"
 HUD_WORDS = dict(timeTemplate="{position} / {duration}", speedTemplate="x{speed}", pauseLabel="PAUSE", playLabel="PLAY")
 SHOT_NAMES = ("FREE", "PILOT", "ORBIT", "CHASE")          # TheaterShot order
 CONFIRM_DELETE = "CONFIRM"
-EMPTY_LINE = "No replays yet. Finish a Regatta and its replay is saved here, ready to watch."
+EMPTY_LINE = "No replays yet. Finish a Regatta and it is kept here, ready to watch."
 ELSEWHERE_LINE = "Recorded on another device"
 PAD_HINT = "A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit"
 LOADING_LINE = "Building the arena"
@@ -366,8 +370,11 @@ def build_browser():
     CR.scrollbar(win, "Window/Scrollbar")
 
     t = win.child(N("Window/Title", "Title", TL(PAD, 34, 600, 46)))
-    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("Replays", "H1", tok("TextLight"))) \
+    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text(TITLE, "H1", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
+    # Beside the title: "Your last 10 games" (countTemplate, filled from ReplayConfigSO.ListedReplays).
+    count_x = PAD + K.label_width(TITLE, "H1") + 24
+    label(win.child(N("Window/Count", "Count", TL(count_x, 54, 520, 22))), "Your last 10 games", "BodySmall", "NeutralLightest")
     st = win.child(N("Window/Status", "Status", TL(PAD, 84, 900, 20)))
     st.add("cg", 225, H.canvas_group(False))
     label(st, BROWSER_WORDS["openFailedLine"], "BodySmall", "Danger")
@@ -385,7 +392,8 @@ def browser_body(ctx):
             + f"  localList: {ref(ctx.rt(f'{COL}/Local/List'))}\n  localSection: {ref(ctx.c(f'{COL}/Local', 'cg'))}\n"
             f"  otherList: {ref(ctx.rt(f'{COL}/Other/List'))}\n  otherSection: {ref(ctx.c(f'{COL}/Other', 'cg'))}\n"
             f"  emptyState: {ref(ctx.c(f'{COL}/Empty', 'cg'))}\n  rowPrefab: {prefab_ref(ROW, 'root#row')}\n"
-            f"  statusText: {ref(ctx.c('Window/Status', 'tmp'))}\n  statusGroup: {ref(ctx.c('Window/Status', 'cg'))}\n"
+            f"  statusText: {ref(ctx.c('Window/Status', 'tmp'))}\n  countText: {ref(ctx.c('Window/Count', 'tmp'))}\n"
+            f"  statusGroup: {ref(ctx.c('Window/Status', 'cg'))}\n"
             f"  playbackHudPrefab: {prefab_ref(HUD, 'root#hud')}\n  windowGroup: {ref(ctx.c('Window', 'cg'))}\n"
             f"  scroll: {ref(ctx.c('Window/Scroll', 'scroll'))}\n  stickScrollSpeed: 1400\n  stickDeadZone: 0.2\n")
 
@@ -530,6 +538,7 @@ def validate(files):
     for field in ("localSection", "otherSection", "emptyState", "statusGroup", "windowGroup"):
         C.wired(pf, comp, field, 225, "ReplayBrowserModal")
     C.wired(pf, comp, "statusText", K.TMP_UGUI, "ReplayBrowserModal")
+    C.wired(pf, comp, "countText", K.TMP_UGUI, "ReplayBrowserModal")
     C.wired(pf, comp, "scroll", A.SCROLL_RECT, "ReplayBrowserModal")
     assert f"  rowPrefab: {prefab_ref(ROW, 'root#row')}\n" in comp, "ReplayBrowserModal.rowPrefab does not name the row"
     assert f"  playbackHudPrefab: {prefab_ref(HUD, 'root#hud')}\n" in comp, "ReplayBrowserModal.playbackHudPrefab does not name the HUD"

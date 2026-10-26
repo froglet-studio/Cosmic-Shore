@@ -18,7 +18,9 @@ namespace CosmicShore.UI
     /// The replay browser (<c>ModalWindows.REPLAYS</c>, <c>Docs/REPLAYS.md</c>): every replay on this
     /// device, newest first, with Watch and Delete, then the replays the player recorded on their
     /// other devices (listed from the Cloud Save index; their frames never left the device that
-    /// recorded them, so they cannot be watched here). Opened from the Arcade window's header.
+    /// recorded them, so they cannot be watched here). This is My Replays: opened from the Profile's
+    /// MY REPLAYS and the Arcade window's REPLAYS, it lists the player's last games
+    /// (<see cref="ReplayConfigSO.ListedReplays"/>, 10).
     ///
     /// <para><b>Watching</b> spawns a <see cref="ReplayPlaybackHud"/> (its own root canvas) and hands it
     /// the replay. While it plays this window stays open underneath, non-interactable and deaf to B,
@@ -50,6 +52,9 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Shown when a replay cannot be opened (missing or unreadable file, or the Theater is busy).")]
         string openFailedLine;
 
+        [SerializeField, Tooltip("The line beside the title. Token: {count} - how many games the list keeps (ReplayConfigSO).")]
+        string countTemplate;
+
         [Header("List")]
         [SerializeField, Tooltip("This device's rows are added here.")] RectTransform localList;
         [SerializeField, Tooltip("The 'on this device' heading and its rows.")] CanvasGroup localSection;
@@ -58,6 +63,7 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Shown while there is no replay to list.")] CanvasGroup emptyState;
         [SerializeField, Tooltip("One replay. Instantiated per row.")] ReplayRowView rowPrefab;
         [SerializeField, Tooltip("A line under the title for what just went wrong.")] TMP_Text statusText;
+        [SerializeField, Tooltip("Beside the title: how many games the list keeps (countTemplate).")] TMP_Text countText;
         [SerializeField] CanvasGroup statusGroup;
 
         [Header("Watching")]
@@ -132,7 +138,12 @@ namespace CosmicShore.UI
             if (scroll) scroll.verticalNormalizedPosition = 1f;
             KitVisibility.SetShown(statusGroup, false);
 
+            int limit = ReplayConfigSO.Resolve().ListedReplays;
+            if (countText) countText.text = TemplateText.Fill(countTemplate, "count", limit.ToString(CultureInfo.InvariantCulture));
+
+            // Newest first, the player's last N games (My Replays, opened from the Profile and the Arcade).
             var local = replayService != null ? replayService.ListOnDevice() : new List<ReplaySummary>();
+            if (local.Count > limit) local.RemoveRange(limit, local.Count - limit);
             foreach (var summary in local) AddRow(localList, summary, here: true);
             KitVisibility.SetShown(localSection, local.Count > 0);
             KitVisibility.SetShown(otherSection, false);
@@ -152,6 +163,8 @@ namespace CosmicShore.UI
                 return;
             }
             if (!this || version != _version || others.Count == 0) return;
+            int limit = ReplayConfigSO.Resolve().ListedReplays;
+            if (others.Count > limit) others.RemoveRange(limit, others.Count - limit);
 
             foreach (var summary in others) AddRow(otherList, summary, here: false);
             KitVisibility.SetShown(otherSection, true);

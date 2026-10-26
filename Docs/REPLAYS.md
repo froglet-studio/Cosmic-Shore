@@ -7,6 +7,10 @@ which already records every vessel and plays the fleet back as ghosts. This laye
 
 Design record with diagrams: https://claude.ai/artifact/4Ykh9qZEdf81cY6hPZonaK (private to the owner until shared).
 
+**Where to find them (no match needed):** Home -> the pilot avatar (or **Y**) -> Profile -> **MY REPLAYS**, beside BACK
+in the header. Also Arcade -> **REPLAYS**, beside BACK. Both open My Replays: the player's last 10 games, newest first;
+**WATCH** plays one inside its arena. (Overwatch 2 keeps replays in the career profile; this follows that.)
+
 ---
 
 ## 1. Decisions (2026-10-15)
@@ -61,7 +65,7 @@ Rules the store keeps (all tested in `ReplayStoreTests`):
 - **Two replays in one minute both survive** (`_2`, `_3`) instead of one overwriting the other.
 - **A summary may only name a bare file name.** The name is joined to the folder to load and to delete, so `../` or a
   rooted path is refused.
-- **The newest `ReplayConfigSO.KeepNewest` (20) are kept.**
+- **The newest `ReplayConfigSO.KeepNewest` (10) are kept** - My Replays is "the last 10 games".
 
 ## 4. Cloud Save index
 
@@ -78,7 +82,8 @@ returns the summaries that are not on this device.
 |---|---|---|
 | Auto Record Modes | Regatta | Modes recorded from Go to the end screen |
 | Results Wait Seconds | 20 | Real-time wait for the end screen before saving without results |
-| Keep Newest | 20 | Replays kept on the device |
+| Keep Newest | 10 | Replays kept on the device - the player's last 10 games (Yash, 2026-10-26) |
+| Listed Replays | 10 | My Replays lists this many per section (this device, other devices), newest first |
 | Cloud Index Size | 50 | Summaries mirrored to Cloud Save (0 = off) |
 | Nudge Seconds | 5 | How far the skip controls jump |
 | Speed Step | 2 | Faster multiplies the playback rate by this, Slower divides |
@@ -93,10 +98,11 @@ Sample rate, length cap, ghosts and cameras stay on `TheaterConfigSO`.
 ## 6. The browser and watching (2026-10-24)
 
 ```
-Arcade header  [REPLAYS] [B BACK]          OpenModalButton (target REPLAYS = 19) -> ScreenSwitcher.OpenModal
+Profile header [MY REPLAYS] [B BACK]       OpenModalButton (target REPLAYS = 19) -> ScreenSwitcher.OpenModal
+Arcade header  [REPLAYS] [B BACK]          the same
       |
-ReplayBrowserModal  (ModalWindowManager, ModalWindows.REPLAYS)
-      |  on open: ReplayService.ListOnDevice()  -> ReplayRowView per replay: WATCH, DELETE (asks twice)
+ReplayBrowserModal  (ModalWindowManager, ModalWindows.REPLAYS) - "My replays", "Your last 10 games"
+      |  on open: ReplayService.ListOnDevice(), newest 10 -> ReplayRowView per replay: WATCH, DELETE (asks twice)
       |           ReplayService.ListFromOtherDevicesAsync() -> rows with "Recorded on another device", no buttons
       |  WATCH:   ReplayService.TryLoad -> Instantiate(ReplayPlaybackHud) -> hud.PlayAsync(recording, summary)
       v
@@ -118,7 +124,8 @@ Stop: TheaterPlayback.Stop -> (from the menu) CameraManager.SetMainMenuCameraAct
 
 | Piece | File | Notes |
 |---|---|---|
-| Replays button | `Tools/Build/author_menu_arcade.py` (`replays_button`) | Left of Back in the Arcade header; `OpenModalButton` names the window by TYPE, like `MenuHubButton`. |
+| MY REPLAYS (Profile) | `Tools/Build/author_menu_profile.py` (`build_view`) | Left of BACK in the Profile header (2026-10-26); a KitButtonSmall carrying `OpenModalButton`. Reached with the D-pad and A, or a click. |
+| Replays button (Arcade) | `Tools/Build/author_menu_arcade.py` (`replays_button`) | Left of Back in the Arcade header; `OpenModalButton` names the window by TYPE, like `MenuHubButton`. |
 | Browser window | `Assets/_Scripts/UI/Modals/ReplayBrowserModal.cs`, `ReplayBrowserModal.prefab` | B closes it back to the Arcade, except while a replay plays and on the frame one ends. The right stick scrolls the list. |
 | One row | `Assets/_Scripts/UI/Elements/Replays/ReplayRowView.cs`, `ReplayRow.prefab` | Mode name from the injected `SO_GameList` (Regatta is an Arena card), date in the invariant culture (the font is ASCII-only). |
 | Playback HUD | `Assets/_Scripts/UI/Elements/Replays/ReplayPlaybackHud.cs`, `ReplayPlaybackHud.prefab` | Title, when, scrub bar, time, speed, shot, pilot, the transport row, Exit, and a line naming the pad controls. |
@@ -181,7 +188,7 @@ authors them and fails on an empty or non-ASCII one.
 
 1. Play Regatta to the end screen.
 2. Look in `<repo>/Recordings/` for the `.cstheater` and its `.replay.json`.
-3. Back on the menu: Arcade > **REPLAYS**. The race is the first row; **WATCH** shows "Building the arena", then plays
+3. Back on the menu: Home -> the pilot avatar (or Y) -> **MY REPLAYS** (or Arcade -> **REPLAYS**). The race is the first row; **WATCH** shows "Building the arena", then plays
    the race inside Regatta's own rails and rings with the HUD over it; **B** or **EXIT** comes back to the list. (Still in the Regatta scene, the Theater's own key **8** plays
    the newest replay too.)
 
@@ -210,5 +217,6 @@ The arena is **Caleb's** mode preview (`ModePreviewArena`, `ModePreviewGateCours
 used through its public API. The one change in it is an optional `prismStride` parameter on `ModePreviewArena.Stand`
 (0 keeps the library's stride, so the preview behaves exactly as before).
 
-The browser rides **Shombith's** style-B menu (`Docs/MENU_REDESIGN_B.md`): the Replays button is in his Arcade generator,
+The browser rides **Shombith's** style-B menu (`Docs/MENU_REDESIGN_B.md` §75): MY REPLAYS is in his Profile generator,
+the Replays button in his Arcade generator,
 the window is built from the same kit and frame as Credits, and the look awaits his review on the team board.

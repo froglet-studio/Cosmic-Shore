@@ -37,10 +37,14 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(1f, 120f)] float resultsWaitSeconds = 20f;
 
         [Header("Storage")]
-        [Tooltip("Replays kept on this device. Saving one more deletes the oldest. Only replays are " +
-                 "ever pruned: a Theater recording made by hand has no summary beside it and is " +
-                 "never touched.")]
-        [SerializeField, Range(1, 200)] int keepNewest = 20;
+        [Tooltip("Replays kept on this device - the player's last N games (10, Yash 2026-10-26: \"my replay area " +
+                 "where I can choose the last 10 games\"). Saving one more deletes the oldest. Only replays are " +
+                 "ever pruned: a Theater recording made by hand has no summary beside it and is never touched.")]
+        [SerializeField, Range(1, 200)] int keepNewest = 10;
+
+        [Tooltip("Replays My Replays lists per section (this device, other devices), newest first. Matches " +
+                 "Keep Newest by default so the list is exactly the games kept.")]
+        [SerializeField, Range(1, 200)] int listedReplays = 10;
 
         [Tooltip("Replay SUMMARIES mirrored to Cloud Save, so the browser can list a match recorded on " +
                  "another device. Summaries only - never frames. Zero turns the mirror off.")]
@@ -89,6 +93,7 @@ namespace CosmicShore.ScriptableObjects
         public float MinSpeed => minSpeed;
         public float MaxSpeed => maxSpeed;
         public int KeepNewest => keepNewest;
+        public int ListedReplays => listedReplays;
         public int CloudIndexSize => cloudIndexSize;
 
         /// <summary>Whether a match of <paramref name="mode"/> records itself.</summary>
