@@ -15704,3 +15704,18 @@ of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in chan
 1. Release, Arcade > Thresher Time (or Regatta with Squirrels), play past the auto-capture.
 2. In the capture: no `PoolMiss.Squirrel Prism` row (was 1.71 ms/frame in Thresher Time), `PoolRefill.Squirrel Prism`
    present; trails look the same.
+
+## 🔴 2026-10-26 — Configure: the AI pilots row stays hidden where it is not offered, and the domain columns never cover it (unverified: no Unity editor in the session)
+
+**Files:** `Assets/_Scripts/UI/Kit/KitVisibility.cs` (a hide finishes the part's `KitEntrance` first),
+`Assets/_Scripts/UI/Elements/Configure/ConfigurePilotsFit.cs` (on each Configure view's `Steps`, authored by
+`Tools/Build/author_menu_configure.py`). EditMode: `KitVisibilityTests`, `ConfigurePilotsFitTests`.
+
+1. Menu > Arcade > Skim Race: the AI pilots row shows; Easy and Hard light when pressed. Back, open Joust: no AI
+   pilots row. Back to Skim Race: the row is there and clickable.
+2. Skim Race, + AI on Jade until it holds 3-4 pilots: the Jade column grows, the AI pilots row moves down under it,
+   the Vessel section and the launch row (status, chips, START) move down with it; nothing overlaps. Kick the AIs:
+   everything moves back.
+3. Arena > Broadside (or Brood Rush), + AI on one domain until it holds 4-5 pilots: the seat rows tighten (shorter,
+   closer) once START would pass the bottom margin; the Easy / Medium / Hard buttons stay clear and clickable.
+4. Maelstrom: 3-4 pilots in one domain push Format and the launch row down; nothing overlaps.
