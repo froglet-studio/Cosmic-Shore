@@ -96,8 +96,12 @@ namespace CosmicShore.Gameplay
             if (clearFirst)
                 _connectionData.PartyMembers?.Clear();
 
-            if (!string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
-                _connectionData.PartyMembers?.Add(_connectionData.LocalPlayerData);
+            // Idempotent (Block 5 step 3): without the clear the list may already hold our row, and
+            // PartyPlayerData is equal by PlayerId, so a blind Add would seat the local player twice.
+            var local = _connectionData.LocalPlayerData;
+            if (!string.IsNullOrEmpty(local.PlayerId) && _connectionData.PartyMembers != null
+                && !_connectionData.PartyMembers.Contains(local))
+                _connectionData.PartyMembers.Add(local);
 
             CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Seeded PartyMembers with local player.");
         }

@@ -39,17 +39,20 @@ this one.
 
 **Port order.** Bring the design, not the files. `UgsRequestPolicy`, `LobbyReadPacer` and the 400-line rule stay.
 
-1. **Count voided ticks** (44587a2fa4). The benign branch at `HostConnectionService.cs:1552` and `:2089` is
+**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-4 are done (below, each marked); steps 5-9 are next.
+
+1. **Done 2026-10-26.** **Count voided ticks** (44587a2fa4). The benign branch at `HostConnectionService.cs:1552` and `:2089` is
    empty, and `UgsRequestCounter.Benign` is never counted, so a voided tick looks healthy. About 5 lines;
    this is the baseline the Block 5 gate needs.
-2. **Extract `PresenceRefreshLoop`, then split the read from the publish** (791c6d0456; hardening seams 1-2).
+2. **Split done 2026-10-26; the extraction is not** (as in August: the publish trackers are tied to four
+   dependencies, more surface than it buys yet). **Extract `PresenceRefreshLoop`, then split the read from the publish** (791c6d0456; hardening seams 1-2).
    Today they share one `try` (`HostConnectionService.cs:1484-1541`), so a benign read failure skips the
    publish. About 150 lines.
-3. **Fix the roster wipe on a background rejoin** (RC-8 from 8a14679585). `SeedLocalPlayer(clearFirst:true)`
+3. **Done 2026-10-26.** **Fix the roster wipe on a background rejoin** (RC-8 from 8a14679585). `SeedLocalPlayer(clearFirst:true)`
    (`HostConnectionService.cs:2326`) runs on the rejoins at `:1631,:1724` and clears a live party roster.
    Clear only with no live session, and make `SeedLocalPlayer` idempotent. About 20 lines; it must land
    before step 5.
-4. **Party session push** (090f61a6ba). Today `PartySessionService` subscribes only to `PlayerLeaving`
+4. **Done 2026-10-26** (the engine's `ISession` gained the three events in `6757fc61d9`). **Party session push** (090f61a6ba). Today `PartySessionService` subscribes only to `PlayerLeaving`
    (`:202,:231`). Add flag-only handlers for `PlayerJoined`, `PlayerHasLeft` and `PlayerPropertiesChanged`,
    drained in `Update` into the cache sync B31 already added. About 120 lines.
 5. **Presence push** (b0adfa7284). `PresenceLobbyService` subscribes to no `ISession` event. Route its six

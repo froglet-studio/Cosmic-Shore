@@ -39,6 +39,13 @@ namespace CosmicShore.Gameplay
         event Action<string> PlayerLeaving;
 
         /// <summary>
+        /// True once per roster change pushed by the session (a player joined, left, or changed
+        /// properties) since the last call, then false until the next one. Main thread only; the
+        /// caller syncs from <see cref="ActiveSession"/>'s Players, which the SDK has already updated.
+        /// </summary>
+        bool ConsumeRosterChanged();
+
+        /// <summary>
         /// The wall-clock time (via <c>Time.unscaledTime</c>) when the current
         /// session was created.  Used to enforce the grace period that prevents
         /// premature RefreshAsync failures from nulling a freshly-provisioned session.

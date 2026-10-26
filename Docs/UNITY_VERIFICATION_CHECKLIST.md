@@ -3672,6 +3672,28 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Party: Block 5 steps 1-4 - voided reads counted, publish independent of the read, rejoin keeps the party, party session push (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2, ported from August's `Ys-rescue-2026-08-24`):
+`HostConnectionService.RefreshAsync` reads in its own `try`; a benign (stale-index) read is counted
+(`UgsRequestCounter.Benign`) and the party sync and our publish still run. The party-session read's benign fault
+is counted and still syncs from `ISession.Players`. `ApplyPostLobbyJoinState` clears the roster only with no live
+party session; `SeedLocalPlayer` is idempotent. `PartySessionService` subscribes `PlayerJoined` / `PlayerHasLeft` /
+`PlayerPropertiesChanged` (flag only); `Update` drains it into `SyncPartyRosterFromPushAsync` (counted as
+`PartyRosterPush`). `net_logs.py show` prints `voided N` and `pushes N`. Amoebius's `ISession` gained the three
+events (`6757fc61d9`, Port only).
+**Verified without the editor:** `PartyPushAndVoidedReadTests` (8; each of the three fixes reverted fails its test)
+and the full edit-mode suite on Amoebius 635/639 (the 4 known SceneTransitionManager / AppManagerBootstrap
+failures); Port tests 105/105; `net_logs.py --self-test`; `unity_refcompile` player OK, editor only the 3 standing
+errors. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 8 `PartyPushAndVoidedReadTests` pass in the Test Runner (they use `DispatchProxy` for stand-in sessions).
+2. Two MPPM players: P2 accepts P1's invite. P1's arcade lobby shows P2 within about a second (before, up to one
+   refresh tick, 1.5-6 s). After Play, `net_logs.py show 1` prints `pushes N` (N > 0) for both.
+3. In a party, pause the editor 12 s (the presence lobby may rejoin when you resume): the party roster stays,
+   with no blanked slots and no second copy of yourself.
+4. Ten minutes in a party: `voided N` on the summary line is the stale-index baseline the later steps are judged by.
+
 ### 🔴 Party: B31 addendum - a lobby write's read is retried on a 429 (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B31, "First retest"): `LobbyPropertyWriter.WriteAsync` runs its read

@@ -42,6 +42,8 @@ namespace CosmicShore.Utility
         PresenceForceReset = 12,
         /// <summary>Boot gave up on the networked menu and started the offline local host.</summary>
         OfflineFallback    = 13,
+        /// <summary>The party session pushed a roster change and the party layer synced from it without a read (Block 5).</summary>
+        PartyRosterPush    = 14,
     }
 
     public static class UgsRequestTelemetry

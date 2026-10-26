@@ -337,6 +337,7 @@ namespace CosmicShore.Tests
             public event Action<string> PlayerLeaving;
 #pragma warning restore CS0067
             public float CreatedAtUnscaledTime => 0f;
+            public bool ConsumeRosterChanged() => false;
             public UniTask CreateAsync(int maxPlayers) { CreateCalls++; return UniTask.CompletedTask; }
             public UniTask JoinByIdAsync(string sessionId) => UniTask.CompletedTask;
             public UniTask JoinByIdAsync(string sessionId, bool asSpectator) => UniTask.CompletedTask;

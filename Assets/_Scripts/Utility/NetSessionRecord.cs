@@ -54,6 +54,9 @@ namespace CosmicShore.Utility
         public long rateLimited, transient, benign, conflict, full, gone, fatal;
         public long presenceForceReset, offlineFallback;
 
+        /// <summary>Roster syncs the party session's push drove (Block 5); 0 in a party means the push never fired.</summary>
+        public long partyRosterPush;
+
         /// <summary>Lobby reads per second across the whole session - the number §6.4 thresholds.</summary>
         public float lobbyReadsPerSecond;
     }
