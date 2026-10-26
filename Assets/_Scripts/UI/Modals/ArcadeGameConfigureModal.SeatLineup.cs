@@ -47,7 +47,7 @@ namespace CosmicShore.UI
             ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
             var dataService = PlayerDataService.Instance;
             bool editable = !_weeklyChallengeLocked && !_localPlayerReady;
-            // Rev 25 (section 78): every pilot stands on the hull they fly, and where the card's hulls are picked a
+            // Rev 25 (section 79): every pilot stands on the hull they fly, and where the card's hulls are picked a
             // press on a seat points the shared vessel strip at it - the seat rows' hull taps, drawn on the lineup.
             bool picker = AllyHullPickerAvailable && _activePanel is ArenaLaunchPanel;
             var humanDomains = HumanDomains();

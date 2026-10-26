@@ -131,10 +131,11 @@ QUADFISH_PALETTE = ["4053ff006892420d8ca5efa51365570c", "5697aa8685514f2ca9b9de9
 PRISM_FILEID = 4563009547826722997
 MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
-# The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
-# and 60), and moving it moves the whole progress ladder. Kept in sync with
-# EndConditionOverridesSO.DefaultDogFightPointTarget.
-DOGFIGHT_POINT_TARGET = 90
+# The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 10
+# and 20), and moving it moves the whole progress ladder. Kept in sync with
+# EndConditionOverridesSO.DefaultDogFightPointTarget. 90 until 2026-10-26: no playtest reached it
+# inside 63-180 s, so it was cut to 40 to land an experienced match near 90 s.
+DOGFIGHT_POINT_TARGET = 40
 
 # The price list, and it is a ladder of PROXIMITY. One rocket reaches a pilot through three
 # concentric radii - warhead shockwave (25x the round's hit radius), prism blast (the conic
@@ -163,7 +164,10 @@ MISSILE_DIRECT_POINTS = 30
 # All four elements rise together. That is the platform law (CLAUDE.md / ElementalComebackSystem:
 # "ALL FOUR elements rise EQUALLY... equal-elements is the law"), so the dial below is the whole
 # tuning surface; a Mass-only weighting would be a fundamentals change, not a mode setting.
-COMEBACK_RATE = 0.12
+#
+# 0.27 since the target went 90 -> 40 (2026-10-26): it keeps the 2.7 levels a quarter-of-target
+# deficit bought at 0.12 x 90, rather than letting the cut silently halve the comeback.
+COMEBACK_RATE = 0.27
 
 # Players spawn on a shell OUTSIDE the wreck field (radius 520) and inside the membrane (1200),
 # so every pilot's opening move is to fly in. The cell has no nucleus, so the ring has nothing

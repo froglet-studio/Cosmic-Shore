@@ -30,7 +30,7 @@ namespace CosmicShore.UI
     /// pattern, on its own axis), with the game camera's post-processing adopted so emissive hull
     /// materials tonemap the way they do in play.</para>
     ///
-    /// <para><b>The player holds the model</b> (Docs/MENU_REDESIGN_B.md section 82; Shombith, 2026-10-26: "give the user
+    /// <para><b>The player holds the model</b> (Docs/MENU_REDESIGN_B.md section 83; Shombith, 2026-10-26: "give the user
     /// all axis we can rotate zoom in zoom out and everything"): a drag turns it on any axis (about the view's up and
     /// right), Shift-drag, a two-finger twist or Y with the right stick rolls it, the wheel, a pinch or Y with the right
     /// stick zooms, a right / middle drag or two fingers move it, and a double-click, double-tap or a right-stick press

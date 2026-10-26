@@ -163,7 +163,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ── What load this was ──────────────────────────
         public string trigger;             // what started the recording
-        public string loadKind = "launch"; // "launch" (into a game or a cell swap) or "menuReturn" (back to the menu, B36)
+        public string loadKind = "launch"; // "launch" (into a game or a cell swap), "menuReturn" (back to the menu, B36) or "boot" (the boot's load of the menu)
         public string completionReason;    // "Playable (turn started)", "Aborted: …", "Timeout", …
         public bool interrupted;           // recovered from an in-flight snapshot (app died mid-load)
         public string sceneFrom;

@@ -44,6 +44,7 @@ that the script re-emits the documents it owns and validates the wiring AS COMMI
 
 import argparse
 import hashlib
+import math
 import importlib.util
 import os
 import re
@@ -1007,7 +1008,8 @@ def sweep_node():
     return n
 
 
-AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3))   # AIDifficulty (Assets/_Scripts/Data), easiest first
+# AIDifficulty (Assets/_Scripts/Data), easiest first; Legendary is the AI with no deliberate mistakes (2026-10-26)
+AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3), ("Legendary", 4))
 AI_BTN_H = 52
 AI_ROW_GAP = 8            # between the domain columns and the AI row (ConfigurePilotsFit keeps it as the columns grow)
 
@@ -1030,10 +1032,11 @@ def ai_row(card, inner, top, compact_x=None):
         label(row.child(N("AIRow/Caption", "Caption", TL(0, 0, 200, 18))), "AI pilots", "Label", "TextLight")
         label(row.child(N("AIRow/Hint", "Hint", TR(0, 0, inner - 210, 18))), "How hard the AI races. The host picks.",
               "BodySmall", "NeutralLightest", align="right")
+    wide = (inner - (len(AI_LEVELS) - 1) * COL_GAP) / len(AI_LEVELS)   # the Rev 4 row: equal plates across the column
     for i, (name, _) in enumerate(AI_LEVELS):
         key = f"AIRow/{name}"
-        opt = row.child(N(key, name, TL(40 + i * (AIC_BTN_W + 6), 0, AIC_BTN_W, G_ACT_H) if compact
-                          else TL(i * (COL_W + COL_GAP), 30, COL_W, AI_BTN_H)))
+        opt = row.child(N(key, name, TL(aic_btn_x(i), 0, aic_btn_w(name), G_ACT_H) if compact
+                          else TL(round(i * (wide + COL_GAP), 2), 30, round(wide, 2), AI_BTN_H)))
         plate = opt.child(N(f"{key}/Plate", "Plate", STRETCH))
         plate.add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver10_line1"), True, raycast=True))
@@ -1132,7 +1135,7 @@ def steps_row(chrome, kind):
 # lovely. But remove the invite a friend button and remove the hold to launch"): the right column is the controls at
 # the top, then ONE card - intensity turned with LB / RB, the pilots as a lineup of pedestals with ADD AI PILOT under
 # them - and START full width at the foot.
-# Rev 25 B (section 78; Shombith 2026-10-26: "Go with B and the signal sign ... the open panel that we used in the
+# Rev 25 B (section 79; Shombith 2026-10-26: "Go with B and the signal sign ... the open panel that we used in the
 # hangar use it here too" and "You can make the space bigger I guess bro, its too noisy if you cramp stuff up"): the
 # Arena window (and so every voyage) takes the same card with six pedestals and the vessel strip for the pressed seat;
 # intensity is a signal sign (bars rising to the level, no number); the card is the Hangar's open angled border; and
@@ -1149,7 +1152,7 @@ G_KINDS = ("arcade", "arena")
 # can make the detail view bigger also see texts are overlapping with images"): the preview is 1100 x 620 again and the
 # right column 680; the controls are one compact panel and the card takes the rest of the column.
 G_SET_X, G_SET_W = SET_X, SET_W
-G_CTRL_H = 144                                       # the hull's name and two rows of two controls (section 83)
+G_CTRL_H = 144                                       # the hull's name and two rows of two controls (section 84)
 G_GAP = 14
 G_START_H = 80
 G_START_TOP = BOTTOM - G_START_H
@@ -1167,8 +1170,20 @@ BAR_W, BAR_SLOT, BAR_H0, BAR_STEP = 12, 18, 8, 6       # the signal sign: bars 1
 G_SEATS = {"arcade": 4, "arena": 6}                  # MaxMatchSeats / MaxArenaSeats (ArcadeGameConfigureModal)
 PED_GAP = {"arcade": 10, "arena": 6}
 G_ACT_H = 44
-AIC_BTN_W = 84
-AIC_W = 40 + 3 * AIC_BTN_W + 2 * 6
+AIC_GAP, AIC_PAD, AIC_MIN = 6, 20, 56   # the compact AI row: gap between plates, a plate's padding round its word, its least width
+ADD_AI_W = 200          # leaves room for the four AI plates (Legendary is the widest) on the card's 602 inner width
+
+
+def aic_btn_w(name):
+    """A compact AI plate is as wide as its word needs (Legendary is twice Easy), never under AIC_MIN."""
+    return max(AIC_MIN, math.ceil(K.label_width(name, "Label")) + AIC_PAD)
+
+
+def aic_btn_x(i):
+    return 40 + sum(aic_btn_w(n) + AIC_GAP for n, _ in AI_LEVELS[:i])
+
+
+AIC_W = aic_btn_x(len(AI_LEVELS) - 1) + aic_btn_w(AI_LEVELS[-1][0])
 STRIP_HEAD = 38                                      # the vessel strip's caption row: caption, the hull's name, CLAIM / CHANGE
 STRIP_SLOTS = 6                                      # hull tiles on the strip; the < > arrows slide it over more hulls
 G_STRIP_H = STRIP_HEAD + HULL_H
@@ -1451,8 +1466,8 @@ def g_pilots(cfg, y, kind):
            f"  aiProfiles: {K.ref(11400000, AI_PROFILES, 2)}\n"
            "  aiName: AI pilot\n  hostLine: Host\n  youLine: You\n  pilotLine: \n"
            "  aiDifficultyLine: '{difficulty} AI'\n  aiLine: AI\n"
-           "  difficultyNames:\n  - Easy\n  - Medium\n  - Hard\n"
-           "  openName: Open\n  seatLine: Seat {n}\n"
+           "  difficultyNames:\n" + "".join(f"  - {n}\n" for n, _ in AI_LEVELS)
+           + "  openName: Open\n  seatLine: Seat {n}\n"
            "  teamNames:\n  - Jade\n  - Ruby\n  - Gold\n"))
     return sec
 
@@ -1460,7 +1475,8 @@ def g_pilots(cfg, y, kind):
 def g_actions(cfg, y):
     """ADD AI PILOT (gamepad X) and, beside it, how hard the AI flies (Rev 7: on every card, unlocked where the mode's
     AI reads it)."""
-    act = cfg.child(N("AddAi", "AddAi", TL(G_PAD_L, y, 250, G_ACT_H)))
+    act = cfg.child(N("AddAi", "AddAi", TL(G_PAD_L, y, ADD_AI_W, G_ACT_H)))
+    assert ADD_AI_W + 8 <= G_INNER - AIC_W, "the AI difficulty row runs into ADD AI PILOT"
     act.add("cg", 225, canvas_group(True))
     prompt_button(act, "AddAi/Button", "AddAiButton", STRETCH, "X", "ADD AI PILOT")
     ai_row(cfg, AIC_W, y, compact_x=G_PAD_L + G_INNER - AIC_W)
@@ -1469,7 +1485,7 @@ def g_actions(cfg, y):
 def chevron(parent, key, name, r, glyph):
     """A < or > that steps a strip: the glyph alone on a clear hit area, white when pointed at, the selection blue when
     focused (a ColorTint on the glyph). Fixed size - a KitButton sizes itself to its label and spilled over the strip's
-    end tiles (section 82)."""
+    end tiles (section 83)."""
     n = parent.child(N(key, name, r))
     n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
     label(n.child(N(f"{key}/Glyph", "Glyph", STRETCH)), glyph, "Body", "TextLight", align="center")
@@ -1489,8 +1505,8 @@ def chevron(parent, key, name, r, glyph):
 def g_vessel(cfg, y):
     """Rev 25 B: the card's hulls for the pressed seat - your own, or an AI's you may pick for - under the lineup. The
     caption row names whose hull it is ("Your vessel", ArenaLaunchPanel), the hull, and holds CLAIM - or, once claimed,
-    CHANGE, which takes the claim back (section 82: "claim needs a change button"); under it < the hull icons > across
-    the card's width. Quiet (section 82, "a bit noisy"): no rule, no names on the tiles, an outline only on the pick."""
+    CHANGE, which takes the claim back (section 83: "claim needs a change button"); under it < the hull icons > across
+    the card's width. Quiet (section 83, "a bit noisy"): no rule, no names on the tiles, an outline only on the pick."""
     sec = cfg.child(N("Step1", "Step1", TL(G_PAD_L, y, G_INNER, G_STRIP_H)))
     sec.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=3))
     (cw, bh), (gw, _) = K.button_size("CLAIM", small=True), K.button_size("CHANGE", small=True)
@@ -2507,7 +2523,7 @@ def validate_prefabs(files):
         V = K.FileIds(view)
         # The settings column fits its tallest domain column (ConfigurePilotsFit): without it a second pilot in a
         # domain runs into the AI row and a third sits behind its buttons.
-        # Rev 20 G (section 74) and Rev 25 (section 78): the Arcade and Arena windows have no Pilots column to fit -
+        # Rev 20 G (section 74) and Rev 25 (section 79): the Arcade and Arena windows have no Pilots column to fit -
         # their pilots are the pedestal lineup and their domain columns a hidden seat book - so the fit lives on the
         # Maelstrom view only.
         if kind in G_KINDS:
@@ -2545,8 +2561,8 @@ def validate_prefabs(files):
             # 2026-10-15) and, since 2026-10-16, every Arena card's.
             wired(text, body, "aiDifficultyPicker", S["aipicker"], view)
             _, pick = comp_doc(text, V("AIRow#picker"))
-            assert pick.count("  - Difficulty: ") == 3 and "Button: {fileID: 0}" not in pick, \
-                f"{view}: the AI difficulty row needs Easy, Medium and Hard, each with its button"
+            assert pick.count("  - Difficulty: ") == len(AI_LEVELS) and "Button: {fileID: 0}" not in pick, \
+                f"{view}: the AI difficulty row needs Easy, Medium, Hard and Legendary, each with its button"
         doms = []
         for d, _ in DOMAINS:
             m = re.search(r"target: \{fileID: (\d+), guid: " + asset_guid("ConfigureDomainColumn") +
@@ -2568,7 +2584,7 @@ def validate_prefabs(files):
             wired(text, body, "selectVesselButton", S["button"], view)
             wired(text, body, "changeVesselButton", S["button"], view)
             # The < > arrows step the shared vessel panel (and slide the strip past its seventh tile). Plain uGUI buttons
-            # of a fixed size: a KitButton fits itself to its label and spilled over the end tiles (section 82).
+            # of a fixed size: a KitButton fits itself to its label and spilled over the end tiles (section 83).
             wired(text, body, "prevButton", A.BUTTON, view)
             wired(text, body, "nextButton", A.BUTTON, view)
             for arrow in ("PrevVesselButton", "NextVesselButton"):
@@ -2781,7 +2797,7 @@ def self_test(files):
          validate_prefabs),
         ("a pilots fit on the Arena view, moving START to fit the hidden seat book", lambda f: f.__setitem__(arena,
             f[arena] + f"  m_Script: {{fileID: 11500000, guid: {S['fit']}, type: 3}}\n"), validate_prefabs),
-        # Rev 25 (section 78), as approved.
+        # Rev 25 (section 79), as approved.
         ("the Arena lineup back to four pedestals", lambda f: f.__setitem__(arena, re.sub(
             r"(  pedestals:\n(?:  - \{fileID: -?\d+\}\n){4})(?:  - \{fileID: -?\d+\}\n){2}", r"\1", f[arena], count=1)),
          validate_prefabs),

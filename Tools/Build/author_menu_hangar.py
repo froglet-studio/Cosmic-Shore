@@ -368,7 +368,7 @@ ORB_TOP = 44 + 92 + 14          # author_menu_arcade.ORB_Y + ORB_SIZE, plus air:
 LIST_BOTTOM = ORB_TOP / CONTENT_SCALE    # the vessel list stops above the orb (content units)
 DOSSIER_W, DOSSIER_TOP = 710, 66
 DOSSIER_H = CONTENT_H - DOSSIER_TOP - 40    # author_ui_kit_sprites.CRADLE_W / _H: the open cradle's fill
-CENTRE_L, CENTRE_R = SIDE + LIST_W + 44, SIDE + DOSSIER_W + 30   # section 82: the list header and the kicker apart
+CENTRE_L, CENTRE_R = SIDE + LIST_W + 44, SIDE + DOSSIER_W + 30   # section 83: the list header and the kicker apart
 HEADER_TOP, CENTRE_TOP, BOTTOM = 16, 164, 40
 PAD = 30                                    # the dossier's content inset
 PAD_R = 60                                  # a page's right inset: clears the right side leaning in to the floor
@@ -1479,7 +1479,7 @@ def validate_prefabs(files, guids):
     # survives (no forward to a preview, no window over the stage, no hint, no bare-arena asset on disk).
     for field in ("keyPressSeconds", "keyPressScale"):
         assert f"\n  {field}: " in abil, f"the Abilities page has no press field {field}"
-    assert "demoStepSeconds" not in abil, "the Abilities page plays on its own again (the AI demo is retired, section 83)"
+    assert "demoStepSeconds" not in abil, "the Abilities page plays on its own again (the AI demo is retired, section 84)"
     for name, _ in ELEMENTS:
         k = f"Tabs/Abilities/{name}"
         _, btn = doc_of(view, hv(f"{k}#button"))

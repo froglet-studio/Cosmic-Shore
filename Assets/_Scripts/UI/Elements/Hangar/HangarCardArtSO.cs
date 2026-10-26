@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Hangar vessel list's own card art (Docs/MENU_REDESIGN_B.md section 81; Shombith, 2026-10-26: "Go ahead with the
+    /// The Hangar vessel list's own card art (Docs/MENU_REDESIGN_B.md section 82; Shombith, 2026-10-26: "Go ahead with the
     /// colourful card renders"): each hull's three-quarter view in its model's slot colours, cut from the vessel-model
     /// contact sheets by <c>Tools/Build/author_hangar_card_art.py</c>. Only the Hangar's list reads it; every other screen
     /// keeps <see cref="SO_Vessel.IconActive"/>, the fleet's card art in its colour scheme (Docs/VesselModels/COLOR.md).

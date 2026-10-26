@@ -16,7 +16,7 @@ namespace CosmicShore.UI
     /// move is the ability's own kind (shot, boost, build, sense...), read from its name and description by
     /// <see cref="HangarAbilityKinds"/> (Docs/MENU_REDESIGN_B.md section 46).
     ///
-    /// <para><b>A press plays it, and nothing else does</b> (Docs/MENU_REDESIGN_B.md section 83; Shombith, 2026-10-26:
+    /// <para><b>A press plays it, and nothing else does</b> (Docs/MENU_REDESIGN_B.md section 84; Shombith, 2026-10-26:
     /// "Abilities when I click them then only the vessel should perform"). Each row is a button: a click, a tap or A on
     /// the focused row performs that ability. Nothing plays on its own any more (the AI demo of section 66 is gone), and
     /// the game's own controls still do nothing here - LT / RT page the screens, LB / RB step the tabs (section 63:
@@ -36,7 +36,7 @@ namespace CosmicShore.UI
         public class Row
         {
             public Element element = Element.Charge;
-            [Tooltip("The row's button: a press performs the ability on the stage (section 83); an open slot draws it disabled.")]
+            [Tooltip("The row's button: a press performs the ability on the stage (section 84); an open slot draws it disabled.")]
             public KitButton button;
             public Image icon;
             public TMP_Text nameText;

@@ -267,7 +267,11 @@ i3/i4   arena  720  <  AI station  936 ( 720 × 1.3)  <  spawn ring 1050  <  mem
   orbits from within forever — the "the AI just stays inside" defect, twice.
 - The scene's `spawnRingRadiusFloorByIntensity` puts players outside all of it (this cell has **no
   nucleus**, so the computed ring would otherwise collapse to the cell centre).
-- Each intensity's `CellConfigDataSO` names its own `MembranePrefab`.
+- Each intensity's `CellConfigDataSO` names its own `MembranePrefab`, and the two rungs on the
+  3,600 shell also set `CytoplasmShardDistance` 360 (120 × 3). `SnowChanger` fills the whole
+  membrane sphere at one shard per spacing³, so the 3,600 shell at the prefab's 120 built
+  ~113,000 shards, 27× the ~4,189 of a 1,200 cell (fixed 2026-10-26; the generator derives it
+  from `cleave_budget.MEMBRANE_RADIUS`).
 
 **It became a TABLE rather than one number the moment the rungs stopped being one size**, and each
 of those three consumers is why: one shared radius across a 2,160-vs-720 spread either parks every

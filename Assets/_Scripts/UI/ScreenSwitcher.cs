@@ -29,7 +29,7 @@ namespace CosmicShore.UI
             HANGAR = 4,
             PROFILE = 5,
             // The bestiary of elements, ethirions and ecology (Docs/CODEX.md's data). Its tab is first and LOCKED, like
-            // PORT (Docs/MENU_REDESIGN_B.md section 83); it has no screen panel yet.
+            // PORT (Docs/MENU_REDESIGN_B.md section 84); it has no screen panel yet.
             CODEX = 6,
         }
 
@@ -107,6 +107,11 @@ namespace CosmicShore.UI
             // It also has to stay reachable if a second entry point (a home-hub tile) is ever
             // added. Shipping without it breaches FMOD's EULA clause 3 - see CreditsModal.
             CREDITS = 18,
+
+            // The replay browser (Docs/REPLAYS.md). Opened from the Arcade window's header, so its
+            // own modal TYPE: gamepad B out of it lands back on the Arcade. Not a hub window, so the
+            // triggers do not slide it, and not in the browser Toybox (replays need a device folder).
+            REPLAYS = 19,
         }
 
         [System.Serializable]

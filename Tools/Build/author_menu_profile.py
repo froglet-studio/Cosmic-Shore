@@ -97,6 +97,8 @@ VESSEL_PITCH, VESSEL_ROW_H = 33, 30         # Rev 13: eight rows in the 326-tall
 STUDIO_PITCH, STUDIO_ROW_H = 46, 40         # Rev 13: nine track rows in the 664-tall Audio Studio column
 FAV_STATS = (("Games", "Games"), ("Drift", "Best drift"), ("Boost", "Best boost"), ("Prisms", "Prisms broken"))
 PAD_B, PAD_LB, PAD_RB = 5, 10, 11            # UnityEngine.InputSystem.LowLevel.GamepadButton
+REPLAYS_MODAL = 19                           # ScreenSwitcher.ModalWindows.REPLAYS - My Replays (author_menu_replays.py)
+OPEN_MODAL = C.script("OpenModalButton")
 SLIDER = "67db9e8f0e2ae9c40bc1e2b64352a6b4"
 PACKAGE = C.PACKAGE | {SLIDER}
 C.STUB_KIND.update({"track": (114, S["track"]), "slider": (114, SLIDER), "screen": (114, S["screen"])})
@@ -334,6 +336,14 @@ def build_view():
     label(head.child(N("Header/Title", "Title", TL(0, 24, 600, 40))), "Your pilot", "H2", "TextLight")
     w, h = K.button_size("BACK", small=True)
     root.children.append(pad_button("Back", "BackButton", "Default", "BACK", TR(40, 108, w, h), PAD_B, "Record"))
+    # My Replays (Yash, 2026-10-26: "inside profiles should have my replay area where I can choose the last 10
+    # games"): left of BACK, opening ModalWindows.REPLAYS through OpenModalButton - the window names the player's
+    # last games and plays one inside its arena (Docs/REPLAYS.md section 6).
+    rw, rh = K.button_size("MY REPLAYS", small=True)
+    root.children.append(Inst("Replays", "KitButtonSmall", "ReplaysButton", TR(40 + w + 12, 108, rw, rh),
+                              K.button_mods("KitButtonSmall", "Default", False, "MY REPLAYS", small=True),
+                              added=[("open", 114, lambda ctx, go: mono(go, OPEN_MODAL,
+                                      f"  target: {REPLAYS_MODAL}\n  screenSwitcher: {{fileID: 0}}\n"))]))
 
     card = root.child(N("Pilot", "Pilot", R((0, 1), (1, 1), (0, -PILOT_Y), (-80, PILOT_H), (0.5, 1))))
     card.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
@@ -1032,6 +1042,9 @@ def validate(files):
             continue
         A.check_file(path, text, guids, minted)
         check_sources(path, text, files)
+    _, opener = A.doc_of(files[prefab_path("ProfileView")], K.FileIds("ProfileView")("Replays#open"))
+    assert opener and OPEN_MODAL in opener and f"  target: {REPLAYS_MODAL}\n" in opener, \
+        "ProfileView: MY REPLAYS must open ModalWindows.REPLAYS (19) through OpenModalButton"
     card = files[prefab_path("QuestCard")]
     _, body = A.doc_of(card, K.FileIds("QuestCard")("root#card"))
     assert body and S["card"] in body, "QuestCard: the root carries no KitQuestCard"
@@ -1164,6 +1177,8 @@ def self_test(files):
         ("the pilot record ships shown", lambda f: f.__setitem__(prefab_path("ProfileView"), _show(f[prefab_path("ProfileView")], "Record#cg"))),
         ("the Audio Studio's skip unwired", lambda f: f.__setitem__(prefab_path("ProfileView"),
             re.sub(r"(  skipButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("ProfileView")]))),
+        ("MY REPLAYS opening the wrong window", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")].replace(f"  target: {REPLAYS_MODAL}\n", "  target: 18\n", 1))),
         ("the profile without its sea lines", lambda f: f.__setitem__(prefab_path("ProfileView"),
             f[prefab_path("ProfileView")].replace(M.SEA_WINDOW_MAT, "0" * 32))),
         ("the Episodes card back on the Profile", lambda f: f.__setitem__(prefab_path("ProfileView"),

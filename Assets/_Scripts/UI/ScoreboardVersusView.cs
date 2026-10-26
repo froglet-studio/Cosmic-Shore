@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The scoreboard's Rev 23 D "team versus" layout (Docs/MENU_REDESIGN_B.md §76; Shombith, 2026-10-26: "For scoreboard
+    /// The scoreboard's Rev 23 D "team versus" layout (Docs/MENU_REDESIGN_B.md §77; Shombith, 2026-10-26: "For scoreboard
     /// I liked D"): two teams face each other - the winner on the left - each with its name in its colour, WINNER under
     /// the winning one, its score, and its pilots below; a bar across the top splits the count the teams shared (the
     /// crystals in a Skim Race), and VS sits between them.

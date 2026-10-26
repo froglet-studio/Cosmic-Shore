@@ -294,6 +294,12 @@ its GameObject lists it in `m_Component`.
   them**: `variantFileID = baseFileID XOR prefabInstanceFileID` (unsigned 64-bit,
   the instance being the variant's own `!u!1001` anchor). This is why a sweep for
   "modifications targeting component X" silently misses every prefab variant.
+  **The XOR is a fallback, not a law: read the stripped stub first.** Measured 2026-10-26 over every
+  `stripped` document under `Assets/` (`--- !u!N &ID stripped` with its `m_CorrespondingSourceObject`
+  and `m_PrefabInstance`): 1,176 of 1,726 satisfy `(instance ^ source) & INT64_MAX`, and **550 do not**
+  (GameCanvas, ArcadeGameConfigureModal, KitPopup, ButterflyHUDVariant among them). So where a stub
+  exists, its own `&ID` is the variant-side fileID; compute the XOR only when no stub was written
+  (`Tools/Build/check_cytoplasm_shards.py` `Prefabs._resolve` does it in that order).
   Either compute the XOR, or — better — let Unity resolve it:
   `AssetDatabase.LoadAllAssetsAtPath` + `TryGetGUIDAndLocalFileIdentifier` gives a
   fileID→object map per prefab that covers base and variant alike, so you can ask

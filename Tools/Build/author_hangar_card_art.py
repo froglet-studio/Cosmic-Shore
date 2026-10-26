@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Author the HANGAR VESSEL LIST'S CARD ART (Docs/MENU_REDESIGN_B.md section 81; Shombith, 2026-10-26: "Go ahead with the
+Author the HANGAR VESSEL LIST'S CARD ART (Docs/MENU_REDESIGN_B.md section 82; Shombith, 2026-10-26: "Go ahead with the
 colourful card renders").
 
 Each hull's three-quarter ("front3/4") view, in its model's slot colours, cut from the vessel-model contact sheet that

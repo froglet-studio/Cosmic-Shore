@@ -49,6 +49,10 @@ DETECTION = dict(pressThreshold=0.5, releaseThreshold=0.2, comboWindowSeconds=0.
                  tapMaxHoldSeconds=0.3, chordWindowSeconds=0.08, finisherLockoutFraction=0.7,
                  blendInSeconds=0.06, blendOutSeconds=0.18)
 
+# The combo-name toast (the game's toast container, top right under Settings). {name} is the
+# flourish's displayName; empty shows nothing.
+COMBO_TOAST_TEMPLATE = "{name}"
+
 SEQUENCES = ["RR", "LL", "RL", "LR", "RRR", "LLL", "RLR", "LRL", "RRL", "LLR", "RLL", "LRR"]
 
 # Gates
@@ -480,6 +484,7 @@ def emit_library():
     for k in ["pressThreshold", "releaseThreshold", "comboWindowSeconds", "tapMaxHoldSeconds",
               "chordWindowSeconds", "finisherLockoutFraction", "blendInSeconds", "blendOutSeconds"]:
         out.append(f"  {k}: {num(DETECTION[k])}\n")
+    out.append(f"  comboToastTemplate: '{COMBO_TOAST_TEMPLATE}'\n")
     out.append("  combos:\n")
     for energized, lib in ((0, BASE), (1, ENERGIZED)):
         for seq in SEQUENCES:

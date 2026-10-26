@@ -54,6 +54,7 @@ python3 Tools/Build/icon_kit/verify.py --self-test        # the gates prove they
 python3 Tools/Build/icon_kit/verify.py <pngs>             # measure ANY icon, hand-drawn included
 python3 Tools/Build/icon_kit/mesh_silhouette.py "<fbx>" --out <sheet.png> [--mirror] [--take "<stack>"]   # the lettered view grid of a hull
 python3 Tools/Build/icon_kit/mesh_pose.py "<fbx>" --takes | --check   # a hull's authored takes; prove the offline skin on the file
+python3 Tools/Build/icon_kit/toy_portraits.py [--preview | --check]   # the Toy Box / codex Tool portraits (LESSONS 40)
 ```
 
 Every run also draws each card's STATES sheet from the spec's `CARDS` (`states.py`: the card before and after, in every

@@ -9,10 +9,12 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Owns the Stoat's two MODES (tuning: <see cref="StoatModeActionSO"/>, design: <c>R_VesselActions/STOAT_DIPOLE.md</c>
-    /// §1a). <b>Mass mode</b> (the default): the triggers lay the field dipole (<see cref="StoatDipoleExecutor"/>) and
+    /// Owns the Stoat's three MODES (tuning: <see cref="StoatModeActionSO"/>, design: <c>R_VesselActions/STOAT_DIPOLE.md</c>
+    /// §1a, §1f). <b>Mass mode</b> (the default): the triggers lay the field dipole (<see cref="StoatDipoleExecutor"/>) and
     /// the trail is laid THICK. <b>Time mode</b>: the triggers fly the orbit slingshot (<see cref="StoatSlingExecutor"/>)
-    /// and the trail is laid at its own thickness. B switches.
+    /// and the trail is laid at its own thickness. <b>Hybrid mode</b>: Time mode's orbit with a short pathfinder line and
+    /// the pathfinder's boost carried out of a well-timed release (<see cref="StoatPathfinderExecutor"/>). B steps
+    /// Mass → Time → Hybrid → Mass.
     ///
     /// <para><b>The mode is simulated on EVERY peer</b> (the Butterfly's <see cref="SpreadWingsActionExecutor"/>
     /// shape): the press round-trips through the server like every ability press, so every machine flips together,
@@ -29,7 +31,21 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class StoatModeExecutor : ShipActionExecutorBase
     {
-        public enum Mode { Mass = 0, Time = 1 }
+        public enum Mode { Mass = 0, Time = 1, Hybrid = 2 }
+
+        const int ModeCount = 3;
+
+        /// <summary>The mode one B press steps to: Mass → Time → Hybrid → Mass.</summary>
+        public static Mode Next(Mode mode) => (Mode)(((int)mode + 1) % ModeCount);
+
+        /// <summary>How many B presses step <paramref name="from"/> to <paramref name="to"/> (0 when they match).</summary>
+        public static int PressesTo(Mode from, Mode to) => (((int)to - (int)from) % ModeCount + ModeCount) % ModeCount;
+
+        /// <summary>True for the modes whose triggers fly the orbit slingshot (Time and Hybrid).</summary>
+        public static bool FliesOrbit(Mode mode) => mode is Mode.Time or Mode.Hybrid;
+
+        /// <summary>Where the HUD's Mass card sits in each mode: full in Mass, half in Hybrid, empty in Time.</summary>
+        public static float MassCardTarget(Mode mode) => mode switch { Mode.Mass => 1f, Mode.Hybrid => 0.5f, _ => 0f };
 
         [Header("Config")]
         [Tooltip("The mode switch's numbers. Wired directly (vessel rule 20) so a missing wire shows in the inspector; " +
@@ -61,7 +77,10 @@ namespace CosmicShore.Gameplay
         public Mode Current => _mode;
         public bool IsTimeMode => _mode == Mode.Time;
         public bool IsMassMode => _mode == Mode.Mass;
-        /// <summary>Eased 1 in Mass mode, 0 in Time mode — the HUD's Mass card (a switch moving, never a meter).</summary>
+        public bool IsHybridMode => _mode == Mode.Hybrid;
+        /// <summary>True while the triggers fly the orbit slingshot (Time or Hybrid mode).</summary>
+        public bool UsesOrbit => FliesOrbit(_mode);
+        /// <summary>Eased 1 in Mass mode, 0.5 in Hybrid, 0 in Time mode — the HUD's Mass card (a switch moving, never a meter).</summary>
         public float MassMode01 => _massBlend;
         public StoatModeActionSO Config => config;
 
@@ -77,15 +96,16 @@ namespace CosmicShore.Gameplay
                                  "stays thin. Wire Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset on the prefab.");
         }
 
-        /// <summary>B: flip the mode. Runs on every peer (the press is replicated).</summary>
-        public void Toggle() => SetMode(_mode == Mode.Mass ? Mode.Time : Mode.Mass, cue: true);
+        /// <summary>B: step to the next mode (Mass → Time → Hybrid → Mass). Runs on every peer (the press is replicated).</summary>
+        public void Toggle() => SetMode(Next(_mode), cue: true);
 
         void SetMode(Mode mode, bool cue)
         {
             if (mode == _mode) return;
             ReleaseTriggers();
             _mode = mode;
-            if (cue && config) PlayOneShot(mode == Mode.Mass ? config.MassModeEvent : config.TimeModeEvent);
+            if (cue && config)
+                PlayOneShot(mode switch { Mode.Mass => config.MassModeEvent, Mode.Time => config.TimeModeEvent, _ => config.HybridModeEvent });
         }
 
         /// <summary>Whatever the triggers hold under the old mode is let go: a pair is never stranded.</summary>
@@ -110,7 +130,7 @@ namespace CosmicShore.Gameplay
             // the same time as a Mass-0 one.
             float span = Mathf.Max(1f, Mathf.Abs(target - 1f));
             _thickness = Mathf.MoveTowards(_thickness, target, span * dt / config.BlendSeconds);
-            _massBlend = Mathf.MoveTowards(_massBlend, _mode == Mode.Mass ? 1f : 0f, dt / config.BlendSeconds);
+            _massBlend = Mathf.MoveTowards(_massBlend, MassCardTarget(_mode), dt / config.BlendSeconds);
             prisms.ThicknessMultiplier = _thickness;
             prisms.ForceShielded = _mode == Mode.Mass && config.ShieldsInMassMode(_status);
 
@@ -120,7 +140,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The switch an autopilot cannot press (never assume an AI can use a human's input): Time mode — the orbit, a
         /// tight turn — when its target sits far off the nose, Mass mode — the dipole, a boosted straight — once it is
-        /// back near the nose. Through the REPLICATED press, like a human's, and never while a trigger is held.
+        /// back near the nose. Through the REPLICATED press, like a human's, and never while a trigger is held. The AI never
+        /// chooses Hybrid mode (its orbit numbers were learned in Time mode); a hull left in Hybrid counts as orbiting, and
+        /// the way back to Mass is as many presses as the cycle needs, sent in one go so no peer stops in between.
         /// </summary>
         void Autopilot()
         {
@@ -138,11 +160,15 @@ namespace CosmicShore.Gameplay
             }
             var local = hull.InverseTransformPoint(ai.TargetPosition);
             float off = Vector3.Angle(Vector3.forward, local);
-            var want = off >= threshold ? Mode.Time : off <= threshold * 0.5f ? Mode.Mass : _mode;
-            if (want == _mode || !ResolveBoundInput(handler, out var ie)) return;
+            var want = off >= threshold ? (UsesOrbit ? _mode : Mode.Time) : off <= threshold * 0.5f ? Mode.Mass : _mode;
+            int presses = PressesTo(_mode, want);
+            if (presses == 0 || !ResolveBoundInput(handler, out var ie)) return;
             _aiLastSwitch = Time.time;
-            handler.PerformShipControllerActionsReplicated(ie);
-            handler.StopShipControllerActionsReplicated(ie);
+            for (int i = 0; i < presses; i++)
+            {
+                handler.PerformShipControllerActionsReplicated(ie);
+                handler.StopShipControllerActionsReplicated(ie);
+            }
         }
 
         /// <summary>Which input B is bound to on THIS vessel — retried until the binding maps have filled (rule 6).</summary>

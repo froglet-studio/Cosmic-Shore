@@ -314,7 +314,7 @@ class Ids:
                        "trigger", "availability")} for _, link, _ in TABS]
         self.keys = [{k: str(f(f"Key{a['side']}#{k}")) for k in ("inst", "stub", "stub_label_kt", "stub_border_th", "hover")}
                      for a in ARROWS]
-        # The tabs as they were keyed before section 83 (by place, 0-4) are all retired; Tab4 was PROFILE (Rev 13).
+        # The tabs as they were keyed before section 84 (by place, 0-4) are all retired; Tab4 was PROFILE (Rev 13).
         self.retired = {str(f(f"Tab{i}#{k}")) for i in range(5) for k in
                         ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "stub_lock", "stub_label",
                          "trigger", "availability")}

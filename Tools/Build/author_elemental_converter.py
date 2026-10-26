@@ -65,7 +65,7 @@ DISABLED_BEFORE, DISABLED_AFTER = "0100000003000000", "03000000"   # [ARK=1, POR
 
 
 def ark_open(switcher_doc):
-    """ARK out of disabledScreens and PORT still in it. Other screens may be locked beside PORT (CODEX, section 83 of
+    """ARK out of disabledScreens and PORT still in it. Other screens may be locked beside PORT (CODEX, section 84 of
     Docs/MENU_REDESIGN_B.md), so the list is read, not matched whole."""
     import re as _re
     m = _re.search(r"^  disabledScreens: ([0-9a-f]*)$", switcher_doc, _re.M)

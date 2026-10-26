@@ -16,7 +16,8 @@ on the "Menu Redesign B" canvas).
                                 round it), Leave, then the INVITES and ONLINE lists in one scroll
     Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/
         ArcadeGameCard.prefab   one grid card: KitGameCard (GameCard) on a KitTile
-        ArcadeView.prefab       the whole window body: nav dim, backdrop, header with Back (B), the
+        ArcadeView.prefab       the whole window body: nav dim, backdrop, header with Replays (opens the
+                                replay browser, author_menu_replays.py) and Back (B), the
                                 party panel, and the explore scroll - weekly challenge and Maelstrom
                                 feature cards, ALL GAMES, a 7 x 4 grid of cards
 
@@ -95,6 +96,7 @@ S = dict(
     runner=script("Assets/FTUE/Scripts/Graph/Runtime/QuestGraphRunner.cs"),
     gate=script("Assets/_Scripts/UI/Elements/OfflineUIGate.cs"),
     close=script("Assets/_Scripts/UI/Modals/ModalWindowCloseButton.cs"),
+    open_modal=script("Assets/_Scripts/UI/Elements/OpenModalButton.cs"),
     scroll_into=K.kit_script("KitScrollIntoView"),
     counter=K.kit_script("KitListCounter"),
     keeper=K.kit_script("KitFocusKeeper"),
@@ -115,6 +117,8 @@ VESSEL_LIST = "49c7c10ad2901c74589c28317a4eb17b"         # SO_VesselList
 AVATAR_PLACEHOLDER = "cd2f05a67ee6cb34bb6887c9ba512f83"  # the first default profile icon
 MAELSTROM_ASSET = "Assets/_SO_Assets/Games/ArcadeGameMaelstrom.asset"
 WEEKLY_PLACEHOLDER_ASSET = "Assets/_SO_Assets/Games/ArcadeGameSkimRace.asset"
+
+REPLAYS_MODAL = 19                                        # ScreenSwitcher.ModalWindows.REPLAYS (Docs/REPLAYS.md)
 
 PARTY_PREFABS = ("PartySlot", "PartyRequestRow", "PartyOnlineRow", "PartyPanel")
 ARCADE_PREFABS = ("ArcadeGameCard", "ArcadeView")
@@ -1035,10 +1039,14 @@ def feature_card(parent, key, name, art, eyebrow, eyebrow_token, title, extra=No
     return n
 
 
+def back_width():
+    return 16 + (K.label_width("B", "Label") + 24) + 10 + K.label_width("BACK", "ButtonSmall") + 16
+
+
 def back_button(parent):
     w_label = K.label_width("BACK", "ButtonSmall")
     keycap_w = K.label_width("B", "Label") + 24
-    w = 16 + keycap_w + 10 + w_label + 16
+    w = back_width()
     b = parent.child(N("Back", "Back", R((1, 0), None, (0, 0), (w, 40), (1, 0))))
     ring_node(b, "Back/FocusRing", 10)
     border, fillc, content = K.button_palette("Default", False)
@@ -1060,6 +1068,33 @@ def back_button(parent):
           f"  fillGraphic: {ref(ctx.c('Back/Fill', 'img'))}\n  borderGraphic: {ref(ctx.c('Back/Border', 'img'))}\n"
           + refs("contentGraphics", [ctx.c("Back/Label", "tmp")]) + "  playGradient: {fileID: 0}\n"))
     b.add("close", 114, lambda ctx, go: mono(go, S["close"], ""))
+    b.add("hlg", 114, K.hv_layout(False, (16, 16, 9, 9), 10, 4, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
+    return b
+
+
+def replays_button(parent):
+    """Replays, left of Back: opens the replay browser (ModalWindows.REPLAYS) through OpenModalButton, which
+    names the window by TYPE and lets the ScreenSwitcher find it (Docs/REPLAYS.md, author_menu_replays.py)."""
+    w_label = K.label_width("REPLAYS", "ButtonSmall")
+    b = parent.child(N("Replays", "Replays", R((1, 0), None, (-(back_width() + 12), 0), (16 + w_label + 16, 40), (1, 0))))
+    ring_node(b, "Replays/FocusRing", 10)
+    border, fillc, content = K.button_palette("Default", False)
+    f = b.child(N("Replays/Fill", "Fill", STRETCH))
+    f.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)).add("le", 114, le(ignore=True))
+    bd = b.child(N("Replays/Border", "Border", STRETCH))
+    bd.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)).add("le", 114, le(ignore=True))
+    lab = b.child(N("Replays/Label", "Label", R(size=(w_label, K.line_height("ButtonSmall")))))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp("REPLAYS", "ButtonSmall", content)) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("button", 114, lambda ctx, go: mono(go, S["button"],
+          K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c('Replays/Fill', 'img'))}\n" + calls([])
+          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c('Replays/FocusRing', 'img'))}\n"
+          "  variant: 0\n  fill: 0\n"
+          f"  fillGraphic: {ref(ctx.c('Replays/Fill', 'img'))}\n  borderGraphic: {ref(ctx.c('Replays/Border', 'img'))}\n"
+          + refs("contentGraphics", [ctx.c("Replays/Label", "tmp")]) + "  playGradient: {fileID: 0}\n"))
+    b.add("open", 114, lambda ctx, go: mono(go, S["open_modal"], f"  target: {REPLAYS_MODAL}\n  screenSwitcher: {{fileID: 0}}\n"))
     b.add("hlg", 114, K.hv_layout(False, (16, 16, 9, 9), 10, 4, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
     return b
 
@@ -1139,6 +1174,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
           "NeutralLightest")
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore games", "H1",
           "TextLight")
+    replays_button(header)
     back_button(header)
     return root
 
@@ -1543,6 +1579,10 @@ def validate_prefabs(files, guids):
     _, back = doc_of(view, V("Back#button"))
     assert back and doc_of(view, V("Back#close"))[0] == 114, "Back has no ModalWindowCloseButton"
     assert "m_Calls: []" in back, "Back must close through ModalWindowCloseButton, not a persistent call"
+    cls, opener = doc_of(view, V("Replays#open"))
+    assert cls == 114 and S["open_modal"] in opener, "Replays has no OpenModalButton"
+    assert f"  target: {REPLAYS_MODAL}\n" in opener, "Replays must open ModalWindows.REPLAYS (19)"
+    assert "m_Calls: []" in doc_of(view, V("Replays#button"))[1], "Replays must open through OpenModalButton, not a persistent call"
 
 
 def validate_scene(before_text, after_text, files):
@@ -1701,6 +1741,8 @@ def self_test(current, files, guids):
             s, RUNNER, f"  - {{fileID: {ids.stubs[ids.cards[-1]]}}}\n", "")),
         "the party panel back in the window": lambda: validate_scene(current, expected, dict(files, **{
             prefab_path("ArcadeView"): files[prefab_path("ArcadeView")] + f"# guid: {asset_guid('PartyPanel')}\n"})),
+        "Replays opens the wrong window": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Replays#open"), f"  target: {REPLAYS_MODAL}\n", "  target: 18\n")),
         "Back first in focus order": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("root#rt"),
             f"  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n",

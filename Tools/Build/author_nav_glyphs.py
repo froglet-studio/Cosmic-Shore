@@ -211,7 +211,7 @@ DefaultImporter:
 
 
 def codex_alpha(size=70, ss=8):
-    """The CODEX glyph (Docs/MENU_REDESIGN_B.md section 83; Shombith, 2026-10-26: "Codex ... invent an icon it will be a
+    """The CODEX glyph (Docs/MENU_REDESIGN_B.md section 84; Shombith, 2026-10-26: "Codex ... invent an icon it will be a
     beastiary or like pokedex for showing elements, ethirions and ecology"): an open book, solid like the other tabs,
     an ethirion's diamond cut out of the left page and a leaf (ecology) out of the right. Drawn, not cropped - the old
     nav had no codex art."""

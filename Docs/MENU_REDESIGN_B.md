@@ -3293,6 +3293,9 @@ Rev 4 column, section 43, and are the follow-up).
   nothing left to act on here - Shombith chose to build G from bleeding-edge and let the second merge resolve it.
 - **AI difficulty** keeps its row, compact, beside ADD AI PILOT (shown only where the card's AI reads it), and the AI
   seats name it.
+  Since 2026-10-26 the row has four plates, Easy / Medium / Hard / Legendary (`AI_LEVELS`; Docs/SKIM_RACE_AI.md
+  section 10): each compact plate is as wide as its word (`aic_btn_w`, Legendary 116 px) and the row ends 12 px clear
+  of ADD AI PILOT (asserted); the Arena's Rev 4 row splits its width four ways.
 - **START** is a full-width lime Play slab with the A prompt (`prompt_button`), pressed - no hold.
 - **`MinigameLaunchPanel`**: the controls block moves down to clear the AI difficulty row only when that row sits ABOVE
   it (the old layout); with the controls above the row (here) it stays put.
@@ -3305,8 +3308,32 @@ Rev 4 column, section 43, and are the follow-up).
 
 - **With Yash's `ConfigurePilotsFit` (bleeding-edge #1563, merged in 2026-10-26).** It grows the Rev 4 Pilots section to its tallest domain column and moves the next section and START down with it. The arcade view no longer has that section (its pilots are the pedestal lineup, its domain columns a hidden seat book), so the fit is authored on the Arena and Maelstrom views only; a fit on the arcade view would move START and the lineup to fit columns nobody sees. `author_menu_configure.py` asserts the arcade view carries none, and its self-test plants one there (Yash's two plants now target the Arena view).
 
+## 75. The replay browser, the Arcade's REPLAYS button and My Replays in the Profile (2026-10-24 / 26, awaiting Shombith's approval)
 
-## 75. Rev 24: the Hangar, option C taken forward; element flowers on the cards (2026-10-26, awaiting in-editor approval)
+Built on `claude/match-replays-5t3dbr` for match replays (`Docs/REPLAYS.md` section 6), without a board round:
+
+- **MY REPLAYS** sits left of **BACK** in the Profile header (2026-10-26, on Ys-bleeding-edge; Yash: "inside profiles
+  should have my replay area where I can choose the last 10 games"): a Default transparent KitButtonSmall like BACK,
+  carrying `OpenModalButton` (`author_menu_profile.py` `build_view`). No pad shortcut: the profile's pad buttons are
+  ControllerButtonPress with empty screen lists, so it is reached with the D-pad and A. Only its four objects were
+  spliced into `ProfileView.prefab`; the generator's pre-existing text-width drift there is left for its owner.
+- **REPLAYS** sits left of **BACK** in the Arcade header (`author_menu_arcade.py` `replays_button`), a Default
+  transparent KitButton like Back, with `OpenModalButton` opening `ModalWindows.REPLAYS = 19` by type.
+- **The window is My Replays**: "My replays" in H1 with "Your last 10 games" (BodySmall) beside it; it lists the
+  newest 10 per section (`ReplayConfigSO.ListedReplays`, and the device keeps 10).
+- **The Replays window** (`author_menu_replays.py`) is the Credits window's frame (1200 x 900, dim, brackets, H1 title,
+  Close B, thin ControlActive scrollbar) holding ON THIS DEVICE and ON YOUR OTHER DEVICES sections of framed rows (H3
+  mode, BodySmall date and length, Body result, WATCH as an opaque Play button, DELETE as Default), and an empty line.
+- **The playback HUD** is its own root canvas: a top and a bottom SurfaceBlack band at 0.72 over the replay, the
+  title in H2, a scrub bar, Data readouts, a row of ButtonSmall transport buttons (PAUSE opaque Play) and a BodySmall
+  line naming the pad controls.
+
+Every word is an authored field (section 50). The Menu_Main instance sits just before Credits under ModalWindows; the
+two generators run in either order. Change anything here through the generators (replays, profile, arcade), never in
+the scene.
+
+
+## 76. Rev 24: the Hangar, option C taken forward; element flowers on the cards (2026-10-26, awaiting in-editor approval)
 
 Shombith, 2026-10-26, on the Rev 22 C board: "bring the vessel list to the left side and keep the vessel like this and the
 text above like this. LB and RB changes the overview parts only. Now the header text can change as per the tab we are in";
@@ -3356,7 +3383,7 @@ R24Borders, R24Notes), copied into `Docs/MenuRedesignB/board/`.
   unwired, the rail missing a line, the card mounted in Menu_Main again), `gates.sh` all OK, and a rect render of the
   prefab. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 24 Hangar".
 
-## 76. The scoreboard is Rev 23 option D, team versus (built 2026-10-26, awaiting in-editor approval)
+## 77. The scoreboard is Rev 23 option D, team versus (built 2026-10-26, awaiting in-editor approval)
 
 Shombith, 2026-10-26: "For scoreboard I liked D". Board: R23ScoreD ("Rev 23 - Scoreboard", copy in
 `Docs/MenuRedesignB/board/`).
@@ -3383,7 +3410,7 @@ Shombith, 2026-10-26: "For scoreboard I liked D". Board: R23ScoreD ("Rev 23 - Sc
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Scoreboard D".
 
 
-## 77. Rev 25 boards: the Arcade card in Arena and Voyage; intensity without Roman numerals (2026-10-26)
+## 78. Rev 25 boards: the Arcade card in Arena and Voyage; intensity without Roman numerals (2026-10-26)
 
 Shombith, 2026-10-26: "the same card as in Arcade should be there in arena and voyages game configuration card selecting
 vessel and domain and AI. Send me mockups of that"; then "Also remove the roman numericals with numbers or just that
@@ -3396,9 +3423,9 @@ Tandava (one crew, `MaxDomainsAllowed: 1`) carries no team stepper. Nothing is b
 `author_menu_configure.py`; the unlock line follows). The boards show the other choice too: no number, just the four
 pips as a rising signal sign (B boards).
 
-## 78. Rev 25 B built: the Arcade card in Arena and Voyage, the signal sign, the open border, a roomier card (2026-10-26, awaiting in-editor approval)
+## 79. Rev 25 B built: the Arcade card in Arena and Voyage, the signal sign, the open border, a roomier card (2026-10-26, awaiting in-editor approval)
 
-Shombith, 2026-10-26, on the Rev 25 boards (section 77): "Go with B and the signal sign but the add AI button is going out.
+Shombith, 2026-10-26, on the Rev 25 boards (section 78): "Go with B and the signal sign but the add AI button is going out.
 Also the open panel that we used in the hangar use it here too", then "You can make the space bigger I guess bro, its too
 noisy if you cramp stuff up". Built in `author_menu_configure.py` for the Arcade window (`ConfigureView`) and the Arena
 window (`ConfigureArenaView`, which every voyage opens through `ArenaLaunchPanel.Handles`); the Maelstrom window keeps the
@@ -3432,7 +3459,7 @@ Rev 4 column and is byte-identical.
 Affects Yash's shared vessel panel (`ArenaLaunchPanel`, the hull strip and claim, #1558): its strip and claim are reused
 as they are; only where they sit moved. Editor check: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 25 configure card".
 
-## 79. The friends drawer: the people glyph, no maximise (2026-10-26)
+## 80. The friends drawer: the people glyph, no maximise (2026-10-26)
 
 Shombith, 2026-10-26: "you used elemental icon for friends you should never do that. Change this plus remove the
 maximize button from the friends panel". The drawer's title wears `chrome_people` (the leaderboard's Friends tab glyph)
@@ -3447,9 +3474,9 @@ The same mistake was on the cell-change loading screen (section 47.4): its four 
 the Mass, Time, Charge and Space glyphs. They now wear none (`EnvironmentLoadVeilContent.stepGlyphs` is empty; the veil
 already drew a step without one), and `author_load_veil_content.py` fails if an element glyph comes back.
 
-## 80. Round 2 on Rev 24 / 25: the Hangar, the arcade card, the configure card (2026-10-26, awaiting in-editor approval)
+## 81. Round 2 on Rev 24 / 25: the Hangar, the arcade card, the configure card (2026-10-26, awaiting in-editor approval)
 
-Shombith, 2026-10-26, on the editor screenshots of sections 75 and 78: "Hangar screen whole bg is too transparent. Make the bg
+Shombith, 2026-10-26, on the editor screenshots of sections 76 and 79: "Hangar screen whole bg is too transparent. Make the bg
 look like the arcade bg ... Left side vessel holders should use the open border card as well ... In the middle remove the
 hued image behind the vessel ... Vibe tab - I do not even notice it because of the transparency ... Overview, Abilities,
 Upgrades, Games, Pilots and artifacts all are on the same tab nav bars"; "The elemental icon can go on the right side and
@@ -3469,7 +3496,7 @@ not need to be that big. We can make the detail view bigger also see texts are o
 - **Colour:** the mockup's colourful hulls were crops of the artist files' clay contact sheets (`Docs/VesselModels/sheets`,
   tan body, lime engine). The fleet's card art follows `Docs/VesselModels/COLOR.md` (lime is never on a vessel; the class
   livery is neutral), so the cards show the shipped renders, lifted by `Hull_Lit`. Colourful card art is a re-render in
-  `render_cards.py` and a colour-language decision, not a UI change. (Superseded for the Hangar list by section 81.)
+  `render_cards.py` and a colour-language decision, not a UI change. (Superseded for the Hangar list by section 82.)
 
 **Arcade card** (`author_menu_arcade.py`): the genre flower moved to the body's right edge, 34 across (was 46 beside the
 hull); a two-genre card stacks two, centred, and the title takes the line between the hull and the flowers.
@@ -3488,9 +3515,9 @@ hull); a two-genre card stacks two, centred, and the title takes the line betwee
 groups, sprites, TMP text, masks) drew every changed screen, and it reports any text on an art image and any text wider
 than its box; the final renders report none. The renderer lives in the session scratchpad, not the repo.
 
-## 81. The Hangar list's colourful card art (2026-10-26, awaiting in-editor approval)
+## 82. The Hangar list's colourful card art (2026-10-26, awaiting in-editor approval)
 
-Shombith, 2026-10-26: "Go ahead with the colourful card renders" (section 80 had left the list on the fleet's card icons,
+Shombith, 2026-10-26: "Go ahead with the colourful card renders" (section 81 had left the list on the fleet's card icons,
 lifted by `Hull_Lit`).
 
 **What the list shows now:** each hull's three-quarter view in its model's slot colours (tan body, cyan glass, lime engine,
@@ -3521,7 +3548,7 @@ hull dropped from the table and a card on the wrong canvas are all caught); `aut
 (new plants: the tile without its card art, the art drawn through `Hull_Lit`); the reference compile; `gates.sh`; and an
 offline render of the tile with six hulls' art (no text on the art, no overflow).
 
-## 82. The configure card's intensity and vessel strip, the friends row's SPECTATE, the Hangar's free model view and its sizes (2026-10-26, awaiting in-editor approval)
+## 83. The configure card's intensity and vessel strip, the friends row's SPECTATE, the Hangar's free model view and its sizes (2026-10-26, awaiting in-editor approval)
 
 Shombith, 2026-10-26, on editor screenshots: "1st image (intensity): Decrease the size. 2nd image (the vessel strip): the
 left and right arrows are overlapping UIs. also claim needs a change button. This will only change in arena and voyage
@@ -3534,7 +3561,7 @@ clamped up. The whole hangar is a bit cramped. reducing the sizes a little bit m
   is 62 tall (was 86); what it gives back goes to the pilots.
 - The vessel strip (Arena and Voyage only - the Arcade card has none):
   - The arrows overlapped the end tiles because they were KitButtonSmall instances, which size themselves to their label
-    (44.5 wide in a 32 slot; the offline renderer does not run that fitter, so section 80's renders missed it). They are
+    (44.5 wide in a 32 slot; the offline renderer does not run that fitter, so section 81's renders missed it). They are
     plain fixed-size chevrons now (26 x 60, a clear hit area and the glyph; grey, white under the pointer, the selection
     blue when focused), outside the tiles; the generator asserts they fit and that the panel's arrows are plain buttons.
   - Quieter: the tiles show the hull's icon only (the caption row names the hull on show), only the pick and the
@@ -3576,7 +3603,7 @@ button's rect, the strip's arrows back to self-sizing kit buttons, CHANGE unwire
 stage that cannot zoom in, the stage's line unwired); the reference compile; offline renders of the configure cards and
 the Hangar (no text on an image, nothing past its box).
 
-## 83. Hangar abilities on a press, the Hangar drawn smaller, the list clear of the friends orb, readable controls, CODEX in the top bar (2026-10-26, awaiting in-editor approval)
+## 84. Hangar abilities on a press, the Hangar drawn smaller, the list clear of the friends orb, readable controls, CODEX in the top bar (2026-10-26, awaiting in-editor approval)
 
 Shombith, 2026-10-26: "Abilities when I click them then only the vessel should perform. Again I say in the hangar we can
 reduce the size of each component it looks too big in the game"; "See at bottom left it overlaps the friends icon";

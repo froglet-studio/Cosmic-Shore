@@ -12,7 +12,11 @@ namespace CosmicShore.Gameplay
     ///  - presses farther apart than <see cref="Settings.ComboWindowSeconds"/> never link;
     ///  - two presses closer than <see cref="Settings.ChordWindowSeconds"/> with both
     ///    triggers down are a CHORD — the energize stance — and suppress combos until both
-    ///    triggers are released.
+    ///    triggers are released;
+    ///  - so is a press while the OTHER trigger is still pulled past the press threshold, however
+    ///    late it comes (2026-10-26): that is a staggered entry into the stance (fingers 0.08-0.3 s
+    ///    apart), which used to link as RL / LR. A ROLLED tap still links - the earlier trigger is
+    ///    COMING OFF, below the press threshold, when the next one goes down.
     /// A two-letter combo is emitted immediately (no waiting to see whether a third comes),
     /// and the chain stays open so a third press within the window upgrades it into the
     /// finisher. After a finisher the chain clears.
@@ -94,11 +98,14 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            // Both pressed on one step, or one pressed within the chord window of the other
-            // while it is still down: the both-triggers stance. Never a combo.
+            // Both pressed on one step, one pressed within the chord window of the other while it is
+            // still down, or one pressed while the other is still pulled past the press threshold: the
+            // both-triggers stance (or a staggered way into it). Never a combo.
             if ((leftPress && rightPress)
-                || (leftPress && _rightHeld && now - _rightPressedAt < _settings.ChordWindowSeconds)
-                || (rightPress && _leftHeld && now - _leftPressedAt < _settings.ChordWindowSeconds))
+                || (leftPress && _rightHeld && (now - _rightPressedAt < _settings.ChordWindowSeconds
+                                                || right >= _settings.PressThreshold))
+                || (rightPress && _leftHeld && (now - _leftPressedAt < _settings.ChordWindowSeconds
+                                                || left >= _settings.PressThreshold)))
             {
                 _chainLength = 0;
                 _chordLatched = true;
@@ -115,7 +122,8 @@ namespace CosmicShore.Gameplay
             combo = default;
             if (now < _suppressUntil) return false;
 
-            // A rolled press (the other trigger still down from a tap a moment ago) links; the
+            // A rolled press (the other trigger still coming off a tap a moment ago, below the press
+            // threshold - Step has already made a press over a fully held trigger a chord) links; the
             // other trigger having been held past a tap's length means it was being held to
             // position the sword, so this press starts fresh.
             if (otherHeld && now - otherPressedAt > _settings.TapMaxHoldSeconds) _chainLength = 0;

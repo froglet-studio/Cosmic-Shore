@@ -79,8 +79,8 @@ namespace CosmicShore.UI
         [SerializeField] private string aiDifficultyLine = "{difficulty} AI";
         [Tooltip("An AI's status where the card does not offer difficulty.")]
         [SerializeField] private string aiLine = "AI";
-        [Tooltip("Easy, Medium and Hard, in that order.")]
-        [SerializeField] private string[] difficultyNames = { "Easy", "Medium", "Hard" };
+        [Tooltip("Easy, Medium, Hard and Legendary, in that order (AIDifficulty 1-4).")]
+        [SerializeField] private string[] difficultyNames = { "Easy", "Medium", "Hard", "Legendary" };
         [Tooltip("An open seat's name.")]
         [SerializeField] private string openName = "Open";
         [Tooltip("An open seat's line. {n} is its seat number.")]

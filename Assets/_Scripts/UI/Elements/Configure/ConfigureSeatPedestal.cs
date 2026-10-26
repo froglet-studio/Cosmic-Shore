@@ -12,7 +12,7 @@ namespace CosmicShore.UI
     /// light, their name, a status line and the team stepper - or, for an open seat, the + octagon that
     /// adds an AI. It draws what the lineup hands it and raises what the pilot presses; it decides nothing.
     ///
-    /// <para>Rev 25 (Docs/MENU_REDESIGN_B.md section 78): the pilot stands on the hull they fly, and on a card
+    /// <para>Rev 25 (Docs/MENU_REDESIGN_B.md section 79): the pilot stands on the hull they fly, and on a card
     /// whose hulls are picked (an Arena card, a voyage) pressing the pilot points the vessel strip under the
     /// lineup at this seat. A card with one team hides the team stepper.</para>
     /// </summary>
