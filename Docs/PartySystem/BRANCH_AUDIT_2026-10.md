@@ -39,7 +39,7 @@ this one.
 
 **Port order.** Bring the design, not the files. `UgsRequestPolicy`, `LobbyReadPacer` and the 400-line rule stay.
 
-**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-5 are done (below, each marked); steps 6-9 are next.
+**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-6 are done (below, each marked); steps 7-9 are next.
 
 1. **Done 2026-10-26.** **Count voided ticks** (44587a2fa4). The benign branch at `HostConnectionService.cs:1552` and `:2089` is
    empty, and `UgsRequestCounter.Benign` is never counted, so a voided tick looks healthy. About 5 lines;

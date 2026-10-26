@@ -184,6 +184,62 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1, UgsRequestTelemetry.Total(UgsRequestCounter.PresenceForceReset));
         }
 
+        // ── Step 6: republish the moment the roster moves ──────────────────────────────────────
+
+        [Test]
+        public void RosterMove_IsPublishedOnTheNextFrame()
+        {
+            var data = NewData();
+            var hcs = NewOnlineService(data, out int[] saves);
+            Call(hcs, "SubscribeToRosterChanges");
+
+            data.PartyMembers.Add(new PartyPlayerData("p2", "Two", 1));
+            Assert.IsTrue(GetField<bool>(hcs, "_rosterMovedSincePublish"), "a join marks the roster moved");
+
+            Call(hcs, "Update");
+
+            Assert.AreEqual(1, saves[0], "our new party size goes out now, not on the next good poll");
+            Assert.IsFalse(GetField<bool>(hcs, "_rosterMovedSincePublish"), "drained once");
+        }
+
+        [Test]
+        public void RosterCleared_IsARosterMoveToo()
+        {
+            var data = NewData();
+            data.PartyMembers.Add(new PartyPlayerData("p2", "Two", 1));
+            var hcs = NewOnlineService(data, out _);
+            Call(hcs, "SubscribeToRosterChanges");
+
+            data.PartyMembers.Clear();
+
+            // Soap's Clear raises only OnCleared (no per-item event, no count change), so the service hooks
+            // it on its own. Amoebius's ScriptableList also raises OnItemCountChanged from Clear, so there
+            // this test cannot tell a missing OnCleared hook apart; in Unity it can.
+            Assert.IsTrue(GetField<bool>(hcs, "_rosterMovedSincePublish"), "a cleared roster is a roster move");
+        }
+
+        [Test]
+        public void AfterUnsubscribe_TheRosterNoLongerReachesTheService()
+        {
+            // OnDestroy's half: the list is a project asset that outlives the service.
+            var data = NewData();
+            var hcs = NewOnlineService(data, out _);
+            Call(hcs, "SubscribeToRosterChanges");
+            Call(hcs, "UnsubscribeFromRosterChanges");
+
+            data.PartyMembers.Add(new PartyPlayerData("p2", "Two", 1));
+
+            Assert.IsFalse(GetField<bool>(hcs, "_rosterMovedSincePublish"));
+        }
+
+        HostConnectionService NewOnlineService(HostConnectionDataSO data, out int[] saves)
+        {
+            var hcs = NewService(data, new CountingLobby { Active = FakeSession.Create(out _) }, out saves);
+            SetField(hcs, "_inviteService", new InviteService());
+            GetField<PartyStateMachine>(hcs, "_stateMachine").TryTransition(PartyState.InPresenceLobby);
+            return hcs;
+        }
+
         // ── Fixtures ────────────────────────────────────────────────────────────────────────────
 
         PresenceLobbyService NewLobbyService() => new(NewData(), new LobbyPropertyWriter(null), null);

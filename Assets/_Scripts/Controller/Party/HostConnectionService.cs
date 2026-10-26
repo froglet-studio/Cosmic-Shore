@@ -206,6 +206,13 @@ namespace CosmicShore.Gameplay
         private bool   _joining;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
+
+        // Block 5 step 6: the party roster moved since our last publish. Set by PartyMembers' own change
+        // events (main thread: every mutation of that list runs there) and drained in Update, which only
+        // gets that far with the lobby mutex free. A flag, not an inline publish: the roster moves inside
+        // RefreshAsync and the member scans, which already hold the mutex the publish waits on.
+        private bool   _rosterMovedSincePublish;
+        private ScriptableListPartyPlayerData _rosterList;
         private bool   _partyLeaveSubscribed;
         private bool   _handlingDefiniteSessionGone;
         private float  _rateLimitBackoffUntil;
@@ -489,6 +496,14 @@ namespace CosmicShore.Gameplay
                 HandlePresenceMembershipLost();
                 return;
             }
+            if (_rosterMovedSincePublish)
+            {
+                // Block 5 step 6 (the August work's 111676ba22): our party size reaches peers now, not on
+                // the next good poll. PublishPartyStateIfChangedAsync skips the write if nothing moved.
+                _rosterMovedSincePublish = false;
+                PublishPresenceImmediateAsync().Forget();
+                return;
+            }
             if (!transitioning && _lobbyService.ConsumeRosterDirty())
             {
                 // Someone arrived, left or changed status. The SDK already patched the lobby we hold,
@@ -525,6 +540,7 @@ namespace CosmicShore.Gameplay
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
+            UnsubscribeFromRosterChanges();
             UnsubscribeFromPartySessionEvents();
 
             if (bootStatusRetryRequestedEvent != null)
@@ -630,6 +646,7 @@ namespace CosmicShore.Gameplay
             {
                 SubscribeToProfileChanges();
                 SubscribeToGameLaunch();
+                SubscribeToRosterChanges();
                 SubscribeToPartySessionEvents();
 
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
@@ -2819,6 +2836,29 @@ namespace CosmicShore.Gameplay
         }
 
         private void HandleGameLaunch() => PublishPresenceImmediateAsync().Forget();
+
+        /// <summary>
+        /// Block 5 step 6: republish when the party roster moves. Subscribed once; the list is a project
+        /// asset that outlives this service, so OnDestroy unsubscribes (a leaked handler would fire on a
+        /// destroyed component for the rest of the session).
+        /// </summary>
+        private void SubscribeToRosterChanges()
+        {
+            if (_rosterList != null || connectionData == null || connectionData.PartyMembers == null) return;
+            _rosterList = connectionData.PartyMembers;
+            _rosterList.OnItemCountChanged += MarkRosterMoved;
+            _rosterList.OnCleared          += MarkRosterMoved;
+        }
+
+        private void UnsubscribeFromRosterChanges()
+        {
+            if (_rosterList == null) return;
+            _rosterList.OnItemCountChanged -= MarkRosterMoved;
+            _rosterList.OnCleared          -= MarkRosterMoved;
+            _rosterList = null;
+        }
+
+        private void MarkRosterMoved() => _rosterMovedSincePublish = true;
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Helpers                                                          ║
