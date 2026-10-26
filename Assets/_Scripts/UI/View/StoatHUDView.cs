@@ -13,7 +13,7 @@ namespace CosmicShore.UI
     /// <list type="number">
     /// <item><b>Ripple</b> (charge) — how big a ripple letting go RIGHT NOW would throw: the open pair's separation as a
     /// share of the largest ripple. Empty with no pair held.</item>
-    /// <item><b>Mode</b> (mass) — 1 in Mass mode, 0.5 in Hybrid, 0 in Time mode, eased: a SWITCH moving between its
+    /// <item><b>Mode</b> (mass) — 1 in Mass mode, 0.5 in Drive, 0 in Time mode, eased: a SWITCH moving between its
     /// ends, never a meter being spent (the Butterfly's Mass card). The card's ICON follows the mode too
     /// (<see cref="SetModeIcon"/>), so the mode B is in reads at a glance on every device - on a phone the card is the
     /// button that switches it.</item>
@@ -50,8 +50,8 @@ namespace CosmicShore.UI
         [SerializeField] Sprite massModeIcon;
         [Tooltip("Time mode: the catch sling - the orbit.")]
         [SerializeField] Sprite timeModeIcon;
-        [Tooltip("Hybrid mode: the catch sling with a short path.")]
-        [SerializeField] Sprite hybridModeIcon;
+        [Tooltip("Drive mode: the warp pair.")]
+        [SerializeField] Sprite driveModeIcon;
 
         StoatModeExecutor.Mode? _shownMode;
         Sprite _authoredModeIcon;   // the card's own icon, shown for a mode whose slot is empty
@@ -84,7 +84,7 @@ namespace CosmicShore.UI
             var sprite = mode switch
             {
                 StoatModeExecutor.Mode.Time => timeModeIcon,
-                StoatModeExecutor.Mode.Hybrid => hybridModeIcon,
+                StoatModeExecutor.Mode.Drive => driveModeIcon,
                 _ => massModeIcon,
             };
             if (!TryGetAbilityIcon(Element.Mass, out var icon) || !icon) return;

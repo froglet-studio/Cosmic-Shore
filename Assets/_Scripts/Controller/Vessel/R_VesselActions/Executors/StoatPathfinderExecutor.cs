@@ -28,12 +28,13 @@ namespace CosmicShore.Gameplay
     /// (<see cref="StoatSlingExecutor.WarpsFlight"/>, the studio's catch warp, 2026-10-14), to
     /// <see cref="StoatSlingConfigSO.CatchWarpShare"/> of the field's boost, so the two modes fly at one pace.</para>
     ///
-    /// <para><b>Hybrid mode draws both</b> (2026-10-26, <c>STOAT_DIPOLE.md</c> §1f): the laid pair's rings AND a short path,
-    /// <see cref="StoatModeActionSO.HybridPathLengthShare"/> of Mass mode's length, flown on the pilot's sticks with no
-    /// field — while the attractor holds the hull it is the line a release right now would send it down. The line warms
-    /// toward lime as the quarter-turn nears and is lime in the window; the catch warps the clock as in Time mode, and a
-    /// timed release CARRIES the boost on (the line stays lime) for <see cref="StoatModeActionSO.HybridCarrySeconds"/> × its
-    /// timing (<see cref="StoatSlingMath.CarryHolds"/>) before it fades.</para>
+    /// <para><b>Drive mode flies the warp pair</b> (2026-10-26, <c>STOAT_DIPOLE.md</c> §1f, <see cref="StoatDriveMath"/>):
+    /// the two trigger squeezes (<see cref="StoatSlingExecutor.Squeeze01"/>, or an autopilot's own) shape a pair that rides
+    /// with the hull. Its stretch warps the flight clock toward <see cref="StoatDriveMath.WarpTarget"/>; its tilt turns the
+    /// hull (<see cref="VesselTransformer.ApplyRotation"/>, on the warped clock, so the line's arc is the arc flown); and
+    /// the STICKS turn on the real clock (<see cref="VesselTransformer.ExternalTurnRateMultiplier"/> = 1 / the warp), so a
+    /// long fast leg turns wide and the pair is what carves at speed. The line is the path with the drive's turn in it,
+    /// easing toward lime with the warp; a ring is drawn where each pole rides. The pair takes nothing and pulls nobody.</para>
     ///
     /// <para><b>Time 5 — Foresight</b> (the replicated unlock bit): the nearest rivals' paths are drawn too, in their
     /// domain colours, each flown forward on the turn and speed it is holding right now (measured from its pose, no
@@ -66,8 +67,11 @@ namespace CosmicShore.Gameplay
         float _boost = 1f;
         bool _wasWarped;
         bool _timeMode;
-        bool _hybrid;
+        bool _drive;
         float _lineWarmth;
+        float _driveWarp01;
+        bool _ownsTurnRate;
+        StoatDriveMath.Shape _shape;
         StoatModeExecutor _mode;
         readonly Vector3[] _ring = new Vector3[RingSegments];
         const int RingSegments = 96;
@@ -99,13 +103,19 @@ namespace CosmicShore.Gameplay
         public float BoostMultiplier => _boost;
         /// <summary>The boost the warp would give at the pilot's Time level right now (the HUD's Time card's full mark).</summary>
         public float BoostTarget => config ? Mathf.Max(1f, config.Boost.EvaluateLive(_status)) : 1f;
-        /// <summary>True while the poles warp the predicted path (the line is lime and the boost is on). Hybrid mode: while
-        /// a release now would pay the whole kick, or a timed release's boost is still carrying.</summary>
+        /// <summary>True while the poles warp the predicted path (the line is lime and the boost is on). Drive mode: while
+        /// the warp is past half its top.</summary>
         public bool IsWarped => _path.Warped;
         /// <summary>The last prediction's verdict and length.</summary>
         public StoatDipoleMath.PathResult LastPath => _path;
         /// <summary>The last prediction's points (the first <see cref="StoatDipoleMath.PathResult.Count"/> are live).</summary>
         public Vector3[] Points => _points;
+        /// <summary>True while Drive mode flies the warp pair on this machine.</summary>
+        public bool IsDriving => _drive;
+        /// <summary>Drive mode: the warp now as a share of its top, 0..1 (the HUD's Time card).</summary>
+        public float DriveWarp01 => _drive ? _driveWarp01 : 0f;
+        /// <summary>Drive mode: this frame's warp pair.</summary>
+        public StoatDriveMath.Shape DriveShape => _shape;
         /// <summary>How many rivals the Time-5 Foresight is drawing this frame.</summary>
         public int ForesightCount => _rivals.Count;
         /// <summary>True while an omni crystal's Overclock holds the boost at full.</summary>
@@ -152,12 +162,16 @@ namespace CosmicShore.Gameplay
             }
 
             bool flying = transformer.IsActive && !_status.IsStationary && !_status.IsTranslationRestricted;
-            // Time mode draws the catch's rings, never a path (and so never warps one); Hybrid draws the rings AND a short path.
+            // Time mode draws the catch's rings, never a path (and so never warps one); Drive flies the warp pair first, so
+            // the line carries its turn.
             _timeMode = _mode && _mode.IsTimeMode;
-            _hybrid = _mode && _mode.IsHybridMode;
+            var modeConfig = _mode ? _mode.Config : null;
+            _drive = _mode && _mode.IsDriveMode && modeConfig;
+            if (_drive) StepDrive(transformer, hull, modeConfig, flying);
+            else ReleaseDrive(transformer);
             if (flying && !_timeMode)
                 using (s_predictMarker.Auto())
-                    Predict(transformer, hull, _hybrid && _mode.Config ? _mode.Config.HybridPathLengthShare : 1f);
+                    Predict(transformer, hull, _drive ? _shape.TurnRate : 0f);
             else _path = default;
 
             float dt = Time.deltaTime;
@@ -165,22 +179,31 @@ namespace CosmicShore.Gameplay
             if (flying && IsOverclocked) _path.Warped = true;   // the omni crystal: the line is lime and the boost on
             // Time mode: the catch warps the clock while its pair is held (the field's rule, "held" in place of "lime").
             bool warped = _path.Warped;
-            if ((_timeMode || _hybrid) && _sling && _sling.Config && !IsOverclocked)
+            if (_timeMode && _sling && _sling.Config && !IsOverclocked)
             {
                 warped = _sling.WarpsFlight;
                 target = _sling.Config.CatchWarpTarget(target);
             }
-            // Hybrid: a timed release carries the boost on, and the line's lime is the timing cue (not "the pair is held").
-            _lineWarmth = _path.Warped ? 1f : 0f;
-            if (_hybrid && _sling && !IsOverclocked)
+            if (_drive)
             {
-                bool carrying = _mode.Config && _sling.LastSlingWasHybrid &&
-                                StoatSlingMath.CarryHolds(_sling.SecondsSinceSling, _sling.LastTiming, _mode.Config.HybridCarrySeconds);
-                warped |= carrying;
-                _lineWarmth = StoatSlingMath.HybridLineWarmth(_sling.Timing01, carrying);
-                _path.Warped = flying && _lineWarmth >= 1f;
+                // The drive's warp follows the stretch (the omni crystal's Overclock holds it at the top).
+                float top = StoatDriveMath.WarpTop(target, modeConfig.DriveWarpShare);
+                float want = IsOverclocked ? top : StoatDriveMath.WarpTarget(_shape, top);
+                _boost = flying ? StoatDriveMath.StepWarp(_boost, want, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+                _driveWarp01 = top > 1.001f ? Mathf.Clamp01((_boost - 1f) / (top - 1f)) : 0f;
+                warped = _driveWarp01 >= 0.5f;
+                _path.Warped = flying && warped;
+                _lineWarmth = _driveWarp01;
+                // The sticks turn on the real clock: a long, fast leg turns wide (the pair carves). One writer, handed back
+                // at 1 by ReleaseDrive.
+                transformer.ExternalTurnRateMultiplier = 1f / Mathf.Max(1f, _boost);
+                _ownsTurnRate = true;
             }
-            _boost = flying ? StoatDipoleMath.StepBoost(_boost, warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+            else
+            {
+                _boost = flying ? StoatDipoleMath.StepBoost(_boost, warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+                _lineWarmth = _path.Warped ? 1f : 0f;
+            }
             transformer.FlightTimeScale = _boost;
 
             if (warped && !_wasWarped) PlayOneShot(config.WarpEvent);
@@ -194,7 +217,43 @@ namespace CosmicShore.Gameplay
             else ClearForesight();
         }
 
-        void Predict(VesselTransformer transformer, Transform hull, float lengthShare)
+        /// <summary>
+        /// Drive mode's frame (the studio's <c>driveShape</c> and the drive's turn): the pair from the two squeezes — the
+        /// pilot's, or an autopilot's from its target (<see cref="StoatDriveMath.AutopilotSqueeze"/>) — and its turn applied
+        /// on the warped clock, so the arc is the same at any warp.
+        /// </summary>
+        void StepDrive(VesselTransformer transformer, Transform hull, StoatModeActionSO modeConfig, bool flying)
+        {
+            float left = 0f, right = 0f;
+            var ai = _status.AutoPilotEnabled ? _status.AIPilot : null;
+            if (ai)
+            {
+                var to = ai.TargetPosition - hull.position;
+                var local = hull.InverseTransformDirection(to);
+                StoatDriveMath.AutopilotSqueeze(to.magnitude, Vector3.Angle(Vector3.forward, local),
+                    Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg, modeConfig.DriveAutopilot(), out left, out right);
+            }
+            else if (_sling)
+            {
+                left = _sling.Squeeze01(StoatSlingExecutor.Side.Left);
+                right = _sling.Squeeze01(StoatSlingExecutor.Side.Right);
+            }
+            _shape = StoatDriveMath.Evaluate(left, right, modeConfig.Drive());
+            if (flying && Mathf.Abs(_shape.TurnRate) > 1e-3f)
+                transformer.ApplyRotation(_shape.TurnRate * Time.deltaTime * Mathf.Max(1f, transformer.FlightTimeScale), hull.up);
+        }
+
+        /// <summary>Out of Drive mode: no pair, and the sticks' turn rate handed back.</summary>
+        void ReleaseDrive(VesselTransformer transformer)
+        {
+            _shape = default;
+            _driveWarp01 = 0f;
+            if (!_ownsTurnRate) return;
+            _ownsTurnRate = false;
+            if (transformer) transformer.ExternalTurnRateMultiplier = 1f;
+        }
+
+        void Predict(VesselTransformer transformer, Transform hull, float driveTurnDegrees)
         {
             StoatDipoleMath.Field field = default;
             bool hasField = _dipole && _dipole.TryGetField(out field);
@@ -218,10 +277,11 @@ namespace CosmicShore.Gameplay
                 // The target in the same units as `engine` (the published speed carries the speed multiplier and warp field).
                 TargetSpeed = target * transformer.SpeedMultiplier * WarpFieldRuntime.ScaleAt(hull.position),
             };
-            var path = config.Path();
-            path.Length *= Mathf.Clamp01(lengthShare);
-            _path = StoatDipoleMath.PredictPath(start, engine, SteeringRate(transformer), field, hasField,
-                config.Flight(transformer.CruiseSpeed), path, _points, _jumps, response);
+            // Drive mode: the pair's turn (yaw about the hull's up, flight time) is part of the steering the line flies.
+            var steering = SteeringRate(transformer);
+            steering.y += driveTurnDegrees * Mathf.Deg2Rad;
+            _path = StoatDipoleMath.PredictPath(start, engine, steering, field, hasField,
+                config.Flight(transformer.CruiseSpeed), config.Path(), _points, _jumps, response);
         }
 
         /// <summary>
@@ -247,7 +307,8 @@ namespace CosmicShore.Gameplay
                 if (_dots) _dots.Hide();
                 _worldDots ??= new StoatPathfinderWorldDots();
                 if (!_worldDots.Begin(cam)) return;
-                if (_timeMode || _hybrid) AddRings(hull: _status.Transform);
+                if (_timeMode) AddRings(hull: _status.Transform);
+                if (_drive) AddDrivePoles(cam);
                 if (!_timeMode)
                     _worldDots.Add(_points, _path.Count, _jumps, _path.JumpCount, PathColor(),
                         config.WorldDotSize, config.WorldDotSpacing, config.WorldDotMinPixels);
@@ -263,11 +324,30 @@ namespace CosmicShore.Gameplay
                 config.DotPixels, config.DotGap, _path.Warped, config.DotDepthMinScale, config.DotDepthFade);
         }
 
-        /// <summary>The path's colour: lime while warped; in Hybrid mode eased from open toward lime by the orbit's timing.</summary>
-        Color PathColor() => Color.Lerp(config.OpenColor, config.WarpedColor, _hybrid ? _lineWarmth : _path.Warped ? 1f : 0f);
+        /// <summary>The path's colour: lime while warped; in Drive mode eased from open toward lime with the warp.</summary>
+        Color PathColor() => Color.Lerp(config.OpenColor, config.WarpedColor, _drive ? _lineWarmth : _path.Warped ? 1f : 0f);
+
+        /// <summary>Drive mode: a ring where each pole rides, facing the camera — the black hole ahead, the white hole behind.</summary>
+        void AddDrivePoles(Camera cam)
+        {
+            var mc = _mode ? _mode.Config : null;
+            var hull = _status.Transform;
+            if (!mc || !hull || !cam || (_shape.Span < 0.01f && Mathf.Abs(_shape.Lean) < 0.01f)) return;
+            StoatDriveMath.Poles(hull.position, hull.forward, hull.right, _shape, out var sink, out var source);
+            AddPoleRing(cam, sink, mc.DriveMarkerRadius, mc.DriveSinkColor);
+            AddPoleRing(cam, source, mc.DriveMarkerRadius, mc.DriveSourceColor);
+        }
+
+        void AddPoleRing(Camera cam, Vector3 centre, float radius, Color color)
+        {
+            var normal = cam.transform.position - centre;
+            if (normal.sqrMagnitude < 1e-6f) return;
+            int n = StoatSlingMath.Ring(centre, normal.normalized, radius, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, color, config.WorldDotSize, config.WorldDotSpacing * 0.5f, config.WorldDotMinPixels, closed: true);
+        }
 
         /// <summary>
-        /// Time and Hybrid mode: the laid pair's DETECTION ring (faint) and ORBIT ring round its attractor, in the plane of the hull's
+        /// Time mode: the laid pair's DETECTION ring (faint) and ORBIT ring round its attractor, in the plane of the hull's
         /// pass. The orbit ring brightens once it has caught the hull, eases toward lime as the quarter-turn nears, and is
         /// lime while a release would pay the whole kick.
         /// </summary>
@@ -417,6 +497,7 @@ namespace CosmicShore.Gameplay
             _boost = 1f;
             var transformer = _status?.VesselTransformer;
             if (transformer) transformer.FlightTimeScale = 1f;
+            ReleaseDrive(transformer);
         }
 
         void PlayOneShot(EventReference reference)
