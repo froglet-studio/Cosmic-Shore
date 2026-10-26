@@ -5,7 +5,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Tuning for the Rhino sword (RHINO_ENERGY_SWORD.md): the energize ritual (the supershield key,
-    /// with the Space level-5 upgrade), how the Space length eases and how far the camera follows it, the
+    /// with its Space level-5 gate, Shield Breaker), how the Space length eases and how far the camera follows it, the
     /// omni-crystal surge's sword ring and camera, and every blade-look/juice knob (energized danger
     /// red, impact flashes, crackle, camera shake). There is no energy (2026-10-26). The blade's
     /// LENGTH range is Space's: Skimmer.Scale on Rhino.prefab (24 at rest, 40 at Space 10).
@@ -40,6 +40,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float energizedTailSeconds = 5f;
         [Tooltip("Seconds of cooldown after the energized tail before the blade can charge again.")]
         [SerializeField] private float energizeCooldownSeconds = 5f;
+
+        [Tooltip("Element whose level-5 upgrade, SHIELD BREAKER, lets the sword destroy SUPER-SHIELDED " +
+                 "prisms at all (the Rhino: Space; Garrett, 2026-10-26). Without it the blade binds in " +
+                 "hardened mass, energized or not. Gated on the replicated unlock bit (IsUpgradeActive) - " +
+                 "whether a prism survives is an outcome every peer has to agree on. None = no upgrade " +
+                 "needed (the energize alone is the key, the pre-2026-10-26 behaviour).")]
+        [SerializeField] private Element superShieldUpgradeElement = Element.Space;
 
         [Header("Omni-crystal Surge - the sword ring and camera")]
         [Tooltip("Swords in the ring a surge raises round the hull, the pilot's own blade included " +
@@ -159,6 +166,15 @@ namespace CosmicShore.Gameplay
             touchPilot ? Mathf.Max(0.01f, EnergizeHoldSeconds / TouchEnergizeRateMultiplier) : EnergizeHoldSeconds;
         public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
+
+        /// <summary>SPACE level-5, Shield Breaker: may this vessel's sword destroy super-shielded prisms?
+        /// Through the replicated unlock bit (IsUpgradeActive), never a raw level read.</summary>
+        public bool SuperShieldUpgradeActive(IVesselStatus status)
+        {
+            if (superShieldUpgradeElement == Element.None) return true;
+            var abilities = status?.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(superShieldUpgradeElement);
+        }
 
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color RestingBladeColor    => restingBladeColor;

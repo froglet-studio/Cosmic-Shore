@@ -181,13 +181,15 @@ namespace CosmicShore.Gameplay
             Prism nearest = null;
             float nearestSq = reach * reach;
             bool hardenedNear = false;
+            bool canPop = sword.SuperShieldUpgradeActive;
             int inReach = 0;
             var domain = Status.Domain;
             for (int i = 0; i < _nearby.Count; i++)
             {
                 var p = _nearby[i];
                 if (!p || p.destroyed || p.Domain == domain || sword.IsOwnAfterimage(p)) continue;
-                if (p.prismProperties is { IsSuperShielded: true }) hardenedNear = true;
+                // Hardened mass is only worth an energize once the blade can pop it (Space L5).
+                if (canPop && p.prismProperties is { IsSuperShielded: true }) hardenedNear = true;
                 float sq = (p.transform.position - ship.position).sqrMagnitude;
                 if (sq < reach * reach) inReach++;
                 if (sq < nearestSq)

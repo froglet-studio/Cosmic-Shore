@@ -18,6 +18,7 @@ MonoBehaviour:
   touchEnergizeRateMultiplier: 2
   energizedTailSeconds: 5
   energizeCooldownSeconds: 5
+  superShieldUpgradeElement: 3
   surgeRingSwordCount: 8
   surgeRingUnfurlSeconds: 0.35
   surgeCameraDistanceScale: 2

@@ -3,12 +3,13 @@
 > **2026-10-26 (Garrett), third round: the two L5s are the sword's two keys.** "Have the sword only
 > destroy supershielded prisms as the space L5 upgrade. Have the sword only steal as the charge L5
 > upgrade." So: **Space L5 = Shield Breaker** — the sword can pop super-shielded prisms at all
-> (`RhinoSkimmerDamagePrismEffectSO.superShieldUpgradeElement`), still with an energized blade;
+> (`ShieldSkimmerScaleConfigSO.superShieldUpgradeElement`), still with an energized blade;
 > without it the blade binds, energized or not. **Charge L5 = Sword Steal** — a sword hit on a
 > rival vessel pockets the petals (`RhinoSwordStealBySkimmerEffect.stealUpgradeElement`); below it
 > the same petals are EJECTED as crystals at the strike, so the hit still scores and conserves.
 > The old L5s are deleted: **Breaker** (shielded prism in one slice) and **Live Wire** (a return to
-> the stance re-lights the tail). The Charge ability is renamed **Energize** (the energize, plus
+> the stance re-lights the tail). The upgrade bit is on the sword (`IRhinoSwordState.SuperShieldUpgradeActive`), so the
+> damage effect, the bind drag and the AI read one gate. The Charge ability is renamed **Energize** (the energize, plus
 > Charge's scaling of how many petals a hit takes).
 
 > **2026-10-26 (Garrett), second round: NO ENERGY; Charge steals; Space alone sets the length.**
@@ -65,7 +66,7 @@ A/B. With no sword state present (a non-Rhino skimmer reusing the asset) the bla
 energized, so super-shielded prisms always bind (the entry beat plays; the drag needs the
 Rhino's driver, so a non-Rhino skimmer gets the jiggle and the thud and nothing else).
 
-## Binding (a NON-energized blade inside super-shielded mass)
+## Binding (a blade inside super-shielded mass it cannot pop: not energized, or no Space L5)
 
 Shipped 2026-09-25, replacing the `BounceBack` recoil. The recoil threw the ship back along its
 course and spun it (`ModifyVelocity` + `GentleSpinShip`), so a slash that grazed armour cost the
@@ -575,7 +576,7 @@ On `ShieldSkimmerScaleConfig.asset`: (the length keys `baseScale` 24 / `maxScale
 root scale in `Rhino.prefab`) · `spaceLengthEaseSpeed` 30 · `cameraFollowsBladeLength` 1 ·
 (`energizeCostFraction` is DELETED with the energy) ·
 `energizeHoldSeconds` 1 · `touchEnergizeRateMultiplier` 2 (phone hold = 0.5 s) · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
-`liveWireUpgradeElement` Charge (the L5 that lets the stance re-light the tail) ·
+(`liveWireUpgradeElement` is DELETED with Live Wire, 2026-10-26) ·
 the surge: `surgeRingSwordCount` 8 · `surgeRingUnfurlSeconds` 0.35 · `surgeCameraDistanceScale` 2 ·
 `surgeCameraBlendSeconds` 0.6 (the `crystalBurst*` keys are DELETED with the burst, 2026-10-26) ·
 `visibilityMultiplier` 1.2 · `restingBladeColor` white ·
@@ -728,9 +729,9 @@ for lack of control by having it go quicker."*
   blade's length again (24 → 40), and the camera follows it.
 - ~~**Charge's level-5 is still Live Wire** while Charge scales the STEAL.~~ **Resolved
   2026-10-26:** the steal itself is Charge's L5 (below it the petals are ejected).
-- **The AI does not know about Shield Breaker.** `RhinoSwordAutopilot` still energizes when
-  super-shielded mass is near, whatever its Space level; below Space 5 that energize only lays
-  afterimages. Harmless, but an AI tuned for it would skip the hardened-mass trigger below Space 5.
+- The AI energizes for nearby super-shielded mass only once its blade can pop it
+  (`RhinoSwordAutopilot` reads `IRhinoSwordState.SuperShieldUpgradeActive`, 2026-10-26); below
+  Space 5 only a crowd of ordinary prisms makes it energize.
 - **Surge ring edges** (§ "The omni-crystal Surge"): a copy's kill sparks on the pilot's blade
   (one FX controller — give each copy a light spark if it reads wrong); the copies have no swept
   tier; the 0.35 s fan-out overlaps the blade (a brief free Breaker on shielded prisms — gate the

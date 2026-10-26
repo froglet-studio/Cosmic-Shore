@@ -146,7 +146,7 @@ in a seat · a body left behind after a vessel swap.
 **What landed** (Garrett: "have the sword only destroy supershielded prisms as the space L5 upgrade. have the
 sword only steal as the charge L5 upgrade."; design record `R_VesselActions/RHINO_ENERGY_SWORD.md`, third round):
 
-- **Space L5 = Shield Breaker.** `RhinoSkimmerDamagePrismEffectSO.superShieldUpgradeElement` = Space: the sword
+- **Space L5 = Shield Breaker.** `ShieldSkimmerScaleConfigSO.superShieldUpgradeElement` = Space: the sword
   pops super-shielded prisms only with the upgrade AND an energized blade; otherwise it binds. Breaker (a shielded
   prism in one slice) is deleted.
 - **Charge L5 = Sword Steal.** `VesselOvertakeBySkimmerEffectSO.stealUpgradeElement` = Charge on the Rhino's steal

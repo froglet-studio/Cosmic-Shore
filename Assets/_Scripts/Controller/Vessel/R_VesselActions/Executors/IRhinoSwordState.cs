@@ -26,7 +26,8 @@ namespace CosmicShore.Gameplay
     ///
     /// The sword's ORDINARY cutting has NO gate: it always damages prisms on contact
     /// (normal prisms explode, shielded prisms lose their shield). The one gated act is
-    /// popping a SUPER-shielded prism, which requires the blade to be ENERGIZED: hold the
+    /// popping a SUPER-shielded prism, which requires the Space level-5 upgrade
+    /// (<see cref="SuperShieldUpgradeActive"/>) and the blade to be ENERGIZED: hold the
     /// both-triggers lower/chop stance (<see cref="SetInStance"/>) to charge; the blade
     /// ignites, stays lit for a tail after leaving the stance, then cools. There is no energy
     /// meter (discarded 2026-10-26): the cooldown is the only limit. An OMNI crystal SURGES the
@@ -38,6 +39,11 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the blade is energized — danger red, and the supershield
         /// key is live (contact pops super-shielded prisms instead of binding in them).</summary>
         bool IsEnergized { get; }
+
+        /// <summary>True when this vessel has the super-shield upgrade (the Rhino's Space level-5,
+        /// Shield Breaker, 2026-10-26). Without it the blade binds in super-shielded prisms,
+        /// energized or not; with it an energized blade pops them.</summary>
+        bool SuperShieldUpgradeActive { get; }
 
         /// <summary>Called the instant the sword destroys a prism, for impact feedback:
         /// a blade flash + a crackle spark at the blade point nearest the prism, plus a

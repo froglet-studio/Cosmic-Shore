@@ -40,7 +40,7 @@ MonoBehaviour:
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Shield Breaker'
-    UpgradeDescription: 'The sword can destroy SUPER-SHIELDED prisms: an energized blade pops them. Without the upgrade the blade binds in hardened mass, energized or not. RhinoSkimmerDamagePrismEffectSO.superShieldUpgradeElement, gated on IsUpgradeActive(Space) (Garrett, 2026-10-26).'
+    UpgradeDescription: 'The sword can destroy SUPER-SHIELDED prisms: an energized blade pops them. Without the upgrade the blade binds in hardened mass, energized or not. ShieldSkimmerScaleConfigSO.superShieldUpgradeElement, gated on IsUpgradeActive(Space) (Garrett, 2026-10-26).'
   - Element: 4
     AbilityLabel: 'Ramp Spool'
     AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its top speed: 220 u/s per second at rest, 550 at level 10, 110 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live). It does not raise the ceiling - cruise 50 x maxBoostMultiplier 16.8 = 840 u/s - only how long the run-up takes. The Rhino is a bulldozer: its hull carries no prism slow, so ramming mass costs it no speed - the plough shoves what it hits aside (RhinoPloughPrismEffectSO) and the ramp keeps climbing through it.'

@@ -14,8 +14,8 @@ namespace CosmicShore.Tests
     /// </summary>
     public class RhinoLevelFiveKeysTests
     {
-        const string DamageEffectPath =
-            "Assets/_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset";
+        const string SwordConfigPath =
+            "Assets/_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset";
         const string StealEffectPath =
             "Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset";
         const string SquirrelJoustPath =
@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
 
         [Test]
         public void SuperShieldPop_IsTheSpaceLevelFiveUpgrade() =>
-            Assert.AreEqual(Element.Space, ElementField(DamageEffectPath, "superShieldUpgradeElement"));
+            Assert.AreEqual(Element.Space, ElementField(SwordConfigPath, "superShieldUpgradeElement"));
 
         [Test]
         public void SwordSteal_IsTheChargeLevelFiveUpgrade() =>
