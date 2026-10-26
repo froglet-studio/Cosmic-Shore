@@ -39,7 +39,7 @@ this one.
 
 **Port order.** Bring the design, not the files. `UgsRequestPolicy`, `LobbyReadPacer` and the 400-line rule stay.
 
-**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-7 are done (below, each marked); steps 8-9 are next.
+**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-8 are done (below, each marked); step 9 is next.
 
 1. **Done 2026-10-26.** **Count voided ticks** (44587a2fa4). The benign branch at `HostConnectionService.cs:1552` and `:2089` is
    empty, and `UgsRequestCounter.Benign` is never counted, so a voided tick looks healthy. About 5 lines;
@@ -72,7 +72,16 @@ this one.
    `PlayerHasLeft`, collected by `DepartureReports`) or a member turning spectator removes at once, which covers
    August's "graceful leave is not slowed down" by id instead of by a re-read). **Two absent reads before eviction** for poll-only absences (c9c6db1772). Today one absence evicts
    (`HostConnectionService.cs:1913-1917`, `PartyMemberService.cs:162-171`). About 110 lines.
-8. **Then relax:** delete the boost window, the 4 s converge and the per-tick reads, and keep one 20 s ±
+8. **Done 2026-10-26** (August never took this step: its push was unproven in the editor, so it kept the 1.5 s poll;
+   ours fired in Shombith's 26 Oct Unity test, `presence pushes 3`). One `LobbyRefreshScheduler.SAFETY_POLL_SECONDS`
+   tick (20 s, +-10%), menu and match alike, reads the presence lobby, runs the converge and reads the party session
+   (`LobbyReadPacer` holds the two reads a second apart): about 0.1 GETs/s where the old cadence spent 0.83 (0.98
+   boosted). Gone: the boost window and its six `Boost()` calls, the 6 s / 15 s party-read timer and
+   `PartyReadDueThisTick`, the 4 s converge timer, the 10 s in-match tick; a push sync no longer GETs. The first
+   poll comes 2 s after a presence join (`FIRST_POLL_AFTER_JOIN_SECONDS`), since a join raises no push for the
+   players already there. Trade-offs: a missed push, a lobby split or a stale local copy now waits up to ~20 s for
+   the net, and the watchdog's three failed reads take ~60 s (a pushed removal or deletion still rejoins at once).
+   The re-measure is the next multiplayer test log (`reads`, `429s`, `voided`, pushes). **Then relax:** delete the boost window, the 4 s converge and the per-tick reads, and keep one 20 s ±
    jitter safety poll. Re-measure with step 1's counter.
 9. **Explicit leave on quit and background** (52b8f5f656). There is no `wantsToQuit` handler
    (`ApplicationLifecycleManager.cs:69-87`); the only leave is an async-void `OnDestroy`
