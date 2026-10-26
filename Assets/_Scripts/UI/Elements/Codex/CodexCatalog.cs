@@ -18,7 +18,7 @@ namespace CosmicShore.UI
         Pilots = 4,
         Vessels = 5,
         Artifacts = 6,
-        Tools = 7,
+        Toys = 7,       // the toybox stations (Codex.asset's Tool kingdom; the player reads "Toys", Shombith 2026-10-26)
     }
 
     /// <summary>One line of facts on a page: a label and its value.</summary>
@@ -51,6 +51,10 @@ namespace CosmicShore.UI
     public sealed class CodexPage
     {
         public Sprite Image;
+        /// <summary>An element page draws the HUD's flower and shape for this element instead of a picture.</summary>
+        public Element Element = Element.None;
+        /// <summary>Colours the picture drifts through, slowly (a lifeform: the domains it is seen in). Null: none.</summary>
+        public Color[] Palette;
         public string Kicker = string.Empty;
         public string Title = string.Empty;
         public string Body = string.Empty;
@@ -66,6 +70,8 @@ namespace CosmicShore.UI
     public sealed class CodexItem
     {
         public Sprite Image;
+        public Element Element = Element.None;
+        public Color[] Palette;
         public string Name = string.Empty;
         public string Sub = string.Empty;
         public CodexPage Page;
@@ -97,8 +103,8 @@ namespace CosmicShore.UI
         public string ethirionKicker = "Ethirion";
         public string floraKicker = "Flora";
         public string faunaKicker = "Fauna";
-        [Tooltip("{group} is the tool's category (Pilot, World, Creation).")]
-        public string toolKicker = "Tool - {group}";
+        [Tooltip("{group} is the toy's category (Pilot, World, Creation).")]
+        public string toolKicker = "Toy - {group}";
         public string vesselKicker = "Vessel";
         [Tooltip("{element} and {vessel} name the pilot's element and hull.")]
         public string pilotKicker = "{element} pilot - {vessel}";
@@ -148,22 +154,32 @@ namespace CosmicShore.UI
         /// <summary>A tool category without its ordering prefix ("1 · Pilot" reads "Pilot").</summary>
         public static string GroupName(string group) => string.IsNullOrEmpty(group) ? string.Empty : GroupPrefix.Replace(group, string.Empty);
 
+        /// <param name="petals">The element icons, Charge to Time: the HUD's element shapes (pentagon, triangle, kite, diamond).</param>
+        /// <param name="cardArt">The Hangar's colourful hull renders, for the vessels. Optional: a vessel without one shows its icon.</param>
+        /// <param name="lifePalette">The colours a lifeform's picture drifts through (the domains). Optional.</param>
         public static List<CodexItem> Build(CodexChapter chapter, CodexSO codex, SO_CaptainList captains, SO_VesselList vessels,
-                                            Sprite[] petals, CodexWords words, Func<VesselClassType, ElementalAbilityMapSO> maps = null)
+                                            Sprite[] petals, CodexWords words, Func<VesselClassType, ElementalAbilityMapSO> maps = null,
+                                            HangarCardArtSO cardArt = null, Color[] lifePalette = null)
         {
             maps ??= ElementalAbilityMapSO.LoadFor;
             words ??= new CodexWords();
-            return chapter switch
+            var items = chapter switch
             {
                 CodexChapter.Ethirions => Entries(codex, codex ? codex.Ethirions : null, words.ethirionKicker, words, petals, false),
                 CodexChapter.Flora => Entries(codex, codex ? codex.EntriesOf(CodexKingdom.Flora) : null, words.floraKicker, words, petals, true),
                 CodexChapter.Fauna => Entries(codex, codex ? codex.EntriesOf(CodexKingdom.Fauna) : null, words.faunaKicker, words, petals, true),
-                CodexChapter.Tools => Tools(codex, words),
+                CodexChapter.Toys => Tools(codex, words),
                 CodexChapter.Elements => Elements(vessels, petals, words, maps),
                 CodexChapter.Pilots => Pilots(captains, vessels, petals, words, maps),
-                CodexChapter.Vessels => Vessels(captains, vessels, petals, words, maps),
+                CodexChapter.Vessels => Vessels(captains, vessels, petals, words, maps, cardArt),
                 _ => new List<CodexItem>(),   // Artifacts: no artifact data in the game yet
             };
+            // A lifeform is nobody's on its page, and in the world it wears its owner's colour: the picture drifts through
+            // the domains (Shombith 2026-10-26: "ecology need colors"). Elements stay colourless (the palette rule).
+            if (lifePalette is { Length: > 0 } && chapter is CodexChapter.Flora or CodexChapter.Fauna)
+                foreach (var item in items)
+                    item.Palette = item.Page.Palette = lifePalette;
+            return items;
         }
 
         // ------------------------------------------------------------------ ethirions, flora, fauna
@@ -227,7 +243,7 @@ namespace CosmicShore.UI
             {
                 var el = Four[i];
                 string name = Name(words, el);
-                var page = new CodexPage { Image = Petal(petals, i), Kicker = words.elementKicker, Title = name,
+                var page = new CodexPage { Image = Petal(petals, i), Element = el, Kicker = words.elementKicker, Title = name,
                                            Body = TemplateText.Fill(words.elementBody, "element", name),
                                            RowsHeading = words.elementRowsHeading };
                 if (vessels && vessels.VesselList != null)
@@ -242,7 +258,7 @@ namespace CosmicShore.UI
                         page.Rows.Add(new CodexRow(vessel.IconActive, vessel.Name, line));
                     }
                 string sub = i < (words.elementLines?.Length ?? 0) ? words.elementLines[i] : string.Empty;
-                items.Add(new CodexItem { Image = Petal(petals, i), Name = name, Sub = sub, Page = page });
+                items.Add(new CodexItem { Image = Petal(petals, i), Element = el, Name = name, Sub = sub, Page = page });
             }
             return items;
         }
@@ -295,7 +311,7 @@ namespace CosmicShore.UI
 
         // ------------------------------------------------------------------ vessels
         static List<CodexItem> Vessels(SO_CaptainList captains, SO_VesselList vessels, Sprite[] petals, CodexWords words,
-                                       Func<VesselClassType, ElementalAbilityMapSO> maps)
+                                       Func<VesselClassType, ElementalAbilityMapSO> maps, HangarCardArtSO cardArt)
         {
             var items = new List<CodexItem>();
             if (!vessels || vessels.VesselList == null) return items;
@@ -303,7 +319,10 @@ namespace CosmicShore.UI
             foreach (var v in vessels.VesselList)
             {
                 if (!v) continue;
-                var page = new CodexPage { Image = v.IconActive, Kicker = words.vesselKicker, Title = v.Name ?? string.Empty,
+                // The colourful hull (Shombith 2026-10-26: "Vessel need colors"), else its icon.
+                var art = cardArt ? cardArt.For(v) : null;
+                if (!art) art = v.IconActive;
+                var page = new CodexPage { Image = art, Kicker = words.vesselKicker, Title = v.Name ?? string.Empty,
                                            Body = v.Description ?? string.Empty, RowsHeading = words.abilitiesHeading };
                 var map = maps(v.Class);
                 for (int i = 0; i < Four.Length; i++)
@@ -320,7 +339,7 @@ namespace CosmicShore.UI
                         page.CellsHeading = words.pilotsHeading;
                         page.Cells.Add(new CodexCell(p.Image, p.Name, Name(words, p.PrimaryElement)));
                     }
-                items.Add(new CodexItem { Image = v.IconActive, Name = v.Name ?? string.Empty, Sub = string.Empty, Page = page });
+                items.Add(new CodexItem { Image = art, Name = v.Name ?? string.Empty, Sub = string.Empty, Page = page });
             }
             return items;
         }

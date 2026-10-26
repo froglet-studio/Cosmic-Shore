@@ -16438,6 +16438,22 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Codex: Toys, live element icons, colour, motion (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 89. Run `CodexCatalogTests` (three new tests).
+
+1. Open the Codex. **Pass:** the last chapter reads TOYS, and a toy's kicker reads "Toy - Pilot / World / Creation".
+2. ELEMENTS. **Pass:** each tile and the page show the HUD's flower over its shape (pentagon, triangle, kite,
+   diamond). The petals light one by one, hold, and start again, and the shape breathes gently. All of it is white:
+   no element colours.
+3. Flora / Fauna. **Pass:** each creature and plant slowly shifts through green, red and gold (Jade, Ruby, Gold).
+4. VESSELS. **Pass:** the colourful Hangar hull renders, not the white icons.
+5. Motion everywhere, subtle. **Pass:** pictures float a little, each at its own pace. Changing stop makes the tiles
+   fade and rise in as a wave. The open tile's glow breathes. Opening an entry makes the page fade and rise in. None
+   of it is distracting.
+6. Leave the Codex (HOME) and profile Menu_Main. **Pass:** no Codex portrait updates while the Codex is off screen,
+   and with it open, Canvas rebuilds stay inside the small portrait canvases.
+
 ## The CODEX screen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md section 88. Run `CodexCatalogTests` in the Test Runner (edit mode).

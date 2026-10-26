@@ -15,7 +15,12 @@ namespace CosmicShore.UI
     {
         [Tooltip("The whole page: hidden while nothing is open (an empty chapter).")]
         [SerializeField] private CanvasGroup pageGroup;
-        [SerializeField] private Image portrait;
+        [Tooltip("The entry's picture, alive (CodexPortrait).")]
+        [SerializeField] private CodexPortrait portrait;
+        [Tooltip("The page's words and blocks: fade and rise in each time a page opens.")]
+        [SerializeField] private CanvasGroup reveal;
+        [SerializeField, Min(0.05f)] private float revealSeconds = 0.32f;
+        [SerializeField, Min(0f)] private float revealRise = 12f;
         [SerializeField] private TMP_Text kickerText;
         [SerializeField] private TMP_Text titleText;
         [Tooltip("The entry's own words (a tagline and description, a pilot's line). Hidden while empty.")]
@@ -42,6 +47,7 @@ namespace CosmicShore.UI
         readonly List<CodexLine> _facts = new();
         readonly List<CodexLine> _cells = new();
         readonly List<CodexLine> _rows = new();
+        float _reveal = 1f;
 
         void Awake()
         {
@@ -54,11 +60,7 @@ namespace CosmicShore.UI
         {
             KitVisibility.SetShown(pageGroup, page != null);
             if (page == null) return;
-            if (portrait)
-            {
-                portrait.sprite = page.Image;
-                portrait.enabled = page.Image;
-            }
+            if (portrait) portrait.Show(page.Image, page.Element, page.Palette, 0f);
             if (kickerText) kickerText.text = page.Kicker;
             if (titleText) titleText.text = page.Title;
             if (bodyText) bodyText.text = page.Body;
@@ -71,6 +73,23 @@ namespace CosmicShore.UI
             Fill(_rows, rowTemplate, page.Rows.Count, (l, i) => l.Set(page.Rows[i].Icon, page.Rows[i].Title, page.Rows[i].Line));
 
             if (scroll) scroll.verticalNormalizedPosition = 1f;
+            _reveal = 0f;
+            Reveal(0f);
+        }
+
+        void Update()
+        {
+            if (_reveal >= 1f) return;
+            _reveal = Mathf.Min(1f, _reveal + Time.unscaledDeltaTime / revealSeconds);
+            Reveal(_reveal);
+        }
+
+        void Reveal(float k)
+        {
+            if (!reveal) return;
+            float e = 1f - (1f - k) * (1f - k) * (1f - k);    // OutCubic
+            reveal.alpha = e;
+            ((RectTransform)reveal.transform).anchoredPosition = new Vector2(0f, -revealRise * (1f - e));
         }
 
         static void Block(CanvasGroup block, TMP_Text heading, string headingText, int count)
