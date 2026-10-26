@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     /// The energize ritual's phases, driven by <see cref="ShieldSkimmerScaleDriver"/> and
     /// read by <see cref="RhinoSwordFXController"/> for the blade's look:
     /// Idle → (hold the both-triggers chop stance) Charging → (hold met) Energized —
-    /// danger red, pops super-shielded prisms, stays lit for a tail after leaving the
+    /// danger red, pops super-shielded prisms (with the Space L5), stays lit for a tail after leaving the
     /// stance → Cooldown → Idle.
     /// </summary>
     public enum RhinoSwordEnergizePhase
@@ -50,9 +50,8 @@ namespace CosmicShore.Gameplay
         /// local camera shake when a super-shield popped.</summary>
         void NotifyPrismDestroyed(bool superShielded, Vector3 prismWorldPosition);
 
-        /// <summary>Called when a NON-energized blade touches a super-shielded prism (the
-        /// BounceBack recoil): a dim spark at the contact, teaching that the blade needs
-        /// the energize stance to pop this.</summary>
+        /// <summary>Called when a blade that cannot pop it (not energized, or no Space L5) touches a
+        /// super-shielded prism: a dim spark at the contact, the entry beat of a bind.</summary>
         void NotifyPopDenied(Vector3 prismWorldPosition);
 
         /// <summary>True while an omni-crystal SURGE holds the blade energized (<see cref="Surge"/>).
