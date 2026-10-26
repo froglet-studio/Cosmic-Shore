@@ -58,9 +58,9 @@
       "id": "stoat",
       "name": "Stoat",
       "file": "stoat.html",
-      "kind": "design studio - round 19",
-      "chip": "design studio · round 19",
-      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and three modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it), Time (the catch sling, timed at 90°) and Gate (a wormhole slingshot: LT shortens and widens it, RT widens its throat, the stick bends it; fly into the black hole and its throat swings you round - up to 120° for a thick one, straight and fastest for a thin one - and out of the white hole warped; drawn as a wireframe while you shape it). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
+      "kind": "design studio - round 20",
+      "chip": "design studio · round 20",
+      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and three modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it), Time (the catch sling, timed at 90°) and Gate (a wormhole slingshot aimed with a reticle: hold a trigger and the tunnel shows as a wireframe on your nose; LT shortens and widens it, RT widens its throat, the stick bends it; let go and it is made and you ride it - up to 120° round for a thick one, straight and fastest for a thin one - out of the white hole warped). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
       "spec": [
         {
           "k": "Sling",
