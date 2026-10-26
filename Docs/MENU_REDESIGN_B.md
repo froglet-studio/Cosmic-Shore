@@ -11,6 +11,10 @@ board is approved there. The Port canvas keeps the item 0 kit board where it was
 canvas carries a reference copy of it (`MenuKit.dc.html`) so the kit sits beside the items built
 from it.
 
+**A copy of every board is in git** (Rev 3 to Rev 23, copied 2026-10-26): `Docs/MenuRedesignB/board/`, with a README
+that indexes each round's boards by page and title. Boards render only inside the canvas and their images stay in its
+asset store; the copy is for reading layouts, words and sizes from a session. New rounds go to the canvas first.
+
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
 2. **Mockup:** an artboard on the mockup canvas, using real content.

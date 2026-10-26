@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+
+  <section aria-label="Pilot" style="position: absolute; left: 40px; top: 108px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 0ms both">
+    <div class="sl" style="background: #222645; padding: 1px; box-sizing: border-box; "><div class="sl" style="position: relative; height: 100%; box-sizing: border-box; background: rgba(0, 4, 31, 0.86); display: flex; align-items: center; gap: 20px; padding: 14px 30px 14px 14px">
+      <span style="position: relative; display: block; width: 84px; height: 84px">
+        <button class="tile oct" type="button" aria-label="Profile" onClick="{{toProfile}}" style="display: grid; place-items: center; width: 84px; height: 84px; background: #E6E9FF">
+          <span class="oct" style="display: block; width: 80px; height: 80px; overflow: hidden; background: #222645"><img src="/_blob/9a4056241500f4b0b79480b0fe3a767d" alt="" style="width: 80px; height: 80px; object-fit: cover"></span>
+        </button>
+        <button class="tile" type="button" aria-label="{{lampAria}}" onClick="{{lamp}}" style="position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 28px; height: 28px; background: #00010A; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%)">
+          <span style="display: block; width: 14px; height: 14px; background: {{lampColor}}; transform: rotate(45deg); animation: {{lampAnim}}"></span>
+        </button>
+      </span>
+      <button class="tile" type="button" onClick="{{toProfile}}" style="display: flex; flex-direction: column; gap: 6px; background: transparent">
+        <span style="font-size: 28px; line-height: 1">Gradies</span>
+        <span class="lab" style="color: {{statusColor}}">{{status}}</span>
+      </button>
+      <span style="width: 1px; height: 56px; background: #222645; margin: 0 4px"></span>
+      <span style="display: flex; flex-direction: column; gap: 6px">
+        <span class="lab" style="font-size: 12px">Crystals</span>
+        <span style="display: flex; align-items: center; gap: 8px; color: #FFAE00"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 2l7 6-7 10-7-10z"></path><path d="M3.6 8h12.8"></path></svg><span class="num" style="font-size: 22px">1,250</span></span>
+      </span>
+    </div></div>
+    <sc-if value="{{asking}}" hint-placeholder-val="{{ false }}">
+      <div style="position: relative; margin-top: 14px; width: 440px; animation: csDrop 200ms cubic-bezier(.22,1,.36,1) 0ms both">
+        <div class="sl" style="background: #E6E9FF; padding: 1px"><div class="sl" style="background: #00010A; padding: 18px 22px 38px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 22px">{{question}}</span><span style="font-size: 15px; color: #747BAD">{{questionNote}}</span></div></div>
+        <div style="position: absolute; left: 22px; bottom: -22px; display: flex; gap: 12px"><button class="btn" type="button" onClick="{{confirm}}" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg>Yes</span></button><button class="btn" type="button" onClick="{{cancelAsk}}" style="--bc: #747BAD; --bf: #747BAD; --bt: #00010A"><span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8"></path></svg>No</span></button></div>
+      </div>
+    </sc-if>
+  </section>
+
+  <section aria-label="Settings" style="position: absolute; right: 40px; top: 108px; display: flex; flex-direction: column; align-items: center; gap: 8px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 40ms both">
+    <button class="tile hex" type="button" aria-label="Settings" onClick="{{settings}}" style="display: grid; place-items: center; width: 96px; height: 84px; background: #434C89">
+      <span class="hex" style="display: grid; place-items: center; width: 92px; height: 80px; background: rgba(0, 4, 31, 0.9); color: #E6E9FF"><span style="display: flex; animation: csSpin 24s linear infinite"><svg width="36" height="36" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 1.5h4l.6 2.6 2.3 1.3 2.5-.8 2 3.4-2 1.8v2.4l2 1.8-2 3.4-2.5-.8-2.3 1.3-.6 2.6H8l-.6-2.6-2.3-1.3-2.5.8-2-3.4 2-1.8V8.8l-2-1.8 2-3.4 2.5.8 2.3-1.3z"></path><path d="M7.5 7.5h5v5h-5z"></path></svg></span></span>
+    </button>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">X</span></span>
+  </section>
+
+  <sc-if value="{{invite}}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Party invite" role="status" style="position: absolute; right: 40px; top: 250px; width: 520px; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both">
+      <div class="sl" style="background: #E6E9FF; padding: 1px"><div class="sl" style="position: relative; background: #00010A; padding: 20px 24px 42px; display: flex; align-items: center; gap: 18px">
+        <span class="oct" style="display: grid; place-items: center; width: 70px; height: 70px; flex: none; background: #99FF80"><span class="oct" style="display: block; width: 64px; height: 64px; overflow: hidden; background: #222645"><img src="/_blob/1cae1b61986f843f4fe7e2e25a30ef13" alt="" style="width: 64px; height: 64px; object-fit: cover"></span></span>
+        <span style="display: flex; flex-direction: column; gap: 6px">
+          <span class="lab" style="color: #99FF80">Party invite</span>
+          <span style="font-size: 22px">Halcyon</span>
+          <span style="display: flex; align-items: center; gap: 6px">
+            <span class="num" style="font-size: 15px; color: #747BAD; margin-right: 6px">Party 2 / 4</span>
+            <span class="oct" style="display: block; width: 22px; height: 22px; overflow: hidden; background: #222645"><img src="/_blob/1cae1b61986f843f4fe7e2e25a30ef13" alt="" style="width: 22px; height: 22px; object-fit: cover"></span><span class="oct" style="display: block; width: 22px; height: 22px; overflow: hidden; background: #222645"><img src="/_blob/f0ce5926c4d430eff7e7eb4e4abc0620" alt="" style="width: 22px; height: 22px; object-fit: cover"></span>
+          </span>
+        </span>
+        <span style="position: absolute; left: 0; bottom: 0; width: 100%; height: 3px; background: #003648"><span style="display: block; height: 3px; background: #00D4FF; transform-origin: left; animation: csDrain 3s linear 320ms both"></span></span>
+      </div></div>
+      <div style="position: absolute; left: 24px; bottom: -22px; display: flex; gap: 12px"><button class="btn" type="button" onClick="{{acceptInvite}}" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg>Join</span></button><button class="btn" type="button" onClick="{{declineInvite}}" style="--bc: #747BAD; --bf: #747BAD; --bt: #00010A"><span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8"></path></svg>Decline</span></button></div>
+    </section>
+  </sc-if>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 500px; width: 1920px; display: flex; justify-content: center; pointer-events: none">
+    <span class="sls lab" style="padding: 8px 16px; background: rgba(0, 4, 31, 0.6); color: #E6E9FF; animation: csBlink 3.2s ease-in-out infinite">Tap the cell to fly</span>
+  </div>
+
+  <section aria-label="Up next" style="position: absolute; left: 0; top: 770px; width: 1920px; display: flex; justify-content: center; gap: 40px">
+    <button class="card sl" type="button" aria-label="Weekly challenge" onClick="{{weekly}}" style="display: block; width: 600px; background: #FFAE00; padding: 1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 120ms both">
+      <span class="sl" style="position: relative; display: flex; align-items: stretch; height: 132px; overflow: hidden; background: rgba(0, 4, 31, 0.9)">
+        <span style="position: relative; width: 200px; flex: none; overflow: hidden"><img src="/_blob/33b45ebe5f51c2b0d213c122ea74892a" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: csPan 14s ease-in-out infinite alternate"></span>
+        <span style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 22px; text-align: left">
+          <span class="lab" style="color: #FFAE00">Weekly challenge</span>
+          <span style="font-size: 22px">Skim Race</span>
+          <span style="font-size: 15px; color: #747BAD">Finish the race</span>
+          <span style="display: flex; align-items: center; gap: 10px; font-size: 15px"><span class="lab" style="color: #E6E9FF">Ends in</span><span class="num" style="color: #E6E9FF">{{countdown}}</span><span style="color: #5C5F70">|</span><span style="color: #747BAD">Your best</span><span class="num">1:08.42</span></span>
+        </span>
+      </span>
+    </button>
+    <button class="card sl" type="button" aria-label="Current quest" onClick="{{quest}}" style="display: block; width: 600px; background: #E6E9FF; padding: 1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 160ms both">
+      <span class="sl" style="position: relative; display: flex; align-items: stretch; height: 132px; overflow: hidden; background: rgba(0, 4, 31, 0.9)">
+        <span style="position: relative; width: 200px; flex: none; overflow: hidden"><img src="/_blob/1efac15c724589a0f77c042d666ebb18" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: csPan 14s ease-in-out infinite alternate"></span>
+        <span style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 22px; text-align: left">
+          <span class="lab" style="color: #747BAD">Current quest</span>
+          <span style="font-size: 22px">JOUST</span>
+          <span style="font-size: 15px; color: #747BAD">Next: Win a Joust match at Intensity 2</span>
+          <span style="display: flex; align-items: center; gap: 10px; font-size: 15px"><span style="display: flex; align-items: flex-end; gap: 3px"><span style="width: 8px; height: 13px; background: #E6E9FF; transform-origin: bottom; animation: csGrowY 200ms cubic-bezier(.33,1,.68,1) 440ms both"></span><span style="width: 8px; height: 16px; background: #E6E9FF; transform-origin: bottom; animation: csGrowY 200ms cubic-bezier(.33,1,.68,1) 480ms both"></span><span style="width: 8px; height: 19px; background: #222645; transform-origin: bottom; animation: csGrowY 200ms cubic-bezier(.33,1,.68,1) 520ms both"></span><span style="width: 8px; height: 22px; background: #222645; transform-origin: bottom; animation: csGrowY 200ms cubic-bezier(.33,1,.68,1) 560ms both"></span></span><span class="num">Intensity 2 of 4</span></span>
+        </span>
+      </span>
+    </button>
+  </section>
+
+  <nav aria-label="Hub" style="position: absolute; left: 0; top: 940px; width: 1920px; display: flex; justify-content: center; align-items: center; gap: 30px">
+    <span style="animation: csRise 320ms cubic-bezier(.22,1,.36,1) 200ms both"><span class="{{toybox.ringCls}}" style="display: inline-flex; padding: 2px; background: {{toybox.ringOuter}}"><span class="{{toybox.ringCls}}" style="display: inline-flex; padding: 3px; background: {{toybox.ringInner}}"><button class="btn big" type="button" onClick="{{toybox.press}}" aria-label="Toy Box" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span style="min-width: 210px; padding: 18px 28px; font-size: 18px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z"></path><path d="M3 7l9 5 9-5M12 12v10"></path></svg>Toy Box</span></button></span></span></span>
+    <span style="animation: csRise 320ms cubic-bezier(.22,1,.36,1) 240ms both"><span class="{{arcade.ringCls}}" style="display: inline-flex; padding: 2px; background: {{arcade.ringOuter}}"><span class="{{arcade.ringCls}}" style="display: inline-flex; padding: 3px; background: {{arcade.ringInner}}"><button class="btn big" type="button" onClick="{{arcade.press}}" style="--bc: #80EAFF; --bf: linear-gradient(90deg, #00D4FF, #80EAFF); --bt: #00010A"><span style="position: relative; overflow: hidden; padding: 18px 30px; font-size: 18px"><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">A</span></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 9h16v8H4z"></path><path d="M8 11v4M6 13h4"></path><path d="M15 12h.01M17 14h.01"></path><path d="M12 9V5"></path></svg>Arcade<span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span></button></span></span></span>
+    <span style="animation: csRise 320ms cubic-bezier(.22,1,.36,1) 280ms both"><span class="{{arena.ringCls}}" style="display: inline-flex; padding: 2px; background: {{arena.ringOuter}}"><span class="{{arena.ringCls}}" style="display: inline-flex; padding: 3px; background: {{arena.ringInner}}"><button class="btn big" type="button" onClick="{{arena.press}}" aria-label="Arena" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span style="min-width: 210px; padding: 18px 28px; font-size: 18px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4l9 9M20 4l-9 9"></path><path d="M6 14l4 4M18 14l-4 4M3 21l4-4M21 21l-4-4"></path></svg>Arena</span></button></span></span></span>
+    <span style="animation: csRise 320ms cubic-bezier(.22,1,.36,1) 320ms both"><button class="btn big" type="button" disabled="disabled" aria-label="Mission" style="--bc: #5C5F70; --bf: #0B0F29; --bt: #5C5F70"><span style="min-width: 210px; padding: 18px 28px; font-size: 18px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>Mission</span></button></span>
+  </nav>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const RING_ON = { ringOuter: '#99FF80', ringInner: '#00010A' };
+const RING_OFF = { ringOuter: 'transparent', ringInner: 'transparent', ringCls: '' };
+const NAMES = { toybox: 'Toy Box', arcade: 'Arcade', arena: 'Arena' };
+const pad = (n) => (n < 10 ? '0' : '') + n;
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ online: true, invite: false, asking: false, focus: null }, props.start || {});
+    this.state = { online: s.online, invite: s.invite, asking: s.asking, focus: s.focus, toast: '', left: 6 * 86400 + 3 * 3600 + 12 * 60 + 9 };
+    this.timer = null;
+    this.clock = setInterval(() => this.setState({ left: Math.max(0, this.state.left - 1) }), 1000);
+  }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); if (this.clock) clearInterval(this.clock); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  ringFor(key, cls) { return this.state.focus === key ? Object.assign({ ringCls: cls }, RING_ON) : RING_OFF; }
+  focusFns(key) {
+    return { focus: () => this.setState({ focus: key }),
+             blur: () => { if (this.state.focus === key) this.setState({ focus: null }); } };
+  }
+  hubVals(key) {
+    return Object.assign({ press: () => this.say('Opens the ' + NAMES[key] + ' window.') }, this.focusFns(key), this.ringFor(key, 'sls'));
+  }
+  renderVals() {
+    const st = this.state, l = st.left;
+    return {
+      lampColor: st.online ? '#99FF80' : '#5C5F70', lampAnim: st.online ? 'csBlink 2.4s ease-in-out infinite' : 'none',
+      status: st.online ? 'Online' : 'Offline', statusColor: st.online ? '#99FF80' : '#5C5F70',
+      lampAria: st.online ? 'Online. Go offline?' : 'Offline. Go online?',
+      lamp: () => this.setState({ asking: true }),
+      asking: st.asking, question: st.online ? 'Go offline?' : 'Go online?',
+      questionNote: st.online ? 'Party, friends and the weekly board pause until you come back.' : 'Reconnects to party, friends and the weekly board.',
+      confirm: () => this.setState({ asking: false, online: !st.online, invite: st.online ? false : st.invite }),
+      cancelAsk: () => this.setState({ asking: false }),
+      toProfile: () => this.say('Opens the profile window.'),
+      settings: () => this.say('Opens Settings.'),
+      invite: st.invite && st.online,
+      acceptInvite: () => { this.setState({ invite: false }); this.say("Joining Halcyon's party."); },
+      declineInvite: () => this.setState({ invite: false }),
+      countdown: Math.floor(l / 86400) + 'd ' + pad(Math.floor(l % 86400 / 3600)) + ':' + pad(Math.floor(l % 3600 / 60)) + ':' + pad(l % 60),
+      weekly: () => this.say('Opens the weekly challenge in the configure window.'),
+      quest: () => this.say('Opens the Profile screen on the Joust quest.'),
+      toybox: this.hubVals('toybox'), arcade: this.hubVals('arcade'), arena: this.hubVals('arena'),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.72)"></div>
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+  <div style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; background: rgba(0, 1, 10, 0.5)"></div>
+
+  <div style="position: absolute; left: 0; top: 84px; width: 1920px; height: 996px; background: rgba(0, 1, 10, 0.82)"></div>
+  <section role="dialog" aria-label="Settings" style="position: absolute; left: 160px; top: 132px; width: 1600px; height: 900px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 0ms both">
+    <div class="sl" style="position: absolute; inset: 0; background: #E6E9FF; padding: 1px">
+      <div class="sl" style="position: relative; height: 100%; box-sizing: border-box; background: #00010A; padding: 30px 48px 40px; display: flex; flex-direction: column; gap: 22px"><span aria-hidden="true" style="position: absolute; top: 14px; left: 14px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 14px; left: 14px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 14px; right: 14px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span class="lab">Settings</span>
+            <h1 style="margin: 0; font-weight: 400; font-size: 36px; line-height: 1.1">{{tabName}}</h1>
+          </div>
+          <nav aria-label="Settings tabs" style="display: flex; gap: 34px"><button class="tile" type="button" aria-label="General" onClick="{{tab0.pick}}" style="display: flex; flex-direction: column; align-items: center; gap: 8px; background: transparent"><span class="hex" style="display: grid; place-items: center; width: 70px; height: 60px; background: {{tab0.border}}"><span class="hex" style="display: grid; place-items: center; width: 66px; height: 56px; background: {{tab0.fill}}; color: {{tab0.icon}}"><svg width="24" height="24" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 1.5h4l.6 2.6 2.3 1.3 2.5-.8 2 3.4-2 1.8v2.4l2 1.8-2 3.4-2.5-.8-2.3 1.3-.6 2.6H8l-.6-2.6-2.3-1.3-2.5.8-2-3.4 2-1.8V8.8l-2-1.8 2-3.4 2.5.8 2.3-1.3z"></path><path d="M7.5 7.5h5v5h-5z"></path></svg></span></span><span class="lab" style="color: {{tab0.label}}">General</span></button><button class="tile" type="button" aria-label="Display" onClick="{{tab1.pick}}" style="display: flex; flex-direction: column; align-items: center; gap: 8px; background: transparent"><span class="hex" style="display: grid; place-items: center; width: 70px; height: 60px; background: {{tab1.border}}"><span class="hex" style="display: grid; place-items: center; width: 66px; height: 56px; background: {{tab1.fill}}; color: {{tab1.icon}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h18v11H3z"></path><path d="M8 20h8M12 16v4"></path></svg></span></span><span class="lab" style="color: {{tab1.label}}">Display</span></button><button class="tile" type="button" aria-label="Performance" onClick="{{tab2.pick}}" style="display: flex; flex-direction: column; align-items: center; gap: 8px; background: transparent"><span class="hex" style="display: grid; place-items: center; width: 70px; height: 60px; background: {{tab2.border}}"><span class="hex" style="display: grid; place-items: center; width: 66px; height: 56px; background: {{tab2.fill}}; color: {{tab2.icon}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 18a8 8 0 1116 0"></path><path d="M12 18l4-6"></path></svg></span></span><span class="lab" style="color: {{tab2.label}}">Performance</span></button><button class="tile" type="button" aria-label="Other" onClick="{{tab3.pick}}" style="display: flex; flex-direction: column; align-items: center; gap: 8px; background: transparent"><span class="hex" style="display: grid; place-items: center; width: 70px; height: 60px; background: {{tab3.border}}"><span class="hex" style="display: grid; place-items: center; width: 66px; height: 56px; background: {{tab3.fill}}; color: {{tab3.icon}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><path d="M14 5v4M8 15v4"></path></svg></span></span><span class="lab" style="color: {{tab3.label}}">Other</span></button></nav>
+          <button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">B</span></span>Close</span></button>
+        </div>
+        <sc-if value="{{restart}}" hint-placeholder-val="{{ false }}">
+          <div class="sls" role="status" style="background: #434C89; padding: 1px"><div class="sls" style="background: #0B0F29; padding: 12px 18px; font-size: 17px">Some of these changes apply after you restart the game.</div></div>
+        </sc-if>
+        <div class="scroll" style="flex: 1; min-height: 0; padding-right: 12px">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+            <div style="display: flex; align-items: center; justify-content: space-between; height: 84px; border-bottom: 1px solid #222645; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{r.d}}ms both">
+              <span style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 20px">{{r.label}}</span><span style="font-size: 15px; color: #747BAD">{{r.desc}}</span></span>
+              <div style="width: 520px; display: flex; justify-content: flex-start">
+                <sc-if value="{{r.isDd}}" hint-placeholder-val="{{ true }}">
+                  <button class="tile sls" type="button" aria-label="{{r.label}}" onClick="{{r.next}}" style="display: block; width: 440px; background: #434C89; padding: 1px">
+                    <span class="sls" style="display: flex; align-items: center; justify-content: space-between; height: 50px; box-sizing: border-box; padding: 0 18px; background: #00041F">
+                      <span style="font-size: 18px">{{r.value}}</span>
+                      <span style="color: #747BAD; display: flex; transform: rotate(90deg)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 2l5 5-5 5"></path></svg></span>
+                    </span>
+                  </button>
+                </sc-if>
+                <sc-if value="{{r.isTg}}" hint-placeholder-val="{{ false }}">
+                  <span style="display: flex; gap: 36px">
+                    <button class="tile" type="button" onClick="{{r.on}}" style="display: flex; flex-direction: column; gap: 6px; background: transparent"><span class="lab" style="font-size: 18px; color: {{r.onColor}}">On</span><span style="height: 2px; background: #00D4FF; transform-origin: left; transition: transform 200ms cubic-bezier(.33,1,.68,1); transform: scaleX({{r.onScale}})"></span></button>
+                    <button class="tile" type="button" onClick="{{r.off}}" style="display: flex; flex-direction: column; gap: 6px; background: transparent"><span class="lab" style="font-size: 18px; color: {{r.offColor}}">Off</span><span style="height: 2px; background: #00D4FF; transform-origin: left; transition: transform 200ms cubic-bezier(.33,1,.68,1); transform: scaleX({{r.offScale}})"></span></button>
+                  </span>
+                </sc-if>
+                <sc-if value="{{r.isSl}}" hint-placeholder-val="{{ false }}">
+                  <span style="display: flex; align-items: center; gap: 20px">
+                    <span style="position: relative; display: block; width: 400px; height: 26px">
+                      <span style="position: absolute; left: 0; top: 11px; width: 400px; height: 4px; background: #003648"></span>
+                      <span style="position: absolute; left: 0; top: 11px; width: {{r.fill}}px; height: 4px; background: #00D4FF; transform-origin: left; animation: csGrowX 320ms cubic-bezier(.22,1,.36,1) {{r.d}}ms both"></span>
+                      <span class="hex" style="position: absolute; left: {{r.knob}}px; top: 0; transition: left 200ms cubic-bezier(.33,1,.68,1); display: grid; place-items: center; width: 30px; height: 26px; background: #00D4FF"><span class="hex" style="display: block; width: 24px; height: 20px; background: #E6E9FF"></span></span>
+                    </span>
+                    <span class="num" style="font-size: 20px; width: 48px; text-align: right">{{r.value}}</span>
+                  </span>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{isPerf}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 14px; margin-top: 22px"><button class="btn" type="button" onClick="{{autoDetect}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Auto detect</span></button><button class="btn" type="button" onClick="{{bench}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Run benchmark</span></button></div>
+          </sc-if>
+          <sc-if value="{{isGeneral}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 26px"><button class="btn" type="button" onClick="{{link}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Bug report</span></button><button class="btn" type="button" onClick="{{link}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Privacy policy</span></button><button class="btn" type="button" onClick="{{link}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Delete my data</span></button><button class="btn" type="button" onClick="{{link}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Credits</span></button><button class="btn" type="button" onClick="{{link}}" style="--bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span>Quit game</span></button></div>
+          </sc-if>
+        </div>
+        <div style="display: flex; justify-content: flex-end"><span class="lab num">Version 0.2.0</span></div>
+      </div>
+    </div>
+  </section>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const SETTINGS = {"General": [{"k": "dd", "label": "Colorblind mode", "desc": "Adjusts team colours for colour vision deficiency.", "opts": ["Off", "Protanopia", "Deuteranopia", "Tritanopia"], "v": 0}, {"k": "tg", "label": "Subtitles", "desc": "Captions for spoken lines.", "v": false}, {"k": "dd", "label": "Subtitle size", "desc": "How large the captions are.", "opts": ["Small", "Medium", "Large"], "v": 1}, {"k": "tg", "label": "Analytics and crash reports", "desc": "Share anonymous usage and crash reports so bugs get fixed.", "v": true}], "Display": [{"k": "dd", "label": "Display mode", "desc": "Fullscreen, a borderless window, or a window.", "opts": ["Fullscreen", "Borderless", "Windowed"], "v": 0}, {"k": "dd", "label": "Resolution", "desc": "Native follows your monitor.", "opts": ["Native", "1920 x 1080", "2560 x 1440", "3840 x 2160"], "v": 0}, {"k": "dd", "label": "Frame rate limit", "desc": "Caps how many frames are drawn each second.", "opts": ["30", "60", "120", "144", "240", "Uncapped"], "v": 1}, {"k": "tg", "label": "V-Sync", "desc": "Syncs frames to the monitor to stop tearing.", "v": true}, {"k": "sl", "label": "Field of view", "desc": "Wider shows more around your vessel.", "lo": 60, "hi": 90, "v": 75}], "Performance": [{"k": "dd", "label": "Quality preset", "desc": "Sets every option below in one step.", "opts": ["Very Low", "Low", "Medium", "High", "Very High", "Ultra", "Custom"], "v": 3, "restart": true}, {"k": "dd", "label": "Anti-aliasing", "desc": "Smooths jagged edges.", "opts": ["Off", "FXAA", "SMAA", "MSAA 2x", "MSAA 4x", "MSAA 8x", "TAA"], "v": 2, "restart": true, "custom": true}, {"k": "dd", "label": "Texture quality", "desc": "Lower saves video memory.", "opts": ["Full", "Half", "Quarter", "Eighth"], "v": 0, "restart": true, "custom": true}, {"k": "dd", "label": "Upscaling", "desc": "Draws fewer pixels and scales up for speed.", "opts": ["Auto", "Linear", "FSR", "STP"], "v": 0, "restart": true, "custom": true}, {"k": "dd", "label": "Adaptive performance", "desc": "Lowers detail when the device runs hot.", "opts": ["Off", "Balanced", "Aggressive"], "v": 1}, {"k": "dd", "label": "Physics / collider detail", "desc": "Lower uses simpler collision shapes.", "opts": ["Low", "High"], "v": 1}], "Other": [{"k": "tg", "label": "Invert Y", "desc": "Pull back to climb.", "v": false}, {"k": "tg", "label": "Invert throttle", "desc": "Swap which way the throttle runs.", "v": false}, {"k": "tg", "label": "Music", "desc": "Play the soundtrack.", "v": true}, {"k": "sl", "label": "Music volume", "desc": "How loud the soundtrack is.", "lo": 0, "hi": 100, "v": 70}, {"k": "tg", "label": "SFX", "desc": "Play sound effects.", "v": true}, {"k": "sl", "label": "SFX volume", "desc": "How loud the effects are.", "lo": 0, "hi": 100, "v": 85}, {"k": "tg", "label": "Haptics", "desc": "Controller rumble.", "v": true}]};
+const TABS = ["General", "Display", "Performance", "Other"];
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ tab: 'General', restart: false }, props.start || {});
+    this.state = { tab: s.tab, vals: JSON.parse(JSON.stringify(SETTINGS)), restart: s.restart, toast: '' };
+    if (s.custom) this.state.vals.Performance[0].v = 6;
+    this.timer = null;
+  }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  set(tab, i, v, row) {
+    const vals = JSON.parse(JSON.stringify(this.state.vals));
+    vals[tab][i].v = v;
+    if (row.custom) vals.Performance[0].v = 6;
+    this.setState({ vals, restart: this.state.restart || !!row.restart });
+  }
+  renderVals() {
+    const st = this.state, list = st.vals[st.tab];
+    const rows = list.map((r, i) => {
+      const o = { label: r.label, desc: r.desc || '', d: 120 + Math.min(i, 8) * 40, isDd: r.k === 'dd', isTg: r.k === 'tg', isSl: r.k === 'sl' };
+      if (r.k === 'dd') { o.value = r.opts[r.v]; o.next = () => this.set(st.tab, i, (r.v + 1) % (r.opts[r.opts.length - 1] === 'Custom' ? r.opts.length - 1 : r.opts.length), r); }
+      if (r.k === 'tg') { o.onColor = r.v ? '#E6E9FF' : '#5C5F70'; o.offColor = r.v ? '#5C5F70' : '#E6E9FF';
+                          o.onScale = r.v ? 1 : 0; o.offScale = r.v ? 0 : 1;
+                          o.on = () => this.set(st.tab, i, true, r); o.off = () => this.set(st.tab, i, false, r); }
+      if (r.k === 'sl') { const f = (r.v - r.lo) / (r.hi - r.lo); o.fill = Math.round(f * 400); o.knob = Math.round(f * 370); o.value = String(r.v); }
+      return o;
+    });
+    const tab = (t) => { const on = st.tab === t; return { pick: () => this.setState({ tab: t }), border: on ? '#E6E9FF' : '#434C89',
+                         fill: on ? '#222645' : '#00041F', icon: on ? '#E6E9FF' : '#747BAD', label: on ? '#E6E9FF' : '#747BAD' }; };
+    return {
+      tabName: st.tab, tab0: tab('General'), tab1: tab('Display'), tab2: tab('Performance'), tab3: tab('Other'),
+      rows, restart: st.restart && st.tab === 'Performance', isPerf: st.tab === 'Performance', isGeneral: st.tab === 'General',
+      autoDetect: () => this.say('Picks settings for this machine and redraws the tab.'),
+      bench: () => this.say('Starts the benchmark scene.'),
+      link: () => this.say('Opens the page in your browser (Credits opens the credits window).'),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
