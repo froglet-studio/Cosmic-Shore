@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: (open design slot)
-    AbilityDescription: '(open design slot) The Vessel Studio proposes "Weapon power": Charge scales the Arms seat's weapon: reach, blast and rate. This element scales weaponPower x1 to x1.6 at level 10 (OmegaMath.ElementMults). Not wired and not signed off - OMEGA_CREW.md section 7.'
+    AbilityDescription: '(open design slot) The Vessel Studio proposes "Weapon power": Charge scales the Arms seat''s weapon: reach, blast and rate. This element scales weaponPower x1 to x1.6 at level 10 (OmegaMath.ElementMults). Not wired and not signed off - OMEGA_CREW.md section 7.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
