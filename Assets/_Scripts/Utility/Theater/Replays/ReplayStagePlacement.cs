@@ -17,7 +17,10 @@ namespace CosmicShore.Utility
         /// <summary>What to add to every recorded position so the match lands on a stage at <paramref name="stageOrigin"/>.</summary>
         public static Vector3 Offset(Vector3 recordedArenaOrigin, Vector3 stageOrigin) => stageOrigin - recordedArenaOrigin;
 
-        /// <summary>Add <paramref name="offset"/> to every pose of every track. Times, rotations and speeds are untouched.</summary>
+        /// <summary>
+        /// Add <paramref name="offset"/> to every pose of every track, and to every recorded prism of
+        /// its world. Times, rotations, speeds and scales are untouched.
+        /// </summary>
         public static void Shift(TheaterRecording recording, Vector3 offset)
         {
             if (recording == null) return;
@@ -31,6 +34,7 @@ namespace CosmicShore.Utility
                     poses[i] = pose;
                 }
             }
+            recording.World?.Shift(offset);
         }
     }
 }

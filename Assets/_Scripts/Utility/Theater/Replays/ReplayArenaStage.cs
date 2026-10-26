@@ -38,12 +38,29 @@ namespace CosmicShore.Utility
         GameObject _host;
         ModePreviewGateCourse _course;
         bool _striking;
+        Vector3 _origin;
 
         /// <summary>The arena's centre - where the recorded arena origin lands.</summary>
-        public Vector3 Origin => _arena.Origin;
+        public Vector3 Origin => _origin;
 
-        /// <summary>True once the arena's cell has finished building.</summary>
+        /// <summary>True once the arena's cell has finished building, or the recorded world's stage is set.</summary>
         public bool IsStanding { get; private set; }
+
+        /// <summary>
+        /// Set the stage for a replay that carries its own recorded world (<see cref="TheaterWorld"/>):
+        /// no cell is built - the recorded prisms ARE the arena, drawn by <see cref="TheaterWorldPlayback"/> -
+        /// only the recorded rings, which are markers and not prisms, are stood at <paramref name="origin"/>.
+        /// </summary>
+        public bool StandRecordedWorld(GameModes mode, Vector3 origin, IReadOnlyList<ReplayGate> recordedGates,
+                                       ThemeManagerDataContainerSO theme)
+        {
+            if (IsStanding || _striking || _arena.Cell) return false;
+            _origin = origin;
+            if (recordedGates is { Count: > 0 }) RaiseRecordedCourse(mode, recordedGates, theme);
+            IsStanding = true;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Replay] recorded world for {mode} standing at {origin}.");
+            return true;
+        }
 
         /// <summary>
         /// Build the arena for <paramref name="mode"/> at <paramref name="origin"/> and wait for it.
@@ -79,6 +96,7 @@ namespace CosmicShore.Utility
             {
                 if (!_arena.Stand(definition, config, template, template.gameObject, origin, container, intensity, prismStride))
                     return false;
+                _origin = _arena.Origin;
 
                 float elapsed = 0f;
                 while (_arena.Cell && _arena.Cell.IsSwappingConfig)
@@ -153,7 +171,7 @@ namespace CosmicShore.Utility
             var rings = new List<RaceGateRing>(gates.Count);
             for (int i = 0; i < gates.Count; i++)
             {
-                var gate = new RaceGate(_arena.Origin + gates[i].Position, gates[i].Axis, gates[i].Radius);
+                var gate = new RaceGate(_origin + gates[i].Position, gates[i].Axis, gates[i].Radius);
                 course.Add(gate);
                 var go = new GameObject($"Gate_{i + 1:00}");
                 go.transform.SetParent(_host.transform, false);
@@ -179,7 +197,7 @@ namespace CosmicShore.Utility
             _host = new GameObject($"ReplayStage ({definition.Mode})");
             _course = _host.AddComponent<ModePreviewGateCourse>();
             float nucleus = _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : 0f;
-            if (!_course.Raise(definition.Mode, intensity, config, nucleus, _arena.Origin, theme)) return;
+            if (!_course.Raise(definition.Mode, intensity, config, nucleus, _origin, theme)) return;
 
             if (definition.CourseStructurePrefab)
                 _arena.BuildCourseStructure(definition.CourseStructurePrefab, _course.Source, _course.CellLocalCourse, intensity);
