@@ -92,6 +92,19 @@
   .seat b { font-weight: 600; }
   .seat small { color: var(--muted); display: block; }
   .seat select { font-size: 12px; }
+  .kit { display: grid; gap: 12px; }
+  .kgrp { display: grid; gap: 6px; border-left: 3px solid var(--accent); padding-left: 8px; }
+  .kgrp h4 { margin: 0; color: var(--accent); }
+  .kcard { display: grid; gap: 3px; }
+  .ktop { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .kin { font-size: 0.78em; opacity: 0.75; min-width: 3.2em; }
+  .kname { font-weight: 700; }
+  .kst { margin-left: auto; font-size: 0.75em; opacity: 0.85; }
+  .kst.new { color: var(--warn, #c98a00); }
+  .kst.part { color: var(--info, #3a8fb7); }
+  .kwhat { line-height: 1.4; }
+  .kfrom { font-size: 0.8em; opacity: 0.65; }
+  .combos { margin: 4px 0 0 18px; padding: 0; display: grid; gap: 4px; }
   .abilities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .ab { border: 1px solid var(--line); border-radius: 8px; padding: 7px 4px; display: grid; gap: 4px; justify-items: center; text-align: center; background: var(--panel-2); position: relative; overflow: hidden; }
   .ab .ic { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--accent); }
@@ -261,6 +274,13 @@
         <h3>Zooids <span>parts, not vessels</span></h3>
         <div class="tblwrap"><table class="tbl"><thead><tr><th>Role</th><th>Zooid</th><th>Its one verb</th><th>Cruise</th><th>Turn</th><th>Move (RT)</th></tr></thead><tbody id="members"></tbody></table></div>
         <p class="note" id="colonyInfo"></p>
+      </div>
+      <div class="panel" id="grp-kit">
+        <h3>Ability kit <span>round 2 proposal</span></h3>
+        <p class="note">Each zooid owns one element: the Bell Space, the Sting Charge, the Bract Mass, the colony Time. Every zooid has a passive and two triggers; B calls the colony from any zooid. Each one is borrowed from a shipped vessel or a concept prototype, named under it.</p>
+        <div id="kit" class="kit"></div>
+        <h4>Why it is one vessel</h4>
+        <ul class="combos" id="kitCombos"></ul>
       </div>
       <div class="panel" id="grp-abilities">
         <h3>Ability row <span>the colony's four, proposals</span></h3>

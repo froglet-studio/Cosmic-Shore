@@ -60,11 +60,15 @@
     ['surgeSeconds', 0, 6, 0.5, 'Surge', 'Seconds the zooids keep the colony\'s speed after a split (Time L5 proposes 3)'],
   ];
   const ELEMENTS = {   // the colony's four, proposals (the fleet contract: one scaled parameter per element)
-    charge: { name: 'Venom', param: 'huskPerShot', range: [1, 3], l5: 'Venom', tip: 'Charge: each venom shot breaks more of a husk (x1 to x3). L5 Venom: one shot opens a husk.' },
-    mass: { name: 'Trawl', param: 'netRadius', range: [1, 1.6], l5: 'Trawl', tip: 'Mass: a wider net (x1 to x1.6). L5 Trawl: the hold takes one more.' },
-    space: { name: 'Lantern', param: 'lanternRange', range: [1, 1.8], l5: 'Beacon', tip: 'Space: the lantern reaches farther (x1 to x1.8). L5 Beacon: the pulse lights every crystal in the window.' },
-    time: { name: 'Digest', param: 'digestSeconds', range: [1, 0.5], l5: 'Surge', tip: 'Time: the colony digests faster (x1 to x0.5). L5 Surge: the zooids keep the colony\'s speed for 3 s after a split.' },
+    charge: { name: 'Venom', param: 'huskPerShot', range: [1, 3], l5: 'Contagion', tip: 'Charge (the Sting): each venom round breaks more of a husk (x1 to x3). L5 Contagion (proposal, not flown yet): a husk the venom opens poisons the next husk in the window.' },
+    mass: { name: 'Trawl', param: 'netRadius', range: [1, 1.6], l5: 'Trawl', tip: 'Mass (the Bract): a wider net (x1 to x1.6). L5 Trawl: the hold takes one more.' },
+    space: { name: 'Lantern', param: 'lanternRange', range: [1, 1.8], l5: 'Beacon', tip: 'Space (the Bell): the lantern reaches farther (x1 to x1.8). L5 Beacon: the pulse lights every crystal in the window.' },
+    time: { name: 'Digest', param: 'digestSeconds', range: [1, 0.5], l5: 'Surge', tip: 'Time (the colony): the colony digests faster (x1 to x0.5). L5 Surge: the zooids keep the colony\'s speed for 3 s after a split.' },
   };
+  // ================= the ability kit (round 2 proposal, 2026-10-27): every zooid's passive and two triggers, the colony's seats; borrowed from the fleet =================
+  // state: 'sim' = flown by this page today, 'part' = flown in part, 'new' = a proposal the sim does not fly yet
+  const KIT = [["Bell", "space", "passive", "Lantern", "Lights every dark crystal within its reach. Space grows the reach x1 to x1.8.", "Dolphin Echo Sight, Angler Paint", "sim"], ["Bell", "space", "RT", "Pulse Jet", "Hold to inhale, release to jet. Release on the beat of your last two pulses and the chain grows x1.1 a pulse, up to x1.8. Each pulse doubles the lantern for 1 s.", "Octopus pulse jet", "part"], ["Bell", "space", "LT", "Slipstream", "Hold to lead: the Sting and the Bract form up in the Bell's wake, one, two, three, and draft at its speed x1.3. The march is a Bell ability, not a rule.", "Remora draft, Jacks The Call", "new"], ["Bell", "space", "L5", "Beacon", "A pulse lights every crystal of the window at once.", "Dolphin Pilot Echo", "sim"], ["Sting", "charge", "RT", "Nematocyst Volley", "Hold for aimed venom out to 160 u. A round breaks the husk of a lit crystal (Charge: x1 to x3 husk prisms a round); with no crystal on the line it smashes the mass there.", "Sparrow Pulsefire, Urchin Chain Spikes", "sim"], ["Sting", "charge", "LT", "Tentacle Lash", "The Sting streams a tentacle of its own trail. Hold to coil: the turn doubles and the tentacle bunches. Let go and it whips straight, cutting the mass it sweeps; a rival hull it strikes loses petals, which spill as crystals.", "Eel coil and whip, Thresher, Wrasse Kite Ram", "new"], ["Sting", "charge", "passive", "Reel", "When a volley or a lash lands on a target more than 120 u away, a strand pulls the Sting toward it like a bungee: the slowest zooid catches up by hitting things.", "Gibbon web, Shrike Void Sling", "new"], ["Sting", "charge", "L5", "Contagion", "A husk the venom opens poisons the next husk in the window: one volley opens two crystals.", "Manta Contagion, Urchin Overcharge", "new"], ["Bract", "mass", "RT", "Net Cast", "Catches the freed crystals within its reach into the hold (three at most). Mass grows the reach x1 to x1.6. Only the Bract can carry the catch.", "Jacks netting, Angler Lure", "sim"], ["Bract", "mass", "LT", "Bract Shell", "Hold to ring the Bract in super-shielded plates, open ahead, that clear the mass they meet. Let go and the plates drop where they are as danger prisms: a trap for a rival on the hold's tail.", "Orca Danger Shield, Rhino afterimages", "part"], ["Bract", "mass", "passive", "Anchor", "Stop on mass and the Bract digs in: its net reaches twice as far and the other two dock to it in half the time. Where the Bract sits is where the colony forms.", "Grizzly Dig In, Shrike Nest, Gecko stick", "part"], ["Bract", "mass", "L5", "Trawl", "The hold takes one more, and the net also catches the crystals a rival sheds when the Sting lashes it.", "Wrasse Crystal Steal, Squirrel Steal", "part"], ["Colony", "time", "passive", "Digest", "One held crystal into the score every 2 s. Time shortens it x1 to x0.5. The hold empty and the wall open, the colony splits on its own.", "Siphonophore (its own)", "sim"], ["Colony", "time", "Helm RT", "Ram Spool", "Hold to wind the colony up. At full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit.", "Rhino Ramp Spool and Breaker, Thresher smash speed", "part"], ["Colony", "time", "Helm LT", "Scatter", "Hold to split. Let go and the three zooids are flung x1.4 along the stick, each toward its own next crystal.", "Remora sling, Gecko hop, Butterfly Fold", "part"], ["Colony", "time", "Lance RT", "Siphon Lance", "Aim with the right stick: a hitscan line out to 400 u that cuts mass and wall cells.", "Shrike Void Lance, Serpent Sniper Shot", "sim"], ["Colony", "time", "Ward LT", "Colony Shell", "While held, the hull ploughs through the mass it meets instead of being slowed.", "Grizzly Rush, Brittle Star Speed Mode", "sim"], ["Colony", "time", "Ward RT", "Chain Wake", "The colony lays its own body behind it as a short chain of shielded prisms, a wall a chasing rival bounces off.", "Eel body, Brittle Star corner trails", "new"], ["Colony", "time", "L5", "Surge", "After a split the zooids keep the colony's speed for 3 s.", "Remora sling, Urchin Slipstream", "sim"]].map(([part, el, input, name, what, from, state]) => ({ part, el, input, name, what, from, state }));
+  const KIT_COMBOS = ["Light, venom, net, digest: each zooid's verb is the next one's condition, so none of them scores alone.", "Lash, Trawl, Digest: the Sting knocks a rival's petals loose as crystals, the Bract nets them, the colony digests them. A steal no single zooid can finish.", "Slipstream carries the slow pair: the Bell leads, and the Sting and the Bract keep its pace only in its wake.", "Anchor sets the fuse point, and the Bract Shell's danger drop covers the docking.", "The Bell's pulse chain carries into the fuse: the colony's spool starts at the chain's multiplier.", "Scatter aims the split: the three zooids land on the window's three crystals, one each."];
   const STYLES = [
     { name: 'Balanced', lv: { charge: 0, mass: 0, space: 0, time: 0 }, info: 'Every element at 0: the lab\'s numbers.' },
     { name: 'Scout', lv: { charge: 0, mass: 0, space: 10, time: 10 }, info: 'See far, digest fast: short colony phases, a long apart phase.' },
@@ -193,7 +197,7 @@
     for (let k = -30; k <= 60; k++) { const i = ((hint + k) % n + n) % n; const d = L[i].distanceToSquared(pos); if (d < bd) { bd = d; best = i; } }
     return best;
   }
-  window.__siphParts = { T, V, Q, TRACKS, COURSE_INFO, BASE, DIFF, DEG, lerp, clamp, ease, easeInv, rng, elx, ELS, EL_COLOR, SEATS, ROLES, ZOOIDS, BY_ID, COLONY, DEFAULTS, SPEC, ELEMENTS, STYLES, S, LS, save, par, mults, styleOf, colonyFlight,
+  window.__siphParts = { T, V, Q, TRACKS, COURSE_INFO, BASE, DIFF, DEG, lerp, clamp, ease, easeInv, rng, elx, ELS, EL_COLOR, SEATS, ROLES, ZOOIDS, BY_ID, COLONY, DEFAULTS, SPEC, ELEMENTS, STYLES, KIT, KIT_COMBOS, S, LS, save, par, mults, styleOf, colonyFlight,
     buildTrack, Grid, basisQuat, tmpArr, AX, AY, AZ, dq, fwdOf, upOf, rightOf, addPrism, removePrism, smashNear, hitWall, makeBody, makeWorld, windowOf, nearestIndex, $ };
 })();
 
@@ -612,7 +616,7 @@
 // ================= part E: input (pad, keys, phone: one input object), the run, the panels, the HUD, the loop, the hooks =================
 (function () {
   'use strict';
-  const P = window.__siphParts, { T, V, BASE, COURSE_INFO, DIFF, S, LS, save, par, mults, styleOf, ZOOIDS, COLONY, DEFAULTS, SPEC, ELEMENTS, STYLES, ELS, EL_COLOR, SEATS, ROLES, clamp, lerp, elx, $, bodiesNow, flown, canvas, renderer, scene, cam, ENV, mark, windowOf, colonyFlight } = P;
+  const P = window.__siphParts, { T, V, BASE, COURSE_INFO, DIFF, S, LS, save, par, mults, styleOf, ZOOIDS, COLONY, DEFAULTS, SPEC, ELEMENTS, STYLES, KIT, KIT_COMBOS, ELS, EL_COLOR, SEATS, ROLES, clamp, lerp, elx, $, bodiesNow, flown, canvas, renderer, scene, cam, ENV, mark, windowOf, colonyFlight } = P;
   const fmt = (x) => (Math.abs(x) >= 100 ? x.toFixed(0) : Math.abs(x) >= 10 ? x.toFixed(1) : x.toFixed(2)).replace(/\.0+$/, '');
 
   // ---- input ----
@@ -765,6 +769,17 @@
     row.append(lab, inp, out, what); $('elements').appendChild(row); elRows[el] = { inp, out, wl, badge, e };
     const c = elx('div', 'ab'); c.style.setProperty('--accent', 'var(' + EL_COLOR[el] + ')'); const st = elx('div', 'st'), nm = elx('div', 'nm', e.name); c.append(elx('div', 'ic', el[0].toUpperCase()), nm, st); $('abilities').appendChild(c); abCards[el] = { c, st, nm };
   }
+  (function renderKit() {
+    const STATE = { sim: 'in the sim', part: 'in part', new: 'proposal' }, host = $('kit'), ROLE = { Bell: 'mobility \u00b7 Space', Sting: 'attack \u00b7 Charge', Bract: 'defence \u00b7 Mass', Colony: 'fused \u00b7 Time' };
+    let grp = null, last = '';
+    for (const k of KIT) {
+      if (k.part !== last) { last = k.part; grp = elx('div', 'kgrp'); grp.style.setProperty('--accent', 'var(' + EL_COLOR[k.el] + ')'); grp.appendChild(elx('h4', null, k.part + ' \u00b7 ' + ROLE[k.part])); host.appendChild(grp); }
+      const card = elx('div', 'kcard'), top = elx('div', 'ktop');
+      top.append(elx('span', 'kin', k.input), elx('span', 'kname', k.name), elx('span', 'kst ' + k.state, STATE[k.state]));
+      card.append(top, elx('div', 'kwhat', k.what), elx('div', 'kfrom', 'from ' + k.from)); grp.appendChild(card);
+    }
+    const ul = $('kitCombos'); for (const c of KIT_COMBOS) ul.appendChild(elx('li', null, c));
+  })();
   function applyLevels() { if (!W) return; W.lv = Object.assign({}, S.lv); W.m = mults(W.lv); }
   const specInputs = {};
   for (const [key, lo, hi, step, label, tip] of SPEC) {
@@ -898,7 +913,7 @@
   const IDE = VesselStudioIDE.build({
     key: 'siphonophore-studio-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
     right: [['scene', 'Scene Config', [$('grp-scene'), $('grp-world')]], ['game', 'Game Config', [$('grp-intensity'), $('grp-loop'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), document.querySelector('.afternote')]],
-      ['style', 'Play Style Config', [$('grp-style'), $('grp-elements')]], ['input', 'Input', [$('grp-controls'), $('grp-feel')]], ['others', 'Vessel Config', [$('grp-mechanic'), $('grp-members'), $('grp-abilities'), $('grp-live')]]],
+      ['style', 'Play Style Config', [$('grp-style'), $('grp-elements')]], ['input', 'Input', [$('grp-controls'), $('grp-feel')]], ['others', 'Vessel Config', [$('grp-kit'), $('grp-mechanic'), $('grp-members'), $('grp-abilities'), $('grp-live')]]],
     bottom: [['score', 'Scorecard', [$('grp-score')]], ['runs', 'Runs', [$('grp-runs')]], ['decisions', 'Decisions', [$('grp-decisions')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
     railW: 390, dockH: 250, winSize: { score: [900, 400], runs: [700, 360], decisions: [520, 420] }, onLayout: () => P.forceResize(),
   });
@@ -910,6 +925,7 @@
   // ---- hooks: the /labmaker contract (__lab) and the studio hook ----
   const SHIPPED = Object.assign({}, DEFAULTS);
   Object.assign(LAB, {
+    KIT, KIT_COMBOS,
     SHIPPED, SPEC: SPEC.map((r) => ['loop'].concat(r)), P: S.params, PLATFORM,
     reset: (seed) => { seedN = seed == null ? 1 : seed; newRun(); run = 'running'; paused = false; $('overlay').hidden = true; },
     tick: (dt, n) => { for (let i = 0; i < (n || 1); i++) { if (!W || W.over) break; P.stepAll(W, dt, -1, null); } },
