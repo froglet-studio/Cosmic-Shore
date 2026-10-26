@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,28 +14,72 @@ namespace CosmicShore.UI
     }
 
     /// <summary>
-    /// The Hangar's right-hand panel: five tabs - Abilities, Upgrades, Games, Pilots, Artifacts (rev 3:
-    /// "on the right there should be place for 5 tabs and swapping should be animated pretty cool").
+    /// A page that names what it shows in the Hangar's header while it is on screen (Rev 24: the PILOTS tab puts the
+    /// selected pilot's name and line where the vessel's were).
+    /// </summary>
+    public interface IHangarHeader
+    {
+        /// <summary>False while the page has nothing to name (the vessel's header stays).</summary>
+        bool TryGetHeader(out string kicker, out string title, out string line);
+
+        /// <summary>Raised when what the page names changes (another pilot picked).</summary>
+        event System.Action HeaderChanged;
+    }
+
+    /// <summary>
+    /// The Hangar's right-hand panel. Rev 25 (Shombith, 2026-10-26: "Overview, Abilities, Upgrades, Games, Pilots and
+    /// artifacts all are on the same tab nav bars"): one row of tabs, each page its own tab (a group of one), LB / RB
+    /// stepping through all of them. Rev 24 grouped them - OVERVIEW's parts on LB / RB and the groups on Y - and a group
+    /// of several pages still works that way. The header above the vessel follows the tab: the vessel on its own pages,
+    /// the pilot on PILOTS, the slot on ARTIFACTS ("the header text can change as per the tab we are in").
     ///
-    /// <para>A swap is one short beat: the underline glides to the new tab (KitTextTab), the old page
-    /// slides out to the left and fades, the new one wipes in from the right with a slight skew settling
-    /// to square, and a scan line sweeps the panel. Interruptible - a second press mid-swap starts the
-    /// next swap from wherever the pages are. LB / RB step through the tabs (pad); a tap or click on a tab
-    /// jumps to it. Pages show and hide through their CanvasGroups (KitVisibility).</para>
+    /// <para>Underneath it is still one strip of pages (<see cref="tabs"/>, left to right), each group a run of them
+    /// (<see cref="groups"/>). A swap is one short beat: the underline glides to the new tab (KitTextTab), the old page
+    /// slides out and fades, the new one wipes in with a slight skew settling to square. Interruptible. Pages show and
+    /// hide through their CanvasGroups (KitVisibility). With no groups authored, LB / RB step every page (the rev-3
+    /// panel).</para>
     /// </summary>
     public class HangarTabsView : MonoBehaviour
     {
         [System.Serializable]
         public class Tab
         {
+            [Tooltip("The page's own button: an OVERVIEW part in the parts row. Empty for a group's only page.")]
             public KitTextTab button;
             public CanvasGroup page;
             [Tooltip("The page's component that takes the selected vessel (optional for a static page).")]
             public MonoBehaviour pageLogic;
         }
 
-        [Header("Tabs (left to right)")]
+        [System.Serializable]
+        public class Group
+        {
+            [Tooltip("The tab in the top row (OVERVIEW, PILOTS, ARTIFACTS).")]
+            public KitTextTab button;
+            [Tooltip("The group's first page in Tabs.")]
+            public int firstPage;
+            [Tooltip("How many pages the group has; LB / RB step them when it is more than one.")]
+            [Min(1)] public int pageCount = 1;
+            [Tooltip("Shown while the group is on screen: OVERVIEW's parts row with its LB / RB keycaps (optional).")]
+            public CanvasGroup partsRow;
+            [Tooltip("The header's kicker on this tab; {vessel} is filled in. Empty (with an empty title) keeps the vessel's header, unless the page names its own.")]
+            public string kickerTemplate;
+            [Tooltip("The header's title on this tab; {vessel} is filled in.")]
+            public string titleTemplate;
+            [Tooltip("The header's line on this tab; {vessel} is filled in.")]
+            public string lineTemplate;
+        }
+
+        [Header("Pages (left to right)")]
         [SerializeField] private Tab[] tabs = System.Array.Empty<Tab>();
+
+        [Header("Tabs (Rev 24)")]
+        [SerializeField] private Group[] groups = System.Array.Empty<Group>();
+
+        [Header("Header (follows the tab)")]
+        [SerializeField] private TMP_Text headerKickerText;
+        [SerializeField] private TMP_Text headerTitleText;
+        [SerializeField] private TMP_Text headerLineText;
 
         [Header("Motion")]
         [SerializeField, Min(0.01f)] private float swapSeconds = 0.32f;
@@ -49,15 +94,20 @@ namespace CosmicShore.UI
         [SerializeField] private float scanTravel = 820f;
 
         [Header("Input")]
-        [Tooltip("Step tabs with the pad's shoulder buttons (LB / RB). Keyboard players click the tabs: Q and E " +
+        [Tooltip("Step OVERVIEW's parts with the pad's shoulder buttons (LB / RB). Keyboard players click the tabs: Q and E " +
                  "are ability keys (ControlGlyphSet), so they cannot double as tab keys.")]
         [SerializeField] private bool shoulderInput = true;
+        [Tooltip("Step the tabs (OVERVIEW, PILOTS, ARTIFACTS) with the pad's Y. On Home Y opens the profile; on the Hangar it is free.")]
+        [SerializeField] private bool northInput = true;
 
         int _current;
         int _previous = -1;
         float _t = 1f;
+        int _group = -1;
+        int[] _groupPage = System.Array.Empty<int>();
         SO_Vessel _vessel;
         HangarVesselStage _stage;
+        string _vesselKicker, _vesselTitle, _vesselLine;
 
         public int Current => _current;
 
@@ -67,6 +117,14 @@ namespace CosmicShore.UI
             {
                 int index = i;
                 if (tabs[i].button) tabs[i].button.onClick.AddListener(() => Show(index));
+                if (tabs[i].pageLogic is IHangarHeader header) header.HeaderChanged += RefreshHeader;
+            }
+            _groupPage = new int[groups.Length];
+            for (int g = 0; g < groups.Length; g++)
+            {
+                int index = g;
+                _groupPage[g] = groups[g].firstPage;
+                if (groups[g].button) groups[g].button.onClick.AddListener(() => ShowGroup(index));
             }
             ShowInstant(0);
         }
@@ -78,6 +136,23 @@ namespace CosmicShore.UI
             _stage = stage;
             foreach (var tab in tabs)
                 if (tab.pageLogic is IHangarTabPage page) page.SetVessel(vessel, stage);
+            RefreshHeader();
+        }
+
+        /// <summary>The vessel's own header (kicker, name, line): what OVERVIEW shows, and any tab that names nothing.</summary>
+        public void SetVesselHeader(string kicker, string title, string line)
+        {
+            _vesselKicker = kicker;
+            _vesselTitle = title;
+            _vesselLine = line;
+            RefreshHeader();
+        }
+
+        public void ShowGroup(int group)
+        {
+            if (groups.Length == 0) return;
+            group = (group % groups.Length + groups.Length) % groups.Length;
+            Show(_groupPage[group]);
         }
 
         public void Show(int index)
@@ -99,6 +174,7 @@ namespace CosmicShore.UI
                 tabs[_previous].page.interactable = false;
                 tabs[_previous].page.blocksRaycasts = false;
             }
+            ApplyGroup();
         }
 
         void ShowInstant(int index)
@@ -114,16 +190,69 @@ namespace CosmicShore.UI
                 if (tabs[i].pageLogic is IHangarTabPage page) page.SetActivePage(i == index);
             }
             if (scanGroup) scanGroup.alpha = 0f;
+            _group = -1;
+            ApplyGroup();
+        }
+
+        int GroupOf(int page)
+        {
+            for (int g = 0; g < groups.Length; g++)
+                if (page >= groups[g].firstPage && page < groups[g].firstPage + groups[g].pageCount) return g;
+            return -1;
+        }
+
+        /// <summary>The tab row, the parts row and the header for the page now on screen.</summary>
+        void ApplyGroup()
+        {
+            int group = GroupOf(_current);
+            if (group >= 0) _groupPage[group] = _current;
+            if (group != _group)
+            {
+                _group = group;
+                for (int g = 0; g < groups.Length; g++)
+                {
+                    if (groups[g].button) groups[g].button.IsSelected = g == group;
+                    if (groups[g].partsRow) KitVisibility.SetShown(groups[g].partsRow, g == group);
+                }
+            }
+            RefreshHeader();
+        }
+
+        void RefreshHeader()
+        {
+            string kicker = _vesselKicker, title = _vesselTitle, line = _vesselLine;
+            var group = _group >= 0 && _group < groups.Length ? groups[_group] : null;
+            var named = _current >= 0 && _current < tabs.Length ? tabs[_current].pageLogic as IHangarHeader : null;
+            if (named != null && named.TryGetHeader(out var k, out var t, out var l))
+            {
+                kicker = k;
+                title = t;
+                line = l;
+            }
+            else if (group != null && !string.IsNullOrEmpty(group.titleTemplate))
+            {
+                string vessel = _vessel ? _vessel.CardName.ToUpperInvariant() : string.Empty;
+                kicker = TemplateText.Fill(group.kickerTemplate, "vessel", vessel);
+                title = TemplateText.Fill(group.titleTemplate, "vessel", vessel);
+                line = TemplateText.Fill(group.lineTemplate, "vessel", vessel);
+            }
+            if (headerKickerText) headerKickerText.text = kicker ?? string.Empty;
+            if (headerTitleText) headerTitleText.text = title ?? string.Empty;
+            if (headerLineText) headerLineText.text = line ?? string.Empty;
         }
 
         void Update()
         {
-            // While a preview holds the stick (the Abilities tab's TRY), LB / RB belong to the vessel.
-            if (shoulderInput && isActiveAndEnabled && !ModePreviewWindow.AnyHasFocus)
+            // While a preview holds the stick, LB / RB / Y belong to the vessel.
+            if (isActiveAndEnabled && !ModePreviewWindow.AnyHasFocus)
             {
                 var pad = Gamepad.current;
-                if (pad != null && pad.rightShoulder.wasPressedThisFrame) Show(_current + 1);
-                else if (pad != null && pad.leftShoulder.wasPressedThisFrame) Show(_current - 1);
+                if (pad != null)
+                {
+                    if (northInput && groups.Length > 0 && pad.buttonNorth.wasPressedThisFrame) ShowGroup(_group + 1);
+                    else if (shoulderInput && pad.rightShoulder.wasPressedThisFrame) StepPart(+1);
+                    else if (shoulderInput && pad.leftShoulder.wasPressedThisFrame) StepPart(-1);
+                }
             }
 
             if (_t >= 1f) return;
@@ -155,6 +284,17 @@ namespace CosmicShore.UI
                 if (inPage) Place(inPage.transform as RectTransform, 0f, 0f);
                 if (scanGroup) scanGroup.alpha = 0f;
             }
+        }
+
+        /// <summary>LB / RB: the next part of the tab on screen, wrapping inside it; from a one-page tab, the next tab.</summary>
+        void StepPart(int step)
+        {
+            if (groups.Length == 0) { Show(_current + step); return; }
+            if (_group < 0) return;
+            var g = groups[_group];
+            if (g.pageCount <= 1) { ShowGroup(_group + step); return; }
+            int offset = ((_current - g.firstPage + step) % g.pageCount + g.pageCount) % g.pageCount;
+            Show(g.firstPage + offset);
         }
 
         static void Place(RectTransform rt, float x, float skew)

@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 25
   Name: Warden
-  Description: 'The field crew: the Stoat, the Thresher and the Butterfly. Apart, each flies its own hull (swap seats with the
-    D-pad); hold LT with the crew together to combine into the Warden''s omega form, a lance of plates with the
-    wrecking ball at its prow. Helm flies, Arms swings the Ripple whip, Core holds the Fold ward and fires
-    Annihilation.'
+  Description: 'The field crew: the Stoat steers, the Sparrow shoots, the Rhino shields. Three vessels flying as one formation;
+    press left or right on the D-pad to sit in another one (the camera goes with you) while the other two are
+    flown by their AI. In the Stoat, RT is its sling boost; in the Sparrow, aim and fire its guns on RT; in the
+    Rhino, hold LT for the shield and press RT for the ward.'
   CrewNames: []
   CrewNameTemplate: '{0} and {1}'
   SeatCount: 3

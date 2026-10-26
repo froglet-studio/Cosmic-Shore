@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Maelstrom in-game UI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+.slx{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+@keyframes csCount{0%{opacity:0;transform:scale(1)}3%{opacity:1}18%{opacity:1;transform:scale(1.25)}25%{opacity:0;transform:scale(1.5)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes csPunchA{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes csPunchB{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes csSlideIn{from{opacity:0;transform:translateX(-120px)}to{opacity:1;transform:none}}
+@keyframes csBanner{0%{opacity:0;transform:scaleX(.3)}60%{opacity:1;transform:scaleX(1.03)}100%{opacity:1;transform:scaleX(1)}}
+@keyframes csReveal{0%{opacity:0;transform:scale(.85)}45%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+@keyframes csTextSweep{0%{left:-30%}100%{left:130%}}
+@keyframes csTick{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="grid" style="position:absolute;inset:0;opacity:.5"></div><div style="position:absolute;left:90px;top:80px;width:1740px;columns:2;column-gap:80px"><div style="font-family:Aldrich;font-size:40px;margin-bottom:30px;column-span:all">Maelstrom in-game UI</div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Three screens, kept</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">HUB between rounds (top bar, the round cards, a live preview of the next round, READY with the tally and the 30 s / 3 s countdown), STATS once the tournament is decided (NEXT, no countdown, the last arena in the preview), and the SUMMARY (winning domain, domain ranking, a card per pilot, Play Again for the host, Main Menu for everyone, STATS back to screen 2). MaelstromSceneView keeps binding everything by name, so the rebuild is a re-skin of the same objects.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Every value, kept</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Game pool (n of m modes, intensity), round status (Round n / n rounds played), the win target line, leading domain, per-round winner, each pilot's round score and running total, the ready tally, the countdown, the summary's GAME WON / GAME OVER, the domain rank and each pilot's total.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">What changes</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">ROUND INDEX : 3 / ROUND NAME : SLINGSHOT become a Round 3 eyebrow over the mode name on the mode's own card art. Scores are a two-column table (ROUND, TOTAL) under avatars ringed in each pilot's domain. A new Race to 12 strip draws each domain's points against the target (computed from the same tournament data the leading-domain line reads). Ready shows each pilot's avatar ticking ready, as the in-game Ready plate does.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Motion</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Cards rise in one stagger apart; the standings bars grow; the next round's card carries the Control Active outline; a pilot readying ticks (punch); the summary's winner line reveals, the rule grows, the cards rise in order of rank.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Pad</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">The round cards scroll on LB / RB (or the stick), A readies / NEXT, on the summary A Play Again (host), Y Stats, B Main Menu.</div></div><div style="margin-bottom:26px"><div class="lab" style="color:#80EAFF;">Built 2026-10-15 (section 27)</div><div style="margin-top:8px;font-size:17px;line-height:1.65;color:#E6E9FF">Hub, stats and summary are built in Unity (Tools/Build/author_maelstrom_ui.py); the three card prefabs are regenerated in place. The Race to N strip is built. A non-host sees no Play Again, as before. Pilots ready shows the human pilots only: an AI has no button to press. The ROUND column is the points the round paid the domain; the mode's own score sits under each name.</div></div></div>
+</div>
+</x-dc>
+</body>
+</html>

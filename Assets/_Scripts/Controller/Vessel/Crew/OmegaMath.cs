@@ -90,17 +90,24 @@ namespace CosmicShore.Gameplay
 
         public static readonly CrewDef[] Crews =
         {
-            new(Crew.Warden, "Warden", "the field crew", new[] { Stoat, Thresher, Butterfly }, WeaponKind.Whip, "Ripple whip", "Fold ward", "Annihilation",
+            new(Crew.Warden, "Warden", "the field crew", new[] { Stoat, Sparrow, Rhino }, WeaponKind.Whip, "Ripple whip", "Fold ward", "Annihilation",
                 omegaTurn: 0.6f, omegaSpeed: 1.15f, reach: 60f, hits: 2f, cool: 0.6f),
-            new(Crew.Bulwark, "Bulwark", "the heavy crew", new[] { Rhino, Grizzly, Scarab }, WeaponKind.Cannon, "Siege cannon", "Switch wall", "Breaker",
+            new(Crew.Bulwark, "Bulwark", "the heavy crew", new[] { Scarab, Grizzly, Butterfly }, WeaponKind.Cannon, "Siege cannon", "Switch wall", "Breaker",
                 omegaTurn: 0.5f, omegaSpeed: 1.1f, speed: 220f, blast: 30f, charge: 1.6f),
-            new(Crew.Tempest, "Tempest", "the fast crew", new[] { Squirrel, Sparrow, Manta }, WeaponKind.Guns, "Pulsefire battery", "Afterburner veil", "Kabloom",
+            new(Crew.Tempest, "Tempest", "the fast crew", new[] { Squirrel, Thresher, Manta }, WeaponKind.Guns, "Pulsefire battery", "Afterburner veil", "Kabloom",
                 omegaTurn: 0.75f, omegaSpeed: 1.3f, range: 260f, rate: 0.08f, wallSeconds: 2.5f),
         };
 
         public static CrewDef CrewOf(Crew id) => Crews[Mathf.Clamp((int)id, 0, Crews.Length - 1)];
 
         public static readonly string[] SeatNames = { "Helm", "Arms", "Core" };
+
+        /// <summary>Every crew is three ROLES (Yash, 2026-10-26: "defender, midfielder and attacker"): member 0 is the
+        /// MOBILITY vessel (it does the manoeuvring), member 1 the ATTACKER (the shooting), member 2 the DEFENDER (the
+        /// protecting). A crew's members are listed in this order; <see cref="RoleNames"/> names them.</summary>
+        public enum Role { Mobility = 0, Attack = 1, Defence = 2 }
+
+        public static readonly string[] RoleNames = { "Mobility", "Attack", "Defence" };
 
         /// <summary>Cruise (u/s), turn and roll (deg/s): what a hull's transformer is set to for a form.</summary>
         public struct Flight
@@ -294,18 +301,21 @@ namespace CosmicShore.Gameplay
             return Quaternion.LookRotation(want, rolled);
         }
 
-        /// <summary>Where an AI member flies apart: an echelon slot beside the hull, member 1 to its right and up, member 2
-        /// to its left and down, <paramref name="spread"/> u out and a little behind (not the page, which flies the AI
-        /// members at the course's crystals; OMEGA_CREW.md §3).</summary>
-        public static Vector3 FormationOffset(int member, int hullMember, float spread)
+        /// <summary>The MARCH formation (Yash, 2026-10-26: "an aligned flock of three ... the relative distance between each
+        /// vessel will be the same"): the mobility vessel leads, the attacker rides <paramref name="spread"/> u to its right
+        /// and <paramref name="back"/> u behind, the defender the same to its left. In the leader's frame (right, up,
+        /// forward). Rigid: nothing here depends on time.</summary>
+        public static Vector3 FormationOffset(Role role, float spread, float back) => role switch
         {
-            int k = member == hullMember ? 0 : (member < hullMember ? member + 1 : member);
-            return k switch
-            {
-                0 => Vector3.zero,
-                1 => new Vector3(spread, spread * 0.25f, -spread * 0.4f),
-                _ => new Vector3(-spread, -spread * 0.25f, -spread * 0.4f),
-            };
-        }
+            Role.Mobility => Vector3.zero,
+            Role.Attack => new Vector3(spread, 0f, -back),
+            _ => new Vector3(-spread, 0f, -back),
+        };
+
+        /// <summary>Where member <paramref name="member"/> stands when the hull IS member <paramref name="hull"/> (the
+        /// person sits there and the camera follows it): the formation re-expressed in the hull's frame, so the three
+        /// keep their distances whichever one the person is in.</summary>
+        public static Vector3 FormationOffsetFrom(int hull, int member, float spread, float back) =>
+            FormationOffset((Role)member, spread, back) - FormationOffset((Role)hull, spread, back);
     }
 }

@@ -90,8 +90,6 @@ namespace CosmicShore.Gameplay
         StoatDipoleExecutor _dipole;
         bool _resolvedSiblings;
         float _lastTiming = -1f;
-        float _lastSlingAt = float.NegativeInfinity;
-        bool _lastSlingHybrid;
 
         // The Time-mode pair under the trigger, and the orbit once it has caught the hull.
         bool _laid;          // a pair is laid and held by a trigger (every peer)
@@ -129,10 +127,11 @@ namespace CosmicShore.Gameplay
         public float SweetProgress01 => IsOrbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
         /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
         public float LastTiming => _lastTiming;
-        /// <summary>Seconds since the last slingshot paid a kick (infinity before the first) — Hybrid mode's boost carry.</summary>
-        public float SecondsSinceSling => Time.time - _lastSlingAt;
-        /// <summary>True when the last slingshot was flown in Hybrid mode (only those carry the boost).</summary>
-        public bool LastSlingWasHybrid => _lastSlingHybrid;
+        /// <summary>
+        /// The squeeze on <paramref name="side"/> right now, 0..1 (0 when that trigger is not held). In DRIVE mode this is
+        /// all the triggers do here: the pathfinder shapes the warp pair from the two squeezes (<see cref="StoatDriveMath"/>).
+        /// </summary>
+        public float Squeeze01(Side side) => _holds[(int)side].Holding ? _holds[(int)side].Live : 0f;
         public StoatSlingConfigSO Config => config;
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -145,8 +144,6 @@ namespace CosmicShore.Gameplay
             _caught = false;
             _resolvedSiblings = false;
             _lastTiming = -1f;
-            _lastSlingAt = float.NegativeInfinity;
-            _lastSlingHybrid = false;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
             if (config == null)
                 CSDebug.LogError($"[Stoat] {name}: StoatSlingExecutor has no StoatSlingConfig — the triggers will sling nothing. " +
@@ -157,9 +154,11 @@ namespace CosmicShore.Gameplay
         /// waits for the release.</summary>
         public void BeginHold(Side side)
         {
-            // The triggers fly the orbit in TIME and HYBRID mode; in Mass mode they lay the field dipole (StoatDipoleExecutor).
+            // The triggers fly the orbit in TIME mode; in Mass mode they lay the field dipole (StoatDipoleExecutor); in DRIVE
+            // mode the squeeze is only tracked here, and the pathfinder shapes the warp pair from it (Squeeze01).
             ResolveSiblings();
-            if (_mode && !_mode.UsesOrbit) return;
+            bool drive = _mode && _mode.IsDriveMode;
+            if (_mode && !_mode.UsesOrbit && !drive) return;
             int i = (int)side;
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
@@ -168,7 +167,7 @@ namespace CosmicShore.Gameplay
             float start = config != null && _status != null && _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
             _holds[i].Live = start;
             _holds[i].Peak = start;
-            if (config == null) return;
+            if (config == null || drive) return;
             PlayOneShot(config.HoldStartEvent);
             if (!BlackHoleRegistry.Config.CrystalPairs) LayPair(side);
         }
@@ -179,7 +178,7 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].Holding = false;
-            if (config == null || _status == null) return;
+            if (config == null || _status == null || (_mode && _mode.IsDriveMode)) return;
             if (_laid)
             {
                 if (_orbitSide == side) Slingshot(boost: true);
@@ -363,8 +362,6 @@ namespace CosmicShore.Gameplay
                 float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
                 float kick = StoatSlingMath.TimedKick(squeeze, timing, config.MissKickShare, rate);
                 _lastTiming = timing;
-                _lastSlingAt = Time.time;
-                _lastSlingHybrid = _mode && _mode.IsHybridMode;
                 // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer). A timed kick can
                 // pass the shared 100 u/s displacement ceiling, so it raises the cap for its own life (vessel §4.ab2) —
                 // never the vessel's ceiling, which every knock-back shares.
@@ -532,7 +529,9 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += Time.deltaTime;
-            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot, AIConfig.AutopilotHold01);
+            // Drive mode ramps a key or a touch button to a full squeeze over its own, shorter time (driveKeyRampSeconds).
+            float ramp = _mode && _mode.IsDriveMode && _mode.Config ? _mode.Config.DriveKeyRampSeconds : config.HoldRampSeconds;
+            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, ramp, autopilot, AIConfig.AutopilotHold01);
             _holds[i].Live = sample;
             _holds[i].Peak = StoatSlingMath.Peak(_holds[i].Peak, sample);
         }

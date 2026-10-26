@@ -7,12 +7,12 @@ namespace CosmicShore.UI
     /// <summary>
     /// The one friends / party panel, out of every window and into a drawer on the left edge
     /// (rev 3: "make it independent like a popup from the left side we can open, minimise, maximise
-    /// whenever we want"). Three states:
+    /// whenever we want"). Two states (the maximised third went 2026-10-26, Shombith: "remove the maximize button from
+    /// the friends panel"):
     /// <list type="bullet">
     /// <item><b>Closed</b> - only the handle shows; pressing it opens the drawer. Since rev 6 the handle is the
     /// presence orb in the bottom-left corner (<see cref="KitPresenceOrb"/>, Docs/MENU_REDESIGN_B.md §45.4).</item>
     /// <item><b>Open</b> - the window slides in from the left at its normal width.</item>
-    /// <item><b>Maximised</b> - the same window, wider; the button restores it.</item>
     /// </list>
     /// The – button minimises back to the handle. The panel inside (PartyPanel) keeps all its own
     /// behaviour; this only moves and sizes its window.
@@ -27,7 +27,7 @@ namespace CosmicShore.UI
     [AddComponentMenu("Cosmic Shore/UI/Friends Drawer")]
     public class FriendsDrawer : MonoBehaviour
     {
-        public enum DrawerState { Closed = 0, Open = 1, Maximised = 2 }
+        public enum DrawerState { Closed = 0, Open = 1 }
 
         /// <summary>How far (canvas units) the open drawer reaches into a hub window; 0 when it is closed or is over
         /// anything but a hub window. One drawer per menu scene, so one value.</summary>
@@ -52,11 +52,6 @@ namespace CosmicShore.UI
         [SerializeField] private CanvasGroup windowGroup;
         [SerializeField] private RectTransform window;
         [SerializeField] private Button minimiseButton;
-        [SerializeField] private Button maximiseButton;
-        [Tooltip("The maximise button's glyph while the window is maximised (shown) or normal (hidden).")]
-        [SerializeField] private CanvasGroup restoreGlyph;
-        [Tooltip("The maximise button's glyph while the window is normal.")]
-        [SerializeField] private CanvasGroup maximiseGlyph;
         [Tooltip("The scene's switcher: which window is on top decides whether the drawer docks, floats or stays shut. " +
                  "Found in the scene when left empty.")]
         [SerializeField] private ScreenSwitcher screenSwitcher;
@@ -64,8 +59,6 @@ namespace CosmicShore.UI
         [Header("Layout")]
         [Tooltip("The open window's width (canvas units).")]
         [SerializeField, Min(0f)] private float normalWidth = 460f;
-        [Tooltip("The maximised window's width (canvas units).")]
-        [SerializeField, Min(0f)] private float maximisedWidth = 720f;
         [Tooltip("Room left above the window for the top nav (canvas units).")]
         [SerializeField, Min(0f)] private float dockTop = 84f;
         [Tooltip("Room left below the window (canvas units).")]
@@ -87,7 +80,6 @@ namespace CosmicShore.UI
             if (!screenSwitcher) screenSwitcher = FindAnyObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
             if (handleButton) handleButton.onClick.AddListener(Open);
             if (minimiseButton) minimiseButton.onClick.AddListener(Close);
-            if (maximiseButton) maximiseButton.onClick.AddListener(ToggleMaximise);
             if (window)
             {
                 window.offsetMin = new Vector2(window.offsetMin.x, dockBottom);
@@ -112,7 +104,6 @@ namespace CosmicShore.UI
         {
             if (handleButton) handleButton.onClick.RemoveListener(Open);
             if (minimiseButton) minimiseButton.onClick.RemoveListener(Close);
-            if (maximiseButton) maximiseButton.onClick.RemoveListener(ToggleMaximise);
         }
 
         public void Open()
@@ -121,12 +112,6 @@ namespace CosmicShore.UI
         }
 
         public void Close() => Apply(DrawerState.Closed, instant: false);
-
-        public void ToggleMaximise()
-        {
-            if (_blocked) return;
-            Apply(_state == DrawerState.Maximised ? DrawerState.Open : DrawerState.Maximised, instant: false);
-        }
 
         /// <summary>True while a hub window is on top: the open drawer makes room in it.</summary>
         private bool OverHubWindow =>
@@ -148,14 +133,12 @@ namespace CosmicShore.UI
             _state = state;
             bool open = state != DrawerState.Closed;
             KitVisibility.SetShown(handleGroup, !open && !_blocked);
-            KitVisibility.SetShown(maximiseGlyph, state != DrawerState.Maximised);
-            KitVisibility.SetShown(restoreGlyph, state == DrawerState.Maximised);
             // The window stays drawn while it slides out; it stops taking input at once.
             if (open) KitVisibility.SetShown(windowGroup, true);
             else if (windowGroup) { windowGroup.interactable = false; windowGroup.blocksRaycasts = false; }
             if (!window) return;
 
-            float width = state == DrawerState.Maximised ? maximisedWidth : normalWidth;
+            float width = normalWidth;
             _fromX = window.anchoredPosition.x;
             _fromWidth = window.sizeDelta.x;
             _toWidth = width;

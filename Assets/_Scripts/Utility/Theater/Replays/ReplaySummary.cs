@@ -24,6 +24,16 @@ namespace CosmicShore.Utility
         public bool IsLocal;
     }
 
+    /// <summary>One race ring of the match's course, relative to <see cref="ReplaySummary.ArenaOrigin"/>.</summary>
+    [Serializable]
+    public class ReplayGate
+    {
+        public int Index;
+        public Vector3 Position;
+        public Vector3 Axis;
+        public float Radius;
+    }
+
     /// <summary>One row of the match's final results, copied from <c>GameDataSO.Results</c>.</summary>
     [Serializable]
     public class ReplayResult
@@ -98,6 +108,13 @@ namespace CosmicShore.Utility
 
         public List<ReplayPilot> Pilots = new();
         public List<ReplayResult> Results = new();
+
+        /// <summary>
+        /// The race rings the match was flown through (any gate race, Skim Race included), captured at Go
+        /// so the replay rebuilds exactly them. Empty for a mode with no rings, and for a summary written
+        /// before 2026-10-26.
+        /// </summary>
+        public List<ReplayGate> Gates = new();
 
         /// <summary>
         /// Seconds as <c>m:ss</c> - a number format, not a sentence: the browser and the playback HUD

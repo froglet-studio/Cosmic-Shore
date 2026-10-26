@@ -93,17 +93,23 @@ namespace CosmicShore.UI
             (IsClientMode || !_weeklyChallengeLocked);
 
         /// <summary>
-        /// Show the AI difficulty row on a card that offers it, lit on the config's value, and take
-        /// it down on every other card - passed either way, because the panel is a shared scene
-        /// object and a row shown for Skim Race must not survive onto the next card.
+        /// The AI difficulty row on every card (Rev 7, approved 2026-10-17: "the AI difficulty row shows, unlocked, wherever
+        /// the mode supports it"; Shombith 2026-10-26: "you removed the easy medium hard difficulty UI please add that
+        /// too"): lit on the config's value and pickable where the card offers it, shown LOCKED on the default where the
+        /// mode's AI has one level. Passed every time, because the panel is a shared scene object and a row unlocked for
+        /// Skim Race must not stay unlocked on the next card.
         /// </summary>
         void ApplyAIDifficultyPresentation()
         {
             if (!_activePanel || config == null) return;
 
             bool offered = OffersAIDifficulty;
-            _activePanel.SetAIDifficultyAvailable(offered);
-            if (offered) _activePanel.ShowAIDifficulty(config.AIDifficulty);
+            bool shown = _selectedGame != null && _activePanel.HasAIDifficultyRow;
+            _activePanel.SetAIDifficultyAvailable(shown);
+            if (!shown) return;
+            _activePanel.ShowAIDifficulty(AIDifficultyRules.IsOfferedFor(_selectedGame.Mode)
+                ? config.AIDifficulty : AIDifficultyRules.Default);
+            _activePanel.SetAIDifficultyOffered(offered);
         }
 
         /// <summary>

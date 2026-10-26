@@ -1254,7 +1254,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: No replays yet. Finish a Regatta and it is kept here, ready to watch.
+  m_text: No replays yet. Play any match and it is kept here, ready to watch.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
@@ -2470,7 +2470,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 295.2, y: -54}
+  m_AnchoredPosition: {x: 268.9, y: -54}
   m_SizeDelta: {x: 520, y: 22}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &827914295016647959
@@ -2799,7 +2799,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -44, y: -40}
-  m_SizeDelta: {x: 122.6, y: 40}
+  m_SizeDelta: {x: 123.2, y: 40}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &992396049996847587
 MonoBehaviour:
@@ -3249,7 +3249,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 234059583874969885, guid: 140fecc22a060d7f8336d53251bfa015, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 32.7
+      value: 33.3
       objectReference: {fileID: 0}
     - target: {fileID: 234059583874969885, guid: 140fecc22a060d7f8336d53251bfa015, type: 3}
       propertyPath: m_SizeDelta.y

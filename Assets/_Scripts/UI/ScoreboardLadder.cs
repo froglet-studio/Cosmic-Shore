@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using CosmicShore.Data;
 
 namespace CosmicShore.UI
@@ -81,6 +82,78 @@ namespace CosmicShore.UI
                     entries.Add(Entry.Row(list[k], domain, won, shared == null, shares[k]));
             }
             return entries;
+        }
+
+        /// <summary>One team of the Rev 23 D "team versus" board: its rows, whether it won, its score and its share of the
+        /// count the two teams split (the share bar).</summary>
+        public sealed class Side
+        {
+            public Domains Domain;
+            public bool Won;
+            /// <summary>The team's score: the one every member shares (a team race time), else the members' scores
+            /// added when each is a whole number, else null (nothing to say once).</summary>
+            public string Score;
+            /// <summary>This team's share of the two teams' count (read off the secondary lines), 0-1, or -1.</summary>
+            public float Share = -1f;
+            public readonly List<Entry> Rows = new();
+        }
+
+        /// <summary>
+        /// The Rev 23 D layout (Shombith, 2026-10-26: "For scoreboard I liked D"): two teams face to face, the winner on
+        /// the left. Only for exactly two domains where at least one fields two or more pilots; anything else (every pilot
+        /// on their own domain, a 1v1, three teams) returns null and the board stays the ladder.
+        /// </summary>
+        public static Side[] BuildVersus(IReadOnlyList<ScoreResult> results, Domains winner)
+        {
+            if (results == null || results.Count == 0) return null;
+            if (winner == Domains.Blue) winner = results[0].Domain;
+            var order = new List<Domains>();
+            var members = new Dictionary<Domains, List<int>>();
+            for (int i = 0; i < results.Count; i++)
+            {
+                var d = results[i].Domain;
+                if (!members.TryGetValue(d, out var list)) { members[d] = list = new List<int>(); order.Add(d); }
+                list.Add(i);
+            }
+            if (order.Count != 2 || (members[order[0]].Count < 2 && members[order[1]].Count < 2)) return null;
+            if (order[1] == winner) order.Reverse();
+
+            var sides = new Side[2];
+            var counts = new int[2];
+            bool counted = true;
+            for (int s = 0; s < 2; s++)
+            {
+                var list = members[order[s]];
+                string shared = SharedScore(results, list);
+                var side = new Side { Domain = order[s], Won = order[s] == winner, Score = shared ?? TotalScore(results, list) };
+                var shares = Shares(results, list);
+                for (int k = 0; k < list.Count; k++)
+                    side.Rows.Add(Entry.Row(list[k], side.Domain, side.Won, shared == null, shares[k]));
+                foreach (int i in list)
+                {
+                    counted &= TryLeadingNumber(results[i].Secondary, out int n);
+                    counts[s] += n;
+                }
+                sides[s] = side;
+            }
+            int total = counts[0] + counts[1];
+            if (counted && total > 0)
+                for (int s = 0; s < 2; s++) sides[s].Share = (float)counts[s] / total;
+            return sides;
+        }
+
+        /// <summary>The listed results' scores added, when every one is a whole number ("14"); null otherwise (a time,
+        /// a word, an empty score).</summary>
+        public static string TotalScore(IReadOnlyList<ScoreResult> results, List<int> indices)
+        {
+            long sum = 0;
+            foreach (int i in indices)
+            {
+                string t = results[i].ScoreText?.Trim();
+                if (!long.TryParse(t, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long v)) return null;
+                sum += v;
+            }
+            return sum.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>The score text every listed result shares, or null when they differ or there is one result.</summary>
