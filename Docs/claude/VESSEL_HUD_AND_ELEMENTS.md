@@ -157,6 +157,21 @@ geometry re-point. The printed procedure ends by clearing the animation's part f
   caller** (its historical MiniGame turn-reset and Hangar call sites are commented out); the emit
   future-proofs any revived re-seed path.
 
+### Elements have no colour (LOCKED — Garrett, 2026-10-24)
+
+> "we need to make sure we never conflate the domain colors with elemental identity. jade is not time. gold is not
+> charge. mass is not blue. space is not ruby. and when you do that it confuses players. i know this conflation got
+> introduced recently, but we need to set a rule that we explicitly do not do this."
+
+The rule, its six colour families and its gate are **`Docs/UI_COLOR_RULES.md`** (Garrett's rules as relayed by
+Shombith the same day) and `python3 Tools/Build/check_ui_colors.py` (`--self-test`), which also holds
+`AbilityLockupStyle.asset`'s `elementColour` / `lavaMotion` at 0 (`author_ingame_hud.py --check`). The same rule
+reached the ability ICONS through `/ability-icon`: a card is tinted by STATE or by TEAM, never by element, and no
+sheet, blob, edge or pip wears an element colour (`.claude/skills/ability-icon/references/ICON_LANGUAGE.md`). The
+icon branch's own `check_element_colour.py` duplicated rule 3 of `check_ui_colors.py` and was retired at the merge
+(2026-10-26); the element->colour maps still in vessel HUD code are listed in `UI_COLOR_RULES.md` ("Still on element
+colours") for their owners.
+
 ### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
 
 > **Rev 3 element colour (2026-10-16, approved by Shombith; `AbilityLockupStyleSO.elementColour`).** Each card

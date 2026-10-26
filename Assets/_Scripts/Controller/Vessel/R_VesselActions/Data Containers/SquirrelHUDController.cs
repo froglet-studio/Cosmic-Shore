@@ -147,29 +147,27 @@ namespace CosmicShore.UI
 
             PushStealReadout();
             PushPalette();
-            if (_drifting) view.SetDriftSide(DriftSide());
+            if (_drifting) view.SetDriftAngle(DriftAngleDegrees());
         }
 
-        // Below this the nose has not left the course far enough for a side to mean anything
-        // (the frame a drift engages, the two are still parallel).
-        const float DriftSideDeadband = 0.05f;
-
         /// <summary>
-        /// Which way the nose has swung off the course, in the SHIP's own frame: -1 left, +1 right,
-        /// 0 not yet diverged. A drift IS nose-vs-course divergence, so the side falls straight out
-        /// of it - when the nose has swung LEFT of the course, the course lies to the ship's right.
-        /// Read in the ship's frame rather than projected onto world up, which only meant anything
-        /// while the ship was level.
+        /// The drift, as the card draws it: the signed angle in degrees between the vessel's forward and its
+        /// course, in the SHIP's own frame - positive when the nose has swung LEFT of the course (the course
+        /// lies to the ship's right). A drift IS nose-vs-course divergence, so the angle falls straight out of
+        /// it; the view turns the hull part by exactly this (Garrett 2026-10-25) or, on a HUD without the parts,
+        /// leans the icon to the side it names. Read in the ship's frame rather than projected onto world up,
+        /// which only meant anything while the ship was level. 0 when there is no course yet.
         /// </summary>
-        private int DriftSide()
+        private float DriftAngleDegrees()
         {
-            if (!_shipTransform || _vesselStatus == null) return 0;
+            if (!_shipTransform || _vesselStatus == null) return 0f;
             var course = _vesselStatus.Course;
-            if (course.sqrMagnitude < 1e-6f) return 0;
+            if (course.sqrMagnitude < 1e-6f) return 0f;
 
-            float lateral = Vector3.Dot(course.normalized, _shipTransform.right);
-            if (Mathf.Abs(lateral) < DriftSideDeadband) return 0;
-            return lateral > 0f ? -1 : 1;
+            var c = course.normalized;
+            float ahead = Vector3.Dot(c, _shipTransform.forward);
+            float lateral = Vector3.Dot(c, _shipTransform.right);
+            return Mathf.Atan2(lateral, ahead) * Mathf.Rad2Deg;
         }
 
         /// <summary>
@@ -196,6 +194,7 @@ namespace CosmicShore.UI
 
             Color shielded = ResolveShieldedColor(live);
             view.SetOmniAbilityTint(shielded);
+            view.SetShieldedTint(shielded);          // the drift trail's octahedrons wear it
             view.SetPlayerDomainColor(ResolveDomainColor(live));
 
             _paintedDomain = live;

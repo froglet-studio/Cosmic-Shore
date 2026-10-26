@@ -209,6 +209,12 @@ Recorded in [`TOOLING_DECISIONS.md`](TOOLING_DECISIONS.md) §6 by Shombith, who 
 Sessions no longer ask whether these tools helped. [`TOOLING_FEEDBACK.md`](TOOLING_FEEDBACK.md) keeps what people
 volunteer.
 
+**One shipping process (Garrett, 2026-10-26).** `/ship` (with its `quick`, `deep`, `tools` and `promote` lanes) is the
+one way a branch reaches `bleeding-edge`. `/to-bleeding-edge`, written on 2026-10-15 for Yash's repeated promotion of
+`Ys-bleeding-edge`, duplicated `/ship`'s merge, gates, push and PR steps without either skill naming the other; it is
+now an alias of `/ship promote [branch]`, and its conflict rules and `gates.sh` live in `/ship` §1.5. Yash is asked to
+promote through `/ship promote` (a Froglet Tasks ticket) so the two habits cannot drift apart again.
+
 **Notices.** `team_context.py` used to show the person a team notice on a session's first prompt, and the tools
 decision on the first prompt about the engine or the tools. Shombith switched it off on 2026-10-23 with
 `team_activity.py` and `team_tasks_nudge.py` (deleted 2026-10-25): together they added about 7 KB to prompts and sent
