@@ -42,6 +42,12 @@ namespace CosmicShore.UI
             public bool CanChangeTeam;
             /// <summary>Whether the ✕ shows (a placed AI the match can spare, for the host).</summary>
             public bool CanKick;
+            /// <summary>The hull this seat flies (its icon), or null when none is decided yet.</summary>
+            public Sprite Hull;
+            /// <summary>Whether pressing the seat points the vessel strip at it (a card whose hulls are picked).</summary>
+            public bool CanPickVessel;
+            /// <summary>Whether the vessel strip picks this seat's hull now.</summary>
+            public bool EditingVessel;
         }
 
         [Header("Seats")]
@@ -91,6 +97,9 @@ namespace CosmicShore.UI
         /// <summary>The ✕ on an AI seat: (that AI's placement ordinal).</summary>
         public event Action<int> OnKickRequested;
 
+        /// <summary>A seat was pressed to pick its hull: (the seat's index in the last <see cref="Show"/>).</summary>
+        public event Action<int> OnSeatPicked;
+
         bool _canAddAi;
         AIDifficulty? _difficulty;
 
@@ -104,6 +113,7 @@ namespace CosmicShore.UI
                 pedestals[i].OnOpenPressed += RequestAddAi;
                 pedestals[i].OnTeamStep += dir => OnTeamStepRequested?.Invoke(index, dir);
                 pedestals[i].OnKick += ordinal => OnKickRequested?.Invoke(ordinal);
+                pedestals[i].OnPicked += () => OnSeatPicked?.Invoke(index);
             }
         }
 
@@ -136,8 +146,9 @@ namespace CosmicShore.UI
         /// <summary>
         /// Draw the roster: <paramref name="seats"/> in order, then open seats up to <paramref name="seatCount"/>
         /// (the match's seats). <paramref name="canAddAi"/>: this pilot may add one (the host, with a seat free).
+        /// <paramref name="showTeams"/>: the card has teams to step through (a one-team card hides the steppers).
         /// </summary>
-        public void Show(IReadOnlyList<Seat> seats, int seatCount, bool canAddAi)
+        public void Show(IReadOnlyList<Seat> seats, int seatCount, bool canAddAi, bool showTeams = true)
         {
             _canAddAi = canAddAi && seats.Count < seatCount;
             if (addAiGroup) KitVisibility.SetShown(addAiGroup, _canAddAi);
@@ -156,7 +167,9 @@ namespace CosmicShore.UI
                     bool ai = s.Kind == SeatKind.Ai;
                     p.ShowPilot(ai ? aiName : s.Name, ai ? AiPortrait(s.AiOrdinal) : s.Avatar, s.Domain,
                                 TeamName(s.Domain), ai ? AiStatus() : HumanStatus(s), ai, s.IsLocal,
-                                s.CanChangeTeam, s.CanKick, s.AiOrdinal);
+                                s.CanChangeTeam && showTeams, s.CanKick, s.AiOrdinal);
+                    p.SetTeamShown(showTeams);
+                    p.SetVessel(s.Hull, s.CanPickVessel, s.EditingVessel);
                 }
                 else
                 {

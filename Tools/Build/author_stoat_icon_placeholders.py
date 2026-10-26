@@ -14,7 +14,7 @@ pass), multiply-tinted at runtime and replaced 1:1 by the art pass. Each names t
 The Mass card's icon follows the MODE B is in (StoatHUDView, 2026-10-26), one icon per mode:
   Mass mode    a thick slab of trail and the path it flies (the field trajectory)
   Time mode    an orbit round a solid attractor, arrowed (the catch sling)
-  Hybrid mode  a small orbit and the short dotted path leaving its tangent
+  Drive mode   the warp pair: a black hole ahead, a white hole behind, the hull between them on its axis
 
 Pure-python PNG raster (no PIL), donor-cloned sprite .meta, deterministic guids, idempotent,
 --check. The folder .meta is emitted too.
@@ -152,17 +152,14 @@ def mode_time(px, py):
     return False
 
 
-def mode_hybrid(px, py):
-    """Hybrid mode: a small orbit, and the short dotted path leaving its tangent."""
-    if circle(px, py, 38, 46, 9):
-        return True                                    # the attractor
-    if arc(px, py, 38, 46, 26.0, 5.5, 95.0, 360.0):
-        return True                                    # the orbit
-    for cx, cy in ((58, 74), (76, 78), (93, 84)):
-        if circle(px, py, cx, cy, 6.5):
-            return True                                # the short path out of it
-    if tri(px, py, 120, 94, 104, 100, 108, 82):
-        return True                                    # its arrowhead
+def mode_drive(px, py):
+    """Drive mode: the warp pair riding with the hull - the black hole ahead, the white hole behind, the hull between."""
+    if circle(px, py, 96, 96, 19):
+        return True                                    # the black hole, ahead
+    if ring(px, py, 32, 32, 15.0, 6.0):
+        return True                                    # the white hole, behind
+    if tri(px, py, 76, 76, 42, 62, 62, 42):
+        return True                                    # the hull, nose toward the black hole
     return False
 
 
@@ -173,7 +170,7 @@ ICONS = {
     "Stoat_Pathfinder.png": pathfinder,
     "Stoat_ModeMass.png": mode_mass,
     "Stoat_ModeTime.png": mode_time,
-    "Stoat_ModeHybrid.png": mode_hybrid,
+    "Stoat_ModeDrive.png": mode_drive,
 }
 
 SIZE, SS = 128, 3  # canvas, supersample factor

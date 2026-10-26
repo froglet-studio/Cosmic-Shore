@@ -65,6 +65,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Summary_KeepsItsRecordedRings_AndAnOldSummaryHasNone()
+        {
+            var summary = new ReplaySummary { RecordingFile = "Headlong_2026-10-26_10-00.cstheater" };
+            summary.Gates.Add(new ReplayGate { Index = 0, Position = new Vector3(10f, 0f, 0f), Axis = new Vector3(0f, 0f, 1f), Radius = 40f });
+            summary.Gates.Add(new ReplayGate { Index = 1, Position = new Vector3(0f, 5f, 200f), Axis = new Vector3(1f, 0f, 0f), Radius = 32f });
+            Assert.IsTrue(ReplaySummary.TryParse(summary.ToJson(), out var read, out string error), error);
+            Assert.AreEqual(2, read.Gates.Count);
+            Assert.AreEqual(1, read.Gates[1].Index);
+            Assert.AreEqual(200f, read.Gates[1].Position.z, 1e-4f);
+            Assert.AreEqual(32f, read.Gates[1].Radius, 1e-4f);
+
+            string old = "{\"Schema\":\"" + ReplaySummary.SchemaId + "\",\"RecordingFile\":\"Regatta_2026-10-15_20-00.cstheater\"}";
+            Assert.IsTrue(ReplaySummary.TryParse(old, out var legacy, out error), error);
+            Assert.IsTrue(legacy.Gates == null || legacy.Gates.Count == 0);
+        }
+
+        [Test]
         public void Summary_KeepsItsArenaOrigin_AndAnOldSummaryReadsZero()
         {
             var summary = new ReplaySummary { RecordingFile = "Regatta_2026-10-24_10-00.cstheater", ArenaOrigin = new Vector3(1f, 2f, 3f) };

@@ -210,9 +210,11 @@ public class VesselTransformer : MonoBehaviour
         ///
         /// One writer at a time, same contract as <see cref="BankIntoTurnSuppressed"/>: the
         /// setter is responsible for handing it back at 1, and <see cref="ResetTransformer"/>
-        /// clears it so an interrupted ability cannot strand a slowed turn. Its one writer today
-        /// is the Rhino's sword binding in super-shielded mass
-        /// (<c>ShieldSkimmerScaleDriver</c>, RHINO_ENERGY_SWORD.md § "Binding").
+        /// clears it so an interrupted ability cannot strand a slowed turn. Its writers today, each
+        /// on its own hull: the Rhino's sword binding in super-shielded mass
+        /// (<c>ShieldSkimmerScaleDriver</c>, RHINO_ENERGY_SWORD.md § "Binding"), and the Stoat's
+        /// Drive mode (<c>StoatPathfinderExecutor</c>: 1 / <see cref="FlightTimeScale"/>, so the
+        /// sticks turn on the real clock while the warp pair speeds the flight; STOAT_DIPOLE.md §1f).
         /// </summary>
         public float ExternalTurnRateMultiplier { get; set; } = 1f;
 

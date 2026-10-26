@@ -19,6 +19,10 @@
   const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
   const ELS = ['charge', 'mass', 'space', 'time'], EL_COLOR = { charge: '--charge', mass: '--mass', space: '--space', time: '--time' };
   const SEATS = ['Helm', 'Arms', 'Core'];
+  // Every crew is three ROLES (Yash, 2026-10-26: 'defender, midfielder and attacker'): member 0 is the MOBILITY vessel (it does
+  // the manoeuvring), member 1 the ATTACKER (the shooting), member 2 the DEFENDER (the protecting). The Unity clone flies
+  // them as one rigid formation with those roles (OMEGA_CREW.md); this page keeps the mega / omega forms.
+  const ROLES = ['Mobility', 'Attack', 'Defence'];
 
   // ================= the members: nine shipped vessels as MEGA forms (lab approximations of the game's kit) =================
   // flight: cruise u/s, turn deg/s (pitch/yaw), roll deg/s. move: the one RT move this lab gives the mega form, named after
@@ -37,15 +41,15 @@
 
   // ================= the three crews (proposals; Yash 2026-10-26: the Stoat in one) =================
   const CREWS = [
-    { id: 'warden', name: 'Warden', tag: 'the field crew', accent: '#c48bff', members: ['Stoat', 'Thresher', 'Butterfly'],
+    { id: 'warden', name: 'Warden', tag: 'the field crew', accent: '#c48bff', members: ['Stoat', 'Sparrow', 'Rhino'],
       weapon: { kind: 'whip', name: 'Ripple whip', reach: 60, hits: 2, cool: 0.6, info: 'the Thresher\'s ball, grown: a 60 u sweep that smashes mass and cracks a wall in two hits' },
       core: { shield: 'Fold ward', finisher: 'Annihilation', info: 'Core holds the Butterfly\'s fold as a ward; its finisher is the Stoat\'s dipole collapsing: a 180 u cone of annihilation' },
       omega: { turn: 0.6, speed: 1.15 }, lore: 'Wormholes, a wrecking chain and folded space: the crew that bends the field. Its omega form is a long lance of plates with the ball swinging from its prow.' },
-    { id: 'bulwark', name: 'Bulwark', tag: 'the heavy crew', accent: '#ff6a4d', members: ['Rhino', 'Grizzly', 'Scarab'],
+    { id: 'bulwark', name: 'Bulwark', tag: 'the heavy crew', accent: '#ff6a4d', members: ['Scarab', 'Grizzly', 'Butterfly'],
       weapon: { kind: 'cannon', name: 'Siege cannon', speed: 220, blast: 30, charge: 1.6, info: 'the Grizzly\'s cannon at omega scale: a full charge breaks a wall outright' },
       core: { shield: 'Switch wall', finisher: 'Breaker', info: 'Core lays the Scarab\'s switch as a shield ring; its finisher is the Rhino\'s Breaker: the whole hull a blade, a 150 u cone cut' },
       omega: { turn: 0.5, speed: 1.1 }, lore: 'A plough, a cannon and a punch. The slowest omega and the one that does not stop: it bulldozes mass it touches.' },
-    { id: 'tempest', name: 'Tempest', tag: 'the fast crew', accent: '#13fff2', members: ['Squirrel', 'Sparrow', 'Manta'],
+    { id: 'tempest', name: 'Tempest', tag: 'the fast crew', accent: '#13fff2', members: ['Squirrel', 'Thresher', 'Manta'],
       weapon: { kind: 'guns', name: 'Pulsefire battery', range: 260, rate: 0.08, wallSeconds: 2.5, info: 'the Sparrow\'s cannons as a battery: a wall under fire for 2.5 s breaks' },
       core: { shield: 'Afterburner veil', finisher: 'Kabloom', info: 'Core keeps the Manta\'s tunnel rings coming behind the omega (a boost for whoever follows); its finisher is the Manta\'s Kabloom: a 200 u cone' },
       omega: { turn: 0.75, speed: 1.3 }, lore: 'The racer, the shooter and the stinger. The fastest omega, and the one whose Core leaves boost rings in its wake.' },
@@ -199,7 +203,7 @@
     for (let k = -30; k <= 60; k++) { const i = ((hint + k) % n + n) % n; const d = L[i].distanceToSquared(pos); if (d < bd) { bd = d; best = i; } }
     return best;
   }
-  window.__omegaParts = { T, V, Q, TRACKS, COURSE_INFO, BASE, DIFF, DEG, lerp, clamp, ease, easeInv, rng, elx, ELS, EL_COLOR, SEATS, MEMBERS, CREWS, CREW_BY, DEFAULTS, SPEC, ELEMENTS, STYLES, S, LS, save, par, mults, styleOf,
+  window.__omegaParts = { T, V, Q, TRACKS, COURSE_INFO, BASE, DIFF, DEG, lerp, clamp, ease, easeInv, rng, elx, ELS, EL_COLOR, SEATS, ROLES, MEMBERS, CREWS, CREW_BY, DEFAULTS, SPEC, ELEMENTS, STYLES, S, LS, save, par, mults, styleOf,
     buildTrack, Grid, basisQuat, tmpArr, AX, AY, AZ, dq, fwdOf, upOf, rightOf, addPrism, removePrism, smashNear, hitWall, makeBody, makeWorld, relight, nearestIndex, $ };
 })();
 

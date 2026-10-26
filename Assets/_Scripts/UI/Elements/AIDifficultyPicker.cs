@@ -18,8 +18,8 @@ namespace CosmicShore.UI
     /// so a guest's row always shows the HOST's pick.</para>
     ///
     /// <para>Difficulty is the OPPONENT, intensity is the MAP - so the two rows are independent and
-    /// a Legendary AI can race intensity 1. The row is shown only on cards whose AI reads the setting
-    /// (<see cref="AIDifficultyRules.IsOfferedFor"/>).</para>
+    /// a Legendary AI can race intensity 1. Every mode offers the row (<see cref="AIDifficultyRules.IsOfferedFor"/>,
+    /// 2026-10-26); the weekly challenge pins it.</para>
     /// </summary>
     public class AIDifficultyPicker : MonoBehaviour
     {

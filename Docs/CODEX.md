@@ -263,6 +263,11 @@ state. **Nothing reads them yet**; do not write code that assumes otherwise.
 
 ## 6. Reading it from the UI
 
+**The menu's CODEX screen is the UI that reads it** (`CodexScreen` and `CodexCatalog`, `Assets/_Scripts/UI/Elements/Codex/`;
+`Docs/MENU_REDESIGN_B.md` section 88). It lists every entry of `Ethirions`, the Flora and Fauna of `Ecology` and
+`Tools`, with their stats, element variants (their ethirion through `VariantImage`), elemental laws and tool
+choices, alongside pilots, vessels and elements from their own assets. A field this page adds shows up there.
+
 ```csharp
 var codex = CodexSO.Load();
 

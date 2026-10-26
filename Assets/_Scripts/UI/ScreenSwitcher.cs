@@ -28,6 +28,9 @@ namespace CosmicShore.UI
             PORT   = 3,
             HANGAR = 4,
             PROFILE = 5,
+            // The Codex: ethirions, elements, ecology, pilots, vessels, artifacts and tools (Docs/CODEX.md's data). Its tab
+            // is first (Docs/MENU_REDESIGN_B.md section 84); its screen is CodexView (CodexScreen, section 88).
+            CODEX = 6,
         }
 
         public enum ModalWindows
@@ -1773,6 +1776,11 @@ namespace CosmicShore.UI
         public void OnClickPortNav()
         {
             NavigateTo(MenuScreens.PORT);
+        }
+
+        public void OnClickCodexNav()
+        {
+            NavigateTo(MenuScreens.CODEX);
         }
 
         public void OnClickHomeNav()

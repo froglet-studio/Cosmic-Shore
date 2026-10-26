@@ -411,7 +411,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The lobby AI difficulty's mistakes on this pilot (<see cref="AIPilotBelief"/>): late notice
-        /// and a misjudged target, applied to whatever point this pilot wants to reach. Null on Hard
+        /// and a misjudged target, applied to whatever point this pilot wants to reach. Null on Legendary
         /// and on every mode that does not offer the difficulty - the pilot then flies exactly as shipped.
         /// </summary>
         public void SetTargetBelief(AIPilotBelief belief) => _belief = belief;
@@ -934,7 +934,7 @@ namespace CosmicShore.Gameplay
                 _targetPosition = _externalTargetProvider();
 
             // The lobby difficulty edits what the pilot BELIEVES about that target - never how it
-            // flies to it. Null on Hard, so Hard is the shipped pilot.
+            // flies to it. Null on Legendary, so Legendary is the shipped pilot.
             if (_belief != null)
                 _targetPosition = _belief.Believe(_targetPosition, transform.position, HeadingDirection(), Time.time);
 

@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb85bfc047404932a9b2fc2ac7649182, type: 3}
   m_Name: DolphinAIBoostPolicy_Switchback
   m_EditorClassIdentifier: 
-  alignDegrees: 26.072
+  alignDegrees: 30.76
   releaseAlignDegrees: 25
-  stickBand: 0.331
+  stickBand: 0.33
   releaseStickBand: 0.6
-  engageRunwaySeconds: 0.831
+  engageRunwaySeconds: 0.832
   releaseRunwaySeconds: 0.5
   disabledInModes:
   - 42

@@ -73,6 +73,40 @@ Summarise: task, status, criteria met vs total, deviations, new queue entries, w
 
 **T6** — The Aldrich migration is an estimate. If it was executed, that is a significant deviation — roughly 1,670 references moved without design sign-off.
 
+**T7 — a layout group with `childControl` OFF reads a child's CURRENT rect, so a self-sizing child lags one pass**
+(claude/new-session-76hnyc, 2026-10-26). A `KitButton` sizes itself with its own ContentSizeFitter. A wrapper whose
+layout group does not control the child's width reads the button's rect, which the fitter sets later in the same pass.
+So a JOIN that turns into SPECTATE keeps JOIN's slot and spills out of the drawer. Make the wrapper control the child's
+width (`author_menu_arcade.wrap_slot`). The same fitter is why a KitButton dropped into a fixed slot (the configure
+strip's `<` `>`) grows past the slot onto its neighbours: use a fixed-size plain button there.
+
+**T8 — the offline rect renderer models layout groups, but not ContentSizeFitters and not Button transitions.** A clean
+"0 overlaps" from it says nothing about a self-sizing button's real width, and nothing about a tile whose outline its
+component hides at runtime (`KitTile.borderAtRest`). When a fix turns on either of those, assert it in the generator
+(the configure strip asserts its arrows are plain fixed buttons) instead of trusting the render. It does not model a
+GridLayoutGroup or the preferred height a nested Vertical/Horizontal layout group passes up either (the Codex grid and
+page, section 88), so blocks inside a scrolling page render stacked on top of each other. Check those by their layout
+settings.
+
+**T9 — `gates.sh` runs only the `author_*_assets.py` generators; the menu generators are not in it**
+(claude/new-session-76hnyc, 2026-10-26, the Codex). Every `author_menu_*.py` reads and writes `Menu_Main`, so a change
+to the scene or to a shared emitter (`author_menu_arcade.emit_node`) can put any of the twenty in drift with GATES:
+ALL OK on screen. Sweep them yourself: `for f in Tools/Build/author_menu_*.py; do python3 "$f" --check >/dev/null 2>&1;
+echo "$? $f"; done`. Also, `check_generated_assets.py --base` audits COMMITS, not the working tree ("audited 0 added"
+before the commit), and it needs `DOTNET_ROOT=/root/.dotnet`.
+
+**T10 — the menu emitters do not share every RectTransform field.** `author_ui_kit_prefabs.emit_node` writes a node's
+`scale`; `author_menu_arcade.emit_node` (the configure / profile / credits chain) wrote `{x: 1, y: 1, z: 1}` whatever
+the node said, until section 88 made it read `node.scale`. A generator that sets `.scale` (or `.rot`) and is not on the
+Hangar's own emitter must assert the field in its validation. The Codex asserts its 0.88. Otherwise the setting
+silently does nothing.
+
+**T11 — lifting a lock (or retiring any optional part) must remove the documents the generator minted for it.**
+`author_menu_topnav.py` removed only the ids its CURRENT config mints, so taking CODEX out of `LOCKED` would have
+stranded the old lock view in the scene. It now removes `Ids.everything()` and allows those removals in its blast-radius
+check. Any generator whose output depends on a set (locked tabs, shown seats, offered modes) needs the same: remove
+everything it can ever mint, then write what it mints now.
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:

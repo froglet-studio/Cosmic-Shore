@@ -675,7 +675,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -48, y: -32}
-  m_SizeDelta: {x: 112.8, y: 36.2}
+  m_SizeDelta: {x: 107.7, y: 36.2}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &82792671574476961
 MonoBehaviour:
@@ -1125,7 +1125,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 234059583874969885, guid: 140fecc22a060d7f8336d53251bfa015, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 32.7
+      value: 33.3
       objectReference: {fileID: 0}
     - target: {fileID: 234059583874969885, guid: 140fecc22a060d7f8336d53251bfa015, type: 3}
       propertyPath: m_SizeDelta.y
@@ -1229,7 +1229,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 38.1, y: 18.2}
+  m_SizeDelta: {x: 32.4, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &325456591613566940
 CanvasRenderer:
@@ -2334,7 +2334,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 119.1, y: 36.2}
+  m_SizeDelta: {x: 111.1, y: 36.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &266462203679597742
 MonoBehaviour:
@@ -2778,7 +2778,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 87.1, y: 18.2}
+  m_SizeDelta: {x: 79.1, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &499778608998038593
 CanvasRenderer:
@@ -3540,7 +3540,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 128.9, y: 36.2}
+  m_SizeDelta: {x: 121.6, y: 36.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &941316201748977800
 MonoBehaviour:
@@ -3984,7 +3984,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 96.9, y: 18.2}
+  m_SizeDelta: {x: 89.6, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &763131851719291341
 CanvasRenderer:
@@ -4143,7 +4143,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 89.7, y: 36.2}
+  m_SizeDelta: {x: 93.4, y: 36.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &517370378609867253
 MonoBehaviour:
@@ -4587,7 +4587,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 57.7, y: 18.2}
+  m_SizeDelta: {x: 61.4, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1058193515562866172
 CanvasRenderer:
@@ -4746,7 +4746,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 89.7, y: 36.2}
+  m_SizeDelta: {x: 87.7, y: 36.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &996118144779084754
 MonoBehaviour:
@@ -5190,7 +5190,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 57.7, y: 18.2}
+  m_SizeDelta: {x: 55.7, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &443073517380383062
 CanvasRenderer:
@@ -5349,7 +5349,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 89.7, y: 36.2}
+  m_SizeDelta: {x: 93.2, y: 36.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &442238615041599354
 MonoBehaviour:
@@ -5793,7 +5793,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 57.7, y: 18.2}
+  m_SizeDelta: {x: 61.2, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &162909575195270375
 CanvasRenderer:
@@ -5952,7 +5952,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 128.9, y: 36.2}
+  m_SizeDelta: {x: 118.5, y: 36.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &687743066434542805
 MonoBehaviour:
@@ -6396,7 +6396,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 96.9, y: 18.2}
+  m_SizeDelta: {x: 86.5, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1040673057479418830
 CanvasRenderer:
@@ -6907,7 +6907,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 0, y: 14}
-  m_SizeDelta: {x: 1100, y: 20}
+  m_SizeDelta: {x: 1400, y: 20}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &580474174560309949
 CanvasRenderer:
@@ -6937,7 +6937,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit
+  m_text: Sticks / WASD fly the camera    A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
@@ -7518,7 +7518,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -56}
-  m_SizeDelta: {x: 132.4, y: 36.2}
+  m_SizeDelta: {x: 133.6, y: 36.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &874535783080966661
 MonoBehaviour:
@@ -7968,7 +7968,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 234059583874969885, guid: 140fecc22a060d7f8336d53251bfa015, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 32.7
+      value: 33.3
       objectReference: {fileID: 0}
     - target: {fileID: 234059583874969885, guid: 140fecc22a060d7f8336d53251bfa015, type: 3}
       propertyPath: m_SizeDelta.y
@@ -8072,7 +8072,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 57.7, y: 18.2}
+  m_SizeDelta: {x: 58.3, y: 18.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &745466615106868727
 CanvasRenderer:

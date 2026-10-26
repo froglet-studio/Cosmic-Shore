@@ -103,44 +103,43 @@ offline 0 of 11 recorded courses finished before, 11 of 11 after. NOT run: `Swit
 
 ---
 
-### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three mega forms that combine into one omega form with three seats (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three vessels marching as one formation with a mobility, an attack and a defence seat (`Ys-bleeding-edge`, 2026-10-26, round 2) — NOT EDITOR-VERIFIED
 
-**What landed:** a first Unity clone of the Vessel Studio's Omega Crews lab (`Docs/Studios/VesselStudio/omega.html`,
-CONCEPT_FLEET.md §10) for Yash to test: `OmegaMath` (the page's omegaFlight, slotOf, dock ease, meter, element mults,
-finisher cone, line for line; `OmegaMathTests` holds it to goldens from the page's own code), `OmegaCrew` on each hull's
-root (the Orca's lifecycle: forms, seats, the meter, the members' moves, the crew weapon, the finisher, input-only AI
-seats), `OmegaVesselTransformer` (the Stoat's two-stick flight with cruise and turn rates switched per form),
-`OmegaCrewView` (placeholder member bodies, struts, fire, the finisher cone), `OmegaCrystalEffectSO` in the shared
-`OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three Stoat-clone prefabs by
-`Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green, 23 negative controls). The Unity CLI was not
-available in the session, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the
-only compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
+**What landed:** the Vessel Studio's Omega Crews lab cloned into the game (`Docs/Studios/VesselStudio/omega.html`,
+CONCEPT_FLEET.md §10), rebuilt after Yash's first test the same day ("an aligned flock of three ... the manoeuvre will be
+done by the Stoat, the shooting by the right vessel, the left one will protect"): `OmegaMath` (the page's arithmetic,
+line for line, goldens from the page's own code in `OmegaMathTests`), `OmegaCrew` on each hull's root (the formation,
+the three seats, the moves, the shield and the ward, input-only AI seats; the Orca's lifecycle), `OmegaVesselTransformer`
+(always the mobility vessel's cruise and turn rates, a boost channel), `OmegaCrewView` (placeholder bodies, aim bar,
+fire, shield shards, ward shell; the colour on the material, which fixes the black bodies of the first test),
+`OmegaCrystalEffectSO` in the shared `OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three
+Stoat-clone prefabs by `Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green). The Unity CLI was not
+available, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the only
+compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
 
 **Test (Menu_Main > freestyle > Toy Box > Vessel Changer > Warden; then Bulwark, Tempest):**
-1. **Apart.** The Stoat hull with two faceted bodies flying beside it (one each side, a little behind), in your domain colour.
-   They keep up through turns and boosts. The Mass card reads half; the Space card fills as they close in.
-2. **The hull member's move (RT).** Warden as the Stoat: a boost burst (x2 for 1.2 s, then 4 s cool: the Charge card
-   refills). D-pad right (or the right arrow): you are the Thresher; the hull jumps to that body's pose and the body left
-   behind takes yours. RT held near mass: prisms ahead are destroyed with a lit bar to the strike. D-pad right again: the
-   Butterfly (a boost). Bulwark: Rhino sweep, Grizzly charge-and-release burst (an explosion at 140 u), Scarab dash.
-   Tempest: Squirrel boost, Sparrow guns (the nearest prism on the nose line), Manta boost.
-3. **Combine.** With the Mass card past a third and both bodies close (the Space card full), hold LT: the two bodies dock onto
-   the hull over about 1.6 s (one 9 u above and 4 back, one 8 u below and 6 back), struts appear, the hull flies faster with
-   wider turns (Warden cruise ~71, Tempest ~89) and bulldozes mass it touches. The Mass card now drains.
-4. **Seats combined.** D-pad right: Arms. Your flight input stops and the hull's AI flies; the mouse / right stick / W A S D
-   turn a thin bar from the hull (the turret line, bounded); RT fires the crew weapon down it (Warden whip, Bulwark
-   cannon with charge, Tempest guns). D-pad right: Core. LT holds the shield (the Mass card drains faster, mass touched
-   dies). With the Mass card near full, RT fires the finisher: the mass in a cone ahead dies, a big blast, and the crew
-   splits round you (one body ahead, two behind to the sides) at nine tenths of the speed; you fly your member again.
-5. **Split on purpose.** As Helm, hold LT half a second: the crew splits. Let the Mass card run out combined: it splits.
-6. **AI seats.** As Helm combined, the Arms AI turns the bar onto mass ahead and fires; the Core AI shields when mass is
-   about to hit. As Arms or Core, the AI Helm flies the hull (it never splits by choice).
-7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars and cones disappear; the console shows no
-   errors from the crew.
+1. **The formation.** The Stoat hull leads; two faceted bodies in your domain colour (not black) ride 18 u to each side and
+   10 u behind, and keep exactly those places through turns, rolls and boosts. The Mass card reads half.
+2. **The mobility seat.** RT: the Stoat's sling boost, the whole formation speeds up for 1.2 s, then the Charge card
+   refills over 4 s. Bulwark: the Scarab's dash. Tempest: the Squirrel's boost.
+3. **Swap to the attacker.** D-pad right (or the right arrow): the hull jumps to the right-hand place and the camera with
+   it; the Stoat's place now shows a body; the AI steers the formation and your flight sticks no longer turn it. The
+   right stick, the mouse or W A S D turn a thin bar from the hull (the turret, bounded); RT fires down it: Warden guns
+   (the nearest prism on the line dies, a bar to it), Bulwark cannon (hold, release: a burst at 140 u), Tempest wrecking
+   ball (held near mass, it smashes it).
+4. **Swap to the defender.** D-pad right again: the hull takes the left-hand place. LT: eight shards orbit the formation,
+   every hostile prism within 40 u of its centre dies, the Mass card drains and the Space card lights. RT: a shell swells
+   round the formation and mass within 60 u dies; the Space card then refills over 3 s. With the Mass card empty neither works.
+5. **Back to the leader.** D-pad left twice: the hull leads again and your sticks fly. The cursor is free again (it
+   locks for mouse aim in the attack seat).
+6. **AI seats.** In the mobility seat, the attacker's bar turns onto mass ahead and fires on its own; the defender's
+   shield comes up when mass is about to hit the formation.
+7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars, shards and shells disappear; the
+   console shows no errors from the crew.
 
-**PASS:** every step as described, no console errors. **FAIL:** a body that drifts away or never docks · a swap that leaves
-the hull where it was · a combine that never ends · RT doing nothing in a seat · input still live in Arms / Core · a bar or
-body left behind after a vessel swap.
+**PASS:** every step as described, no console errors. **FAIL:** a body that is black, drifts or lags · a swap that leaves
+the hull where it was or the camera behind · flight sticks still steering in the attack or defence seat · RT doing nothing
+in a seat · a body left behind after a vessel swap.
 
 ### 🔴 Rhino round 3: Space L5 is the super-shield key, Charge L5 is the sword's steal (`cece/exciting-noether-dx1n4z`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -14674,6 +14673,23 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
 9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
    black screen), and the Theater's own playback runs.
 
+## 🔴 Every mode records itself; replays open on the free camera (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Yash: "any game mode I play, it should be automatically recorded ... simulate the entire game with my free cameras as in
+third eye". No Unity CLI in the session, so `/verify-unity` could not run. Checked offline: refcompile player and editor
+0 errors in project code; `ReplayStagePlacementTests` 5/5 (rings and arena origin survive the sidecar);
+`author_menu_replays.py --check` / `--self-test`; the gates.
+
+1. **Any mode records.** Play a match each of Skim Race, Joust and a gate race (Headlong or Switchback). **Pass:** each
+   leaves a `<Mode>_<date>_<time>.cstheater` + `.replay.json` in `<repo>/Recordings/` and a row in My Replays.
+2. **The lava lamp never records.** Fly freestyle in the menu for a minute. **Pass:** no new file.
+3. **Free camera first.** WATCH any replay. **Pass:** it opens on the free camera framing the match; the left stick /
+   WASD flies it, the right stick / mouse looks; D-pad left / right still cycles Pilot, Orbit, Chase.
+4. **The rings are the match's.** Watch the Headlong replay. **Pass:** the ghosts thread the rings (the JSON's `Gates`
+   lists them); for Skim Race the rings stand where they stood at Go.
+5. **No arena, still a replay.** Watch a Maelstrom game's replay (no preview definition). **Pass:** it plays on the dark
+   stage.
+
 ## 🔴 My Replays in the Profile - the last 10 games (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
 
 The replay work merged into Ys-bleeding-edge, plus MY REPLAYS in the Profile header and a last-10 rule
@@ -16398,6 +16414,195 @@ the cloud session. Proven offline: refcompile (player + editor OK), Amoebius bui
 - [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
 - [ ] Arena and Maelstrom windows are unchanged.
 
+## Scoreboard D, team versus (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
+`ScoreboardLadder.BuildVersus` run under .NET against the real source, `author_ingame_hud.py --check` / `--self-test`,
+`gates.sh`, a rect render of `ScoreboardPanel.prefab`.
+
+1. Skim Race 2v2 (you and an AI on Ruby, two AIs on Jade) to the end. **Pass:** the board shows the two teams side by
+   side, the winner on the left with WINNER under its coloured name and its race time once in the head; each team's
+   pilots under it (rank, face, name, "Ruby - Squirrel", "14 Crystals"); VS between the columns; across the top a bar
+   split by the teams' crystals with "Ruby 52%" / "Jade 48%" under its ends.
+2. A mode where each pilot has their own whole-number score (Crystal Capture 2v2). **Pass:** each head shows the team's
+   total and every row keeps its own score.
+3. A free-for-all (every pilot on their own domain) and a 1v1. **Pass:** the Rev 8 ladder, exactly as before; no VS, no bar.
+4. 3v1. **Pass:** versus, the lone pilot's column shows one row.
+5. PLAY AGAIN / MAIN MENU, the rematch faces and the reward strip count-up all still work and nothing overlaps the columns.
+
+## Rev 24 Hangar, element flowers on the arcade cards, the AI difficulty row on every card, the now-playing card gone (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
+`author_menu_hangar.py` / `author_menu_arcade.py` / `author_menu_profile.py` / `author_ui_kit_sprites.py` `--check` and
+`--self-test`, `.claude/skills/ship/gates.sh`, a rect render of `HangarView.prefab` at 1920 and 1728 wide.
+
+1. Open the Hangar. **Pass:** the vessel list is on the left; the header (kicker, big name, line) sits over the 3D vessel; the
+   dossier on the right has the open angled border - no top edge, a short stub on the left, a diagonal right side, a
+   chamfered rail to the right of the tabs and a small corner triangle - and nothing inside it crosses the diagonal.
+2. Press Y. **Pass:** OVERVIEW -> PILOTS -> ARTIFACTS -> OVERVIEW. The header becomes the picked pilot ("PILOT - MASS -
+   SPARROW", the name, the quote) on PILOTS and "SPARROW - 1 SLOT / ARTIFACTS" on ARTIFACTS, and the vessel's again on
+   OVERVIEW. The LB / ABILITIES UPGRADES GAMES / RB row shows only on OVERVIEW.
+3. On OVERVIEW press LB / RB. **Pass:** Abilities -> Upgrades -> Games and back, wrapping inside OVERVIEW only; on PILOTS and
+   ARTIFACTS LB / RB do nothing. Clicking a tab or a part does the same as the pad.
+4. Abilities. **Pass:** each row starts with the element's in-game flower (the HUD's petals) - one white petal on a vessel
+   nobody upgraded - then the ability icon, name, element, line and keycap; no crystal icons.
+5. Upgrades on a fresh profile. **Pass:** the four flowers down the right each show 1 (one white petal) with "1" under them;
+   the left reads "CHARGE / LEVEL 1 TO 2", the ability, its line, NOW 1 -> NEXT 2 flowers, the level-5 box, and "UPGRADE
+   200". D-pad onto another element focuses it (blue frame) without pressing A.
+6. Buy a level. **Pass:** crystals fly to the hull, the flower pops to the new level (level 6 turns the first petal blue),
+   the hull morphs, LEVEL N shows; the Abilities and Pilots flowers for that element show the new level too.
+7. Leave the Hangar and open the Arcade. **Pass:** each card's genre petal is now a whole flower filled to the level bought
+   for that element on the card's hull (Brood Rush shows two flowers); a card on a hull never upgraded shows one white petal.
+8. Vibe. **Pass:** three rows of ten segments, lit from the left to the vessel's value (half for the Sparrow); no sliders.
+9. Simulator at 16:10 (1728 x 1080). **Pass:** the vibe bars and the UNLOCK button (on a locked vessel) do not overlap.
+10. Arcade -> any card -> configure. **Pass:** the AI Easy / Medium / Hard row is there on every card. On Skim Race, Regatta,
+    Slingshot, Warpline, Astro League, Brood Rush and Broadside it is bright and the host can pick; on every other card it is
+    dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
+11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
+
+## The CODEX screen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 88. Run `CodexCatalogTests` in the Test Runner (edit mode).
+
+1. Main menu: the CODEX tab has no lock. Press it, or press LT from HANGAR. **Pass:** the Codex slides in. The
+   chapters run along the top, the grid is on the left and the open page on the right. Nothing sits under the top bar
+   or the friends orb, at 16:9 and 16:10.
+2. ETHIRIONS. **Pass:** five tiles (Charge, Mass, Space, Time, Omni) with their portraits. The first is open, and its
+   page lists its facts (Kind, Collection, Reward, ...).
+3. LB / RB. **Pass:** they step Ethirions, Elements, Flora, Fauna, Pilots, Vessels, Artifacts, Tools and stop at each
+   end. Under ECOLOGY, FLORA / FAUNA show beside the grid's title. On every other chapter they are hidden.
+4. Pad: move across the grid. **Pass:** the tile under the pad opens its page, its outline turns blue, and the grid
+   scrolls to keep it in view.
+5. Flora > Arbor. **Pass:** its facts, four element cells each showing an ethirion, and its elemental laws as rows.
+   The page scrolls when it is long.
+6. Pilots > Shrapnel. **Pass:** the portrait, the "Bigger bangs, brighter booms!" line, the signature, how it flies,
+   "Mass - Turret Stance" and "Shielded Prisms".
+7. Elements > Mass. **Pass:** one row per vessel naming its Mass ability and level-5 upgrade.
+8. Artifacts. **Pass:** no tiles, and the line "Artifacts are found far out in the HyperSea. None found yet."
+9. Tools > Connect the Dots. **Pass:** its category (Creation), facts, and the paintings as rows.
+
+## Configure: picked pilot's podium glows, no outline (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 86.
+
+1. Open an Arena card with three pilots, then press the third. **Pass:** no rectangle round any pilot. The picked seat's
+   podium glows brighter and wider in its team colour and breathes. Nothing overlaps the neighbouring portraits.
+2. Press another pilot. **Pass:** the glow moves to that podium, and the vessel strip names that pilot's vessel.
+
+## Arcade SORT and FILTER (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 85. Run `ArcadeGridOrderTests` in the Test Runner (edit mode).
+
+1. Open the Arcade. **Pass:** ALL GAMES and its count on the left, SORT: FAVOURITES and FILTER: ALL on the right; the
+   buttons never overlap each other or the count, at 16:9 and 16:10.
+2. Press SORT. **Pass:** a row of FAVOURITES / A-Z / UNLOCKED opens under the line, the current one underlined; pick A-Z:
+   the row closes, the button reads SORT: A-Z, the grid is alphabetical.
+3. FILTER: try FAVOURITES (only starred cards), SOLO, MULTIPLAYER, MASS (cards whose flower is Mass), CHARGE. **Pass:**
+   the count follows; a filter with no games shows "No games match this filter."
+4. Pad: focus SORT, A opens the row with the focus on the current option, A picks and the focus returns to SORT.
+5. Close and reopen the Arcade. **Pass:** the sort and filter are kept for the session.
+
+## Hangar press-to-perform and scale, controls text, CODEX top bar (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 84.
+
+1. Hangar, ABILITIES. **Pass:** nothing plays on its own; clicking (or A on) a row makes the vessel perform it.
+2. Hangar at 16:9 and 16:10. **Pass:** everything reads smaller with more space; nothing clipped at the edges; the
+   dossier reaches near the foot; the vessel list ends above the friends orb.
+3. Open an Arcade card. **Pass:** the controls panel shows two columns with whole names ("Skyburst Rockets").
+4. Top bar. *(Superseded for CODEX by "The CODEX screen" above, section 88: CODEX is no longer locked and opens its screen;
+   check the order and the book glyph here.)* **Pass:** CODEX (locked, book glyph), HANGAR, HOME, ARK, PORT (locked); pressing CODEX says not open yet;
+   LT / RT step HANGAR - HOME - ARK in that order and skip CODEX and PORT; the slide matches the bar.
+
+## Configure intensity and vessel strip, friends SPECTATE, Hangar free view and sizes (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline: reference compile, every menu generator's `--check` / `--self-test`,
+`gates.sh`, offline renders. Docs/MENU_REDESIGN_B.md section 83.
+
+1. Open any Arcade card. **Pass:** intensity is one small group under its caption (LB, four bars, RB), not spread across
+   the card; LB / RB and a tap on a bar still change it.
+2. Open Brood Rush (Arena) and a voyage. **Pass:** the hull strip shows icons only; only the picked hull is outlined
+   (hover outlines another); the < > chevrons sit outside the first and last tiles, never on them, and step the hulls
+   (Regatta: reach the ninth). Press CLAIM: the arrows leave, CHANGE stands where CLAIM was, START opens. Press CHANGE:
+   the strip and arrows are back, START says to claim a hull. Claim, press START (ready): CHANGE goes away.
+3. Two players on an Arena card: player A claims the Manta, then presses CHANGE. **Pass:** player B can now pick the
+   Manta.
+4. Friends drawer with a friend in a match. **Pass:** SPECTATE shows whole, inside the drawer, beside nothing it overlaps;
+   a friend going from online to in-match turns JOIN into SPECTATE without spilling.
+5. Hangar, mouse: drag (turns on any axis), Shift-drag (rolls), wheel (zooms, stops before entering the hull), right-drag
+   (moves), double-click (eases back and the idle turn resumes). **Pass:** each as said; the idle turn stays off while the
+   model is held; picking another vessel starts it framed.
+6. Hangar, pad: right stick turns, hold Y + right stick zooms (up / down) and rolls (left / right), right-stick press
+   resets; the line under the stage names the pad's controls once the pad is used. **Pass:** Y does nothing else here; LT /
+   RT still page the screens.
+7. Hangar, phone (or the Device Simulator): one finger turns, pinch zooms, twist rolls, two fingers move, double-tap
+   resets.
+8. Hangar layout at 16:9 and 16:10. **Pass:** CRYSTALS and its pill have room (the amount clear of the pill's edges, the
+   pill clear of the top bar and the tabs); the title, tabs, ability rows and vibe bars read smaller with space between;
+   nothing overlaps.
+
+## Hangar list: colourful card art (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline: reference compile (0 errors in project code),
+`author_hangar_card_art.py --check` / `--self-test`, `author_menu_hangar.py --check` / `--self-test`, `gates.sh`, an offline
+render of the tile. Docs/MENU_REDESIGN_B.md section 82.
+
+1. Let Unity import `Assets/_Graphics/Hangar/Cards/` and `Assets/_SO_Assets/UI/HangarCardArt.asset`. **Pass:** the 20 PNGs
+   import as single sprites; the asset's inspector lists 20 entries, each with a vessel and its art; no missing script.
+2. Open the Hangar. **Pass:** every vessel card shows its hull in colour (tan, cyan, lime, orange), in the band above the
+   name, not greyed; no grey halo around a hull; the Wrasse shows the kite model, not the Sparrow.
+3. Open any other screen with vessel cards (the configure vessel strip, the Arena roster). **Pass:** those still show the
+   fleet's card icons, unchanged.
+
+## Round 2: Hangar (opaque, open-border list, one tab row), arcade card flower, configure card (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline: reference compile, the generators' `--check` / `--self-test`, `gates.sh`, and
+an offline render of every changed prefab (no text on an image, no text past its box). Docs/MENU_REDESIGN_B.md section 81.
+
+1. Open the Hangar. **Pass:** the menu world no longer shows through (the same backdrop as the Arcade window); no blue glow
+   behind the vessel; the vibe bars read clearly; one tab row LB ABILITIES UPGRADES GAMES PILOTS ARTIFACTS RB, LB / RB step
+   through all five and wrap, and the header names the pilot on PILOTS and the slot on ARTIFACTS.
+2. The vessel list. **Pass:** every vessel is an open angled card (no top-left edge, the right side leaning in), the hull
+   large on top, name and Owned / Locked under it; the selected card's outline is blue and thicker; the list scrolls.
+3. A locked vessel. **Pass:** UNLOCK sits at the stage's top right, never on the floor rings or the vibe bars, at 16:10 too.
+4. The Arcade grid. **Pass:** each card's element flower sits on the right of its body, small, level with the title; Brood
+   Rush shows two stacked.
+5. Open Scurry, then Brood Rush. **Pass:** the preview is the old size (left two thirds); the controls panel is short; the
+   card under it holds intensity, the pilots, (Arena) the vessel strip with CLAIM, ADD AI PILOT and the AI row; no name,
+   status or team sits on a portrait or a hull; nothing of the Arcade window shows through behind.
+
+## Friends drawer: people glyph, no maximise (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Verified offline: reference compile, Amoebius builds, `author_menu_friends_drawer.py --check` / `--self-test`, `gates.sh`.
+
+1. Open Menu_Main, press the presence orb. **Pass:** the drawer's title shows the two-people glyph (grey), not an element
+   icon; the top-right has only the minimise bar, which slides the drawer back; no maximise / restore button; no stray
+   plate or ring behind the minimise.
+2. Change cell in freestyle. **Pass:** the loading screen's four steps are words only, no element icons.
+
+## Rev 25 configure card: Arena and Voyage on the Arcade card, the signal sign, the open border (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
+`author_menu_configure.py --check` / `--self-test` (45 planted defects caught), `author_ui_kit_sprites.py --check`,
+`author_menu_hangar.py --check` (the shared rail border left the Hangar byte-identical), `gates.sh`, rect renders of
+`ConfigureView`, `ConfigureArenaView` and `ConfigureSeatPedestal`. Docs/MENU_REDESIGN_B.md section 79.
+
+1. Open any Arcade card. **Pass:** the preview is narrower (860), the right column wider; the card has no glass frame -
+   an open angled border, a rail along the top right that chamfers into a right side leaning in toward the floor, a
+   corner mark bottom-left; intensity is LB, four rising bars lit to the level, RB, no number; the "Play N to unlock"
+   line on the caption row's right; ADD AI PILOT and Easy / Medium / Hard inside the border; the controls above show
+   every row.
+2. Open Brood Rush (Arena). **Pass:** the same card, six pedestals, each pilot standing on a hull icon over the pool of
+   their team's colour; under them "Your vessel" with the hull strip and CLAIM; the hull you tap appears under your feet.
+3. Add two AIs, then press an AI's pedestal (mouse, or move to it with the pad and press A). **Pass:** the strip's
+   caption reads "{domain} AI's vessel", that pedestal wears the blue band, a tap on a tile changes the hull under that
+   AI's feet; pressing your own pedestal gives the strip back ("Your vessel"). CLAIM still gates START.
+4. Open Tandava from the Voyage window. **Pass:** the same card; no team steppers (one crew); the hull strip shows its
+   three hulls.
+5. As a guest in an Arena lobby. **Pass:** the host's hull shows under the host; your AIs (your team) can be pressed,
+   the others cannot.
+6. LB / RB step intensity, a locked level shows its unlock line, and nothing overlaps the leaning right side at 16:10.
+
 ## Menu_Main slide lag: masks sleep while nothing under them can be seen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds, every menu generator `--check` / `--self-test`, `check_generated_assets.py`.
@@ -16515,3 +16720,16 @@ No Unity editor, `unity` CLI or .NET SDK in the session, so no compile ran. Veri
 6. Play Headlong or Redline. **Pass:** the HUD counts 40 gates over 5 laps of 8 rings.
 7. Time one match of each mode the doc's table marks "estimate", flown by an experienced pilot. **Pass:** each
    lands within ~60-120 s; record the times in `Docs/ARCADE_MATCH_LENGTH.md` §2.
+
+## 🔴 2026-10-26 — AI difficulty on every mode (unverified: no Unity editor in the session)
+
+**Files:** `AIDifficulty.cs` (`IsOfferedFor` = every mode but Random; `UsesPilotBelief` = every mode without its own
+handicap), `GateRaceController.ArmRacer` (drops the autopilot belief when it installs its ring handicap), the Maelstrom
+configure view (compact AI row, `author_menu_configure.py`). EditMode: `AIDifficultyRulesTests`.
+
+1. Open several cards that never had the row - Joust, Rampage, Cleave, Switchback, Skein, Headlong, Hijack, Dog Fight:
+   Easy / Medium / Hard / Legendary shows on each, lights when pressed, and a guest sees the host's pick.
+2. Switchback (a gate race) on Easy vs Legendary: Easy notices rings late and overshoots some; Legendary threads cleanly.
+   Third Eye on an Easy AI: it shows a ring handicap and no autopilot belief (one handicap, not two).
+3. Joust or Dog Fight on Easy vs Legendary: the Easy AI reacts late and sometimes flies off to one side of its target.
+4. Maelstrom: the compact AI row sits under the domain columns, clear of Format; the pick holds across rounds.

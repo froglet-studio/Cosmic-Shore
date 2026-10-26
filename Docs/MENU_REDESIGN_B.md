@@ -11,6 +11,10 @@ board is approved there. The Port canvas keeps the item 0 kit board where it was
 canvas carries a reference copy of it (`MenuKit.dc.html`) so the kit sits beside the items built
 from it.
 
+**A copy of every board is in git** (Rev 3 to Rev 23, copied 2026-10-26): `Docs/MenuRedesignB/board/`, with a README
+that indexes each round's boards by page and title. Boards render only inside the canvas and their images stay in its
+asset store; the copy is for reading layouts, words and sizes from a session. New rounds go to the canvas first.
+
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
 2. **Mockup:** an artboard on the mockup canvas, using real content.
@@ -3327,3 +3331,446 @@ Built on `claude/match-replays-5t3dbr` for match replays (`Docs/REPLAYS.md` sect
 Every word is an authored field (section 50). The Menu_Main instance sits just before Credits under ModalWindows; the
 two generators run in either order. Change anything here through the generators (replays, profile, arcade), never in
 the scene.
+
+
+## 76. Rev 24: the Hangar, option C taken forward; element flowers on the cards (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the Rev 22 C board: "bring the vessel list to the left side and keep the vessel like this and the
+text above like this. LB and RB changes the overview parts only. Now the header text can change as per the tab we are in";
+"Use the petals in game of the elements with the bars"; "I just care about the angled panel border"; "for the vibe ... they
+can be like bars"; then, on the Rev 24 boards: "In upgrades we do upgrade the elemental petals and they always start with 1
+value. That same petal can be showed in the arcade game cards updated with the real value the players have. Go ahead an
+implement". Boards: page "Rev 24 - Hangar C taken forward" (R24HangarAbilities / Upgrades / Games / Pilots / Artifacts,
+R24Borders, R24Notes), copied into `Docs/MenuRedesignB/board/`.
+
+- **The element flower, outside a match.** `KitElementFlower` (`Assets/_Scripts/UI/Kit/`) is the vessel HUD's flower: five
+  copies of `Resources/ElementPetals/<element>_petal` rotated 72 degrees apart, coloured by
+  `ElementalBarsConfigSO.DistributePetalValues` and `ColorForTick` exactly as `ElementalBarsView` colours them (1 = one
+  white petal, 5 = all white, 6 = one blue, 10 = all blue). It writes five colours when the level or element changes, never
+  per frame. `author_menu_hangar.element_flower` authors one (the petals rotated in the prefab, so the editor shows the
+  flower); `ElementFlowerTests` holds the fill to the HUD's at every Hangar level.
+- **Every element starts at 1.** `HangarUpgradeStore.StartLevel = 1`, applied on read (`Shown`): a saved 0 or no record is
+  a 1, nothing migrates. The first UPGRADE buys level 2 for 200 (100 x the level bought). `LevelChanged` fires on a buy.
+- **The arcade cards.** `GameCard.GenreFlower` / `GenreFlowerSecondary` replace the single white genre petal on
+  `ArcadeGameCard.prefab`: the genre's element (`ModeGenre`, unchanged) as a flower filled to the player's level for that
+  element on the card's hull (`ResolveModeVessel`, the Mode Map's rule). The cards redraw on `LevelChanged` and when the
+  cloud profile lands (`PlayerDataService.OnProfileChanged`). The Arena and Toy cards keep the petal (no flower wired).
+- **Layout** (`author_menu_hangar.build_view`, reference 1920 x 1080, height-matched): the list on the left (230 wide);
+  the header (kicker, Display name, line) over the centre; the 3D vessel over the sea with no box (the bay's glows stay);
+  the vibe bars at the bottom left; UNLOCK over the stage's lower right (so it never meets the bars at 16:10); the dossier
+  710 x 890 at the right.
+- **The border** (R24Borders "2 Rail"): `kit_cradle_fill` (new in `author_ui_kit_sprites.py`, the open cradle with its
+  fade-in from the top, drawn at the dossier's size) plus seven straight lines rotated in place (`line_node`; the kit's
+  node emitter now writes a z rotation, `Node.rot`, byte-neutral for every other node), a faint dash where the rail ends
+  and `kit_corner_tri` in the bottom-left corner. Pages keep 60 units off the right side so nothing crosses the diagonal
+  (asserted from the geometry).
+- **Tabs.** `HangarTabsView` keeps its five pages and adds three groups: OVERVIEW (Abilities, Upgrades, Games - LB / RB, the
+  parts row with its LB / RB keycaps), PILOTS and ARTIFACTS - Y steps them (Y opens the profile only on Home). The header
+  follows the tab: OVERVIEW the vessel (`HangarVesselDetailView.kickerTemplate`, "VESSEL - OWNED"), PILOTS the page's own
+  (`IHangarHeader`: "PILOT - MASS - SPARROW", the name, the quote), ARTIFACTS the group's templates.
+- **Upgrades** (`HangarUpgradesPage`, rewritten): four flower tiles down the right, the focused one framed in the selection
+  blue (pad focus moves it, no press); the left names the element and step, the ability and its line, the flower NOW and
+  NEXT, the level-5 box (`UpgradeLabel` / `UpgradeDescription`), and UPGRADE with the price. The moment is kept (crystals
+  fly, the flower pops, the hull morphs, LEVEL N). Still look-only.
+- **Abilities** rows start with the flower; the crystal glyph is gone (`elementGlyph` left empty). **Pilots** are four rows
+  (portrait, name, line, flower); the rev-3 hero is gone from the prefab (its fields stay optional). **Vibe** is ten
+  segments per scale (`HangarVibeView.segments`; the rail and thumb still work if authored).
+- **Also on 2026-10-26:** the NOW PLAYING card is off Menu_Main ("Remove this man ASAP"; `author_menu_profile.py` stops
+  mounting it and fails if it is back), and the configure window's AI Easy / Medium / Hard row shows on every card - unlocked
+  where the mode's AI reads it, dimmed and locked on Medium elsewhere (the Rev 7 rule, `ArcadeLaunchPanel.SetAIDifficultyOffered`).
+- **Proof without an editor:** refcompile player and editor OK, Amoebius builds, the generators' `--check` / `--self-test`
+  (new controls: a petal turned out of place, the parts row unwired, the header not following the tab, a vibe segment
+  unwired, the rail missing a line, the card mounted in Menu_Main again), `gates.sh` all OK, and a rect render of the
+  prefab. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 24 Hangar".
+
+## 77. The scoreboard is Rev 23 option D, team versus (built 2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "For scoreboard I liked D". Board: R23ScoreD ("Rev 23 - Scoreboard", copy in
+`Docs/MenuRedesignB/board/`).
+
+- **When.** `ScoreboardLadder.BuildVersus` (pure, `ScoreboardLadderTests`) returns the two sides for a match of exactly two
+  domains where at least one fields two or more pilots (2v2, 3v1, 3v3); a free-for-all, a 1v1 or three teams return null
+  and the board stays the Rev 8 B ladder (§49), unchanged. The winner is always the left side.
+- **A side.** Its name in its domain colour (domain colours are for teams, as on every board), WINNER under the winner
+  (`ScoreboardVersusView.winnerWord`; `loserWord` empty), its score - the time every member shares, else the members'
+  whole-number scores added, else nothing - a rule in its colour, then its pilots as `ScoreboardVersusRow` rows (the
+  ladder row's parts at 660 wide: rank, face, name with the pilot line and counts stacked under it, score, reward). A
+  shared team time is said once in the head and the rows drop it, as the ladder's header did.
+- **The share bar** across the top splits the count the two teams' secondary lines carry ("14 Crystals"), the loser's
+  part at 60 % alpha, with "{domain} {percent}%" under each end (`shareTemplate`); hidden when any line has no number.
+- **Unchanged:** the header (mode line, banner, rule), the stats strip, PLAY AGAIN / CONTINUE / MAIN MENU / LEAVE LOBBY
+  with the rematch faces, the reward strip counting the wallet, the crystal award path. They keep their Rev 8 places
+  (buttons left, reward right); the D board drew them the other way round - say if that should follow.
+- **Wiring.** `author_ingame_hud.py`: the `Versus` layout in ScoreboardPanel (hidden by default; the ladder's `List` gained
+  a CanvasGroup to step aside), `ScoreboardVersusRow.prefab`, and `Scoreboard.versusView` / `versusRowPrefab` set on
+  GameCanvas. Every mode's board is GameCanvas's; the benchmark stress scene's own Scoreboard keeps the ladder.
+- **Proof without an editor:** refcompile player and editor OK, Amoebius builds, `BuildVersus` run under .NET against
+  the real source (10 checks), `author_ingame_hud.py --check` / `--self-test` (new controls: the view unwired, the ladder
+  not stepping aside, a side with nowhere for its rows), `gates.sh` all OK, a rect render of the panel. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Scoreboard D".
+
+
+## 78. Rev 25 boards: the Arcade card in Arena and Voyage; intensity without Roman numerals (2026-10-26)
+
+Shombith, 2026-10-26: "the same card as in Arcade should be there in arena and voyages game configuration card selecting
+vessel and domain and AI. Send me mockups of that"; then "Also remove the roman numericals with numbers or just that
+signal sign". **Boards only for Arena and Voyage** (canvas page "Rev 25 - Arcade card in Arena and Voyage", copied into
+`Docs/MenuRedesignB/board/`): the G card with six seats, each pilot standing on the vessel they fly - A puts a team and a
+vessel stepper under every pilot, B keeps the team steppers and adds a strip of the card's hulls for the focused seat.
+Tandava (one crew, `MaxDomainsAllowed: 1`) carries no team stepper. Nothing is built for them until a pick.
+
+**Built now:** the Arcade window's intensity reads 1 - 4 instead of I - IV (`IntensityStepper.numerals`, authored by
+`author_menu_configure.py`; the unlock line follows). The boards show the other choice too: no number, just the four
+pips as a rising signal sign (B boards).
+
+## 79. Rev 25 B built: the Arcade card in Arena and Voyage, the signal sign, the open border, a roomier card (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the Rev 25 boards (section 78): "Go with B and the signal sign but the add AI button is going out.
+Also the open panel that we used in the hangar use it here too", then "You can make the space bigger I guess bro, its too
+noisy if you cramp stuff up". Built in `author_menu_configure.py` for the Arcade window (`ConfigureView`) and the Arena
+window (`ConfigureArenaView`, which every voyage opens through `ArenaLaunchPanel.Handles`); the Maelstrom window keeps the
+Rev 4 column and is byte-identical.
+
+- **Roomier.** The preview narrows from 1100 to 860 and the right column widens from 680 to 920 (`G_PV_W`, `G_SET_W`).
+  The card hugs its sections and the controls panel above it takes the rest, so the Arcade's shorter card leaves its
+  controls room for every row. The objective box moves to the preview's top-left (no room beside FLY any more); the +1
+  toast keeps the top-right.
+- **The open border.** The card is the Hangar's "2 Rail" border (`H.rail_border`, now shared, with the rail along the
+  card's top edge, a 30-unit chamfer and a 40-unit lean) over `kit_cradle_card`, a new kit sprite: the Hangar's cradle at
+  920 x 536, faint at the top instead of clear. The right inset (56) clears the leaning side; the generator asserts the
+  sprite and the rail were drawn for the same card.
+- **The signal sign.** Intensity is LB, four bars rising left to right (20 wide, 14 to 53 tall) lit up to the picked level,
+  RB. The bars are the `KitIntensityPip`s, so the modal drives them as before; there is no numeral (`numeralText` is
+  empty). What opens the next level moved to the caption row's right.
+- **Six pedestals on the Arena.** The lineup draws a pedestal per seat the modal holds on those cards (`MaxArenaSeats` 6,
+  the Arcade's `MaxMatchSeats` 4; the generator reads both from the modal). Each pilot stands on the hull they fly
+  (`ConfigureSeatPedestal.hullImage`): your strip pick, another pilot's arena claim (else the hull they last flew), an AI's
+  `AIHullSeating.SeatHull`; a one-hull card shows its hull on every seat. A card with one team (Tandava,
+  `MaxDomainsAllowed: 1`) hides the team steppers.
+- **The vessel strip for the pressed seat** (B). Under the lineup: < seven hull tiles >, then CLAIM - the same
+  `ArenaLaunchPanel` hull strip, claim flow and caption ("Your vessel" / "{domain} AI's vessel"). Pressing a pilot
+  (`ConfigureSeatPedestal.pickButton`, in pad navigation only where it does something) points the strip at that seat
+  through the modal's `SelectVesselSeat`, the same rule the seat rows' hull taps used; the seat the strip picks for wears
+  the selection band. The old class line and description under the strip are gone (the controls panel names the hull).
+- **ADD AI stays inside.** ADD AI PILOT and the Easy / Medium / Hard row sit on the card's last row, inside the inset.
+- Retired with it: the Arena's Rev 4 column, its `ConfigurePilotsFit`, the controls grid under the preview, the hull
+  section's class line, and the generator's `hull_body` / `vessel_body`.
+
+Affects Yash's shared vessel panel (`ArenaLaunchPanel`, the hull strip and claim, #1558): its strip and claim are reused
+as they are; only where they sit moved. Editor check: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 25 configure card".
+
+## 80. The friends drawer: the people glyph, no maximise (2026-10-26)
+
+Shombith, 2026-10-26: "you used elemental icon for friends you should never do that. Change this plus remove the
+maximize button from the friends panel". The drawer's title wears `chrome_people` (the leaderboard's Friends tab glyph)
+in NeutralLightest instead of the Space element glyph, and the window has only its minimise: `FriendsDrawer` loses the
+Maximised state, `maximiseButton`, its two glyphs and `maximisedWidth`. **The rule, standing:** an element glyph means an
+element (an ability, a petal, an element bar) and nothing else - never people, a social feature, or decoration;
+`author_menu_friends_drawer.py` now fails if the title wears any of the four. The re-emit also sweeps documents an older
+version parented under the drawer that their parent no longer listed (old plates and focus rings under the minimise and
+maximise buttons).
+
+The same mistake was on the cell-change loading screen (section 47.4): its four build steps ("Laying prisms" ...) wore
+the Mass, Time, Charge and Space glyphs. They now wear none (`EnvironmentLoadVeilContent.stepGlyphs` is empty; the veil
+already drew a step without one), and `author_load_veil_content.py` fails if an element glyph comes back.
+
+## 81. Round 2 on Rev 24 / 25: the Hangar, the arcade card, the configure card (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the editor screenshots of sections 76 and 79: "Hangar screen whole bg is too transparent. Make the bg
+look like the arcade bg ... Left side vessel holders should use the open border card as well ... In the middle remove the
+hued image behind the vessel ... Vibe tab - I do not even notice it because of the transparency ... Overview, Abilities,
+Upgrades, Games, Pilots and artifacts all are on the same tab nav bars"; "The elemental icon can go on the right side and
+you can resize it a bit smaller"; "Game configuration card - worst - Bring the old preview card size. The controls tab does
+not need to be that big. We can make the detail view bigger also see texts are overlapping with images".
+
+**Hangar** (`author_menu_hangar.py`):
+- The backdrop is the Arcade window's: the 0.95 SurfaceBlack veil, then the sea lines. The vibe bars now read against it.
+- The bay's deep glow, its two coloured rim lights and the floor pool are gone; the vessel stands on its floor rings.
+- One tab row, LB to RB: ABILITIES, UPGRADES, GAMES, PILOTS, ARTIFACTS. Every page is its own tab (a group of one, so the
+  header still follows the tab); LB / RB step through all five (`HangarTabsView.StepPart` steps groups from a one-page
+  group); Y is free. The OVERVIEW group and the second row are gone - the three pages were OVERVIEW.
+- The vessel list is open-border cards (220 x 124): `kit_open_tile_fill` / `_line1` / `_line2`, new kit sprites drawn at the
+  card's size, so KitTile still swaps the outline on selection. The hull is large on top, drawn with `Hull_Lit.mat` (the
+  arcade card's treatment), the name and status under it.
+- UNLOCK moved to the stage's top right and the turn hint to its foot: they sat on the floor rings.
+- **Colour:** the mockup's colourful hulls were crops of the artist files' clay contact sheets (`Docs/VesselModels/sheets`,
+  tan body, lime engine). The fleet's card art follows `Docs/VesselModels/COLOR.md` (lime is never on a vessel; the class
+  livery is neutral), so the cards show the shipped renders, lifted by `Hull_Lit`. Colourful card art is a re-render in
+  `render_cards.py` and a colour-language decision, not a UI change. (Superseded for the Hangar list by section 82.)
+
+**Arcade card** (`author_menu_arcade.py`): the genre flower moved to the body's right edge, 34 across (was 46 beside the
+hull); a two-genre card stacks two, centred, and the title takes the line between the hull and the flowers.
+
+**Configure** (`author_menu_configure.py`):
+- The preview is 1100 x 620 again and the right column 680 (Rev 25's 860 / 920 is undone).
+- The controls are one compact panel (144): the hull's name and CONTROLS on one row, two rows of three controls under it.
+- The card takes the rest of the column (578 tall); the pedestals take what the other sections leave (Arcade 358, Arena 216).
+- A pedestal stretches: its pictures (the portrait over the hull on its pool) share the region above the words in fractions,
+  and the words (name, status, team) sit in fixed rows at its foot, so no word sits on a picture. The AI tag is gone (the
+  status line says AI).
+- The vessel strip is six tiles across the card under a caption row that holds the hull's name and CLAIM.
+- The window's veil is opaque: the Arcade window's title and cards read through the 0.95 one.
+
+**How this round was checked:** an offline renderer of the generated prefabs (nested prefabs and their overrides, layout
+groups, sprites, TMP text, masks) drew every changed screen, and it reports any text on an art image and any text wider
+than its box; the final renders report none. The renderer lives in the session scratchpad, not the repo.
+
+## 82. The Hangar list's colourful card art (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "Go ahead with the colourful card renders" (section 81 had left the list on the fleet's card icons,
+lifted by `Hull_Lit`).
+
+**What the list shows now:** each hull's three-quarter view in its model's slot colours (tan body, cyan glass, lime engine,
+orange accents), the look of the Rev 24 mockup, filling the card's art band above the name and status.
+
+**Where the art comes from:** `Tools/Build/author_hangar_card_art.py` cuts it from the vessel-model contact sheets
+(`Docs/VesselModels/sheets/<vessel>_after.jpg`, the Blender Cycles renders `vessel_model/build.py` makes; the second cell of
+the first row, the front three-quarter view). It keys out the studio grey, un-blends the grey from the edge pixels (no grey
+fringe on the navy card), trims the hull and fits it to one 600 x 200 clear canvas, so every card frames its hull the same
+way. The Wrasse uses `wrassekite_after.jpg` (its card icon is still a placeholder), the Rhino and the Urchin their rigged
+sheets, the Jacks `jack_after.jpg`. A hull with no sheet falls back to its card icon on the same canvas. All 20 hulls the
+Hangar lists have a sheet. The art was not re-rendered: Blender is not installable in this environment, and the sheets are
+the committed Cycles renders.
+
+- `Assets/_Graphics/Hangar/Cards/<Vessel>.png`: the art (20 sprites).
+- `Assets/_SO_Assets/UI/HangarCardArt.asset`: `HangarCardArtSO`, the vessel to art table (not `_SO_Assets/Hangar/`: that
+  folder retired with TRY and `author_menu_hangar.py` guards that it stays gone).
+- `HangarVesselTile.cardArt` names the table; `Configure` shows `cardArt.For(vessel)`, else `SO_Vessel.IconActive`.
+- The tile's art is a band across the card's top (8 down, 62 tall, inside the leaning right side), drawn as rendered: the
+  `Hull_Lit` material is gone from the tile, since it would grey the colours. KitTile's Art keeps the aspect.
+
+**Only the Hangar list reads it.** Every other screen keeps `SO_Vessel.IconActive`, the fleet's card art in the colour scheme
+of `Docs/VesselModels/COLOR.md` (Garrett's vessel colour language), which this art does not follow. Re-run the generator
+when a model's sheet is re-rendered; `--check` fails when the art drifts from the sheets.
+
+**How it was checked:** `author_hangar_card_art.py --check` / `--self-test` (a blank card, a card painted the studio grey, a
+hull dropped from the table and a card on the wrong canvas are all caught); `author_menu_hangar.py --check` / `--self-test`
+(new plants: the tile without its card art, the art drawn through `Hull_Lit`); the reference compile; `gates.sh`; and an
+offline render of the tile with six hulls' art (no text on the art, no overflow).
+
+## 83. The configure card's intensity and vessel strip, the friends row's SPECTATE, the Hangar's free model view and its sizes (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on editor screenshots: "1st image (intensity): Decrease the size. 2nd image (the vessel strip): the
+left and right arrows are overlapping UIs. also claim needs a change button. This will only change in arena and voyage
+also this place is a bit noisy"; "Spectate is getting cut off"; "In the hangar screen where we can drag a model left and
+right give the user all axis we can rotate zoom in zoom out and everything with the model"; "Crystals is looking too
+clamped up. The whole hangar is a bit cramped. reducing the sizes a little bit might fix these issues".
+
+**Configure card** (`author_menu_configure.py`, every card):
+- Intensity is one small group under its caption: LB (54 x 32), the four signal bars (12 wide, 8 to 26 tall), RB. The row
+  is 62 tall (was 86); what it gives back goes to the pilots.
+- The vessel strip (Arena and Voyage only - the Arcade card has none):
+  - The arrows overlapped the end tiles because they were KitButtonSmall instances, which size themselves to their label
+    (44.5 wide in a 32 slot; the offline renderer does not run that fitter, so section 81's renders missed it). They are
+    plain fixed-size chevrons now (26 x 60, a clear hit area and the glyph; grey, white under the pointer, the selection
+    blue when focused), outside the tiles; the generator asserts they fit and that the panel's arrows are plain buttons.
+  - Quieter: the tiles show the hull's icon only (the caption row names the hull on show), only the pick and the
+    pointed-at tile are outlined (`KitTile.borderAtRest`, off for these tiles; every other tile keeps its outline), the
+    rule under the caption is gone, the strip is 60 tall (was 84), and the arrows leave once the hull is claimed.
+  - **CLAIM, then CHANGE.** A claim used to freeze the strip for the rest of the session. Once the claim lands, CHANGE
+    stands in CLAIM's place: it gives the claim back (`ReleaseArenaHullClaim`), the strip and the arrows come back, and
+    START waits for a new claim. Only for the pilot's own hull and only while they are not ready - a ready pilot's hull is
+    part of what the others are waiting on; when the ready state resets, CHANGE is offered again
+    (`ArenaLaunchPanel.changeVesselButton` / `OnVesselChangeRequested`, `ArcadeGameConfigureModal.HandleVesselChangeRequested`).
+
+**Friends row** (`author_menu_arcade.py`, `PartyOnlineRow`): a button slot now controls its button's width. Left
+uncontrolled, a layout group takes a child's current rect as its size, and the button's own fitter sets that rect later
+in the same pass, so a JOIN that became SPECTATE kept JOIN's slot and ran out of the drawer. INVITE + SPECTATE fit the
+row's 202 strip, and the generator asserts both.
+
+**Hangar - the player holds the model** (`HangarVesselStage`):
+
+| | Mouse | Touch | Pad |
+|---|---|---|---|
+| Turn (any axis: about the view's up and right) | drag | one finger | right stick |
+| Roll | Shift-drag | two-finger twist | hold Y, right stick left / right |
+| Zoom (0.6x to 2.2x, never into the hull) | wheel | pinch | hold Y, right stick up / down |
+| Move | right or middle drag | two-finger drag | - |
+| Reset (eases back) | double-click | double-tap | press the right stick |
+
+While the model is held the idle turn stays off (it would turn away what the player is looking at); a reset or another
+vessel brings it back. The line under the stage says how, for the device in hand (three authored lines on the stage).
+On the Hangar screen Y is free (it opens the profile on Home only) and the triggers stay the screens' paging.
+
+**Hangar - sizes** (`author_menu_hangar.py`): the vessel's name is H1 (36, was Display 48) and the stage starts 22 higher;
+the tabs are BodySmall with 18 between them; ability rows are 100 tall (was 112) with smaller flowers, icons and keycaps;
+the vibe bars are BodySmall with 22-wide segments; the list's header and the vessel's kicker are 24 further apart. The
+crystals sit 4 lower, 20 from their word, and the kit pill has more room inside (18 / 24 / 8 / 8, the amount 12 from the
+crystal).
+
+**How it was checked:** every menu generator's `--check`; `--self-test` with new plants (the Join slot reading its
+button's rect, the strip's arrows back to self-sizing kit buttons, CHANGE unwired, the hull tiles outlined at rest, the
+stage that cannot zoom in, the stage's line unwired); the reference compile; offline renders of the configure cards and
+the Hangar (no text on an image, nothing past its box).
+
+## 84. Hangar abilities on a press, the Hangar drawn smaller, the list clear of the friends orb, readable controls, CODEX in the top bar (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "Abilities when I click them then only the vessel should perform. Again I say in the hangar we can
+reduce the size of each component it looks too big in the game"; "See at bottom left it overlaps the friends icon";
+"texts for controls are tooooo small"; "Change the order in the top. It should be Codex (locked like port invent an icon
+it will be a beastiary or like pokedex for showing elements, ethirions and ecology), Hangar, Home, Ark and then Port
+(Locked)"; "According to the order the slide menu should work too".
+
+**Hangar abilities** (`HangarAbilitiesPage`, `author_menu_hangar.py`): each ability row is a button again - a click, a
+tap or A on the focused row makes the vessel perform that ability. Nothing plays on its own: the AI demo of section 66
+(an ability every 2.4 s) is gone, with its two timings.
+
+**Hangar sizes**: everything under the top bar sits in one `Frame/Content` drawn at 0.88, laid out in a space 1 / 0.88
+as large (its anchors run past the frame, so after the scale it fills the frame exactly at any width; the menu canvas
+matches height, so the space is 1132 tall). Every component is 12 % smaller and the space between them grows to match.
+The top offsets are measured from under the top bar now (`TOP_BAR` 84). The dossier's cradle is drawn 1026 tall
+(`author_ui_kit_sprites.CRADLE_H`) so it still reaches the foot.
+
+**Friends orb**: the vessel list ends 150 px above the screen's foot (`ORB_TOP`: the orb's top plus air), so it never runs
+under the friends orb at the bottom left.
+
+**Configure controls** (`author_menu_configure.py`): two wide columns (were three), and a control's name runs up to its
+glyph (it gave up 96 px to a description that is never shown), so names read whole at Body size.
+
+**Top bar** (`author_menu_topnav.py`, `ScreenSwitcher`): CODEX, HANGAR, HOME, ARK, PORT. CODEX is new and locked like
+PORT (`MenuScreens.CODEX = 6`, `OnClickCodexNav`, in `disabledScreens`); its glyph is drawn by `author_nav_glyphs.py`
+(an open book, an ethirion's diamond on one page and a leaf on the other). The generator now writes the strip's
+`screens` order from the same list as the tabs, so LT / RT and the slide follow the bar; CODEX has no panel yet (its
+locked slot is never entered). The Codex's data already exists (`Docs/CODEX.md`, Garrett's); this is only its door.
+The tabs' objects are keyed by link, not place, so a reorder can never hand one tab's wiring to another.
+
+**How it was checked:** every menu generator's `--check` / `--self-test` (new plants: an ability row out of pad
+navigation, the Hangar drawn at full size, the AI demo back, the strip in the old order, CODEX not locked, CODEX
+without its lock view); `author_elemental_converter.py` now reads `disabledScreens` as a list (ARK open, PORT closed);
+the reference compile; offline renders (the scratch renderer learned uniform scale).
+
+## 85. SORT and FILTER beside ALL GAMES (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "In arcade games beside the all games tasks I want to have a sort and filter button"; "Go ahead
+with the sort and filter buttons".
+
+**What the player sees.** ALL GAMES and its count on the left; on the right two buttons that name their choice, SORT:
+FAVOURITES and FILTER: ALL. A button opens its row of options right under that line - a row of tabs, the chosen one
+underlined in the selection blue - and the grid moves down to make room (no floating menu: a pointer, a finger and
+the pad all use it the same way; on the pad the focus moves onto the current option, and back to the button after a
+pick). Picking an option closes the row and re-fills the grid. The choice lasts the session.
+
+- **Sort:** Favourites (favourites first, then A-Z: the grid's order before this section), A-Z, Unlocked (unlocked
+  first, then A-Z).
+- **Filter:** All, Favourites, Unlocked, Solo (one player at most), Multiplayer (more than one), and the four elements
+  by the card's genre - the same answer the card's flower shows (`ModeGenre`, now read through
+  `ArcadeGridOrder.TryGenres` by both the card and the filter).
+- A filter that leaves nothing shows "No games match this filter." (authored). A card a guided path points at is never
+  filtered out.
+
+**Where:** `ArcadeGridOrder` (the pure sort and filter rule; `ArcadeGridOrderTests`), `ArcadeGridOptions` (the buttons,
+rows and choice), `ArcadeExploreView` (`gridOptions`, `emptyFilterLine`; its lock rule is one `IsLocked` the grid and the
+Unlocked options share), `author_menu_arcade.py` (`all_games_header`, `option_row`). Every word is an authored field.
+
+**How it was checked:** `author_menu_arcade.py --check` / `--self-test` (new plants: SORT without its button, a filter
+tab dropped, the sort row open on arrival, the explore view without its options); `ArcadeGridOrderTests` compile in the
+editor assembly (not run: no editor here); the player and editor reference compiles.
+
+
+## 86. The picked pilot's podium glows instead of an outline (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith, with a screenshot of the Arena card):** "The selection UI is overlapping. We do not need a selection
+icon we can glow the podium below more to see it."
+
+**Built** (`author_menu_configure.py`, `ConfigureSeatPedestal`):
+- The blue outline round the picked pilot (`Pilot/Pick/Editing/Band`) is gone. It covered the pilot and their hull and
+  ran over the next seat's portrait.
+- The seat the vessel strip is picking lights its podium instead: `Pilot/Lit`, under the hull and inside the seat's
+  width. It holds a wider pool of the team's light (`Halo`, `kit_pool`, tinted like the pool through the new
+  `podiumGlow` field) and a white-hot rim (`Core`, `kit_pool_rim`), breathing (KitAmbient Breathe, 1.6 s, down to 55 %).
+- `editingMark` now points at `Pilot/Lit`, so the modal's logic is unchanged. The pilot is still the button that points
+  the strip at its seat.
+
+**How it was checked:**
+- `author_menu_configure.py --check` and `--self-test`. Two new plants are both caught: the outline sprite back on the
+  pedestal, and `podiumGlow` unwired. The validator also asserts that the podium breathes.
+- `gates.sh`, including the player and editor reference compiles.
+
+## 87. Rev 26 mockups: the Codex (2026-10-26, awaiting board approval)
+
+**Asked (Shombith):** "Bring up the codex from the design board and create mockups there of how codex with eithirions
+and everything and details about all pilots and artifacts and elements and everything will show."
+
+**On the canvas:** page "Rev 26 - Codex" of Menu Redesign B (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with
+a copy in `Docs/MenuRedesignB/board/R26*.dc.html`. Eleven boards:
+- the front page;
+- one board per chapter: Ethirions, Elements, Ecology > Fauna, Ecology > Flora, Pilots, Vessels, Artifacts, Tools;
+- the in-match discovery toast;
+- notes.
+
+Each chapter screen keeps the Hangar's split: the grid on the left and the open page on the right. LB / RB step the
+chapters. CODEX is the top bar's first tab (section 84).
+
+**Data:** every number on the boards is the shipped value, from these sources:
+- Ethirions, ecology and tools: `Assets/Resources/Codex.asset` (`CodexSO`, Garrett's, `Docs/CODEX.md`). The art is
+  the baked `Assets/_Graphics/Codex/` portraits.
+- Pilots: `SO_Captain_<Hull>_<Element>`, for the name, flavour line, signature, how the AI flies and the portrait.
+- Vessels and elements: `element_ability_table.py`, for each ability and its level-5 upgrade. The art is the Hangar
+  card art.
+
+**Proposed, not in the game:**
+- Discovery. `Docs/CODEX.md` section 5 says every entry ships unlocked, and nothing reads `UnlockedByDefault` or
+  `DiscoveryKey` yet. The counts, the NEW badges, the silhouettes and the toast all assume discovery.
+- Artifacts. There is no artifact data in the game; the two shown come from the Rev 24 Hangar board.
+- Descriptions. The Codex asset's descriptions are blank, so they show as [bracketed] slots.
+- Copy. Each element's one-line meaning ("the strike you carry", "what you build", "how far you reach", "how fast you
+  move") is proposed wording, read off the fleet's ability table.
+
+Nothing is built in Unity until a board is approved.
+
+## 88. The CODEX screen, built (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith):** "Go ahead implement the codex I like the design" (the Rev 26 boards, section 87).
+
+**What the player gets:** CODEX, the top bar's first tab, now opens its screen. Its lock is lifted, so LT / RT reach it.
+- **Chapters** along the top: ETHIRIONS, ELEMENTS, ECOLOGY, PILOTS, VESSELS, ARTIFACTS, TOOLS. LB / RB step through
+  them. ECOLOGY has two stops, Flora and Fauna, with FLORA / FAUNA tabs beside the grid's title while it is open.
+- **The grid** on the left: one tile per entry (picture, name, a quiet line). The pad landing on a tile opens it. The
+  open tile's outline is the selection blue, with a glow.
+- **The page** on the right: picture, kicker and title, then a scroll of the entry's own words, its facts, its element
+  cells and its rows.
+- The layout is the Hangar's: the same backdrop and sea, drawn at its 0.88 scale. The grid stops above the friends orb.
+
+**What each chapter shows, all from the game's own data:**
+- **Ethirions, Flora, Fauna, Tools:** `Codex.asset` (`CodexSO.Load()`, Garrett's, `Docs/CODEX.md`).
+  - A lifeform's page has its facts and one cell per element (its heart is that element's ethirion), and its
+    elemental laws as rows.
+  - A tool's page has its category, facts, and its choices as rows (the paintings, the hulls, the domains).
+- **Elements:** each element's petal and authored line, and a row for every vessel naming that element's ability and
+  level-5 upgrade (`ElementalAbilityMapSO.LoadFor`). An element with no ability designed reads "Open slot".
+- **Pilots:** the Hangar's `ElementalCaptains` list, in the vessel list's order, then Charge to Time. The page shows the
+  flavour line, signature, how they fly as a wingmate, the ability their element answers to, and its upgrade.
+- **Vessels:** the Hangar's vessel list (`SO_Classlist_Classes`), each with its four abilities and upgrades and its
+  pilots. The art is the vessel's own `IconActive`, not the colourful Hangar card art (that stays Hangar-only).
+- **Artifacts:** the game has no artifact data, so this stop shows its authored empty line.
+
+Discovery is not built (`Docs/CODEX.md` section 5: nothing reads it yet), so every entry is listed. The counts,
+silhouettes, NEW badges and discovery toast from the boards wait for it.
+
+**Built:**
+- **C#** (`Assets/_Scripts/UI/Elements/Codex/`):
+  - `CodexCatalog` is the pure builder that turns the data into chapters and pages; `CodexCatalogTests` covers it.
+  - `CodexScreen` is the `IScreen` on the view's root.
+  - `CodexTile`, `CodexPageView` and `CodexLine` draw the tiles and the page; `CodexLine` is one line view for facts,
+    cells and rows, copied from hidden templates.
+  - Every word around the data is an authored field: `CodexWords`, the stop titles, the count and the empty lines.
+- **Generator** `Tools/Build/author_menu_codex.py`:
+  - It writes `CodexTile.prefab` and `CodexView.prefab`, places one CodexView instance as the first child of
+    `Screens`, and points `ScreenSwitcher.screens`' CODEX slot (id 6, root 0 since section 84) at it.
+  - `--check` and `--self-test` run eight plants: the slot left empty, a chapter tab dropped, the page unwired, a
+    template left visible, the outline repainted by a theme, no pilots list, FLORA / FAUNA always shown, and the
+    focus order changed.
+- **Top bar** `author_menu_topnav.py`:
+  - `LOCKED` is now PORT only, and `disabledScreens` is PORT.
+  - A re-run removes every document the script can mint, so CODEX's old lock view is deleted rather than stranded.
+  - Plants: "CODEX locked again" and "PORT without its lock view".
+- **Shared emitter:** `author_menu_arcade.emit_node` now writes a node's `scale`, as the kit emitter does. Every
+  existing node has scale 1, so its output is unchanged: every menu generator still reports no drift.
+
+**How it was checked:**
+- `author_menu_codex.py --check` and `--self-test`, and `author_menu_topnav.py --check` and `--self-test`.
+- Every `author_menu_*` generator's `--check` reports no drift.
+- `gates.sh`: ALL OK, including the player and editor reference compiles.
+- Offline renders of the view and the tile. The renderer does not lay out GridLayoutGroups or nested layout groups,
+  so the grid and the page's blocks were checked by their layout settings, not by the picture.
+- Not opened in the editor, and `CodexCatalogTests` has not been run.

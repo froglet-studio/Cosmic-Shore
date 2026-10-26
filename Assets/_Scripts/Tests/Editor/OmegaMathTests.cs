@@ -34,14 +34,19 @@ namespace CosmicShore.Tests
                 foreach (int m in c.Members) { Assert.IsFalse(used[m], OmegaMath.Members[m].Name + " is in two crews"); used[m] = true; }
             }
             Assert.AreEqual("Stoat", OmegaMath.Members[OmegaMath.CrewOf(OmegaMath.Crew.Warden).Members[0]].Name, "the Stoat leads the Warden (Yash 2026-10-26)");
+            // every crew is a mobility vessel, an attacker and a defender (Yash 2026-10-26: defender, midfielder, attacker)
+            Assert.AreEqual("Sparrow", OmegaMath.Members[OmegaMath.CrewOf(OmegaMath.Crew.Warden).Members[(int)OmegaMath.Role.Attack]].Name);
+            Assert.AreEqual("Rhino", OmegaMath.Members[OmegaMath.CrewOf(OmegaMath.Crew.Warden).Members[(int)OmegaMath.Role.Defence]].Name);
+            Assert.AreEqual("Scarab", OmegaMath.Members[OmegaMath.CrewOf(OmegaMath.Crew.Bulwark).Members[(int)OmegaMath.Role.Mobility]].Name);
+            Assert.AreEqual("Thresher", OmegaMath.Members[OmegaMath.CrewOf(OmegaMath.Crew.Tempest).Members[(int)OmegaMath.Role.Attack]].Name);
             Assert.AreEqual(60f, OmegaMath.Members[OmegaMath.Stoat].Cruise); Assert.AreEqual(110f, OmegaMath.Members[OmegaMath.Stoat].Turn);
             Assert.AreEqual(OmegaMath.MoveKind.Cannon, OmegaMath.Members[OmegaMath.Grizzly].Kind);
             Assert.AreEqual(OmegaMath.WeaponKind.Guns, OmegaMath.CrewOf(OmegaMath.Crew.Tempest).Weapon);
         }
 
-        [TestCase(OmegaMath.Crew.Warden, 70.916667f, 64f, 74f)]
-        [TestCase(OmegaMath.Crew.Bulwark, 67.833333f, 49.166667f, 56.666667f)]
-        [TestCase(OmegaMath.Crew.Tempest, 89.266667f, 82.5f, 105f)]
+        [TestCase(OmegaMath.Crew.Warden, 72.833333f, 62f, 78f)]
+        [TestCase(OmegaMath.Crew.Bulwark, 66.733333f, 47.5f, 55f)]
+        [TestCase(OmegaMath.Crew.Tempest, 88.4f, 87.5f, 102.5f)]
         public void OmegaFlight_IsTheMembersAverageTimesTheCrewsMultipliers(OmegaMath.Crew crew, float cruise, float turn, float roll)
         {
             var f = OmegaMath.OmegaFlight(OmegaMath.CrewOf(crew));
@@ -163,18 +168,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Formation_GivesTheTwoOtherMembersTheTwoSideSlots_WhoeverTheHullIs()
+        public void Formation_IsRigid_AttackerRightDefenderLeft_WhicheverMemberTheHullIs()
         {
+            Near(Vector3.zero, OmegaMath.FormationOffset(OmegaMath.Role.Mobility, 18f, 10f), 0f, "the mobility vessel leads");
+            Near(new Vector3(18f, 0f, -10f), OmegaMath.FormationOffset(OmegaMath.Role.Attack, 18f, 10f), 0f, "the attacker right and behind");
+            Near(new Vector3(-18f, 0f, -10f), OmegaMath.FormationOffset(OmegaMath.Role.Defence, 18f, 10f), 0f, "the defender left and behind");
+            // the person sits in the attacker: the leader is 18 left and 10 ahead of the hull, the defender 36 left
+            Near(new Vector3(-18f, 0f, 10f), OmegaMath.FormationOffsetFrom(1, 0, 18f, 10f), 0f, "leader from the attacker");
+            Near(new Vector3(-36f, 0f, 0f), OmegaMath.FormationOffsetFrom(1, 2, 18f, 10f), 0f, "defender from the attacker");
+            Near(Vector3.zero, OmegaMath.FormationOffsetFrom(2, 2, 18f, 10f), 0f, "a member from itself");
+            // the distances between the three never change with the hull
             for (int hull = 0; hull < 3; hull++)
             {
-                var seen = new System.Collections.Generic.HashSet<float>();
-                for (int m = 0; m < 3; m++)
-                {
-                    var o = OmegaMath.FormationOffset(m, hull, 40f);
-                    if (m == hull) { Near(Vector3.zero, o, 0f, "the hull"); continue; }
-                    Assert.AreEqual(40f, Mathf.Abs(o.x), 1e-6f); seen.Add(o.x);
-                }
-                Assert.AreEqual(2, seen.Count, "one to each side, hull " + hull);
+                float ad = Vector3.Distance(OmegaMath.FormationOffsetFrom(hull, 1, 18f, 10f), OmegaMath.FormationOffsetFrom(hull, 2, 18f, 10f));
+                Assert.AreEqual(36f, ad, 1e-5f, "attacker to defender, hull " + hull);
             }
         }
     }
