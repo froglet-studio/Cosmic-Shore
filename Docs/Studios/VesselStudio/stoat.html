@@ -257,7 +257,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 16 · Mass, Time, Hybrid</span>
+    <span class="round">Round 17 · Mass, Time, Drive</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
@@ -275,7 +275,7 @@
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
-        <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn mode" id="tMode" title="B: the Stoat's mode (Mass, Time, Hybrid), as the game's Mass card">B · Mass</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
+        <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn mode" id="tMode" title="B: the Stoat's mode (Mass, Time, Drive), as the game's Mass card">B · Mass</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
     </div>
@@ -343,7 +343,7 @@
         <div class="seg" role="group" aria-label="Sling mode" id="slingSegMain">
           <button type="button" data-sling="field" aria-pressed="true">Mass: field trajectory</button>
           <button type="button" data-sling="dipole" aria-pressed="false">Time: catch sling</button>
-          <button type="button" data-sling="hybrid" aria-pressed="false">Hybrid</button>
+          <button type="button" data-sling="drive" aria-pressed="false">Drive: the warp pair</button>
         </div>
         <p class="src" style="margin-top:4px" id="mainP">Squeeze depth = the black hole's strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.</p>
         <label class="check"><input type="checkbox" id="portal"> <span id="portalLabel">Carry the Stoat through the pair</span></label>
@@ -394,6 +394,9 @@
       <details class="card" id="grp-D" open><summary>Dipole sling <small>round 6</small></summary><div class="rows"></div>
         <p class="src"><b>Press</b>: the black hole is laid <i>ahead</i> and <i>to the side</i> on the trigger's side, the white hole the same distance ahead on the other side; neither moves. <b>Squeeze depth</b> (read live; curve from Squeeze) sets the strength between <i>a touch</i> and <i>buried</i> (GM = 20,000 × strength, the game's unit) and the horizon between its two sizes; the white hole mirrors both and pushes with <i>push</i> × the pull, softened over twice its horizon. The <b>hold radius</b> is the circle on which the pull exactly bends you round at your speed, GM = v²(r − r<sub>s</sub>)²/r: heavier, wider. Pass within <i>catches you</i> × that circle, with it off your nose by at least <i>catches once</i> (or once you are inside the circle), and you are in its grip: the engine holds your speed and you settle onto the circle and go round for as long as you hold, up to <i>longest hold</i>. Outside it the pull only bends you. <b>Let go</b>: it lets go of you, and you leave on the tangent with a boost of speed × (<i>a touch</i> … <i>buried</i>) by the squeeze; the pair falls together and annihilates. Stepped at 4 ms; diving through the portal keeps only the speed you had before the dive.</p>
         <div class="btns"><button class="pick" type="button" data-reset="D">Reset</button></div></details>
+      <details class="card" id="grp-V" open><summary>Drive mode <small>round 17 · T's third press</small></summary><div class="rows"></div>
+        <p class="src"><b>A warp pair that rides with you</b>: a black hole ahead of the nose, its white hole behind, mirrored through the hull. Your triggers shape it as in Mass mode. <b>Both</b> stretch it: a longer pair warps your flight faster (the long legs). The <b>difference</b> slides the black hole to the deeper trigger's side: the pair tilts, and the tilt turns you. A short pair pulled sideways carves (agile), a long straight pair travels (fast, stable), a light squeeze with a small difference trims (precise). The line is the path you will fly, the drive's turn and warp included. Let go and the warp fades. The pair takes nothing and pulls nobody: it is your drive, not a pair in the world. The game: <code>StoatDriveMath</code>, <code>StoatModeAction</code> drive* fields.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="V">Reset</button></div></details>
       <details class="card" id="grp-F" open><summary>Field trajectory <small>round 15 · lab-only</small></summary><div class="rows"></div>
         <p class="src"><b>No catch, no hold circle.</b> The pair is only a field: the black hole's pull GM/(r − r<sub>s</sub>)² and the white hole's softened push, capped at the force ceiling. It bends your nose and speeds you up or slows you along it; the engine pulls that gravity speed back toward cruise at <i>engine holds speed</i>. <b>The poles are fixed</b> (<i>pole strength</i>, <i>horizon</i>, <i>white hole push</i>). <b>Squeeze</b> either trigger and the pair opens <i>ahead</i> of you with the poles together. Then the two triggers place them (each on the squeeze curve): the <b>difference</b> between the triggers pulls them apart <b>sideways</b> (up to <i>sideways</i> u for one full trigger, the black hole on the deeper trigger's side), and the <b>sum</b> pulls them apart <b>lengthways</b> (up to <i>lengthways</i> u with both full), the black hole always the nearer, so you shoot into the sink and out of the source. One trigger gives a slight diagonal; both full put the black hole dead ahead and the white hole further ahead on the same line. The separation is the dipole moment. Ease off and the poles come back together; let go of both and they meet and annihilate, so there is only ever one pair. <b>The line</b> is your path on your current inputs, drawn as evenly spaced dots (<i>dot size</i>, <i>gap</i>) from just ahead of the nose, run with the flight's own step: <span style="color:#96a6c2">blue-grey</span> while the poles leave it alone, <b style="color:#9dff2e">lime</b> as soon as they <b>warp it at all</b> (bend it by <i>boost once … bend</i> in total) or it goes <b>through the wormhole</b>. While it is lime you travel down it at <i>loop boost</i> ×: the boost runs your own flight faster (steering, engine and field together), so you reach each point of the line sooner and the line does not change. It stops where it would loop back onto itself. In this mode the Stoat turns at <i>pitch &amp; yaw in this mode</i> × its shipped rate, so the pair does more of the turning. Force ceiling and fastest bend come from the <b>Dipole</b> tab.</p>
         <div class="btns"><button class="pick primary" type="button" id="ftScanBtn">Scan headings</button><button class="pick" type="button" id="ftBatchBtn">Score the field</button><span class="hint" id="ftNote" style="margin:0">no drawing</span></div>
@@ -481,8 +484,9 @@
 
   // ================= the shipped numbers =================
   const SHIPPED = {
-    // Hybrid mode (StoatModeAction hybridPathLengthShare / hybridCarrySeconds, 2026-10-26): T's third press
-    hyLen: 0.5, hyCarry: 2.5,
+    // Drive mode (StoatModeAction drive* / autopilotDrive*, 2026-10-26): T's third press, the warp pair
+    drLenMin: 60, drLenMax: 320, drLatMax: 140, drTurnGain: 2.2, drTurnMax: 140, drWarpShare: 1, drWarpExp: 1.3, drKeyRamp: 0.5,
+    drAiNear: 0, drAiFar: 150, drAiCone: 120, drAiLeanDeg: 15,
     // the squeeze (StoatSlingConfig)
     holdExponent: 1.5, holdRamp: 3,
     // A: the orbit sling and the drift pair (StoatSlingConfig + BlackHoleConfig)
@@ -570,8 +574,18 @@
     ['D', 'dpFlowCap', 'Most momentum (× cruise)', 0, 5, 0.05],
     ['D', 'dpKickSweep', 'Full kick only after going round (°, 0 = always)', 0, 360, 5],
     ['D', 'dpWarp', 'Warp while caught (share of the loop boost, 0 = none)', 0, 1.5, 0.05],
-    ['D', 'hyLen', 'Hybrid: path length (share of the field trajectory\'s)', 0.1, 1, 0.05],
-    ['D', 'hyCarry', 'Hybrid: boost carried after a perfect release (s)', 0, 10, 0.1],
+    ['V', 'drLenMin', 'Pair half-length, triggers light (u)', 20, 300, 5],
+    ['V', 'drLenMax', 'Pair half-length, both triggers full (u)', 60, 800, 10],
+    ['V', 'drLatMax', 'Sideways reach at a full difference (u)', 0, 400, 5],
+    ['V', 'drTurnGain', 'Turn per degree of tilt (°/s per °)', 0, 6, 0.1],
+    ['V', 'drTurnMax', 'Fastest drive turn (°/s)', 0, 360, 5],
+    ['V', 'drWarpShare', 'Top warp (share of the loop boost)', 0, 3, 0.05],
+    ['V', 'drWarpExp', 'Warp curve (1 = straight, higher = gentle at a light squeeze)', 0.5, 3, 0.05],
+    ['V', 'drKeyRamp', 'Key / touch: full squeeze after (s)', 0.05, 3, 0.05],
+    ['V', 'drAiNear', 'AI: no stretch within (u of the ring)', 0, 600, 10],
+    ['V', 'drAiFar', 'AI: full stretch from (u)', 100, 2000, 10],
+    ['V', 'drAiCone', 'AI: no stretch with the ring this far off the nose (°)', 10, 180, 5],
+    ['V', 'drAiLeanDeg', 'AI: full difference at this turn still to make (°)', 5, 120, 1],
     ['D', 'dpWarpHeld', 'Warp from the press (1) or only once caught (0)', 0, 1, 1],
     ['D', 'dpSweetDeg', 'Best release, degrees round (0 = off)', 0, 360, 5],
     ['D', 'dpSweetHalf', 'Full kick within (± °)', 0, 90, 1],
@@ -1311,13 +1325,19 @@
     // the field the Stoat also turns at ftTurnScale × its pitch/yaw, so a boosting circle takes a big input.
     // The catch sling (slingMode 'dipole') shares the warp while the black hole holds you (dpWarp), so both mechanics run
     // at one pace; only the field turns at ftTurnScale.
-    const inField = style === 'A' && slingMode === 'field', inCatch = style === 'A' && isCatch(slingMode);
-    const warp = inField || inCatch ? ftMul : 1, kdt = dt * warp;
+    // Drive mode: the warp pair's turn is flown on the flight clock too, so the arc the line shows is the arc you fly at
+    // any warp (driveShape).
+    const inField = style === 'A' && slingMode === 'field', inCatch = style === 'A' && isCatch(slingMode), inDrive = style === 'A' && slingMode === 'drive';
+    if (inDrive) driveShape(ftLive); else { ftLive.yaw = 0; ftLive.span = 0; ftLive.lean = 0; ftLive.warp01 = 0; }
+    // In Drive the STICKS turn on the real clock, not the warped one: stretching the pair for speed widens every stick turn
+    // (the price of a long leg), and the pair's tilt is what carves at speed. sdt is the sticks' step.
+    const warp = inField || inCatch || inDrive ? ftMul : 1, kdt = dt * warp, sdt = inDrive ? dt : kdt;
     const turn = P.pitchYaw * (inField ? P.ftTurnScale : 1);
     if (race !== 'ready') {
-      dq.setFromAxisAngle(X, -YSum * turn * rad * kdt); hull.quaternion.multiply(dq);    // Unity +X = nose down; three +X = nose up
-      dq.setFromAxisAngle(Y, -XSum * turn * rad * kdt); hull.quaternion.multiply(dq);
-      dq.setFromAxisAngle(Zn, YDiff * P.roll * rad * kdt); hull.quaternion.multiply(dq);
+      dq.setFromAxisAngle(X, -YSum * turn * rad * sdt); hull.quaternion.multiply(dq);    // Unity +X = nose down; three +X = nose up
+      dq.setFromAxisAngle(Y, -XSum * turn * rad * sdt); hull.quaternion.multiply(dq);
+      dq.setFromAxisAngle(Zn, YDiff * P.roll * rad * sdt); hull.quaternion.multiply(dq);
+      if (inDrive && ftLive.yaw) { dq.setFromAxisAngle(Y, -ftLive.yaw * rad * kdt); hull.quaternion.multiply(dq); }   // the drive's turn, + = right
       hull.quaternion.normalize();
     }
     basis();
@@ -1325,7 +1345,9 @@
     const target = race === 'ready' ? 0 : stance ? 0 : XDiff * P.cruise;
     speed += (target - speed) * (1 - Math.exp(-(stance ? 6 : 2.2) * kdt));
     // the field trajectory: the steering you are holding is part of the prediction (ftSteer of it)
-    ftRates.pitch = race !== 'ready' ? -YSum * turn * rad : 0; ftRates.yaw = race !== 'ready' ? -XSum * turn * rad : 0; ftRates.roll = race !== 'ready' ? YDiff * P.roll * rad : 0;
+    // (rates in flight time: in Drive the sticks' real-time rate is 1/warp of it; the pair's turn is flight time already)
+    const sk = inDrive ? 1 / Math.max(1, ftMul) : 1;
+    ftRates.pitch = race !== 'ready' ? -YSum * turn * rad * sk : 0; ftRates.yaw = race !== 'ready' ? -XSum * turn * rad * sk - (inDrive ? ftLive.yaw * rad : 0) : 0; ftRates.roll = race !== 'ready' ? YDiff * P.roll * rad * sk : 0;
     ftThrottleTarget = target;
     stepFieldBoost(dt);
 
@@ -1536,7 +1558,6 @@
       tv.subVectors(gates[threaded % 8].p, hull.position).normalize();
       raceStats.relSum += Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI; raceStats.relN++;
     }
-    if (slingMode === 'hybrid' && sd.captured && !stopped) ftLive.carry = Math.max(0, P.hyCarry) * clamp01(sweetSpot(sd.sweep * 180 / Math.PI));
     lastDipole = { turned: sd.turned, sweep: sd.sweep, captured: sd.captured, kick, S: sd.pair.S, rc: sd.rc, gain: gravSpeed - sd.gain0, auto: !!auto };
     slingFlash = 1.6; slingDipole = null;
   }
@@ -1634,9 +1655,41 @@
   let ftRates = { pitch: 0, yaw: 0, roll: 0 };
   let fieldSling = null, ftMul = 1;
   // one live prediction (the sim's) and its result
-  function newFtLive() { return { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0, jumps: new Int32Array(8), nj: 0, thru: false, warm: 0, carry: 0 }; }
-  // The catch sling flies in Time mode ('dipole') and in Hybrid mode ('hybrid', 2026-10-26: the catch with a short path).
-  const isCatch = (m) => m === 'dipole' || m === 'hybrid';
+  function newFtLive() { return { pts: new Float32Array(FT_MAX * 3), n: 0, end: 'none', lime: false, loop: 0, hitJ: -1, len: 0, jumps: new Int32Array(8), nj: 0, thru: false, warm: 0, span: 0, lean: 0, a: 0, lat: 0, tilt: 0, yaw: 0, warp01: 0 }; }
+  // The catch sling flies in Time mode ('dipole') only; Drive mode ('drive') has its own pair (driveShape).
+  const isCatch = (m) => m === 'dipole';
+  // Drive mode (T's third press, 2026-10-26; the game's StoatDriveMath.Evaluate, line for line): a WARP PAIR. A phantom
+  // black hole rides ahead of the nose and its white hole behind, mirrored through the hull, and the triggers shape it as
+  // in Mass mode. Their SUM is the pair's length: a longer pair is more warp (the long legs). Their DIFFERENCE slides the
+  // black hole to the deeper trigger's side (the white hole to the other): the pair tilts, and the tilt turns you. So the
+  // pair's shape is the dial between agility and precision: a short pair pulled sideways carves, a long straight pair
+  // travels, a light squeeze with a small difference trims. It takes nothing and pulls nobody (the hull's drive).
+  function driveShape(out) {
+    const L = holds.L.on ? holds.L.live : 0, R = holds.R.on ? holds.R.live : 0;
+    out.span = clamp01((L + R) / 2); out.lean = Math.max(-1, Math.min(1, R - L));
+    out.a = P.drLenMin + (Math.max(P.drLenMin, P.drLenMax) - P.drLenMin) * out.span;
+    out.lat = out.lean * Math.max(0, P.drLatMax);
+    out.tilt = Math.atan2(out.lat, Math.max(1, out.a)) * 180 / Math.PI;
+    out.yaw = Math.max(-P.drTurnMax, Math.min(P.drTurnMax, P.drTurnGain * out.tilt));   // °/s of flight time, + = right
+    out.warp01 = Math.pow(out.span, Math.max(0.05, P.drWarpExp));
+    return out;
+  }
+  // The warp the drive asks for, eased (StoatDriveMath.StepWarp): up at ftRise /s, down over ftFade s.
+  function stepDriveBoost(dt) {
+    ftLive.nj = 0; ftLive.thru = false; ftLive.end = 'none';
+    const on = race === 'running' && !stopped && !stance;
+    const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.drWarpShare);
+    const target = on ? 1 + (top - 1) * (ftLive.warp01 || 0) : 1;
+    if (!on) ftMul = 1;
+    else if (target > ftMul) ftMul += (target - ftMul) * (1 - Math.exp(-Math.max(0.1, P.ftRise) * dt));
+    else ftMul = target + (ftMul - target) * Math.exp(-dt / Math.max(0.01, P.ftFade));
+    if (!on) { ftLive.n = 0; ftLive.lime = false; ftLive.warm = 0; return; }
+    // the line: your flight with the drive's turn in it (ftRates carries it), no field
+    ftKin.v = speed; ftKin.vT = ftThrottleTarget; ftKin.mul = 1; ftKin.flow = flow; ftKin.g = gravSpeed; ftKin.portal = false;
+    fieldPath(P, null, hull.position, hull.quaternion, ftKin, ftRates, ftLive, null, 0);
+    ftLive.warm = top > 1.001 ? clamp01((ftMul - 1) / (top - 1)) : 0; ftLive.lime = ftLive.warm >= 0.5;
+    if (raceStats) { if (ftLive.lime) raceStats.limeT += dt; raceStats.mulTop = Math.max(raceStats.mulTop, ftMul); }
+  }
   let ftLive = newFtLive();   // per pilot
   function fieldAccel(Pv, f, p, out) {
     out.set(0, 0, 0);
@@ -1825,6 +1878,7 @@
   // Every frame of flight: predict, colour, boost. The boost arrives at ftRise /s and fades over ftFade s once the loop opens.
   function stepFieldBoost(dt) {
     if (style === 'A' && isCatch(slingMode)) { stepCatchBoost(dt); return; }
+    if (style === 'A' && slingMode === 'drive') { stepDriveBoost(dt); return; }
     const on = style === 'A' && slingMode === 'field' && race === 'running' && !stopped && !stance;
     if (!on) { ftMul = 1; ftLive.n = 0; ftLive.nj = 0; ftLive.thru = false; ftLive.lime = false; ftLive.end = 'none'; return; }
     const f = fieldStanding();
@@ -1839,26 +1893,11 @@
   }
   // The catch sling's pace: while the black hole has caught you, the flight clock warps up to dpWarp of the loop boost at
   // ftRise /s, and fades over ftFade s once you are let go — the field's own rule, with "caught" in place of "lime".
-  // Hybrid mode (the game's StoatPathfinderExecutor, STOAT_DIPOLE.md 1f): the same catch, plus the field's path at hyLen of
-  // its length flown on your sticks with no field (while the hole holds you: where a release now sends you). The line warms
-  // toward lime as the quarter-turn nears and is lime in the window (StoatSlingMath.HybridLineWarmth); a release keeps the
-  // warp on for hyCarry x its timing (StoatSlingMath.CarryHolds), the line lime, before it fades.
-  const hyPv = Object.create(null);
   function stepCatchBoost(dt) {
     ftLive.n = 0; ftLive.nj = 0; ftLive.thru = false; ftLive.lime = false; ftLive.end = 'none'; ftLive.warm = 0;
-    const on = race === 'running' && !stopped && !stance, hybrid = slingMode === 'hybrid';
-    ftLive.carry = hybrid && on ? Math.max(0, ftLive.carry - dt) : 0;
-    const carrying = ftLive.carry > 0;
-    const caught = on && (carrying || !!(slingDipole && slingDipole.pair.held && (slingDipole.captured || P.dpWarpHeld >= 0.5)));
+    const on = race === 'running' && !stopped && !stance;
+    const caught = on && !!(slingDipole && slingDipole.pair.held && (slingDipole.captured || P.dpWarpHeld >= 0.5));
     const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.dpWarp);
-    if (hybrid && on) {
-      Object.setPrototypeOf(hyPv, P); hyPv.ftLength = P.ftLength * Math.min(1, Math.max(0.1, P.hyLen));
-      ftKin.v = speed; ftKin.vT = ftThrottleTarget; ftKin.mul = 1; ftKin.flow = flow; ftKin.g = gravSpeed; ftKin.portal = false;
-      fieldPath(hyPv, null, hull.position, hull.quaternion, ftKin, ftRates, ftLive, null, 0);
-      const sd = slingDipole, timing = sd && sd.captured ? sweetSpot(sd.sweep * 180 / Math.PI) : 0;
-      ftLive.warm = carrying || timing >= 0.999 ? 1 : 0.35 * timing;
-      ftLive.lime = ftLive.warm >= 1;
-    }
     if (!on) ftMul = 1;
     else if (caught) ftMul += (top - ftMul) * (1 - Math.exp(-Math.max(0.1, P.ftRise) * dt));
     else ftMul = 1 + (ftMul - 1) * Math.exp(-dt / Math.max(0.01, P.ftFade));
@@ -1910,6 +1949,23 @@
       px = x; py = y;
     }
     if (ftLive.end !== 'open' && have) { c.strokeStyle = 'rgba(' + rgb + ',0.95)'; c.lineWidth = 2 * sc; c.beginPath(); c.arc(px, py, 7 * sc, 0, TAU); c.stroke(); }
+    c.restore();
+  }
+  // Drive mode: the warp pair where it rides (StoatPathfinderExecutor draws the same in the game): the black hole a ring
+  // with a dark core ahead, the white hole a bright ring behind, a faint line through the hull between them.
+  const drSink = new V3(), drSrc = new V3();
+  function drawDrivePair(c, cw, ch, sc) {
+    if (mode !== 'fly' || style !== 'A' || slingMode !== 'drive' || race !== 'running' || stopped) return;
+    const d = ftLive; if (d.span < 0.01 && Math.abs(d.lean) < 0.01) return;
+    basis();
+    drSink.copy(hull.position).addScaledVector(fwd, d.a).addScaledVector(right, d.lat);
+    drSrc.copy(hull.position).addScaledVector(fwd, -d.a).addScaledVector(right, -d.lat);
+    const scr = (v) => { ftScr.copy(v).applyMatrix4(cam.matrixWorldInverse); if (ftScr.z > -cam.near - 0.5) return null; ftScr.applyMatrix4(cam.projectionMatrix); return [(ftScr.x * 0.5 + 0.5) * cw, (-ftScr.y * 0.5 + 0.5) * ch]; };
+    const a = scr(drSink), b = scr(drSrc), r = 9 * sc;
+    c.save();
+    if (a && b) { c.strokeStyle = 'rgba(217,204,255,0.35)'; c.lineWidth = 1.5 * sc; c.setLineDash([5 * sc, 6 * sc]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.setLineDash([]); }
+    if (a) { c.fillStyle = 'rgba(4,6,20,0.9)'; c.beginPath(); c.arc(a[0], a[1], r, 0, TAU); c.fill(); c.strokeStyle = '#c48bff'; c.lineWidth = 2.5 * sc; c.stroke(); }
+    if (b) { c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = 2.5 * sc; c.beginPath(); c.arc(b[0], b[1], r, 0, TAU); c.stroke(); }
     c.restore();
   }
   // The heading scan: the Stoat D u from the black hole, flying straight at cruise, aimed at every heading within ±span°
@@ -1979,12 +2035,12 @@
     const h = holds[side];
     const pressed = raw > 0.05;
     if (pressed && !h.on) {
-      h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : style === 'A' && slingMode !== 'orbit' ? P.dpKeySqueeze : 0;
-      if (style === 'A') { if (isCatch(slingMode)) layDipole(side); else if (slingMode === 'field') layField(side); else layOrbit(side); }   // A: the press lays the pair
+      h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : style === 'A' && slingMode === 'drive' ? 0 : style === 'A' && slingMode !== 'orbit' ? P.dpKeySqueeze : 0;
+      if (style === 'A') { if (isCatch(slingMode)) layDipole(side); else if (slingMode === 'field') layField(side); else if (slingMode !== 'drive') layOrbit(side); }   // A: the press lays the pair (Drive's pair rides with you)
     }
     if (h.on) {
       h.t += dt;
-      h.live = analog ? clamp01(raw) : style === 'A' && slingMode !== 'orbit' ? P.dpKeySqueeze : clamp01(h.t / P.holdRamp);
+      h.live = analog ? clamp01(raw) : style === 'A' && slingMode === 'drive' ? clamp01(h.t / Math.max(0.05, P.drKeyRamp)) : style === 'A' && slingMode !== 'orbit' ? P.dpKeySqueeze : clamp01(h.t / P.holdRamp);
       h.peak = Math.max(h.peak, h.live);                // the boost (A) and the crystal size (B) use the DEEPEST squeeze
     }
     if (!pressed && h.on) {
@@ -2035,7 +2091,7 @@
     if (e.code === 'Enter') startRace();
     if (e.code === 'Space') stance = !stance && race === 'running';
     if (e.code === 'KeyR') stopRace();
-    if (e.code === 'KeyT') toggleMechanic();   // the game's B (T on its keyboard): field trajectory -> catch sling -> Hybrid -> field
+    if (e.code === 'KeyT') toggleMechanic();   // the game's B (T on its keyboard): field trajectory -> catch sling -> Drive -> field
     if (e.code === 'KeyP') setStopped(!stopped);
     if (e.code === 'KeyC') nextCamera();
   });
@@ -2270,6 +2326,18 @@
     if (sx >= 0) { inp.R.x = 1; inp.L.x = sx - 1; } else { inp.L.x = -1; inp.R.x = sx + 1; }
     let b = easeInv(pitchCmd), r = easeInv(rollCmd); if (invertY) { b = -b; r = -r; }
     inp.R.y = Math.max(-1, Math.min(1, (b + r) / 2)); inp.L.y = Math.max(-1, Math.min(1, (b - r) / 2));
+    if (style === 'A' && slingMode === 'drive') {   // the drive (StoatDriveMath.AutopilotSqueeze): stretch on the long legs, lean toward the ring
+      const n = clamp01(P.aiNoise), yawDeg = yawErr * 180 / Math.PI;
+      const reach = clamp01((d - P.drAiNear) / Math.max(1, P.drAiFar - P.drAiNear));
+      let span = blind ? 0 : reach * clamp01(1 - turnDeg / Math.max(1, P.drAiCone));
+      let lean = blind ? 0 : Math.max(-1, Math.min(1, yawDeg / Math.max(1, P.drAiLeanDeg)));
+      if (n > 0) { span *= 1 - 0.5 * n * aiRand(); lean *= 1 + n * (aiRand() - 0.5); }   // a rookie squeezes off the mark
+      inp.lt = clamp01(span - lean / 2); inp.rt = clamp01(span + lean / 2);
+      trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+      ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : span > 0.05 || Math.abs(lean) > 0.05 ? 'pair' : 'ring';
+      lastInput = inp;
+      return inp;
+    }
     if (style === 'A' && slingMode === 'field' && P.aiWarp >= 0.5) {   // the field, flown by watching the path
       // The skill: keep the poles open while they WARP the path (lime: the flight runs ftBoost x faster) and the ring is
       // still ahead, let go as the ring comes close so the bend does not throw you past its mouth, and lay the next pair
@@ -3031,10 +3099,11 @@
       c.font = font(12, 700); c.fillText('RING ' + (threaded % 8 + 1) + ' · ' + d + ' u', px, py + (on ? 28 : 24) * sc);
     }
     drawFieldPath(c, cw, ch, sc);
+    drawDrivePair(c, cw, ch, sc);
     wellMarkers(c, cam, 0, cw, ch, sc, font, W.filter((w) => w.pr.owned), true);
     // top-left: the pair being flown
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
-    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'CATCH SLING (Time mode, T)' : slingMode === 'hybrid' ? 'HYBRID (orbit + short path, T)' : slingMode === 'field' ? 'FIELD TRAJECTORY (Mass mode, T)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
+    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'CATCH SLING (Time mode, T)' : slingMode === 'drive' ? 'DRIVE (the warp pair, T)' : slingMode === 'field' ? 'FIELD TRAJECTORY (Mass mode, T)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
     c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
     c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
@@ -3068,10 +3137,13 @@
     } else if (slingFlash > 0 && lastDipole) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + (lastDipole.captured ? Math.round(lastDipole.sweep * 180 / Math.PI) + '° round' : 'bent ' + Math.round(lastDipole.turned * 180 / Math.PI) + '°') + ' · boost +' + Math.round(lastDipole.kick) + ' u/s', cw / 2, ch * 0.3); c.globalAlpha = 1; }
     else if (slingOrbit) { c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = colA; c.fillText('ORBIT  r ' + Math.round(slingOrbit.r) + ' u  ·  ' + Math.round(slingOrbit.angle * 180 / Math.PI) + '°  ·  let go to slingshot', cw / 2, tY + pad + 14 * sc); }
     else if (slingFlash > 0 && lastOrbit) { c.globalAlpha = Math.min(1, slingFlash); c.textAlign = 'center'; c.font = font(18, 700); c.fillStyle = amber; c.fillText('SLINGSHOT · ' + Math.round(lastOrbit.angle * 180 / Math.PI) + '° round r ' + Math.round(lastOrbit.r) + ' u', cw / 2, ch * 0.3); c.globalAlpha = 1; }
-    if (style === 'A' && slingMode === 'hybrid' && race === 'running' && !stopped && !slingDipole && !(slingFlash > 0 && lastDipole)) {
-      const lime = '#9dff2e', carrying = ftLive.carry > 0;
-      c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = carrying ? lime : dim;
-      c.fillText((ftMul > 1.05 ? '× ' + ftMul.toFixed(1) + '  ·  ' : '') + (carrying ? 'BOOST CARRIED · ' + ftLive.carry.toFixed(1) + ' s' : 'path ' + Math.round(ftLive.len) + ' u  ·  squeeze LT or RT to lay a catch ahead'), cw / 2, tY + pad + 14 * sc);
+    if (style === 'A' && slingMode === 'drive' && race === 'running' && !stopped) {
+      const lime = '#9dff2e', d = ftLive, idle = d.span < 0.01;
+      c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = d.lime ? lime : idle ? dim : colA;
+      c.fillText(idle ? 'DRIVE · squeeze both triggers to stretch the pair, one deeper to turn'
+        : '× ' + ftMul.toFixed(1) + '  ·  pair ' + Math.round(2 * d.a) + ' u long  ·  ' + (Math.abs(d.yaw) < 1 ? 'straight' : 'turning ' + Math.round(Math.abs(d.yaw)) + '°/s ' + (d.yaw > 0 ? 'right' : 'left')), cw / 2, tY + pad + 14 * sc);
+      c.font = font(11, 500); c.fillStyle = dim;
+      if (!idle) c.fillText(Math.abs(d.tilt) >= 12 ? 'carve: the pair tilted' : d.span >= 0.6 ? 'travel: long and straight' : 'trim: light and level', cw / 2, tY + pad + 30 * sc);
     }
     if (style === 'A' && slingMode === 'field' && race === 'running' && !stopped) {
       const f = fieldStanding(), lim = ftLive.lime, lime = '#9dff2e';
@@ -3212,8 +3284,8 @@
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, per pair, and you can log it.</p>' +
         (style === 'A' && slingMode === 'field'
           ? '<p><b>The field trajectory.</b> <b>Squeeze</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways (the black hole on the deeper trigger\'s side), their sum lengthways (the black hole always nearer, the white hole beyond). Ease off and they come together; let go of both and they annihilate. Nothing catches you: the line from your nose is the path your inputs fly through their field. Whenever the poles bend that path at all, or it runs <b style="color:#9dff2e">through the wormhole</b>, it turns lime and you travel down it ' + P.ftBoost + '× faster; the line does not move.</p>'
-          : style === 'A' && slingMode === 'hybrid'
-          ? '<p><b>Hybrid mode</b> (T\'s third press; the game\'s B). The catch sling of Time mode, with the field trajectory\'s line back at ' + Math.round(P.hyLen * 100) + '% of its length, flown on your sticks. <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd> to lay the catch ahead, fly past it and go round. While it holds you, the line is where letting go sends you: it warms as the quarter-turn nears and turns <b style="color:#9dff2e">lime in the window</b>. <b>Let go</b> on lime and the boost stays on for up to ' + P.hyCarry + ' s.</p>'
+          : style === 'A' && slingMode === 'drive'
+          ? '<p><b>Drive mode</b> (T\'s third press; the game\'s B): a warp pair rides with you, a black hole ahead and its white hole behind. <b>Squeeze both</b> <kbd>LT</kbd> <kbd>RT</kbd> to stretch it: the longer the pair, the faster you travel (up to ' + (1 + (Math.max(1, P.ftBoost) - 1) * P.drWarpShare).toFixed(1) + '×). <b>Squeeze one deeper</b> and the black hole slides to that side: the pair tilts and turns you. Short and tilted carves, long and straight travels, light and level trims. The line is where you will fly.</p>'
           : style === 'A' && slingMode === 'dipole'
           ? '<p><b>The dipole sling.</b> <b>Press</b> <kbd>LT</kbd> or <kbd>RT</kbd>: a small black hole appears ahead on that side, its white hole ahead on the other. <b>How deep</b> you squeeze is its strength; the solid circle is where it would hold you, the faint one how far out it can catch you. Fly past it: once it catches you, you stay in its grip and go round for as long as you <b>hold</b>. <b>Let go</b> and you slingshot out on the tangent with a boost; the pair falls together and annihilates.</p>'
           : style === 'A'
@@ -4062,8 +4134,18 @@
     dpCarry: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How much of the release kick you KEEP as momentum instead of a punch that fades. Kept momentum stacks over a chain of slings — this is how a skilled pilot climbs past cruise and stays there.', lo: 'All punch: fast for a moment, then back to cruise.', hi: 'All momentum: a smaller jump that lasts.' },
     dpFlowFade: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How long kept momentum takes to fade (to about a third). Sling again before it is gone and the next kick builds on it.', lo: 'Momentum bleeds off quickly.', hi: 'Momentum lingers — chains stack high.' },
     dpFlowCap: { scene: 'sling', cfg: { q: 1, release: 180, T: 9 }, d: 'The most momentum you can carry, as a multiple of cruise speed. It is the ceiling a perfect chain of slings climbs to.', lo: 'A low ceiling.', hi: 'A high ceiling: 60 cruise + 1.5 × 60 = 150 u/s of lasting speed.' },
-    hyLen: { scene: 'field', cfg: { D: 300 }, d: 'Hybrid mode (T\'s third press): how long its path is, as a share of the field trajectory\'s. Short on purpose: it shows the exit of a catch and the next few seconds, not the whole course. The game: StoatModeAction hybridPathLengthShare.', lo: 'Just the exit.', hi: 'As long as the field\'s line.' },
-    hyCarry: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'Hybrid mode: after a release in the 90 deg window, the warp stays on (and the line stays lime) for this long, times how well the release was timed. A release outside the window carries nothing. The game: StoatModeAction hybridCarrySeconds.', lo: 'The boost fades at once, as in Time mode.', hi: 'A timed release keeps you fast for longer.' },
+    drLenMin: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode: how far ahead the black hole rides (and the white hole behind) with the triggers barely squeezed. A short pair tilts a long way for a small difference: sharp, agile turns. The game: StoatModeAction driveLengthMin.', lo: 'Sharper carves at a light squeeze.', hi: 'Steadier at a light squeeze.' },
+    drLenMax: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode: the pair\'s half-length with both triggers full. A long pair barely tilts, so the fastest travel is also the straightest. The game: StoatModeAction driveLengthMax.', lo: 'Full stretch still turns well.', hi: 'Full stretch flies dead straight.' },
+    drLatMax: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode: how far the black hole slides to the deeper trigger\'s side at a full difference (the white hole the same distance the other way). More reach, more tilt, more turn. The game: StoatModeAction driveLateralMax.', lo: 'Gentle turns.', hi: 'Hard turns.' },
+    drTurnGain: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode: degrees per second of turn for each degree the pair is tilted, flown on the warped clock, so the arc you see is the arc you fly at any speed. The game: StoatModeAction driveTurnGain.', lo: 'The pair barely steers.', hi: 'The pair steers hard.' },
+    drTurnMax: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode: the fastest the pair can turn you, on top of your sticks. The game: StoatModeAction driveTurnMax.', lo: 'Capped low.', hi: 'No practical cap.' },
+    drWarpShare: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode: the warp at full stretch, as a share of the loop boost (the field\'s lime warp; Time scales it). Above 1 the drive outruns the field on a long leg. The game: StoatModeAction driveWarpShare.', lo: 'A modest cruise.', hi: 'A long-distance sprint.' },
+    drWarpExp: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode: how the warp grows with the stretch. Above 1 a light squeeze stays near your own speed (room to trim), and the warp comes on as you squeeze deep. The game: StoatModeAction driveWarpExponent.', lo: 'Warp comes on at once.', hi: 'Warp only near full.' },
+    drKeyRamp: { scene: 'field', cfg: { D: 300 }, d: 'Drive mode on keys and touch (no analog trigger): a held key or button reaches a full squeeze after this long. Hold both for the long legs, tap one to trim. The game: StoatModeAction driveKeyRampSeconds.', lo: 'Snappy.', hi: 'Gradual.' },
+    drAiNear: { scene: 'field', cfg: { D: 300 }, d: 'The AI in Drive mode stops stretching the pair this close to its ring, so it does not overshoot it. The game: StoatModeAction autopilotDriveNear.', lo: 'Warps right up to the ring.', hi: 'Slows early.' },
+    drAiFar: { scene: 'field', cfg: { D: 300 }, d: 'The AI stretches the pair fully from this far out. The game: StoatModeAction autopilotDriveFar.', lo: 'Full warp on short legs too.', hi: 'Full warp only on long legs.' },
+    drAiCone: { scene: 'field', cfg: { D: 300 }, d: 'The AI does not stretch the pair while its ring is this far off the nose: it turns first, then travels. The game: StoatModeAction autopilotDriveConeDegrees.', lo: 'Turns before it warps.', hi: 'Warps while turning.' },
+    drAiLeanDeg: { scene: 'field', cfg: { D: 300 }, d: 'The AI squeezes one trigger fully deeper when this much turn is still to make, less for less. The game: StoatModeAction autopilotDriveLeanDegrees.', lo: 'Hard differences for small turns.', hi: 'Gentle differences.' },
     dpWarp: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'The catch sling\'s pace. While the black hole has caught you, your own flight runs faster — the same time warp the field trajectory gives a lime path (its Loop boost, arriving and fading at its rates) — so going round the hole is as fast as flying the field. This is the share of that boost the catch gets: 1 = the same pace as the field, 0 = no warp (round 6).', lo: 'Slower round the hole.', hi: 'Faster round the hole.' },
     dpWarpHeld: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'When the catch sling\'s warp starts. 1: as soon as the pair is laid and held — flying at the black hole is already fast, as in the field, where any bend of your path warps it. 0: only once the black hole has caught you.', lo: 'Fast only on the orbit.', hi: 'Fast from the press.' },
     dpSweetDeg: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'The game\'s timing rule for the catch sling: the whole kick is paid for a release this many degrees round the black hole (90 = a quarter turn: out on a tangent square to the way you came in). A release never caught pays nothing. 0 turns the window off and the older rule (Full kick only after going round) applies.', lo: 'Let go earlier in the swing.', hi: 'Let go later in the swing.' },
@@ -4349,9 +4431,9 @@
   function setStyle(s) {
     style = s;
     document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
-    $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode !== 'orbit');
+    $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode !== 'orbit' && slingMode !== 'drive'); $('grp-V').hidden = !(s === 'A' && slingMode === 'drive');
     const fieldOn = s === 'A' && slingMode === 'field';
-    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : s === 'A' && slingMode === 'hybrid' ? 'Hybrid mode (the catch with a short path)' : 'The catch sling (Time mode; the dipole sling)';
+    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : s === 'A' && slingMode === 'drive' ? 'Drive mode (the warp pair)' : 'The catch sling (Time mode; the dipole sling)';
     $('mainP').innerHTML = fieldOn
       ? 'Squeeze a trigger: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways, the sum lengthways (black hole nearer, white hole beyond); let go of both and they close and annihilate. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you; whenever the poles <b style="color:#9dff2e">warp it at all</b> it turns lime and you travel down it 3× faster. Settings: the <b>Field</b> tab.'
       : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
@@ -4369,15 +4451,15 @@
   function toggleMechanic() {
     if (mode !== 'fly') return;
     if (style !== 'A') setStyle('A');
-    setSlingMode(slingMode === 'field' ? 'dipole' : slingMode === 'dipole' ? 'hybrid' : 'field');   // Mass -> Time -> Hybrid -> Mass, the game's B
-    toast(slingMode === 'field' ? 'Mass mode: the field trajectory (T switches)' : slingMode === 'dipole' ? 'Time mode: the catch sling (T switches)' : 'Hybrid mode: the catch sling with a short path (T switches)');
+    setSlingMode(slingMode === 'field' ? 'dipole' : slingMode === 'dipole' ? 'drive' : 'field');   // Mass -> Time -> Drive -> Mass, the game's B
+    toast(slingMode === 'field' ? 'Mass mode: the field trajectory (T switches)' : slingMode === 'dipole' ? 'Time mode: the catch sling (T switches)' : 'Drive mode: the warp pair (T switches)');
   }
   function setSlingMode(m) {
-    slingMode = m === 'orbit' ? 'orbit' : m === 'field' ? 'field' : m === 'hybrid' ? 'hybrid' : 'dipole';
+    slingMode = m === 'orbit' ? 'orbit' : m === 'field' ? 'field' : m === 'drive' ? 'drive' : 'dipole';
     if (fieldSling && fieldSling.pair.alive) fieldSling.pair.held = false;
-    fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.warm = 0; ftLive.carry = 0;
+    fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.warm = 0; ftLive.span = 0; ftLive.lean = 0; ftLive.yaw = 0; ftLive.warp01 = 0;
     document.querySelectorAll('[data-sling]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.sling === slingMode ? 'true' : 'false'));
-    $('tMode').textContent = 'B · ' + (slingMode === 'field' ? 'Mass' : slingMode === 'dipole' ? 'Time' : slingMode === 'hybrid' ? 'Hybrid' : 'Orbit');
+    $('tMode').textContent = 'B · ' + (slingMode === 'field' ? 'Mass' : slingMode === 'dipole' ? 'Time' : slingMode === 'drive' ? 'Drive' : 'Orbit');
     if (slingDipole) releaseDipole(); if (slingOrbit) slingshot(false);
     setStyle(style);
   }
@@ -4547,14 +4629,15 @@
   const BH_KEYS = ['bhGmPerStrength', 'bhHorizonPerStrength', 'bhInfluenceFloor', 'bhMaxInfluence', 'bhPrismAccelCap', 'bhPrismMaxSpeed', 'releaseDamping', 'bhPrismReturn', 'bhTideGain', 'bhTideMax', 'vesselTide', 'bhShadow', 'bhLensStrength', 'bhLensReach', 'bhLensFade', 'bhRingGlow', 'bhRingWidth'];
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
-  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'hyLen', 'hyCarry', 'closeSpeed', 'closeRamp'];
+  const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'closeSpeed', 'closeRamp'];
+  const V_KEYS = ['drLenMin', 'drLenMax', 'drLatMax', 'drTurnGain', 'drTurnMax', 'drWarpShare', 'drWarpExp', 'drKeyRamp', 'drAiNear', 'drAiFar', 'drAiCone', 'drAiLeanDeg'];
   const F_KEYS = SPEC.filter((r) => r[0] === 'F').map((r) => r[1]);
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
   function currentChoice(topic) {
     switch (topic) {
       case 'Wormhole style': return style === 'A' ? 'Pair A: the drift pair (this branch)' : 'Pair B: the crystal wormhole (charming-cerf)';
-      case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : slingMode === 'hybrid' ? ', Hybrid mode' : slingMode === 'field' ? ', the field trajectory' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (isCatch(slingMode) ? D_KEYS : slingMode === 'field' ? D_KEYS.concat(F_KEYS) : A_KEYS) : B_KEYS));
+      case 'Sling feel': return 'Sling with pair ' + style + (style === 'A' ? (slingMode === 'dipole' ? ', the dipole sling' : slingMode === 'drive' ? ', Drive mode' : slingMode === 'field' ? ', the field trajectory' : ', the orbit sling') : '') + changedText(SLING_KEYS.concat(style === 'A' ? (isCatch(slingMode) ? D_KEYS : slingMode === 'field' ? D_KEYS.concat(F_KEYS) : slingMode === 'drive' ? V_KEYS : A_KEYS) : B_KEYS));
       case 'Play styles': return 'Play styles: ' + STYLES.map((st) => st.name + ' ' + BP[st.key].toFixed(2)).join(', ') + (liveStyles ? ' (live)' : '') + changedText(['styleStep', 'styleDrift', 'needleStep', 'needleCone']);
       case 'Birth & annihilation': return 'Birth & annihilation' + typeName('life') + changedText(LIFE_KEYS);
       case 'Black hole': return 'Black hole' + typeName('BH') + changedText(BH_KEYS);
@@ -4725,7 +4808,7 @@
   const DOCK_TABS = {
     // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D25, D27)
     R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-F', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-life']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
-      ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
+      ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-D', 'grp-V', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
       ['others', 'Vessel Config', ['grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
@@ -4836,7 +4919,7 @@
   Object.defineProperties(window.__stoatStudio, Object.getOwnPropertyDescriptors({
     SHIPPED, SPEC,
     reset(sd) { if (sd != null) seed = sd; ai.seed = 1; buildCourse(); spawn(); },
-    state() { return { t: simT, race, raceT, threaded, speed, ftMul, gravSpeed, flow, slingMode, style, pos: hull.position.toArray(), path: { n: ftLive.n, end: ftLive.end, lime: ftLive.lime, loop: ftLive.loop, len: ftLive.len, warm: ftLive.warm, carry: ftLive.carry } }; },
+    state() { return { t: simT, race, raceT, threaded, speed, ftMul, gravSpeed, flow, slingMode, style, pos: hull.position.toArray(), path: { n: ftLive.n, end: ftLive.end, lime: ftLive.lime, loop: ftLive.loop, len: ftLive.len, warm: ftLive.warm, span: ftLive.span, lean: ftLive.lean, yaw: ftLive.yaw } }; },
     score() { return { fieldScan: fieldScanAll(), field: lastFieldBatch ? fieldSummary(lastFieldBatch) : null, styles: lastBatch ? batchSummary(lastBatch) : null }; },
     get slingMode() { return slingMode; },
     fieldScan, fieldScanAll, fieldPath, runFieldBatch, fieldTable, fieldSummary, fieldStanding, layField, dipoleOffsets,
