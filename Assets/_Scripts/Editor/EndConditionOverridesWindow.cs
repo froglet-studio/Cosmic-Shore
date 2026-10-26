@@ -79,8 +79,9 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultMaelstromWinTarget + ".\n" +
                 "  • Brood Rush: claimed fauna waves to win (race to N), default " +
                 EndConditionOverridesSO.DefaultBroodRushWaveTarget + ".\n" +
-                "  • Rampage: hostile prisms destroyed to win (race to N), default " +
-                EndConditionOverridesSO.DefaultRampagePrismTarget + ".\n" +
+                "  • Rampage: hostile prisms destroyed to win (race to N), PER INTENSITY - the " +
+                "forest shrinks about five-fold from intensity 1 to 4. A rung left at 0 falls back " +
+                "to the mode scalar (default " + EndConditionOverridesSO.DefaultRampagePrismTarget + ").\n" +
                 "  • Cleave: hostile prisms destroyed to win (race to N), PER INTENSITY - its " +
                 "four rungs are four unrelated arenas, and 1 and 2 are open 2,160-radius places " +
                 "holding about a third of the mass of 3 and 4. A rung left at 0 falls back to " +
@@ -89,8 +90,11 @@ namespace CosmicShore.Editor
                 "  • Wildlife Liberation: creatures a domain must kill to win (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget + ".\n" +
                 "  • Dog Fight: gunnery points a DOMAIN needs to win - a bullet hit scores 1 and " +
-                "a missile hit scores 50, so the default " + EndConditionOverridesSO.DefaultDogFightPointTarget +
-                " is 120 bullets or 3 rockets, or any mix.\n" +
+                "a rocket its best tier (shockwave 10, blast 20, direct 30), default " +
+                EndConditionOverridesSO.DefaultDogFightPointTarget + ".\n" +
+                "  • Grizzly Charge: points a DOMAIN needs on Dog Fight's price list - a Grizzly " +
+                "blast landed on a rival is 20, a round 1 - default " +
+                EndConditionOverridesSO.DefaultGrizzlyChargePointTarget + ".\n" +
                 "  • The Bends: BENDS a DOMAIN needs to win - one opposing pilot caught in your " +
                 "Dolphin crystal blast scores 1, so the default " +
                 EndConditionOverridesSO.DefaultBendsPointTarget +
@@ -108,6 +112,11 @@ namespace CosmicShore.Editor
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
                 "its VERB (round 1, contact strike 8, area debuff 12, rocket 10/20/30), default " +
                 EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " PER PILOT (the race target scales with team size: x1 / x1.6 / x2.2 / x2.8).\n" +
+                "  • Tandava: the PERCENT of the swarm's form below which its body shatters (the pilots win; they also " +
+                "win by breaking the halo, wiping it out or starving it; there is no clock, and they lose if the Antlion " +
+                "eats its last feast), default " + EndConditionOverridesSO.DefaultTandavaBreakPercent + "%; and the HALO RINGS " +
+                "(12 round the Lord of the Dance) the pilots must break before its drum stops to break the dance, default " +
+                EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak + ".\n" +
                 "  • Scarab Scramble: goals a DOMAIN needs to win (race to N) - a forged ball " +
                 "through any hoop, default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + ".\n" +
                 "  • Astro League: goals a DOMAIN needs to end the match EARLY (mercy rule) - " +
@@ -138,7 +147,7 @@ namespace CosmicShore.Editor
                 "Default " + EndConditionOverridesSO.DefaultSkeinRingTarget + ".\n" +
                 "  • Headlong: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the Rhino circuit; the controller lays target/laps rings (laps is the " +
-                "scene's HeadlongController.laps, 3), rounded UP to a whole lap, so this is also " +
+                "scene's HeadlongController.laps, 5), rounded UP to a whole lap, so this is also " +
                 "the size of the circuit. Default " +
                 EndConditionOverridesSO.DefaultHeadlongGateTarget + ".\n" +
                 "  • Hijack: prisms a DOMAIN must STEAL to win (race to N) - ownership flips, " +
@@ -188,6 +197,18 @@ namespace CosmicShore.Editor
             int mw  = Mathf.Max(0, EditorGUILayout.IntField("Maelstrom - Win Target (points)", _config.maelstromWinTarget));
             int nr  = Mathf.Max(0, EditorGUILayout.IntField("Brood Rush - Wave Target", _config.nucleusRushWaveTarget));
             int ra  = Mathf.Max(0, EditorGUILayout.IntField("Rampage - Prism Target", _config.rampagePrismTarget));
+            // Per-intensity, like Cleave's below: the forest shrinks about five-fold up the ladder.
+            // A 0 here falls back to the scalar above.
+            var raByIntensity = new List<int>(4);
+            EditorGUI.indentLevel++;
+            for (int i = 0; i < 4; i++)
+            {
+                int authored = _config.rampagePrismTargetByIntensity != null
+                               && i < _config.rampagePrismTargetByIntensity.Count
+                    ? _config.rampagePrismTargetByIntensity[i] : 0;
+                raByIntensity.Add(Mathf.Max(0, EditorGUILayout.IntField($"Intensity {i + 1}", authored)));
+            }
+            EditorGUI.indentLevel--;
             int rc  = Mathf.Max(0, EditorGUILayout.IntField("Cleave - Prism Target", _config.cleavePrismTarget));
             // Per-intensity, because this mode's four rungs are four different PLACES: 1 and 2 are
             // open 2,160-radius arenas holding roughly a third of the mass of 3 and 4. A 0 here
@@ -205,6 +226,7 @@ namespace CosmicShore.Editor
             EditorGUI.indentLevel--;
             int wl  = Mathf.Max(0, EditorGUILayout.IntField("Wildlife Liberation - Kill Target", _config.wildlifeKillTarget));
             int df  = Mathf.Max(0, EditorGUILayout.IntField("Dog Fight - Point Target", _config.dogFightPointTarget));
+            int gc  = Mathf.Max(0, EditorGUILayout.IntField("Grizzly Charge - Point Target", _config.grizzlyChargePointTarget));
             int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Bend Target", _config.bendsPointTarget));
             int ss  = Mathf.Max(0, EditorGUILayout.IntField("Scarab Scramble - Goal Target", _config.scarabScrambleGoalTarget));
             int al  = Mathf.Max(0, EditorGUILayout.IntField("Astro League - Goal Limit (mercy)", _config.astroLeagueGoalLimit));
@@ -230,6 +252,8 @@ namespace CosmicShore.Editor
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
+            int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
+            int tf  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Halo Rings to Break the Dance", _config.tandavaHaloRingsToBreak), 0, 12);
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -239,10 +263,12 @@ namespace CosmicShore.Editor
                     _config.maelstromWinTarget = mw;
                     _config.nucleusRushWaveTarget = nr;
                     _config.rampagePrismTarget = ra;
+                    _config.rampagePrismTargetByIntensity = raByIntensity;
                     _config.cleavePrismTarget = rc;
                     _config.cleavePrismTargetByIntensity = rcByIntensity;
                     _config.wildlifeKillTarget = wl;
                     _config.dogFightPointTarget = df;
+                    _config.grizzlyChargePointTarget = gc;
                     _config.bendsPointTarget = bd;
                     _config.scarabScrambleGoalTarget = ss;
                     _config.astroLeagueGoalLimit = al;
@@ -268,6 +294,8 @@ namespace CosmicShore.Editor
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
+                    _config.tandavaBreakPercent = tv;
+                    _config.tandavaHaloRingsToBreak = tf;
                 });
 
             EditorGUILayout.Space();
@@ -278,13 +306,17 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Joust", jo > 0 ? jo.ToString() : EndConditionOverridesSO.DefaultJoustCount + " (default)");
             EditorGUILayout.LabelField("Maelstrom", mw > 0 ? mw.ToString() : EndConditionOverridesSO.DefaultMaelstromWinTarget + " (default)");
             EditorGUILayout.LabelField("Brood Rush", nr > 0 ? nr.ToString() : EndConditionOverridesSO.DefaultBroodRushWaveTarget + " (default)");
-            EditorGUILayout.LabelField("Rampage", ra > 0 ? ra.ToString() : EndConditionOverridesSO.DefaultRampagePrismTarget + " (default)");
+            string rampageEffective = ra > 0 ? ra.ToString()
+                : EndConditionOverridesSO.DefaultRampagePrismTarget + " (default)";
+            EditorGUILayout.LabelField("Rampage", string.Join(" / ", raByIntensity.ConvertAll(
+                v => v > 0 ? v.ToString() : rampageEffective)));
             string cleaveEffective = rc > 0 ? rc.ToString()
                 : EndConditionOverridesSO.DefaultCleavePrismTarget + " (default)";
             EditorGUILayout.LabelField("Cleave", string.Join(" / ", rcByIntensity.ConvertAll(
                 v => v > 0 ? v.ToString() : cleaveEffective)));
             EditorGUILayout.LabelField("Wildlife Liberation", wl > 0 ? wl.ToString() : EndConditionOverridesSO.DefaultWildlifeKillTarget + " (default)");
             EditorGUILayout.LabelField("Dog Fight", df > 0 ? df.ToString() : EndConditionOverridesSO.DefaultDogFightPointTarget + " (default)");
+            EditorGUILayout.LabelField("Grizzly Charge", gc > 0 ? gc.ToString() : EndConditionOverridesSO.DefaultGrizzlyChargePointTarget + " (default)");
             EditorGUILayout.LabelField("The Bends", bd > 0 ? bd.ToString() : EndConditionOverridesSO.DefaultBendsPointTarget + " (default)");
             EditorGUILayout.LabelField("Scarab Scramble", ss > 0 ? ss.ToString() : EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + " (default)");
             EditorGUILayout.LabelField("Astro League", al > 0 ? al.ToString() : EndConditionOverridesSO.DefaultAstroLeagueGoalLimit + " (default)");
@@ -311,6 +343,8 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
+            EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
+            EditorGUILayout.LabelField("Tandava (halo rings to break)", tf > 0 ? tf.ToString() : EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -345,10 +379,12 @@ namespace CosmicShore.Editor
                    "Joust: " + Fmt(_config.joustCountBuild, "default " + EndConditionOverridesSO.DefaultJoustCount) + "\n" +
                    "Maelstrom: " + Fmt(_config.maelstromWinTargetBuild, "default " + EndConditionOverridesSO.DefaultMaelstromWinTarget) + "\n" +
                    "Brood Rush: " + Fmt(_config.nucleusRushWaveTargetBuild, "default " + EndConditionOverridesSO.DefaultBroodRushWaveTarget) + "\n" +
-                   "Rampage: " + Fmt(_config.rampagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRampagePrismTarget) + "\n" +
+                   "Rampage: " + Fmt(_config.rampagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRampagePrismTarget) +
+                   " (per intensity " + string.Join(" / ", _config.rampagePrismTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Cleave: " + Fmt(_config.cleavePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultCleavePrismTarget) + "\n" +
                    "Wildlife Liberation: " + Fmt(_config.wildlifeKillTargetBuild, "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget) + "\n" +
                    "Dog Fight: " + Fmt(_config.dogFightPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDogFightPointTarget) + "\n" +
+                   "Grizzly Charge: " + Fmt(_config.grizzlyChargePointTargetBuild, "default " + EndConditionOverridesSO.DefaultGrizzlyChargePointTarget) + "\n" +
                    "The Bends: " + Fmt(_config.bendsPointTargetBuild, "default " + EndConditionOverridesSO.DefaultBendsPointTarget) + "\n" +
                    "Scarab Scramble: " + Fmt(_config.scarabScrambleGoalTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget) + "\n" +
                    "Astro League: " + Fmt(_config.astroLeagueGoalLimitBuild, "default " + EndConditionOverridesSO.DefaultAstroLeagueGoalLimit) + "\n" +
@@ -373,7 +409,9 @@ namespace CosmicShore.Editor
                    "Dustup: " + Fmt(_config.dustupPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDustupPointTarget) + "\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
-                   "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot);
+                   "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
+                   "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +
+                   "Tandava (halo rings to break): " + Fmt(_config.tandavaHaloRingsToBreakBuild, "default " + EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

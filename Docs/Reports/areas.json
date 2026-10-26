@@ -116,6 +116,8 @@
         ".claude/skills/cosmic-shore-deck",
         "Tools/Build/team_report.py",
         "Tools/Build/team_tasks.py",
+        ".claude/skills/team-tasks",
+        ".github/workflows/team-tasks.yml",
         "Tools/Build/who_works_where.py",
         "Docs/TEAM.md",
         "Docs/Reports"
@@ -245,7 +247,8 @@
         "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
         "Docs/Studios/CREW_VESSEL_LAB.md",
         "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
-        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+        "Docs/Studios/CREW_OF_FOUR_LAB.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md"
       ],
       "artifacts": [
         {
@@ -314,6 +317,328 @@
         "Check out cece/admiring-hamilton-gyzzh8 and build an Android development APK (Docs/ANDROID_BUILD.md).",
         "Run Docs/UNITY_VERIFICATION_CHECKLIST.md \"Phone controls for the whole fleet\" steps 4-15 in the Toybox Vessel Changer and an arena match.",
         "In the Editor, Device Simulator with a phone selected shows the button layouts (steps 1-3)."
+      ]
+    },
+    "bug-hunt": {
+      "title": "Bug Hunt",
+      "aliases": [
+        "bug hunt",
+        "bug ledger",
+        "console errors",
+        "send to claude",
+        "team bug board",
+        "bugledger"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Caleb",
+        "Shombith",
+        "Andrew",
+        "jtgjones"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "tooling and fixes merge to bleeding-edge; testers send to bugledger/<user>",
+      "summary": "Unity sends every tester's console errors to bugledger/<user> after Play; Claude fixes them and marks them fixed there; the tester's next clean play tests close them. A daily scheduled sweep is meant to do this unattended.",
+      "paths": [
+        "Assets/_Scripts/Editor/Diagnostics",
+        "Tools/Build/bug_ledger.py",
+        "BugLedger",
+        ".claude/skills/bug-ledger",
+        "Docs/DIAGNOSTICS.md"
+      ],
+      "docs": [
+        "Docs/DIAGNOSTICS.md",
+        ".claude/skills/bug-ledger/SKILL.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Team Bug Board",
+          "url": "https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno"
+        },
+        {
+          "name": "Bug Hunt Loop (how it works)",
+          "url": "https://claude.ai/artifact/U8djY1FtPnqDmLS6QLG5t4"
+        }
+      ],
+      "report": "Docs/Reports/BUG_HUNT.md",
+      "taskAreas": [
+        "diagnostics",
+        "Performance",
+        "audio"
+      ],
+      "test": [
+        "Pull bleeding-edge, open Unity, play anything until a red error appears, stop Play: the console says it was sent to Claude.",
+        "git fetch origin; python3 Tools/Build/bug_ledger.py collect shows it on bugledger/<you>."
+      ]
+    },
+    "multiplayer": {
+      "title": "Multiplayer",
+      "aliases": [
+        "multiplayer",
+        "party",
+        "multiplayer bugs",
+        "lobby",
+        "relay",
+        "online",
+        "mppm",
+        "net logs"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Caleb",
+        "Shombith"
+      ],
+      "audience": [
+        "Yash",
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "summary": "Party, presence lobby, Relay and the multiplayer test logs: open bugs, what the testers' logs show, next steps.",
+      "paths": [
+        "Assets/_Scripts/Controller/Party",
+        "Assets/_Scripts/Controller/Multiplayer",
+        "Assets/_Scripts/Utility/UgsRequestPolicy.cs",
+        "Assets/_Scripts/Editor/Diagnostics/NetTestLogs.cs",
+        "Tools/Build/net_logs.py",
+        "Docs/PartySystem"
+      ],
+      "docs": [
+        "Docs/MULTIPLAYER_START_HERE.md",
+        "Docs/PartySystem/BUGS.md",
+        "Docs/DIAGNOSTICS.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/MULTIPLAYER.md",
+      "taskAreas": [
+        "Multiplayer"
+      ],
+      "test": [
+        "Two machines on bleeding-edge party up, play a match, one leaves mid-match, both stop Play normally.",
+        "python3 Tools/Build/net_logs.py collect, then show 1."
+      ]
+    },
+    "concept-fleet": {
+      "title": "Concept fleet",
+      "aliases": [
+        "concept fleet",
+        "concept vessels",
+        "new vessels",
+        "prototype vessels",
+        "vessel concepts",
+        "gibbon",
+        "flea",
+        "dragonfly",
+        "albatross",
+        "web-slinger",
+        "omega",
+        "omega crews",
+        "omega crew",
+        "warden",
+        "bulwark",
+        "tempest",
+        "supervessel",
+        "supervessels",
+        "combiner",
+        "combiner vessels",
+        "mega form",
+        "omega form",
+        "vessel ids",
+        "vessel id ledger"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett"
+      ],
+      "audience": [
+        "Yash",
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "browser prototypes in the Vessel Studio; the Flea is in Unity on claude/flea-vessel, the Omega crews in Unity on Ys-bleeding-edge (2026-10-26); nothing of it on bleeding-edge",
+      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17; Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross), then the Omega crews (2026-10-26: three combiner crew vessels, Warden / Bulwark / Tempest, each three fleet members with mega forms that dock into one omega form with three seats). The Flea (24) and the Omega crews (25-27) are cloned into Unity; the vessel id ledger lives in Docs/Studios/CONCEPT_FLEET.md section 0.",
+      "paths": [
+        "Docs/Studios/CONCEPT_FLEET.md",
+        "Docs/Studios/VesselStudio/vessels",
+        "Docs/Studios/VesselStudio/studio-kinds.js",
+        "Docs/Studios/VesselStudio/studio-vessel.js",
+        ".claude/skills/vessel-studio/vessel_pages.py",
+        "Docs/Studios/VesselStudio/omega.html",
+        "Docs/Studios/VesselStudio/omega-studio.js",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaMath.cs",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrew.cs",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrewView.cs",
+        "Assets/_Scripts/Controller/Vessel/Crew/OmegaCrewConfigSO.cs",
+        "Assets/_Scripts/Controller/Vessel/OmegaVesselTransformer.cs",
+        "Assets/_Scripts/UI/Controller/OmegaHUDController.cs",
+        "Assets/_Scripts/Tests/Editor/OmegaMathTests.cs",
+        "Tools/Build/author_omega_assets.py",
+        "Assets/_SO_Assets/VesselActions/Omega",
+        "Assets/_Prefabs/Spacevessels/Warden.prefab",
+        "Assets/_Prefabs/Spacevessels/Bulwark.prefab",
+        "Assets/_Prefabs/Spacevessels/Tempest.prefab",
+        "Assets/_Scripts/Controller/Vessel/FleaMath.cs",
+        "Assets/_Scripts/Controller/Vessel/FleaVesselTransformer.cs",
+        "Tools/Build/author_flea_assets.py",
+        "Assets/_Prefabs/Spacevessels/Flea.prefab",
+        "Tools/Build/studio_to_unity/clones.json"
+      ],
+      "docs": [
+        "Docs/Studios/CONCEPT_FLEET.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md",
+        "Assets/_Scripts/Controller/Vessel/R_VesselActions/FLEA.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Vessel Studio (the concept fleet row)",
+          "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
+        },
+        {
+          "name": "Omega Crews lab (the studio's Omega Crews bay)",
+          "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
+        }
+      ],
+      "report": "Docs/Reports/CONCEPT_FLEET.md",
+      "taskAreas": [
+        "Vessel Studio",
+        "Vessel Studio / concept fleet",
+        "Vessel Studio / Gibbon",
+        "Vessel Studio / Flea",
+        "Vessel Studio / Albatross",
+        "Vessel Studio / Dragonfly",
+        "Vessel Studio / Marlin",
+        "Vessel / Tether",
+        "Vessel Studio / Omega crews",
+        "Vessel / Omega crews"
+      ],
+      "test": [
+        "Open the Vessel Studio artifact, the concept fleet row (ten vessels) or the Omega Crews bay; fly a vessel; record Keep / Drop on its Decisions tab.",
+        "Unity, Ys-bleeding-edge: Menu_Main freestyle, Toy Box, Vessel Changer, Warden / Bulwark / Tempest: the hand test in Docs/UNITY_VERIFICATION_CHECKLIST.md (the Omega crews section).",
+        "Unity, claude/flea-vessel: the Flea from the same Vessel Changer (FLEA.md section 6)."
+      ]
+    },
+    "android-build": {
+      "title": "Android build",
+      "aliases": [
+        "android",
+        "android build",
+        "android builds",
+        "play store",
+        "google play",
+        "aab",
+        "apk",
+        "internal testing",
+        "play console"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Shombith",
+        "Garrett",
+        "Caleb"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "all on bleeding-edge; the 32-bit build has not been uploaded to Play yet",
+      "summary": "The signed release App Bundle for Google Play with its pre-upload check, the development APK and the switch that makes it play like release, and 32-bit (ARMv7) back beside ARM64. Build 412826 (2026-10-14, 64-bit only) is on internal testing.",
+      "paths": [
+        "Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs",
+        "Assets/_Scripts/Editor/Build/AndroidBundleCheck.cs",
+        "Assets/_Scripts/Tests/Editor/AndroidBundleCheckTests.cs",
+        "Assets/_Scripts/Utility/DevDiagnostics.cs",
+        "Assets/_Scripts/Utility/DevDiagnosticsToggle.cs",
+        "Assets/Plugins/Android",
+        "ProjectSettings/AndroidResolverDependencies.xml",
+        "Tools/Build/check_android_signing_settings.py",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "docs": [
+        "Docs/ANDROID_BUILD.md",
+        "Docs/PLATFORM_UNIFICATION.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/ANDROID_BUILD.md",
+      "taskAreas": [
+        "Android build"
+      ],
+      "test": [
+        "Pull bleeding-edge; switch the editor to Android.",
+        "Select the upload key in Publishing Settings, then FrogletTools > Build > Android App Bundle (Release); the .check.txt lists arm64-v8a and armeabi-v7a.",
+        "Upload to Play internal testing and install on a 32-bit phone (Moto G Power or Galaxy M) and a 64-bit one."
+      ]
+    },
+    "steam-launch": {
+      "title": "Steam launch",
+      "aliases": [
+        "steam",
+        "steam launch",
+        "steam release",
+        "launch",
+        "launch readiness",
+        "steam playtest",
+        "playtest",
+        "store page",
+        "steamworks",
+        "steam direct",
+        "how fast to launch",
+        "shipping on steam"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Caleb",
+        "Garrett",
+        "Yash"
+      ],
+      "audience": [
+        "Shombith",
+        "Caleb",
+        "Garrett"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "everything described is on bleeding-edge; this report doc arrives with PR #1521",
+      "summary": "Getting Cosmic Shore onto Steam as an invite-only Playtest (Revision 2), not the paid Early Access of Revision 1. The uploader, the Playtest runbook and the platform work are finished and waiting on a Steamworks app that does not exist yet, so the 30-day Steam Direct clock has not started.",
+      "paths": [
+        "Tools/Steam",
+        "Tools/Build/build_windows.sh",
+        "Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.cs",
+        "Docs/STEAM_BUSINESS_SETUP.md",
+        "Docs/STEAM_RELEASE_TASKS.md",
+        "Docs/STEAM_PLAYTEST_RUNBOOK.md",
+        "Docs/STEAM_CHECKPOINT_SERIES.md",
+        "Docs/LAUNCH_BLOCKER_INDEX.md",
+        "Docs/BUILD_AND_DELIVERY.md",
+        ".github/workflows/unity-ci.yml"
+      ],
+      "docs": [
+        "Docs/STEAM_RELEASE_TASKS.md",
+        "Docs/STEAM_BUSINESS_SETUP.md",
+        "Docs/STEAM_PLAYTEST_RUNBOOK.md",
+        "Docs/STEAM_CHECKPOINT_SERIES.md",
+        "Docs/BUILD_AND_DELIVERY.md",
+        "Docs/LAUNCH_BLOCKER_INDEX.md",
+        "Docs/Legal/README.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Steam Launch Status (the page for Shombith and Caleb)",
+          "url": "https://claude.ai/artifact/53u11qrp5tgdSm87S1Mj4n"
+        }
+      ],
+      "report": "Docs/Reports/STEAM_LAUNCH.md",
+      "taskAreas": [
+        "Steam launch"
+      ],
+      "test": [
+        "Nothing here is testable in the editor: the gate is off-machine (a Steamworks account).",
+        "The one thing a person can do today: ./Tools/Build/build_windows.sh --version <x.y.z>, launch the player, sign in, reach Menu_Main, open and close the pause menu, read Player.log (QA-BUILD-WINDOWS-PLAYER).",
+        "Steam upload, once an app id exists: ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal"
       ]
     }
   }

@@ -1179,7 +1179,34 @@ that is 1.46× clearance, so an AI that never opens a single door **still thread
 reaches**. *The pre-open eye is the designed FLOOR on AI competence* — the mode cannot produce an
 AI that is stuck, only one that is slow.
 
+### Since 2026-10-26: the Regatta steering, and the rocket fired at the station
+
+Two changes for the Sparrow's training (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §6):
+- **Steering.** `BreakwaterController.AICommitFromApproachPoint` is true. With the numbers above the 280 u approach
+  point lay outside the 240 u commit radius on any leg over 700 u: a pilot reaching it was still "approaching" and
+  circled it (Yash's five races of 2026-10-20: AI Sparrows threaded about 1 station a minute, circling 56% of the race).
+  With the switch on, the approach point stays inside the commit radius (`GateRaceController.ApproachLeadFor`) and the
+  through line runs through the station's centre, which is the eye.
+- **The rocket.** In Breakwater the Sparrow's drive is `Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater`,
+  which takes the SkyBurst rocket off the AIPilot timer and fires it at the station: once per station, nose within 4 deg,
+  between 60 and 220 u (its reach is 229 u), with a rocket in the bay. The guns stay on the timer (the paragraphs above
+  still hold for them). Every other mode keeps the timer for the rocket too.
+- **The boost (2026-10-26).** The same variant boosts on the legs and lets go before each station: it starts when the
+  station is within 45 deg of the course with at least 2 s to it, keeps going within 60 deg, and lets go 1.25 s out
+  (about 170 u at the boosted 135 u/s); the stick bands are off (1). The base policy's bands (12 deg, stick 0.35, let go
+  0.5 s out) boosted 8-18% of a lap: Yash's two races of 2026-10-26 had the AI Sparrows at a median 35-40 u/s against
+  his 135 u/s held all race, threading about half as many stations. Offline (`switchback_dolphin_sim.py --mode
+  Breakwater`, the seven recorded courses, the steering above): base bands 110-131 s a lap, these 79-82 s, no station
+  clipped; under 0.9 s the boosted hull reaches the station too fast to line up on the eye and clips the danger weave,
+  so `learn_drives_from_flights.FLOORS` never lets a learned release go under 1.25 s here. Yash's own laps run about
+  62 s: he steers the boost by hand.
+
 ### The crystal detour
+
+> **Retired 2026-10-26 (Yash):** *"while playing any racing game mode, AI should not go for crystals. It should only
+> focus on waypoints. If the crystals are the waypoints, then go for crystals."* No gate race detours for a crystal now:
+> `GateRaceController.AIDetoursForCrystals` is false in code, so the scene's `aiCrystalDetourSlack` is read only by a
+> mode that opts in (none does). Test: `RaceAIWaypointsOnlyTests`. The paragraph below is the history.
 
 Installing an external target provider **replaces** `AIPilot`'s own crystal seeking outright — the
 trap `RAMPAGE.md` records — so without a detour an AI would fly past every crystal in the cell and

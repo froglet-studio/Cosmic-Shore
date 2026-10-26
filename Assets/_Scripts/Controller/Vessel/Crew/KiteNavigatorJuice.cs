@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     sealed class KiteNavigatorJuice
     {
-        enum Act : byte { Sputter, Implode, Shock, Flash, Fold, Morph, Stream, Home, Shard, Bloom }
+        enum Act : byte { Sputter = 0, Implode = 1, Shock = 2, Flash = 3, Fold = 4, Morph = 5, Stream = 6, Home = 7, Shard = 8, Bloom = 9 }
 
         struct Bit
         {

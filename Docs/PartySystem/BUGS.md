@@ -38,10 +38,14 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
 | B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | **Session case fixed 2026-10-09** (an invite and the `partySession` it names now go out in one save; this was "defect 5"); the Count case is open - its cure is Block 5 (push instead of poll) | 🟡 |
 | B30 | A party guest's swapped-in vessel never moves, and the gap throws every 250 ms | Root-caused & fixed 2026-10-13; playtest-confirmed by the owner | 🟢 |
-| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Root-caused & fixed 2026-10-17: two GETs per 1.5 s tick (1.33/s) against UGS's 1 GET/s/player; the party GET now runs at most every 6 s (0.83/s). Needs a two-machine retest | 🟡 |
+| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Fixed 2026-10-17 by averaging under 1 GET/s; that did not hold (1,061 party-read 429s, 21-23 Oct) because the presence and party reads still went out in the same second. Fixed again 2026-10-24: every read passes `LobbyReadPacer` (1.05 s apart) and a tick reads one lobby. Needs a two-machine retest | 🟡 |
 | B32 | After a guest leaves mid-match, the host's presence lobby answers `NotInLobby` and the host sits in `Reconnecting` for the rest of the session | Root-caused & fixed 2026-10-17: the leaving player hosted the shared presence lobby and its leave DELETED it; the host then never left `Reconnecting`. Needs a two-machine retest | 🟡 |
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
+| B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
+| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
+| B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
+| B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2113,6 +2117,37 @@ spacing, and the budget under 1/s with the old cadence as the negative control. 
 machines party up and idle 10 minutes in the menu; `net_logs.py show` reports `429s 0` and no
 `rate-limited` line.
 
+**The first fix did not hold (measured 2026-10-24).** Caleb's and Gradi's tests of 21-23 Oct, all on code
+with the fix above: 1,061 `Party session refresh rate-limited` warnings against 12 presence-refresh ones,
+spaced 7.8 s apart (one per party poll plus its 3 s back-off). Nearly every party read was refused. The
+average was under the cap, but the tick still read the presence lobby and then the party session back to
+back, milliseconds apart, so the party read always fell in the same second as the presence read. UGS's cap
+is one GET per second, not one per second on average.
+
+**Second fix (2026-10-24).**
+- `LobbyReadPacer` (`Assets/_Scripts/Utility/`) is the one gate every lobby GET of ours passes: the
+  presence refresh, the party refresh, and `LobbyPropertyWriter` / `PartySessionService`'s reads before and
+  after a save. No two go out less than 1.05 s apart; a read that would waits its turn. It resets at Play
+  start.
+- The refresh tick makes one read: on the tick the party session is due a read
+  (`LobbyRefreshScheduler.IsPartySessionPollDue`, asked without claiming it), it skips the presence read and
+  works from the presence lobby as last read. So the tick never waits a second in the middle, and the
+  presence lobby is read every tick but one in four.
+- Held by `PartyRefreshRecoveryTests` (13): the pacer refuses a read right behind another and allows it at
+  1.05 s, a refused try claims nothing, the Play-start reset frees the slot, and the party poll can be asked
+  without claiming it. **Hand test:** same as above: `429s 0` and no `rate-limited` line in a 10-minute
+  party. If 429s remain, they come from reads outside the pacer (the SDK's own), and the next step is Block 5.
+
+**First retest, 25 Oct (multiplayer sweep, `shombith+gradi-20261025_175453`, both on `bleeding-edge` with the
+pacer).** A 6-minute two-machine party with a join: Shombith 1 rate-limit failure in 310 reads, Gradi 3 in 200
+(against 1,061 in Caleb's and Gradi's 21-23 Oct logs). All four came in the first 2-3 s after a party started,
+when the SDK's own create / join calls had just read the lobby. One of them cost something: the identity
+republish's read before its save was not under `UgsRequestPolicy`, so that one 429 dropped the write ("[LobbyPropertyWriter]
+RepublishLocalIdentity error ... RateLimitExceeded", in Gradi's 25 Oct solo log too). **Fixed 2026-10-25:**
+`LobbyPropertyWriter.WriteAsync` runs that read under the policy like the save, so a 429 is retried with
+back-off; held by `LobbyPropertyWriterRetryTests` (3; the retry test fails with the old code). The other
+writes through it (joined party, invite clear) had no per-tick fallback and gain the most.
+
 ## B32 — After a guest leaves mid-match, the host sits in `Reconnecting` for the rest of the session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
 
 **Seen in.** Same log as B31. ys1 joined Caleb's party (client 1 approved at 72 s), both pressed Ready in
@@ -2198,6 +2233,15 @@ unloaded one is the negative control). **Hand test:** in the editor, Play, party
 The second Play's `net_logs.py` log shows `HostingParty->InParty` more than a second apart (a real Relay
 creation), no "lobby not found", and no "Relay session not ready".
 
+**Also seen (2026-10-25, Bug Ledger `E-c2a4d444b8`, Yash; `E-81100c14a5`, Yash and Andrew).** Stopping Play while
+the game is still starting an online session logs `SessionException: Failed to start the network manager` (the
+SDK's `NetworkManagerSession.OnStopCompleted`: the NetworkManager shut down before its start finished) or
+`Cannot start when Singleton is not set` (the start began after the NetworkManager was gone). Both surface
+unobserved through `UniTaskExtensions.AsMainThread`, so the caller that started the session (boot's solo host,
+`MultiplayerSetup`, the presence or party create) is fire-and-forget at that moment and the 1,500-character stack
+excerpt does not name it. A teardown race, not a gameplay fault: the fix is for the starting caller to observe
+Play stopping (cancel, or catch `NetworkManagerStartFailed` while `IsQuitting`) - the same shape as B38.
+
 ## B34 — `ObjectDisposedException` on a `$lobby` channel after Play stops 🟡 (root-caused 2026-10-17; the leak itself is B33)
 
 **Seen in.** Bug Ledger `E-c523697cae`, on every tester's branch (`bugledger/yskha`, `gradi`, `mrglo`,
@@ -2225,4 +2269,175 @@ it fails to reset belongs to a session that no longer exists.
 
 **Still open.** The leak behind it is B33. When B33 leaves the SDK session cleanly as Play exits, this
 error has nothing left to fire on, and the filter rule can be deleted.
+
+## B35 — Every direct join fails with `NetworkConfig mismatch` 🟡 (root-caused & fixed 2026-10-24)
+
+**Seen in.** The multiplayer test logs of Caleb (`belac`) and Gradi, five two-machine tests from
+2026-10-21 to 2026-10-23, both editors on the same commit. Each time one of them direct-joins the other:
+the host logs `[Netcode] NetworkConfig mismatch. The configuration between the server and client does not
+match` (twice, once per connection attempt); the joiner logs `Received error message from Relay: not
+connected`, then `SessionException NetworkManagerStartFailed`, and its party falls back from
+`JoiningParty` to `HostingParty` alone. Later tries in the same Play add `SessionConflict: player is
+already a member` (the lobby join had succeeded; only Netcode failed). The 19-20 Oct tests had none.
+
+**Cause.** With `ForceSamePrefabs` on, the connection request carries a hash of the sorted
+`GlobalObjectIdHash` of every registered network prefab (NGO 2.13.3 `NetworkConfig.GetConfig`), and the
+host refuses any client whose hash differs. Each editor uses the hash IN MEMORY, and
+`NetworkObject.OnValidate` regenerates it from the prefab's GUID only in edit mode: it skips while
+entering Play. So a prefab first loaded as Play starts keeps its COMMITTED value, and one the editor had
+already loaded (selected it, opened a scene or a tool that holds it) carries the regenerated value.
+Eleven registered prefabs committed a value that is not the one Unity computes (AstroLeagueBall,
+Butterfly, Falcon, MassSharkFauna, NetworkVesselSpawner, Player, QuadFish, Rhino, Scarab, TadPoleFauna,
+Termite; AstroLeagueBall at 0). Two editors on the same commit therefore disagreed whenever their
+histories differed, and nothing said which prefab. Same mechanism, no logged proof of WHICH prefab
+differed in these tests: the logs carry only the host's one-line refusal.
+
+**What changed.**
+- The eleven prefabs carry the value Unity computes (`xxh32("GlobalObjectId_V1-1-<guid>-<fileID>-0")`,
+  checked against prefabs Unity regenerated itself), so every editor and every build agrees whatever it
+  loaded first. One line per prefab; no other field moved.
+- `Tools/Build/check_network_prefab_hashes.py` fails on a stale hash as well as a collision, and `--fix`
+  writes Unity's value (`--self-test` proves both fire, with negative controls).
+- Each peer's test log records `netConfig`: its config hash and the prefab keys inside it, once per
+  Netcode start (`MultiplayerSetup.MarkNetworkConfig`, pinned by `NetworkConfigMarkTests`).
+  `python3 Tools/Build/net_logs.py show <test>` prints `NetworkConfig differs between players (B35)` with
+  the keys only one player has, so a future mismatch names its prefab.
+
+**Hand test.** Two machines on this commit: one hosts a party, the other direct-joins (and once by
+accepting an invite). Pass: the joiner lands in the party, no `NetworkConfig mismatch` on the host. If it
+still fails, send the logs; `net_logs.py show` will name the prefab or setting.
+
+## B36 — The Relay drops the host after the game freezes 🟠 (root-caused 2026-10-25; the freeze itself is not fixed)
+
+**Seen in.** Bug Ledger `E-4d0d17e44b` ("Received error message from Relay: player timed out due to
+inactivity", 16 sightings), `E-0a098d80df` ("Relay allocation is invalid", 16), `E-fda866d511` ("Failed to
+establish connection with the Relay server", 11), `E-e5ff2abb8c` ("Transport failure! Relay allocation needs to
+be recreated", 10) and `E-e6054bc064` ("Host is shutting down due to network transport failure", 10). In the
+multiplayer test logs: the owner's 20 Oct test (`owner-20261020_195824`, solo against AI in Bloomrush) lost its
+host three times in 20 minutes, each time about 3 s after the Bloomrush scene was torn down (twice on the way
+back to the menu, once on a Bloomrush replay). Each ended in `Bouncing to solo menu: Connection lost`.
+
+**Not this bug.** The `Received error message from Relay: not connected` lines in Caleb's and Gradi's 21-23 Oct
+joins are the joiner's side of B35 (the host refused the connection).
+
+**Cause.**
+1. Unity Relay disconnects a player it has heard nothing from for about 10 s. Our UnityTransport pings the
+   Relay every 0.5 s (`m_HeartbeatTimeoutMS: 500` on `NetworkManager.prefab`; UTP 2.7.4 `RelayLayer` sends a
+   ping when nothing else went out). Those pings go out from the transport's update on the main thread, so
+   a frame that lasts 10 s sends nothing.
+2. The owner's Bloomrush flights record a mean frame of 190, 290, 273 and 300 ms (676 ms in one short run),
+   against 17-21 ms for every other mode on the same machine. Between "return to menu" (`AppState ->
+   MainMenu`) and the Bloomrush scene's unload, about 85 s passed with nothing logged. The Single-mode load's
+   final frame (destroy the Bloomrush scene, build Menu_Main, unload unused assets) is the likely 10 s freeze.
+   The logs had no frame timing, so this is inferred, not measured.
+3. Gradi's 19 Oct boot drop (`Failed to establish connection with the Relay server (server didn't answer any
+   BIND message)`) followed `HCS retry did not finish within 15s`: an allocation that sat unused about as
+   long. Same family, not proven.
+
+**What changed (2026-10-25).**
+- `FrameStallWatch` (`Assets/_Scripts/Utility/`): while the NetworkManager is listening, a frame of 3 s or
+  more is recorded in the session record as `stall` ("12.4s in MinigameBloomrush"). One of 9 s or more also
+  warns that Relay may drop the session. Resets at Play start; runs every frame from Play start.
+- `MultiplayerSetup.OnTransportFailure` records `relayDrop` with the freeze it followed ("after a 12.4 s freeze
+  2.9 s earlier") or "no freeze in the last 30 s".
+- `net_logs.py show` prints each player's `longest freeze` on its summary line.
+- Held by `FrameStallWatchTests` (5) and the `net_logs.py --self-test` checks.
+
+**Still open.** These changes make the next drop name its cause; they do not stop the freeze. If the next log
+shows a `stall` of 10 s before the `relayDrop`, the fix is in the freezing frame: profile the Bloomrush to
+menu load (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, `/perf-hunt`) and why Bloomrush runs at 3-5 fps on that
+machine. If it shows "no freeze", the drop is a network fault and needs a different look.
+Tickets: T-20261025-482c (#1520, the retest) and T-20261024-0212 (#1495, Bloomrush's slow frames after the
+prism creation queue; it now also times the return to the menu).
+
+**The freeze, measured in Amoebius (2026-10-25).** Lever L14 in `Docs/PERFORMANCE_OPTIMIZATION.md` §3.3 has the
+numbers. After 90 s of Bloomrush on `Ys-bleeding-edge`, 26,680 laid prisms still wait for creation, each already a
+GameObject, and the switch to the menu is one frame of 1.3-1.5 s in Amoebius. A sampling trace of that frame puts
+almost all of it in the engine (scene parsing, GC, object destruction); the game's own teardown is ~0.06 s, and no
+game `OnDestroy` grows with the square of the count. So the 10 s in Unity is most likely Unity destroying those
+objects and unloading assets, which Amoebius cannot reproduce. The 24 Oct creation queue (`5de4316d05`) already
+removed the 57,000 coroutines each such destroy also had to stop, after the 20 Oct drops. Not fixed further until a
+Unity Load Time Insights capture of the return says which of L14's two fixes applies.
+
+**The capture is automatic now (2026-10-25).** Load Time Insights records every load while online with no arming,
+including the return to the menu (`loadKind: "menuReturn"`), and the after-Play send ships each report to
+`bugledger/<user>`. So the next online Bloomrush anyone plays, on any machine, brings the measurement L14 waits for;
+`net_logs.py show` lists it under the test, with a RELAY RISK flag on a frame over 9 s. The scheduled multiplayer
+sweep (`Docs/MULTIPLAYER_START_HERE.md` §3.1) reads it. No hand step is needed for the capture any more.
+
+**Measured at boot (2026-10-26 sweep, `shombith-20261026_182837`).** Cause 3 above is now measured, not guessed.
+Shombith's solo Play on `claude/new-session-76hnyc` (`1779d97ef8`) hosted its solo party over Relay at 12.3 s. The
+Relay took 12 s to come up (`HostingParty` at 12.3 s, `InParty` at 24.6 s), so the boot's first 15 s wait timed out
+at 24.4 s, a beat before it did. Then one frame lasted **10.4 s** while the Authentication scene was still active
+(`stall 10.4s in Authentication`). Relay answered no BIND (`Failed to establish connection with the Relay server`),
+the host shut down (`relayDrop after a 10.4 s freeze 0.0 s earlier`) and the game bounced to the solo menu at
+35.1 s. It re-hosted by 50.5 s and played on. The menu's objects woke at 36.4 s, so the frozen frame is most likely
+the boot's own load of Menu_Main: `AuthenticationSceneController.LoadMainMenuNetworkedAsync` loads it through
+Netcode's scene manager with the Relay host already up, the same shape as the Bloomrush return. **That load was not
+timed:** Load Time Insights covered game launches, cell swaps and returns to the menu, not the boot. Now it does:
+`LoadInsights.BeginBootLoad` (loadKind `"boot"`) starts just before that `LoadScene`, and `SceneLoader` ends it when
+the menu shows, as it ends a return. So the next online boot on any machine brings a report that names the slow part
+of the load (under "Loads" in `net_logs.py show`, RELAY RISK over 9 s). `LoadInsightsAutoRecordTests` (8) hold it.
+Not fixed yet: the freeze itself. When the report names it, the fix is in that frame. If the boot must keep loading
+the menu over a live Relay, the other lever is to start the Relay host after the menu is up (a boot-order change for
+whoever owns the boot).
+
+## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
+
+**Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same
+second as one of them, `E-ca3bc5cbe1` ("[INVITE-SEND] ABORT - presence lobby is null", Gradi, 11 Sep). Not seen
+since 11 Sep on any machine. Gradi's 13 Oct crash log shows the same create still failing for other reasons:
+`(0) Request timeout` and `An unknown error occurred`.
+
+**Cause.** `PresenceLobbyService.CreateAsync` logged `e.Message` only, so no report kept the frame that threw.
+What fits: `JoinOrCreateAsync` ran before Unity Services had initialized (or with nobody signed in). The SDK
+then has no session service to call, so the query threw a bare `NullReferenceException` (logged as "Join
+failed ... creating new lobby as fallback"), and the create threw the same one. Without a presence lobby, an
+invite aborts (the second issue). The party code was reworked since (every UGS call through
+`UgsRequestPolicy`, 7 Oct), so this is a likely cause, not a proven one.
+
+**Already fixed, 2026-10-08 (`ceabacdd50`).** A failed boot-time join left the player with no presence lobby
+for the whole session; it now retries with back-off (3 s up to 60 s, `SchedulePresenceRejoin`).
+
+**What changed (2026-10-25).**
+- `JoinOrCreateAsync` does not call the SDK until Unity Services are `Initialized` and a player is signed in
+  (`UgsNotReadyReason`); the lobby stays null and the rejoin back-off tries again.
+- A create failure the rejoin recovers from (`Transient`, `RateLimited`, `Benign`, `Cancelled`; Gradi's timeouts)
+  is a one-line warning. Anything else, a bare `NullReferenceException` included, is logged with the whole
+  exception, so a recurrence names its frame.
+- `SendInviteAsync` with no presence lobby is a warning naming whether a rejoin is pending, and the friends
+  panel shows its authored `serviceNotReadyLine` ("Connection service not ready. Try again shortly.") instead
+  of silently resetting the row. `HostConnectionService.HasPresenceLobby` is the public read for it.
+- Held by `PresenceLobbyCreateTests` (2).
+
+**Hand test.** Start Play with the network cable out (or Wi-Fi off), wait 10 s, plug it back in: no
+`Could not create presence lobby` error; a `Presence lobby not rejoined - retrying` warning, then the online list
+fills. Press Invite on a friend during the outage: the "Connection service not ready" toast.
+Ticket: T-20261025-3506 (#1524).
+
+## B38 — "Recovery failed" when Play stops during a failed join's recovery 🟡 (root-caused & fixed 2026-10-25)
+
+**Seen in.** Bug Ledger `E-41b7610878` (belac, 19 Oct: `Recovery failed (InvalidOperationException): This can
+only be used during play mode, please use EditorSceneManager.OpenScene() instead`, at
+`PartyInviteController.RecoverFromFailedTransitionAsync`, the Menu_Main load) and `E-0de9ec6c70` (Gradi, 3
+times, 2-28 Sep: `Recovery failed (ArgumentNullException): Value cannot be null. Parameter name:
+asyncOperation`). Both are marked **EditMode** in the ledger: they were logged after Play had stopped.
+
+**Cause.** After a failed join (or a lost host, B10), `RecoverFromFailedTransitionAsync` awaits the party
+leave and the Netcode shutdown (up to its shutdown timeout), then loads Menu_Main, then creates the solo
+session. The leave-lobby flow does the same. Stopping Play inside those awaits let the flow continue in edit
+mode: `SceneManager.LoadSceneAsync` throws there (Unity 6000.4), or returns null and UniTask's `ToUniTask`
+throws on it (6000.3). Had the load not thrown, `EnsurePartySessionAsync` would then have created a UGS
+session in edit mode, where nothing ever leaves it (the leak class behind B33/B34).
+
+**What changed.** `PartyInviteController.PlayEnded(flow)` is checked after every await in both flows and in
+their catch blocks: once Play has stopped (`IsPlaying`, Unity's flag; tests substitute it) or the controller
+is destroyed, the flow stops with a verbose line on the `Party` channel instead of loading a scene or
+creating a session. Held by `PartyRecoveryAfterPlayTests` (3). `ReconnectService`'s scene load is started by a
+button and has no report; it is unchanged.
+
+**Hand test.** Two machines: one joins a party that is not there (or the host stops Play mid-join), and the
+joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
+Play stops.
+Ticket: T-20261025-6541 (#1527).
 

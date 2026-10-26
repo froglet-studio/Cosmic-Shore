@@ -33,16 +33,20 @@ namespace CosmicShore.Gameplay
     /// The rules are <see cref="OrcaCrewCore"/>'s, held to the lab page by <c>Tools/Build/orca_crew_lab/parity.cjs</c>;
     /// this is the glue to the scene.
     ///
-    /// <para><b>Seats.</b> Keys 1-4 pick a seat; the D-pad (and the arena's <see cref="PilotSwapGesture"/>) steps through
-    /// them; a two-finger tap steps on a touch screen. While the person holds a gunner seat the hull's own <c>AIPilot</c>
+    /// <para><b>Seats.</b> The swap gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, the left / right arrow
+    /// keys, a two-finger swipe) steps round the domain's seats, these and every other hull's (<see cref="CrewStations"/>).
+    /// While the person holds a gunner seat the hull's own <c>AIPilot</c>
     /// flies it and the person's flight input is paused, exactly as the Wrasse's navigator seat does.</para>
     ///
     /// <para><b>Where it runs.</b> On the local pilot's own hull while a person flies it, and on an AI hull on the
-    /// authority (every seat AI). Missiles, the shield's poses and the AI gunners are that machine's; networking the
-    /// crew is a follow-up (ORCA_CREW.md), as it is for the Wrasse.</para>
+    /// authority (every seat AI). Missiles, the shield's poses and the AI gunners are that machine's. A person on another
+    /// machine can man a free gunner seat while someone else flies (<see cref="CrewStations"/>: the swap gesture steps
+    /// them in): their seat runs on THEIR machine (a rider: their turret, gun, missiles and bomb, on the hull's copy
+    /// there), and the hull's machine leaves that seat to them. What their rounds do to prisms is seen on their machine,
+    /// as an AI gunner's is on the hull's today; networking the crew's effects is ORCA_CREW.md's follow-up.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class OrcaCrew : MonoBehaviour, ICrewTriggers, IHullParkAware
+    public sealed partial class OrcaCrew : MonoBehaviour, ICrewTriggers, IHullParkAware, ICrewStations
     {
         public const int Helm = 0, Seats = 4;
 
@@ -58,7 +62,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Every crew live this frame, so a helm can see rival missiles closing and missiles can meet.</summary>
         static readonly List<OrcaCrew> Live = new();
 
-        enum Mode { Idle = 0, LocalHuman = 1, AICrew = 2 }
+        // Rider: the person on this machine mans one gunner seat of a hull another machine flies (only that seat runs here)
+        enum Mode { Idle = 0, LocalHuman = 1, AICrew = 2, Rider = 3 }
         enum TargetKind { None = 0, Hull = 1, Prism = 2, Crystal = 3, Omni = 4 }
         struct Target { public TargetKind Kind; public Vector3 Position, Velocity; public Transform Follow; }
 
@@ -78,7 +83,7 @@ namespace CosmicShore.Gameplay
         bool _weTookHull, _boosting, _shieldTriggerHeld;
         // the hull's triggers as CrewTriggerActionSO reports them (a pad's, the keyboard's shifts, a phone's thumb lifts)
         bool _rtHeld, _ltHeld;
-        float _swapReadyAt, _tank, _shieldEndsAt, _shieldReadyAt, _twoFingerAt = -1f;
+        float _tank, _shieldEndsAt, _shieldReadyAt;
         CursorLockMode _cursorBefore;
         bool _cursorLocked;
 
@@ -130,7 +135,9 @@ namespace CosmicShore.Gameplay
 
         public OrcaCrewConfigSO Config => _cfg ? _cfg : config;
         /// <summary>True while the local person rides this hull (and the HUD should read it).</summary>
-        public bool HumanAboard => _mode == Mode.LocalHuman;
+        public bool HumanAboard => _mode is Mode.LocalHuman or Mode.Rider;
+        /// <summary>True while the local person mans a seat of a hull another machine flies.</summary>
+        public bool HumanRides => _mode == Mode.Rider;
         public int HumanSeat => _humanSeat;
         public int MissilesAt(int seat) => seat > Helm && seat < Seats ? _mags[seat]?.Count ?? 0 : 0;
         public float BoostTank01 => _cfg && _cfg.BoostTank > 0f ? Mathf.Clamp01(_tank / _cfg.BoostTank) : 0f;
@@ -206,6 +213,9 @@ namespace CosmicShore.Gameplay
             vessel = null;
             if (!config || !TryGetComponent(out vessel) || vessel.VesselStatus == null) return Mode.Idle;
             var status = vessel.VesselStatus;
+            if (CrewStations.LocalRiderSeat(this) > Helm) return Mode.Rider;
+            // the person's own hull, parked on its AI while they ride another: an AI crew, as on any hull an AI flies
+            if (CrewStations.IsParkedHere(vessel)) return Mode.AICrew;
             if (VesselVisionShading.LocalVessel == transform && (_weTookHull || !status.AutoPilotEnabled)) return Mode.LocalHuman;
             if (status.Player != null && status.IsInitializedAsAI && IsAuthority()) return Mode.AICrew;
             return Mode.Idle;
@@ -248,6 +258,11 @@ namespace CosmicShore.Gameplay
             if (bombGun) bombGun.Initialize(_status);
             _tank = _cfg.BoostTank;
             _humanSeat = Helm;
+            if (mode == Mode.Rider)
+            {
+                _humanSeat = Mathf.Clamp(CrewStations.LocalRiderSeat(this), Helm + 1, Seats - 1);
+                LockCursor(true);
+            }
             _weTookHull = _boosting = _shieldTriggerHeld = _rtHeld = _ltHeld = false;
             _shieldEndsAt = _shieldReadyAt = 0f;
             _crystalTakenAt.Clear();
@@ -258,7 +273,8 @@ namespace CosmicShore.Gameplay
         void Unbind()
         {
             if (_vessel == null) return;
-            if (_humanSeat != Helm) SetHumanSeat(Helm);
+            if (_mode == Mode.Rider) { _humanSeat = Helm; LockCursor(false); }
+            else if (_humanSeat != Helm) SetHumanSeat(Helm);
             StopBoost();
             RetireShield();
             RetireDropped();
@@ -286,11 +302,11 @@ namespace CosmicShore.Gameplay
             if (_vessel == null) Bind(vessel, mode);
             float dt = Time.deltaTime;
 
-            if (_mode == Mode.LocalHuman) PollSeat();
+            if (_mode == Mode.Rider) FollowRiderSeat();
             if (dt <= 0f) return;
             _s = _cfg.ToSettings();
 
-            StepHelm(dt);   // before the hull's own transformer reads the boost
+            if (_mode != Mode.Rider) StepHelm(dt);   // before the hull's own transformer reads the boost; the helm is not a rider's
         }
 
         // After the hull has moved this frame (round 7): the gunners aim and fire from where the turrets now ARE, so a
@@ -303,7 +319,7 @@ namespace CosmicShore.Gameplay
             if (dt > 0f)
             {
                 _pod.Follow(HullFrame(), dt, _s.MountSmooth);
-                for (int s = 1; s < Seats; s++) StepSeat(s, dt);
+                for (int s = 1; s < Seats; s++) if (RunsHere(s)) StepSeat(s, dt);
                 for (int s = 1; s < Seats; s++) if (_missiles[s] != null) StepMissile(s, dt);
                 _fireButtonPressed = _missileButtonPressed = false;   // a button press is read by this frame's seat only
                 StepBomb(dt);
@@ -311,53 +327,46 @@ namespace CosmicShore.Gameplay
                 if (_dropped.Count > 0 && Time.time >= _droppedCheckAt) { _droppedCheckAt = Time.time + 0.5f; ExpireDropped(); }
             }
             PoseShield();
-            _view?.Frame(_mode == Mode.LocalHuman ? _humanSeat : Helm);
+            _view?.Frame(HumanAboard ? _humanSeat : Helm);
             _view?.Draw();
         }
 
         // ------------------------------------------------------------------ seats
 
-        void PollSeat()
+        // The swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, not the crew's:
+        // CrewStations steps them round the domain's seats (helm -> gunners -> the next hull) and moves them here through
+        // TakeSeat. The crew picks no seat itself, so every control cycles the same way.
+
+        /// <inheritdoc cref="ICrewStations.SeatCount"/>: the helm and three gunners.
+        public int SeatCount => Seats;
+
+        /// <inheritdoc cref="ICrewStations.LocalSeat"/>
+        public int LocalSeat => _mode == Mode.LocalHuman ? _humanSeat : -1;
+
+        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: every gunner seat (each runs on its rider's machine).
+        public bool HostsRiders => true;
+
+        /// <inheritdoc cref="ICrewStations.TakeSeat"/>
+        public void TakeSeat(int seat)
         {
-            int pick = -1;
-            var kb = Keyboard.current;
-            if (kb != null)
-            {
-                if (kb.digit1Key.wasPressedThisFrame) pick = 0;
-                else if (kb.digit2Key.wasPressedThisFrame) pick = 1;
-                else if (kb.digit3Key.wasPressedThisFrame) pick = 2;
-                else if (kb.digit4Key.wasPressedThisFrame) pick = 3;
-            }
-            if (pick < 0)
-            {
-                // keys 1 / 2 are also the arena gesture's; a digit already picked a seat above
-                int dir = PilotSwapGesture.DirectionThisFrame();
-                if (dir == 0 && TwoFingerTapped()) dir = 1;
-                if (dir != 0) pick = ((_humanSeat + dir) % Seats + Seats) % Seats;
-            }
-            if (pick < 0 || pick == _humanSeat || Time.unscaledTime < _swapReadyAt) return;
-            _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
-            SetHumanSeat(pick);
+            if (_mode != Mode.LocalHuman || seat < Helm || seat >= Seats || seat == _humanSeat) return;
+            if (seat > Helm && CrewStations.HeldByRemoteHuman(this, seat)) return;   // a person on another machine mans it
+            SetHumanSeat(seat);
         }
 
-        // Two fingers down and both up again quickly: the touch screen's "next seat".
-        bool TwoFingerTapped()
+        // a seat runs on this machine unless a person on another machine mans it (a rider runs only their own)
+        bool RunsHere(int seat) => _mode == Mode.Rider ? seat == _humanSeat : !CrewStations.HeldByRemoteHuman(this, seat);
+
+        // a rider steps between gunner seats through CrewStations; the seat it holds follows, with nothing of the hull's
+        void FollowRiderSeat()
         {
-            var ts = Touchscreen.current;
-            if (ts == null) return false;
-            if (ts.touches.Count > 1 && ts.touches[1].press.wasPressedThisFrame) _twoFingerAt = Time.unscaledTime;
-            if (_twoFingerAt < 0f) return false;
-            // the left thumb aiming while the right presses Fire or Missile is not a seat swap
-            for (int i = 0; i < ts.touches.Count; i++)
-                if (ts.touches[i].press.isPressed && FlightTouchClaims.Claims(ts.touches[i].startPosition.ReadValue()))
-                {
-                    _twoFingerAt = -1f;
-                    return false;
-                }
-            for (int i = 0; i < ts.touches.Count; i++) if (ts.touches[i].press.isPressed) return false;
-            bool quick = Time.unscaledTime - _twoFingerAt < 0.35f;
-            _twoFingerAt = -1f;
-            return quick;
+            int seat = CrewStations.LocalRiderSeat(this);
+            if (seat <= Helm || seat == _humanSeat) return;
+            _humanSeat = seat;
+            _turrets[seat].React = 0f;
+            _touchId = int.MinValue;
+            _fireButtonPressed = _missileButtonPressed = false;
+            LockCursor(true);
         }
 
         /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
@@ -417,7 +426,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        bool HumanAt(int seat) => _mode == Mode.LocalHuman && _humanSeat == seat;
+        bool HumanAt(int seat) => HumanAboard && _humanSeat == seat;
 
         // ------------------------------------------------------------------ helm: boost and shield
 
@@ -480,25 +489,6 @@ namespace CosmicShore.Gameplay
             if (!_boosting) return;
             _boosting = false;
             if (UnityLiveness.Alive(_status)) _status.IsBoosting = false;
-        }
-
-        // The lab's helmAI shield: raise it when a rival missile is closing inside the range this skill notices.
-        bool HelmAIWantsShield()
-        {
-            if (Time.time < _shieldReadyAt) return false;
-            var hullPos = N(transform.position);
-            foreach (var other in Live)
-            {
-                if (other == this || other._status == null || other._status.Domain == _status.Domain) continue;
-                for (int s = 1; s < Seats; s++)
-                {
-                    var m = other._missiles[s];
-                    if (m != null && OrcaCrewCore.IsIncoming(hullPos, m.Position, m.Frame.F, _skill.ShieldLate)
-                        && _rng.NextDouble() > _skill.ShieldLate * 0.2f)
-                        return true;
-                }
-            }
-            return false;
         }
 
         void RaiseShield()
@@ -1014,29 +1004,6 @@ namespace CosmicShore.Gameplay
             _bombPrev = pos;
         }
 
-        // The bomb seat's AI bursts its bomb (the lab's aiBurst): a rival hull inside the blast, the bomb at its target, or
-        // past it - a bomb nobody bursts would hold the seat's only throw.
-        bool AIBurstsBomb()
-        {
-            var at = _bomb.transform.position;
-            float radius = _cfg.BombBlastRadiusAt(_status);
-            var players = _cfg.GameData ? _cfg.GameData.Players : null;
-            if (players != null)
-                foreach (var player in players)
-                {
-                    var vessel = player?.Vessel;
-                    var st = vessel?.VesselStatus;
-                    if (player == _player || st == null || !UnityLiveness.Alive(vessel.Transform) || st.Domain == _status.Domain) continue;
-                    if (Vector3.Distance(vessel.Transform.position, at) < radius * _skill.Detonate + _s.HullRadius) return true;
-                }
-            var tg = _targets[BombSeat];
-            if (tg.Kind == TargetKind.None) return _bombAge > 2f;
-            float d = Vector3.Distance(at, Refresh(tg).Position);
-            bool passed = _bombLastD >= 0f && d > _bombLastD + 0.01f;
-            _bombLastD = d;
-            return d < radius * 0.5f || passed || _bombAge > 4f;
-        }
-
         void DetonateBomb()
         {
             var shot = _bomb;
@@ -1080,118 +1047,6 @@ namespace CosmicShore.Gameplay
             if (!shot) return;
             shot.VesselStruck -= OnBombStruck;
             shot.FlightEnded -= OnBombFlightEnded;
-        }
-
-        // ------------------------------------------------------------------ AI gunners (the lab's gunnerAI, inputs only)
-
-        // Round 5: the gun when the target is in its range and it is ready, else a missile (always for a crystal, which only a
-        // missile collects). Returns whether to launch a missile; gunHold whether to fire the gun.
-        bool TurretAI(int s, OrcaTurret t, float dt, out bool gunHold)
-        {
-            gunHold = false;
-            var mount = OrcaCrewCore.MountPosition(N(transform.position), _pod, s, _s.HullRadius);
-            float reach = _s.MissileSpeed * _s.MissileLife * 0.8f, gr = _cfg.GunsOn ? GunRange(s) : 0f;
-            var tg = TargetFor(s, U(mount), Mathf.Max(reach, gr), _mags[s].Count);
-            if (tg.Kind == TargetKind.None) { t.React = 0f; return false; }
-            if (_rng.NextDouble() < 1.5 * dt)   // the lab re-rolls its aim error 5% of its 30 Hz steps; a sniper steadies its aim
-                t.Noise = RandDir() * (Gauss() * _skill.AimNoiseDeg * OrcaCrewCore.Deg2Rad * (s == SniperSeat ? 0.4f : 1f));
-            float dm = Vector3.Distance(U(mount), tg.Position);
-            bool crystal = tg.Kind == TargetKind.Omni || tg.Kind == TargetKind.Crystal;
-            bool useGun = _cfg.GunsOn && !crystal && dm < gr && GunReady(s);
-            float speed = useGun ? (s == FastGunSeat ? _cfg.FastGunRoundSpeed : s == BombSeat ? _cfg.BombSpeed : 1e9f) : _s.MissileSpeed;
-            var aim = OrcaCrewCore.LeadAim(mount, N(transform.position), N(tg.Position), N(tg.Velocity), speed, _skill.Lead, t.Noise);
-            t.React += dt;
-            float tol = useGun && s == SniperSeat ? 4f : useGun && s == FastGunSeat ? 8f : 15f;
-            bool ok = V3.Dot(aim, t.Aim) > Mathf.Cos(tol * Mathf.Deg2Rad) && t.React > _skill.ReactSeconds;
-            t.SlewToward(aim, dt, _s.TurretTurnDeg);
-            gunHold = useGun && ok;
-            return !useGun && ok && _mags[s].Count > 0 && dm < reach && (crystal || !_cfg.GunsOn || dm >= gr * 0.6f || !GunReady(s));
-        }
-
-        void MissileAI(int s, OrcaMissile m)
-        {
-            var tg = TargetFor(s, U(m.Position), _s.MissileSpeed * _s.MissileLife * 0.8f, _mags[s].Count + 1);
-            if (tg.Kind == TargetKind.None) { m.StickYaw = m.StickPitch = m.StickRoll = 0f; return; }
-            var pos = U(m.Position);
-            float d = Vector3.Distance(pos, tg.Position), lt = d / Mathf.Max(1f, MissileSpeed) * _skill.Lead;
-            var aim = (tg.Position + tg.Velocity * lt - pos).normalized;
-            var (yaw, pitch, roll) = OrcaCrewCore.SteerToward(m.Frame, N(aim), Gauss() * _skill.SteerNoise);
-            m.StickYaw = yaw; m.StickPitch = pitch; m.StickRoll = roll;
-            bool burst = (tg.Kind == TargetKind.Hull && d < BlastRadius * _skill.Detonate)
-                         || (tg.Kind == TargetKind.Prism && d < _cfg.BlastRadiusAtRest * 0.4f);
-            if (burst && m.CanBurstByHand) Burst(s);
-        }
-
-        // The lab's bestTarget: an omni crystal when the seat's magazine runs low, else the nearest rival hull or hostile
-        // prism, else any crystal. Re-picked every aiRetargetSeconds.
-        Target TargetFor(int s, Vector3 from, float reach, int mag)
-        {
-            if (Time.time < _retargetAt[s] && _targets[s].Kind != TargetKind.None) return Refresh(_targets[s]);
-            _retargetAt[s] = Time.time + _cfg.AiRetargetSeconds;
-            float best = float.MaxValue;
-            var pick = default(Target);
-            void Offer(TargetKind kind, Vector3 p, Vector3 v, float cost, Transform follow = null) { if (cost < best) { best = cost; pick = new Target { Kind = kind, Position = p, Velocity = v, Follow = follow }; } }
-
-            var crystals = Crystal.Active;
-            if (mag > 0 && mag < 2)
-                for (int i = 0; i < crystals.Count; i++)
-                {
-                    var c = crystals[i];
-                    if (!c || c.IsEmbedded || c.crystalProperties.Element != Element.Omni) continue;
-                    float d = Vector3.Distance(from, c.transform.position);
-                    if (d < reach) Offer(TargetKind.Omni, c.transform.position, Vector3.zero, d * 0.5f);
-                }
-            var players = _cfg.GameData ? _cfg.GameData.Players : null;
-            if (players != null)
-                foreach (var player in players)
-                {
-                    var vessel = player?.Vessel;
-                    var st = vessel?.VesselStatus;
-                    if (player == _player || st == null || !UnityLiveness.Alive(vessel.Transform) || st.Domain == _status.Domain) continue;
-                    float d = Vector3.Distance(from, vessel.Transform.position);
-                    if (d < reach) Offer(TargetKind.Hull, vessel.Transform.position, vessel.Transform.forward * st.Speed, d, vessel.Transform);
-                }
-            var index = PrismSpatialIndex.Instance;
-            if (index && index.IsAvailable)
-            {
-                _query.Clear();
-                index.QuerySphere(from, Mathf.Min(reach, 250f), _query);   // the sniper also reaches past this; prisms beyond come in its cone
-                foreach (var p in _query)
-                {
-                    if (!p || p.destroyed || p.Domain == _status.Domain || p.prismProperties is { IsSuperShielded: true }) continue;
-                    Offer(TargetKind.Prism, p.transform.position, Vector3.zero, Vector3.Distance(from, p.transform.position) * 1.1f);
-                }
-            }
-            if (pick.Kind == TargetKind.None)
-                for (int i = 0; i < crystals.Count; i++)
-                {
-                    var c = crystals[i];
-                    if (!c || c.IsEmbedded) continue;
-                    float d = Vector3.Distance(from, c.transform.position);
-                    if (d < reach) Offer(TargetKind.Crystal, c.transform.position, Vector3.zero, 1e9f + d);
-                }
-            _targets[s] = pick;
-            return pick;
-        }
-
-        // a held hull target follows its hull between re-picks; a crystal or prism stays where it was picked
-        static Target Refresh(Target t)
-        {
-            if (t.Kind == TargetKind.Hull && UnityLiveness.Alive(t.Follow)) t.Position = t.Follow.position;
-            return t;
-        }
-
-        V3 RandDir()
-        {
-            float z = (float)_rng.NextDouble() * 2f - 1f, a = (float)_rng.NextDouble() * Mathf.PI * 2f, r = Mathf.Sqrt(1f - z * z);
-            return new V3(r * Mathf.Cos(a), z, r * Mathf.Sin(a));
-        }
-
-        float Gauss()
-        {
-            double u = 0.0;
-            while (u <= 0.0) u = _rng.NextDouble();
-            return (float)(System.Math.Sqrt(-2.0 * System.Math.Log(u)) * System.Math.Cos(2.0 * System.Math.PI * _rng.NextDouble()));
         }
 
         // ------------------------------------------------------------------ a person's input in a gunner seat
@@ -1271,7 +1126,8 @@ namespace CosmicShore.Gameplay
         static Vector2 Bigger(Vector2 a, Vector2 b) => b.sqrMagnitude > a.sqrMagnitude ? b : a;
 
         static Vector2 KeyAxes(Keyboard kb) => new(
-            (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f),
+            // left / right arrows are the seat cycle (PilotSwapGesture), so the turret turns on A / D only
+            (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f),
             (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f));
 
         // The aiming finger: its movement this frame (px) and its offset from where it landed (the missile's stick). It is the

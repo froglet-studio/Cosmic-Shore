@@ -103,16 +103,18 @@ namespace CosmicShore.Editor.AI
     /// </summary>
     public static class ThirdEyePilots
     {
-        static readonly List<SkimRacePilot> s_skim = new();
-
-        /// <summary>Refill <paramref name="into"/> with every live vessel. Call on a timer, never per repaint.</summary>
+        /// <summary>
+        /// Refill <paramref name="into"/> with every live vessel. Call on a timer, never per repaint.
+        /// Reads <see cref="VesselStatus.Live"/> and each hull's own <see cref="SkimRacePilot"/> (the pilot is
+        /// installed on the vessel's GameObject, <c>SkimRaceAIDeployment.TryInstall</c>), never
+        /// <c>FindObjectsByType</c>: that walks every loaded object, and the scan's two walks were the
+        /// ~85-130 ms editor freeze every 0.5 s in Yash's 10-26 captures whenever this window was open
+        /// (shown or docked behind a tab), the same walk the 10-17 Stoat slowdown measured.
+        /// </summary>
         public static void Scan(List<ThirdEyePilot> into)
         {
             into.Clear();
-            s_skim.Clear();
-            s_skim.AddRange(Object.FindObjectsByType<SkimRacePilot>(FindObjectsSortMode.None));
-
-            foreach (var status in Object.FindObjectsByType<VesselStatus>(FindObjectsSortMode.None))
+            foreach (var status in VesselStatus.Live)
             {
                 if (!status || !status.isActiveAndEnabled) continue;
 
@@ -146,14 +148,12 @@ namespace CosmicShore.Editor.AI
                     pilot.IsAI |= autopilot.AutoPilotEnabled;
                 }
 
-                foreach (var skim in s_skim)
+                if (hull.TryGetComponent(out SkimRacePilot skim) && skim.Vessel is Object sv && sv
+                    && ReferenceEquals(skim.Vessel.VesselStatus, status))
                 {
-                    if (!skim || !(skim.Vessel is Object sv && sv)) continue;
-                    if (!ReferenceEquals(skim.Vessel.VesselStatus, status)) continue;
                     pilot.SkimPilot = skim;
                     // A pilot that stands down on a human's hull (a taken-over seat) does not make it an AI's.
                     if (pilot.Player == null || pilot.IsAI || skim.FlyingForHuman) pilot.IsAI = true;
-                    break;
                 }
 
                 into.Add(pilot);
@@ -164,7 +164,6 @@ namespace CosmicShore.Editor.AI
                 int rank = Rank(a).CompareTo(Rank(b));
                 return rank != 0 ? rank : string.CompareOrdinal(a.Name, b.Name);
             });
-            s_skim.Clear();
         }
 
         // You first, then the other humans, then the AI.

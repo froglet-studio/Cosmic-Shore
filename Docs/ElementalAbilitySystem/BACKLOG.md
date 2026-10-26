@@ -69,13 +69,14 @@ isn't juicy enough.
 
 Petal flare on unlock via `OnUpgradeStateChanged` (juice in `ElementalBarsConfigSO`); ability-icon
 row only in the branch's final view-binding shape with authored sprites; unlocked-state icons;
-Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now the roll-charge pip, `SparrowHUDView.SetRollCharge`; still open: shielded turret, piercing, domain-safe). Clean up dead code
+Sparrow HUD indicators (~~roll armed~~ RETIRED 2026-10-26 — the roll-charge pip was unbound from the Time card, Garrett: "its cooldown is so low"; ~~shielded turret~~ SHIPPED 2026-10-26 — the Mass card's rounds become shielded octahedrons at Mass 5, `SparrowHUDView.SetAbilityUpgraded`; still open: piercing, domain-safe). Clean up dead code
 (`ElementPipsView`, `SparrowAnimationController` or adopt it properly, `AIGunner`,
 `ExplodableProjectile`, `StopGunsAction`, `SparrowExhaustProjectile.prefab`).
 
 ## Open decisions (owner: Garrett)
 
-1. **Initial element levels.** SP arcade spawns at level 5 in everything (`MiniGame.cs:61`) —
+1. **Initial element levels.** *(Since then the SP default became resting 0, and `MiniGame.cs` was retired on
+   2026-10-25; the legacy explore Play button keeps the 0 in `ArcadeExploreView`.)* SP arcade spawns at level 5 in everything (`MiniGame.cs:61`) —
    all upgrades ON at spawn; MP spawns at 0 — upgrades unreachable without crystals.
    *Recommendation:* spawn at resting 0 (or captain-authored levels) everywhere; let crystals +
    comeback drive progression. This makes the unlock an earned mid-match power spike in every mode.
@@ -468,14 +469,14 @@ measurement attached is worse than no row.
   a wiring change. The container and both prefabs are deliberately KEPT: a dangling container
   reference is worse than an empty one.
 - **[RESOLVED 2026-10-16 — the consumer side went first.]** `EventOnSkimmerDebuffApplied.asset` and
-  `EventOnVesselSlowedByExplosion.asset` are deleted, and `RhinoVesselHUDController`'s four SOAP
+  `EventOnVesselSlowedByExplosion.asset` are deleted, and `RhinoHUDController`'s four SOAP
   channels with them (two had no producer; the other two counted EVERY Rhino's blasts, not this
   one's). The `ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` TYPE survives with no
   asset, producer or consumer — the generic vehicle is still there for a future Debuff-class
   skimmer effect. Kept for the record:
   **`ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` have no producer.** Measured: the
   only raiser was `VesselDamageBySkimmerEffectSO` (deleted); the only consumer is
-  `RhinoVesselHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
+  `RhinoHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
   (the ability lockup's retire sweep switched the Rhino's whole root-level status cluster off —
   `Docs/ABILITY_LOCKUP.md`). Kept as a wire rather than deleted: it is the generic *"a skimmer
   debuffed you"* vehicle and the next Debuff-class skimmer effect is its producer. Deciding between

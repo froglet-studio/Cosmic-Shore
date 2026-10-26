@@ -19,7 +19,7 @@ but **it has not been played in the Unity editor**. That playtest is the next st
     - **Time**: boosts saved for the pilot, spent on the right trigger.
     - **Charge**: kite power. The next ram on a rival steals that many petals, as a scored hit.
   - Motes are the navigator's own, drawn only on its board. They are not game crystals.
-- **An AI squad mate takes whichever seat is empty.** The arena's swap (D-pad left / right, keys 1 / 2) moves you
+- **An AI squad mate takes whichever seat is empty.** The swap (D-pad left / right, the left / right arrow keys, a two-finger swipe; `Docs/CREW_STATIONS.md`) moves you
   between the hull and the kite.
 - **The design came from a browser lab** that ran three rounds. It was signed off on 2026-10-17 ("this is fun, build
   it in Unity").
@@ -50,7 +50,7 @@ the hit box, jets and engine flash are still the Sparrow's (`T-20261020-a9f5`).
 **2026-10-21, two seats, either device (decided by Garrett):** "wrasse and grouper, are two seats. players can select,
 change seats etc. both can be played on mobile or pc." This closes `T-20261017-b06e`, and it replaces the audit line
 that one phone runs one human plus an AI.
-- **Today, one human:** keys 1 / 2 pick the Grouper or the Wrasse, and the D-pad or a double tap on the small view
+- **Today, one human:** the D-pad, the left / right arrow keys (no direct picks since 2026-10-23) or a double tap on the small view
   steps to the other seat. The pick is remembered per hull class (`CrewSeatChoice`).
 - **The phone boost:** ~~lifting both thumbs~~ (superseded the same day: Garrett, "The grouper can not use boost on
   mobile"). The Grouper boosts on RT on every device: the pad's trigger, right Shift, or on a phone **lifting the left
@@ -88,7 +88,7 @@ counts, five-petal motes, depth measured from the plane and a dither cone in the
 | What | Where |
 |---|---|
 | The lab (rounds 1-3) and its write-up | `Docs/Studios/CrewVesselLab.html`, `Docs/Studios/CREW_VESSEL_LAB.md` |
-| The kite core and its AI, engine-free and ported line for line from the lab | `Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs`, `KiteNavigatorAI.cs` |
+| The kite core and its AI, engine-free and ported line for line from the lab | `Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs`, `Controller/AI/Wrasse/KiteNavigatorAI.cs` |
 | The seat on the hull: board, motes, shadows, thumb, effects, swap, saved boosts, L5s, Omni burst | `KiteNavigator.cs` |
 | The two views, drawn by the game's renderer (the top-down kite camera, the picture-in-picture swap, the five-petal motes) | `KiteNavigatorView.cs` |
 | Every number, cloned from the lab, plus the rounds 4-4f fields | `KiteNavigatorConfigSO.cs`, `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset` |

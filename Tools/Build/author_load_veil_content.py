@@ -5,13 +5,14 @@ approved "Loading" board; the owner, 2026-10-17: "Black loading screen when chan
 
     Assets/Resources/UI/EnvironmentLoadVeilContent.asset   (EnvironmentLoadVeilContentSO)
         Every word EnvironmentLoadVeil shows - "Entering", "Loading", "Tip", the four build steps, a line under each
-        freestyle cell's name, the tips - plus the living lattice behind it (Lattice_Window.mat), the four element
-        glyphs the steps wear (Mass, Time, Charge, Space) and the two kit fonts. The veil is built in code, so it reads
+        freestyle cell's name, the tips - plus the sea behind it (Sea_Window.mat, §70) and the two kit fonts. The
+        steps wear no glyph: they wore the four element glyphs until 2026-10-26, and an element glyph means an
+        element, never a loading step (Shombith: "you used elemental icon for friends you should never do that"). The veil is built in code, so it reads
         this asset from Resources.
 
 The words are the authored source: a human edits them in the inspector afterwards and this script's --check then
 reports the drift (re-run it only to reset them). The checks hold what the veil relies on:
-  - four step labels, none blank, and the glyphs in step order (Mass, Time, Charge, Space);
+  - four step labels, none blank, and no element glyph on any of them;
   - every cell line names a cell a CellConfigDataSO really carries (a renamed cell's line would never show);
   - every tip and line fits the UI font (ASCII) and one line on screen;
   - the lattice, the glyphs and the fonts resolve.
@@ -47,7 +48,7 @@ REPO = K.REPO
 ASSET = "Assets/Resources/UI/EnvironmentLoadVeilContent.asset"
 SCRIPT = "Assets/_Scripts/Controller/Environment/Spawning/EnvironmentLoadVeilContentSO.cs"
 CELL_CONFIGS = "Assets/_SO_Assets/Cell Configs/**/*.asset"
-ELEMENTS = ("Mass", "Time", "Charge", "Space")
+ELEMENTS = ("Charge", "Mass", "Space", "Time")
 
 WORDS = dict(enteringWord="Entering", loadingWord="Loading", tipLabel="Tip")
 # The real build phases (EnvironmentLoadVeil.StepFor): laying, growing, the all-clear hold, the reveal. The board's
@@ -91,7 +92,7 @@ def ref(fid, guid, kind):
     return f"{{fileID: {fid}, guid: {guid}, type: {kind}}}"
 
 
-def asset_text(words=WORDS, steps=STEPS, lines=CELL_LINES, tips=TIPS, glyph_order=ELEMENTS):
+def asset_text(words=WORDS, steps=STEPS, lines=CELL_LINES, tips=TIPS, glyph_order=()):
     out = ["%YAML 1.1", "%TAG !u! tag:unity3d.com,2011:", "--- !u!114 &11400000", "MonoBehaviour:",
            "  m_ObjectHideFlags: 0", "  m_CorrespondingSourceObject: {fileID: 0}", "  m_PrefabInstance: {fileID: 0}",
            "  m_PrefabAsset: {fileID: 0}", "  m_GameObject: {fileID: 0}", "  m_Enabled: 1", "  m_EditorHideFlags: 0",
@@ -106,8 +107,8 @@ def asset_text(words=WORDS, steps=STEPS, lines=CELL_LINES, tips=TIPS, glyph_orde
         out += [f"  - cellName: {q(name)}", f"    line: {q(line)}"]
     out.append("  tips:")
     out += [f"  - {q(t)}" for t in tips]
-    out.append(f"  lattice: {ref(2100000, M.LATTICE_WINDOW_MAT, 2)}")
-    out.append("  stepGlyphs:")
+    out.append(f"  background: {ref(2100000, M.SEA_WINDOW_MAT, 2)}")
+    out.append("  stepGlyphs:" + ("" if glyph_order else " []"))
     out += [f"  - {K.sprite_ref(H.element_glyph(e))}" for e in glyph_order]
     out.append(f"  displayFont: {ref(K.ALDRICH[1], K.ALDRICH[0], 2)}")
     out.append(f"  captionFont: {ref(K.SEMIBOLD[1], K.SEMIBOLD[0], 2)}")
@@ -179,11 +180,12 @@ def validate(files, known=None):
     for t in tips:
         assert t and len(t) <= MAX_LINE, f"a tip is blank or longer than one line: {t!r}"
     assert text.isascii(), "non-ASCII text (the UI font has 97 glyphs)"
-    glyphs = re.findall(r"guid: ([0-9a-f]{32})", block(text, "stepGlyphs"))
-    assert glyphs == [H.element_glyph(e) for e in ELEMENTS], "the step glyphs are not Mass, Time, Charge, Space in step order"
-    assert f"  lattice: {ref(2100000, M.LATTICE_WINDOW_MAT, 2)}" in text, "the lattice is not Lattice_Window.mat"
+    glyphs = [] if "  stepGlyphs: []\n" in text else re.findall(r"guid: ([0-9a-f]{32})", block(text, "stepGlyphs"))
+    for e in ELEMENTS:
+        assert H.element_glyph(e) not in glyphs, f"a build step wears the {e} glyph (an element glyph means an element)"
+    assert f"  background: {ref(2100000, M.SEA_WINDOW_MAT, 2)}" in text, "the loading screen's background is not the sea (Sea_Window.mat, §70)"
     owned = known_guids()
-    for g in [M.LATTICE_WINDOW_MAT, K.ALDRICH[0], K.SEMIBOLD[0]] + glyphs:
+    for g in [M.SEA_WINDOW_MAT, K.ALDRICH[0], K.SEMIBOLD[0]] + glyphs:
         assert g in owned, f"guid {g} resolves to no asset"
 
 
@@ -193,7 +195,7 @@ def self_test(files):
         "a line for a cell that no longer exists": asset_text(lines=CELL_LINES + (("Garlandia", "Nowhere"),)),
         "a blank build step": asset_text(steps=STEPS[:2] + ("",) + STEPS[3:]),
         "a tip the font cannot draw": asset_text(tips=TIPS[:1] + ("Fly to the core — then turn.",)),
-        "the glyphs out of step order": asset_text(glyph_order=("Time", "Mass", "Charge", "Space")),
+        "an element glyph back on a build step": asset_text(glyph_order=("Mass",)),
         "the loading word blanked": asset_text(words=dict(WORDS, loadingWord="")),
     }
     for label, bad in plants.items():

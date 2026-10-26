@@ -18,6 +18,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -36,6 +39,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 1
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0.6
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -54,6 +60,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 1
     toggleElements: []
@@ -72,6 +81,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 1
     idleFullThrottle: 0
     toggleElements: []
@@ -94,6 +106,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -112,6 +127,9 @@ MonoBehaviour:
     liftDeferSeconds: 0.12
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -130,6 +148,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -146,6 +167,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -164,6 +188,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -178,6 +205,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -196,6 +226,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -210,6 +243,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -224,6 +260,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements:
@@ -239,6 +278,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -267,6 +309,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -289,6 +334,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -317,6 +365,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -345,6 +396,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -373,6 +427,9 @@ MonoBehaviour:
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
     idlePullsBothTriggers: 0
     idleFullThrottle: 0
     toggleElements: []
@@ -385,6 +442,8 @@ MonoBehaviour:
   tiltFullScaleDegrees: 25
   tiltDeadZoneDegrees: 2.5
   tiltSmoothingPerSecond: 12
+  tiltRollMaxDegrees: 90
+  noseFollowPerSecond: 9
   buttonMillimetres: 10
   buttonGapMillimetres: 1.5
   innerArcMillimetres: 22

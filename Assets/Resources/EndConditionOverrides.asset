@@ -13,81 +13,97 @@ MonoBehaviour:
   m_Name: EndConditionOverrides
   m_EditorClassIdentifier:
   hexRaceCrystalCount: 0
-  crystalCaptureCrystalCount: 20
-  joustCount: 3
+  crystalCaptureCrystalCount: 14
+  joustCount: 2
   maelstromWinTarget: 6
   nucleusRushWaveTarget: 3
   rampagePrismTarget: 2000
-  cleavePrismTarget: 1500
+  rampagePrismTargetByIntensity:
+  - 2000
+  - 1700
+  - 1300
+  - 1000
+  cleavePrismTarget: 1000
   cleavePrismTargetByIntensity:
-  - 1200
-  - 1200
-  - 1500
-  - 1500
+  - 950
+  - 950
+  - 1000
+  - 1000
   wildlifeKillTarget: 30
-  dogFightPointTarget: 90
+  dogFightPointTarget: 40
+  grizzlyChargePointTarget: 90
   bendsPointTarget: 3
-  scarabScrambleGoalTarget: 10
+  scarabScrambleGoalTarget: 3
   astroLeagueGoalLimit: 5
-  tollwayTollTarget: 4
-  wreckingBallPrismTarget: 1500
+  tollwayTollTarget: 3
+  wreckingBallPrismTarget: 650
   undertowPointTarget: 12
-  dustupPointTarget: 10
-  tapestryRoundSeconds: 150
-  siroccoPrismTarget: 600
+  dustupPointTarget: 4
+  tapestryRoundSeconds: 90
+  siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
+  tandavaBreakPercent: 35
+  tandavaHaloRingsToBreak: 9
   salvoPrismTarget: 700
-  switchbackGateTarget: 20
-  waystationRingTarget: 24
+  switchbackGateTarget: 26
+  waystationRingTarget: 15
   breakwaterStationTarget: 15
   breakwaterLaps: 2
   skeinRingTarget: 24
-  headlongGateTarget: 24
-  redlineGateTarget: 24
-  grizzlyTimeGateTarget: 24
+  headlongGateTarget: 40
+  redlineGateTarget: 40
+  grizzlyTimeGateTarget: 16
   slingshotGateTarget: 16
   warplineGateTarget: 10
-  thresherTimeGateTarget: 24
+  thresherTimeGateTarget: 16
   wrasseRunGateTarget: 16
   regattaGateTarget: 24
-  hijackStealTarget: 750
+  hijackStealTarget: 500
   hexRaceCrystalCountBuild: 0
-  crystalCaptureCrystalCountBuild: 20
-  joustCountBuild: 3
+  crystalCaptureCrystalCountBuild: 14
+  joustCountBuild: 2
   maelstromWinTargetBuild: 6
   nucleusRushWaveTargetBuild: 3
   rampagePrismTargetBuild: 2000
-  cleavePrismTargetBuild: 1500
+  rampagePrismTargetByIntensityBuild:
+  - 2000
+  - 1700
+  - 1300
+  - 1000
+  cleavePrismTargetBuild: 1000
   cleavePrismTargetByIntensityBuild:
-  - 1200
-  - 1200
-  - 1500
-  - 1500
+  - 950
+  - 950
+  - 1000
+  - 1000
   wildlifeKillTargetBuild: 30
-  dogFightPointTargetBuild: 90
+  dogFightPointTargetBuild: 40
+  grizzlyChargePointTargetBuild: 90
   bendsPointTargetBuild: 3
-  scarabScrambleGoalTargetBuild: 10
+  scarabScrambleGoalTargetBuild: 3
   astroLeagueGoalLimitBuild: 5
-  tollwayTollTargetBuild: 4
-  wreckingBallPrismTargetBuild: 1500
+  tollwayTollTargetBuild: 3
+  wreckingBallPrismTargetBuild: 650
   undertowPointTargetBuild: 12
-  dustupPointTargetBuild: 10
-  tapestryRoundSecondsBuild: 150
-  siroccoPrismTargetBuild: 600
+  dustupPointTargetBuild: 4
+  tapestryRoundSecondsBuild: 90
+  siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
+  tandavaBreakPercentBuild: 35
+  tandavaHaloRingsToBreakBuild: 9
   salvoPrismTargetBuild: 700
-  switchbackGateTargetBuild: 20
-  waystationRingTargetBuild: 24
+  switchbackGateTargetBuild: 26
+  waystationRingTargetBuild: 15
   breakwaterStationTargetBuild: 15
   breakwaterLapsBuild: 2
   skeinRingTargetBuild: 24
-  headlongGateTargetBuild: 24
-  redlineGateTargetBuild: 24
-  grizzlyTimeGateTargetBuild: 24
+  headlongGateTargetBuild: 40
+  redlineGateTargetBuild: 40
+  grizzlyTimeGateTargetBuild: 16
   slingshotGateTargetBuild: 16
   warplineGateTargetBuild: 10
-  thresherTimeGateTargetBuild: 24
+  thresherTimeGateTargetBuild: 16
   wrasseRunGateTargetBuild: 16
   regattaGateTargetBuild: 24
-  hijackStealTargetBuild: 750
+  hijackStealTargetBuild: 500
   autoRestoreBuildValuesBeforeBuild: 1

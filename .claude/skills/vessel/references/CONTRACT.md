@@ -18,11 +18,12 @@ read all of it when creating or completing a vessel. Where this file and the cod
 10. [Docs & paper trail](#10-docs--paper-trail) — trackers, design docs, verification ledger
 11. [Fleet status snapshot](#11-fleet-status-snapshot) — dated; verify before trusting
 
-Naming trap that applies everywhere: file names renamed Ship→Vessel but class names did not.
+Naming trap that applies everywhere: file names renamed Ship→Vessel before class names did.
 `VesselActionSO.cs` → `ShipActionSO` · `VesselActionExecutorBase.cs` → `ShipActionExecutorBase` ·
-`VesselHelper.cs` → `ShipHelper` · `R_VesselElementStatsHandler.cs` → `R_ShipElementStatsHandler` ·
-`VesselActions.cs` → `enum ShipActions` · `VesselHUD.cs` → `ShipHUD` (legacy).
-**Grep by class name.** (`VesselCardView.cs` → `ShipCardView` was on this list until the
+`VesselHelper.cs` → `ShipHelper` · `VesselActions.cs` → `enum ShipActions`.
+**Grep by class name.** Every class an asset binds to now matches its file (2026-10-25,
+`Docs/REFACTOR_BACKLOG.md` M5): `R_VesselElementStatsHandler` and `VesselHUD` were
+`R_ShipElementStatsHandler` and `ShipHUD` until then. (`VesselCardView.cs` → `ShipCardView` was on this list until the
 freestyle vessel-selection panel was retired, 2026-09-23.)
 
 ---
@@ -120,7 +121,7 @@ mistake presents as a wiring bug, in a completely different part of the tool. Au
 DEPENDENCY ORDER (`<VesselAnimation subclass>` → `VesselStatus` → `VesselController` →
 `ResourceSystem`, `VesselImpactor`) and take, never re-add, what Unity auto-added along the way —
 `VesselStatus` pulls in `VesselCameraCustomizer`, `R_VesselActionHandler`, `VesselCustomization`
-and `R_ShipElementStatsHandler`, none of which carries `[DisallowMultipleComponent]`, so a second
+and `R_VesselElementStatsHandler`, none of which carries `[DisallowMultipleComponent]`, so a second
 `AddComponent` of any of them silently mints a duplicate. `ButterflyVesselSetup.Require<T>` is the
 shape: existing-or-add, and report the TYPE when the add comes back null.
 
@@ -439,7 +440,7 @@ juice through `ElementBars` when a vessel wants it.
   rule 39 for the full list of abstract bases a new vessel touches.
 
 - **`IVesselHUDView` is a trap**: an empty marker interface implemented by nothing —
-  `VesselHUDView` (abstract class) is the real contract. The legacy `ShipHUD` reparent path is
+  `VesselHUDView` (abstract class) is the real contract. The legacy `VesselHUD` (was `ShipHUD`) reparent path is
   dead for the shipping fleet (only Termite still nests `HUDContainer.prefab`).
 - **Lifecycle**: `VesselController.Initialize` initializes the HUD **hidden** and calls
   `SubscribeToEvents` only for the local user. Visibility is owned by scene hosts:
@@ -607,7 +608,7 @@ already lists all 11 prefabs).
 | Sparrow | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ row; no switcher (hints static, both glyph sets render); glyph art wrong | ✅ | skimmer containers all-empty; 2nd inline skimmer unwired | |
 | Manta | ✅ | 3/4 quantitative, 0 upgrades — **open slots** | 0 found (re-survey at vessel-prefab level) | ✅ (Manta meshes, also Termite/Falcon/Shrike) | ✅ | blocked on design |
 | Dolphin | ✅ | 4/4 + 4 upgrades SHIPPED (`claude/dolphin-energy-crystal-cooldown-zpvc07`) | 4/4 bound; no switcher (hints unbound) | ❌ placeholder art — rig swap pending | ✅ **since the branch** — the reference pointed at a DISABLED twin | energy economy + drift boost + cone; see `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` |
-| Rhino | ✅ | **4/4 + 4 upgrades SHIPPED 2026-10-16** (Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker, Ramp Spool / Momentum; editor-unverified) | **4/4 bound** (placeholder icons, 2026-10-16); the old 3-in-vessel-prefab cluster deleted | ❌ `Rhino_Test.fbx` still wired — rig swap to `rhino_shapekey_with_animations.fbx` never run | ✅ (sword variant; hull = plough, not damage) | was "1/4, open slots, bind once map approved" — done. Still open: rig swap, jets unsized, no authored `ElementalBarsView` |
+| Rhino | ✅ | **4/4 + 4 upgrades SHIPPED 2026-10-16** (Sword Steal / Live Wire - Sword Energy until 2026-10-26, Afterimage / Danger Afterimages, Blade Reach / Breaker, Ramp Spool / Momentum; editor-unverified) | **4/4 bound** (placeholder icons, 2026-10-16); the old 3-in-vessel-prefab cluster deleted | ❌ `Rhino_Test.fbx` still wired — rig swap to `rhino_shapekey_with_animations.fbx` never run | ✅ (sword variant; hull = plough, not damage) | was "1/4, open slots, bind once map approved" — done. Still open: rig swap, jets unsized, no authored `ElementalBarsView` |
 | Serpent | ✅ | 1/4, 0 upgrades — **open slots** | 0 bound; HUD root was centre-collapsed (fixed) | ✅ | ❌ "VacuumSkimmer" has no SkimmerImpactor/container AND its GameObject is INACTIVE — cannot vacuum | fails Audit Vessel Skimmers |
 | Urchin / Grizzly / Termite / Falcon / Shrike | ❌ | none | none | Urchin ❌ (rig pending) · Grizzly ❌ (no art) · Termite/Falcon/Shrike ✅ | none (nested base skimmer would NRE) | prefabs exist and are already in DefaultNetworkPrefabs (all 11 are — don't re-add); Vessel Prefab Container registration unstarted; NONE of the five has a `{Vessel}CameraSettingsSO.asset`; Falcon/Shrike additionally lack SO_Class assets |
 

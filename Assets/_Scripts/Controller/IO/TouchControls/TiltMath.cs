@@ -51,6 +51,25 @@ namespace CosmicShore.Gameplay
                 Axis(Mathf.DeltaAngle(reference.y, angles.y), fullScaleDegrees, deadZoneDegrees));
         }
 
+        /// <summary>
+        /// How far the phone has turned like a steering wheel - about the glass's normal - from
+        /// <paramref name="reference"/> to <paramref name="current"/>, in degrees, clockwise as the player
+        /// sees the glass positive (the same sign as <see cref="Angles"/>' roll). Both are the attitude
+        /// sensor's fused pose (gyro, accelerometer and compass; the OS's rotation vector): the rotation
+        /// from the DEVICE frame to the world, right-handed, device z out of the glass toward the face.
+        ///
+        /// <para>It is the TWIST of the relative rotation about the device's z, so tipping the phone back or
+        /// turning on the spot reads as no roll, and unlike gravity it holds with the phone lying flat.</para>
+        /// </summary>
+        public static float RollBetween(Quaternion reference, Quaternion current)
+        {
+            // In the reference's own device frame: current = reference * relative.
+            Quaternion relative = Quaternion.Inverse(reference) * current;
+            // Twist about +z, counter-clockwise seen from the face (right-handed) positive.
+            float counterClockwise = 2f * Mathf.Atan2(relative.z, relative.w) * Mathf.Rad2Deg;
+            return -Mathf.DeltaAngle(0f, counterClockwise);
+        }
+
         static float Axis(float degrees, float fullScale, float deadZone)
         {
             float magnitude = Mathf.Abs(degrees);

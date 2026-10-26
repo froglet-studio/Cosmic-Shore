@@ -28,6 +28,9 @@ namespace CosmicShore.UI
             PORT   = 3,
             HANGAR = 4,
             PROFILE = 5,
+            // The bestiary of elements, ethirions and ecology (Docs/CODEX.md's data). Its tab is first and LOCKED, like
+            // PORT (Docs/MENU_REDESIGN_B.md section 84); it has no screen panel yet.
+            CODEX = 6,
         }
 
         public enum ModalWindows
@@ -104,6 +107,11 @@ namespace CosmicShore.UI
             // It also has to stay reachable if a second entry point (a home-hub tile) is ever
             // added. Shipping without it breaches FMOD's EULA clause 3 - see CreditsModal.
             CREDITS = 18,
+
+            // The replay browser (Docs/REPLAYS.md). Opened from the Arcade window's header, so its
+            // own modal TYPE: gamepad B out of it lands back on the Arcade. Not a hub window, so the
+            // triggers do not slide it, and not in the browser Toybox (replays need a device folder).
+            REPLAYS = 19,
         }
 
         [System.Serializable]
@@ -160,7 +168,13 @@ namespace CosmicShore.UI
                  "It is not the only source: a COMMERCE screen (the Store) is closed by " +
                  "Resources/CommerceAvailability instead, so the paid-EA conversion is one asset edit and " +
                  "carries its own reading (Unavailable rather than Locked). Do not author one in both.")]
-        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT };
+        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.CODEX };
+
+        [Header("Screens Off the Tab Bar")]
+        [Tooltip("Screens with no tab of their own (Rev 13, Shombith 2026-10-25: the top bar is Hangar, Ark, Home and " +
+                 "Port). LT / RT page past them, and while one is open the tab bar shows Home lit - the screen opens " +
+                 "over Home. The Profile is opened from the pilot card on Home (or Y) and closed with Back (or B).")]
+        [SerializeField] private List<MenuScreens> navHiddenScreens = new() { MenuScreens.PROFILE };
 
         [Tooltip("Reason a disabled screen's nav link gives when pressed. Empty leaves the refusal sting to " +
                  "speak alone. Deliberately generic: MenuScreens names (ARK, PORT) are internal.")]
@@ -169,6 +183,13 @@ namespace CosmicShore.UI
         [Header("Arcade Panel")]
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
+
+        [Header("Return From a Match")]
+        [Tooltip("Leaving a match re-opens the launch panel of the card it was launched from (MenuReturnCard), " +
+                 "once the menu's vessel is ready, the boot world is built and the lobby has spawned. If that " +
+                 "takes longer than this many seconds (unscaled) the menu stays on HOME, as it did before. Longer " +
+                 "than the splash's own 60 s hold for the boot world, so a slow phone still gets its panel back.")]
+        [SerializeField] private float returnToCardTimeoutSeconds = 90f;
 
         [Header("Home Hub Buttons")]
         [Tooltip("Seconds the four home-hub buttons (Mission / Toy Box / Arena / Arcade) take to fade " +
@@ -707,6 +728,58 @@ namespace CosmicShore.UI
             {
                 StartCoroutine(LaunchModalCoroutine());
             }
+
+            // Back from a match launched off a card: land on that card's launch panel, not on HOME.
+            if (MenuReturnCard.TryTake(out var returnCard))
+                StartCoroutine(ReturnToLaunchedCardCoroutine(returnCard));
+        }
+
+        /// <summary>
+        /// Re-opens the card a match was launched from, over the window that lists it, so the player
+        /// can change the setup and go again (<see cref="MenuReturnCard"/>). The panel re-seeds itself
+        /// from the setup that just flew (<c>LaunchPreferenceStore</c>).
+        ///
+        /// <para>Waits for three things a press never has to, because a press cannot land while the
+        /// splash still covers the menu: the menu's own vessel (the menu is Ready), the boot world
+        /// (the panel's live preview stands a second arena, which must not race the first build), and
+        /// the lobby the card commits to (<see cref="ArcadeGameConfigureModal.IsReadyToOpenCards"/>).
+        /// Gives up quietly to HOME after <see cref="returnToCardTimeoutSeconds"/>.</para>
+        /// </summary>
+        private IEnumerator ReturnToLaunchedCardCoroutine(MenuReturnCard.Card card)
+        {
+            float giveUpAt = Time.unscaledTime + returnToCardTimeoutSeconds;
+            var menu = FindAnyObjectByType<MainMenuController>();
+
+            while ((menu && menu.CurrentState is MainMenuState.None or MainMenuState.Initializing)
+                   || EnvironmentLoadVeil.IsCovering
+                   || !ArcadeGameConfigureModal.IsReadyToOpenCards)
+            {
+                if (Time.unscaledTime > giveUpAt)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                        $"[ScreenSwitcher] Return to {card.Mode}'s panel abandoned after {returnToCardTimeoutSeconds:0}s " +
+                        "(menu, boot world or lobby not ready) - staying on HOME.");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            // Ready, not merely past Initializing: a launch (LaunchingGame) or a flight (Freestyle)
+            // that started meanwhile is somewhere the player went.
+            if (menu && menu.CurrentState != MainMenuState.Ready) yield break;
+
+            if (!MenuReturnCard.ShouldReopen(
+                    isPartyClient: ArcadeConfigSyncManager.IsPartyClient,
+                    guided: MenuGuide.IsActive || QuestArcadeConstraints.Active,
+                    inFreestyle: InFreestyle,
+                    windowOpen: HasActiveModal))
+                yield break;
+
+            var week = WeeklyChallengeService.Instance ? WeeklyChallengeService.Instance.ThisWeek : default;
+            if (card.WeeklyChallenge && week.IsValid && week.GameMode == card.Mode)
+                OpenWeeklyChallenge();
+            else
+                OpenGame(card.Mode);
         }
 
         private IEnumerator LaunchModalCoroutine()
@@ -718,10 +791,11 @@ namespace CosmicShore.UI
             PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
             PlayerPrefs.Save();
 
-            // Game-related modals require context (selected game, party state) that is
-            // lost on scene transition - never auto-reopen them after returning from a game.
-            // ARCADE is included because re-opening the arcade overlay on return causes
-            // stale game configuration to resurface.
+            // Game-related modals require context (selected game, party state) that a modal TYPE
+            // does not carry - never reopen them from this pref. ARCADE is included because
+            // re-opening the arcade overlay on its own causes stale game configuration to
+            // resurface. Coming back from a match re-opens the launched card through
+            // MenuReturnCard instead, which carries the card (ReturnToLaunchedCardCoroutine).
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
                           or ModalWindows.ARCADE
                           or ModalWindows.ARENA_GAME_CONFIGURE)
@@ -812,13 +886,17 @@ namespace CosmicShore.UI
             if (inFreestyle) return;
             if (HasActiveModal)
             {
-                // Inside a hub window LT / RT swap it for its neighbour (rev 7). Only while that window is the
-                // top modal: under a configure the triggers belong to the game, and a guided path or a preview
-                // holding the stick leaves the pad one way forward.
+                // Inside a hub window LB / RB swap it for its neighbour (the hub strip's keycaps), and LT / RT keep
+                // paging the top bar's screens, leaving the window (Shombith, 2026-10-25: "These should be swapped with
+                // LB and RB when inside the screen and LT and RT should still work"; rev 7 slid on LT / RT). Only while
+                // that window is the top modal: under a configure the pad belongs to the game, and a guided path or a
+                // preview holding the stick leaves the pad one way forward.
                 if (!guided && !ModePreviewWindow.AnyHasFocus && ActiveHubWindow != ModalWindows.NONE)
                 {
-                    if (Gamepad.current.leftTrigger.wasPressedThisFrame) SlideHubWindow(-1);
-                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) SlideHubWindow(+1);
+                    if (Gamepad.current.leftShoulder.wasPressedThisFrame) SlideHubWindow(-1);
+                    else if (Gamepad.current.rightShoulder.wasPressedThisFrame) SlideHubWindow(+1);
+                    else if (Gamepad.current.leftTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateLeft(); }
+                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateRight(); }
                 }
                 return;
             }
@@ -838,6 +916,13 @@ namespace CosmicShore.UI
                 if (Gamepad.current.startButton.wasPressedThisFrame)
                 {
                     OpenModalByType(ModalWindows.SETTINGS);
+                    return;
+                }
+
+                // Y opens the profile, as pressing the pilot card does (Rev 13: Select already toggles freestyle).
+                if (!guided && Gamepad.current.buttonNorth.wasPressedThisFrame)
+                {
+                    OnClickProfileNav();
                     return;
                 }
             }
@@ -971,11 +1056,27 @@ namespace CosmicShore.UI
                 rt.pivot = new Vector2(0f, 0.5f);
                 rt.offsetMin = new Vector2(i * slot + inset.x, inset.y);
                 rt.offsetMax = new Vector2((i + 1) * slot - inset.z, -inset.w);
+                EnsureSlotMask(rt, inset);
             }
 
             _laidOutWidth = slot;
             _laidOutInsets = inset;
             ApplyBleeds(inset);
+        }
+
+        /// <summary>
+        /// Gives a screen its own <see cref="KitRectMask2D"/> spanning its whole slot (the negative padding
+        /// reaches past the safe rect to the slot edges, where the bleeds draw). Its graphics then register
+        /// with that mask rather than the strip's, and a screen slid off the strip stops re-culling them every
+        /// frame (Docs/PERFORMANCE_OPTIMIZATION.md, the 10-26 Menu_Main row). A screen that already carries
+        /// a RectMask2D keeps it.
+        /// </summary>
+        private static void EnsureSlotMask(RectTransform screen, Vector4 inset)
+        {
+            if (!screen.TryGetComponent(out RectMask2D mask))
+                mask = screen.gameObject.AddComponent<KitRectMask2D>();
+            if (mask is KitRectMask2D)
+                mask.padding = -inset;
         }
 
         /// <summary>
@@ -1546,6 +1647,23 @@ namespace CosmicShore.UI
             return false;
         }
 
+        /// <summary>
+        /// <see cref="OpenGame(SO_ArcadeGame)"/> for a mode: the card is the one the game windows' own
+        /// rosters hold, so the configure opens over the window that draws it (the return from a match,
+        /// <see cref="MenuReturnCard"/>).
+        /// </summary>
+        public bool OpenGame(GameModes mode)
+        {
+            if (WebToybox.IsBuild) return false;
+            foreach (var explore in FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var game = explore.FindGameByMode(mode);
+                if (game) return OpenGame(game);
+            }
+            CSDebug.LogWarning($"[ScreenSwitcher] No game window lists a {mode} card - its configure cannot open.");
+            return false;
+        }
+
         private void OpenArcadePanel()
         {
             // The gamepad's A on HOME and the arcade nav both land here; the browser Toybox has no
@@ -1660,6 +1778,11 @@ namespace CosmicShore.UI
             NavigateTo(MenuScreens.PORT);
         }
 
+        public void OnClickCodexNav()
+        {
+            NavigateTo(MenuScreens.CODEX);
+        }
+
         public void OnClickHomeNav()
         {
             NavigateTo(MenuScreens.HOME);
@@ -1675,9 +1798,17 @@ namespace CosmicShore.UI
             NavigateTo(MenuScreens.ARK);
         }
 
+        /// <summary>Opens the profile screen over Home without the strip's slide (it has no tab: Rev 13). The Home pilot
+        /// card and Y call it; <see cref="OnClickProfileBack"/> returns.</summary>
         public void OnClickProfileNav()
         {
-            NavigateTo(MenuScreens.PROFILE);
+            NavigateTo(MenuScreens.PROFILE, false);
+        }
+
+        /// <summary>The profile's Back (and B): straight back to Home, the screen it opened over.</summary>
+        public void OnClickProfileBack()
+        {
+            NavigateTo(MenuScreens.HOME, false);
         }
 
         /// <summary>
@@ -1875,10 +2006,14 @@ namespace CosmicShore.UI
             NavigateRight();
         }
 
+        /// <summary>A screen with no tab (<see cref="navHiddenScreens"/>): LT / RT page past it.</summary>
+        private bool IsIndexNavHidden(int index) =>
+            navHiddenScreens != null && navHiddenScreens.Contains(GetScreenIdForIndex(index));
+
         private void NavigateLeft()
         {
             int target = currentScreen - 1;
-            while (target >= 0 && IsIndexDisabled(target))
+            while (target >= 0 && (IsIndexDisabled(target) || IsIndexNavHidden(target)))
                 target--;
 
             if (target < 0)
@@ -1891,7 +2026,7 @@ namespace CosmicShore.UI
         {
             int max = GetScreenCount() - 1;
             int target = currentScreen + 1;
-            while (target <= max && IsIndexDisabled(target))
+            while (target <= max && (IsIndexDisabled(target) || IsIndexNavHidden(target)))
                 target++;
 
             if (target > max)
@@ -1907,6 +2042,9 @@ namespace CosmicShore.UI
 
         private void UpdateNavBar(int index)
         {
+            // A screen with no tab lights Home's: it opens over Home (Rev 13).
+            if (IsIndexNavHidden(index)) index = GetIndexForScreen(MenuScreens.HOME);
+
             // Two supported ways to highlight the active nav tab:
             //
             //  1. Explicit per-button icon lists (NavActiveImages / NavInactiveImages).

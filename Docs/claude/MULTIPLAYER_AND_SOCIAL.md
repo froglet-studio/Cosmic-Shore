@@ -22,7 +22,20 @@ then refuses a mismatched build at the connection request, and the HOST's consol
 difficulty (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3). **10** (2026-10-20) - `NetworkVesselImpactor`'s
 `PublishSilence` RPC pair, the owner telling every peer how long its pilot is silenced
 (`Docs/ElementalAbilitySystem/SILENCE.md`). **11** (2026-10-21) - `FaunaNetworkSync`'s `_netLeashMark`, the
-mark a tamed creature wears (its spindles lean toward its holder's domain hue; `R_VesselActions/JACKS.md` §3).
+mark a tamed creature wears (its spindles lean toward its holder's domain hue; `R_VesselActions/JACKS.md` §3). **12** (2026-10-23) - `Player.NetStation` (the seat and hull each person holds) and the crew relay RPCs
+(`RequestStation`, `ReportOwnSeat`, `CrewInput`, `CrewState`): seats, then hulls, for every person in freestyle and the
+arena (`CrewStations`, `Docs/CREW_STATIONS.md`). **13** (2026-10-23/24, `cece/optimistic-rubin-t46tzs`) - `FaunaNetworkSync`'s
+`_netLeashMark` becomes a `uint` (domain, glow, lean): the Jacks' herd lights up; and `FaunaNetworkSync`'s
+`_netStolenDomain` plus `ShieldBody_ClientRpc` (a creature stolen and shielded by the Jacks' net),
+`NetworkCrystalManager.RelocateCrystal_ServerRpc` (the net puts the omni crystal down) and `JacksBodies`' plane-pull flag
+(`R_VesselActions/JACKS.md` §1.1, §5). **14** (2026-10-25) - `ArcadeConfigSyncManager.RequestAIVessel_ServerRpc`,
+a pilot asking the host to put an AI seat in a given hull from the Arena configure window's shared vessel panel
+(`Docs/HomeHub/ARCHITECTURE.md` §3.2.1). Both are on bleeding-edge since the 2026-10-25 merge, which ships 14.
+**15** (2026-10-26, `cece/wonderful-knuth-rzv8qp`) - `RhinoSwordNetworkRelay` drops its `n_energy` variable: the
+Rhino has no energy any more (`R_VesselActions/RHINO_ENERGY_SWORD.md`).
+**Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
+that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
+entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.
 Two players testing a join must run the same build.
 
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
@@ -37,6 +50,8 @@ Two players testing a join must run the same build.
 Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and drives a host/server Netcode scene load (with a defensive local fallback only when no NetworkManager is active). `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
 
 **MPPM / connected-client guard**: `LaunchGame`, `ReturnToMainMenu`, and `HandleActiveSessionEnd` all check `if (nm.IsListening && !nm.IsServer) return` after visual setup (fade-to-black, state transition, `OnClientReady` subscription) but before `LoadSceneAsync()`. In Multiplayer Play Mode, SOAP events on the shared `GameDataSO` fire on every virtual player, so without this guard a client's `SceneLoader` would call `SceneManager.LoadScene()` locally and race the server's Netcode scene load — destroying AI NetworkObjects before they replicate. The guard lets connected clients keep the smooth visual transitions while deferring the actual scene load to the server's Netcode scene management. **Each guard also ARMS a scene-follow watchdog** (`SceneLoader.ArmClientSceneFollowWatchdog`, 90 s, retired by the next SINGLE scene load): the guard covers the screen and returns, so a scene event that never arrives was a permanent black screen with no timeout and no way out — `Docs/PartySystem/BUGS.md` B19. **The guard is an MPPM construct and the watchdog's real call site is elsewhere**: a SOAP raise is LOCAL and does not cross the wire, so on separate machines a client never runs `LaunchGame` or `ReturnToMainMenu` at all — these three fire for MPPM virtual players sharing one process and one `GameDataSO`. What blacks out a SHIPPED client's screen is `MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc`, which arms it too. Arming only here would look correct in the editor and protect nobody in a build.
+
+**Contact-driven RPCs need THREE branches, not two.** Every peer's physics sees every vessel's contacts, so `if (IsSpawned && IsOwner) SendRpc(); else RunLocally();` puts a spawned copy of ANOTHER player's vessel in the offline branch: it runs the chain from its own contact, then again when the owner's broadcast arrives. The crystal pickup did this until 2026-10-25, and a host watching a client's Squirrel saw a ghost omni crystal fade out beside the ring. The fix shape is `VesselImpactor.RouteCrystalPickup(isSpawned, isOwner)`: offline runs locally, the owner broadcasts, and a non-owner copy does nothing. Input-driven RPCs (`R_VesselActionHandler`) don't have this problem, because only the owner produces input.
 
 `VesselStatus` extends `NetworkBehaviour`. Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
 
@@ -778,7 +793,6 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 | In-game HUD | `SkimRaceHUD.cs` | `_Scripts/UI/` |
 | Scoreboard | `SkimRaceScoreboard.cs` | `_Scripts/UI/` |
 | Elemental comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |
-| Stats provider | `SkimRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
 | Player stats profile | `SkimRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
 | Full documentation | `SKIMRACE.md` | `_Scripts/Controller/Arcade/` |
 

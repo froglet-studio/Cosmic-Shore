@@ -183,7 +183,13 @@ Before this, an attached AI aimed down whatever rail it had latched — right on
 pilot on a rival's lane crawled at 20 u/s for the rest of the race. **Unmeasured:** after a Slip the
 pilot flies back at the ring through the braid and may re-latch a rival's lane (1.5 s
 `MinSlipIntervalSeconds` bounds the loop); how often an AI Urchin ends up on its own lane is a
-playtest number. Every other hull is untouched — none attaches, and the driver finds every
+playtest number. **Measured 2026-10-25** from 17 recorded races with an AI Urchin rival: on its own lane in 15 (300-304
+u/s, won 10), on the human's lane in 2 (both I4 Hard, the only AI; within 14 u of it for 96% of the race at 42-48 u/s,
+5-10 of 24 rings in 105 s). Two fixes, NOT editor-verified: a **dry-crawl cap** (`UrchinAutopilotConfigSO.MaxDryCrawlSeconds`
+4 s, `UrchinRailAssessment.DryCrawlTooLong`: the arc test keeps a crawl that threads the next ring, and a rival's lane
+threads every ring, so without a cap it crawled ring after ring), and a **stand-off approach** (`RegattaController
+.OwnLaneApproach`: a free Urchin nearer a rival's lane than its own, within `aiRivalLaneClearance` 30 u, aims
+`aiOwnLaneStandOff` 20 u past its own lane straight away from the rival point, so it leaves that rail at once). Every other hull is untouched — none attaches, and the driver finds every
 control by capability. `AIPilot` is unchanged. The AI templates are
 `Random`, so the bot grid draws its hulls from the card. The Manta's boost has an autopilot
 drive; the Rhino's ramp did NOT engage for an AI (2026-10-14 audit: the press only comes from a human input
@@ -252,7 +258,7 @@ every AI seat instead of per domain (Squirrels lift off their rail); the Rhino's
 addressed but unmeasured (2026-10-17: it brakes ON the ramp at 300 u/s² to a corner speed, `AI/AI_BOOST.md`). The bleeding-edge commit `fb2bff7ac` (Skim Race ring
 crystals) merges cleanly and does not change Regatta.
 
-**2026-10-17 (Ys-bleeding-edge only, not editor-verified).** Regatta's gate steering now puts the "through" point on
+**2026-10-17 (not editor-verified).** Regatta's gate steering now puts the "through" point on
 the line from the pilot through the ring's CENTRE, not on the ring's axis (`GateRaceController.ArmRacer`, gated by
 `AICommitFromApproachPoint`, so Regatta only). A drifting hull locks its course on that point, and an axis point lay off
 that line when the pilot committed off-axis, so the locked line passed beside the mouth. In the offline models the axis
@@ -263,7 +269,7 @@ and the Manta got Regatta Soar bands (`f4e35748c`, below).
 **Per-hull Regatta variants.** The Rhino, Dolphin and Manta drives and the Stoat's three configs each read a
 Regatta-only copy when one exists (`Resources/AIBoostPolicies/<asset>_Regatta`, written by
 `learn_drives_from_flights.py` from people's editor flights). Only the Manta's exists: `MantaSoarAITuning_Regatta`,
-Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
+Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`) (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
 raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). So the Squirrel
 (`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
 numbers.
@@ -276,12 +282,13 @@ after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolp
 **No AI targets a crystal in Regatta (2026-10-17, Yash):** *"in Regatta no AI should target an omni crystal; only
 the waypoints of the track."*
 - **The rule:** every Regatta AI steers for the course's rings, and for its rail while it rides one.
-- **How:** `RegattaController.AICrystalDetourSlack` is 0 in code. Every other gate race still lets an AI swing up to
-  `aiCrystalDetourSlack` (220 u in the scenes) for a crystal on its way, and `MinigameRegatta.unity` serializes 220
-  too. The code value wins, so no scene edit can turn the detour back on.
+- **How:** since 2026-10-26 the rule is every gate race's (Yash: "while playing any racing game mode, AI should not go
+  for crystals"): `GateRaceController.AIDetoursForCrystals` is false in code, so `aiCrystalDetourSlack` (220 u in the
+  scenes) is read only by a mode that opts in, and none does. No scene edit can turn the detour back on. (2026-10-17 to
+  10-26 it was Regatta's own override, `RegattaController.AICrystalDetourSlack` = 0.)
 - **Why:** in Yash's editor flights, rival AIs came within 20 u of crystals whenever the recording could see one (the
   Manta, Dolphin, Sparrow and Serpent beside omni crystals; the Rhino beside others).
-- **Test:** `RegattaNoCrystalTargetTests`, with Headlong as the negative control.
+- **Test:** `RaceAIWaypointsOnlyTests` (was `RegattaNoCrystalTargetTests`), with an opted-in mode as the negative control.
 - **The Squirrel** already aimed only at rings (`RegattaRingObjective`). The Third Eye's "Crystal on the way" phase
   no longer appears in Regatta.
 
@@ -303,19 +310,161 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   rim (`HullClearance`), and its **risk**. Bold cuts more of each bend (a longer look-ahead) and keeps 0.75x the room;
   careful follows the line tightly with 1.5x. Every AI seat draws its own risk round the hull's (seeded per seat), so a
   grid has careful and bold pilots of the same hull. Starting values: Rhino 0.80 / 18 u / 0.40 (biggest, fastest:
-  out wide, safer), Manta 0.70 / 16 / 0.50, Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
-  0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45.
+  out wide, safer; line set 2026-10-24 from Yash's six Rhino races: 0.676), Manta 0.70 / 16 / 0.50 (line learned 2026-10-24: 0.809), Dolphin 0.60 / 12 / 0.50 (line set 2026-10-24 from Yash's one Dolphin race: 0.785), Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
+  0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45 (line set 2026-10-25 from Yash's two Scarab races: 0.788).
 - **Learned from people**: `learn_drives_from_flights.py` measures where a person crosses the rings in their fastest
   three finished races of a hull and writes that hull's `LaneShare` (`race_lines_learned.json`, read by the
-  generator). No Rhino, Manta, Dolphin, Stoat, Sparrow or Scarab flights yet; the Serpent has one finished race.
+  generator). Each crossing is scaled by its OWN ring's mouth (an I1 crossing read against the I3 mouth looked far
+  wider: the Rhino's six races read 0.815 that way and 0.676 crossing by crossing, I1 0.676 and I3 0.672). The Manta's
+  line is learned (0.809). The Rhino's 0.676 was SET BY HAND on 2026-10-24 (Yash's ask) from all six of his Rhino races,
+  four of them unfinished, because only two finished; the learner replaces it at the third finished race. The Dolphin's 0.785 was set by hand the same day from Yash's one
+  Dolphin race (I1, 22 crossings, unfinished); the learner replaces it at the third finished race too. The Scarab's 0.788
+  was set by hand on 2026-10-25 from Yash's two Scarab races (I2, 37 crossings, both unfinished: the AI Stoat won).
 - **Steering** (`GateRaceController.TryRaceLine`, overridden here): asked after the difficulty belief and the
   missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
   the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second
   look-ahead further on is the boost drivers' corner (`AIBoostContext.CornerDegrees`).
+- **The speed drives judge the RING, not the steering point** (2026-10-17, found checking the Dolphin): every boost
+  driver gauges its runway as distance ÷ speed to its target, and on the line the target is one look-ahead (0.35-0.8 s)
+  ahead. The Rhino ramps only with 1.5 s of runway and the Dolphin spends only with 2.5 s, so on the line neither would
+  ever have fired its speed verb. `AIPilot.TickBoostPolicy` now hands the drivers the ring the mode reports
+  (`AIPilot.ObjectivePosition`: bearing, range and the turn there; a difficulty mistake keeps the believed point), and
+  the line's "after" is a look-ahead past the RING, so `CornerDegrees` is the turn at the ring. The Manta's drive reads
+  the stick and was unaffected.
+- **The Stoat needed one fix for it** (2026-10-17): its field and sling autopilots judged RANGE by the point they
+  steer for, and the line keeps that point one look-ahead ahead (60 u at cruise), inside their "far enough to lay a
+  pair" tests (90 u, 120 u). It would have laid no pair, warped nowhere and raced at cruise. They now take the bearing
+  from the line and the range from the ring they are after (`AIPilot.ObjectivePosition`,
+  `StoatDipoleMath.AutopilotGauge`; `StoatDipoleTests`). The mode switch reads only the angle and was unaffected.
 - **Not on a line:** the Squirrel (its own Skim Race pilot; Yash's own Squirrel crosses rings 11 u from the centre,
   median of 1,042 crossings: the braid's middle IS the Squirrel's line) and the Urchin (rides its own lane).
 - **Tests:** `RegattaRaceLineTests` (clearance, radius, the centre line as the negative control, the loop, the
   style's bounds and seeded risk, which hulls have a style). Not editor-verified.
+
+### 6.3 The line's aim is a path lead, and it never cuts a mouth (2026-10-25)
+
+Yash, 2026-10-25: "I need all vessels to fly and win the race in Regatta based on their AI skills ... modifying their
+default AI skills." **Measured first, from the rivals in 87 stored editor Regatta races** (`Tools/Build/
+regatta_rival_report.py`; each flight records every AI rival's position and rings at 10 Hz): the Urchin threaded 23.5
+rings a minute and the Squirrel 13.7, but every hull on the generic gate steering or the race line threaded only
+5.5-9.3 (Serpent 9.3, Manta 7.9, Dolphin 7.2, Sparrow 6.4, Rhino 6.3, Scarab 5.5), where the offline drive models had
+them at 25-58. Difficulty did not explain it (Hard was often worse than Medium). Traced: these AIs crossed the ring's
+plane just OUTSIDE the mouth (median 1.1-1.7 ring radii from the centre; the Squirrel and Urchin: 0.3, the
+measurement's floor) and swung 500-1500 u wide before re-attacking, the Manta missing one ring for every two it
+threaded; on the line, the fastest two missed more rings than they threaded (Manta 13 / 5, Scarab 9 / 8).
+
+Two causes, both in the shared steering, both fixed:
+
+- **The orbit break-off fired on the line.** `AIPilot.UpdateOrbitBreak` is built for chasing a crystal: it breaks off
+  when the objective sits inside the turning circle off the nose, or when 360° of turning passes without the range
+  falling. The line's aim is a LEAD POINT one look-ahead ahead, so its range never falls (one lap of the circuit IS
+  360°) and every sharp bend puts it off the nose inside the circle; the break-off then flew an escape leg of
+  2 x max(2R - 18, 1.5 s x speed) (966 u for the Scarab): the wide swings. A rail's aim is the same kind of point and
+  was already exempt. Now the mode marks the line's aim each frame (`AIPilot.MarkAimAsPathLead`, called by
+  `GateRaceController` when it returns `TryRaceLine`'s point) and the break-off skips it. Other modes and every other
+  aim keep the break-off (the flag is cleared before every sample).
+- **The look-ahead cut the mouth.** Steering at a point a look-ahead along the line cuts every bend; at a ring on a
+  bend the chord to that point crosses the ring's plane outside a small mouth (I3/I4: 72 u) when the hull is fast.
+  `RegattaRaceLine.AimThroughRing`: when the ring's crossing point is nearer along the line than the look-ahead AND
+  the chord would cross outside the mouth less the hull's room (`RaceLineStyleSO.ClearanceAt`), the pilot aims at the
+  crossing point pushed straight on by what is left of the look-ahead. Where the chord already threads, the line is
+  untouched.
+
+**Offline model** (`Tools/Build/regatta_line_sim.py`: the real line over the exported rails, `AIPilot`'s own stick
+law, the shipped break-off; each hull at its recorded race speed), seconds for 3 laps, before → after, and the
+break-offs plus misses in the four races:
+
+| Hull | u/s | I1 | I2 | I3 | I4 | Break-offs + misses |
+|---|---:|---|---|---|---|---|
+| Manta | 267 | 88.5 → 53.3 | 87.1 → 59.8 | 104.2 → 66.5 | 215.5 → 66.5 | 83 → 0 |
+| Scarab | 322 | 59.7 → 43.8 | 58.1 → 48.2 | 135.3 → 53.6 | 145.2 → 53.3 | 81 → 0 |
+| Rhino | 130 | 126.9 → 109.9 | 139.9 → 123.3 | 150.5 → 131.3 | 149.0 → 130.9 | 26 → 0 |
+| Sparrow | 80 | 189.6 → 178.5 | 223.2 → 200.6 | 231.8 → 213.9 | 231.3 → 212.7 | 24 → 0 |
+| Dolphin | 120 | 119.3 → 119.3 | 136.7 → 133.6 | 173.8 → 142.7 | 163.3 → 141.4 | 19 → 0 |
+| Serpent | 157 | 100.1 → 90.8 | 113.6 → 101.5 | 122.3 → 108.7 | 124.0 → 107.5 | 18 → 0 |
+
+The shipped column is close to the real races for the slow hulls (Rhino, Sparrow, Dolphin: about 6-12 rings a
+minute in both), which is why the model is trusted to rank the fix; the editor is still the measurement.
+
+**What else was measured and left alone:**
+- **The Scarab's corner lift** (lift the throttle, its only brake, before a corner): modelled
+  (`scarab_drive_sim.py`), never faster than flat out on Regatta's steering, so not shipped. Its lost races were the
+  two causes above.
+- **Each hull's timed default skills** (`AIPilot.abilities`, cycled on a timer): the Dolphin's three are all bound to
+  the commit control and skipped by the cycle; the Sparrow's guns cost no boost (its afterburner is free, full auto
+  costs 0 ammo); the Rhino, Manta, Scarab and Squirrel have none; the Serpent's are Garrett's (in-flight branch
+  `cece/vibrant-archimedes-n3xn3x`). Nothing in the recordings tied a timed skill to a lost race, so none changed.
+- **Rail rams:** 90-94% of the time the Dolphin, Sparrow, Squirrel and Urchin spent under 20 u/s mid-race they were
+  within 15 u of a rail prism. Most of those races predate the line (2026-10-17), which exists to keep hulls off the
+  rails; re-measure with races flown after this change.
+
+Tests: `RegattaRaceLineTests` (`AimThroughRing_*`, `DistanceAlong_*`). The break-off flag is held by the model's
+self-test, not a Unity test (`AIPilot` needs a live vessel). Not editor-verified (`UNITY_VERIFICATION_CHECKLIST.md`).
+
+### 6.4 On the line, "straight" is judged on the path (2026-10-25, the Rhino first)
+
+The Rhino, measured on its own line for the first time (`Tools/Build/rhino_line_sim.py`: the ramp drive
+`RampBoostAIPolicySO` on the real race line with `AIPilot`'s stick law, the Regatta variant's numbers and §6.3's fix):
+it ramped only **5-10%** of a race and took **196-216 s** for three laps; the real Rhino AIs raced at its 50 u/s cruise
+(5-6 rings a minute) after the line arrived. Every frame the ramp stayed off, the one gate that failed was the
+angle: `AIBoostPolicySO.IsStraight` asks for the course within 12 deg of the target, and since 2026-10-17 the target the
+drives judge is the RING (so the runway is the ring's range, §6.2). But the line follows the braid's curve between
+rings, so the hull is pointed along the curve and the ring round the bend sat 18-35 deg off the course (median 21 deg):
+no stretch of the line was ever straight, for ANY hull's speed verb that asks it (the Rhino's ramp, the Sparrow's
+afterburner, the Scarab's dash, the Serpent's pellets, the Dolphin's spend; the Manta's Soar reads the stick).
+
+**Fix:** `AIBoostContext.PathDirection`: when the pilot's aim is a path's lead point (`AIPilot.MarkAimAsPathLead`,
+only Regatta's line sets it) the drives judge "straight" (`AngleToTarget`, and the Dolphin's nose check) on where the
+pilot is going; the runway and the corner stay the ring's. Every other mode and aim is unchanged (no path, no change).
+
+| Rhino, 3 laps | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| cruise only (no ramp) | 285.3 s | 320.2 s | 341.3 s | 340.0 s |
+| judged by the ring (before) | 196.7 s, ramping 5% | 198.1 s, 7% | 195.7 s, 10% | 216.2 s, 8% |
+| judged by the path (now) | **29.6 s**, 100% | **40.7 s**, 82% | **51.8 s**, 70% | **48.0 s**, 85% |
+
+No mouth missed in any of them. **Not changed, for Yash to decide:** the sweep (`rhino_line_sim.py --sweep`) finds
+170 → 119 s over the four courses with `cornerSpeed` 1000 (it is 333, set by hand on 2026-10-24 from Yash's Rhino
+races) and `engageRunwaySeconds` 0.6 (1.5). The model has no rail rams, which matter at 700 u/s, so the person's number
+stands until editor races say otherwise. Tests: `RegattaDriveTuningTests.Context_*`, `RampPolicy_OnTheLine_*`.
+
+### 6.4.1 The AI's nose lags: a longer look-ahead for the Manta and the Rhino (2026-10-25, the Manta)
+
+**Every model before this one turned the nose the instant the stick moved. The game does not, for an AI.** The stick
+turns the COMMANDED heading (`VesselTransformer.accumulatedRotation`) and the nose slerps toward it at 1.5/s
+(`LERP_AMOUNT`, a 0.67 s time constant). People lost that lag on 2026-10-21; AI, autopilot and remote hulls kept it
+(`NoseFollowFraction`), and only the Squirrel's Skim Race pilot leads its corners for it. A pilot chasing a point 0.35-0.8
+s ahead through a 0.67 s lag overshoots, corrects, overshoots: its stick sits near full. The models now carry it
+(`regatta_line_sim.turn_with_lag`, `lag=True`; `manta_line_sim.py` `nose="nose"`; `rhino_line_sim.py`, on by default)
+and match the real races far better: the shipped Manta races I1-I3 in 53-96 s and stalls at I4, where the real AI Manta
+threaded about 8 rings a minute at 240-268 u/s, i.e. barely above its 180 u/s cruise.
+
+**The Manta** (`Tools/Build/manta_line_sim.py`: its Soar executor law on its line, with the lag, and a rail ram costing
+half its speed as `MantaVesselChangeSpeedByPrism` does on a rail that is not its colour). Under the lag its stick sat
+near full, so its Soar (full below a 0.975 stick) was on only 1-18% of the race. A longer look-ahead calms the stick:
+
+| Manta look-ahead (careful / bold s), lag on | I1 | I2 | I3 | I4 | misses | rail rams |
+|---|---|---|---|---|---|---|
+| 0.35 / 0.8 (every hull's default) | 53.2 | 78.1 | 95.7 | stalled | 0 / 3 / 8 / 178 | 2 / 9 / 19 / 187 |
+| **0.6 / 1.0 (shipped)** | 54.3 | 64.5 | 77.3 | 84.0 | none | 0 / 10 / 6 / 30 |
+| 0.8 / 1.4 | 54.4 | 61.7 | 74.8 | 81.5 | none | 2 / 10 / 18 / 50 |
+
+The Regatta Soar bands (0.975, learned from Yash's flights) stay: on the line they are the best of the three sets tried
+with or without the lag, and the corner cap `manta_drive_sim.py` dropped (cut Soar before a corner) is slower on the
+line too. Raising `MaxLookahead` past 520 u changes nothing measurable. Judging the error from where the nose is about
+to point (part way to the command) was tried in both models and gains under 10%: not shipped.
+
+**The Rhino, re-measured with the lag** (§6.4's path judging still halves its race: 898.6 → 447.7 s over I1-I4, with a
+miss now flown the gate way as `GateRaceController` does). Once its ramp fires on the line it reaches 450-585 u/s and
+missed 12 I3/I4 mouths through the same lag; 0.8 / 1.4 s: 405.4 s and none.
+
+**What changed:** `Resources/RaceLines/Manta_Regatta` and `Rhino_Regatta` look-ahead seconds (written by
+`Tools/Build/author_race_lines.py`, `--check` green). These were still the defaults every hull got on 2026-10-17, never
+learned; the learned `LaneShare` values stay. **The lag itself is left as it is**: it is the fleet feel AI hulls share
+with remote players, and Garrett's call (`VesselTransformer`).
+**Re-checked under the lag:** §6.3's fix (no break-off on the line, never cut a mouth) still makes every hull faster or
+equal on every course, but the Manta and the Scarab still miss mouths at I2-I4 in the fixed-speed model; the Scarab is
+next to look at with its own model.
 
 ## 6.5 Scoring — the team sum
 

@@ -29,6 +29,8 @@ namespace CosmicShore.UI
         [SerializeField] private HangarVesselTile vesselTilePrefab;
         [Tooltip("\"1 / 11 owned\" beside the list's label.")]
         [SerializeField] private KitText ownedCountText;
+        [Tooltip("The owned count's line. {owned} is the hulls unlocked, {total} the hulls listed. Empty shows nothing.")]
+        [SerializeField] private string ownedCountLine = "{owned} / {total} owned";
 
         [Header("List Animation")]
         [Tooltip("Delay in seconds between each tile's fade-in.")]
@@ -49,7 +51,7 @@ namespace CosmicShore.UI
         [Header("Legacy Ship Selection (deprecated)")]
         [SerializeField] private Transform ShipSelectionContainer;
         [SerializeField] private InfiniteScroll ShipSelectionScrollView;
-        [SerializeField] private HangarShipSelectNavLink ShipSelectCardPrefab;
+        [SerializeField] private HangarVesselSelectNavLink ShipSelectCardPrefab;
 
         [Header("Legacy Training UI")]
         [SerializeField] private Transform GameSelectionContainer;
@@ -145,7 +147,8 @@ namespace CosmicShore.UI
             }
 
             if (ownedCountText)
-                ownedCountText.SetText($"{sorted.Count(s => !s.IsLocked)} / {sorted.Count} owned");
+                ownedCountText.SetText(TemplateText.Fill(ownedCountLine,
+                    "owned", sorted.Count(s => !s.IsLocked).ToString(), "total", sorted.Count.ToString()));
         }
 
         void RebuildList()
@@ -313,7 +316,7 @@ namespace CosmicShore.UI
             {
                 for (var i = 0; i < ShipSelectionContainer.childCount; i++)
                 {
-                    var selectCard = ShipSelectionContainer.GetChild(i).gameObject.GetComponent<HangarShipSelectNavLink>();
+                    var selectCard = ShipSelectionContainer.GetChild(i).gameObject.GetComponent<HangarVesselSelectNavLink>();
                     selectCard.SetActive(selectCard.Ship == selectedShip);
                 }
             }
@@ -355,7 +358,7 @@ namespace CosmicShore.UI
             yield return null;
             if (ShipSelectionContainer && ShipSelectionContainer.childCount > 0)
             {
-                var shipSelectCard = ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>();
+                var shipSelectCard = ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarVesselSelectNavLink>();
                 shipSelectCard.Select();
             }
         }

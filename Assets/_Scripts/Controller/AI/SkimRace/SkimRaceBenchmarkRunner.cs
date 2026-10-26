@@ -43,8 +43,8 @@ namespace CosmicShore.Gameplay
             public bool TraceFrames = true;
             [Tooltip("Graphics quality level for the run (-1 = leave the player's setting). The same setting a player picks; it changes frame rate, never gameplay.")]
             public int QualityLevel = -1;
-            [Tooltip("The lobby AI difficulty the AI seats fly. Hard (the default) is the unhandicapped pilot every earlier benchmark measured; Easy and Medium add the difficulty's deliberate mistakes (Docs/SKIM_RACE_AI.md section 10).")]
-            public AIDifficulty Difficulty = AIDifficulty.Hard;
+            [Tooltip("The lobby AI difficulty the AI seats fly. Legendary (the default) is the unhandicapped pilot every earlier benchmark measured (called Hard until 2026-10-26); Easy, Medium and Hard add the difficulty's deliberate mistakes (Docs/SKIM_RACE_AI.md section 10).")]
+            public AIDifficulty Difficulty = AIDifficulty.Legendary;
         }
 
         public static SkimRaceBenchmarkRunner Active { get; private set; }

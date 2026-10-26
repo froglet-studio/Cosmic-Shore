@@ -387,9 +387,9 @@ start, against one that subscribes when Menu_Main loads). SceneLoader unpauses a
 statement, so a restore on that route fires immediately *after* it and hands the loading match
 `Time.timeScale = 0` — launching a game out of a flying preview would start it frozen.
 
-> `SceneLoader.LaunchGame` is the **only** producer of that unpause. `MiniGame` (which does call
-> `TogglePauseGame(false)` on entry) is the legacy single-player base with two subclasses — not
-> the `MiniGameControllerBase` hierarchy every shipped mode uses, and nothing in that hierarchy
+> `SceneLoader.LaunchGame` is the **only** producer of that unpause. `MiniGame` (which called
+> `TogglePauseGame(false)` on entry) was the legacy single-player base, retired 2026-10-25 with its two
+> unused subclasses (`Docs/REFACTOR_BACKLOG.md` M6) — never the `MiniGameControllerBase` hierarchy every shipped mode uses, and nothing in that hierarchy
 > touches `PauseSystem` at all. A restore that leaned on the game scene unpausing itself would be
 > leaning on a class the arcade modes do not instantiate.
 
@@ -530,6 +530,7 @@ table, but it cannot be the shipped shape.
 | `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over. The beside-the-window readout is RETIRED: `StartRunner` hides the HUD and re-raises progress as `ModePreviewSession.OnObjectiveProgress(delta, total)`, which the modal routes into the launch panel's objective box + micro toast (`Docs/ArcadeLaunch/ARCHITECTURE.md` §5.5) — one counting source, one visible readout |
 | `DrillRunner` / `DrillCoachView` | `Preview/Drill/` / `UI/View/` | The coaching layer over a flight: the Lesson, then the Mentor. Started and stopped with `ModePreviewRunner`; holds the window's release (`ModePreviewWindow.HoldRelease`) and the card's Play button only while a FORCED Lesson runs. Plan and status: `Docs/ModePreview/TRAINING_PLAN.md` §10 |
 | `Cell.InitializeSatellite` / `StrikeSatelliteWorld` | `Controller/Environment/` | The platform capability pair |
+| `ReplayArenaStage` (a second user) | `_Scripts/Utility/Theater/Replays/` | Match replays stand the SAME satellite arena (and `ModePreviewGateCourse`'s rings) to play a recorded race inside its arena: parked on -Z (this preview uses +X), at full prism density through `Stand`'s optional `prismStride` (0 = this library's `FlightPrismStride`, the preview's unchanged default), struck through the same pool-safe `BeginStrike` / drain / `FinishStrike`. `Docs/REPLAYS.md` §6.1 |
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |
 | ~~`ModePreviewSetupTool`~~ | *retired* | **Gone — scaffolding, its job done.** It stood the preview window up in `Menu_Main` and migrated the scene off earlier revisions (deleting TestFlightButton / FocusFrame / ExitButton / legacy video instances). The migrated scene is on the branch; recover the tool from git history if a scene ever needs the migration again. |
 

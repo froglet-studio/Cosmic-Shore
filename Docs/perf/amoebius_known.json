@@ -10,6 +10,11 @@
       "reason": "MaterialPropertyBlock.SetVectorArray(Vector4[]) clones the array on every call in Amoebius (Port/src/CosmicShore.Engine/Rendering/MaterialPropertyBlock.cs:68); the game passes one cached Vector4[] (Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrisms.cs:77,196). Unity's SetVectorArray copies into native memory without a managed allocation.",
       "measured": "~3.0 KB/frame, Skim Race I2 3 seats, 2026-10-15",
       "task": "same task as CrystalChargeArcs.LateUpdate (the engine's copy-per-call stand-ins)"
+    },
+    "StoatPathfinder.Dots": {
+      "reason": "Mesh.SetVertices(Vector3[], start, length) and SetUVs(channel, Vector2[], start, length) copy the range into a fresh array on every call in Amoebius (Port/src/CosmicShore.Engine/Rendering/Mesh.Extras.cs:107-117, ArraySegment.ToArray); the game passes its cached arrays (Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderWorldDots.cs End). Unity's ranged SetVertices / SetUVs allocate nothing.",
+      "measured": "~138 KB/frame, Warpline I2 3 seats, 2026-10-26",
+      "task": "same task as CrystalChargeArcs.LateUpdate (the engine's copy-per-call stand-ins)"
     }
   }
 }

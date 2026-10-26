@@ -14,8 +14,12 @@ namespace CosmicShore.UI
     /// seconds left, and the swarm's size.
     ///
     /// <para><b>Every word is authored</b> (CLAUDE.md, player-facing text): the card names are the deck's, the phase names
-    /// and the three templates are serialized here, and an empty field shows nothing. Tokens: <c>{name}</c>,
-    /// <c>{level}</c>, <c>{phase}</c>, <c>{seconds}</c>, <c>{count}</c>, <c>{cap}</c>.</para>
+    /// and the templates are serialized here, and an empty field shows nothing. Tokens: <c>{name}</c>,
+    /// <c>{level}</c>, <c>{from}</c>, <c>{to}</c>, <c>{next}</c>, <c>{phase}</c>, <c>{seconds}</c>, <c>{count}</c>, <c>{cap}</c>.</para>
+    ///
+    /// <para><b>Level scaling</b> (Garrett, 2026-10-24: "show what the next level will do"): a hand card you already hold
+    /// reads <c>Lv 3 → 7</c>, and the details show every number at both levels (<c>3.0 → 4.5</c>) and the jolts picking it
+    /// unlocks; with no hand, each held card's numbers sit beside the next level's.</para>
     ///
     /// <para><b>The objective card</b> (<see cref="CoreAbility.Objective"/>, directly left of the omnicrystal's): the phase's
     /// target as a glyph (<see cref="objectiveIcons"/>, in the cycle's order), which DRAINS from the top as the phase timer
@@ -49,6 +53,9 @@ namespace CosmicShore.UI
         [SerializeField] string cardNameTemplate = "{name}";
         [Tooltip("Under a card in the hand: the level it arrives at. Tokens: {level}.")]
         [SerializeField] string cardLevelTemplate = "Lv {level}";
+        [Tooltip("Under a card in the hand that you already hold: the level you hold and the level picking it takes it to. " +
+                 "Tokens: {from} {to}.")]
+        [SerializeField] string cardLevelUpTemplate = "Lv {from} \u2192 {to}";
         [Tooltip("Under a card with no hand dealt: the levels you hold of the element. Tokens: {level}.")]
         [SerializeField] string heldTemplate = "{level}";
 
@@ -63,13 +70,28 @@ namespace CosmicShore.UI
         [SerializeField] string detailsTitleTemplate = "{name}";
         [Tooltip("Under the name: the level the card arrives at. Tokens: {level}.")]
         [SerializeField] string detailsLevelTemplate = "Level {level}";
+        [Tooltip("Under the name, for a card you already hold: the level held and the level picking it takes it to. " +
+                 "Tokens: {from} {to}.")]
+        [SerializeField] string detailsLevelUpTemplate = "Level {from} \u2192 {to}";
         [Tooltip("One line per number on the card, at that level. Tokens: {label} {value} {unit}.")]
         [SerializeField] string detailsStatTemplate = "{label}: {value}{unit}";
+        [Tooltip("A number that changes between two levels (the level held and the next one, or the level picking takes it " +
+                 "to), so the player sees how the card scales. A number that does not change uses detailsStatTemplate. " +
+                 "Tokens: {label} {value} {next} {unit}.")]
+        [SerializeField] string detailsStatUpTemplate = "{label}: {value}{unit} \u2192 <b>{next}{unit}</b>";
+        [Tooltip("A jolt the card reaches on the way to the level shown (picking it, or the level it arrives at). " +
+                 "Tokens: {level} {text}.")]
+        [SerializeField] string detailsUnlockTemplate = "<b>Unlocks at Lv {level}:</b> {text}";
         [Tooltip("The card's next jolt above the level you hold. Tokens: {level} {text}.")]
         [SerializeField] string detailsMilestoneTemplate = "At Lv {level}: {text}";
         [Tooltip("With no hand dealt: the heading of each card you hold of the element, followed by its text, its numbers at " +
                  "the held level (detailsStatTemplate) and the jolts it has reached. Tokens: {name} {level}.")]
         [SerializeField] string detailsHeldTemplate = "<b>{name}</b>  Lv {level}";
+        [Tooltip("With no hand dealt: the heading of a held card below the top level, whose numbers then show the next " +
+                 "level beside the held one. Tokens: {name} {level} {next}.")]
+        [SerializeField] string detailsHeldUpTemplate = "<b>{name}</b>  Lv {level} \u2192 {next}";
+        [Tooltip("Under a card at the top level (15): nothing more to gain.")]
+        [SerializeField] string detailsMaxLevel = "Max level";
         [Tooltip("With no hand dealt: a jolt a held card has reached, under its numbers. Tokens: {level} {text}.")]
         [SerializeField] string detailsReachedTemplate = "Since Lv {level}: {text}";
         [Tooltip("With no hand dealt and nothing held of the element.")]
@@ -125,12 +147,18 @@ namespace CosmicShore.UI
         public string SwarmTemplate => swarmTemplate;
         public string CardNameTemplate => cardNameTemplate;
         public string CardLevelTemplate => cardLevelTemplate;
+        public string CardLevelUpTemplate => cardLevelUpTemplate;
         public string HeldTemplate => heldTemplate;
         public string DetailsTitleTemplate => detailsTitleTemplate;
         public string DetailsLevelTemplate => detailsLevelTemplate;
+        public string DetailsLevelUpTemplate => detailsLevelUpTemplate;
         public string DetailsStatTemplate => detailsStatTemplate;
+        public string DetailsStatUpTemplate => detailsStatUpTemplate;
+        public string DetailsUnlockTemplate => detailsUnlockTemplate;
         public string DetailsMilestoneTemplate => detailsMilestoneTemplate;
         public string DetailsHeldTemplate => detailsHeldTemplate;
+        public string DetailsHeldUpTemplate => detailsHeldUpTemplate;
+        public string DetailsMaxLevel => detailsMaxLevel;
         public string DetailsReachedTemplate => detailsReachedTemplate;
         public string DetailsNothingHeld => detailsNothingHeld;
         public string DetailsBrowseHint => detailsBrowseHint;

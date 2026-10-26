@@ -513,7 +513,7 @@ namespace CosmicShore.UI
             tile.ChipGlyph = glyphGo.GetComponent<Image>();
             tile.ChipGlyph.preserveAspect = true;
             tile.ChipGlyph.raycastTarget = false;
-            tile.ChipGlyph.color = config.GlyphSet ? config.GlyphSet.restColor : UITheme.Resolve(theme, config.TextToken);
+            tile.ChipGlyph.color = config.GlyphSet ? config.GlyphSet.RestColor : UITheme.Resolve(theme, config.TextToken);
             tile.ChipGlyph.enabled = false;
 
             tile.ChipLabel = NewText("Label", tile.Chip, config.ChipFontSize, theme);

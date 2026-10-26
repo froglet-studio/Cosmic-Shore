@@ -23,30 +23,38 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("The prisms' depth effect, read")]
         [Tooltip("The material set whose DANGEROUS block material supplies the spread (_Spread) and the ramp (_SqrDistance). The theme's base set (OriginalMaterialSet), so the incorporeal parts open exactly as hard and on exactly the ramp danger mass does.")]
-        public SO_MaterialSet tierMaterialSet;
+        [SerializeField] SO_MaterialSet tierMaterialSet;
+        public SO_MaterialSet TierMaterialSet => tierMaterialSet;
 
         [Tooltip("Multiplier on the danger prisms' spread. 1 = on par with danger mass; above 1, stronger.")]
-        [Range(0f, 3f)] public float strength = 1f;
+        [SerializeField, Range(0f, 3f)] float strength = 1f;
+        public float Strength => strength;
 
         [Header("The far side: settling back to a minimal presence")]
         [Tooltip("Where the parts START settling back, in the prisms' normalised squared distance (1 = fully open, ~316 units). 2.25 = 1.5x the ramp's distance, ~474 units: the peak holds until here.")]
-        [Min(1.01f)] public float recedeStartNorm = 2.25f;
+        [SerializeField, Min(1.01f)] float recedeStartNorm = 2.25f;
+        public float RecedeStartNorm => recedeStartNorm;
 
         [Tooltip("Where they are back at rest. The recede is smooth in DISTANCE between the two. 4.9 = ~2.2x the ramp's distance, ~700 units (Garrett, round 5: settle back from 474 to ~700 on the full braid).")]
-        [Min(1.02f)] public float recedeEndNorm = 4.9f;
+        [SerializeField, Min(1.02f)] float recedeEndNorm = 4.9f;
+        public float RecedeEndNorm => recedeEndNorm;
 
         [Header("Alive: the wave through what has opened")]
         [Tooltip("How much the opening breathes with the wave, as a fraction of the opening (0 = still). Scales with how open the part is, so a closed part never moves.")]
-        [Range(0f, 1f)] public float flowAmplitude = 0.35f;
+        [SerializeField, Range(0f, 1f)] float flowAmplitude = 0.35f;
+        public float FlowAmplitude => flowAmplitude;
 
         [Tooltip("Wave crests along a part's flow coordinate (a spindle's length).")]
-        [Range(0.1f, 6f)] public float flowWaves = 1.5f;
+        [SerializeField, Range(0.1f, 6f)] float flowWaves = 1.5f;
+        public float FlowWaves => flowWaves;
 
         [Tooltip("Crests per second, travelling toward the end of the flow coordinate (a spindle's tip: away from its crystal).")]
-        [Range(0f, 4f)] public float flowSpeed = 0.6f;
+        [SerializeField, Range(0f, 4f)] float flowSpeed = 0.6f;
+        public float FlowSpeed => flowSpeed;
 
         [Tooltip("Brightness added on a crest of a fully open part (0 = no pulse of light). NOT scaled by a part's strength: it follows how far open the part is on the ramp, not how far it moved. 0.02 = round 6's negligible sanity setting (was 0.8: up to 80% brighter on a crest).")]
-        [Range(0f, 3f)] public float pulseGlow = 0.02f;
+        [SerializeField, Range(0f, 3f)] float pulseGlow = 0.02f;
+        public float PulseGlow => pulseGlow;
 
         static readonly int SpreadId = Shader.PropertyToID("_Spread");
         static readonly int SqrDistanceId = Shader.PropertyToID("_SqrDistance");

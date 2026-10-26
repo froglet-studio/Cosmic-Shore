@@ -3,7 +3,7 @@
 
 The Urchin was the only hull in the fleet with a complete ability map (4/4 named, 4/4 level-5
 upgrades) and NO HUD at all (URCHIN_BACKLOG U3): no `UrchinHUDVariant.prefab`, `vesselHUDController:
-{fileID: 0}` on `Urchin.prefab`, and `UrchinVesselHUDController` / `UrchinVesselHUDView` referenced
+{fileID: 0}` on `Urchin.prefab`, and `UrchinHUDController` / `UrchinVesselHUDView` referenced
 by nothing. `VesselController.Initialize` logged "HUD will not function" on every spawn and the
 pilot flew with no ability row, no element flowers and no control chips.
 
@@ -38,7 +38,7 @@ This writes three things, each the way the fleet's sibling hulls already carry t
    exactly `iconBoxSize` so the derived scale is 1.
 
 3. `Urchin.prefab` - a `ShipHUDContainer` (overlay Canvas + scaler + raycaster, verbatim the
-   Butterfly's) holding a nested instance of the variant, an `UrchinVesselHUDController` on the
+   Butterfly's) holding a nested instance of the variant, an `UrchinHUDController` on the
    vessel root bound to the instance's view and to the vessel's OWN `UrchinTrackActionExecutor`,
    and `VesselStatus.vesselHUDController` pointed at it. No modification on the nested instance
    touches the view or the icons, so the variant stays the single source of truth for the row
@@ -156,7 +156,11 @@ def icon_writes() -> dict:
         assert 0.08 <= c <= 0.45, f"{png}: coverage {c:.3f} outside the readable band"
     out = {ICON_DIR + ".meta": folder_meta(guid_for("Urchin.folder"))}
     for _, _, png, fn in SLOTS + [(None, None, CHARGE_RING_PNG, charge_ring)]:
-        out[f"{ICON_DIR}/{png}"] = render(fn)
+        # The four ability PNGs are owned by the icon kit since 2026-10-24 (Tools/Build/icon_kit/specs/urchin.py,
+        # the art pass that replaced these placeholders); this tool keeps the metas (same guids) and the
+        # charge-ring GAUGE sprite, which is not an ability icon.
+        if png == CHARGE_RING_PNG:
+            out[f"{ICON_DIR}/{png}"] = render(fn)
         out[f"{ICON_DIR}/{png}.meta"] = sprite_meta(guid_for(png))
     return out
 
@@ -175,7 +179,7 @@ BASE_ROOT_RT = 6557045720525393826
 BASE_MISSING_SCRIPT = 5582900316631961953   # the deleted ShipHUDView-era component
 IMAGE_SCRIPT_GUID = "fe87c0e1cc204ed48ad3b37840f39efc"
 VIEW_SCRIPT = "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs"
-CONTROLLER_SCRIPT = "Assets/_Scripts/UI/Controller/UrchinVesselHUDController.cs"
+CONTROLLER_SCRIPT = "Assets/_Scripts/UI/Controller/UrchinHUDController.cs"
 
 ICON_BOX = 60   # Resources/AbilityLockupStyle.iconBoxSize -> derived icon scale exactly 1
 
@@ -631,7 +635,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {{fileID: 11500000, guid: {script_guid(CONTROLLER_SCRIPT)}, type: 3}}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.UrchinVesselHUDController
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.UrchinHUDController
   baseView: {{fileID: {U_HUD_VIEW}}}
   _iconSetSwitcher: {{fileID: 0}}
   view: {{fileID: {U_HUD_VIEW}}}

@@ -53,6 +53,10 @@ INTENSITIES = (1, 2, 3, 4)
 # SpawnableGyroid walks the shipped bond-mate table (its enum is lifted by run.sh).
 # The shipped bake format, so bake_prism_layouts.py writes exactly what the game reads.
 BAKE_FORMAT = "Assets/_Scripts/Controller/Environment/Spawning/PrismLayoutBakeFormat.cs"
+# Pure-C# helpers a shape calls. SpawnableGeode took MathfNoAlloc.Min (50a2e4e3c, 2026-10-24, the
+# no-params-array three-value Min), and until it was listed here the harness failed to compile, so this
+# audit and bake_prism_layouts.py --check both stopped running (CS0103 'MathfNoAlloc').
+HELPERS = ["Assets/_Scripts/Utility/MathfNoAlloc.cs"]
 GYROID_TABLES = ["Assets/_Scripts/Controller/Assemblers/CornerSiteType.cs",
                  "Assets/_Scripts/Controller/Assemblers/GyroidBondMateData.cs",
                  "Assets/_Scripts/Controller/Assemblers/GyroidBondMateDataContainer.cs"]
@@ -81,7 +85,7 @@ def shapes():
 
 def list_sources():
     seen, out = set(), []
-    for s in rcb.SOURCES + GYROID_TABLES + [BAKE_FORMAT] + shapes():
+    for s in rcb.SOURCES + HELPERS + GYROID_TABLES + [BAKE_FORMAT] + shapes():
         if s not in seen:
             seen.add(s)
             out.append(s)

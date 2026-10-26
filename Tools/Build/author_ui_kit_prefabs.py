@@ -40,6 +40,7 @@ referenced guid resolves to a .meta in the repo (or is a known package script).
 
 import argparse
 import hashlib
+import math
 import os
 import re
 import struct
@@ -116,7 +117,8 @@ TOK = {
     "SurfaceBlack": "00010A", "SurfaceVeryDark": "00041F", "SurfaceDark": "222645",
     "SurfaceLight": "434C89", "NeutralLightest": "747BAD", "Cta": "99FF80", "Danger": "FF4B3A",
     "ControlActive": "00D4FF", "Purchase": "FFAE00", "Tooltip": "A600FF",
-    # Rev 6: the elements as the colours of meaning (AbilityLockupStyleSO's element colours).
+    # Rev 6's element colours: RETIRED 2026-10-24 (elements carry no colour in the UI, Docs/UI_COLOR_RULES.md). The
+    # tokens keep their indices for serialized assets; no style-B surface may draw with them.
     "ElementCharge": "FFD34D", "ElementMass": "7FA8FF", "ElementSpace": "B07CFF", "ElementTime": "5FF0C8",
     # Rev 7: whatever is selected or focused (UITheme.Selection).
     "Selection": "3DB2FF",
@@ -138,12 +140,15 @@ def lerp(a, b, t):
 WHITE = (1.0, 1.0, 1.0, 1.0)
 VARIANTS = {"Default": 0, "Inactive": 1, "Cancel": 2, "Purchase": 3, "Cta": 4, "Play": 5, "Danger": 6,
             "Mass": 7, "Space": 8, "Time": 9}
-ELEMENT_VARIANT = {"Purchase": "ElementMass", "Mass": "ElementMass", "Space": "ElementSpace", "Time": "ElementTime"}
+# Retired rev 6 variants: they draw as Default (KitButton.PaletteFor).
+RETIRED_VARIANTS = ("Mass", "Space", "Time")
+ELEMENT_TOKENS = ("ElementCharge", "ElementMass", "ElementSpace", "ElementTime")
 
 
 def button_palette(variant, opaque, disabled=False):
     """(border, fill, content) in the Normal state - KitButton.PaletteFor."""
     v = "Inactive" if disabled else variant
+    v = "Default" if v in RETIRED_VARIANTS else v
     opaque = opaque or v == "Danger"
     dark = tok("SurfaceBlack")
     if v == "Inactive":
@@ -152,16 +157,16 @@ def button_palette(variant, opaque, disabled=False):
     if v == "Cancel":
         return ((tok("NeutralLightest"), tok("NeutralLightest"), dark) if opaque else
                 (tok("NeutralLightest"), tok("NeutralLightest", 0.12), tok("TextLight")))
-    if v in ELEMENT_VARIANT:   # rev 6: a spend is Mass; people Space; progress Time
-        t = ELEMENT_VARIANT[v]
-        return ((tok(t), tok(t), dark) if opaque else (tok(t), tok(t, 0.12), tok(t)))
+    if v == "Purchase":        # a spend is gold, and gold means nothing else
+        return ((tok("Purchase"), tok("Purchase"), dark) if opaque else
+                (tok("Purchase"), tok("Purchase", 0.12), tok("Purchase")))
     if v == "Cta":
         return ((tok("Cta"), tok("Cta"), dark) if opaque else
                 (tok("Cta"), tok("Cta", 0.12), tok("Cta")))
-    if v == "Play":            # rev 6: Play is Charge
-        charge = tok("ElementCharge")
-        return ((lerp(charge, WHITE, 0.5), charge, dark) if opaque else
-                (charge, tok("ElementCharge", 0.24), charge))
+    if v == "Play":            # the call to action, lime
+        cta = tok("Cta")
+        return ((lerp(cta, WHITE, 0.5), cta, dark) if opaque else
+                (cta, tok("Cta", 0.24), cta))
     if v == "Danger":
         return (tok("Danger"), tok("Danger"), dark)
     return ((tok("TextLight"), tok("TextLight"), dark) if opaque else
@@ -177,7 +182,7 @@ def selected_fill():
     return tuple(a[i] + (b[i] - a[i]) * SELECTED_FILL_TINT for i in range(3)) + (a[3],)
 
 
-def tile_palette(selected, locked, unselected_primary="TextLight", locked_secondary="Purchase"):
+def tile_palette(selected, locked, unselected_primary="TextLight", locked_secondary="NeutralLightest"):
     """KitTile.CollectColors in the Normal state."""
     return dict(
         fill=selected_fill() if selected else tok("SurfaceVeryDark"),
@@ -273,6 +278,12 @@ def rect(amin=(0.5, 0.5), amax=None, pos=(0, 0), size=(100, 100), pivot=(0.5, 0.
 STRETCH = rect((0, 0), (1, 1), (0, 0), (0, 0))
 
 
+def rot_z(deg):
+    """A z rotation as Unity serializes m_LocalRotation."""
+    h = math.radians(deg) / 2
+    return "{x: 0, y: 0, z: %s, w: %s}" % (f32(math.sin(h)), f32(math.cos(h)))
+
+
 class Node:
     def __init__(self, key, name, r=None, active=True):
         self.key, self.name, self.rect, self.active = key, name, r or rect(), active
@@ -327,15 +338,17 @@ def emit_node(ctx, node, parent_rt, out):
     for ch in node.children:
         child_rts.append(ctx.rt(ch.key) if isinstance(ch, Node) else ctx.fid(ch.key + "#stub"))
     r = node.rect
+    deg = getattr(node, "rot", 0)     # a z rotation in degrees (an element flower's petals); none on nearly every node
+    sc = getattr(node, "scale", 1)    # a uniform scale (the Hangar's content, section 84); 1 on nearly every node
     children = ("  m_Children:\n" + "".join(f"  - {{fileID: {c}}}\n" for c in child_rts)
                 if child_rts else "  m_Children: []\n")
     out.append(f"--- !u!224 &{rt}\nRectTransform:\n  m_ObjectHideFlags: 0\n"
                "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
                f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {go}}}\n"
-               "  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\n  m_LocalPosition: {x: 0, y: 0, z: 0}\n"
-               "  m_LocalScale: {x: 1, y: 1, z: 1}\n  m_ConstrainProportionsScale: 0\n"
+               f"  m_LocalRotation: {rot_z(deg) if deg else '{x: 0, y: 0, z: 0, w: 1}'}\n  m_LocalPosition: {{x: 0, y: 0, z: 0}}\n"
+               f"  m_LocalScale: {{x: {f32(sc)}, y: {f32(sc)}, z: 1}}\n  m_ConstrainProportionsScale: 0\n"
                + children
-               + f"  m_Father: {{fileID: {parent_rt}}}\n  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}\n"
+               + f"  m_Father: {{fileID: {parent_rt}}}\n  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: {f32(deg)}}}\n"
                f"  m_AnchorMin: {v2(*r['amin'])}\n  m_AnchorMax: {v2(*r['amax'])}\n"
                f"  m_AnchoredPosition: {v2(*r['pos'])}\n  m_SizeDelta: {v2(*r['size'])}\n"
                f"  m_Pivot: {v2(*r['pivot'])}\n")
@@ -663,7 +676,7 @@ def tile_body(fill, border, sel_sprite, unsel_sprite, primary, unsel_primary, se
                     + refs_list("primaryGraphics", [ctx.c(k, "tmp" if k in ("Name", "Label") else "img") for k in primary])
                     + f"  unselectedPrimaryToken: {TOKEN_INDEX[unsel_primary]}\n"
                     + refs_list("secondaryGraphics", [ctx.c(k, "tmp") for k in secondary])
-                    + f"  lockedSecondaryToken: {TOKEN_INDEX['Purchase']}\n"
+                    + f"  lockedSecondaryToken: {TOKEN_INDEX['NeutralLightest']}\n"
                     + refs_list("artGraphics", [ctx.c(k, "img") for k in art])
                     + (f"  lockGraphic: {{fileID: {ctx.c(lock, 'img')}}}\n" if lock else "  lockGraphic: {fileID: 0}\n")
                     + (f"  lockLabel: {{fileID: {ctx.c(lock_label, 'tmp')}}}\n" if lock_label else "  lockLabel: {fileID: 0}\n"))
@@ -713,16 +726,13 @@ def build_top_nav_tab():
     # The label sizes itself to its text so the 2px underline beneath it spans the word, not the tab.
     alab = active.child(Node("ActiveImage/Label", "Label",
                              rect(size=(label_width("TAB", "Button"), line_height("Button")))))
-    # Rev 7: the shown screen's word and underline in the sky-blue Selection; the underline carries the selection
-    # light (SelectionBar.mat: a sweep running along it, breathing), placed by KitRimMesh.
+    # The shown screen's word and underline in the sky-blue Selection. The underline is a plain, still bar: the rev 7
+    # sweep along it read as frozen next to the hub strip's bar (Shombith, 2026-10-24), and it was decoration
+    # (Docs/UI_COLOR_RULES.md, attention economy).
     alab.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("Selection"))) \
         .add("kt", 114, kit_text("Button", "Selection")).add("csf", 114, fitter(2, 0))
     under = alab.child(Node("ActiveImage/Underline", "Underline", rect((0, 0), (1, 0), (0, -6), (0, 2), (0.5, 0.5))))
-    bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
-    under.add("cr", 222, canvas_renderer()).add("img", 114, lambda ctx, go: image(tok("Selection"))(ctx, go).replace(
-        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n", 1)) \
-        .add("th", 114, themed("Selection")) \
-        .add("rim", 114, lambda ctx, go: mono(go, "b403ee3874d54f79d0f27e7013879c0f", ""))
+    under.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("Selection"))).add("th", 114, themed("Selection"))
     # The lit glyph hangs off the word's left edge, so it follows the fitted label without a layout.
     aicon = alab.child(Node("ActiveImage/Icon", "Icon", rect((0, 0.5), None, (-(NAV_ICON_GAP + NAV_ICON / 2), 0),
                                                               (NAV_ICON, NAV_ICON)), active=False))
@@ -803,7 +813,9 @@ def build_currency_pill():
     amt = root.child(Node("Amount", "Amount", rect(size=(label_width("0", "Data"), line_height("Data")))))
     amt.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("0", "Data", tok("TextLight"), "left")) \
         .add("kt", 114, kit_text("Data"))
-    root.add("hlg", 114, hv_layout(False, (16, 16, 8, 8), 10, 4, (1, 1), (0, 0)))
+    # Section 82 ("Crystals is looking too clamped up"): room inside the pill - more on the right, where the sliver's cut
+    # corner eats into it - and the amount a little apart from the crystal.
+    root.add("hlg", 114, hv_layout(False, (18, 24, 8, 8), 12, 4, (1, 1), (0, 0)))
     root.add("csf", 114, fitter(2, 2))
     return root
 
@@ -1215,11 +1227,18 @@ def outputs():
 
 
 def validate(out):
-    # Rev 6: the elements are the colours of meaning - Play is Charge, a spend is Mass, people Space,
-    # progress Time (Docs/MENU_REDESIGN_B.md §45). KitButton.PaletteFor mirrors this table.
-    for variant, token in (("Play", "ElementCharge"), ("Purchase", "ElementMass"), ("Space", "ElementSpace"),
-                           ("Time", "ElementTime")):
+    # Garrett's colour roles (2026-10-24, Docs/UI_COLOR_RULES.md): Play is the lime call to action, a spend is gold,
+    # danger is fire, the rest is the neutral blue - and no button wears an element colour. KitButton.PaletteFor
+    # mirrors this table.
+    for variant, token in (("Play", "Cta"), ("Cta", "Cta"), ("Purchase", "Purchase"), ("Danger", "Danger")):
         assert button_palette(variant, True)[1] == tok(token), f"the {variant} button is not drawn in {token}"
+    for variant in VARIANTS:
+        for opaque in (True, False):
+            drawn = set(button_palette(variant, opaque))
+            for t in ELEMENT_TOKENS:
+                assert tok(t) not in drawn, f"the {variant} button wears {t} - elements carry no colour"
+    for variant in RETIRED_VARIANTS:
+        assert button_palette(variant, False) == button_palette("Default", False), f"retired {variant} must draw as Default"
     """Every local fileID resolves; anchors are unique; every referenced guid has an owner."""
     # Rev 7: a selection is the glowing sky blue everywhere (Docs/MENU_REDESIGN_B.md §47.1, the owner 2026-10-17).
     assert tok("Selection")[:3] == tuple(int("3DB2FF"[i:i + 2], 16) / 255 for i in (0, 2, 4)), "Selection is not sky blue"
@@ -1228,9 +1247,8 @@ def validate(out):
     assert f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n" in tile, "KitTile's selected border is not Selection"
     nav = out[f"{PREFAB_DIR}/KitTopNavTab.prefab"]
     bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
-    assert f"guid: {bar_mat}, type: 2}}" in nav, "the nav underline lost the selection light (SelectionBar.mat)"
-    assert nav.count("guid: b403ee3874d54f79d0f27e7013879c0f, type: 3}") == 1, \
-        "the nav underline has no KitRimMesh (the selection light would sweep the wrong UVs)"
+    assert f"guid: {bar_mat}, type: 2}}" not in nav, "the nav underline runs the selection sweep again (it must be a still bar)"
+    assert "guid: b403ee3874d54f79d0f27e7013879c0f, type: 3}" not in nav, "the nav underline carries KitRimMesh again"
     known_guids = set(PACKAGE_GUIDS)
     for root, _dirs, names in os.walk(os.path.join(REPO, "Assets")):
         for n in names:
@@ -1284,8 +1302,8 @@ def self_test(out):
     nav, tile = f"{PREFAB_DIR}/KitTopNavTab.prefab", f"{PREFAB_DIR}/KitTile.prefab"
     bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
     plants = {
-        "the nav underline loses the selection light": (nav, lambda t: t.replace(
-            f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n", "  m_Material: {fileID: 0}\n", 1)),
+        "the nav underline sweeping again": (nav, lambda t: t.replace(
+            "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n")),
         "the selected tile border falls back to the green CTA": (tile, lambda t: t.replace(
             f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n", f"  selectedBorderToken: {TOKEN_INDEX['Cta']}\n", 1)),
     }

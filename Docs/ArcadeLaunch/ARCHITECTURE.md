@@ -275,15 +275,52 @@ legacy `LoadoutSystem.SaveGameLoadOut` "last game play configuration" is superse
 hull; its only writer was the retired two-screen path's `PlaySelectedGame`, and its read is
 kept as a fallback below this store.
 
+### 3.2.1 Leaving a match lands back on its panel
+
+Pressing Main Menu - on the result panel, in the pause menu, on the Maelstrom summary - used to land
+on HOME with the lava lamp, so changing the AI difficulty or the intensity for another go meant
+finding the card again. It now lands on **the launch panel of the card the match was launched
+from**, over the window that lists it, already seeded with the setup that just flew (§3.2) (Yash,
+2026-10-25: "this should be the general flow").
+
+- **The record:** `MenuReturnCard` (`_Scripts/UI/`), the card's mode plus whether it was this week's
+  challenge. Written in `HandleAllPlayersReady` beside the launch preference, on every peer. It is
+  a static, so it survives the scene loads and not an app restart, and the next Menu_Main load
+  TAKES it, so only the first load after a launch counts as a return.
+- **The re-open:** `ScreenSwitcher.ReturnToLaunchedCardCoroutine`, started from `Start`. It goes
+  through `OpenGame(GameModes)`: the window whose roster lists the card opens, then the card is
+  pressed, the same path as the Hangar's Games tab. For this week's challenge (if the week still
+  names that mode) it goes through `OpenWeeklyChallenge`. The Maelstrom card opens its own window
+  through `OpenFor` as usual.
+- **It waits for what a press never has to**, because a press cannot land while the splash covers
+  the menu: the menu's vessel (`MainMenuState.Ready`), the boot world (`EnvironmentLoadVeil`: the
+  preview stands a second arena, which must not race the first build) and the lobby
+  (`ArcadeGameConfigureModal.IsReadyToOpenCards`: before the sync manager spawns, the host's commit
+  returns on its first line). After `returnToCardTimeoutSeconds` (90 s, past the splash's own
+  60 s boot-world hold) it stays on HOME.
+- **Who does not re-open it** (`MenuReturnCard.ShouldReopen`, held by `MenuReturnCardTests`):
+  - A party GUEST. The host's open reaches them as the replicated lobby (§3.1), so the whole
+    party lands on the panel together. A guest's own `OpenFor` would be a request for the card.
+  - A guided path (`MenuGuide`) or the first orientation funnel (`QuestArcadeConstraints.Active`),
+    which decide where the player goes; the quest resumes on HOME.
+  - A player who already went into freestyle or a window.
+  - A host loss or a session end, which clear the record (`PartyInviteController.BounceToSoloMenuAsync`,
+    `SceneLoader.HandleActiveSessionEnd`): the party it was launched with is gone.
+- **Launches that do not come from a card** (Quick Play, missions, training, benchmarks) write no
+  record and still return to HOME.
+
+This is a place the player was, not a guided path (`Docs/HomeHub/ARCHITECTURE.md` §8): the player
+pressed Main Menu, and the panel they launched from is where that press now goes.
+
 ### 3.3 The AI difficulty row: the opponent, not the map
 
 Three buttons under the intensity row - **Easy, Medium, Hard** - set how well the AI flies.
 They are deliberately not intensity: intensity is the MAP (track length, crystals, laps), the
-difficulty is the OPPONENT, so a Hard AI can race intensity 1 and an Easy one intensity 4.
-`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3`) carries it, and
+difficulty is the OPPONENT, so a Legendary AI can race intensity 1 and an Easy one intensity 4.
+`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3, Legendary = 4`) carries it, and
 `AIDifficultyRules` holds the four rules every reader shares: the default is **Medium**, any
 other number (0 from an old save or a default struct, a member a later build added) resolves to
-that default, `IsOfferedFor` names the modes whose AI actually reads it, and `Step` is the pad's
+that default, `IsOfferedFor` is every mode (2026-10-26), and `Step` is the pad's
 left/right.
 
 It follows intensity's path exactly, because it is the same kind of fact:
@@ -305,9 +342,13 @@ It follows intensity's path exactly, because it is the same kind of fact:
   `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
   installed. `[NonSerialized]`, survives `ResetRuntimeData` (and so the replay reload), reset by
   `ResetAllData` - the same lifetime as `RequestedAIDomains`.
-- **It is offered only where the AI reads it.** A row that changed nothing would be a promise the
-  match breaks, so a mode is added to `AIDifficultyRules.IsOfferedFor` in the same change that
-  teaches its pilot to read the value. Today: Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
+- **It is offered on every mode, and every AI reads it** (Yash, 2026-10-26: "Every game mode should have easy,
+  medium, hard AI. That's a generic rule."). A row that changed nothing would be a promise the match breaks, so
+  the rule is carried by the AI, not by a list: every AI seat is configured through
+  `ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode`, which gives the platform autopilot an
+  `AIPilotBelief` on every mode without a handicap of its own, and every `GateRaceController` race replaces that
+  belief with its ring handicap when it arms its racers (one handicap per pilot, never two). Before 2026-10-26 it
+  was offered only on Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
   races Slingshot and Warpline (`GateRaceHandicap`), Regatta (Squirrels on `SkimRaceHandicap`, every
   other hull `GateRaceHandicap`), and the Arena's Astro League, Brood
   Rush and Broadside (`AIDifficultyRules.UsesPilotBelief`: the platform autopilot flies on an
@@ -795,7 +836,7 @@ instead of splitting it across two files.
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
 | `GameBriefingView` | same | Description + rotating tips |
-| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard row (§3.3) - draws and raises, never decides |
+| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard / Legendary row (§3.3) - draws and raises, never decides |
 | `author_ai_difficulty_row.py` | `Tools/Build/` | Writes that row into `ArcadeGameConfigureModal.prefab` (`--check`) |
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
 | `ModeVideoView` | same | The Maelstrom's clip |
@@ -888,6 +929,14 @@ raised and nothing subscribes to it, in code or in any scene — a removal candi
 integration point rather than part of the two-screen path.
 
 ## The Maelstrom pool list is a Toy Box VARIANT ROW
+
+> **Superseded 2026-10-25 (kept for the lesson below).** The style-B configure windows (`a326296f6`,
+> 2026-10-15) moved the pool list out of `Menu_Main` into `ConfigureMaelstromView.prefab`, with its own
+> row, `ConfigurePoolRow.prefab`; both are authored by `Tools/Build/author_menu_configure.py`. The
+> `MaelstromPoolRow.prefab` this section describes was then referenced by nothing, and its generator,
+> `author_maelstrom_pool_cards.py`, had no grid left to patch, so both were deleted
+> (`Docs/REFACTOR_BACKLOG.md` S62). What still holds is the rule at the end of the next paragraphs: a
+> card slot is a promise about what the data means.
 
 `MaelstromPoolRow.prefab` was a 228×170 chamfered PNG drawn **Simple** — stretched — into a 260×80
 grid cell, carrying one centred label and nothing else. That is the trap §4.1.8 of

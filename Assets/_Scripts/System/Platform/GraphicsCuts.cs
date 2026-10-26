@@ -111,6 +111,10 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>One view on the screen at a time (the preset's <c>singleView</c>): no crew vessel's
+        /// picture-in-picture, and the person starts in the cheaper seat (<c>CrewSingleView</c>).</summary>
+        public static bool SingleView => Current?.SingleView ?? false;
+
         /// <summary>The sky drawn in place of <paramref name="authored"/>, or null to keep it: the tier's
         /// replacement first, then the preset's bake when the preset in force asks for one.</summary>
         public static Material SkyboxReplacementFor(Material authored)

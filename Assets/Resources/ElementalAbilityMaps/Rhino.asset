@@ -15,8 +15,8 @@ MonoBehaviour:
   vesselClass: 3
   entries:
   - Element: 1
-    AbilityLabel: 'Sword Energy'
-    AbilityDescription: 'Charge raises the energy the sword banks per cut - x1 at rest, x2 at level 10, floored at x0.5 (RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier on 0.04 per prism and 0.12 per super-shield). Energy lengthens the blade and pays for the energize (0.1 a time), so a charged Rhino refills both in half the cuts. Its own afterimages are prisms like any other: once the 1 s self-trail grace is past the blade cuts them and banks their energy.'
+    AbilityLabel: 'Sword Steal'
+    AbilityDescription: 'Charge raises how many petals a sword hit steals from a rival vessel - x1 at rest (the price Broadside puts on a Strike), x2.5 at level 10, floored at x1 (RhinoSwordStealBySkimmerEffect.stealScale, read at the thief''s replicated level; the same verb and numbers as the Squirrel''s joust). The card is also the energize: hold both triggers to light the blade, which pops super-shielded prisms. The Rhino has no energy meter (2026-10-26): the energize costs nothing and the cooldown is its only limit.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -25,7 +25,7 @@ MonoBehaviour:
     UpgradeDescription: 'Once an energized blade''s stance is let go its 5 s tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it, so a blade kept coming back to the chop stays energized. ShieldSkimmerScaleConfigSO.liveWireUpgradeElement, gated on IsUpgradeActive(Charge) in ShieldSkimmerScaleDriver.'
   - Element: 2
     AbilityLabel: 'Afterimage'
-    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge lays them for its whole length. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Rhino''s own blade: past the 1 s self-trail grace it cuts them like any prism.'
+    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge (8 s, a ring of eight trigger-driven swords round the hull) lays them for its whole length, from the pilot's blade. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Rhino''s own blade: past the 1 s self-trail grace it cuts them like any prism.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'The afterimages are laid as DANGER prisms (RhinoSwordAfterimageConfigSO.dangerUpgradeElement, gated on IsUpgradeActive(Mass), snapshotted per afterimage).'
   - Element: 3
     AbilityLabel: 'Blade Reach'
-    AbilityDescription: 'Space lengthens the sword: the blade''s resting length runs 30 at rest to 50 at level 10 (Skimmer.Scale on the ForceFieldSkimmer Variant, read live by ShieldSkimmerScaleDriver), and stored energy grows it on top toward 120. Reach is what the blade cuts, what it strikes an Astro League ball with at the tip, and how far the afterimages reach.'
+    AbilityDescription: 'Space alone grows the sword: the blade runs 24 at rest to 40 at level 10 (Skimmer.Scale on the Rhino''s ForceFieldSkimmer, eased in by ShieldSkimmerScaleDriver), and nothing else resizes it - no energy, no surge burst (2026-10-26). The local pilot''s camera pulls back with it, in proportion (ShieldSkimmerScaleConfig.cameraFollowsBladeLength), so the blade reads the same size on screen. Reach is what the blade cuts, what it strikes an Astro League ball with at the tip, and how far the afterimages and the surge''s sword ring reach.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4

@@ -168,9 +168,9 @@ The auth system follows a **single-writer / multi-reader** pattern through SOAP:
 
 - **`AuthenticationServiceFacade`** (plain C# singleton, Reflex DI) — the **sole writer** to `AuthenticationDataVariable`. Handles UGS initialization, anonymous sign-in, cached session restore, event wiring, and sign-out. Created by `AppManager.InstallBindings()` as a lazy singleton.
 - **`AuthenticationDataVariable`** (SOAP `ScriptableVariable<AuthenticationData>`) — the **shared state**. All other systems read from this or subscribe to its events.
-- **`AuthenticationController`** (MonoBehaviour) — thin adapter that delegates to the facade via `[Inject]`. Exists for scenes that need a GameObject entry point (e.g., inspector-driven `autoSignInAnonymously` toggle).
+- **`AuthenticationController`** (MonoBehaviour) — thin adapter that delegates to the facade via `[Inject]`. Exists for scenes that need a GameObject entry point (e.g., inspector-driven `autoSignInAnonymously` toggle). (retired 2026-10-25: on no scene or asset, `Docs/Reports/DEAD_CODE_M8.md`)
 - **`AuthenticationSceneController`** (MonoBehaviour) — orchestrates the Authentication scene UI: auto-skip on cached auth, guest login button, username setup panel, navigation to main menu. All async work uses `CancellationToken` and `UniTask`.
-- **`SplashToAuthFlow`** (MonoBehaviour) — placed on the splash scene. After splash display, reads `AuthenticationDataVariable` to decide: skip to `Menu_Main` (if signed in) or load the Authentication scene.
+- **`SplashToAuthFlow`** (MonoBehaviour) — placed on the splash scene. After splash display, reads `AuthenticationDataVariable` to decide: skip to `Menu_Main` (if signed in) or load the Authentication scene. (retired 2026-10-25: on no scene or asset, `Docs/Reports/DEAD_CODE_M8.md`)
 
 #### Execution Flow
 
@@ -355,7 +355,7 @@ ApplicationStateDataVariable (ScriptableObject asset)
        └─ .OnStateChanged ──► (ScriptableEventApplicationState — any subscriber)
 ```
 
-Readers of auth state: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService`, `AuthenticationController`, `MultiplayerSetup`, `FriendsServiceFacade`.
+Readers of auth state: `AuthenticationSceneController`, `PlayerDataService`, `MultiplayerSetup`, `FriendsServiceFacade`.
 
 Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or `ApplicationStateData.OnStateChanged` SOAP event.
 
@@ -368,8 +368,6 @@ Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or 
 | Auth facade (single writer) | `AuthenticationServiceFacade.cs` | `_Scripts/System/` |
 | Friends facade (single writer) | `FriendsServiceFacade.cs` | `_Scripts/System/` |
 | Auth scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
-| MonoBehaviour auth adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
-| Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
 | Network monitor | `NetworkMonitor.cs` | `_Scripts/System/` |
 | SOAP auth state | `AuthenticationData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | SOAP auth variable | `AuthenticationDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
@@ -387,7 +385,7 @@ Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or 
 - **UniTask + CancellationToken**: All auth async paths use `UniTask` with `CancellationTokenSource` tied to `OnEnable`/`OnDisable` lifecycle. No raw `Task.Delay` or manual elapsed-time polling.
 - **Timeout via linked CTS**: Use `CancellationTokenSource.CreateLinkedTokenSource(ct)` + `CancelAfter()` for timeouts, not polling loops.
 - **Button interactability**: Disable buttons during async operations instead of boolean `_isProcessing` guards.
-- **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own `AuthenticationController` GameObjects at runtime.
+- **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own auth GameObjects at runtime.
 
 ### Dependency Injection (Reflex)
 
@@ -423,7 +421,17 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
   `VesselTransformer.NoseFollowFraction`: the local human's nose is the commanded rotation each frame on every device;
   AI, autopilot and remote hulls keep the fleet's 1.5/s, which the autopilots model. Predict a hull with its
   `NoseFollowRate`, never the static `RotationFollowRate`.
+- **The nose lag is one dial per device, never per hull (Garrett, 2026-10-23).** For a local human,
+  `NoseFollowFraction` closes `1 - e^(-rate·dt)` of the gap at the device's rate (`PilotNoseFollowPerSecond`, which
+  `NoseFollowRate` reports too): the pad `GamepadFlightConfigSO.noseFollowPerSecond` = **1.5**, the fleet lag it flew
+  2024-11-19 to 2026-10-21 ("responsive, but eases into its target ... we want to keep this on gamepad"); touch
+  `TouchControlProfileLibrarySO.noseFollowPerSecond` = **9** (0.11 s: a thumb on glass is already damped by friction,
+  so it only needs its hard starts, stops and lifts rounded; the value touch flew on four hulls 10-05 to 10-21) until a
+  phone playtest says otherwise; keyboard and mouse none. Flown and rejected on the pad: a response curve on
+  stick position (no smoothness) and a 4-6 stage smoothing chain (it starts almost still, which reads as input lag).
 - **On a phone, each hull has a touch profile** (`Resources/TouchControlProfiles`, `TouchControlProfileLibrarySO`,
   generated by `Tools/Build/author_touch_profiles.py`): ThumbLifts or TotemButtons, tilt, both-thumbs-off controls and
-  extra buttons, read by `TouchInputStrategy` (flight) and `TouchControlsHud` (the cards). Both thumbs off reads as a
+  extra buttons (a hull's tilt may be turned over per axis, `flipTiltSteerPitch` / `flipTiltSteerYaw`: the Manta flips
+  pitch only, Garrett 2026-10-22 / 2026-10-25; it is hull data under the one Invert Y rule, not a strategy's sign; a
+  hull may soften one-thumb flight at home with `oneThumbResponseCurve`, the Dolphin 0.6, rim unchanged), read by `TouchInputStrategy` (flight) and `TouchControlsHud` (the cards). Both thumbs off reads as a
   released pad. `Docs/ABILITY_LOCKUP.md` "On a phone" and `Docs/Reports/MOBILE_VESSELS.md` §8.

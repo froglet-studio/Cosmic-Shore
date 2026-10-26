@@ -30,9 +30,9 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _Period: 18
+    - _Period: 0
     - _Soft: 1
-    - _Speed: 26
+    - _Speed: 0
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0

@@ -100,6 +100,7 @@ namespace CosmicShore.ECS
         {
             _runtimeOverride = null;
             _linearizeOverride = null;
+            _forceMeshRendererStamps = false;
         }
         static bool _configLoaded;
         // OPT-IN: defaults OFF. The instanced path only renders correctly once the
@@ -150,6 +151,32 @@ namespace CosmicShore.ECS
 
         /// <summary>Runtime A/B override (null = fall back to config). New prisms follow the new value; existing ones keep their current path until reuse.</summary>
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
+
+        // ------------------------------------------------------------------
+        // The no-compute MeshRenderer stamp path (Docs/PRISM_ANIMATION.md §4.11)
+        // ------------------------------------------------------------------
+
+        static bool _forceMeshRendererStamps;
+
+        /// <summary>
+        /// True on a device where Entities Graphics cannot run (<see cref="EntitiesGraphicsSupportProbe"/>: no
+        /// SRP, no compute — every WebGL2 browser —, or compute kernels that fail to load), and while the dev A/B
+        /// forces it (<c>prismpath mpb</c>). On such a device no prism ever gets a companion entity, so the
+        /// clock-material stamps go to each prism's MaterialPropertyBlock instead
+        /// (<see cref="PrismMeshRendererStamps"/>) and the death visuals to a small pooled GameObject carrier
+        /// (<c>PrismMeshRendererDebris</c>). Keyed off the device probe, never a build define. Everywhere else it is
+        /// false and strict mode holds unchanged: a prism without an entity snaps and screams.
+        /// </summary>
+        public static bool UsesMeshRendererStamps =>
+            _forceMeshRendererStamps || !EntitiesGraphicsSupportProbe.IsSupported;
+
+        /// <summary>Whether the dev A/B currently forces the MeshRenderer stamp path.</summary>
+        public static bool MeshRendererStampsForced => _forceMeshRendererStamps;
+
+        /// <summary>Dev A/B (the <c>prismpath mpb</c> console command): force the MeshRenderer stamp path on a
+        /// device that HAS Entities Graphics. Only meaningful together with <c>SetRuntimeOverride(false)</c> and a
+        /// re-sync of the live prisms, so no prism keeps an entity the stamps would land on first.</summary>
+        public static void SetMeshRendererStampsForced(bool forced) => _forceMeshRendererStamps = forced;
 
         // ------------------------------------------------------------------
         // Clock-material animation (Docs/PRISM_ANIMATION.md, LOCKED law)
@@ -2070,6 +2097,29 @@ namespace CosmicShore.ECS
                 var r = refreshes[i];
                 if (r.Entity == Entity.Null || !em.Exists(r.Entity)) continue;
                 em.SetComponentData(r.Entity, new PrismImplosionLocationOverride { Value = r.Location });
+                if (r.GrowBounds)
+                    em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
+            }
+        }
+
+        /// <summary>
+        /// <see cref="RefreshImplosionDebrisBatch"/> for the burst carrier's SUCTION (PrismCollisionBurst, the slice
+        /// entities drawing the destruction's cut into a moving sink): the live sink rides the slice's
+        /// <see cref="PrismSliceCentreOverride"/>, which no other burst kind reads. The same §1 exception, the same
+        /// shape — one float4 per live suction per frame, a bounds write only when the sink wandered out of them.
+        /// </summary>
+        public static void RefreshSliceDebrisSinkBatch(
+            System.Collections.Generic.List<ImplosionDebrisRefresh> refreshes, int epoch)
+        {
+            if (refreshes == null || refreshes.Count == 0) return;
+            if (epoch != _epoch || _world == null || !_world.IsCreated) return;
+
+            var em = _world.EntityManager;
+            for (int i = 0; i < refreshes.Count; i++)
+            {
+                var r = refreshes[i];
+                if (r.Entity == Entity.Null || !em.Exists(r.Entity)) continue;
+                em.SetComponentData(r.Entity, new PrismSliceCentreOverride { Value = new float4(r.Location, 1f) });
                 if (r.GrowBounds)
                     em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
             }

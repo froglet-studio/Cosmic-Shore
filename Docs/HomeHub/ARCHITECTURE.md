@@ -232,6 +232,36 @@ press itself, because a disabled button is never the whole gate.
 Two things the window does NOT draw: the objective box and the controls block. The panel's
 `objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
 
+### 3.2.1 One shared vessel panel for every seat (2026-10-25)
+
+Yash asked for one place to choose every hull - your own and each AI's - instead of a control on every
+seat: "use the vessel panel to choose the AI vessels and owner vessels together", with the intensity on
+top and the vessel panel below. So the configure window's settings column now reads **Intensity, Pilots,
+Vessel**, top to bottom (the Arcade's view takes the same order; its vessel section only shows the card's
+hull). On the Arena the vessel section is the **shared vessel panel**: `<`, seven hull tiles, `>`, then
+the class line and CLAIM. It picks the hull of whichever seat is selected:
+
+- **Your own row** (the default, and on every open): the panel works as it always did. A tile shows a
+  hull, the arrows step it, CLAIM takes it, and Start waits for the claim.
+- **An AI's row**: tap it and the caption reads "Ruby AI's vessel". The section's own labels show that
+  AI's hull ("Auto" while none is picked), and a tile or an arrow puts the AI in that hull at once. There
+  is no CLAIM for an AI. Tap the same row again, or your own row, to go back to your own hull. The row being
+  edited turns the Selection colour (`DomainAvatarChip.SetEditing`). Your summary chips, the FLY row and
+  the controls keep naming YOUR hull while an AI is selected.
+- **Who may pick** is unchanged (`AIHullSeating.MayPick`): the host any seat, opponents included; a guest
+  only their own team's allies. A guest's row taps go nowhere else.
+- **The host decides.** An arrow sends the existing `RequestAllyVesselCycle`. A tile sends the new
+  `RequestAIVessel` (protocol 14). The host refuses a hull another pilot has claimed or another AI already
+  flies (`TakenHullsForAiSeat`, the same set the strip draws locked), then re-broadcasts the roster, which
+  is how a guest's panel learns the pick.
+- **A tap on an AI row used to step its hull.** It now selects the seat; the stepping moved to the panel's
+  arrows.
+
+The arrows and the tiles are authored by `Tools/Build/author_menu_configure.py` (`hull_body`): 74-px
+tiles centred in the panel, and 32 x 56 arrows level with the tiles' middle, inset from the panel's edges.
+The arrows first landed as a hand edit of `ConfigureArenaView.prefab` (`d9b7305b1`), which left the
+generator's `--check` red; the generator now owns them.
+
 ### 3.3 What the carousel offers: the card's list, never the Hangar's lock
 
 **A card's `Vessels` list is the authority on what a mode admits. The Hangar's purchase lock
@@ -503,7 +533,7 @@ sized to "the largest Urchin/Dolphin roster" (`PrismCradle.Slots` 4, `PrismLit.S
 untouched by the six-seat cards.
 
 **3. A human can swap into an AI teammate's hull mid-match** - **D-pad left / right**, keyboard
-**1 / 2** (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
+**1 / 2** (the **left / right arrow keys** and a two-finger swipe since 2026-10-23, read by the person's `LocalCrewStation` round the domain's seats: `Docs/CREW_STATIONS.md`) (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
 rear view). Left/1 = previous, right/2 = next, round a ring of the pilot's own hull plus every AI
 teammate's, ordered by vessel NetworkObjectId so every peer walks it identically
 (`PilotSwap.TryPickRingTarget`). Human teammates' hulls are never in the ring.
@@ -1302,11 +1332,10 @@ tonemapper, so without it a shark is a blown-out white shape with no colour in i
 `volumeLayerMask` (the shape `ConnectingArenaPreview.AdoptUrpSettings` already uses); shadows and
 AA stay off, which is where the cost was.
 
-**The portraits ARE low-poly, and it is the bake, not the display.** `ToolPortraitBuilder.AddRing`
-rebuilt the toy's own 12 × 6 torus — sized for a ring seen from a vessel in flight — and drawn as a
-still at 330 px it is a dodecagon. The bake now tessellates at 48 × 12. **The portraits are baked
-assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > UI > Codex
-bake; nothing changes on screen until it is run.
+**The portraits were low-poly, and it was the bake, not the display** (superseded 2026-10-26).
+`ToolPortraitBuilder.AddRing` rebuilt the toy's own 12 × 6 torus, a dodecagon as a 330 px still.
+The baked emblem is gone now: a toy's portrait is a 2D glyph drawn at 512 px by
+`Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4), with no tessellation to get wrong.
 
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 

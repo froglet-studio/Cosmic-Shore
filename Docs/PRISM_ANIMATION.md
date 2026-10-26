@@ -599,7 +599,9 @@ Implementation constraints (verified by the capability audit):
   transition — silent where that is a normal transient (fresh spawn paint, morph
   overlay windows), screaming via `PrismClockDiagnostics.WarnNoRenderEntity` where the
   render path is genuinely down. There are no MaterialPropertyBlock twins and no CPU
-  animation tier; the former managers are DELETED (tracker D2, 2026-08-02).
+  animation tier; the former managers are DELETED (tracker D2, 2026-08-02). **One exception
+  (2026-10-15, §4.11): on a device where Entities Graphics cannot run at all (no compute — a
+  WebGL2 browser), the same one-shot stamps go to the prism's property block.**
 - Currently NON-instanced properties that must not be driven per-instance without
   flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
   `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
@@ -2617,7 +2619,79 @@ halves' fresnel and flesh shading is the prism look approximated, not the BlockG
 `UNITY_DOTS_INSTANCED_PROP` / `DOTS.hlsl` are the documented Entities-Graphics custom-shader surface
 and were compiled against a mock, not the package.
 
-### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21)
+### 4.11 The no-compute MeshRenderer stamp path (shipped 2026-10-15, the browser Toybox)
+
+**Why.** A WebGL2 browser (the browser Toybox, `Docs/WEBGL_TOYBOX.md`) has no compute shaders, so
+Entities Graphics is unsupported, `PrismRenderService` never creates a companion entity, and every prism
+draws through its own MeshRenderer. Strict mode then had nothing to stamp: in the shipped browser build
+NOTHING animated — no grow-in, no colour lerp, no sway, no shield bloom, no turret flight, no jiggle, no
+cell-swap suction — and no death had a visual (`PrismDebris` queued batches that could never spawn, held
+for 5 s, and `PrismFactory` reported "this death has no visual"). The owner asked for the animations back.
+
+**The ruling.** On a device where Entities Graphics CANNOT run — and only there — the "no MPB twins" clause
+of §4.4 is reversed. The law's core is untouched: one write at the stamp, nothing per frame, one write at
+the analytic end, GPU runs the course off `_PrismClock`. Only the CARRIER of the initial conditions changes:
+the prism's `MaterialPropertyBlock` instead of its entity's per-instance components. Every other strict-mode
+case (tool scenes, pre-first-show, exotic morph windows, a misconfigured `PrismRenderConfig` on a desktop)
+still snaps and screams through `PrismClockDiagnostics.WarnNoRenderEntity`, exactly as before.
+
+- **The predicate:** `PrismRenderService.UsesMeshRendererStamps` = `!EntitiesGraphicsSupportProbe.IsSupported`
+  (no SRP, no compute, or compute kernels that fail to load) or the dev A/B force. Device-keyed, never the
+  `FROGLET_WEB_TOYBOX` define. `PrismMeshRendererStamps.Active` adds `Application.isPlaying` (edit-mode tooling
+  keeps settling to the end state). Every new branch is gated on it, so a device with Entities Graphics runs
+  bit-for-bit as before.
+- **Why it works on the GPU side.** Every clock property the prism graphs read is exposed and Hybrid Per
+  Instance (`hlslDeclarationOverride: 3`). In a variant without `DOTS_INSTANCING_ON` — the only variant a
+  no-compute device has — Shader Graph declares those properties in the `UnityPerMaterial` cbuffer, which a
+  property block overrides. `PrismMeshRendererStampsTests` pins every name the block writes as exposed + Hybrid
+  Per Instance in BlockGraph, ExplodingBlockGraph and SuctionGraph, and as the `[MaterialProperty]` name of the
+  component the entity stamp writes, with the same float / vector packing. The settled defaults the materials
+  carry (`_GrowStartFrac` 1, every duration/rate 0, sway spans 0) are what a REMOVED property falls back to.
+- **One writer, mirroring the service.** `Controller/ECS/Rendering/PrismMeshRendererStamps.cs`: `StampGrow`,
+  `StampColorTransition`, `StampFlight`, `StampShieldMorph`, `StampJiggle`, `StampSuctionClock`, `StampSway`, the
+  super-shield mark, `ClearPrismStamps`, and the culling-envelope twins (`ExpandBounds`, `EncapsulateBoundsPoint`,
+  `ResetBounds` on `Renderer.localBounds`). Same arguments as the `PrismRenderService.Stamp*` they mirror;
+  colours go through `PrismRenderService.ApplyColorSpace` and `SetVector`, i.e. the entity write's own
+  conversion. Get-modify-set, so grow + colour + sway + shield on one renderer coexist.
+- **Clearing is removal.** A block takes a renderer out of the SRP Batcher, so a settled prism must end with
+  NO block. Unity has no per-property remove: a clear rebuilds the block from the families still present and
+  sets `null` when none are (and resets the local bounds). Timed families clear THEMSELVES at the analytic end
+  through `PrismTimerManager`, guarded by their stamp time (a re-stamp or pooled reuse makes the stale clear a
+  no-op): colour at `t0+dur`, flight at arrival, shield morph at t = 1, jiggle at its end, and grow when the
+  largest per-axis remainder is under 0.5% of final size (`GrowClearDelay`: ln(dev/0.005)/k — 4.2 s for a
+  from-zero bloom at the default k = 1.25, 2.1 s for boost prisms at k = 2.5; the entity path never clears a grow
+  at all, it has no batcher to lose). Sway is permanent while the lifeform lives (cleared at death and on pool
+  release); cell-swap suction ends in a pool return (`ClearPrismStamps`), because clearing it would pop the
+  collapsed prism back.
+- **Population (estimate, not measured).** At steady state the prisms carrying a block are: every LIVING health
+  prism on a swaying limb (permanent — the lifeform mass in the cell and the Wanderway belt), plus trail prisms
+  for ~4.2 s after they are laid (lay rate × 4.2 s; at a vessel's wavelength 4 and ~50 u/s, ≈ 50), plus a
+  Wanderway scene arrival's prisms (≤ 600 per arrival, two concurrent) for ~4.2 s. Trail and environment mass
+  that has settled carries none. Read the real number from `prismpath` in a Development WebGL build
+  (`prisms with a stamp block N`; `PrismMeshRendererStamps.RenderersWithBlock`).
+- **Death visuals.** `Utility/Effects/PrismMeshRendererDebris.cs`: a capped pool (`PrismRenderConfigSO.
+  MeshRendererDebrisCap`, 96) of plain MeshRenderer pieces, created on first need and never destroyed. One
+  pose + one block write per death (the same `ExplosionDebrisSpawn` / `ImplosionDebrisSpawn` values, computed by
+  `PrismDebris` / `PrismShieldShatter` with their own arithmetic), a flat end-time sweep, and for a suction the
+  §1 moving-target exception (one `_Location` write per live suction per frame). Past half the cap pieces
+  shorten toward 0.33 s (the retired pooled path's pressure reading); past the cap a death has no visual and
+  the request still reports success, so the factory's "no visual" error stays for real faults. The Rhino slice
+  refuses on these devices (its hand-written DOTS shader has no carrier), so a blade kill explodes instead. The
+  pooled `PrismExplosion` / `PrismImplosion` (Grow — the Sparrow's ReverseSuction) stamp their own block too.
+- **Diagnostics.** On these devices the strict-mode screams are replaced by ONE `CSDebug.LogVerbose(
+  PrismRuntime)` line at first use ("MeshRenderer stamp path (no Entities Graphics)"). The render service's
+  one-time "Entities Graphics is unsupported on this device" warning stays.
+- **Dev A/B.** `prismpath mpb` (DiagnosticsHUD, editor + development builds): entities off, MeshRenderer stamp
+  path forced, live prisms re-synced. `prismpath on|off|auto` drops the force. A stamp made before the switch is
+  not re-made (a lifeform's sway shows on the path it was grown on), so compare on a cell grown after it.
+- **Not covered.** `ThreatGrove.StampGlow` writes its danger palette with `PrismRenderService.SetColors`, a
+  direct colour STATE on the entity, not a stamp; on these devices the glow's colour lerp still does not show.
+  `Prism.SetColorShade` is entity-only, as it always was.
+- **Verified so far:** compiles in the `webgl`, `player` and `editor` refcompile configs; the edit-mode tests
+  above. NOT verified: nothing has run in a browser or in the editor — see `Docs/WEBGL_TOYBOX.md` §4 for the
+  in-browser checks.
+
+### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21; the suction on the destruction's ladder, round 15, 2026-10-25)
 
 **Current design (round 2, the designer, 2026-10-14):** *"lets do without the white edge on the dissolves
 and the glitter; the interior brighter color will create plenty of contrast already. in this scheme
@@ -2635,6 +2709,58 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 |---|---|---|---|
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+| **Suction** (every consumption, `PrismFactory.SpawnImplosion`; round 15) | LEVEL 0 — the suction kind on the cut's depth 0 (the explosion's 24 wedges); refused, the SuctionGraph's implosion | the destruction's DEPTHS 1–2, same lines | its DEPTHS 3–4, same lines |
+
+**Round 15 (Garrett, 2026-10-25) — the suction comes apart on the destruction's cut and ladder:** *"lets use the silver
+gnomen triangles that are used on the explosion shader on the suction shader. Use the same LOD system as well."*
+
+- **The SUCTION kind** (kind 7, `PrismBurstSuctionPose`, its own program `_BURST_SUCTION`): a consumed prism is drawn
+  on the destruction's own mesh at the destruction's own depth (`PrismInteractionLod.TrySuction` runs `PickDepth`,
+  the crowding steps and the triangle fit exactly as `TryDestruction` does), and every silver triangle and gnomon is
+  drawn into the eater over the implosion's authored life (`PrismImplosion.prefab` `implosionDuration`, 2 s, read
+  through `PrismDebris.TryGetImplosionDuration`). **Round 15b (Garrett, the same day): *"i was thinking it would detatch
+  one triangle at a time along the current faces. so we would see the triangle spaced out along their path. so
+  instead of one whole face that face simply separates its triangles as it is pulled in."*** Every face stays whole
+  and lets go of its triangles ONE AFTER ANOTHER, starting from the face's point nearest the eater and spreading
+  across it, over `suctionStagger` (0.7) of the life; the face toward the eater starts first and the face turned
+  away `suctionFaceLag` (0.2 of the order) later, the SuctionGraph's face order kept as a lag instead of a block. A
+  gradient noise bends the peel front a little (`suctionOrderNoise` 0.03). Each triangle's own trip (the remaining
+  quarter of the life) is eased in as u^`suctionAcceleration` (1.4) along a curve lifted `suctionLift` (0.35 R) off
+  its face, wound `suctionSwirl` (0.25 turns, its hand per suction) about the line to the eater, tumbling
+  `suctionSpin` (0.75 turns, the destruction's size spin and cap), shrinking over the last `suctionShrink` (0.3) of
+  the trip so it is gone exactly AT the eater; with the trips overlapping, each face feeds a stream of triangles
+  strung out along the path in. Every fragment is in by 95% of the life. (Round 15's first cut ordered the whole
+  prism by how far each piece sat toward the eater, so the face toward it went as one block.)
+- **The moving target, unchanged**: the eater swims while it feeds, so the sink is RETAINED, not snapshotted — the
+  burst carrier's one post-spawn write, `PrismCollisionBurst.RefreshSuctions` → `PrismRenderService
+  .RefreshSliceDebrisSinkBatch`, one float4 (`_SliceCentre`, unused by every other burst kind) per live suction per
+  frame, the §1 exception exactly as `PrismDebris.RefreshImplosions` writes the SuctionGraph's `_Location`. The
+  stamp-time sink rides `_SliceAxis` and fixes the order and the vortex's axis, so a fragment already on its way
+  never changes its turn. An eater that dies mid-suction freezes the sink where it was last seen.
+- **Level 0 and the budget**: far away, off screen or over the detail budget a suction is the same kind on depth 0
+  (`suctionAsFragments`, its own cap `maxLiveSuctions` 1,024, outside the detail budget like the explosions); close-up
+  suctions share the detail budget (`maxLiveBursts`, `maxLiveTriangles`) with destructions and sheds. Any refusal —
+  config off, budget, the render service down, a device without Entities Graphics — draws the SuctionGraph's implosion,
+  so a consumption never loses its visual. **Grow** (the Sparrow's ReverseSuction, `PrismType.Grow`) is untouched: it
+  still runs the pooled SuctionGraph, which owns its completion callback.
+- **Proved offline**: `verify_prism_collision_burst.py` § S — the first frame is the prism, every fragment rigid up to
+  its shrink, every pose inside `PrismBurstSuctionReach` about the LIVE sink (= `PrismCollisionBurst.SuctionReach`, the
+  culling box grown when the sink wanders), every fragment at the live sink by 95% of the life; on each face the
+  triangles let go from its point nearest the sink outward (S6: every same-face pair in order) and one at a time (S7:
+  each face's departures spread over at least half its share, under 2% of consecutive ones at one instant; measured
+  0.79 and 15 of 17,784); negative controls: a random order (S6 fires), a face letting go whole (S7 fires), the sink
+  snapshotted at the stamp (S5 fires). Every pass compiles with
+  `_BURST_SUCTION`, plain and DOTS-instanced. The Collision Burst Lab does not draw the suction yet (its page is rebuilt
+  from the shipped HLSL; its JS port has no suction kind).
+
+**Round 14 (Garrett, 2026-10-23) — the skin is the OLD domain on both sides:** *"the stealing effect is supposed to
+curl the original domain and reveal the stolen domain underneath, but i am seeing it immediately change domain color
+and the peel the changed color to have the changed color also underneath"*; *"the abrupt change on the outside is
+wrong"*. The roll winds the skin top side in, so the curl shows its UNDERSIDE, and the steal stamped that underside
+with the NEW colour (round 2's "molting reveals the new colour inside"). The new colour showed along the curl from
+the first frame, and the curl read as new peeling off new. `TryRequestShed` now stamps no inside colour
+(`_SlicePivot.w` 0): the underside is the old bright × `_InnerGlow`. The only new colour on screen is the prism the
+roll uncovers. The Collision Burst Lab still draws the round-7 inside colour; it is not yet updated.
 
 **Round 13 (the designer, 2026-10-17): *"triple the amount that they spread"*.** Fragment burst 0.12 → 0.36, drift
 0.072 → 0.216: every fragment travels three times as far; level 0's cloud at 2 s is 2.57 R against the old explosion
@@ -2784,7 +2910,8 @@ great, but these should have even higher resolution versions that also grade LOD
   round 1 below describes, so squinted at it is meant to read as the explosion.
 - **A SHED is the grade, squinted at.** On an accepted shed the prism takes its new colour AT ONCE
   (`UpdateMaterial` with duration 0) and a skin in its OLD on-screen colours, a hair outside it
-  (`shedInflate` radii), comes off it; the skin's inside wears the NEW colour (the `_SlicePivot` stamp).
+  (`shedInflate` radii), comes off it; since round 14 the skin's inside is the OLD colour too (no `_SlicePivot`
+  stamp), so only the prism it uncovers wears the new one.
   Its coverage falls on the grade's own smoothstep over the grade's own length (`_SlicePlane.x` = 1:
   `PrismBurstProgress` returns `smoothstep(age / (life/(1+overshoot)))`, the life stamped as
   `DefaultTransitionSeconds × (1 + overshoot)`), so the mean colour runs the grade's course exactly —
@@ -2817,7 +2944,9 @@ pose, the flight, the kind — so it is §1's ordinary shape: one stamp per pris
 off `_PrismClock`, one batched retirement. It rides the slice's carrier unchanged
 (`PrismRenderService.SpawnSliceDebrisBatch`, the `Slice` override set, its `_SliceTiming` and
 `_SliceDrift` channels) with its own mesh and material, so it added no ECS component and no render-service
-code. No per-frame CPU write to any burst, no §1 exception, no residency swap (born on the dense mesh).
+code. No per-frame CPU write to any burst, no §1 exception, no residency swap (born on the dense mesh). (Round 15's
+SUCTION kind is the one exception since: its live sink, one `_SliceCentre` float4 per live suction per frame through
+`PrismRenderService.RefreshSliceDebrisSinkBatch` — see the round-15 entry above.)
 
 **The mesh is the slice's, UNWELDED.** `HighPolyPrismMesh.GetUnwelded(10)`: the identical solid, 1,200
 triangles, every triangle owning its own three vertices, plus TEXCOORD2 = the triangle's centroid in

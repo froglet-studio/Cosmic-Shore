@@ -8,10 +8,15 @@ work by merge. Testing an AI visually: the one Vessel Studio artifact (`/vessel-
 window in Unity (FrogletTools > AI > Third Eye). The rules every AI follows, difficulty, finish times and the
 test ladder: the **`/vessel-ai`** skill.
 
+**Yash's sessions, any area: build on `Ys-bleeding-edge`, PR into it, and never push or open a PR into `bleeding-edge`**
+unless Yash asks; Yash tests there and decides what is promoted (2026-10-25, [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) §1).
+
 | Read | When |
 |---|---|
 | [`../ElementalAbilitySystem/SILENCE.md`](../ElementalAbilitySystem/SILENCE.md) §6 | **The combat-balance plan (Garrett, 2026-10-20):** optimize each hull's AI in mirror matches in its Charge arcade game, then against the other hulls in Broadside (the Charge arena game: the mixed-fleet rumble), scored on the petals each pilot makes opponents lose (strip, steal, danger-prism collisions), until each hull's score plateaus; then balance the hulls so every plateau is the same. Never balance against an AI that has not plateaued. Needs a per-attacker petal ledger first, and the AI has to learn silence both ways |
-| [`REGATTA_AI_ROADMAP.md`](REGATTA_AI_ROADMAP.md) | **The current plan:** six racing AIs for Regatta (Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin), one way to build a racing AI (a hull drive on the shared course / belief / steering), and the order with each step's status. As of 2026-10-17: the Stoat is on the card, the Rhino drive is rebuilt (step 4), the Dolphin drifts again at the peak (step 6), Regatta steers through the ring's centre; none of it run in the editor yet |
+| [`AUTO_LEARNING.md`](AUTO_LEARNING.md) | **The AIs learn on their own (LOCKED, Yash 2026-10-26):** every recorded race reaches the hourly AI learning sweep (`ai_learn.py --run`), which relearns, judges and pushes. Never ask a person to run a learner; a new learner joins `ai_learn.py` |
+| [`MINIGAME_TRAINING_PLAN.md`](MINIGAME_TRAINING_PLAN.md) | **The current plan (Yash, 2026-10-26, restated 2026-10-27):** train each vessel's AI in its OWN minigames, its Time minigame first (Dolphin → Switchback, Stoat → Warpline; the vessel → minigame map), never in Regatta; learn from repeated play (automatic: `AUTO_LEARNING.md`); then rebuild the arena games (Regatta first) as a mix of the learned skills, so any vessel fits them |
+| [`REGATTA_AI_ROADMAP.md`](REGATTA_AI_ROADMAP.md) | **The Regatta record (superseded as the plan 2026-10-26):** six racing AIs for Regatta (Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin), one way to build a racing AI (a hull drive on the shared course / belief / steering), and the order with each step's status. As of 2026-10-17: the Stoat is on the card, the Rhino drive is rebuilt (step 4), the Dolphin drifts again at the peak (step 6), Regatta steers through the ring's centre; none of it run in the editor yet |
 | [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) | Before any merge into or out of `Ys-bleeding-edge`: the branches, which way work flows, conflict rules, verification |
 | [`AI_TRAINING_PLAN.md`](AI_TRAINING_PLAN.md) | AI training end to end (training data from Unity editor play only; the Training AI for Regatta page was deleted 2026-10-16), what Unity has today, the four layers (watch in the AI Lab, AIs train each other in the genetic trainer, learn from players with consent, nothing ships itself) and the order of work |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Before touching any AI: the six layers, the roster of every AI (source of truth), what is wrong today, the target architecture |
@@ -36,7 +41,7 @@ files the roster does not know yet. It only reads; merging is a separate, delibe
 - **Per-mode variants.** A drive's numbers for one mode live in `Assets/Resources/AIBoostPolicies/<base asset name>_<GameModes name>`
   (e.g. `RhinoAIBoostPolicy_Regatta`), read by `AIBoostPolicySO.ForMode`, `AIModeTuning.For` and
   `MantaSoarAITuningSO.LoadForMode`. A variant of a different class than its base is ignored. The folder holds one
-  variant so far, `MantaSoarAITuning_Regatta` (Soar bands 0.8 / 0.85, set 2026-10-17 from `manta_drive_sim.py` with the
+  variant so far, `MantaSoarAITuning_Regatta` (Soar bands 0.8 / 0.85, set 2026-10-17 from `manta_drive_sim.py` (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`) with the
   learner's writer; a person's Manta flights replace it). So in Regatta the Squirrel and the Manta fly Regatta numbers;
   the Rhino, the Dolphin and the Stoat fly their shipped numbers until their flights are learned. Renaming a base asset
   orphans its variant.
@@ -45,7 +50,7 @@ files the roster does not know yet. It only reads; merging is a separate, delibe
 - **The Stoat's three configs** (`StoatModeAction`, `StoatDipoleConfig`, `StoatSlingConfig`) resolve their variant only once
   the pilot's game data exists (`AIModeTuning.ForPilot` returns null until then; the executors ask again next frame).
 - **The Manta has no base tuning asset.** Its Soar bands are fields on `MantaAnalogTurnBoostExecutor` (0.35 / 0.75);
-  a `MantaSoarAITuning_<mode>` asset replaces them in that mode (Regatta: 0.8 / 0.85). The Manta does not drop Soar
+  a `MantaSoarAITuning_<mode>` asset replaces them in that mode (Regatta: 0.8 / 0.85 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`)). The Manta does not drop Soar
   before a corner: that look-ahead was modelled and was slower on every course (its turn radius barely shrinks when
   it slows), so it was not shipped.
 - **Ring geometry for the Python learners** comes from the flight's own `ringList`; a flight without one falls back to

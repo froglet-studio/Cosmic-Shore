@@ -332,10 +332,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f6bf511ab634c8980037aadaa556b20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceSystem: {fileID: 1435252848482629424}
   skimmerRoot: {fileID: 282447970148362685}
   config: {fileID: 11400000, guid: 1885bb8aa7a8b5b41bfca5a1e6a9ee79, type: 2}
-  shieldIndex: 1
   relay: {fileID: 7740000000000001601}
   afterimage: {fileID: 7740000000000001604}
 --- !u!1 &3947427428015649370
@@ -835,7 +833,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2990694141
+  GlobalObjectIdHash: 234294682
   InScenePlacedSourceGlobalObjectIdHash: 3922501974
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1089,11 +1087,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Resources:
   - Name: Boost
-    initialResourceGainRate: 0
-    resourceGainRate: 0
-    maxAmount: 1
-    initialAmount: 0
-  - Name: Shield
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
@@ -12117,7 +12110,7 @@ PrefabInstance:
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 30
+      value: 24
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
@@ -12186,6 +12179,26 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
         type: 2}
+    - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: Scale.Max
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: Scale.Min
+      value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: Scale.Value
+      value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 1957019139854139517, guid: c8d5df1098821194eb69eec4c965548e,
+        type: 3}
+      propertyPath: Scale.element
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 3630837686170528968, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_Name
@@ -13910,11 +13923,14 @@ MonoBehaviour:
   reachMultiple: 1.1
   strokeSeconds: 0.3
   restSeconds: 0.45
-  energizeMargin: 0.05
-  energizeWhenFull: 0.75
+  energizeCrowd: 6
   hardenedSearchMultiple: 1.6
   stanceTimeoutSeconds: 2
-  swordConfig: {fileID: 11400000, guid: 1885bb8aa7a8b5b41bfca5a1e6a9ee79, type: 2}
+  comboChance: 0.35
+  finisherChance: 0.4
+  comboTapSeconds: 0.08
+  comboGapSeconds: 0.1
+  comboRecoverSeconds: 0.9
 --- !u!114 &7740000000000001604
 MonoBehaviour:
   m_ObjectHideFlags: 0

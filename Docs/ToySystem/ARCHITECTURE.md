@@ -1193,6 +1193,7 @@ beside a ring stay prisms.
 | `Neutral` | `Domains.Blue`'s plain prism material — the platform's existing "no team / neutral entity" sentinel | *thread me and something happens* | every toy root, every matrix station, the painting's milestones and its SHARE/REPAINT gates, the Wanderway return station |
 | `Domain` | that domain's plain prism material | *threading me makes your trail this domain* | the Domain Changer's slots; the painting's **stroke-start gates** (crossing one calls `RequestStrokeDomain`, so it really does hand you one) |
 | `Next` | the free-pickup LIME (`SO_ColorSet.GetCtaSignalColor`) on the prism shader | *this is the switch YOU are meant to thread next* | Switchback's gates — the local pilot's next one only |
+| `Halo` | a fixed PEARL (`ToyFactory.HaloPearl`, a warm white) on the prism shader - the one colour no playable domain, no danger rim and no free pickup wears | *this is a halo ring: thread it to break it* | Tandava's halo (`TandavaHaloRing`) round the Lord of the Dance - a guarded ring does not change colour, its drawn mouth dims smaller while its crossing test is off (`Assets/_Scripts/Controller/Arcade/TANDAVA.md` §3.6). It was `Flame`, a danger-red ring of fire, until fire left the mode (the value 3 is kept) |
 
 **`Next` is the first PER-VIEWER signal, and that is what makes it legal.** Every other signal
 describes the switch itself and reads the same on every screen; this one describes the
@@ -1230,12 +1231,10 @@ sees it, so `ToySwitchVocabularyTests` reads the source and holds an allow-list 
 directions, so a row that stops being used has to be deleted rather than left describing the
 reservation while hiding it.
 
-**The encyclopedia's tool portraits are deliberately NOT repainted.** `ToolPortraitBuilder` draws
-a tool's emblem — core, satellites and switch ring — from one material in that entry's accent
-colour, because a codex portrait is a monochrome ICON identifying an entry in a gallery, not a
-render of the object. A blue hoop on all six would trade the gallery's per-tool identity for a
-consistency nobody is looking at from inside the codex. If that ever stops being the call, the
-change is a second material in `ToolPortraitBuilder.Build`, not a change here.
+**The encyclopedia's tool portraits are not switch art at all.** Since 2026-10-26 a tool's codex
+portrait (and so its Toy Box card) is a white 2D glyph that teaches what the toy does, drawn by
+`Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4); the baked emblem that used to carry
+the toy's accent (`ToolPortraitBuilder`) was retired with it, so nothing here repaints a portrait.
 
 **Neutral is Blue, not "untinted".** Every switch had been wearing its own toy's accent, which is
 how the Vessel Changer's stations came to be gold and the Lifeform bench's pale green — colours a
@@ -1890,10 +1889,13 @@ window in which a key like this is free to move, and it closes the moment one do
 
 ### The 2D art is the encyclopedia's
 
-`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ UI ▸ Codex** already bakes from
-each toy's own `ToyEmblem` grammar (`Docs/CODEX.md` §3.5). So the flat card is a picture of the
-thing the player flies at, re-baking an emblem re-skins the menu with nothing to re-wire, and no
-second icon set is authored.
+`ToyPortraitLibrary` resolves the portrait each toy's codex page points at, so the menu card and the
+codex page cannot show two pictures of one toy, and a redraw re-skins both with nothing to re-wire.
+Since 2026-10-26 that portrait is a white glyph that teaches what flying through the toy DOES,
+drawn by `Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4, sheet
+`Docs/Icons/sheets/toybox.png`). It replaced the baked `ToyEmblem` disc (core + satellites in the
+switch ring), which made all seven cards near-identical rings and told the player nothing; the
+codex baker now stands down on Tool pages so a re-bake cannot bring that back.
 
 Matched on the toy's own **definition asset** (`CodexEntry.SourceConfig`), never on a name — a toy
 has no prefab, and the config is what the harvester keyed the entry on. A display-name pass is the

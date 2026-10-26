@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     /// now only answers a deliberate press-then-slam. Holding the stick at the perimeter still
     /// never repeats, and a stick already pinned at max when boost starts still rolls
     /// immediately. That charge is what the boost ability icon displays
-    /// (<see cref="OnRollChargeChanged"/> → SparrowHUDView.SetRollCharge), and it now empties
+    /// (<see cref="OnRollChargeChanged"/>; the Sparrow HUD stopped drawing it on 2026-10-26 - the roll is back too fast to be worth a readout), and it now empties
     /// when the window lapses, so the pip reads real availability rather than "boost is held".
     ///
     /// It works IDENTICALLY in the stationary/turret stance. Boost gives no speed there —

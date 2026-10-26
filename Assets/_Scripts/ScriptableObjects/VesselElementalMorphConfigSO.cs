@@ -26,10 +26,12 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds the hull takes to glide between element silhouettes on a level change. " +
                  "Keep it visible - continuity of existence applies to the vessel's own body: the " +
                  "model MORPHS between states, it never snaps.")]
-        [Min(0f)] public float morphDuration = 0.75f;
+        [SerializeField, Min(0f)] float morphDuration = 0.75f;
+        public float MorphDuration => morphDuration;
 
         [Tooltip("Ease applied to the blend-shape glide.")]
-        public Ease morphEase = Ease.InOutSine;
+        [SerializeField] Ease morphEase = Ease.InOutSine;
+        public Ease MorphEase => morphEase;
 
         /// <summary>Integer element level at (and below) which a shape rests at weight zero.</summary>
         public const int MorphFloorLevel = 0;

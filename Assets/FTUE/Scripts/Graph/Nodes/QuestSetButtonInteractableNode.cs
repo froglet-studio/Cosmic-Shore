@@ -18,10 +18,12 @@ namespace CosmicShore.Core
         public override string EditorSummary => $"'{buttonKey}' → {(interactable ? "interactable" : "disabled")}";
 
         [Tooltip("Key of the button on the runner's Quest Buttons list (e.g. 'episodes').")]
-        public string buttonKey = "episodes";
+        [SerializeField] string buttonKey = "episodes";
+        public string ButtonKey => buttonKey;
 
         [Tooltip("The interactable state to apply.")]
-        public bool interactable = true;
+        [SerializeField] bool interactable = true;
+        public bool Interactable => interactable;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

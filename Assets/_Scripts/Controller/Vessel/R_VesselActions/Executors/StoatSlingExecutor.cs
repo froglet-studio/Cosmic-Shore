@@ -127,6 +127,11 @@ namespace CosmicShore.Gameplay
         public float SweetProgress01 => IsOrbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
         /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
         public float LastTiming => _lastTiming;
+        /// <summary>
+        /// The squeeze on <paramref name="side"/> right now, 0..1 (0 when that trigger is not held). In DRIVE mode this is
+        /// all the triggers do here: the pathfinder shapes the warp pair from the two squeezes (<see cref="StoatDriveMath"/>).
+        /// </summary>
+        public float Squeeze01(Side side) => _holds[(int)side].Holding ? _holds[(int)side].Live : 0f;
         public StoatSlingConfigSO Config => config;
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -149,9 +154,11 @@ namespace CosmicShore.Gameplay
         /// waits for the release.</summary>
         public void BeginHold(Side side)
         {
-            // The triggers fly the orbit in TIME mode only; in Mass mode they lay the field dipole (StoatDipoleExecutor).
+            // The triggers fly the orbit in TIME mode; in Mass mode they lay the field dipole (StoatDipoleExecutor); in DRIVE
+            // mode the squeeze is only tracked here, and the pathfinder shapes the warp pair from it (Squeeze01).
             ResolveSiblings();
-            if (_mode && !_mode.IsTimeMode) return;
+            bool drive = _mode && _mode.IsDriveMode;
+            if (_mode && !_mode.UsesOrbit && !drive) return;
             int i = (int)side;
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
@@ -160,7 +167,7 @@ namespace CosmicShore.Gameplay
             float start = config != null && _status != null && _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
             _holds[i].Live = start;
             _holds[i].Peak = start;
-            if (config == null) return;
+            if (config == null || drive) return;
             PlayOneShot(config.HoldStartEvent);
             if (!BlackHoleRegistry.Config.CrystalPairs) LayPair(side);
         }
@@ -171,7 +178,7 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].Holding = false;
-            if (config == null || _status == null) return;
+            if (config == null || _status == null || (_mode && _mode.IsDriveMode)) return;
             if (_laid)
             {
                 if (_orbitSide == side) Slingshot(boost: true);
@@ -446,7 +453,7 @@ namespace CosmicShore.Gameplay
             }
 
             ResolveSiblings();
-            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.IsTimeMode)) AutopilotSling();
+            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.UsesOrbit)) AutopilotSling();
         }
 
         /// <summary>
@@ -479,7 +486,10 @@ namespace CosmicShore.Gameplay
             }
             if (AIConfig.AiSlingMinTurnDegrees <= 0f) return;
             if (Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
-            var local = hull.InverseTransformPoint(ai.TargetPosition);
+            // Bearing from the steering point, range from the objective: on a race line the steering point sits one
+            // look-ahead away, inside AiSlingMinDistance at cruise (StoatDipoleMath.AutopilotGauge).
+            var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
+                                                       (ai.ObjectivePosition - hull.position).magnitude);
             if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool attractorLeft))
                 return;
             var side = attractorLeft ? Side.Left : Side.Right;
@@ -519,7 +529,9 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += Time.deltaTime;
-            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot, AIConfig.AutopilotHold01);
+            // Drive mode ramps a key or a touch button to a full squeeze over its own, shorter time (driveKeyRampSeconds).
+            float ramp = _mode && _mode.IsDriveMode && _mode.Config ? _mode.Config.DriveKeyRampSeconds : config.HoldRampSeconds;
+            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, ramp, autopilot, AIConfig.AutopilotHold01);
             _holds[i].Live = sample;
             _holds[i].Peak = StoatSlingMath.Peak(_holds[i].Peak, sample);
         }

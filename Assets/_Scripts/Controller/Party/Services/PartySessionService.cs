@@ -137,7 +137,51 @@ namespace CosmicShore.Gameplay
         /// in <see cref="ClearSession"/> - the single point that nulls the reference -
         /// so no handler outlives the session object it was attached to.
         /// </summary>
-        private void OnSessionPlayerLeaving(string playerId) => PlayerLeaving?.Invoke(playerId);
+        private void OnSessionPlayerLeaving(string playerId)
+        {
+            _departures.Report(playerId);   // Block 5 step 7: a stated departure skips the second read
+            PlayerLeaving?.Invoke(playerId);
+        }
+
+        // Block 5 (push instead of poll): the session's roster events. The SDK applies a change to the
+        // local session BEFORE it raises these, so ISession.Players is already current and the drain
+        // needs no GET. Each handler only sets a flag, since the SDK may raise from a continuation that
+        // is not Unity's frame: HostConnectionService.Update drains it on the main thread (rule from
+        // the August presence work, B16 there).
+        private int _rosterChanged;
+        private readonly DepartureReports _departures = new();
+
+        /// <inheritdoc/>
+        public void TakeDepartures(System.Collections.Generic.ISet<string> into) => _departures.TakeInto(into);
+
+        /// <inheritdoc/>
+        public bool ConsumeRosterChanged() => System.Threading.Interlocked.Exchange(ref _rosterChanged, 0) == 1;
+
+        private void MarkRosterChanged() => System.Threading.Interlocked.Exchange(ref _rosterChanged, 1);
+        private void OnSessionPlayerJoined(string playerId) => MarkRosterChanged();
+        private void OnSessionPlayerHasLeft(string playerId)
+        {
+            _departures.Report(playerId);
+            MarkRosterChanged();
+        }
+        private void OnSessionPlayerPropertiesChanged() => MarkRosterChanged();
+
+        /// <summary>Wires every session event this service listens to; called right after each assignment.</summary>
+        internal void Attach(ISession session)
+        {
+            session.PlayerLeaving           += OnSessionPlayerLeaving;
+            session.PlayerJoined            += OnSessionPlayerJoined;
+            session.PlayerHasLeft           += OnSessionPlayerHasLeft;
+            session.PlayerPropertiesChanged += OnSessionPlayerPropertiesChanged;
+        }
+
+        internal void Detach(ISession session)
+        {
+            session.PlayerLeaving           -= OnSessionPlayerLeaving;
+            session.PlayerJoined            -= OnSessionPlayerJoined;
+            session.PlayerHasLeft           -= OnSessionPlayerHasLeft;
+            session.PlayerPropertiesChanged -= OnSessionPlayerPropertiesChanged;
+        }
 
         // ─────────────────────────────────────────────────────────────────────
         // Construction
@@ -199,7 +243,7 @@ namespace CosmicShore.Gameplay
             if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
             ActiveSession          = session;
             CreatedAtUnscaledTime  = Time.unscaledTime;
-            ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
+            Attach(ActiveSession);
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
         }
 
@@ -228,7 +272,7 @@ namespace CosmicShore.Gameplay
                 async () => await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread());
             if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
             ActiveSession = session;
-            ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
+            Attach(ActiveSession);
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Joined party session {ActiveSession.Id}.");
         }
 
@@ -264,8 +308,7 @@ namespace CosmicShore.Gameplay
         public async UniTask RefreshAsync()
         {
             if (ActiveSession == null) return;
-            UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-            await ActiveSession.RefreshAsync().AsMainThread();
+            await LobbyReadPacer.RefreshAsync(ActiveSession);
         }
 
         /// <inheritdoc/>
@@ -286,8 +329,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!firstAttempt)
                     {
-                        UgsRequestTelemetry.Count(UgsRequestCounter.LobbyReads);
-                        try { await session.RefreshAsync().AsMainThread(); } catch { /* best-effort resync before the retry */ }
+                        try { await LobbyReadPacer.RefreshAsync(session); } catch { /* best-effort resync before the retry */ }
                     }
                     firstAttempt = false;
                     session.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
@@ -323,8 +365,10 @@ namespace CosmicShore.Gameplay
         {
             if (ActiveSession == null) return;
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
-            ActiveSession.PlayerLeaving -= OnSessionPlayerLeaving;
+            Detach(ActiveSession);
             ActiveSession         = null;
+            System.Threading.Interlocked.Exchange(ref _rosterChanged, 0);
+            _departures.Clear();
             CreatedAtUnscaledTime = 0f;
         }
 

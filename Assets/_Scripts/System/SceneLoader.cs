@@ -303,6 +303,11 @@ namespace CosmicShore.Core
             GC.Collect();
 
             _sceneTransitionManager?.FadeFromBlack().Forget();
+
+            // The menu is on screen: a return-to-menu or boot load recording (B36) ends here. A launch recording
+            // ends elsewhere (MiniGameHUD), so only the kinds that end at the menu are closed.
+            if (LoadInsights.IsRecordingMenuLoad)
+                LoadInsights.CompleteLoad("Menu shown - the splash fades");
         }
 
         /// <summary>
@@ -323,6 +328,8 @@ namespace CosmicShore.Core
             // on HOME with no modals open. These keys are set by ScreenSwitcher
             // during normal menu navigation but become stale when a scene
             // transition destroys modal GameObjects without proper ModalWindowOut().
+            // The card the match was launched from is not one of them: ScreenSwitcher
+            // re-opens it from MenuReturnCard once the menu is up.
             PlayerPrefs.DeleteKey("ReturnToScreen");
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
@@ -353,6 +360,10 @@ namespace CosmicShore.Core
             // own Menu_Main sceneLoaded finally sets the fade. The RPC and the despawn
             // messages share the reliable channel, so the veil always lands first.
             NotifyClientsOfMenuReturn();
+
+            // B36: the game -> menu load froze ~10 s on a slow machine and Unity Relay dropped the host. Record it
+            // (online play records by itself, LoadInsights.ShouldRecord); it ends when the menu shows.
+            LoadInsights.BeginLoad($"Return to menu — {SceneManager.GetActiveScene().name} → {menuScene}", menuReturn: true);
 
             LoadSceneAsync(menuScene).Forget();
         }
@@ -605,7 +616,9 @@ namespace CosmicShore.Core
             // "Main Menu" return does NOT route here; it goes straight through
             // ReturnToMainMenu(), which keeps the live Relay so the whole party
             // reloads Menu_Main together. Here the session is already gone, so we
-            // return to the menu and fully reset local game state.
+            // return to the menu and fully reset local game state - on HOME: the
+            // party the card was launched with is gone, so it is not re-opened.
+            CosmicShore.UI.MenuReturnCard.Clear();
             ReturnToMainMenu();
             gameData.ResetAllData();
         }

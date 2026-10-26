@@ -877,10 +877,11 @@ namespace CosmicShore.Gameplay
         public bool Sustains(Fauna creature) => _tamed.Count > 0 && _tamed[0].Creature == creature;
 
         /// <summary>The school's mark: a tamed creature's spindles lean toward the Angler's domain hue (<c>tameHueLean</c>).</summary>
-        public bool TryGetLeashMark(out Domains domain, out float lean)
+        public bool TryGetLeashMark(out Domains domain, out float lean, out float glow)
         {
             domain = _status != null ? _status.Domain : default;
             lean = config ? config.TameHueLean : 0f;
+            glow = 0f;
             return _status != null && lean > 0f;
         }
 

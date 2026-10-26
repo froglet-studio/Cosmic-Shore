@@ -294,6 +294,12 @@ its GameObject lists it in `m_Component`.
   them**: `variantFileID = baseFileID XOR prefabInstanceFileID` (unsigned 64-bit,
   the instance being the variant's own `!u!1001` anchor). This is why a sweep for
   "modifications targeting component X" silently misses every prefab variant.
+  **The XOR is a fallback, not a law: read the stripped stub first.** Measured 2026-10-26 over every
+  `stripped` document under `Assets/` (`--- !u!N &ID stripped` with its `m_CorrespondingSourceObject`
+  and `m_PrefabInstance`): 1,176 of 1,726 satisfy `(instance ^ source) & INT64_MAX`, and **550 do not**
+  (GameCanvas, ArcadeGameConfigureModal, KitPopup, ButterflyHUDVariant among them). So where a stub
+  exists, its own `&ID` is the variant-side fileID; compute the XOR only when no stub was written
+  (`Tools/Build/check_cytoplasm_shards.py` `Prefabs._resolve` does it in that order).
   Either compute the XOR, or — better — let Unity resolve it:
   `AssetDatabase.LoadAllAssetsAtPath` + `TryGetGUIDAndLocalFileIdentifier` gives a
   fileID→object map per prefab that covers base and variant alike, so you can ask
@@ -1085,6 +1091,14 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
   (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
   `TMPDIR` decides where the ~550 MB cache lands.
+  **`run.sh` falls back to `$HOME/.dotnet`, but `check_generated_assets.py` does NOT**: it looks under
+  `/usr/lib/dotnet/sdk` and exits **2** with `csc.dll not found` (2026-10-22, `cece/dazzling-volta-apzw2m`).
+  Pass `DOTNET_ROOT=$HOME/.dotnet` to it explicitly; exit 2 is "called wrong", not a finding.
+- **It catches URP API drift that reads fine from memory.** On URP 17, `UniversalAdditionalCameraData
+  .volumeFrameworkUpdateMode` is `internal` (use the `Camera.SetVolumeFrameworkUpdateMode` extension) and
+  `clearDepth` has no setter (overlays already clear depth). Both failed this compile on 2026-10-22. The URP
+  source it compiled against is under the cache's `graphics/Packages/com.unity.render-pipelines.universal/`:
+  read it rather than guessing an API.
 - **A warm run takes ~30 s, and the `cached` lines are the evidence.** Count them
   (`grep -c ' cached$'`): about 86 package assemblies should come from the cache. Until 2026-10-08
   NONE ever did, so every run recompiled them all. A stub DLL rebuilt each run sat in every
@@ -1113,6 +1127,17 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   control. If an older checkout still reports such ids missing, check the XOR before believing it —
   the old scene reference to `BigCrystalVariant`'s Crystal (`6588436222817790495`) was exactly that
   kind of id and loaded in play for months.
+- **`check_generated_assets.py` used to report every authored UnityEvent as a dropped field; it reads them
+  since 2026-10-24.** `m_OnClick: m_PersistentCalls: ...` came back as "`m_PersistentCalls` is not a
+  serialized field of UnityEngine.UI.Button.ButtonClickedEvent" (80 findings on shipped prefabs since
+  `363d153b9^`). The base chain was walked, but `UnityEventBase` is declared in `UnityEngine.CoreModule`,
+  which the schema never read. `Schema/Program.cs` now reads the `UnityEngine.Events` namespace from that
+  (depublicized) DLL, so persistent calls, their `ArgumentCache` and both enums are checked like any field.
+  If an older checkout still reports `m_PersistentCalls`, it is this false positive, not a defect.
+  The same day, the package twin: Netcode's `#if UNITY_EDITOR [SerializeField]` foldout flags
+  (`ShowTopMostFoldoutHeaderGroup` on every `NetworkBehaviour`, `NetworkTransformExpanded`) read as dropped
+  (73 findings), because package types came only from their player-built DLLs. The schema now also parses
+  each package's sources with `UNITY_EDITOR`, so any package's editor-only field counts, on its own class only.
 - **The `editor` config is RED on bleeding-edge itself (measured 2026-10-14): 3 errors, all in
   `Assets/_Scripts/System/AuthenticationServiceFacade.cs`** (`Unity.Multiplayer.PlayMode` /
   `CurrentPlayer` — the Multiplayer Play Mode editor package, not obtainable here). A/B it on a

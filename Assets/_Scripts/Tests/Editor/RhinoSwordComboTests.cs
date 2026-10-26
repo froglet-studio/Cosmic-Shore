@@ -124,8 +124,28 @@ namespace CosmicShore.Tests
         [Test]
         public void ARolledTap_StillLinks()
         {
-            // Right tapped, left pressed 0.12 s later while right is still coming off.
-            var found = Run(NewDetector(), new Seg(0, 1, 0.12f), new Seg(1, 1, 0.05f), new Seg(1, 0, 0.1f), Gap(0.5f));
+            // Right tapped, left pressed 0.12 s later while right is still COMING OFF (0.3: below the
+            // 0.5 press threshold, above the 0.2 release).
+            var found = Run(NewDetector(), new Seg(0, 1, 0.12f), new Seg(1, 0.3f, 0.05f), new Seg(1, 0, 0.1f), Gap(0.5f));
+            CollectionAssert.AreEqual(new[] { "RL" }, found);
+        }
+
+        [TestCase(0.1f)]
+        [TestCase(0.2f)]
+        [TestCase(0.28f)]
+        public void AStaggeredStance_IsNeverACombo(float stagger)
+        {
+            // Right pulled, left following `stagger` s later while right is still FULLY held - the
+            // energize stance entered with the fingers apart (it used to fire LR/RL, 2026-10-16).
+            var found = Run(NewDetector(), new Seg(0, 1, stagger), new Seg(1, 1, 1.2f), Gap(0.5f));
+            CollectionAssert.IsEmpty(found);
+        }
+
+        [Test]
+        public void AfterAStaggeredStance_TapsLinkAgain()
+        {
+            var found = Run(NewDetector(), new Seg(0, 1, 0.15f), new Seg(1, 1, 1f), Gap(0.5f),
+                            Tap('R'), Gap(), Tap('L'), Gap(0.5f));
             CollectionAssert.AreEqual(new[] { "RL" }, found);
         }
 

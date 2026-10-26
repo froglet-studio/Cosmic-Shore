@@ -293,7 +293,7 @@ namespace CosmicShore.Tests
                      {
                          ("5db69771d02b4c24ca00998adf318137", "the Squirrel model"),
                          ("c1572db06ad4244469ad3f25d86940b8", "SquirrelHUDVariant"),
-                         ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelVesselHUDController"),
+                         ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelHUDController"),
                          ("2b0d487de1554acfad93a158ddac3874", "SquirrelVesselTelemetry"),
                          ("3c3fc507fffc4f5e86ab043ee7543cd2", "the Squirrel's camera settings"),
                          ("769c65db9958c064485be49a2183f263", "the Squirrel's vessel container"),
@@ -387,6 +387,164 @@ namespace CosmicShore.Tests
             }
             StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
                 Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
+        }
+
+        // ------------------------------------------------------------------ the three modes and the warp pair (STOAT_DIPOLE.md §1f)
+
+        static StoatDriveMath.Settings ShippedDrive => new()
+        {
+            LengthMin = 60f, LengthMax = 320f, LateralMax = 140f, TurnGain = 2.2f, TurnMax = 140f, WarpExponent = 1.3f,
+        };
+
+        [Test]
+        public void ModeCycle_BStepsMassTimeDriveAndBack()
+        {
+            Assert.AreEqual(StoatModeExecutor.Mode.Time, StoatModeExecutor.Next(StoatModeExecutor.Mode.Mass));
+            Assert.AreEqual(StoatModeExecutor.Mode.Drive, StoatModeExecutor.Next(StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Next(StoatModeExecutor.Mode.Drive));
+        }
+
+        [Test]
+        public void ModeCycle_PressesToCountsTheWayRound()
+        {
+            Assert.AreEqual(0, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Time, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(2, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Drive));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Drive, StoatModeExecutor.Mode.Mass));
+        }
+
+        [Test]
+        public void ModeCycle_OnlyTimeFliesTheOrbit()
+        {
+            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Mass));
+            Assert.IsTrue(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Time));
+            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Drive));
+            Assert.AreEqual(0.5f, StoatModeExecutor.MassCardTarget(StoatModeExecutor.Mode.Drive));
+        }
+
+        [Test]
+        public void Drive_BothTriggersFull_IsTheLongStraightPair_AtTheTopWarp()
+        {
+            var shape = StoatDriveMath.Evaluate(1f, 1f, ShippedDrive);
+            Assert.AreEqual(1f, shape.Span, 1e-6f);
+            Assert.AreEqual(0f, shape.TurnRate, 1e-6f, "an even stretch flies straight");
+            Assert.AreEqual(320f, shape.HalfLength, 1e-4f);
+            Assert.AreEqual(1f, shape.Warp01, 1e-6f);
+            Assert.AreEqual(3f, StoatDriveMath.WarpTarget(shape, StoatDriveMath.WarpTop(3f, 1f)), 1e-5f);
+        }
+
+        [Test]
+        public void Drive_TheDeeperTrigger_SlidesTheBlackHoleThatWay_AndTurnsThatWay()
+        {
+            var right = StoatDriveMath.Evaluate(0f, 1f, ShippedDrive);
+            var left = StoatDriveMath.Evaluate(1f, 0f, ShippedDrive);
+            Assert.Greater(right.TurnRate, 0f, "right trigger deeper turns right");
+            Assert.Less(left.TurnRate, 0f);
+            Assert.AreEqual(right.TurnRate, -left.TurnRate, 1e-4f);
+            StoatDriveMath.Poles(Vector3.zero, Vector3.forward, Vector3.right, right, out var sink, out var source);
+            Assert.Greater(sink.x, 0f, "the black hole rides ahead and to the right");
+            Assert.Greater(sink.z, 0f);
+            Assert.AreEqual(-sink.x, source.x, 1e-4f, "the white hole is mirrored through the hull");
+            Assert.AreEqual(-sink.z, source.z, 1e-4f);
+        }
+
+        [Test]
+        public void Drive_TheSamePull_TiltsAShortPairMore_ThanALongOne()
+        {
+            // Agility against precision is the pair's shape: the same difference carves on a short pair and only trims a
+            // long one, so the fastest travel is also the steadiest.
+            var shortPair = StoatDriveMath.Evaluate(0f, 0.4f, ShippedDrive);
+            var longPair = StoatDriveMath.Evaluate(0.6f, 1f, ShippedDrive);
+            Assert.AreEqual(shortPair.Lean, longPair.Lean, 1e-6f);
+            Assert.Greater(Mathf.Abs(shortPair.TurnRate), 2f * Mathf.Abs(longPair.TurnRate));
+            Assert.Less(shortPair.Warp01, longPair.Warp01);
+        }
+
+        [Test]
+        public void Drive_ALightSqueeze_StaysNearTheHullsOwnSpeed()
+        {
+            var light = StoatDriveMath.Evaluate(0.2f, 0.2f, ShippedDrive);
+            Assert.Less(StoatDriveMath.WarpTarget(light, 3f), 1.25f, "room to trim at a light squeeze");
+            Assert.LessOrEqual(Mathf.Abs(StoatDriveMath.Evaluate(0f, 1f, new StoatDriveMath.Settings
+            {
+                LengthMin = 1f, LengthMax = 1f, LateralMax = 1000f, TurnGain = 10f, TurnMax = 140f, WarpExponent = 1f,
+            }).TurnRate), 140f, "the turn is capped");
+        }
+
+        [Test]
+        public void Drive_StepWarp_RisesToTheStretch_AndFadesWithIt()
+        {
+            float up = StoatDriveMath.StepWarp(1f, 3f, 20f, 0.6f, 0.1f);
+            Assert.Greater(up, 2.5f);
+            Assert.LessOrEqual(up, 3f);
+            float down = StoatDriveMath.StepWarp(3f, 1.5f, 20f, 0.6f, 0.1f);
+            Assert.Less(down, 3f);
+            Assert.Greater(down, 1.5f, "it eases down toward the new stretch, not to a stop");
+        }
+
+        [Test]
+        public void Drive_Autopilot_StretchesOnALongLeg_AndLeansTowardItsTarget()
+        {
+            var ai = new StoatDriveMath.AutopilotSettings { Near = 0f, Far = 150f, ConeDegrees = 120f, LeanDegrees = 15f };
+            StoatDriveMath.AutopilotSqueeze(1000f, 0f, 0f, ai, out float l, out float r);
+            Assert.AreEqual(1f, l, 1e-6f);
+            Assert.AreEqual(1f, r, 1e-6f);
+            StoatDriveMath.AutopilotSqueeze(1000f, 20f, 20f, ai, out l, out r);
+            Assert.Greater(r, l, "a target to the right: the right trigger deeper");
+            StoatDriveMath.AutopilotSqueeze(1000f, 130f, -130f, ai, out l, out r);
+            Assert.AreEqual(0f, (l + r) * 0.5f, 0.5f + 1e-4f, "far off the nose: turn first (no stretch beyond the lean)");
+            Assert.Greater(l, r);
+        }
+
+        [Test]
+        public void Hud_TheModeCardShowsAnIconPerMode()
+        {
+            var text = Read("Assets/_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab");
+            foreach (var (field, guid) in new[]
+                     {
+                         ("massModeIcon", "707ac0afea37451ef31b5be8eb09cdb2"),
+                         ("timeModeIcon", "fb6ff66c748d7560d236e89894823447"),
+                         ("driveModeIcon", "f37b37888ed20c67236ca93dc3b874c4"),
+                     })
+            {
+                StringAssert.Contains($"  {field}: {{fileID: 21300000, guid: {guid}, type: 3}}\n", text, field);
+                Assert.IsTrue(File.Exists(AssetDatabasePathOf(guid)), $"{field}'s sprite is missing");
+            }
+        }
+
+        static string AssetDatabasePathOf(string guid)
+        {
+            foreach (var meta in Directory.GetFiles("Assets/_Graphics/Icons/AbilityIcons/Stoat", "*.png.meta"))
+                if (File.ReadAllText(meta).Contains($"guid: {guid}")) return meta.Substring(0, meta.Length - ".meta".Length);
+            return "";
+        }
+
+        [Test]
+        public void Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo()
+        {
+            // On a phone the Mass card is a button that raises its control's input (Button2Action, B); the prefab's touch
+            // overrides must route that input to the mode switch, or the three modes are pad-only.
+            var map = Read(Map);
+            StringAssert.Contains("  - Element: 2\n    AbilityLabel: Mass / Time Mode\n", map);
+            StringAssert.Contains("    Input: 7\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: Armoured Wake\n", map);
+            var prefab = Read(Prefab);
+            int touch = prefab.IndexOf("  _touchActionOverrides:\n", System.StringComparison.Ordinal);
+            int pad = prefab.IndexOf("  _gamepadActionOverrides:\n", System.StringComparison.Ordinal);
+            Assert.That(touch, Is.GreaterThan(0).And.LessThan(pad), "the Stoat has touch overrides");
+            StringAssert.Contains("  - InputEvent: 7\n    ShipActions:\n    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n",
+                prefab.Substring(touch, pad - touch), "touch B is StoatModeAction");
+        }
+
+        [Test]
+        public void ModeAction_ShipsTheDrivesNumbers()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset");
+            foreach (var row in new[] { "driveLengthMin: 60\n", "driveLengthMax: 320\n", "driveLateralMax: 140\n", "driveTurnGain: 2.2\n",
+                         "driveTurnMax: 140\n", "driveWarpShare: 1\n", "driveWarpExponent: 1.3\n", "driveKeyRampSeconds: 0.5\n",
+                         "autopilotDriveFar: 150\n", "autopilotDriveLeanDegrees: 15\n" })
+                StringAssert.Contains("  " + row, text);
+            StringAssert.Contains("driveModeEvent:", text);
+            StringAssert.DoesNotContain("hybrid", text);
         }
     }
 }

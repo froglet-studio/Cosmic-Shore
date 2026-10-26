@@ -1440,7 +1440,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The eight families, finer where one family's parts are laid by different
         /// rules (the tree's trunk, heartwood, buttresses, limbs and canopy).</summary>
-        enum Fam { Trunk, Heartwood, Buttress, Branch, Canopy, Deck, Gate, Stair, Veil, Reef, Kelp, Causeway, Atoll, Glimmer, Dune, Pebble }
+        enum Fam { Trunk = 0, Heartwood = 1, Buttress = 2, Branch = 3, Canopy = 4, Deck = 5, Gate = 6, Stair = 7, Veil = 8, Reef = 9, Kelp = 10, Causeway = 11, Atoll = 12, Glimmer = 13, Dune = 14, Pebble = 15 }
 
         /// <summary>A spatially compact run of one family's lays (a strand, a coral, an arc of
         /// planks), with its bounds and the bounds of each 16-lay run inside it.</summary>

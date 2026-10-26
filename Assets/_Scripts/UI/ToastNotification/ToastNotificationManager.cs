@@ -48,6 +48,13 @@ namespace CosmicShore.UI
             set => container = value;
         }
 
+        /// <summary>Wiring for a manager built in code - <see cref="ToastNotificationAPI"/>'s auto-create,
+        /// which has no inspector to set these.</summary>
+        internal void SetSettings(ToastNotificationSettingsSO value) => settings = value;
+
+        /// <inheritdoc cref="SetSettings"/>
+        internal void SetChannel(ToastNotificationChannel value) => channel = value;
+
         public override void Awake()
         {
             base.Awake();
@@ -180,9 +187,7 @@ namespace CosmicShore.UI
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
             var item = go.AddComponent<ToastNotificationItem>();
-            var field = typeof(ToastNotificationItem).GetField("messageText",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field?.SetValue(item, tmp);
+            item.SetMessageText(tmp);
 
             go.transform.SetParent(transform, false);
             return item;

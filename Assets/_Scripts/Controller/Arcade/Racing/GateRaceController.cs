@@ -131,15 +131,16 @@ namespace CosmicShore.Gameplay
                  "aiCommitDistance and the approach lead plus half the hull's turning radius), and after crossing a " +
                  "ring's plane OUTSIDE the mouth, re-latch the side from where the pilot is and break off at once. " +
                  "Off: commit at aiCommitDistance whatever the line, and circle the far-side point after a miss " +
-                 "until AIPilot's orbit detector fires. Ported from the Regatta AI studio (17/32 Hard races " +
-                 "finished off, 30/32 on). Regatta turns it on in code; every other gate race keeps its shipped " +
-                 "steering until its owner tests it on.")]
+                 "until AIPilot's orbit detector fires. On, the approach point also stays inside the commit radius " +
+                 "(ApproachLeadFor). Ported from the Regatta AI studio (17/32 Hard races finished off, 30/32 on). " +
+                 "Regatta and Switchback turn it on in code; every other gate race keeps its shipped steering until " +
+                 "its owner tests it on.")]
         [SerializeField] bool aiCommitFromApproachPoint;
 
         [Tooltip("Extra distance an AI will accept flying to take a crystal ON THE WAY to its next " +
-                 "gate. The crystal is the Dolphin's only blast trigger, and the external target " +
-                 "provider below replaces AIPilot's own crystal seeking outright - so without this " +
-                 "an AI could never fire the mode's whole interference layer. 0 disables the detour.")]
+                 "gate - read ONLY by a mode whose race needs crystals (AIDetoursForCrystals). A racing " +
+                 "AI flies the course's waypoints and nothing else (Yash, 2026-10-26), so in every gate " +
+                 "race today this value is not used, whatever the scene says.")]
         [SerializeField, Min(0f)] float aiCrystalDetourSlack = 220f;
 
         [Tooltip("Seconds between an AI's scans of the live crystal registry. The chosen crystal " +
@@ -313,11 +314,22 @@ namespace CosmicShore.Gameplay
         protected virtual bool AICommitFromApproachPoint => aiCommitFromApproachPoint;
 
         /// <summary>
-        /// The extra distance an AI flies for a crystal on the way to its next ring (<see cref="aiCrystalDetourSlack"/>).
-        /// 0 means an AI never steers at a crystal in this mode: it flies the course's rings and nothing else. A mode
-        /// whose crystals are not part of the race overrides it to 0 (Regatta).
+        /// <b>A racing AI flies the waypoints, not the crystals</b> (Yash, 2026-10-26: "while playing any racing game
+        /// mode, AI should not go for crystals. It should only focus on waypoints. If the crystals are the waypoints,
+        /// then go for crystals"). Every gate race used to let an AI swing up to 220 u off its line for any crystal near
+        /// its route (Regatta alone opted out, 2026-10-17); in Switchback the AI Dolphins took crystals instead of the
+        /// gates, losing the approach to the mouth each time. A mode whose race really needs a crystal (one that IS a
+        /// waypoint, or one the vessel cannot finish without) overrides this to true; none does today. In such a mode
+        /// <see cref="aiCrystalDetourSlack"/> bounds the detour.
         /// </summary>
-        protected virtual float AICrystalDetourSlack => aiCrystalDetourSlack;
+        protected virtual bool AIDetoursForCrystals => false;
+
+        /// <summary>
+        /// The extra distance an AI flies for a crystal on the way to its next ring: <see cref="aiCrystalDetourSlack"/> in
+        /// a mode that opts in (<see cref="AIDetoursForCrystals"/>), else 0 - the AI never steers at a crystal and flies
+        /// the course's rings and nothing else.
+        /// </summary>
+        protected virtual float AICrystalDetourSlack => AIDetoursForCrystals ? aiCrystalDetourSlack : 0f;
 
         /// <summary>
         /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
@@ -326,6 +338,26 @@ namespace CosmicShore.Gameplay
         /// (2026-10-14 Regatta audit, the Manta). 1 = no cap.
         /// </summary>
         const float ApproachLeadShareOfLeg = 0.4f;
+
+        /// <summary>
+        /// With <see cref="AICommitFromApproachPoint"/> on, the approach point never sits further from the ring than this
+        /// share of <see cref="aiCommitDistance"/>, so a pilot that reaches it is inside the commit radius and turns in.
+        /// Without it a leg over 650 u put the approach point at the full 300 u lead, outside the 260 u commit radius: the
+        /// pilot arrived, was still "approaching", and steered at the point it sat on. A wide-turning hull overshoots
+        /// into the radius by luck; the Dolphin turns on a 35 u circle and orbited 265-335 u out for the whole race
+        /// (Switchback, Yash's races of 2026-10-26: AI Dolphins threaded 0-2 of 20 rings, circling gate 0;
+        /// <c>Tools/Build/switchback_dolphin_sim.py</c>: 0 rings, and 20 of 20 on all six recorded courses with this).
+        /// </summary>
+        const float ApproachLeadShareOfCommit = 0.8f;
+
+        /// <summary>The approach lead for a leg of <paramref name="legLength"/>: <paramref name="approachLead"/> capped at
+        /// <see cref="ApproachLeadShareOfLeg"/> of the leg and, with the Regatta steering on, at
+        /// <see cref="ApproachLeadShareOfCommit"/> of the commit radius. Pure, for the tests.</summary>
+        public static float ApproachLeadFor(float approachLead, float legLength, float commitDistance, bool fromApproachPoint)
+        {
+            float lead = Mathf.Min(approachLead, ApproachLeadShareOfLeg * legLength);
+            return fromApproachPoint ? Mathf.Min(lead, ApproachLeadShareOfCommit * commitDistance) : lead;
+        }
 
         /// <summary>
         /// The range inside which an AI stops lining up and aims through the ring. Shipped behaviour is the
@@ -1054,13 +1086,12 @@ namespace CosmicShore.Gameplay
         /// that drifts just past the plane without threading would otherwise see the sides swap
         /// and swing away - the same latch Dog Fight's break-off needed, for the same reason.</para>
         ///
-        /// <para><b>Plus an on-the-way crystal detour.</b> Installing an external target provider
-        /// replaces AIPilot's own crystal seeking outright - the trap The Bends records - and a
-        /// crystal is the Dolphin's ONLY blast trigger, so a racing AI would otherwise never fire
-        /// the mode's whole interference layer. The detour is bounded by a distance budget rather
-        /// than by a radius: a crystal is taken only when going through it costs less than
-        /// <see cref="aiCrystalDetourSlack"/> of extra flying, so it can never pull a pilot off
-        /// the course, and the test stops holding the instant the pilot is past it.</para>
+        /// <para><b>No crystals.</b> Installing an external target provider replaces AIPilot's own
+        /// crystal seeking outright, so a racing AI flies the course's waypoints and nothing else
+        /// (<see cref="AIDetoursForCrystals"/>, 2026-10-26). A mode whose race needs crystals opts in
+        /// to an on-the-way detour, bounded by a distance budget rather than a radius: a crystal is
+        /// taken only when going through it costs less than <see cref="aiCrystalDetourSlack"/> of
+        /// extra flying, and the test stops holding the instant the pilot is past it.</para>
         ///
         /// <para>Steering only: no ability, throttle or weapon is touched here, and the provider
         /// is per-pilot, so nothing leaks into another mode.</para>
@@ -1090,9 +1121,9 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
-        // Easy and Medium race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
-        // Hard on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
+        // The lobby's AI difficulty (every mode offers it, AIDifficultyRules.IsOfferedFor):
+        // Easy, Medium and Hard race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
+        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
         SkimRaceHandicapLevel RaceHandicapLevel() => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
             ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
             : default;
@@ -1123,6 +1154,9 @@ namespace CosmicShore.Gameplay
             // Seeded per seat and per race, so each AI errs differently every race.
             var handicap = handicapLevel.IsNone ? null
                 : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
+            // The race's ring handicap IS this pilot's difficulty: drop the platform belief its spawn gave it
+            // (ConfigureAIPilotForMode installs one on every offered mode), or each mistake would be made twice.
+            pilot.SetTargetBelief(null);
 
             pilot.SetExternalTargetProvider(() =>
             {
@@ -1196,6 +1230,8 @@ namespace CosmicShore.Gameplay
                 if (!misjudged && lineLostIndex != index && TryRaceLine(captured, self, out Vector3 lineAim, out Vector3 lineAfter))
                 {
                     pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    // A look-ahead along a line, not a point to reach: the pilot's orbit break-off must not judge it.
+                    pilot.MarkAimAsPathLead();
                     after = lineAfter;
                     return lineAim;
                 }
@@ -1207,14 +1243,12 @@ namespace CosmicShore.Gameplay
                     detour = null;   // a new leg is a new line; re-decide what is on the way
                     // The leg into this ring: from the ring before it, or from where the pilot is for the first.
                     Vector3 legFrom = index > 0 ? _course[RingIndexFor(index - 1)].Position : self;
-                    approachLead = Mathf.Min(aiApproachLead,
-                        ApproachLeadShareOfLeg * Vector3.Distance(legFrom, gate.Position));
+                    approachLead = ApproachLeadFor(aiApproachLead, Vector3.Distance(legFrom, gate.Position),
+                        aiCommitDistance, AICommitFromApproachPoint);
                 }
 
-                // A crystal ON THE WAY, if there is one. Installing an external target
-                // provider replaces AIPilot's own crystal seeking outright (the trap Bends
-                // records), so without this an AI would never collect one, never fire the
-                // blast, and the mode's interference layer would be human-only.
+                // A crystal ON THE WAY, only in a mode whose race needs crystals (AIDetoursForCrystals; none
+                // today): a racing AI flies the waypoints, never a crystal (Yash, 2026-10-26).
                 if (AICrystalDetourSlack > 0f)
                 {
                     if (Time.time >= nextCrystalScan)

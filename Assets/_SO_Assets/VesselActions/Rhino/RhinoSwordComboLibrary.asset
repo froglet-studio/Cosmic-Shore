@@ -20,6 +20,7 @@ MonoBehaviour:
   finisherLockoutFraction: 0.7
   blendInSeconds: 0.06
   blendOutSeconds: 0.18
+  comboToastTemplate: '{name}'
   combos:
   - sequence: RR
     energized: 0
@@ -1074,12 +1075,12 @@ MonoBehaviour:
       yaw: -100
       roll: -380
       pitch: 40
-      thrust: 0.2
+      thrust: 0.3
     - time: 0.78
       yaw: -110
       roll: -500
       pitch: 30
-      thrust: 0.2
+      thrust: 0.3
     - time: 0.9
       yaw: -90
       roll: -640

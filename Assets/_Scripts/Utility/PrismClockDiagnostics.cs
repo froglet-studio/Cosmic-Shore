@@ -51,6 +51,11 @@ namespace CosmicShore.Utility
         /// REQUIRES the instanced renderer. Logged once per reason key. Pass a
         /// detail line (e.g. PrismRenderService.DescribeGrowStampTarget) so the
         /// error names the exact broken gate instead of a generic pointer.</summary>
+        /// <summary>True while <see cref="WarnNoRenderEntity"/> would still log for this key, so a caller can
+        /// skip composing an expensive detail line for the warnings that are discarded.</summary>
+        public static bool WillWarnNoRenderEntity(string reasonKey) =>
+            !Muted && !string.IsNullOrEmpty(reasonKey) && !_warnedContexts.Contains(reasonKey);
+
         public static void WarnNoRenderEntity(string reasonKey, Object context, string detail = null)
         {
             if (Muted || string.IsNullOrEmpty(reasonKey) || !_warnedContexts.Add(reasonKey)) return;

@@ -43,6 +43,39 @@ motion, give it a volume. A screen-space ring, a label or a word over it is the 
 - **It holds in labs and studios too**: a page that decides a look draws it in its 3D view, so what is decided is what
   the game shows.
 
+### Orthographic views and picture-in-picture frames (Garrett 2026-10-22)
+
+> "make sure anyone else using orthographic view never applies a panini or bloom to 2d assets by default."
+> "give the pip views a pleasant border across the game that matches our styleguide."
+
+- **No Panini on an orthographic camera, ever, with nothing to opt into.** `OrthographicLens`
+  (`Assets/_Scripts/Utility/`) hooks `beginCameraRendering` (URP raises it before it updates the camera's volumes),
+  gives every orthographic Game camera its own volume stack and holds `PaniniProjection.distance` at 0 in it. Panini is
+  a perspective lens. On a flat picture it only bows straight edges. Bloom, the tonemapper and the rest are untouched.
+  `OrthographicLens.AllowPanini(cam, true)` opts a camera out; nothing does.
+- **A 2D camera fades the sky's Voronoi cell net** (Garrett 2026-10-25: "the characters with an orthographic view like
+  the shrimp are doing something weird with the voroni effect on the skybox"; "call these 2d cameras"). A 2D camera is
+  one that slides and zooms across a plane: the Pistol's off-axis side view, the Wrasse's kite board, the Jacks' herding
+  view. The sky follows only rotation, so through those lenses its cell net sat magnified and glued to the screen.
+  `TwoDCameraSky.Register(cam)` (in `Crew/CrewViews.cs`) sets the global `_SkyCellOverlaySuppress` to 1 as that camera
+  begins rendering and 0 for every other camera; `HyperSeaSkybox.shader` multiplies its cell overlay by
+  `1 - _SkyCellOverlaySuppress`. Stars, nebulae and the galactic band stay. Register every new 2D camera and unregister
+  it on dispose. The baked MobileLow sky carries its cells in its texture and is not faded.
+- **2D marks in an orthographic view skip its post-processing.** Icons, dots, rings, cords and petals are drawn
+  through an `UnprocessedOverlay` (`Assets/_Scripts/Utility/`): an overlay camera on the view's URP stack with
+  post-processing off, seeing only the otherwise empty `3D UI` layer. Draw with `RenderParams.camera = overlay.Camera`
+  and `layer = overlay.Layer`. The world under the marks keeps the game's bloom and tonemapper. The Wrasse
+  (`KiteNavigatorView`) and the Jacks (`JacksView`) do this.
+- **The gate:** `python3 Tools/Build/check_orthographic_views.py` (`--self-test`) fails when the lens loses its hook or
+  its Panini zeroing, and when a runtime script makes a camera orthographic without an `UnprocessedOverlay`. A view with
+  no marks says so with `// ortho-marks: <why>`.
+- **Every picture-in-picture view wears one frame.** `PipViewFrame` (`Assets/_Scripts/UI/Elements/`) draws the style
+  guide's frame round whichever camera is in a view's small rect: a 1px Light hairline on a slivered outline, then the
+  2px Neutral (Dark) chrome band out to a clean rectangle, the band filling the two cut corners (`STYLE_FOUNDATION.md`
+  §2-§5). The look is `Resources/PipFrameStyle.asset` (`PipFrameStyleSO`, colours as `UIThemeSO` tokens). The crew
+  square (`CrewPictureInPicture`), the Wrasse, the Orca's lifted pilot view and the Jacks wear it. A new PiP view owns a
+  `PipViewFrame` and calls `Show(smallCamera)` each frame (null hides it).
+
 ### HLSL / Shader Graph
 
 - Custom Function nodes use HLSL files stored in a consistent location

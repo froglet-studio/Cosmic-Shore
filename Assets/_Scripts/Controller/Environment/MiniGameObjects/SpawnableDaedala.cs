@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
         // ── Crossings: the later structure gives way ───────────────────────────────────────
 
         /// <summary>The structures a later prism can meet, in the order they are laid.</summary>
-        enum Part { Deck, Gate, Stair, Causeway, Arch, Aqueduct, Tower, Lantern, Plaza, Atoll }
+        enum Part { Deck = 0, Gate = 1, Stair = 2, Causeway = 3, Arch = 4, Aqueduct = 5, Tower = 6, Lantern = 7, Plaza = 8, Atoll = 9 }
 
         /// <summary>Largest half-diagonal of any prism this city lays (an arch pier at full
         /// jitter): a prism farther than its own half-diagonal plus this from a centre cannot

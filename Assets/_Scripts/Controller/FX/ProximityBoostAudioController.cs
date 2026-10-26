@@ -84,14 +84,14 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField, Tooltip(
             "Shared SOAP variable for the base (no-boost) multiplier. " +
             "Should reference the same asset wired into " +
-            "SkimmerBoostPrismEffectSO and SquirrelVesselHUDController so " +
+            "SkimmerBoostPrismEffectSO and SquirrelHUDController so " +
             "the audio normalisation matches the gameplay clamp exactly.")]
         ScriptableVariable<float> boostBaseMultiplier;
 
         [SerializeField, Tooltip(
             "Shared SOAP variable for the maximum boost multiplier. " +
             "Should reference the same asset wired into " +
-            "SkimmerBoostPrismEffectSO and SquirrelVesselHUDController.")]
+            "SkimmerBoostPrismEffectSO and SquirrelHUDController.")]
         ScriptableVariable<float> boostMaxMultiplier;
 
         [Header("Boost Changed Event")]

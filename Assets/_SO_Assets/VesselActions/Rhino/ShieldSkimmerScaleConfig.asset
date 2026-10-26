@@ -12,24 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 179e407d1d9d40babefd4e314ae7e59f, type: 3}
   m_Name: ShieldSkimmerScaleConfig
   m_EditorClassIdentifier: 
-  baseScale: 30
-  maxScale: 120
-  prismGrowSpeed: 30
-  shrinkSpeed: 10
-  crystalBurstFactorAtFullEnergy: 4
-  crystalBurstHoldSeconds: 2.5
-  crystalBurstGrowSpeed: 600
-  crystalBurstReturnSpeed: 150
-  energizeCostFraction: 0.1
+  spaceLengthEaseSpeed: 30
+  cameraFollowsBladeLength: 1
   energizeHoldSeconds: 1
   touchEnergizeRateMultiplier: 2
   energizedTailSeconds: 5
   energizeCooldownSeconds: 5
   liveWireUpgradeElement: 1
+  surgeRingSwordCount: 8
+  surgeRingUnfurlSeconds: 0.35
+  surgeCameraDistanceScale: 2
+  surgeCameraBlendSeconds: 0.6
   visibilityMultiplier: 1.2
   restingBladeColor: {r: 1, g: 1, b: 1, a: 1}
-  fullEnergyColor: {r: 1, g: 1, b: 1, a: 1}
-  fullEnergyBrightness: 1.8
   energizedColor: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 1}
   colorTransitionSeconds: 0.25
   igniteCrackleIntensity: 2.5

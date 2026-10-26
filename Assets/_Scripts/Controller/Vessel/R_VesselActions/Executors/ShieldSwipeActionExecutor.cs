@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Obvious.Soap;
 using UnityEngine;
@@ -34,7 +35,8 @@ namespace CosmicShore.Gameplay
     /// COMBOS ride on top: a rapid string of trigger TAPS (RR, RL, RLR, …) calls an authored
     /// flourish from <see cref="RhinoSwordComboLibrarySO"/> — a separate, upgraded set while
     /// the blade is ENERGIZED — which blends in from the current pose, plays its path, and
-    /// blends back to wherever the fingers are. A held trigger is never a tap, so positioning
+    /// blends back to wherever the fingers are. The local pilot sees its name in the game's toast
+    /// container (top right, under Settings). A held trigger is never a tap, so positioning
     /// the sword is untouched. Detection reads the replicated trigger MIRRORS (the same values
     /// the energize stance reads), so every peer calls the same combo. See RHINO_SWORD_COMBOS.md.
     /// </summary>
@@ -97,6 +99,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The flourish currently playing, or null. For FX/HUD/diagnostics.</summary>
         public RhinoSwordComboPath ActiveFlourish => _flourish;
+
+        /// <summary>The pose last written to the blade (the swipe, the chop and any flourish), in
+        /// channel space; zero at rest. <see cref="RhinoAnimation"/> leans the wings with it.</summary>
+        public SwordPoseChannels CurrentPose => _lastApplied;
+
+        /// <summary>The frame <see cref="CurrentPose"/>'s sweep is expressed in: the blade's parent,
+        /// whose origin it pivots about. Null until the blade resolves.</summary>
+        public Transform PoseFrame => shieldRoot ? shieldRoot.parent : null;
 
         void OnEnable()
         {
@@ -245,6 +255,15 @@ namespace CosmicShore.Gameplay
 
             if (!_fx) shieldRoot.TryGetComponent(out _fx);
             if (_fx) _fx.NotifyCombo(finisher, energized);
+
+            // The combo's name, for the pilot who landed it: through the game's toast container (top
+            // right, under Settings) - the only place incoming text goes - from the library's authored
+            // template. An AI, a remote copy and the lava lamp's autopilot are silent.
+            if (_status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI && !_status.AutoPilotEnabled)
+            {
+                string line = TemplateText.Fill(library.ComboToastTemplate, "name", path.DisplayName);
+                if (!string.IsNullOrEmpty(line)) ToastNotificationAPI.Show(line);
+            }
         }
 
         /// <summary>

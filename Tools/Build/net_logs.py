@@ -53,8 +53,9 @@ def _git(*args, repo=None):
     return r.stdout if r.returncode == 0 else None
 
 
-def from_branches(repo=None):
-    """Every net log on every origin branch, deduped by (user, file name); lists the branches it is on."""
+def _branch_reports(kind, reader, repo=None):
+    """Every report of one kind (reports/<user>/<kind>/<file>) on every origin branch, read by reader(text, source,
+    user), deduped by (user, file name); each lists the branches it is on."""
     found = {}
     refs = (_git("for-each-ref", "--format=%(refname:short)", "refs/remotes/origin", repo=repo) or "").split()
     for ref in refs:
@@ -67,19 +68,81 @@ def from_branches(repo=None):
             meta, _, path = line.partition("\t")
             parts = meta.split()
             rel = path[len(REPORTS_PREFIX):].split("/")
-            if len(parts) < 3 or parts[1] != "blob" or len(rel) != 3 or rel[1] != "net":
+            if len(parts) < 3 or parts[1] != "blob" or len(rel) != 3 or rel[1] != kind:
                 continue
             user, _, name = rel
             key = (user, name)
             if key not in found:
                 text = _git("cat-file", "blob", parts[2], repo=repo)
-                log = parse(text, source=f"{ref}:{path}", user=user)
-                if log is None:
+                doc = reader(text, source=f"{ref}:{path}", user=user)
+                if doc is None:
                     continue
-                log["branches"] = []
-                found[key] = log
+                doc["branches"] = []
+                found[key] = doc
             found[key]["branches"].append(ref[len("origin/"):])
     return list(found.values())
+
+
+def from_branches(repo=None):
+    """Every net log on every origin branch, deduped by (user, file name); lists the branches it is on."""
+    return _branch_reports("net", parse, repo)
+
+
+def loads_from_branches(repo=None):
+    """Every Load Time Insights report the after-play send carried (kind "load")."""
+    return _branch_reports("load", parse_load, repo)
+
+
+# ── load timing reports (Load Time Insights, B36) ───────────────────────────
+
+RELAY_RISK_MS = 9000        # Unity Relay drops a connection after ~10 s without traffic (B36)
+
+
+def parse_load(text, source, user):
+    """One LoadInsightReport JSON, or None. Its window: timestamp is when it finished; totalMs before that it began."""
+    if not text:
+        return None
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return None
+    if not isinstance(doc, dict) or "trigger" not in doc or "totalMs" not in doc:
+        return None
+    end = _time(doc.get("timestamp"))
+    if end is None:
+        return None
+    doc["source"] = source
+    doc["user"] = user or "unknown"
+    doc["_end"] = end
+    doc["_start"] = end - dt.timedelta(milliseconds=float(doc.get("totalMs") or 0))
+    return doc
+
+
+def attach_loads(tests, loads):
+    """Each load report joins the test whose player (same sender) was playing when it ran."""
+    for t in tests:
+        t.setdefault("loads", [])
+    for load in loads:
+        for t in tests:
+            if any(p.get("user") == load["user"]
+                   and p["_start"] - dt.timedelta(seconds=5) <= load["_start"] <= p["_end"] + dt.timedelta(seconds=30)
+                   for p in t["peers"]):
+                t["loads"].append(load)
+                break
+    for t in tests:
+        t["loads"].sort(key=lambda l: l["_start"])
+
+
+def load_line(load):
+    """One line per load: who, which kind, how long, the worst frame (a Relay risk at ~10 s), how it ended."""
+    worst = float(load.get("worstFrameMs") or 0)
+    risk = "  RELAY RISK (a frame near Relay's 10 s timeout)" if worst >= RELAY_RISK_MS else ""
+    slices = sorted(load.get("slices") or [], key=lambda s: -float(s.get("attributedMs") or 0))[:2]
+    top = ", ".join(f"{s.get('name')} {float(s.get('attributedMs') or 0) / 1000:.1f}s" for s in slices)
+    return (f"{load['user']:<8} {load.get('loadKind') or 'launch':<10} {float(load.get('totalMs') or 0) / 1000:6.1f}s  "
+            f"worst frame {worst / 1000:5.2f}s  frames {load.get('framesDuringLoad', 0):<5} "
+            f"'{load.get('trigger', '')}' -> {load.get('completionReason', '')}"
+            + (f"  [{top}]" if top else "") + risk)
 
 
 def from_dirs(dirs):
@@ -212,6 +275,20 @@ def console_rate_limits(log):
                if l.get("type") == "warning" and RATE_LIMIT.search(l.get("msg", "")))
 
 
+def longest_stall(events):
+    """B36: the longest frame freeze (seconds) a player's record marked while online, or 0. A freeze of
+    ~10 s loses the Relay connection ("player timed out due to inactivity")."""
+    longest = 0.0
+    for ev in events:
+        ev = ev[1] if isinstance(ev, tuple) else ev
+        if ev.get("e") == "stall":
+            try:
+                longest = max(longest, float((ev.get("detail") or "").split("s", 1)[0]))
+            except ValueError:
+                pass
+    return longest
+
+
 def peer_summary(log, name=None):
     rec = log.get("record") or {}
     con = log.get("console") or {}
@@ -223,9 +300,16 @@ def peer_summary(log, name=None):
     limits = f"{counted}" + (f" (console {seen})" if seen != counted else "")
     events = log["_events"] if "_events" in log else rec.get("lifecycle") or []
     carried = "  [record carried over from an earlier Play: counters and why may be that one's]" if log.get("_carried") else ""
+    freeze = longest_stall(events)
+    stall = f" longest freeze {freeze:.1f}s" if freeze else ""
+    # Block 5: reads the SDK's stale-index fault voided (counted since 2026-10-26), and the refreshes each
+    # lobby's push drove with no read (0 online means that push never fired).
+    voided = f" voided {counters['benign']}" if counters.get("benign") else ""
+    pushes = "".join(f" {name} pushes {counters[key]}" for key, name in
+                     (("partyRosterPush", "party"), ("presencePush", "presence")) if counters.get(key))
     return (f"{name or log.get('peer', '?'):<10} {rec.get('role', '?'):<10} "
             f"{'CLEAN' if clean else 'DIRTY':<6} errors {con.get('errors', 0):<4} warnings {con.get('warnings', 0):<4} "
-            f"reads {counters.get('lobbyReads', 0)} 429s {limits} "
+            f"reads {counters.get('lobbyReads', 0)} 429s {limits}{voided}{pushes}{stall} "
             f"events {len(events)}  ({log.get('why', '')}){carried}")
 
 
@@ -257,7 +341,9 @@ def timeline(test, all_lines=False):
 def load(args):
     logs = [] if args.no_branches else from_branches()
     logs += from_dirs(args.dir or [])
-    return group(logs)
+    tests = group(logs)
+    attach_loads(tests, [] if args.no_branches else loads_from_branches())
+    return tests
 
 
 def cmd_collect(args):
@@ -282,6 +368,25 @@ def cmd_collect(args):
     return 0
 
 
+def config_diff(test):
+    """B35: lines naming where the players' Netcode configs differ, from each one's last `netConfig`
+    mark ("hash=<hex> prefabs=<n> <key>:<name> ..."). Empty when they agree or fewer than two recorded one."""
+    configs = {}
+    for log in test["peers"]:
+        marks = [ev.get("detail") or "" for _, ev in log.get("_events", []) if ev.get("e") == "netConfig"]
+        if marks:
+            words = marks[-1].split()
+            configs[peer_name(test, log)] = (words[0] if words else "", set(w for w in words[2:] if ":" in w))
+    if len(configs) < 2 or len({h for h, _ in configs.values()}) == 1:
+        return []
+    out = ["NetworkConfig differs between players (B35):"]
+    every = set.intersection(*(keys for _, keys in configs.values()))
+    for name, (h, keys) in configs.items():
+        only = sorted(keys - every)
+        out.append(f"  {name}: {h}" + (f"  only here: {' '.join(only)}" if only else "  (same prefab keys: the difference is a setting)"))
+    return out
+
+
 def cmd_show(args):
     tests = load(args)
     pick = None
@@ -296,6 +401,12 @@ def cmd_show(args):
     for p in pick["peers"]:
         print("  " + peer_summary(p, peer_name(pick, p)))
         print(f"    branch {p.get('branch')} @ {p.get('commit')}   source {p.get('source')}")
+    for line in config_diff(pick):
+        print("  " + line)
+    if pick.get("loads"):
+        print("  Loads (Load Time Insights):")
+        for l in pick["loads"]:
+            print("    " + load_line(l))
     print()
     width = max([10] + [len(peer_name(pick, p)) for p in pick["peers"]])
     for when, peer, kind, text in timeline(pick, all_lines=args.lines):
@@ -361,6 +472,12 @@ def self_test():
         check("DIRTY" in peer_summary(dirty), "a 429 in the verdict reads DIRTY (negative control)")
         check("429s 2 (console 1)" in peer_summary(dirty), "the console's rate-limit warnings show beside the record's count")
         check("console" not in peer_summary(tests[1]["peers"][0]), "...and not when they agree")
+        pushed = _fixture("main", "2026-10-15T10:00:00Z", "host", [], [])
+        pushed["record"]["counters"].update(benign=2, partyRosterPush=5, presencePush=7)
+        check("voided 2 party pushes 5 presence pushes 7" in peer_summary(pushed),
+              "voided reads and both lobbies' pushes show on the summary line")
+        check("voided" not in peer_summary(dirty) and "pushes" not in peer_summary(dirty),
+              "...and nothing shows when both are 0 (negative control)")
 
     # Two machines: another sender whose Play overlapped is the same test; one that did not is not.
     def at(doc, end, user):
@@ -375,6 +492,37 @@ def self_test():
     check([peer_name(two[1], p) for p in two[1]["peers"]] == ["belac/main", "yskha/main"], "...whose players carry their sender")
     check(len(two[0]["peers"]) == 1 and peer_name(two[0], two[0]["peers"][0]) == "main",
           "a later Play that overlapped nothing stays its own test (negative control)")
+
+    # B36: a frozen frame shows on the player's summary line.
+    froze = parse(json.dumps(_fixture("main", "2026-10-20T19:58:24Z", "host",
+                  [(415.0, "stall", "12.4s in MinigameBloomrush"), (418.0, "relayDrop", "after a 12.4 s freeze 2.9 s earlier")], [])), "x", "owner")
+    check("longest freeze 12.4s" in peer_summary(froze), "a recorded freeze shows on the summary line")
+    calm = parse(json.dumps(_fixture("main", "2026-10-20T19:58:24Z", "host", [(5.0, "party", "a->b")], [])), "x", "owner")
+    check("freeze" not in peer_summary(calm), "...and nothing shows without one (negative control)")
+
+    # B36: a player's load report joins their test, and a frame near Relay's timeout is flagged.
+    lt = group([at(_fixture("main", "2026-10-20T19:58:24Z", "host", [], []), "2026-10-20T20:18:28Z", "owner")])
+    menu = parse_load(json.dumps({"trigger": "Return to menu - MinigameBloomrush -> Menu_Main", "loadKind": "menuReturn",
+                                  "totalMs": 14000, "worstFrameMs": 10400, "framesDuringLoad": 40,
+                                  "completionReason": "Menu shown - the splash fades", "timestamp": "2026-10-20T20:05:10Z",
+                                  "slices": [{"name": "Scene load", "attributedMs": 11000}]}), "x", "owner")
+    other = parse_load(json.dumps({"trigger": "Game launch", "totalMs": 5000, "worstFrameMs": 200,
+                                   "timestamp": "2026-10-20T20:05:10Z"}), "x", "belac")
+    late = parse_load(json.dumps({"trigger": "Game launch", "totalMs": 5000, "worstFrameMs": 200,
+                                  "timestamp": "2026-10-21T09:00:00Z"}), "x", "owner")
+    attach_loads(lt, [menu, other, late])
+    check([l["trigger"] for l in lt[0]["loads"]] == [menu["trigger"]], "a load joins its sender's test, inside its window")
+    check("RELAY RISK" in load_line(menu) and "menuReturn" in load_line(menu), "a ~10 s frame is flagged as a Relay risk")
+    check("RELAY RISK" not in load_line(other), "...and a 0.2 s frame is not (negative control)")
+    check(parse_load(json.dumps({"schema": SCHEMA}), "x", "u") is None, "a net log is not a load report")
+
+    # B35: two players whose Netcode configs differ - the report names the prefab key only one has.
+    h = at(_fixture("main", "2026-10-23T23:02:05Z", "host", [(1.0, "netConfig", "hash=00000000000000aa prefabs=2 11:Goby 22:Player")], []), "2026-10-23T23:10:00Z", "belac")
+    j = at(_fixture("main", "2026-10-23T23:02:30Z", "client", [(1.0, "netConfig", "hash=00000000000000bb prefabs=2 11:Goby 33:Player")], []), "2026-10-23T23:09:00Z", "gradi")
+    diff = config_diff(group([h, j])[0])
+    check(len(diff) == 3 and "22:Player" in diff[1] and "33:Player" in diff[2], "differing configs name the prefab key each player alone has")
+    j2 = at(_fixture("main", "2026-10-23T23:02:30Z", "client", [(1.0, "netConfig", "hash=00000000000000aa prefabs=2 11:Goby 22:Player")], []), "2026-10-23T23:09:00Z", "gradi")
+    check(config_diff(group([h, j2])[0]) == [], "matching configs print nothing (negative control)")
 
     # A record carried over from an earlier Play (no domain reload): cut to this Play's events.
     old = _fixture("main", "2026-10-16T21:56:40Z", "host",

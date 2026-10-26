@@ -68,6 +68,9 @@ System's `ReleaseCompanion` (`Docs/HomeHub/ARCHITECTURE.md`).
 
 ## 4. Who is on what (avoid collisions)
 
+**Shombith leads activation; Caleb heads FTUE with him; no one else is on it** (Shombith, 2026-10-26). Every
+activation task on `Docs/TEAM_TASKS.md` names them; the rows below are the branches the work touches, not owners.
+
 | Work | Branch / PR | Collides on |
 |---|---|---|
 | Microgame Training + first-login guide | merged into `Ys-bleeding-edge` 2026-10-15 from `claude/exciting-bell-69b398` (no PR of its own; last commit 2026-10-13) | `QuestGraphRunner`, quest nodes, `Menu_Main.unity`, `ArcadeExploreView`, `ScreenSwitcher`, `ModalWindowManager`, `MenuHubButton`, `GateRaceController` (the course-source refactor) |
@@ -108,8 +111,9 @@ measurable now. The later phases wait for the gate, and stay at zero until it fl
 
 ## 6. The path to activation, in order
 
-**Every step below that needs a person is a task on [`TEAM_TASKS.md`](TEAM_TASKS.md)** (`python3
-Tools/Build/team_tasks.py list --area Activation`). Yash has offered to take tasks; take one before starting it.
+**Every step below that needs a person is a ticket on Froglet Tasks** (GitHub issues labelled `team-task`;
+`python3 Tools/Build/team_tasks.py list --area Activation`). Tickets name nobody; take one, naming your branch,
+before starting it.
 
 1. ~~**Land the training branch.**~~ Merged into `Ys-bleeding-edge` 2026-10-15 (§4). It reaches
    `bleeding-edge` with this branch's next PR.

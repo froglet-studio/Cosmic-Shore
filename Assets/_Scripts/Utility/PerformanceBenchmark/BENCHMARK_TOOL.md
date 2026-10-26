@@ -107,6 +107,14 @@ whole structure is laid AND fully grown (`PrismTrailBuilder.PollArenaReady`) —
 pre-game cinematic starts). The post-arena ceremony — cinematic, Ready click, countdown — is
 gameplay, not load, and is deliberately excluded from the recording.
 
+**Online play records by itself (2026-10-25, B36).** While a NetworkManager is listening (any online
+session, solo-against-AI included; `LoadInsights.OnlineProvider`, set by `MultiplayerSetup`), every load
+records without arming: each game launch, and each **return to the menu** (report `loadKind: "menuReturn"`,
+from `SceneLoader.ReturnToMainMenu` on the host and the server's Menu_Main pull on a client, ending when the
+menu's splash fades). The after-Play Bug Hunt send (`BugHuntAutoSend`) ships every new `load_*.json` to
+`bugledger/<user>` with no question, and `Tools/Build/net_logs.py show` lists them beside the multiplayer
+test they belong to, flagging any frame over 9 s as a Relay risk. Offline play still records only when armed.
+
 1. Press **● Arm Record Insight Mode** (persists until disarmed — every game launch records while
    armed, so you can capture intensity 1 vs intensity 2 back-to-back).
 2. Enter Play Mode and launch a game. Hosts start recording at the launch tap; **pure clients

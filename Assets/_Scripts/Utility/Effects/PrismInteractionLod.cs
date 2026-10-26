@@ -6,7 +6,8 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The DETAIL LEVEL of the prism's two fundamental interactions, decided once, at the instant of the event,
+    /// The DETAIL LEVEL of the prism's two fundamental interactions (and of its consumption, which rides the
+    /// destruction's ladder), decided once, at the instant of the event,
     /// for every prism in the game (Docs/PRISM_ANIMATION.md §4.12; config <see cref="PrismInteractionLodConfigSO"/>):
     ///
     /// <list type="table">
@@ -19,6 +20,8 @@ namespace CosmicShore.Utility
     /// away at its own end, the smallest first (<see cref="PrismCollisionBurst.Fragment"/>, round 9).</item>
     /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (the roll: each face's skin rolls
     /// up away from the camera and round the prism until the prism hides it) at three mesh resolutions.</item>
+    /// <item><b>Suction</b> (round 15) — the destruction's ladder and meshes unchanged, each fragment drawn into the
+    /// eater instead of bursting out (<see cref="TrySuction"/>, <see cref="PrismCollisionBurst.Suction"/>).</item>
     /// </list>
     ///
     /// Both ladders are graded by DISTANCE — the prism's projected diameter over the screen height through
@@ -159,13 +162,50 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// A SUCTION at its depth (round 15, Garrett: "use the silver gnomen triangles that are used on the explosion
+        /// shader on the suction shader. Use the same LOD system as well."): the destruction's own ladder — the cut as
+        /// deep as the prism's size on screen and the amount allow, stepping down until its mesh fits the budget — each
+        /// fragment the burst's SUCTION kind, drawn into <paramref name="target"/> over the implosion's own life in the
+        /// domain's palette. Every suction the finer levels do not take — far away, off screen, over their budget — is
+        /// LEVEL 0, the same kind on the cut's depth 0 (<see cref="PrismInteractionLodConfigSO.SuctionAsFragments"/>).
+        /// False means the caller (<c>PrismFactory.SpawnImplosion</c>) draws the SuctionGraph's implosion.
+        /// </summary>
+        public static bool TrySuction(Vector3 position, Quaternion rotation, Vector3 scale, Color bright, Color dark,
+            Transform target)
+        {
+            var cfg = PrismInteractionLodConfigSO.Instance;
+            if (cfg == null || !cfg.SuctionEnabled || target == null) return false;
+            // A device without Entities Graphics draws consumptions on the capped MeshRenderer carrier (§4.11).
+            if (CosmicShore.ECS.PrismMeshRendererStamps.Active) return false;
+            if (!PrismDebris.TryGetImplosionDuration(out float life) || life <= 0f) return false;
+
+            if (PrismCollisionBurst.CanAccept(cfg) && TryMeasure(position, scale, out float fraction))
+            {
+                int steps = CrowdSteps(PrismCollisionBurst.Fill(cfg), cfg.CrowdedFill, cfg.PackedFill);
+                // A depth whose mesh does not fit the triangle budget steps up until one does.
+                for (int depth = PickDepth(fraction, steps, cfg); depth > 0; depth--)
+                {
+                    var mesh = MeshOfLevel(depth, cfg);
+                    if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
+                    if (PrismCollisionBurst.TryRequestSuction(position, rotation, scale, bright, dark, target, life, mesh))
+                        return true;
+                    break;
+                }
+            }
+
+            return cfg.SuctionAsFragments &&
+                   PrismCollisionBurst.TryRequestSuction(position, rotation, scale, bright, dark, target, life,
+                       MeshOfLevel(0, cfg), level0: true);
+        }
+
+        /// <summary>
         /// A STEAL at its detail level: when the prism is big enough on screen and the budget has room, its old
         /// colours shed off it as a skin (the bloom; the kind is still picked by weight, unravel and flake ship at 0) at the resolution
         /// its size and the amount allow, over a grade of <paramref name="gradeSeconds"/>. True means the caller must
         /// give the prism its new colour AT ONCE (the skin is the transition); false means the caller grades as usual.
         /// </summary>
         public static bool TryShed(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color oldBright, Color oldDark, Color newBright, float gradeSeconds)
+            Color oldBright, Color oldDark, float gradeSeconds)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
             if (cfg == null || !cfg.ShedEnabled || !PrismCollisionBurst.CanAccept(cfg)) return false;
@@ -181,7 +221,7 @@ namespace CosmicShore.Utility
             {
                 var mesh = MeshOf(level, cfg, kind);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
-                return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark, newBright,
+                return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark,
                     gradeSeconds, kind, mesh, eye, cfg.ShedSubdivisionOf((int)level));
             }
             return false;

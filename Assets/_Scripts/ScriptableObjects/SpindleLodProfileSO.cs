@@ -38,113 +38,151 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Style")]
         [Tooltip("COVERT hides the LOD (the braid converges into a thread; bands below in girths). OVERT makes it the effect: the tiers swap exactly where the prisms' own depth ramp says the braid is closed or fully open, and the braid opens like danger mass with a wave running through it (bands from the prisms + the overt fade below; the look on Resources/IncorporealDepth). Switchable in Play.")]
-        public Style style = Style.Overt;
+        [SerializeField] Style style = Style.Overt;
+        public Style LookStyle => style;
 
         [Header("System")]
         [Tooltip("Master switch. OFF returns every spindle to its authored braid and stops the system - the kill switch if a tier ever looks wrong in play.")]
-        public bool lodEnabled = true;
+        [SerializeField] bool lodEnabled = true;
+        public bool LodEnabled => lodEnabled;
 
         [Tooltip("Seconds between classification passes (one Burst pass over every registered spindle). The shader blends continuously between passes, so this only sets how promptly a mesh swap follows the camera.")]
-        [Min(0.05f)] public float tickIntervalSeconds = 0.2f;
+        [SerializeField, Min(0.05f)] float tickIntervalSeconds = 0.2f;
+        public float TickIntervalSeconds => tickIntervalSeconds;
 
         [Tooltip("Mesh/material swaps applied per frame. A swap left for the next frame is invisible: both sides of every swap draw the same picture over the hysteresis band. Leaving the instanced batch because a spindle MOVED is never budgeted.")]
-        [Min(16)] public int maxTransitionsPerFrame = 384;
+        [SerializeField, Min(16)] int maxTransitionsPerFrame = 384;
+        public int MaxTransitionsPerFrame => maxTransitionsPerFrame;
+
+        [Tooltip("Milliseconds of swaps per frame, on top of the count above: whichever runs out first ends the frame's drain. Each swap is several renderer writes, so a full count budget measured 14.7 ms in one frame (Menu_Main, 2026-10-23); the rest waits invisibly for the next frame.")]
+        [SerializeField, Min(0.5f)] float maxTransitionMsPerFrame = 3f;
+        public float MaxTransitionMsPerFrame => maxTransitionMsPerFrame;
 
         [Tooltip("Draw still, far spindles as ONE instanced call per material instead of one renderer each. Off keeps every far thread on its own renderer (the per-limb CPU cost stays; the triangle saving remains).")]
-        public bool batchFarThreads = true;
+        [SerializeField] bool batchFarThreads = true;
+        public bool BatchFarThreads => batchFarThreads;
 
         [Header("Tiers (girths)")]
         [Tooltip("The authored braid on SpindleGraph, untouched, out to here. The mid tier's decimation error (0.05 units) is under half a pixel from ~70 girths.")]
-        [Min(1f)] public float nearEndGirths = 100f;
+        [SerializeField, Min(1f)] float nearEndGirths = 100f;
+        public float NearEndGirths => nearEndGirths;
 
         [Tooltip("The mid tier (the braid at every third ring) out to here; beyond it the far thread. The strands finish drawing together at midEnd x (1 - hysteresis), so the far thread takes over from a picture identical to its own.")]
-        [Min(1f)] public float midEndGirths = 420f;
+        [SerializeField, Min(1f)] float midEndGirths = 420f;
+        public float MidEndGirths => midEndGirths;
 
         [Tooltip("Fractional band below each boundary inside which a spindle keeps its current tier, so one standing near a boundary does not swap meshes every pass.")]
-        [Range(0.01f, 0.3f)] public float hysteresis = 0.08f;
+        [SerializeField, Range(0.01f, 0.3f)] float hysteresis = 0.08f;
+        public float Hysteresis => hysteresis;
 
         [Tooltip("Where the three strands start drawing together and the lace starts closing into the thread. Must sit past nearEnd: the near tier (SpindleGraph) cannot draw a converging braid.")]
-        [Min(1f)] public float convergeStartGirths = 110f;
+        [SerializeField, Min(1f)] float convergeStartGirths = 110f;
+        public float ConvergeStartGirths => convergeStartGirths;
 
         [Tooltip("The far thread starts fading out here...")]
-        [Min(1f)] public float farFadeStartGirths = 1300f;
+        [SerializeField, Min(1f)] float farFadeStartGirths = 1300f;
+        public float FarFadeStartGirths => farFadeStartGirths;
 
         [Tooltip("...and is gone here, where it stops being drawn at all (zero cost).")]
-        [Min(1f)] public float farFadeEndGirths = 1900f;
+        [SerializeField, Min(1f)] float farFadeEndGirths = 1900f;
+        public float FarFadeEndGirths => farFadeEndGirths;
 
         [Header("Overt ladder past the peak (the prisms' normalised squared distance d^2 / _SqrDistance: 1 = fully open, ~316 units)")]
         [Tooltip("OVERT: where the settled braid (72 triangles, from the end of Resources/IncorporealDepth's recede) hands over to the 12-triangle thread. 10 = ~3.2x the ramp's distance, ~1,000 units.")]
-        [Min(1.01f)] public float overtThreadStartNorm = 10f;
+        [SerializeField, Min(1.01f)] float overtThreadStartNorm = 10f;
+        public float OvertThreadStartNorm => overtThreadStartNorm;
 
         [Tooltip("OVERT: where the thread starts fading out (and every other spindle body with it). 15.625 = 1.25x 1,000 units, ~1,250 units.")]
-        [Min(1.01f)] public float overtFadeStartNorm = 15.625f;
+        [SerializeField, Min(1.01f)] float overtFadeStartNorm = 15.625f;
+        public float OvertFadeStartNorm => overtFadeStartNorm;
 
         [Tooltip("OVERT: where it is gone; it stops being drawn just past here. 22.5 = 1.5x 1,000 units, ~1,500 units.")]
-        [Min(1.02f)] public float overtFadeEndNorm = 22.5f;
+        [SerializeField, Min(1.02f)] float overtFadeEndNorm = 22.5f;
+        public float OvertFadeEndNorm => overtFadeEndNorm;
 
         [Header("Overt strength (share of the danger prisms' spread, Resources/IncorporealDepth)")]
         [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.01 = a tip travels ~0.15 units at the peak: round 6's deliberately negligible sanity setting).")]
-        [Range(0f, 2f)] public float chargeStrength = 0.01f;
+        [SerializeField, Range(0f, 2f)] float chargeStrength = 0.01f;
+        public float ChargeStrength => chargeStrength;
 
         [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.005 = ~0.08 units at the peak (round 6's negligible sanity setting).")]
-        [Range(0f, 2f)] public float otherStrength = 0.005f;
+        [SerializeField, Range(0f, 2f)] float otherStrength = 0.005f;
+        public float OtherStrength => otherStrength;
 
         [Header("The thread's look")]
         [Tooltip("The narrowest a thread is ever DRAWN, in screen pixels. Thinner geometry rasterises as broken, sparkling dots; past this width the thread is drawn wider and its alpha pays for the difference (coverage), so it reads as a continuous line of the right brightness.")]
-        [Range(0.5f, 3f)] public float minThreadPixels = 1.25f;
+        [SerializeField, Range(0.5f, 3f)] float minThreadPixels = 1.25f;
+        public float MinThreadPixels => minThreadPixels;
 
         [Tooltip("Where the thread sits between the material's dull and bright colours when a facet is edge-on.")]
-        [Range(0f, 1f)] public float threadBase = 0.35f;
+        [SerializeField, Range(0f, 1f)] float threadBase = 0.35f;
+        public float ThreadBase => threadBase;
 
         [Tooltip("How much a facet facing the camera brightens toward the bright colour - what keeps the thread a faceted volume rather than a flat line.")]
-        [Range(0f, 1f)] public float threadFacet = 0.55f;
+        [SerializeField, Range(0f, 1f)] float threadFacet = 0.55f;
+        public float ThreadFacet => threadFacet;
 
         [Tooltip("Colour multiplier the thread reaches as it recedes toward farFadeStart (above 1 reaches bloom). The far look: the skeleton glows instead of vanishing.")]
-        [Range(0.5f, 3f)] public float threadGlow = 1.35f;
+        [SerializeField, Range(0.5f, 3f)] float threadGlow = 1.35f;
+        public float ThreadGlow => threadGlow;
 
         [Tooltip("The converged thread's opacity before coverage and fades.")]
-        [Range(0.05f, 1f)] public float threadAlpha = 0.85f;
+        [SerializeField, Range(0.05f, 1f)] float threadAlpha = 0.85f;
+        public float ThreadAlpha => threadAlpha;
 
         [Header("Beyond the braid (SpindleDepthGraph, Docs/SPINDLE_LOD.md §8)")]
         [Tooltip("OVERT: every spindle-material renderer that is NOT the braid - a creature's own model (the shark, brittlestar, worm and quadfish) - wears the same depth effect, blooming outward from its pivot (its element sets its strength, as for a limb). Off: those keep their authored material.")]
-        public bool depthOnBodies = true;
+        [SerializeField] bool depthOnBodies = true;
+        public bool DepthOnBodies => depthOnBodies;
 
         [Tooltip("OVERT: how far a switch ring's facets open, as a share of the danger prisms' face travel (0.005 = ~0.08 units at the peak, the same as a non-Charge limb). Rings are drawn in SpindleDepthGraph (ToyFactory.AddSwitchRing).")]
-        [Range(0f, 2f)] public float switchRingStrength = 0.005f;
+        [SerializeField, Range(0f, 2f)] float switchRingStrength = 0.005f;
+        public float SwitchRingStrength => switchRingStrength;
 
         [Tooltip("SpindleGraph's _Distance on the switch rings: the squared distance its lace fades out by. A branch fades by 2,000,000 (~1,400 units); a switch is a signal you fly toward, so 200,000,000 keeps it readable ~14,000 units out.")]
-        [Min(1f)] public float switchRingDistance = 200000000f;
+        [SerializeField, Min(1f)] float switchRingDistance = 200000000f;
+        public float SwitchRingDistance => switchRingDistance;
 
         [Tooltip("SpindleGraph's sway amplitude on the switch rings. 0: a ring is a trigger volume drawn at its own radius, and a swaying ring would draw it somewhere it is not.")]
-        [Min(0f)] public float switchRingSway = 0f;
+        [SerializeField, Min(0f)] float switchRingSway = 0f;
+        public float SwitchRingSway => switchRingSway;
 
         [Tooltip("The ring's DARK colour (its body, what an edge-on facet shows) as a share of its signal colour. Low keeps the machined facets readable: a ring between two bright colours washes flat (the prism rings used 0.22).")]
-        [Range(0f, 1f)] public float switchRingDarkShare = 0.18f;
+        [SerializeField, Range(0f, 1f)] float switchRingDarkShare = 0.18f;
+        public float SwitchRingDarkShare => switchRingDarkShare;
 
         [Tooltip("How far the ring's BRIGHT colour (a facet square to the camera) sits from its signal colour toward white. 0 = the signal colour itself.")]
-        [Range(0f, 1f)] public float switchRingRimWhiten = 0f;
+        [SerializeField, Range(0f, 1f)] float switchRingRimWhiten = 0f;
+        public float SwitchRingRimWhiten => switchRingRimWhiten;
 
         [Tooltip("The synthetic wire's facet shading: where a facet edge-on to the camera sits between dark (0) and bright (1).")]
-        [Range(0f, 1f)] public float switchRingShadeBase = 0f;
+        [SerializeField, Range(0f, 1f)] float switchRingShadeBase = 0f;
+        public float SwitchRingShadeBase => switchRingShadeBase;
 
         [Tooltip("The synthetic wire's facet shading: how far a facet square to the camera brightens past switchRingShadeBase (base + facet x facing^2). 1 = the full dark-to-bright range across the cable's facets.")]
-        [Range(0f, 1f)] public float switchRingShadeFacet = 1f;
+        [SerializeField, Range(0f, 1f)] float switchRingShadeFacet = 1f;
+        public float SwitchRingShadeFacet => switchRingShadeFacet;
 
         [Header("Measured (owned by Tools/Build/author_spindle_lod_meshes.py - do not hand-edit)")]
         [Tooltip("SpindleLodMid.mat: SpindleMaterial on SpindleLodMidGraph. A build-variant anchor; runtime LOD materials are cloned from it.")]
-        public Material midTemplate;
+        [SerializeField] Material midTemplate;
+        public Material MidTemplate => midTemplate;
 
         [Tooltip("SpindleLodFar.mat: SpindleMaterial on SpindleLodFarGraph, instancing on. A build-variant anchor; runtime LOD materials are cloned from it.")]
-        public Material farTemplate;
+        [SerializeField] Material farTemplate;
+        public Material FarTemplate => farTemplate;
 
         [Tooltip("SpindleDepth.mat: SpindleMaterial on SpindleDepthGraph. A build-variant anchor; the creatures' depth materials are cloned from it.")]
-        public Material depthTemplate;
+        [SerializeField] Material depthTemplate;
+        public Material DepthTemplate => depthTemplate;
 
         [Tooltip("SpindleWire.mat: SpindleMaterial on SpindleWireGraph. A build-variant anchor; every tier of a SYNTHETIC mesh set (the switch rings' wire) is cloned from it.")]
-        public Material wireTemplate;
+        [SerializeField] Material wireTemplate;
+        public Material WireTemplate => wireTemplate;
 
         [Tooltip("One entry per spindle mesh that has LOD meshes.")]
-        public List<MeshSet> meshSets = new();
+        [SerializeField] List<MeshSet> meshSets = new();
+        public List<MeshSet> MeshSets => meshSets;
 
         [Serializable]
         public class MeshSet

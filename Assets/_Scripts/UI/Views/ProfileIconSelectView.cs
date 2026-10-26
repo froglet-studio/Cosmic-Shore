@@ -315,7 +315,7 @@ namespace CosmicShore.UI
 
             ClearGrid();
 
-            foreach (var profileIcon in profileIcons.profileIcons)
+            foreach (var profileIcon in profileIcons.ProfileIcons)
             {
                 var buttonInstance = Instantiate(iconButtonPrefab, iconGrid.transform);
                 buttonInstance.transform.localScale = Vector3.one;
@@ -340,9 +340,9 @@ namespace CosmicShore.UI
             }
 
             // If nothing matched the saved id, default to first icon
-            if (!_hasSelectedIcon && profileIcons.profileIcons.Count > 0)
+            if (!_hasSelectedIcon && profileIcons.ProfileIcons.Count > 0)
             {
-                var first = profileIcons.profileIcons[0];
+                var first = profileIcons.ProfileIcons[0];
 
                 var allButtons = iconGrid.GetComponentsInChildren<ProfileIconSelectButton>(true);
                 var firstButton = allButtons.FirstOrDefault(b => b.ProfileIcon.Id == first.Id);

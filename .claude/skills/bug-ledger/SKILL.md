@@ -76,7 +76,7 @@ Worst first (open, then regressions, then times seen). One issue on several bran
    work, or a `Debug.Log` are not fixes (CLAUDE.md § What Claude Code Should Never Do).
 5. **Load the area's skill / topic file first**; shared prefabs and SOs are fixed once at the source.
 6. A DESIGN or CONTENT call (an FMOD event's loop region, what a skimmer should do) is not yours:
-   restore established behaviour if you can, and hand it to its owner with `team_tasks.py add`.
+   restore established behaviour if you can, and file it as a `decision` ticket (`/team-tasks add`, naming nobody).
 7. Team rules (CLAUDE.md § Team): a fix in another collaborator's area beyond a wiring/data repair
    is a task for its owner, not a commit; commits there say `Affects: <person>'s <area>`.
 
@@ -93,7 +93,11 @@ commit (throwaway index; your HEAD, index and working tree are untouched). Their
 its next sync (editor load, or before a send) **only once that commit is in their HEAD** — tell them
 to pull. Two clean play tests then close it unseen; if the error returns it reopens and their next
 "Send to Claude" brings it back (`regressions > 0` = your fix did not hold: re-root-cause from
-scratch). Leave `ignored` issues alone (`mark-fixed` refuses without `--force`); never delete issue
+scratch). **A fix that reached some senders only** (the issue is `validating` on one `bugledger/*` branch and still
+`open`, with no `fixCommit`, on another): hand it on with `mark-fixed <id> --commit <the same sha> --branch <user>`.
+Copies already validating that commit are left alone (a rewrite would zero their clean runs), so never re-run a
+plain `mark-fixed` just to reach one more tester. Skip it when the open copy has `regressions` > 0 — that machine
+saw the error AFTER taking the fix. Leave `ignored` issues alone (`mark-fixed` refuses without `--force`); never delete issue
 files — closing is the editor's job, after validation.
 
 ## 4. "Is it fixed?" — answer from their branch

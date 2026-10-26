@@ -317,6 +317,10 @@ namespace CosmicShore.Gameplay
                         try { ep.Execute(this, prismImpactor); } catch (System.Exception ex) { ReportEffectThrow(ex, ep); }
                     }
 
+                    // The camera following this vessel feels the skim: a nudge away from the prism and a little
+                    // rumble (Docs/CAMERA_FEEL.md). Every prism the effects above acted on, as the haptic does.
+                    VesselCameraFeel.Skim(skimmer.VesselStatus, prismImpactor.transform.position,
+                        transform.position, SphereWorldRadius);
 
                     if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain)
                         return;

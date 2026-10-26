@@ -64,14 +64,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("When on, the offset follows only the vessel's heading (yaw) and ignores pitch/roll. " +
                  "An AI pilot banks and loops constantly - yaw-only framing keeps the horizon stable " +
                  "instead of whipping the camera around every barrel roll.")]
-        public bool yawOnlyOffset = true;
+        [SerializeField] bool yawOnlyOffset = true;
+        public bool YawOnlyOffset => yawOnlyOffset;
 
         [Header("Orbit Framing (OrbitVessel)")]
         [Tooltip("Horizontal distance from the vessel while orbiting.")]
-        public float orbitRadius = 80f;
+        [SerializeField] float orbitRadius = 80f;
+        public float OrbitRadius => orbitRadius;
 
         [Tooltip("Height above the vessel while orbiting.")]
-        public float orbitHeight = 28f;
+        [SerializeField] float orbitHeight = 28f;
+        public float OrbitHeight => orbitHeight;
 
         [Tooltip("Orbit speed in degrees per second.")]
         public float orbitDegreesPerSecond = 6f;
@@ -91,21 +94,25 @@ namespace CosmicShore.Gameplay
         [Tooltip("Orbit speed in degrees per second. The historical rig ran ~2.83 deg/s - a full " +
                  "lap every ~2 minutes. This is deliberately slow enough that the camera reads as " +
                  "still and ALL the motion on screen belongs to the vessels, trails and crystals.")]
-        public float lavaLampDegreesPerSecond = 2.83f;
+        [SerializeField] float lavaLampDegreesPerSecond = 2.83f;
+        public float LavaLampDegreesPerSecond => lavaLampDegreesPerSecond;
 
         [Tooltip("Direction from the cell centre to the camera at orbit phase zero (normalized at " +
                  "use). Only its component perpendicular to the orbit axis sweeps; the parallel " +
                  "component fixes how far off the axis the orbit sits.")]
-        public Vector3 lavaLampStartDirection = new(0f, 0f, -1f);
+        [SerializeField] Vector3 lavaLampStartDirection = new(0f, 0f, -1f);
+        public Vector3 LavaLampStartDirection => lavaLampStartDirection;
 
         [Tooltip("World-space vertical lift applied on top of the orbit position, so the framing " +
                  "sits slightly above the cell's midline. The historical rig used 30.")]
-        public float lavaLampHeightOffset = 30f;
+        [SerializeField] float lavaLampHeightOffset = 30f;
+        public float LavaLampHeightOffset => lavaLampHeightOffset;
 
         [Tooltip("Aim at the cell's crystal (the original behaviour - the slowly-respawning crystal " +
                  "gives the camera something alive to drift toward). Off aims at the cell centre, " +
                  "for a perfectly still frame. Falls back to the centre whenever no crystal exists.")]
-        public bool lavaLampAimAtCrystal = true;
+        [SerializeField] bool lavaLampAimAtCrystal = true;
+        public bool LavaLampAimAtCrystal => lavaLampAimAtCrystal;
 
         [Range(0.5f, 0.999f)]
         [Tooltip("CAMERA ROLL DIAL. World-up as the look hint gives EXACTLY a level horizon, so the " +
@@ -120,15 +127,18 @@ namespace CosmicShore.Gameplay
                  "latitude can push the view that steep, so the blend effectively never fires. " +
                  "Lower it (~0.85) for an orbit that DOES cross the pole - the legacy (0,1,-1) cone " +
                  "- where the roll is unavoidable and wants to be spread out gently instead.")]
-        public float lavaLampPoleBlendStart = 0.99f;
+        [SerializeField] float lavaLampPoleBlendStart = 0.99f;
+        public float LavaLampPoleBlendStart => lavaLampPoleBlendStart;
 
         [Header("Top-Down Framing (TopDownPan)")]
         [Tooltip("Height above the vessel for the top-down vantage.")]
-        public float topDownHeight = 70f;
+        [SerializeField] float topDownHeight = 70f;
+        public float TopDownHeight => topDownHeight;
 
         [Tooltip("World-space back offset so the camera is not exactly vertical - a slight tilt " +
                  "keeps the look rotation well-conditioned and lets vessel facing read at a glance.")]
-        public float topDownBackOffset = -12f;
+        [SerializeField] float topDownBackOffset = -12f;
+        public float TopDownBackOffset => topDownBackOffset;
 
         [Header("Smoothing")]
         [Tooltip("SmoothDamp time (seconds) for the camera position chasing its desired framing. " +
@@ -142,7 +152,8 @@ namespace CosmicShore.Gameplay
         [Header("Lens")]
         [Tooltip("Field of view while this configuration is active. 0 = match the gameplay camera's " +
                  "FOV (recommended - guarantees no lens jump when entering freestyle).")]
-        public float fieldOfView = 0f;
+        [SerializeField] float fieldOfView = 0f;
+        public float FieldOfView => fieldOfView;
 
         [Header("Freestyle Transition")]
         [Tooltip("How long the blend between this framing and the gameplay camera lasts, both " +

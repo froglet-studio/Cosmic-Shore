@@ -440,7 +440,7 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   a peer that simulates any rival of a prism's owner believes a proxy's break of that owner's
   shield. The SCORE path is unchanged and was already correct on every peer.
 - **The Urchin HUD is placeholder art.** Since #973 (2026-10) `Urchin.prefab` wires
-  `VesselStatus.vesselHUDController` to an `UrchinVesselHUDController` driving a nested
+  `VesselStatus.vesselHUDController` to an `UrchinHUDController` driving a nested
   `UrchinHUDVariant.prefab` (a Prefab Variant of `VesselHUDPrefab`, authored by
   `Tools/Build/author_urchin_hud.py`): the four-icon row Chain Spikes / Trail Rider / Track
   Projector / Slip with RT / LT / B chips, the elemental petal bars, the **ammo gauge** on the

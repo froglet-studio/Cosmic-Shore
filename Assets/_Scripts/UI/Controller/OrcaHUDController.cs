@@ -63,6 +63,7 @@ namespace CosmicShore.UI
         readonly TouchButtonView[] _buttons = new TouchButtonView[2];
         AbilityLockupView _lockup;
         int _buttonSeat = -1, _screenWidth, _screenHeight;
+        bool _riderButtonsBuilt;
         Rect _safeArea;
 
         public override void Initialize(IVesselStatus vesselStatus)
@@ -106,9 +107,14 @@ namespace CosmicShore.UI
             1 => Element.Space, 2 => Element.Mass, 3 => Element.Charge, _ => Element.Time,
         };
 
+        // the local person's HUD: their own hull's, or the hull whose gunner seat they man from another machine
+        bool LocalHud => _isLocalPilotHud || (crew && crew.HumanRides);
+
         void Update()
         {
-            if (!_isLocalPilotHud || !crew) return;
+            if (!LocalHud || !crew) return;
+            // a rider's HUD is a remote hull's, initialised without the phone buttons: build them the first time it is theirs
+            if (!_isLocalPilotHud && !_riderButtonsBuilt && View) { _riderButtonsBuilt = true; BuildButtons(View); }
             int held = crew.HumanAboard ? crew.HumanSeat : -1;
             PaintButtons(held);
 
@@ -174,7 +180,7 @@ namespace CosmicShore.UI
         {
             ClearButtons();
             _buttonSeat = -1;
-            if (!_isLocalPilotHud || !crew || !KitInputDevice.IsTouchPrimary) return;
+            if (!LocalHud || !crew || !KitInputDevice.IsTouchPrimary) return;
             _lockup = view.GetComponent<AbilityLockupView>();
             var row = _lockup ? _lockup.Row : null;
             var cfg = crew.Config;

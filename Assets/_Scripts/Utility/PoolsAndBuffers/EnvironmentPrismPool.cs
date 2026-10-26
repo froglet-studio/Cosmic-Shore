@@ -194,6 +194,7 @@ namespace CosmicShore.Gameplay
             prism.ClearSuctionClockStamp();
             if (PrismRenderService.IsHandleUsable(in prism.RenderHandle))
                 PrismRenderService.ClearPrismStamps(in prism.RenderHandle);
+            PrismMeshRendererStamps.ClearPrismStamps(prism.StampRenderer); // §4.11 twin (no-op where entities run)
 
             // worldPositionStays: false so a suctioned localScale is not baked in
             // (same as vessel pooled returns).
@@ -303,8 +304,7 @@ namespace CosmicShore.Gameplay
                 instanceScale.SetTargetScale(restore);
             }
 
-            var team = instance.GetComponent<PrismTeamManager>();
-            if (team == null)
+            if (!instance.TryGetComponent(out PrismTeamManager team))
             {
                 CSDebug.LogError($"[EnvironmentPrismPool] PrepareForLay: PrismTeamManager missing on {instance.name}");
             }

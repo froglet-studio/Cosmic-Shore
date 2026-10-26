@@ -42,7 +42,7 @@ WHAT IT MAKES (`R_VesselActions/STOAT.md`)
     stops being a Squirrel clone. Removed: the Squirrel FBX (its hit box re-authored as the Stoat's own
     StoatBody / StoatHitbox sized to the hull; two of its four jets re-homed onto the hull's hips without
     the Squirrel's sideways DriftJet, two dropped), SquirrelHUDVariant + its hint roots +
-    SquirrelVesselHUDController, SquirrelVesselTelemetry (-> DefaultVesselTelemetry), the DriftTrail /
+    SquirrelHUDController, SquirrelVesselTelemetry (-> DefaultVesselTelemetry), the DriftTrail /
     SquirrelTube executors, the SquirrelShard pool, ToggleAlignAction, the Squirrel-gated drift / proximity
     audio, the Squirrel drift switches, the skimmer's stale overrides and its Space scaling. Added: the
     Stoat's own HUD (StoatHUDVariant, copied once from the Thresher's: StoatHUDView + four icons + four
@@ -678,7 +678,10 @@ def dipole_config_asset() -> str:
             "  autopilotDrySeconds: 0.5\n"
             "  autopilotMinHoldSeconds: 0.8\n"
             "  autopilotMaxHoldSeconds: 15\n"
-            "  autopilotRelaySeconds: 0.25\n" +
+            "  autopilotRelaySeconds: 0.25\n"
+            # the code's own default (one lap round the sink), serialized so a mode's learned copy can carry its own
+            # (StoatDipoleConfig_Warpline: Yash's pairs turned him about 78 deg, 2026-10-26)
+            "  autopilotMaxOrbitDegrees: 360\n" +
             empty_event("openEvent") + empty_event("annihilateEvent") + empty_event("warpEvent"))
 
 
@@ -1433,9 +1436,26 @@ def mode_action_asset() -> str:
             "  massModeThickness:\n" + elemental(3, 3, 6, 2, 1) +
             "  blendSeconds: 0.8\n"
             "  massUpgradeShieldsInMassMode: 1\n"
+            "  driveLengthMin: 60\n"
+            "  driveLengthMax: 320\n"
+            "  driveLateralMax: 140\n"
+            "  driveTurnGain: 2.2\n"
+            "  driveTurnMax: 140\n"
+            "  driveWarpShare: 1\n"
+            "  driveWarpExponent: 1.3\n"
+            "  driveKeyRampSeconds: 0.5\n"
+            "  driveMarkerRadius: 10\n"
+            "  driveSinkColor: {r: 0.77, g: 0.55, b: 1, a: 0.95}\n"
+            "  driveSourceColor: {r: 1, g: 1, b: 1, a: 0.95}\n"
             "  autopilotTimeModeDegrees: 70\n"
-            "  autopilotModeIntervalSeconds: 3\n" +
-            empty_event("massModeEvent") + empty_event("timeModeEvent"))
+            "  autopilotModeIntervalSeconds: 3\n"
+            "  autopilotDriveDistance: 400\n"
+            "  autopilotDriveSwitchConeDegrees: 30\n"
+            "  autopilotDriveNear: 0\n"
+            "  autopilotDriveFar: 150\n"
+            "  autopilotDriveConeDegrees: 120\n"
+            "  autopilotDriveLeanDegrees: 15\n" +
+            empty_event("massModeEvent") + empty_event("timeModeEvent") + empty_event("driveModeEvent"))
 
 
 def ripple_config_asset() -> str:
@@ -1531,7 +1551,10 @@ def hud_variant_from_donor(donor: str) -> str:
                   "  timeGauge: {fileID: 7700000000000001233}\n"
                   f"  gaugeColor: {color(0.59, 0.65, 0.76)}\n"
                   f"  readyColor: {color(157 / 255, 1, 46 / 255)}\n"
-                  "  colorBlendRate: 15\n", view)
+                  "  colorBlendRate: 15\n" +
+                  "".join(f"  {field}: {{fileID: 21300000, guid: {stoat_icon_guid(name)}, type: 3}}\n" for field, name in
+                          (("massModeIcon", "Stoat_ModeMass.png"), ("timeModeIcon", "Stoat_ModeTime.png"),
+                           ("driveModeIcon", "Stoat_ModeDrive.png"))), view)
     set_doc(docs, "5875684227236902712", view)
     # The gauges: Charge and Space reuse the Thresher's two (renamed); Mass and Time get their own.
     for fid, name in (("7700000000000001200", "RippleGauge"), ("7700000000000001210", "AccretionGauge")):
@@ -1572,7 +1595,7 @@ def check_stage6(files, prefab, errors):
     for guid, what in ((SQUIRREL_FBX_INSTANCE, "the Squirrel FBX instance"), (SQUIRREL_HUD_INSTANCE, "the SquirrelHUDVariant instance")):
         want(f"--- !u!1001 &{guid}\n" not in prefab, f"{what} is still nested in the prefab")
     for sguid, what in (("5db69771d02b4c24ca00998adf318137", "the Squirrel model"), ("c1572db06ad4244469ad3f25d86940b8", "SquirrelHUDVariant"),
-                        ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelVesselHUDController"),
+                        ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelHUDController"),
                         ("2b0d487de1554acfad93a158ddac3874", "SquirrelVesselTelemetry"),
                         ("32b33e1ed2484f50a02e78e895fd4809", "SquirrelTubeActionExecutor"), (SQUIRREL_CAMERA, "the Squirrel's camera settings"),
                         (SQUIRREL_SKIMMER_CONTAINER, "the Squirrel's skimmer container"), (SQUIRREL_VESSEL_CONTAINER, "the Squirrel's vessel container"),

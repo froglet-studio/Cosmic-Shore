@@ -106,7 +106,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                 $"[CrystalMorph] Squirrel: began on '{crystal.name}' at {origin.Position} (the crystal " +
                 $"is now at {crystal.transform.position}), domain {domain}, {morph.Census}; waiting " +
-                $"up to {morph.Config.targetGraceSeconds:F2}s for a {PrismKind.Shielded} ring.");
+                $"up to {morph.Config.TargetGraceSeconds:F2}s for a {PrismKind.Shielded} ring.");
             return morph;
         }
 
@@ -129,16 +129,16 @@ namespace CosmicShore.Gameplay
                 return;
             }
             float distance = Vector3.Distance(lay.Pose.position, _collectPosition);
-            if (distance > Config.ringCaptureRadius)
+            if (distance > Config.RingCaptureRadius)
             {
                 CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                     $"[CrystalMorph] Squirrel: skipped a shielded ring {distance:F0}u from the " +
-                    $"collect (capture radius {Config.ringCaptureRadius:F0}u) — another pickup's.");
+                    $"collect (capture radius {Config.RingCaptureRadius:F0}u) — another pickup's.");
                 return;
             }
 
-            // Every target is resolved in WORLD space off its prism, then brought into this
-            // object's frame — the mesh's targets have to live in the same space as its vertices.
+            // Every target is resolved in WORLD space off its prism, then brought into the BODY's
+            // frame (BodyFrame) — the mesh's targets have to live in the same space as its vertices.
             var targets = new List<CrystalMorphMeshBuilder.OctahedronTarget>(lay.Prisms.Count);
             string firstRefusal = null;
             for (int i = 0; i < lay.Prisms.Count; i++)
@@ -154,9 +154,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var mesh = CrystalMorphMeshBuilder.TryBuild(SourceMesh, targets, Config.fillerPhase,
-                                                        Config.panelPhaseStart,
-                                                        Mathf.Max(Config.panelPhaseStart, Config.panelPhaseEnd),
+            var mesh = CrystalMorphMeshBuilder.TryBuild(SourceMesh, targets, Config.FillerPhase,
+                                                        Config.PanelPhaseStart,
+                                                        Mathf.Max(Config.PanelPhaseStart, Config.PanelPhaseEnd),
                                                         out string diagnosis);
             if (mesh == null)
             {
@@ -181,12 +181,12 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                 $"[CrystalMorph] Squirrel: took ring #{_ringsSeen} {distance:F1}u from the collect — " +
                 $"{_held.Count} prisms held, {MorphVertexCount} morph vertices, {MorphSeconds:F2}s of " +
-                $"morph + {Config.duration - MorphSeconds:F2}s of dissolve (colour target " +
+                $"morph + {Config.Duration - MorphSeconds:F2}s of dissolve (colour target " +
                 $"{(_haveTargetColour ? "read" : "NOT FOUND")}).");
         }
 
         /// <summary>
-        /// The eight faces of one laid prism's shield, in this object's frame — built from the
+        /// The eight faces of one laid prism's shield, in the body's frame — built from the
         /// shield's OWN semi-axes (<see cref="PrismOctahedronShield"/> derives them from the
         /// authored BoxCollider and the circumscribing scale) and the prism's FINAL scale. Under the
         /// clock law a prism's transform is final at its stamp, but reading <c>TargetScale</c> makes
@@ -211,7 +211,7 @@ namespace CosmicShore.Gameplay
 
             Vector3 scale = prism.TargetScale;
             if (scale == Vector3.zero) scale = prism.transform.localScale;
-            var toLocal = transform.worldToLocalMatrix *
+            var toLocal = BodyFrame.worldToLocalMatrix *
                           Matrix4x4.TRS(prism.transform.position, prism.transform.rotation, scale);
 
             target = CrystalMorphMeshBuilder.OctahedronTarget.FromSemiAxes(
@@ -289,7 +289,7 @@ namespace CosmicShore.Gameplay
             Unsubscribe();
             CSDebug.LogWarning(
                 $"[SquirrelCrystalMorph] no usable {PrismKind.Shielded} boost ring arrived within " +
-                $"{Config.targetGraceSeconds:F2}s ({_ringsSeen} ring(s) seen), so the crystal is " +
+                $"{Config.TargetGraceSeconds:F2}s ({_ringsSeen} ring(s) seen), so the crystal is " +
                 "fading out instead of morphing. The ring is laid by a SIBLING effect " +
                 "(SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam " +
                 "cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's " +

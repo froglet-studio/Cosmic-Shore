@@ -1,5 +1,11 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> **2026-10-26 (Garrett): the Rhino has NO ENERGY.** The meter, the energy banked per cut, the energize
+> cost and the surge's fill and element buff are gone; **Charge** scales the sword's petal STEAL
+> (×1 → ×2.5); **Space alone** sets the blade length (24 → 40) and the camera follows it; the omni-crystal
+> Surge is an 8 s energized sword ring. Energy passages below are history - the current rules are
+> `RHINO_ENERGY_SWORD.md` § "No energy (2026-10-26) — and Length: Space alone".
+
 > **2026-10-16:** every peer now poses the blade from `InputStatus`' replicated analog trigger
 > mirrors (remote peers used to replay binary press/release swings); the press/release path
 > survives only for touch. The sword's `CapsuleCollider` is a TRIGGER again (the PR #928 merge
@@ -36,7 +42,7 @@ The raised rest pose is authored on the ForceFieldSkimmer instance transform in
 axis has meaningful travel). Its MOUNT sits at local (0, **−1**, 20.7) — lowered from
 9.38, which perched the grip ~3 units above the hull's top, to about the hull's own
 vertical centre (the hull box spans y ≈ −8.9…+6.4, centred −1.2). Both numbers are one edit on that instance: y is how high
-the sword is *held*, the pitch is how far it is *raised*, and on a 60–240-unit blade
+the sword is *held*, the pitch is how far it is *raised*, and on a 48–192-unit blade
 the PITCH is much the stronger lever for "it towers overhead". The executor captures whatever local pose is authored
 as its zero point, and pivots rotation **and mount position** about the Fusilage
 origin so the blade carves a real arc instead of spinning in place. On top of that
@@ -50,6 +56,31 @@ Sign conventions (Unity, verified): positive about up = yaw right; positive abou
 +forward = **counterclockwise** roll from the pilot's seat (`AngleAxis(+90, forward)`
 maps right→up). Note `BarrelRollController`'s header comment states this backwards —
 do not copy it (follow-up below).
+
+### The wings swing with the sword (Garrett, 2026-10-26: "bring the wings into the rhino's sword animations")
+
+`RhinoAnimation` lays a SWORD LAYER on both front wings (and so on the pods and back plates
+they carry) after the flight puppetry has run: it reads the pose the executor last wrote
+(`ShieldSwipeActionExecutor.CurrentPose`, the same channels a combo flourish fills) and turns
+each wing about its own pivot by `swordFollowYawDegrees · sin(yaw)` (20), `swordFollowRollDegrees ·
+sin(roll)` (30) and `swordFollowPitchDegrees · sin(pitch)` (25), composed in the blade's order
+and in the blade's own frame (`PoseFrame`, the fuselage), so the wings swing, bank and bow the
+way the blade does; a lunge (`thrust`) sweeps both wings back by `swordLungeSweepDegrees` (20)
+per unit, mirrored. The sines keep the lean continuous through a flourish that spins the blade
+a full turn and through the wrap at its end. The layer is lifted off before the puppetry eases
+the wings and laid back on after, so the flight pose never smooths toward the sword's. Every peer
+poses the blade from the same mirrors, so every peer leans the same wings. A hull with
+`RhinoAnimation` and no swipe executor (the Jacks) has no layer. The four numbers are fields on
+`RhinoAnimation` in `Rhino.prefab`.
+
+### Framing: the Rhino sits low in its camera (2026-10-26)
+
+The chase camera looks at the vessel's root, and a blade standing up off the nose filled the
+top of the frame. `RhinoCameraSettingsSO.lookAheadLift` is **18** (12 on the first pass, then
+"move the rhino down a little more"): the camera looks 18 units above the hull, so the Rhino
+sits about 14° below the centre of the frame and the resting 48-unit blade spans roughly −15° to
++8° about it (from −70, 60° FOV). The hull itself is not moved: the
+prism trail, the hull colliders, the AI's aim and the sword's pivot all stay on the root.
 
 ## Input paths
 
@@ -115,8 +146,15 @@ the rejected v1 slash cooldown, which gated DAMAGE; see `RHINO_ENERGY_SWORD.md`
 
 ## Sword dimensions & scale ownership
 
+**Shortened 20 % on 2026-10-26** (Garrett: "make the sword a bit shorter"): rest 30 → **24**,
+Space level 10 50 → **40**, full energy 120 → **96** (blade 60 → 48 long at rest, 192 at full).
+The Space float is overridden on the Rhino's OWN instance of `ForceFieldSkimmer Variant.prefab`
+(`Scale.Min/Max/Value` + `element` restated so `element_ability_table.py` reads it), not on the
+variant, because the Jacks nest the same variant with its float disabled and inherit its `Value`.
+`ShieldSkimmerScaleConfig.baseScale` (the no-skimmer fallback) is 24 to match.
+
 The sword's silhouette is the authored local scale on the ForceFieldSkimmer instance
-in `Rhino.prefab` — (1.5, 30, 4.8). Resting-length scaling elongates local Y only
+in `Rhino.prefab` — (1.5, 24, 4.8). Resting-length scaling elongates local Y only
 (`Skimmer.elongateYOnly`, set on `ForceFieldSkimmer Variant.prefab`; spherical
 skimmers on other vessels keep the legacy uniform XYZ path). The one exception is the
 transient **surge burst** on an omni-crystal pickup (`RHINO_ENERGY_SWORD.md`), which deliberately
@@ -131,11 +169,11 @@ Exactly one component writes the sword's scale at runtime:
 - **`ShieldSkimmerScaleDriver`** (on `ScaleSkimmerObject`) owns the transform — it
   sets `Skimmer.HasExternalScaleDriver` in `OnEnable`, which stands the Skimmer's own
   elemental scale write down. Each frame it tweens world Y between its resting base
-  and `ShieldSkimmerScaleConfig.asset` `maxScale` (120) from the Shield resource
+  and `ShieldSkimmerScaleConfig.asset` `maxScale` (96) from the Shield resource
   (index 1), preserving the authored X/Z via `Skimmer.AuthoredShape`.
 - **SPACE element sets the resting base**: the driver reads
   `Skimmer.LiveElementalScale` — the Skimmer's `Scale` ElementalFloat, authored on
-  the variant prefab as Space 30 → 50 — as its live `BaseScale`, so Space levels
+  the Rhino's instance as Space 24 → 40 — as its live `BaseScale`, so Space levels
   lengthen the sword's resting length and shield growth composes on top. A Space
   deficit (negative levels) shortens it below 30 via the usual unclamped lerp.
 - *(Until 2026-10-16 an inactive `GrowSkimmerActionRegistry` sat in `Rhino.prefab`,
@@ -434,6 +472,11 @@ there but a stepped sword falsifies this analysis; 0/1 there confirms the driver
    owner is feathering (analog pose from the replicated mirrors, since 2026-10-16 — it used to
    show full binary swings). A keyboard Rhino shows its rate-limited swing on both clients.
 4. Turn end / vessel swap mid-pull: sword snaps back to its authored rest pose.
+5. Wings follow the sword: feather RT then LT and both. The front wings (with the pods) swing
+   and bank with the swipe and bow with the chop; a tap combo (RR, RLR, …) carries them through
+   the flourish and back. Flying without the triggers, the wings fold exactly as before.
+6. Framing: the Rhino sits below the centre of its chase camera and the resting blade reads
+   roughly centred. Too low or too high is `lookAheadLift` on `RhinoCameraSettingsSO`.
 
 ### Swing velocity model + debris retune (this branch — needs a human at the editor)
 

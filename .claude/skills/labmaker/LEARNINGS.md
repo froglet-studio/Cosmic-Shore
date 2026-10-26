@@ -905,6 +905,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   `holdHorizon` / `shieldDirs` / `flyMissile`; `OrcaTurret.HoldHorizon`; `Tools/Build/orca_crew_lab/parity.cjs`.
 - Promoted: no
 
+### L-STU-144 — A gather that chases a moving leader at its own speed never docks: dock kinematically
+- Lab: Omega Crews Studio (`Docs/Studios/VesselStudio/omega.html`) · Branch: `Ys-bleeding-edge` · By: the combiner-crew session (session_01JZzEha3L2L4aMuJYzunPm3) · Date: 2026-10-26
+- What happened: the combine was written as "each member flies to its slot round the caller"; the caller kept flying at cruise and the members, at the same cruise, circled it "gathering" for the whole 540 s limit (the trace showed form gather / mega flapping, spread 50-150 u, zero combines). A completion threshold of 8 u on a target moving at 60 u/s is never met by a steered body.
+- Do instead: once a gather is called and everyone is in range, the dock is an ANIMATION on a clock (1.6 s): the caller flies, the others are carried onto their slots (lerp position, slerp attitude, inherit the caller's velocity) and the form switches when the clock runs out. The steered approach is only for closing to gather range; while calling, the AI caller holds back at half cruise so the followers can close.
+- Evidence: `omega-studio.js` part B `stepWorld` (form 'gather'); the 10 s trace (`omega_trace.cjs`, scratch) before and after.
+- Promoted: no
+
+### L-STU-145 — An objective window that skips a gate lets the crew do everything else first and leaves the gates for one long run
+- Lab: Omega Crews Studio · Branch: `Ys-bleeding-edge` · By: the same session · Date: 2026-10-26
+- What happened: "three crystals lit = the first three untaken" let the members collect every open crystal round the whole course while the locked ones (behind walls) stayed lit and untouched; the crew then faced eight walls in a row with one omega and a draining meter, and the "combine only when near the locked crystal" rule never fired because nobody flew toward it. Scorecards read DNF across the board, and it looked like an AI bug.
+- Do instead: anchor the window at the first untaken objective (lit = the next three in order), so a gated objective gates the course; send idle members to the gate's approach point; decide the combine from "the locked one is near, or is all that is lit".
+- Evidence: `relight`, `assignTargets` (`toWall`), `wantCombine` in `omega-studio.js`; CONCEPT_FLEET.md section 10.1.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
@@ -974,6 +988,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: verify from the FIRST step as well as from a warmed-up state (a lone seed plus one dormant child). `verify_lab.cjs` ticks 120 frames from `reset`; a lab whose risk is at birth adds a t = 0 check of its own.
 - Evidence: DISCOVERIES "Verifier blind spot" (the check now also covers the lone seed, to 1.8e-7).
 - Promoted: §8
+
+### L-NCA-10 — A lab that ports a director must reproduce one harness result before any of its own flags are read
+- Lab: Tandava Form Lab (`Docs/Studios/TandavaFormLab/`) · Branch: `claude/tandava-arena-mode` · Date: 2026-10-25
+- What happened: the lab's JS port of `TandavaDirectorCore` drives a stand-in flock, not the sort core. Its first flags (a hatchling that cannot heal, a spine cut forty times a cross cut, two wingmates breaking the dance in 9 s) were worth reading only because the same port first reproduced harness T7: unopposed, the creature completed in 210-237 s over 9-10 meals, inside the C# run's band.
+- Do instead: name one harness test the lab must match, check it after every director change in both languages, and file each new lab result as an Editor QA item with the lever that would move it, not as a defect.
+- Evidence: `TANDAVA.md` §4.1, QA-TANDAVA-15/16; `lunge_check.js`.
+- Promoted: no
+
+### L-NCA-11 — A pose the director holds briefly must be timed by the director, not baked as a loop
+- Lab: Tandava Form Lab + `swarm_core_harness` T19 · Branch: `claude/tandava-arena-mode` · Date: 2026-10-25
+- What happened: the Antlion's snap was first baked as a looping gape-snap plan. The members could not follow the loop at the swarm's speed, so the jaws barely moved in the harness. Directing gape and snap as two static poses, with the director committing the snap 0.5 s before contact and holding it 1.3 s, closed the jaws. That only worked once the lunge poses were also given a per-plan well clip of 5 (`SwarmSortParams.PlanWellClip`), so the members could keep up with a 144 u/s charge.
+- Do instead: bake a fast tell as separate poses and let the director time it. Measure the live swing against the plan's (T19 asserts at least half).
+- Evidence: `TandavaDirectorCore` `Snapping`/`_snapUntil`; harness T19; `TANDAVA.md` §8 `PlanWellClip`.
+- Promoted: no
 
 ---
 
@@ -1393,6 +1421,47 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - Port every mode readout the lab draws (squad, selection, lock) together with the mode itself.
   - When the designer remaps buttons, check what the OLD button did. A habit press is how a hidden mode gets entered.
 - Evidence: `R_VesselActions/ANGLER.md` §1k; `ANGLER_COMMAND_LAB.md` round 7.
+
+### L-STU-102 — One cooldown for the skim and the hull hides every hull contact
+- Lab: Concept fleet (`Docs/Studios/VesselStudio/studio-vessel.js`) · Branch: `Ys-bleeding-edge` · By: the concept-fleet session · Date: 2026-10-17
+- What happened: the platform baseline inherited from the Squirrel studio cooled a prism for 0.6 s per pilot on a SKIM (12 u out) and used the same cooldown for the HULL contact, so a hull flying through a prism it had just skimmed registered nothing. Invisible in every studio whose hull avoids prisms; the Flea, whose mechanic IS the contact, never bounced (uses 2 in 300 s), and every concept's contact count read 0.
+- Do instead: keep two cooldowns (`p.cool` for the skim, `p.hull` for the contact) and test the hull branch with a vessel that wants to hit things. The game's `SkimmerImpactor` / `VesselImpactor` are separate components; worth confirming they never share a cooldown.
+- Evidence: the Flea's smoke rows before and after (uses 2 -> 111 on I1); `studio-vessel.js` stepPilot.
+- Promoted: no
+
+### L-STU-103 — A chain walker needs "ahead" and "not where I came from", or a cluster is a treadmill
+- Lab: Concept fleet (`studio-kinds.js`, the Gecko's `nextOnChain`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
+- What happened: the Gecko picked the next prism as "the neighbour most along my course", which inside a 14 u cluster ping-ponged A -> B -> A, and once it had run past a segment's end the clearance lerp pulled it back to the end while the run pushed it forward: a hull at 130 u/s standing still for 60 s, finishing 1 crystal of 24. Only a per-0.5 s trace of pos / stuck / next showed it; the 3 s trace read as "running".
+- Do instead: exclude the previous prism, require forward progress (dot > 0.3), and step to the next prism when the projection passes the segment's end, not only when the hull is near it. Trace position, not state, when a state machine reads healthy and nothing moves.
+- Evidence: `probe_gecko.cjs` trace (34-42 s, dNext 21.3 constant) in the session; Gecko I1 Hard DNF -> 160 s.
+- Promoted: no
+
+### L-GEN-15 — Give every mechanic scorecard a "same pilot, mechanic forbidden" column
+- Lab: Concept fleet · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
+- What happened: ten movement mechanics, one AI each. The column that decided most was not Easy / Medium / Hard but the Hard pilot with its mechanic switched off (`W.mech = false`: triggers ignored, passive bonuses off). It said NO to the Gibbon's straight-line swings (Hard 15% behind its own control on I1), YES to the other nine, and separated "the mechanic IS the engine" (Marlin, Octopus: the control cannot move) from "the mechanic is a bonus" (Eel +28%, Gecko +39%, Dragonfly +35%).
+- Do instead: build the no-mechanic control into the engine from the first round (one flag the kinds honour), and read it before any tuning: a mechanic that does not beat its own control is decoration, however good it feels.
+- Evidence: `studio-vessel.js` raceHeadless `{ mech: false }`; `CONCEPT_FLEET.md` section 4.
+- Promoted: no
+
+### L-STU-87 — A dive is an attitude, lift is perpendicular to the path, and a stick held for seconds is a loop
+- Lab: Concept fleet (`studio-kinds.js`, the Albatross's `soar` kind) · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
+- What happened: eight AI attempts (aim heights, airbrakes, lift caps, contact rules) left the Albatross DNF on every course, because the PHYSICS was never audited: (1) lift acted along hull-up, so a pull-up with the nose 50 degrees above the path put ~90 u/s^2 against the velocity and bled 127 u/s to 54 in two seconds; (2) drag 0.0004 at 125 u/s gave a glide ratio of 1.6, so a dive bought nothing; (3) the updraft (22) outpulled the ballast (10) at neutral wings, and the ribbon made the whole line a column, so no dive got down through it; (4) the AI's dive ADDED a pitch push to the base aim (a full stick-up toward a point 120 u above the line), which never nosed down, and once made absolute it was a pitch RATE held for the whole dive, which looped the hull 400 degrees in eight seconds. The scripted probe held its stick the same way and its loop read as "physics".
+- Do instead: audit energy first (E = v^2/2 + g*y, printed per second in free space far from the course) before touching the pilot; make lift perpendicular to the flight path (hull-up minus its along-track part) with the angle of attack as its magnitude, so only gravity and drag change the speed; set the glide ratio and the ballast as design numbers (a racer's dive must be a short plunge); give a scripted or AI dive an ATTITUDE through the aim controller (`ctx.aimAt(P, pos + flat * 120 - up * 100)`), never a held stick.
+- Evidence: `probe_soar2.cjs` energy audit (dE -4.4k/s in a pull-up, half of it drag) and the Hard AI trace (diving=1, Ly=-0.70 for 32 s, speed 90 -> 56); smoke I1 Hard DNF -> 357 -> 266 s across the three fixes (`CONCEPT_FLEET.md` section 4).
+- Promoted: no
+
+### L-STU-100 — A mode switch must not read the input of the mode it is leaving: the press acts on what the screen showed
+- Lab: Concept fleet, the Gibbon's two modes (`studio-kinds.js`, kind `tether`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: Garrett's space mode gives each stick to a tether (it aims it, then reels it), and a trigger press is the door into that mode. The first version aimed the hook with the stick in the frame of the press, but in that frame the thumbs were still STEERING (time mode), so a held pitch-up aimed the tether 45 degrees up and hooked nothing; the ghost ring had shown a different prism.
+- Do instead: when an input changes meaning across a mode switch, resolve the switch frame with the OLD mode's reading (here: hook the prism the ring showed, from the time-mode neutral aim) and let the new meaning start on the next frame. Test it with a scripted pad that is already deflected at the press, not a neutral one.
+- Evidence: `probe_given.cjs` "space, one tether": hooked never -> hooked at 0.02 s; `CONCEPT_FLEET.md` section 8.2.
+- Promoted: no
+
+### L-STU-101 — Two rigid ropes are one constraint (a circle about the anchors' line), not two constraints solved in turn
+- Lab: Concept fleet, the Gibbon's bolas · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: projecting the velocity onto each rope's sphere in turn (Gauss-Seidel, 4 passes) kept both ropes exact (error 0.000 u) and still STALLED the hull: 1 degree swept in 3 s. A hull flying between two anchors planted ahead has almost no velocity along the only circle the two ropes allow, so the projections ate it; "rope error 0" read as success while nothing moved.
+- Do instead: solve the pair as what it is, a rotation about the line A-B on the circle the two lengths define (x = (la^2 - lb^2 + d^2) / 2d along the axis, radius sqrt(la^2 - x^2)), with the speed redirected onto that circle at the hook. Measure motion (swept angle, distance travelled) beside any constraint error: a solver that freezes the body satisfies every constraint.
+- Evidence: `probe_given.cjs` "space, two tethers": swept 1 -> 722 degrees in 3 s, rope error 0.000 u both times.
 - Promoted: no
 
 ### L-STU-102 — A studio that draws a world effect as an additive flat sheet is deciding a UI look
@@ -1412,6 +1481,19 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
   LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
 
+
+### L-STU-104 — A spring cannot land a fast body; a landing is a restitution, and the spring is what brings it back
+- Lab: Concept fleet, the Gibbon web-slinger (`studio-kinds.js`, kind `web`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: an elastic web pulled dead-on has nothing to stop the hull AT the anchor, so a zip flew through it and yo-yoed (closest 0.7 u). A braking "perch" made it land dead (0 bounces): not the springy feel asked for. A landing-pad SPRING inside the shortest web punched through at every setting tried: stopping 150 u/s inside 10 u needs about 1100 u/s^2, far past any pad that still feels soft.
+- Do instead: model the arrival as a bounce with a restitution (the closing speed reflects at e, the position clamps to the shortest web) and let the web's own spring pull the body back for the next bob: each bob is e of the last, it never passes through and it always settles. Sweep the knobs with a script that prints arrival speed, closest approach, bounce count and the distance trace; a single "settled / not settled" flag hid that the springy setting was the right one.
+- Evidence: `sweep_web.cjs` rows (pad spring 3-6: closest 0.0-0.6 u; restitution 0.5: closest 9.8 u, trace 148 125 80 24 22 32 31 19 11 15 16 14 12 11 10); `CONCEPT_FLEET.md` section 8.3.
+- Promoted: no
+
+### L-STU-105 — An AI for a hull with no engine must never aim past its reach, and must read an orbit as sideways motion, not distance
+- Lab: Concept fleet, the Gibbon web-slinger · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: the generic line pilot (aim ~24 u ahead) webbed whatever was nearest (447 webs, 35 u/s, DNF). Aiming farther fixed that and exposed three more: a web on a crystal it was flying past ORBITED it for 23 s (a spring is a central pull: the sideways speed stays); an "it is not closing, let go" rule then dropped every web that was still braking the hull; and an aim point past web reach let the hull coast 700 u into empty space, where a hull with no engine is stranded. Its "nearest anchor" fallback then picked its own trail 11 u away, inside the shortest web, and it never fired again.
+- Do instead: (1) aim at the farthest point still inside reach, and off the course at the anchor nearest the course, never its own trail; (2) count a web as an orbit only while the motion is mostly sideways to it; (3) never cap a thrustless AI's speed by letting go early (it strands itself). Still open: the AI moves (32-41 u/s) but finishes no course; a racing pilot for this hull needs a plan (which anchor brakes, which redirects), not rules.
+- Evidence: `trace_web_ai.cjs` traces in the session; smoke rows I1 avg 35 / 6 / 41 across the variants.
 
 ### L-STU-119 — An orbit control must fit one lap inside the tail, and closes loops only because something drifts
 - Lab: Wrasse Lasso Lab (`Docs/Studios/WrasseLassoLab.html`) · Branch: `cece/loving-fermat-ntdnbu` · By: Claude session for Garrett · Date: 2026-10-20
@@ -1594,4 +1676,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - Before raising a count, find any loop over pairs of members in the lab and the game.
 - Evidence: `StarlingsLab.html` `SHIPPED`, `minNow`; `StarlingRules.CapNow`; `StarlingSwarmExecutor.Separation`; team
   task T-20261021-729e (the card decision).
+- Promoted: no
+
+### L-STU-143 — Take a mechanic out of a random draw with a POOL that defaults to everything, so every old seed still plays
+- Lab: Honeyguide Lab (`Docs/Studios/HoneyguideLab.html`) · Branch: `cece/nifty-dirac-2dmclm` · By: the 2026-10-22 Ratel-portrait session · Date: 2026-10-22
+- What happened: Garrett asked to remove Printer (a free prism every spin) "for now". The draw was `ABILITIES[floor(rng * 9)]`, held step for step to `DynamoCore.cs` by `parity.cjs`. Deleting the key would have renumbered the serialized `DynamoAbility` enum and changed every seed. Instead the core draws from `S.abilities` (null = all, so the arithmetic is identical), and the shipped settings pass all but `RETIRED_ABILITIES`. Parity stayed green on every old rule set, and new rule sets (the shipped pool, two abilities, one) plus a planted "ignore the pool" control (caught, 4,431 steps) cover the change. One Unity golden did need re-measuring: it plays the shipped config, and it was already stale from round 6 (start slot 27 against the page's 26), which nobody had seen because no CI runs the edit-mode tests. The page and `DynamoCore.cs` on the shipped asset agreed on the new values.
+- Do instead: retire a drawn option with a list next to the lab's shipped settings and a matching list on the game's config, held equal by the generator's `--check`. Never delete the key or the enum member. When a game test plays the shipped config, recompute its golden by running the real C# core on the real asset as well as the page, and the two must agree.
+- Evidence: `abilityPool` in the page's dynamo-core block; `DynamoSettings.Abilities`, `HoneyguideConfigSO.retiredAbilities`; `author_honeyguide_assets.py` check "retiredAbilities is not the lab's RETIRED_ABILITIES"; `HoneyguideTests.Ratel_NeverDrawsPrinter_WhileItIsRetired`.
 - Promoted: no

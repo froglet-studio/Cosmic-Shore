@@ -102,6 +102,20 @@ button while the card is open turns it to that element, so every ability can be 
 `detailsBrowseHint`); the card words are the
 deck's.
 
+**Level scaling** (Garrett, 2026-10-24: "the cards and current level display need to show what the next level will do
+to give them a sense of level scaling"). Picking a card ADDS its level to the one you hold (`StarlingRules.Pick`), so:
+- **The row**: a hand card you already hold reads `Lv 3 → 7` (`cardLevelUpTemplate`, tokens `{from}` `{to}`); a new
+  card still reads `Lv {level}`.
+- **The details of a hand card** show the level held and the level the pick reaches (`detailsLevelUpTemplate`), each
+  number at both (`detailsStatUpTemplate`: `Range: 150u → 165u`), every jolt the pick passes (`detailsUnlockTemplate`,
+  so a new card arriving at Lv 6 lists its Lv 5 jolt), then the next jolt beyond. A new card shows its numbers at the
+  level it arrives at.
+- **The details with no hand** head each held card `Lv 3 → 4` (`detailsHeldUpTemplate`), set each number beside the next
+  level's, and add the card's next jolt under the ones it has reached.
+- A number that does not change between the two levels (a count that rounds to the same value, a step not yet reached)
+  reads once through `detailsStatTemplate`; a card at 15 shows `detailsMaxLevel`. The formatting is
+  `StarlingHUDController.StatLine` / `PickedLevel`, held by `StarlingHUDLevelScalingTests`.
+
 ## 6. Files
 
 | What | Where |

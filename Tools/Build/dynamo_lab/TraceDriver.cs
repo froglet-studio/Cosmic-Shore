@@ -72,6 +72,8 @@ public static class TraceDriver
                 FixedAbility = string.IsNullOrEmpty(fixedAbility) ? -1 : Array.IndexOf(DynamoCore.AbilityKeys, fixedAbility),
                 FirstPortSet = Int(j, "firstPortSet"),
             };
+            if (j.TryGetProperty("abilities", out var pool) && pool.ValueKind == JsonValueKind.Array)
+                s.Abilities = pool.EnumerateArray().Select(a => Array.IndexOf(DynamoCore.AbilityKeys, a.GetString())).ToArray();
             foreach (var ps in j.GetProperty("portSets").EnumerateArray()) s.PortSets.Add(Pairs(ps));
             foreach (var p in j.GetProperty("patterns").EnumerateArray())
                 s.Patterns.Add(new DynamoPattern { Cells = Pairs(p.GetProperty("cells")), Parked = p.GetProperty("parked").GetBoolean() });

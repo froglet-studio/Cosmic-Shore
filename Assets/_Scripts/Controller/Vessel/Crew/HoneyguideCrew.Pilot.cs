@@ -317,6 +317,7 @@ namespace CosmicShore.Gameplay
             if (upgrade != null)   // a trigger upgrade: it takes RT or LT over for activeSeconds (lab round 6)
             {
                 int level = GrantUpgrade(key, upgrade, pat.name);
+                if (depth == 0) SetMadeLine(pat, level > 1 ? Roman(level) : "");
                 if (depth == 0)
                     Toast(TemplateText.Fill(_cfg.UpgradeToastTemplate, "name", pat.name, "level", level > 1 ? Roman(level) : "",
                                             "trigger", _cfg.TriggerName(upgrade.trigger), "text", pat.effectText));
@@ -370,6 +371,7 @@ namespace CosmicShore.Gameplay
                 case HoneyguideEffect.Eti: ChargeNearbyDomains(); break;
                 case HoneyguideEffect.Vorticity: _core.BoardEffect(_s, DynamoBoardEffect.Unspin, 0); break;
             }
+            if (depth == 0) SetMadeLine(pat, lv > 0 ? Roman(lv) : "");
             if (depth == 0)
                 Toast(TemplateText.Fill(_cfg.MadeToastTemplate, "name", pat.name, "level", lv > 0 ? Roman(lv) : "", "text", pat.effectText));
         }

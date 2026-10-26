@@ -5,7 +5,6 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
@@ -209,35 +208,6 @@ namespace CosmicShore.Core
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
             _analytics?.RecordMenuReady();
-
-            // The browser Toybox opens flying: the player clicked "launch" on the web page to get
-            // here, so the first thing they see is their vessel under their own control.
-            if (WebToybox.IsBuild && !_webToyboxEnteredFreestyle)
-                EnterFreestyleForWebToyboxAsync().Forget();
-        }
-
-        bool _webToyboxEnteredFreestyle;
-
-        /// <summary>
-        /// Enters freestyle once, at the first menu-ready, in the browser Toybox. Retries for a
-        /// moment because <see cref="MenuCrystalClickHandler.ToggleTransition"/> silently ignores a
-        /// call made before the local vessel resolves; after that the player can still enter by
-        /// clicking, exactly as on every other platform.
-        /// </summary>
-        async UniTaskVoid EnterFreestyleForWebToyboxAsync()
-        {
-            _webToyboxEnteredFreestyle = true;
-            var ct = this.GetCancellationTokenOnDestroy();
-            var handler = FindFirstObjectByType<MenuCrystalClickHandler>();
-            if (handler == null) return;
-
-            const int maxFrames = 120;
-            for (int frame = 0; frame < maxFrames; frame++)
-            {
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                if (handler == null || handler.IsInFreestyle || handler.IsTransitioning) return;
-                handler.ToggleTransition();
-            }
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace CosmicShore.UI
     /// without moving the selection.</para>
     ///
     /// <para><b>Locked</b> dims the art and shows the lock glyph (§10.13); the secondary line takes
-    /// <see cref="lockedSecondaryToken"/> (Purchase by default, for a tile unlocked by a spend). A
+    /// <see cref="lockedSecondaryToken"/> (the neutral blue by default: gold is for the button that spends). A
     /// locked tile stays pressable, so the owner can refuse with its own message - the shell-wide
     /// MenuAvailability contract (Docs/HomeHub/ARCHITECTURE.md §2).</para>
     /// </summary>
@@ -44,6 +44,9 @@ namespace CosmicShore.UI
         [Tooltip("What the border wears while selected: the sky-blue Selection (rev 7) everywhere the kit's generators " +
                  "author a tile.")]
         [SerializeField] private UIColorToken selectedBorderToken = UIColorToken.Selection;
+        [Tooltip("Draw the border while the tile is neither selected nor pointed at. Off for a quiet row of tiles (the " +
+                 "configure card's hull strip): only the pick, and the tile under the pointer, are outlined.")]
+        [SerializeField] private bool borderAtRest = true;
 
         private const float SelectedFillTint = 0.22f;
 
@@ -54,8 +57,8 @@ namespace CosmicShore.UI
         [SerializeField] private UIColorToken unselectedPrimaryToken = UIColorToken.TextLight;
         [Tooltip("The status line - Light when selected, Neutral (Lightest) otherwise.")]
         [SerializeField] private Graphic[] secondaryGraphics = { };
-        [Tooltip("What the secondary line wears while LOCKED. Purchase for a tile a spend unlocks.")]
-        [SerializeField] private UIColorToken lockedSecondaryToken = UIColorToken.Purchase;
+        [Tooltip("What the secondary line wears while LOCKED. Neutral: the gold is the UNLOCK button's, the spend itself.")]
+        [SerializeField] private UIColorToken lockedSecondaryToken = UIColorToken.NeutralLightest;
         [Tooltip("Vessel or icon art. Drawn white (untinted) and dimmed while locked.")]
         [SerializeField] private Graphic[] artGraphics = { };
         [Tooltip("The lock glyph, shown only while locked.")]
@@ -106,7 +109,7 @@ namespace CosmicShore.UI
                 var border = isSelected ? selectedBorderToken
                     : hover ? UIColorToken.SurfaceLight
                     : UIColorToken.SurfaceDark;
-                into.Add((borderImage, Token(border)));
+                into.Add((borderImage, Token(border, isSelected || hover || borderAtRest ? 1f : 0f)));
                 SetSelectionLight(borderImage, isSelected);
             }
 

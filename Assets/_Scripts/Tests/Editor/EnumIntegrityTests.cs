@@ -32,7 +32,8 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(25, values.Length,
+            // 25 -> 28 on 2026-10-26: Warden (25), Bulwark (26), Tempest (27), the Omega crews (Controller/Vessel/Crew/OMEGA_CREW.md).
+            Assert.AreEqual(28, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -62,6 +63,9 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Starling, 21)]
         [TestCase(VesselClassType.Jacks, 22)]
         [TestCase(VesselClassType.Honeyguide, 23)]
+        [TestCase(VesselClassType.Warden, 25)]
+        [TestCase(VesselClassType.Bulwark, 26)]
+        [TestCase(VesselClassType.Tempest, 27)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -172,9 +176,13 @@ namespace CosmicShore.Tests
             // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
             // 61 -> 62 on 2026-10-13: ThresherTime (66), the Thresher's circuit race.
             // 62 -> 63 on 2026-10-20: WrasseRun (68), the Wrasse and Grouper's race (67 is SerpentCharge's,
-            // in flight on another branch: when it lands this becomes 64).
+            // in flight on another branch).
+            // 63 -> 64 on 2026-10-25: Tandava (69), the co-op swarm hunt - authored as 62 on its branch, renumbered at
+            // the merge (the seventh collision).
+            // 64 -> 65 on 2026-10-26: TandavaSevering (70), Voyage 2 - Tandava's fork with the severing work. When
+            // SerpentCharge (67) lands this becomes 66.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(63, values.Length,
+            Assert.AreEqual(65, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

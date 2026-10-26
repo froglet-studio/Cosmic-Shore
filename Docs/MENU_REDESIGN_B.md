@@ -11,6 +11,10 @@ board is approved there. The Port canvas keeps the item 0 kit board where it was
 canvas carries a reference copy of it (`MenuKit.dc.html`) so the kit sits beside the items built
 from it.
 
+**A copy of every board is in git** (Rev 3 to Rev 23, copied 2026-10-26): `Docs/MenuRedesignB/board/`, with a README
+that indexes each round's boards by page and title. Boards render only inside the canvas and their images stay in its
+asset store; the copy is for reading layouts, words and sizes from a session. New rounds go to the canvas first.
+
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
 2. **Mockup:** an artboard on the mockup canvas, using real content.
@@ -724,7 +728,12 @@ a Prefab Variant cannot change; everything they share is a nested prefab.
   with ordinary navigation.
 - Favourite star wired by the modal in code (it was dead on the Arena and Maelstrom copies).
 - Arena: a hull strip (`KitHullTile`, `OnVesselPickRequested`) replaces the carousel arrows; the
-  controls block follows the shown hull. Maelstrom: the format block (race target, game cap, points by
+  controls block follows the shown hull. **2026-10-25 (Yash):** the strip is a WINDOW onto the card's hulls
+  (`ArenaLaunchPanel.StripOffset`), with `<` / `>` arrows (`PrevVesselButton` / `NextVesselButton`, two
+  `KitButtonSmall`s at the strip's ends, wired to the panel's `prevButton` / `nextButton`) that step the pick and
+  slide the window to keep it in view. The strip went from eight tiles to seven between the arrows (`Hull8` is
+  inactive). Why: Regatta lists nine hulls, and on a fixed eight-tile strip the ninth, the Stoat, had no tile and
+  could never be picked. `ArenaHullStripTests`. Maelstrom: the format block (race target, game cap, points by
   place, seats) and the pool summary are wired.
 - `ArcadeGameConfigureModal` ModalType 10 -> 1 (10 is the Arcade window's own: one B closed both).
 
@@ -1985,9 +1994,12 @@ boards were approved with "Approved, price is fine, make it look-only for now". 
 - **The upgrade moment.** Six crystals fly from the button to the hull. On landing, the new pip flashes white and settles
   in the element's colour, the hull morphs from the old level to the new one (`AnimateElementLevel`, 0.5 s) and swells
   (`Pulse`), a hex ring bursts, and a banner names the element, "LEVEL N" and "{ability} grows".
-- **Look-only.** Levels are saved per vessel per element in PlayerPrefs (`HangarUpgradeStore`,
-  `hangar.upgrade.{vessel}.{element}`, max 10). The hull shows the bought form on every visit, and **nothing in a match
-  reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
+- **Look-only.** Levels are saved per vessel per element, max 10, on the player's cloud profile
+  (`HangarUpgradeStore` -> `PlayerDataService.SetHangarUpgradeLevel`, `ProfileEconomy.HangarUpgrades`), in the same save
+  as the crystals they cost (2026-10-25, `Docs/REFACTOR_BACKLOG.md` S67: they were in PlayerPrefs, so a reinstall kept
+  the debit and lost the level). A level bought before then is still read from the old device key
+  `hangar.upgrade.{vessel}.{element}` and adopted into the profile once it has loaded. The hull shows the bought form on
+  every visit, and **nothing in a match reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
   Garrett, who owns vessel tuning).
 - **The words** are serialized on `HangarUpgradesPage`: `buyTemplate`, `maxedWord`, `bannerTemplate` and
   `bannerLineTemplate`.
@@ -2047,6 +2059,19 @@ now looks like style B:
   `abilityBullet`.
 - **Gate:** four new planted defects: a row that grows on hover, the hover label unwired, a card row unwired, and the
   modal back on the generated card.
+
+**The Pilots section fits its tallest domain column (2026-10-26).** The section was authored for one seat and the open
+seat (`PILOTS_BODY_H`), but a column grows by a row per pilot, so a second pilot in one domain ran into the AI pilots row
+and a third sat behind its Easy / Medium / Hard buttons. `ConfigurePilotsFit` on each view's `Steps` now grows the
+section to the tallest column, drops the AI row under it and moves the next section (Vessel; Maelstrom: Format) and the
+launch row down by the same amount, up to `maxGrowth`, the room above `BOTTOM` the generator measures per window
+(Arcade 144.6, Arena 86.6, Maelstrom 126.6). Past that the seat rows and the open seat tighten: gaps 6 -> 2, then rows
+down to 32 (the kick button), which only a crowded Arena column needs (5 pilots: rows of 34.9). A lobby that cannot
+launch (all six Arena pilots in one domain) grows 19 px past `BOTTOM` instead of covering the row. The generator's
+`check_pilots_fit` runs the same arithmetic over every seat count, reading the seat ceilings from
+`ArcadeGameConfigureModal` and the Arena roster's `MinDomainsAllowed`; two new planted defects (the fit unwired from the
+AI row, the launch row left out of it). Also: a `KitVisibility` hide now finishes the part's entrance first, which had
+left the AI row visible but dead on cards that do not offer it.
 
 ## 44. Playtest fixes: the Ark under the nav, the fly hint's x, flat - and x (2026-10-17)
 
@@ -2810,7 +2835,7 @@ Measured at ship time on `claude/new-session-76hnyc` after the bleeding-edge mer
 |---|---|---|---|---|
 | R1 | `chrome_provider_steam / google / apple` stand-in glyphs are unreferenced by any shipped asset | debt this branch created | `grep -rl <guid> Assets --include=*.unity --include=*.prefab --include=*.asset` = 0 for all three; only `author_start_flow.py` / `author_menu_settings.py` self-tests use them as planted stand-ins | Retire them from `author_ui_chrome_icons.py` (and point the self-tests at any other chrome sprite)? A first-party redrawn Google G is a brand risk if someone wires it again. |
 | R2 | `ControlGlyphSet.asset` has two writers | debt made visible | `author_ingame_hud.py` owns the pad labels; Garrett's `e1fc17719` hand-added bindings 13 / 14; the generator now leaves unnamed bindings untouched (merge `9601b40fb`) | One owner: should the HUD generator author 13 / 14 too, or hand pad labels back to the asset? Ask Garrett. |
-| R3 | `check_generated_assets.py` reports `m_OnClick.m_PersistentCalls` as "not a serialized field of Button.ButtonClickedEvent" | debt walked past (the checker, not this branch) | 134 `[field]` findings on this branch, every one that same field; `m_PersistentCalls` is serialized on `UnityEventBase`, so the reflection probably stops at the derived type | Fix the checker to walk base types of `UnityEvent` subclasses; until then its `[field]` count is noise. |
+| R3 | `check_generated_assets.py` reports `m_OnClick.m_PersistentCalls` as "not a serialized field of Button.ButtonClickedEvent" | debt walked past (the checker, not this branch) | 134 `[field]` findings on this branch, every one that same field; `m_PersistentCalls` is serialized on `UnityEventBase`, so the reflection probably stops at the derived type | Fix the checker to walk base types of `UnityEvent` subclasses; until then its `[field]` count is noise. **Fixed 2026-10-24 (`claude/pensive-cannon-op8s2c`):** the bases were walked, but `UnityEventBase` lives in the engine's CoreModule, which the schema never read; `Schema/Program.cs` now reads `UnityEngine.Events` from it, so a valid persistent call is clean and a typo inside one is still caught (`--self-test`). |
 | R4 | `check_generated_assets.py` `[guid]` findings outside this branch's work | debt walked past | 2 `GameCanvas.prefab` modifications target fileIDs missing from `EndGameStatsPanel.prefab` / `R_Pause_Menu_Panel.prefab`; 11 `UIKitTestScene.unity` InputSystemUIInputModule actions point at guid `ca9f5fa95ffab41fb9a615ab714db018` (no asset) | GameCanvas: delete the dead modifications (they target removed objects)? UIKitTestScene: re-point to the project's input actions asset. |
 | R5 | Hand-edited YAML is never parse-checked | debt made visible | Garrett's `Rhino.asset` shipped an unescaped apostrophe (fixed `e2802341a`); found only because `check_hangar_ability_kinds.py` uses `yaml.safe_load` | A cheap repo gate: tag-tolerant `yaml.load` of every changed `.asset/.prefab/.unity` (58 files in ~seconds; `/asset-surgery` §5). |
 | R6 | `ElementalBarsView` builds 20 petal Images per spawn on the eight hulls with no baked flowers | debt this branch made quiet (2026-10-19) | Sparrow, Dolphin, Manta, Rhino, Serpent, Urchin, Scarab, Butterfly HUDs: 0 `Petal[0-4]` nodes, 0 authored `petalRoot`s (grep of `Assets/_Prefabs/UI Elements/VesselHUD/*.prefab`); the lockup's runtime sockets no longer warn | Bake them (FrogletTools > Vessels > Wiring > Bake Elemental Petal Bars Into All Vessel HUDs) or accept the runtime build? Garrett's prefabs. |
@@ -2930,3 +2955,771 @@ still the one random event, so both showed "Cosmic Shore soundtrack". Now:
 **Arena hull icons.** The vessel chips on Arena cards drew white squares: `KitArenaGameCard` put each vessel's icon on
 the chip's FIRST child, which is the chip frame's fill (`Fill`, `Border`, `Icon`), and left the sprite-less `Icon`
 drawing a white quad on top. It now finds the `Icon` child by name.
+
+## 61. Garrett's palette and attention pass (2026-10-24, awaiting in-editor approval)
+
+Garrett's feedback, relayed by Shombith: six colour families (domain jade / ruby / gold, neutral blue, call-to-action
+lime, danger fire), gold only for spending, elements told by shape / animation / effects and never by a fixed colour,
+"every pixel is important" (no decorative motion; juice only for upgrades, powered states and the call to action),
+and the selection effect only on what is actually selected. The rules and where each is enforced:
+[`Docs/UI_COLOR_RULES.md`](UI_COLOR_RULES.md). This section supersedes the element-colour parts of §45 (rev 6: element
+tokens across the menu, element rims) and §49's rim choices for the scoreboard.
+
+What changed:
+- **Elements:** no screen draws in an element token; the five `ElementRim_*` materials are deleted (the selection's
+  materials keep the shader); the `Mass` / `Space` / `Time` button variants draw as Default; the ability lockup's
+  `elementColour` and `lavaMotion` are off; Hangar abilities / upgrades / pilots, the vessel info card and the pilot
+  record read a serialized neutral token (upgrades: gold).
+- **Gold = spend:** Purchase stays gold (and CONVERT on the Ark, UPGRADE, UNLOCK, SPEND); the crystal glyph stays gold
+  as the currency. Off gold: the leaderboard podium (lime, white, neutral; no gold / silver / bronze), reward amounts
+  (lime), the configure launch-blocked reason (fire).
+- **Lime = good:** PLAY / JOIN / ACCEPT / "online" / done ticks / earned reward amounts. Off lime: every eyebrow that
+  wore it (welcome, sign-in, Google, Steam account, party invite, pilot record, Link Google, today's activity) and the
+  Spectate / Invite buttons (neutral).
+- **Fire = danger:** DELETE MY DATA, the guest notice, the Steam-not-running note, why a game cannot launch.
+- **Selection:** off the Audio Studio's playing row (it has its "Playing" mark), the Toybox daily card (its CTA is the
+  lime "Try it" chip), your own scoreboard row (a brighter hairline, glass leaning neutral), the favourite-pilot ring,
+  the account-link "Other" card and the sign-in spinner. On: the Hangar pilot underline (a real selection).
+- **Still:** lattice drift / pulses / twinkles 0 (the shader now draws exactly nothing for a density of 0), presence-orb
+  spin and dots 0 (a dot size of 0 draws none), solid bonds, no Hangar ring breathing / scan line / motes, no floating
+  avatars or art, no gear spin, `KitElementHalo` rests unless `breathe` is set. Kept: loading / connecting spinners,
+  the music EQ, the fly and focus hints, the START sweep, the current quest segment's spark, window entrances.
+- **Settings links:** `author_menu_settings.py` now writes the www.froglet.games links that merge `c659fe209f` set by
+  hand (and checks them), so re-running it no longer reverts them.
+
+Gates: `check_ui_colors.py` (new, 7 planted defects), every touched generator's `--check` and `--self-test`,
+`lattice_preview.py --check` (new still-mode assertions). Open: which element looked "frozen" next to a working one
+(Garrett's note) - needs a screenshot; the party orb's polish beyond removing its orbiting charge.
+
+### 61.1 Follow-up (2026-10-24, Shombith)
+
+- **Focus ring:** keeps the selection blue (no look of its own).
+- **The "frozen" element** was the bar under the top nav's Home / Hangar / Ark: it ran the selection sweep
+  (`SelectionBar.mat`), which read as stuck next to the hub strip's bar. Every tab underline is now a plain, still
+  Selection bar: the top nav's lost the material and `KitRimMesh`, and `KitTextTab` no longer lights its underline.
+- **Hub strip words:** Toy Box, Arcade, Arena and Mission all read in `NeutralLightest`, the shown one included
+  (`KitTextTab` gained serialized `restLabelToken` / `selectedLabelToken` / `hoverLabelToken`; the strip sets the
+  selected one to the rest blue; hover still lifts to white). Held by `author_menu_hub_nav.py` and
+  `author_ui_kit_prefabs.py` validation, each with a planted defect.
+- **Friends orb polish:** pending Shombith's direction (team task).
+- **Home's four hub buttons** (Toy Box, Arcade, Arena, Mission) draw alike: Arcade was the opaque lime Play button and
+  is now Default like the others (it keeps the A keycap and the pad's first focus); Mission stays Inactive while it is
+  unavailable. `author_menu_home.py` asserts it, with a planted defect.
+
+## 62. Rev 11 (frosted glass + Amoebius hex lattice) built and scrapped (2026-10-24)
+
+Built on this branch (commits f0d56b1405, 2d7e1df205: a hex-lattice shader over a blurred copy of the world, a random
+ring / tide / grow per window open, frosted Hangar and Settings) and reverted the same day at the owner's word: "Scrap
+the whole lattice design. The old bg was far better." Every window is back on the background it had before: the line
+lattice (still, section 61) over the see-through dark veil. New alternatives are on the canvas's Rev 12 page; nothing
+ships until one is picked. What the attempt taught, for the next one: a script-enqueued URP pass (the
+SilencePerimeterPass pattern) can feed the overlay canvas a blurred world at a quarter size with no renderer-asset
+change, and per-window variation on one shared UI material travels as vertex data (UV1/UV2) - both are in the reverted
+commits if a later design needs them.
+
+## 63. The Hangar's pad presses belong to the menu (2026-10-25, awaiting in-editor approval)
+
+(Numbered 63 because `claude/new-session-76hnyc`, in flight, already writes sections 61 and 62.)
+
+Yash's play test: on the Hangar's Abilities tab with a Sparrow, RT both paged the top bar to the Ark (the top bar shows
+LT / RT for that) and played Pulsefire Cannons (its keycap reads RT). `ScreenSwitcher` and `HangarAbilitiesPage` both
+polled the trigger off the device in the same frame. The same clash sat on LT (Skyburst Rockets), on LB / RB for any
+ability there (the tabs step on them), and on A: with the pad on another control, A pressed that control AND played the
+ability bound to A (Turret Stance).
+
+**The rule.** On a menu screen the pad is the menu's. `HangarAbilitiesPage` no longer polls pad controls; a pad keycap
+is a label of the in-match control. The pad replays an ability through its row (D-pad to the row, A), the same way a
+click or a tap does (the row's `KitButton` was already wired to it). The keyboard keys the abilities use (LSHIFT, SPACE,
+Q, E, F, R, TAB, the mouse off the UI) have no menu job, so they still play their ability. Every pad control alike, not
+only the ones that clash today, so the page cannot start fighting the menu again when a screen gains a control.
+
+**Why not the other way round.** Letting the Abilities tab keep the triggers would make the top bar's LT / RT a lie on
+that tab, and still leave LB / RB and A fighting. The TRY flight (§35) could take the pad because it was a real flight
+(`ModePreviewWindow.AnyHasFocus`, which also stood the shell down); the AI demo (§59) is a display, so it does not.
+
+The header line now reads "Labels follow your device. Select one to see it again." (was "Press one", which read as
+"press that control"; Yash, 2026-10-25), authored in `author_menu_hangar.py` and regenerated into `HangarView.prefab`.
+Changed: `HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only), the header line.
+
+## 66. The Hangar's ability rows are information (2026-10-25, awaiting in-editor approval)
+
+Yash, after talking to Shombith: "my abilities don't need to be selected or clicked to test it in hangar. They are just
+info. So LT / RT always works, just to change the tabs." (Sections 64 and 65, which made LT / RT work only from a tab
+menu, were reverted on Ys-bleeding-edge the same day, `c28b962c2`; LT / RT page the tabs from anywhere, as before.)
+
+- **Nothing the player presses plays an ability.** §63 had already stopped the pad's controls; this removes the rest:
+  the click / tap / A on a row and the keyboard key a row shows. `HangarAbilitiesPage` adds no click listener and polls
+  no key; `HangarControlInput` keeps only the device tracking the keycap labels need (`WasPressed` is gone), and the
+  `demoResumeSeconds` pause after a player's press is gone with the press.
+- **The AI demo is unchanged:** every 2.4 s the next ability's keycap sinks, its row lights and the stage performs it.
+- **The rows keep their look and drop their input** (`author_menu_hangar.py`, `kit_row(..., interactive=False)`): each
+  row's KitButton stays as the frame (an open slot still draws disabled) but leaves pad navigation, a CanvasGroup on
+  the row blocks no raycasts so no click reaches it, and the press sound is gone. The generator fails if a row becomes
+  a pad stop, takes clicks or regains its sound (planted defect: a row takes clicks again).
+- **Header line:** "Labels follow your device." ("Select one to see it again." described a press that no longer exists.)
+
+## 67. Sea lines behind every window (2026-10-25, awaiting in-editor approval)
+
+Shombith picked H, "Sea lines", from the canvas's Rev 12 options board, saw it under the Arcade and Profile windows
+(R12SeaArcade / R12SeaProfile, an 86 % veil, 60 / 45 / 30 s layers) and asked for it built: "keep it a bit slow.
+Make it 95% opaque".
+
+- **The shader.** `CosmicShore/UI/SeaLines` (`SeaLines.shader` on `UISeaLines.cginc`), UI/Default plumbing like the
+  lattice. Lines rest 46 canvas units apart; line i is in layer i mod 3 (far, middle, near: alpha 0.13 / 0.19 / 0.27,
+  width 0.8 / 1 / 1.3). Each line is two sines whose periods divide the 480-unit loop, with its own amplitude and
+  phase, so a layer that slides one loop per period never shows a seam. Only the nearest line and its two neighbours
+  are evaluated per pixel. The window's top and bottom 20 % fade out. Time alone animates it, so no canvas rebuilds.
+- **The material.** `Sea_Window.mat`, written by `author_ui_lattice.py` (guid `sea_window_mat`): the colour #6F84D8,
+  layers at 90 / 68 / 45 s a loop (the board's speeds, half again slower). The gate fails any layer under 40 s.
+- **Where.** `menu_b_motion.window_sea_node` replaces the window lattice right after the veil in the Arcade, Arena,
+  Mission and Toy Box windows (node key `BackdropLattice`, now named SeaLines), the three Configure views
+  (`VeilLattice`), and new in the Profile and Leaderboard windows (`VeilSea`). The panel lattice (`Lattice_Panel`) and
+  the panel-sized `Lattice_Window` (pilot record, friends drawer, in-game HUD) are unchanged.
+- **The veil.** `WINDOW_BACKDROP_ALPHA` 0.75 -> 0.95, shared by every window above; Profile and Leaderboard (0.72) and
+  Configure (0.94) use it too.
+- **Proof without an editor.** `lattice_preview.py` compiles the real include and fragment with clang and renders the
+  full 1920 x 1080 window: thin and faint, moving a fraction of a line per frame, one whole loop returns the same frame,
+  0 seconds holds it still, a hidden window draws nothing, the edges fade. Unity's own shader compile is still owed.
+- **Hand test.** Open Arcade, Arena, Mission, Toy Box, a game's Configure, Profile and Leaderboard: the lines drift
+  slowly right to left in three depths, the game world barely shows through, no seam passes, nothing flickers.
+
+## 68. The friends drawer docks into hub windows and never covers a game window (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25: "Friends panel should not overlap over any gameplay cards. So If I open scurry it cannot be
+opened unless I close the scurry window. Next the friends card can be a self sizer according to the panel it is in.
+For panels it should slide out from the left and take up the whole left side ... plus also the top parts and it would
+move the content of other panels. Example, when it is enabled inside the arcade screen the cards move to the right when
+this panel opens up. It should not move other contents if it is home, hangar or any other screens."
+
+- **Size.** The drawer window is anchored to the left edge and stretched from under the top nav (84) to the bottom,
+  flush with the edge (inset 0): its height follows whatever screen it is on. Only the widths are authored (460, 720
+  maximised). `FriendsDrawer` now tweens only x and width (`normalWidth`, `maximisedWidth`, `dockTop`, `dockBottom`
+  replace `normalSize` / `maximisedSize`).
+- **Docking.** `FriendsDrawer` listens to `ScreenSwitcher.ModalStackChanged`. With a hub window on top (Arcade, Arena,
+  Mission, Toy Box) it publishes `FriendsDrawer.DockWidth`, the open window's right edge, on every frame of the slide.
+  Each hub window carries a `FriendsDrawerDock` (`author_menu_arcade.drawer_dock`) that moves its Header's and Body's
+  left edge to `max(authored gutter, DockWidth + 24)`, so the layout groups reflow the cards into the narrower body
+  and they move right with the drawer. Home, the Hangar, Ark, Profile and Settings carry no dock: the drawer slides
+  over them and moves nothing.
+- **Blocked.** With any other window on top (a game's configure such as Scurry's, Settings, the leaderboard, the
+  profile window) the drawer closes at once and the orb hides; both come back when that window closes.
+- **Gates.** `author_menu_friends_drawer.py` checks the full-height anchoring, the widths, and that all four hub windows
+  carry a dock pushing exactly their Header and Body (three new negative controls). The refcompile player config and
+  the Amoebius Live build compile both scripts.
+- **Hand test.** Open the drawer on Home and the Hangar: it covers the left side, nothing moves. Open Arcade with it
+  open, and open it inside Arcade, Arena, Mission and Toy Box: the cards slide right with it and back when it closes;
+  maximise pushes further. Open a game (Scurry) from Arcade: the drawer closes and the orb is gone until Back. Watch
+  that the Arcade cards still read at the narrower width (the grid reflows; nothing measured it in the editor).
+
+## 69. Rev 13: four tabs, the profile from the pilot, the Voyage window, a brighter sea (2026-10-25, awaiting in-editor approval)
+
+Shombith approved the canvas's Rev 13 boards (R13Voyage, R13Profile, R13Home, R13Notes) with four answers: Y opens the
+profile ("pressing select opens the freestyle anyway"), the locked second voyage is named **Episode 2**, the friends
+drawer's pilot does not open the profile, and Ark and Port keep their places. "All of the buttons of the hub should look
+the same" (they already did in the game - the bright Arcade was the old mockup's - and Voyage now draws Default too).
+
+- **Top bar: Hangar, Ark, Home, Port.** `author_menu_topnav.py` drops the PROFILE tab (`RETIRED_TAB_INDICES`, its minted
+  documents removed every run). `ScreenSwitcher.navHiddenScreens` (default PROFILE): LT / RT page past it and the tab
+  bar lights Home while it is open.
+- **The profile opens from the pilot.** The Home avatar's button calls `ScreenSwitcher.OnClickProfileNav` (it opened
+  the avatar editor; that is the profile's own CHANGE AVATAR), and Y on Home does the same. The screen appears without
+  the strip's slide. Back (B, a `ControllerButtonPress` on the profile's BACK) closes the favourite-pilot picker first,
+  else returns to Home (`ProfileScreen.backButton`, `ScreenSwitcher.OnClickProfileBack`).
+- **The profile IS the pilot record.** `ProfileView.prefab`: a header ("Profile / Your pilot", BACK), a full-width pilot
+  card (avatar, name, CHANGE AVATAR / RENAME, and Fly time, Games, Sessions, Crystals and Pilot since), then the record's
+  Favourites and Fly time by vessel on the left and the Audio Studio on the right (nine rows at 46). No Episodes card,
+  no quest row, no EXPAND, no record background of its own (the veil and the sea lines are the screen's).
+  `ProfileScreen.OnScreenEnter` opens the record; its close, name and stat fields are left empty
+  (`RECORD_UNUSED`). The now-playing card rests on Home now (the profile carries the Audio Studio). The scene's old
+  QuestTrackView on the ProfileScreen root and its stubs into the view are removed (`RETIRED_REFS`).
+- **Voyage replaces Mission.** The Home hub button and the hub strip read Voyage (glyph `chrome_globe`, Available,
+  Default); the modal type stays `ModalWindows.MISSION`. `MissionView.prefab` (author_menu_mission.py) is the approved
+  R13Voyage board: the Episode 1 card with the quest progress bar and "n of 5", the quest track as rows
+  (`QuestRow.prefab`, a compact KitQuestCard: numeral, name, goal line, state, CLAIM / PLAY - QuestTrackView moved here,
+  reading `GameModeQuestList`), the featured voyage and the locked Episode 2 card. Home's Up next quest card opens the
+  Voyage window and says "Ready to claim in Voyage". The mission grid (MissionExploreView / MissionCard) is no longer
+  mounted; MissionCard.prefab is still generated, unused.
+- **Tandava is Voyage 1, open.** `VoyageView` draws the card's art, name and description and Set sail calls
+  `ArcadeGameConfigureModal.OpenFor(card)`, which opens the arena launch panel (Tandava seats Squirrel, Sparrow, Rhino).
+  The four forms on the card are authored text. `author_tandava_assets.py` gains `VOYAGE = True`: the card stays in
+  `_Archive` and off every grid but is back on the master roster (`OrganicRematchGames`), the by-mode lookup party
+  guests, the AI spawner and the return-from-match path use. Being on the master roster also makes it a rematch pick.
+- **The sea, brighter, with gradients.** `SeaLines.shader`: `_LineColor` / `_LineColorMid` / `_LineColorEnd` shade the
+  lines across the window (#49B8FF, #7F98FF, #9C8CFF), the layers are stronger (0.2 / 0.3 / 0.42, widths 0.9 / 1.1 / 1.5),
+  and `_WashTop` / `_WashBottom` / `_GlowColor` lay a deep-blue wash (#081654 at 0.75, clear at the bottom) and a soft
+  glow up top over the veil. Same 90 / 68 / 45 s. `lattice_preview.py` asserts the wash (top 0.76, bottom 0).
+- **Merge notes.** Yash's Hangar change (the ability rows are information, §66) is kept, with the palette rule put
+  back on it: the stage demo draws in the neutral `elementTint`, not AbilityLockupStyle's element colours.
+  `author_menu_configure.py` learned bleeding-edge's hand-authored arena hull arrows (d9b7305b11).
+  The purchase and toy-configure windows are regenerated: their buy buttons still drew the old Mass blue (the
+  palette pass had not reached them).
+- **Proof without an editor.** refcompile player config clean, the Amoebius Live build, every menu generator `--check`
+  and `--self-test`, `author_tandava_assets.py --check`, `check_ui_colors.py`, `check_generated_assets.py`,
+  `lattice_preview.py`. Unity's own compile and the hand test are owed (checklist entry "Rev 13").
+
+## 70. The sea everywhere; the lattice retired (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25: "Remove the grid bg from the toy cards also replace with the new background in the authentication
+and loading screens as well. Any part with grid bg should change to this new sea bg. Hangar should have it too."
+
+- **One background: the sea.** `Sea_Window.mat` (§67, §69) is behind every window and screen that had a background:
+  the hub windows, Profile, the friends drawer, the in-game scoreboard, the splash and sign-in scenes, the cell-change
+  loading screen (`EnvironmentLoadVeilContentSO.background`, formerly `lattice`, kept by `[FormerlySerializedAs]`) and
+  now the Hangar (behind the whole screen, under the top bar; `author_menu_hangar.py` checks it).
+- **`Sea_Panel.mat` inside panels.** The same three layers closer together (spacing 30, height 6), fainter (0.12 / 0.18 /
+  0.26) and with no wash - the panel's glass is its ground. It replaces `Lattice_Panel` in the Ark recipe, the
+  leaderboard list, the pilot card, the avatar preview and the toy configure cards. `menu_b_motion.panel_sea_node`
+  (was `grid_node`); `window_lattice_node` is gone, every caller uses `window_sea_node`.
+- **No background on the toy cards.** The Toy Box card and the Shuffle card lose theirs.
+- **The lattice is retired.** `Lattice.shader`, `UILattice.cginc`, `Lattice_Panel.mat` and `Lattice_Window.mat` are
+  deleted (`author_ui_lattice.py` RETIRED, so `--check` fails if one comes back) and its clang harness leaves
+  `lattice_preview.py`. `validate_screens` fails any menu screen, Menu_Main, the two start scenes, the scoreboard or the
+  loading-screen asset that still names a lattice material, and fails those four outside the menu if they lose the sea.
+- **Proof without an editor.** refcompile player config clean (editor config: the 3 errors already on bleeding-edge,
+  none in changed files), the Amoebius Live build, every touched generator's `--check` and `--self-test`
+  (`author_ui_lattice.py` gains negative controls for a panel back on the lattice, the sign-in without its sea and a
+  washed-over panel sea), `lattice_preview.py --check`, `check_generated_assets.py`, `check_ui_colors.py`. Unity's own
+  compile and the look in the editor are owed (checklist entry "Sea everywhere").
+
+## 71. Rev 17 J: episodes apart from voyages, the old quest tracker back (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25, through Rev 14-17 on the canvas: "Make the quest into a tracker like before ... The old quest tracker
+was good ... the episode 1 do not need to be so big", "It does not [need] useless text like where does your vessel go
+next", "both the quest tracker and the voyages look the same. Please differentiate them ... tracker is taking too much
+... keep [episodes] separate from tandava its not a episode", "why remove episodes? and also there will be more
+voyages", then "Rev17 J implement".
+
+- **Episodes, left.** A head ("Episodes"), then Episode 1 in a glass panel: "Episode 1", "The Hypersea", the progress
+  bar and "n / 5" (`summaryLine '{claimed} / {total}'`) on one row, and under it the quest tracker. Episode 2 is its own
+  locked bar under the panel - an episode, never a voyage card.
+- **The old quest tracker.** `VoyageQuestCard.prefab` is the Profile's QuestCard (`author_menu_profile.build_quest_card`,
+  which now takes a size and `compact`): art and numeral, state, name, goal line, the two goal rows, the intensity meter
+  and PLAY QUEST / CLAIM / "Unlocks after", and its track node and segment. Five across at 224 x 500 (art 140, the name
+  in Body, the goal rows without their title). `QuestTrackView` spawns it into an HLG. Rev 13's `QuestRow.prefab` is
+  retired (deleted; the generator removes it if it comes back).
+- **Voyages, right.** A scrolling column (ScrollRect, VLG + fitter: there will be more voyages). Tandava is full-bleed
+  art with a fade at its foot, OPEN, "Voyage 1", its name (VoyageView's title), its four forms and SET SAIL - square,
+  no glass, unlike every episode surface. Voyage 2 and Voyage 3 are locked tiles: the number and a lock, no invented name.
+- **No filler.** The header is just "Voyage". Gone: "Where your story goes next", the episode's tagline, "The next
+  voyage arrives with Episode 2.", "Co-op hunt", the crew line, the card description. The generator fails if any
+  returns, if the voyages column stops scrolling, or if Episode 2 and Voyage 2 are not both there.
+- **Proof without an editor.** `author_menu_mission.py --check` / `--self-test` (new controls: filler back in the header,
+  a frozen voyages column, a quest card that cannot claim), `author_menu_profile.py --check` (the full-size QuestCard is
+  byte-identical), refcompile player config, the gates. The look and the tracker's behaviour are owed in the editor
+  (checklist entry "Rev 17 J").
+
+## 72. Rev 18 A: the game and toy cards (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25: "Change the card background a little better make it have some animation this is for all of the
+gamemode toy cards", "The vessels and the elemental icons do not show up in big or small screens", "they are too
+transparent ... can have a bg like the profile screen - keep this. Just change how they orient the details", "The game
+cards are still noisy", then "implement a" on the canvas's Rev 18 board.
+
+- **One shape for all three.** The art (or a toy's portrait) on top, an opaque body under it, a 1 px seam between. No
+  word is written on the art any more; the old bottom fade and the text over it are gone.
+- **Arcade card** (`ArcadeGameCard.prefab`, 341 x 296 at the reference width; was 218 tall): a 200 px art band, then the
+  hull on a pale octagon plate (`kit_oct_fill` in `TextLight` - the hull renders are dark and vanished on the old dark
+  chip), the name (H3, one line), and the genre petals under it at 46 px (the petal sprites carry a wide transparent
+  margin, so the shape reads about 18 px; they were 22 px images, a few pixels of shape). Party picks top left on the
+  art, the favourite star top right on a dark disc, the lock in the middle of the art.
+- **Arena card** (`ArenaGameCard.prefab`, 560 tall): the art in the top half; pilots and domains on one line, the name,
+  the description in full, and every hull the card seats on a pale plate (48 px) along the foot. The plate keeps its
+  `Icon` child, which `KitArenaGameCard` finds by name.
+- **Toy card** (`ToyCard.prefab`): the portrait in a well of its own, then the section, the name and the tagline.
+- **The pictures move, slowly.** `CardDrift.shader` (UICardDrift.cginc) moves a picture's vertices along a Lissajous
+  path - a translation, never a scale, so a quad needs no centre and an atlased sprite cannot bleed - and the card's
+  mask crops it. `KitCoverImage.overscan` (new, default 1) draws the game cards' art 5 % larger than a cover fit inside
+  a `RectMask2D` band, so the drift (5 x 3 units, 40 s, `Card_ArtDrift.mat`) never shows an edge;
+  `author_menu_arcade.check_card_a` computes the margin at the reference card size and fails if the reach could cross
+  it. A toy's portrait bobs 4 units over 8 s (`Card_PortraitBob.mat`). Shader-only, so no canvas rebuilds. Recorded as
+  the cards' one exception in `Docs/UI_COLOR_RULES.md`.
+- **Proof without an editor.** refcompile player config, `author_menu_arcade/arena/toybox.py --check` / `--self-test`
+  (new controls: the art standing still, a band with no overscan, a toy portrait standing still), `author_ui_lattice.py`
+  (the two materials, slow, on the right shader), `lattice_preview.py --check` (the drift stays in its reach, loops,
+  holds still at 0 s), every menu generator `--check`, `check_generated_assets.py`, `check_ui_colors.py`. The look, the
+  drift and the plates in the editor are owed (checklist entry "Rev 18 A").
+
+## 73. The hull lit, not plated; the sea in the card bodies (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25, on the built Rev 18 A cards: "Good but dont like the white bg, also the blue part can have the sea
+lines".
+
+- **No plate.** The pale octagon behind the hull is gone. The hull is drawn with `Hull_Lit.mat` (`HullLit.shader` on
+  `UIHullLit.cginc`): the near-black render x 1.3 plus a cool lift (0.14, 0.17, 0.30), and a thin white edge (0.6) taken
+  from the sprite's alpha 4 texels out. Chosen from a contact sheet of the real hull renders on the card navy (the
+  second of four strengths: the hull stands off the card and its trim and red details stay). Still - no time term, and
+  `author_ui_lattice.py` fails the shader if one appears. Arcade: the hull at 60 px where the plate was; Arena: the seated
+  hulls at 52 px along the foot (the holder keeps its `Icon` child for `KitArenaGameCard`).
+- **The sea in the body.** Each card's body (Arcade, Arena, Toy) carries `Sea_Panel.mat` under its words, inside the
+  card's clip so the cut corner crops it (`author_menu_arcade.body_sea`).
+- **Proof without an editor.** `lattice_preview.py --check` (the lit black reads 0.17 against the card's 0.02, trim stays
+  white, the edge is brighter than the body), `author_ui_lattice.py` / `author_menu_arcade.py` / `author_menu_arena.py` /
+  `author_menu_toybox.py` `--check` and `--self-test` (new controls: the hull left dark, the hull back to a dark render),
+  every menu generator `--check`, `check_generated_assets.py`, `check_ui_colors.py`.
+
+## 74. Rev 19 / 20: the arcade configure window, option G (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the configure mockups: "It is too noisy. Keep the preview on the left and the description
+below. Move the controls to the right side, keep it at the top. Move the intensity and the team and AI selection below
+it ... Remove the slop below saying dolphin, pilot 2"; then, on Rev 19: "it [does not] show the avatar of the players or
+AI and how do I add them?"; then "Start and configuration is where I am disappointed, others are okay"; then, on Rev 20:
+"Go with G lovely. But remove the invite a friend button and remove the hold to launch just start is enough". Boards:
+the canvas's Rev 19 page (the layout) and Rev 20 page (configuration + START, six options; `R20ConfigureG2` is the
+approved one). Built in `author_menu_configure.py`, for the ARCADE window only (the Arena and Maelstrom windows keep the
+Rev 4 column, section 43, and are the follow-up).
+
+- **Layout.** The preview and its description stay on the left. The right column is, top to bottom: the controls (the
+  hull named over a two-column grid, `controls(cols=2)`), one glass panel holding intensity and the pilots, the line
+  that says why START cannot launch (or that the host waits for the others), and START.
+- **Removed.** The summary chips ("Dolphin · Intensity 1 · 2 pilots" - the slop), "Ready to launch", the vessel row
+  (the hull heads the controls now), START's sweep. The panel's `intensityValueText`, `intensityChipText`,
+  `pilotsChipText` and `readyLabel` are empty on this window (all optional in `ArcadeLaunchPanel`).
+- **Intensity: one numeral, LB / RB.** `IntensityStepper` draws the picked level as a big Roman numeral with four pips
+  under it (lit to the picked level) and the line that opens the next. The four `KitIntensityPip`s ARE the panel's
+  `intensityButtons`, so the modal drives them exactly as it drove the nodes; LB / RB and the two prompt buttons only
+  press the neighbouring pip (a locked one raises its locked event; a guest's non-interactable pips change nothing).
+  The shoulders are free under a configure (`ScreenSwitcher` slides hub windows only); the preview holding the stick
+  keeps them.
+- **Pilots: the lineup.** `ConfigureSeatLineup` + four `ConfigureSeatPedestal`s (new part prefab): every seat the
+  match holds, each pilot's portrait standing on a pool of their team's light (`kit_pool` / `kit_pool_rim`, tinted the
+  domain colour), name, status (Host / You / "Medium AI"), and the team underneath. An AI seat shows a portrait from
+  the AI roster (`MainAIProfileList`, stable per seat) and is named "AI pilot": the match draws its own pilot when it
+  spawns, so the seat promises no name. An open seat is the + octagon (`kit_oct_line2` family) - press it, the ADD AI
+  PILOT prompt under the lineup, or X, to add an AI. No invite button (Shombith): friends join through the party.
+  The ✕ on a placed AI removes it (host, while the match can spare the seat).
+- **Teams: focus a seat, then left / right** (Shombith's pick). `ConfigureTeamStepper` is a Selectable whose left /
+  right step the team instead of moving focus (up / down still navigate); its arrows do the same by pointer. Your own
+  seat sets your domain (`HandleDomainSelected`); the host steps a placed AI's (`MoveAiToDomain`, new: the placement
+  changes team where it stands). A new AI joins the team with the fewest pilots, a tie going away from your own
+  (`AddAiToLeastFilledTeam`). The teams offered are the Jade - Ruby - Gold prefix the card allows (`MaxDomainsAllowed`).
+- **The modal is unchanged underneath.** The lineup is a VIEW of the roster the domain tiles' chips show
+  (`ArcadeGameConfigureModal.SeatLineup.cs`); every action goes through the methods the tiles always used. The three
+  domain columns stay in the window, hidden (`SeatBook`, alpha 0, not interactable), because the modal keeps its chips
+  in their strips; Yash's in-flight `ConfigurePilotsFit` (Ys-bleeding-edge 5442765451) fits those columns and has
+  nothing left to act on here - Shombith chose to build G from bleeding-edge and let the second merge resolve it.
+- **AI difficulty** keeps its row, compact, beside ADD AI PILOT (shown only where the card's AI reads it), and the AI
+  seats name it.
+  Since 2026-10-26 the row has four plates, Easy / Medium / Hard / Legendary (`AI_LEVELS`; Docs/SKIM_RACE_AI.md
+  section 10): each compact plate is as wide as its word (`aic_btn_w`, Legendary 116 px) and the row ends 12 px clear
+  of ADD AI PILOT (asserted); the Arena's Rev 4 row splits its width four ways.
+- **START** is a full-width lime Play slab with the A prompt (`prompt_button`), pressed - no hold.
+- **`MinigameLaunchPanel`**: the controls block moves down to clear the AI difficulty row only when that row sits ABOVE
+  it (the old layout); with the controls above the row (here) it stays put.
+- **Proof without an editor.** refcompile player and editor configs OK, Amoebius builds; `author_menu_configure.py
+  --check` / `--self-test` (new controls: an invite control back, START held, START not the Play slab, the seat book
+  showing, a pip that is not an intensity button, the summary chips back, AI seats without portraits);
+  `author_ui_kit_sprites.py --check` / `--self-test` (the pool, its rim and the octagon outline, with controls);
+  `check_generated_assets.py`, `check_ui_colors.py`, `check_console_logging.py`. The look and the pad flow are owed
+  in the editor (checklist entry "Rev 20 G").
+
+- **With Yash's `ConfigurePilotsFit` (bleeding-edge #1563, merged in 2026-10-26).** It grows the Rev 4 Pilots section to its tallest domain column and moves the next section and START down with it. The arcade view no longer has that section (its pilots are the pedestal lineup, its domain columns a hidden seat book), so the fit is authored on the Arena and Maelstrom views only; a fit on the arcade view would move START and the lineup to fit columns nobody sees. `author_menu_configure.py` asserts the arcade view carries none, and its self-test plants one there (Yash's two plants now target the Arena view).
+
+## 75. The replay browser, the Arcade's REPLAYS button and My Replays in the Profile (2026-10-24 / 26, awaiting Shombith's approval)
+
+Built on `claude/match-replays-5t3dbr` for match replays (`Docs/REPLAYS.md` section 6), without a board round:
+
+- **MY REPLAYS** sits left of **BACK** in the Profile header (2026-10-26, on Ys-bleeding-edge; Yash: "inside profiles
+  should have my replay area where I can choose the last 10 games"): a Default transparent KitButtonSmall like BACK,
+  carrying `OpenModalButton` (`author_menu_profile.py` `build_view`). No pad shortcut: the profile's pad buttons are
+  ControllerButtonPress with empty screen lists, so it is reached with the D-pad and A. Only its four objects were
+  spliced into `ProfileView.prefab`; the generator's pre-existing text-width drift there is left for its owner.
+- **REPLAYS** sits left of **BACK** in the Arcade header (`author_menu_arcade.py` `replays_button`), a Default
+  transparent KitButton like Back, with `OpenModalButton` opening `ModalWindows.REPLAYS = 19` by type.
+- **The window is My Replays**: "My replays" in H1 with "Your last 10 games" (BodySmall) beside it; it lists the
+  newest 10 per section (`ReplayConfigSO.ListedReplays`, and the device keeps 10).
+- **The Replays window** (`author_menu_replays.py`) is the Credits window's frame (1200 x 900, dim, brackets, H1 title,
+  Close B, thin ControlActive scrollbar) holding ON THIS DEVICE and ON YOUR OTHER DEVICES sections of framed rows (H3
+  mode, BodySmall date and length, Body result, WATCH as an opaque Play button, DELETE as Default), and an empty line.
+- **The playback HUD** is its own root canvas: a top and a bottom SurfaceBlack band at 0.72 over the replay, the
+  title in H2, a scrub bar, Data readouts, a row of ButtonSmall transport buttons (PAUSE opaque Play) and a BodySmall
+  line naming the pad controls.
+
+Every word is an authored field (section 50). The Menu_Main instance sits just before Credits under ModalWindows; the
+two generators run in either order. Change anything here through the generators (replays, profile, arcade), never in
+the scene.
+
+
+## 76. Rev 24: the Hangar, option C taken forward; element flowers on the cards (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the Rev 22 C board: "bring the vessel list to the left side and keep the vessel like this and the
+text above like this. LB and RB changes the overview parts only. Now the header text can change as per the tab we are in";
+"Use the petals in game of the elements with the bars"; "I just care about the angled panel border"; "for the vibe ... they
+can be like bars"; then, on the Rev 24 boards: "In upgrades we do upgrade the elemental petals and they always start with 1
+value. That same petal can be showed in the arcade game cards updated with the real value the players have. Go ahead an
+implement". Boards: page "Rev 24 - Hangar C taken forward" (R24HangarAbilities / Upgrades / Games / Pilots / Artifacts,
+R24Borders, R24Notes), copied into `Docs/MenuRedesignB/board/`.
+
+- **The element flower, outside a match.** `KitElementFlower` (`Assets/_Scripts/UI/Kit/`) is the vessel HUD's flower: five
+  copies of `Resources/ElementPetals/<element>_petal` rotated 72 degrees apart, coloured by
+  `ElementalBarsConfigSO.DistributePetalValues` and `ColorForTick` exactly as `ElementalBarsView` colours them (1 = one
+  white petal, 5 = all white, 6 = one blue, 10 = all blue). It writes five colours when the level or element changes, never
+  per frame. `author_menu_hangar.element_flower` authors one (the petals rotated in the prefab, so the editor shows the
+  flower); `ElementFlowerTests` holds the fill to the HUD's at every Hangar level.
+- **Every element starts at 1.** `HangarUpgradeStore.StartLevel = 1`, applied on read (`Shown`): a saved 0 or no record is
+  a 1, nothing migrates. The first UPGRADE buys level 2 for 200 (100 x the level bought). `LevelChanged` fires on a buy.
+- **The arcade cards.** `GameCard.GenreFlower` / `GenreFlowerSecondary` replace the single white genre petal on
+  `ArcadeGameCard.prefab`: the genre's element (`ModeGenre`, unchanged) as a flower filled to the player's level for that
+  element on the card's hull (`ResolveModeVessel`, the Mode Map's rule). The cards redraw on `LevelChanged` and when the
+  cloud profile lands (`PlayerDataService.OnProfileChanged`). The Arena and Toy cards keep the petal (no flower wired).
+- **Layout** (`author_menu_hangar.build_view`, reference 1920 x 1080, height-matched): the list on the left (230 wide);
+  the header (kicker, Display name, line) over the centre; the 3D vessel over the sea with no box (the bay's glows stay);
+  the vibe bars at the bottom left; UNLOCK over the stage's lower right (so it never meets the bars at 16:10); the dossier
+  710 x 890 at the right.
+- **The border** (R24Borders "2 Rail"): `kit_cradle_fill` (new in `author_ui_kit_sprites.py`, the open cradle with its
+  fade-in from the top, drawn at the dossier's size) plus seven straight lines rotated in place (`line_node`; the kit's
+  node emitter now writes a z rotation, `Node.rot`, byte-neutral for every other node), a faint dash where the rail ends
+  and `kit_corner_tri` in the bottom-left corner. Pages keep 60 units off the right side so nothing crosses the diagonal
+  (asserted from the geometry).
+- **Tabs.** `HangarTabsView` keeps its five pages and adds three groups: OVERVIEW (Abilities, Upgrades, Games - LB / RB, the
+  parts row with its LB / RB keycaps), PILOTS and ARTIFACTS - Y steps them (Y opens the profile only on Home). The header
+  follows the tab: OVERVIEW the vessel (`HangarVesselDetailView.kickerTemplate`, "VESSEL - OWNED"), PILOTS the page's own
+  (`IHangarHeader`: "PILOT - MASS - SPARROW", the name, the quote), ARTIFACTS the group's templates.
+- **Upgrades** (`HangarUpgradesPage`, rewritten): four flower tiles down the right, the focused one framed in the selection
+  blue (pad focus moves it, no press); the left names the element and step, the ability and its line, the flower NOW and
+  NEXT, the level-5 box (`UpgradeLabel` / `UpgradeDescription`), and UPGRADE with the price. The moment is kept (crystals
+  fly, the flower pops, the hull morphs, LEVEL N). Still look-only.
+- **Abilities** rows start with the flower; the crystal glyph is gone (`elementGlyph` left empty). **Pilots** are four rows
+  (portrait, name, line, flower); the rev-3 hero is gone from the prefab (its fields stay optional). **Vibe** is ten
+  segments per scale (`HangarVibeView.segments`; the rail and thumb still work if authored).
+- **Also on 2026-10-26:** the NOW PLAYING card is off Menu_Main ("Remove this man ASAP"; `author_menu_profile.py` stops
+  mounting it and fails if it is back), and the configure window's AI Easy / Medium / Hard row shows on every card - unlocked
+  where the mode's AI reads it, dimmed and locked on Medium elsewhere (the Rev 7 rule, `ArcadeLaunchPanel.SetAIDifficultyOffered`).
+- **Proof without an editor:** refcompile player and editor OK, Amoebius builds, the generators' `--check` / `--self-test`
+  (new controls: a petal turned out of place, the parts row unwired, the header not following the tab, a vibe segment
+  unwired, the rail missing a line, the card mounted in Menu_Main again), `gates.sh` all OK, and a rect render of the
+  prefab. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 24 Hangar".
+
+## 77. The scoreboard is Rev 23 option D, team versus (built 2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "For scoreboard I liked D". Board: R23ScoreD ("Rev 23 - Scoreboard", copy in
+`Docs/MenuRedesignB/board/`).
+
+- **When.** `ScoreboardLadder.BuildVersus` (pure, `ScoreboardLadderTests`) returns the two sides for a match of exactly two
+  domains where at least one fields two or more pilots (2v2, 3v1, 3v3); a free-for-all, a 1v1 or three teams return null
+  and the board stays the Rev 8 B ladder (§49), unchanged. The winner is always the left side.
+- **A side.** Its name in its domain colour (domain colours are for teams, as on every board), WINNER under the winner
+  (`ScoreboardVersusView.winnerWord`; `loserWord` empty), its score - the time every member shares, else the members'
+  whole-number scores added, else nothing - a rule in its colour, then its pilots as `ScoreboardVersusRow` rows (the
+  ladder row's parts at 660 wide: rank, face, name with the pilot line and counts stacked under it, score, reward). A
+  shared team time is said once in the head and the rows drop it, as the ladder's header did.
+- **The share bar** across the top splits the count the two teams' secondary lines carry ("14 Crystals"), the loser's
+  part at 60 % alpha, with "{domain} {percent}%" under each end (`shareTemplate`); hidden when any line has no number.
+- **Unchanged:** the header (mode line, banner, rule), the stats strip, PLAY AGAIN / CONTINUE / MAIN MENU / LEAVE LOBBY
+  with the rematch faces, the reward strip counting the wallet, the crystal award path. They keep their Rev 8 places
+  (buttons left, reward right); the D board drew them the other way round - say if that should follow.
+- **Wiring.** `author_ingame_hud.py`: the `Versus` layout in ScoreboardPanel (hidden by default; the ladder's `List` gained
+  a CanvasGroup to step aside), `ScoreboardVersusRow.prefab`, and `Scoreboard.versusView` / `versusRowPrefab` set on
+  GameCanvas. Every mode's board is GameCanvas's; the benchmark stress scene's own Scoreboard keeps the ladder.
+- **Proof without an editor:** refcompile player and editor OK, Amoebius builds, `BuildVersus` run under .NET against
+  the real source (10 checks), `author_ingame_hud.py --check` / `--self-test` (new controls: the view unwired, the ladder
+  not stepping aside, a side with nowhere for its rows), `gates.sh` all OK, a rect render of the panel. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Scoreboard D".
+
+
+## 78. Rev 25 boards: the Arcade card in Arena and Voyage; intensity without Roman numerals (2026-10-26)
+
+Shombith, 2026-10-26: "the same card as in Arcade should be there in arena and voyages game configuration card selecting
+vessel and domain and AI. Send me mockups of that"; then "Also remove the roman numericals with numbers or just that
+signal sign". **Boards only for Arena and Voyage** (canvas page "Rev 25 - Arcade card in Arena and Voyage", copied into
+`Docs/MenuRedesignB/board/`): the G card with six seats, each pilot standing on the vessel they fly - A puts a team and a
+vessel stepper under every pilot, B keeps the team steppers and adds a strip of the card's hulls for the focused seat.
+Tandava (one crew, `MaxDomainsAllowed: 1`) carries no team stepper. Nothing is built for them until a pick.
+
+**Built now:** the Arcade window's intensity reads 1 - 4 instead of I - IV (`IntensityStepper.numerals`, authored by
+`author_menu_configure.py`; the unlock line follows). The boards show the other choice too: no number, just the four
+pips as a rising signal sign (B boards).
+
+## 79. Rev 25 B built: the Arcade card in Arena and Voyage, the signal sign, the open border, a roomier card (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the Rev 25 boards (section 78): "Go with B and the signal sign but the add AI button is going out.
+Also the open panel that we used in the hangar use it here too", then "You can make the space bigger I guess bro, its too
+noisy if you cramp stuff up". Built in `author_menu_configure.py` for the Arcade window (`ConfigureView`) and the Arena
+window (`ConfigureArenaView`, which every voyage opens through `ArenaLaunchPanel.Handles`); the Maelstrom window keeps the
+Rev 4 column and is byte-identical.
+
+- **Roomier.** The preview narrows from 1100 to 860 and the right column widens from 680 to 920 (`G_PV_W`, `G_SET_W`).
+  The card hugs its sections and the controls panel above it takes the rest, so the Arcade's shorter card leaves its
+  controls room for every row. The objective box moves to the preview's top-left (no room beside FLY any more); the +1
+  toast keeps the top-right.
+- **The open border.** The card is the Hangar's "2 Rail" border (`H.rail_border`, now shared, with the rail along the
+  card's top edge, a 30-unit chamfer and a 40-unit lean) over `kit_cradle_card`, a new kit sprite: the Hangar's cradle at
+  920 x 536, faint at the top instead of clear. The right inset (56) clears the leaning side; the generator asserts the
+  sprite and the rail were drawn for the same card.
+- **The signal sign.** Intensity is LB, four bars rising left to right (20 wide, 14 to 53 tall) lit up to the picked level,
+  RB. The bars are the `KitIntensityPip`s, so the modal drives them as before; there is no numeral (`numeralText` is
+  empty). What opens the next level moved to the caption row's right.
+- **Six pedestals on the Arena.** The lineup draws a pedestal per seat the modal holds on those cards (`MaxArenaSeats` 6,
+  the Arcade's `MaxMatchSeats` 4; the generator reads both from the modal). Each pilot stands on the hull they fly
+  (`ConfigureSeatPedestal.hullImage`): your strip pick, another pilot's arena claim (else the hull they last flew), an AI's
+  `AIHullSeating.SeatHull`; a one-hull card shows its hull on every seat. A card with one team (Tandava,
+  `MaxDomainsAllowed: 1`) hides the team steppers.
+- **The vessel strip for the pressed seat** (B). Under the lineup: < seven hull tiles >, then CLAIM - the same
+  `ArenaLaunchPanel` hull strip, claim flow and caption ("Your vessel" / "{domain} AI's vessel"). Pressing a pilot
+  (`ConfigureSeatPedestal.pickButton`, in pad navigation only where it does something) points the strip at that seat
+  through the modal's `SelectVesselSeat`, the same rule the seat rows' hull taps used; the seat the strip picks for wears
+  the selection band. The old class line and description under the strip are gone (the controls panel names the hull).
+- **ADD AI stays inside.** ADD AI PILOT and the Easy / Medium / Hard row sit on the card's last row, inside the inset.
+- Retired with it: the Arena's Rev 4 column, its `ConfigurePilotsFit`, the controls grid under the preview, the hull
+  section's class line, and the generator's `hull_body` / `vessel_body`.
+
+Affects Yash's shared vessel panel (`ArenaLaunchPanel`, the hull strip and claim, #1558): its strip and claim are reused
+as they are; only where they sit moved. Editor check: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 25 configure card".
+
+## 80. The friends drawer: the people glyph, no maximise (2026-10-26)
+
+Shombith, 2026-10-26: "you used elemental icon for friends you should never do that. Change this plus remove the
+maximize button from the friends panel". The drawer's title wears `chrome_people` (the leaderboard's Friends tab glyph)
+in NeutralLightest instead of the Space element glyph, and the window has only its minimise: `FriendsDrawer` loses the
+Maximised state, `maximiseButton`, its two glyphs and `maximisedWidth`. **The rule, standing:** an element glyph means an
+element (an ability, a petal, an element bar) and nothing else - never people, a social feature, or decoration;
+`author_menu_friends_drawer.py` now fails if the title wears any of the four. The re-emit also sweeps documents an older
+version parented under the drawer that their parent no longer listed (old plates and focus rings under the minimise and
+maximise buttons).
+
+The same mistake was on the cell-change loading screen (section 47.4): its four build steps ("Laying prisms" ...) wore
+the Mass, Time, Charge and Space glyphs. They now wear none (`EnvironmentLoadVeilContent.stepGlyphs` is empty; the veil
+already drew a step without one), and `author_load_veil_content.py` fails if an element glyph comes back.
+
+## 81. Round 2 on Rev 24 / 25: the Hangar, the arcade card, the configure card (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the editor screenshots of sections 76 and 79: "Hangar screen whole bg is too transparent. Make the bg
+look like the arcade bg ... Left side vessel holders should use the open border card as well ... In the middle remove the
+hued image behind the vessel ... Vibe tab - I do not even notice it because of the transparency ... Overview, Abilities,
+Upgrades, Games, Pilots and artifacts all are on the same tab nav bars"; "The elemental icon can go on the right side and
+you can resize it a bit smaller"; "Game configuration card - worst - Bring the old preview card size. The controls tab does
+not need to be that big. We can make the detail view bigger also see texts are overlapping with images".
+
+**Hangar** (`author_menu_hangar.py`):
+- The backdrop is the Arcade window's: the 0.95 SurfaceBlack veil, then the sea lines. The vibe bars now read against it.
+- The bay's deep glow, its two coloured rim lights and the floor pool are gone; the vessel stands on its floor rings.
+- One tab row, LB to RB: ABILITIES, UPGRADES, GAMES, PILOTS, ARTIFACTS. Every page is its own tab (a group of one, so the
+  header still follows the tab); LB / RB step through all five (`HangarTabsView.StepPart` steps groups from a one-page
+  group); Y is free. The OVERVIEW group and the second row are gone - the three pages were OVERVIEW.
+- The vessel list is open-border cards (220 x 124): `kit_open_tile_fill` / `_line1` / `_line2`, new kit sprites drawn at the
+  card's size, so KitTile still swaps the outline on selection. The hull is large on top, drawn with `Hull_Lit.mat` (the
+  arcade card's treatment), the name and status under it.
+- UNLOCK moved to the stage's top right and the turn hint to its foot: they sat on the floor rings.
+- **Colour:** the mockup's colourful hulls were crops of the artist files' clay contact sheets (`Docs/VesselModels/sheets`,
+  tan body, lime engine). The fleet's card art follows `Docs/VesselModels/COLOR.md` (lime is never on a vessel; the class
+  livery is neutral), so the cards show the shipped renders, lifted by `Hull_Lit`. Colourful card art is a re-render in
+  `render_cards.py` and a colour-language decision, not a UI change. (Superseded for the Hangar list by section 82.)
+
+**Arcade card** (`author_menu_arcade.py`): the genre flower moved to the body's right edge, 34 across (was 46 beside the
+hull); a two-genre card stacks two, centred, and the title takes the line between the hull and the flowers.
+
+**Configure** (`author_menu_configure.py`):
+- The preview is 1100 x 620 again and the right column 680 (Rev 25's 860 / 920 is undone).
+- The controls are one compact panel (144): the hull's name and CONTROLS on one row, two rows of three controls under it.
+- The card takes the rest of the column (578 tall); the pedestals take what the other sections leave (Arcade 358, Arena 216).
+- A pedestal stretches: its pictures (the portrait over the hull on its pool) share the region above the words in fractions,
+  and the words (name, status, team) sit in fixed rows at its foot, so no word sits on a picture. The AI tag is gone (the
+  status line says AI).
+- The vessel strip is six tiles across the card under a caption row that holds the hull's name and CLAIM.
+- The window's veil is opaque: the Arcade window's title and cards read through the 0.95 one.
+
+**How this round was checked:** an offline renderer of the generated prefabs (nested prefabs and their overrides, layout
+groups, sprites, TMP text, masks) drew every changed screen, and it reports any text on an art image and any text wider
+than its box; the final renders report none. The renderer lives in the session scratchpad, not the repo.
+
+## 82. The Hangar list's colourful card art (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "Go ahead with the colourful card renders" (section 81 had left the list on the fleet's card icons,
+lifted by `Hull_Lit`).
+
+**What the list shows now:** each hull's three-quarter view in its model's slot colours (tan body, cyan glass, lime engine,
+orange accents), the look of the Rev 24 mockup, filling the card's art band above the name and status.
+
+**Where the art comes from:** `Tools/Build/author_hangar_card_art.py` cuts it from the vessel-model contact sheets
+(`Docs/VesselModels/sheets/<vessel>_after.jpg`, the Blender Cycles renders `vessel_model/build.py` makes; the second cell of
+the first row, the front three-quarter view). It keys out the studio grey, un-blends the grey from the edge pixels (no grey
+fringe on the navy card), trims the hull and fits it to one 600 x 200 clear canvas, so every card frames its hull the same
+way. The Wrasse uses `wrassekite_after.jpg` (its card icon is still a placeholder), the Rhino and the Urchin their rigged
+sheets, the Jacks `jack_after.jpg`. A hull with no sheet falls back to its card icon on the same canvas. All 20 hulls the
+Hangar lists have a sheet. The art was not re-rendered: Blender is not installable in this environment, and the sheets are
+the committed Cycles renders.
+
+- `Assets/_Graphics/Hangar/Cards/<Vessel>.png`: the art (20 sprites).
+- `Assets/_SO_Assets/UI/HangarCardArt.asset`: `HangarCardArtSO`, the vessel to art table (not `_SO_Assets/Hangar/`: that
+  folder retired with TRY and `author_menu_hangar.py` guards that it stays gone).
+- `HangarVesselTile.cardArt` names the table; `Configure` shows `cardArt.For(vessel)`, else `SO_Vessel.IconActive`.
+- The tile's art is a band across the card's top (8 down, 62 tall, inside the leaning right side), drawn as rendered: the
+  `Hull_Lit` material is gone from the tile, since it would grey the colours. KitTile's Art keeps the aspect.
+
+**Only the Hangar list reads it.** Every other screen keeps `SO_Vessel.IconActive`, the fleet's card art in the colour scheme
+of `Docs/VesselModels/COLOR.md` (Garrett's vessel colour language), which this art does not follow. Re-run the generator
+when a model's sheet is re-rendered; `--check` fails when the art drifts from the sheets.
+
+**How it was checked:** `author_hangar_card_art.py --check` / `--self-test` (a blank card, a card painted the studio grey, a
+hull dropped from the table and a card on the wrong canvas are all caught); `author_menu_hangar.py --check` / `--self-test`
+(new plants: the tile without its card art, the art drawn through `Hull_Lit`); the reference compile; `gates.sh`; and an
+offline render of the tile with six hulls' art (no text on the art, no overflow).
+
+## 83. The configure card's intensity and vessel strip, the friends row's SPECTATE, the Hangar's free model view and its sizes (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on editor screenshots: "1st image (intensity): Decrease the size. 2nd image (the vessel strip): the
+left and right arrows are overlapping UIs. also claim needs a change button. This will only change in arena and voyage
+also this place is a bit noisy"; "Spectate is getting cut off"; "In the hangar screen where we can drag a model left and
+right give the user all axis we can rotate zoom in zoom out and everything with the model"; "Crystals is looking too
+clamped up. The whole hangar is a bit cramped. reducing the sizes a little bit might fix these issues".
+
+**Configure card** (`author_menu_configure.py`, every card):
+- Intensity is one small group under its caption: LB (54 x 32), the four signal bars (12 wide, 8 to 26 tall), RB. The row
+  is 62 tall (was 86); what it gives back goes to the pilots.
+- The vessel strip (Arena and Voyage only - the Arcade card has none):
+  - The arrows overlapped the end tiles because they were KitButtonSmall instances, which size themselves to their label
+    (44.5 wide in a 32 slot; the offline renderer does not run that fitter, so section 81's renders missed it). They are
+    plain fixed-size chevrons now (26 x 60, a clear hit area and the glyph; grey, white under the pointer, the selection
+    blue when focused), outside the tiles; the generator asserts they fit and that the panel's arrows are plain buttons.
+  - Quieter: the tiles show the hull's icon only (the caption row names the hull on show), only the pick and the
+    pointed-at tile are outlined (`KitTile.borderAtRest`, off for these tiles; every other tile keeps its outline), the
+    rule under the caption is gone, the strip is 60 tall (was 84), and the arrows leave once the hull is claimed.
+  - **CLAIM, then CHANGE.** A claim used to freeze the strip for the rest of the session. Once the claim lands, CHANGE
+    stands in CLAIM's place: it gives the claim back (`ReleaseArenaHullClaim`), the strip and the arrows come back, and
+    START waits for a new claim. Only for the pilot's own hull and only while they are not ready - a ready pilot's hull is
+    part of what the others are waiting on; when the ready state resets, CHANGE is offered again
+    (`ArenaLaunchPanel.changeVesselButton` / `OnVesselChangeRequested`, `ArcadeGameConfigureModal.HandleVesselChangeRequested`).
+
+**Friends row** (`author_menu_arcade.py`, `PartyOnlineRow`): a button slot now controls its button's width. Left
+uncontrolled, a layout group takes a child's current rect as its size, and the button's own fitter sets that rect later
+in the same pass, so a JOIN that became SPECTATE kept JOIN's slot and ran out of the drawer. INVITE + SPECTATE fit the
+row's 202 strip, and the generator asserts both.
+
+**Hangar - the player holds the model** (`HangarVesselStage`):
+
+| | Mouse | Touch | Pad |
+|---|---|---|---|
+| Turn (any axis: about the view's up and right) | drag | one finger | right stick |
+| Roll | Shift-drag | two-finger twist | hold Y, right stick left / right |
+| Zoom (0.6x to 2.2x, never into the hull) | wheel | pinch | hold Y, right stick up / down |
+| Move | right or middle drag | two-finger drag | - |
+| Reset (eases back) | double-click | double-tap | press the right stick |
+
+While the model is held the idle turn stays off (it would turn away what the player is looking at); a reset or another
+vessel brings it back. The line under the stage says how, for the device in hand (three authored lines on the stage).
+On the Hangar screen Y is free (it opens the profile on Home only) and the triggers stay the screens' paging.
+
+**Hangar - sizes** (`author_menu_hangar.py`): the vessel's name is H1 (36, was Display 48) and the stage starts 22 higher;
+the tabs are BodySmall with 18 between them; ability rows are 100 tall (was 112) with smaller flowers, icons and keycaps;
+the vibe bars are BodySmall with 22-wide segments; the list's header and the vessel's kicker are 24 further apart. The
+crystals sit 4 lower, 20 from their word, and the kit pill has more room inside (18 / 24 / 8 / 8, the amount 12 from the
+crystal).
+
+**How it was checked:** every menu generator's `--check`; `--self-test` with new plants (the Join slot reading its
+button's rect, the strip's arrows back to self-sizing kit buttons, CHANGE unwired, the hull tiles outlined at rest, the
+stage that cannot zoom in, the stage's line unwired); the reference compile; offline renders of the configure cards and
+the Hangar (no text on an image, nothing past its box).
+
+## 84. Hangar abilities on a press, the Hangar drawn smaller, the list clear of the friends orb, readable controls, CODEX in the top bar (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "Abilities when I click them then only the vessel should perform. Again I say in the hangar we can
+reduce the size of each component it looks too big in the game"; "See at bottom left it overlaps the friends icon";
+"texts for controls are tooooo small"; "Change the order in the top. It should be Codex (locked like port invent an icon
+it will be a beastiary or like pokedex for showing elements, ethirions and ecology), Hangar, Home, Ark and then Port
+(Locked)"; "According to the order the slide menu should work too".
+
+**Hangar abilities** (`HangarAbilitiesPage`, `author_menu_hangar.py`): each ability row is a button again - a click, a
+tap or A on the focused row makes the vessel perform that ability. Nothing plays on its own: the AI demo of section 66
+(an ability every 2.4 s) is gone, with its two timings.
+
+**Hangar sizes**: everything under the top bar sits in one `Frame/Content` drawn at 0.88, laid out in a space 1 / 0.88
+as large (its anchors run past the frame, so after the scale it fills the frame exactly at any width; the menu canvas
+matches height, so the space is 1132 tall). Every component is 12 % smaller and the space between them grows to match.
+The top offsets are measured from under the top bar now (`TOP_BAR` 84). The dossier's cradle is drawn 1026 tall
+(`author_ui_kit_sprites.CRADLE_H`) so it still reaches the foot.
+
+**Friends orb**: the vessel list ends 150 px above the screen's foot (`ORB_TOP`: the orb's top plus air), so it never runs
+under the friends orb at the bottom left.
+
+**Configure controls** (`author_menu_configure.py`): two wide columns (were three), and a control's name runs up to its
+glyph (it gave up 96 px to a description that is never shown), so names read whole at Body size.
+
+**Top bar** (`author_menu_topnav.py`, `ScreenSwitcher`): CODEX, HANGAR, HOME, ARK, PORT. CODEX is new and locked like
+PORT (`MenuScreens.CODEX = 6`, `OnClickCodexNav`, in `disabledScreens`); its glyph is drawn by `author_nav_glyphs.py`
+(an open book, an ethirion's diamond on one page and a leaf on the other). The generator now writes the strip's
+`screens` order from the same list as the tabs, so LT / RT and the slide follow the bar; CODEX has no panel yet (its
+locked slot is never entered). The Codex's data already exists (`Docs/CODEX.md`, Garrett's); this is only its door.
+The tabs' objects are keyed by link, not place, so a reorder can never hand one tab's wiring to another.
+
+**How it was checked:** every menu generator's `--check` / `--self-test` (new plants: an ability row out of pad
+navigation, the Hangar drawn at full size, the AI demo back, the strip in the old order, CODEX not locked, CODEX
+without its lock view); `author_elemental_converter.py` now reads `disabledScreens` as a list (ARK open, PORT closed);
+the reference compile; offline renders (the scratch renderer learned uniform scale).
+
+## 85. SORT and FILTER beside ALL GAMES (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "In arcade games beside the all games tasks I want to have a sort and filter button"; "Go ahead
+with the sort and filter buttons".
+
+**What the player sees.** ALL GAMES and its count on the left; on the right two buttons that name their choice, SORT:
+FAVOURITES and FILTER: ALL. A button opens its row of options right under that line - a row of tabs, the chosen one
+underlined in the selection blue - and the grid moves down to make room (no floating menu: a pointer, a finger and
+the pad all use it the same way; on the pad the focus moves onto the current option, and back to the button after a
+pick). Picking an option closes the row and re-fills the grid. The choice lasts the session.
+
+- **Sort:** Favourites (favourites first, then A-Z: the grid's order before this section), A-Z, Unlocked (unlocked
+  first, then A-Z).
+- **Filter:** All, Favourites, Unlocked, Solo (one player at most), Multiplayer (more than one), and the four elements
+  by the card's genre - the same answer the card's flower shows (`ModeGenre`, now read through
+  `ArcadeGridOrder.TryGenres` by both the card and the filter).
+- A filter that leaves nothing shows "No games match this filter." (authored). A card a guided path points at is never
+  filtered out.
+
+**Where:** `ArcadeGridOrder` (the pure sort and filter rule; `ArcadeGridOrderTests`), `ArcadeGridOptions` (the buttons,
+rows and choice), `ArcadeExploreView` (`gridOptions`, `emptyFilterLine`; its lock rule is one `IsLocked` the grid and the
+Unlocked options share), `author_menu_arcade.py` (`all_games_header`, `option_row`). Every word is an authored field.
+
+**How it was checked:** `author_menu_arcade.py --check` / `--self-test` (new plants: SORT without its button, a filter
+tab dropped, the sort row open on arrival, the explore view without its options); `ArcadeGridOrderTests` compile in the
+editor assembly (not run: no editor here); the player and editor reference compiles.
+
+
+## 86. The picked pilot's podium glows instead of an outline (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith, with a screenshot of the Arena card):** "The selection UI is overlapping. We do not need a selection
+icon we can glow the podium below more to see it."
+
+**Built** (`author_menu_configure.py`, `ConfigureSeatPedestal`):
+- The blue outline round the picked pilot (`Pilot/Pick/Editing/Band`) is gone. It covered the pilot and their hull and
+  ran over the next seat's portrait.
+- The seat the vessel strip is picking lights its podium instead: `Pilot/Lit`, under the hull and inside the seat's
+  width. It holds a wider pool of the team's light (`Halo`, `kit_pool`, tinted like the pool through the new
+  `podiumGlow` field) and a white-hot rim (`Core`, `kit_pool_rim`), breathing (KitAmbient Breathe, 1.6 s, down to 55 %).
+- `editingMark` now points at `Pilot/Lit`, so the modal's logic is unchanged. The pilot is still the button that points
+  the strip at its seat.
+
+**How it was checked:**
+- `author_menu_configure.py --check` and `--self-test`. Two new plants are both caught: the outline sprite back on the
+  pedestal, and `podiumGlow` unwired. The validator also asserts that the podium breathes.
+- `gates.sh`, including the player and editor reference compiles.
+
+## 87. Rev 26 mockups: the Codex (2026-10-26, awaiting board approval)
+
+**Asked (Shombith):** "Bring up the codex from the design board and create mockups there of how codex with eithirions
+and everything and details about all pilots and artifacts and elements and everything will show."
+
+**On the canvas:** page "Rev 26 - Codex" of Menu Redesign B (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with
+a copy in `Docs/MenuRedesignB/board/R26*.dc.html`. Eleven boards:
+- the front page;
+- one board per chapter: Ethirions, Elements, Ecology > Fauna, Ecology > Flora, Pilots, Vessels, Artifacts, Tools;
+- the in-match discovery toast;
+- notes.
+
+Each chapter screen keeps the Hangar's split: the grid on the left and the open page on the right. LB / RB step the
+chapters. CODEX is the top bar's first tab (section 84).
+
+**Data:** every number on the boards is the shipped value, from these sources:
+- Ethirions, ecology and tools: `Assets/Resources/Codex.asset` (`CodexSO`, Garrett's, `Docs/CODEX.md`). The art is
+  the baked `Assets/_Graphics/Codex/` portraits.
+- Pilots: `SO_Captain_<Hull>_<Element>`, for the name, flavour line, signature, how the AI flies and the portrait.
+- Vessels and elements: `element_ability_table.py`, for each ability and its level-5 upgrade. The art is the Hangar
+  card art.
+
+**Proposed, not in the game:**
+- Discovery. `Docs/CODEX.md` section 5 says every entry ships unlocked, and nothing reads `UnlockedByDefault` or
+  `DiscoveryKey` yet. The counts, the NEW badges, the silhouettes and the toast all assume discovery.
+- Artifacts. There is no artifact data in the game; the two shown come from the Rev 24 Hangar board.
+- Descriptions. The Codex asset's descriptions are blank, so they show as [bracketed] slots.
+- Copy. Each element's one-line meaning ("the strike you carry", "what you build", "how far you reach", "how fast you
+  move") is proposed wording, read off the fleet's ability table.
+
+Nothing is built in Unity until a board is approved.

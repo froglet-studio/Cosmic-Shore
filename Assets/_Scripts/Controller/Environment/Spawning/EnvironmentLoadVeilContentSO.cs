@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
@@ -42,9 +43,11 @@ namespace CosmicShore.Gameplay
         public string[] tips = Array.Empty<string>();
 
         [Header("Look")]
-        [Tooltip("The living lattice behind it all (Lattice_Window.mat). Empty: black.")]
-        public Material lattice;
-        [Tooltip("The steps' glyphs, in step order: Mass, Time, Charge, Space.")]
+        [Tooltip("The sea behind it all (Sea_Window.mat, Docs/MENU_REDESIGN_B.md §70). Empty: black.")]
+        [FormerlySerializedAs("lattice")]
+        public Material background;
+        [Tooltip("Optional glyphs for the steps, in step order; empty shows the labels alone. Never an element glyph: " +
+                 "an element glyph means an element.")]
         public Sprite[] stepGlyphs = Array.Empty<Sprite>();
         [Tooltip("The cell's name.")]
         public TMP_FontAsset displayFont;

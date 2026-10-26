@@ -73,7 +73,8 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (!_isLocalPilotHud || !navigator) return;
+            // the local person's HUD: their own hull's, or the hull whose kite they fly from another machine
+            if ((!_isLocalPilotHud && !(navigator && navigator.RidesHere)) || !navigator) return;
             Paint(0, navigator.Charges);
             Paint(1, navigator.LastBlastDestroyed);
             Paint(2, navigator.SavedBoosts);

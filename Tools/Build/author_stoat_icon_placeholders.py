@@ -11,6 +11,11 @@ pass), multiply-tinted at runtime and replaced 1:1 by the art pass. Each names t
   Space   Field Dipole  a sink (solid) and a source (ring) with the field arcing between
   Time    Pathfinder    a dotted, curving line ending in an arrowhead
 
+The Mass card's icon follows the MODE B is in (StoatHUDView, 2026-10-26), one icon per mode:
+  Mass mode    a thick slab of trail and the path it flies (the field trajectory)
+  Time mode    an orbit round a solid attractor, arrowed (the catch sling)
+  Drive mode   the warp pair: a black hole ahead, a white hole behind, the hull between them on its axis
+
 Pure-python PNG raster (no PIL), donor-cloned sprite .meta, deterministic guids, idempotent,
 --check. The folder .meta is emitted too.
 """
@@ -124,11 +129,48 @@ def pathfinder(px, py):
     return False
 
 
+def mode_mass(px, py):
+    """Mass mode: the thick trail, and the dotted path the field flies."""
+    if 12 <= px <= 46 and 22 <= py <= 106:
+        return True                                    # the thick trail
+    for cx, cy in ((64, 30), (78, 46), (89, 64), (96, 83)):
+        if circle(px, py, cx, cy, 7.0):
+            return True                                # the path
+    if tri(px, py, 102, 118, 88, 98, 112, 96):
+        return True                                    # its arrowhead
+    return False
+
+
+def mode_time(px, py):
+    """Time mode: an orbit round a solid attractor, arrowed."""
+    if circle(px, py, 64, 64, 12):
+        return True                                    # the attractor
+    if arc(px, py, 64, 64, 40.0, 6.0, 60.0, 330.0):
+        return True                                    # the orbit
+    if tri(px, py, 98, 90, 89, 108, 77, 89):
+        return True                                    # its arrowhead
+    return False
+
+
+def mode_drive(px, py):
+    """Drive mode: the warp pair riding with the hull - the black hole ahead, the white hole behind, the hull between."""
+    if circle(px, py, 96, 96, 19):
+        return True                                    # the black hole, ahead
+    if ring(px, py, 32, 32, 15.0, 6.0):
+        return True                                    # the white hole, behind
+    if tri(px, py, 76, 76, 42, 62, 62, 42):
+        return True                                    # the hull, nose toward the black hole
+    return False
+
+
 ICONS = {
     "Stoat_Ripple.png": ripple,
     "Stoat_Modes.png": modes,
     "Stoat_FieldDipole.png": field_dipole,
     "Stoat_Pathfinder.png": pathfinder,
+    "Stoat_ModeMass.png": mode_mass,
+    "Stoat_ModeTime.png": mode_time,
+    "Stoat_ModeDrive.png": mode_drive,
 }
 
 SIZE, SS = 128, 3  # canvas, supersample factor

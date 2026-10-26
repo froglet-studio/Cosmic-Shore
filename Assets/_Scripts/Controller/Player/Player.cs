@@ -183,6 +183,170 @@ namespace CosmicShore.Gameplay
             NetArenaHullClaim.Value = hull;
         }
 
+        // ── Seats and hulls (CrewStations) ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The station this human holds: a hull and a seat on it, or the default (hull 0) for "flying my own hull". Written
+        /// by the server only (<see cref="RequestStation_ServerRpc"/>, <see cref="ReportOwnSeat_ServerRpc"/>), read by every
+        /// peer: the ring skips stations other people hold, and a crew leaves a seat a person on another machine holds to
+        /// them. See <see cref="CrewStations"/>.
+        /// </summary>
+        public NetworkVariable<CrewStation> NetStation =
+            new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        LocalCrewStation _localStation;
+        float _nextStationServerTime;   // server-side rate limit on moves (own-seat reports are not limited)
+        float _nextStationCheckTime;    // server: how often a station is re-checked against the hulls that exist
+
+        void Update()
+        {
+            if (IsSpawned && IsServer) KeepStationValid();
+            // the person on this machine (IsLocalPilot also covers the legacy un-networked spawn, where only their own
+            // hull's seats are in the ring)
+            if (!IsLocalPilot || (IsSpawned && !IsLocalUser)) return;
+            _localStation ??= new LocalCrewStation(this);
+            _localStation.Tick(gameData);
+        }
+
+        /// <summary>A menu parked this person's own hull on its AI (<see cref="CrewSeat.ReturnHumansToHull"/>): a ride ends
+        /// and the person is sent home, without this machine taking the autopilot or the pause back from the parker.</summary>
+        internal void ReturnStationHome() => _localStation?.ReturnHome();
+
+        /// <summary>Ask the server to move this person to <paramref name="seat"/> on the hull <paramref name="hullId"/>.
+        /// Owner only; the server decides (<see cref="CrewStations.Classify"/>).</summary>
+        internal void RequestStation(ulong hullId, int seat)
+        {
+            if (!IsSpawned || !IsOwner) return;
+            RequestStation_ServerRpc(hullId, seat);
+        }
+
+        /// <summary>Tell the server which seat this person's own crew put them in (0 the helm).</summary>
+        internal void ReportOwnSeat(int seat)
+        {
+            if (!IsSpawned || !IsOwner) return;
+            ReportOwnSeat_ServerRpc(seat);
+        }
+
+        [ServerRpc] // RequireOwnership = true: a person only ever moves THEMSELVES
+        void RequestStation_ServerRpc(ulong hullId, int seat)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (Time.unscaledTime < _nextStationServerTime) return;
+            if (NetIsAI.Value || !CrewStations.TryFindHull(hullId, out var hull))
+            {
+                CSDebug.LogWarning($"[Player] Seat move refused for {NetName.Value}: hull {hullId} is not spawned.");
+                return;
+            }
+
+            var move = CrewStations.Classify(this, hull, seat, gameData.Players, out var pilot);
+            if (move != CrewStations.Move.OwnSeat && !CrewStations.HullHoppingAllowed(gameData))
+                move = CrewStations.Move.None;
+            if (move == CrewStations.Move.None)
+            {
+                // a warning, not a verbose line: a refused move looks exactly like a D-pad that does nothing
+                CSDebug.LogWarning($"[Player] Seat move refused for {NetName.Value}: seat {seat} of " +
+                                   $"{hull.VesselStatus.VesselType} is not free for them.");
+                return;
+            }
+
+            _nextStationServerTime = Time.unscaledTime + PilotSwap.CooldownSeconds * 0.8f;
+            switch (move)
+            {
+                case CrewStations.Move.OwnSeat:
+                    NetStation.Value = seat == 0 ? default : new CrewStation(hullId, seat);
+                    break;
+                case CrewStations.Move.Ride:
+                    NetStation.Value = new CrewStation(hullId, seat);
+                    break;
+                case CrewStations.Move.TakeHull:
+                    // the arena's exchange: the hull this person leaves goes to the one they took it from (an AI, or a
+                    // person riding elsewhere), so it is abandoned in its turn - exactly as free as a spawned companion
+                    ExecutePilotSwapServer(pilot);
+                    NetStation.Value = default;
+                    break;
+            }
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Player] {NetName.Value} moved to seat {seat} of {hull.VesselStatus.VesselType} ({move}).");
+        }
+
+        [ServerRpc]
+        void ReportOwnSeat_ServerRpc(int seat)
+        {
+            if (NetIsAI.Value || Vessel is not UnityEngine.Object own || !own) return;
+            var st = NetStation.Value;
+            if (!st.IsHome && st.Hull != Vessel.VesselNetId) return;   // riding: the own crew has no say
+            if (seat <= 0) { NetStation.Value = default; return; }
+            if (seat >= CrewStations.SeatCount(Vessel)) return;
+            if (CrewStations.HumanAt(gameData.Players, this, Vessel.VesselNetId, seat))
+            {
+                CSDebug.LogWarning($"[Player] {NetName.Value}'s crew took seat {seat}, which a rider holds.");
+                return;
+            }
+            NetStation.Value = new CrewStation(Vessel.VesselNetId, seat);
+        }
+
+        // Server: a station on a hull that is gone, or on a seat it no longer has, is the own helm again; a station that
+        // names the own hull's helm is written as the default.
+        void KeepStationValid()
+        {
+            var st = NetStation.Value;
+            if (st.IsHome || Time.unscaledTime < _nextStationCheckTime) return;
+            _nextStationCheckTime = Time.unscaledTime + 0.25f;
+            bool own = Vessel is UnityEngine.Object o && o && st.Hull == Vessel.VesselNetId;
+            if (own && st.Seat == 0) { NetStation.Value = default; return; }
+            if (!CrewStations.TryFindHull(st.Hull, out var hull) || st.Seat >= CrewStations.SeatCount(hull))
+                NetStation.Value = default;
+        }
+
+        // ── Crew relay (CrewRelay): a rider's seat input to the hull's machine, its crew's state back to the riders ──
+
+        /// <summary>From the rider's machine: <paramref name="data"/> for the crew of the hull this person rides.</summary>
+        internal void SendCrewInput(ulong hullId, int seat, int[] data)
+        {
+            if (IsSpawned && IsOwner) CrewInput_ServerRpc(hullId, seat, data);
+        }
+
+        [ServerRpc] // RequireOwnership = true: a person only speaks for the seat THEY hold
+        void CrewInput_ServerRpc(ulong hullId, int seat, int[] data)
+        {
+            var st = NetStation.Value;
+            if (st.Hull != hullId || st.Seat != seat || !CrewStations.IsRiding(this)) return;
+            if (!CrewStations.TryFindHull(hullId, out var hull) || hull is not NetworkBehaviour nb || !nb.IsSpawned) return;
+            CrewInput_ClientRpc(hullId, seat, data, CrewRelay.To(nb.OwnerClientId));
+        }
+
+        [ClientRpc]
+        void CrewInput_ClientRpc(ulong hullId, int seat, int[] data, ClientRpcParams rpc = default) =>
+            CrewRelay.DeliverInput(hullId, seat, data);
+
+        /// <summary>From the hull owner's machine (this person's own hull): its crew's state for the hull's riders.</summary>
+        internal void SendCrewState(ulong hullId, int[] data)
+        {
+            if (!IsSpawned) return;
+            if (IsServer) BroadcastCrewState(hullId, data);
+            else if (IsOwner) CrewState_ServerRpc(hullId, data);
+        }
+
+        [ServerRpc]
+        void CrewState_ServerRpc(ulong hullId, int[] data)
+        {
+            // only the machine that owns the hull speaks for its crew
+            if (!CrewStations.TryFindHull(hullId, out var hull) || hull is not NetworkBehaviour nb || nb.OwnerClientId != OwnerClientId) return;
+            BroadcastCrewState(hullId, data);
+        }
+
+        void BroadcastCrewState(ulong hullId, int[] data)
+        {
+            var riders = CrewRelay.RidersOf(gameData.Players, hullId);
+            if (riders.Length > 0) CrewState_ClientRpc(hullId, data, new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = riders } });
+        }
+
+        [ClientRpc]
+        void CrewState_ClientRpc(ulong hullId, int[] data, ClientRpcParams rpc = default) =>
+            CrewRelay.DeliverState(hullId, data);
+
         // ── Arena pilot swap (PilotSwap) ──────────────────────────────────────────────────────
         float _nextPilotSwapRequestTime;   // owner-side debounce
         float _nextPilotSwapServerTime;    // server-side rate limit
@@ -821,7 +985,7 @@ namespace CosmicShore.Gameplay
 
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
-            Name = NetName.Value.ToString();
+            Name = DisplayNameValidator.ForDisplay(NetName.Value.ToString()); // fair play T7
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
@@ -846,6 +1010,7 @@ namespace CosmicShore.Gameplay
 
             // Add to game data early so ServerPlayerVesselInitializer can find us.
             gameData.Players.Add(this);
+            CrewStations.GameData = gameData;
 
             VesselNetId = NetVesselId.Value;
 
@@ -983,6 +1148,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             _spawnEventRaised = false;
+            _localStation = null;
             gameData.Players.Remove(this);
 
             NetDomain.OnValueChanged -= OnNetDomainChanged;
@@ -1113,7 +1279,7 @@ namespace CosmicShore.Gameplay
             // if a value happens to be the same, the local property
             // would remain stale without this explicit sync.
             Domain = NetDomain.Value;
-            Name = NetName.Value.ToString();
+            Name = DisplayNameValidator.ForDisplay(NetName.Value.ToString()); // fair play T7
             AvatarId = NetAvatarId.Value;
 
             // Re-register with gameData (cleared by ResetRuntimeData during scene transition)
@@ -1221,7 +1387,7 @@ namespace CosmicShore.Gameplay
         
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
-            Name = newValue.ToString();
+            Name = DisplayNameValidator.ForDisplay(newValue.ToString()); // fair play T7
 
             // Keep the RoundStats identity mirror live. A mid-session rename
             // (menu profile edit -> HandleProfileLoadedAfterSpawn on the owner)

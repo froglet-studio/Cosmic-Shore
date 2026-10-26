@@ -936,7 +936,7 @@ namespace CosmicShore.Editor
                 "completion is submitted to the world board AND to the player's regional board.",
                 MessageType.None);
 
-            var boards = _catalog.regionalLeaderboards;
+            var boards = _catalog.RegionalLeaderboards;
             int removeAt = -1;
 
             for (int i = 0; i < boards.Count; i++)

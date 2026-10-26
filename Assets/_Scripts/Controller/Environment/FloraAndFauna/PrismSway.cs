@@ -97,6 +97,13 @@ namespace CosmicShore.Gameplay
             if (!stamped && prism.TryEnsureRenderEntityForStamp())
                 stamped = PrismRenderService.StampSway(in prism.RenderHandle, spanX, spanY, axis, timing);
 
+            // No Entities Graphics on this device (a WebGL2 browser): the same constants ride the
+            // MeshRenderer's property block (Docs/PRISM_ANIMATION.md §4.11). False everywhere else.
+            bool meshRendererPath = false;
+            if (!stamped)
+                stamped = meshRendererPath = PrismMeshRendererStamps.StampSway(prism.StampRenderer,
+                    in spanX, in spanY, in axis, in timing);
+
             if (!stamped)
             {
                 PrismClockDiagnostics.WarnNoRenderEntity("prismSway", prism,
@@ -111,7 +118,7 @@ namespace CosmicShore.Gameplay
             if (sharedMat && !sharedMat.HasProperty(SwaySpanXId))
                 PrismClockDiagnostics.WarnUnwiredMaterial(sharedMat, "_SwaySpanX", prism);
 
-            ExpandCullingEnvelope(prism, amplitude, z0);
+            ExpandCullingEnvelope(prism, amplitude, z0, meshRendererPath);
             return true;
         }
 
@@ -126,6 +133,10 @@ namespace CosmicShore.Gameplay
             PrismRenderService.ClearSwayStamp(in prism.RenderHandle);
             var mesh = prism.EffectiveRenderMesh();
             if (mesh != null) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
+            // §4.11 twin: the block loses the sway (and goes to null, rejoining the SRP Batcher, when that
+            // was all it held); the culling envelope returns to the mesh. No-op where entities run.
+            PrismMeshRendererStamps.ClearSwayStamp(prism.StampRenderer);
+            PrismMeshRendererStamps.ResetBounds(prism.StampRenderer);
         }
 
         static readonly int SwaySpanXId = Shader.PropertyToID("_SwaySpanX");
@@ -140,11 +151,11 @@ namespace CosmicShore.Gameplay
         /// The sweep is `peak * amplitude * limbHeight` in LIMB units; converting it to the
         /// prism's own object units is what the axis row already encodes, so the padding is
         /// taken in WORLD units off the limb height and the prism's own scale.
-        static void ExpandCullingEnvelope(HealthPrism prism, float amplitude, float z0)
+        static void ExpandCullingEnvelope(HealthPrism prism, float amplitude, float z0, bool meshRendererPath)
         {
             var mesh = prism.EffectiveRenderMesh();
             if (mesh == null) return;
-            PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
+            if (!meshRendererPath) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
 
             var scale = prism.transform.lossyScale;
             float smallest = Mathf.Max(1e-4f,
@@ -152,7 +163,10 @@ namespace CosmicShore.Gameplay
             // Object-space padding: the world sweep divided by the SMALLEST axis scale, so a
             // thin prism's box still covers the sweep on every axis.
             float padding = PeakWaveMagnitude * Mathf.Abs(amplitude * z0) / smallest;
-            PrismRenderService.ExpandBoundsForClockAnimation(in prism.RenderHandle, float3.zero, padding);
+            if (meshRendererPath)
+                PrismMeshRendererStamps.ExpandBounds(prism.StampRenderer, mesh, float3.zero, padding);
+            else
+                PrismRenderService.ExpandBoundsForClockAnimation(in prism.RenderHandle, float3.zero, padding);
         }
     }
 }

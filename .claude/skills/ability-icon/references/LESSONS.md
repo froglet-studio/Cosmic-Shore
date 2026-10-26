@@ -1,0 +1,236 @@
+# Lessons (append one block per round; the owner's words first)
+
+## 2026-10-24 - the audit, and round 1 (Manta, Urchin)
+
+Garrett: "the current icons range from decent to terrible." "Angular is probably good." "The flower
+probably owns it. I don't see what value the redundancy could provide." "[Hull silhouettes] are fair
+game where appropriate. Dolphin uses its jaw silhouette to good effect in its space ability icon."
+"We will improve your icon development skill by raising the floors in our existing icons."
+
+1. **Fifty-five icons came from twelve scripts and three drawing engines**, and the ability row
+   disagreed with the style foundation on its most basic question (round vs angular). The language
+   was never written down; each script cited "the house icon language" as one sentence in the
+   previous script's docstring. Writing it down (ICON_LANGUAGE.md) and putting one engine under it
+   is most of the fix.
+2. **The gates had to be calibrated on the fleet before they meant anything.** First draft (12 px
+   margin, coverage ≥ 0.14, 7 px thin threshold) failed 54 of 56 including everything Garrett called
+   decent. The fleet draws to a ~4 px margin because the lockup scales by authored size; the Thresher
+   set covers 0.12-0.16; round-capped strokes are ~5 px. Calibrated: margin 6, coverage 0.10-0.45,
+   thin < 5 px share ≤ 0.35, tight-gap boundary share ≤ 0.25. Now the Thresher fails only on what is
+   really wrong with it (chain-link and spike gaps, debris specks), the Shrike on being too thin
+   (coverage 0.08-0.10), the Starlings' cards on looking alike at 24 px.
+3. **Gates are a floor, not a verdict.** Urchin Slip (three circles) and Track Projector (a ladder)
+   passed every gate and named nothing. The sheet at 40 px, read by a person, is the judgement.
+4. **`Urchin_ChargeRing.png` is a gauge, not an icon.** The audit called a bare ring "generic"; it is
+   the hold-charge ring the HUD draws round the Charge card. Read `author_<hull>_hud.py` before
+   judging a sprite in the icon folder.
+5. **Prisms in a row fuse into a zigzag at 40 px** unless the gap is ≥ 6 px (Yastri round 1: two
+   prisms overlapped by 3 px and read as a chain). Two big prisms beat three small ones.
+6. **The smallest feature of a silhouette is what gets named.** The Manta's cephalic lobes, drawn
+   tall, made the Soar icon a fox's head at 40 px (ears + snout). Flattened to short lobes on a blunt
+   head, it is a ray. Remove or flatten; shrinking keeps the read.
+7. **Sleepers across a receding track read as a stacked tree.** A single-track rail is a solid taper
+   with a centre groove cut out - the negative-space rule.
+8. **The sheet's BEFORE must come from HEAD, not disk**, or the first write erases its own comparison
+   (the first `--check` after writing drew new vs new). `author.py committed()` reads `git show`.
+9. **A spent generator must stand down on the files the kit now owns and keep the rest**:
+   `author_manta_icon_placeholders.py` keeps the metas and folder metas; `author_urchin_hud.py`
+   keeps the metas, the HUD variant and the charge-ring gauge. Both `--check` clean, and a re-run
+   cannot put the placeholder back.
+10. **Soar is the weakest of the eight** (a ray at 60, a delta at 40); it is the one to ask about
+    first. Kabloom (blast with a hollow core), Sting (octagon bomb), Track Projector (road to the
+    horizon) and Trail Rider (ball on the ribbon) are the ones that moved most.
+
+## 2026-10-24/25 - round 2 (Squirrel, Sparrow; the Dolphin measured and left)
+
+Garrett: "this is slightly better. but not quite there. first we need to make sure we never conflate the domain
+colors with elemental identity. jade is not time. gold is not charge. mass is not blue. space is not ruby ... we
+need to set a rule that we explicitly do not do this." "lets start with the squirrel, dolphin, and sparrow. their
+abilities are more locked in. lets get their icons polished."
+
+11. **Elements have no colour - LOCKED.** The lockup's rev 3 lava colours (Charge gold, Mass blue, Space violet,
+    Time teal) were the domain palette read as elements; the sheet of round 1 repeated the mistake by washing
+    each plate in "its element's" colour. Both are gone: `AbilityLockupStyle.asset` serialises
+    `elementColour: 0`, `check_element_colour.py` held it until the 2026-10-26 merge, when it turned out `check_ui_colors.py` (Docs/UI_COLOR_RULES.md, the same rule relayed by Shombith the same day) already did: the icon gate was retired, theirs holds it (and lists the element->colour maps still in code with
+    their owners), the sheet draws white on the plate. Rule text: `Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`
+    "Elements have no colour".
+12. **Measure the HUD before deciding what an icon IS.** On these three hulls the "icon" is often a live
+    readout: the Dolphin's Charge card is a generated blast cross-section, its Space card the two jaw halves
+    opening to the next gape, its Time card an 11-step ring; the Squirrel's Space card is a generated reach
+    ring with a count; the Sparrow's Charge card is a sprite LADDER. A sprite swap polishes none of that. The
+    Dolphin had nothing to redraw and was left alone; the Squirrel got two cards and its two drift sprites;
+    the Sparrow got three cards, a five-rung ladder and the weapon-mode pair.
+13. **A ladder is one icon in several states, not several icons**: its rungs live in their own folder, are
+    `family=False` (they are each other's variants on purpose), the card's own sprite IS the top rung, and the
+    view's `missileIcons` list is rewritten to all five (`rebind.py` `list=`). The old three-rung art had a dark
+    decagon PLATE baked in and sat on the lockup's plate; the bay holds four rockets and the ladder said two.
+14. **A ghost at alpha 0.5 sits on the gates' threshold** and vanishes at 40 px (the empty rack lost its
+    ghosts). Ghosts are 0.6.
+15. **Borrowed art is a rebind, not a redraw**: the Squirrel's Time card wore the Sparrow's boost icon, and the
+    Sparrow's prefab referenced that boost icon TWICE (the Time card and a legacy `BoostIcon` image). A rebind
+    step asserts the count it expects (`expect=`), so a second reference is found rather than silently swapped.
+16. **The placeholder the skull was is also the Jousts metric icon** (`ModeControlsLibrary.asset`): every
+    reference to a sprite being replaced is its own rebind step, and the ones outside the HUD (the drift
+    placeholder in `AbilityControlRow.prefab`, the cannon one in `HomeScreen.prefab`) are left for their owners.
+17. **The drift's sweep needs to be as heavy as the hull.** Round 1's arc was a hairline behind an arrow and
+    read as an arrow; at 12 px the arc under the tail reads as a slide.
+18. The weakest of this round: the Sparrow's Turret Stance (a pawn at 40 px) and the Squirrel's Crystal Joust
+    (a gem with a cut - the joust itself is not in it). Ask about those first.
+
+## 2026-10-25 - one icon: the Squirrel's Crystal Joust
+
+Garrett: "your before pictures are not accurate or exhaustive." "lets focus on one icon for one vessel." "lets get
+one thing right. then move on."
+
+19. **A BEFORE is the card as the HUD draws it, in every state, in every place the sprite shows** - not the
+    sprite on a square. `card.py` draws the lockup card from `AbilityLockupStyle.asset`'s own numbers (two
+    trapezoids, the slant edge, the flower cell, the 60 px icon box) with the state tint (the joust flash) and
+    the sheet now uses it; the one-icon sheet also shows the other surface the sprite was on (the Jousts
+    metric icon in the arcade launch panel) and the fleet glyph the new icon is built on. It still says
+    "drawn offline" on it: the Editor is the truth, and the flower is an approximation.
+20. **One icon per round when the owner says so.** Three candidates on the card (the fleet's joust glyph with
+    the crystal at the impact; the cleaved gem; the hull through the gem) beat eight redrawn icons nobody
+    asked for. The joust glyph won because the Jousts OBJECTIVE and the Crystal Joust ABILITY are one act,
+    and one act wears one pictogram (`objective_jousts.png`, the objective set's `jousts()`).
+21. **Measure a failing gate before guessing.** The component gate wanted the spark to be one mass with the
+    gem (start the marks inside it); the gap gate then named four narrow wedges between each spark and the
+    lance arm beside it - found by dumping the tight-gap mask's quadrants, fixed by steepening the sparks.
+    Two blind tweaks had already missed.
+22. **"The Squirrel" means the Squirrel's silhouette, not a chevron.** Garrett on the first "through" option: "it
+    should read as the squirrel silhouette vs a generic one." The silhouette comes from the hull's OWN mesh:
+    `hull_view.py` projects the FBX (bind pose, file frame, nose +Y) to top / side / front masks with no Blender,
+    and the spec's `squirrel_top()` is drawn to those proportions (slim wedge body, forward-swept wings with pod
+    tips, a ribbed tail). Two ribs, not three - three fuse into a fishbone at 40 px.
+23. **Keep the creature off the wings.** With the body overlapping the hull's widest part the composite was a
+    blob at 40 px in every placement; with the creature at the NOSE (the hull punching through it, wings clear
+    of the halves) it reads at 40. Place the second object where the silhouette is narrowest.
+24. **"Fidelity" means the hull's real geometry.** Garrett on the drawn silhouette: "the fidelity is too low. this
+    reads too abstractly." `mesh_silhouette.silhouette()` projects the FBX mesh itself (parallel projection,
+    pitch / yaw, a 1.2 px thickening so the ribs survive 60 px); twelve views went on one sheet and Garrett chose
+    D (tipped 45, turned 15). The hand-drawn `squirrel_top()` is retired. A real silhouette fails the `gap` gate
+    on its ribs by design: the icon carries `exempt={"gap": "<who, why>"}`, printed on every run, never silent.
+25. **Measure the projection before composing on it.** Three rounds put the creature up-right of the nose because
+    I assumed yaw 15 tilted the hull's axis; `project_point()` on the nose and tail vertices showed the axis is
+    HORIZONTAL in view D and the fitted box IS the hull's length. Compose from projected points, not from the
+    numbers that produced them. And the creature at the nose needs a narrow crack (12 px) - a wide channel turns
+    a body into two brackets.
+26. **The opponent is the same hull, smaller.** Garrett: "perhaps use a second smaller squirrel." A hexagon at
+    the nose read as brackets; a second Squirrel (the same mesh at 40 px, rolled 35 degrees nose-up: knocked)
+    ahead of the big one reads as the overtake at every size, and needs no new pictogram. `silhouette(roll=)`
+    turns a hull in the plane exactly (on the projected points, not a raster rotate). Two thin hulls sit at the
+    coverage floor: thicken them (1.5 / 1.6 px) rather than shrink the gap between them.
+27. **A card can be a PAIR the HUD tints separately - that is a view change, not a sprite.** Garrett: "the two
+    squirrels should be facing each other and the same size. the right facing squirrel should be the players
+    domain color. the other squirrel can be the danger color (fire). when the player jousts then both can turn
+    lime." The Dolphin's jaw pair was the pattern: the card's icon Image becomes a transparent container (no
+    sprite, alpha 0 - the lockup still kerns and punches it) over two stretched child Images; the view paints
+    them from pushes it already receives (SetPlayerDomainColor, SetDangerTint) and snaps both to the shared
+    `ElementalBarsConfigSO.LimeColor` on a joust. Neither tint is an element colour: a team claim and the fleet's
+    warning hue. `rebind.py` `pair=` builds the children in the prefab YAML with deterministic fileIDs and wires
+    the view's fields; the kit writes three sprites (the pair in Pair/, each exempt from the whole-icon gates,
+    and the white composite the Jousts objective box keeps). C# touched: SquirrelVesselHUDView - no Unity CLI in
+    this session, so the editor check is on the board.
+28. **Skimming is the second tinted pair, and the split is WHAT IS YOURS.** Garrett: "make the vessel and the
+    prisms touching and behind the skimmer the player's domain color. make the prisms in front of the skimmer the
+    blue" and "i like b2 the best". The Time card's icon became a container over SkimSelf (hull, skimmer sphere,
+    the prisms under it - domain colour, from the same push as the boost fill) and SkimAhead (the prisms ahead -
+    `ElementalBarsConfigSO.BlueColor`, the HUD's one blue). Prisms are `motifs.block()` - a box from front-above
+    with its seams cut - after a notched band read as "the profile of a chocolate bar". The pair's `pair=` step
+    inserts the view's fields after a named anchor (`after=`). Seam slivers trip the specks gate: exempt by name.
+29. **The ring stays white, and thinner.** A part the view never tints is still its own child (field None in the
+    `pair=` step) so it is not painted with the hull. 5 px. Garrett on the two pairs: "I really like where we
+    landed here on both because the icons are teaching the ability" - now the bar at the top of SKILL.md.
+30. **A card can be a LIVE READOUT built from parts.** Garrett: "use blocks and straight as the default state. when
+    drifting change them to octahedrons. have the angle between vessel and the trail match the player's
+    difference between vessel forward and course velocity." The drift card is a stretched TRAIL part (blocks at
+    rest, octahedrons while drifting - a drift lays shielded prisms, and shielded reads as a diamond) and a HULL
+    part in its own point-anchored child rect on the course line (`pair=` child with a rect), turned every frame
+    by the signed forward-vs-course angle the controller now pushes (`SetDriftAngle`; the old binary side lean
+    is the fallback for a HUD without the parts). The hull sprite is the mesh centred in its own canvas so the
+    child's rotation is about the hull. Unity wraps long flow values onto a second line in prefab YAML - a field
+    rewrite must match `{...}` across lines or it leaves a dangling `type: 3}` (rebind `_set_field`).
+31. **A part that turns must pivot on the hull's AXIS, not its bounding box.** Garrett: "the trail should be
+    directly behind the squirrel so the pointing down vs up has an anti symmetry to it." In view D the nose-tail
+    line sits 16 px above the sprite's bbox centre (the wings and pods hang below it), so a hull centred by its
+    bbox had the trail running under it and turned about the wrong point. Measure the axis with
+    `project_point()` on the nose and tail vertices, draw the hull that much low in its canvas so the axis IS
+    the canvas centre (the child rect's pivot), and put the trail on that line.
+32. **No state tints on the parts: the angle and the trail change are the signal.** Garrett: "lets have it and
+    the trail stay and remain the domain color (but the octahedrons can change to the shielded domain color),
+    the dynamic angle and trail change should be sufficient." The drift hull and the resting trail wear the
+    domain colour; the drifting trail's octahedrons wear the domain's SHIELDED colour (`SetShieldedTint`, the
+    same resolve the omni card gets). driftColor / doubleDriftColor survive only on the single-icon fallback.
+    General rule: once a card's parts carry team colour, a state is told by SHAPE (and a team-derived colour),
+    not by a second palette.
+33. **A ring around a hull reads as a SKIMMER; a quantity is the plate gauge.** The Dolphin's Time card (the boost
+    bank fills while it drifts) was offered as the top-down Dolphin inside a boost ring. Garrett: "i like the top
+    down view, but the ring now reads as a skimmer. lets just have the whole lower totem fill with the consistency
+    of other resources." So the bank is the card's PLATE GAUGE - `AbilityIconBinding.gauge`, the fleet's one
+    linear fill the lockup adopts onto the ability plate (Docs/ABILITY_LOCKUP.md "The gauge") - and the card's
+    icon is the hull alone (`Dolphin_ChargeFill`, the live mesh from above, domain colour, turned by the live
+    drift angle). The authored eleven-step ring retired: `chargeSteps` emptied, the step methods gone, the PNGs
+    left where the artist put them. The kit learned three things: a `pair=` child with icon None is a bare gauge
+    Image, `binding=` names it on the view's abilityIcons entry, `fields={"x": "[]"}` empties a serialized list;
+    and `card.py` draws the gauge (`gauge=0..1`) so a sheet shows a metered card as the HUD does. General rule: a
+    HOW-MUCH on a card is never a shape of its own - not a ring, not a ladder - it is the plate filling, the same
+    on every card that has one; the icon spends its shapes on WHO and WHAT.
+
+## 2026-10-26 - the Sparrow's Time card: the hull in its own TAKE
+
+Garrett: "time first, build the folded pose." "what do you mean roll pip? ... oh i know. it is letting you know
+that the roll is available." "lets not show that that is armed because its cooldown is so low." "make the vessel
+pointing to the right. (it is currently pointing left, which may be due to a model error)" "A is the best." "lets
+show some jets coming out of the sparrow so the default state communicates motion and doesn't just look like the
+vessel silhouette."
+
+34. **A hull's authored TAKE is a card state, and the kit can skin it without Blender.** The Sparrow rests with
+    both fans spread (a starburst at 60 px); its SpeedUp take folds them into swept wings, and that fold IS the
+    afterburner. `mesh_pose.py` reads the FBX skin (clusters: indexes, weights, bind matrices), the bone chain and
+    the take's keys, and linear-blend-skins the mesh with the pose as a delta on the bind pose;
+    `mesh_silhouette.silhouette(..., take=)` projects it. Two proofs on the file (`--check`): the rest skin
+    reproduces the raw mesh (0.0000) and the node chain lands on every TransformLink (the XYZ Euler convention
+    holds). Blender's exporter writes a cluster's `Transform` as the mesh in BONE space (inv(link) * mesh global),
+    not the mesh global - 65 distinct matrices on the Sparrow; read it as such or the rest skin is 47 units off.
+35. **Nose right is the owner's read, not the file's.** The Sparrow's dossier records the hull flies blade-end
+    first (a model error the modeller will fix); the card shows the pointed fuselage to the right because that is
+    what reads as a ship ("make the vessel pointing to the right"). `mirror=` is a per-hull call made by looking.
+36. **A readout that re-arms faster than a glance is not worth a plate.** The Time plate filled light blue while
+    the strafing roll was armed; Garrett: "lets not show that that is armed because its cooldown is so low." The
+    pip is unbound (`binding=dict(element=4, gauge=None)`, `deactivate=` on its Image, the view's pip fields
+    deleted with `fields={...: None}`) and the plate is bare. Ask of every live signal: does the pilot ever act
+    on it?
+37. **The default state must still MOVE.** The hull alone, spread or folded, is a silhouette; two white exhaust
+    plumes behind it ("jets coming out of the sparrow") make the rest state a ship under way and the boost state
+    a ship at full burn - the plumes lengthen with the fold. The jets are their own untinted part (`AfterburnerJets`,
+    rest/boost sprites) so the domain colour stays on the hull; the hull sits right of centre to leave them room
+    (box 94 at cx 74). `plume()` in the spec: a tapered bar, chamfered at the engine, square at the tip.
+38. **A ghost is the ability's PROMISE; the state turns it real.** The Sparrow's Mass card (Turret Stance) fires
+    swelling rounds from both pods: while flying the rounds are a ghost (alpha 0.6) of what the stance will fire,
+    taking the stance turns them solid with a punch, and Mass 5 swaps them to octahedrons in the domain's shielded
+    colour - the same shape rule as the Squirrel's shielded drift trail, so "shielded" is one shape fleet-wide.
+    Garrett: "b is good" (both pods at their real spacing over one centreline stream). The upgrade hook is
+    `SetAbilityUpgraded(element, upgraded)` on the view, so an L5 that changes WHAT the act makes changes the
+    card's part, not only its mark. A rebind `old=` step is retired once its icon's Image becomes a container
+    (the sprite is cleared, so no reference remains to keep).
+39. **The judging sheet is declared in the spec, not scripted per round.** Every options and states sheet of
+    rounds 3-4 was a scratch script; a session without them would have rebuilt the sheet machinery before drawing
+    a line. `CARDS` in the spec names a card's parts, its states (part, colour key, alpha), its plate gauge per
+    state and the sprite it replaced (with the commit to read it from), and `author.py` draws
+    `Docs/Icons/sheets/<hull>_<card>.png` on every run (`states.py`). Colour keys are the HUD's own: domain,
+    shielded, blue, white, lime, danger - sampled from the palette and the bars config, never typed in. An options
+    round is the same sheet with one entry per candidate. SKILL.md §4.5 is the eight-step wiring recipe a session
+    follows for a live card.
+40. **The kit draws more than ability rows: the Toy Box portraits (2026-10-26).** Garrett: "update the images on the
+    toybox so they are production ready. they should communicate their utility and adhere to the larger design
+    principles." The seven toy cards showed the codex baker's `ToyEmblem` disc (a ring round spheres in the toy's
+    accent), seven near-identical rings that named nothing. `Tools/Build/icon_kit/toy_portraits.py` now draws one
+    glyph per toy in this language and writes it into the file the codex page points at (guid kept; a page with no
+    image gets one through the "filled only when empty" tier), with its own card-mock sheet
+    (`Docs/Icons/sheets/toybox.png`) and `--check`. Three things it taught: (a) **the same grammar for the same act**
+    - the three "pick one" toys (vessel, domain, world) all put the thing you get SOLID and the alternatives as
+    ghosts, so the row reads as one family; (b) **two hulls side by side must share a view** (both plan) or they
+    read as two kinds of thing, and a hull's widest span (the Dolphin's wings) decides where an arrow can go - it
+    went between the tails, not across the middle; (c) **the 60 px gates are not a portrait's gates**: a 128 px card
+    portrait is exempted from `components`/`gap` BY NAME with the reason, never by loosening `verify.py`. The
+    generator that made the old art (`ToolPortraitBuilder`) was retired and the baker stands down on Tool pages, so
+    a re-bake cannot put the spheres back.

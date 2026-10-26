@@ -64,7 +64,6 @@ S = dict(
 # Rev 10 (section 56): the pilot record window's data.
 VESSEL_LIST = "Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset"   # the Hangar's roster (HangarScreen.ShipList)
 CAPTAIN_LIST = "Assets/_SO_Assets/Captains/Elemental/ElementalCaptains.asset"
-LOCKUP_STYLE_ASSET = "Assets/Resources/AbilityLockupStyle.asset"
 SOUNDTRACK_ASSET = "Assets/_SO_Assets/Audio/Soundtrack.asset"
 SOUNDTRACK_GUID = "6a1c3e5b7d9f4b2a8c0e1f3a5b7c9d10"
 # The nine tracks in event:/Music/Music today (the FMOD project's Music event, a random multi-sound).
@@ -94,9 +93,12 @@ def fmod_music_sounds():
             names.add(os.path.splitext(m.group(1))[0].strip().lower())
     return names
 VESSEL_ROWS, PILOT_TILES = 8, 4
-VESSEL_PITCH, VESSEL_ROW_H = 38, 32
+VESSEL_PITCH, VESSEL_ROW_H = 33, 30         # Rev 13: eight rows in the 326-tall panel under the favourites
+STUDIO_PITCH, STUDIO_ROW_H = 46, 40         # Rev 13: nine track rows in the 664-tall Audio Studio column
 FAV_STATS = (("Games", "Games"), ("Drift", "Best drift"), ("Boost", "Best boost"), ("Prisms", "Prisms broken"))
 PAD_B, PAD_LB, PAD_RB = 5, 10, 11            # UnityEngine.InputSystem.LowLevel.GamepadButton
+REPLAYS_MODAL = 19                           # ScreenSwitcher.ModalWindows.REPLAYS - My Replays (author_menu_replays.py)
+OPEN_MODAL = C.script("OpenModalButton")
 SLIDER = "67db9e8f0e2ae9c40bc1e2b64352a6b4"
 PACKAGE = C.PACKAGE | {SLIDER}
 C.STUB_KIND.update({"track": (114, S["track"]), "slider": (114, SLIDER), "screen": (114, S["screen"])})
@@ -159,13 +161,17 @@ CARD_W, CARD_H, TRACK_H, GAP = 352, 670, 50, 20
 ART_H = 190
 
 
-def build_quest_card():
-    root = N("root", "QuestCard", R(size=(CARD_W, CARD_H)))
-    root.add("cg", 225, canvas_group(True)).add("le", 114, le(mw=0, fw=1, ph=CARD_H))
+def build_quest_card(name="QuestCard", card_w=CARD_W, card_h=CARD_H, art_h=ART_H, gap=GAP, compact=False):
+    """One quest card on the track. `compact` is the Voyage window's (Docs/MENU_REDESIGN_B.md section 71, the approved
+    R17 J board: five across an episode): tighter padding, the name in Body, the goal rows without their title."""
+    pad = 16 if compact else 20
+    cw = card_w - 2 * pad
+    root = N("root", name, R(size=(card_w, card_h)))
+    root.add("cg", 225, canvas_group(True)).add("le", 114, le(mw=0, fw=1, ph=card_h))
     root.add("in", 114, M.entrance("Rise", by_sibling=True))
 
     # The track: the segment back to the previous card's node, then this card's node.
-    seg = image_node(root, "Segment", "Segment", TL(-(CARD_W + GAP) // 2, 15, CARD_W + GAP, 2), "SurfaceDark")
+    seg = image_node(root, "Segment", "Segment", TL(-(card_w + gap) // 2, 15, card_w + gap, 2), "SurfaceDark")
     seg.comps = [x for x in seg.comps if x[0] != "th"]
     seg.add("mask", 114, A.rect_mask())
     spark = seg.child(N("Segment/SparkGroup", "SparkGroup", STRETCH))
@@ -187,13 +193,12 @@ def build_quest_card():
         .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
     border.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
 
-    clip = body.child(N("Body/Art", "Art", TL(2, 2, CARD_W - 4, ART_H)))
+    clip = body.child(N("Body/Art", "Art", TL(2, 2, card_w - 4, art_h)))
     clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))) \
         .add("th", 114, H.themed("SurfaceBlack")).add("mask", 114, A.rect_mask())
     art = clip.child(N("Body/Art/Image", "Image", STRETCH))
     art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, C.SQUIRREL_ICON)) \
-        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], "")) \
-        .add("amb", 114, M.ambient("Pan", period=14, amplitude=0.04))
+        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], ""))
     label(clip.child(N("Body/Art/Numeral", "Numeral", TL(16, 6, 120, 54))), "01", "Display", "TextLight")
     chip = clip.child(N("Body/Art/Completed", "Completed", TR(12, 14, 112, 26)))
     chip.add("cg", 225, canvas_group(False))
@@ -204,34 +209,36 @@ def build_quest_card():
     lk = image_node(lock, "Body/Art/Lock/Glyph", "Glyph", STRETCH, "TextLight", K.chrome_sprite("chrome_lock"),
                     preserve=True)
 
-    y = ART_H + 22
-    label(body.child(N("Body/State", "State", TL(20, y, 312, 18))), "In progress", "Label", "NeutralLightest")
-    label(body.child(N("Body/Title", "Title", TL(20, y + 22, 312, 30))), "QUEST", "H3", "TextLight")
-    label(body.child(N("Body/Description", "Description", TL(20, y + 58, 312, 44))), "", "BodySmall",
-          "NeutralLightest", valign="top", wrap=True)
-    C.themed_line(body, "Body/Rule", "Rule", TL(20, y + 110, 312, 1), "SurfaceDark")
+    y = art_h + (16 if compact else 22)
+    label(body.child(N("Body/State", "State", TL(pad, y, cw, 18))), "In progress", "Label", "NeutralLightest")
+    label(body.child(N("Body/Title", "Title", TL(pad, y + (20 if compact else 22), cw, 26 if compact else 30))), "QUEST",
+          "Body" if compact else "H3", "TextLight")
+    label(body.child(N("Body/Description", "Description", TL(pad, y + (48 if compact else 58), cw, 40 if compact else 44))), "",
+          "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    C.themed_line(body, "Body/Rule", "Rule", TL(pad, y + (94 if compact else 110), cw, 1), "SurfaceDark")
 
-    goals = body.child(N("Body/Goals", "Goals", TL(20, y + 130, 312, 120)))
+    goals = body.child(N("Body/Goals", "Goals", TL(pad, y + (106 if compact else 130), cw, 80 if compact else 120)))
     goals.add("cg", 225, canvas_group(True))
-    section_label(goals, "Body/Goals/Title", "Title", "Goals", TL(0, 0, 200, 18), "NeutralLightest")
+    if not compact:
+        section_label(goals, "Body/Goals/Title", "Title", "Goals", TL(0, 0, 200, 18), "NeutralLightest")
     for i in range(2):
         k = f"Body/Goals/Row{i + 1}"
-        row = goals.child(N(k, f"Goal{i + 1}", TL(0, 26 + i * 46, 312, 42)))
+        row = goals.child(N(k, f"Goal{i + 1}", TL(0, i * 40, cw, 36) if compact else TL(0, 26 + i * 46, 312, 42)))
         row.add("cg", 225, canvas_group(True))
         done = image_node(row, f"{k}/Done", "Done", TL(0, 4, 14, 14), "Cta", K.chrome_sprite("chrome_confirm"), preserve=True)
         done.comps = [x for x in done.comps if x[0] != "th"]
         pend = image_node(row, f"{k}/Pending", "Pending", TL(3, 7, 9, 9), "TextLight")
         pend.comps = [x for x in pend.comps if x[0] != "th"]
         pend.rot = 45
-        cap = row.child(N(f"{k}/Caption", "Caption", TL(24, 2, 288, 16)))
+        cap = row.child(N(f"{k}/Caption", "Caption", TL(24, 2, cw - 24, 16)))
         cap.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("UNLOCK INTENSITY 3", "Label", tok("NeutralLightest"))) \
             .add("kt", 114, K.kit_text("Label", "NeutralLightest"))
-        desc = row.child(N(f"{k}/Description", "Description", TL(24, 20, 288, 22)))
+        desc = row.child(N(f"{k}/Description", "Description", TL(24, 18 if compact else 20, cw - 24, 18 if compact else 22)))
         desc.add("cr", 222, K.canvas_renderer()) \
             .add("tmp", 114, A.ellipsis(text("Play Intensity 2 to unlock", "BodySmall", tok("TextLight")))) \
             .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
 
-    foot = body.child(N("Body/Footer", "Footer", R((0, 0), (1, 0), (0, 20), (-40, 100), (0.5, 0))))
+    foot = body.child(N("Body/Footer", "Footer", R((0, 0), (1, 0), (0, pad), (-2 * pad, 100), (0.5, 0))))
     claim = foot.child(N("Body/Footer/Claim", "Claim", R((0, 0), (1, 0), (0, 0), (0, 54), (0.5, 0))))
     claim.add("cg", 225, canvas_group(False))
     claim.children.append(Inst("ClaimButton", "KitButton", "ClaimButton", STRETCH,
@@ -243,7 +250,7 @@ def build_quest_card():
         bar = image_node(play, f"Body/Footer/Play/Bar{i + 1}", f"Bar{i + 1}", R((0, 1), None, (i * 12, -40), (8, h), (0, 0)),
                          "SurfaceDark")
         bar.comps = [x for x in bar.comps if x[0] != "th"]
-    mt = play.child(N("Body/Footer/Play/Meter", "Meter", R((0, 1), None, (58, -28), (220, 22), (0, 0.5))))
+    mt = play.child(N("Body/Footer/Play/Meter", "Meter", R((0, 1), None, (58, -28), (min(220, cw - 58), 22), (0, 0.5))))
     mt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Intensity 1 of 4", "Body", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("Body", "TextLight"))
     w, h = K.button_size("PLAY QUEST", small=True)
@@ -305,94 +312,76 @@ STATS = (("Crystals", "Crystals", "0", 0, 0), ("Games completed", "Games", "0", 
          ("Flight time", "Flight", "0m", 0, 1), ("Sessions", "Sessions", "0", 1, 1))
 
 
+# Rev 13 (Shombith, 2026-10-25, §69): "let the profile be the expanded version completely". The Profile has no tab: it
+# opens from the Home pilot (or Y) over Home, with Back. The pilot record is no longer a window over the screen - it IS
+# the screen, under a full-width pilot card. Episodes and the quest track moved to the Voyage window
+# (author_menu_mission.py). Layout, canvas units from the top: header 100, pilot card 168, the record's panels 376.
+PILOT_Y, PILOT_H = 168, 190
+STATS = (("Fly time", "Flight", "0m"), ("Games", "Games", "0"), ("Sessions", "Sessions", "0"), ("Crystals", "Crystals", "0"),
+         ("Pilot since", "Since", ""))
+
+
 def build_view():
     root = N("root", "ProfileView", STRETCH)
-    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.72)
+    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.95)
+    # §67: the sea lines over the veil (Sea_Window.mat).
+    root.child(M.window_sea_node("VeilSea", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
-    # The quest row comes first in hierarchy: Refocus lands on the first live Selectable, and the
-    # frontier card's Claim or Play is the control that matters here.
-    quests = root.child(N("Quests", "Quests", R((0, 1), (1, 1), (0, -322), (-80, 718), (0.5, 1))))
-    quests.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    section_label(quests, "Quests/Title", "Title", "Quests", TL(0, 8, 120, 18))
-    label(quests.child(N("Quests/Summary", "Summary", TR(0, 8, 240, 18))), "0 of 5 complete", "Label", "NeutralLightest",
-          align="right")
-    bar = quests.child(N("Quests/Bar", "Bar", R((0, 1), (1, 1), ((88 - 168) / 2, -16), (-(88 + 168), 4), (0.5, 0.5))))
-    bar.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
-    fa = bar.child(N("Quests/Bar/FillArea", "FillArea", STRETCH))
-    fl = fa.child(N("Quests/Bar/FillArea/Fill", "Fill", R((0, 0), (0.2, 1), (0, 0), (0, 0))))
-    fl.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))) \
-        .add("th", 114, H.themed("ControlActive"))
-    bar.add("slider", 114, lambda ctx, go: K.mono(go, SLIDER,
-            K.SELECTABLE_FIELDS.replace("  m_Interactable: 1\n", "  m_Interactable: 0\n")
-            + f"  m_TargetGraphic: {ref(ctx.c('Quests/Bar', 'img'))}\n"
-            f"  m_FillRect: {ref(ctx.rt('Quests/Bar/FillArea/Fill'))}\n  m_HandleRect: {{fileID: 0}}\n"
-            "  m_Direction: 0\n  m_MinValue: 0\n  m_MaxValue: 5\n  m_WholeNumbers: 1\n  m_Value: 1\n"
-            "  m_OnValueChanged:\n    m_PersistentCalls:\n      m_Calls: []\n", enabled=False))
-    row = quests.child(N("Quests/Row", "Row", R((0, 0), (1, 1), (0, -24), (0, -48))))
-    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), GAP, 0, (1, 1), (1, 0)))
+    # The record first in hierarchy: Refocus lands on the first live Selectable (the favourite pilot's CHANGE).
+    build_record(root)
 
-    card = root.child(N("Pilot", "Pilot", TL(40, 108, 1180, 196)))
+    head = root.child(N("Header", "Header", TL(40, 96, 900, 64)))
+    head.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", distance=10))
+    label(head.child(N("Header/Eyebrow", "Eyebrow", TL(0, 4, 300, 18))), "Profile", "Label", "NeutralLightest")
+    label(head.child(N("Header/Title", "Title", TL(0, 24, 600, 40))), "Your pilot", "H2", "TextLight")
+    w, h = K.button_size("BACK", small=True)
+    root.children.append(pad_button("Back", "BackButton", "Default", "BACK", TR(40, 108, w, h), PAD_B, "Record"))
+    # My Replays (Yash, 2026-10-26: "inside profiles should have my replay area where I can choose the last 10
+    # games"): left of BACK, opening ModalWindows.REPLAYS through OpenModalButton - the window names the player's
+    # last games and plays one inside its arena (Docs/REPLAYS.md section 6).
+    rw, rh = K.button_size("MY REPLAYS", small=True)
+    root.children.append(Inst("Replays", "KitButtonSmall", "ReplaysButton", TR(40 + w + 12, 108, rw, rh),
+                              K.button_mods("KitButtonSmall", "Default", False, "MY REPLAYS", small=True),
+                              added=[("open", 114, lambda ctx, go: mono(go, OPEN_MODAL,
+                                      f"  target: {REPLAYS_MODAL}\n  screenSwitcher: {{fileID: 0}}\n"))]))
+
+    card = root.child(N("Pilot", "Pilot", R((0, 1), (1, 1), (0, -PILOT_Y), (-80, PILOT_H), (0.5, 1))))
     card.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
     frame(card, "Pilot/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    card.child(M.grid_node("Pilot/Grid"))
+    card.child(M.panel_sea_node("Pilot/Grid"))
     M.bracket_nodes(card, "Pilot/Bracket")
-    av = card.child(N("Pilot/Avatar", "Avatar", TL(30, 22, 152, 152)))
+    av = card.child(N("Pilot/Avatar", "Avatar", TL(30, 19, 152, 152)))
     image_node(av, "Pilot/Avatar/Ring", "Ring", STRETCH, "SurfaceLight", K.kit_sprite("kit_oct_fill"), raycast=True)
     image_node(av, "Pilot/Avatar/Back", "Back", R((0, 0), (1, 1), (0, 0), (-6, -6)), "SurfaceDark", K.kit_sprite("kit_oct_fill"))
     icon = art_node(av, "Pilot/Avatar/Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-10, -10)), A.AVATAR_PLACEHOLDER, preserve=True)
-    icon.add("amb", 114, M.ambient("Float", period=4.2, amplitude=4))
     av.add("button", 114, C.plain_button(c("Pilot/Avatar/Ring", "img"))).add("audio", 114, A.menu_audio(11))
-    label(card.child(N("Pilot/Eyebrow", "Eyebrow", TL(210, 36, 300, 18))), "Pilot", "Label", "NeutralLightest")
-    nm = card.child(N("Pilot/Name", "Name", TL(210, 56, 400, 56)))
+    label(card.child(N("Pilot/Eyebrow", "Eyebrow", TL(210, 30, 300, 18))), "Pilot", "Label", "NeutralLightest")
+    nm = card.child(N("Pilot/Name", "Name", TL(210, 50, 400, 56)))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Pilot", "Display", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("Display", "TextLight"))
-    btns = card.child(N("Pilot/Buttons", "Buttons", TL(210, 124, 400, 40)))
+    # Rev 13: the name opens the name editor (the avatar opens the avatar editor). Its text takes the raycast.
+    nm.comps = [(k, cid, (lambda b: (lambda ctx, go: b(ctx, go).replace("  m_RaycastTarget: 0\n", "  m_RaycastTarget: 1\n", 1)))(body))
+                if k == "tmp" else (k, cid, body) for k, cid, body in nm.comps]
+    nm.add("button", 114, C.plain_button(c("Pilot/Name", "tmp")))
+    btns = card.child(N("Pilot/Buttons", "Buttons", TL(210, 118, 400, 40)))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 12, 3, (0, 0), (0, 0)))
-    for key, cap in (("ChangeAvatar", "CHANGE AVATAR"), ("Rename", "RENAME"), ("Expand", "EXPAND")):
+    for key, cap in (("ChangeAvatar", "CHANGE AVATAR"), ("Rename", "RENAME")):
         w, h = K.button_size(cap, small=True)
         btns.children.append(kit_button(key, key, "Default", cap, R((0, 0.5), None, (0, 0), (w, h), (0, 0.5)),
                                         opaque=False, small=True))
-    C.themed_line(card, "Pilot/Divider", "Divider", TL(620, 34, 1, 128), "SurfaceDark")
-    for cap, key, val, col, rw in STATS:
-        x, y = 650 + col * 262, 40 + rw * 66
-        label(card.child(N(f"Pilot/{key}Label", f"{key}Label", TL(x, y, 240, 16))), cap, "Label", "NeutralLightest")
+    C.themed_line(card, "Pilot/Divider", "Divider", TL(630, 30, 1, 130), "SurfaceDark")
+    for i, (cap, key, val) in enumerate(STATS):
+        x = 664 + i * 230
+        C.themed_line(card, f"Pilot/{key}Rule", f"{key}Rule", TL(x, 52, 2, 84), "SurfaceDark")
+        label(card.child(N(f"Pilot/{key}Label", f"{key}Label", TL(x + 18, 56, 200, 16))), cap, "Label", "NeutralLightest")
         if key == "Crystals":
-            image_node(card, "Pilot/CrystalIcon", "CrystalIcon", TL(x, y + 26, 18, 18), "ElementMass",
+            image_node(card, "Pilot/CrystalIcon", "CrystalIcon", TL(x + 18, 90, 18, 18), "Purchase",
                        K.chrome_sprite("chrome_crystal"), preserve=True)
-            v = card.child(N("Pilot/CrystalsValue", "CrystalsValue", TL(x + 26, y + 18, 220, 34)))
-            label(v, val, "H2", "ElementMass")
+            v = card.child(N("Pilot/CrystalsValue", "CrystalsValue", TL(x + 44, 80, 180, 40)))
+            label(v, val, "H1", "TextLight")
             v.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Pilot/CrystalsValue', 'tmp'))}\n"))
         else:
-            label(card.child(N(f"Pilot/{key}Value", f"{key}Value", TL(x, y + 18, 240, 34))), val, "H2", "TextLight")
-
-    ep = root.child(N("Episodes", "Episodes", R((1, 1), None, (-40, -108), (640, 196), (1, 1))))
-    ep.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
-    A.ring_node(ep, "Episodes/FocusRing", 14)
-    efill, ebord = A.frame_nodes(ep, "Episodes/Frame", 14, "SurfaceVeryDark", "SurfaceDark", raycast=True, themed_paint=False)
-    M.bracket_nodes(ep, "Episodes/Bracket")
-    lk = ep.child(N("Episodes/Lock", "Lock", R((0, 0.5), None, (76, 0), (84, 72))))
-    image_node(lk, "Episodes/Lock/Hex", "Hex", STRETCH, "SurfaceLight", K.kit_sprite("kit_hex_line2"))
-    image_node(lk, "Episodes/Lock/Glyph", "Glyph", R((0.5, 0.5), None, (0, 0), (24, 28)), "NeutralLightest",
-               K.chrome_sprite("chrome_lock"), preserve=True)
-    cap = ep.child(N("Episodes/Caption", "Caption", R((0, 0.5), None, (144, 16), (440, 18), (0, 0.5))))
-    label(cap, "Episodes", "Label", "NeutralLightest")
-    line = ep.child(N("Episodes/Line", "Line", R((0, 0.5), None, (144, -14), (460, 30), (0, 0.5))))
-    line.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Arrive with the full release", "H3", tok("NeutralLightest"))) \
-        .add("kt", 114, K.kit_text("H3", "NeutralLightest", driven=True))
-    ep.add("tile", 114, A.tile_body(c("Episodes/FocusRing", "img"), c("Episodes/Frame/Fill", "img"),
-                                    c("Episodes/Frame/Border", "img"), 14, primary=[c("Episodes/Line", "tmp")],
-                                    unsel_primary="NeutralLightest", lock=c("Episodes/Lock/Glyph", "img")))
-    ep.comps[-1] = ("tile", 114, locked_tile(ep.comps[-1][2]))
-    ep.add("affordance", 114, lambda ctx, go: mono(go, S["affordance"], "  surface: 1\n"))
-    ep.add("availability", 114, lambda ctx, go: mono(go, S["availability"],
-           "  availability: 1\n"
-           f"  lockedOverlay: {ref(ctx.go('Episodes/Lock'))}\n  unavailableOverlay: {{fileID: 0}}\n"
-           f"  label: {ref(ctx.c('Episodes/Line', 'tmp'))}\n"
-           "  unavailableLabelColor: {r: 0.36078432, g: 0.37254903, b: 0.4392157, a: 1}\n"
-           "  dimOwnGraphics: 0\n  dimTint: {r: 1, g: 1, b: 1, a: 0.35}\n"
-           "  lockedMessage: Episodes arrive with the full release.\n"))
-    ep.add("shake", 114, M.shake()).add("audio", 114, A.menu_audio(11))
-    build_record(root)
+            label(card.child(N(f"Pilot/{key}Value", f"{key}Value", TL(x + 18, 80, 200, 40))), val, "H1", "TextLight")
     return root
 
 
@@ -442,28 +431,13 @@ RECORD_TINT = 0.6
 
 
 def build_record(root):
-    W_, X2 = 1000, 1080
+    W_, X2 = 1000, 1060
+    # The record's panels, laid out from the top of the canvas (the Record rect starts under the nav at 84).
+    top = lambda y: y - 84
     rec = root.child(N("Record", "Record", R((0, 0), (1, 1), (0, -42), (0, -84))))
     rec.add("cg", 225, canvas_group(False))
-    image_node(rec, "Record/Solid", "Solid", STRETCH, "SurfaceBlack", raycast=True)
-    # A navy wash over the solid so the record reads as the menu's surface, not a black hole (the owner, 2026-10-18).
-    image_node(rec, "Record/Tint", "Tint", STRETCH, "SurfaceDark", alpha=RECORD_TINT)
-    rec.child(M.window_lattice_node("Record/Lattice"))
-    label(rec.child(N("Record/Eyebrow", "Eyebrow", TL(40, 26, 400, 18))), "Pilot record", "Label", "Cta")
-    nm = rec.child(N("Record/Name", "Name", TL(40, 48, 900, 52)))
-    nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Pilot", "H1", tok("TextLight")))) \
-        .add("kt", 114, K.kit_text("H1", "TextLight"))
-    w, h = K.button_size("CLOSE", small=True)
-    rec.children.append(pad_button("RecordClose", "CloseButton", "Cancel", "CLOSE", TR(40, 40, w, h), PAD_B, "Record"))
-
-    # Stats
-    st = panel(rec, "Record/Stats", "Stats", TL(40, 120, W_, 110), "", "NeutralLightest")
-    for i, (key, cap, token) in enumerate((("Flight", "Fly time", "ElementTime"), ("Games", "Games", "ElementCharge"),
-                                           ("Sessions", "Sessions", "ElementSpace"), ("Since", "Pilot since", "ElementMass"))):
-        stat(st, f"Record/Stats/{key}", cap, token, 30 + i * 245)
-
     # Favourites
-    fav = panel(rec, "Record/Favourites", "Favourites", TL(40, 250, W_, 320), "Favourites", "ElementMass")
+    fav = panel(rec, "Record/Favourites", "Favourites", TL(40, top(376), W_, 320), "Favourites", "NeutralLightest")
     fv = fav.child(N("Record/Favourites/Vessel", "Vessel", TL(24, 52, 460, 248)))
     frame(fv, "Record/Favourites/Vessel/Frame", 10, "SurfaceBlack", "SurfaceDark", fill_alpha=0.6)
     label(fv.child(N("Record/Favourites/Vessel/Caption", "Caption", TL(20, 18, 300, 16))), "Favourite vessel", "Label", "NeutralLightest")
@@ -483,14 +457,14 @@ def build_record(root):
     label(fp.child(N("Record/Favourites/Pilot/Line", "Line", TL(20, 84, 260, 44))), "", "BodySmall", "NeutralLightest",
           valign="top", wrap=True)
     pr = fp.child(N("Record/Favourites/Pilot/Portrait", "Portrait", R((1, 0), None, (-20, 20), (140, 140), (1, 0))))
-    image_node(pr, "Record/Favourites/Pilot/Portrait/Ring", "Ring", STRETCH, "Selection", K.kit_sprite("kit_oct_fill"))
+    image_node(pr, "Record/Favourites/Pilot/Portrait/Ring", "Ring", STRETCH, "NeutralLightest", K.kit_sprite("kit_oct_fill"))
     image_node(pr, "Record/Favourites/Pilot/Portrait/Back", "Back", R((0, 0), (1, 1), (0, 0), (-6, -6)), "SurfaceDark", K.kit_sprite("kit_oct_fill"))
     art_node(pr, "Record/Favourites/Pilot/Portrait/Image", "Image", R((0, 0), (1, 1), (0, 0), (-10, -10)), None, preserve=True)
     w, h = K.button_size("CHANGE", small=True)
-    fp.children.append(small("ChangePilot", "ChangePilot", "Space", "CHANGE", R((0, 0), None, (20, 20), (w, h), (0, 0))))
+    fp.children.append(small("ChangePilot", "ChangePilot", "Default", "CHANGE", R((0, 0), None, (20, 20), (w, h), (0, 0))))
 
     # Fly time by vessel
-    by = panel(rec, "Record/ByVessel", "ByVessel", TL(40, 590, W_, 380), "Fly time by vessel", "ElementTime")
+    by = panel(rec, "Record/ByVessel", "ByVessel", TL(40, top(714), W_, 326), "Fly time by vessel", "NeutralLightest")
     for i in range(VESSEL_ROWS):
         k = f"Record/ByVessel/Row{i}"
         row = by.child(N(k, f"Row{i}", TL(24, 52 + i * VESSEL_PITCH, W_ - 48, VESSEL_ROW_H)))
@@ -500,32 +474,32 @@ def build_record(root):
         track = row.child(N(f"{k}/Track", "Track", R((0, 0.5), (1, 0.5), (110, 0), (-420, 6))))
         track.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
         fill = track.child(N(f"{k}/Track/Fill", "Fill", R((0, 0), (0.5, 1), (0, 0), (0, 0), (0, 0.5))))
-        fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementTime")))
+        fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive")))
         label(row.child(N(f"{k}/Time", "Time", R((1, 0.5), None, (0, 0), (160, 26), (1, 0.5)))), "", "Data", "TextLight", align="right")
     label(by.child(N("Record/ByVessel/Empty", "Empty", TL(24, 60, W_ - 48, 24))), "", "Body", "NeutralLightest")
 
-    build_studio(rec, X2)
+    build_studio(rec, X2, top(376))
     build_picker(rec)
     rec.add("record", 114, lambda ctx, go: mono(go, S["record"], record_body(ctx)))
 
 
-def build_studio(rec, x):
+def build_studio(rec, x, y):
     k0 = "Record/Studio"
-    st = panel(rec, k0, "Studio", TL(x, 120, 800, 850), "Audio Studio", "ElementTime")
-    label(st.child(N(f"{k0}/Count", "Count", TR(24, 20, 360, 18))), "", "Label", "ElementTime", align="right")
+    st = panel(rec, k0, "Studio", TL(x, y, 820, 664), "Audio Studio", "NeutralLightest")
+    label(st.child(N(f"{k0}/Count", "Count", TR(24, 20, 360, 18))), "", "Label", "NeutralLightest", align="right")
     label(st.child(N(f"{k0}/Title", "Title", TL(24, 52, 750, 40))), "", "H2", "TextLight")
     label(st.child(N(f"{k0}/Artist", "Artist", TL(24, 94, 750, 20))), "", "BodySmall", "NeutralLightest")
     tr = st.child(N(f"{k0}/Progress", "Progress", TL(24, 126, 752, 3)))
     tr.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
     pf = tr.child(N(f"{k0}/Progress/Fill", "Fill", R((0, 0), (0, 1), (0, 0), (0, 0), (0, 0.5))))
-    pf.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementTime"))).add("th", 114, H.themed("ElementTime"))
+    pf.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))).add("th", 114, H.themed("ControlActive"))
     row = st.child(N(f"{k0}/Transport", "Transport", TL(24, 146, 752, 40)))
     # Each button is sized for the longest word AudioStudioPanel can put on it (Shuffle: on / off, Start / Stop music),
     # not its first caption, and the row controls the widths - sized for the caption, they overlapped (2026-10-18).
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (1, 0), (0, 0)))
-    for key, cap, variant, words in (("Back", "BACK", "Space", ()), ("Pause", "PAUSE", "Play", ("PLAY",)),
-                                     ("Skip", "SKIP", "Space", ()), ("Shuffle", "SHUFFLE", "Time", ("SHUFFLE: ON", "SHUFFLE: OFF")),
-                                     ("Stop", "STOP MUSIC", "Mass", ("START MUSIC",))):
+    for key, cap, variant, words in (("Back", "BACK", "Default", ()), ("Pause", "PAUSE", "Default", ("PLAY",)),
+                                     ("Skip", "SKIP", "Default", ()), ("Shuffle", "SHUFFLE", "Default", ("SHUFFLE: ON", "SHUFFLE: OFF")),
+                                     ("Stop", "STOP MUSIC", "Cancel", ("START MUSIC",))):
         w = max(K.button_size(x, small=True)[0] for x in (cap,) + words) + 8
         h = K.button_size(cap, small=True)[1]
         holder = row.child(N(f"{k0}/Transport/{key}", key, R((0, 0.5), None, (0, 0), (w, h), (0, 0.5))))
@@ -533,21 +507,21 @@ def build_studio(rec, x):
         holder.children.append(small(f"Studio{key}", f"{key}Button", variant, cap, STRETCH, opaque=key == "Pause"))
     label(st.child(N(f"{k0}/Notice", "Notice", TL(24, 198, 752, 40))),
           "Picking tracks arrives with the next music update. Until then the soundtrack plays at random.",
-          "BodySmall", "ElementCharge", valign="top", wrap=True)
+          "BodySmall", "NeutralLightest", valign="top", wrap=True)
     for i in range(len(TRACKS)):
         k = f"{k0}/Row{i}"
-        r = st.child(N(k, f"Row{i}", TL(24, 250 + i * 64, 752, 54)))
+        r = st.child(N(k, f"Row{i}", TL(24, 250 + i * STUDIO_PITCH, 772, STUDIO_ROW_H)))
         r.add("cg", 225, canvas_group(True))
         tile_nodes(r, k)
         tick = r.child(N(f"{k}/Tick", "Tick", R((0, 0.5), None, (30, 0), (26, 26))))
-        image_node(tick, f"{k}/Tick/Box", "Box", STRETCH, "ElementTime", K.kit_sprite("kit_sliver10_line1"), sliced=True, raycast=True)
-        mark = image_node(tick, f"{k}/Tick/Mark", "Mark", R((0.5, 0.5), None, (0, 0), (18, 18)), "ElementTime",
+        image_node(tick, f"{k}/Tick/Box", "Box", STRETCH, "NeutralLightest", K.kit_sprite("kit_sliver10_line1"), sliced=True, raycast=True)
+        mark = image_node(tick, f"{k}/Tick/Mark", "Mark", R((0.5, 0.5), None, (0, 0), (18, 18)), "Cta",
                           K.chrome_sprite("chrome_confirm"), preserve=True)
         tick.add("button", 114, C.plain_button(c(f"{k}/Tick/Box", "img")))
         label(r.child(N(f"{k}/Number", "Number", R((0, 0.5), None, (64, 0), (40, 24), (0, 0.5)))), f"{i + 1:02d}", "Data", "NeutralLightest")
         label(r.child(N(f"{k}/Title", "Title", R((0, 0.5), (1, 0.5), (110, 0), (-240, 26), (0, 0.5)))), TRACKS[i][1], "Body", "TextLight")
         label(r.child(N(f"{k}/Playing", "Playing", R((1, 0.5), None, (-20, 0), (140, 18), (1, 0.5)), active=False)),
-              "Playing", "Label", "ElementTime", align="right")
+              "Playing", "Label", "ControlActive", align="right")
         r.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10,
                                        primary=[c(f"{k}/Title", "tmp")]))
     st.add("studio", 114, lambda ctx, go: mono(go, S["studio"], studio_body(ctx)))
@@ -559,14 +533,14 @@ def build_picker(rec):
     pk.add("cg", 225, canvas_group(False))
     image_node(pk, f"{k0}/Solid", "Solid", STRETCH, "SurfaceBlack", raycast=True)
     image_node(pk, f"{k0}/Tint", "Tint", STRETCH, "SurfaceDark", alpha=RECORD_TINT)
-    pk.child(M.window_lattice_node(f"{k0}/Lattice"))
-    label(pk.child(N(f"{k0}/Eyebrow", "Eyebrow", R((0.5, 1), None, (0, -90), (600, 18)))), "Profile", "Label", "ElementSpace", align="center")
+    pk.child(M.window_sea_node(f"{k0}/Lattice", name="Sea"))
+    label(pk.child(N(f"{k0}/Eyebrow", "Eyebrow", R((0.5, 1), None, (0, -90), (600, 18)))), "Profile", "Label", "NeutralLightest", align="center")
     label(pk.child(N(f"{k0}/Title", "Title", R((0.5, 1), None, (0, -126), (900, 52)))), "Favourite pilot", "H1", "TextLight", align="center")
     vs = pk.child(N(f"{k0}/Vessel", "Vessel", R((0.5, 1), None, (0, -196), (700, 44))))
     label(vs.child(N(f"{k0}/Vessel/Name", "Name", R((0.5, 0.5), None, (0, 0), (360, 36)))), "", "H2", "TextLight", align="center")
     for key, cap, pad, ax in (("Prev", "LB", PAD_LB, 0), ("Next", "RB", PAD_RB, 1)):
         w, h = K.button_size(cap, small=True)
-        vs.children.append(pad_button(f"Picker{key}", f"{key}Button", "Space", cap,
+        vs.children.append(pad_button(f"Picker{key}", f"{key}Button", "Default", cap,
                                       R((ax, 0.5), None, (0, 0), (w, h), (ax, 0.5)), pad, k0))
     tw, th, gap = 300, 340, 40
     x0 = -(PILOT_TILES * tw + (PILOT_TILES - 1) * gap) // 2
@@ -581,12 +555,12 @@ def build_picker(rec):
         label(t.child(N(f"{k}/Name", "Name", R((0.5, 1), None, (0, -196), (tw - 30, 34), (0.5, 1)))), "", "H2", "TextLight", align="center")
         label(t.child(N(f"{k}/Line", "Line", R((0.5, 1), None, (0, -236), (tw - 30, 20), (0.5, 1)))), "", "BodySmall", "NeutralLightest", align="center")
         label(t.child(N(f"{k}/Favourite", "Favourite", R((0.5, 1), None, (0, -270), (tw - 30, 18), (0.5, 1)), active=False)),
-              "Favourite", "Label", "ElementCharge", align="center")
+              "Favourite", "Label", "NeutralLightest", align="center")
         t.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 14,
                                        primary=[c(f"{k}/Name", "tmp")]))
     btns = pk.child(N(f"{k0}/Buttons", "Buttons", R((0.5, 0.5), None, (0, -230), (520, 40))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 16, 4, (0, 0), (0, 0)))
-    for key, cap, variant in (("Set", "SET AS FAVOURITE", "Play"), ("Back", "BACK", "Cancel")):
+    for key, cap, variant in (("Set", "SET AS FAVOURITE", "Cta"), ("Back", "BACK", "Cancel")):
         w, h = K.button_size(cap, small=True)
         holder = btns.child(N(f"{k0}/Buttons/{key}", key, R((0, 0.5), None, (0, 0), (w, h), (0, 0.5))))
         holder.add("le", 114, le(pw=w, ph=h))
@@ -603,15 +577,12 @@ def record_body(ctx):
         f"    fillImage: {ref(ctx.c(f'Record/ByVessel/Row{i}/Track/Fill', 'img'))}\n"
         f"    timeText: {ref(ctx.c(f'Record/ByVessel/Row{i}/Time', 'tmp'))}\n" for i in range(VESSEL_ROWS))
     return (f"  group: {ref(ctx.c('Record', 'cg'))}\n"
-            f"  closeButton: {ref(ctx.iref('RecordClose', 'root#button'))}\n"
+            "  closeButton: {fileID: 0}\n"
             f"  picker: {ref(ctx.c('Record/Picker', 'picker'))}\n"
             f"  vessels: {asset_ref(VESSEL_LIST)}\n  captains: {asset_ref(CAPTAIN_LIST)}\n"
-            f"  lockupStyle: {asset_ref(LOCKUP_STYLE_ASSET)}\n"
-            f"  nameText: {ref(ctx.c('Record/Name', 'tmp'))}\n"
-            f"  flightTimeText: {ref(ctx.c('Record/Stats/FlightValue', 'tmp'))}\n"
-            f"  gamesText: {ref(ctx.c('Record/Stats/GamesValue', 'tmp'))}\n"
-            f"  sessionsText: {ref(ctx.c('Record/Stats/SessionsValue', 'tmp'))}\n"
-            f"  sinceText: {ref(ctx.c('Record/Stats/SinceValue', 'tmp'))}\n"
+            f"  vesselBarTint: {K.TOKEN_INDEX['ControlActive']}\n"
+            "  nameText: {fileID: 0}\n  flightTimeText: {fileID: 0}\n  gamesText: {fileID: 0}\n  sessionsText: {fileID: 0}\n"
+            f"  sinceText: {ref(ctx.c('Pilot/SinceValue', 'tmp'))}\n"
             f"  favouriteVesselName: {ref(ctx.c('Record/Favourites/Vessel/Name', 'tmp'))}\n"
             f"  favouriteVesselLine: {ref(ctx.c('Record/Favourites/Vessel/Line', 'tmp'))}\n"
             f"  favouriteVesselIcon: {ref(ctx.c('Record/Favourites/Vessel/Icon', 'img'))}\n"
@@ -675,22 +646,22 @@ def build_now_playing():
     # stops catching clicks once the card hides (the panel's CanvasGroup stops blocking raycasts).
     pn.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
     pn.add("cg", 225, canvas_group(True))
-    frame(pn, "Panel/Frame", 14, "SurfaceVeryDark", "ElementTime", fill_alpha=0.92)
-    image_node(pn, "Panel/Disc", "Disc", TL(18, 18, 56, 56), "ElementTime", K.kit_sprite("kit_oct_fill"))
+    frame(pn, "Panel/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
+    image_node(pn, "Panel/Disc", "Disc", TL(18, 18, 56, 56), "SurfaceLight", K.kit_sprite("kit_oct_fill"))
     image_node(pn, "Panel/DiscCore", "DiscCore", TL(21, 21, 50, 50), "SurfaceBlack", K.kit_sprite("kit_oct_fill"))
-    eq = image_node(pn, "Panel/Eq", "Eq", TL(32, 32, 28, 28), "ElementTime", K.chrome_sprite("chrome_gauge"), preserve=True)
+    eq = image_node(pn, "Panel/Eq", "Eq", TL(32, 32, 28, 28), "TextLight", K.chrome_sprite("chrome_gauge"), preserve=True)
     eq.add("amb", 114, M.ambient("Breathe", period=1.1, amplitude=0.45))
-    label(pn.child(N("Panel/Eyebrow", "Eyebrow", TL(90, 18, 330, 14))), "Now playing", "Label", "ElementTime")
+    label(pn.child(N("Panel/Eyebrow", "Eyebrow", TL(90, 18, 330, 14))), "Now playing", "Label", "NeutralLightest")
     label(pn.child(N("Panel/Title", "Title", TL(90, 36, 330, 28))), "", "H3", "TextLight")
     label(pn.child(N("Panel/Artist", "Artist", TL(90, 66, 330, 18))), "", "BodySmall", "NeutralLightest")
     tr = pn.child(N("Panel/Progress", "Progress", TL(18, 92, 404, 2)))
     tr.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
     pf = tr.child(N("Panel/Progress/Fill", "Fill", R((0, 0), (0, 1), (0, 0), (0, 0), (0, 0.5))))
-    pf.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementTime"))).add("th", 114, H.themed("ElementTime"))
+    pf.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))).add("th", 114, H.themed("ControlActive"))
     ctl = pn.child(N("Panel/Controls", "Controls", TL(18, 104, 404, 36)))
     ctl.add("cg", 225, canvas_group(False))
     ctl.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (0, 0), (0, 0)))
-    for key, cap, variant in (("Back", "BACK", "Space"), ("Pause", "PAUSE", "Play"), ("Skip", "SKIP", "Space")):
+    for key, cap, variant in (("Back", "BACK", "Default"), ("Pause", "PAUSE", "Default"), ("Skip", "SKIP", "Default")):
         w, h = K.button_size(cap, small=True)
         holder = ctl.child(N(f"Panel/Controls/{key}", key, R((0, 0.5), None, (0, 0), (w, h), (0, 0.5))))
         holder.add("le", 114, le(pw=w, ph=h))
@@ -704,7 +675,7 @@ def build_now_playing():
              f"  pauseButton: {ref(ctx.iref('CardPause', 'root#button'))}\n"
              f"  pauseLabel: {ref(ctx.iref('CardPause', 'Label#tmp'))}\n"
              f"  skipButton: {ref(ctx.iref('CardSkip', 'root#button'))}\n"
-             "  restingOn:\n  - 5\n  toastOffScreens: 0\n"))
+             "  restingOn:\n  - 2\n  toastOffScreens: 0\n"))
     return root
 
 
@@ -819,12 +790,15 @@ C.STUB_KIND.update({"ubutton": (114, A.BUTTON), "record": (114, S["record"])})
 SCREEN_REFS = {"displayNameText": ("Pilot/Name#tmp", "tmp"), "avatarImage": ("Pilot/Avatar/Icon#img", "img"),
                "gamesCompletedText": ("Pilot/GamesValue#tmp", "tmp"), "flightTimeText": ("Pilot/FlightValue#tmp", "tmp"),
                "sessionsText": ("Pilot/SessionsValue#tmp", "tmp"), "renameButton": ("Rename|root#button", "button"),
-               "episodesButton": ("Episodes#tile", "tile"), "recordButton": ("Expand|root#button", "button"),
-               "recordWindow": ("Record#record", "record")}
+               "nameButton": ("Pilot/Name#button", "ubutton"),
+               "recordWindow": ("Record#record", "record"), "backButton": ("Back|root#button", "button")}
+SWITCHER = "4216411968520269688"            # Menu_Main's ScreenSwitcher (Back returns through it)
 AVATAR_BUTTONS = (("Pilot/Avatar#button", "ubutton"), ("ChangeAvatar|root#button", "button"))
-TRACK_REFS = {"questItemContainer": ("Quests/Row#rt", "rt"), "progressBarSlider": ("Quests/Bar#slider", "slider"),
-              "summaryText": ("Quests/Summary#tmp", "tmp")}
-TRACK_DROPPED = ("ghostSlider", "questDescriptionContainer", "questDescriptionPrefab", "scrollRect")
+# Rev 13: the stubs the scene used to hold into ProfileView for the quest row, the Episodes card and EXPAND.
+RECORD_UNUSED = ("closeButton", "nameText", "flightTimeText", "gamesText", "sessionsText")
+RETIRED_REFS = ("Quests/Row#rt", "Quests/Bar#slider", "Quests/Summary#tmp", "Episodes#go", "Episodes#tile", "Expand|root#button")
+# Rev 13: the quest track left the Profile for the Voyage window, which carries its own QuestTrackView
+# (author_menu_mission.py). The scene's old one, on the ProfileScreen root, is removed.
 
 
 class ViewMount(C.Mount):
@@ -847,7 +821,7 @@ class ViewMount(C.Mount):
         return V(key)
 
     def refs(self):
-        return list(SCREEN_REFS.values()) + list(AVATAR_BUTTONS) + list(TRACK_REFS.values()) + [("Episodes#go", "go")]
+        return list(SCREEN_REFS.values()) + list(AVATAR_BUTTONS)
 
     def docs(self, parent_rt, mods=()):
         out = []
@@ -913,7 +887,8 @@ def audio_transform(text):
 def scene_transform(text):
     sc = T.Scene(text)
     assert sc.field(IDS["root_go"], "m_Name") == "ProfileScreen", "ProfileScreen moved"
-    assert sc.script(IDS["screen"]) == S["screen"] and sc.script(IDS["track"]) == S["track"], "Profile components moved"
+    assert sc.script(IDS["screen"]) == S["screen"], "ProfileScreen moved"
+    assert not sc.has(IDS["track"]) or sc.script(IDS["track"]) == S["track"], "the old QuestTrackView's id was reused"
     assert sc.script(IDS["episodes"]) == S["episodes"], "EpisodeScreen moved"
     mount = ViewMount()
     if any(sc.has(g) for g in IDS["retired"]):
@@ -925,8 +900,9 @@ def scene_transform(text):
             for fid in dict.fromkeys(C.subtree(sc, go)):
                 if sc.has(fid):
                     sc.remove(fid)
+    retired_stubs = {mount.stub_fid(k) for k in RETIRED_REFS}
     for fid in list(sc.order):
-        if fid in mount.ids():
+        if fid in mount.ids() or fid in retired_stubs:
             sc.remove(fid)
     root_rt = sc.rect_of(IDS["root_go"])
     anchor = root_rt
@@ -945,35 +921,27 @@ def scene_transform(text):
     doc = rebuild_screen_doc(doc, mount)
     sc.replace(IDS["screen"], doc)
 
-    doc = sc.docs[IDS["track"]]
-    doc = set_field(doc, "questItemPrefab",
-                    f"{{fileID: {K.FileIds('QuestCard')('root#go')}, guid: {asset_guid('QuestCard')}, type: 3}}")
-    for field, (key, _) in TRACK_REFS.items():
-        if re.search(r"^  " + field + ":", doc, re.M):
-            doc = set_field(doc, field, ref(mount.stub_fid(key)))
-        else:
-            doc = doc.rstrip("\n") + "\n" + f"  {field}: {ref(mount.stub_fid(key))}\n"
-    for field in TRACK_DROPPED:
-        doc = set_field(doc, field, "{fileID: 0}")
-    doc = set_field(doc, "parallaxFalloff", "0")
-    sc.replace(IDS["track"], doc)
+    # Rev 13: the quest track moved to the Voyage window; the old QuestTrackView leaves the ProfileScreen root.
+    if sc.has(IDS["track"]):
+        go = IDS["root_go"]
+        sc.replace(go, re.sub(r"^  - component: \{fileID: " + IDS["track"] + r"\}\n", "", sc.docs[go], flags=re.M))
+        sc.remove(IDS["track"])
 
+    # The Episodes card left the Profile too: EpisodeScreen refuses without a host of its own.
     doc = sc.docs[IDS["episodes"]]
-    doc = insert_field_before(doc, "episodePanel", f"  refusalHost: {ref(mount.stub_fid('Episodes#go'))}")
+    doc = insert_field_before(doc, "episodePanel", "  refusalHost: {fileID: 0}")
     sc.replace(IDS["episodes"], doc)
 
-    # Rev 10: the now-playing card, last in the safe area (over every screen).
+    # The now-playing card (Rev 10) is off the menu (Shombith, 2026-10-26: "Remove this man ASAP"): its instance leaves
+    # Menu_Main's safe area. The prefab and NowPlayingCard stay for whoever brings a music surface back; the Audio Studio
+    # on the Profile still plays and picks the soundtrack.
     card = CardMount()
     for fid in list(sc.order):
         if fid in card.ids():
             sc.remove(fid)
     safe_rt = sc.rect_of(SAFE_AREA_GO)
-    anchor = safe_rt
-    for d in card.docs(safe_rt):
-        sc.insert_after(anchor, T.doc_fid(d), d)
-        anchor = T.doc_fid(d)
     kids = re.findall(r"\{fileID: (-?\d+)\}", (re.search(r"^  m_Children:\n((?:  - .*\n)*)", sc.docs[safe_rt], re.M) or [None, ""])[1] or "")
-    kids = [k for k in kids if k != card.stub] + [card.stub]
+    kids = [k for k in kids if k != card.stub]
     sc.replace(safe_rt, T.set_block(sc.docs[safe_rt], "m_Children", K.refs_list("m_Children", kids)))
 
     doc = sc.docs[IDS["old_modal"]]
@@ -984,7 +952,8 @@ def scene_transform(text):
 
 
 SCREEN_ORDER = ("displayNameText", "avatarImage", "gamesCompletedText", "flightTimeText", "sessionsText",
-                "profileWindow", "avatarButtons", "renameButton", "episodesButton", "episodes", "recordButton", "recordWindow")
+                "profileWindow", "avatarButtons", "renameButton", "nameButton", "episodesButton", "episodes", "recordButton", "recordWindow",
+                "backButton", "screenSwitcher")
 
 
 def rebuild_screen_doc(doc, mount):
@@ -993,6 +962,8 @@ def rebuild_screen_doc(doc, mount):
     vals = {k: f" {ref(mount.stub_fid(v[0]))}" for k, v in SCREEN_REFS.items()}
     vals["profileWindow"] = f" {ref(IDS['window'])}"
     vals["episodes"] = f" {ref(IDS['episodes'])}"
+    vals["episodesButton"] = vals["recordButton"] = " {fileID: 0}"
+    vals["screenSwitcher"] = f" {ref(SWITCHER)}"
     body = ""
     for k in SCREEN_ORDER:
         if k == "avatarButtons":
@@ -1071,6 +1042,9 @@ def validate(files):
             continue
         A.check_file(path, text, guids, minted)
         check_sources(path, text, files)
+    _, opener = A.doc_of(files[prefab_path("ProfileView")], K.FileIds("ProfileView")("Replays#open"))
+    assert opener and OPEN_MODAL in opener and f"  target: {REPLAYS_MODAL}\n" in opener, \
+        "ProfileView: MY REPLAYS must open ModalWindows.REPLAYS (19) through OpenModalButton"
     card = files[prefab_path("QuestCard")]
     _, body = A.doc_of(card, K.FileIds("QuestCard")("root#card"))
     assert body and S["card"] in body, "QuestCard: the root carries no KitQuestCard"
@@ -1098,14 +1072,13 @@ def validate(files):
     for field, (key, _) in SCREEN_REFS.items():
         assert f"  {field}: {{fileID: {mount.stub_fid(key)}}}" in screen, f"ProfileScreen.{field} does not point into the view"
     assert f"  profileWindow: {{fileID: {IDS['window']}}}" in screen, "ProfileScreen has no profile window"
-    track = sc.docs[IDS["track"]]
-    assert f"questItemPrefab: {{fileID: {K.FileIds('QuestCard')('root#go')}, guid: {asset_guid('QuestCard')}" in track, \
-        "QuestTrackView does not spawn QuestCard"
-    for field in TRACK_DROPPED:
-        assert re.search(r"^  " + field + r": \{fileID: 0\}", track, re.M), f"QuestTrackView still names {field}"
-    assert re.search(r"^  parallaxFalloff: 0$", track, re.M), "five cards fit: parallax must be off"
-    assert f"refusalHost: {{fileID: {mount.stub_fid('Episodes#go')}}}" in sc.docs[IDS["episodes"]], \
-        "EpisodeScreen does not refuse on the Episodes card"
+    assert not sc.has(IDS["track"]), "the Profile still carries a QuestTrackView (Rev 13: the quest track is the Voyage window's)"
+    assert re.search(r"^  (episodesButton|recordButton): \{fileID: 0\}\n(?:.*\n)*?  (episodesButton|recordButton): \{fileID: 0\}", screen, re.M), \
+        "ProfileScreen still names the Episodes card or the EXPAND button"
+    assert f"  screenSwitcher: {{fileID: {SWITCHER}}}" in screen, "ProfileScreen.screenSwitcher is not the scene's switcher (Back)"
+    view = files[prefab_path("ProfileView")]
+    for gone in ("m_Name: Episodes\n", "m_Name: Quests\n", "m_Name: Expand\n"):
+        assert gone not in view, f"ProfileView still has {gone.split(': ')[1].strip()} (Rev 13)"
     validate_rev10(files, sc)
 
 
@@ -1118,35 +1091,36 @@ def validate_rev10(files, sc):
         _, body = A.doc_of(view, V(key))
         assert body and script in body, f"ProfileView: no {name}"
         for m in re.finditer(r"^  (?!m_)(\w+): \{fileID: 0\}", body, re.M):
+            # Rev 13: the record is the profile's body - its own close, name and stat lines are the screen's now.
+            if name == "ProfileRecordWindow" and m.group(1) in RECORD_UNUSED:
+                continue
             raise AssertionError(f"{name}.{m.group(1)} is not wired")
     for key in ("Record#cg", "Record/Picker#cg"):
         _, cg = A.doc_of(view, V(key))
         assert "  m_Alpha: 0\n" in cg and "  m_BlocksRaycasts: 0\n" in cg, f"ProfileView: {key.split('#')[0]} ships shown (it would cover the profile)"
-    _, solid = A.doc_of(view, V("Record/Solid#img"))
-    assert re.search(r"m_Color: \{r: [\d.]+, g: [\d.]+, b: [\d.]+, a: 1\}", solid), "the pilot record's background is not solid"
-    _, lat = A.doc_of(view, V("Record/Lattice#img"))
-    assert lat and f"guid: {M.LATTICE_WINDOW_MAT}" in lat, "the pilot record has no lattice"
+    _, sea = A.doc_of(view, V("VeilSea#img"))
+    assert sea and f"guid: {M.SEA_WINDOW_MAT}" in sea, "the profile has no sea lines behind it"
     _, studio = A.doc_of(view, V("Record/Studio#studio"))
     assert studio.count("    tile: {fileID: ") == len(TRACKS), f"the Audio Studio needs {len(TRACKS)} track rows"
     _, rec = A.doc_of(view, V("Record#record"))
     assert rec.count("    fill: {fileID: ") == VESSEL_ROWS, f"the pilot record needs {VESSEL_ROWS} vessel rows"
-    for path in (VESSEL_LIST, CAPTAIN_LIST, LOCKUP_STYLE_ASSET):
+    for path in (VESSEL_LIST, CAPTAIN_LIST):
         assert f"guid: {K.meta_guid(path)}" in rec, f"ProfileRecordWindow does not read {path}"
-    # The Profile screen itself is unchanged apart from the EXPAND button.
+    # Rev 13: the record is the profile's body; ProfileScreen opens it when the screen comes on.
     mount = ViewMount()
     screen = sc.docs[IDS["screen"]]
     assert f"  recordWindow: {{fileID: {mount.stub_fid('Record#record')}}}" in screen, "ProfileScreen.recordWindow is not the record window"
-    # The card, last in the safe area.
+    # The now-playing card is off the menu (2026-10-26): no instance of it in Menu_Main, nothing in the safe area naming it.
     card = CardMount()
     safe = sc.docs[sc.rect_of(SAFE_AREA_GO)]
     kids = re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)", safe, re.M).group(1))
-    assert kids and kids[-1] == card.stub, "the now-playing card is not last in Menu_Main's safe area"
-    assert f"m_SourcePrefab: {{fileID: 100100000, guid: {asset_guid('NowPlayingCard')}" in sc.docs[card.inst], "the card is not a NowPlayingCard"
+    assert card.stub not in kids and not sc.has(card.inst), "the now-playing card is back in Menu_Main"
+    assert f"guid: {asset_guid('NowPlayingCard')}" not in "".join(sc.docs.values()), "Menu_Main still instances the NowPlayingCard prefab"
     cardp = files[prefab_path("NowPlayingCard")]
     _, cb = A.doc_of(cardp, K.FileIds("NowPlayingCard")("root#card"))
     assert cb and S["nowplaying"] in cb and not re.search(r"^  (?!m_)\w+: \{fileID: 0\}", cb, re.M), "NowPlayingCard is not wired"
     # The owner, 2026-10-18: the card shows on the Profile tab only, with no pop-ups elsewhere.
-    assert "  restingOn:\n  - 5\n" in cb and "  toastOffScreens: 0\n" in cb, "the now-playing card shows outside the Profile tab"
+    assert "  restingOn:\n  - 2\n" in cb and "  toastOffScreens: 0\n" in cb, "the now-playing card does not rest on Home (Rev 13: the Profile carries the Audio Studio)"
     # Audio
     audio = files[AUDIO_PREFAB]
     assert f"  soundtrack: {{fileID: 11400000, guid: {SOUNDTRACK_GUID}, type: 2}}" in audio, "AudioSystem has no soundtrack"
@@ -1198,18 +1172,25 @@ def self_test(files):
         ("an unwired claim button", lambda f: f.__setitem__(card, re.sub(r"(  claimButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("a quest back on the legacy still", lambda f: f.__setitem__(first, re.sub(r"^  Icon: .*$",
             "  Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}", f[first], flags=re.M))),
-        ("parallax left on", lambda f: f.__setitem__(SCENE, re.sub(r"^  parallaxFalloff: 0$", "  parallaxFalloff: 400", f[SCENE], flags=re.M))),
+        ("the Profile's Back unwired", lambda f: f.__setitem__(SCENE, T.in_doc(f[SCENE], IDS["screen"],
+            f"  screenSwitcher: {{fileID: {SWITCHER}}}", "  screenSwitcher: {fileID: 0}"))),
         ("the pilot record ships shown", lambda f: f.__setitem__(prefab_path("ProfileView"), _show(f[prefab_path("ProfileView")], "Record#cg"))),
         ("the Audio Studio's skip unwired", lambda f: f.__setitem__(prefab_path("ProfileView"),
             re.sub(r"(  skipButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("ProfileView")]))),
-        ("the record without its lattice", lambda f: f.__setitem__(prefab_path("ProfileView"),
-            f[prefab_path("ProfileView")].replace(M.LATTICE_WINDOW_MAT, "0" * 32))),
+        ("MY REPLAYS opening the wrong window", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")].replace(f"  target: {REPLAYS_MODAL}\n", "  target: 18\n", 1))),
+        ("the profile without its sea lines", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")].replace(M.SEA_WINDOW_MAT, "0" * 32))),
+        ("the Episodes card back on the Profile", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")] + "  m_Name: Episodes\n")),
         ("AudioSystem without the soundtrack", lambda f: f.__setitem__(AUDIO_PREFAB, re.sub(r"  soundtrack: .*\n", "", f[AUDIO_PREFAB]))),
         ("a track without its sound name", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("    soundName: SKY FIRE\n", "", 1))),
         ("a sound name that is not in the FMOD event", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("soundName: SEVERITY", "soundName: SEVERITY 2", 1))),
         ("two tracks sharing an id", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("id: sky-fire", "id: space-gliding"))),
+        ("the now-playing card mounted in Menu_Main again", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            "  m_SourcePrefab: {fileID: 100100000, guid: ", f"  m_SourcePrefab: {{fileID: 100100000, guid: {asset_guid('NowPlayingCard')}, type: 3}}\n  m_X: {{fileID: 100100000, guid: ", 1))),
         ("the card rests on Home again", lambda f: f.__setitem__(prefab_path("NowPlayingCard"),
-            f[prefab_path("NowPlayingCard")].replace("  restingOn:\n  - 5\n", "  restingOn:\n  - 2\n"))),
+            f[prefab_path("NowPlayingCard")].replace("  restingOn:\n  - 2\n", "  restingOn:\n  - 5\n"))),
         ("a caption that breaks the YAML", lambda f: f.__setitem__(prefab_path("ProfileView"),
             f[prefab_path("ProfileView")].replace("      value: SHUFFLE\n", "      value: SHUFFLE: ON\n", 1))),
         ("a dangling profile reference", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  profileIconImage: {fileID: 0}",

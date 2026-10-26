@@ -140,18 +140,16 @@ namespace CosmicShore.UI
                 var nameTransform = cardGO.transform.Find("EpisodeName");
                 if (nameTransform != null)
                 {
-                    var nameTMP = nameTransform.GetComponent<TMP_Text>();
-                    if (nameTMP != null)
-                        nameTMP.text = episode.title;
+                    if (nameTransform.TryGetComponent(out TMP_Text nameTMP))
+                        nameTMP.text = episode.Title;
                 }
 
                 // EpisodeDetail (description)
                 var detailTransform = cardGO.transform.Find("EpisodeDetail");
                 if (detailTransform != null)
                 {
-                    var detailTMP = detailTransform.GetComponent<TMP_Text>();
-                    if (detailTMP != null)
-                        detailTMP.text = episode.description;
+                    if (detailTransform.TryGetComponent(out TMP_Text detailTMP))
+                        detailTMP.text = episode.Description;
                 }
 
                 // A non-zero priceUsd marks the episode as purchasable "support" - its card
@@ -165,38 +163,35 @@ namespace CosmicShore.UI
                 // to be right the day the panel opens again - the gate and the rendering must flip
                 // together or the first build after the conversion shows prices it cannot take.
                 bool episodesAvailable = SO_CommerceAvailability.Instance.IsAvailable(CommerceSurface.Episodes);
-                bool isPurchasable = episode.priceUsd > 0f && episodesAvailable;
+                bool isPurchasable = episode.PriceUsd > 0f && episodesAvailable;
 
                 // Amount / ValueText - price (purchasable), completion, or the free-text amount.
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
                 if (valueTransform != null)
                 {
-                    var valueTMP = valueTransform.GetComponent<TMP_Text>();
-                    if (valueTMP != null)
+                    if (valueTransform.TryGetComponent(out TMP_Text valueTMP))
                     {
                         if (isPurchasable)
-                            valueTMP.text = FormatPrice(episode.priceUsd);
-                        else if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
+                            valueTMP.text = FormatPrice(episode.PriceUsd);
+                        else if (cloudProgress != null && cloudProgress.IsCompleted(episode.EpisodeId))
                             valueTMP.text = completedLine;
                         else
-                            valueTMP.text = episode.amount;
+                            valueTMP.text = episode.Amount;
                     }
                 }
 
                 // BG image
                 var bgTransform = cardGO.transform.Find("BG");
-                if (bgTransform != null && episode.cardImage != null)
+                if (bgTransform != null && episode.CardImage != null)
                 {
-                    var bgImage = bgTransform.GetComponent<Image>();
-                    if (bgImage != null)
-                        bgImage.sprite = episode.cardImage;
+                    if (bgTransform.TryGetComponent(out Image bgImage))
+                        bgImage.sprite = episode.CardImage;
                 }
 
                 var button = cardGO.transform.Find("Button");
                 if (button != null)
                 {
-                    var btn = button.GetComponent<Button>();
-                    if (btn != null)
+                    if (button.TryGetComponent(out Button btn))
                     {
                         if (isPurchasable)
                         {
@@ -223,9 +218,9 @@ namespace CosmicShore.UI
                         {
                             // Play semantics (unchanged): interactable when available or cloud-unlocked.
                             // Prefab-wired onClick listeners are left intact.
-                            bool isAvailable = episode.isAvailable;
+                            bool isAvailable = episode.IsAvailable;
                             if (cloudProgress != null)
-                                isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.episodeId);
+                                isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.EpisodeId);
                             btn.interactable = isAvailable;
                         }
                     }

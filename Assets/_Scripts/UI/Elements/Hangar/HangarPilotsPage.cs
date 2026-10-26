@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Data;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -16,8 +18,13 @@ namespace CosmicShore.UI
     /// catalogue, and the new Pilots system (PilotSO, Docs/PILOTS_AND_ARTIFACTS.md) is not on
     /// bleeding-edge, so this shows who the pilots ARE; choosing one to fly with is that system's
     /// job.</para>
+    ///
+    /// <para>Rev 24 (Shombith, 2026-10-26): PILOTS is a tab of its own and the header above the vessel names the picked
+    /// pilot - "PILOT - MASS - SPARROW", the name, the quote (<see cref="IHangarHeader"/>). The pilots are four rows -
+    /// portrait, name, what they are best at, and their element's flower at the level the player has bought for it on
+    /// this vessel. Moving the pad onto a row picks it. The rev-3 hero fields stay optional for a layout that has one.</para>
     /// </summary>
-    public class HangarPilotsPage : MonoBehaviour, IHangarTabPage
+    public class HangarPilotsPage : MonoBehaviour, IHangarTabPage, IHangarHeader
     {
         [System.Serializable]
         public class Card
@@ -28,10 +35,15 @@ namespace CosmicShore.UI
             public TMP_Text nameText;
             public Image elementGlyph;
             public Image underline;
+            [Tooltip("Rev 24: what the pilot is best at (SO_Captain.Description).")]
+            public TMP_Text lineText;
+            [Tooltip("Rev 24: the pilot's element as the HUD's flower, at the level the player bought on this vessel.")]
+            public KitElementFlower flower;
         }
 
         [SerializeField] private SO_CaptainList captains;
-        [SerializeField] private AbilityLockupStyleSO lockupStyle;
+        [Tooltip("What a pilot card's element glyph draws in. Docs/UI_COLOR_RULES.md: an element never has a fixed colour in the UI - its glyph's shape says which it is.")]
+        [SerializeField] private CosmicShore.UI.UIColorToken elementTint = CosmicShore.UI.UIColorToken.NeutralLightest;
 
         [Header("Hero")]
         [SerializeField] private CanvasGroup heroGroup;
@@ -56,13 +68,21 @@ namespace CosmicShore.UI
         [SerializeField] private string aiTemplate = "As your wingmate: {behaviour}";
         [SerializeField] private string[] elementNames = { "Charge", "Mass", "Space", "Time" };
 
+        [Header("Header (Rev 24)")]
+        [Tooltip("The header's kicker while PILOTS is shown; {element} and {vessel} are filled in. Upper-cased.")]
+        [SerializeField] private string headerKickerTemplate = "PILOT · {element} · {vessel}";
+
         readonly List<SO_Captain> _pilots = new();
         string _vesselName;
+        VesselClassType _vesselClass = VesselClassType.Any;
         int _selected;
+        bool _active;
+        GameObject _lastSelected;
+
+        public event System.Action HeaderChanged;
 
         void Awake()
         {
-            if (!lockupStyle) lockupStyle = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
             for (int i = 0; i < cards.Length; i++)
             {
                 int index = i;
@@ -74,6 +94,7 @@ namespace CosmicShore.UI
         {
             _pilots.Clear();
             _vesselName = vessel ? vessel.Name : string.Empty;
+            _vesselClass = vessel ? vessel.Class : VesselClassType.Any;
             if (vessel && captains && captains.CaptainList != null)
                 foreach (var c in captains.CaptainList)
                     if (c && c.Vessel && c.Vessel.Class == vessel.Class) _pilots.Add(c);
@@ -90,13 +111,39 @@ namespace CosmicShore.UI
                 if (card.portrait) { card.portrait.sprite = p.Image; card.portrait.enabled = p.Image; }
                 if (card.nameText) card.nameText.text = p.Name;
                 if (card.elementGlyph) card.elementGlyph.color = Colour(p);
+                if (card.lineText) card.lineText.text = p.Description;
+                if (card.flower)
+                    card.flower.Set(p.PrimaryElement, _vesselClass == VesselClassType.Any ? HangarUpgradeStore.StartLevel
+                                                                                          : HangarUpgradeStore.GetLevel(_vesselClass, p.PrimaryElement));
             }
             KitVisibility.SetShown(heroGroup, _pilots.Count > 0);
             KitVisibility.SetShown(emptyGroup, _pilots.Count == 0);
             Select(0);
         }
 
-        public void SetActivePage(bool active) { }
+        public void SetActivePage(bool active) => _active = active;
+
+        public bool TryGetHeader(out string kicker, out string title, out string line)
+        {
+            kicker = title = line = string.Empty;
+            if (_pilots.Count == 0) return false;
+            var p = _pilots[_selected];
+            kicker = TemplateText.Fill(headerKickerTemplate, "element", ElementName(p), "vessel", _vesselName).ToUpperInvariant();
+            title = p.Name.ToUpperInvariant();
+            line = string.IsNullOrEmpty(p.Flavor) ? p.Description : quoteTemplate.Replace("{quote}", p.Flavor.Trim('“', '”', '"'));
+            return true;
+        }
+
+        void Update()
+        {
+            // The pad moving onto a pilot picks it: one reference compare a frame while the tab is shown.
+            if (!_active || !EventSystem.current) return;
+            var selected = EventSystem.current.currentSelectedGameObject;
+            if (selected == _lastSelected) return;
+            _lastSelected = selected;
+            for (int i = 0; i < cards.Length && i < _pilots.Count; i++)
+                if (cards[i]?.button && cards[i].button.gameObject == selected && i != _selected) Select(i);
+        }
 
         void Select(int index)
         {
@@ -116,7 +163,8 @@ namespace CosmicShore.UI
             if (heroQuoteText) heroQuoteText.text = string.IsNullOrEmpty(p.Flavor) ? string.Empty : quoteTemplate.Replace("{quote}", p.Flavor.Trim('“', '”', '"'));
             if (heroAiText) heroAiText.text = string.IsNullOrEmpty(p.AIBehaviorDescription) ? string.Empty : aiTemplate.Replace("{behaviour}", p.AIBehaviorDescription);
             for (int i = 0; i < cards.Length; i++)
-                if (cards[i]?.underline) cards[i].underline.color = i == _selected ? Colour(_pilots[Mathf.Min(i, _pilots.Count - 1)]) : Color.clear;
+                if (cards[i]?.underline) cards[i].underline.color = i == _selected ? CosmicShore.UI.UITheme.Resolve(null, CosmicShore.UI.UIColorToken.Selection) : Color.clear;   // a real selection
+            HeaderChanged?.Invoke();
         }
 
         string ElementName(SO_Captain p)
@@ -125,6 +173,6 @@ namespace CosmicShore.UI
             return i >= 0 && i < elementNames.Length ? elementNames[i] : p.PrimaryElement.ToString();
         }
 
-        Color Colour(SO_Captain p) => lockupStyle ? lockupStyle.ColourFor(p.PrimaryElement) : Color.white;
+        Color Colour(SO_Captain p) => CosmicShore.UI.UITheme.Resolve(null, elementTint);
     }
 }

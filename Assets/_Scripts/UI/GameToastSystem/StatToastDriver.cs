@@ -83,7 +83,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < Watches.Length; i++)
             {
                 if (library.TryResolve(gameData.GameMode, Watches[i].Situation, out var definition))
-                    _active.Add((Watches[i], Mathf.Max(1, definition.everyN)));
+                    _active.Add((Watches[i], Mathf.Max(1, definition.EveryN)));
             }
 
             _turnActive = _active.Count > 0;

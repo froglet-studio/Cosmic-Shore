@@ -16,6 +16,7 @@ removal of Switchback's own `firstGateDistance`, which Waystation deliberately d
 Run with --check to validate and diff without writing.
 """
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -23,7 +24,7 @@ import arcade_mode_lib as lib          # noqa: E402
 import waystation_course as course     # noqa: E402
 
 MODE_ID = 58
-RING_TARGET = 24
+RING_TARGET = 15   # 24 until 2026-10-26 (a 205 s editor finish); 15 aims an experienced run near 90 s
 g = lib.Generator(mode_id=MODE_ID, mode_name="Waystation")
 errors = []
 
@@ -72,8 +73,9 @@ for i in (1, 2, 3, 4):
 
 # ── the comeback rate is a FUNCTION OF THE TARGET ───────────────────────────
 # bonusLevels = deficit x rate, so a rate that survives a re-target silently stops meaning
-# anything. Sized against Switchback's curve (target 20 at 0.5 buys 2.5 levels a quarter down).
-COMEBACK_RATE = 0.4
+# anything. Sized against Switchback's curve (2.5 levels a quarter down): 0.64 x 15/4 = 2.4, the
+# 2.4 that 0.4 bought on the old 24-ring course.
+COMEBACK_RATE = 0.64
 quarter = RING_TARGET * 0.25
 if quarter * COMEBACK_RATE < 1.0:
     errors.append(f"comeback rate {COMEBACK_RATE} buys only "
@@ -192,6 +194,10 @@ scene = lib.swap_guid(scene, EXISTING["SwitchbackScoringRule"],
 # line as an unresolvable modification forever, so it is removed rather than left.
 scene = lib.replace_block(scene, "  firstGateDistance: 620\n", "",
                           "Switchback's firstGateDistance")
+# Switchback's feature layer (I3 skim walls, I4 danger prisms; SwitchbackController.featuresPrefab, 2026-10-25)
+# is also Switchback's own: WaystationController does not declare it. Removed when the donor carries it, so the
+# clone stays right whether or not the donor has the field.
+scene = re.sub(r"^  featuresPrefab: \{[^\n]*\}\n", "", scene, count=1, flags=re.M)
 
 # The four AI seats fly the Butterfly.
 old_ai = "".join(f"  - vesselClass: 2\n    PlayerName: AI {i}\n    AvatarId: {i}\n"
@@ -214,7 +220,9 @@ for probe, why in (
     if not course.re.search(probe, scene, course.re.M):
         errors.append(f"the donor scene no longer provides: {why}")
 
-for stale in (EXISTING["SwitchbackController"], EXISTING["SwitchbackScoringRule"]):
+# Switchback's feature-layer prefab: a donor-only asset, so a leak of its field fails here by name.
+SWITCHBACK_FEATURES_PREFAB = "29ec5eb8fa7cb3fd1d816c63b5b39687"
+for stale in (EXISTING["SwitchbackController"], EXISTING["SwitchbackScoringRule"], SWITCHBACK_FEATURES_PREFAB):
     if stale in scene:
         errors.append(f"donor guid {stale} survived the clone")
 

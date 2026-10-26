@@ -74,6 +74,14 @@ namespace CosmicShore.Gameplay
                 stamped = PrismRenderService.StampShieldMorph(
                     in prism.RenderHandle, now, duration, direction, offset);
 
+            // No Entities Graphics on this device (a WebGL2 browser): the renderer already holds the
+            // settled shield mesh (the shields set MeshFilter.sharedMesh alongside the entity override),
+            // so the same stamp rides its property block (Docs/PRISM_ANIMATION.md §4.11). It clears itself
+            // at t = 1, which is the authored mesh. False everywhere else.
+            if (!stamped)
+                stamped = PrismMeshRendererStamps.StampShieldMorph(
+                    renderer, now, duration, direction, offset);
+
             if (!stamped)
                 PrismClockDiagnostics.WarnNoRenderEntity(reasonKey, context,
                     prism.DescribeRenderEntityState());
@@ -93,6 +101,7 @@ namespace CosmicShore.Gameplay
             if (prism != null)
             {
                 PrismRenderService.ClearShieldMorphStamp(in prism.RenderHandle);
+                PrismMeshRendererStamps.ClearShieldMorphStamp(renderer); // §4.11 twin
                 return;
             }
             ClearRig(renderer);

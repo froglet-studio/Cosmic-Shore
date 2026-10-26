@@ -337,6 +337,8 @@ namespace CosmicShore.Tests
             public event Action<string> PlayerLeaving;
 #pragma warning restore CS0067
             public float CreatedAtUnscaledTime => 0f;
+            public bool ConsumeRosterChanged() => false;
+            public void TakeDepartures(System.Collections.Generic.ISet<string> into) => into.Clear();
             public UniTask CreateAsync(int maxPlayers) { CreateCalls++; return UniTask.CompletedTask; }
             public UniTask JoinByIdAsync(string sessionId) => UniTask.CompletedTask;
             public UniTask JoinByIdAsync(string sessionId, bool asSpectator) => UniTask.CompletedTask;
@@ -351,6 +353,9 @@ namespace CosmicShore.Tests
             public int JoinCalls;
             public ISession ActiveLobby => null;
             public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
+            public bool ConsumeRosterDirty() => false;
+            public bool ConsumeMembershipLost() => false;
+            public void TakeDepartures(System.Collections.Generic.ISet<string> into) => into.Clear();
             public UniTask JoinOrCreateAsync(int maxPlayers) { JoinCalls++; return UniTask.CompletedTask; }
             public UniTask LeaveAsync() => UniTask.CompletedTask;
             public UniTask RefreshAsync() => UniTask.CompletedTask;

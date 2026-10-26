@@ -1159,13 +1159,13 @@ Other limits:
 
 ## 10. AI difficulty (the host's lobby setting)
 
-The host picks how well the Skim Race AI flies on the launch panel - **Easy, Medium (the default)
-or Hard** - in a row under the intensity buttons (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3 has the
+The host picks how well the Skim Race AI flies on the launch panel - **Easy, Medium (the default),
+Hard or Legendary** (Legendary added 2026-10-26, see the end of this section) - in a row under the intensity buttons (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3 has the
 lobby side: host-only, replicated to guests, remembered per card). It is independent of intensity
 on purpose: intensity picks the TRACK, difficulty picks the OPPONENT, so the hardest AI can race
 intensity 1.
 
-**Hard is the shipped pilot, unchanged.** Easy and Medium are the SAME pilot with deliberate,
+**Legendary is the shipped pilot, unchanged** (it was called Hard until 2026-10-26). Easy, Medium and Hard are the SAME pilot with deliberate,
 human-shaped mistakes (`SkimRaceHandicap`), chosen by the user from four candidates (2026-10-05):
 
 - **Slow reaction.** For a moment after a new crystal appears the pilot has not noticed it, keeps
@@ -1234,6 +1234,27 @@ The editor benchmark (`FrogletTools > AI > Skim Race AI Benchmark`) now has an A
 (default Hard, which is what every earlier benchmark measured), and each race record names the
 difficulty and the number of misjudged crystals per AI seat.
 
+**Legendary, and a Hard with mistakes (2026-10-26).** Yash asked for a range "from very accurate AIs to very easy
+AIs", Easy / Medium / Hard / Legendary. Hard used to be the mistake-free pilot, so nothing was left above it; it now
+makes a few mistakes and **Legendary** is the mistake-free pilot (`AIDifficulty.Legendary = 4`; numbers 1-3 kept, so
+saves and the replicated lobby read as before). The ladder serves every AI that reads the setting (this pilot, the gate
+races' `GateRaceHandicap`, the Arena autopilot's `AIPilotBelief`), all from `SkimRaceDifficultySO`:
+
+| Difficulty | Reaction | Misjudge chance | How it was set |
+|---|---|---|---|
+| Legendary | - | - | the unhandicapped pilot (the old Hard) |
+| **Hard** | 0.12 s | 0.02 | SET between Medium and none, about half Medium's mistakes - **not tuned** |
+| Medium | 0.25 s | 0.045 | tuned 2026-10-05 (table above) |
+| Easy | 0.5 s | 0.099 | tuned 2026-10-05 (table above) |
+
+Hard could not be tuned to a seat time because the simulator no longer matches this section's baseline: on
+2026-10-26 (`run.sh eval 2 40 ph.Seats=2`) the unhandicapped seat median was **129.8 s with 17/40 races
+unfinished** (80.2 s and every race finished on 2026-10-05); Medium 138.3 s (24 unfinished), Easy mostly
+unfinished, and Hard 0.12 / 0.02 sat between them at 131.5 s (16 unfinished, 0.73 misjudged per seat per race).
+The ORDER holds, the times do not; re-tune Hard with `run.sh handicap` once the simulator agrees with the editor
+again (a seat median between Medium's 95 s and the unhandicapped 80 s, e.g. 87 s). Flights recorded before
+2026-10-26 with `rivalDifficulty` "Hard" raced what is now Legendary.
+
 ## 11. When a map changes: fingerprints and retuning
 
 A tuned policy is only as good as the map it was tuned on: its numbers were found for those corners and
@@ -1242,7 +1263,7 @@ one retune command all use that record (the user's choices, 2026-10-05).
 
 **What counts as "the map changed"** - only what changes the race: an intensity's path points
 (`SpawnableWaypointTrack.waypoints`), its curve setting (`useSplinePerIntensity`), its laps
-(`CrystalCollisionTurnMonitor.ResolveLaps`) and where its crystals sit (`CrystalManager`'s anchor set for
+(`NetworkCrystalCollisionTurnMonitor.ResolveLaps`) and where its crystals sit (`CrystalManager`'s anchor set for
 that intensity, clamped into the list exactly as the spawner does). Colours, prism looks, prism spacing and
 the crystal spawn jitter do not count. Positions count in whole units, so a nudge under half a unit is the
 same map. `SkimRaceTrackFingerprint` hashes those four facts into 8 hex digits (32-bit FNV-1a over

@@ -22,25 +22,32 @@ namespace CosmicShore.Core
         [SerializeField] private Image monologuePortrait;
 
         [Header("Left Speaker")]
-        public RectTransform leftSpeakerRoot;
-        public RectTransform leftBox;
+        [SerializeField] RectTransform leftSpeakerRoot;
+        public RectTransform LeftSpeakerRoot => leftSpeakerRoot;
+        [SerializeField] RectTransform leftBox;
+        public RectTransform LeftBox => leftBox;
         public TMP_Text leftSpeakerName;
         public TMP_Text leftDialogueText;
         public Image leftPortrait;
 
         [Header("Right Speaker")]
-        public RectTransform rightSpeakerRoot;
-        public RectTransform rightBox;
+        [SerializeField] RectTransform rightSpeakerRoot;
+        public RectTransform RightSpeakerRoot => rightSpeakerRoot;
+        [SerializeField] RectTransform rightBox;
+        public RectTransform RightBox => rightBox;
         public TMP_Text rightSpeakerName;
         public TMP_Text rightDialogueText;
         public Image rightPortrait;
 
         [Header("Reward Panel")]
-        public RectTransform rewardPanel;
+        [SerializeField] RectTransform rewardPanel;
+        public RectTransform RewardPanel => rewardPanel;
 
         [Header("Buttons")]
-        public Button nextButton;
-        public Button skipButton;
+        [SerializeField] Button nextButton;
+        public Button NextButton => nextButton;
+        [SerializeField] Button skipButton;
+        public Button SkipButton => skipButton;
 
         /// <summary>
         /// Fired by an AnimationEvent at the end of "MonologuePopOut" & "DialoguePopOut"

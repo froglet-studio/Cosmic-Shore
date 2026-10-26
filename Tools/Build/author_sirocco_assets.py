@@ -31,7 +31,7 @@ SCRIPT_PATHS = {
     "SiroccoSettingsSO":       "Assets/_Scripts/Controller/Arcade/Sirocco/SiroccoSettingsSO.cs",
     "SiroccoScoringRuleSO":    "Assets/_Scripts/Controller/Arcade/Sirocco/SiroccoScoringRuleSO.cs",
     "SiroccoPrismTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/SiroccoPrismTurnMonitor.cs",
-    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/Arcade/ButterflyGames/ButterflyAutopilotModeDriver.cs",
+    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/AI/Butterfly/ButterflyAutopilotModeDriver.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
 G_ASSET = {
@@ -56,10 +56,10 @@ DUST_PRISM = "Assets/_SO_Assets/Effects/Skimmer Prism Effects/ButterflyScaleDust
 EXISTING["ButterflyScaleDustPrismEffect"] = lib.existing_guid(DUST_PRISM)
 
 # ── The race ─────────────────────────────────────────────────────────────────
-PRISM_TARGET = 600    # kept in sync with EndConditionOverridesSO.DefaultSiroccoPrismTarget
-# Comeback - a FUNCTION OF THE TARGET. A quarter behind (150 prisms) buys 1.5 element levels, and
+PRISM_TARGET = 400    # kept in sync with EndConditionOverridesSO.DefaultSiroccoPrismTarget (600 until 2026-10-26)
+# Comeback - a FUNCTION OF THE TARGET. A quarter behind (100 prisms) buys 1.5 element levels, and
 # on this mode an element level is the dust itself: Space is the swath, Charge the bite.
-COMEBACK_RATE = 0.01
+COMEBACK_RATE = 0.015
 SPAWN = common.spawn_block(500, 0, 0)   # Rampage's own ring - 500 outside its nucleus
 
 CARD_REL = "Assets/_SO_Assets/Games/ArcadeGameSirocco.asset"
@@ -68,7 +68,7 @@ CARD_REL = "Assets/_SO_Assets/Games/ArcadeGameSirocco.asset"
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
 g.folder_meta("Assets/_Scripts/Controller/Arcade/Sirocco")
-g.folder_meta("Assets/_Scripts/Controller/Arcade/ButterflyGames")
+g.folder_meta("Assets/_Scripts/Controller/AI/Butterfly")
 g.text_meta("Assets/_Scripts/Controller/Arcade/SIROCCO.md")
 
 # ── 2. Scoring rule: metric 5 = PrismsDestroyed (Rampage's rule, inherited) ──
@@ -204,5 +204,5 @@ common.assert_scene(errors, scene,
 g.finish(errors, referenced=EXISTING,
          minted=list(G_SCRIPT.values()) + list(G_ASSET.values())
                 + [guid("folder/Assets/_Scripts/Controller/Arcade/Sirocco"),
-                   guid("folder/Assets/_Scripts/Controller/Arcade/ButterflyGames"),
+                   guid("folder/Assets/_Scripts/Controller/AI/Butterfly"),
                    guid("text/Assets/_Scripts/Controller/Arcade/SIROCCO.md")])

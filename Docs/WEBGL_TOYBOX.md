@@ -56,7 +56,7 @@ other WebGL or low-end build.
 | Authentication scene | cached / anonymous sign-in, username, Relay attempts | straight to the local host (`RunAuthFlowAsync`) |
 | `PlanBootNetwork` | may attempt Relay; counts an unwanted fallback | `webToybox: true`: never attempts Relay, never counts |
 | Offline host | `UnityTransport` on 127.0.0.1 | **`SinglePlayerTransport`** (NGO 2.13.3), in memory |
-| Menu_Main | menu, then the player taps to fly | enters freestyle once at the first menu-ready |
+| Menu_Main | menu, then the player taps to fly | the same: the menu, then the player taps to fly |
 
 Because UGS never signs in, nothing that starts from `OnSignedIn` runs: Cloud Save, the presence lobby,
 Friends, party, leaderboards, UGS Analytics and PostHog. The local data layer still initialises from
@@ -81,8 +81,8 @@ in the Editor, so the toybox path can be played before it is built). Everywhere 
 **Build.** `Editor/Build/WebToyboxBuild.cs`: FrogletTools > Build > WebGL Toybox (+ Development), or
 `-executeMethod CosmicShore.Editor.WebToyboxBuild.Build`. Exactly Bootstrap, Authentication and Menu_Main, with
 `FROGLET_WEB_TOYBOX` passed for that build only (`extraScriptingDefines`), to `Builds/WebGLToybox/`, plus a
-`build_manifest.txt`. It refuses unless the editor is on Web, and sets the editor's Development checkbox to match the
-build, because the release guards exempt any build while it is ticked. Unity Build Automation calls
+`build_manifest.txt`. It refuses unless the editor is on Web. The release guards judge it by its own build options
+(`ReleaseBuildKind`), so the editor's Development checkbox does not matter. Unity Build Automation calls
 `WebToyboxBuild.PreExport` instead (batchmode only): it sets the three scenes and appends the define. The release
 guard checks the scenes a scripted build declares (`UnityPipelineReleaseGuard.DeclareBuildScenes`) as well as Build
 Settings, and `BuildSceneListReconciler` stands down in a toybox-defined editor so UBA's define reload cannot re-add
@@ -118,6 +118,26 @@ renderers choose it from `SystemInfo`, not the define; `memberdraw sm35|auto` fo
 (`SWARM_FAUNA.md` §14.8, `SUBSTRATE_FAUNA.md` §5.1). VFX Graph needs compute too: `ArcLightningFallback` draws the
 arc lightning's two strands as LineRenderers (the Rhino's arc is switched off on every platform today, so nothing
 shows there yet).
+
+**Prism animation without Entities Graphics.** Entities Graphics needs compute too, so in a browser
+`PrismRenderService` stays off and every prism draws through its MeshRenderer. The clock-material stamps (grow-in,
+colour lerp, sway, shield bloom, jiggle, turret/builder/plough flight, cell-swap suction) go to each prism's
+MaterialPropertyBlock instead of its entity, through `PrismMeshRendererStamps`, and deaths (explosion, suction,
+shield shards) are drawn by a capped pool of MeshRenderer pieces (`PrismMeshRendererDebris`, 96 at once,
+`PrismRenderConfig.meshRendererDebrisCap`). Same values, same shader properties, one write at the stamp and one at
+the end; a settled prism drops its block so it rejoins the SRP Batcher. The choice comes from the device probe
+(`PrismRenderService.UsesMeshRendererStamps`), not the define; `prismpath mpb` forces it in the editor for an A/B,
+and `prismpath` reports how many prisms hold a block and how many debris pieces are live
+(`PRISM_ANIMATION.md` §4.11). Not covered: the Rhino slice (a blade kill explodes instead) and ThreatGrove's danger
+glow colour.
+
+In-browser checks (a Development WebGL build, F7 console): prisms laid by the vessel bloom in rather than pop;
+a domain change and a fresh Wanderway scene fade their colours; living flora and fauna mass sways with its limbs and
+a skeleton stops; a shield blooms on and sheds shards when it breaks; ramming or blasting prisms shows flying,
+fading debris and fauna feeding shows suction toward the eater; the console carries no `[PrismClock] STRICT MODE`,
+`[PrismDebris] ... batch spawn failed` or `[PrismFactory] ... declined` lines; `prismpath` shows the block count
+falling back after laying stops (only swaying mass should keep one), and frame time with a full freestyle cell is
+not worse than before.
 
 **Painting SHARE** downloads the viewer `.html` (`Plugins/WebGL/FrogletDownload.jslib`); a WebGL player has no share
 sheet, and its files live in IndexedDB.
@@ -228,10 +248,8 @@ Recorded in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under the toybox branch's ent
 
 ## 7. Follow-ups
 
-- **Release guards trust the Development checkbox** (all three: `UnityPipelineReleaseGuard`, `CreditsReleaseGuard`,
-  `WeeklyChallengeTestModeBuildGuard`). A scripted release build made while it is ticked skips them.
-  `WebToyboxBuild` works around it by forcing the checkbox to match; `CosmicShoreBuildPipeline` does not. Filed as a
-  separate task.
+- ~~Release guards trust the Development checkbox~~ — fixed: all three guards ask `ReleaseBuildKind`, which reads only
+  the build's own options.
 - **Display settings in a browser.** The settings modal still shows display mode and resolution, which do nothing
   on WebGL now (`ApplyDisplay` returns). Hide those rows when `Application.platform == WebGLPlayer`.
 - **FMOD on the web.** The toybox waits up to 90 s for the banks (SFX.bank is ~37 MB, downloaded after the build

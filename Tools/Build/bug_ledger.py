@@ -26,7 +26,7 @@ mirrors into the Team Bug Board artifact.
 file creates a hand-filed `C-` issue in shared/ — how a bug filed on the Team Bug Board
 (no Unity needed) reaches every editor's ledger once the branch is pulled.
 
-mark-fixed <id> --note ... [--commit <sha>, default HEAD] rewrites the issue as
+mark-fixed <id> --note ... [--commit <sha>, default HEAD] [--branch <user>] rewrites the issue as
 `validating` ON EVERY origin/bugledger/* BRANCH that carries it (a throwaway index and a
 push; HEAD, the index and the working tree are untouched), recording the fix commit. The
 sender's editor adopts it at its next sync (editor load, or before a send) only once that
@@ -222,8 +222,19 @@ def cmd_mark_fixed(args):
 
     # Where the editor will look: every reporter's bugledger/<user> branch that carries the issue.
     # The machine adopts the fix once `commit` is in its HEAD, then validates it by play runs.
+    # --branch narrows it to the senders still OPEN when a fix already reached the others; a copy
+    # already validating this same commit is left alone (rewriting it would zero its clean runs).
+    only = {b if b.startswith("bugledger/") else "bugledger/" + b for b in (getattr(args, "branch", None) or [])}
     written = 0
     for branch, ledger_issue in _bugledger_copies(issue["id"]):
+        if only and branch not in only:
+            continue
+        have = ledger_issue.get("fixCommit") or ""
+        if ledger_issue["state"] == "validating" and have and commit and \
+                (have.startswith(commit) or commit.startswith(have)):
+            print("%s already validating %s on %s - left alone" % (ledger_issue["id"], have[:10], branch))
+            written += 1
+            continue
         _write_to_branch(branch, "%s/%s.bug.json" % (SHARED_REL, ledger_issue["id"]),
                          to_json(apply_fix(ledger_issue)),
                          "bugledger: %s fixed in %s" % (ledger_issue["id"], commit[:10]))
@@ -231,6 +242,8 @@ def cmd_mark_fixed(args):
         written += 1
     if written:
         return 0
+    if only:
+        sys.exit("%s is not on %s (git fetch origin first)" % (issue["id"], ", ".join(sorted(only))))
 
     # Legacy: an issue published into the working tree's shared/ folder.
     os.makedirs(SHARED, exist_ok=True)
@@ -555,6 +568,24 @@ def _self_test_branch_fix():
         with open(os.path.join(work, rel), encoding="utf-8") as f:
             assert from_json(f.read())["state"] == "open", "mark-fixed wrote the working-tree copy"
 
+        # The same fix again is a no-op on a copy already validating it (its clean runs survive),
+        # and --branch keeps the write off every other sender's branch.
+        tip = g("rev-parse", "origin/bugledger/ys")
+        REPO = work
+        try:
+            cmd_mark_fixed(argparse.Namespace(id=base["id"], note="again", by="claude", force=False,
+                                              commit="deadbeef01", branch=None))
+            try:
+                cmd_mark_fixed(argparse.Namespace(id=base["id"], note="elsewhere", by="claude", force=False,
+                                                  commit="cafef00d02", branch=["someone-else"]))
+                raise AssertionError("a --branch that matches nothing must refuse, not write shared/")
+            except SystemExit:
+                pass
+        finally:
+            REPO = saved
+        g("fetch", "-q", "origin")
+        assert g("rev-parse", "origin/bugledger/ys") == tip, "a repeated or filtered mark-fixed rewrote the branch"
+
 
 def _self_test_collect():
     """collect over a throwaway repo with two fake origin branches carrying the SAME issue in two
@@ -623,6 +654,8 @@ def main():
     p.add_argument("--commit", help="the commit that carries the fix (default: HEAD). The reporter's "
                                     "editor starts validating only once this commit is in their HEAD")
     p.add_argument("--force", action="store_true", help="also mark an IGNORED issue")
+    p.add_argument("--branch", action="append", help="only these senders' branches (bugledger/<user> or "
+                   "<user>; repeatable) - e.g. to hand a fix that already reached one tester to the others")
     p.set_defaults(func=cmd_mark_fixed)
     p = sub.add_parser("collect", help="merge BugLedger/shared from every origin branch (fetch first)")
     p.add_argument("--out", help="write the board JSON here instead of stdout")

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Top nav, locked tab refused</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+a{color:#80EAFF}a:hover{color:#E6E9FF}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.tab{appearance:none;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 0 6px;border-bottom:2px solid transparent;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.12em}
+.key{appearance:none;border:0;cursor:pointer;padding:1px;background:#434C89;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.key>span{display:block;padding:4px 12px;background:#00041F;color:#747BAD;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+</style>
+</helmet>
+<div style="width: 1920px; height: 220px; position: relative; overflow: hidden; background: #00010A url(/_blob/c480f7802bf9e34b00948517f6c3b602) 0 0 / 1920px 1080px no-repeat; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <button class="key" type="button" aria-label="Previous screen (LT)"><span>LT</span></button>
+    <button class="tab" type="button" style="color: #747BAD">HANGAR</button>
+    <button class="tab" type="button" style="color: #747BAD">ARK</button>
+    <button class="tab" type="button" aria-current="page" style="color: #00D4FF; border-bottom-color: #00D4FF">HOME</button>
+    <button class="tab" type="button" style="color: #747BAD"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3.5 7V2.5h7V7"></path><path d="M1.5 7h11v8h-11z"></path><path d="M7 10v2.5"></path></svg>PORT</button>
+    <button class="tab" type="button" style="color: #747BAD">PROFILE</button>
+    <button class="key" type="button" aria-label="Next screen (RT)"><span>RT</span></button>
+  </nav>
+  <div role="status" style="position: absolute; left: 50%; top: 112px; transform: translateX(-50%)">
+    <div class="sl" style="background: #222645; padding: 1px">
+      <div class="sl" style="display: flex; align-items: center; gap: 12px; background: #00041F; padding: 12px 22px">
+        <svg width="16" height="18" viewBox="0 0 14 16" fill="none" stroke="#747BAD" stroke-width="1.8" aria-hidden="true"><path d="M3.5 7V2.5h7V7"></path><path d="M1.5 7h11v8h-11z"></path><path d="M7 10v2.5"></path></svg>
+        <span style="font-size: 18px">Not open yet.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

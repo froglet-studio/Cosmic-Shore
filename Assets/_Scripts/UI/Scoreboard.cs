@@ -74,6 +74,13 @@ namespace CosmicShore.UI
         [Tooltip("What the local pilot earned and the wallet counting up. Empty: no strip.")]
         [SerializeField] private ScoreboardRewardStrip rewardStrip;
 
+        [Header("Team Versus (Rev 23 D)")]
+        [Tooltip("Two teams face to face, shown instead of the ladder for a two-team match (ScoreboardLadder.BuildVersus). " +
+                 "Empty keeps the ladder for every match.")]
+        [SerializeField] private ScoreboardVersusView versusView;
+        [Tooltip("A team's row in the versus layout - half the ladder's width, the counts under the name.")]
+        [SerializeField] private PlayerScoreCard versusRowPrefab;
+
         [Header("Crystal Rewards")]
         [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
                  "Places past the end of the list earn 0, and LAST place always earns 0 regardless " +
@@ -138,6 +145,12 @@ namespace CosmicShore.UI
         [SerializeField] private string modeLine = "{mode} - Intensity {intensity}";
         [Tooltip("The line above the banner for a game without an intensity. {mode} is the game.")]
         [SerializeField] private string modeNoIntensityLine = "{mode}";
+        [Tooltip("The line under each pilot's name, in their domain colour. {domain} is their team, {vessel} the hull " +
+                 "they flew (a human or an AI).")]
+        [SerializeField] private string pilotLine = "{domain}  ·  {vessel}";
+        [Tooltip("The line under a pilot's name when their hull is not known (they left before the end). {domain} is " +
+                 "their team.")]
+        [SerializeField] private string pilotNoVesselLine = "{domain}";
         [Tooltip("Play again, for the host (whose press restarts the match).")]
         [SerializeField] private string playAgainHostLine = "Play again";
         [Tooltip("Play again, for a guest (whose press is a rematch vote).")]
@@ -746,13 +759,41 @@ namespace CosmicShore.UI
 
         void DecorateCard(PlayerScoreCard card, string pilotName, Domains domain)
         {
-            card.SetDomain(domain == Domains.Blue || (int)domain == 0 ? string.Empty : domain.ToString(), GetDomainColor(domain));
+            card.SetDomain(PilotLine(domain, FlownVesselName(pilotName)), GetDomainColor(domain));
             card.SetLocal(gameData != null && gameData.LocalPlayer != null && gameData.LocalPlayer.Name == pilotName);
+        }
+
+        /// <summary>
+        /// The line under a pilot's name: their team and the hull they flew ("Ruby · Squirrel"), so a board of
+        /// several hulls says who flew what. Blue is the "no domain" sentinel, so a pilot without a team shows the
+        /// hull alone.
+        /// </summary>
+        string PilotLine(Domains domain, string vessel)
+        {
+            bool noTeam = domain == Domains.Blue || (int)domain == 0;
+            if (string.IsNullOrEmpty(vessel))
+                return noTeam ? string.Empty : TemplateText.Fill(pilotNoVesselLine, "domain", domain.ToString());
+            return noTeam ? vessel : TemplateText.Fill(pilotLine, "domain", domain.ToString(), "vessel", vessel);
+        }
+
+        /// <summary>
+        /// The hull <paramref name="pilotName"/> is flying now, at the end of the match - humans and AI alike,
+        /// matched by name the way the avatar is (<see cref="ResolveAvatarSpriteByName"/>). Null when the pilot is
+        /// gone (left before the end) or never got a hull.
+        /// </summary>
+        string FlownVesselName(string pilotName)
+        {
+            var player = gameData?.Players?.FirstOrDefault(p => p.IsAlive() && p.Name == pilotName);
+            if (player == null || !player.Vessel.IsAlive() || !player.Vessel.VesselStatus.IsAlive()) return null;
+
+            var hull = player.Vessel.VesselStatus.VesselType;
+            return hull is VesselClassType.Any or VesselClassType.Random ? null : PauseMenu.SpacedName(hull.ToString());
         }
 
         void PopulatePlayerCards(List<IRoundStats> orderedStats)
         {
             ClearPlayerCards();
+            if (versusView) versusView.SetShown(false);
 
             if (orderedStats == null || orderedStats.Count == 0) return;
             if (!playerCardContainer || !playerCardPrefab)
@@ -811,6 +852,18 @@ namespace CosmicShore.UI
             }
 
             string winnerName = results[0].Name;
+
+            // Rev 23 D: a two-team match is drawn as the two teams facing each other; anything else stays the ladder.
+            var versus = versusView && versusRowPrefab && versusView.IsAvailable
+                ? ScoreboardLadder.BuildVersus(results, gameData.WinnerDomain) : null;
+            if (versusView) versusView.SetShown(versus != null);
+            if (versus != null)
+            {
+                PopulateVersus(results, versus, winnerName);
+                AwardCrystalsToLocalPlayer(winnerName);
+                return;
+            }
+
             var ladder = ScoreboardLadder.Build(results, gameData.WinnerDomain);
             int stagger = 0;
 
@@ -825,29 +878,49 @@ namespace CosmicShore.UI
                     continue;
                 }
 
-                var r = results[entry.ResultIndex];
-                var card = Instantiate(playerCardPrefab, playerCardContainer);
-
-                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger++);
-                card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
-                card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
-                card.SetOutcome(entry.Won);
-                DecorateCard(card, r.Name, r.Domain);
                 // A header carries the team's shared score once; with no header prefab every row keeps its own.
-                card.ShowScore(entry.ShowsScore || !teamHeaderPrefab);
-                card.SetShare(entry.Share);
-
-                if (!string.IsNullOrEmpty(r.Secondary))
-                    card.ShowSecondaryStat(r.Secondary);
-
-                int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
-                if (reward > 0)
-                    card.ShowCrystalReward(reward);
-
-                _spawnedCards.Add(card);
+                SpawnRow(playerCardPrefab, playerCardContainer, results[entry.ResultIndex], entry,
+                         entry.ShowsScore || !teamHeaderPrefab, stagger++, winnerName);
             }
 
             AwardCrystalsToLocalPlayer(winnerName);
+        }
+
+        void PopulateVersus(List<ScoreResult> results, ScoreboardLadder.Side[] sides, string winnerName)
+        {
+            int stagger = 0;
+            for (int s = 0; s < sides.Length; s++)
+            {
+                var side = sides[s];
+                versusView.BindSide(s, side.Domain.ToString(), GetDomainColor(side.Domain), side.Won, side.Score);
+                foreach (var entry in side.Rows)
+                    SpawnRow(versusRowPrefab, versusView.Rows(s), results[entry.ResultIndex], entry,
+                             entry.ShowsScore, stagger++, winnerName);
+            }
+            versusView.SetShare(sides[0].Share, sides[0].Domain.ToString(), sides[1].Domain.ToString());
+        }
+
+        void SpawnRow(PlayerScoreCard prefab, Transform parent, ScoreResult r, ScoreboardLadder.Entry entry, bool showScore,
+                      int stagger, string winnerName)
+        {
+            var card = Instantiate(prefab, parent);
+
+            card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger);
+            card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
+            card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+            card.SetOutcome(entry.Won);
+            DecorateCard(card, r.Name, r.Domain);
+            card.ShowScore(showScore);
+            card.SetShare(entry.Share);
+
+            if (!string.IsNullOrEmpty(r.Secondary))
+                card.ShowSecondaryStat(r.Secondary);
+
+            int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
+            if (reward > 0)
+                card.ShowCrystalReward(reward);
+
+            _spawnedCards.Add(card);
         }
 
         string TeamLine(ScoreboardLadder.Entry header)
@@ -979,9 +1052,9 @@ namespace CosmicShore.UI
         Sprite ResolveAvatarSpriteByName(string playerName)
         {
             // AI players - look up by name in AI profile list (struct, not nullable)
-            if (aiProfileList != null && aiProfileList.aiProfiles != null)
+            if (aiProfileList != null && aiProfileList.AiProfiles != null)
             {
-                foreach (var p in aiProfileList.aiProfiles)
+                foreach (var p in aiProfileList.AiProfiles)
                 {
                     if (p.Name == playerName)
                         return p.AvatarSprite;
@@ -989,17 +1062,17 @@ namespace CosmicShore.UI
             }
 
             // Human players - look up by AvatarId via gameData.Players
-            if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
+            if (profileIconList != null && profileIconList.ProfileIcons != null && gameData?.Players != null)
             {
                 var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
                 if (player != null)
                 {
-                    foreach (var icon in profileIconList.profileIcons)
+                    foreach (var icon in profileIconList.ProfileIcons)
                     {
                         if (icon.Id == player.AvatarId) return icon.IconSprite;
                     }
-                    if (profileIconList.profileIcons.Count > 0)
-                        return profileIconList.profileIcons[0].IconSprite;
+                    if (profileIconList.ProfileIcons.Count > 0)
+                        return profileIconList.ProfileIcons[0].IconSprite;
                 }
             }
 

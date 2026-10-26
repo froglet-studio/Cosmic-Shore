@@ -107,13 +107,34 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float liftDeferSeconds;
 
         [Header("Tilt")]
-        [Tooltip("While one thumb flies, tilting the phone like a steering wheel rolls the hull (the axis " +
-                 "the second thumb gave). The Dolphin.")]
+        [Tooltip("While one thumb flies (the aim), the phone is an augmented-reality window on the roll axis: " +
+                 "turn it like a steering wheel and the hull rolls exactly as far, one to one, up to the " +
+                 "library's tilt roll limit either side. Read from the phone's fused pose (gyro and compass). " +
+                 "The Dolphin.")]
         public bool tiltRollOnOneThumb;
 
         [Tooltip("With no thumb on the glass, tilting the phone steers: wheel-turn yaws, tipping forward and " +
                  "back pitches. The Manta's soar, the Thresher's launch aim.")]
         public bool tiltSteersWhileIdle;
+
+        [Tooltip("Turns the idle tilt steer's PITCH over: tipping the top edge away pitches as a pulled-back " +
+                 "thumb. Invert Y still applies on top. The Manta (Garrett, 2026-10-22: up/down was the " +
+                 "opposite of his expectation).")]
+        [UnityEngine.Serialization.FormerlySerializedAs("flipTiltSteer")]
+        public bool flipTiltSteerPitch;
+
+        [Tooltip("Turns the idle tilt steer's YAW over: wheel-turn right yaws left. Off on every hull today - " +
+                 "the Manta flew flipped from 2026-10-22 and Garrett reverted its yaw on 2026-10-25 (\"manta " +
+                 "gyro has its yaw controls flipped from intended\").")]
+        public bool flipTiltSteerYaw;
+
+        [Header("One thumb")]
+        [Tooltip("Softens the CENTRE of one-thumb flight (one thumb on the glass) without touching the rim: " +
+                 "the thumb's deflection r becomes (1 - c) r + c r^3 before the mix, so small corrections " +
+                 "turn gently and a thumb at the rim still turns exactly as sharp. 0 = linear (every hull " +
+                 "but the Dolphin). The Dolphin (Garrett, 2026-10-25: \"too sensitive around the home... " +
+                 "I like that it can turn sharp but it should have a nonlinear response curve\").")]
+        [Range(0f, 1f)] public float oneThumbResponseCurve;
 
         [Header("Both thumbs off")]
         [Tooltip("With no thumb on the glass, both analog triggers read fully pulled - the Rhino energizes " +

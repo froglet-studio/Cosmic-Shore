@@ -19,15 +19,25 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
     fires that card's own effect.
   - A pattern made three times is replaced.
   - Every 4 patterns the Ratel draws a new ability and a new port pattern. The clock stops while they are shown.
+  - **Printer is retired from the draw, for now** (Garrett 2026-10-22: its free prism at the start of every spin "is too
+    confusing to players on mobile"). The config's `retiredAbilities` lists it, and the lab's `RETIRED_ABILITIES` holds the
+    same list (`author_honeyguide_assets.py --check` fails if they differ). To bring it back, empty both lists. The cards
+    that grant free prisms (Universal Translator, 5D Printer) still do.
 
 ## Try it
 
 1. Open the Toybox and use the **Vessel Changer**. Pick **Honeyguide and Ratel**.
 2. Fly it. Ram trails of the domains the battery holds, with the nose along the trail, to slip.
-3. Press **D-pad left / right** or **1 / 2**, double-tap the small board, or tap **Fly** (left of the Ratel's big board) to swap seats. The AI takes the empty seat:
+3. Press **D-pad left / right** or the **left / right arrow keys** (a two-finger swipe on a phone), double-tap the small board, or tap **Fly** (left of the Ratel's big board) to swap seats; past the Ratel the gesture goes on to the next hull (`Docs/CREW_STATIONS.md`). A second person can play the Ratel from their own machine while you fly: their moves are applied to your board and the board is sent back to them. The AI takes the empty seat:
    - the hull's own `AIPilot` flies while you play the Ratel;
    - the Ratel AI (the lab's `aiPlan`, input-only, Hard by default) plays while you fly.
-4. To play the Ratel (the board covers the centre of the screen):
+4. To play the Ratel (the board covers the centre of the screen; **on a phone, turn the phone to portrait**):
+   - On a phone the board assumes the phone is held portrait (Garrett 2026-10-22). The screen stays locked to
+     landscape, so the board is drawn a quarter turn round and reads upright with the phone upright. Its text
+     (`portraitTextMillimetres`, 2.8 mm), cards (`portraitCardMillimetres`, 20 mm tall) and Fly button (above the board, at
+     its left) are sized in millimetres for a thumb, inside `portraitRect` of the safe area. `boardOrientation` picks
+     PortraitOnPhone (the default: portrait on a touch-first device, landscape elsewhere), Portrait (also for trying it in the
+     Editor) or Landscape. The small board while flying stays landscape.
    - Drag a prism along empty cells to move it (1 AP a step).
    - Tap a port to inject its colour (1 AP).
    - Tap a lit card to make its pattern (1 AP).
@@ -37,8 +47,31 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
      empty cell.
    - The Ratel's ability (at the start and each new one) and every pattern made are announced in the game's toast, top
      right under Settings (`ToastNotificationAPI`), worded for both seats.
+   - Making a pattern has juice (Garrett 2026-10-23): its cells burst one after another in the card's family colour, the
+     card pops and the board's edge flashes (`madeJuiceSeconds`, 0.7 s). The prism it takes lifts off its cell and flies on
+     an arc to its battery slot, turning from the board's hex prism into the battery's round charge, and lands with a ring
+     (`chargeFlightSeconds`, 0.55 s; `HoneyguideMesh.HexToDisc`). Both boards draw it, the small one while flying too.
+   - The band between the board and the cards always says what the last pattern made does (`madeLineTemplate`), until
+     the next one. It is **lime** (`dynamoLineColour`) when the effect works on the Dynamo itself - its prisms, ports, AP,
+     spin clock or battery (`HoneyguideConfigSO.TouchesDynamo`: Amanita Furnace, Big Red Button, Dragon Saddle, Zero Point
+     Amplifier, Triplesynth, Universal Translator, Anode Ray, 5D Printer, Square-Peg Hammer, Reactor Cilia,
+     Chrono-Compressor, Meta Machine, Mystic Eti, Vorticity Module), cream otherwise. While a free prism rides the cursor
+     the free-prism line takes the band, in lime.
 5. **RT** pecks and **LT** flits. When the Ratel makes an upgrade card, the toast says which trigger it took, and the chip
    above the small board shows it with the seconds it has left.
+
+## Very Low: one view, the Ratel first (Garrett, 2026-10-22)
+
+"if the lowest graphics setting are selected don't display pips. start the player in the wrasse and the ratel. in this
+setting very little of the game should even need to be processed, so the ratel should run fine on very old phones."
+On the Very Low preset (`CrewSingleView`, `Docs/PLATFORM_UNIFICATION.md` §3.10):
+- the person starts on the Ratel at every bind, once the hull is theirs with live input (`HoneyguideCrew.ApplyStartSeat`,
+  the Wrasse's rule);
+- playing the Ratel, the world behind the board is not drawn: the game camera is parked (`PilotCameraPark`, a plain
+  backdrop in the board's panel colour, no post-processing or shadows), so the board's canvas is nearly all a frame
+  costs. The hull's AI still flies and the match still runs;
+- flying the Honeyguide, there is no small board (and no trigger chip with it): a thumb-sized **Ratel** button sits in its
+  corner instead, the Fly button's twin, so a phone can always get back to the Ratel. The D-pad and the arrow keys still swap.
 
 ## Where things are
 

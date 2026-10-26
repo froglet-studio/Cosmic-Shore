@@ -62,13 +62,16 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     {
         [Header("Sim duration")]
         [Tooltip("Total simulated seconds.")]
-        [Min(10f)] public float simDurationSeconds = 300f;
+        [SerializeField, Min(10f)] float simDurationSeconds = 300f;
+        public float SimDurationSeconds => simDurationSeconds;
         [Tooltip("Fixed timestep. Matches Cell's 0.5s phase tick.")]
-        [Min(0.05f)] public float tickIntervalSeconds = 0.5f;
+        [SerializeField, Min(0.05f)] float tickIntervalSeconds = 0.5f;
+        public float TickIntervalSeconds => tickIntervalSeconds;
 
         [Header("Cell")]
         [Tooltip("Cell membrane radius (m). Blob cell is 1200.")]
-        [Min(100f)] public float cellMembraneRadius = 1200f;
+        [SerializeField, Min(100f)] float cellMembraneRadius = 1200f;
+        public float CellMembraneRadius => cellMembraneRadius;
         [Tooltip("Deterministic RNG seed.")]
         public int seed = 42;
 
@@ -76,37 +79,49 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Tooltip("Flora placed within the production grid's ±500m box (the shipped grid CAN see these). " +
                  "Distributed across innerClusterCount cluster centers - uniform-random placement creates " +
                  "a flat density field that the algorithm has nothing to lock onto.")]
-        [Min(0)] public int innerFloraCount = 60;
+        [SerializeField, Min(0)] int innerFloraCount = 60;
+        public int InnerFloraCount => innerFloraCount;
         [Tooltip("Flora placed in the 500m..(membrane-100m) outer shell (the shipped ±500m grid CANNOT see these). " +
                  "Distributed across outerClusterCount cluster centers.")]
-        [Min(0)] public int outerFloraCount = 60;
+        [SerializeField, Min(0)] int outerFloraCount = 60;
+        public int OuterFloraCount => outerFloraCount;
         [Tooltip("How many inner cluster centers innerFloraCount flora are distributed across. " +
                  "Production SpawnProfile data places flora in discrete biome clumps; modeling that gives " +
                  "the density field real peaks instead of uniform noise.")]
-        [Min(1)] public int innerClusterCount = 2;
+        [SerializeField, Min(1)] int innerClusterCount = 2;
+        public int InnerClusterCount => innerClusterCount;
         [Tooltip("How many outer-shell cluster centers outerFloraCount flora are distributed across.")]
-        [Min(1)] public int outerClusterCount = 3;
+        [SerializeField, Min(1)] int outerClusterCount = 3;
+        public int OuterClusterCount => outerClusterCount;
         [Tooltip("Gaussian scatter radius (m) of flora positions around their cluster center.")]
-        [Min(1f)] public float floraClusterScatterRadius = 120f;
+        [SerializeField, Min(1f)] float floraClusterScatterRadius = 120f;
+        public float FloraClusterScatterRadius => floraClusterScatterRadius;
         [Tooltip("Seconds between prism spawns per flora.")]
-        [Min(0.1f)] public float floraGrowthIntervalSeconds = 1.5f;
+        [SerializeField, Min(0.1f)] float floraGrowthIntervalSeconds = 1.5f;
+        public float FloraGrowthIntervalSeconds => floraGrowthIntervalSeconds;
         [Tooltip("Gaussian scatter radius (m) of spawned prisms around their flora.")]
-        [Min(1f)] public float floraScatterRadius = 80f;
+        [SerializeField, Min(1f)] float floraScatterRadius = 80f;
+        public float FloraScatterRadius => floraScatterRadius;
 
         [Header("Phase thresholds")]
         [Tooltip("CellPhaseThresholds.Default scaled by this. Default is tuned for thousands " +
                  "of prisms; 0.15 gives Restless~1200 / Frenzy~2250 for a fast sim.")]
-        [Range(0.02f, 1f)] public float thresholdScale = 0.15f;
+        [SerializeField, Range(0.02f, 1f)] float thresholdScale = 0.15f;
+        public float ThresholdScale => thresholdScale;
 
         [Header("Fauna")]
         [Tooltip("Consume radius (m). MassShark/Brittlestar SOs use 40.")]
-        [Min(1f)] public float faunaConsumeRadius = 40f;
+        [SerializeField, Min(1f)] float faunaConsumeRadius = 40f;
+        public float FaunaConsumeRadius => faunaConsumeRadius;
         [Tooltip("Max opposing prisms one fauna eats per tick while on target.")]
-        [Min(1)] public int faunaConsumePerTickInRange = 3;
+        [SerializeField, Min(1)] int faunaConsumePerTickInRange = 3;
+        public int FaunaConsumePerTickInRange => faunaConsumePerTickInRange;
         [Tooltip("Fauna travel speed (m/s).")]
-        [Min(10f)] public float faunaSpeed = 250f;
+        [SerializeField, Min(10f)] float faunaSpeed = 250f;
+        public float FaunaSpeed => faunaSpeed;
         [Tooltip("Seconds between a fauna re-querying the density algorithm for a new goal.")]
-        [Min(0.5f)] public float faunaGoalUpdateIntervalSeconds = 5f;
+        [SerializeField, Min(0.5f)] float faunaGoalUpdateIntervalSeconds = 5f;
+        public float FaunaGoalUpdateIntervalSeconds => faunaGoalUpdateIntervalSeconds;
         [Tooltip("Radius (m) of the orbit sphere each fauna sweeps around the density target. " +
                  "The fauna continuously re-rolls a sub-goal inside this sphere, so the swarm " +
                  "collectively covers a volume of roughly this + consumeRadius - the sim's " +
@@ -115,15 +130,19 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                  "swarm's effective consumption volume equals the volume the algorithm samples " +
                  "for density. Set lower (~60m) to model a tighter swarm; the cluster shell will " +
                  "become unreachable and consumption stalls.")]
-        [Min(0f)] public float faunaGoalOrbitRadius = 120f;
+        [SerializeField, Min(0f)] float faunaGoalOrbitRadius = 120f;
+        public float FaunaGoalOrbitRadius => faunaGoalOrbitRadius;
         [Tooltip("Max simultaneous fauna.")]
-        [Min(1)] public int faunaPopulationCap = 40;
+        [SerializeField, Min(1)] int faunaPopulationCap = 40;
+        public int FaunaPopulationCap => faunaPopulationCap;
         [Tooltip("Seconds between fauna spawns (for the dominant domain) once the cell holds mass.")]
-        [Min(0.25f)] public float faunaSpawnIntervalSeconds = 2f;
+        [SerializeField, Min(0.25f)] float faunaSpawnIntervalSeconds = 2f;
+        public float FaunaSpawnIntervalSeconds => faunaSpawnIntervalSeconds;
 
         [Header("Output")]
         [Tooltip("Sample the time series for the report this often (simulated seconds).")]
-        [Min(1f)] public float timeSeriesSampleEverySeconds = 10f;
+        [SerializeField, Min(1f)] float timeSeriesSampleEverySeconds = 10f;
+        public float TimeSeriesSampleEverySeconds => timeSeriesSampleEverySeconds;
         [TextArea(10, 48)] public string lastReport = "";
 
         // ==================================================================

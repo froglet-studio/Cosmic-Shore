@@ -249,7 +249,7 @@ RHINO_ICONS = {CHARGE: "Rhino_SwordEnergy-PLACEHOLDER.png", MASS: "Rhino_Afterim
 # The Mass and Time hosts were the first pass (2026-10-06); Charge and Space were open design slots.
 RHINO_FIRST_PASS = (MASS, TIME)
 # Cards with a meter (2026-10-17): Charge fills with the sword's energy, Time with speed as a
-# fraction of the ramp's top speed. RhinoVesselHUDController writes both.
+# fraction of the ramp's top speed. RhinoHUDController writes both.
 RHINO_GAUGES = (CHARGE, TIME)
 
 

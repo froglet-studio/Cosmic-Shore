@@ -121,9 +121,11 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    spec. Collider sizes specifically: `worldRadius = m_Radius × max(|sx|,|sy|,|sz|)`, and sweep
    sibling prefabs for the same authored value.
 5. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
-   only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
-   `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`
-   declares `enum ShipActions`.
+   first: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
+   `VesselActions.cs` declares `enum ShipActions`. Every class an ASSET binds to now matches its
+   file (2026-10-25, `Docs/REFACTOR_BACKLOG.md` M5: `R_VesselElementStatsHandler`, `VesselHUD` and
+   nine more were renamed); these three are a base class, a static helper and an enum, which no
+   asset names.
 6. **Re-fetch any branch you cite immediately before asserting its state** — branches and
    bleeding-edge move mid-session. This skill's own fleet snapshot went stale twice while being
    written: the Dolphin branch grew its row-wiring commit between research and verification, and
@@ -244,7 +246,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 14. **A HUD controller must never reach for another vessel's executor by TYPE.**
     `GetComponentInChildren<SomeOtherVesselsExecutor>(true)` compiles fine, returns null on every
     vessel that isn't the one carrying it, and the gauge it feeds then simply never moves — no
-    error, no warning, nothing to notice. `SquirrelVesselHUDController` polled the Sparrow-only
+    error, no warning, nothing to notice. `SquirrelHUDController` polled the Sparrow-only
     `OverheatingActionExecutor` for its heat gauge for the component's entire life; the gauge was
     dead the whole time and the bug only surfaced when the Sparrow branch DELETED the type and the
     Squirrel stopped compiling. If a HUD needs a signal, bind it on the vessel's OWN component (a
@@ -866,7 +868,8 @@ applies to new abilities, new resources on the meter list, and anything that add
     controls, laid out round the right thumb in millimetres). Ask of every new ability: *how does a phone press it?*
     A trigger-depth read needs a press fallback (`max(analog, held)`, the Thresher and Angler pattern) or a hold-time
     ramp (the Stoat's `Hold01`); an LT+RT ability needs a both-thumbs-off form (`idlePullsBothTriggers`, the Rhino) or a
-    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up. The gate:
+    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up (the roll one
+    is an ANGLE, one to one with the phone like an AR window, `IInputStatus.HoldsRollAngle`, applied to the command so the touch nose lag filters sensor jitter; the steer is a stick). The gate:
     `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
     no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
     erase read only trigger depth), and a ThumbLifts card whose lift glyph names a lift nothing is bound to. **A
@@ -884,10 +887,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     `TouchButtonLayout` + `TouchControlsHud.LayoutSettings`, and have the aiming finger skip any touch that STARTED on a
     claimed region (`FlightTouchClaims.Claims(startPosition)`), or the thumb on the button also aims and also counts as
     half of a two-finger gesture (2026-10-21).
-    Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
-    goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
-    `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
+    Two fleet rules ride with it (2026-10-21): **a human pilot's nose follows at their DEVICE's rate** - every
+    transformer's RotateShip goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a
+    new override; read `NoseFollowRate` to predict a hull), which since 2026-10-23 reads one dial per device
+    (`PilotNoseFollowPerSecond`: pad `GamepadFlightConfig` 1.5, touch `TouchControlProfiles` 9, keyboard and mouse
+    none; never per hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
     input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
+    **The pad's smoothness IS its one-stage nose lag; neither a curve nor a smoothing chain replaces it** (Garrett,
+    2026-10-23, `cece/serene-galileo-t77xt3`). A response curve shapes how FAR a stick turns the hull, not how the
+    turn unfolds, so it gave back none of the smoothness. A chain of 4-6 fast first-order stages is smooth to many
+    derivatives with half the mean delay, and it read as "much worse input lag", because a multi-stage chain starts
+    almost STILL (0.7% of a step on the first frame) while one stage takes its biggest step on the first frame. The
+    feel a pilot wants is "responsive, but eases into its target": answer at once, round the end. Judge any future
+    filter by its FIRST-frame response, not its settling time.
     Three traps this cost (2026-10-21): **`BaseInputStrategy.ResetInput` clears `InputStatus.Idle`**, so a strategy that
     re-tests `Idle` after resetting re-raises `IdleAction` every frame - track the edge in the strategy (`idlePressed`);
     **the Input System starts every sensor disabled, and enabling one wakes every reader of it** (tilt enabling the
@@ -913,6 +925,28 @@ applies to new abilities, new resources on the meter list, and anything that add
     span on every device, keeping the gameplay length (the ring) independent of the view: a span the ring is derived
     from cannot be zoomed without changing the game.
 
+
+61. **A runtime COPY of a live vessel part (a second blade, a mirrored arm) is cloned under an INACTIVE holder and
+    stripped before it wakes.** The Rhino's surge ring (`RhinoSurgeSwordRing`, 2026-10-26) needed seven more swords that
+    cut exactly like the real one. A clone of the blade root carries everything that makes a blade a blade (mesh, both
+    trigger colliders, the kinematic body, `SkimmerImpactor` + `ImpactCollider` wired to the CLONE by Unity's internal
+    reference remap, its own `SkimmerSwingKinematics`) - and also the one-of-a-kind parts, whose serialized references
+    point OUTSIDE the clone and still reach the original: `RhinoSwordFXController.bladeTracers` names the fuselage's five
+    tracers, so a woken copy would re-seat and tint the pilot's own streaks. So: `Instantiate` under a holder whose
+    GameObject is INACTIVE (no Awake / OnEnable runs on the copy), `DestroyImmediate` the one-of-a-kind components, then
+    arm what is left (`Skimmer.Initialize(status)`, `HasExternalScaleDriver = true`, `SwordState` = the real sword's, so
+    every copy cuts through the same effect chain and reads the same energized state), and only then activate. Before
+    trusting the remap, list each copied component's serialized object references and sort them into "inside the clone"
+    (remapped) and "outside" (shared with the original). Pose every copy from the original's LIVE local pose in
+    LateUpdate, after the executor that writes it, and copy the body's MaterialPropertyBlock so the look follows too.
+62. **An ability that moves the camera writes a POINT-OF-USE multiplier on `CustomCameraController`, never
+    `_followOffset`** - the same rule `RearView`, `FollowHeightScale` and `SurroundFraming01` follow, for the same reason:
+    adaptive zoom and every settings re-apply write `_followOffset`, so the first of them to fire would silently undo the
+    ability. The Rhino has two (2026-10-26): `SurroundFraming01` (the surge: straight back and centred on the hull) and
+    `VesselDistanceScale` (the blade's Space length: the camera pulls back in proportion). Both reset in
+    `SetFollowTarget`, both are written only for the LOCAL HUMAN pilot (an AI, a remote copy or the lava lamp's
+    autopilot must never move this machine's camera), and the owner releases them on disable (`RhinoSwordCamera`). Keep
+    the hull where it sat on screen by scaling the LOOK POINT with the offset. FOV stays the player's (rule 21).
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
@@ -1267,6 +1301,28 @@ objects no-ops off the server (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
   to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
   pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
 
+### 4.ac2 An ability that takes prisms: `IsEnvironmentOwned` is NOT "a mode's track" (the Jacks' net, 2026-10-25)
+
+`Prism.IsEnvironmentOwned` means only **no player name**. That is Skim Race's track, but it is also every plant prism
+and every prism a cell's environment lays: the Toybox boots into **Garland**, whose bough is ~4,300 owner-less
+`SpawnablePrism`s (`SpawnableGarland` → `PrismTrailBuilder.ConfigureLaid`, no player name) beside 13 plants. The Jacks'
+net skipped `IsEnvironmentOwned` "to spare the track" and so touched NOTHING for three playtest rounds, each reported as
+"no interaction with prisms", while static reading of the spatial index, the move and the render path found no bug.
+Rules: (1) to spare an indestructible track, test what makes it indestructible (`prismProperties.IsSuperShielded`), not
+the owner name; (2) when a prism filter "does nothing" in play, first list what the TEST CELL actually spawns (follow
+the scene's `CellConfigs` → the BootDefault config → its EnvironmentPrefab and spawn profile) and run each population
+through the filter by hand. The hull breaks owner-less prisms in every mode; an ability that refuses them needs a
+reason that names the case.
+
+### 4.ac3 A vessel draws no controls of its own (LOCKED, Garrett 2026-10-25)
+
+The HUD is the five standard cards (four elemental + the omni crystal's); any other active control is a CORE card left
+of them with a glyph chip (`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`). The Jacks' herding view drew a zoom and a call
+button top right for rounds 2-9 and they were removed. Put the control on a card instead. A mode that pauses the
+flight's buttons (a crew seat, the Jacks' herding) still hears card taps by subscribing to the input status's
+`OnButtonPressed` while paused (`JacksExecutor.ListenToCards`). A card is only pressable if its map `Input` is BOUND
+on the prefab (`AbilityCardPress` asks `ResolvesOnActiveDevice`), so keep the binding even when one mode ignores it.
+
 ### 4.ad Porting a vessel from its studio — the settings, the CAMERA, and the AI's hand-over
 
 The studio (`/vessel-studio`) is where a vessel's numbers are decided; the Unity port is a COPY of them, and
@@ -1297,7 +1353,7 @@ the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. D
    `framingFieldOfView` to the studio's FOV (68): the camera moves nearer by tan(68°/2)/tan(fov/2) and turns
    its look so the hull reads the same size AND sits at the same height on screen at whatever FOV the player
    chose (`CustomCameraController.FramedLook`, `CameraLookAheadTests`). A per-vessel FOV was tried first and
-   reverted: `CameraSettingsApplier` re-applies the player's value on every settings change.
+   reverted: `CameraSettingsApplier` re-applied the player's value on every settings change (that class was on no scene and was retired 2026-10-25).
 4. **The studio's look has no owner tint.** A slung hole's `DomainTintAmount` filled the black hole's shadow
    with the owner's dark domain colour (it read as JADE, not black). The studio draws a pure black shadow, a
    warm photon ring and a white-hot core; the Stoat's config ships the tint at 0, and the lens draws the ring

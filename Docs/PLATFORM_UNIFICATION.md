@@ -493,7 +493,8 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 | `ITSAppUsesNonExemptEncryption = NO` written into every iOS build | `Assets/_Scripts/Editor/Build/IosExportCompliancePostprocess.cs` | Stops App Store Connect holding each build at "Missing Compliance". The declaration: HTTPS + Relay DTLS, standard algorithms, in support of gameplay, under the EAR Cat. 5 Pt. 2 Note 4 games exclusion. **The company owns this answer**; delete the file to answer per upload instead. |
 | NativeShare's photo-library purpose string: the plugin default ("The app requires access to Photos to save media to it.") → a specific one naming paintings and screenshots | `ProjectSettings/NativeShare.json` (the plugin's own settings file; its iOS post-process writes `NSPhotoLibraryUsageDescription` / `NSPhotoLibraryAddUsageDescription` from it) | App Review 5.1.1 rejects purpose strings that don't say what the access is for. |
 | Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb`, `Tools/iOS/asc_api_key_json.py` (manual dispatch only) | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Run 4 (2026-10-12) uploaded the first build to TestFlight**, on the team API key. Run 3 had failed at the upload because `ASC_KEY_P8` held the key body without its BEGIN/END lines; the job now accepts that shape. Run 5 (2026-10-12) uploaded the phone-menu fix the same way. |
-| **Android release build + pre-upload check** (2026-10-13) | `Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs`, `AndroidBundleCheck.cs`, `Tools/Build/check_android_signing_settings.py` | **FrogletTools > Build > Android App Bundle (Release)** builds a signed `.aab` with a minutes-since-2026 version code, puts Player Settings back, and checks the bundle for everything Play rejects (debug key, target < 36, debuggable, no arm64, over 200 MB) plus 16 KB alignment, app category, Billing and native debug symbols (embedded in the bundle since 2026-10-14). The static CI job fails on a committed keystore path. Not run in Unity yet. Steps: `Docs/ANDROID_BUILD.md`. |
+| **32-bit (ARMv7) Android back, beside ARM64** (2026-10-15, owner's call) | `ProjectSettings.asset` (`AndroidTargetArchitectures` 2 → 3), `AndroidResolverDependencies.xml` (`androidAbis` `arm64-v8a,armeabi-v7a`) | Reverses the 2026-10-08 ARM64-only change above. Two testers on the internal track got "Item not found" while a third could install: a Moto G Power and a Samsung Galaxy M, phone families that run 32-bit Android on 64-bit chips. Every native plugin already ships `armeabi-v7a` (FMOD, Lofelt haptics; NativeShare is Java-only). Play delivers one ABI per phone, so downloads do not grow; the build and the upload do. The bundle check now warns when 32-bit libraries are missing, and estimates the base size per phone (the largest ABI, not both). |
+| **Android release build + pre-upload check** (2026-10-13) | `Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs`, `AndroidBundleCheck.cs`, `Tools/Build/check_android_signing_settings.py` | **FrogletTools > Build > Android App Bundle (Release)** builds a signed `.aab` with a minutes-since-2026 version code, puts Player Settings back, and checks the bundle for everything Play rejects (debug key, target < 36, debuggable, no arm64, over 200 MB) plus 16 KB alignment, app category, Billing and native debug symbols (embedded in the bundle since 2026-10-14). The static CI job fails on a committed keystore path. Build 412826 (2026-10-14) went to Play internal testing from this menu; the refusal dialogs, batchmode and the Test Runner are not checked in the Editor yet. Steps: `Docs/ANDROID_BUILD.md`. |
 
 **Found and left open** (setup guide §5):
 
@@ -563,7 +564,7 @@ number is a field there):
 | **Ultra / Very High / High** | nothing | nothing - render as before |
 | **Medium** | nothing | **baked sky** (the HyperSea sky's nebulae, dust and stars stop drifting and twinkling; one texture sample per pixel instead of ~20 noise octaves and two Voronoi searches); wormhole exact view at **0.75** of the camera's resolution |
 | **Low** | **AA Off**; render scale at most **80%** (Linear upscale) | everything Medium cuts, plus: **HDR off**; bloom built at **quarter** resolution with at most **3** pyramid levels; membrane at **642** capsules (level 3); **a quarter of the cytoplasm shards**; wormhole view at **0.5** |
-| **Very Low** | **AA Off**; render scale at most **70%** | the same as Low |
+| **Very Low** | **AA Off**; render scale at most **70%** | the same as Low, plus **one view at a time** (`singleView`, 2026-10-22): no crew vessel draws a picture-in-picture, the pilot camera hidden under a full-screen seat view draws nothing, and the person starts on the Wrasse or the Ratel (below) |
 
 **How it is wired.**
 - `GraphicsCuts` (`_Scripts/System/Platform/`) is the one reader: it merges the device tier's cuts
@@ -590,6 +591,19 @@ number is a field there):
   dropdowns after a pick.
 - Live on a change: sky, HDR, bloom, AA, render scale. Read when an object wakes: membrane, cytoplasm,
   and the wormhole view's cap (read per frame). The panel already shows "some changes apply after a restart".
+
+- **One view at a time on Very Low** (Garrett, 2026-10-22: "if the lowest graphics setting are selected
+  don't display pips. start the player in the wrasse and the ratel. in this setting very little of the
+  game should even need to be processed, so the ratel should run fine on very old phones"). The row's
+  `singleView` flag, read through `GraphicsCuts.SingleView` / `CrewSingleView.On` every frame, so it
+  follows a change at once. Every crew view honours it (`KiteNavigatorView`, `HoneyguideDynamoView`,
+  `CrewPictureInPicture` for the Goby, `OrcaCrewView`, `JacksView`): the camera of a seat nobody sits
+  in is off rather than a small square, and the pilot camera under a full-screen seat view is parked by
+  `PilotCameraPark` (no layers, a solid clear, no post-processing or shadows; still enabled, so
+  `Camera.main` holds). The Wrasse and the Ratel are where the person starts: the Wrasse is one top-down
+  camera, the Ratel is a UI board with the world not drawn at all behind it. Swaps still work from the
+  keys, the D-pad and the Ratel's Fly button; with no small view there is no double tap. The Orca
+  sniper's scope is gameplay, not a picture-in-picture, and stays.
 
 **Known limits.**
 - Picking a preset ABOVE Low does not put AA or render scale back. The player sets them, or presses

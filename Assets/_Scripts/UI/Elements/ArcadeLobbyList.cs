@@ -707,19 +707,20 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The molecule's bonds (<see cref="seatBonds"/>): a seated pilot's in their domain colour (Space while it is
-        /// not known), an open seat's in dim Space. Graphic.color only dirties the canvas when the colour changes.
+        /// The molecule's bonds (<see cref="seatBonds"/>): a seated pilot's in their domain colour (the neutral blue while it
+        /// is not known), an open seat's in dim neutral blue. Graphic.color only dirties the canvas when the colour changes.
+        /// No element colour (Docs/UI_COLOR_RULES.md).
         /// </summary>
         void TintBonds()
         {
             if (seatBonds == null || seatBonds.Length == 0) return;
-            Color space = UITheme.Resolve(theme, UIColorToken.ElementSpace);
+            Color neutral = UITheme.Resolve(theme, UIColorToken.NeutralLightest);
             for (int i = 0; i < seatBonds.Length; i++)
             {
                 var bond = seatBonds[i];
                 if (!bond) continue;
                 bool seated = i < _drawnSeats;
-                Color colour = seated ? (_seatGlows[i] ?? space) : space;
+                Color colour = seated ? (_seatGlows[i] ?? neutral) : neutral;
                 colour.a = seated ? 1f : openBondAlpha;
                 bond.color = colour;
             }
@@ -727,16 +728,16 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatar(int avatarId)
         {
-            if (!profileIcons || profileIcons.profileIcons == null) return null;
+            if (!profileIcons || profileIcons.ProfileIcons == null) return null;
 
-            foreach (var icon in profileIcons.profileIcons)
+            foreach (var icon in profileIcons.ProfileIcons)
             {
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
             }
 
-            return profileIcons.profileIcons.Count > 0
-                ? profileIcons.profileIcons[0].IconSprite
+            return profileIcons.ProfileIcons.Count > 0
+                ? profileIcons.ProfileIcons[0].IconSprite
                 : null;
         }
     }

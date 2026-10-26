@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
@@ -53,6 +54,13 @@ namespace CosmicShore.UI
         [SerializeField] Button maelstromCard;
         [Tooltip("The count beside ALL GAMES: how many cards the grid draws.")]
         [SerializeField] KitText gameCountText;
+
+        [Header("Sort and filter (section 85)")]
+        [Tooltip("The SORT and FILTER buttons beside ALL GAMES and their option rows. Optional: without it the grid is " +
+                 "favourites first, then A-Z, and shows every game.")]
+        [SerializeField] ArcadeGridOptions gridOptions;
+        [Tooltip("Shown when the filter leaves no game (its words are authored on the object).")]
+        [SerializeField] GameObject emptyFilterLine;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
@@ -97,6 +105,7 @@ namespace CosmicShore.UI
             DeveloperUnlockGate.OnChanged += HandleConstraintsChanged;
             // A guided path may open the one card it points at, so its start and end re-lock.
             MenuGuide.Changed += HandleConstraintsChanged;
+            if (gridOptions) gridOptions.Changed += PopulateGameSelectionList;
             // Guarded + idempotent, and retried from Start() — supersedes the raw
             // subscribe here, which would double-add alongside it.
             TrySubscribeToProgression();
@@ -115,6 +124,7 @@ namespace CosmicShore.UI
             QuestArcadeConstraints.OnChanged -= HandleConstraintsChanged;
             DeveloperUnlockGate.OnChanged -= HandleConstraintsChanged;
             MenuGuide.Changed -= HandleConstraintsChanged;
+            if (gridOptions) gridOptions.Changed -= PopulateGameSelectionList;
 
             // A reveal cut short by the grid going away must not strand a card at alpha 0.
             CardGridReveal.Snap(this, _revealCards, _reveal);
@@ -234,19 +244,23 @@ namespace CosmicShore.UI
             // window, reached from its own control. Excluded here rather than removed from
             // SO_GameList, because that list is also the roster the tournament pool and the
             // client-side mode lookup read.
-            var sortedGames = new List<SO_ArcadeGame>(
-                filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Maelstrom));
-            sortedGames.Sort((x, y) =>
-            {
-                int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
-                if (flagComparison == 0)
-                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal); // Sort alphabetically by Name if they're tied
-
-                return flagComparison;
-            });
+            //
+            // Sort and filter (section 85): the player's choice from SORT / FILTER, applied by the one pure rule in
+            // ArcadeGridOrder. Without the options the grid keeps its old order - favourites first, then A-Z - and
+            // shows every game. A card a guided path points at always stays.
+            var progressionService = GameModeProgressionService.Instance;
+            var sortedGames = ArcadeGridOrder.Apply(
+                filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Maelstrom),
+                gridOptions ? gridOptions.Sort : ArcadeGridSort.FavouritesFirst,
+                gridOptions ? gridOptions.Filter : ArcadeGridFilter.All,
+                g => FavoriteSystem.IsFavorited(g.Mode),
+                g => !IsLocked(g, progressionService),
+                ArcadeGridOrder.HasGenre,
+                g => MenuGuide.ExemptsMode(g.Mode));
 
             EnsureGridCapacity(sortedGames.Count);
             if (gameCountText) gameCountText.SetText(sortedGames.Count.ToString());
+            if (emptyFilterLine) emptyFilterLine.SetActive(sortedGames.Count == 0);
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -258,8 +272,6 @@ namespace CosmicShore.UI
                     GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
                 }
             }
-
-            var progressionService = GameModeProgressionService.Instance;
 
             // Bounded by the SLOTS and the ROSTER, and by nothing else. The old third term
             // (GameList.Games.Count) was a ceiling on a different list - it counts the Maelstrom
@@ -277,9 +289,7 @@ namespace CosmicShore.UI
                 // Locked when the quest progression hasn't unlocked the mode, or the running
                 // quest graph has funneled the arcade down to one tutorial mode - unless a guided
                 // path points at this card, which may always open the one door it leads to.
-                bool isLocked = ((progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
-                                 || QuestArcadeConstraints.IsModeBlocked(game.Mode))
-                                && !MenuGuide.ExemptsMode(game.Mode);
+                bool isLocked = IsLocked(game, progressionService);
                 gameCard.SetLocked(isLocked);
 
                 if (isLocked) _lockedSlots.Add(i);
@@ -302,6 +312,14 @@ namespace CosmicShore.UI
             FitScrollContent();
             ReportUnreachableCards(sortedGames.Count);
         }
+
+        /// <summary>Locked when the quest progression hasn't unlocked the mode, or the running quest graph has funneled the
+        /// arcade down to one tutorial mode - unless a guided path points at this card, which may always open the one
+        /// door it leads to. The grid's lock and its "Unlocked" sort and filter read this one rule.</summary>
+        static bool IsLocked(SO_ArcadeGame game, GameModeProgressionService progressionService) =>
+            ((progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
+             || QuestArcadeConstraints.IsModeBlocked(game.Mode))
+            && !MenuGuide.ExemptsMode(game.Mode);
 
         /// <summary>
         /// Bring the grid's ROWS into line with the cards that were just filled: a row is shown
@@ -855,22 +873,32 @@ namespace CosmicShore.UI
             ArcadeGameConfigureModal.OpenForWeeklyChallenge(card, challenge);
         }
 
+        // The legacy Play button's launch values. They were statics on the retired MiniGame, which nothing wrote
+        // once Arcade.cs stopped (2026-10-25, REFACTOR_BACKLOG.md M6), so they are the values it held: SelectShip
+        // sets the resources; the vessel, intensity and player count never moved off their defaults. Resting level
+        // 0 in every element: authored ability baselines are exact at spawn (Docs/ElementalAbilitySystem/BACKLOG.md
+        // § Open decisions #1).
+        const VesselClassType LegacyLaunchVessel = VesselClassType.Dolphin;
+        const int LegacyLaunchIntensity = 1;
+        const int LegacyLaunchPlayers = 1;
+        static ResourceCollection s_launchResources = new(0f, 0f, 0f, 0f);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetLaunchResources() => s_launchResources = new(0f, 0f, 0f, 0f);
+
         public void SelectShip(SO_Vessel selectedShip)
         {
             selectedVesselClassType.Value = selectedShip.Class;
-            // TODO - Remove statics from MiniGame, use SOAP Data Container
-            // notify the mini game engine that this is the vessel to play
-            // MiniGame.PlayerShipType = selectedShip.Class;
 
             // Set resource levels from the vessel's config
-            MiniGame.ResourceCollection = selectedShip.InitialResourceLevels;
+            s_launchResources = selectedShip.InitialResourceLevels;
         }
 
         public void PlaySelectedGame()
         {
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
-            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(LegacyLaunchIntensity, LegacyLaunchPlayers, LegacyLaunchVessel, SelectedGame.Mode, SelectedGame.IsMultiplayer));
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, LegacyLaunchVessel, s_launchResources, LegacyLaunchIntensity, LegacyLaunchPlayers, SelectedGame.IsMultiplayer, false);
         }
 
         public void ToggleFavorite()

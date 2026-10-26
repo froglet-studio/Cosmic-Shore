@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     public class SkimRaceScoreTracker : BaseScoreTracker, IStatExposable
     {
         [Header("Dependencies")]
-        [SerializeField] CrystalCollisionTurnMonitor turnMonitor;
+        [SerializeField] NetworkCrystalCollisionTurnMonitor turnMonitor;
 
         [Header("Settings")]
         [SerializeField] bool showDebugLogs = true;
