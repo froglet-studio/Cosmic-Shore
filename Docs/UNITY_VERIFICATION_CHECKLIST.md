@@ -15914,3 +15914,14 @@ the cloud session. Proven offline: refcompile (player + editor OK), Amoebius bui
 - [ ] START launches on a press (no hold). The controls panel does NOT jump when the difficulty row shows.
 - [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
 - [ ] Arena and Maelstrom windows are unchanged.
+
+## Menu_Main slide lag: masks sleep while nothing under them can be seen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds, every menu generator `--check` / `--self-test`, `check_generated_assets.py`.
+
+1. Open Menu_Main, enter Play (Release code optimization, Third Eye closed), let it settle on Home past the 4-minute auto-capture, stop Play and send the capture. **Pass:** `ClipperRegistry.Cull` well under 1 ms (3.4-4.0 ms in the 10-25/26 captures, 0.3 ms on 10-18).
+2. Slide Home -> Hangar -> Ark -> Profile and back with LB/RB and the nav. **Pass:** every screen draws fully on arrival, nothing stays blank or half-clipped, no content shows from a neighbouring screen during the slide.
+3. On a notched phone or a Simulator device with a safe area: **Pass:** each screen's background still reaches the screen edges (the slot mask is padded out to the slot).
+4. Open and close the Arcade, Arena, Toy Box, Voyage and Settings windows; scroll the Arcade grid. **Pass:** cards and art bands clip correctly at the viewport edge on the first frame the window is visible.
+5. Freestyle (Select) and back. **Pass:** the hub reappears fully drawn.
+
