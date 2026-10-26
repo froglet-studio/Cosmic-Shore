@@ -313,8 +313,14 @@ orbiting, and the way back to Mass is as many B presses as the cycle needs, sent
 (`StoatModeExecutor.PressesTo`). **The flight recorder** writes `timeMode` 2 for Hybrid; the learner
 (`learn_drives_from_flights.py`) counts Time and Hybrid as one orbit family, so a Time → Hybrid press is not a switch.
 
-**Not done yet:** the Vessel Studio's Stoat page has no Hybrid mode (this went Unity-first, at the user's request); the
-mode's FMOD slot `hybridModeEvent` ships empty; the numbers (0.5, 2.5 s) are first guesses for play.
+**In the Vessel Studio** (round 16, `Docs/Studios/StoatFlightStudio.html`, the same day): T steps field trajectory →
+catch sling → Hybrid → field, the game's B; Hybrid is the catch sling with `fieldPath` run at `hyLen` × `ftLength` on
+the sticks with no field, the warmth / lime cue and the carry in `stepCatchBoost` (per pilot, in `ftLive`), the release
+starting the carry in `releaseDipole`. `hyLen` / `hyCarry` map to `hybridPathLengthShare` / `hybridCarrySeconds`
+(`studio_to_unity/stoat.json`; both match). **One known difference:** the line's full length is 600 u in the studio
+(`ftLength`) and 1200 u in Unity (`StoatDipoleConfig.pathLength`, play-tuned there, a drift `studio_to_unity.py --check`
+already reported before Hybrid), so Hybrid's line is 300 u in the studio and 600 u in the game until one side is
+changed. **Not done yet:** the FMOD slot `hybridModeEvent` ships empty; the numbers (0.5, 2.5 s) are first guesses for play.
 
 ## 2. What the sink takes
 
