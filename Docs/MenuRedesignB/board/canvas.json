@@ -1861,7 +1861,7 @@
    "w": 1920,
    "h": 1080,
    "page": "rev25",
-   "title": "Rev 25 - Arena B (vessel strip, intensity as a signal)"
+   "title": "Rev 25 - Arena B (picked: vessel strip, signal, open border)"
   },
   "R25VoyageA.dc.html": {
    "x": 0,
@@ -1877,7 +1877,7 @@
    "w": 1920,
    "h": 1080,
    "page": "rev25",
-   "title": "Rev 25 - Voyage B (vessel strip, signal)"
+   "title": "Rev 25 - Voyage B (picked: vessel strip, signal, open border)"
   },
   "R25Notes.dc.html": {
    "x": 0,
