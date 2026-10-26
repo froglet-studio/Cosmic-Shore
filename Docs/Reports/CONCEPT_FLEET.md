@@ -1,4 +1,4 @@
-# Concept fleet and supervessels — where it stands (report for Yash, 2026-10-26)
+# Concept fleet and supervessels — where it stands (report for Yash, 2026-10-26, evening)
 
 **Branches:** the studio pages and the Omega crews are on `Ys-bleeding-edge`; the Flea is on `claude/flea-vessel`
 (Garrett's); nothing of it is on `bleeding-edge`. **Artifact:** the Vessel Studio, version 40
@@ -13,10 +13,12 @@ things are in Unity and neither has been opened in an editor yet.
 - **The Flea is in Unity** on `claude/flea-vessel` (vessel 24, 2026-10-24): flyable from the Toybox's Vessel Changer,
   the page's maths ported with golden tests, the Stoat's body as a stand-in. Garrett has not flown it yet.
 - **The Omega crews are in Unity** on `Ys-bleeding-edge` (vessels 25-27, 2026-10-26; Yash: "make this prototype in
-  Ys-bleeding-edge, I wanna test there"): Warden (Stoat, Thresher, Butterfly), Bulwark (Rhino, Grizzly, Scarab), Tempest
-  (Squirrel, Sparrow, Manta). Apart, each member is a hull you swap between with the D-pad; LT gathers them into one
-  omega form with three seats (Helm, Arms, Core); the finisher splits them. The lab's headless scorecard, the Unity
-  clone's limits and the hand test are in `Docs/Studios/CONCEPT_FLEET.md` §10 and `Crew/OMEGA_CREW.md`.
+  Ys-bleeding-edge, I wanna test there"), rebuilt the same day after his first test as a MARCH FORMATION with three
+  roles: Warden = Stoat (mobility) / Sparrow (attack) / Rhino (defence), Bulwark = Scarab / Grizzly / Butterfly,
+  Tempest = Squirrel / Thresher / Manta. The three fly as one rigid flock; the D-pad moves you (and the camera) between
+  them while the AI holds the other two; the attack seat aims and fires, the defence seat shields and fires the ward.
+  The lab's combine (mega / omega forms) stays on the page, not in the game yet. `Crew/OMEGA_CREW.md`,
+  `Docs/Studios/CONCEPT_FLEET.md` §10.3, the hand test in the checklist.
 - **The vessel id ledger** (CONCEPT_FLEET.md §0): 24 Flea, 25-27 the Omega crews, **28 is the next free id**. The
   Tether / Gibbon, Dragonfly, Marlin and Albatross have none yet; the name "Marlin" is kept in the
   game for a swordsman (the Jacks were "Marlin and Jacks"), so the drifter's name still needs Garrett's call.
@@ -27,7 +29,7 @@ things are in Unity and neither has been opened in an editor yet.
 |---|---|---|
 | Gibbon | Web-slinger, round 2 done in the studio (§8.3); AI moves but finishes no course | Yash flies it and decides the feel; the Tether prototype (`cece/loving-feynman-hlgf18`) is still unmerged (T-20261017-e64b) |
 | Flea | **Unity, `claude/flea-vessel`** (24): Vessel Changer, FleaMath goldens, Stoat body | Garrett flies the branch (T-20261024-bd25), then its small racing game (T-20261017-929b) |
-| Warden / Bulwark / Tempest | **Unity, `Ys-bleeding-edge`** (25-27): Vessel Changer, OmegaMath goldens, Stoat body + placeholder member bodies | Yash flies them (the hand test; a ticket for it is filed by `/team-tasks add` on his yes: the session could not reach the Froglet Tasks page's store); Keep / Drop per crew on the studio's Decisions tab; then round 2: the Omega Run mode (`/arcadegame`), member and omega bodies (`/vessel-model`), the Warden's reason to split, rider seats |
+| Warden / Bulwark / Tempest | **Unity, `Ys-bleeding-edge`** (25-27, round 2: the march formation with mobility / attack / defence seats): Vessel Changer, OmegaMath goldens, Stoat body + placeholder member bodies | Yash flies them (the hand test; a ticket for it is filed by `/team-tasks add` on his yes: the session could not reach the Froglet Tasks page's store); Keep / Drop per crew on the studio's Decisions tab; then round 3: member bodies (`/vessel-model`), the combine in the game, multiplayer swapping, the Omega Run mode (`/arcadegame`) |
 | Dragonfly | Round 1 page | Control swap, stored boosts, the mine / joust kit (T-20261017-3cc7) |
 | Marlin | Round 1 page (drifter) | Pure drifter, never grips (T-20261017-1bc9); its name needs a decision |
 | Albatross | Round 1 page (glider, AI weak) | Nucleus-frame up/down, thermals, membrane cost (T-20261017-ba54); needs a cell stage in the studio |

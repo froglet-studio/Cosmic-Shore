@@ -11,36 +11,46 @@ Yash, 2026-10-26: "I wanna make a crew vessel, that stoat start will be a part o
 control the vessel in different way ... each vessel will have their own megaforms and then finally they will have their
 omegaforms. They can combine." Then: "make this prototype in Ys-bleeding-edge, I wanna test there."
 
-## 1. What a crew is
+## 1. What a crew is (round 2, Yash's test of 2026-10-26)
 
-Three vessels of the shipped fleet, one hull class, one squad slot, one card (`SO_Class_<Crew>`, SeatCount 3):
+Three vessels of the shipped fleet, one hull class, one squad slot, one card (`SO_Class_<Crew>`, SeatCount 3), flying as
+ONE MARCH FORMATION: an aligned flock of three whose relative distances never change. Every crew is three ROLES (Yash:
+"defender, midfielder and attacker"): a MOBILITY vessel that leads and does the manoeuvring, an ATTACKER to its right
+that does the shooting, a DEFENDER to its left that protects.
 
-| Crew | Members (page `MEMBERS`) | Omega weapon (Arms) | Core shield / finisher | Omega flight |
+| Crew | Mobility (member 0) | Attack (member 1) | Defence (member 2) | The formation flies with |
 |---|---|---|---|---|
-| **Warden** (25), the field crew | Stoat, Thresher, Butterfly | Ripple whip: 60 u sweep, cool 0.6 s | Fold ward / Annihilation | turn x0.6, speed x1.15 |
-| **Bulwark** (26), the heavy crew | Rhino, Grizzly, Scarab | Siege cannon: blast 30 x (0.5 + charge), charge 1.6 s | Switch wall / Breaker | turn x0.5, speed x1.1 |
-| **Tempest** (27), the fast crew | Squirrel, Sparrow, Manta | Pulsefire battery: range 260, every 0.08 s | Afterburner veil / Kabloom | turn x0.75, speed x1.3 |
+| **Warden** (25), the field crew | Stoat (sling boost) | Sparrow (Pulsefire guns) | Rhino (shield; its plough on RT) | the Stoat: cruise 60, turn 110, roll 130 |
+| **Bulwark** (26), the heavy crew | Scarab (cavitation dash) | Grizzly (charged cannon) | Butterfly (shield; a boost on RT) | the Scarab: 75 / 120 / 150 |
+| **Tempest** (27), the fast crew | Squirrel (skim boost) | Thresher (wrecking ball) | Manta (shield; a boost on RT) | the Squirrel: 66 / 120 / 140 |
 
-The omega flight is the members' average cruise / turn / roll times the crew's multipliers (`OmegaMath.OmegaFlight`):
-Warden 70.9 u/s, turn 64, roll 74; Bulwark 67.8 / 49.2 / 56.7; Tempest 89.3 / 82.5 / 105.
+The compositions are proposals from the fleet's strengths (the best movers, the best shooters, the vessels with a
+shield or a plough); Yash rearranges them in `OmegaMath.Crews` and the page's CREWS (the artifact first). The lab page
+keeps the mega / omega COMBINE from round 1 (gather, dock, one omega body with Helm / Arms / Core, the finisher);
+the game does not have it yet (§6).
 
-## 2. How it plays (the page's controls, on the game's inputs)
+## 2. How it plays
 
-| Form | LT | RT | Swap gesture (D-pad left / right, arrow keys, two-finger swipe) |
+- **The formation.** The hull's `OmegaVesselTransformer` always flies with the MOBILITY vessel's cruise and turn rates,
+  whichever member the person sits in. The other two members are bodies at fixed offsets in the leader's frame
+  (`formationSpread` 18 u to each side, `formationBack` 10 u behind; `OmegaMath.FormationOffset`), drawn by
+  `OmegaCrewView`. Nothing drifts apart.
+- **Seats and the swap.** The person sits in one member; the HULL (the Unity vessel, with its camera) IS that member.
+  The swap gesture (D-pad left / right, the arrow keys, a two-finger swipe) moves the hull to the chosen member's place
+  in the formation (`OmegaCrew.HandOver`: the pose is the formation's, the speed the formation's), so the camera goes
+  with you and the member you left becomes a body. An AI holds every seat you do not.
+
+| Seat | Who flies | LT | RT |
 |---|---|---|---|
-| **Apart (mega)** | hold = call the gather; with the meter at `combineAt` (0.3) and every member within `gatherRange` (140 u) the dock starts | the hull member's move (§3) | the hull becomes another member: it takes that member's pose and flight, the member left behind takes the hull's |
-| **Gathering** | - | - | waits for the omega |
-| **Omega, Helm** (seat 0) | hold `splitSeconds` (0.5 s) = split | - | to Arms / Core: the hull's AIPilot flies, your flight input is paused (the Orca's gunner rule) |
-| **Omega, Arms** (seat 1) | - | fire the crew weapon down the turret line (right stick / mouse / W A S D aim; the arrows stay the seat cycle) | |
-| **Omega, Core** (seat 2) | hold = the shield (extra meter drain, mass touched is destroyed) | the finisher when the meter is at `finisherAt` (0.9): everything hostile in a cone `finisherCone` (180 u) ahead, a blast, then the split | |
+| **Mobility** | you, with the sticks | - | the mobility vessel's move (§3: a boost, or the Scarab's dash) |
+| **Attack** | the hull's AIPilot (your flight input is paused, the Orca's gunner rule); you aim the turret with the right stick, the mouse or W A S D | - | the attacker's weapon down the turret line (guns / cannon / the wrecking ball) |
+| **Defence** | the hull's AIPilot; the sticks are free | the shield: every hostile prism within `shieldRadius` (40 u) of the formation dies while held; the meter drains `shieldDrain` | the ward burst: one sweep half again as wide, `wardCost` 0.2 of the meter, `wardCooldown` 3 s |
 
-The meter (`OmegaCrew.Meter01`, the Mass card): starts at 0.5; apart it regenerates `regen` (0.02/s) and a crystal adds
-`meterPerCrystal` (0.22); combined it drains `drain` (0.05/s, plus `shieldDrain` 0.06/s while shielded) and a crystal
-pays `combinedCrystal` (half); the finisher costs `finisherCost` (0.7); empty, the crew splits. The AI fills every seat
-the person does not hold: Arms turns the turret onto the nearest mass ahead and fires when aligned (a cannon holds until
-charged); Core shields when `aiShieldMass` prisms are about to hit and fires the finisher when the cone holds
-`aiFinisherMass`; the AI Helm is the hull's AIPilot and never splits on purpose (the page's AI helm splits when nothing
-locked lies ahead; there are no walls here yet, §6).
+- **The AI seats** (input only): the attacker AI turns its turret onto the nearest mass ahead of ITS place and fires when
+  aligned (a cannon holds until charged); the defender AI shields when `aiShieldMass` hostile prisms are about to meet
+  the formation and fires the ward when `aiFinisherMass` are; the mobility AI is the hull's own AIPilot.
+- **The meter** (the Mass card) starts at `startMeter` 0.5, regenerates `regen` 0.02/s always, fills by
+  `meterPerCrystal` 0.22 per crystal (`OmegaCrystalEffectSO`), and pays for the shield and the ward.
 
 ## 3. What the Unity hull does with each member's move (the page's `megaMove`, folded)
 
@@ -59,35 +69,41 @@ The page has nine distinct moves. A hull here has one `OmegaMath.MoveKind` per m
 | Manta | Boost tunnel (a ring others ride) | **Boost** burst (`foldBoost`): the ring is round 2 | cool 3 |
 
 A smash is `PrismSpatialIndex.QuerySphere` + `Prism.Damage(devastate)` (a super-shielded prism has its shields
-deactivated first), the Orca sniper's debris numbers. The AI members do not use their moves here (the page's AI
-members do); they fly the formation and the gather.
+deactivated first), the Orca sniper's debris numbers. In the game a member's move runs from its PLACE in the formation along its aim: the mobility vessel's from the hull
+(a boost is the whole formation's), the attacker's down its turret line, the defender's round the formation.
 
 ## 4. HUD (the Stoat's four gauges, `OmegaHUDController`)
 
-Charge = the weapon (a cannon's charge while held, else how far its cooldown has run); Mass = the meter; Space = apart,
-how close the farthest member is to gather range (full when the combine can start), the dock while gathering, full
-combined; Time = the finisher, lit when the meter can pay for it. No text: the form is read off the world (§5).
+Charge = the attacker's weapon (a cannon's charge while held, else how far its cooldown has run); Mass = the meter;
+Space = the ward's cooldown running down, lit while the shield is up; Time = the seat you sit in (a third per seat:
+mobility, attack, defence), lit in the mobility seat. No text: the formation is read off the world (§5).
 
 ## 5. The look (`OmegaCrewView`, placeholders)
 
-The hull wears the Stoat's model. The other two members are faceted bodies in the page's proportions (plates, ball,
-wings, wedge, box, disc, cone, fighter, delta) in the hull's domain colour on the Orca's lit material
-(`Resources/OrcaCrewLit.mat`), flying beside the hull apart, docked on their page slots (9 up / 4 back, 8 down / 6
-back) with struts combined. Weapon fire is a lit bar to the strike, the Arms aim a thin bar, the finisher a cone that
-fades over 0.6 s. Real member models are the next round (`/vessel-model`); so is a body for the omega form.
+The hull wears the Stoat's model whichever member you sit in (so the Stoat shape moves with you; the member you left
+shows as its placeholder). The other two members are faceted bodies in the page's proportions (plates, ball, wings,
+wedge, box, disc, cone, fighter, delta) in the hull's domain colour on the Orca's lit material
+(`Resources/OrcaCrewLit.mat`), the colour set on the material itself (a property block on the instanced template drew
+them BLACK in Yash's first test, 2026-10-26). The attacker's aim is a thin bar along its turret line, weapon fire a bar
+to the strike, the shield eight shards orbiting the formation, the ward a shell that fades. Real member models are the
+next round (`/vessel-model`).
 
-## 6. Not on the page's side yet, or not here yet (round 2)
+## 6. Not in the game yet (round 3)
 
-- **The Omega Run** (the page's mini-game: shielded walls lock every third crystal and only the omega's weapon opens
-  them) is not a mode yet: `/arcadegame`. Without walls the AI Helm never splits on purpose, and the Warden's omega has
-  no reason to split (the page's round-1 finding; decision `omega-round1-purpose` in the artifact's log).
+- **The combine** (the lab's mega / omega forms: gather on LT, the dock, one omega body with Helm / Arms / Core, the
+  finisher that splits the crew) is on the page and in `OmegaMath` (slots, dock ease, the finisher cone, held by
+  `OmegaMathTests`), not in `OmegaCrew`: Yash's test asked for the formation with roles first ("for now, just make
+  this much").
+- **Multiplayer swapping** (a second person taking the attacker or the defender from another machine): `HostsRiders`
+  is false; the Orca's rider seats are the pattern.
+- **The Omega Run** mini-game (walls only a crew weapon opens): `/arcadegame`.
 - **Skims do not fill the meter** (`meterPerSkim` is carried but no per-skim hook reaches the crew).
-- **One person per crew**: `HostsRiders` is false; the Orca's rider seats are the pattern when a second person should
-  take Arms or Core from another machine.
-- **An AI hull** (a rival crew the spawner adds) flies as its first member and never combines.
-- **No omega camera**: the hull's chase camera stays in every seat; the Arms aim shows as a bar in the world.
-- **The gate pair and the tunnel ring** are boosts here (§3).
-- **Networking the crew's effects** (what a remote peer sees of the bodies and the finisher) is the Orca's follow-up too.
+- **An AI crew** (a rival the spawner adds) flies the formation with every seat on AI (the attacker fires, the defender
+  shields) on the authority only.
+- **No per-member camera**: the hull's chase camera moves with you because the hull does; the members have no cameras
+  of their own.
+- **The gate pair and the tunnel ring** are boosts here (§3). A defender whose move is a boost (Butterfly, Manta) boosts
+  the whole formation on RT; the ward and the shield are the same for every defender.
 
 ## 7. Elements (open slots)
 
@@ -112,9 +128,10 @@ reads it until the slots are signed off (vessel skill §3).
 
 ## 9. Hand test (Garrett's workflow: artifact to the Toybox's Vessel Changer)
 
-Menu_Main > freestyle > Toy Box > Vessel Changer > **Warden** (then Bulwark, Tempest). Fly: the Stoat hull with two
-faceted bodies beside it. RT: the Stoat's sling boost. D-pad right: you are the Thresher (the hull jumps to its pose);
-RT held: mass ahead is smashed. Hold LT with the Mass card past a third: the two bodies dock onto the hull over 1.6 s;
-the hull is now the omega (faster, wider turns), bulldozing mass. D-pad right: Arms; the right stick aims a bar, RT
-whips. D-pad right: Core; LT holds the shield (the Mass card drains faster), RT with the Mass card near full fires the
-finisher: a cone of mass dies, a blast, the crew splits round you. Hold LT as Helm for half a second: split.
+Menu_Main > freestyle > Toy Box > Vessel Changer > **Warden** (then Bulwark, Tempest). Fly: the Stoat hull leads, two
+bodies in your domain colour ride 18 u to each side and 10 u behind, and stay there through every turn and boost. RT:
+the Stoat's sling boost (the whole formation speeds up). D-pad right: you are the Sparrow; the hull jumps to the right
+place, the camera with it, the AI now steers the formation and your sticks turn a thin bar; RT fires its guns down it,
+the nearest prism on that line dies. D-pad right again: the Rhino; LT holds the shield (shards orbit the formation,
+mass inside it dies, the Mass card drains), RT fires the ward (a shell swells and fades, mass around the formation
+dies). D-pad left twice: back in the Stoat, your sticks fly again. Swap to another vessel: nothing is left behind.

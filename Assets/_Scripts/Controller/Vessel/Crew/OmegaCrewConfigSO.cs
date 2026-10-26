@@ -57,24 +57,30 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(10f)] float cannonRange = 140f;
         [Tooltip("A boost-kind move with no page boost of its own (the Butterfly's gate, the Manta's tunnel) is this boost for one second here.")]
         [SerializeField, Min(1f)] float foldBoost = 1.5f;
-        [Tooltip("How far out the AI members fly beside the hull apart (u), one to each side.")]
-        [SerializeField, Min(10f)] float formationSpread = 40f;
-        [Tooltip("An AI member more than its formation slot behind flies this many times its cruise to catch up.")]
-        [SerializeField, Min(1f)] float memberCatchUp = 1.4f;
+        [Tooltip("The march formation (Yash, 2026-10-26): how far the attacker rides to the mobility vessel's right and the defender to its left (u).")]
+        [SerializeField, Min(5f)] float formationSpread = 18f;
+        [Tooltip("The march formation: how far behind the mobility vessel the attacker and the defender ride (u).")]
+        [SerializeField, Min(0f)] float formationBack = 10f;
+        [Tooltip("The defence seat's shield: every hostile prism within this of the formation's centre dies while LT is held (u).")]
+        [SerializeField, Min(5f)] float shieldRadius = 40f;
+        [Tooltip("The defence seat's ward burst (RT): a one-shot sweep half again as wide as the shield; this much meter it costs.")]
+        [SerializeField, Range(0f, 1f)] float wardCost = 0.2f;
+        [Tooltip("Seconds between ward bursts.")]
+        [SerializeField, Min(0f)] float wardCooldown = 3f;
         [Tooltip("The Arms seat's mouse aim (radians per pixel of mouse travel).")]
         [SerializeField, Min(0f)] float mouseAimRadiansPerPixel = 0.0035f;
         [Tooltip("How far ahead an AI Arms seat looks for mass to aim at (u).")]
         [SerializeField, Min(10f)] float aiAimRange = 120f;
-        [Tooltip("Prisms within 45 u ahead that make an AI Core raise the shield.")]
+        [Tooltip("Hostile prisms about to meet the formation that make an AI defender raise the shield.")]
         [SerializeField, Min(1)] int aiShieldMass = 3;
-        [Tooltip("Prisms in the finisher cone that make an AI Core fire it (the page fires at a wall; there are no walls yet).")]
+        [Tooltip("Hostile prisms about to meet the formation that make an AI defender fire the ward burst.")]
         [SerializeField, Min(1)] int aiFinisherMass = 6;
         [Tooltip("Speed a smashed prism's debris leaves at (u/s), and its cap (the Orca's sniper numbers).")]
         [SerializeField, Min(0f)] float debrisSpeed = 90f;
         [SerializeField, Min(0f)] float debrisSpeedLimit = 120f;
 
         [Header("Explosions")]
-        [Tooltip("The finisher's blast (AOEExplosion prefabs), spawned at the omega and scaled to the finisher's reach.")]
+        [Tooltip("The ward burst's blast (AOEExplosion prefabs), spawned at the formation's centre and scaled to its sweep.")]
         [SerializeField] AOEExplosion[] finisherExplosions;
         [Tooltip("A cannon shot's burst (a member's or the Siege cannon), scaled to its blast radius.")]
         [SerializeField] AOEExplosion[] cannonExplosions;
@@ -103,7 +109,10 @@ namespace CosmicShore.Gameplay
         public float CannonRange => cannonRange;
         public float FoldBoost => foldBoost;
         public float FormationSpread => formationSpread;
-        public float MemberCatchUp => memberCatchUp;
+        public float FormationBack => formationBack;
+        public float ShieldRadius => shieldRadius;
+        public float WardCost => wardCost;
+        public float WardCooldown => wardCooldown;
         public float MouseAimRadiansPerPixel => mouseAimRadiansPerPixel;
         public float AiAimRange => aiAimRange;
         public int AiShieldMass => aiShieldMass;

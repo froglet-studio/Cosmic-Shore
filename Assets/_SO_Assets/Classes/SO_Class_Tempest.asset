@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 27
   Name: Tempest
-  Description: 'The fast crew: the Squirrel, the Sparrow and the Manta. The fastest omega. Helm flies, Arms fires the Pulsefire
-    battery, Core holds the Afterburner veil and fires Kabloom.'
+  Description: 'The fast crew: the Squirrel steers, the Thresher smashes, the Manta shields. Three vessels flying as one
+    formation; the D-pad moves you between them. In the Squirrel, RT is its skim boost; in the Thresher, hold RT to
+    swing the wrecking ball; in the Manta, hold LT for the shield and press RT for the ward.'
   CrewNames: []
   CrewNameTemplate: '{0} and {1}'
   SeatCount: 3
