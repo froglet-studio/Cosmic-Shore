@@ -456,3 +456,16 @@ crew and the feel of the swap, the dock and the finisher on the Decisions tab. T
 body for each omega (today the three member bodies on struts), the Warden's reason to split, a second mini-game
 (a wall-breaking race against a rival crew), and the Unity port by `/artifact-to-unity` with the mini-game (`/arcadegame`)
 and the four abilities, per CLAUDE.md's artifact-to-Unity pipeline.
+
+### 10.2 The Unity clone (2026-10-26, `Ys-bleeding-edge`; Yash: "make this prototype in Ys-bleeding-edge, I wanna test there")
+
+Three hull classes, `Warden = 25`, `Bulwark = 26`, `Tempest = 27`, each a Stoat clone by `Tools/Build/author_omega_assets.py`
+carrying `OmegaCrew` (the forms, the seats, the meter, the members' moves, the crew weapon, the finisher, input-only AI
+seats), `OmegaVesselTransformer` (the page's cruise / turn / roll per form), `OmegaCrewView` (placeholder bodies and
+struts) and `OmegaCrystalEffectSO` (crystals fill the meter). `OmegaMath` is the page's part B line for line, held by
+`OmegaMathTests` to goldens from the page's own functions (`omegaFlight`, `slotOf`, the dock ease, the meter, `mults`,
+the `omegaCore` cone). In the Toybox's Vessel Changer, as every port must be (CLAUDE.md "Bring it to Unity"). What the
+clone folds (nine member moves into boost / smash / guns / cannon; a cannon that bursts at range instead of flying) and
+what is round 2 (the Omega Run mode via `/arcadegame`, member and omega bodies via `/vessel-model`, skims into the
+meter, rider seats, an omega camera) is written in `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md` §3 and §6;
+the hand test is `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not editor-verified: the Unity CLI was not available.

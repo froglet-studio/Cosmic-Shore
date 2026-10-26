@@ -30,5 +30,12 @@
     "clonedAt": "2026-10-18",
     "result": "2026-10-18 (v11): the vortex ring and the flares are lit faceted volumes, in the 3D world and in the Pistol's view (nothing in the world looks flat): PistolWarp.VortexRingFacets, URP Lit materials, the view's ring on the solid pass. 2026-10-18: the Pistol's view drawn as the game draws it (PistolTrueDraw: real meshes and materials, lit, under the sky, through a perspective camera whose frustum is the parallax; the lab's side view the same). 45 mapped parameters match the artifact (studio_to_unity.py --check). 2026-10-16: gCruise is mapped to Goby.prefab DefaultThrottleScaler (160, the Goby's own cruise; author_goby_assets.py writes and checks it from the lab), the closeness speed (gCloseMax 2.4, gCloseRange 320) and the AI Goby's easing (aiMaxGap 260) are cloned as GobyMath, the launch is 1 charge / 9 s. Earlier: the lab's maths line for line (PistolRibbon, PistolBodyMath, VortexRing, PistolAI) and the Pistol's VIEW (PistolWarp, PistolWorldMesh, PistolWorld.shader), held to the page's goldens. 16 keys stay lab-only (--unmapped): the Goby's turn rates are the Squirrel prefab's own; the straight boost waits; seeding, hinge tilt, Goby AI weave, run length, swapCd.",
     "retired": "2026-10-22: Garrett redesigned the Goby's kit straight in Unity (\"we already have the pair in the game ... go straight to unity\"): the Goby darts and perches, the Pistol rides a flat plane perch to perch, builds dens, pulls mass into its plane and fires homing rings. goby.json (the lab-to-asset map) was removed with the old config's fields; the lab (goby.html) is behind the game until a lab round ports this kit. See .claude/skills/duo-vessel/references/designs/goby-and-pistol.md section 11."
+  },
+  "Omega": {
+    "artifactVersion": "v40 (Omega Crews lab round 1, 2026-10-26)",
+    "pageSha": "3a75bb4563",
+    "decisionsThrough": "2026-10-26T00:00:00.000Z",
+    "clonedAt": "2026-10-26",
+    "result": "First clone: the three crews (Warden 25, Bulwark 26, Tempest 27) as Stoat-clone hulls with OmegaCrew / OmegaVesselTransformer / OmegaCrewView / OmegaCrystalEffectSO (author_omega_assets.py). The page's DEFAULTS are OmegaCrewConfigSO's fields with the page's labels (no studio_to_unity map yet: the lab's SPEC keys are the config's field names one for one, OMEGA_CREW.md). OmegaMath ported line for line, OmegaMathTests goldens from the page's own functions. The decision log held one entry (omega-round1-purpose: the purpose decision, no settings snapshot). Not editor-verified (no Unity CLI)."
   }
 }

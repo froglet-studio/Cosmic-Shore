@@ -47,6 +47,7 @@ namespace CosmicShore.Gameplay
             VesselClassType.BrittleStar, VesselClassType.Shrike, VesselClassType.Angler,
             VesselClassType.Wrasse, VesselClassType.Orca, VesselClassType.Starling, VesselClassType.Jacks,
             VesselClassType.Honeyguide,
+            VesselClassType.Warden, VesselClassType.Bulwark, VesselClassType.Tempest,
         };
 
         /// <summary>
