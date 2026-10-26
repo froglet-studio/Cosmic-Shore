@@ -372,7 +372,7 @@ with the rest of the law.
   Afterimage / Danger Afterimages; Space — Blade Reach / Breaker; Time — Ramp Spool / Momentum),
   and the row binds 4/4 with PLACEHOLDER icons — no card is LOCKED. The Time row's own `Input` is
   still deliberately **0**: the ramp engages on a full-throttle straight, not a button.
-- **OPEN: the graded ramp is not reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
+- **DONE 2026-10-26 (Garrett: "yes"): the Time gauge DIMS as the line bends** while the ramp is engaged - `RhinoHUDController.PushLineToTimeGauge` scales the gauge's authored alpha from 1 (straight) down to `bentLineGaugeAlpha` (0.3) by `RampBoostActionExecutor.Straightness01`; the fill is still speed / top speed. *Was:* **OPEN: the graded ramp is not reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
   is published for exactly this and is still read by nothing. The Time card now exists — lit
   while the ramp boosts, flashing once at Momentum, its gauge filling with speed / top speed
   (2026-10-17) — and straightness is still the obvious second readout for it: the one number that tells a
