@@ -42,15 +42,20 @@ namespace CosmicShore.Gameplay
 
             if (IsServer)
             {
+                // Per-intensity: the forest shrinks five-fold up the ladder. Resolved here, on the
+                // server, and replicated through _netPrismTarget - a client receives the number
+                // rather than deriving it from an intensity it may not have yet (Cleave's rule).
                 var overrides = EndConditionOverridesSO.Instance;
+                int intensity = gameData != null && gameData.SelectedIntensity != null
+                    ? gameData.SelectedIntensity.Value : 1;
                 int target = overrides != null
-                    ? overrides.GetRampagePrismTarget()
+                    ? overrides.GetRampagePrismTarget(intensity)
                     : EndConditionOverridesSO.DefaultRampagePrismTarget;
 
                 _netPrismTarget.Value = target;
                 gameData.PrismTargetCount = target;
 
-                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[RampagePrismMonitor] Server set prism target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[RampagePrismMonitor] Server set prism target: {target} (intensity {intensity})");
             }
             else if (_netPrismTarget.Value > 0)
             {
