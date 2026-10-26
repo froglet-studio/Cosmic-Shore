@@ -30,8 +30,8 @@ namespace CosmicShore.UI
         [SerializeField] private Button nextButton;
 
         [Header("Words")]
-        [Tooltip("The numerals for levels 1 to 4.")]
-        [SerializeField] private string[] numerals = { "I", "II", "III", "IV" };
+        [Tooltip("What levels 1 to 4 read as (Shombith, 2026-10-26: numbers, not Roman numerals).")]
+        [SerializeField] private string[] numerals = { "1", "2", "3", "4" };
         [Tooltip("A locked level's line when its pip carries no goal. {level} is the level before it.")]
         [SerializeField] private string unlockLine = "Play {level} to unlock";
 
