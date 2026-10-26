@@ -215,9 +215,16 @@ namespace CosmicShore.Tests
         static void SetField(object target, string name, object value) => Field(target, name).SetValue(target, value);
         static T GetField<T>(object target, string name) => (T)Field(target, name).GetValue(target);
 
-        static void Call(object target, string method) =>
-            (target.GetType().GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance)
-             ?? throw new MissingMethodException(target.GetType().Name, method)).Invoke(target, null);
+        static void Call(object target, string method)
+        {
+            var m = target.GetType().GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new MissingMethodException(target.GetType().Name, method);
+            // Optional parameters take their defaults (RefreshAsync's fetchFromServer, Block 5 step 5).
+            var ps = m.GetParameters();
+            var args = new object[ps.Length];
+            for (int i = 0; i < ps.Length; i++) args[i] = ps[i].HasDefaultValue ? ps[i].DefaultValue : null;
+            m.Invoke(target, ps.Length == 0 ? null : args);
+        }
 
         /// <summary>An ISession whose events can be raised, whose roster is empty and whose player takes any property.</summary>
         public class FakeSession : DispatchProxy
@@ -231,6 +238,10 @@ namespace CosmicShore.Tests
                 fake = (FakeSession)(object)proxy;
                 return proxy;
             }
+
+            /// <summary>Runs inside LeaveAsync / DeleteAsync, before they complete (as the SDK raises Deleted).</summary>
+            public Action OnLeave;
+            public bool IsHostValue;
 
             public void Raise(string evt, params object[] args)
             {
@@ -246,7 +257,11 @@ namespace CosmicShore.Tests
                     case "get_Id": return "session";
                     case "get_Players": return Array.Empty<IReadOnlyPlayer>();
                     case "get_CurrentPlayer": return DispatchProxy.Create<Unity.Services.Multiplayer.IPlayer, AnyPlayer>();
+                    case "get_IsHost": return IsHostValue;
+                    case "AsHost": return null;
+                    case "LeaveAsync": OnLeave?.Invoke(); return System.Threading.Tasks.Task.CompletedTask;
                 }
+                if (m.ReturnType == typeof(System.Threading.Tasks.Task)) return System.Threading.Tasks.Task.CompletedTask;
                 return m.ReturnType.IsValueType && m.ReturnType != typeof(void) ? Activator.CreateInstance(m.ReturnType) : null;
             }
         }
@@ -281,6 +296,8 @@ namespace CosmicShore.Tests
             public Action OnRefresh;
             public ISession ActiveLobby => Active;
             public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
+            public bool ConsumeRosterDirty() => false;
+            public bool ConsumeMembershipLost() => false;
             public UniTask JoinOrCreateAsync(int maxPlayers) => UniTask.CompletedTask;
             public UniTask LeaveAsync() => UniTask.CompletedTask;
             public UniTask RefreshAsync() { OnRefresh?.Invoke(); return UniTask.CompletedTask; }

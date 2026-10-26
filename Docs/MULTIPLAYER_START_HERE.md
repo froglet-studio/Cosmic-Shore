@@ -129,7 +129,7 @@ last result, on 2026-10-14 just before #1089, was 8/14, stopped by the blocker b
 | 2 | Verify what landed | Owner's MPPM runs (§5.2) |
 | 3 | Test level: the five-process party scenarios | Landed (14/14 on Amoebius) |
 | 4 | Offline mode, seven cases | Landed (L1 tests); needs a player build pass |
-| 5 | **Push instead of poll — a launch blocker** (week one is 10-40 concurrent players) | **Steps 1-4 of 9 landed 2026-10-26** on `Ys-bleeding-edge`, ported from August's `Ys-rescue-2026-08-24`: voided reads are counted (`voided N` in `net_logs.py show`), a voided read no longer skips our publish, a background rejoin keeps a live party roster, and the party session's own join/leave/property events drive a roster sync at once (`pushes N`). Next: the presence push (step 5); order in `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 |
+| 5 | **Push instead of poll — a launch blocker** (week one is 10-40 concurrent players) | **Steps 1-5 of 9 landed 2026-10-26** on `Ys-bleeding-edge`, ported from August's `Ys-rescue-2026-08-24`: voided reads are counted (`voided N` in `net_logs.py show`), a voided read no longer skips our publish, a background rejoin keeps a live party roster, the party session's own join/leave/property events drive a roster sync at once (`party pushes N`), and the presence lobby's do too, with no read (`presence pushes N`); a pushed removal or delete rejoins at once. Next: republish on a roster move (step 6), then the two-strike eviction and relaxing the poll; order in `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 |
 | 6 | Reconnection grace | Not started |
 
 Open bugs that matter: **B29 Count case** (a party that just shrank reads as full; Block 5 cures

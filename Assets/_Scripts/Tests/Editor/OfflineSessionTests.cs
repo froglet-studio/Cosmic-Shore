@@ -352,6 +352,8 @@ namespace CosmicShore.Tests
             public int JoinCalls;
             public ISession ActiveLobby => null;
             public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
+            public bool ConsumeRosterDirty() => false;
+            public bool ConsumeMembershipLost() => false;
             public UniTask JoinOrCreateAsync(int maxPlayers) { JoinCalls++; return UniTask.CompletedTask; }
             public UniTask LeaveAsync() => UniTask.CompletedTask;
             public UniTask RefreshAsync() => UniTask.CompletedTask;

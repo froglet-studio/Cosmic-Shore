@@ -44,6 +44,8 @@ namespace CosmicShore.Utility
         OfflineFallback    = 13,
         /// <summary>The party session pushed a roster change and the party layer synced from it without a read (Block 5).</summary>
         PartyRosterPush    = 14,
+        /// <summary>The presence lobby pushed a roster change and the refresh ran on what the SDK already held, with no read (Block 5).</summary>
+        PresencePush       = 15,
     }
 
     public static class UgsRequestTelemetry

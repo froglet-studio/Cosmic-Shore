@@ -42,6 +42,20 @@ namespace CosmicShore.Gameplay
         Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
 
         /// <summary>
+        /// True once per burst of roster pushes from the active lobby (a player joined, left or changed
+        /// properties) since the last call (Block 5 step 5). The SDK applied the change before raising it,
+        /// so the caller re-reads <see cref="ActiveLobby"/> with no GET. Main thread only.
+        /// </summary>
+        bool ConsumeRosterDirty();
+
+        /// <summary>
+        /// True once after the service removed this player from the active lobby or deleted it - the
+        /// service stating the fact, not an inference from failed reads. The caller rejoins at once.
+        /// Our own leave never raises it. Main thread only.
+        /// </summary>
+        bool ConsumeMembershipLost();
+
+        /// <summary>
         /// Joins an existing presence lobby or creates one if none exists.
         /// Safe to call multiple times - returns early if already joined.
         /// </summary>

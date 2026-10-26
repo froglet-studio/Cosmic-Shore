@@ -150,6 +150,7 @@ namespace CosmicShore.Utility
                     presenceForceReset  = T(UgsRequestCounter.PresenceForceReset),
                     offlineFallback     = T(UgsRequestCounter.OfflineFallback),
                     partyRosterPush     = T(UgsRequestCounter.PartyRosterPush),
+                    presencePush        = T(UgsRequestCounter.PresencePush),
                     // Guarded: a record built before the first mark would divide by zero and
                     // report Infinity, which serialises and then poisons every later average.
                     lobbyReadsPerSecond = seconds > 0.01f ? T(UgsRequestCounter.LobbyReads) / seconds : 0f,

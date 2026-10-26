@@ -302,10 +302,11 @@ def peer_summary(log, name=None):
     carried = "  [record carried over from an earlier Play: counters and why may be that one's]" if log.get("_carried") else ""
     freeze = longest_stall(events)
     stall = f" longest freeze {freeze:.1f}s" if freeze else ""
-    # Block 5: reads the SDK's stale-index fault voided (counted since 2026-10-26), and roster syncs the
-    # party session's push drove (0 in a party means the push never fired).
+    # Block 5: reads the SDK's stale-index fault voided (counted since 2026-10-26), and the refreshes each
+    # lobby's push drove with no read (0 online means that push never fired).
     voided = f" voided {counters['benign']}" if counters.get("benign") else ""
-    pushes = f" pushes {counters['partyRosterPush']}" if counters.get("partyRosterPush") else ""
+    pushes = "".join(f" {name} pushes {counters[key]}" for key, name in
+                     (("partyRosterPush", "party"), ("presencePush", "presence")) if counters.get(key))
     return (f"{name or log.get('peer', '?'):<10} {rec.get('role', '?'):<10} "
             f"{'CLEAN' if clean else 'DIRTY':<6} errors {con.get('errors', 0):<4} warnings {con.get('warnings', 0):<4} "
             f"reads {counters.get('lobbyReads', 0)} 429s {limits}{voided}{pushes}{stall} "
@@ -472,8 +473,9 @@ def self_test():
         check("429s 2 (console 1)" in peer_summary(dirty), "the console's rate-limit warnings show beside the record's count")
         check("console" not in peer_summary(tests[1]["peers"][0]), "...and not when they agree")
         pushed = _fixture("main", "2026-10-15T10:00:00Z", "host", [], [])
-        pushed["record"]["counters"].update(benign=2, partyRosterPush=5)
-        check("voided 2 pushes 5" in peer_summary(pushed), "voided reads and party pushes show on the summary line")
+        pushed["record"]["counters"].update(benign=2, partyRosterPush=5, presencePush=7)
+        check("voided 2 party pushes 5 presence pushes 7" in peer_summary(pushed),
+              "voided reads and both lobbies' pushes show on the summary line")
         check("voided" not in peer_summary(dirty) and "pushes" not in peer_summary(dirty),
               "...and nothing shows when both are 0 (negative control)")
 

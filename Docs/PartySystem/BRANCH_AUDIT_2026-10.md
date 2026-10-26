@@ -39,7 +39,7 @@ this one.
 
 **Port order.** Bring the design, not the files. `UgsRequestPolicy`, `LobbyReadPacer` and the 400-line rule stay.
 
-**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-4 are done (below, each marked); steps 5-9 are next.
+**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-5 are done (below, each marked); steps 6-9 are next.
 
 1. **Done 2026-10-26.** **Count voided ticks** (44587a2fa4). The benign branch at `HostConnectionService.cs:1552` and `:2089` is
    empty, and `UgsRequestCounter.Benign` is never counted, so a voided tick looks healthy. About 5 lines;
@@ -55,7 +55,9 @@ this one.
 4. **Done 2026-10-26** (the engine's `ISession` gained the three events in `6757fc61d9`). **Party session push** (090f61a6ba). Today `PartySessionService` subscribes only to `PlayerLeaving`
    (`:202,:231`). Add flag-only handlers for `PlayerJoined`, `PlayerHasLeft` and `PlayerPropertiesChanged`,
    drained in `Update` into the cache sync B31 already added. About 120 lines.
-5. **Presence push** (b0adfa7284). `PresenceLobbyService` subscribes to no `ISession` event. Route its six
+5. **Done 2026-10-26** (`PresencePushChannel`; the engine's `ISession` gained `RemovedFromSession` in `023d5c55db`).
+   One rule the port added: the channel detaches BEFORE our own leave or delete, since the SDK raises `Deleted` on
+   the lobby we leave and a frame can run while the leave awaits. **Presence push** (b0adfa7284). `PresenceLobbyService` subscribes to no `ISession` event. Route its six
    `_activeLobby` assignments (`:164/271/307/366/505/583`) through one `SetActiveLobby`. Drain events
    **without** a fetch (4022675284's shape, not 8a14679585's `RefreshAsync` per push). Evict by departed id at
    once (a510bd5128). Send `RemovedFromSession`/`Deleted` into the existing

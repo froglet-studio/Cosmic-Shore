@@ -3887,6 +3887,27 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Party: Block 5 step 5 - the presence lobby's push (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 5): `PresencePushChannel` listens to the presence
+lobby's `PlayerJoined` / `PlayerHasLeft` / `PlayerPropertiesChanged` (roster dirty) and `RemovedFromSession` /
+`Deleted` (membership lost), flag only. Every `_activeLobby` change in `PresenceLobbyService` goes through
+`SetActiveLobby`; the channel detaches before our own leave or delete. `HostConnectionService.Update` drains a roster
+push into `RefreshAsync(fetchFromServer: false)` (no GET, no converge query, no party poll, the watchdog untouched;
+counted `PresencePush`) and a membership loss into an immediate rejoin. `net_logs.py show` prints `party pushes N
+presence pushes N`. Amoebius's `ISession` gained `RemovedFromSession` (`023d5c55db`, Port only).
+**Verified without the editor:** `PresencePushTests` (9; dropping the detach-before-leave, letting a push tick read,
+or dropping the immediate rejoin each fails its test) and the full edit-mode suite on Amoebius 644/648 (the 4 known
+SceneTransitionManager / AppManagerBootstrap failures); Port tests 105/105; `net_logs.py --self-test`;
+`unity_refcompile` player and editor OK; the Amoebius player build. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 9 `PresencePushTests` pass in the Test Runner.
+2. Two MPPM players in the menu: start P2's Play after P1's. P2 appears in P1's online list within about a second
+   (before, the next 1.5 s poll). Stop P2: it leaves P1's list as soon as UGS drops it.
+3. After Play, `net_logs.py show 1`: each player's summary line has `presence pushes N` with N > 0.
+4. Leave a party and return to the menu: no "removed us or was deleted - rejoining" warning (our own leave must not
+   read as being thrown out).
+
 ### 🔴 Party: Block 5 steps 1-4 - voided reads counted, publish independent of the read, rejoin keeps the party, party session push (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2, ported from August's `Ys-rescue-2026-08-24`):
