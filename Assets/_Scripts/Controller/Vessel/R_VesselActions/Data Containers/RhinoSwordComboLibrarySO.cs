@@ -192,6 +192,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds to blend from the flourish's end back to the live trigger pose.")]
         [SerializeField, Min(0.01f)] float blendOutSeconds = 0.18f;
 
+        [Header("Toast")]
+        [Tooltip("The line shown when the LOCAL human pilot lands a combo, in the game's toast container " +
+                 "(top right, under Settings - the only place incoming text goes). Tokens: {name} (the " +
+                 "flourish's displayName). Empty = no toast.")]
+        [SerializeField] string comboToastTemplate = "{name}";
+
         [Header("Flourishes")]
         [SerializeField] List<RhinoSwordComboPath> combos = new();
 
@@ -204,6 +210,7 @@ namespace CosmicShore.Gameplay
         public float BlendInSeconds => Mathf.Max(0.01f, blendInSeconds);
         public float BlendOutSeconds => Mathf.Max(0.01f, blendOutSeconds);
         public IReadOnlyList<RhinoSwordComboPath> Combos => combos;
+        public string ComboToastTemplate => comboToastTemplate;
 
         public RhinoSwordComboDetector.Settings DetectorSettings => new()
         {

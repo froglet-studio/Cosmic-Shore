@@ -1,5 +1,23 @@
 # Rhino Sword Combos — trigger strings call flourishes
 
+> **2026-10-26 (Garrett: "yes but obey the rule that any incoming text can only go to the dedicated
+> toast container in the upper right under the settings"):** three follow-ups closed.
+> - **The combo's NAME is toasted** for the pilot who landed it, through `ToastNotificationAPI.Show` -
+>   the game's toast container, top right under Settings, and nowhere else. The line is the library's
+>   authored `comboToastTemplate` (`{name}` = the flourish's `displayName`; empty = no toast), emitted
+>   by `author_rhino_sword_combos.py`. An AI, a remote copy and the lava lamp's autopilot are silent
+>   (`ShieldSwipeActionExecutor.StartFlourish`).
+> - **A staggered stance no longer fires a combo.** A press while the OTHER trigger is still pulled
+>   past `pressThreshold` is a chord (the stance forming), however late it comes; a rolled tap still
+>   links because its earlier trigger is coming OFF, below the threshold
+>   (`RhinoSwordComboDetector.Step`; `AStaggeredStance_IsNeverACombo`, `AfterAStaggeredStance_TapsLinkAgain`,
+>   and `ARolledTap_StillLinks` rewritten to a trigger that is actually coming off - run against the old
+>   detector, the new tests fail 4 of 4).
+> - **The AI combos.** `RhinoSwordAutopilot` taps a string (0.08 s taps, 0.1 s apart - inside the 0.3 s
+>   tap and 0.35 s window) instead of a stroke `comboChance` (0.35) of the time: two taps, or a finisher
+>   `finisherChance` (0.4) of the time and always while energized; first letter on the target's side.
+>   It writes the same mirrors, so its flourish plays on every peer.
+
 > **2026-10-16:** the energized variant is now chosen from the REPLICATED energize phase (the
 > owner decides it, `RhinoSwordNetworkRelay`), so every peer picks the same set. The AI still never
 > combos. New OPEN finding: a staggered entry into the energize stance fires a combo (Follow-ups).
@@ -173,19 +191,8 @@ their rules, and the generator's gates + self-test pass.
 ## Follow-ups
 
 - **Audio**: 24 empty `sound` slots on the library asset for the audio owner.
-- **HUD callout**: `RhinoSwordComboPath.DisplayName` is authored for a combo-name toast; nothing
-  draws it yet (`ShieldSwipeActionExecutor.ActiveFlourish` exposes the playing one).
+- ~~**HUD callout**~~ **DONE 2026-10-26**: the combo's `DisplayName` is toasted (header note).
 - ~~**Replicated energized choice**~~ **DONE 2026-10-16** via the owner-authoritative energize
   phase (`RhinoSwordNetworkRelay`); only the within-a-tick residual above remains.
-- **AI (still OPEN)**: AI Rhinos never combo. Since 2026-10-16 `RhinoSwordAutopilot` does write
-  the trigger mirrors (so the detector runs on them), but its strokes are `strokeSeconds` 0.3 +
-  `restSeconds` 0.45 apart — 0.75 s press to press, past the 0.35 s `comboWindowSeconds` — so they
-  never link, and its stance presses both triggers together (a chord). Giving it flourishes means
-  teaching the autopilot to tap a sequence, not a new replication path.
-- **Staggered stance fires a combo (OPEN, 2026-10-16).** A rolled press links whenever the other
-  trigger has been down ≤ `tapMaxHoldSeconds`, even if it is still fully held — so entering the
-  energize stance with the fingers 0.08–0.3 s apart calls RL/LR (`RhinoSwordComboDetector.Press`;
-  `RhinoSwordComboTests.ARolledTap_StillLinks` locks the current behaviour). Fix shape for design:
-  require the earlier trigger to be COMING OFF (below `pressThreshold`, or past its peak) before a
-  rolled press links, or defer the two-letter fire until the stance has had a chance to form —
-  either way the test must change with it.
+- ~~**AI (still OPEN)**: AI Rhinos never combo.~~ **DONE 2026-10-26** (header note).
+- ~~**Staggered stance fires a combo (OPEN, 2026-10-16).**~~ **FIXED 2026-10-26** (header note).

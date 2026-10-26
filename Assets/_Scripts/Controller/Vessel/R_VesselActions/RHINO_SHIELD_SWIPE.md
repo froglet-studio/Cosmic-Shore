@@ -1,5 +1,11 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> **2026-10-26 (Garrett): the Rhino has NO ENERGY.** The meter, the energy banked per cut, the energize
+> cost and the surge's fill and element buff are gone; **Charge** scales the sword's petal STEAL
+> (×1 → ×2.5); **Space alone** sets the blade length (24 → 40) and the camera follows it; the omni-crystal
+> Surge is an 8 s energized sword ring. Energy passages below are history - the current rules are
+> `RHINO_ENERGY_SWORD.md` § "No energy (2026-10-26) — and Length: Space alone".
+
 > **2026-10-16:** every peer now poses the blade from `InputStatus`' replicated analog trigger
 > mirrors (remote peers used to replay binary press/release swings); the press/release path
 > survives only for touch. The sword's `CapsuleCollider` is a TRIGGER again (the PR #928 merge
