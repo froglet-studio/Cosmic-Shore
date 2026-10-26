@@ -1121,7 +1121,7 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
+        // The lobby's AI difficulty (every mode offers it, AIDifficultyRules.IsOfferedFor):
         // Easy, Medium and Hard race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
         // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
         SkimRaceHandicapLevel RaceHandicapLevel() => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
@@ -1154,6 +1154,9 @@ namespace CosmicShore.Gameplay
             // Seeded per seat and per race, so each AI errs differently every race.
             var handicap = handicapLevel.IsNone ? null
                 : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
+            // The race's ring handicap IS this pilot's difficulty: drop the platform belief its spawn gave it
+            // (ConfigureAIPilotForMode installs one on every offered mode), or each mistake would be made twice.
+            pilot.SetTargetBelief(null);
 
             pilot.SetExternalTargetProvider(() =>
             {

@@ -27,9 +27,8 @@ namespace CosmicShore.UI
                      "difference up with domain-balanced AI, so an empty list is always legal.")]
             public List<Domains> AIDomains = new();
 
-            [Tooltip("How well the AI flies, the host's pick on the launch panel. Offered only " +
-                     "on cards whose AI reads it (AIDifficultyRules.IsOfferedFor); every other " +
-                     "card carries the default and nothing reads it.")]
+            [Tooltip("How well the AI flies, the host's pick on the launch panel. Offered on " +
+                     "every mode (AIDifficultyRules.IsOfferedFor) and read by every AI.")]
             public AIDifficulty AIDifficulty = AIDifficultyRules.Default;
 
             [System.NonSerialized]
