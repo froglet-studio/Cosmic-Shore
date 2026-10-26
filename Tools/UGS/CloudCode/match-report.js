@@ -39,6 +39,7 @@ const { DataApi } = require("@unity-services/cloud-save-1.4");
 const CONDUCT_KEY = "FAIRPLAY_CONDUCT";
 const SIGNALS_KEY = "FAIRPLAY_SIGNALS";
 const AGE_KEY = "FAIRPLAY_AGE";
+const TRUST_KEY = "trust";      // trust.js's record, private custom data "fp-" + player id (phase B)
 
 const RULES = {
   recentMatches: 20,          // matches kept per player, for the leave rate and for comparing reports
@@ -239,6 +240,8 @@ module.exports = async ({ params, context, logger }) => {
     }
 
     if (result.report) {
+      try { await countPoolMatch(api, projectId, playerId); }
+      catch (e) { logger.warning(`match report saved; pool match not counted: ${e.message}`); }
       try { await compareWithOthers(api, projectId, playerId, result.report, logger); }
       catch (e) { logger.warning(`match report saved; comparison skipped: ${e.message}`); }
     }
@@ -257,6 +260,18 @@ async function updateBirthYear(api, projectId, playerId, params, nowYear) {
     catch (e) { if (!(e && e.response && e.response.status === 409)) throw e; } // a parallel start wrote it
   }
   return merged;
+}
+
+// A finished match in the Undertow or the quitters' pool counts toward the notice (trust.js RULES.noticeAfterMatches).
+async function countPoolMatch(api, projectId, playerId) {
+  const id = "fp-" + playerId;
+  const res = await api.getPrivateCustomItems(projectId, id, [TRUST_KEY]);
+  const row = res && res.data && res.data.results ? res.data.results.find((r) => r.key === TRUST_KEY) : null;
+  if (!row || !row.value) return;
+  const t = row.value;
+  if (t.stage !== "undertow" && t.stage !== "quitters" && t.stage !== "restricted") return;
+  t.matches = (t.matches || 0) + 1;
+  await api.setPrivateCustomItem(projectId, id, { key: TRUST_KEY, value: t, writeLock: row.writeLock });
 }
 
 async function appendSignals(api, projectId, playerId, added) {

@@ -15,6 +15,13 @@ class FakeDataApi {
     store.set(id, { value: JSON.parse(JSON.stringify(body.value)), writeLock: "w" + ++lock });
   }
 }
+const priv = new Map(); // "customId/key" -> { value, writeLock }  (trust.js's record)
+FakeDataApi.prototype.getPrivateCustomItems = async function (_p, id, keys) {
+  return { data: { results: keys.filter((k) => priv.has(id + "/" + k)).map((k) => ({ key: k, ...JSON.parse(JSON.stringify(priv.get(id + "/" + k))) })) } };
+};
+FakeDataApi.prototype.setPrivateCustomItem = async function (_p, id, body) {
+  priv.set(id + "/" + body.key, { value: JSON.parse(JSON.stringify(body.value)), writeLock: "w" + ++lock });
+};
 const realLoad = Module._load;
 Module._load = function (req) {
   if (req === "@unity-services/cloud-save-1.4") return { DataApi: FakeDataApi };
@@ -206,6 +213,18 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     } finally { Date.now = realNow; }
     const s = signalsOf("farm");
     assert.equal(s.length, 1); assert.equal(s[0].kind, "around_the_clock"); assert.equal(s[0].review, "standard");
+  });
+
+  // ---- Phase B: matches in a pool count toward the notice (trust.js) ----
+  await test("a finished match in the Undertow counts toward the notice; on the shore it does not", async () => {
+    priv.set("fp-under/trust", { value: { stage: "undertow", matches: 2 }, writeLock: "w0" });
+    priv.set("fp-shore/trust", { value: { stage: "shore", matches: 0 }, writeLock: "w0" });
+    for (const p of ["under", "shore"]) {
+      await call(p, { action: "start", matchId: "pb", mode: "Joust", hostId: p, players: [p] });
+      await call(p, { action: "end", matchId: "pb", mode: "Joust", hostId: p, players: [p], scores: [], winner: p });
+    }
+    assert.equal(priv.get("fp-under/trust").value.matches, 3);
+    assert.equal(priv.get("fp-shore/trust").value.matches, 0);
   });
 
   console.log(`\n${passed} passed`);

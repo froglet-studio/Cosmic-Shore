@@ -352,7 +352,7 @@ Each phase stands on its own and is worth doing even if the next never happens.
 whether the 3-match delay can stand for EU and UK players flagged for cheating (question 4), and whether the
 Undertow itself is a "similarly significant" automated decision (question 1).
 
-All of these are hand-offs in [`HANDOFFS.md`](HANDOFFS.md), waiting for approval to be filed as a Froglet Tasks ticket. The `T-…` ids in §8b name records there.
+All of these are on Froglet Tasks ticket **T-20261026-4918** (issue #1565), one checklist line each; the `T-…` ids in §8b name the original records in [`HANDOFFS.md`](HANDOFFS.md).
 
 ## 8b. Priorities chosen on the Threat Board (Shombith, 2026-10-24)
 
