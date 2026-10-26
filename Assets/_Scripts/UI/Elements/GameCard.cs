@@ -306,13 +306,9 @@ namespace CosmicShore.UI
         Element _genre, _genreSecondary;
         bool _hasGenre;
 
-        bool TryResolveGenre(GameModes mode, out Element first, out Element second)
-        {
-            if (!_previews) _previews = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
-            var definition = _previews ? _previews.Resolve(mode) : null;
-            ScoringMetric? metric = definition ? definition.ObjectiveMetric : (ScoringMetric?)null;
-            return ModeGenre.TryElementsFor(mode, metric, out first, out second);
-        }
+        // The one genre answer the Arcade's element filter reads too (ArcadeGridOrder, section 85).
+        static bool TryResolveGenre(GameModes mode, out Element first, out Element second) =>
+            ArcadeGridOrder.TryGenres(mode, out first, out second);
 
         static void ApplyPetal(Image image, Sprite sprite, Color tint)
         {

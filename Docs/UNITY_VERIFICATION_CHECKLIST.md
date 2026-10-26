@@ -16422,6 +16422,19 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Arcade SORT and FILTER (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 85. Run `ArcadeGridOrderTests` in the Test Runner (edit mode).
+
+1. Open the Arcade. **Pass:** ALL GAMES and its count on the left, SORT: FAVOURITES and FILTER: ALL on the right; the
+   buttons never overlap each other or the count, at 16:9 and 16:10.
+2. Press SORT. **Pass:** a row of FAVOURITES / A-Z / UNLOCKED opens under the line, the current one underlined; pick A-Z:
+   the row closes, the button reads SORT: A-Z, the grid is alphabetical.
+3. FILTER: try FAVOURITES (only starred cards), SOLO, MULTIPLAYER, MASS (cards whose flower is Mass), CHARGE. **Pass:**
+   the count follows; a filter with no games shows "No games match this filter."
+4. Pad: focus SORT, A opens the row with the focus on the current option, A picks and the focus returns to SORT.
+5. Close and reopen the Arcade. **Pass:** the sort and filter are kept for the session.
+
 ## Hangar press-to-perform and scale, controls text, CODEX top bar (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md section 84.

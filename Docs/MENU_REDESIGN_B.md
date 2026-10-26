@@ -3639,3 +3639,30 @@ navigation, the Hangar drawn at full size, the AI demo back, the strip in the ol
 without its lock view); `author_elemental_converter.py` now reads `disabledScreens` as a list (ARK open, PORT closed);
 the reference compile; offline renders (the scratch renderer learned uniform scale).
 
+## 85. SORT and FILTER beside ALL GAMES (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "In arcade games beside the all games tasks I want to have a sort and filter button"; "Go ahead
+with the sort and filter buttons".
+
+**What the player sees.** ALL GAMES and its count on the left; on the right two buttons that name their choice, SORT:
+FAVOURITES and FILTER: ALL. A button opens its row of options right under that line - a row of tabs, the chosen one
+underlined in the selection blue - and the grid moves down to make room (no floating menu: a pointer, a finger and
+the pad all use it the same way; on the pad the focus moves onto the current option, and back to the button after a
+pick). Picking an option closes the row and re-fills the grid. The choice lasts the session.
+
+- **Sort:** Favourites (favourites first, then A-Z: the grid's order before this section), A-Z, Unlocked (unlocked
+  first, then A-Z).
+- **Filter:** All, Favourites, Unlocked, Solo (one player at most), Multiplayer (more than one), and the four elements
+  by the card's genre - the same answer the card's flower shows (`ModeGenre`, now read through
+  `ArcadeGridOrder.TryGenres` by both the card and the filter).
+- A filter that leaves nothing shows "No games match this filter." (authored). A card a guided path points at is never
+  filtered out.
+
+**Where:** `ArcadeGridOrder` (the pure sort and filter rule; `ArcadeGridOrderTests`), `ArcadeGridOptions` (the buttons,
+rows and choice), `ArcadeExploreView` (`gridOptions`, `emptyFilterLine`; its lock rule is one `IsLocked` the grid and the
+Unlocked options share), `author_menu_arcade.py` (`all_games_header`, `option_row`). Every word is an authored field.
+
+**How it was checked:** `author_menu_arcade.py --check` / `--self-test` (new plants: SORT without its button, a filter
+tab dropped, the sort row open on arrival, the explore view without its options); `ArcadeGridOrderTests` compile in the
+editor assembly (not run: no editor here); the player and editor reference compiles.
+

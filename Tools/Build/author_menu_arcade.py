@@ -106,7 +106,15 @@ S = dict(
     th=K.kit_script("KitThemedGraphic"),
     button=K.kit_script("KitButton"),
     tile=K.kit_script("KitTile"),
+    grid_options=script("Assets/_Scripts/UI/Elements/ArcadeGridOptions.cs"),
+    text_tab=K.kit_script("KitTextTab"),
 )
+
+# Section 85 (Shombith, 2026-10-26: "beside the all games tasks I want to have a sort and filter button"): one name per
+# ArcadeGridSort / ArcadeGridFilter value, in the enums' order (the tabs' order is the value).
+SORT_NAMES = ("Favourites", "A-Z", "Unlocked")
+FILTER_NAMES = ("All", "Favourites", "Unlocked", "Solo", "Multiplayer", "Charge", "Mass", "Space", "Time")
+ALLG_H, OPT_ROW_H = 34, 34
 
 # --- data assets (guids read off the shipped wiring they replace) -------------------------------
 CONNECTION_DATA = "69a7bf449c11416dac2d81ebd3ff61f5"     # HostConnectionDataSO
@@ -1099,6 +1107,51 @@ def replays_button(parent):
     return b
 
 
+def all_games_header(content):
+    """ALL GAMES and its count on the left; SORT and FILTER on the right (section 85). Each button names its choice
+    ("SORT: A-Z") and opens its row of options under this line; ArcadeGridOptions owns the rows and the choice."""
+    allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (CONTENT_W, ALLG_H), (0, 1))))
+    allg.add("le", 114, le(ph=ALLG_H))
+    lw = K.label_width("ALL GAMES", "Label")
+    label(allg.child(N("AllGames/Label", "Label", R((0, 0.5), None, (0, 0), (lw + 4, 18), (0, 0.5)))), "ALL GAMES", "Label",
+          "TextLight")
+    label(allg.child(N("AllGames/Count", "Count", R((0, 0.5), None, (lw + 16, 0), (60, 18), (0, 0.5)))), "28", "Label",
+          "NeutralLightest")
+    opts = allg.child(N("AllGames/Options", "Options", R((1, 0.5), None, (-10, 0), (520, ALLG_H), (1, 0.5))))
+    opts.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 5, (1, 0), (0, 0)))
+    for key, caption in (("Sort", f"Sort: {SORT_NAMES[0]}"), ("Filter", f"Filter: {FILTER_NAMES[0]}")):
+        slot = wrap_slot(opts, f"AllGames/Options/{key}Slot", f"{key}Slot")
+        slot.children.append(small_button(f"{key}Button", f"{key}Button", "Default", caption))
+    longest = max(K.button_size(f"Sort: {n}", small=True)[0] for n in SORT_NAMES) + 10 \
+        + max(K.button_size(f"Filter: {n}", small=True)[0] for n in FILTER_NAMES)
+    assert longest <= 520 and lw + 16 + 60 + 520 + 10 <= CONTENT_W, "SORT and FILTER do not fit beside ALL GAMES"
+    allg.add("options", 114, lambda ctx, go: mono(go, S["grid_options"],
+             f"  sortButton: {ref(ctx.iref('SortButton', 'root#button'))}\n"
+             f"  sortLabel: {ref(ctx.iref('SortButton', 'Label#tmp'))}\n"
+             "  sortCaption: 'Sort: {choice}'\n"
+             "  sortNames:\n" + "".join(f"  - {n}\n" for n in SORT_NAMES)
+             + f"  sortRow: {ref(ctx.c('SortRow', 'cg'))}\n"
+             + refs("sortTabs", [ctx.c(f"SortRow/Tab{i}", "tab") for i in range(len(SORT_NAMES))])
+             + f"  filterButton: {ref(ctx.iref('FilterButton', 'root#button'))}\n"
+             f"  filterLabel: {ref(ctx.iref('FilterButton', 'Label#tmp'))}\n"
+             "  filterCaption: 'Filter: {choice}'\n"
+             "  filterNames:\n" + "".join(f"  - {n}\n" for n in FILTER_NAMES)
+             + f"  filterRow: {ref(ctx.c('FilterRow', 'cg'))}\n"
+             + refs("filterTabs", [ctx.c(f"FilterRow/Tab{i}", "tab") for i in range(len(FILTER_NAMES))])))
+
+
+def option_row(content, key, names):
+    """A row of option tabs under ALL GAMES, hidden (out of the layout) until its button opens it; the chosen one is
+    underlined in the selection blue (KitTextTab)."""
+    row = content.child(N(key, key, R((0, 1), None, (0, 0), (CONTENT_W, OPT_ROW_H), (0, 1))))
+    row.add("cg", 225, canvas_group(False)).add("le", 114, le(ph=OPT_ROW_H, ignore=True)) \
+        .add("hlg", 114, K.hv_layout(False, (0, 0, 2, 2), 14, 3, (0, 0), (0, 0)))
+    for i, n in enumerate(names):
+        H.text_tab(row, f"{key}/Tab{i}", f"Tab{i}", n.upper(), "Label", K.label_width(n.upper(), "Label") + 16, 30)
+    width = sum(K.label_width(n.upper(), "Label") + 16 for n in names) + 14 * (len(names) - 1)
+    assert width <= CONTENT_W, f"{key}: the options run past the grid's width ({width})"
+
+
 def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     root = N("root", "ArcadeView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
@@ -1148,13 +1201,14 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
            "  ObjectiveText: {fileID: 0}\n  StatusText: {fileID: 0}\n  CompletedBadge: {fileID: 0}\n"))
     feature_card(feats, "Maelstrom", "Maelstrom", maelstrom_art, "GAUNTLET", "ControlActive", "Maelstrom", mael_extra)
 
-    content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 26), (0, 1)))).add("le", 114, le(ph=26))
-    allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (CONTENT_W, 18), (0, 1))))
-    allg.add("le", 114, le(ph=18))
-    label(allg.child(N("AllGames/Label", "Label", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "ALL GAMES", "Label", "TextLight")
-    label(allg.child(N("AllGames/Count", "Count", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "28", "Label", "NeutralLightest",
-          align="right")
+    content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 18), (0, 1)))).add("le", 114, le(ph=18))
+    all_games_header(content)
+    for key, names in (("SortRow", SORT_NAMES), ("FilterRow", FILTER_NAMES)):
+        option_row(content, key, names)
     content.child(N("Gap2", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 10), (0, 1)))).add("le", 114, le(ph=10))
+    empty = content.child(N("EmptyFilter", "EmptyFilter", R((0, 1), None, (0, 0), (CONTENT_W, 24), (0, 1)), active=False))
+    empty.add("le", 114, le(ph=24))
+    label(empty.child(N("EmptyFilter/Line", "Line", STRETCH)), "No games match this filter.", "BodySmall", "NeutralLightest")
 
     grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (CONTENT_W, GRID_ROWS * (CARD_H + 10) - 10), (0, 1))))
     grid.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 0, (1, 1), (1, 0)))
@@ -1223,7 +1277,8 @@ RETIRED_ROOTS = {"7767652896660694874": "Header", "3184225246935049006": "GameSe
                  "2496229280682334806": "ArcadeLobbyList", "7399798317413155242": "CloseButton",
                  "688672352": "FriendListPanel"}
 
-VIEW_OWNED = ("GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard", "maelstromCard", "gameCountText")
+VIEW_OWNED = ("GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard", "maelstromCard", "gameCountText",
+              "gridOptions", "emptyFilterLine")
 # Fields the view no longer declares; a migration may drop them (ArcadeDPadNav: retired, see
 # Tools/Build/retire_arcade_dpad_nav.py).
 VIEW_RETIRED = ("ArcadeDPadNav",)
@@ -1244,6 +1299,8 @@ class Ids:
             "WeeklyChallengeCard": (V("Weekly#weekly"), 114, S["weekly"]),
             "maelstromCard": (V("Maelstrom#tile"), 114, S["tile"]),
             "gameCountText": (V("AllGames/Count#kt"), 114, S["kt"]),
+            "gridOptions": (V("AllGames#options"), 114, S["grid_options"]),
+            "emptyFilterLine": (V("EmptyFilter#go"), 1, None),
         }
         # Objects of NESTED instances inside ArcadeView: their id in ArcadeView is derived once.
         self.cards = []
@@ -1284,7 +1341,8 @@ def view_doc(old, ids):
     values = {k: v for k, v in fields if k not in VIEW_RETIRED}
     new = {k: f" {ref(ids.stubs[k])}" for k in VIEW_OWNED}
     order = ["rosterOverride", "GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard",
-             "maelstromCard", "gameCountText", "ArcadeGameConfigureModal", "selectedVesselClassType",
+             "maelstromCard", "gameCountText", "gridOptions", "emptyFilterLine", "ArcadeGameConfigureModal",
+             "selectedVesselClassType",
              "cardRevealSettings"]
     assert set(values) <= set(order), f"ArcadeExploreView carries fields this script does not know: {set(values) - set(order)}"
     return head + "".join(f"  {k}:{new.get(k, values.get(k))}\n" for k in order)
@@ -1564,6 +1622,20 @@ def validate_prefabs(files, guids):
 
     view = files[prefab_path("ArcadeView")]
     V = K.FileIds("ArcadeView")
+    # Section 85: SORT and FILTER reach their buttons, labels and rows, with one tab per enum value in order.
+    _, opts = doc_of(view, V("AllGames#options"))
+    assert opts, "ArcadeView has no ArcadeGridOptions on ALL GAMES"
+    for field in ("sortButton", "sortLabel", "sortRow", "filterButton", "filterLabel", "filterRow"):
+        assert re.search(r"^  " + field + r": \{fileID: -?[1-9]\d*\}", opts, re.M), f"ArcadeGridOptions.{field} is unwired"
+    for field, names, row in (("sortTabs", SORT_NAMES, "SortRow"), ("filterTabs", FILTER_NAMES, "FilterRow")):
+        block = re.search(r"^  " + field + r":\n((?:  - \{fileID: -?\d+\}\n)*)", opts, re.M)
+        tabs = re.findall(r"fileID: (-?\d+)", block.group(1)) if block else []
+        assert tabs == [str(V(f"{row}/Tab{i}#tab")) for i in range(len(names))], \
+            f"ArcadeGridOptions.{field} must list the {row} tabs in enum order"
+        assert f"  {field[:-4]}Names:\n" + "".join(f"  - {n}\n" for n in names) in opts, f"ArcadeGridOptions.{field[:-4]}Names drifted"
+    for row in ("SortRow", "FilterRow"):
+        assert "  m_Alpha: 0\n" in doc_of(view, V(f"{row}#cg"))[1] and "  m_IgnoreLayout: 1\n" in doc_of(view, V(f"{row}#le"))[1], \
+            f"{row} must start closed and out of the layout"
     for r in range(GRID_ROWS):
         _, row = doc_of(view, V(f"Row{r + 1}#rt"))
         assert len(re.findall(r"^  - \{fileID:", row, re.M)) == GRID_COLS, f"grid row {r + 1} does not hold {GRID_COLS} cards"
@@ -1764,6 +1836,14 @@ def self_test(current, files, guids):
         "the Join slot reading its button's rect (SPECTATE overflows)": prefab_plant(
             prefab_path("PartyOnlineRow"), lambda t: in_one(
                 t, K.FileIds("PartyOnlineRow")("JoinSlot#hlg"), "  m_ChildControlWidth: 1\n", "  m_ChildControlWidth: 0\n")),
+        "SORT without its button": prefab_plant(prefab_path("ArcadeView"), lambda t: re.sub(
+            r"(\n  sortButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "a filter tab dropped": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
+            f"  - {{fileID: {K.FileIds('ArcadeView')('FilterRow/Tab8#tab')}}}\n", "", 1)),
+        "the sort row open on arrival": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("SortRow#cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n")),
+        "a legacy ArcadeExploreView without its sort and filter": scene_plant(lambda s: s.replace(
+            f"gridOptions: {{fileID: {ids.stubs['gridOptions']}}}", "gridOptions: {fileID: 0}")),
         "a seat's relay opens the card on the wrong avatar": prefab_plant(prefab_path("PartySlot"), lambda t: t.replace(
             f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Avatar/Icon#rt')}}}\n",
             f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Name#rt')}}}\n", 1)),
