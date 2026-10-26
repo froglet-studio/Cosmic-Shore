@@ -220,3 +220,17 @@ vessel silhouette."
     shielded, blue, white, lime, danger - sampled from the palette and the bars config, never typed in. An options
     round is the same sheet with one entry per candidate. SKILL.md §4.5 is the eight-step wiring recipe a session
     follows for a live card.
+40. **The kit draws more than ability rows: the Toy Box portraits (2026-10-26).** Garrett: "update the images on the
+    toybox so they are production ready. they should communicate their utility and adhere to the larger design
+    principles." The seven toy cards showed the codex baker's `ToyEmblem` disc (a ring round spheres in the toy's
+    accent), seven near-identical rings that named nothing. `Tools/Build/icon_kit/toy_portraits.py` now draws one
+    glyph per toy in this language and writes it into the file the codex page points at (guid kept; a page with no
+    image gets one through the "filled only when empty" tier), with its own card-mock sheet
+    (`Docs/Icons/sheets/toybox.png`) and `--check`. Three things it taught: (a) **the same grammar for the same act**
+    - the three "pick one" toys (vessel, domain, world) all put the thing you get SOLID and the alternatives as
+    ghosts, so the row reads as one family; (b) **two hulls side by side must share a view** (both plan) or they
+    read as two kinds of thing, and a hull's widest span (the Dolphin's wings) decides where an arrow can go - it
+    went between the tails, not across the middle; (c) **the 60 px gates are not a portrait's gates**: a 128 px card
+    portrait is exempted from `components`/`gap` BY NAME with the reason, never by loosening `verify.py`. The
+    generator that made the old art (`ToolPortraitBuilder`) was retired and the baker stands down on Tool pages, so
+    a re-bake cannot put the spheres back.

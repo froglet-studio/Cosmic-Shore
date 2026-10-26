@@ -476,7 +476,7 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | Codex harvester — ethirions + ecology, and the shared merge | `Assets/_Scripts/Editor/Codex/CodexHarvester.cs` |
 | Codex harvester — tools (freestyle toys) | `Assets/_Scripts/Editor/Codex/ToolCodexHarvester.cs` |
 | Codex image baker (photographs a prefab) | `Assets/_Scripts/Editor/Codex/CodexImageBaker.cs` |
-| Codex tool portrait (draws a toy, which has no prefab) | `Assets/_Scripts/Editor/Codex/ToolPortraitBuilder.cs` |
+| Codex tool portrait = Toy Box card art (a 2D glyph per toy; the baker stands down on Tool pages) | `Tools/Build/icon_kit/toy_portraits.py` (`--preview`, `--check`) |
 | Codex data asset + schema | `Assets/_Scripts/ScriptableObjects/Codex/CodexSO.cs`, `Assets/Resources/Codex.asset` |
 | Codex documentation | `Docs/CODEX.md` |
 | Crash detector monitor (always-on watchdog) | `Assets/_Scripts/Editor/Diagnostics/CrashDetectorMonitor.cs` |

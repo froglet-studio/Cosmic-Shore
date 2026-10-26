@@ -23,6 +23,7 @@ function, what it is in the game, and the rule for using it.
 | Block | `block(cx, cy, w, h, dp)` | a bare prism in a trail, from front-above | a box with its seams cut; a notched band read as "the profile of a chocolate bar". Gap ≥ 6 px between blocks |
 | Plate gauge | not a motif: `AbilityIconBinding.gauge` on the HUD; `card.py card(..., gauge=0..1)` on a sheet | HOW MUCH (a bank, a charge) | the lockup's one linear fill of the lower totem. Never a ring round the hull ("the ring now reads as a skimmer"), never a sprite ladder |
 | Chamfered rect | `canvas.chamfered_rect` | a plate, a card, a chip | the style guide's corner sliver on two opposite corners |
+| Toy-portrait pieces | `toy_portraits.py`: `cell(cx, cy, r, w, nucleus)`, `fish(cx, cy, s)`, `petal(element, tip, direction, length)`, `swap_arrow(y, x0, x1)` | a cell (membrane ring + nucleus crystal), a creature (the lifeform hexagon with a forked tail), an element's petal SHAPE read from the HUD's own sprite, the swap mark | one user so far (the Toy Box portraits); promote to `motifs.py` on the second, as the rule above says |
 
 **A hull's own silhouette is its mesh**, never a drawing of it (Garrett 2026-10-25: "the fidelity is too low"):
 `mesh_silhouette.silhouette(fbx, pitch, yaw, box, cx, cy, dilate_px)` projects the FBX on the kit grid, and
