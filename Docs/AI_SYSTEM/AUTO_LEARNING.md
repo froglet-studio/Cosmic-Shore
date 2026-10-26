@@ -4,6 +4,10 @@
 > record should just come here and then you evaluate what type of data the new game has ... and then relearn its AI
 > navigation in order to win the race."
 
+**Where the AIs learn (Yash, 2026-10-27):** in each vessel's OWN minigames, its Time minigame first (Warpline for the
+Stoat, Switchback for the Dolphin), never in Regatta. The arena games, Regatta among them, are rebuilt later from the
+skills learned there (`MINIGAME_TRAINING_PLAN.md`), so Regatta races are reported and never learned from (`HOLD`, §3).
+
 **No person runs a learner, a report or a test command for AI learning, and no session asks them to.** A person plays;
 everything after that happens by itself. A session that would otherwise end with "run `learn_...py`" runs it itself,
 or leaves it to the sweep below.
@@ -63,8 +67,10 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
   nobody's sweep runs is a learner that never runs.
 - **A new vessel or racing mode** is read by the sweep from its first recorded race (it shows under "No learner reads
   these yet" until a learner covers it).
-- **A mode another collaborator owns the AI of** goes in `ai_learn.HOLD` with the reason, so it is reported and never
-  written, until they say so. Today: Warpline (the Stoat's AI waits for Garrett's configuration, issue 1198).
+- **A mode another collaborator owns the AI of, or one not trained now,** goes in `ai_learn.HOLD` with the reason, so
+  it is reported and never written, until they say so. Today: **Regatta** (the AIs train in their own minigames; Regatta
+  is rebuilt from those skills later, Yash 2026-10-27). Warpline was held from 2026-10-17 for Garrett's Stoat
+  configuration, which landed 10-13 / 10-21; Yash lifted it 2026-10-27.
 
 ## 4. What is automatic, and what is not yet
 
@@ -93,12 +99,12 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 | Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge; in Switchback also one variant per intensity (`_I<n>`, `PER_INTENSITY_MODES`, `MINIGAME_TRAINING_PLAN.md` §3.6) |
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
-| Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |
+| Stoat | drives (AIModeTuning) | its pair | its three configs; in Warpline never `autopilotLetGoNear` (set from the model, 250 u: `MINIGAME_TRAINING_PLAN.md` §7) |
 | Sparrow | drives (HoldBoost) | boost (state bit); the rocket (a SkyBurst press, 2026-10-26) | start / stop bands, shortest hold and rest; the rocket's range and aim (`rocketMinRange` / `rocketMaxRange`: p10 / p90 of the presses' distance to the ring, `rocketAimDegrees`: their median nose angle); in Breakwater never a boost release under 1.25 s (`FLOORS`, the danger weave) |
 | Serpent | drives (PelletBoost) | a ConsumeBoost press | start bands, seconds between pellets |
 | Scarab | drives (SnapDash) | throttle double-tap at TIME 5 | start bands, dash cooldown |
 | Squirrel | drives (SkimRing) outside Regatta and Skim Race; skim line in Regatta (writes) and Skim Race (report only) | a boost-ring press / the skim | ring bands / skim line |
-| Every hull in Regatta | race lines | where it crosses the rings | `race_lines_learned.json` |
+| Every hull in Regatta | race lines (**on hold since 2026-10-27**: reported only) | where it crosses the rings | nothing until Regatta is rebuilt |
 | Urchin | report only | rail ride | its riding lives in each mode's scene fields |
 | Grizzly | report only | - | its bomb autopilot does not load per mode, and `grizzly-v3` (jtgjones) is reworking the bombs |
 | Butterfly | report only | - | its Mass / Dust choice is each mode's controller code; no Dust bit is recorded |

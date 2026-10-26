@@ -1,5 +1,10 @@
 # Regatta AI roadmap — six racing AIs, one way to build them
 
+> **2026-10-27 (Yash): the AIs are not trained in Regatta at all.** Each vessel trains in its own minigames (its Time
+> minigame first); the learning sweep reports Regatta races and learns nothing from them; Regatta and the other arena
+> games are restructured later from the learned skills (`MINIGAME_TRAINING_PLAN.md`). The Stoat's hold (§3.1) is lifted:
+> it trains in Warpline (§7 there).
+>
 > **2026-10-26: AI training moved to each vessel's own racing minigame** (Yash). This roadmap stays as the record of
 > the Regatta work; the plan going forward is `MINIGAME_TRAINING_PLAN.md`: train each hull in its minigame at four
 > intensities (the Dolphin in Switchback first), then rebuild Regatta from what the trained vessels can do.

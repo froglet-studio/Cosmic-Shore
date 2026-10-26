@@ -31,6 +31,17 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Warpline";
 
+        /// <summary>
+        /// Warpline flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>), as
+        /// Switchback, Breakwater and Waystation do. The scene's 180 u approach lead lay outside its 160 u commit radius,
+        /// and a Stoat warped to ~140 u/s turns at a fixed 48 deg/s (a 167 u circle): in Yash's 15 recorded races
+        /// (2026-10-25..27) the AI Stoats crossed a ring's plane 10-180 u off its 26-48 u mouth and looped 3,000-7,800 u
+        /// back round, finishing none of 30 races. Offline on those courses (<c>Tools/Build/switchback_dolphin_sim.py
+        /// --mode Warpline</c>): none of 15 finished with the shipped steering; all 15 with this one and the warp let go
+        /// 250 u out (<c>Resources/AIBoostPolicies/StoatDipoleConfig_Warpline</c>).
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
         protected override RaceCourseSource CreateCourseSource() =>
             new WarplineCourseSource { Laps = laps };
     }

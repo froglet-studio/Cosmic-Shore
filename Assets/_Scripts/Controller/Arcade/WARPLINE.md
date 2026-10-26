@@ -53,6 +53,14 @@ levels — and Time sets the warp boost, so it lands on the mode's axis).
 
 ## 3. AI
 
+**2026-10-27, the Stoat's training minigame** (`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §7, Yash): in Yash's 15
+races the AI Stoats finished none of 30, crossing the rings off their mouths and looping back round. Now Warpline flies
+Regatta's gate steering (`WarplineController.AICommitFromApproachPoint`, the approach point kept inside the commit
+radius), and in Warpline alone the autopilot reads `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` and
+`StoatSlingConfig_Warpline` (`AIModeTuning`): it lets go of the warp 250 u from the ring (60 below), so the hull, which
+turns at 48 deg/s, lines up before the mouth, and holds each warp 1.0-2.36 s as Yash does. The rest of this section is
+the base autopilot, which every other mode still flies.
+
 **2026-10-10, ported from the Stoat Flight Studio (`/vessel-studio` D24):**
 - **AI difficulty.** The card now offers the lobby's Easy / Medium / Hard picker (`AIDifficultyRules.IsOfferedFor`).
   `GateRaceController.ArmRacers` races Easy and Medium on `GateRaceHandicap`, the Skim Race's two mistakes applied to
