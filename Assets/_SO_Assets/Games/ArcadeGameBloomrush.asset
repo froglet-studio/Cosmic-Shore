@@ -18,7 +18,7 @@ MonoBehaviour:
   Description: Mantas only, and nobody has to learn a button. Soar through the reef
     to arm your bombs, graze wildlife and rival rays to plant them - silently, one
     bomb per target, first tag takes it - then reach a crystal before the fuses burn
-    down and set the whole board off at once. Biggest bloomed volume in 120 seconds
+    down and set the whole board off at once. Biggest bloomed volume in 90 seconds
     wins it for your domain.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
@@ -35,4 +35,4 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.00036
+  ComebackRatePerScoreDeficit: 0.00048

@@ -58,6 +58,8 @@
     {"key": "dpSweetDeg", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotDegrees"},
     {"key": "dpSweetHalf", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotHalfWidth"},
     {"key": "dpSweetFall", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotFalloff"},
-    {"key": "dpMissShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "missKickShare"}
+    {"key": "dpMissShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "missKickShare"},
+    {"key": "hyLen", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "hybridPathLengthShare"},
+    {"key": "hyCarry", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "hybridCarrySeconds"}
   ]
 }

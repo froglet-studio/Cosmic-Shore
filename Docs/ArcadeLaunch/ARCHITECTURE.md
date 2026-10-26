@@ -832,7 +832,7 @@ instead of splitting it across two files.
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
 | `GameBriefingView` | same | Description + rotating tips |
-| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard row (§3.3) - draws and raises, never decides |
+| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard / Legendary row (§3.3) - draws and raises, never decides |
 | `author_ai_difficulty_row.py` | `Tools/Build/` | Writes that row into `ArcadeGameConfigureModal.prefab` (`--check`) |
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
 | `ModeVideoView` | same | The Maelstrom's clip |

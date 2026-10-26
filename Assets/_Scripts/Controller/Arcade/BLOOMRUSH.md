@@ -8,7 +8,7 @@ Vessel mechanics: `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOO
 
 ## Rules
 
-- **120-second timed round** — the platform's first timed-highest-score mode in the domain-games
+- **90-second timed round** (120 until 2026-10-26, `Docs/ARCADE_MATCH_LENGTH.md`) — the platform's first timed-highest-score mode in the domain-games
   family. The scene's `NetworkTimeBasedTurnMonitor` (duration 120) is the ONLY end condition;
   `BloomrushScoringRuleSO.IsObjectiveReached` is a permanent no.
 - **Score = hostile prism VOLUME destroyed** (`ScoringMetric.VolumeDestroyed = 11`, reading

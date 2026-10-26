@@ -106,20 +106,22 @@ PF_GO, PF_TR, PF_MB = 5330000000000101, 5330000000000102, 5330000000000103
 
 # Gates in the course. This is BOTH the end-game target and the number of rings laid - the
 # controller and the turn monitor read the same EndConditionOverridesSO getter - so a course can
-# never be a different length from the thing counting it. 20 gates at the shipped leg lengths is
-# ~8.9-10.2k units of flying; at a Dolphin's 68 u/s cruise and 347 u/s boost that is a 2-3 minute
-# race with room for misses. Kept in sync with EndConditionOverridesSO.DefaultSwitchbackGateTarget.
-GATE_TARGET = 20
+# never be a different length from the thing counting it. Kept in sync with
+# EndConditionOverridesSO.DefaultSwitchbackGateTarget. 20 until 2026-10-26, when the measured
+# editor races put an experienced intensity-1 run at 58-75 s (~10 s to the first gate, then
+# 2.6-3.6 s a gate); 26 lands that run near 85 s.
+GATE_TARGET = 26
 
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate` - so
 # a rate only means anything next to the scale of deficits the mode produces. This is the trap
 # DOGFIGHT.md, BENDS.md and WILDLIFE_LIBERATION.md have now each recorded independently, so the
 # assert below fails the build rather than trusting the number.
 #
-# At 0.5: five gates behind (a quarter of the course) buys 2.5 element levels, ten behind buys 5.
+# At 0.385: six and a half gates behind (a quarter of the course) buys 2.5 element levels, the
+# 2.5 that 0.5 bought on the old 20-gate course.
 # It matters here because the deficit is measured on the LEAD RUNNER - a trailing domain is
 # genuinely behind on the same course, with no teammate's progress to hide in.
-COMEBACK_RATE = 0.5
+COMEBACK_RATE = 0.385
 
 # The donor's Cell block, and the one the clone replaces it with. Rampage runs four cactus-forest
 # configs as an IntensityWise ladder (cellTypeChoiceOptions: 1); Switchback runs ONE barren race

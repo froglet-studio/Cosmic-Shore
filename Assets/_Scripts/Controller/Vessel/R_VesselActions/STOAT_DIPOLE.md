@@ -129,7 +129,8 @@ orbit near 90 degree orbit rotation."*
 | **The trail** | THICK: the prism's height × `massModeThickness` (Mass ×3 → ×6, read at the REPLICATED level) | as authored |
 | **Mass 5** | every prism arrives SHIELDED (Armoured Wake) | — |
 
-**B** (`InputEvents.Button2Action`; T on a keyboard, the Vessel Studio's key too — R until 2026-10-14) flips the mode (`StoatModeActionSO` → `StoatModeExecutor.Toggle`).
+**B** (`InputEvents.Button2Action`; T on a keyboard, the Vessel Studio's key too — R until 2026-10-14) steps the mode,
+**Mass → Time → Hybrid → Mass** since 2026-10-26 (`StoatModeActionSO` → `StoatModeExecutor.Toggle`; Hybrid is §1f).
 It is a press with no release semantics (vessel rule 37). Both trigger assets ride each trigger (`StoatDipoleLeft/
 RightAction` AND `StoatSlingLeft/RightAction`); each executor stands aside outside its own mode, so the binding never
 changes and the peer-press harness sees one ordinary binding. **A switch lets go of whatever the triggers held** — the
@@ -263,7 +264,20 @@ executors, serialized on the prefab — rule 14):
 | Charge | Ripple | the ripple a let-go would throw NOW, as a share of the largest |
 | Mass | Mass / Time Mode | the switch: full in Mass mode, empty in Time mode, eased between |
 | Space | Field Dipole | Space-5 Accretion: how far the open pair has grown |
-| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both) |
+| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Hybrid: the sweet spot while the orbit holds you, the boost (and its carry) between orbits |
+
+The Mass card reads the mode: full in Mass, **half in Hybrid**, empty in Time, and its **icon follows the mode**
+(2026-10-26, `StoatHUDView.SetModeIcon`): `Stoat_ModeMass` (the thick trail and its path), `Stoat_ModeTime` (an orbit
+round a solid attractor), `Stoat_ModeHybrid` (a small orbit and the short dotted path leaving it), placeholders from
+`author_stoat_icon_placeholders.py` (`--check`) wired on `StoatHUDVariant.prefab`; an empty slot shows the card's own icon.
+
+**On a phone** (Android, iOS: `KitInputDevice.IsTouchPrimary`, and only while no pad is connected; never on PC or
+Steam) the Stoat flies the TotemButtons profile (`author_touch_profiles.py`): the cards round the right thumb are its
+buttons. **The Mass card is B** (its ability's Input 7, `Button2Action`, routed to `StoatModeAction` by the prefab's
+`_touchActionOverrides`), so a tap steps Mass → Time → Hybrid and the icon shows where you are; the **Space card is LT**
+(the left dipole, or the left catch in Time and Hybrid), the **Dipole disc is RT** and the **Hold disc is A**.
+`StoatSlingTests.Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo` pins the binding. Open: the Dipole disc and the Space
+card keep their dipole icons in Time and Hybrid mode, where the triggers lay the catch.
 
 The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
 `SO_Class_Stoat` are renders of the Stoat's own hull (since 2026-10-18 its model: `Tools/Build/vessel_model/render_cards.py Stoat`, `--check`).
@@ -280,6 +294,44 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
   `StoatDipoleMath.PredictPath`. Rivals rescanned once a second. Local pilot only; presentation only.
 - **Overclock (the omni crystal, proposal O1).** `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.
+
+## 1f. Hybrid mode — the orbit with a short path (2026-10-26)
+
+The design call (Yash): *"a third one … a mix of the orbit and the pathfinding. It will show the pathfinding trail but
+not that much range … maybe 50% smaller, and also when the pathfinding we get this extra boost that we rarely get in
+orbit."* B's third press. The aim is a mode that can replace the other two once it has been played.
+
+| | Hybrid mode |
+|---|---|
+| **LT / RT** | Time mode's catch slingshot, unchanged (§1b): the light pair laid ahead, the catch, the 90° timed kick |
+| **What is drawn** | the pair's DETECTION and ORBIT rings (as Time mode) **and** the pathfinder's path at `hybridPathLengthShare` **0.5** of Mass mode's length, flown on the pilot's sticks with no field |
+| **The line's colour** | the open colour, warming toward lime as the quarter-turn nears (to 35% just short of the window) and **lime in the sweet-spot window** — the orbit ring's cue, put on the line the pilot looks down (`StoatSlingMath.HybridLineWarmth`) |
+| **The boost** | the catch warps the flight clock while the pair is held (as Time mode); a timed release then **CARRIES** the pathfinder's boost on for `hybridCarrySeconds` **2.5 s** × the release's timing (`StoatSlingMath.CarryHolds`) — the line stays lime — before it fades. A release outside the window carries nothing. |
+| **The poles, the trail, Mass 5** | Time mode's: light poles, the trail as authored, no shield |
+
+**Why this shape** (research, 2026-10-26). A short, initial-segment aim line is what players of aim-and-release games ask
+for (Peggle's guide, the first bounce in Arkanoid / Puzzle Bubble) and what designers keep when a full preview makes a
+game too easy, so 50% shows the exit of an orbit and the next few seconds, not the course. While the attractor holds the
+hull the line is the RELEASE preview: the pilot sees where a let-go sends them before letting go (the trajectory preview
+gravity-slingshot jams single out; predicting an inverse-square orbit unaided is what their playtesters failed at). The
+timing is read in one place, on that line: warming colour → lime is Mario Kart's drift-spark ladder (charge shown as
+colour, release on the top colour), and the reward for a timed release is a boost that lasts (the mini-turbo's
+"longer after the drift" rule), not only a bigger instant kick. Sources: itch.io jam threads on aim lines and slingshot
+games; mariowiki / Mario Kart wiki on mini-turbos; Kotaku on mini-turbo duration.
+
+**The autopilot** never chooses Hybrid (its orbit numbers were learned in Time mode): a hull left in Hybrid counts as
+orbiting, and the way back to Mass is as many B presses as the cycle needs, sent in one go
+(`StoatModeExecutor.PressesTo`). **The flight recorder** writes `timeMode` 2 for Hybrid; the learner
+(`learn_drives_from_flights.py`) counts Time and Hybrid as one orbit family, so a Time → Hybrid press is not a switch.
+
+**In the Vessel Studio** (round 16, `Docs/Studios/StoatFlightStudio.html`, the same day): T steps field trajectory →
+catch sling → Hybrid → field, the game's B; Hybrid is the catch sling with `fieldPath` run at `hyLen` × `ftLength` on
+the sticks with no field, the warmth / lime cue and the carry in `stepCatchBoost` (per pilot, in `ftLive`), the release
+starting the carry in `releaseDipole`. `hyLen` / `hyCarry` map to `hybridPathLengthShare` / `hybridCarrySeconds`
+(`studio_to_unity/stoat.json`; both match). **One known difference:** the line's full length is 600 u in the studio
+(`ftLength`) and 1200 u in Unity (`StoatDipoleConfig.pathLength`, play-tuned there, a drift `studio_to_unity.py --check`
+already reported before Hybrid), so Hybrid's line is 300 u in the studio and 600 u in the game until one side is
+changed. **Not done yet:** the FMOD slot `hybridModeEvent` ships empty; the numbers (0.5, 2.5 s) are first guesses for play.
 
 ## 2. What the sink takes
 

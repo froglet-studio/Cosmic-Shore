@@ -388,5 +388,102 @@ namespace CosmicShore.Tests
             StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
                 Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
         }
+
+        // ------------------------------------------------------------------ the three modes and Hybrid's carry (STOAT_DIPOLE.md §1f)
+
+        [Test]
+        public void ModeCycle_BStepsMassTimeHybridAndBack()
+        {
+            Assert.AreEqual(StoatModeExecutor.Mode.Time, StoatModeExecutor.Next(StoatModeExecutor.Mode.Mass));
+            Assert.AreEqual(StoatModeExecutor.Mode.Hybrid, StoatModeExecutor.Next(StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Next(StoatModeExecutor.Mode.Hybrid));
+        }
+
+        [Test]
+        public void ModeCycle_PressesToCountsTheWayRound()
+        {
+            Assert.AreEqual(0, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Time, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(2, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Time, StoatModeExecutor.Mode.Mass));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Hybrid, StoatModeExecutor.Mode.Mass));
+        }
+
+        [Test]
+        public void ModeCycle_TimeAndHybridFlyTheOrbit_MassDoesNot()
+        {
+            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Mass));
+            Assert.IsTrue(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Time));
+            Assert.IsTrue(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Hybrid));
+            Assert.AreEqual(0.5f, StoatModeExecutor.MassCardTarget(StoatModeExecutor.Mode.Hybrid));
+        }
+
+        [Test]
+        public void HybridCarry_APerfectReleaseCarriesTheWholeTime_AMissNothing()
+        {
+            Assert.IsTrue(StoatSlingMath.CarryHolds(2.4f, 1f, 2.5f));
+            Assert.IsFalse(StoatSlingMath.CarryHolds(2.6f, 1f, 2.5f));
+            Assert.IsTrue(StoatSlingMath.CarryHolds(1.0f, 0.5f, 2.5f));
+            Assert.IsFalse(StoatSlingMath.CarryHolds(1.3f, 0.5f, 2.5f));
+            Assert.IsFalse(StoatSlingMath.CarryHolds(0f, 0f, 2.5f), "a release outside the window carries nothing");
+            Assert.IsFalse(StoatSlingMath.CarryHolds(0f, -1f, 2.5f), "no release yet");
+            Assert.IsFalse(StoatSlingMath.CarryHolds(float.PositiveInfinity, 1f, 2.5f));
+        }
+
+        [Test]
+        public void HybridLine_WarmsWithTheTiming_LimeInTheWindowOrWhileCarrying()
+        {
+            Assert.AreEqual(0f, StoatSlingMath.HybridLineWarmth(0f, false));
+            Assert.Less(StoatSlingMath.HybridLineWarmth(0.9f, false), 1f);
+            Assert.AreEqual(1f, StoatSlingMath.HybridLineWarmth(1f, false));
+            Assert.AreEqual(1f, StoatSlingMath.HybridLineWarmth(0f, true));
+        }
+
+        [Test]
+        public void Hud_TheModeCardShowsAnIconPerMode()
+        {
+            var text = Read("Assets/_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab");
+            foreach (var (field, guid) in new[]
+                     {
+                         ("massModeIcon", "707ac0afea37451ef31b5be8eb09cdb2"),
+                         ("timeModeIcon", "fb6ff66c748d7560d236e89894823447"),
+                         ("hybridModeIcon", "9444e831cd6940a6a71095fc9a707bac"),
+                     })
+            {
+                StringAssert.Contains($"  {field}: {{fileID: 21300000, guid: {guid}, type: 3}}\n", text, field);
+                Assert.IsTrue(File.Exists(AssetDatabasePathOf(guid)), $"{field}'s sprite is missing");
+            }
+        }
+
+        static string AssetDatabasePathOf(string guid)
+        {
+            foreach (var meta in Directory.GetFiles("Assets/_Graphics/Icons/AbilityIcons/Stoat", "*.png.meta"))
+                if (File.ReadAllText(meta).Contains($"guid: {guid}")) return meta.Substring(0, meta.Length - ".meta".Length);
+            return "";
+        }
+
+        [Test]
+        public void Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo()
+        {
+            // On a phone the Mass card is a button that raises its control's input (Button2Action, B); the prefab's touch
+            // overrides must route that input to the mode switch, or the three modes are pad-only.
+            var map = Read(Map);
+            StringAssert.Contains("  - Element: 2\n    AbilityLabel: Mass / Time Mode\n", map);
+            StringAssert.Contains("    Input: 7\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: Armoured Wake\n", map);
+            var prefab = Read(Prefab);
+            int touch = prefab.IndexOf("  _touchActionOverrides:\n", System.StringComparison.Ordinal);
+            int pad = prefab.IndexOf("  _gamepadActionOverrides:\n", System.StringComparison.Ordinal);
+            Assert.That(touch, Is.GreaterThan(0).And.LessThan(pad), "the Stoat has touch overrides");
+            StringAssert.Contains("  - InputEvent: 7\n    ShipActions:\n    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n",
+                prefab.Substring(touch, pad - touch), "touch B is StoatModeAction");
+        }
+
+        [Test]
+        public void ModeAction_ShipsHybridsNumbers()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset");
+            StringAssert.Contains("hybridPathLengthShare: 0.5\n", text);
+            StringAssert.Contains("hybridCarrySeconds: 2.5\n", text);
+            StringAssert.Contains("hybridModeEvent:", text);
+        }
     }
 }

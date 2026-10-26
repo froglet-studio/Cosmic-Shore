@@ -33,6 +33,9 @@ a pilot asking the host to put an AI seat in a given hull from the Arena configu
 (`Docs/HomeHub/ARCHITECTURE.md` §3.2.1). Both are on bleeding-edge since the 2026-10-25 merge, which ships 14.
 **15** (2026-10-26, `cece/wonderful-knuth-rzv8qp`) - `RhinoSwordNetworkRelay` drops its `n_energy` variable: the
 Rhino has no energy any more (`R_VesselActions/RHINO_ENERGY_SWORD.md`).
+**Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
+that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
+entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.
 Two players testing a join must run the same build.
 
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).

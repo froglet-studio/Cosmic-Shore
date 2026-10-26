@@ -22,6 +22,8 @@ MonoBehaviour:
     Floor: 1
   blendSeconds: 0.8
   massUpgradeShieldsInMassMode: 1
+  hybridPathLengthShare: 0.5
+  hybridCarrySeconds: 2.5
   autopilotTimeModeDegrees: 70
   autopilotModeIntervalSeconds: 3
   massModeEvent:
@@ -32,6 +34,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   timeModeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hybridModeEvent:
     Guid:
       Data1: 0
       Data2: 0

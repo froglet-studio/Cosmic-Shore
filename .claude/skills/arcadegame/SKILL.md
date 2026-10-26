@@ -111,6 +111,13 @@ nobody has watched fail is a gate nobody should trust.
 
 **The card's `CardBackground` is owned by `/cardart`, not by the mode generator** - once the renderer has rewired a card, a generator that re-emits the whole card with `arcade_mode_lib.CARD_ART`'s legacy placeholder silently puts the old backdrop back on every re-run, and `render_card_backgrounds.py --check` then fails on a card nobody touched. Emit `arcade_mode_lib.card_background("<Mode>")`: it returns the guid of the mode's `/cardart` PNG `.meta` (`CardBackgrounds/<Mode>.png`), and falls back to the placeholder only on first bring-up, before `/cardart` has run. The value comes from the RENDER, not from the card, so a card that drifts back to the placeholder fails `--check` instead of being copied forward - the older approach (read `EXISTING['CardBackground']` back off the card; `butterfly_games_common.card_background`, now unused) copied a drifted card forward, and twelve generators that skipped even that emitted the placeholder outright until #969 (2026-10); Waystation clobbered its rendered card the first time its generator ran after `/cardart`. Tollway and Wildlife Liberation are standalone and pin their render guid in `EXISTING['CardBackground']`; prefer the helper in anything new. General rule: *a generator that rewrites a whole asset owns every field in it unless it derives the ones another tool owns from that tool's output.*
 
+**A donor's NEW field leaks into every clone.** When the donor scene's controller gains a field after a mode was
+cloned from it, the next generator run copies it into the clone, and `--check` goes red on a mode nobody touched
+(2026-10-26: Switchback's `featuresPrefab` reached Waystation; Waystation already stripped `firstGateDistance` the
+same way). Strip donor-only fields with a pattern that also matches when the field is ABSENT (so the generator still
+passes against an older donor), and add each donor-only asset guid to the "every donor guid gone from the clone"
+validation, so the leak fails by name instead of as a drift diff.
+
 **A spent one-shot must STAND DOWN, not abort** - a scene clone that asserts on its donor's
 exact text is right today and is the `author_dogfight_assets.py` trap the day the donor moves;
 when the scene is committed and the donor drifts, guard the clone and keep the checks below it live.

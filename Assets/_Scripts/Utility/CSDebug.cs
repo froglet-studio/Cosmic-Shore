@@ -238,8 +238,13 @@ namespace CosmicShore.Utility
         /// race course generation, and end-of-match stat reports. Distinct from
         /// <see cref="ArcadeLaunch"/>, which is the launch PANEL. A mode that cannot start is
         /// still a warning or an error.
+        ///
+        /// <para>Also carries the match recorder (<c>[Theater]</c>, <c>[Replay]</c>): what started,
+        /// what was written and where, what was loaded. Recording a match is part of the match's
+        /// own lifecycle, and the enum has no free bit for a channel of its own (all 32 are taken),
+        /// so it rides here rather than widening the type every caller casts to an int.</para>
         /// </summary>
-        [CSLogChannelLabel("[Arcade] match flow: targets, ready-up, scoring, comeback")]
+        [CSLogChannelLabel("[Arcade] match flow: targets, ready-up, scoring, comeback, replays")]
         ArcadeMatch = 1 << 21,
         /// <summary>
         /// <c>[Menu]</c> — app-shell navigation and selection: screen slides, hangar / store /
