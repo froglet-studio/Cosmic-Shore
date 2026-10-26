@@ -72,9 +72,11 @@ a report on this area runs that, never answers from memory (`Docs/TEAM.md` rule 
 _Generated 2026-10-26 from git (last 30 days), who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area concept-fleet --days 30`._
 
 ### Recent changes (25+)
-- 2026-10-26 `91327c5c6` fix(omega): the crews' class and element-map assets parse as YAML again — on Ys-bleeding-edge
-- 2026-10-26 `6350dfc87` feat(omega): the Omega crews in Unity - Warden, Bulwark, Tempest (25-27): mega forms that combine into one omega form with three seats — on Ys-bleeding-edge
-- 2026-10-26 `3a75bb456` feat(vessel-studio): the Omega Crews studio - combiner crew vessels (mega forms, one omega form, three seats) — on Ys-bleeding-edge
+- 2026-10-26 `63a08b12a` feat(omega): the crews march as one formation with mobility, attack and defence seats; the bodies take their colour — on Ys-bleeding-edge
+- 2026-10-26 `b036761b0` docs(concept-fleet): the vessel id ledger and the shared-work rule, the Omega crews and the Flea in the area report and the class list — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `91327c5c6` fix(omega): the crews' class and element-map assets parse as YAML again — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `6350dfc87` feat(omega): the Omega crews in Unity - Warden, Bulwark, Tempest (25-27): mega forms that combine into one omega form with three seats — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `3a75bb456` feat(vessel-studio): the Omega Crews studio - combiner crew vessels (mega forms, one omega form, three seats) — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-24 `eca1568b8` docs(concept-fleet): the Flea's Unity branch is up; Garrett's flight test; the Tether's free id is now 25 — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-24 `6332aab74` feat(flea): the Flea (vessel 24) flies in Unity - bounce off mass, RT timed to the contact, LT crouch and hop — on another branch
 - 2026-10-24 `9a79de22d` docs(reports): the concept fleet's report and area; the Tether's free id is now 24 — on Ys-bleeding-edge, bleeding-edge
@@ -95,8 +97,6 @@ _Generated 2026-10-26 from git (last 30 days), who_works_where.py and the team-t
 - 2026-10-17 `422d52e66` docs(concept-fleet): round 2 is one vessel per session; the Gibbon merges the Tether prototype — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-17 `989e690e4` fix(vessel-studio): the Albatross flies as a glider; the concept fleet's four-course scorecard — on Ys-bleeding-edge, bleeding-edge
 - 2026-10-17 `268320eb3` feat(vessel-studio): the concept fleet - ten new movement vessels as recipes on one engine (D40) — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-17 `7496683d8` feat(angler): round 4 - one-thumb, 2x speed, camera 4x, the lure stops, crystal seeds, lure growth, Charge spends a creature — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-16 `2bcba3eb3` feat(angler): the element map - Space paint 3200 u, Charge lock-on, Mass lure & grow, Time dash; the omni creature — on Ys-bleeding-edge, bleeding-edge
 
 ### Also in flight on other branches
 - `claude/flea-vessel` (unattributed, 2026-10-24): feat(flea): the Flea (vessel 24) flies in Unity - bounce off mass, RT timed to the contact, LT crouch and hop
