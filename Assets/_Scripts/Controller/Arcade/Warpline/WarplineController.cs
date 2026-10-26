@@ -41,6 +41,10 @@ namespace CosmicShore.Gameplay
         /// a minute, stalled on ring 0): its approach point sat 180 u out against a 160 u commit, and on its 167 u turning
         /// circle (48 deg/s at 140 u/s) it circled 10-60 u off the 32-48 u mouths. Offline on those 11 courses
         /// (<c>Tools/Build/switchback_dolphin_sim.py --mode Warpline</c>, no warp): 0 of 11 finished before, 11 of 11 after.
+        /// Steering alone still missed 4-7 mouths a race and took twice Yash's time: warped, the hull cannot line up from the
+        /// base autopilot's 60 u let-go, so in Warpline it lets go of the warp 250 u out
+        /// (<c>Resources/AIBoostPolicies/StoatDipoleConfig_Warpline</c>; with the warp modelled, all 15 of Yash's courses
+        /// in 82-92 s with no missed mouth, 2026-10-27).
         /// </summary>
         protected override bool AICommitFromApproachPoint => true;
     }

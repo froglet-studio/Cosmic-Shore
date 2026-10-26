@@ -1,6 +1,23 @@
-# Training the AIs through each vessel's own racing minigame
+# Training the AIs through each vessel's own minigames
 
-**Decided by Yash, 2026-10-26.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`). Yash's words:
+**Decided by Yash, 2026-10-26, restated 2026-10-27.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`).
+
+**The plan in one paragraph (2026-10-27).** The AIs are not trained in Regatta. Each vessel is trained in its OWN
+minigames: first its **Time minigame** (the card whose genre petal is Time, usually its race: the Stoat's is Warpline),
+then its other own minigames, racing or not. People pick a vessel and play its minigames over and over; every match is
+recorded and learned from on its own (`AUTO_LEARNING.md`), so the AI keeps getting better there. Then the **arena
+games** (the cards that seat several vessels: Regatta, Broadside, Brood Rush, Astro League) are **restructured from the
+skills the vessels learned**: an arena game is a mix of those skills, so ANY vessel can play it and still fit. Regatta
+itself may stay a track race or become something else; that is not decided. Until then the learning sweep reports
+Regatta races and learns nothing from them (`ai_learn.HOLD`). Yash, 2026-10-27:
+
+> "We are not using the regatta scene to train the AIs, rather we are using the AIs own mini-games, time mini-games, to
+> train them. [...] we will pick each vessel, we will keep playing their own time mini-games, whether racing or other
+> time mini-games. And through that they will keep improving in those mini-games, and then we will restructure the
+> regatta, arena game mode based on their own skills. [...] arena games should be a mixed combination of the skills
+> acquired by the vessels. So that we can use any vessel to play these arena games, and they will still be a good fit."
+
+Yash's words of 2026-10-26:
 
 > "It's not through Regatta, but it's through creating some mini games, some fun racing mini games of them or modifying
 > the existing mini games, racing mini games especially of them. On basis of four intensity level, making them super fun
@@ -32,20 +49,26 @@
 
 ## 2. Which minigame trains which vessel
 
-From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one whose score is a race.
+From `VESSEL_MODE_CHART.md` §4 (live cards). Every vessel has one minigame per element; its **Time minigame** is the one
+whose genre petal is Time (`ModeGenre`: a race, a goal race or a crystal race), and it is trained first. Its other own
+minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the learner already reads them (§1 step 4,
+`AUTO_LEARNING.md` §5).
 
-| Vessel | Racing minigame | Shape | State (2026-10-26) |
+| Vessel | Time minigame | Shape | State (2026-10-27) |
 |---|---|---|---|
 | **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
-| Stoat | Warpline (also Slingshot) | gate race, field pairs | 11 hand-flown races (I1-I3). Retrained 2026-10-26: the Regatta steering and the pair and sling numbers learned from Yash (`WARPLINE.md` §3.1) |
+| **Stoat** | **Warpline** (also Slingshot) | gate race, field pairs | **Second (Yash, 2026-10-26/27).** 15 hand-flown races, all finished (I1-I4); the AI Stoats finished none of 30. Retrained: the Regatta steering, the pair and sling numbers learned from Yash (`WARPLINE.md` §3.1), and the warp let go 250 u out (§7, `WARPLINE.md` §3.2) |
 | Rhino | Headlong | lapped gate race | none yet |
 | Manta | Redline | gate race | none yet |
 | Urchin | Skein | gate race on rails | none yet |
 | Sparrow | Breakwater | gate race through breakwaters | 7 hand-flown (I1, I4). The steering fix and the rocket that clears the way are in, the rocket's range and aim learned from Yash's shots (§6) |
 | Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
 | Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
-| Serpent | **none** | - | no racing minigame of its own yet: one has to be made or chosen |
+| Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
+| Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
+| Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
+| Serpent | **none** | - | no Time minigame of its own yet: one has to be made or chosen |
 
 ## 3. Switchback first (Dolphin)
 
@@ -203,9 +226,11 @@ cascade, the steering after it finishes it. Two leads, offline only, for when th
 
 Neither is shipped: the next races at I2 and I4 on the new ladder decide.
 
-## 4. The end state: Regatta rebuilt from the trained vessels
+## 4. The end state: the arena games rebuilt from the trained vessels
 
-Once two to four vessels race at their best in their own minigames:
+Once two to four vessels play at their best in their own minigames, the **arena games** are restructured from what they
+learned. An arena game is a mix of the vessels' skills, so any vessel can play it and still be a good fit (Yash,
+2026-10-27). Regatta is the first of them; whether it stays a track race is open. What follows is the Regatta case:
 
 - **Regatta is designed from their measured skills**, not tuned blind. Each trained AI shows what its vessel is good
   at: the Dolphin's carve, the Squirrel's skim, the Stoat's warp, the Urchin's rail. Regatta's course gets sections
@@ -281,6 +306,49 @@ ability rule in its own minigame.
   None of it has been run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 - **Done (2026-10-26, later):** a drive per intensity (§3.6), learned from each intensity's current course with the
   mode variant from every intensity (§3.7); the Sparrow's rocket learned from Yash's shots (§6).
-- **Next:** Yash plays Switchback at each intensity, repeatedly. Nothing else: every race is relearned from within the
+- **Done (2026-10-27):** the plan restated (each vessel's own Time minigame first, then its other own minigames; the
+  arena games rebuilt from the skills; Regatta races reported, never learned from). The Stoat's hold lifted and its
+  Warpline AI fixed (§7).
+- **Next:** Yash plays Warpline and Switchback at each intensity, repeatedly. Nothing else: every race is relearned from within the
   hour by the AI learning sweep (`AUTO_LEARNING.md`), which also checks the AI's pace and fixes what numbers cannot.
   Then the next vessel.
+
+## 7. The Stoat in Warpline (2026-10-27)
+
+**What Yash's races show.** 15 races (2026-10-25..27, I1-I4, Easy to Legendary rivals), all finished by Yash in
+66-129 s. The AI Stoats finished **none of 30**: 0-9 of 10 rings, at about 140 u/s, as fast as Yash (median 100,
+116 at the rings). On a clean leg the AI flew 800-1,000 u in 6-9 s; but it crossed a ring's plane 10-180 u off its
+26-48 u mouth 1-11 times a race, and every miss cost a 3,000-7,800 u loop back round.
+
+**Why.** Two causes, both measured offline on the 15 courses (`switchback_dolphin_sim.py --mode Warpline`, the Stoat at
+60 u/s cruise and 48 deg/s, the warp as a hold to ~140 u/s; the pair's bend of the path is not modelled, so it is
+pessimistic on turns):
+1. **Warpline did not fly the Regatta steering**, and its 180 u approach point lay outside its 160 u commit radius
+   (Switchback's and Breakwater's defect). Shipped steering: none of 15 finished.
+2. **The autopilot held the warp until 60 u from the ring** (`StoatDipoleConfig.autopilotLetGoNear`). At 140 u/s and a
+   fixed 48 deg/s the Stoat turns on a 167 u circle, so from 60 u it cannot line up on the mouth. With the steering fixed
+   and the let-go at 60 u it still missed 180-280 mouths over the 15 courses; at 200 u and more, none.
+
+Yash threads half the rings while still warping and otherwise lets go about 50 u out: he sees the pair bend his path
+into the ring, which the AI's steering does not use. So the let-go is NOT learned from him; it is set from the model.
+
+**What changed.** The steering and the learned numbers landed first, from a session working in parallel on Yash's
+"re train Stoat" (2026-10-26, 11 races, `WARPLINE.md` §3.1); this section adds the warp's let-go (`WARPLINE.md` §3.2).
+- `WarplineController.AICommitFromApproachPoint` = true (the Regatta steering with the approach-point cap).
+- `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` and `StoatSlingConfig_Warpline` (Warpline only,
+  `AIModeTuning`), written by the learner from Yash's races: hold a warp 1.0-2.36 s (was 0.8-15), the next pair 1.52 s
+  after an orbit cap (2); in Time mode sling from 125 u at any 8 deg turn, every 0.95 s, let go within 16.6 deg. And by
+  hand: `autopilotLetGoNear` 250 (was 60), which the learner keeps.
+- Garrett's Stoat configuration (`Assets/_SO_Assets/VesselActions/Stoat/`) is untouched: a person's Stoat, and the AI
+  in every other mode, fly as before.
+
+**The model, all 15 courses** (median race seconds; Yash's median 92):
+
+| | warp 120 u/s | 140 u/s | 170 u/s |
+|---|---|---|---|
+| Shipped steering, let go 60 u | none finish | none finish | none finish |
+| Regatta steering, let go 60 u, learned hold | 214 s, 183 misses | 243 s, 242 misses | 204 s, 199 misses |
+| **Regatta steering, let go 250 u, learned hold** | **92 s, 0 misses** | **87 s, 0** | **82 s, 0** |
+
+Tests: `SwitchbackAISteeringTests.Warpline_*`. Not run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Slingshot,
+the Stoat's other race, keeps its scene steering until its own races show the same thing.

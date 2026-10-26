@@ -97,6 +97,16 @@ Breakwater and Waystation had.
 
 The Stoat's own configs, which every other mode flies, are unchanged.
 
+### 3.2 The warp lets go 250 u out (2026-10-27)
+
+With the steering fixed, the AI still missed 4-7 mouths a race and took about twice Yash's time (offline on his 15
+races, I1-I4): warped to ~140 u/s on a 167 u turning circle, it cannot line up on a 26-48 u ring from the base
+autopilot's 60 u let-go. With the warp modelled (`switchback_dolphin_sim.py --mode Warpline`: laid at 1.5x the let-go,
+let go at it, held 1.0-2.36 s), letting go 250 u out finishes all 15 courses in 82-92 s with no missed mouth, at warp
+speeds of 120-170 u/s (Yash: median 92 s); 175 u starts missing again. So `StoatDipoleConfig_Warpline.autopilotLetGoNear`
+is 250, set by hand: Yash threads half his rings still warped, steering by the pair's bend, which the AI does not use,
+so his ~50 u let-go is not one the AI can copy. The learner never writes that field (`MINIGAME_TRAINING_PLAN.md` §7).
+
 ## 4. Known limit — two pairs at a time
 
 The black-hole budget is four holes (`BlackHolePhysics.NativeWells.Capacity`, the lens's well bank), so

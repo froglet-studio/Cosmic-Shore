@@ -20,7 +20,7 @@ task, Docs/AI_SYSTEM/AUTO_LEARNING.md) runs it, and it
      every vessel/mode whose flights no learner reads yet (the session's to-do).
 
 A learner writes nothing until it has three finished races of a hull (its own rule), so a single race only counts.
-Modes on HOLD are reported, never written (another collaborator's call).
+Modes on HOLD are reported, never written (another collaborator's call, or not trained now).
 
     python3 Tools/Build/ai_learn.py             # status: what is new since the last learn (changes nothing)
     python3 Tools/Build/ai_learn.py --run       # learn from it, write the report and the memory
@@ -40,7 +40,11 @@ SKIM_LINE_MODES = ("Regatta", "SkimRace")   # learn_from_flights.py: the Squirre
 
 # Modes whose AI is someone else's call: reported, never written.
 # Warpline was held for Garrett's Stoat configuration (issue 1198) until Yash lifted it on 2026-10-26 ("re train Stoat").
-HOLD = {}
+HOLD = {
+    # Yash, 2026-10-27: the AIs train in each vessel's OWN minigame, and the arena games (Regatta among them) are rebuilt
+    # later from the skills they learn there (MINIGAME_TRAINING_PLAN.md). Regatta races are reported, never learned from.
+    "Regatta": "the AIs train in their own minigames; Regatta is rebuilt from those skills later (Yash, 2026-10-27)",
+}
 
 
 def py(*args, timeout=900):
@@ -329,6 +333,8 @@ def self_test():
         bad.append(f"Regatta {modes['Regatta']}")
     if modes["SkimRace"]["learners"] != ["skim line"]:
         bad.append(f"Skim Race's Squirrel is measured by the skim learner {modes['SkimRace']}")
+    if not modes["Regatta"]["hold"]:
+        bad.append("Regatta is on hold: the AIs train in their own minigames (Yash, 2026-10-27)")
     if modes["Warpline"]["hold"] or modes["Warpline"]["learners"] != ["drives"]:
         bad.append(f"Warpline's Stoat is learned since 2026-10-26 {modes['Warpline']}")
     if modes["Bloomrush"]["learners"] != ["drives"]:
@@ -341,6 +347,8 @@ def self_test():
         bad.append("everything seen must leave nothing new")
     # Only a flight a learner read, in a mode whose learners all succeeded, is marked learned (Codex, PR 1558).
     learned, waiting = settle(new, {"Breakwater"})
+    if any("flight_Regatta_" in p for p in learned) or not any("flight_Regatta_" in p for p in waiting):
+        bad.append("a Regatta flight (a mode on hold) waits, it is not learned")
     if not any("Warpline" in p for p in learned):
         bad.append("Warpline's Stoat flights are learned now that its hold is lifted")
     if any("Ghost" in p for p in learned) or not any("Ghost" in p for p in waiting):

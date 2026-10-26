@@ -84,7 +84,7 @@ MonoBehaviour:
   autopilotHoldSeconds: 4
   autopilotIntervalSeconds: 1.519
   autopilotWatchPath: 1
-  autopilotLetGoNear: 60
+  autopilotLetGoNear: 250
   autopilotDrySeconds: 0.5
   autopilotMinHoldSeconds: 0.998
   autopilotMaxHoldSeconds: 2.357

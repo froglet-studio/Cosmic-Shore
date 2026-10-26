@@ -484,6 +484,24 @@ NOT run: `RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_E
    discharges at about half charge); at I3 it is the mode's.
 2. The AI Dolphins circle less at I4 than in the 2026-10-26 04:09 race (23 s circling, 50 s on gate 4).
 
+### 🔴 Warpline: the AI Stoats finish the race (`Ys-bleeding-edge`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (on top of "The AI Stoat retrained for Warpline", 2026-10-26, above: the same steering and copies):
+`WarplineController.AICommitFromApproachPoint => true` (Regatta's gate steering), and Warpline-only autopilot copies `Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` / `StoatSlingConfig_Warpline`: the warp let go
+250 u from the ring (60 in the base), held 1.0-2.36 s, the sling numbers from Yash's 15 races. In those races the AI
+Stoats finished none of 30. Garrett's base Stoat configs are unchanged.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files; `switchback_dolphin_sim --self-test`
+and `--mode Warpline` (shipped: none of 15 courses finished; now 15 of 15, 0 missed rings, median 82-92 s with the
+warp at 120-170 u/s); `learn_drives_from_flights --mode Warpline --check`; `ai_learn --self-test`. NOT run:
+`SwitchbackAISteeringTests` in Unity.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): `Warpline_FliesTheRegattaSteering_WhateverTheSceneSays` and
+   `Warpline_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing` pass.
+2. Warpline I1 and I4 against two AI Stoats (Hard): they thread the rings without looping back, warp on the legs and
+   drop out of the warp well before each ring (Third Eye), and finish both laps.
+
 ### 🔴 Breakwater: the AI Sparrows boost on the legs (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `SparrowAIBoostPolicy_Breakwater` boost bands: align 45 / 60 deg, stick bands 1, engage 2 s, release
