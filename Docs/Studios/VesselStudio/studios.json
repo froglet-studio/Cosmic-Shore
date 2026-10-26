@@ -58,9 +58,9 @@
       "id": "stoat",
       "name": "Stoat",
       "file": "stoat.html",
-      "kind": "design studio - round 15",
-      "chip": "design studio · round 15",
-      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and the round-15 field trajectory (a predicted path that boosts you when it loops back on itself). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
+      "kind": "design studio - round 16",
+      "chip": "design studio · round 16",
+      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and three modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it), Time (the catch sling, timed at 90°) and Hybrid (the catch with a half-length path and a boost carried out of a timed release). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
       "spec": [
         {
           "k": "Sling",
@@ -76,7 +76,7 @@
         },
         {
           "k": "Status",
-          "v": "round-4 sling in the game (Slingshot)"
+          "v": "all three modes in the game on B (Ys-bleeding-edge)"
         }
       ],
       "preview": "previews/stoat.png",

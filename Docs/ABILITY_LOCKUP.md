@@ -986,7 +986,7 @@ notches inside the trapezoid.
    the Time card wipes empty when a strafing roll is spent, refills on re-arm. Scarab: the Space
    card fills with ball energy and goes READY. Confirm each meter is on the card of the ability it
    reports on (boost on Boost Ring, ball energy on Ball Forge), not the one it was authored under.
-10. **Rhino.** Fly a Rhino: four LIVE cards (placeholder icons) — Sword Energy, Afterimage, Blade
+10. **Rhino.** Fly a Rhino: four LIVE cards (placeholder icons) — Sword Steal (Sword Energy until 2026-10-26), Afterimage, Blade
     Reach, Ramp Spool — with the element flowers docked above all four. Energize the blade (hold
     the both-triggers chop stance 1 s): the Charge card lights while energized and carries the
     energize-cooldown veil afterwards.

@@ -109,13 +109,14 @@ DRAINS = [
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Squirrel joust overtake (the ally BUFF mirrors the debuff). The STEAL is additionally "
      "scaled by the thief's CHARGE (stealScale, x1 at rest -> x2.5 at L10); this row prices the "
-     "x1 base, which is what the Rhino's sword always takes."),
+     "x1 base, which both hulls take at rest."),
     ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset",
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Rhino sword contact steal (same type, requireOvertake OFF - a blade connects on its own "
      "terms). Priced identically to the joust because they are the same VERB: Broadside prices a "
      "Strike once, and two hulls landing one must take the same petals or the price list is a "
-     "fiction."),
+     "fiction. Since 2026-10-26 its steal is CHARGE-scaled exactly like the joust's (x1 -> x2.5): "
+     "Charge is the Rhino's steal."),
 ]
 
 # Verbs that SCORE and still carry no drain path at all. Reported, never authored.
