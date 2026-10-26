@@ -110,14 +110,13 @@ the ramp keeps climbing. That was recorded as a gap; it is the design.
 `RhinoVesselSurgeByCrystalEffect` replaces `RhinoVesselChangeResourceByCrystalEffect` in the
 Rhino's vessel container (the explosion beside it is unchanged). On an omni pickup:
 
-1. sword energy is raised to 1 (`energyFill`);
-2. the blade **bursts** in all three dimensions (the crystal-burst look, which no longer spends
-   anything);
-3. the blade is held **energized for 6 s** (`surgeSeconds`) with no stance and no cost, overriding
-   a cooldown;
-4. all four elements are lent **+0.2 normalized (two levels)**, decaying over the surge
-   (`ResourceSystem.ApplyElementalEffect`, temporary - the base level is untouched);
-5. **afterimages lay throughout** - the Mass ability that otherwise waits for the energize to end.
+*(Reworked 2026-10-26 - the 2026-10-16 surge also filled the energy, burst the blade and lent every
+element two levels; all three are gone.)* Today:
+
+1. the blade is held **energized for 8 s** (`surgeSeconds`) with no stance, overriding a cooldown;
+2. a **ring of 8 trigger-driven swords** surrounds the hull and the pilot's camera pulls back onto it
+   (`RHINO_ENERGY_SWORD.md` § "The omni-crystal Surge");
+3. **afterimages lay throughout** - the Mass ability that otherwise waits for the energize to end.
 
 When the surge ends the blade goes out (unless Live Wire and the stance hold it), and the ordinary
 5 s afterimage window follows with a fresh budget.
