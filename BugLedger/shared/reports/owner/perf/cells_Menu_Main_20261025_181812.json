@@ -1,0 +1,119 @@
+{
+    "scene": "Menu_Main",
+    "timestamp": "2026-10-25 18:18:12",
+    "label": "",
+    "secondsSinceSceneLoad": 261.6173095703125,
+    "floraObjectsInScene": 21,
+    "faunaObjectsInScene": 14,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Garland Cell Config",
+            "spawnProfile": "Garland Cell Spawn Profile",
+            "configChoice": "EnvironmentFree",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "RandomLifeSpawner",
+            "phase": "Calm",
+            "liveVolume": 1951281.875,
+            "liveEnvironmentVolume": 1933765.625,
+            "livePrismCount": 11349,
+            "floraPlantingEnabled": true,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 2278970.0,
+            "frenzyEnterVolume": 2529242.0,
+            "frenzyExitVolume": 2519642.0,
+            "frenzyEnterCount": 11747,
+            "frenzyExitCount": 11147,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 391.9114685058594,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Jade",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 21,
+            "faunaLiveTotal": 14,
+            "flora": [
+                {
+                    "config": "Garland Arbor Flora Config Data",
+                    "prefab": "ArborFlora",
+                    "live": 5,
+                    "initialBatch": 3,
+                    "seedFloor": 3,
+                    "cap": 5,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Garland Tendril Flora Config Data",
+                    "prefab": "TendrilFlora",
+                    "live": 6,
+                    "initialBatch": 4,
+                    "seedFloor": 4,
+                    "cap": 6,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Garland Lantern Flora Config Data",
+                    "prefab": "LanternFlora",
+                    "live": 7,
+                    "initialBatch": 4,
+                    "seedFloor": 4,
+                    "cap": 7,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                },
+                {
+                    "config": "Garland Spire Flora Config Data",
+                    "prefab": "SpireFlora",
+                    "live": 3,
+                    "initialBatch": 2,
+                    "seedFloor": 2,
+                    "cap": 3,
+                    "atCap": true,
+                    "spawnProbability": 1.0
+                }
+            ],
+            "fauna": [
+                {
+                    "config": "Garland Brittlestar Fauna Config Data",
+                    "prefab": "MassBrittlestarFauna",
+                    "live": 6,
+                    "initialBatch": 3,
+                    "cap": 6,
+                    "atCap": true,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Garland QuadFish Fauna Config Data",
+                    "prefab": "QuadFish",
+                    "live": 8,
+                    "initialBatch": 4,
+                    "cap": 8,
+                    "atCap": true,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                },
+                {
+                    "config": "Garland Shark Fauna Config Data",
+                    "prefab": "MassSharkFauna",
+                    "live": 0,
+                    "initialBatch": 1,
+                    "cap": 2,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": []
+}
