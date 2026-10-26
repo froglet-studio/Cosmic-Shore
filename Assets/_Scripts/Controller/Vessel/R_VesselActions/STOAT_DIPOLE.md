@@ -130,7 +130,7 @@ orbit near 90 degree orbit rotation."*
 | **Mass 5** | every prism arrives SHIELDED (Armoured Wake) | — |
 
 **B** (`InputEvents.Button2Action`; T on a keyboard, the Vessel Studio's key too — R until 2026-10-14) steps the mode,
-**Mass → Time → Drive → Mass** since 2026-10-26 (`StoatModeActionSO` → `StoatModeExecutor.Toggle`; Drive is §1f).
+**Mass → Time → Gate → Mass** since 2026-10-26 (`StoatModeActionSO` → `StoatModeExecutor.Toggle`; Gate is §1f).
 It is a press with no release semantics (vessel rule 37). Both trigger assets ride each trigger (`StoatDipoleLeft/
 RightAction` AND `StoatSlingLeft/RightAction`); each executor stands aside outside its own mode, so the binding never
 changes and the peer-press harness sees one ordinary binding. **A switch lets go of whatever the triggers held** — the
@@ -202,6 +202,17 @@ artifact's batch race (the AI at Hard, best of three squeezes; the field ×3 boo
 
 The circuit is now level; the hairpins are still the field's (the catch's circles cost time there — tuning, not pace).
 
+**A controlled orbit (2026-10-27).** Playtest: *"going near the black hole I get shifted right or left toward the side
+of the white hole; I cannot go in the middle."* Measured in the studio: a deep squeeze was caught ~120 u out and held on a
+126 u circle round a black hole only 90 u from its white hole, so the orbit reached round the white hole and swung the
+hull past its side, and the catch snapped the hull onto the squeeze's circle wherever it was (Unity's shape: a light
+squeeze = a 150 u circle round the 90 u pair). Two knobs, studio and Unity alike: **held where it caught you**
+(`holdAtCatch`, on; the held circle eases to the squeeze's at `orbitEaseRate` 0.8 /s) and **the circle clear of the white
+hole** (`whiteClear` 0.8: at most 0.8 × the poles' distance, 72 u; `StoatSlingMath.ClearOfRepulsor`). A pilot aiming
+beside the black hole is now caught at ~68 u (was 120), 9/9 passes caught, no dives; the AI's Time races 56.1 → 53.8 s
+(circuit I2), 80.4 → 76.5 s (hairpins I2). Measured and left off in the studio: `dpCatchInside 0` (catch only as you pass)
+dives you into the hole when aimed straight at it.
+
 **The autopilot** presses the trigger on its target's side (target ≥ 30° off the nose, ≥ 120 u away, every 3 s), flies
 toward its target past the pole and is caught; once caught it lets go when the target is within `aiReleaseConeDegrees`
 (20°) of the nose, or within 60° inside the timing window; a pair that has not caught it in `aiCatchGiveUpSeconds` (4 s)
@@ -264,20 +275,20 @@ executors, serialized on the prefab — rule 14):
 | Charge | Ripple | the ripple a let-go would throw NOW, as a share of the largest |
 | Mass | Mass / Time Mode | the switch: full in Mass mode, empty in Time mode, eased between |
 | Space | Field Dipole | Space-5 Accretion: how far the open pair has grown |
-| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Drive: the warp pair's warp as a share of its top, ready past half |
+| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Gate: a jump's warp as a share of its top, ready past half |
 
-The Mass card reads the mode: full in Mass, **half in Drive**, empty in Time, and its **icon follows the mode**
+The Mass card reads the mode: full in Mass, **half in Gate**, empty in Time, and its **icon follows the mode**
 (2026-10-26, `StoatHUDView.SetModeIcon`): `Stoat_ModeMass` (the thick trail and its path), `Stoat_ModeTime` (an orbit
-round a solid attractor), `Stoat_ModeDrive` (the warp pair: a black hole ahead, a white hole behind, the hull between), placeholders from
+round a solid attractor), `Stoat_ModeGate` (an arrow into a black hole, its white hole far along the line), placeholders from
 `author_stoat_icon_placeholders.py` (`--check`) wired on `StoatHUDVariant.prefab`; an empty slot shows the card's own icon.
 
 **On a phone** (Android, iOS: `KitInputDevice.IsTouchPrimary`, and only while no pad is connected; never on PC or
 Steam) the Stoat flies the TotemButtons profile (`author_touch_profiles.py`): the cards round the right thumb are its
 buttons. **The Mass card is B** (its ability's Input 7, `Button2Action`, routed to `StoatModeAction` by the prefab's
-`_touchActionOverrides`), so a tap steps Mass → Time → Drive and the icon shows where you are; the **Space card is LT**
-(the left dipole, the left catch in Time, the left half of the warp pair in Drive), the **Dipole disc is RT** and the **Hold disc is A**.
+`_touchActionOverrides`), so a tap steps Mass → Time → Gate and the icon shows where you are; the **Space card is LT**
+(the left dipole, the left catch in Time, the gate in Gate mode), the **Dipole disc is RT** and the **Hold disc is A**.
 `StoatSlingTests.Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo` pins the binding. Open: the Dipole disc and the Space
-card keep their dipole icons in Time and Drive mode.
+card keep their dipole icons in Time and Gate mode.
 
 The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
 `SO_Class_Stoat` are renders of the Stoat's own hull (since 2026-10-18 its model: `Tools/Build/vessel_model/render_cards.py Stoat`, `--check`).
@@ -295,68 +306,45 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
 - **Overclock (the omni crystal, proposal O1).** `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.
 
-## 1f. Drive mode — the warp pair (2026-10-26)
+## 1f. Gate mode — the warp gate (2026-10-27)
 
-The design call (Yash), after a first cut (Hybrid: the orbit with a half-length path and a carried boost) was removed:
-*"we will use the field trajectory as more precise movement and the orbit as more fast agile movement, but less accuracy
-... can you make [a third mode] so that we can also have a bigger control of long distance travel with agile movement and
-precision? ... determine this precision level or agility level with how much the black holes are differing from each
-other, or the position of the black hole and the white hole pair, or the size of them ... it cannot be just the blend. It
-needs to be recreated by inspiring the other two."* B's third press: **Mass → Time → Drive → Mass**.
+**History.** B's third press was first Hybrid (2026-10-26: the orbit with a half-length path and a carried boost), then
+Drive (the same day: a phantom pair riding with the hull, its stretch a warp and its tilt a turn). Played in the
+artifact, Drive was *"just a plain boost with pressing both triggers ... it doesn't even need the black hole"*. The
+design call (Yash, 2026-10-27): *"keep the black hole pair ... a little bit of realism, a little bit of sci-fi ... if we
+can aim a little bit well and place them in a good distance, then we get the max speed boost ... we can't keep spamming
+them ... they fall back together in a limited time, maybe 0.5 to 1.5 seconds."* Both earlier cuts are removed.
 
-**The idea: a warp drive.** In general relativity the Alcubierre drive contracts space ahead of a ship and expands it
-behind. The Stoat already owns a black hole (a sink) and a white hole (a source); in Drive mode they ride WITH the hull,
-the black hole ahead of the nose and the white hole behind it, mirrored through the hull, and the triggers shape the pair
-the way they shape Mass mode's dipole (`StoatDriveMath`, ported line for line from the studio's `driveShape`):
+**Gate mode** (`StoatGateMath`, the gate in `StoatSlingExecutor`, the warp in `StoatPathfinderExecutor`; the studio's
+`layGate` / `gateHold` / `gateJumped` / `stepGateBoost`, line for line):
 
-| The triggers | The pair | What it does |
-|---|---|---|
-| **Sum** (both squeezed) | its LENGTH: `driveLengthMin` 60 u → `driveLengthMax` 320 u ahead and behind | the WARP: the flight clock to `1 + (Boost − 1) × driveWarpShare × span^driveWarpExponent` (×3 at rest at full stretch, Time scales it) — the long legs |
-| **Difference** (one deeper) | the black hole slides to the deeper trigger's side, up to `driveLateralMax` 140 u, the white hole the other way | the pair TILTS (`atan2(sideways, length)`) and the tilt TURNS the hull toward the black hole: `driveTurnGain` 2.2 °/s per degree, up to `driveTurnMax` 140 °/s, on the warped clock |
-| **The sticks** | — | turn on the REAL clock (`ExternalTurnRateMultiplier` = 1 / the warp): a long fast leg turns wide |
+| | |
+|---|---|
+| **Press** LT or RT | a REAL pair opens along the nose: the black hole `gateAhead` 90 u ahead, its white hole further along the same line — held, no pull on its owner, the Time-mode poles' light strength, a `gateMouthRadius` 5 u horizon. One gate at a time: none until the last has gone (no spam) |
+| **Squeeze** | the deeper trigger stretches it: the white hole slides out, `gateLengthMin` 120 → `gateLengthMax` 600 u through the squeeze curve (`BlackHoleRegistry.Reshape`) |
+| **Fly into the black hole** | the platform carries the hull through (`BlackHoleVesselPull.TryCarryThrough`, heading kept): out of the white hole, the gate's length skipped. Within `gateFunnelRadius` 30 u, still ahead, the black hole draws its owner sideways onto the line into its mouth at `gateFunnelRate` 4 /s — aim near it and it takes you in |
+| **The jump's warp** | quality = aim × length: all of it for an entry straight down the gate's line, none at `gateAimConeDegrees` 25° off; × 0.4 for the shortest gate → 1 for the longest. The flight clock warps to `1 + (Boost − 1) × gateWarpShare 1.5 × quality` (×4 at rest for a perfect jump) for `gateBoostSeconds` 2.5 s, then fades |
+| **Held / let go** | held, it lasts at most `gateHoldMaxSeconds` 3 s; let go (or flown through) it falls together in about `gateCollapseSeconds` 0.8 s (`BlackHoleRegistry.LetGo(pair, speed)`) and annihilates — throwing the Charge ripple |
 
-**So the pair's shape is the dial between agility and precision** — the user's "how much the holes differ, where they sit":
-a short pair pulled sideways tilts a long way and **carves** (the orbit's agility); a long straight pair barely tilts and
-**travels** fast and steady (the long legs); a light squeeze with a small difference **trims** (the field's precision —
-the warp curve keeps a light squeeze near the hull's own speed). The same difference turns a short pair more than twice
-as hard as a long one (`StoatSlingTests.Drive_TheSamePull_TiltsAShortPairMore_ThanALongOne`).
+**What is drawn:** the lensed holes themselves; a lime ring round the open gate's mouth (where to fly in); the path ahead
+(lime while the warp is past half). The HUD's Time card is the warp's share; the Mass card half full with the Gate icon.
+Keys and touch ramp a held trigger to a full squeeze (the longest gate) over `gateKeyRampSeconds` 0.5 s.
 
-**What is drawn:** the pathfinder's line, flown with the drive's turn and on its warp (the field's precision tool: the
-arc you see is the arc you fly), easing toward lime with the warp and lime past half of it; and a ring where each pole
-rides (black hole violet, white hole white). The HUD's Time card is the warp's share of its top; the Mass card sits half
-full and shows the Drive icon. Keys and touch ramp a held trigger to a full squeeze over `driveKeyRampSeconds` 0.5 s.
+**Studio scorecard** (the AI at Hard, seed 1, race seconds; Mass / Time / Gate): circuit I1 54.0 / 60.4 / **53.5**,
+I2 59.6 / 53.8 / **53.0**, I3 **51.5** / 77.2 / 54.8, I4 **49.2** / 79.5 / 57.7; hairpins I1-I4 **31-39** / 66-95 / 61-71.
+The gate is a long-leg tool: the AI opens one only on a leg of `autopilotGateMinDistance` 300 u+ within
+`autopilotGateConeDegrees` 12° of its nose, so the hairpins (no such legs) fly it unassisted. An AI that steers at the
+mouth itself did 44.8 s on circuit I2, but the game's AI cannot be pointed at a mouth without overriding its mode's race
+line, so both run the same rule and the funnel takes them in. A person who aims does better than the AI.
 
-**It takes nothing and pulls nobody.** The pair is the hull's drive, not a pair in the world: no horizon, no prism taken,
-no vessel pulled (PvP stays petals only), no lens pass (no frame cost). The trail is laid as authored.
+**The autopilot** switches into Gate for a long leg (`autopilotGateDistance` 400 u, within 30°) and out under half or past
+twice the cone, presses RT with the squeeze that ends the gate 80 u short of its target (`StoatGateMath.AutopilotLength`),
+holds while the gate is open and lets go once through or once it closes.
 
-**Why the sticks run on the real clock** (measured in the studio before porting). With the sticks on the warped clock —
-the field's rule, where the warp is pure speed — Drive won every course by 30–40% and made both other modes pointless.
-On the real clock, stretching for speed costs turning radius, and the trade-off appears (the AI at Hard, seed 1, race
-seconds):
-
-| Course | Mass (field) | Time (catch) | **Drive** |
-|---|---|---|---|
-| Circuit I1 / I2 / I3 / I4 | 54.0 / 59.7 / 51.5 / 49.2 | 60.7 / 56.1 / 75.8 / 81.7 | **45.8 / 45.4 / 43.8 / 41.8** |
-| Hairpins I1 / I2 / I3 / I4 | 38.8 / 33.2 / 32.0 / **31.0** | 90.6 / 80.4 / 65.2 / 66.2 | **35.2** / **32.6** / 33.3 / 37.1 |
-
-Drive wins every open circuit (the long legs), is level with Mass on the medium hairpins, and Mass wins the tightest
-(the small manoeuvres) — the split the design asked for. The warp share was 1.5 in the first cut (Drive too strong); 1.
-
-**The autopilot.** In Drive mode it squeezes its own triggers (`StoatDriveMath.AutopilotSqueeze`, the studio's AI):
-stretch with the distance still to go (full from `autopilotDriveFar` 150 u), none while its target is more than
-`autopilotDriveConeDegrees` 120° off the nose (turn first, then travel), and the difference toward the target, full at
-`autopilotDriveLeanDegrees` 15° of yaw. It switches INTO Drive for a long leg — its target at least
-`autopilotDriveDistance` 400 u away and within `autopilotDriveSwitchConeDegrees` 30° of the nose (0 = never) — and out
-under half that distance or past twice the cone, two B presses round the cycle in one go when it must.
-
-**Where it runs.** The mode replicates (B is a replicated press); the squeezes, the pair, the turn and the warp run on
-the simulating machine (the pathfinder's own rule), and peers see the flight. The flight recorder writes `timeMode` 2.
-
-**The studio** (`Docs/Studios/StoatFlightStudio.html`, round 17): `slingMode 'drive'`, the Drive mode card (`grp-V`, the
-`dr*` rows, mapped to `StoatModeAction` by `studio_to_unity/stoat.json`, all twelve matching), T and the phone's B button
-step the three modes. **Known difference:** the line's length is 600 u in the studio and 1200 u in Unity (the existing
-`pathLength` drift `studio_to_unity.py --check` reports). **Not done:** the FMOD slot `driveModeEvent` ships empty; the
-pole rings are dots, not lensed holes; the icon is a placeholder; not yet flown in the Unity Editor.
+**Known limits.** The squeeze is not replicated: a peer's copy of the gate keeps a length of its own. The jump is the
+platform's point-in-horizon test each frame: a very fast, off-centre pass (×4 warp past 100 u/s) can step over a 5 u
+mouth; the funnel centres the approach. **Not done:** `gateModeEvent` ships empty; the icon is a placeholder; not yet
+flown in the Unity Editor. The studio's line is 600 u and Unity's 1200 u (the existing `pathLength` drift).
 
 ## 2. What the sink takes
 

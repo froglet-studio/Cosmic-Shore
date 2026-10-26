@@ -91,6 +91,16 @@ namespace CosmicShore.Gameplay
         bool _resolvedSiblings;
         float _lastTiming = -1f;
 
+        // Gate mode: the gate (a held pair stretched along the nose), whether it has been flown through, the jump's warp.
+        BlackHoleRegistry.Pair _gate;
+        bool _gateUsed;
+        Vector3 _gateSink;
+        Vector3 _gateAxis;
+        float _gateQuality;
+        float _gateBoostUntil = float.NegativeInfinity;
+        int _transitsSeen;
+        float _aiGateSqueeze;
+
         // The Time-mode pair under the trigger, and the orbit once it has caught the hull.
         bool _laid;          // a pair is laid and held by a trigger (every peer)
         bool _caught;        // ...and has caught the hull (the simulating machine)
@@ -127,11 +137,16 @@ namespace CosmicShore.Gameplay
         public float SweetProgress01 => IsOrbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
         /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
         public float LastTiming => _lastTiming;
-        /// <summary>
-        /// The squeeze on <paramref name="side"/> right now, 0..1 (0 when that trigger is not held). In DRIVE mode this is
-        /// all the triggers do here: the pathfinder shapes the warp pair from the two squeezes (<see cref="StoatDriveMath"/>).
-        /// </summary>
+        /// <summary>The squeeze on <paramref name="side"/> right now, 0..1 (0 when that trigger is not held).</summary>
         public float Squeeze01(Side side) => _holds[(int)side].Holding ? _holds[(int)side].Live : 0f;
+        /// <summary>Gate mode: the gate this hull opened last, alive or not; null before the first.</summary>
+        public BlackHoleRegistry.Pair Gate => _gate;
+        /// <summary>Gate mode: true while a gate is open and not yet flown through.</summary>
+        public bool GateOpen => _gate != null && _gate.IsAlive && !_gateUsed;
+        /// <summary>Gate mode: how good the last jump was, 0..1 (<see cref="StoatGateMath.Quality"/>).</summary>
+        public float GateQuality => _gateQuality;
+        /// <summary>Gate mode: true while the last jump's warp holds (the pathfinder, the one writer of the clock, reads it).</summary>
+        public bool GateWarps => Time.time < _gateBoostUntil;
         public StoatSlingConfigSO Config => config;
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -144,6 +159,9 @@ namespace CosmicShore.Gameplay
             _caught = false;
             _resolvedSiblings = false;
             _lastTiming = -1f;
+            _gate = null;
+            _gateUsed = false;
+            _gateBoostUntil = float.NegativeInfinity;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
             if (config == null)
                 CSDebug.LogError($"[Stoat] {name}: StoatSlingExecutor has no StoatSlingConfig — the triggers will sling nothing. " +
@@ -154,20 +172,21 @@ namespace CosmicShore.Gameplay
         /// waits for the release.</summary>
         public void BeginHold(Side side)
         {
-            // The triggers fly the orbit in TIME mode; in Mass mode they lay the field dipole (StoatDipoleExecutor); in DRIVE
-            // mode the squeeze is only tracked here, and the pathfinder shapes the warp pair from it (Squeeze01).
+            // The triggers fly the orbit in TIME mode; in Mass mode they lay the field dipole (StoatDipoleExecutor); in GATE
+            // mode a press opens the warp gate (one at a time) and the squeeze stretches it.
             ResolveSiblings();
-            bool drive = _mode && _mode.IsDriveMode;
-            if (_mode && !_mode.UsesOrbit && !drive) return;
+            bool gate = _mode && _mode.IsGateMode;
+            if (_mode && !_mode.UsesOrbit && !gate) return;
             int i = (int)side;
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
             _holds[i].HeldFor = 0f;
             // An autopilot writes no trigger, so its fixed squeeze is the hold from the start.
-            float start = config != null && _status != null && _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
+            float start = config != null && _status != null && _status.AutoPilotEnabled ? (gate ? _aiGateSqueeze : AIConfig.AutopilotHold01) : 0f;
             _holds[i].Live = start;
             _holds[i].Peak = start;
-            if (config == null || drive) return;
+            if (config == null) return;
+            if (gate) { LayGate(side); return; }
             PlayOneShot(config.HoldStartEvent);
             if (!BlackHoleRegistry.Config.CrystalPairs) LayPair(side);
         }
@@ -178,7 +197,8 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].Holding = false;
-            if (config == null || _status == null || (_mode && _mode.IsDriveMode)) return;
+            if (config == null || _status == null) return;
+            if (_mode && _mode.IsGateMode) { if (!IsHoldingAny) LetGoGate(); return; }
             if (_laid)
             {
                 if (_orbitSide == side) Slingshot(boost: true);
@@ -194,6 +214,7 @@ namespace CosmicShore.Gameplay
         public void ReleaseAll()
         {
             if (_laid) Slingshot(boost: false);
+            LetGoGate();
             _holds[0].Holding = false;
             _holds[1].Holding = false;
         }
@@ -396,7 +417,7 @@ namespace CosmicShore.Gameplay
         /// the separation the pair was laid at.</summary>
         void OnPairMet(BlackHoleRegistry.Pair pair, Vector3 at)
         {
-            if (pair == null || pair != _pair) return;
+            if (pair == null || (pair != _pair && pair != _gate)) return;
             Detonate(at, 2f * pair.HalfGap0);
         }
 
@@ -458,7 +479,128 @@ namespace CosmicShore.Gameplay
             }
 
             ResolveSiblings();
+            if (_gate != null) StepGate(Time.deltaTime);
             if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.UsesOrbit)) AutopilotSling();
+            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && _mode && _mode.IsGateMode) AutopilotGate();
+        }
+
+        // ------------------------------------------------------------------ Gate mode: the warp gate (STOAT_DIPOLE.md §1f)
+
+        StoatGateMath.Settings GateSettings() => _mode && _mode.Config ? _mode.Config.Gate() : default;
+
+        /// <summary>
+        /// The press: a black hole opened <see cref="StoatGateMath.Settings.Ahead"/> ahead of the nose and its white hole along
+        /// the same line, as long as the squeeze asks (<see cref="StoatGateMath.Length"/>) - held, no pull on its owner (an
+        /// owned drift pair pulls no vessel), the Time-mode poles' light strength. One gate at a time: none until the last has
+        /// gone. Every peer lays its own copy from the replicated press (the squeeze is not replicated: a peer's copy keeps
+        /// the length it was opened at).
+        /// </summary>
+        void LayGate(Side side)
+        {
+            var hull = _status.Transform;
+            if (!hull || (_gate != null && _gate.IsAlive)) return;
+            if (!BlackHoleRegistry.CanSpawn(2)) return;
+            var gs = GateSettings();
+            var bh = BlackHoleRegistry.Config;
+            _gateAxis = hull.forward;
+            _gateSink = hull.position + _gateAxis * gs.Ahead;
+            float length = StoatGateMath.Length(_holds[(int)side].Live, gs, config.HoldExponent);
+            float strength = config.PoleGM / Mathf.Max(1e-3f, bh.GmPerStrength);
+            _gate = BlackHoleRegistry.SpawnPair(_gateSink + _gateAxis * (0.5f * length), _gateAxis, strength, gs.Mouth,
+                0.5f * length, StoatGateMath.CollapseSpeed(0.5f * length, gs.CollapseSeconds), gs.HoldMaxSeconds, hull.up,
+                OwnerTransform(), held: true);
+            if (_gate == null) return;
+            _gateUsed = false;
+            _transitsSeen = BlackHoleVesselPull.VesselTransitsTotal;
+            if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
+            PlayOneShot(config.HoldStartEvent);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] gate opened {gs.Ahead:F0} u ahead, {length:F0} u long");
+        }
+
+        /// <summary>Let go (or flown through): the gate falls together in <see cref="StoatGateMath.Settings.CollapseSeconds"/>.</summary>
+        void LetGoGate()
+        {
+            if (_gate == null || !_gate.IsAlive || !_gate.Held) return;
+            BlackHoleRegistry.LetGo(_gate, StoatGateMath.CollapseSpeed(_gate.HalfGap0, GateSettings().CollapseSeconds));
+        }
+
+        /// <summary>
+        /// The gate's frame: held, it stretches with the deeper squeeze (the black hole stays where it opened); let go, the
+        /// registry closes it. On the simulating machine the black hole draws its owner onto its mouth
+        /// (<see cref="StoatGateMath.FunnelStep"/>), and a carry through it (<see cref="BlackHoleVesselPull"/> counts every
+        /// transit) scores the jump: its quality, the warp's time, and the gate let go behind the hull.
+        /// </summary>
+        void StepGate(float dt)
+        {
+            if (!_gate.IsAlive) { _gate = null; return; }
+            var gs = GateSettings();
+            if (_gate.Held)
+            {
+                if (!_gateUsed && IsHoldingAny)
+                {
+                    float squeeze = Mathf.Max(Squeeze01(Side.Left), Squeeze01(Side.Right));
+                    float length = StoatGateMath.Length(squeeze, gs, config.HoldExponent);
+                    BlackHoleRegistry.Reshape(_gate, _gateSink + _gateAxis * (0.5f * length), 0.5f * length);
+                }
+                else LetGoGate();
+            }
+            if (_gateUsed || !MantaStingActionExecutor.IsSimAuthority(_status)) return;
+            var hull = _status.Transform;
+            var transformer = _status.VesselTransformer;
+            if (!hull || !transformer) return;
+            int transits = BlackHoleVesselPull.VesselTransitsTotal;
+            if (transits != _transitsSeen)
+            {
+                _transitsSeen = transits;
+                var white = _gate.White;
+                float near = white ? white.HorizonRadius * 4f + 10f : 0f;
+                if (white && (hull.position - white.transform.position).sqrMagnitude <= near * near)
+                {
+                    // Through: the heading is the one it went in with (SetPose keeps the rotation).
+                    _gateUsed = true;
+                    _gateQuality = StoatGateMath.Quality(hull.forward, _gateSink, white.transform.position, gs);
+                    _gateBoostUntil = Time.time + gs.BoostSeconds;
+                    LetGoGate();
+                    if (_gateQuality >= 0.999f) PlayOneShot(config.SweetSpotEvent);
+                    PlayOneShot(config.SlingEvent);
+                    CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] through the gate, quality {_gateQuality:F2}");
+                    return;
+                }
+            }
+            if (_gate.Black && !_status.IsTranslationRestricted)
+            {
+                var step = StoatGateMath.FunnelStep(hull.position, hull.forward, _gate.Black.transform.position, gs, dt);
+                if (step.sqrMagnitude > 1e-8f) transformer.TranslateShip(step);
+            }
+        }
+
+        /// <summary>
+        /// The gate an autopilot cannot open by itself (it writes no trigger): on a long leg with its target near the nose
+        /// (<see cref="StoatModeActionSO.AutopilotGateMinDistance"/>, <see cref="StoatModeActionSO.AutopilotGateConeDegrees"/>)
+        /// it presses RT with the squeeze that ends the gate short of its target (<see cref="StoatGateMath.AutopilotLength"/>),
+        /// holds it while the gate is open and lets go once through or once it closes. The gate lies along its nose and the
+        /// funnel takes it in. Through the REPLICATED press, like a human's.
+        /// </summary>
+        void AutopilotGate()
+        {
+            var handler = _status.ActionHandler;
+            var ai = _status.AIPilot;
+            var hull = _status.Transform;
+            var mc = _mode ? _mode.Config : null;
+            if (!handler || !ai || !hull || !mc) return;
+            if (IsHoldingAny)
+            {
+                if ((_gateUsed || _gate == null || !_gate.IsAlive || !_gate.Held) && ResolveBoundInput(Side.Right, handler, out var held))
+                    handler.StopShipControllerActionsReplicated(held);
+                return;
+            }
+            if (_gate != null && _gate.IsAlive) return;
+            var to = ai.TargetPosition - hull.position;
+            float distance = to.magnitude;
+            if (distance < mc.AutopilotGateMinDistance || Vector3.Angle(hull.forward, to) > mc.AutopilotGateConeDegrees) return;
+            var gs = mc.Gate();
+            _aiGateSqueeze = StoatGateMath.SqueezeFor(StoatGateMath.AutopilotLength(distance, gs), gs, config.HoldExponent);
+            if (ResolveBoundInput(Side.Right, handler, out var ie)) handler.PerformShipControllerActionsReplicated(ie);
         }
 
         /// <summary>
@@ -534,9 +676,11 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += Time.deltaTime;
-            // Drive mode ramps a key or a touch button to a full squeeze over its own, shorter time (driveKeyRampSeconds).
-            float ramp = _mode && _mode.IsDriveMode && _mode.Config ? _mode.Config.DriveKeyRampSeconds : config.HoldRampSeconds;
-            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, ramp, autopilot, AIConfig.AutopilotHold01);
+            // Gate mode ramps a key or a touch button to a full squeeze over its own, shorter time (gateKeyRampSeconds), and an
+            // autopilot holds the squeeze its gate needs.
+            bool gate = _mode && _mode.IsGateMode && _mode.Config;
+            float ramp = gate ? _mode.Config.GateKeyRampSeconds : config.HoldRampSeconds;
+            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, ramp, autopilot, gate ? _aiGateSqueeze : AIConfig.AutopilotHold01);
             _holds[i].Live = sample;
             _holds[i].Peak = StoatSlingMath.Peak(_holds[i].Peak, sample);
         }
@@ -561,6 +705,7 @@ namespace CosmicShore.Gameplay
                 _laid = _caught = false;
                 BlackHoleRegistry.LetGo(_pair);
             }
+            LetGoGate();
             _holds[0] = default;
             _holds[1] = default;
             _boundInput[0] = null;

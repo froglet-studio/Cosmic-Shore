@@ -389,31 +389,20 @@ namespace CosmicShore.Tests
                 Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
         }
 
-        // ------------------------------------------------------------------ the three modes and the warp pair (STOAT_DIPOLE.md §1f)
+        // ------------------------------------------------------------------ the three modes and the warp gate (STOAT_DIPOLE.md §1f)
 
-        static StoatDriveMath.Settings ShippedDrive => new()
+        static StoatGateMath.Settings ShippedGate => new()
         {
-            LengthMin = 60f, LengthMax = 320f, LateralMax = 140f, TurnGain = 2.2f, TurnMax = 140f, WarpExponent = 1.3f,
+            Ahead = 90f, LengthMin = 120f, LengthMax = 600f, Mouth = 5f, HoldMaxSeconds = 3f, CollapseSeconds = 0.8f,
+            AimConeDegrees = 25f, WarpShare = 1.5f, BoostSeconds = 2.5f, FunnelRadius = 30f, FunnelRate = 4f,
         };
 
         [Test]
-        public void Orbit_TheCircleStaysClearOfTheRepulsor()
-        {
-            // The pair is 2 x catchSide = 90 u across: a 150 u circle reaches round the repulsor and swings the hull past
-            // its side (the 2026-10-27 playtest). At 0.8 of the pair it is 72 u at most; a tight circle is untouched.
-            Assert.AreEqual(72f, StoatSlingMath.ClearOfRepulsor(150f, 90f, 0.8f), 1e-4f);
-            Assert.AreEqual(40f, StoatSlingMath.ClearOfRepulsor(40f, 90f, 0.8f), 1e-4f);
-            Assert.AreEqual(150f, StoatSlingMath.ClearOfRepulsor(150f, 90f, 0f), 1e-4f, "0 = no limit");
-            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
-            StringAssert.Contains("  holdAtCatch: 1\n  orbitEaseRate: 0.8\n  whiteClear: 0.8\n", text);
-        }
-
-        [Test]
-        public void ModeCycle_BStepsMassTimeDriveAndBack()
+        public void ModeCycle_BStepsMassTimeGateAndBack()
         {
             Assert.AreEqual(StoatModeExecutor.Mode.Time, StoatModeExecutor.Next(StoatModeExecutor.Mode.Mass));
-            Assert.AreEqual(StoatModeExecutor.Mode.Drive, StoatModeExecutor.Next(StoatModeExecutor.Mode.Time));
-            Assert.AreEqual(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Next(StoatModeExecutor.Mode.Drive));
+            Assert.AreEqual(StoatModeExecutor.Mode.Gate, StoatModeExecutor.Next(StoatModeExecutor.Mode.Time));
+            Assert.AreEqual(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Next(StoatModeExecutor.Mode.Gate));
         }
 
         [Test]
@@ -421,8 +410,8 @@ namespace CosmicShore.Tests
         {
             Assert.AreEqual(0, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Time, StoatModeExecutor.Mode.Time));
             Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Time));
-            Assert.AreEqual(2, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Drive));
-            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Drive, StoatModeExecutor.Mode.Mass));
+            Assert.AreEqual(2, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Mass, StoatModeExecutor.Mode.Gate));
+            Assert.AreEqual(1, StoatModeExecutor.PressesTo(StoatModeExecutor.Mode.Gate, StoatModeExecutor.Mode.Mass));
         }
 
         [Test]
@@ -430,82 +419,63 @@ namespace CosmicShore.Tests
         {
             Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Mass));
             Assert.IsTrue(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Time));
-            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Drive));
-            Assert.AreEqual(0.5f, StoatModeExecutor.MassCardTarget(StoatModeExecutor.Mode.Drive));
+            Assert.IsFalse(StoatModeExecutor.FliesOrbit(StoatModeExecutor.Mode.Gate));
+            Assert.AreEqual(0.5f, StoatModeExecutor.MassCardTarget(StoatModeExecutor.Mode.Gate));
         }
 
         [Test]
-        public void Drive_BothTriggersFull_IsTheLongStraightPair_AtTheTopWarp()
+        public void Gate_TheSqueezeStretchesIt_AndTheInverseFindsTheSqueeze()
         {
-            var shape = StoatDriveMath.Evaluate(1f, 1f, ShippedDrive);
-            Assert.AreEqual(1f, shape.Span, 1e-6f);
-            Assert.AreEqual(0f, shape.TurnRate, 1e-6f, "an even stretch flies straight");
-            Assert.AreEqual(320f, shape.HalfLength, 1e-4f);
-            Assert.AreEqual(1f, shape.Warp01, 1e-6f);
-            Assert.AreEqual(3f, StoatDriveMath.WarpTarget(shape, StoatDriveMath.WarpTop(3f, 1f)), 1e-5f);
+            Assert.AreEqual(120f, StoatGateMath.Length(0f, ShippedGate, 1.5f), 1e-4f);
+            Assert.AreEqual(600f, StoatGateMath.Length(1f, ShippedGate, 1.5f), 1e-3f);
+            float half = StoatGateMath.Length(0.5f, ShippedGate, 1.5f);
+            Assert.Less(half, 360f, "the squeeze curve: half a squeeze is less than half the stretch");
+            Assert.AreEqual(0.5f, StoatGateMath.SqueezeFor(half, ShippedGate, 1.5f), 1e-4f);
         }
 
         [Test]
-        public void Drive_TheDeeperTrigger_SlidesTheBlackHoleThatWay_AndTurnsThatWay()
+        public void Gate_AStraightEntryIntoALongGate_EarnsTheWholeWarp()
         {
-            var right = StoatDriveMath.Evaluate(0f, 1f, ShippedDrive);
-            var left = StoatDriveMath.Evaluate(1f, 0f, ShippedDrive);
-            Assert.Greater(right.TurnRate, 0f, "right trigger deeper turns right");
-            Assert.Less(left.TurnRate, 0f);
-            Assert.AreEqual(right.TurnRate, -left.TurnRate, 1e-4f);
-            StoatDriveMath.Poles(Vector3.zero, Vector3.forward, Vector3.right, right, out var sink, out var source);
-            Assert.Greater(sink.x, 0f, "the black hole rides ahead and to the right");
-            Assert.Greater(sink.z, 0f);
-            Assert.AreEqual(-sink.x, source.x, 1e-4f, "the white hole is mirrored through the hull");
-            Assert.AreEqual(-sink.z, source.z, 1e-4f);
+            var sink = new Vector3(0f, 0f, 90f);
+            Assert.AreEqual(1f, StoatGateMath.Quality(Vector3.forward, sink, sink + Vector3.forward * 600f, ShippedGate), 1e-4f);
+            Assert.AreEqual(0.4f, StoatGateMath.Quality(Vector3.forward, sink, sink + Vector3.forward * 120f, ShippedGate), 1e-4f,
+                "the shortest gate, straight: 0.4");
+            var angled = Quaternion.Euler(0f, 12.5f, 0f) * Vector3.forward;
+            Assert.AreEqual(0.5f, StoatGateMath.Quality(angled, sink, sink + Vector3.forward * 600f, ShippedGate), 1e-3f,
+                "half the aim cone off the line: half the warp");
+            Assert.AreEqual(0f, StoatGateMath.Quality(Vector3.right, sink, sink + Vector3.forward * 600f, ShippedGate), 1e-6f);
+            float top = StoatGateMath.WarpTop(3f, 1.5f);
+            Assert.AreEqual(4f, top, 1e-5f);
+            Assert.AreEqual(4f, StoatGateMath.WarpTarget(1f, top), 1e-5f);
+            Assert.AreEqual(1f, StoatGateMath.WarpTarget(0f, top), 1e-5f);
         }
 
         [Test]
-        public void Drive_TheSamePull_TiltsAShortPairMore_ThanALongOne()
+        public void Gate_LetGo_FallsTogetherInTheCollapseTime()
         {
-            // Agility against precision is the pair's shape: the same difference carves on a short pair and only trims a
-            // long one, so the fastest travel is also the steadiest.
-            var shortPair = StoatDriveMath.Evaluate(0f, 0.4f, ShippedDrive);
-            var longPair = StoatDriveMath.Evaluate(0.6f, 1f, ShippedDrive);
-            Assert.AreEqual(shortPair.Lean, longPair.Lean, 1e-6f);
-            Assert.Greater(Mathf.Abs(shortPair.TurnRate), 2f * Mathf.Abs(longPair.TurnRate));
-            Assert.Less(shortPair.Warp01, longPair.Warp01);
+            Assert.AreEqual(375f, StoatGateMath.CollapseSpeed(300f, 0.8f), 1e-3f);
+            Assert.AreEqual(150f, StoatGateMath.CollapseSpeed(60f, 0.4f), 1e-3f);
         }
 
         [Test]
-        public void Drive_ALightSqueeze_StaysNearTheHullsOwnSpeed()
+        public void Gate_TheFunnel_DrawsTheOwnerOntoTheMouth_OnlyAheadAndNear()
         {
-            var light = StoatDriveMath.Evaluate(0.2f, 0.2f, ShippedDrive);
-            Assert.Less(StoatDriveMath.WarpTarget(light, 3f), 1.25f, "room to trim at a light squeeze");
-            Assert.LessOrEqual(Mathf.Abs(StoatDriveMath.Evaluate(0f, 1f, new StoatDriveMath.Settings
-            {
-                LengthMin = 1f, LengthMax = 1f, LateralMax = 1000f, TurnGain = 10f, TurnMax = 140f, WarpExponent = 1f,
-            }).TurnRate), 140f, "the turn is capped");
+            var sink = new Vector3(10f, 0f, 20f);
+            var step = StoatGateMath.FunnelStep(Vector3.zero, Vector3.forward, sink, ShippedGate, 0.1f);
+            Assert.Greater(step.x, 0f, "toward the line into the mouth");
+            Assert.AreEqual(0f, step.z, 1e-6f, "sideways only: the hull's own flight carries it in");
+            Assert.AreEqual(Vector3.zero, StoatGateMath.FunnelStep(Vector3.zero, Vector3.forward, new Vector3(10f, 0f, -20f), ShippedGate, 0.1f),
+                "behind: nothing");
+            Assert.AreEqual(Vector3.zero, StoatGateMath.FunnelStep(Vector3.zero, Vector3.forward, new Vector3(10f, 0f, 200f), ShippedGate, 0.1f),
+                "out of reach: nothing");
         }
 
         [Test]
-        public void Drive_StepWarp_RisesToTheStretch_AndFadesWithIt()
+        public void Gate_Autopilot_OpensAGateThatEndsShortOfItsTarget()
         {
-            float up = StoatDriveMath.StepWarp(1f, 3f, 20f, 0.6f, 0.1f);
-            Assert.Greater(up, 2.5f);
-            Assert.LessOrEqual(up, 3f);
-            float down = StoatDriveMath.StepWarp(3f, 1.5f, 20f, 0.6f, 0.1f);
-            Assert.Less(down, 3f);
-            Assert.Greater(down, 1.5f, "it eases down toward the new stretch, not to a stop");
-        }
-
-        [Test]
-        public void Drive_Autopilot_StretchesOnALongLeg_AndLeansTowardItsTarget()
-        {
-            var ai = new StoatDriveMath.AutopilotSettings { Near = 0f, Far = 150f, ConeDegrees = 120f, LeanDegrees = 15f };
-            StoatDriveMath.AutopilotSqueeze(1000f, 0f, 0f, ai, out float l, out float r);
-            Assert.AreEqual(1f, l, 1e-6f);
-            Assert.AreEqual(1f, r, 1e-6f);
-            StoatDriveMath.AutopilotSqueeze(1000f, 20f, 20f, ai, out l, out r);
-            Assert.Greater(r, l, "a target to the right: the right trigger deeper");
-            StoatDriveMath.AutopilotSqueeze(1000f, 130f, -130f, ai, out l, out r);
-            Assert.AreEqual(0f, (l + r) * 0.5f, 0.5f + 1e-4f, "far off the nose: turn first (no stretch beyond the lean)");
-            Assert.Greater(l, r);
+            Assert.AreEqual(330f, StoatGateMath.AutopilotLength(500f, ShippedGate), 1e-4f);
+            Assert.AreEqual(120f, StoatGateMath.AutopilotLength(100f, ShippedGate), 1e-4f, "never shorter than the shortest gate");
+            Assert.AreEqual(600f, StoatGateMath.AutopilotLength(5000f, ShippedGate), 1e-4f);
         }
 
         [Test]
@@ -516,7 +486,7 @@ namespace CosmicShore.Tests
                      {
                          ("massModeIcon", "707ac0afea37451ef31b5be8eb09cdb2"),
                          ("timeModeIcon", "fb6ff66c748d7560d236e89894823447"),
-                         ("driveModeIcon", "f37b37888ed20c67236ca93dc3b874c4"),
+                         ("gateModeIcon", "b49cdba89db0551eae62a4a8eeb5cb1a"),
                      })
             {
                 StringAssert.Contains($"  {field}: {{fileID: 21300000, guid: {guid}, type: 3}}\n", text, field);
@@ -548,14 +518,15 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ModeAction_ShipsTheDrivesNumbers()
+        public void ModeAction_ShipsTheGatesNumbers()
         {
             var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset");
-            foreach (var row in new[] { "driveLengthMin: 60\n", "driveLengthMax: 320\n", "driveLateralMax: 140\n", "driveTurnGain: 2.2\n",
-                         "driveTurnMax: 140\n", "driveWarpShare: 1\n", "driveWarpExponent: 1.3\n", "driveKeyRampSeconds: 0.5\n",
-                         "autopilotDriveFar: 150\n", "autopilotDriveLeanDegrees: 15\n" })
+            foreach (var row in new[] { "gateAhead: 90\n", "gateLengthMin: 120\n", "gateLengthMax: 600\n", "gateMouthRadius: 5\n",
+                         "gateHoldMaxSeconds: 3\n", "gateCollapseSeconds: 0.8\n", "gateAimConeDegrees: 25\n", "gateWarpShare: 1.5\n",
+                         "gateBoostSeconds: 2.5\n", "gateFunnelRadius: 30\n", "autopilotGateConeDegrees: 12\n" })
                 StringAssert.Contains("  " + row, text);
-            StringAssert.Contains("driveModeEvent:", text);
+            StringAssert.Contains("gateModeEvent:", text);
+            StringAssert.DoesNotContain("drive", text);
             StringAssert.DoesNotContain("hybrid", text);
         }
     }
