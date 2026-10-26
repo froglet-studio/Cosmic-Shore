@@ -1,6 +1,6 @@
 {
  "note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: when a learner changes, every flight is learned from again. Delete a line to relearn it. 'waiting' holds the flights no learner read yet (mode on hold, hull with no learner) and why: each is learned from once its reason goes away. A flight whose learner failed is in neither, so the next sweep tries it again.",
- "learners": "86a1ea5b48d3f017",
+ "learners": "e335b402a2411517",
  "flights": [
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Squirrel_20261016_110728.json",
   "BugLedger/shared/reports/belac/flights/flight_Regatta_Squirrel_20261016_110924.json",
@@ -22,6 +22,7 @@
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_220619.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_222258.json",
   "BugLedger/shared/reports/gradi/flights/flight_SkimRace_Squirrel_20261022_223711.json",
+  "BugLedger/shared/reports/gradi/flights/flight_Tandava_Squirrel_20261025_184835.json",
   "BugLedger/shared/reports/owner/flights/flight_Bloomrush_Manta_20261020_154841.json",
   "BugLedger/shared/reports/owner/flights/flight_Bloomrush_Manta_20261020_155806.json",
   "BugLedger/shared/reports/owner/flights/flight_Bloomrush_Manta_20261020_160346.json",
@@ -139,7 +140,10 @@
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_020302.json",
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040438.json",
   "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040647.json",
-  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040920.json"
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_040920.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_052330.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_052519.json",
+  "BugLedger/shared/reports/yskha/flights/flight_Switchback_Dolphin_20261026_052710.json"
  ],
  "waiting": {
   "BugLedger/shared/reports/belac/flights/flight_Waystation_Butterfly_20261020_164612.json": "report: its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller (ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet",
