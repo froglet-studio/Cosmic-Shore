@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d4ef6a9416c4f3faa4a192734c8b913, type: 3}
   m_Name: SparrowAIBoostPolicy_Breakwater
   m_EditorClassIdentifier: 
-  alignDegrees: 12
-  releaseAlignDegrees: 25
-  stickBand: 0.35
-  releaseStickBand: 0.6
-  engageRunwaySeconds: 1.5
-  releaseRunwaySeconds: 0.5
+  alignDegrees: 45
+  releaseAlignDegrees: 60
+  stickBand: 1
+  releaseStickBand: 1
+  engageRunwaySeconds: 2
+  releaseRunwaySeconds: 1.25
   disabledInModes:
   - 41
   - 40

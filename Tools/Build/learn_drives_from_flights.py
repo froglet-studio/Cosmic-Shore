@@ -282,6 +282,19 @@ RANGES = {
 }
 
 
+# Floors a learned value never goes under in one mode, each measured offline. Breakwater's Sparrow: a boosted hull that lets
+# go under 0.9 s from a station reaches it too fast to line up on the 18 u eye and clips the danger weave
+# (switchback_dolphin_sim.py --mode Breakwater, 2026-10-26); people hold the boost all race and steer it by hand.
+FLOORS = {("Sparrow", "Breakwater"): {"releaseRunwaySeconds": 1.25}}
+
+
+def apply_floors(hull, mode, learned):
+    for field, floor in FLOORS.get((hull, mode), {}).items():
+        if field in learned and learned[field] < floor:
+            learned[field] = floor
+    return learned
+
+
 def clamp(key, v):
     lo, hi = RANGES[key]
     return round(min(max(v, lo), hi), 3)
@@ -740,6 +753,7 @@ def learn_hull(hull, flights):
             learned["releaseAlignDegrees"] = max(learned["releaseAlignDegrees"], learned.get("alignDegrees", 0))
             learned["releaseStickBand"] = max(learned.get("releaseStickBand", 0), learned.get("stickBand", 0))
             learned["releaseRunwaySeconds"] = min(learned["releaseRunwaySeconds"], learned.get("engageRunwaySeconds", 6))
+    apply_floors(hull, MODE, learned)
     if why is None and len(done) < MIN_FINISHED:
         why = f"{len(done)} finished race(s) or complete match(es); nothing is written below {MIN_FINISHED}"
     elif why is None and not learned:
@@ -1221,6 +1235,10 @@ def self_test():
             assert "cornerSpeed: 333" not in text and "alignDegrees: 7.0" in text, "no mode variant: the base"
         finally:
             OUT_DIR = keep
+
+    floored = apply_floors("Sparrow", "Breakwater", {"releaseRunwaySeconds": 0.3, "alignDegrees": 20.0})
+    assert floored == {"releaseRunwaySeconds": 1.25, "alignDegrees": 20.0}, floored
+    assert apply_floors("Sparrow", "Regatta", {"releaseRunwaySeconds": 0.3}) == {"releaseRunwaySeconds": 0.3}
 
     print("learn_drives_from_flights self-test: OK (Rhino and Dolphin starts / stops recovered, a random pilot rejected; "
           "Dolphin charge 0.80; Manta bands 0.50 / 0.80 recovered; under 3 finished races, unfinished races and AI-held "

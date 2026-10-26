@@ -87,7 +87,7 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
 | Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |
-| Sparrow | drives (HoldBoost) | boost (state bit) | start / stop bands, shortest hold and rest |
+| Sparrow | drives (HoldBoost) | boost (state bit) | start / stop bands, shortest hold and rest; in Breakwater never a release under 1.25 s (`FLOORS`, the danger weave) |
 | Serpent | drives (PelletBoost) | a ConsumeBoost press | start bands, seconds between pellets |
 | Scarab | drives (SnapDash) | throttle double-tap at TIME 5 | start bands, dash cooldown |
 | Squirrel | drives (SkimRing) outside Regatta and Skim Race; skim line in Regatta (writes) and Skim Race (report only) | a boost-ring press / the skim | ring bands / skim line |
