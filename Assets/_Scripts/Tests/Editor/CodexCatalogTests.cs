@@ -146,7 +146,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Tools_DropTheGroupsOrderingPrefix_AndListTheirChoices()
         {
-            var item = Build(CodexChapter.Tools)[0];
+            var item = Build(CodexChapter.Toys)[0];
             Assert.AreEqual("Creation", item.Sub);
             Assert.AreEqual("Saturn", item.Page.Rows[0].Title);
             Assert.AreEqual("A planet and its rings", item.Page.Rows[0].Line);
@@ -188,6 +188,45 @@ namespace CosmicShore.Tests
             Assert.AreEqual("Turret Stance", sparrow.Rows[1].Title);
             Assert.AreEqual("Level 5: Shielded Prisms", sparrow.Rows[1].Line);
             Assert.AreEqual(2, sparrow.Cells.Count);
+        }
+
+        [Test]
+        public void Elements_CarryTheirElement_ForTheFlower()
+        {
+            var items = Build(CodexChapter.Elements);
+            Assert.AreEqual(new[] { Element.Charge, Element.Mass, Element.Space, Element.Time }, items.ConvertAll(i => i.Element).ToArray());
+            Assert.AreEqual(Element.Mass, items[1].Page.Element);
+        }
+
+        [Test]
+        public void OnlyLifeforms_DriftThroughThePalette()
+        {
+            var palette = new[] { Color.green, Color.red, Color.yellow };
+            List<CodexItem> With(CodexChapter c) => CodexCatalog.Build(c, _codex, _captains, _vessels, new Sprite[4], new CodexWords(),
+                                                                      cls => null, null, palette);
+            Assert.AreSame(palette, With(CodexChapter.Flora)[0].Palette);
+            Assert.AreSame(palette, With(CodexChapter.Fauna)[0].Page.Palette);
+            Assert.IsNull(With(CodexChapter.Ethirions)[0].Palette);
+            Assert.IsNull(With(CodexChapter.Vessels)[0].Palette);
+        }
+
+        [Test]
+        public void Vessels_ShowTheirColourfulCardArt_ElseTheirIcon()
+        {
+            var sparrow = _vessels.VesselList[1];
+            var tex = new Texture2D(4, 4);
+            _made.Add(tex);
+            var art = Sprite.Create(tex, new Rect(0, 0, 4, 4), Vector2.zero);
+            _made.Add(art);
+            var cards = Make<HangarCardArtSO>();
+            var entry = new HangarCardArtSO.Entry { vessel = sparrow, art = art };
+            typeof(HangarCardArtSO).GetField("entries", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(cards, new List<HangarCardArtSO.Entry> { entry });
+            var items = CodexCatalog.Build(CodexChapter.Vessels, _codex, _captains, _vessels, new Sprite[4], new CodexWords(),
+                                           cls => null, cards);
+            Assert.AreSame(art, items.Find(i => i.Name == "Sparrow").Image);
+            Assert.AreSame(art, items.Find(i => i.Name == "Sparrow").Page.Image);
+            Assert.IsNull(items.Find(i => i.Name == "Squirrel").Image);         // no card art, no icon authored here
         }
 
         [Test]

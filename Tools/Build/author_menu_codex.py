@@ -52,10 +52,12 @@ GRID = W.GRID                                       # UnityEngine.UI.GridLayoutG
 PACKAGE = W.PACKAGE
 S = dict(screen=C.script("CodexScreen"), tile=C.script("CodexTile"), page=C.script("CodexPageView"),
          line=C.script("CodexLine"), switcher=C.script("ScreenSwitcher"), tab=K.kit_script("KitTextTab"),
+         portrait=C.script("CodexPortrait"), ambient=K.kit_script("KitAmbient"),
          mask=H.KIT_RECT_MASK_2D)
 CODEX_ID = 6                                        # ScreenSwitcher.MenuScreens.CODEX
 CAPTAIN_LIST = "Assets/_SO_Assets/Captains/Elemental/ElementalCaptains.asset"   # the Hangar's PILOTS list
 VESSEL_LIST = "Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset"           # the Hangar's vessel list
+CARD_ART = "Assets/_SO_Assets/UI/HangarCardArt.asset"   # the Hangar's colourful hull renders ("Vessel need colors")
 ELEMENTS = ("Charge", "Mass", "Space", "Time")
 
 # Menu_Main, measured 2026-10-26 (names asserted on every run).
@@ -66,8 +68,8 @@ CONTENT_SCALE, TOP_BAR = H.CONTENT_SCALE, H.TOP_BAR
 CONTENT_H = round((1080 - TOP_BAR) / CONTENT_SCALE)
 SIDE = 40
 ORB_CLEAR = H.LIST_BOTTOM                           # the grid stops above the friends orb, bottom left
-CHAPTERS = ("Ethirions", "Elements", "Ecology", "Pilots", "Vessels", "Artifacts", "Tools")
-STOPS = ("Ethirions", "Elements", "Flora", "Fauna", "Pilots", "Vessels", "Artifacts", "Tools")
+CHAPTERS = ("Ethirions", "Elements", "Ecology", "Pilots", "Vessels", "Artifacts", "Toys")   # "Name tools to toys" (2026-10-26)
+STOPS = ("Ethirions", "Elements", "Flora", "Fauna", "Pilots", "Vessels", "Artifacts", "Toys")
 TAB_ROLE, TAB_PAD, TAB_GAP, TAB_H = "Body", 18, 22, 52
 CHAPTER_TOP = 16
 ZONE_TOP = CHAPTER_TOP + TAB_H + 28                 # the grid and the page start under the chapters
@@ -112,27 +114,66 @@ def str_list(name, values, indent="  "):
 # CodexTile.prefab
 # --------------------------------------------------------------------------------------------
 
+SHAPES = {e: K.meta_guid(f"Assets/_Graphics/ElementShapes/{e.lower()}_{shape}_label.png")
+          for e, shape in zip(ELEMENTS, ("pentagon", "triangle", "kite", "diamond"))}
+PORTRAIT_SCRIPT = C.script("CodexPortrait")
+KIT_AMBIENT = K.kit_script("KitAmbient")
+
+
+def portrait_node(parent, key, r, flower):
+    """A CodexPortrait (section 89): a Motion child that floats, carrying the picture and - for an element - the HUD's
+    flower over the element's shape. CodexPortrait fills it and moves it; nothing here is drawn by code but the colours."""
+    n = parent.child(N(key, "Portrait", r))
+    # Its own Canvas: the picture moves and recolours every frame while the Codex is shown, and a nested canvas keeps
+    # that rebuild to this one picture instead of the whole menu canvas (the Hangar's bay does the same). It takes no
+    # clicks (the tile's Fill does), so it needs no raycaster; without overrideSorting the grid's mask still clips it.
+    n.add("canvas", 223, H.nested_canvas())
+    motion = n.child(N(f"{key}/Motion", "Motion", STRETCH))
+    # Authored clear: CodexPortrait.Show paints it white (or the first palette colour) as it fills it.
+    C.plain_image(motion, f"{key}/Motion/Art", "Art", STRETCH, (1.0, 1.0, 1.0, 0.0), None, preserve=True)
+    el = motion.child(N(f"{key}/Motion/Element", "Element", STRETCH))
+    el.add("cg", 225, H.canvas_group(False))
+    H.element_flower(el, f"{key}/Motion/Element/Flower", "Flower", R((0.5, 0.6), None, (0, 0), (flower, flower)), "Charge", 5)
+    shape = round(flower * 0.3)
+    C.plain_image(el, f"{key}/Motion/Element/Shape", "Shape", R((0.5, 0.0), None, (0, shape / 2 + 2), (shape, shape)),
+                  (1.0, 1.0, 1.0, 1.0), SHAPES["Charge"])
+    n.add("portrait", 114, lambda ctx, go: mono(go, PORTRAIT_SCRIPT,
+          f"  motion: {ref(ctx.rt(key + '/Motion'))}\n  art: {ref(ctx.c(key + '/Motion/Art', 'img'))}\n"
+          f"  elementGroup: {ref(ctx.c(key + '/Motion/Element', 'cg'))}\n"
+          f"  flower: {ref(ctx.c(key + '/Motion/Element/Flower', 'flower'))}\n"
+          f"  shape: {ref(ctx.c(key + '/Motion/Element/Shape', 'img'))}\n"
+          "  shapes:\n" + "".join(f"  - {K.ref(21300000, SHAPES[e], 3)}\n" for e in ELEMENTS)
+          + "  floatAmplitude: 4\n  floatPeriod: 4.5\n  driftSeconds: 5\n  driftStrength: 0.8\n"
+          "  petalStep: 0.32\n  petalHold: 1.4\n  shapeBreath: 0.05\n"))
+    return n
+
+
 def build_tile():
     root = N("root", "CodexTile", R(size=(TILE_W, TILE_H)))
     root.add("cg", 225, H.canvas_group(True)).add("le", 114, le())
+    # The open tile's glow breathes (KitAmbient modulates the alpha CodexTile gives it).
     glow = root.child(N("Glow", "Glow", R((0, 0), (1, 1), (0, 0), (18, 18))))
-    glow.add("cg", 225, H.canvas_group(False))
+    glow.add("cg", 225, H.canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.55))
     C.plain_image(glow, "Glow/Image", "Image", STRETCH, tok("Selection", 0.35), K.kit_sprite("kit_sliver14_fill"), preserve=False)
-    fill = root.child(N("Fill", "Fill", STRETCH))
+    # Everything else rides on Body, which fades and rises in when the tile is filled (CodexTile.Appear).
+    body = root.child(N("Body", "Body", STRETCH))
+    body.add("cg", 225, H.canvas_group(True))
+    fill = body.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.92), K.kit_sprite("kit_sliver14_fill"), True, raycast=True)) \
         .add("th", 114, H.themed("SurfaceVeryDark", 0.92))
     # The outline is painted by CodexTile (the selection blue on the open tile), so it carries no KitThemedGraphic.
-    outline = root.child(N("Frame", "Frame", STRETCH))
+    outline = body.child(N("Frame", "Frame", STRETCH))
     outline.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
-    art_node(root, "Art", "Art", TL(14, 12, TILE_W - 28, TILE_H - 76), None, preserve=True)
-    H.ellipsize(label(root.child(N("Name", "Name", TL(14, TILE_H - 60, TILE_W - 28, 26))), "Entry", "Body", "TextLight"))
-    H.ellipsize(label(root.child(N("Sub", "Sub", TL(14, TILE_H - 32, TILE_W - 28, 20))), "Line", "Label", "NeutralLightest"))
-    root.add("button", 114, C.tint_button("Art", nav=3, normal=0.82))
+    portrait_node(body, "Portrait", TL(14, 12, TILE_W - 28, TILE_H - 76), 96)
+    H.ellipsize(label(body.child(N("Name", "Name", TL(14, TILE_H - 60, TILE_W - 28, 26))), "Entry", "Body", "TextLight"))
+    H.ellipsize(label(body.child(N("Sub", "Sub", TL(14, TILE_H - 32, TILE_W - 28, 20))), "Line", "Label", "NeutralLightest"))
+    root.add("button", 114, C.tint_button("Portrait/Motion/Art", nav=3, normal=0.82))
     root.add("tile", 114, lambda ctx, go: mono(go, S["tile"],
-             f"  button: {ref(ctx.c('root', 'button'))}\n  art: {ref(ctx.c('Art', 'img'))}\n"
+             f"  button: {ref(ctx.c('root', 'button'))}\n  portrait: {ref(ctx.c('Portrait', 'portrait'))}\n"
              f"  nameText: {ref(ctx.c('Name', 'tmp'))}\n  subText: {ref(ctx.c('Sub', 'tmp'))}\n"
-             f"  frame: {ref(ctx.c('Frame', 'img'))}\n  glow: {ref(ctx.c('Glow', 'cg'))}\n"
+             f"  frame: {ref(ctx.c('Frame', 'img'))}\n  glow: {ref(ctx.c('Glow', 'cg'))}\n  body: {ref(ctx.c('Body', 'cg'))}\n"
+             "  appearSeconds: 0.28\n  appearStagger: 0.03\n  appearRise: 14\n"
              f"  theme: {K.ref(11400000, K.THEME, 2)}\n  restToken: {K.TOKEN_INDEX['SurfaceLight']}\n"
              f"  selectedToken: {K.TOKEN_INDEX['Selection']}\n"))
     return root
@@ -245,13 +286,16 @@ def page_zone(content):
     z.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
     C.frame(z, "Page/Frame", 14, fill_alpha=0.9)
     M.bracket_nodes(z, "Page/Bracket", inset=14)
-    art_node(z, "Page/Portrait", "Portrait", TL(PAGE_PAD, PAGE_PAD, PORTRAIT, PORTRAIT), None, preserve=True)
+    # The page's picture and words fade and rise in each time a page opens (CodexPageView.Reveal, section 89).
+    rv = z.child(N("Page/Reveal", "Reveal", STRETCH))
+    rv.add("cg", 225, H.canvas_group(True))
+    portrait_node(rv, "Page/Portrait", TL(PAGE_PAD, PAGE_PAD, PORTRAIT, PORTRAIT), 150)
     x = PAGE_PAD + PORTRAIT + 28
-    label(z.child(N("Page/Kicker", "Kicker", R((0, 1), (1, 1), ((x - PAGE_PAD) / 2, -(PAGE_PAD + 30)), (-(x + PAGE_PAD), 20), (0.5, 1)))),
+    label(rv.child(N("Page/Kicker", "Kicker", R((0, 1), (1, 1), ((x - PAGE_PAD) / 2, -(PAGE_PAD + 30)), (-(x + PAGE_PAD), 20), (0.5, 1)))),
           "Ethirion", "Label", "NeutralLightest")
-    H.ellipsize(label(z.child(N("Page/Title", "Title", R((0, 1), (1, 1), ((x - PAGE_PAD) / 2, -(PAGE_PAD + 54)), (-(x + PAGE_PAD), 60), (0.5, 1)))),
+    H.ellipsize(label(rv.child(N("Page/Title", "Title", R((0, 1), (1, 1), ((x - PAGE_PAD) / 2, -(PAGE_PAD + 54)), (-(x + PAGE_PAD), 60), (0.5, 1)))),
                       "Charge", "H1", "TextLight", valign="bottom"))
-    sv = z.child(N("Page/Scroll", "Scroll", R((0, 0), (1, 1), (0, -(PAGE_PAD + HEAD_H) / 2), (-2 * PAGE_PAD, -(2 * PAGE_PAD + HEAD_H)))))
+    sv = rv.child(N("Page/Scroll", "Scroll", R((0, 0), (1, 1), (0, -(PAGE_PAD + HEAD_H) / 2), (-2 * PAGE_PAD, -(2 * PAGE_PAD + HEAD_H)))))
     vp = sv.child(N("Page/Scroll/Viewport", "Viewport", STRETCH))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("mask", 114, lambda ctx, go: K.mono(go, S["mask"], "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n"))
@@ -286,7 +330,8 @@ def n_key(child_key):
 
 def page_body(ctx):
     t = lambda b: f"Page/{b}" + ("/Cells" if b == "Cells" else "") + "/Template"
-    return (f"  pageGroup: {ref(ctx.c('Page', 'cg'))}\n  portrait: {ref(ctx.c('Page/Portrait', 'img'))}\n"
+    return (f"  pageGroup: {ref(ctx.c('Page', 'cg'))}\n  portrait: {ref(ctx.c('Page/Portrait', 'portrait'))}\n"
+            f"  reveal: {ref(ctx.c('Page/Reveal', 'cg'))}\n  revealSeconds: 0.32\n  revealRise: 12\n"
             f"  kickerText: {ref(ctx.c('Page/Kicker', 'tmp'))}\n  titleText: {ref(ctx.c('Page/Title', 'tmp'))}\n"
             f"  bodyText: {ref(ctx.c('Page/Body', 'tmp'))}\n  scroll: {ref(ctx.c('Page/Scroll', 'scroll'))}\n"
             f"  factsBlock: {ref(ctx.c('Page/Facts', 'cg'))}\n  factsHeading: {ref(ctx.c('Page/Facts/Heading', 'tmp'))}\n"
@@ -309,7 +354,7 @@ WORDS = (  # CodexWords, in declaration order: (field, value)
     ("ethirionKicker", "Ethirion"),
     ("floraKicker", "Flora"),
     ("faunaKicker", "Fauna"),
-    ("toolKicker", "Tool - {group}"),
+    ("toolKicker", "Toy - {group}"),
     ("vesselKicker", "Vessel"),
     ("pilotKicker", "{element} pilot - {vessel}"),
     ("factsHeading", "Facts"),
@@ -343,11 +388,13 @@ def words_block():
 
 
 def screen_body(ctx):
-    petals = [K.ref(21300000, H.PETAL_SPRITE[e], 3) for e in ELEMENTS]
+    shapes = [K.ref(21300000, SHAPES[e], 3) for e in ELEMENTS]
     tile = K.ref(F("CodexTile")("root#tile"), asset_guid("CodexTile"))
     return (f"  captains: {K.ref(11400000, K.meta_guid(CAPTAIN_LIST), 2)}\n"
             f"  vessels: {K.ref(11400000, K.meta_guid(VESSEL_LIST), 2)}\n"
-            "  elementPetals:\n" + "".join(f"  - {p}\n" for p in petals)
+            "  elementShapes:\n" + "".join(f"  - {p}\n" for p in shapes)
+            + f"  cardArt: {K.ref(11400000, K.meta_guid(CARD_ART), 2)}\n"
+            f"  colorSet: {K.ref(11400000, C.COLOR_SET, 2)}\n"
             + words_block()
             + str_list("stopTitles", STOP_TITLES)
             + f"  countTemplate: {ystr('{count} entries')}\n"
@@ -462,9 +509,24 @@ def validate(files):
     tile = files[prefab_path("CodexTile")]
     _, tbody = A.doc_of(tile, F("CodexTile")("root#tile"))
     assert tbody and S["tile"] in tbody, "CodexTile.prefab: the root carries no CodexTile"
-    for field, want in (("button", A.BUTTON), ("art", K.IMAGE), ("nameText", K.TMP_UGUI), ("subText", K.TMP_UGUI),
-                        ("frame", K.IMAGE), ("glow", 225)):
+    for field, want in (("button", A.BUTTON), ("portrait", S["portrait"]), ("nameText", K.TMP_UGUI), ("subText", K.TMP_UGUI),
+                        ("frame", K.IMAGE), ("glow", 225), ("body", 225)):
         C.wired(tile, tbody, field, want, "CodexTile")
+    # Section 89 ("Make everything subtly animated"): the open tile's glow breathes, every picture floats, and an element
+    # draws the HUD's flower over its shape (all four shapes wired).
+    _, amb = A.doc_of(tile, F("CodexTile")("Glow#amb"))
+    assert amb and S["ambient"] in amb and f"  mode: {M.AMBIENT['Breathe']}\n" in amb, "CodexTile: the open tile's glow must breathe"
+    for name, key in (("CodexTile", "Portrait"), ("CodexView", "Page/Portrait")):
+        text = files[prefab_path(name)]
+        _, pbody = A.doc_of(text, F(name)(f"{key}#portrait"))
+        assert pbody and S["portrait"] in pbody, f"{name}: {key} carries no CodexPortrait"
+        for field, want in (("motion", 224), ("art", K.IMAGE), ("elementGroup", 225), ("shape", K.IMAGE)):
+            C.wired(text, pbody, field, want, f"{name} {key}")
+        assert all(f"guid: {SHAPES[e]}" in pbody for e in ELEMENTS), f"{name}: {key} needs the four element shapes"
+        assert re.search(r"^  floatAmplitude: [1-9]", pbody, re.M), f"{name}: {key} does not float"
+        _, canvas = A.doc_of(text, F(name)(f"{key}#canvas"))
+        assert canvas and "  m_OverrideSorting: 0\n" in canvas, \
+            f"{name}: {key} needs its own Canvas (no override sorting), so its motion rebuilds only itself"
     frame_go = F("CodexTile")("Frame#go")
     assert not re.search(r"m_GameObject: \{fileID: %s\}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: \{fileID: 11500000, guid: %s"
                          % (frame_go, K.kit_script("KitThemedGraphic")), tile), \
@@ -485,14 +547,17 @@ def validate(files):
     assert sbody.count(f"guid: {K.meta_guid(CAPTAIN_LIST)}") == 1 and sbody.count(f"guid: {K.meta_guid(VESSEL_LIST)}") == 1, \
         "CodexScreen must read the Hangar's pilots and vessel lists"
     for e in ELEMENTS:
-        assert f"guid: {H.PETAL_SPRITE[e]}" in sbody, f"CodexScreen.elementPetals is missing {e}"
+        assert f"guid: {SHAPES[e]}" in sbody, f"CodexScreen.elementShapes is missing {e}"
+    assert f"  cardArt: {K.ref(11400000, K.meta_guid(CARD_ART), 2)}\n" in sbody, "CodexScreen: the vessels need their colourful card art"
+    assert f"  colorSet: {K.ref(11400000, C.COLOR_SET, 2)}\n" in sbody, "CodexScreen: lifeforms need the domain palette"
+    assert "  m_text: TOYS\n" in view and "  m_text: TOOLS\n" not in view, "the chapter is TOYS (\"Name tools to toys\")"
     titles = re.search(r"^  stopTitles:\n((?:  - .*\n)*)", sbody, re.M)
     assert titles and len(re.findall(r"^  - ", titles.group(1), re.M)) == len(STOPS), "CodexScreen.stopTitles needs one title per stop"
     assert "Artifacts are found far out in the HyperSea" in sbody, "the empty ARTIFACTS stop must say where artifacts come from"
 
     _, pbody = A.doc_of(view, V("Page#page"))
     assert pbody and S["page"] in pbody, "the Page carries no CodexPageView"
-    for field, want in (("pageGroup", 225), ("portrait", K.IMAGE), ("kickerText", K.TMP_UGUI), ("titleText", K.TMP_UGUI),
+    for field, want in (("pageGroup", 225), ("portrait", S["portrait"]), ("reveal", 225), ("kickerText", K.TMP_UGUI), ("titleText", K.TMP_UGUI),
                         ("bodyText", K.TMP_UGUI), ("scroll", A.SCROLL_RECT), ("factsBlock", 225), ("factTemplate", S["line"]),
                         ("cellsBlock", 225), ("cellTemplate", S["line"]), ("rowsBlock", 225), ("rowTemplate", S["line"])):
         C.wired(view, pbody, field, want, "CodexPageView")
@@ -557,6 +622,13 @@ def self_test(files):
         ("the pilots read from no list", lambda f: f.__setitem__(view, re.sub(r"(  captains: )\{fileID: \d+, guid: \w+, type: 2\}", r"\1{fileID: 0}", f[view], count=1))),
         ("FLORA / FAUNA shown on every chapter", lambda f: f.__setitem__(view, re.sub(
             r"(--- !u!225 &%s\nCanvasGroup:\n(?:  .*\n)*?  m_Alpha: )0" % V("Grid/Ecology#cg"), r"\g<1>1", f[view], count=1))),
+        ("the vessels without their card art", lambda f: f.__setitem__(view, re.sub(
+            r"(  cardArt: )\{fileID: \d+, guid: \w+, type: 2\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("the open tile's glow standing still", lambda f: f.__setitem__(tile, f[tile].replace(
+            f"  mode: {M.AMBIENT['Breathe']}\n", f"  mode: {M.AMBIENT['Float']}\n", 1))),
+        ("the page's picture not alive", lambda f: f.__setitem__(view, re.sub(
+            r"(  portrait: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("the chapter called TOOLS again", lambda f: f.__setitem__(view, f[view].replace("  m_text: TOYS\n", "  m_text: TOOLS\n", 1))),
         ("the chapters before the grid in focus order", lambda f: f.__setitem__(view, f[view].replace(
             f"  m_Children:\n  - {{fileID: {V('Grid#rt')}}}\n  - {{fileID: {V('Page#rt')}}}\n",
             f"  m_Children:\n  - {{fileID: {V('Page#rt')}}}\n  - {{fileID: {V('Grid#rt')}}}\n", 1))),

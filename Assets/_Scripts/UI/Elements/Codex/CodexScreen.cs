@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
@@ -24,27 +25,31 @@ namespace CosmicShore.UI
         const int StopCount = 8;
         static readonly CodexChapter[] TabStops =
             { CodexChapter.Ethirions, CodexChapter.Elements, CodexChapter.Flora, CodexChapter.Pilots, CodexChapter.Vessels,
-              CodexChapter.Artifacts, CodexChapter.Tools };
+              CodexChapter.Artifacts, CodexChapter.Toys };
 
         [Header("Data")]
         [Tooltip("The pilots: the Hangar's PILOTS list (ElementalCaptains).")]
         [SerializeField] private SO_CaptainList captains;
         [Tooltip("The vessels, in order: the Hangar's list.")]
         [SerializeField] private SO_VesselList vessels;
-        [Tooltip("The element petals, Charge to Time (Resources/ElementPetals).")]
-        [SerializeField] private Sprite[] elementPetals = new Sprite[4];
+        [Tooltip("The element icons, Charge to Time: the HUD's element shapes (Assets/_Graphics/ElementShapes).")]
+        [SerializeField] private Sprite[] elementShapes = new Sprite[4];
+        [Tooltip("The Hangar's colourful hull renders: a vessel's picture here.")]
+        [SerializeField] private HangarCardArtSO cardArt;
+        [Tooltip("The domain palette: a lifeform's picture drifts through Jade, Ruby and Gold, the colours it wears in the world.")]
+        [SerializeField] private SO_ColorSet colorSet;
 
         [Header("Words")]
         [SerializeField] private CodexWords words = new();
-        [Tooltip("The grid's title per stop: Ethirions, Elements, Flora, Fauna, Pilots, Vessels, Artifacts, Tools.")]
-        [SerializeField] private string[] stopTitles = { "Ethirions", "Elements", "Flora", "Fauna", "Pilots", "Vessels", "Artifacts", "Tools" };
+        [Tooltip("The grid's title per stop: Ethirions, Elements, Flora, Fauna, Pilots, Vessels, Artifacts, Toys.")]
+        [SerializeField] private string[] stopTitles = { "Ethirions", "Elements", "Flora", "Fauna", "Pilots", "Vessels", "Artifacts", "Toys" };
         [Tooltip("The grid's count. {count} is the number of entries.")]
         [SerializeField] private string countTemplate = "{count} entries";
         [Tooltip("What an empty stop says, per stop (same order as the titles). Empty: nothing.")]
         [SerializeField] private string[] emptyLines = { "", "", "", "", "", "", "Artifacts are found far out in the HyperSea. None found yet.", "" };
 
         [Header("Chapters")]
-        [Tooltip("One tab per chapter: Ethirions, Elements, Ecology, Pilots, Vessels, Artifacts, Tools.")]
+        [Tooltip("One tab per chapter: Ethirions, Elements, Ecology, Pilots, Vessels, Artifacts, Toys.")]
         [SerializeField] private KitTextTab[] chapterTabs = new KitTextTab[7];
         [Tooltip("Flora and Fauna, shown under the chapters while ECOLOGY is open.")]
         [SerializeField] private CanvasGroup ecologyTabsGroup;
@@ -88,10 +93,17 @@ namespace CosmicShore.UI
         public void OnScreenEnter()
         {
             _active = true;
+            CodexPortrait.Animating = true;
             ShowStop(_stop);
         }
 
-        public void OnScreenExit() => _active = false;
+        public void OnScreenExit()
+        {
+            _active = false;
+            CodexPortrait.Animating = false;
+        }
+
+        void OnDisable() => CodexPortrait.Animating = false;
 
         void Update()
         {
@@ -161,7 +173,17 @@ namespace CosmicShore.UI
         List<CodexItem> Items(CodexChapter stop)
         {
             int s = (int)stop;
-            return _items[s] ??= CodexCatalog.Build(stop, CodexSO.Load(), captains, vessels, elementPetals, words);
+            return _items[s] ??= CodexCatalog.Build(stop, CodexSO.Load(), captains, vessels, elementShapes, words, null, cardArt, LifePalette());
+        }
+
+        Color[] _lifePalette;
+
+        /// <summary>The domains a lifeform is seen in, as the HUD paints them (SO_ColorSet's signal colours).</summary>
+        Color[] LifePalette()
+        {
+            if (_lifePalette != null || !colorSet) return _lifePalette;
+            return _lifePalette = new[] { colorSet.GetDomainSignalColor(Domains.Jade), colorSet.GetDomainSignalColor(Domains.Ruby),
+                                          colorSet.GetDomainSignalColor(Domains.Gold) };
         }
 
         void FillTiles(List<CodexItem> items)
