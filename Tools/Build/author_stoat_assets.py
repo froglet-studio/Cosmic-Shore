@@ -1433,9 +1433,11 @@ def mode_action_asset() -> str:
             "  massModeThickness:\n" + elemental(3, 3, 6, 2, 1) +
             "  blendSeconds: 0.8\n"
             "  massUpgradeShieldsInMassMode: 1\n"
+            "  hybridPathLengthShare: 0.5\n"
+            "  hybridCarrySeconds: 2.5\n"
             "  autopilotTimeModeDegrees: 70\n"
             "  autopilotModeIntervalSeconds: 3\n" +
-            empty_event("massModeEvent") + empty_event("timeModeEvent"))
+            empty_event("massModeEvent") + empty_event("timeModeEvent") + empty_event("hybridModeEvent"))
 
 
 def ripple_config_asset() -> str:
