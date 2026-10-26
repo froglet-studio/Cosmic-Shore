@@ -197,6 +197,10 @@ namespace CosmicShore.Gameplay
             // Client-pull: answer roster requests from freshly-joined clients.
             clientPlayerVesselInitializer.OnRosterRequested = HandleRosterRequest;
 
+            // Fair play (Threat Board T5): measure guest-owned hulls' speed on the host. Signals only,
+            // never kicks; observe-only until ceilings are authored (Docs/AntiCheat/README.md §4.2).
+            MovementPlausibilityMonitor.Attach(gameObject, gameData);
+
             // Process players that were already spawned before this initializer
             // existed (e.g. the host's Player object spawned in the Auth scene
             // before Menu_Main loaded). Their SOAP event was already raised and missed.

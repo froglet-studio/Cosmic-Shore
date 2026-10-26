@@ -985,7 +985,7 @@ namespace CosmicShore.Gameplay
 
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
-            Name = NetName.Value.ToString();
+            Name = DisplayNameValidator.ForDisplay(NetName.Value.ToString()); // fair play T7
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
@@ -1279,7 +1279,7 @@ namespace CosmicShore.Gameplay
             // if a value happens to be the same, the local property
             // would remain stale without this explicit sync.
             Domain = NetDomain.Value;
-            Name = NetName.Value.ToString();
+            Name = DisplayNameValidator.ForDisplay(NetName.Value.ToString()); // fair play T7
             AvatarId = NetAvatarId.Value;
 
             // Re-register with gameData (cleared by ResetRuntimeData during scene transition)
@@ -1387,7 +1387,7 @@ namespace CosmicShore.Gameplay
         
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
-            Name = newValue.ToString();
+            Name = DisplayNameValidator.ForDisplay(newValue.ToString()); // fair play T7
 
             // Keep the RoundStats identity mirror live. A mid-session rename
             // (menu profile edit -> HandleProfileLoadedAfterSpawn on the owner)

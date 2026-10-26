@@ -69,6 +69,8 @@ sell tokens directly rather than shipping episodes as DLC.
 | `CONSENT_SETUP.md` | How the in-game consent flow is wired, and the editor steps to finish it. |
 | `TERMS_OF_SALE_TEMPLATE.md` | Draft terms for episode tokens. On hold pending the DLC decision. |
 | `DLC_VS_TOKENS_QUESTIONNAIRE.md` | The decision questionnaire, including the questions for counsel. |
+| `CODE_OF_CONDUCT_TEMPLATE.md` | The six fair-play rules the in-game notice cites, the measures (separate matchmaking, leaderboard and reward holds, name reset, ranked restriction; never paid content), notice and appeal. For `Docs/AntiCheat/`. |
+| `STORE_PRIVACY_LABELS.md` | What the App Store privacy label, Play Data safety form and Steam Anti-Cheat section must say once fair-play checks ship. |
 
 ---
 

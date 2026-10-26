@@ -21,7 +21,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private string partySessionId;
 
         public string PlayerId => playerId;
-        public string DisplayName => displayName;
+        public string DisplayName => CosmicShore.Utility.DisplayNameValidator.ForDisplay(displayName); // fair play T7
         public int AvatarId => avatarId;
 
         /// <summary>Members currently in this player's party (includes themselves).</summary>

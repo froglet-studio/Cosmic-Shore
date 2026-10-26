@@ -55,8 +55,8 @@ SEQUENCES = ["RR", "LL", "RL", "LR", "RRR", "LLL", "RLR", "LRL", "RRL", "LLR", "
 MIN_UNIQUE = 0.25          # mean tip separation / blade length between any two paths
 ENERGIZED_TRAVEL = 1.2     # energized tip travel >= this x the base path's
 CAMERA_CLEARANCE = 20.0    # world units between the blade segment and the camera, resting length
-REST_ANCHOR = 30.0         # ForceFieldSkimmer local scale y at rest (blade = 2 x anchor = 60 long)
-ENERGIZED_ANCHOR = 60.0    # a charged blade (reported, not gated -- the camera also pulls back)
+REST_ANCHOR = 24.0         # ForceFieldSkimmer local scale y at rest (blade = 2 x anchor = 48 long)
+ENERGIZED_ANCHOR = 48.0    # a charged blade (reported, not gated -- the camera also pulls back)
 
 # ---------------------------------------------------------------------------------------------
 # THE DESIGNS. Keys: (t, yaw, roll, pitch, thrust). +yaw right, +roll CCW from the pilot's seat,
@@ -248,8 +248,8 @@ ENERGIZED = {
         (0.14, 95, 95, 10, 0),
         (0.30, -30, -140, 30, 0),
         (0.46, -80, -260, 40, 0),
-        (0.62, -100, -380, 40, 0.2),
-        (0.78, -110, -500, 30, 0.2),
+        (0.62, -100, -380, 40, 0.3),
+        (0.78, -110, -500, 30, 0.3),
         (0.90, -90, -640, 20, 0),     # two full roll spirals down the left
         (1.00, -50, -720, 10, 0)]),
     "LRR": ("Piercing Charge", 1.05, [

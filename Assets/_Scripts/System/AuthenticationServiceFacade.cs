@@ -84,6 +84,12 @@ namespace CosmicShore.Core
         /// </summary>
         Task _signInTask;
 
+        /// <summary>
+        /// True while a Steam sign-in is being tried. A refused Steam attempt falls back to anonymous, so the
+        /// SDK's SignInFailed for it is not a failed sign-in and is not reported as one. Read on the SDK's thread.
+        /// </summary>
+        volatile bool _steamAttemptInFlight;
+
         public AuthenticationServiceFacade(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
         {
             _authenticationDataVariable = authenticationDataVariable;
@@ -253,11 +259,25 @@ namespace CosmicShore.Core
             }
 
             authenticationData.State = AuthenticationData.AuthState.SigningIn;
-            Log($"Signing in anonymously... (SessionTokenExists={svc.SessionTokenExists})");
+
+            // Steam on PC (fair play, Threat Board T1; SteamSignIn): with no cached session, sign in WITH Steam so
+            // a reinstall lands on the same account; with one, resume it anonymously and link Steam afterwards.
+            bool steam = SteamSignIn.IsEnabled;
+            bool resumingCachedSession = svc.SessionTokenExists;
+            Log($"Signing in... (SessionTokenExists={resumingCachedSession}, Steam={steam})");
 
             try
             {
-                await svc.SignInAnonymouslyAsync().AsMainThread();
+                bool signedInWithSteam = false;
+                if (steam && !resumingCachedSession)
+                {
+                    _steamAttemptInFlight = true;
+                    try { signedInWithSteam = await SteamSignIn.TrySignInAsync(svc); }
+                    finally { _steamAttemptInFlight = false; }
+                }
+
+                if (!signedInWithSteam)
+                    await svc.SignInAnonymouslyAsync().AsMainThread();
             }
             catch (Exception e)
             {
@@ -270,6 +290,9 @@ namespace CosmicShore.Core
             // flipping the state to Failed on a session that had in fact signed in, and taking
             // the rest of the listener chain down with it.
             OnSignInSuccess();
+
+            if (steam && resumingCachedSession)
+                SteamSignIn.LinkInBackground(svc);
         }
 
         /// <summary>
@@ -432,7 +455,12 @@ namespace CosmicShore.Core
             // request, so they are marshalled first. Docs/THREADING.md.
             svc.SignedIn += () => OnMainThread(OnSignInSuccess);
 
-            svc.SignInFailed += (RequestFailedException ex) => OnMainThread(() => OnSignInFailed(ex));
+            svc.SignInFailed += (RequestFailedException ex) =>
+            {
+                if (_steamAttemptInFlight)
+                    return; // the anonymous fallback follows; SteamSignIn logs the refusal
+                OnMainThread(() => OnSignInFailed(ex));
+            };
 
             svc.SignedOut += () => OnMainThread(() => OnSignedOut("Auth event: SignedOut"));
 

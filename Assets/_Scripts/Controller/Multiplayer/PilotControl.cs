@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEngine;
@@ -18,6 +19,10 @@ namespace CosmicShore.Gameplay
     /// their live hulls, the AI keeps flying the one you left with its own steering. Score follows the PILOT, so what
     /// you earn in a rival's hull is credited to you.</item>
     /// </list>
+    ///
+    /// <para><b>Compiled into the editor and development builds only</b> (fair play, Threat Board T6;
+    /// Docs/AntiCheat/README.md §2): in a release build a modded host could otherwise call it to sit in any hull.
+    /// Its two callers, <c>HumanFlightRecorder</c> and the Third Eye, are guarded the same way.</para>
     ///
     /// <para><b>Host only, and a test tool.</b> The arena swap stays the player-facing feature (same team, AI teammates
     /// only, refused server-side otherwise); this skips those two rules so a tester can sit in any AI hull. Every call
@@ -126,3 +131,4 @@ namespace CosmicShore.Gameplay
         }
     }
 }
+#endif

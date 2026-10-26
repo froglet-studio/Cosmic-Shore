@@ -98,6 +98,14 @@ namespace CosmicShore.Gameplay
         /// <summary>The flourish currently playing, or null. For FX/HUD/diagnostics.</summary>
         public RhinoSwordComboPath ActiveFlourish => _flourish;
 
+        /// <summary>The pose last written to the blade (the swipe, the chop and any flourish), in
+        /// channel space; zero at rest. <see cref="RhinoAnimation"/> leans the wings with it.</summary>
+        public SwordPoseChannels CurrentPose => _lastApplied;
+
+        /// <summary>The frame <see cref="CurrentPose"/>'s sweep is expressed in: the blade's parent,
+        /// whose origin it pivots about. Null until the blade resolves.</summary>
+        public Transform PoseFrame => shieldRoot ? shieldRoot.parent : null;
+
         void OnEnable()
         {
             if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
