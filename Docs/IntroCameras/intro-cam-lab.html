@@ -1,0 +1,1022 @@
+<title>Intro Cam Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a broadcast control room. Mode rack on the left, the program monitor in the middle,
+   the shot sheet and the team's verdicts on the right. One dark look on purpose: it is a monitor. */
+:root{
+  --bg:#080a12; --rack:#0e111c; --sheet:#111523; --raise:#181d2e; --line:#252b40; --line2:#323a55;
+  --fg:#e6e9f4; --muted:#8a91ab; --faint:#5d6480;
+  --jade:#13fff2; --ruby:#ff00f9; --gold:#ffa700; --blue:#6680ff;
+  --keep:#39d98a; --tweak:#ffb547; --redo:#ff5c6c;
+  --display:'Saira Condensed','Arial Narrow',sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45}
+*{box-sizing:border-box}
+button,select,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--jade);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:232px minmax(0,1fr) 344px;grid-template-rows:auto minmax(0,1fr);height:100%;min-height:560px}
+header.top{grid-column:1/-1;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px solid var(--line);background:var(--rack)}
+.brand{display:flex;align-items:baseline;gap:12px;min-width:0}
+.brand h1{margin:0;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:.04em;text-transform:uppercase;line-height:1}
+.brand h1 b{color:var(--jade);font-weight:800}
+.brand p{margin:0;color:var(--muted);font-size:12.5px}
+.top .spacer{flex:1}
+.ctl{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:5px 10px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed="true"]{background:var(--raise);color:var(--fg)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* mode rack */
+.rack{grid-row:2;background:var(--rack);border-right:1px solid var(--line);overflow:auto;padding:8px 0 24px}
+.rack h2{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:16px 16px 6px}
+.rack button.mode{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;width:100%;text-align:left;background:transparent;border:0;border-left:3px solid transparent;padding:6px 14px 6px 13px;color:var(--fg)}
+.rack button.mode:hover{background:var(--raise)}
+.rack button.mode[aria-current="true"]{background:var(--raise);border-left-color:var(--jade)}
+.rack .mname{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rack .mhull{font-size:11.5px;color:var(--muted);grid-column:1}
+.rack .vd{grid-row:1/span 2;grid-column:2;display:flex;gap:3px}
+.vd i{width:7px;height:7px;border-radius:50%;display:block}
+.vd i.keep{background:var(--keep)}.vd i.tweak{background:var(--tweak)}.vd i.redo{background:var(--redo)}
+
+/* program monitor */
+.stage{grid-row:2;min-width:0;display:flex;flex-direction:column;gap:12px;padding:14px max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px));overflow:auto}
+.pick{display:none}
+.monitor{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;background:#000;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px var(--line2)}
+.monitor canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.bar{position:absolute;left:0;right:0;height:0;background:#000;z-index:3;pointer-events:none}
+.bar.t{top:0}.bar.b{bottom:0}
+.caps{position:absolute;inset:0;z-index:4;pointer-events:none;font-family:var(--display);text-transform:uppercase}
+.cap{position:absolute;opacity:0;will-change:transform,opacity}
+.cap.title{left:0;right:0;top:38%;text-align:center;font-weight:800;font-size:clamp(28px,7.2cqw,96px);letter-spacing:.06em;line-height:.9;color:#fff;text-shadow:0 0 28px rgba(0,0,0,.6)}
+.cap.sub{left:8%;right:8%;top:58%;text-align:center;font-family:var(--body);text-transform:none;font-weight:500;font-size:clamp(12px,1.9cqw,24px);color:#e9eeff;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+.cap.stat{right:4%;top:15%;font-weight:700;font-size:clamp(11px,1.6cqw,20px);letter-spacing:.12em;padding:.35em .8em;border:1px solid rgba(255,255,255,.55);background:rgba(4,6,14,.55);color:#fff}
+.cap.lower{left:4%;bottom:15%;display:flex;flex-direction:column;gap:.15em}
+.cap.lower b{font-weight:800;font-size:clamp(16px,3cqw,38px);letter-spacing:.05em;color:#fff;line-height:1}
+.cap.lower span{font-family:var(--mono);text-transform:uppercase;font-size:clamp(9px,1.1cqw,13px);letter-spacing:.14em;color:var(--pd,#13fff2)}
+.cap.lower::before{content:"";position:absolute;left:-.7em;top:.1em;bottom:.1em;width:4px;background:var(--pd,#13fff2)}
+.cap.ready{left:50%;bottom:9%;transform:translateX(-50%);font-weight:700;font-size:clamp(13px,1.9cqw,22px);letter-spacing:.16em;padding:.45em 1.6em;background:var(--pd,#13fff2);color:#04121a;border-radius:3px}
+.monitor{container-type:inline-size}
+.tag{position:absolute;left:12px;top:10px;z-index:5;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#cfd6f0;background:rgba(4,6,14,.6);padding:3px 8px;border-radius:3px;pointer-events:none}
+.tag.rec::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff3b4e;margin-right:6px;vertical-align:1px}
+
+.transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{background:var(--raise);border:1px solid var(--line2);border-radius:6px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--jade);border-color:var(--jade);color:#03201e;font-weight:600}
+.time{font-family:var(--mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+label.chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+select{background:var(--raise);border:1px solid var(--line2);border-radius:6px;padding:5px 8px}
+
+.timeline{position:relative;display:flex;height:42px;border-radius:5px;overflow:hidden;background:var(--rack);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;user-select:none}
+.tseg{position:relative;min-width:0;border-right:1px solid var(--bg);padding:5px 7px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.tseg:nth-child(odd){background:#141a2c}.tseg:nth-child(even){background:#19203a}
+.tseg.handoff{background:repeating-linear-gradient(135deg,#12251f 0 6px,#0f1f1b 6px 12px)}
+.tseg em{font-style:normal;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#cdd3ea}
+.tseg small{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.tseg.on{box-shadow:inset 0 -3px 0 var(--jade)}
+.playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #fff;pointer-events:none;left:0}
+.keys{font-size:12px;color:var(--faint)}
+.keys kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--muted)}
+
+/* shot sheet */
+.sheet{grid-row:2;background:var(--sheet);border-left:1px solid var(--line);overflow:auto;padding:16px 16px 28px;display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 4px}
+.sheet h3{margin:0;font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.03em;text-transform:uppercase;line-height:1;text-wrap:balance}
+.concept{margin:6px 0 0;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.06em;text-transform:uppercase;color:var(--jade)}
+.pitch{margin:8px 0 0;color:#c8cde2;max-width:62ch}
+ol.shots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border-top:1px solid var(--line)}
+ol.shots li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 10px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
+ol.shots li:hover .sn{color:#fff}
+ol.shots li.on{background:linear-gradient(90deg,rgba(19,255,242,.07),transparent)}
+ol.shots .si{font-family:var(--mono);font-size:11px;color:var(--faint);padding-top:2px}
+ol.shots .sn{font-weight:600}
+ol.shots .sd{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+ol.shots .sm{grid-column:2/-1;font-family:var(--mono);font-size:11px;color:var(--blue);text-transform:uppercase;letter-spacing:.06em}
+ol.shots .sx{grid-column:2/-1;font-size:12.5px;color:var(--muted)}
+.box{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--rack);display:flex;flex-direction:column;gap:10px}
+.vbtns{display:flex;gap:6px}
+.vbtns button{flex:1;background:var(--raise);border:1px solid var(--line2);border-radius:6px;padding:7px 4px;font-weight:600;font-size:13px}
+.vbtns button[data-v="keep"][aria-pressed="true"]{background:var(--keep);border-color:var(--keep);color:#04210f}
+.vbtns button[data-v="tweak"][aria-pressed="true"]{background:var(--tweak);border-color:var(--tweak);color:#2a1800}
+.vbtns button[data-v="redo"][aria-pressed="true"]{background:var(--redo);border-color:var(--redo);color:#2a0006}
+textarea{width:100%;min-height:64px;resize:vertical;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:8px;font-size:13px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--muted)}
+.vlist{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.vlist li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;font-size:13px}
+.pill{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding:1px 7px;border-radius:999px;align-self:start;margin-top:2px}
+.pill.keep{background:rgba(57,217,138,.16);color:var(--keep)}.pill.tweak{background:rgba(255,181,71,.16);color:var(--tweak)}.pill.redo{background:rgba(255,92,108,.16);color:var(--redo)}
+.vlist .who{font-weight:600}.vlist .note{grid-column:2;color:#c8cde2;overflow-wrap:anywhere}
+details.unity summary{cursor:pointer;font-weight:600}
+details.unity p,details.unity li{color:#c3c8dc;font-size:13px}
+details.unity code{font-family:var(--mono);font-size:12px;color:#d9defa}
+details.unity ul{padding-left:18px;margin:6px 0}
+
+@media (max-width:1180px){
+  .app{grid-template-columns:minmax(0,1fr) 330px;height:auto}
+  .rack{display:none}
+  .pick{display:flex;gap:8px;align-items:center}
+  .pick select{flex:1;min-width:0}
+  .stage{grid-row:2;grid-column:1}
+  .sheet{grid-row:2;grid-column:2}
+}
+@media (max-width:820px){
+  .app{display:block}
+  .stage{padding-bottom:6px}
+  .sheet{border-left:0;border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .keys{display:none}
+  .brand p{display:none}
+}
+@media (prefers-reduced-motion:reduce){ .cap{transition:none} }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>Intro <b>Cam</b> Lab</h1><p>One pre-game camera for every Cosmic Shore mode. Watch each one, then keep, tweak or redo it.</p></div>
+    <div class="spacer"></div>
+    <div class="ctl"><span>Your domain</span>
+      <div class="seg" id="domSeg" role="group" aria-label="Your domain">
+        <button data-d="jade" aria-pressed="true"><span class="dot" style="background:var(--jade)"></span>Jade</button>
+        <button data-d="ruby" aria-pressed="false"><span class="dot" style="background:var(--ruby)"></span>Ruby</button>
+        <button data-d="gold" aria-pressed="false"><span class="dot" style="background:var(--gold)"></span>Gold</button>
+      </div>
+    </div>
+    <div class="ctl"><span>Camera</span>
+      <div class="seg" id="camSeg" role="group" aria-label="Which intro to play">
+        <button data-c="new" aria-pressed="true">New intro</button>
+        <button data-c="old" aria-pressed="false">Today's orbit</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="rack" id="rack" aria-label="Game modes"></nav>
+
+  <main class="stage">
+    <div class="pick"><select id="modeSelect" aria-label="Game mode"></select></div>
+    <div class="monitor" id="monitor">
+      <canvas id="gl"></canvas>
+      <canvas id="ov"></canvas>
+      <div class="bar t" id="barT"></div><div class="bar b" id="barB"></div>
+      <div class="tag rec" id="tag">Pre-game</div>
+      <div class="caps">
+        <div class="cap title" id="cTitle"></div>
+        <div class="cap sub" id="cSub"></div>
+        <div class="cap stat" id="cStat"></div>
+        <div class="cap lower" id="cLower"><b></b><span></span></div>
+        <div class="cap ready" id="cReady">Ready</div>
+      </div>
+    </div>
+    <div class="transport">
+      <button class="btn primary" id="bPlay">Pause</button>
+      <button class="btn" id="bReplay">Replay</button>
+      <button class="btn" id="bSkip">Skip</button>
+      <select id="speed" aria-label="Playback speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      <button class="btn" id="bPrev" aria-label="Previous mode">◀</button>
+      <button class="btn" id="bNext" aria-label="Next mode">▶</button>
+      <label class="chk"><input type="checkbox" id="auto"> Play every mode in a row</label>
+      <span class="time" id="time">0.0 / 0.0 s</span>
+    </div>
+    <div class="timeline" id="timeline"><div class="playhead" id="ph"></div></div>
+    <div class="keys"><kbd>Space</kbd> play · <kbd>S</kbd> skip · <kbd>R</kbd> replay · <kbd>←</kbd><kbd>→</kbd> mode · <kbd>C</kbd> compare with today's orbit · click the timeline or a shot to jump</div>
+  </main>
+
+  <aside class="sheet">
+    <section>
+      <p class="eyebrow" id="sGroup"></p>
+      <h3 id="sName"></h3>
+      <p class="concept" id="sConcept"></p>
+      <p class="pitch" id="sPitch"></p>
+    </section>
+    <section>
+      <p class="eyebrow">Shot sheet</p>
+      <ol class="shots" id="shots"></ol>
+    </section>
+    <section class="box" id="verdictBox">
+      <p class="eyebrow" style="margin:0">Your verdict on this intro</p>
+      <div class="vbtns" id="vbtns">
+        <button data-v="keep" aria-pressed="false">Keep</button>
+        <button data-v="tweak" aria-pressed="false">Tweak</button>
+        <button data-v="redo" aria-pressed="false">Redo</button>
+      </div>
+      <textarea id="vnote" placeholder="What to change: e.g. shot 2 too slow, open on the crystal instead"></textarea>
+      <div class="row"><button class="btn" id="vsave">Save verdict</button><span class="hint" id="vstatus">Connecting…</span></div>
+      <p class="eyebrow" style="margin:6px 0 0">Team verdicts</p>
+      <ul class="vlist" id="vlist"><li class="hint" style="display:block">No verdicts on this mode yet.</li></ul>
+    </section>
+    <details class="unity">
+      <summary>How this lands in Unity</summary>
+      <p>Today every mode plays the same <code>PreGameCinematicController</code> path: four chords of a 150-unit circle, 60 up, looking at the scene centre, then 1.5&nbsp;s to the pilot.</p>
+      <ul>
+        <li>One sequence asset per <code>GameModes</code> value, a list of shots (move kind, duration, easing, anchors, field of view, roll, shake). The controller plays it when one is set and falls back to today's orbit when not.</li>
+        <li>Anchors are named scene objects (crystal, gate 0, hulk 2, nucleus), never the coordinates in this page; this page uses stand-in arenas.</li>
+        <li>Every caption is an authored text field on the asset; an empty field shows nothing.</li>
+        <li>The hand-off to the pilot, Skip (0.3&nbsp;s) and the gamepad South button stay exactly as they are.</li>
+      </ul>
+    </details>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const T3=THREE, V=(x,y,z)=>new T3.Vector3(x,y,z), UP=V(0,1,0), XA=V(1,0,0), ZA=V(0,0,1);
+const DOMC={jade:0x13fff2,ruby:0xff00f9,gold:0xffa700,blue:0x6680ff};
+const DOMCSS={jade:'#13fff2',ruby:'#ff00f9',gold:'#ffa700'};
+let playerDom='jade';
+const domOrder=()=>{const a=['jade','ruby','gold'];return [playerDom,...a.filter(d=>d!==playerDom)];};
+const col=i=>DOMC[domOrder()[((i%3)+3)%3]];
+const NEUTRAL=0x6680ff;
+
+/* ---------- small maths ---------- */
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const lerp=(a,b,t)=>a+(b-a)*t, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const EASE={linear:t=>t,smooth:t=>t*t*(3-2*t),inOut:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,out:t=>1-Math.pow(1-t,3),in:t=>t*t*t,
+  expoOut:t=>t>=1?1:1-Math.pow(2,-10*t),expoIn:t=>t<=0?0:Math.pow(2,10*t-10),back:t=>{const c=1.4;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);}};
+const hash=i=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);};
+const _m=new T3.Matrix4();
+function qDir(dir){const d=dir.clone().normalize();_m.lookAt(V(0,0,0),d,Math.abs(d.y)>.98?XA:UP);return new T3.Quaternion().setFromRotationMatrix(_m);}
+function qAlign(dir){return new T3.Quaternion().setFromUnitVectors(ZA,dir.clone().normalize());}
+class FnCurve extends T3.Curve{constructor(fn,closed){super();this.fn=fn;this.closed=!!closed;this.arcLengthDivisions=400;}getPoint(t,target=new T3.Vector3()){return target.copy(this.fn(t));}}
+const wrapU=(c,u)=>c.closed?((u%1)+1)%1:clamp(u,0,1);
+const ptAt=(c,u)=>c.getPointAt(wrapU(c,u));
+const tanAt=(c,u)=>c.getTangentAt(wrapU(c,u));
+
+/* ---------- renderer ---------- */
+const glCanvas=document.getElementById('gl'), ov=document.getElementById('ov'), octx=ov.getContext('2d');
+const renderer=new T3.WebGLRenderer({canvas:glCanvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.outputEncoding=T3.sRGBEncoding;
+const camera=new T3.PerspectiveCamera(60,16/9,.5,4000);
+let scene=new T3.Scene();
+const SHARED=new Set();
+const BOX=new T3.BoxGeometry(1,1,1); SHARED.add(BOX);
+const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.25,'rgba(255,255,255,.55)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);const t=new T3.CanvasTexture(c);return t;})();
+
+function stdMat(c,e=.25,o={}){return new T3.MeshStandardMaterial(Object.assign({color:c,emissive:c,emissiveIntensity:e,roughness:.45,metalness:.15,flatShading:true},o));}
+function glowAt(pos,c,size,op){const s=glow(c,size,op);s.position.copy(pos);return s;}
+function glow(c,size,op=.6){const s=new T3.Sprite(new T3.SpriteMaterial({map:GLOW,color:c,blending:T3.AdditiveBlending,transparent:true,depthWrite:false,opacity:op}));s.scale.set(size,size,1);return s;}
+
+/* ---------- world builders ---------- */
+function Prisms(){const L=[];return{L,add(p,q,s,c){L.push({p:p.clone(),q,s:s.clone(),c});},
+  build(ctx,emis=.12){if(!L.length)return null;const mat=new T3.MeshStandardMaterial({color:0xffffff,roughness:.42,metalness:.12,flatShading:true,emissive:0x0c1020,emissiveIntensity:1});
+    const m=new T3.InstancedMesh(BOX,mat,L.length),M=new T3.Matrix4(),C=new T3.Color();
+    L.forEach((it,i)=>{M.compose(it.p,it.q,it.s);m.setMatrixAt(i,M);m.setColorAt(i,C.set(it.c));});
+    m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;ctx.scene.add(m);return m;}};}
+
+function kitBase(ctx,o={}){
+  const R=ctx.R,s=ctx.scene;
+  s.background=new T3.Color(0x04050b);s.fog=new T3.FogExp2(0x060813,o.fog??.0011);
+  s.add(new T3.HemisphereLight(0xc8d4ff,0x2a1638,1.1));
+  const d=new T3.DirectionalLight(0xffffff,.85);d.position.set(.6,1,.4);s.add(d);
+  s.add(new T3.AmbientLight(0x404660,.4));
+  if(o.membrane!==false){
+    s.add(new T3.Mesh(new T3.SphereGeometry(R,48,32),new T3.MeshBasicMaterial({color:o.tint??0x34408a,side:T3.BackSide,transparent:true,opacity:.11,depthWrite:false,fog:false})));
+    s.add(new T3.LineSegments(new T3.EdgesGeometry(new T3.IcosahedronGeometry(R*.995,3)),new T3.LineBasicMaterial({color:o.tint??0x5a6cff,transparent:true,opacity:.09,fog:false,depthWrite:false})));
+  }
+  const r=rng(99),n=1400,pos=new Float32Array(n*3);
+  for(let i=0;i<n;i++){const u=r()*2-1,a=r()*Math.PI*2,q=Math.sqrt(1-u*u),rr=R*4;pos[i*3]=q*Math.cos(a)*rr;pos[i*3+1]=u*rr;pos[i*3+2]=q*Math.sin(a)*rr;}
+  const g=new T3.BufferGeometry();g.setAttribute('position',new T3.BufferAttribute(pos,3));
+  s.add(new T3.Points(g,new T3.PointsMaterial({color:0xaab6ff,size:1.6,sizeAttenuation:false,fog:false,transparent:true,opacity:.7})));
+}
+
+function crystal(ctx,pos,c=0xeaf7ff,size=4){
+  const g=new T3.Group(),m=new T3.Mesh(new T3.OctahedronGeometry(size,0),stdMat(c,.85,{roughness:.2,metalness:.3}));
+  m.scale.y=1.5;g.add(m);g.add(glow(c,size*7,.5));g.position.copy(pos);ctx.scene.add(g);
+  const ph=hash(ctx.ticks.length)*6;ctx.ticks.push(T=>{m.rotation.y=T*1.2+ph;m.position.y=Math.sin(T*1.6+ph)*.6;});
+  return g;
+}
+function trail(P,curve,c,spacing=5.2,scale=V(2.8,.7,4.4)){
+  const n=Math.max(2,Math.floor(curve.getLength()/spacing));
+  for(let i=0;i<n;i++){const u=i/(n-1);P.add(curve.getPointAt(u),qDir(curve.getTangentAt(u)),scale,c);}
+}
+function lineOf(ctx,curve,c=0x9fb2ff,op=.18,n=400){
+  const l=new T3.Line(new T3.BufferGeometry().setFromPoints(curve.getSpacedPoints(n)),new T3.LineBasicMaterial({color:c,transparent:true,opacity:op}));ctx.scene.add(l);return l;
+}
+function tube(ctx,curve,r,c,e=.4,seg=300,closed=false){const m=new T3.Mesh(new T3.TubeGeometry(curve,seg,r,6,closed),stdMat(c,e));ctx.scene.add(m);return m;}
+function ring(ctx,pos,q,r,c,e=.6,tubeR=.9){const m=new T3.Mesh(new T3.TorusGeometry(r,tubeR,8,44),stdMat(c,e,{roughness:.3}));m.position.copy(pos);m.quaternion.copy(q);ctx.scene.add(m);return m;}
+
+/* vessels: forward is +Z */
+function makeVessel(hull,c){
+  const g=new T3.Group(),m=stdMat(c,.38),d=stdMat(0x262c40,.05);
+  const part=(geo,mat,p=[0,0,0],r=[0,0,0],s=[1,1,1])=>{const o=new T3.Mesh(geo,mat);o.position.set(...p);o.rotation.set(...r);o.scale.set(...s);g.add(o);return o;};
+  const cone=(r,h,seg=6)=>{const geo=new T3.ConeGeometry(r,h,seg);geo.rotateX(Math.PI/2);return geo;};
+  const box=(x,y,z)=>new T3.BoxGeometry(x,y,z);
+  switch(hull){
+    case 'squirrel':part(cone(1,7.5,5),m);part(box(4.6,.2,1.4),d,[0,0,-1.6]);part(box(.2,1.4,1.8),m,[0,.7,-2.6]);break;
+    case 'sparrow':part(cone(1.2,6.5,6),m);part(box(2.8,.25,1.3),d,[1.8,0,.4],[0,-.5,0]);part(box(2.8,.25,1.3),d,[-1.8,0,.4],[0,.5,0]);part(box(.25,1.2,1.4),m,[0,.7,-2.4]);break;
+    case 'dolphin':part(new T3.SphereGeometry(1,10,8),m,[0,0,0],[0,0,0],[1.4,1.1,3.4]);part(box(3.8,.2,1),d,[0,0,-2.9]);part(box(.2,1.6,1.2),m,[0,1.2,.2]);break;
+    case 'rhino':part(box(2.6,1.8,5.6),m);part(cone(.7,3,5),d,[0,.4,4.2]);part(box(4.4,.4,1.6),d,[0,-.3,-1.6]);break;
+    case 'manta':part(cone(5,6.5,3),m,[0,0,0],[0,0,Math.PI/2],[1,.2,1]);part(new T3.CylinderGeometry(.2,.2,5,4),d,[0,0,-4.5],[Math.PI/2,0,0]);break;
+    case 'urchin':{part(new T3.IcosahedronGeometry(1.8,0),m);const sg=cone(.35,2.6,4);for(let i=0;i<14;i++){const u=hash(i)*2-1,a=hash(i+40)*6.283,q=Math.sqrt(1-u*u),dir=V(q*Math.cos(a),u,q*Math.sin(a));const o=new T3.Mesh(sg,d);o.position.copy(dir.clone().multiplyScalar(2.3));o.quaternion.copy(qAlign(dir));g.add(o);}break;}
+    case 'scarab':part(new T3.SphereGeometry(2.3,10,6,0,Math.PI*2,0,Math.PI/2),m,[0,-.3,0],[0,0,0],[1,.8,1.4]);part(box(3.8,.3,4.6),d,[0,-.45,0]);break;
+    case 'butterfly':part(box(.6,.6,5),d);part(box(5.2,.12,3.2),m,[2.8,.2,.9],[0,0,.25]);part(box(5.2,.12,3.2),m,[-2.8,.2,.9],[0,0,-.25]);part(box(4,.12,2.4),m,[2.3,0,-1.7],[0,0,.15]);part(box(4,.12,2.4),m,[-2.3,0,-1.7],[0,0,-.15]);break;
+    case 'grizzly':part(box(3.2,2.4,5),m);part(box(1.3,1.3,3.2),d,[2.3,-.2,-.6]);part(box(1.3,1.3,3.2),d,[-2.3,-.2,-.6]);break;
+    case 'stoat':part(new T3.CylinderGeometry(.7,.7,9,6),m,[0,0,0],[Math.PI/2,0,0]);part(cone(.7,2,6),m,[0,0,5.5]);part(box(3.4,.2,1),d,[0,0,-3.4]);break;
+    case 'wrasse':part(cone(1.1,6,6),m);part(box(7.4,.2,1.6),d,[0,0,-.8]);part(box(.2,1.3,1.4),m,[0,.7,-2.5]);break;
+    default:part(cone(1.2,6,6),m);part(box(6,.25,1.6),d,[0,0,-1]);
+  }
+  const gl=glow(c,7,.9);gl.position.set(0,0,-3.8);g.add(gl);
+  return g;
+}
+function spawn(ctx,hull,dom,pos,target){
+  const v=makeVessel(hull,col(dom));v.position.copy(pos);v.lookAt(target);ctx.scene.add(v);
+  ctx.vessels.push({obj:v,base:pos.clone(),ph:ctx.vessels.length*1.7});
+  if(!ctx.player&&dom===0)ctx.player=v;return v;
+}
+function grid(ctx,hulls,origin,fwd,n=6,o={}){
+  const cols=o.cols||2,sp=o.spacing||10,rg=o.rowGap||14,f=fwd.clone().normalize();
+  let side=new T3.Vector3().crossVectors(f,UP);if(side.lengthSq()<1e-4)side.set(1,0,0);side.normalize();
+  const out=[];
+  for(let i=0;i<n;i++){const row=Math.floor(i/cols),c=i%cols;
+    const p=origin.clone().addScaledVector(side,(c-(cols-1)/2)*sp).addScaledVector(f,-row*rg);
+    const h=Array.isArray(hulls)?hulls[i%hulls.length]:hulls;out.push(spawn(ctx,h,o.doms?o.doms[i]:i%3,p,p.clone().addScaledVector(f,100)));}
+  return out;
+}
+function frame(tan){const t=tan.clone().normalize();let side=new T3.Vector3().crossVectors(t,UP);if(side.lengthSq()<1e-4)side.set(1,0,0);side.normalize();const up=new T3.Vector3().crossVectors(side,t).normalize();return{t,side,up};}
+
+/* circuits: loop, scatter (open course) */
+function kitCircuit(ctx,o={}){
+  const R=ctx.R,r=rng(o.seed||3),n=o.n||8,closed=o.layout!=='scatter',pts=[];
+  if(!closed){for(let i=0;i<n;i++){const a=-.9*Math.PI+i/(n-1)*1.8*Math.PI,rad=R*(.25+.45*r());pts.push(V(Math.cos(a)*rad,(r()-.5)*R*.55,Math.sin(a)*rad));}}
+  else{for(let i=0;i<n;i++){const a=i/n*Math.PI*2+(r()-.5)*(o.jitter??.35),rad=R*(o.rad??.6)*(1+(r()-.5)*(o.wobble??.5));pts.push(V(Math.cos(a)*rad,(r()-.5)*R*(o.lift??.32),Math.sin(a)*rad));}}
+  const curve=new T3.CatmullRomCurve3(pts,closed,'centripetal');curve.arcLengthDivisions=500;
+  lineOf(ctx,curve,0x9fb2ff,.2);
+  const gates=[],G=o.gates??12;
+  for(let i=0;i<G;i++){const u=closed?i/G:(i+.5)/G,p=curve.getPointAt(u),t=curve.getTangentAt(u);
+    let q=qAlign(t);if(o.tilt){q=q.clone().multiply(new T3.Quaternion().setFromAxisAngle(ZA,r()*Math.PI*2)).multiply(new T3.Quaternion().setFromAxisAngle(XA,(r()-.5)*o.tilt));}
+    const mesh=o.noRings?null:ring(ctx,p,q,o.gateR||10,i===0?0xffe08a:(o.ringC||0xcfd8ff),i===0?.9:.45);gates.push({p,t,q,u,mesh});}
+  const p0=curve.getPointAt(0),t0=curve.getTangentAt(0);
+  return{curve,gates,start:p0,startTan:t0,origin:p0.clone().addScaledVector(t0,-(o.gridBack??28)),closed};
+}
+
+/* ---------- camera shots ---------- */
+function evalShot(s,uRaw,T){
+  const e=(EASE[s.ease||'smooth']||EASE.smooth)(clamp(uRaw,0,1));
+  let p,l,f=60,r=0;
+  switch(s.k){
+    case 'move':p=s.p0.clone().lerp(s.p1||s.p0,e);l=s.l0.clone().lerp(s.l1||s.l0,e);f=lerp(s.f0??60,s.f1??s.f0??60,e);r=lerp(s.r0||0,s.r1??s.r0??0,e);break;
+    case 'orbit':{const a=T3.MathUtils.degToRad(lerp(s.a0,s.a1,e)),rad=lerp(s.r0,s.r1??s.r0,e),h=lerp(s.h0,s.h1??s.h0,e);
+      p=s.c.clone().add(V(Math.sin(a)*rad,h,Math.cos(a)*rad));l=(s.l||s.c).clone();f=lerp(s.f0??60,s.f1??s.f0??60,e);r=lerp(s.r0r||0,s.r1r??s.r0r??0,e);break;}
+    case 'path':{const c=s.curve,u=lerp(s.u0,s.u1,e),dirn=Math.sign(s.u1-s.u0)||1,fr=frame(tanAt(c,u).multiplyScalar(dirn)),o=s.off||V(0,3,0);
+      p=ptAt(c,u).addScaledVector(fr.side,o.x).addScaledVector(fr.up,o.y).addScaledVector(fr.t,o.z);
+      l=ptAt(c,u+(s.ahead??.03)*dirn).addScaledVector(fr.up,o.y*(s.lookUp??.6)).addScaledVector(fr.side,o.x*.6);
+      f=lerp(s.f0??70,s.f1??s.f0??70,e);
+      if(s.bank){const t2=tanAt(c,u+.012*dirn).multiplyScalar(dirn);r=clamp(-fr.side.dot(t2)*s.bank*14,-.55,.55);}
+      if(s.spin)r+=s.spin*e;break;}
+    case 'vertigo':{const d=lerp(s.d0,s.d1,e);p=s.target.clone().addScaledVector(s.dir.clone().normalize(),d);l=s.target.clone();
+      f=clamp(T3.MathUtils.radToDeg(2*Math.atan(s.d0*Math.tan(T3.MathUtils.degToRad(s.f0)/2)/d)),8,125);break;}
+    case 'cuts':{const n=s.list.length,i=Math.min(n-1,Math.floor(clamp(uRaw,0,.9999)*n)),lt=clamp(uRaw,0,.9999)*n-i,c=s.list[i];
+      const dir=c.l.clone().sub(c.p).normalize();p=c.p.clone().addScaledVector(dir,(s.push??6)*EASE.out(lt));l=c.l.clone();f=(c.f??55)-lt*(s.zoom??4);r=c.r||0;break;}
+    case 'hold':p=s.p0.clone();l=s.l0.clone();f=s.f0??60;break;
+  }
+  if(s.fovWave){f+=Math.sin(T*s.fovWave[1])*s.fovWave[0];}
+  if(s.shake){const a=s.shake*(s.shakeDecay?Math.pow(1-e,1.5):1);
+    p.add(V(Math.sin(T*13.1)*.7+Math.sin(T*29.3)*.3,Math.sin(T*17.3+1)*.7+Math.sin(T*31.7)*.3,Math.sin(T*11.7+2)*.6).multiplyScalar(a));
+    l.add(V(Math.sin(T*9.7+3),Math.sin(T*8.3+1),0).multiplyScalar(a*.6));}
+  return{p,l,f,r};
+}
+const mixPose=(a,b,t)=>({p:a.p.clone().lerp(b.p,t),l:a.l.clone().lerp(b.l,t),f:lerp(a.f,b.f,t),r:lerp(a.r,b.r,t)});
+function playerPose(ctx){const v=ctx.player;v.updateMatrixWorld();return{p:v.localToWorld(V(0,6,-18)),l:v.localToWorld(V(0,1.5,14)),f:62,r:0};}
+function applyPose(P){camera.position.copy(P.p);camera.up.set(0,1,0);camera.lookAt(P.l);if(P.r)camera.rotateZ(P.r);if(Math.abs(camera.fov-P.f)>.01){camera.fov=P.f;camera.updateProjectionMatrix();}}
+
+/* captions/fx helpers (times in seconds from the shot's start) */
+const title=(t,at=.2,d=1.8)=>({k:'title',t,at,d}), sub=(t,at=.25,d=1.9)=>({k:'sub',t,at,d}), stat=(t,at=.2,d=1.7)=>({k:'stat',t,at,d});
+const flash=(at=0,d=.4)=>({k:'flash',at,d}), speed=(at=0,d=99,amt=1)=>({k:'speed',at,d,amt}), warp=(at=0,d=99)=>({k:'warp',at,d});
+
+/* ---------- the modes ---------- */
+const MODES=[];
+const M=d=>MODES.push(d);
+const GROUPS=['Domain classics','Races','Fights','Demolition','Party and control','Arena'];
+
+M({key:'skimrace',name:'Skim Race',group:0,hull:'Squirrel',concept:'Trail skim',
+pitch:'Open low on a live trail at speed, so the first thing you learn is that trails are the road. Crane off the end to find the one crystal, then walk the grid.',
+build(ctx){kitBase(ctx);const r=rng(11),cr=V(0,20,165);crystal(ctx,cr,0xeaf7ff,6);const P=Prisms(),trails=[];
+  for(let k=0;k<5;k++){const x0=(k-2)*38,c=new T3.CatmullRomCurve3([V(x0,(r()-.5)*30,-165),V(x0+(r()-.5)*60,(r()-.5)*50,-80),V(x0+(r()-.5)*70,(r()-.5)*50,10),V(x0*.4+(r()-.5)*40,(r()-.5)*40,95),V((r()-.5)*20,14,140)]);trails.push(c);trail(P,c,col(k));}
+  P.build(ctx);grid(ctx,'squirrel',V(0,0,-192),V(0,0,1),6,{cols:3,spacing:11});
+  const tr=trails[2],eP=tr.getPointAt(.72);
+  return[
+  {name:'Skim the trail',note:'Rides a live trail at hull height; speed lines carry the boost.',k:'path',dur:2.8,curve:tr,u0:.04,u1:.72,off:V(0,3.2,0),ahead:.05,f0:76,f1:98,ease:'inOut',bank:1,fx:[speed(.2,2.6)],cap:[title('Skim Race',.45,1.9)]},
+  {name:'Rise to the prize',note:'Crane up off the trail end until the crystal sits in frame.',k:'move',dur:2.2,p0:eP.clone().add(V(0,3,0)),p1:eP.clone().add(V(-34,58,-40)),l0:tr.getPointAt(.8),l1:cr,f0:92,f1:52,ease:'inOut',cap:[sub('Skim trails for speed. Beat everyone to the crystal.',.3,1.8)]},
+  {name:'Crystal vertigo',note:'Dolly back while zooming in: the crystal holds size, the arena stretches behind it.',k:'vertigo',dur:1.8,target:cr,dir:V(.35,.25,-1),d0:34,d1:125,f0:74,ease:'inOut',cap:[stat('First to the crystal')]},
+  {name:'Grid pan',note:'Side-on pan along the start grid at hull height.',k:'move',dur:1.8,p0:V(58,6,-176),p1:V(-46,5,-178),l0:V(18,1,-196),l1:V(-18,1,-196),f0:42,ease:'smooth'}];}});
+
+M({key:'joust',name:'Joust',group:0,hull:'Squirrel',concept:'Standoff',
+pitch:'A western standoff. A long lens side-on between the two lines, a tight half-circle around the gap between them, then over your shoulder at the rival you will hit first.',
+build(ctx){kitBase(ctx);const P=Prisms(),r=rng(5);
+  for(let k=0;k<4;k++){const c=new T3.CatmullRomCurve3([V((r()-.5)*300,(r()-.5)*120,-150),V((r()-.5)*200,(r()-.5)*100,0),V((r()-.5)*300,(r()-.5)*120,150)]);trail(P,c,col(k),6);}P.build(ctx);
+  const me=spawn(ctx,'squirrel',0,V(-12,0,-70),V(-12,0,100)),
+  rv=spawn(ctx,'squirrel',1,V(-12,0,70),V(-12,0,-100));
+  spawn(ctx,'squirrel',0,V(14,0,-74),V(14,0,100));spawn(ctx,'squirrel',1,V(14,0,74),V(14,0,-100));
+  return[
+  {name:'Standoff',note:'Long lens, side-on, a slow slide across the gap between the two lines.',k:'move',dur:2.3,p0:V(150,6,-26),p1:V(150,6,26),l0:V(0,2,-8),l1:V(0,2,8),f0:34,f1:30,ease:'smooth',cap:[title('Joust',.3,1.8)]},
+  {name:'Lance to lance',note:'Half-circle around the empty middle, low; both lines sweep past.',k:'orbit',dur:2.4,c:V(0,0,0),r0:34,r1:30,h0:3,h1:6,a0:90,a1:270,f0:72,ease:'inOut',cap:[sub('Fly straight at them. Hit first.',.4,1.7)]},
+  {name:'Over the shoulder',note:'Behind you, pushing in on the rival across from you.',k:'move',dur:1.7,p0:me.localToWorld(V(5,4,-14)),p1:me.localToWorld(V(3,3.4,18)),l0:rv.position.clone(),l1:rv.position.clone(),f0:52,f1:30,ease:'inOut',cap:[stat('First domain to the joust target')]}];}});
+
+M({key:'scurry',name:'Scurry',group:0,hull:'Squirrel',concept:'Crystal roll call',
+pitch:'A beat of hard cuts, one per crystal, each a quick push-in. Then the camera lifts straight up and turns until every crystal is on screen at once.',
+build(ctx){kitBase(ctx);const r=rng(21),cs=[];for(let i=0;i<10;i++){const a=i/10*6.283+r()*.4,rad=60+r()*120;cs.push(V(Math.cos(a)*rad,(r()-.5)*90,Math.sin(a)*rad));}
+  cs.forEach(p=>crystal(ctx,p,0xeaf7ff,4.5));grid(ctx,'squirrel',V(0,-20,-200),V(0,0,1),6,{cols:3,spacing:11});
+  const list=cs.slice(0,6).map((p,i)=>{const d=V(Math.cos(i*2.1),.3+(i%2)*.3,Math.sin(i*2.1)).normalize();return{p:p.clone().addScaledVector(d,30),l:p,f:50};});
+  return[
+  {name:'Roll call',note:'Six hard cuts on the beat, one crystal each, a short push-in on every cut.',k:'cuts',dur:3.3,list,push:10,zoom:6,cap:[title('Scurry',.2,1.6),sub('Every crystal. As fast as you can.',1.9,1.4)]},
+  {name:'All of them',note:'Lift straight up from the middle and turn; all ten crystals land in one frame.',k:'move',dur:2.3,p0:V(0,60,.1),p1:V(0,330,.1),l0:V(0,0,0),l1:V(0,0,0),f0:70,f1:58,r0:0,r1:.7,ease:'inOut',cap:[stat('10 crystals')]},
+  {name:'Drop to the line',note:'Fall from the top shot down toward the start line.',k:'move',dur:1.6,p0:V(0,330,.1),p1:V(40,10,-150),l0:V(0,0,0),l1:V(0,-20,-200),f0:58,f1:55,ease:'inOut'}];}});
+
+M({key:'maelstrom',name:'Maelstrom',group:0,hull:'Any',concept:'Eye of the storm',
+pitch:'The tournament is a storm of games. Spiral down through the vortex past the three games orbiting it, end in the calm eye, then find your seat.',
+build(ctx){kitBase(ctx,{tint:0x5a3c9a});const R=ctx.R,n=3200,pos=new Float32Array(n*3),cl=new Float32Array(n*3),C=new T3.Color();
+  for(let i=0;i<n;i++){const h=hash(i),arm=i%3,a=h*12+arm*2.094,y=(hash(i+7)-.5)*220,rad=18+Math.abs(y)*.55+hash(i+3)*40;pos[i*3]=Math.cos(a)*rad;pos[i*3+1]=y;pos[i*3+2]=Math.sin(a)*rad;C.set(col(arm)).lerp(new T3.Color(0xffffff),.35);cl[i*3]=C.r;cl[i*3+1]=C.g;cl[i*3+2]=C.b;}
+  const g=new T3.BufferGeometry();g.setAttribute('position',new T3.BufferAttribute(pos,3));g.setAttribute('color',new T3.BufferAttribute(cl,3));
+  const vort=new T3.Points(g,new T3.PointsMaterial({size:2.2,vertexColors:true,transparent:true,opacity:.85,blending:T3.AdditiveBlending,depthWrite:false}));ctx.scene.add(vort);
+  ctx.ticks.push(T=>{vort.rotation.y=T*.45;});
+  const eye=glow(0xffffff,60,.5);ctx.scene.add(eye);
+  const tok=new T3.Group();ctx.scene.add(tok);
+  const t1=crystal(ctx,V(95,10,0),0xeaf7ff,6);tok.add(t1);
+  const l1=new T3.Mesh(new T3.CylinderGeometry(.8,.8,30,6),stdMat(col(0),.5));l1.rotation.z=.8;const l2=l1.clone();l2.material=stdMat(col(1),.5);l2.rotation.z=-.8;const lg=new T3.Group();lg.add(l1,l2);lg.position.set(-48,-6,82);tok.add(lg);
+  const t3=new T3.Group();for(let i=0;i<4;i++){const m=new T3.Mesh(new T3.OctahedronGeometry(3,0),stdMat(0xeaf7ff,.8));m.position.set((hash(i)-.5)*16,(hash(i+5)-.5)*12,(hash(i+9)-.5)*16);t3.add(m);}t3.position.set(-48,14,-82);tok.add(t3);
+  ctx.ticks.push(T=>{tok.rotation.y=-T*.25;});
+  for(let i=0;i<6;i++){const a=i/6*6.283;spawn(ctx,'squirrel',i%3,V(Math.cos(a)*40,-60,Math.sin(a)*40),V(0,-60,0));}
+  return[
+  {name:'Into the storm',note:'A descending spiral from outside the vortex down toward its eye; the three games orbit past.',k:'orbit',dur:3.8,c:V(0,0,0),r0:230,r1:50,h0:170,h1:12,a0:0,a1:300,f0:62,f1:74,ease:'inOut',cap:[title('Maelstrom',.5,2),sub('Skim Race · Joust · Scurry',2.3,1.4)]},
+  {name:'The eye',note:'Vertigo looking down into the calm centre.',k:'vertigo',dur:1.8,target:V(0,-20,0),dir:V(.2,1,.25),d0:45,d1:140,f0:70,ease:'inOut',cap:[stat('Race to the crown')]},
+  {name:'Lineup',note:'Low circle around the ring of pilots waiting below the eye.',k:'orbit',dur:1.6,c:V(0,-60,0),r0:70,h0:8,a0:200,a1:260,f0:58,ease:'smooth'}];}});
+
+M({key:'headlong',name:'Headlong',group:1,hull:'Rhino',concept:'Flat out',
+pitch:'A chase camera with nothing to chase: the lens runs the circuit at blinding speed and banks into every corner, then pulls high to show the whole loop.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:41,n:7,gates:12});grid(ctx,'rhino',k.origin,k.startTan,6);
+  return[
+  {name:'Flat out',note:'Lens at hull height on the racing line, banking into corners, FOV pushed wide.',k:'path',dur:3.2,curve:k.curve,u0:.06,u1:.6,off:V(0,2.4,0),ahead:.025,f0:88,f1:100,bank:1.3,ease:'linear',fx:[speed(0,3.2,1.2)],cap:[title('Headlong',.6,1.8)]},
+  {name:'The loop',note:'Swing up and round to show the whole circuit.',k:'orbit',dur:2.3,c:V(0,0,0),r0:200,r1:250,h0:90,h1:150,a0:30,a1:90,f0:60,ease:'inOut',cap:[sub('Thread the corner flat out, or pay six seconds.',.3,1.9)]},
+  {name:'Start gate',note:'Push down through the gold start gate toward the grid.',k:'move',dur:1.5,p0:k.start.clone().addScaledVector(k.startTan,40).add(V(0,25,0)),p1:k.start.clone().addScaledVector(k.startTan,8).add(V(0,4,0)),l0:k.start,l1:k.origin,f0:60,f1:55,ease:'inOut',cap:[stat('Lead runner home wins')]}];}});
+
+M({key:'redline',name:'Redline',group:1,hull:'Manta',concept:'Rev to the limit',
+pitch:'The intro is the throttle. Field of view climbs from 55 to 112 while the camera runs the line, the title lands with a flash at the top, then a slow corner study.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:57,n:9,gates:14,wobble:.6});grid(ctx,'manta',k.origin,k.startTan,6);
+  const cp=k.curve.getPointAt(.35);
+  return[
+  {name:'Ramp up',note:'Starts calm, ends screaming; speed lines grow with the FOV.',k:'path',dur:3.2,curve:k.curve,u0:.02,u1:.42,off:V(0,3,0),ahead:.03,f0:55,f1:112,bank:1,ease:'in',fx:[speed(1.2,2,1.4),flash(3.05,.45)],cap:[title('Redline',3.05,1.9)]},
+  {name:'Corner study',note:'Slow arc around one corner of the circuit, as if the race paused.',k:'orbit',dur:2.1,c:cp,r0:70,h0:22,a0:20,a1:95,f0:55,ease:'smooth',cap:[sub('Both triggers buried is four times cruise.',.2,1.8)]},
+  {name:'Grid',note:'Glide in over the grid.',k:'move',dur:1.5,p0:k.origin.clone().add(V(40,30,0)),p1:k.origin.clone().add(V(15,8,-10)),l0:k.origin,l1:k.start,f0:55,ease:'inOut',cap:[stat('Lead runner home wins')]}];}});
+
+M({key:'switchback',name:'Switchback',group:1,hull:'Dolphin',concept:'Thread the needle',
+pitch:'Fly the course gate to gate, banking with every twisted ring, then pull away to show nobody placed two gates the same way.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:8,layout:'scatter',n:9,gates:10,tilt:1.4,gateR:11});grid(ctx,'dolphin',k.origin,k.startTan,6);
+  return[
+  {name:'Gate to gate',note:'Through the first five gates, rolling with each twist.',k:'path',dur:3.4,curve:k.curve,u0:.0,u1:.5,off:V(0,0,0),ahead:.035,f0:80,f1:86,bank:1.6,spin:.6,ease:'inOut',fx:[speed(.3,3)],cap:[title('Switchback',.5,1.8)]},
+  {name:'Course reveal',note:'Pull back and up until the whole course hangs in frame.',k:'move',dur:2.2,p0:k.curve.getPointAt(.5).add(V(0,10,0)),p1:V(-40,170,-280),l0:k.curve.getPointAt(.55),l1:V(0,0,0),f0:80,f1:58,ease:'inOut',cap:[sub('Every gate in order. Every gate twisted.',.3,1.8)]},
+  {name:'First gate',note:'Drop back to the first gate, framed from behind the grid.',k:'move',dur:1.5,p0:V(-40,170,-280),p1:k.origin.clone().addScaledVector(k.startTan,-14).add(V(0,8,0)),l0:V(0,0,0),l1:k.gates[0].p,f0:58,f1:56,ease:'inOut',cap:[stat('Lead runner home wins')]}];}});
+
+M({key:'breakwater',name:'Breakwater',group:1,hull:'Sparrow',concept:'Station approach',
+pitch:'Head-on at a station, close enough to read the danger weave, and straight through its eye. Then up and along the chain of walls that waits.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:13,n:8,gates:14,noRings:true,rad:.62});
+  const P=Prisms();k.gates.forEach((g,i)=>{const q=qAlign(g.t),fr=frame(g.t);
+    for(let j=0;j<22;j++){const a=j/22*6.283,rad=18+12,dir=fr.side.clone().multiplyScalar(Math.cos(a)).addScaledVector(fr.up,Math.sin(a));P.add(g.p.clone().addScaledVector(dir,rad).addScaledVector(g.t,6),qDir(dir.clone().addScaledVector(g.t,-.8)),V(7,7,1.2),i===0?0xffe08a:0x8b9bd8);}
+    for(let j=0;j<8;j++){const a=j/8*6.283,dir=fr.side.clone().multiplyScalar(Math.cos(a)).addScaledVector(fr.up,Math.sin(a)),perp=fr.side.clone().multiplyScalar(-Math.sin(a)).addScaledVector(fr.up,Math.cos(a));P.add(g.p.clone().addScaledVector(dir,12),qDir(perp),V(1.4,1.4,20),0xff4d3d);}});
+  P.build(ctx);grid(ctx,'sparrow',k.origin.clone().addScaledVector(k.startTan,-10),k.startTan,6);
+  const s=k.gates[1];
+  return[
+  {name:'Approach',note:'Straight at a station along its axis and through the 18-unit eye.',k:'move',dur:2.7,p0:s.p.clone().addScaledVector(s.t,-110).add(V(0,6,0)),p1:s.p.clone().addScaledVector(s.t,14),l0:s.p,l1:s.p.clone().addScaledVector(s.t,60),f0:50,f1:84,ease:'in',fx:[flash(2.45,.35)],cap:[title('Breakwater',.3,1.9)]},
+  {name:'Chain of walls',note:'High along the circuit, station after station sliding underneath.',k:'path',dur:2.4,curve:k.curve,u0:.12,u1:.42,off:V(0,46,0),ahead:.06,lookUp:-.4,f0:66,ease:'inOut',cap:[sub('Shoot a door. Saw it open. Or thread the eye.',.25,1.9)]},
+  {name:'Start gate',note:'Settle in behind the gold start station.',k:'move',dur:1.5,p0:k.start.clone().add(V(0,60,0)),p1:k.origin.clone().addScaledVector(k.startTan,-30).add(V(0,10,0)),l0:k.start,l1:k.start,f0:60,f1:56,ease:'inOut',cap:[stat('14 stations · 2 laps')]}];}});
+
+M({key:'skein',name:'Skein',group:1,hull:'Urchin',concept:'Knot and strand',
+pitch:'Circle the trefoil knot so its shape reads, then drop onto one breathing strand and ride it as it swings out and back in.',
+build(ctx){kitBase(ctx);const s=46,knot=new FnCurve(t=>{const a=t*6.2832;return V(Math.sin(a)+2*Math.sin(2*a),-Math.sin(3*a)*.9,Math.cos(a)-2*Math.cos(2*a)).multiplyScalar(s);},true);
+  tube(ctx,knot,3.2,0xdfe6ff,.35,420,true);
+  const fr=knot.computeFrenetFrames(600,true),strands=[];
+  for(let k=0;k<4;k++){const pts=[];for(let j=0;j<600;j+=3){const u=j/600,p=knot.getPointAt(u),phi=k*1.5708+u*6.2832*3,rad=18+9*Math.sin(u*6.2832*5+k);pts.push(p.addScaledVector(fr.normals[j],Math.cos(phi)*rad).addScaledVector(fr.binormals[j],Math.sin(phi)*rad));}
+    const c=new T3.CatmullRomCurve3(pts,true);strands.push(c);
+    [[.02,.3],[.36,.62],[.68,.95]].forEach(([a,b])=>{const sp=[];for(let i=0;i<=60;i++)sp.push(c.getPointAt(lerp(a,b,i/60)));tube(ctx,new T3.CatmullRomCurve3(sp),.9,col(k),.5,120);});}
+  [0,.5].forEach(u=>ring(ctx,knot.getPointAt(u),qAlign(knot.getTangentAt(u)),34,0xffe08a,.8,1.4));
+  for(let i=0;i<6;i++){const st=strands[i%4],u=.1+i*.14;ring(ctx,st.getPointAt(u),qAlign(st.getTangentAt(u)),6,0xcfd8ff,.6,.6);}
+  const st=knot.getPointAt(0),tt=knot.getTangentAt(0);grid(ctx,'urchin',st.clone().addScaledVector(tt,-30),tt,6,{spacing:12});
+  return[
+  {name:'The knot',note:'Wide orbit with a rising crane so the trefoil reads as one shape.',k:'orbit',dur:2.8,c:V(0,0,0),r0:300,r1:260,h0:40,h1:120,a0:0,a1:100,f0:56,ease:'inOut',cap:[title('Skein',.4,1.9)]},
+  {name:'Ride a strand',note:'Close on one strand as it breathes out and back in.',k:'path',dur:2.8,curve:strands[0],u0:.05,u1:.25,off:V(0,2.5,0),ahead:.02,f0:80,f1:92,bank:1,ease:'linear',fx:[speed(0,2.8)],cap:[sub('Change strands. The fast line runs inside.',.3,1.9)]},
+  {name:'Start collar',note:'Swing back to the wide collar at the start.',k:'move',dur:1.5,p0:st.clone().add(V(60,40,40)),p1:st.clone().addScaledVector(tt,-60).add(V(0,14,0)),l0:st,l1:st,f0:60,f1:56,ease:'inOut',cap:[stat('Thread the last ring')]}];}});
+
+M({key:'waystation',name:'Waystation',group:1,hull:'Butterfly',concept:'Migration',
+pitch:'Weave a coil of rings, then fold: a white-out jump across the cell to the next cluster, exactly the one choice the Fold gives you. Then the map of the whole migration.',
+build(ctx){kitBase(ctx);const R=ctx.R,centers=[V(-R*.5,-20,-R*.35),V(R*.42,30,-R*.05),V(-R*.05,-10,R*.5)],coils=[];
+  centers.forEach((c,k)=>{const pts=[];for(let i=0;i<=24;i++){const a=i/24*Math.PI*3;pts.push(V(c.x+Math.cos(a)*16,c.y+(i/24-.5)*56,c.z+Math.sin(a)*16));}
+    const cu=new T3.CatmullRomCurve3(pts);coils.push(cu);lineOf(ctx,cu,0xb8c6ff,.3,120);
+    [.12,.32,.52,.72,.92].forEach((u,i)=>ring(ctx,cu.getPointAt(u),qAlign(cu.getTangentAt(u)),8,i===4?0xffe08a:0xcfd8ff,.55,.7));
+    ctx.scene.add(glowAt(c.clone(),0x9fb2ff,90,.18));});
+  const st=coils[0].getPointAt(0),tt=coils[0].getTangentAt(0);grid(ctx,'butterfly',st.clone().addScaledVector(tt,-40),tt,6);
+  const e0=coils[0].getPointAt(1),s1=coils[1].getPointAt(0);
+  return[
+  {name:'The coil',note:'Weave through the first cluster, ring to ring.',k:'path',dur:2.5,curve:coils[0],u0:0,u1:1,off:V(0,0,0),ahead:.06,f0:74,ease:'inOut',bank:1,cap:[title('Waystation',.4,1.8)]},
+  {name:'Fold',note:'One white-out jump along the heading you left on; FOV stretches then snaps back.',k:'move',dur:1.0,p0:e0,p1:s1.clone().add(V(0,-12,0)),l0:s1,l1:coils[1].getPointAt(.15),f0:118,f1:66,ease:'expoOut',fx:[flash(0,.5),warp(0,.9)]},
+  {name:'Next coil',note:'Into the second cluster, slower.',k:'path',dur:1.9,curve:coils[1],u0:0,u1:.8,off:V(0,0,0),ahead:.06,f0:70,ease:'out',bank:1,cap:[sub('Thread the last ring on the line you want to leave on.',.1,1.8)]},
+  {name:'Migration map',note:'Rise to see all three clusters and the jumps between them.',k:'move',dur:1.8,p0:coils[1].getPointAt(.8).add(V(0,20,0)),p1:V(0,330,-60),l0:centers[1],l1:V(0,0,0),f0:70,f1:60,ease:'inOut',cap:[stat('Lead runner home wins')]}];}});
+
+M({key:'grizzlytime',name:'Grizzly Time',group:1,hull:'Grizzly',concept:'Bomb launch',
+pitch:'Hold behind the Grizzly for a beat. A bomb flash, and the camera is thrown down the circuit on the blast, decelerating into the first corner.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:71,n:7,gates:10});const g=grid(ctx,'grizzly',k.origin,k.startTan,4);const me=g[0];
+  return[
+  {name:'Fuse',note:'Still, close behind the hull; a slight tremor builds.',k:'move',dur:1.1,p0:me.localToWorld(V(3,4,-14)),p1:me.localToWorld(V(2,3.5,-11)),l0:me.localToWorld(V(0,1,20)),l1:me.localToWorld(V(0,1,20)),f0:55,f1:50,shake:.15,ease:'in',cap:[title('Grizzly Time',.15,1.6)]},
+  {name:'Blast launch',note:'Flash, then the lens rides the blast down the line, fast then slowing.',k:'path',dur:2.4,curve:k.curve,u0:-.0,u1:.3,off:V(0,3,0),ahead:.03,f0:105,f1:70,bank:1,ease:'expoOut',shake:.8,shakeDecay:true,fx:[flash(0,.45),speed(0,1.4,1.5)],cap:[sub('Your speed is your bombs.',.7,1.6)]},
+  {name:'The circuit',note:'Pull up to show the loop you will bomb your way around.',k:'orbit',dur:2.0,c:V(0,0,0),r0:210,h0:110,a0:-40,a1:20,f0:58,ease:'inOut',cap:[stat('Against the clock')]}];}});
+
+M({key:'slingshot',name:'Slingshot',group:1,hull:'Stoat',concept:'Gravity well',
+pitch:'Orbit a pole tighter and faster until it lets go, then sling out along the tangent onto the circuit. The pole does the steering; so does the camera.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:64,n:7,gates:10});
+  const poles=[];[.22,.55,.82].forEach((u,i)=>{const p=k.curve.getPointAt(u),fr=frame(k.curve.getTangentAt(u)),pp=p.addScaledVector(fr.side,i%2?28:-28);
+    const m=new T3.Mesh(new T3.SphereGeometry(6,20,14),new T3.MeshStandardMaterial({color:0x05030a,roughness:.2,metalness:.8}));m.position.copy(pp);ctx.scene.add(m);
+    const rg=ring(ctx,pp,qAlign(V(.3,1,.2)),11,0xb48cff,.9,.5);ctx.scene.add(glowAt(pp.clone(),0x8a5cff,46,.45));ctx.ticks.push(T=>{rg.rotation.z=T*2;});poles.push(pp);});
+  grid(ctx,'stoat',k.origin,k.startTan,6);const pole=poles[0],u0=.22;
+  return[
+  {name:'Gravity well',note:'A tightening, accelerating orbit around a pole.',k:'orbit',dur:2.4,c:pole,r0:46,r1:18,h0:10,h1:3,a0:0,a1:330,f0:60,f1:78,ease:'in',cap:[title('Slingshot',.4,1.7)]},
+  {name:'Sling out',note:'Released onto the circuit on the tangent, fast.',k:'path',dur:2.1,curve:k.curve,u0:u0,u1:u0+.25,off:V(0,3,0),ahead:.03,f0:96,f1:76,bank:1.2,ease:'expoOut',fx:[flash(0,.3),speed(0,1.6,1.3)],cap:[sub('You cruise slow and turn wide. Your poles do the steering.',.4,1.7)]},
+  {name:'The circuit',note:'High orbit that shows the poles beside the corners.',k:'orbit',dur:1.9,c:V(0,0,0),r0:220,h0:120,a0:120,a1:170,f0:58,ease:'inOut',cap:[stat('Lead runner home wins')]}];}});
+
+M({key:'warpline',name:'Warpline',group:1,hull:'Stoat',concept:'Bent light',
+pitch:'Space itself bends: down a long leg with the lens breathing in and out like gravitational lensing, then a study of the dipole that does it.',
+build(ctx){kitBase(ctx,{tint:0x4a2f8a});const k=kitCircuit(ctx,{seed:65,n:5,gates:10,rad:.66,wobble:.3,jitter:.2});
+  const u=.3,p=k.curve.getPointAt(u),fr=frame(k.curve.getTangentAt(u)),A=p.clone().addScaledVector(fr.side,30),B=p.clone().addScaledVector(fr.side,-30).addScaledVector(fr.t,40);
+  [A,B].forEach((pp,i)=>{const m=new T3.Mesh(new T3.SphereGeometry(6,20,14),new T3.MeshStandardMaterial({color:i?0xf2f0ff:0x05030a,roughness:.2,metalness:.7,emissive:i?0x8888ff:0,emissiveIntensity:.4}));m.position.copy(pp);ctx.scene.add(m);ctx.scene.add(glowAt(pp.clone(),i?0x9fb2ff:0x8a5cff,50,.45));});
+  const mid=A.clone().add(B).multiplyScalar(.5);grid(ctx,'stoat',k.origin,k.startTan,6);
+  return[
+  {name:'Long leg',note:'Down a long leg; FOV breathes ±22° like light bending.',k:'path',dur:3.1,curve:k.curve,u0:.02,u1:.27,off:V(0,3,0),ahead:.03,f0:72,fovWave:[22,2.3],bank:.8,ease:'linear',fx:[warp(0,3.1)],cap:[title('Warpline',.5,1.9)]},
+  {name:'Dipole',note:'Slow arc around the black and white pole pair.',k:'orbit',dur:2.1,c:mid,r0:90,h0:26,a0:-40,a1:50,f0:56,ease:'smooth',cap:[sub('Lay the poles. Warp the line. Fly it faster.',.2,1.9)]},
+  {name:'Grid',note:'Back to the start.',k:'move',dur:1.4,p0:k.origin.clone().add(V(40,40,0)),p1:k.origin.clone().add(V(10,9,-12)),l0:k.origin,l1:k.start,f0:58,f1:55,ease:'inOut',cap:[stat('Time is everything')]}];}});
+
+M({key:'threshertime',name:'Thresher Time',group:1,hull:'Thresher',concept:'Sling release',
+pitch:'The hammer throw. The camera winds tight around the planted ball, faster each lap, then lets go along the tangent and flies the line the release gives it.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:66,n:7,gates:10});const g=grid(ctx,'default',k.origin,k.startTan,4);
+  const ball=k.curve.getPointAt(.04).add(V(0,0,0));const bm=new T3.Mesh(new T3.IcosahedronGeometry(4,1),stdMat(col(0),.5));bm.position.copy(ball);ctx.scene.add(bm);
+  const chain=new T3.Line(new T3.BufferGeometry().setFromPoints([g[0].position,ball]),new T3.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.5}));ctx.scene.add(chain);
+  return[
+  {name:'Wind the chain',note:'Orbit the ball, radius shrinking, speed climbing.',k:'orbit',dur:2.4,c:ball,r0:44,r1:16,h0:6,h1:2,a0:0,a1:520,f0:58,f1:80,ease:'in',cap:[title('Thresher Time',.3,1.7)]},
+  {name:'Release',note:'Let go on the tangent and ride the momentum down the line.',k:'path',dur:2.0,curve:k.curve,u0:.05,u1:.3,off:V(0,3,0),ahead:.03,f0:100,f1:72,bank:1,ease:'expoOut',fx:[flash(0,.3),speed(0,1.5,1.3)],cap:[sub('Plant the ball. Orbit it. Let go.',.4,1.5)]},
+  {name:'The circuit',note:'High orbit of the loop.',k:'orbit',dur:1.9,c:V(0,0,0),r0:220,h0:120,a0:60,a1:110,f0:58,ease:'inOut',cap:[stat('Against the clock')]}];}});
+
+M({key:'wrasserun',name:'Wrasse Run',group:1,hull:'Wrasse and Grouper',concept:'Kite line',
+pitch:'Two pilots, one tether. The camera slides up the line from the Grouper\'s plane to the Wrasse\'s kite, then watches the kite swing through a lit ring.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:68,n:8,gates:12,gateR:12});const g=grid(ctx,'wrasse',k.origin,k.startTan,4);const me=g[0];
+  const kitePos=me.localToWorld(V(0,16,-26));const kite=new T3.Mesh(new T3.OctahedronGeometry(3,0),stdMat(col(0),.55));kite.scale.set(1.6,.35,1);kite.position.copy(kitePos);ctx.scene.add(kite);
+  ctx.scene.add(new T3.Line(new T3.BufferGeometry().setFromPoints([me.position,kitePos]),new T3.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.6})));
+  ctx.ticks.push(T=>{kite.rotation.y=Math.sin(T*1.3)*.5;});
+  return[
+  {name:'Tether',note:'From the Grouper\'s plane, up the line to the Wrasse\'s kite.',k:'move',dur:2.1,p0:me.localToWorld(V(6,2,4)),p1:me.localToWorld(V(5,19,-18)),l0:me.position.clone(),l1:kitePos,f0:52,f1:60,ease:'inOut',cap:[title('Wrasse Run',.3,1.8)]},
+  {name:'Through the lit ring',note:'At kite height down the line, threading rings.',k:'path',dur:2.6,curve:k.curve,u0:0,u1:.3,off:V(0,0,0),ahead:.04,f0:78,bank:1,ease:'inOut',fx:[speed(.4,2)],cap:[sub('The Grouper flies the plane. The Wrasse takes the ring.',.3,1.9)]},
+  {name:'The circuit',note:'Up and round.',k:'orbit',dur:1.7,c:V(0,0,0),r0:220,h0:110,a0:0,a1:50,f0:58,ease:'inOut',cap:[stat('Only the Wrasse counts')]}];}});
+
+/* boneyard */
+function kitBoneyard(ctx,o={}){
+  const r=rng(o.seed||17),R=ctx.R,hulks=[],dark=stdMat(0x3a4058,.08,{metalness:.5,roughness:.55}),rust=stdMat(0x5a4a52,.05,{metalness:.4});
+  const spots=[V(-40,10,20),V(90,-30,-60),V(-120,30,-90),V(60,40,110),V(-90,-50,120),V(150,10,50),V(10,-60,-150)];
+  spots.forEach((pos,i)=>{const axis=V(r()-.5,(r()-.5)*.4,r()-.5).normalize(),len=60+r()*50,rad=12+r()*10,q=qAlign(axis),g=new T3.Group();g.position.copy(pos);g.quaternion.copy(q);
+    const n=Math.floor(len/9);for(let j=0;j<n;j++){const t=new T3.Mesh(new T3.TorusGeometry(rad*(1-.25*Math.abs(j/n-.5)*2),1.3,5,18,Math.PI*(1.1+r()*.5)),j%3?dark:rust);t.position.z=-len/2+j*9;t.rotation.z=r()*.4-Math.PI*.05;g.add(t);}
+    const sp=new T3.Mesh(BOX,dark);sp.scale.set(2.2,2.2,len);sp.position.y=-rad*.9;g.add(sp);
+    for(let j=0;j<5;j++){const pl=new T3.Mesh(BOX,rust);pl.scale.set(6+r()*8,.8,8+r()*8);pl.position.set((r()-.5)*rad,rad*.9,(r()-.5)*len*.8);pl.rotation.z=(r()-.5)*.6;g.add(pl);}
+    ctx.scene.add(g);hulks.push({pos,axis,len,rad,g});});
+  const P=Prisms();for(let i=0;i<420;i++){const a=r()*6.283,u=r()*2-1,q2=Math.sqrt(1-u*u),rr=R*(.2+r()*.65),s=1+r()*5;P.add(V(Math.cos(a)*q2*rr,u*rr*.6,Math.sin(a)*q2*rr),qDir(V(r()-.5,r()-.5,r()-.5)),V(s,s*.6,s*1.4),r()<.5?0x4a5068:0x6a5a64);}
+  P.build(ctx);return{hulks};
+}
+
+M({key:'dogfight',name:'Dog Fight',group:2,hull:'Sparrow',concept:'Wreck recon',
+pitch:'Handheld, like a pilot scouting: drift through the ribs of a dead hulk, out into a canyon of rubble, then a long-lens push onto the rivals waiting across the Boneyard.',
+build(ctx){kitBase(ctx,{fog:.0016});const b=kitBoneyard(ctx,{seed:17}),h=b.hulks[0];
+  const me=spawn(ctx,'sparrow',0,V(-30,0,-160),V(0,0,0));spawn(ctx,'sparrow',0,V(-50,6,-150),V(0,0,0));
+  const rv=spawn(ctx,'sparrow',1,V(170,20,130),V(0,0,0));spawn(ctx,'sparrow',1,V(150,30,150),V(0,0,0));
+  const a=h.pos.clone().addScaledVector(h.axis,-h.len/2-15),bb=h.pos.clone().addScaledVector(h.axis,h.len/2+15);
+  const canyon=new T3.CatmullRomCurve3([bb,V(60,0,30),V(120,-10,70),V(140,10,110)]);
+  return[
+  {name:'Through the wreck',note:'A handheld drift down the inside of a hollow hulk.',k:'move',dur:2.7,p0:a,p1:bb,l0:h.pos.clone().addScaledVector(h.axis,10),l1:bb.clone().addScaledVector(h.axis,40),f0:72,shake:.45,ease:'smooth',cap:[title('Dog Fight',.6,1.9)]},
+  {name:'Canyon run',note:'Out of the hulk and through the rubble toward the rivals.',k:'path',dur:2.0,curve:canyon,u0:0,u1:.75,off:V(0,2,0),ahead:.08,f0:82,bank:1,ease:'inOut',fx:[speed(0,2)],cap:[sub('Guns score 1. Missiles score 50.',.3,1.6)]},
+  {name:'Rivals',note:'Long lens push onto the rival pair.',k:'move',dur:1.7,p0:V(60,10,40),p1:V(100,16,80),l0:rv.position.clone(),l1:rv.position.clone(),f0:30,f1:20,shake:.2,ease:'inOut',cap:[stat('First domain to the target')]}];}});
+
+/* forests: cacti grow from the membrane toward the centre */
+function cactus(P,base,dir,h,c,r){const up=dir.clone().normalize(),q=qDir(up),seg=4.2,n=Math.max(3,Math.floor(h/seg));
+  for(let i=0;i<n;i++)P.add(base.clone().addScaledVector(up,i*seg+seg/2),q,V(3.6,3.6,seg*.92),c);
+  const fr=frame(up.clone().add(V(.01,.02,.03)));
+  for(let k=0;k<2;k++){if(r()<.25)continue;const at=Math.floor(n*(.35+r()*.35)),sd=(k?fr.side:fr.side.clone().negate()).applyAxisAngle(up,r()*1.2),o=base.clone().addScaledVector(up,at*seg);
+    for(let j=1;j<=2;j++)P.add(o.clone().addScaledVector(sd,j*seg),qDir(sd),V(3,3,seg*.92),c);
+    const top=o.clone().addScaledVector(sd,2*seg);for(let j=1;j<=3;j++)P.add(top.clone().addScaledVector(up,j*seg),q,V(3,3,seg*.92),c);}}
+function kitForest(ctx,o={}){const R=ctx.R,r=rng(o.seed||31),P=Prisms(),bases=[];const pal=o.pal||[0x5a72d8,0x6a84ff,0x4b5fb0,0x7f8fe8];
+  for(let i=0;i<(o.n||70);i++){let d;for(let t=0;t<20;t++){const u=r()*2-1,a=r()*6.283,q=Math.sqrt(1-u*u);d=V(q*Math.cos(a),u,q*Math.sin(a));if(o.band?Math.abs(d.y)<o.band:(d.y<(o.below??-.15)))break;}
+    const base=d.clone().multiplyScalar(R*(o.shell||.97)),h=(o.h0||40)+r()*(o.h1||70);cactus(P,base,d.clone().negate(),h,pal[i%pal.length],r);bases.push({base,dir:d.clone().negate(),h});}
+  return{P,bases};}
+
+M({key:'bends',name:'The Bends',group:2,hull:'Dolphin',concept:'High noon',
+pitch:'A spaghetti-western duel in the cactus forest: a wide low shot between the trunks, a draw-speed vertigo on the rival, then a slow circle around the two of you.',
+build(ctx){kitBase(ctx);const F=kitForest(ctx,{seed:42,n:85,below:-.1,h0:50,h1:90});F.P.build(ctx);
+  const me=spawn(ctx,'dolphin',0,V(-50,-70,0),V(50,-70,0)),rv=spawn(ctx,'dolphin',1,V(50,-70,0),V(-50,-70,0));
+  spawn(ctx,'dolphin',0,V(-58,-64,16),V(50,-70,0));spawn(ctx,'dolphin',1,V(58,-64,-16),V(-50,-70,0));
+  return[
+  {name:'High noon',note:'Low and wide between the trunks, long lens, both pilots tiny in frame.',k:'move',dur:2.3,p0:V(-10,-96,-170),p1:V(8,-94,-150),l0:V(0,-74,0),l1:V(0,-72,0),f0:30,f1:28,ease:'smooth',cap:[title('The Bends',.3,1.9)]},
+  {name:'The draw',note:'Snap vertigo onto the rival: they hold size, the forest lunges.',k:'vertigo',dur:1.6,target:rv.position.clone(),dir:V(-1,.15,-.25),d0:70,d1:22,f0:24,ease:'expoOut',fx:[flash(0,.2)],cap:[sub('No guns. Only the blast.',.4,1.2)]},
+  {name:'Circle',note:'Slow orbit around both pilots.',k:'orbit',dur:2.0,c:V(0,-70,0),r0:90,h0:14,a0:200,a1:300,f0:52,ease:'smooth',cap:[stat('First domain to the bend target')]}];}});
+
+/* cages */
+function cageBars(P,rad,detail,c,th){const g=new T3.IcosahedronGeometry(rad,detail),e=new T3.EdgesGeometry(g),a=e.attributes.position.array;
+  for(let i=0;i<a.length;i+=6){const p=V(a[i],a[i+1],a[i+2]),q2=V(a[i+3],a[i+4],a[i+5]),d=q2.clone().sub(p);P.add(p.clone().add(q2).multiplyScalar(.5),qDir(d),V(th,th,d.length()),c);}g.dispose();e.dispose();}
+function kitCages(ctx){const P=Prisms();cageBars(P,210,2,0x7c86b8,1.4);cageBars(P,120,1,0x9aa4d8,1.8);cageBars(P,45,0,0xd0d6ff,2.2);P.build(ctx);
+  const n=260,sw=new T3.InstancedMesh(new T3.TetrahedronGeometry(1.6),stdMat(0xffb36b,.45),n),M4=new T3.Matrix4(),q=new T3.Quaternion(),s=V(1,1,1);ctx.scene.add(sw);
+  ctx.ticks.push(T=>{for(let i=0;i<n;i++){const a=hash(i)*6.283+T*(.18+hash(i+3)*.2),u=hash(i+11)*2-1,qq=Math.sqrt(1-u*u),rr=140+hash(i+5)*60,p=V(Math.cos(a)*qq*rr,u*rr,Math.sin(a)*qq*rr);q.setFromAxisAngle(UP,a);M4.compose(p,q,s);sw.setMatrixAt(i,M4);}sw.instanceMatrix.needsUpdate=true;});
+  const mids=[];for(let i=0;i<10;i++){const m=new T3.Mesh(new T3.IcosahedronGeometry(5,0),stdMat(0xff7a59,.4));ctx.scene.add(m);mids.push(m);}
+  ctx.ticks.push(T=>mids.forEach((m,i)=>{const a=i/10*6.283+T*.3,rr=70+30*Math.sin(i);m.position.set(Math.cos(a)*rr,Math.sin(T*.5+i)*40,Math.sin(a)*rr);m.rotation.y=T;}));
+  const core=new T3.Group(),cm=new T3.Mesh(new T3.IcosahedronGeometry(14,1),stdMat(0xff3d6e,.5));core.add(cm);const sg=new T3.ConeGeometry(2.4,12,5);
+  for(let i=0;i<16;i++){const u=hash(i+60)*2-1,a=hash(i+70)*6.283,qq=Math.sqrt(1-u*u),d=V(qq*Math.cos(a),u,qq*Math.sin(a)),sp=new T3.Mesh(sg,cm.material);sp.position.copy(d.clone().multiplyScalar(17));sp.quaternion.setFromUnitVectors(UP,d);core.add(sp);}
+  ctx.scene.add(core);ctx.ticks.push(T=>{core.rotation.y=T*.3;core.rotation.x=Math.sin(T*.4)*.3;});return{core};}
+
+M({key:'wildlifeliberation',name:'Wildlife Liberation',group:2,hull:'Sparrow',concept:'Breach',
+pitch:'Break in the way you will: through the outer cage into the swarm, through the middle cage past the big ones, into the core face to face with the worst. Then snap back out to your start.',
+build(ctx){kitBase(ctx);kitCages(ctx);grid(ctx,'sparrow',V(0,0,-232),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Outer swarm',note:'Through the outer bars into the swarm.',k:'move',dur:2.1,p0:V(14,22,300),p1:V(8,14,180),l0:V(0,0,0),l1:V(0,0,0),f0:58,f1:64,ease:'inOut',cap:[title('Wildlife Liberation',.3,1.8)]},
+  {name:'Middle room',note:'Through the second cage; bigger things circle.',k:'move',dur:1.8,p0:V(8,14,165),p1:V(4,10,96),l0:V(0,0,0),l1:V(0,0,0),f0:64,f1:62,ease:'inOut',cap:[sub('Three cages. Wildlife everywhere.',.1,1.7)]},
+  {name:'The core',note:'Face to face with the core creature; flash on entry, slight tremor.',k:'move',dur:1.6,p0:V(4,10,80),p1:V(2,6,40),l0:V(0,0,0),l1:V(0,0,0),f0:62,f1:46,shake:.25,ease:'out',fx:[flash(0,.35)]},
+  {name:'Snap out',note:'Rip back out of all three cages to the start line.',k:'move',dur:1.3,p0:V(2,6,40),p1:V(30,30,-300),l0:V(0,0,0),l1:V(0,0,-232),f0:46,f1:64,ease:'expoOut',fx:[speed(0,.9,1.3)],cap:[stat('First pilot to the kill target',.3,1.4)]}];}});
+
+M({key:'undertow',name:'Undertow',group:2,hull:'Scarab',concept:'Crab along the cage',
+pitch:'The Scarab\'s plate hits sideways, so the camera moves sideways: a long crab along the cage wall beside the wildlife, a whip of a dash, then the whole caged arena.',
+build(ctx){kitBase(ctx);kitCages(ctx);grid(ctx,'scarab',V(0,0,-232),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Crab',note:'A slow sideways track along the middle cage, wildlife drifting past.',k:'orbit',dur:2.7,c:V(0,0,0),r0:132,h0:6,a0:-30,a1:20,l:V(0,0,0),f0:60,ease:'smooth',cap:[title('Undertow',.4,1.9)]},
+  {name:'Plate dash',note:'A lateral whip, as fast as the juke dash.',k:'orbit',dur:.9,c:V(0,0,0),r0:132,h0:6,a0:20,a1:62,f0:72,ease:'expoOut',fx:[flash(0,.25),speed(0,.8,1.4)],cap:[sub('Dash beside them. Strip them bare.',.1,1.6)]},
+  {name:'The cages',note:'Up and out to the whole caged arena.',k:'orbit',dur:2.2,c:V(0,0,0),r0:150,r1:320,h0:10,h1:130,a0:62,a1:110,f0:60,ease:'inOut',cap:[stat('Bends and kills · first domain to the target',.5,1.6)]}];}});
+
+M({key:'dustup',name:'Dustup',group:2,hull:'Butterfly',concept:'Overhead pass',
+pitch:'The Butterfly hits by flying over you, so the intro looks straight down on a rival from above, turning, then falls past them the way the dust will.',
+build(ctx){kitBase(ctx,{fog:.0015});kitBoneyard(ctx,{seed:23});
+  spawn(ctx,'butterfly',0,V(-40,-10,-170),V(0,0,0));spawn(ctx,'butterfly',0,V(-60,-4,-160),V(0,0,0));
+  const rv=spawn(ctx,'butterfly',1,V(80,0,40),V(0,0,-100));spawn(ctx,'butterfly',2,V(-120,10,90),V(0,0,0));
+  const dust=new T3.Mesh(new T3.CylinderGeometry(3,1,18,8,1,true),new T3.MeshBasicMaterial({color:0xfff2c8,transparent:true,opacity:.25,blending:T3.AdditiveBlending,depthWrite:false,side:T3.DoubleSide}));dust.position.copy(rv.position).add(V(0,-11,0));ctx.scene.add(dust);
+  return[
+  {name:'Overhead',note:'Straight down on a rival, slowly turning.',k:'orbit',dur:2.4,c:rv.position.clone(),r0:4,h0:56,h1:42,a0:0,a1:120,f0:50,ease:'smooth',cap:[title('Dustup',.4,1.8)]},
+  {name:'Dust fall',note:'Fall past the rival through where the dust hangs.',k:'move',dur:1.9,p0:rv.position.clone().add(V(4,40,6)),p1:rv.position.clone().add(V(14,-34,10)),l0:rv.position.clone(),l1:rv.position.clone(),f0:50,f1:64,ease:'inOut',cap:[sub('No guns. Fly over them.',.3,1.5)]},
+  {name:'The Boneyard',note:'Wide sweep of the arena.',k:'orbit',dur:1.9,c:V(0,0,0),r0:240,h0:90,a0:150,a1:200,f0:56,ease:'inOut',cap:[stat('First domain to the target')]}];}});
+
+M({key:'rampage',name:'Rampage',group:3,hull:'Dolphin',concept:'Canopy breach',
+pitch:'Thread the trunks of the forest ring at the membrane, burst up through the canopy, and find the single crystal floating alone in the middle of everything you will destroy.',
+build(ctx){kitBase(ctx);const F=kitForest(ctx,{seed:7,n:90,band:.32,h0:30,h1:70,shell:.98});F.P.build(ctx);const cr=V(0,0,0);crystal(ctx,cr,0xeaf7ff,7);
+  const R=ctx.R,rr=R*.8,loop=new FnCurve(t=>{const a=t*6.283;return V(Math.cos(a)*rr,Math.sin(a*3)*8,Math.sin(a)*rr);},true);
+  grid(ctx,'dolphin',V(0,0,-R*.55),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Through the thorns',note:'Low through the forest ring, trunks whipping past.',k:'path',dur:2.8,curve:loop,u0:.15,u1:.32,off:V(0,0,0),ahead:.02,f0:82,ease:'linear',fx:[speed(0,2.8)],cap:[title('Rampage',.5,1.9)]},
+  {name:'Canopy breach',note:'Rise inward over the canopy and find the crystal.',k:'move',dur:2.2,p0:loop.getPointAt(.32),p1:V(-80,90,90),l0:loop.getPointAt(.34),l1:cr,f0:82,f1:50,ease:'inOut',cap:[sub('One crystal. A whole forest in the way.',.3,1.8)]},
+  {name:'Lonely crystal',note:'Vertigo on the crystal; the forest ring stretches away behind it.',k:'vertigo',dur:1.7,target:cr,dir:V(-.7,.6,.7),d0:30,d1:110,f0:72,ease:'inOut',cap:[stat('First domain to the target')]}];}});
+
+M({key:'cleave',name:'Cleave',group:3,hull:'Rhino',concept:'Blade pass',
+pitch:'The camera is the blade: it runs the edge of a Möbius ribbon of small prisms, close enough to count them, then pulls out to show the interlocked ribbons are the arena and the score.',
+build(ctx){kitBase(ctx);const P=Prisms(),Rm=95,w=24;
+  const mob=(t,s,k)=>{let p=V((Rm+s*Math.cos(t/2))*Math.cos(t),s*Math.sin(t/2),(Rm+s*Math.cos(t/2))*Math.sin(t));if(k){p=V(p.x,p.z,p.y);p.x+=50;}else p.x-=50;return p;};
+  for(let k=0;k<2;k++)for(let i=0;i<120;i++)for(let j=0;j<9;j++){const t=i/120*6.283,s=-w+j*6,p=mob(t,s,k),dt=mob(t+.01,s,k).sub(p),ds=mob(t,s+.5,k).sub(p),n=new T3.Vector3().crossVectors(dt,ds);P.add(p,qDir(n),V(4.6,4.6,1.4),hash(i*9+j+k*999)<.08?0xff4d3d:(k?0xb9c3ff:0xc9b9ff));}
+  P.build(ctx);const edge=new FnCurve(t=>mob(t*6.283,w+5,0),true);
+  grid(ctx,'rhino',V(0,-30,-205),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Blade edge',note:'Skims the ribbon edge, prisms rushing past under the lens.',k:'path',dur:3.0,curve:edge,u0:.55,u1:.78,off:V(0,3,0),ahead:.03,f0:84,ease:'linear',bank:.6,fx:[speed(0,3)],cap:[title('Cleave',.5,1.9)]},
+  {name:'Pull out',note:'Back away from the ribbon until both interlocked ribbons fill the frame.',k:'move',dur:2.4,p0:edge.getPointAt(.78).add(V(0,6,0)),p1:V(140,150,240),l0:edge.getPointAt(.8),l1:V(0,0,0),f0:84,f1:56,ease:'inOut',cap:[sub('Four arenas. One blade. The arena is the score.',.3,1.9)]},
+  {name:'Orbit',note:'A slow turn around the ribbons.',k:'orbit',dur:1.8,c:V(0,0,0),r0:290,h0:150,a0:30,a1:65,f0:56,ease:'smooth',cap:[stat('Cut the prism target first')]}];}});
+
+M({key:'salvo',name:'Salvo',group:3,hull:'Sparrow',concept:'Target lock',
+pitch:'A high strike-planning orbit where every hulk lights up in turn as a target, in the world, then a missile-cam dive at the biggest one and a slow drift back through the dust.',
+build(ctx){kitBase(ctx,{fog:.0014});const b=kitBoneyard(ctx,{seed:44});
+  b.hulks.forEach((h,i)=>{const bx=new T3.LineSegments(new T3.EdgesGeometry(new T3.BoxGeometry(h.rad*2.4,h.rad*2.4,h.len+10)),new T3.LineBasicMaterial({color:0xff5a3c,transparent:true,opacity:0}));
+    bx.position.copy(h.pos);bx.quaternion.copy(h.g.quaternion);ctx.scene.add(bx);const t0=.4+i*.32;ctx.ticks.push(T=>{const lt=T-t0;bx.material.opacity=lt<0?0:Math.min(1,lt*4)*(lt<.25?(Math.sin(lt*60)>0?1:.3):.85);bx.scale.setScalar(lt<0?1.4:1+Math.max(0,.4-lt*1.6));});});
+  grid(ctx,'sparrow',V(0,0,-205),V(0,0,1),6,{cols:3,spacing:11});const big=b.hulks[2];
+  return[
+  {name:'Target lock',note:'High orbit; each hulk gets a red frame in the world, one after another.',k:'orbit',dur:3.0,c:V(0,0,0),r0:240,h0:160,a0:0,a1:40,f0:60,ease:'smooth',cap:[title('Salvo',.4,1.8)]},
+  {name:'Missile cam',note:'An accelerating dive at the biggest hulk, white-out at impact.',k:'move',dur:1.4,p0:V(140,150,170),p1:big.pos.clone().add(V(10,8,14)),l0:big.pos,l1:big.pos,f0:60,f1:100,ease:'expoIn',fx:[speed(.3,1.1,1.6),flash(1.3,.5)],cap:[sub('This time the Boneyard is the target.',.1,1.2)]},
+  {name:'Debris drift',note:'Drift slowly back out of the dust with a trembling lens.',k:'move',dur:1.9,p0:big.pos.clone().add(V(20,14,30)),p1:big.pos.clone().add(V(70,30,90)),l0:big.pos,l1:big.pos,f0:62,shake:.5,shakeDecay:true,ease:'out',cap:[stat('First domain to the prism target')]}];}});
+
+M({key:'wreckingball',name:'Wrecking Ball',group:3,hull:'Scarab',concept:'Be the ball',
+pitch:'The camera is the ball: it barrels and rolls through the cactus court, then lifts out past the wall to show the whole forest you can plow.',
+build(ctx){kitBase(ctx);const F=kitForest(ctx,{seed:54,n:70,below:.3,h0:30,h1:60,shell:.66,pal:[0x5a72d8,0x7f8fe8,0xff8a6b,0xff6fa8]});F.P.build(ctx);
+  const R=ctx.R;ctx.scene.add(new T3.LineSegments(new T3.EdgesGeometry(new T3.IcosahedronGeometry(R*.66,2)),new T3.LineBasicMaterial({color:0xffd9a8,transparent:true,opacity:.3})));
+  for(let i=0;i<5;i++)crystal(ctx,V((hash(i)-.5)*160,(hash(i+4)-.5)*100,(hash(i+8)-.5)*160),0xffffff,4);
+  const path=new T3.CatmullRomCurve3([V(-120,-40,-60),V(-50,-10,-20),V(0,-30,40),V(60,0,30),V(110,-20,-30)]);
+  grid(ctx,'scarab',V(0,-10,-140),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Be the ball',note:'Rolling through the forest, the horizon turning over.',k:'path',dur:2.7,curve:path,u0:0,u1:.8,off:V(0,0,0),ahead:.05,f0:88,spin:6.283,ease:'linear',fx:[speed(0,2.7)],cap:[title('Wrecking Ball',.5,1.9)]},
+  {name:'Over the wall',note:'Out through the court wall to show the whole forest.',k:'move',dur:2.3,p0:path.getPointAt(.8),p1:V(150,120,240),l0:path.getPointAt(.9),l1:V(0,0,0),f0:80,f1:56,ease:'inOut',cap:[sub('Every bright crystal is a ball. Plow the forest.',.3,1.8)]},
+  {name:'Court',note:'Slow orbit of the walled court.',k:'orbit',dur:1.7,c:V(0,0,0),r0:290,h0:120,a0:32,a1:60,f0:56,ease:'smooth',cap:[stat('First domain to the target')]}];}});
+
+M({key:'sirocco',name:'Sirocco',group:3,hull:'Butterfly',concept:'Storm front',
+pitch:'Ride the leading edge of a dust storm low over Rampage\'s forest, watch one cactus erode in front of you, then the storm-wide view.',
+build(ctx){kitBase(ctx,{tint:0x6a5530});const F=kitForest(ctx,{seed:61,n:80,below:-.05,h0:40,h1:80,pal:[0x8a7bd8,0x6a84ff,0xb8a070,0x7f8fe8]});F.P.build(ctx);
+  const n=2600,pos=new Float32Array(n*3),g=new T3.BufferGeometry();g.setAttribute('position',new T3.BufferAttribute(pos,3));
+  const dust=new T3.Points(g,new T3.PointsMaterial({color:0xffd8a0,size:1.6,transparent:true,opacity:.6,blending:T3.AdditiveBlending,depthWrite:false}));ctx.scene.add(dust);
+  ctx.ticks.push(T=>{for(let i=0;i<n;i++){const x=((hash(i)*500+T*90)%500)-250,y=-140+hash(i+1)*120+Math.sin(T+i)*4,z=(hash(i+2)-.5)*400;pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;}g.attributes.position.needsUpdate=true;});
+  const vt=new T3.Group();const P2=Prisms();cactus(P2,V(0,-200,0),UP.clone(),90,0xb8a070,rng(3));const vm=P2.build({scene:vt});ctx.scene.add(vt);vt.position.set(40,0,30);
+  ctx.ticks.push(T=>{const k=clamp((T-3.3)/1.8,0,1);vt.scale.set(1-k*.5,1-k*.75,1-k*.5);});
+  const front=new T3.CatmullRomCurve3([V(-240,-120,-60),V(-120,-110,-20),V(-20,-115,20),V(60,-108,40)]);
+  grid(ctx,'butterfly',V(0,-60,-200),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Storm front',note:'Low across the forest with the dust, buffeted.',k:'path',dur:3.0,curve:front,u0:0,u1:.8,off:V(0,4,0),ahead:.06,f0:78,shake:.35,ease:'linear',fx:[speed(0,3,.8)],cap:[title('Sirocco',.5,1.9)]},
+  {name:'Erosion',note:'Push on one cactus as the dust wears it down.',k:'move',dur:1.9,p0:V(-30,-100,-40),p1:V(10,-90,0),l0:V(40,-150,30),l1:V(40,-150,30),f0:54,f1:40,shake:.2,ease:'inOut',cap:[sub('Your dust is your blade.',.3,1.5)]},
+  {name:'The storm',note:'Rise to the storm-wide view.',k:'orbit',dur:1.8,c:V(0,-80,0),r0:250,h0:130,a0:220,a1:250,f0:58,ease:'inOut',cap:[stat('First domain to the prism target')]}];}});
+
+M({key:'grizzlycharge',name:'Grizzly Charge',group:3,hull:'Grizzly',concept:'Ground zero',
+pitch:'Fall from the top of the cell straight onto the densest prism field, the field detonates in a sphere of white, and the shockwave throws the camera back out.',
+build(ctx){kitBase(ctx);const r=rng(62),P=Prisms();
+  for(let c=0;c<44;c++){const ctr=V((r()-.5)*300,(r()-.5)*160-20,(r()-.5)*300);for(let i=0;i<46;i++){const s=2+r()*3;P.add(ctr.clone().add(V((r()-.5)*28,(r()-.5)*28,(r()-.5)*28)),qDir(V(r()-.5,r()-.5,r()-.5)),V(s,s,s*1.6),[0x5a72d8,0xff6b4a,0x7f8fe8][i%3]);}}
+  const m=P.build(ctx),base=P.L.map(it=>new T3.Matrix4().compose(it.p,it.q,it.s)),hit=V(0,-20,0),M4=new T3.Matrix4(),Z0=new T3.Matrix4().makeScale(0,0,0);
+  const wave=new T3.Mesh(new T3.SphereGeometry(1,32,20),new T3.MeshBasicMaterial({color:0xfff1d0,transparent:true,opacity:0,blending:T3.AdditiveBlending,depthWrite:false}));wave.position.copy(hit);ctx.scene.add(wave);
+  let last=-1;ctx.ticks.push(T=>{const k=clamp((T-2.2)/1.4,0,1),wr=k*130;wave.scale.setScalar(Math.max(.01,wr));wave.material.opacity=k>0&&k<1?(1-k)*.55:0;
+    const key=Math.round(wr);if(key===last)return;last=key;P.L.forEach((it,i)=>{m.setMatrixAt(i,it.p.distanceTo(hit)<wr?Z0:base[i]);});m.instanceMatrix.needsUpdate=true;});
+  grid(ctx,'grizzly',V(0,40,-215),V(0,0,1),4,{cols:2,spacing:12});
+  return[
+  {name:'Fall',note:'Straight down from the top of the cell onto the field, accelerating.',k:'move',dur:2.2,p0:V(8,230,10),p1:V(4,30,6),l0:V(0,-20,0),l1:V(0,-20,0),f0:46,f1:84,ease:'expoIn',fx:[speed(.8,1.4,1.3)],cap:[title('Grizzly Charge',.2,1.8)]},
+  {name:'Shockwave',note:'White-out, the field vanishes in a growing sphere and the lens is thrown back.',k:'move',dur:2.0,p0:V(4,30,6),p1:V(60,120,170),l0:V(0,-20,0),l1:V(0,-20,0),f0:84,f1:60,shake:1.4,shakeDecay:true,ease:'expoOut',fx:[flash(0,.6)],cap:[sub('A cell full of prisms. Nuke them.',.5,1.5)]},
+  {name:'Crater',note:'Slow orbit of the crater the blast left.',k:'orbit',dur:1.8,c:V(0,-20,0),r0:200,h0:110,a0:20,a1:55,f0:58,ease:'smooth',cap:[stat('Most prisms destroyed')]}];}});
+
+/* courts */
+function kitCourt(ctx,o={}){const R=ctx.R,cr=R*.7;ctx.scene.add(new T3.LineSegments(new T3.EdgesGeometry(new T3.IcosahedronGeometry(cr,2)),new T3.LineBasicMaterial({color:0xffe0a8,transparent:true,opacity:.28})));
+  ctx.scene.add(new T3.Mesh(new T3.SphereGeometry(cr,40,24),new T3.MeshBasicMaterial({color:0xffc070,side:T3.BackSide,transparent:true,opacity:.05,depthWrite:false})));return{cr};}
+
+M({key:'scarabscramble',name:'Scarab Scramble',group:4,hull:'Scarab',concept:'Hoop tour',
+pitch:'A playful, bouncy flight that threads every glowing hoop in the court in one line, like a ball someone just batted, then the court from above.',
+build(ctx){kitBase(ctx);const C=kitCourt(ctx),r=rng(43),hoops=[];
+  for(let i=0;i<6;i++){const a=i/6*6.283+.3,y=(i%2?1:-1)*35+(r()-.5)*20,p=V(Math.cos(a)*C.cr*.55,y,Math.sin(a)*C.cr*.55),t=V(-Math.sin(a),0,Math.cos(a));ring(ctx,p,qAlign(t),14,0xffd27a,.9,1.6);hoops.push(p);}
+  for(let i=0;i<12;i++)crystal(ctx,V((r()-.5)*180,(r()-.5)*120,(r()-.5)*180),0xffffff,3.4);
+  const path=new T3.CatmullRomCurve3(hoops,true,'centripetal');grid(ctx,'scarab',V(0,-50,-130),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Hoop tour',note:'One springy line through all six hoops.',k:'path',dur:3.6,curve:path,u0:0,u1:.85,off:V(0,0,0),ahead:.035,f0:78,bank:1.4,ease:'back',cap:[title('Scarab Scramble',.5,1.9),sub('Fly through a bright crystal. It is your ball now.',2.0,1.5)]},
+  {name:'The court',note:'Up over the court.',k:'orbit',dur:2.0,c:V(0,0,0),r0:150,r1:220,h0:90,h1:160,a0:40,a1:90,f0:60,ease:'inOut',cap:[stat('Roll it through any hoop')]},
+  {name:'Drop in',note:'Bounce down to the start.',k:'move',dur:1.4,p0:V(120,150,150),p1:V(20,-40,-100),l0:V(0,0,0),l1:V(0,-50,-130),f0:60,f1:56,ease:'back'}];}});
+
+M({key:'tollway',name:'Tollway',group:4,hull:'Scarab',concept:'Toll posts',
+pitch:'A beat of low-angle cuts up at each toll post and its plant, the ring grafted on a few, then a crane up a monument the scoring already raised.',
+build(ctx){kitBase(ctx);const C=kitCourt(ctx),r=rng(48),P=Prisms(),posts=[];
+  for(let i=0;i<8;i++){const u=r()*2-1,a=i/8*6.283,q=Math.sqrt(1-u*u)*.9,d=V(q*Math.cos(a),u*.6,q*Math.sin(a)).normalize(),base=d.clone().multiplyScalar(C.cr),inn=d.clone().negate();
+    for(let j=0;j<10;j++)P.add(base.clone().addScaledVector(inn,j*4+2),qDir(inn),V(2.6,2.6,3.8),0x7ad89a);
+    const tip=base.clone().addScaledVector(inn,42);const bulb=new T3.Mesh(new T3.IcosahedronGeometry(5,0),stdMat(0x9cf0b0,.5));bulb.position.copy(tip);ctx.scene.add(bulb);
+    if(i%3===0)ring(ctx,tip.clone().addScaledVector(inn,10),qAlign(inn),12,col(i/3),.8,1.3);posts.push({tip,inn,base});}
+  const mon=posts[1].tip.clone().addScaledVector(posts[1].inn,4);for(let s=0;s<2;s++)for(let i=0;i<60;i++){const a=(i/60)*1.6+.2,rr=4+i*.45,dir=V(Math.cos(a)*(s?1:-1),Math.sin(a),0);P.add(mon.clone().addScaledVector(dir,rr).add(V(0,0,(hash(i+s*60)-.5)*3)),qDir(dir),V(2,2,3.4),col(0));}
+  P.build(ctx);grid(ctx,'scarab',V(0,-40,-120),V(0,0,1),6,{cols:3,spacing:11});
+  const list=posts.slice(0,5).map(p=>({p:p.base.clone().addScaledVector(p.inn,4).add(V(8,6,8)),l:p.tip,f:58}));
+  return[
+  {name:'Toll posts',note:'Five low-angle cuts up the stalks, one per post.',k:'cuts',dur:3.2,list,push:8,zoom:5,cap:[title('Tollway',.3,1.7)]},
+  {name:'Monument',note:'Crane up a scarab-wing monument raised by earlier tolls.',k:'move',dur:2.1,p0:mon.clone().add(V(30,-20,30)),p1:mon.clone().add(V(40,40,50)),l0:mon,l1:mon,f0:56,f1:52,ease:'inOut',cap:[sub('Plant a ring. Every ball through it pays you.',.2,1.8)]},
+  {name:'The court',note:'Slow orbit of the whole court.',k:'orbit',dur:1.8,c:V(0,0,0),r0:240,h0:110,a0:30,a1:60,f0:58,ease:'smooth',cap:[stat('First domain to the toll target')]}];}});
+
+M({key:'hijack',name:'Hijack',group:4,hull:'Urchin',concept:'Grind line',
+pitch:'Ride a rail at grinding height as it changes colour under you, punch through a burr, then the three great rings from far away, still turning.',
+build(ctx){kitBase(ctx);const rr=150,normals=[V(0,1,.15),V(.9,.3,.2),V(-.3,.4,.9)].map(n=>n.normalize()),circles=[];
+  normals.forEach((n,k)=>{const q=qAlign(n);for(let j=0;j<3;j++){const m=new T3.Mesh(new T3.TorusGeometry(rr,1.7,6,90,6.283/3),stdMat(col(j+k),.45));m.quaternion.copy(q);m.rotateZ(j*6.283/3);ctx.scene.add(m);}
+    const a=new T3.Vector3().crossVectors(n,Math.abs(n.y)>.9?XA:UP).normalize(),b=new T3.Vector3().crossVectors(n,a).normalize();circles.push(new FnCurve(t=>a.clone().multiplyScalar(Math.cos(t*6.283)*rr).addScaledVector(b,Math.sin(t*6.283)*rr),true));});
+  const P=Prisms(),burrs=[];for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){const x=new T3.Vector3().crossVectors(normals[i],normals[j]).normalize();[1,-1].forEach((s,k)=>{const c=x.clone().multiplyScalar(rr*s);burrs.push(c);for(let q=0;q<28;q++){const d=V(hash(q+i*50)-.5,hash(q+j*70)-.5,hash(q+k*90)-.5).normalize(),len=5+hash(q)*10;P.add(c.clone().addScaledVector(d,len/2),qDir(d),V(2,2,len),col(i+j+k));}});}
+  P.build(ctx);const core=new T3.Mesh(new T3.IcosahedronGeometry(42,2),new T3.MeshStandardMaterial({color:0x1a1030,wireframe:true}));ctx.scene.add(core);ctx.scene.add(glow(0x9b6bff,140,.35));
+  const st=circles[0].getPointAt(.92);grid(ctx,'urchin',st.clone().add(V(0,0,-30)),V(0,0,1),6,{spacing:12});
+  return[
+  {name:'Grind',note:'Low over one rail as it runs through the domain thirds.',k:'path',dur:2.8,curve:circles[0],u0:.05,u1:.24,off:V(0,4,0),ahead:.025,f0:86,ease:'linear',fx:[speed(0,2.8)],cap:[title('Hijack',.5,1.8)]},
+  {name:'Burr',note:'Punch through a spiny burr where two rails cross.',k:'move',dur:1.2,p0:burrs[0].clone().add(V(-30,8,-30)),p1:burrs[0].clone().add(V(20,-4,20)),l0:burrs[0],l1:burrs[0].clone().add(V(60,-10,60)),f0:70,f1:90,ease:'in',fx:[flash(.55,.3)]},
+  {name:'Three rails',note:'Far out, the three rings and their burrs turning in frame.',k:'orbit',dur:2.3,c:V(0,0,0),r0:360,h0:100,a0:0,a1:70,f0:54,ease:'inOut',cap:[sub('Grind your colour. Steal theirs.',.2,1.8),stat('Steal the prism target',.8,1.4)]}];}});
+
+M({key:'bloomrush',name:'Bloomrush',group:4,hull:'Manta',concept:'Reef bloom',
+pitch:'A slow, dreamy drift through the reef with tagged wildlife glowing their fuses. Then everything blooms at once, the way a good round ends.',
+build(ctx){kitBase(ctx,{tint:0x2a6a7a});const r=rng(52),P=Prisms(),pal=[0xff7aa8,0xffb36b,0x5fe0c8,0xb48cff];
+  function branch(p,d,len,depth,c){const n=Math.max(1,Math.floor(len/4));for(let i=0;i<n;i++)P.add(p.clone().addScaledVector(d,i*4+2),qDir(d),V(2.4,2.4,3.6),c);const e=p.clone().addScaledVector(d,n*4);if(depth>0)for(let k=0;k<3;k++){const nd=d.clone().add(V(r()-.5,r()*.3,r()-.5).multiplyScalar(1.4)).normalize();branch(e,nd,len*.7,depth-1,c);}}
+  const reefs=[];for(let i=0;i<12;i++){const p=V((r()-.5)*320,-120+r()*40,(r()-.5)*320);reefs.push(p);branch(p,UP.clone(),22+r()*10,3,pal[i%4]);}P.build(ctx);
+  const wl=[];for(let i=0;i<24;i++){const m=new T3.Mesh(new T3.TetrahedronGeometry(2.4),stdMat(0xdfe6ff,.3));ctx.scene.add(m);const bomb=glow(0xff3b30,10,.0);m.add(bomb);wl.push({m,bomb,i});}
+  ctx.ticks.push(T=>wl.forEach(({m,bomb,i})=>{const a=i/24*6.283+T*.15;m.position.set(Math.cos(a)*(80+i*3),-70+Math.sin(T*.6+i)*20,Math.sin(a)*(80+i*3));m.rotation.y=-a;const tagged=i%3===0;
+    const bt=4.2;bomb.material.opacity=tagged?(T<bt?.5+.5*Math.sin(T*(6+T*2)):Math.max(0,1-(T-bt)*1.2)):0;bomb.scale.setScalar(tagged&&T>bt?10+(T-bt)*90:10);}));
+  const cr=V(0,-70,0);crystal(ctx,cr,0xffffff,5);
+  const drift=new T3.CatmullRomCurve3([V(-220,-80,-160),V(-120,-95,-60),V(-30,-80,-40),V(30,-75,-10)]);grid(ctx,'manta',V(0,-40,-200),V(0,0,1),6,{cols:3,spacing:12});
+  return[
+  {name:'Reef drift',note:'Slow and floaty through the coral; tagged wildlife pulse their fuses.',k:'path',dur:3.0,curve:drift,u0:0,u1:.85,off:V(0,4,0),ahead:.08,f0:64,shake:.15,ease:'smooth',cap:[title('Bloomrush',.6,1.9)]},
+  {name:'Bloom',note:'Vertigo on the crystal as every fuse goes at once.',k:'vertigo',dur:2.0,target:cr,dir:V(.6,.3,-1),d0:30,d1:120,f0:72,ease:'inOut',fx:[flash(1.2,.5)],cap:[sub('Skim to arm. Tag to plant. Beat the fuse.',.2,1.8)]},
+  {name:'The reef',note:'Wide orbit over the reef.',k:'orbit',dur:1.9,c:V(0,-80,0),r0:250,h0:110,a0:180,a1:215,f0:58,ease:'smooth',cap:[stat('120 seconds · biggest bloom wins')]}];}});
+
+M({key:'tapestry',name:'Tapestry',group:4,hull:'Butterfly',concept:'Blank canvas',
+pitch:'Start in an empty sky. Three painters cross it and the wakes appear behind them while the camera follows one brush, then a top-down shot shows the territory you will fight over.',
+build(ctx){kitBase(ctx);const r=rng(60),painters=[];
+  for(let k=0;k<3;k++){const pts=[];for(let i=0;i<7;i++){const a=k*2.1+i*.7;pts.push(V(Math.cos(a)*(60+i*22),(r()-.5)*50,Math.sin(a)*(60+i*22)));}const c=new T3.CatmullRomCurve3(pts),N=160,
+    m=new T3.InstancedMesh(BOX,new T3.MeshStandardMaterial({color:col(k),emissive:col(k),emissiveIntensity:.3,flatShading:true,transparent:true,opacity:.85}),N),M4=new T3.Matrix4();
+    for(let i=0;i<N;i++){const u=i/(N-1),fr=frame(c.getTangentAt(u));M4.compose(c.getPointAt(u),qDir(fr.t),V(18,.7,3.4));m.setMatrixAt(i,M4);}m.count=0;ctx.scene.add(m);
+    const bf=makeVessel('butterfly',col(k));ctx.scene.add(bf);ctx.ticks.push(T=>{const u=clamp((T-1.4-k*.25)/4.2,0,1);m.count=Math.floor(N*u);bf.position.copy(c.getPointAt(Math.max(u,.001)));bf.lookAt(c.getPointAt(Math.min(1,u+.01)));bf.visible=u>0&&u<1;});painters.push(c);}
+  grid(ctx,'butterfly',V(0,0,-205),V(0,0,1),6,{cols:3,spacing:11});
+  return[
+  {name:'Empty sky',note:'A slow drift through an empty cell. Nothing yet.',k:'move',dur:1.6,p0:V(-150,30,-150),p1:V(-120,30,-110),l0:V(0,0,0),l1:V(0,0,0),f0:55,ease:'smooth',cap:[title('Tapestry',.2,1.8)]},
+  {name:'The brush',note:'Follow one painter as wakes appear across the sky.',k:'path',dur:3.0,curve:painters[0],u0:.02,u1:.7,off:V(6,10,-20),ahead:.08,f0:64,ease:'smooth',cap:[sub('Paint the sky. Raid what they paint.',.5,1.9)]},
+  {name:'Territory',note:'Rise to a top-down of the painted territory.',k:'move',dur:2.2,p0:painters[0].getPointAt(.7).add(V(10,20,0)),p1:V(0,360,.1),l0:painters[0].getPointAt(.8),l1:V(0,0,0),f0:64,f1:60,r1:.5,ease:'inOut',cap:[stat('Most mass standing wins')]}];}});
+
+M({key:'astroleague',name:'Astro League',group:5,hull:'Rhino',concept:'Kickoff broadcast',
+pitch:'A sports broadcast. Sweep the pitch from behind one goal, walk each line of players like an anthem lineup, and push in on the ball for kickoff.',
+build(ctx){kitBase(ctx);const fl=-34;const gh=new T3.GridHelper(360,24,0x4a5a9a,0x26305a);gh.position.y=fl;ctx.scene.add(gh);
+  const P=Prisms();[[-170,0],[170,1]].forEach(([z,d])=>{for(let i=0;i<14;i++){const x=-28+i*4.3;P.add(V(x,fl+30,z),qDir(XA),V(3,3,4),col(d));}for(let j=0;j<8;j++){[-30,30].forEach(x=>P.add(V(x,fl+j*4+2,z),qDir(UP),V(3,3,4),col(d)));}});P.build(ctx);
+  ring(ctx,V(0,fl+.5,0),qAlign(UP),40,0xdfe6ff,.4,.5);
+  const ball=new T3.Mesh(new T3.IcosahedronGeometry(7,1),stdMat(0xffffff,.5));ctx.scene.add(ball,glowAt(V(0,0,0),0xffffff,40,.35));ctx.ticks.push(T=>{ball.rotation.y=T*.6;ball.position.y=Math.sin(T*1.4)*1.2;});
+  [-40,0,40].forEach((x,i)=>spawn(ctx,'rhino',0,V(x,0,-60),V(x,0,0)));[-40,0,40].forEach(x=>spawn(ctx,'rhino',1,V(x,0,60),V(x,0,0)));
+  return[
+  {name:'Broadcast wide',note:'From high behind your goal, sweep over the whole pitch.',k:'move',dur:2.8,p0:V(-40,90,-260),p1:V(30,60,-60),l0:V(0,0,0),l1:V(0,0,60),f0:58,f1:62,ease:'inOut',cap:[title('Astro League',.5,1.9)]},
+  {name:'Your line',note:'Walk your team\'s line at hull height.',k:'move',dur:1.6,p0:V(-70,4,-38),p1:V(70,4,-38),l0:V(-40,0,-60),l1:V(40,0,-60),f0:44,ease:'smooth',cap:[sub('Hypersea soccer. Played with a sword.',.1,2.6)]},
+  {name:'Their line',note:'The same walk past the rival line.',k:'move',dur:1.4,p0:V(70,4,38),p1:V(-70,4,38),l0:V(40,0,60),l1:V(-40,0,60),f0:44,ease:'smooth'},
+  {name:'Kickoff',note:'Vertigo on the ball at centre.',k:'vertigo',dur:1.7,target:V(0,0,0),dir:V(-.4,.4,-1),d0:26,d1:110,f0:72,ease:'inOut',cap:[stat('Kickoff')]}];}});
+
+M({key:'broodrush',name:'Brood Rush',group:5,hull:'Any',concept:'Nucleus pulse',
+pitch:'Start inside the nucleus glow and back out through its shells as a brood is born and swims outward in a ring, then circle the claim with the clock in mind.',
+build(ctx){kitBase(ctx,{tint:0x6a3c8a});const nuc=new T3.Mesh(new T3.IcosahedronGeometry(24,2),stdMat(0xf2d6ff,.7,{roughness:.3}));ctx.scene.add(nuc,glow(0xff9cf0,120,.4));
+  const sh=[34,44].map((r,i)=>{const m=new T3.LineSegments(new T3.EdgesGeometry(new T3.IcosahedronGeometry(r,1)),new T3.LineBasicMaterial({color:0xe0b8ff,transparent:true,opacity:.45}));ctx.scene.add(m);return m;});
+  const claim=ring(ctx,V(0,0,0),qAlign(UP),64,col(0),.9,1.6);
+  const n=150,fa=new T3.InstancedMesh(new T3.TetrahedronGeometry(2),stdMat(col(0),.5),n),M4=new T3.Matrix4(),q=new T3.Quaternion();ctx.scene.add(fa);
+  ctx.ticks.push(T=>{nuc.rotation.y=T*.2;sh[0].rotation.y=T*.3;sh[1].rotation.x=T*.25;const sc=1+Math.sin(T*3)*.03;nuc.scale.setScalar(sc);
+    for(let i=0;i<n;i++){const w=i%3,born=.5+w*2.4,lt=T-born,a=(i/n)*6.283*3+w,u=(hash(i)-.5)*1.4,rad=lt<0?0:30+lt*70,d=V(Math.cos(a)*Math.cos(u),Math.sin(u),Math.sin(a)*Math.cos(u));
+      q.setFromUnitVectors(UP,d);M4.compose(d.multiplyScalar(rad),q,V(1,1,1).multiplyScalar(lt<0||rad>230?0:1));fa.setMatrixAt(i,M4);}fa.instanceMatrix.needsUpdate=true;});
+  for(let i=0;i<6;i++){const a=i/6*6.283;spawn(ctx,'dolphin',i%3,V(Math.cos(a)*150,10,Math.sin(a)*150),V(0,0,0));}
+  return[
+  {name:'Inside the nucleus',note:'Back out through the shells as the first brood is born.',k:'move',dur:2.6,p0:V(0,4,14),p1:V(10,26,130),l0:V(0,0,0),l1:V(0,0,0),f0:80,f1:60,ease:'out',fx:[flash(0,.5)],cap:[title('Brood Rush',.6,1.8)]},
+  {name:'Claim ring',note:'Circle the nucleus at the height of the claim ring.',k:'orbit',dur:2.4,c:V(0,0,0),r0:150,h0:40,a0:0,a1:110,f0:58,ease:'smooth',cap:[sub('Hold the nucleus. Every brood born in your colour scores.',.2,2)]},
+  {name:'Pulse',note:'Vertigo on the nucleus as the next wave breaks.',k:'vertigo',dur:1.5,target:V(0,0,0),dir:V(.5,.5,1),d0:70,d1:170,f0:64,ease:'inOut',cap:[stat('A brood every 30 seconds')]}];}});
+
+const FLEET=['urchin','squirrel','manta','rhino','scarab','sparrow','dolphin'];
+M({key:'regatta',name:'Regatta',group:5,hull:'Every hull',concept:'Grid walk',
+pitch:'Walk the starting grid like race day, hull by hull, then ride high over the three braided rails and come home to the gold gate.',
+build(ctx){kitBase(ctx);const k=kitCircuit(ctx,{seed:56,n:8,gates:12,gridBack:34});
+  for(let d=0;d<3;d++){const pts=[];for(let i=0;i<400;i++){const u=i/400,p=k.curve.getPointAt(u),fr=frame(k.curve.getTangentAt(u)),ph=u*6.283*8+d*2.094;pts.push(p.addScaledVector(fr.side,Math.cos(ph)*7).addScaledVector(fr.up,Math.sin(ph)*7));}tube(ctx,new T3.CatmullRomCurve3(pts,true),.8,col(d),.55,700,true);}
+  const g=grid(ctx,FLEET,k.origin,k.startTan,7,{cols:1,rowGap:13,doms:[0,1,2,0,1,2,0]});const first=g[0].position,last=g[6].position,fr=frame(k.startTan);
+  return[
+  {name:'Grid walk',note:'Along the grid at hull height, every hull in turn.',k:'move',dur:3.1,p0:last.clone().addScaledVector(fr.side,16).add(V(0,3,0)),p1:first.clone().addScaledVector(fr.side,16).addScaledVector(fr.t,10).add(V(0,3,0)),l0:last,l1:first,f0:46,ease:'smooth',cap:[title('Regatta',.5,1.9)]},
+  {name:'Braided rails',note:'High over the racing line, the three domain rails braiding below.',k:'path',dur:2.4,curve:k.curve,u0:.1,u1:.38,off:V(0,16,0),ahead:.04,lookUp:-.2,f0:70,bank:.7,ease:'inOut',fx:[speed(0,2.4,.8)],cap:[sub('Every hull. One circuit. Three laps.',.2,1.8)]},
+  {name:'Gold gate',note:'Up and round to the gold start gate.',k:'orbit',dur:1.7,c:V(0,0,0),r0:230,h0:110,a0:0,a1:40,f0:58,ease:'inOut',cap:[stat('Lead runner home wins')]}];}});
+
+M({key:'broadside',name:'Broadside',group:5,hull:'Every fighting hull',concept:'Roll call',
+pitch:'A fight-night roll call: every hull gets one hero beat with the weapon it brings, then the title lands over the Boneyard.',
+build(ctx){kitBase(ctx,{fog:.0014});kitBoneyard(ctx,{seed:57});
+  const weapons=['Guns and rockets','Chain spikes','Energised sword','The joust','The cone','The plate','The bloom'],hulls=['sparrow','urchin','rhino','squirrel','dolphin','scarab','manta'],names=['Sparrow','Urchin','Rhino','Squirrel','Dolphin','Scarab','Manta'],vs=[];
+  hulls.forEach((h,i)=>{const a=-1.2+i*.4,p=V(Math.sin(a)*170,-10+(i%2)*14,-Math.cos(a)*170);vs.push(spawn(ctx,h,i%3,p,V(0,0,0)));});
+  const list=vs.map(v=>({p:v.localToWorld(V(7,2.5,13)),l:v.position.clone(),f:40}));
+  const caps=names.map((n,i)=>sub(n+' · '+weapons[i],i*.55+.05,.5));
+  return[
+  {name:'Roll call',note:'Seven hero beats, one per hull, each named with its weapon.',k:'cuts',dur:3.85,list,push:3,zoom:4,cap:caps},
+  {name:'The Boneyard',note:'Out wide over the wreck, title lands.',k:'orbit',dur:2.3,c:V(0,0,0),r0:150,r1:260,h0:30,h1:100,a0:180,a1:220,f0:60,ease:'inOut',fx:[flash(0,.35)],cap:[title('Broadside',.1,1.9)]},
+  {name:'Points',note:'Hold wide while the scoring rule shows.',k:'orbit',dur:1.4,c:V(0,0,0),r0:260,h0:100,a0:220,a1:232,f0:60,ease:'linear',cap:[stat('Every hit priced by the weapon that landed it',0,1.3)]}];}});
+
+/* ---------- playback state ---------- */
+const st={idx:0,ctx:null,shots:[],caps:[],fx:[],total:0,T:0,playing:true,speed:1,phase:'intro',skipFrom:null,skipT:0,liveT:0,compare:false};
+function disposeScene(){scene.traverse(o=>{if(o.geometry&&!SHARED.has(o.geometry))o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(!SHARED.has(m))m.dispose();});}});}
+function todaysOrbit(ctx){const R=ctx.R,rO=R*.62,h=R*.25,pts=[];for(let i=0;i<5;i++){const a=i/4*6.283;pts.push(V(Math.sin(a)*rO,h,Math.cos(a)*rO));}
+  const out=[];for(let i=0;i<4;i++){out.push({name:'Orbit leg '+(i+1),note:'Straight chord between two points of the circle, looking at the centre.',k:'move',dur:1.5,p0:pts[i],p1:pts[i+1],l0:V(0,0,0),ease:'smooth',f0:60});
+    out.push({name:'Pause',note:'0.3 s hold at each point.',k:'hold',dur:.3,p0:pts[i+1],l0:V(0,0,0),f0:60});}return out;}
+function load(i,keepT){
+  st.idx=(i+MODES.length)%MODES.length;const mode=MODES[st.idx];
+  disposeScene();scene=new T3.Scene();
+  const ctx={scene,R:240,ticks:[],vessels:[],player:null};
+  const shots=st.compare?todaysOrbit((mode.build(ctx),ctx)):mode.build(ctx);
+  if(!ctx.player){ctx.player=ctx.vessels[0]?.obj||spawn(ctx,'default',0,V(0,0,-180),V(0,0,0));}
+  ctx.ticks.push(T=>ctx.vessels.forEach(v=>{v.obj.position.copy(v.base).addScaledVector(UP,Math.sin(T*1.4+v.ph)*.5);}));
+  shots.push({name:'Hand-off to pilot',note:'Same as the game today: 1.5 s to behind the vessel, 0.3 s when skipped.',k:'handoff',dur:1.5});
+  let t=0;const caps=[],fx=[];
+  shots.forEach((s,j)=>{s.start=t;(s.cap||[]).forEach(c=>caps.push(Object.assign({},c,{a:t+c.at})));(s.fx||[]).forEach(f=>fx.push(Object.assign({},f,{a:t+f.at,d:Math.min(f.d,s.dur-f.at)})));t+=s.dur;});
+  const last=shots[shots.length-2];if(!st.compare)caps.push({k:'lower',t:mode.name,t2:mode.hull,a:last.start,d:last.dur+1.5});
+  Object.assign(st,{ctx,shots,caps,fx,total:t,T:keepT?Math.min(st.T,t):0,phase:'intro',skipFrom:null,liveT:0});
+  ctx.shotEnd=shots.map((s,j)=>s.k==='handoff'?null:evalShot(s,1,s.start+s.dur));
+  renderSheet();renderTimeline();syncList();renderVerdict();
+}
+
+/* ---------- frame ---------- */
+const capEl={title:document.getElementById('cTitle'),sub:document.getElementById('cSub'),stat:document.getElementById('cStat'),lower:document.getElementById('cLower')};
+const readyEl=document.getElementById('cReady'),barT=document.getElementById('barT'),barB=document.getElementById('barB'),tagEl=document.getElementById('tag');
+const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function poseAt(T){const s=st.shots,ctx=st.ctx;let i=s.findIndex(x=>T<x.start+x.dur);if(i<0)i=s.length-1;const sh=s[i],u=(T-sh.start)/sh.dur;
+  if(sh.k==='handoff'){const from=ctx.shotEnd[i-1]||playerPose(ctx);return{pose:mixPose(from,playerPose(ctx),EASE.smooth(clamp(u,0,1))),i,u};}
+  let P=evalShot(sh,u,T);if(sh.blend&&T-sh.start<sh.blend&&i>0)P=mixPose(ctx.shotEnd[i-1],P,EASE.smooth((T-sh.start)/sh.blend));return{pose:P,i,u};}
+function frameAt(T){
+  st.ctx.ticks.forEach(f=>f(T));
+  let pose,i=-1,lb=st.compare?0:1;
+  if(st.phase==='intro'){const r=poseAt(T);pose=r.pose;i=r.i;if(st.shots[i].k==='handoff')lb=st.compare?0:1-EASE.smooth(clamp(r.u,0,1));}
+  else if(st.phase==='skip'){const u=clamp(st.skipT/.3,0,1);pose=mixPose(st.skipFrom,playerPose(st.ctx),EASE.smooth(u));lb=st.compare?0:1-u;i=st.shots.length-1;}
+  else{pose=playerPose(st.ctx);lb=0;i=st.shots.length-1;}
+  applyPose(pose);renderer.render(scene,camera);
+  const h=glCanvas.clientHeight;barT.style.height=barB.style.height=(h*.085*lb)+'px';
+  drawOverlay(T,lb);drawCaps(st.phase==='intro'?T:-99);
+  readyEl.style.opacity=st.phase==='live'?Math.min(1,st.liveT*3):0;
+  tagEl.textContent=st.phase==='live'?'Live · waiting on Ready':(st.compare?'Today\'s orbit':'Pre-game · '+MODES[st.idx].name);
+  tagEl.classList.toggle('rec',st.phase!=='live');
+  return i;
+}
+function drawCaps(T){
+  ['title','sub','stat','lower'].forEach(k=>{const el=capEl[k];let best=null;for(const c of st.caps)if(c.k===k&&T>=c.a&&T<=c.a+c.d)best=c;
+    if(!best){el.style.opacity=0;return;}const lt=T-best.a,o=Math.min(1,lt/.22,(best.d-lt)/.25);
+    if(k==='lower'){el.querySelector('b').textContent=best.t;el.querySelector('span').textContent=best.t2;}else if(el.textContent!==best.t)el.textContent=best.t;
+    el.style.opacity=clamp(o,0,1);const e=EASE.out(Math.min(1,lt/.4));
+    if(reduce)el.style.transform=k==='title'?'none':'';
+    else if(k==='title')el.style.transform=`scale(${1.18-.18*e})`;
+    else if(k==='sub')el.style.transform=`translateY(${(1-e)*12}px)`;
+    else if(k==='stat')el.style.transform=`translateX(${(1-e)*24}px)`;
+    else el.style.transform=`translateX(${(1-e)*-24}px)`;});
+}
+function drawOverlay(T,lb){
+  const w=ov.width,h=ov.height;octx.clearRect(0,0,w,h);
+  if(lb>0){const g=octx.createRadialGradient(w/2,h/2,h*.3,w/2,h/2,h*.9);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,0,${.5*lb})`);octx.fillStyle=g;octx.fillRect(0,0,w,h);}
+  if(st.phase!=='intro')return;
+  const diag=Math.hypot(w,h)/2;
+  for(const f of st.fx){const lt=T-f.a;if(lt<0||lt>f.d)continue;const u=lt/f.d;
+    if(f.k==='flash'){octx.fillStyle=`rgba(255,255,255,${.85*(1-u)*(1-u)})`;octx.fillRect(0,0,w,h);}
+    else if(f.k==='speed'||f.k==='warp'){if(reduce)continue;const a=clamp(Math.min(lt/.3,(f.d-lt)/.3),0,1)*(f.amt||1),wp=f.k==='warp';
+      octx.lineCap='round';for(let i=0;i<80;i++){const ang=hash(i)*6.283,ph=(hash(i+99)+T*(wp?1.4:1.1))%1,r0=(.28+ph*.8)*diag,len=diag*(.05+hash(i+7)*.09)*(wp?2.2:1);
+        octx.strokeStyle=wp?`rgba(190,170,255,${a*.4})`:`rgba(225,240,255,${a*.32})`;octx.lineWidth=(1+hash(i+3)*1.6)*(w/900);octx.beginPath();octx.moveTo(w/2+Math.cos(ang)*r0,h/2+Math.sin(ang)*r0);octx.lineTo(w/2+Math.cos(ang)*(r0+len),h/2+Math.sin(ang)*(r0+len));octx.stroke();}}}
+}
+
+/* ---------- loop ---------- */
+let lastWall=performance.now(),lastShot=-1;
+function tick(now){
+  const dt=Math.min(.1,(now-lastWall)/1000);lastWall=now;
+  if(st.playing){
+    if(st.phase==='intro'){st.T+=dt*st.speed;if(st.T>=st.total){st.T=st.total;st.phase='live';st.liveT=0;}}
+    else if(st.phase==='skip'){st.skipT+=dt*st.speed;if(st.skipT>=.3){st.phase='live';st.liveT=0;}}
+    else{st.liveT+=dt*st.speed;if(document.getElementById('auto').checked&&st.liveT>1.4){load(st.idx+1);}}
+  }
+  const i=frameAt(st.phase==='intro'?st.T:st.total+st.liveT);
+  if(i!==lastShot){lastShot=i;document.querySelectorAll('#shots li').forEach((li,j)=>li.classList.toggle('on',j===i));document.querySelectorAll('.tseg').forEach((s,j)=>s.classList.toggle('on',j===i));}
+  const shown=st.phase==='intro'?st.T:st.total;
+  document.getElementById('ph').style.left=(shown/st.total*100)+'%';
+  document.getElementById('time').textContent=`${shown.toFixed(1)} / ${st.total.toFixed(1)} s`;
+  requestAnimationFrame(tick);
+}
+
+/* ---------- UI ---------- */
+const rack=document.getElementById('rack'),sel=document.getElementById('modeSelect');
+function buildRack(){rack.innerHTML='';sel.innerHTML='';GROUPS.forEach((g,gi)=>{const h=document.createElement('h2');h.textContent=g;rack.appendChild(h);const og=document.createElement('optgroup');og.label=g;sel.appendChild(og);
+  MODES.forEach((m,i)=>{if(m.group!==gi)return;const b=document.createElement('button');b.className='mode';b.dataset.i=i;b.innerHTML=`<span class="mname"></span><span class="mhull"></span><span class="vd"></span>`;
+    b.querySelector('.mname').textContent=m.name;b.querySelector('.mhull').textContent=m.hull;b.addEventListener('click',()=>{load(i);});rack.appendChild(b);
+    const o=document.createElement('option');o.value=i;o.textContent=m.name+' · '+m.hull;og.appendChild(o);});});}
+function syncList(){rack.querySelectorAll('button.mode').forEach(b=>{const on=+b.dataset.i===st.idx;b.setAttribute('aria-current',on?'true':'false');if(on)b.scrollIntoView({block:'nearest'});
+  const vd=b.querySelector('.vd');vd.innerHTML='';const vs=verdictsFor(MODES[+b.dataset.i].key);vs.slice(0,4).forEach(v=>{const d=document.createElement('i');d.className=v.verdict;vd.appendChild(d);});});sel.value=st.idx;}
+sel.addEventListener('change',()=>load(+sel.value));
+function moveWords(s){return({move:'Dolly / crane',orbit:'Orbit',path:'Fly the line',vertigo:'Dolly zoom',cuts:'Hard cuts',hold:'Hold',handoff:'Hand-off'})[s.k]+(s.shake?' · handheld':'')+(s.fovWave?' · lens breathing':'')+(s.spin?' · roll':'');}
+function renderSheet(){const m=MODES[st.idx];
+  document.getElementById('sGroup').textContent=GROUPS[m.group]+' · '+m.hull;document.getElementById('sName').textContent=m.name;
+  document.getElementById('sConcept').textContent=st.compare?'Today\'s orbit (every mode)':m.concept;
+  document.getElementById('sPitch').textContent=st.compare?'What every mode plays now: four straight chords of a circle around the scene centre with a short pause at each corner, then the hand-off.':m.pitch;
+  const ol=document.getElementById('shots');ol.innerHTML='';
+  st.shots.forEach((s,j)=>{const li=document.createElement('li');li.innerHTML=`<span class="si">${String(j+1).padStart(2,'0')}</span><span class="sn"></span><span class="sd">${s.dur.toFixed(1)} s</span><span class="sm"></span><span class="sx"></span>`;
+    li.querySelector('.sn').textContent=s.name;li.querySelector('.sm').textContent=moveWords(s);li.querySelector('.sx').textContent=s.note||'';li.addEventListener('click',()=>seek(s.start+.01));ol.appendChild(li);});
+  lastShot=-1;}
+function renderTimeline(){const tl=document.getElementById('timeline');tl.querySelectorAll('.tseg').forEach(e=>e.remove());const ph=document.getElementById('ph');
+  st.shots.forEach(s=>{const d=document.createElement('div');d.className='tseg'+(s.k==='handoff'?' handoff':'');d.style.flex=s.dur+' 1 0';d.innerHTML='<em></em><small></small>';d.querySelector('em').textContent=s.name;d.querySelector('small').textContent=s.dur.toFixed(1)+' s';tl.insertBefore(d,ph);});}
+function seek(T){st.T=clamp(T,0,st.total-.001);st.phase='intro';st.skipFrom=null;}
+document.getElementById('timeline').addEventListener('pointerdown',e=>{const r=e.currentTarget.getBoundingClientRect();seek((e.clientX-r.left)/r.width*st.total);});
+const bPlay=document.getElementById('bPlay');
+function setPlaying(p){st.playing=p;bPlay.textContent=p?'Pause':'Play';}
+bPlay.addEventListener('click',()=>{if(st.phase==='live'){seek(0);setPlaying(true);}else setPlaying(!st.playing);});
+function replay(){seek(0);setPlaying(true);}
+function skip(){if(st.phase!=='intro')return;st.skipFrom=poseAt(st.T).pose;st.phase='skip';st.skipT=0;setPlaying(true);}
+document.getElementById('bReplay').addEventListener('click',replay);
+document.getElementById('bSkip').addEventListener('click',skip);
+document.getElementById('bPrev').addEventListener('click',()=>load(st.idx-1));
+document.getElementById('bNext').addEventListener('click',()=>load(st.idx+1));
+document.getElementById('speed').addEventListener('change',e=>{st.speed=+e.target.value;});
+document.querySelectorAll('#domSeg button').forEach(b=>b.addEventListener('click',()=>{playerDom=b.dataset.d;document.querySelectorAll('#domSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+  document.getElementById('monitor').style.setProperty('--pd',DOMCSS[playerDom]);load(st.idx,true);}));
+function setCompare(c){st.compare=c;document.querySelectorAll('#camSeg button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.c==='old')===c?'true':'false'));load(st.idx);}
+document.querySelectorAll('#camSeg button').forEach(b=>b.addEventListener('click',()=>setCompare(b.dataset.c==='old')));
+document.addEventListener('keydown',e=>{if(e.target.closest('textarea,input,select'))return;
+  if(e.code==='Space'){e.preventDefault();bPlay.click();}else if(e.key==='s'||e.key==='S')skip();else if(e.key==='r'||e.key==='R')replay();
+  else if(e.key==='ArrowRight')load(st.idx+1);else if(e.key==='ArrowLeft')load(st.idx-1);else if(e.key==='c'||e.key==='C')setCompare(!st.compare);});
+function resize(){const mon=document.getElementById('monitor'),w=mon.clientWidth,h=mon.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const dpr=Math.min(window.devicePixelRatio||1,2);ov.width=Math.round(w*dpr);ov.height=Math.round(h*dpr);}
+new ResizeObserver(resize).observe(document.getElementById('monitor'));
+
+/* ---------- verdicts (shared, one doc per person) ---------- */
+let db=null,user=null,myId=null,allV={},names={};
+const vbtns=document.getElementById('vbtns'),vnote=document.getElementById('vnote'),vsave=document.getElementById('vsave'),vstatus=document.getElementById('vstatus'),vlist=document.getElementById('vlist');
+let pick=null,dirtyFor=null;
+function verdictsFor(key){const out=[];for(const id in allV){const v=allV[id]?.modes?.[key];if(v&&v.verdict)out.push(Object.assign({id},v));}return out.sort((a,b)=>(b.at||0)-(a.at||0));}
+function renderVerdict(){const key=MODES[st.idx].key,mine=allV[myId]?.modes?.[key];
+  if(dirtyFor!==key){pick=mine?.verdict||null;vnote.value=mine?.note||'';dirtyFor=key;}
+  vbtns.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===pick?'true':'false'));
+  const can=!!(db&&myId);vbtns.querySelectorAll('button').forEach(b=>b.disabled=!can);vsave.disabled=!can||!pick;vnote.disabled=!can;
+  if(!can)vstatus.textContent=db===null&&window.__vReady?'Open this page signed in to claude.ai to leave a verdict.':vstatus.textContent;
+  const vs=verdictsFor(key);vlist.innerHTML='';
+  if(!vs.length){const li=document.createElement('li');li.className='hint';li.style.display='block';li.textContent='No verdicts on this mode yet.';vlist.appendChild(li);return;}
+  vs.forEach(v=>{const li=document.createElement('li');li.innerHTML='<span class="pill"></span><span class="who"></span><span class="note"></span>';const p=li.querySelector('.pill');p.className='pill '+v.verdict;p.textContent=v.verdict;
+    li.querySelector('.who').textContent=(v.id===myId?'You':(names[v.id]||'Someone'));li.querySelector('.note').textContent=v.note||'';vlist.appendChild(li);});}
+vbtns.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;pick=b.dataset.v;renderVerdict();});
+vsave.addEventListener('click',async()=>{if(!db||!myId||!pick)return;const key=MODES[st.idx].key;vsave.disabled=true;vstatus.textContent='Saving…';
+  try{const modes=Object.assign({},allV[myId]?.modes||{});modes[key]={verdict:pick,note:vnote.value.trim().slice(0,1000),at:Date.now()};await db.doc('verdicts/'+myId).set({modes,at:Date.now()});vstatus.textContent='Saved. The team sees it now.';}
+  catch(err){vstatus.textContent=(err&&err.code==='permission_denied')?'You can view this page but not write to it. Ask its owner for edit access.':'Not saved: '+((err&&err.message)||'try again');}
+  vsave.disabled=false;});
+async function resolveNames(){if(!user)return;const ids=Object.keys(allV).filter(id=>id!==myId);if(!ids.length)return;try{const ps=await user.profiles(ids);ids.forEach(id=>{names[id]=(ps[id]&&ps[id].name)||'Someone';});renderVerdict();}catch(e){}}
+(async()=>{try{if(window.claude&&window.claude.use){[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);}}catch(e){db=null;}
+  window.__vReady=true;
+  if(!db){vstatus.textContent='Open this page signed in to claude.ai to leave a verdict.';renderVerdict();return;}
+  try{myId=user?await user.id():null;}catch(e){myId=null;}
+  vstatus.textContent=myId?'Pick one, add a note if it needs changes, then save.':'Sign in to leave a verdict.';
+  db.collection('verdicts').onSnapshot(snap=>{allV={};snap.docs.forEach(d=>{if(d.exists)allV[d.id]=d.data();});renderVerdict();syncList();resolveNames();},
+    err=>{vstatus.textContent='Team verdicts could not load ('+(err&&err.code||'error')+').';});
+  renderVerdict();})();
+
+/* ---------- boot ---------- */
+buildRack();
+const want=(location.hash||'').slice(1).toLowerCase();const wi=MODES.findIndex(m=>m.key===want);
+document.getElementById('monitor').style.setProperty('--pd',DOMCSS[playerDom]);
+load(wi>=0?wi:0);resize();requestAnimationFrame(tick);
+window.__introCamLab={MODES,st,load,frameAt};
+})();
+</script>
