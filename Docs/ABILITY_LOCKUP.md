@@ -265,7 +265,7 @@ to claim, silently, and only on the vessels whose authoring had drifted.
 | vessel | slot | meter |
 |---|---|---|
 | Squirrel | **Time** (Skimming) | `boostFill` — the skim-energy meter. It is authored under the skimming button and belongs on the card of the ability it reports on, which since the 2026-09 element re-cut is **Time**: skimming is what banks the energy |
-| Sparrow | Time (Afterburner) | `rollChargeIndicator` — the strafing-roll pip, already on the right card |
+| Sparrow | Time (Afterburner) | **none since 2026-10-26** — the strafing-roll pip (`rollChargeIndicator`) was unbound and its Image switched off: "lets not show that that is armed because its cooldown is so low" (Garrett). The card is the hull folding for boost with its jets; the plate is bare |
 | Scarab | Space (Ball Forge) | `energyRing` — authored under the throttle button, re-homed |
 | Dolphin | **Time** (Charge Fill Rate) | `ChargeFillGauge` — a bare Image under the Time card's container, bound 2026-10-25 when the authored eleven-step boost ring retired ("the ring now reads as a skimmer. lets just have the whole lower totem fill with the consistency of other resources" — Garrett). The view writes the bank's `fillAmount`; the hull part beside it (`Dolphin_ChargeFill`) turns by the live drift angle |
 

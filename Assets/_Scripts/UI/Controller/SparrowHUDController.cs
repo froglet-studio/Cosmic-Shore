@@ -5,6 +5,8 @@ using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     public class SparrowHUDController : VesselHUDController
@@ -15,10 +17,10 @@ namespace CosmicShore.UI
         [Header("Executors")]
         [SerializeField] private FireGunActionExecutor fireGunExecutor;
 
-        [Tooltip("Drives the boost ability icon's charge ring: the Sparrow's boost is indefinite, so " +
-                 "the icon shows whether the once-per-press strafing roll is still available instead " +
-                 "of a heat/boost gauge.")]
-        [SerializeField] private BarrelRollController barrelRollController;
+        // The palette, for the Time card's hull part (the pilot's domain colour). Injected rather
+        // than serialized so the slot reads the same ColorSet the rest of the HUD does; vessels DO
+        // get GameObjectInjector.InjectRecursive at spawn (the Dolphin's HUD controller is the pattern).
+        [Inject] GameDataSO _gameData;
 
         [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge and " +
                  "its phase-transition marks. Resolved off the vessel if left empty.")]
@@ -32,6 +34,7 @@ namespace CosmicShore.UI
         IVesselStatus _vesselStatus;
 
         bool _pollGunHeat;
+        bool _pollAfterburner;
         GunSpreadProfile _paintedProfile;
         float _paintedFullSpread = -1f;
         readonly List<float> _phaseJoins = new();
@@ -67,13 +70,10 @@ namespace CosmicShore.UI
             if (onInputEventBlocked)
                 onInputEventBlocked.OnRaised += HandleInputEventBlocked;
 
-            if (barrelRollController)
-            {
-                barrelRollController.OnRollChargeChanged += HandleRollChargeChanged;
-                view.SetRollCharge(barrelRollController.IsRollArmed
-                    ? RollChargeState.Armed
-                    : RollChargeState.Lapsed);
-            }
+            // The Time card's hull part: polled per frame (PushAfterburner) - the boost flag is
+            // written on the status by the boost action, and the domain can change mid-match.
+            _pollAfterburner = true;
+            PushAfterburner();
 
             if (!gunSprayAccuracy && _vesselStatus is Component vesselComponent)
                 gunSprayAccuracy = vesselComponent.GetComponentInChildren<GunSprayAccuracy>(true);
@@ -100,11 +100,9 @@ namespace CosmicShore.UI
         void Unsubscribe()
         {
             _pollGunHeat = false;
+            _pollAfterburner = false;
             _paintedProfile = null;
             _paintedFullSpread = -1f;
-
-            if (barrelRollController)
-                barrelRollController.OnRollChargeChanged -= HandleRollChargeChanged;
 
             if (stationaryModeChanged)
                 stationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
@@ -123,6 +121,7 @@ namespace CosmicShore.UI
         /// </summary>
         void Update()
         {
+            if (_pollAfterburner) PushAfterburner();
             if (!_pollGunHeat || !view || !gunSprayAccuracy) return;
 
             var profile = gunSprayAccuracy.Profile;
@@ -164,10 +163,24 @@ namespace CosmicShore.UI
             view.SetWeaponMode(isStationary);
         }
 
-        private void HandleRollChargeChanged(RollChargeState state)
+        /// <summary>
+        /// The Time card's hull part: the Sparrow folds while the boost is held (IsBoosting, written
+        /// by the boost action on the status) and wears the pilot's domain colour. The card shows
+        /// nothing else - the boost is indefinite, and the strafing roll's armed state is not worth
+        /// a readout (Garrett 2026-10-26: "its cooldown is so low").
+        /// </summary>
+        void PushAfterburner()
         {
-            if (!view) return;
-            view.SetRollCharge(state);
+            if (!view || _vesselStatus == null) return;
+            view.SetAfterburnerHullColor(ResolveDomainSignalColor());
+            view.SetBoosting(_vesselStatus.IsBoosting);
+        }
+
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _vesselStatus == null) return Color.white;
+            return colorSet.GetDomainSignalColor(_vesselStatus.Domain);
         }
 
         /// <summary>

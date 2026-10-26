@@ -218,7 +218,10 @@ Skimming (hull in its sphere over prisms, domain / blue) and Drift (trail + hull
 are teaching the ability" - then the **Dolphin's Time card**: the live mesh from above in the domain colour, turned by
 the drift angle, over the card's PLATE GAUGE (the eleven-step ring retired: "the ring now reads as a skimmer. lets just
 have the whole lower totem fill with the consistency of other resources"). Charge, Mass and Space stay live readouts.
-Next: the Dolphin's other cards if Garrett wants them, the Sparrow, then the eleven placeholders.
+Then the **Sparrow's Time card** (2026-10-26): the hull in its own SpeedUp take - fans folded - skinned offline
+(`mesh_pose.py`), nose right, over a bare plate (the roll pip retired), with white exhaust plumes so the rest state
+moves; the view swaps hull and jets on the live boost flag. Next: the Sparrow's Mass, Space and Charge cards, then
+the eleven placeholders.
 
 | Round | What | Why first |
 |---|---|---|

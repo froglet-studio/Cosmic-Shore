@@ -17,8 +17,11 @@ A spec may carry `REBIND = [...]` with two kinds of step:
         a sprite, or a raw YAML value (`"[]"` empties a serialized LIST, its items included). A child whose icon is
         None is a bare GAUGE Image (no sprite, Filled / Vertical / origin Bottom, empty): the lockup adopts it as the
         card's plate fill when `binding=dict(element=4, gauge="<child name>")` names it on the view's abilityIcons
-        entry (the Dolphin's Time card: the boost bank is the plate, not a ring). Idempotent: an existing child of
-        that name is left alone.
+        entry (the Dolphin's Time card: the boost bank is the plate, not a ring); `gauge=None` UNBINDS the entry's
+        gauge (the Sparrow's roll pip, 2026-10-26). A field whose value is None is DELETED from the view block (a
+        field the C# no longer has). Idempotent: an existing child of that name is left alone.
+    dict(file="Assets/.../SparrowHUDVariant.prefab", deactivate="<Image fileID>")
+        switches that Image's GameObject off (m_IsActive: 0) - a readout nothing binds any more, left in place
 
 The guid of an icon is read from its .meta (the kit writes the meta before it rebinds). A rebind never touches a
 file it was not named for: the same placeholder sprite can be referenced from another prefab on purpose (the
@@ -201,14 +204,15 @@ def _apply_pair(text, step, icon_meta):
     # The card's plate GAUGE: the abilityIcons entry for `element` points its `gauge` at the named child.
     if pair.get("binding"):
         bnd = pair["binding"]
-        seed = f"{step['file']}/{container}/{bnd['gauge']}"
+        seed = f"{step['file']}/{container}/{bnd.get('gauge') or ''}"
         fid_img = _fid(seed + "img")
         va, vb = _block(text, pair["view"])
         vblk = text[va:vb]
         pat = rf"^(  - element: {bnd['element']}\n    icon: [^\n]*\n    upgradedSprite: [^\n]*\n)(    gauge: [^\n]*\n)?"
         if not re.search(pat, vblk, re.M):
             raise SystemExit(f"{step['file']}: no abilityIcons entry for element {bnd['element']} on {pair['view']}")
-        vblk = re.sub(pat, lambda m: m.group(1) + f"    gauge: {{fileID: {fid_img}}}\n", vblk, count=1, flags=re.M)
+        gauge_ref = f"{{fileID: {fid_img}}}" if bnd.get("gauge") else "{fileID: 0}"
+        vblk = re.sub(pat, lambda m: m.group(1) + f"    gauge: {gauge_ref}\n", vblk, count=1, flags=re.M)
         text = text[:va] + vblk + text[vb:]
     # Other serialized fields on the view the pair needs: a sprite (("icon", name)), a raw YAML value, or "[]" to
     # empty a serialized list (its items go with it).
@@ -216,6 +220,10 @@ def _apply_pair(text, step, icon_meta):
         v = _sprite_ref(guid_of(icon_meta[value[1]])) if isinstance(value, tuple) else value
         va, vb = _block(text, pair["view"])
         vblk = text[va:vb]
+        if v is None:
+            vblk = re.sub(rf"^\s*{re.escape(field)}: [^\n]*\n", "", vblk, count=1, flags=re.M)
+            text = text[:va] + vblk + text[vb:]
+            continue
         if v == "[]":
             vblk = re.sub(rf"^(\s*{re.escape(field)}:)[^\n]*\n(?:\s+- [^\n]*\n)*", lambda m: m.group(1) + " []\n", vblk, count=1, flags=re.M)
             text = text[:va] + vblk + text[vb:]
@@ -245,6 +253,10 @@ def apply(root, steps, icon_meta, check=False):
             new = text.replace(f"guid: {step['old']}", f"guid: {guid}")
         elif "pair" in step:
             new = _apply_pair(text, step, icon_meta)
+        elif "deactivate" in step:
+            a, b = _block(text, step["deactivate"])
+            go = re.search(r"m_GameObject: \{fileID: (\d+)\}", text[a:b]).group(1)
+            new = _set_in_block(text, go, "m_IsActive", "0")
         elif "list" in step:
             key = step["list"]
             m = re.search(rf"^(\s*){re.escape(key)}:\n((?:\s*- \{{fileID: \d+, guid: \w+, type: 3\}}\n)+)", text, re.M)

@@ -174,3 +174,33 @@ one thing right. then move on."
     and `card.py` draws the gauge (`gauge=0..1`) so a sheet shows a metered card as the HUD does. General rule: a
     HOW-MUCH on a card is never a shape of its own - not a ring, not a ladder - it is the plate filling, the same
     on every card that has one; the icon spends its shapes on WHO and WHAT.
+
+## 2026-10-26 - the Sparrow's Time card: the hull in its own TAKE
+
+Garrett: "time first, build the folded pose." "what do you mean roll pip? ... oh i know. it is letting you know
+that the roll is available." "lets not show that that is armed because its cooldown is so low." "make the vessel
+pointing to the right. (it is currently pointing left, which may be due to a model error)" "A is the best." "lets
+show some jets coming out of the sparrow so the default state communicates motion and doesn't just look like the
+vessel silhouette."
+
+34. **A hull's authored TAKE is a card state, and the kit can skin it without Blender.** The Sparrow rests with
+    both fans spread (a starburst at 60 px); its SpeedUp take folds them into swept wings, and that fold IS the
+    afterburner. `mesh_pose.py` reads the FBX skin (clusters: indexes, weights, bind matrices), the bone chain and
+    the take's keys, and linear-blend-skins the mesh with the pose as a delta on the bind pose;
+    `mesh_silhouette.silhouette(..., take=)` projects it. Two proofs on the file (`--check`): the rest skin
+    reproduces the raw mesh (0.0000) and the node chain lands on every TransformLink (the XYZ Euler convention
+    holds). Blender's exporter writes a cluster's `Transform` as the mesh in BONE space (inv(link) * mesh global),
+    not the mesh global - 65 distinct matrices on the Sparrow; read it as such or the rest skin is 47 units off.
+35. **Nose right is the owner's read, not the file's.** The Sparrow's dossier records the hull flies blade-end
+    first (a model error the modeller will fix); the card shows the pointed fuselage to the right because that is
+    what reads as a ship ("make the vessel pointing to the right"). `mirror=` is a per-hull call made by looking.
+36. **A readout that re-arms faster than a glance is not worth a plate.** The Time plate filled light blue while
+    the strafing roll was armed; Garrett: "lets not show that that is armed because its cooldown is so low." The
+    pip is unbound (`binding=dict(element=4, gauge=None)`, `deactivate=` on its Image, the view's pip fields
+    deleted with `fields={...: None}`) and the plate is bare. Ask of every live signal: does the pilot ever act
+    on it?
+37. **The default state must still MOVE.** The hull alone, spread or folded, is a silhouette; two white exhaust
+    plumes behind it ("jets coming out of the sparrow") make the rest state a ship under way and the boost state
+    a ship at full burn - the plumes lengthen with the fold. The jets are their own untinted part (`AfterburnerJets`,
+    rest/boost sprites) so the domain colour stays on the hull; the hull sits right of centre to leave them room
+    (box 94 at cx 74). `plume()` in the spec: a tapered bar, chamfered at the engine, square at the tip.

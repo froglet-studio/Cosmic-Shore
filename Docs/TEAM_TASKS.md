@@ -2230,3 +2230,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (or Garrett on his next Dolphin flight)
 - **Added:** 2026-10-25 by Claude session cece/loving-ptolemy-4715w4 (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/sheets/dolphin_charge_fill.png, Tools/Build/icon_kit/specs/dolphin.py, Assets/_Scripts/UI/View/DolphinVesselHUDView.cs
+
+### T-20261026-b60f · open · test · hud
+- **Task:** Sparrow Time card: open SparrowHUDVariant.prefab, confirm it compiles and draws - the Time card is the top-down Sparrow in the domain colour with white jets, folding its fans (and lengthening the jets) while the boost is held, back when released; the plate shows no roll pip any more (OverheatCounter switched off); Sparrow.prefab's SparrowHUDController no longer has a barrelRollController field (a stale serialized line is harmless; resave the prefab to drop it)
+- **Done when:** A Sparrow flight in Freestyle shows the hull fold on boost and unfold on release, in the pilot's domain colour, with no light-blue plate fill; no console errors on the HUD
+- **Who can take it:** Yash (or Garrett on his next Sparrow flight)
+- **Added:** 2026-10-26 by Claude session cece/loving-ptolemy-4715w4 (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/sparrow_afterburner.png, Tools/Build/icon_kit/specs/sparrow.py, Assets/_Scripts/UI/View/SparrowHUDView.cs, Assets/_Scripts/UI/Controller/SparrowHUDController.cs
