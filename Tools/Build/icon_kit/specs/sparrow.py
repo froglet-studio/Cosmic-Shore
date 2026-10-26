@@ -38,18 +38,19 @@ VIEW_PLAN = dict(pitch=0, yaw=0, dilate_px=1.0, mirror=False)
 # The hull sits right of centre so its JETS have room behind it (Garrett 2026-10-26: "lets show some jets coming out
 # of the sparrow so the default state communicates motion and doesn't just look like the vessel silhouette"). The
 # engine faces sit at the blade end of the mesh (the dossier: z +2.7, behind the six nose blades), which is the LEFT
-# end here - the jets stream from under the blades, two plumes at the engines' x (+-2.3 of the 6.25 half-width).
-AB_HULL = dict(box=94, cx=74.0, cy=64.0)
-AB_JET_Y = (64 - 14, 64 + 14)
-AB_JET_X0 = 30                       # where the plumes leave the hull's tail end
-AB_JET_LEN = dict(rest=20, boost=24)  # a plume's length: idling, and at full burn (the tip stays inside the optical box)
+# end here - the jets stream from under the blades, two plumes close together on the centreline, in the HUD's BLUE
+# (ElementalBarsConfigSO.blueColor, the view tints the part): "give them a blue tint".
+AB_HULL = dict(box=90, cx=76.0, cy=64.0)
+AB_JET_Y = (64 - 7, 64 + 7)             # "bring the jets together" (Garrett 2026-10-26): a 6 px gap at the engines
+AB_JET_X0 = 32                       # where the plumes leave the hull's tail end
+AB_JET_LEN = dict(rest=14, boost=26)  # a plume's length: idling, and at full burn - nearly double ("lengthen them when using the boost"); the tip stays inside the optical box
 
 
 def sparrow(take=None, box=112, cx=64.0, cy=64.0):
     return mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=cy, take=take, **VIEW_PLAN)
 
 
-def plume(x0, y, length, w0=10, w1=4):
+def plume(x0, y, length, w0=8, w1=3):
     """One exhaust plume trailing LEFT from (x0, y): a bar tapering from w0 at the engine to w1 at its tip, with the
     tip cut square and the engine end chamfered - the style's angular language, no flame curls."""
     x1 = x0 - length
@@ -151,9 +152,9 @@ ICONS = [
          exempt={"gap": "the real mesh", "box_fill": "a part: the hull leaves room for its jets", "in_box": "a part"}),
     dict(name="Sparrow_AfterburnerHullBoost", element="Time", act="Afterburner: the hull part boosting (SpeedUp take)", draw=afterburner_hull_boost, subdir="Parts", family=False,
          exempt={"gap": "the real mesh", "box_fill": "a part", "in_box": "a part", "components": "the nose blades slide forward in the take"}),
-    dict(name="Sparrow_AfterburnerJetsRest", element="Time", act="Afterburner: the jets part, idling (white)", draw=afterburner_jets_rest, subdir="Parts", family=False,
+    dict(name="Sparrow_AfterburnerJetsRest", element="Time", act="Afterburner: the jets part, idling (the HUD blue)", draw=afterburner_jets_rest, subdir="Parts", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "two plumes", "thin": "the plumes taper", "at40": "a part"}),
-    dict(name="Sparrow_AfterburnerJetsBoost", element="Time", act="Afterburner: the jets part at full burn (white)", draw=afterburner_jets_boost, subdir="Parts", family=False,
+    dict(name="Sparrow_AfterburnerJetsBoost", element="Time", act="Afterburner: the jets part at full burn (the HUD blue)", draw=afterburner_jets_boost, subdir="Parts", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "two plumes", "thin": "the plumes taper", "at40": "a part"}),
     dict(name="Sparrow_Rockets_4", element="Charge", act="Skyburst Rockets: 4 of 4", draw=lambda: rockets(4), subdir="Ladder", family=False, before=ART + "Missiles/missileGauge_2.png"),
     dict(name="Sparrow_Rockets_3", element="Charge", act="rack: 3 of 4", draw=lambda: rockets(3), subdir="Ladder", family=False),

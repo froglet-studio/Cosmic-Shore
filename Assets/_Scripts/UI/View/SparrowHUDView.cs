@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -36,12 +37,20 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite afterburnerRestSprite;
         [Tooltip("The hull boosting: fans folded, the SpeedUp take (Sparrow_AfterburnerHullBoost).")]
         [SerializeField] private Sprite afterburnerBoostSprite;
-        [Tooltip("The exhaust part behind the hull - white, never tinted - so the card says MOTION even at " +
-                 "rest (Garrett 2026-10-26: \"show some jets coming out of the sparrow so the default state " +
-                 "communicates motion\"). Swapped with the hull: idling plumes at rest, full burn while boosting.")]
+        [Tooltip("The exhaust part behind the hull, so the card says MOTION even at rest (Garrett " +
+                 "2026-10-26: \"show some jets coming out of the sparrow so the default state communicates " +
+                 "motion\"). Tinted the HUD's BLUE (the shared config's blueColor - \"give them a blue tint\"), " +
+                 "never the domain colour; swapped with the hull: short idling plumes at rest, nearly twice " +
+                 "as long while boosting.")]
         [SerializeField] private Image afterburnerJetsIcon;
         [SerializeField] private Sprite afterburnerJetsRestSprite;
         [SerializeField] private Sprite afterburnerJetsBoostSprite;
+        [Tooltip("Shared colour spec; the jets wear its blueColor. Loaded from Resources when left empty; " +
+                 "never author a second copy of the colour.")]
+        [SerializeField] private ElementalBarsConfigSO barsConfig;
+        [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
+        [Tooltip("Fallback jets colour when the shared config cannot be resolved.")]
+        [SerializeField] private Color afterburnerJetsFallbackColor = new(0.22f, 0.51f, 1f, 1f);
         [Tooltip("Scale punch on the hull the instant it folds, so the fold reads even at a glance.")]
         [SerializeField, Min(0f)] private float afterburnerFoldPunchScale = 0.2f;
         [SerializeField, Min(0.01f)] private float afterburnerFoldPunchDuration = 0.25f;
@@ -95,8 +104,13 @@ namespace CosmicShore.UI
                 afterburnerHullIcon.color = _afterburnerHullColor;
                 afterburnerHullIcon.rectTransform.localScale = Vector3.one;
             }
-            if (afterburnerJetsIcon && afterburnerJetsRestSprite)
-                afterburnerJetsIcon.sprite = afterburnerJetsRestSprite;
+            if (afterburnerJetsIcon)
+            {
+                if (afterburnerJetsRestSprite) afterburnerJetsIcon.sprite = afterburnerJetsRestSprite;
+                if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
+                    barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+                afterburnerJetsIcon.color = barsConfig ? barsConfig.blueColor : afterburnerJetsFallbackColor;
+            }
 
             if (weaponModeIcon)
                 weaponModeIcon.enabled = false;
