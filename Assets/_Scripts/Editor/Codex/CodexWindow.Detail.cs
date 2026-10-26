@@ -169,7 +169,9 @@ namespace CosmicShore.Editor.Codex
                     {
                         if (FrogletEditorPalette.ColorButton("Re-bake this image",
                                 FrogletEditorPalette.Cyan, 150f, 24f,
-                                "Render this entry only, at the toolbar's bake size.",
+                                entry.Kingdom == CodexKingdom.Tool
+                                    ? $"A Tool's portrait is drawn by {CodexImageBaker.ToolPortraitAuthor}, not baked."
+                                    : "Render this entry only, at the toolbar's bake size.",
                                 enabled: CodexImageBaker.CanBake(entry)))
                             _deferred = () => BakeOne(entry);
 

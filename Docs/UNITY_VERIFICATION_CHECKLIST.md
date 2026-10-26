@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Toy Box portraits: seven glyphs that teach each toy; the codex baker stands down on Tool pages (`cece/sharp-pascal-3frg3w`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "update the images on the toybox so they are production ready. they should communicate
+their utility and adhere to the larger design principles"): the seven Toy Box card portraits (`ToyCard.prefab`'s
+Portrait, through `ToyPortraitLibrary` and each toy's codex page) are white angular glyphs drawn by
+`Tools/Build/icon_kit/toy_portraits.py`, written into the existing `Assets/_Graphics/Codex/tool_*.png` (guids
+kept); the Element Charger, which had no portrait, got `tool_element-charger.png` and its codex page points at it.
+`ToolPortraitBuilder` (the baked emblem) is deleted and `CodexImageBaker.CanBake` is false for Tool pages. The C#
+compiled clean headless (`unity_refcompile --config editor`: 0 errors in project code); no Unity Editor was open.
+
+**Verify in editor:**
+1. Let the PNGs import. Menu_Main → Toy Box: each of the seven cards shows its glyph in white (no blank card, no
+   ring of spheres); Today's activity shows the offering toy's glyph.
+2. FrogletTools > UI > Codex → Tools: each page shows the same glyph; "Re-bake this image" is disabled on a Tool
+   page with the tooltip naming the script; **Bake all** skips the Tool portraits (the PNGs stay unchanged in
+   git) but still bakes a painting's and a hull's variant icons.
+3. Run Scan & Merge once: no Tool page loses its Image (the field is fill-when-empty).
+
 ### 🔴 Rhino round 2: no energy; Charge steals; Space alone sets the length (camera follows); combo toasts, AI combos, ramp line on the Time card (`cece/wonderful-knuth-rzv8qp`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "Omnicrystal doesn't need the element buff, lets discard the whole notion of energy as

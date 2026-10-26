@@ -7,12 +7,12 @@ namespace CosmicShore.UI
     /// <summary>
     /// The <b>2D face of a toy</b>, for the app shell's Toy Box.
     ///
-    /// <para>It resolves the portrait the in-game encyclopedia already bakes rather than authoring
-    /// a second set of icons: <c>FrogletTools &gt; UI &gt; Codex</c> draws every toy from
-    /// its own <c>ToyEmblem</c> grammar (core + satellites inside the switch ring) and bakes the
-    /// result to <c>Assets/_Graphics/Codex/</c>, so the flat card in the menu is a picture of the
-    /// same emblem the player flies at in freestyle - and re-baking the emblem re-skins the menu
-    /// with nothing to re-wire. See <c>Docs/CODEX.md</c> §3.5.</para>
+    /// <para>It resolves the portrait the in-game encyclopedia already holds rather than wiring a
+    /// second set of icons: each toy's codex page points at one sprite in
+    /// <c>Assets/_Graphics/Codex/</c>, drawn by <c>Tools/Build/icon_kit/toy_portraits.py</c> as an
+    /// angular white glyph that teaches what flying through the toy DOES (the ability-icon
+    /// language), so the menu card and the codex page can never show two different pictures of
+    /// one toy, and a redraw re-skins both with nothing to re-wire. See <c>Docs/CODEX.md</c> §4.</para>
     ///
     /// <para>Matched on the toy's own DEFINITION ASSET (<see cref="CodexEntry.SourceConfig"/>),
     /// never on a name: a toy has no prefab, and the config is the thing the codex harvester
