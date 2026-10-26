@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'The afterimages are laid as DANGER prisms (RhinoSwordAfterimageConfigSO.dangerUpgradeElement, gated on IsUpgradeActive(Mass), snapshotted per afterimage).'
   - Element: 3
     AbilityLabel: 'Blade Reach'
-    AbilityDescription: 'Space lengthens the sword: the blade''s resting length runs 30 at rest to 50 at level 10 (Skimmer.Scale on the ForceFieldSkimmer Variant, read live by ShieldSkimmerScaleDriver), and stored energy grows it on top toward 120. Reach is what the blade cuts, what it strikes an Astro League ball with at the tip, and how far the afterimages reach.'
+    AbilityDescription: 'Space lengthens the sword: the blade''s resting length runs 24 at rest to 40 at level 10 (Skimmer.Scale on the ForceFieldSkimmer Variant, read live by ShieldSkimmerScaleDriver), and stored energy grows it on top toward 96. Reach is what the blade cuts, what it strikes an Astro League ball with at the tip, and how far the afterimages reach.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4

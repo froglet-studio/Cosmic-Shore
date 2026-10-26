@@ -15,7 +15,7 @@ MonoBehaviour:
   mode: 0
   followOffset: {x: 0, y: 0, z: -70}
   lookAheadDistance: 0
-  lookAheadLift: 12
+  lookAheadLift: 18
   dynamicMinDistance: 10
   dynamicMaxDistance: 130
   followSmoothTime: 0.2
