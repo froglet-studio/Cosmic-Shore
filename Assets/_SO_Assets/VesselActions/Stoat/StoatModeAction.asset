@@ -22,10 +22,25 @@ MonoBehaviour:
     Floor: 1
   blendSeconds: 0.8
   massUpgradeShieldsInMassMode: 1
-  hybridPathLengthShare: 0.5
-  hybridCarrySeconds: 2.5
+  driveLengthMin: 60
+  driveLengthMax: 320
+  driveLateralMax: 140
+  driveTurnGain: 2.2
+  driveTurnMax: 140
+  driveWarpShare: 1
+  driveWarpExponent: 1.3
+  driveKeyRampSeconds: 0.5
+  driveMarkerRadius: 10
+  driveSinkColor: {r: 0.77, g: 0.55, b: 1, a: 0.95}
+  driveSourceColor: {r: 1, g: 1, b: 1, a: 0.95}
   autopilotTimeModeDegrees: 70
   autopilotModeIntervalSeconds: 3
+  autopilotDriveDistance: 400
+  autopilotDriveSwitchConeDegrees: 30
+  autopilotDriveNear: 0
+  autopilotDriveFar: 150
+  autopilotDriveConeDegrees: 120
+  autopilotDriveLeanDegrees: 15
   massModeEvent:
     Guid:
       Data1: 0
@@ -40,7 +55,7 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
-  hybridModeEvent:
+  driveModeEvent:
     Guid:
       Data1: 0
       Data2: 0

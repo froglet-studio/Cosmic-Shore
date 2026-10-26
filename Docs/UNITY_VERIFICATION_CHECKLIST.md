@@ -103,44 +103,43 @@ offline 0 of 11 recorded courses finished before, 11 of 11 after. NOT run: `Swit
 
 ---
 
-### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three mega forms that combine into one omega form with three seats (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three vessels marching as one formation with a mobility, an attack and a defence seat (`Ys-bleeding-edge`, 2026-10-26, round 2) — NOT EDITOR-VERIFIED
 
-**What landed:** a first Unity clone of the Vessel Studio's Omega Crews lab (`Docs/Studios/VesselStudio/omega.html`,
-CONCEPT_FLEET.md §10) for Yash to test: `OmegaMath` (the page's omegaFlight, slotOf, dock ease, meter, element mults,
-finisher cone, line for line; `OmegaMathTests` holds it to goldens from the page's own code), `OmegaCrew` on each hull's
-root (the Orca's lifecycle: forms, seats, the meter, the members' moves, the crew weapon, the finisher, input-only AI
-seats), `OmegaVesselTransformer` (the Stoat's two-stick flight with cruise and turn rates switched per form),
-`OmegaCrewView` (placeholder member bodies, struts, fire, the finisher cone), `OmegaCrystalEffectSO` in the shared
-`OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three Stoat-clone prefabs by
-`Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green, 23 negative controls). The Unity CLI was not
-available in the session, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the
-only compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
+**What landed:** the Vessel Studio's Omega Crews lab cloned into the game (`Docs/Studios/VesselStudio/omega.html`,
+CONCEPT_FLEET.md §10), rebuilt after Yash's first test the same day ("an aligned flock of three ... the manoeuvre will be
+done by the Stoat, the shooting by the right vessel, the left one will protect"): `OmegaMath` (the page's arithmetic,
+line for line, goldens from the page's own code in `OmegaMathTests`), `OmegaCrew` on each hull's root (the formation,
+the three seats, the moves, the shield and the ward, input-only AI seats; the Orca's lifecycle), `OmegaVesselTransformer`
+(always the mobility vessel's cruise and turn rates, a boost channel), `OmegaCrewView` (placeholder bodies, aim bar,
+fire, shield shards, ward shell; the colour on the material, which fixes the black bodies of the first test),
+`OmegaCrystalEffectSO` in the shared `OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three
+Stoat-clone prefabs by `Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green). The Unity CLI was not
+available, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the only
+compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
 
 **Test (Menu_Main > freestyle > Toy Box > Vessel Changer > Warden; then Bulwark, Tempest):**
-1. **Apart.** The Stoat hull with two faceted bodies flying beside it (one each side, a little behind), in your domain colour.
-   They keep up through turns and boosts. The Mass card reads half; the Space card fills as they close in.
-2. **The hull member's move (RT).** Warden as the Stoat: a boost burst (x2 for 1.2 s, then 4 s cool: the Charge card
-   refills). D-pad right (or the right arrow): you are the Thresher; the hull jumps to that body's pose and the body left
-   behind takes yours. RT held near mass: prisms ahead are destroyed with a lit bar to the strike. D-pad right again: the
-   Butterfly (a boost). Bulwark: Rhino sweep, Grizzly charge-and-release burst (an explosion at 140 u), Scarab dash.
-   Tempest: Squirrel boost, Sparrow guns (the nearest prism on the nose line), Manta boost.
-3. **Combine.** With the Mass card past a third and both bodies close (the Space card full), hold LT: the two bodies dock onto
-   the hull over about 1.6 s (one 9 u above and 4 back, one 8 u below and 6 back), struts appear, the hull flies faster with
-   wider turns (Warden cruise ~71, Tempest ~89) and bulldozes mass it touches. The Mass card now drains.
-4. **Seats combined.** D-pad right: Arms. Your flight input stops and the hull's AI flies; the mouse / right stick / W A S D
-   turn a thin bar from the hull (the turret line, bounded); RT fires the crew weapon down it (Warden whip, Bulwark
-   cannon with charge, Tempest guns). D-pad right: Core. LT holds the shield (the Mass card drains faster, mass touched
-   dies). With the Mass card near full, RT fires the finisher: the mass in a cone ahead dies, a big blast, and the crew
-   splits round you (one body ahead, two behind to the sides) at nine tenths of the speed; you fly your member again.
-5. **Split on purpose.** As Helm, hold LT half a second: the crew splits. Let the Mass card run out combined: it splits.
-6. **AI seats.** As Helm combined, the Arms AI turns the bar onto mass ahead and fires; the Core AI shields when mass is
-   about to hit. As Arms or Core, the AI Helm flies the hull (it never splits by choice).
-7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars and cones disappear; the console shows no
-   errors from the crew.
+1. **The formation.** The Stoat hull leads; two faceted bodies in your domain colour (not black) ride 18 u to each side and
+   10 u behind, and keep exactly those places through turns, rolls and boosts. The Mass card reads half.
+2. **The mobility seat.** RT: the Stoat's sling boost, the whole formation speeds up for 1.2 s, then the Charge card
+   refills over 4 s. Bulwark: the Scarab's dash. Tempest: the Squirrel's boost.
+3. **Swap to the attacker.** D-pad right (or the right arrow): the hull jumps to the right-hand place and the camera with
+   it; the Stoat's place now shows a body; the AI steers the formation and your flight sticks no longer turn it. The
+   right stick, the mouse or W A S D turn a thin bar from the hull (the turret, bounded); RT fires down it: Warden guns
+   (the nearest prism on the line dies, a bar to it), Bulwark cannon (hold, release: a burst at 140 u), Tempest wrecking
+   ball (held near mass, it smashes it).
+4. **Swap to the defender.** D-pad right again: the hull takes the left-hand place. LT: eight shards orbit the formation,
+   every hostile prism within 40 u of its centre dies, the Mass card drains and the Space card lights. RT: a shell swells
+   round the formation and mass within 60 u dies; the Space card then refills over 3 s. With the Mass card empty neither works.
+5. **Back to the leader.** D-pad left twice: the hull leads again and your sticks fly. The cursor is free again (it
+   locks for mouse aim in the attack seat).
+6. **AI seats.** In the mobility seat, the attacker's bar turns onto mass ahead and fires on its own; the defender's
+   shield comes up when mass is about to hit the formation.
+7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars, shards and shells disappear; the
+   console shows no errors from the crew.
 
-**PASS:** every step as described, no console errors. **FAIL:** a body that drifts away or never docks · a swap that leaves
-the hull where it was · a combine that never ends · RT doing nothing in a seat · input still live in Arms / Core · a bar or
-body left behind after a vessel swap.
+**PASS:** every step as described, no console errors. **FAIL:** a body that is black, drifts or lags · a swap that leaves
+the hull where it was or the camera behind · flight sticks still steering in the attack or defence seat · RT doing nothing
+in a seat · a body left behind after a vessel swap.
 
 ### 🔴 Rhino round 2: no energy; Charge steals; Space alone sets the length (camera follows); combo toasts, AI combos, ramp line on the Time card (`cece/wonderful-knuth-rzv8qp`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -14652,6 +14651,23 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
 9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
    black screen), and the Theater's own playback runs.
 
+## 🔴 Every mode records itself; replays open on the free camera (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Yash: "any game mode I play, it should be automatically recorded ... simulate the entire game with my free cameras as in
+third eye". No Unity CLI in the session, so `/verify-unity` could not run. Checked offline: refcompile player and editor
+0 errors in project code; `ReplayStagePlacementTests` 5/5 (rings and arena origin survive the sidecar);
+`author_menu_replays.py --check` / `--self-test`; the gates.
+
+1. **Any mode records.** Play a match each of Skim Race, Joust and a gate race (Headlong or Switchback). **Pass:** each
+   leaves a `<Mode>_<date>_<time>.cstheater` + `.replay.json` in `<repo>/Recordings/` and a row in My Replays.
+2. **The lava lamp never records.** Fly freestyle in the menu for a minute. **Pass:** no new file.
+3. **Free camera first.** WATCH any replay. **Pass:** it opens on the free camera framing the match; the left stick /
+   WASD flies it, the right stick / mouse looks; D-pad left / right still cycles Pilot, Orbit, Chase.
+4. **The rings are the match's.** Watch the Headlong replay. **Pass:** the ghosts thread the rings (the JSON's `Gates`
+   lists them); for Skim Race the rings stand where they stood at Go.
+5. **No arena, still a replay.** Watch a Maelstrom game's replay (no preview definition). **Pass:** it plays on the dark
+   stage.
+
 ## 🔴 My Replays in the Profile - the last 10 games (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
 
 The replay work merged into Ys-bleeding-edge, plus MY REPLAYS in the Profile header and a last-10 rule
@@ -16652,3 +16668,16 @@ No Unity editor, `unity` CLI or .NET SDK in the session, so no compile ran. Veri
 6. Play Headlong or Redline. **Pass:** the HUD counts 40 gates over 5 laps of 8 rings.
 7. Time one match of each mode the doc's table marks "estimate", flown by an experienced pilot. **Pass:** each
    lands within ~60-120 s; record the times in `Docs/ARCADE_MATCH_LENGTH.md` §2.
+
+## 🔴 2026-10-26 — AI difficulty on every mode (unverified: no Unity editor in the session)
+
+**Files:** `AIDifficulty.cs` (`IsOfferedFor` = every mode but Random; `UsesPilotBelief` = every mode without its own
+handicap), `GateRaceController.ArmRacer` (drops the autopilot belief when it installs its ring handicap), the Maelstrom
+configure view (compact AI row, `author_menu_configure.py`). EditMode: `AIDifficultyRulesTests`.
+
+1. Open several cards that never had the row - Joust, Rampage, Cleave, Switchback, Skein, Headlong, Hijack, Dog Fight:
+   Easy / Medium / Hard / Legendary shows on each, lights when pressed, and a guest sees the host's pick.
+2. Switchback (a gate race) on Easy vs Legendary: Easy notices rings late and overshoots some; Legendary threads cleanly.
+   Third Eye on an Easy AI: it shows a ring handicap and no autopilot belief (one handicap, not two).
+3. Joust or Dog Fight on Easy vs Legendary: the Easy AI reacts late and sometimes flies off to one side of its target.
+4. Maelstrom: the compact AI row sits under the domain columns, clear of Format; the pick holds across rounds.

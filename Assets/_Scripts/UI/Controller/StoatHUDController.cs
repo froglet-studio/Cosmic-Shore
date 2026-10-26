@@ -19,7 +19,7 @@ namespace CosmicShore.UI
         [Header("Stoat")]
         [SerializeField] StoatHUDView view;
 
-        [Tooltip("This vessel's mode switch (Mass / Time / Hybrid).")]
+        [Tooltip("This vessel's mode switch (Mass / Time / Drive).")]
         [SerializeField] StoatModeExecutor mode;
         [Tooltip("This vessel's field dipole (the ripple a let-go would throw; Space-5 Accretion).")]
         [SerializeField] StoatDipoleExecutor dipole;
@@ -56,12 +56,13 @@ namespace CosmicShore.UI
                 view.SetModeIcon(mode.Current);
             }
 
-            // Time and Hybrid: progress to the sweet spot while the orbit holds the hull. Hybrid between orbits shows the
-            // pathfinder's boost (a timed release carries it), as Mass mode does.
+            // Time: progress to the sweet spot while the orbit holds the hull. Drive: the warp pair's warp as a share of its
+            // top, ready past half. Mass: the pathfinder's boost.
             bool timeMode = mode && mode.IsTimeMode;
-            bool orbit = mode && mode.UsesOrbit;
-            if (orbit && sling && sling.IsOrbiting)
+            if (timeMode && sling && sling.IsOrbiting)
                 view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);
+            else if (mode && mode.IsDriveMode && pathfinder)
+                view.SetTime(pathfinder.DriveWarp01, pathfinder.IsWarped);
             else if (!timeMode && pathfinder)
             {
                 float top = pathfinder.BoostTarget;

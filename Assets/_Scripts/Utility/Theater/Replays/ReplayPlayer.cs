@@ -110,7 +110,8 @@ namespace CosmicShore.Utility
                 onArena = await _stage.StandAsync((GameModes)recording.GameMode, Mathf.Max(1, summary != null ? summary.Intensity : 1),
                                                   recording.CellConfigName, Vector3.back * replay.StageDistance,
                                                   replay.ArenaPrismStride, replay.ArenaBuildTimeoutSeconds,
-                                                  request.Container, request.Theme, _drainPrismsPerFrame, ct);
+                                                  request.Container, request.Theme, _drainPrismsPerFrame, ct,
+                                                  summary?.Gates);
                 ct.ThrowIfCancellationRequested();
             }
             catch (OperationCanceledException)
@@ -152,6 +153,11 @@ namespace CosmicShore.Utility
                 _stageConfig = null;
                 return false;
             }
+
+            // Open on the configured shot - the free camera by default, seeded from the orbit's framing
+            // (Begin poses the orbit first), so the whole match is there to fly around.
+            var startShot = (request.Replay ? request.Replay : ReplayConfigSO.Resolve()).StartShot;
+            if (startShot != _playback.Shot) _playback.SetShotByIndex((int)startShot);
 
             _cameraManager = request.CameraManager;
             _backToMenuCamera = request.BackToMenuCamera;

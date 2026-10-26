@@ -749,16 +749,16 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
-  DefaultThrottleScaler: 58
+  DefaultThrottleScaler: 75
   ThrottleScalerMultiplier:
     Enabled: 0
     Value: 1
     Min: 1
     Max: 2.5
     element: 4
-  PitchScaler: 90
-  YawScaler: 90
-  RollScaler: 100
+  PitchScaler: 120
+  YawScaler: 120
+  RollScaler: 150
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 3
 --- !u!114 &874579555101021522

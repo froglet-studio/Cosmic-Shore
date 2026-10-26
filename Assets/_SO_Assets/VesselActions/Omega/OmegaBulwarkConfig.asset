@@ -31,8 +31,11 @@ MonoBehaviour:
   ploughRadius: 7
   cannonRange: 140
   foldBoost: 1.5
-  formationSpread: 40
-  memberCatchUp: 1.4
+  formationSpread: 18
+  formationBack: 10
+  shieldRadius: 40
+  wardCost: 0.2
+  wardCooldown: 3
   mouseAimRadiansPerPixel: 0.0035
   aiAimRange: 120
   aiShieldMass: 3

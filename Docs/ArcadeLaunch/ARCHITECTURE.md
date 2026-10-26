@@ -316,11 +316,11 @@ pressed Main Menu, and the panel they launched from is where that press now goes
 
 Three buttons under the intensity row - **Easy, Medium, Hard** - set how well the AI flies.
 They are deliberately not intensity: intensity is the MAP (track length, crystals, laps), the
-difficulty is the OPPONENT, so a Hard AI can race intensity 1 and an Easy one intensity 4.
-`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3`) carries it, and
+difficulty is the OPPONENT, so a Legendary AI can race intensity 1 and an Easy one intensity 4.
+`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3, Legendary = 4`) carries it, and
 `AIDifficultyRules` holds the four rules every reader shares: the default is **Medium**, any
 other number (0 from an old save or a default struct, a member a later build added) resolves to
-that default, `IsOfferedFor` names the modes whose AI actually reads it, and `Step` is the pad's
+that default, `IsOfferedFor` is every mode (2026-10-26), and `Step` is the pad's
 left/right.
 
 It follows intensity's path exactly, because it is the same kind of fact:
@@ -342,9 +342,13 @@ It follows intensity's path exactly, because it is the same kind of fact:
   `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
   installed. `[NonSerialized]`, survives `ResetRuntimeData` (and so the replay reload), reset by
   `ResetAllData` - the same lifetime as `RequestedAIDomains`.
-- **It is offered only where the AI reads it.** A row that changed nothing would be a promise the
-  match breaks, so a mode is added to `AIDifficultyRules.IsOfferedFor` in the same change that
-  teaches its pilot to read the value. Today: Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
+- **It is offered on every mode, and every AI reads it** (Yash, 2026-10-26: "Every game mode should have easy,
+  medium, hard AI. That's a generic rule."). A row that changed nothing would be a promise the match breaks, so
+  the rule is carried by the AI, not by a list: every AI seat is configured through
+  `ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode`, which gives the platform autopilot an
+  `AIPilotBelief` on every mode without a handicap of its own, and every `GateRaceController` race replaces that
+  belief with its ring handicap when it arms its racers (one handicap per pilot, never two). Before 2026-10-26 it
+  was offered only on Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
   races Slingshot and Warpline (`GateRaceHandicap`), Regatta (Squirrels on `SkimRaceHandicap`, every
   other hull `GateRaceHandicap`), and the Arena's Astro League, Brood
   Rush and Broadside (`AIDifficultyRules.UsesPilotBelief`: the platform autopilot flies on an

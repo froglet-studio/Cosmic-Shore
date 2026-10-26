@@ -130,7 +130,7 @@ orbit near 90 degree orbit rotation."*
 | **Mass 5** | every prism arrives SHIELDED (Armoured Wake) | — |
 
 **B** (`InputEvents.Button2Action`; T on a keyboard, the Vessel Studio's key too — R until 2026-10-14) steps the mode,
-**Mass → Time → Hybrid → Mass** since 2026-10-26 (`StoatModeActionSO` → `StoatModeExecutor.Toggle`; Hybrid is §1f).
+**Mass → Time → Drive → Mass** since 2026-10-26 (`StoatModeActionSO` → `StoatModeExecutor.Toggle`; Drive is §1f).
 It is a press with no release semantics (vessel rule 37). Both trigger assets ride each trigger (`StoatDipoleLeft/
 RightAction` AND `StoatSlingLeft/RightAction`); each executor stands aside outside its own mode, so the binding never
 changes and the peer-press harness sees one ordinary binding. **A switch lets go of whatever the triggers held** — the
@@ -264,20 +264,20 @@ executors, serialized on the prefab — rule 14):
 | Charge | Ripple | the ripple a let-go would throw NOW, as a share of the largest |
 | Mass | Mass / Time Mode | the switch: full in Mass mode, empty in Time mode, eased between |
 | Space | Field Dipole | Space-5 Accretion: how far the open pair has grown |
-| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Hybrid: the sweet spot while the orbit holds you, the boost (and its carry) between orbits |
+| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Drive: the warp pair's warp as a share of its top, ready past half |
 
-The Mass card reads the mode: full in Mass, **half in Hybrid**, empty in Time, and its **icon follows the mode**
+The Mass card reads the mode: full in Mass, **half in Drive**, empty in Time, and its **icon follows the mode**
 (2026-10-26, `StoatHUDView.SetModeIcon`): `Stoat_ModeMass` (the thick trail and its path), `Stoat_ModeTime` (an orbit
-round a solid attractor), `Stoat_ModeHybrid` (a small orbit and the short dotted path leaving it), placeholders from
+round a solid attractor), `Stoat_ModeDrive` (the warp pair: a black hole ahead, a white hole behind, the hull between), placeholders from
 `author_stoat_icon_placeholders.py` (`--check`) wired on `StoatHUDVariant.prefab`; an empty slot shows the card's own icon.
 
 **On a phone** (Android, iOS: `KitInputDevice.IsTouchPrimary`, and only while no pad is connected; never on PC or
 Steam) the Stoat flies the TotemButtons profile (`author_touch_profiles.py`): the cards round the right thumb are its
 buttons. **The Mass card is B** (its ability's Input 7, `Button2Action`, routed to `StoatModeAction` by the prefab's
-`_touchActionOverrides`), so a tap steps Mass → Time → Hybrid and the icon shows where you are; the **Space card is LT**
-(the left dipole, or the left catch in Time and Hybrid), the **Dipole disc is RT** and the **Hold disc is A**.
+`_touchActionOverrides`), so a tap steps Mass → Time → Drive and the icon shows where you are; the **Space card is LT**
+(the left dipole, the left catch in Time, the left half of the warp pair in Drive), the **Dipole disc is RT** and the **Hold disc is A**.
 `StoatSlingTests.Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo` pins the binding. Open: the Dipole disc and the Space
-card keep their dipole icons in Time and Hybrid mode, where the triggers lay the catch.
+card keep their dipole icons in Time and Drive mode.
 
 The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
 `SO_Class_Stoat` are renders of the Stoat's own hull (since 2026-10-18 its model: `Tools/Build/vessel_model/render_cards.py Stoat`, `--check`).
@@ -295,43 +295,68 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
 - **Overclock (the omni crystal, proposal O1).** `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.
 
-## 1f. Hybrid mode — the orbit with a short path (2026-10-26)
+## 1f. Drive mode — the warp pair (2026-10-26)
 
-The design call (Yash): *"a third one … a mix of the orbit and the pathfinding. It will show the pathfinding trail but
-not that much range … maybe 50% smaller, and also when the pathfinding we get this extra boost that we rarely get in
-orbit."* B's third press. The aim is a mode that can replace the other two once it has been played.
+The design call (Yash), after a first cut (Hybrid: the orbit with a half-length path and a carried boost) was removed:
+*"we will use the field trajectory as more precise movement and the orbit as more fast agile movement, but less accuracy
+... can you make [a third mode] so that we can also have a bigger control of long distance travel with agile movement and
+precision? ... determine this precision level or agility level with how much the black holes are differing from each
+other, or the position of the black hole and the white hole pair, or the size of them ... it cannot be just the blend. It
+needs to be recreated by inspiring the other two."* B's third press: **Mass → Time → Drive → Mass**.
 
-| | Hybrid mode |
-|---|---|
-| **LT / RT** | Time mode's catch slingshot, unchanged (§1b): the light pair laid ahead, the catch, the 90° timed kick |
-| **What is drawn** | the pair's DETECTION and ORBIT rings (as Time mode) **and** the pathfinder's path at `hybridPathLengthShare` **0.5** of Mass mode's length, flown on the pilot's sticks with no field |
-| **The line's colour** | the open colour, warming toward lime as the quarter-turn nears (to 35% just short of the window) and **lime in the sweet-spot window** — the orbit ring's cue, put on the line the pilot looks down (`StoatSlingMath.HybridLineWarmth`) |
-| **The boost** | the catch warps the flight clock while the pair is held (as Time mode); a timed release then **CARRIES** the pathfinder's boost on for `hybridCarrySeconds` **2.5 s** × the release's timing (`StoatSlingMath.CarryHolds`) — the line stays lime — before it fades. A release outside the window carries nothing. |
-| **The poles, the trail, Mass 5** | Time mode's: light poles, the trail as authored, no shield |
+**The idea: a warp drive.** In general relativity the Alcubierre drive contracts space ahead of a ship and expands it
+behind. The Stoat already owns a black hole (a sink) and a white hole (a source); in Drive mode they ride WITH the hull,
+the black hole ahead of the nose and the white hole behind it, mirrored through the hull, and the triggers shape the pair
+the way they shape Mass mode's dipole (`StoatDriveMath`, ported line for line from the studio's `driveShape`):
 
-**Why this shape** (research, 2026-10-26). A short, initial-segment aim line is what players of aim-and-release games ask
-for (Peggle's guide, the first bounce in Arkanoid / Puzzle Bubble) and what designers keep when a full preview makes a
-game too easy, so 50% shows the exit of an orbit and the next few seconds, not the course. While the attractor holds the
-hull the line is the RELEASE preview: the pilot sees where a let-go sends them before letting go (the trajectory preview
-gravity-slingshot jams single out; predicting an inverse-square orbit unaided is what their playtesters failed at). The
-timing is read in one place, on that line: warming colour → lime is Mario Kart's drift-spark ladder (charge shown as
-colour, release on the top colour), and the reward for a timed release is a boost that lasts (the mini-turbo's
-"longer after the drift" rule), not only a bigger instant kick. Sources: itch.io jam threads on aim lines and slingshot
-games; mariowiki / Mario Kart wiki on mini-turbos; Kotaku on mini-turbo duration.
+| The triggers | The pair | What it does |
+|---|---|---|
+| **Sum** (both squeezed) | its LENGTH: `driveLengthMin` 60 u → `driveLengthMax` 320 u ahead and behind | the WARP: the flight clock to `1 + (Boost − 1) × driveWarpShare × span^driveWarpExponent` (×3 at rest at full stretch, Time scales it) — the long legs |
+| **Difference** (one deeper) | the black hole slides to the deeper trigger's side, up to `driveLateralMax` 140 u, the white hole the other way | the pair TILTS (`atan2(sideways, length)`) and the tilt TURNS the hull toward the black hole: `driveTurnGain` 2.2 °/s per degree, up to `driveTurnMax` 140 °/s, on the warped clock |
+| **The sticks** | — | turn on the REAL clock (`ExternalTurnRateMultiplier` = 1 / the warp): a long fast leg turns wide |
 
-**The autopilot** never chooses Hybrid (its orbit numbers were learned in Time mode): a hull left in Hybrid counts as
-orbiting, and the way back to Mass is as many B presses as the cycle needs, sent in one go
-(`StoatModeExecutor.PressesTo`). **The flight recorder** writes `timeMode` 2 for Hybrid; the learner
-(`learn_drives_from_flights.py`) counts Time and Hybrid as one orbit family, so a Time → Hybrid press is not a switch.
+**So the pair's shape is the dial between agility and precision** — the user's "how much the holes differ, where they sit":
+a short pair pulled sideways tilts a long way and **carves** (the orbit's agility); a long straight pair barely tilts and
+**travels** fast and steady (the long legs); a light squeeze with a small difference **trims** (the field's precision —
+the warp curve keeps a light squeeze near the hull's own speed). The same difference turns a short pair more than twice
+as hard as a long one (`StoatSlingTests.Drive_TheSamePull_TiltsAShortPairMore_ThanALongOne`).
 
-**In the Vessel Studio** (round 16, `Docs/Studios/StoatFlightStudio.html`, the same day): T steps field trajectory →
-catch sling → Hybrid → field, the game's B; Hybrid is the catch sling with `fieldPath` run at `hyLen` × `ftLength` on
-the sticks with no field, the warmth / lime cue and the carry in `stepCatchBoost` (per pilot, in `ftLive`), the release
-starting the carry in `releaseDipole`. `hyLen` / `hyCarry` map to `hybridPathLengthShare` / `hybridCarrySeconds`
-(`studio_to_unity/stoat.json`; both match). **One known difference:** the line's full length is 600 u in the studio
-(`ftLength`) and 1200 u in Unity (`StoatDipoleConfig.pathLength`, play-tuned there, a drift `studio_to_unity.py --check`
-already reported before Hybrid), so Hybrid's line is 300 u in the studio and 600 u in the game until one side is
-changed. **Not done yet:** the FMOD slot `hybridModeEvent` ships empty; the numbers (0.5, 2.5 s) are first guesses for play.
+**What is drawn:** the pathfinder's line, flown with the drive's turn and on its warp (the field's precision tool: the
+arc you see is the arc you fly), easing toward lime with the warp and lime past half of it; and a ring where each pole
+rides (black hole violet, white hole white). The HUD's Time card is the warp's share of its top; the Mass card sits half
+full and shows the Drive icon. Keys and touch ramp a held trigger to a full squeeze over `driveKeyRampSeconds` 0.5 s.
+
+**It takes nothing and pulls nobody.** The pair is the hull's drive, not a pair in the world: no horizon, no prism taken,
+no vessel pulled (PvP stays petals only), no lens pass (no frame cost). The trail is laid as authored.
+
+**Why the sticks run on the real clock** (measured in the studio before porting). With the sticks on the warped clock —
+the field's rule, where the warp is pure speed — Drive won every course by 30–40% and made both other modes pointless.
+On the real clock, stretching for speed costs turning radius, and the trade-off appears (the AI at Hard, seed 1, race
+seconds):
+
+| Course | Mass (field) | Time (catch) | **Drive** |
+|---|---|---|---|
+| Circuit I1 / I2 / I3 / I4 | 54.0 / 59.7 / 51.5 / 49.2 | 60.7 / 56.1 / 75.8 / 81.7 | **45.8 / 45.4 / 43.8 / 41.8** |
+| Hairpins I1 / I2 / I3 / I4 | 38.8 / 33.2 / 32.0 / **31.0** | 90.6 / 80.4 / 65.2 / 66.2 | **35.2** / **32.6** / 33.3 / 37.1 |
+
+Drive wins every open circuit (the long legs), is level with Mass on the medium hairpins, and Mass wins the tightest
+(the small manoeuvres) — the split the design asked for. The warp share was 1.5 in the first cut (Drive too strong); 1.
+
+**The autopilot.** In Drive mode it squeezes its own triggers (`StoatDriveMath.AutopilotSqueeze`, the studio's AI):
+stretch with the distance still to go (full from `autopilotDriveFar` 150 u), none while its target is more than
+`autopilotDriveConeDegrees` 120° off the nose (turn first, then travel), and the difference toward the target, full at
+`autopilotDriveLeanDegrees` 15° of yaw. It switches INTO Drive for a long leg — its target at least
+`autopilotDriveDistance` 400 u away and within `autopilotDriveSwitchConeDegrees` 30° of the nose (0 = never) — and out
+under half that distance or past twice the cone, two B presses round the cycle in one go when it must.
+
+**Where it runs.** The mode replicates (B is a replicated press); the squeezes, the pair, the turn and the warp run on
+the simulating machine (the pathfinder's own rule), and peers see the flight. The flight recorder writes `timeMode` 2.
+
+**The studio** (`Docs/Studios/StoatFlightStudio.html`, round 17): `slingMode 'drive'`, the Drive mode card (`grp-V`, the
+`dr*` rows, mapped to `StoatModeAction` by `studio_to_unity/stoat.json`, all twelve matching), T and the phone's B button
+step the three modes. **Known difference:** the line's length is 600 u in the studio and 1200 u in Unity (the existing
+`pathLength` drift `studio_to_unity.py --check` reports). **Not done:** the FMOD slot `driveModeEvent` ships empty; the
+pole rings are dots, not lensed holes; the icon is a placeholder; not yet flown in the Unity Editor.
 
 ## 2. What the sink takes
 

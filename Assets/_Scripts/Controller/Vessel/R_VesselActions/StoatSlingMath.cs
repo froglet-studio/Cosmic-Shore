@@ -131,27 +131,6 @@ namespace CosmicShore.Gameplay
         public static float TimedKick(float squeezeBoost, float sweetSpot01, float missShare, float rate) =>
             Mathf.Max(0f, squeezeBoost) * Mathf.Lerp(Mathf.Clamp01(missShare), 1f, Mathf.Clamp01(sweetSpot01)) * Mathf.Max(1f, rate);
 
-        // ------------------------------------------------------------------ Hybrid mode: the carry (STOAT_DIPOLE.md §1f)
-
-        /// <summary>
-        /// Hybrid mode's boost CARRY: true while a release <paramref name="secondsSince"/> ago, timed
-        /// <paramref name="timing01"/>, still holds the pathfinder's boost on — for <paramref name="carrySeconds"/> × the
-        /// timing, so a perfect quarter-turn carries the whole time and a release outside the window carries nothing.
-        /// </summary>
-        public static bool CarryHolds(float secondsSince, float timing01, float carrySeconds) =>
-            timing01 > 0f && carrySeconds > 0f && secondsSince >= 0f && secondsSince < carrySeconds * Mathf.Clamp01(timing01);
-
-        /// <summary>
-        /// How lime Hybrid mode's path is drawn, 0..1: lime (1) while the boost carries or a release now would pay the
-        /// whole kick, otherwise warming with the orbit's timing (to <paramref name="approachShare"/> just short of the
-        /// window) — the orbit ring's cue, put on the line the pilot is looking down.
-        /// </summary>
-        public static float HybridLineWarmth(float timing01, bool carrying, float approachShare = 0.35f)
-        {
-            float t = Mathf.Clamp01(timing01);
-            return carrying || t >= 0.999f ? 1f : Mathf.Clamp01(approachShare) * t;
-        }
-
         // ------------------------------------------------------------------ Time mode: the catch (STOAT_DIPOLE.md §1b)
 
         /// <summary>
