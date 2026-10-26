@@ -119,9 +119,10 @@ namespace CosmicShore.Utility
     /// <summary>
     /// A theater recording: the outcome log of one match, replayable without any determinism.
     ///
-    /// <para><b>P0 records vessels only.</b> Every other object class is a later phase, and the
-    /// format is chunked so adding one does not invalidate a recording made today: an unknown
-    /// stream id is SKIPPED by its own byte length rather than aborting the read.</para>
+    /// <para><b>P0 records vessels; P1 adds the prism world</b> (<see cref="World"/>, stream 2).
+    /// The format is chunked so adding a stream does not invalidate a recording made earlier: an
+    /// unknown stream id is SKIPPED by its own byte length rather than aborting the read, and a
+    /// recording without a world stream reads as <see cref="World"/> null.</para>
     ///
     /// <para><b>Deliberately uncompressed.</b> P0 writes raw little-endian floats — 36 B per pose,
     /// so four pilots at 30 Hz for five minutes is about 1.3 MB. Delta-coding the positions and
@@ -148,12 +149,21 @@ namespace CosmicShore.Utility
         /// <summary>Stream ids. A reader skips any id it does not know, by the length that precedes it.</summary>
         public const ushort StreamVessels = 1;
 
+        /// <summary>The prism world (<see cref="TheaterWorld"/>, Theater P1). Written only when it holds events.</summary>
+        public const ushort StreamWorld = 2;
+
         public string SceneName = string.Empty;
         public string CellConfigName = string.Empty;
         public int GameMode;
         public float SampleHz = 30f;
         public long UtcTicks;
         public readonly List<TheaterTrack> Tracks = new();
+
+        /// <summary>The prisms the match was flown among, or null when the world was not recorded.</summary>
+        public TheaterWorld World;
+
+        /// <summary>True when there is a recorded world to play.</summary>
+        public bool HasWorld => World != null && World.Events.Count > 0;
 
         /// <summary>Seconds from the first sample of any track to the last. Zero for an empty recording.</summary>
         public float Duration
@@ -208,12 +218,22 @@ namespace CosmicShore.Utility
 
             // One chunk per stream. Each is (id, byteLength, payload) so a reader from a future
             // phase — or a reader OLDER than the recording — can step over what it does not know.
-            writer.Write((ushort)1); // chunk count
+            writer.Write((ushort)(HasWorld ? 2 : 1)); // chunk count
 
             writer.Write(StreamVessels);
             using (var payload = new MemoryStream())
             {
                 WriteVesselStream(payload);
+                var bytes = payload.ToArray();
+                writer.Write(bytes.Length);
+                writer.Write(bytes);
+            }
+
+            if (!HasWorld) return;
+            writer.Write(StreamWorld);
+            using (var payload = new MemoryStream())
+            {
+                World.Write(payload);
                 var bytes = payload.ToArray();
                 writer.Write(bytes.Length);
                 writer.Write(bytes);
@@ -293,9 +313,10 @@ namespace CosmicShore.Utility
                     byte[] payload = reader.ReadBytes(length);
                     if (payload.Length != length) { error = "truncated recording"; return false; }
 
-                    if (id != StreamVessels) continue; // a stream this build does not know
                     using var payloadStream = new MemoryStream(payload, writable: false);
-                    ReadVesselStream(payloadStream, result);
+                    if (id == StreamVessels) ReadVesselStream(payloadStream, result);
+                    else if (id == StreamWorld) result.World = TheaterWorld.Read(payloadStream);
+                    // Any other id is a stream this build does not know: already stepped over.
                 }
 
                 recording = result;

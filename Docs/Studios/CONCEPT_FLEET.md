@@ -51,10 +51,8 @@ way by reading and writing the SAME records, in this order, at the start and the
 | 22 | Jacks | `bleeding-edge` | 2026-10-21 |
 | 23 | Honeyguide (Honeyguide and Ratel) | `bleeding-edge` | 2026-10-21 |
 | 24 | Flea | `claude/flea-vessel` (Garrett's branch, unmerged) | 2026-10-24 |
-| 25 | Warden (Omega crew: Stoat, Thresher, Butterfly) | `Ys-bleeding-edge` | 2026-10-26 |
-| 26 | Bulwark (Omega crew: Rhino, Grizzly, Scarab) | `Ys-bleeding-edge` | 2026-10-26 |
-| 27 | Tempest (Omega crew: Squirrel, Sparrow, Manta) | `Ys-bleeding-edge` | 2026-10-26 |
-| **28** | **next free** (the Tether / Gibbon, the Dragonfly, the Marlin and the Albatross have none yet) | | |
+| 25-27 | free again: the Omega crews (Warden, Bulwark, Tempest) claimed them on 2026-10-26 and were removed on 2026-10-27 (§10.5), before any merge to `bleeding-edge` | | |
+| **25** | **next free** (the Siphonophore, the Tether / Gibbon, the Dragonfly, the Marlin and the Albatross have none yet) | | |
 
 An id a branch claims and then abandons is released only when that branch is deleted; say so here.
 
@@ -553,4 +551,80 @@ What it means for the Omega crews:
   first sketch of that pressure). Its mini-game and its four abilities come with it, as every new vessel's do.
 - Until that design exists, nothing more is built on the assembled crews beyond what the test bed needs; no new crew
   is composed from shipped vessels.
+
+### 10.5 The three Unity crews removed (2026-10-27, Yash: "remove the three mega vessels we just created")
+
+Warden, Bulwark and Tempest (25-27), their prefabs, configs, maps, cards, the Omega C# and the generator are gone from
+`Ys-bleeding-edge` (commit after 6350dfc87d); the enum, the roster and `EnumIntegrityTests` are back to 25 members and
+ids 25-27 are free again (the ledger in §0). The Omega Crews lab page stays as the superseded round-1 record (its hub
+card says so). Nothing of the Omega crews reaches `bleeding-edge`.
+
+## 11. The Siphonophore: a Voltron vessel designed from the ground up (round 1, 2026-10-27)
+
+**Page:** `Docs/Studios/VesselStudio/siphonophore.html` + `siphonophore-studio.js` (the "Siphonophore" bay of the one
+artifact). **Why this animal:** a siphonophore (the Portuguese man o' war is one) is one animal made of zooids that are
+not animals on their own, which is exactly the principle of §10.4: many separate vessels and one big vessel at
+alternating parts of one game loop, designed that way from the start.
+
+### 11.1 The parts (none a complete vessel)
+
+| Zooid | Role | Its ONE verb | Flight (proposal) | RT move | LT |
+|---|---|---|---|---|---|
+| **Bell** (the swimming bell) | Mobility | **lights** a DARK crystal within the lantern's 90 u (it stays lit) | cruise 78, turn 130, roll 150 | Pulse: x1.8 for 1 s and the lantern at twice its range, cool 3 s | hold = call the fuse |
+| **Sting** (the stinging tentacle) | Attack | **opens** a LIT crystal's husk (6 shielded prisms), one per venom shot (range 160, every 0.25 s); smashes mass | cruise 60, turn 85, roll 100 | Venom shot | hold = call the fuse |
+| **Bract** (the shield leaf) | Defence | **nets** a FREED crystal within 24 u into its hold (3), unscored | cruise 66, turn 100, roll 110 | Cast the net | ward (mass within 18 u is shed); with a hold, the call |
+
+No part scores. A dark crystal cannot be opened (the Sting cannot see it), an unopened one cannot be netted, and a
+crystal behind a wall is LOCKED (dark, unopenable, unnettable) until the colony opens the wall.
+
+### 11.2 The colony (the fused form) and the loop
+
+Hold LT with every zooid within 120 u of the caller (the person's zooid, else the Bract): they dock in 1.2 s into the
+colony (the zooids' average flight x1.25 speed, x0.55 turn), three seats on the same gesture: **Helm** (the Bell) flies
+and rams on RT, **Lance** (the Sting) aims the lance (right stick) and fires at walls (range 140, every 0.3 s; a wall
+takes 3 hits or rams), **Ward** (the Bract) holds the shield on LT. The colony **digests** the hold into the score, one
+crystal per 4 s, ploughs mass, and cannot light, open or catch anything. The hold empty and no wall to open, it
+**splits itself** (Helm holds LT 0.5 s to split early, the hold kept). So the loop is LIGHT, OPEN, NET, FUSE, DIGEST
+(and RAM), SPLIT, and neither phase can do the other's work: that is the design, not a meter.
+
+The Tide Run (the lab's mini-game): every crystal of the Skim Race course dark in a husk, every third behind a wall only
+the colony opens; finish = every crystal digested.
+
+Elements (proposals, one scaled parameter each): Charge = Venom (husk prisms per shot x1 to x3; L5 Venom opens a husk
+in one shot), Mass = Trawl (net radius x1 to x1.6; L5 the hold takes one more), Space = Lantern (range x1 to x1.8; L5
+Beacon: the pulse lights the whole window), Time = Digest (x1 to x0.5; L5 Surge: the zooids keep the colony's speed
+3 s after a split).
+
+### 11.3 Measured (round 1, 2026-10-27; headless, two seeds 11 / 22, seconds; `siph_score.cjs` in the session's scratch, the page's own `runHeadless`)
+
+| Course | Easy | Medium | Hard | Never fuse | Always fused | Colony share (Hard) | Fuses |
+|---|---|---|---|---|---|---|---|
+| I1 (24 crystals, 7 walls) | 439 / 380 | 357 / 380 | 384 / 419 | DNF (0 digested) | DNF (0 digested, 1 wall) | 25% | 8 |
+| I2 (30 crystals, 9 walls) | 443 / DNF | DNF (29) / DNF | 484 / 485 | DNF (0) | DNF (0, 9 walls) | 25% | 10 |
+| I3 | - | - | DNF (17 / 15 digested in 600 s) | DNF (0) | DNF (0, 14 walls) | 12% | 5-6 |
+
+**Found:**
+- **The two controls fail for the designed reason**: never fusing scores nothing (the hold is never digested); always
+  fused lights, opens and nets nothing (0 digested on every course, even with every wall rammed open). The alternation
+  is forced by what each form CAN do, which is what §10.4 asked for; the Omega lab could only force it with a meter.
+- **The levels do not separate yet** (Medium is fastest on I1; I2's Medium seeds hit the time limit): the belief
+  mistakes cost a three-step relay little, and the relay's own stalls (below) are bigger than a mistake. A crew mistake
+  (a late call, a net cast early) is the lever, as the Omega lab found (D24).
+- **I3 and I4 exceed the lab's 600 s limit** at the lab's digest time (4 s a crystal, 48 crystals on I3 = 192 s of
+  digesting alone). `digestSeconds` and `holdCap` are the pacing levers; a course meant for this vessel is shorter or
+  lights more than one crystal per anchor.
+- **Fixed on the way** (the lab would have measured nothing without them): the Sting circled its crystal inside its
+  own turn radius and never lined a shot up (it now stands off to 95 u and attacks straight); a colony that fused for a
+  wall and split at once because the wall was "not ahead" (it keeps the window's wall as its goal until it is open);
+  an idle zooid flew to the far wall instead of staying with the crew (each idles behind the zooid before it in the
+  loop); a lit crystal with no husk left could never be freed (walled crystals are now locked until their wall opens).
+
+**Decisions needed (designer):** the hold's size and the digest time (the rhythm: how long apart, how long fused);
+whether the Bell's lantern should reveal husks too (today a lit crystal shows its husk; a dark one is a dim shape);
+whether the Ward seat earns something in the colony phase beyond the shield (today it is the quiet seat); names.
+
+**Next rounds (the owner flies it first):** Yash flies the three zooids and the colony (Game Config > Seats) and
+records Keep / Drop and the feel of the relay, the fuse and the digest on the Decisions tab; then a crew mistake for
+the levels, a course of its own, bodies via `/vessel-model`, and only then the Unity clone by `/artifact-to-unity`
+with the Tide Run (`/arcadegame`) and the four abilities.
 

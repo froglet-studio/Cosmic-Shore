@@ -150,7 +150,11 @@ namespace CosmicShore.Utility
 
             // Two turns of one match have no end screen between them, so the earlier turn's
             // results are not coming: keep what there is rather than drop it.
-            if (_pending != null) SavePending(withResults: false);
+            if (_pending != null)
+            {
+                StopRecorder();
+                SavePending(withResults: false);
+            }
 
             // The arena the match is flown in: its config names the exact cell to stand when the
             // replay is watched, and its position is the origin the poses are recorded around.
@@ -159,6 +163,8 @@ namespace CosmicShore.Utility
 
             _recorder = new TheaterRecorder();
             _recorder.Begin(theater, ResolveSceneName(), (int)_gameData.GameMode, configName);
+            var replayConfig = ReplayConfigSO.Resolve();
+            if (replayConfig.RecordWorld) _recorder.RecordWorld(replayConfig.NewWorldRecorder());
             _pending = NewSummary();
             _pending.ArenaOrigin = cell ? cell.transform.position : Vector3.zero;
 

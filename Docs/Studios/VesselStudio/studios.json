@@ -173,11 +173,40 @@
       "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
     },
     {
+      "id": "siphonophore",
+      "name": "Siphonophore",
+      "file": "siphonophore.html",
+      "kind": "voltron vessel designed from the ground up - design lab round 1",
+      "chip": "voltron vessel · round 1",
+      "summary": "One vessel that is three zooids and one colony, taking turns. Apart, the Bell lights the dark crystals, the Sting opens their husks and the Bract nets them into its hold; none of them can score. Fused, the colony digests the hold into the score and rams the walls open, and cannot light, open or catch; the hold empty, it splits itself. Designed from the ground up to alternate, never assembled from vessels that already have a loop.",
+      "spec": [
+        {
+          "k": "Apart",
+          "v": "Bell lights · Sting opens · Bract nets (the hold)"
+        },
+        {
+          "k": "Fused",
+          "v": "Helm rams · Lance opens walls · Ward shields · the hold digests into the score"
+        },
+        {
+          "k": "The loop",
+          "v": "light, open, net, fuse, digest, split: neither phase can do the other’s work"
+        },
+        {
+          "k": "Why",
+          "v": "the Voltron principle (2026-10-27): designed to alternate, not assembled"
+        }
+      ],
+      "preview": "previews/siphonophore.png",
+      "accent": "#9be7ff",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
       "id": "omega",
       "name": "Omega Crews",
       "file": "omega.html",
       "kind": "combiner crew vessels - design lab round 1",
-      "chip": "combiner crews · round 1",
+      "chip": "combiner crews · superseded",
       "summary": "Three shipped vessels fly as themselves (their MEGA forms), then gather into one OMEGA form with three seats: Helm flies it, Arms wields the crew’s weapon, Core keeps the shield and the finisher. Swap seats with the arena’s gesture; the AI takes every seat you leave. The omega meter fills apart and drains combined, so you combine for the walls and split for the crystals. Three crews to compare: the Warden (Stoat, Thresher, Butterfly), the Bulwark (Rhino, Grizzly, Scarab), the Tempest (Squirrel, Sparrow, Manta).",
       "spec": [
         {
@@ -531,6 +560,7 @@
     "studio-new.js",
     "studio-kinds.js",
     "studio-vessel.js",
-    "omega-studio.js"
+    "omega-studio.js",
+    "siphonophore-studio.js"
   ]
 }

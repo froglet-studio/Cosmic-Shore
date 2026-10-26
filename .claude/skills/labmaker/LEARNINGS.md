@@ -921,6 +921,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
+### L-STU-146 — A combine bolted onto autonomous vessels has no loop; design the parts so neither phase can do the other's work
+- Lab: Omega Crews Studio (Docs/Studios/VesselStudio/omega.html) and Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Omega lab assembled three shipped vessels (each with a complete loop) into a combiner; its scorecard found the Warden's omega never had a reason to split (always combined beat its crew), and the only lever was a meter. Yash's principle the next day: a Voltron vessel is designed from the ground up to be many vessels and one vessel at alternating parts of its own loop. The Siphonophore gives each part ONE verb (light, open, net) and the colony the only scoring verb (digest); both scorecard controls (never fuse, always fused) DNF on every course for the designed reason, with no meter at all.
+- Do instead: before building a combiner, write the two controls first and ask what each form CANNOT do; if a meter is the only thing that forces the alternation, the design is assembled, not designed. The three Unity crews built from the assembled design were removed the same day (CONCEPT_FLEET.md section 10.5).
+- Evidence: CONCEPT_FLEET.md sections 10.1, 10.4, 11.3; siphonophore-studio.js wantFuse / stepColony; the scorecard rows I1 / I2.
+- Promoted: no
+
+### L-STU-147 — A slow turner that orbits its target inside its own turn radius never lines a shot up: stand off, then attack straight
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Sting (turn 85 deg/s, slowed to 33 u/s over its crystal) circled 5-45 u from the crystal for 500 s with a heading error of 23-149 deg and fired nothing; a "come round" aim beyond the crystal only tightened the orbit.
+- Do instead: an AI that must align a line on a target keeps a standoff state: closer than 45 u and more than 12 deg off, fly AWAY to 95 u, then come back straight and fire within 12 deg; the omega lab's cannon AI (L-STU-145's neighbour) had the same shape.
+- Evidence: siphonophore-studio.js zooidAI (B.K.standoff); the trace before and after (siph_dbg.cjs in the session's scratch: uses 19 for 60 s, then crystal 5 freed in 3 s).
+- Promoted: no
+
+### L-STU-148 — The second lab that needs a shell copied it; the shell is owed to studio-crew.js
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: siphonophore-studio.js copies the Omega page's track, grid, prism, rendering, camera, input, panel and hook parts (about 60 percent of 900 lines) and rewrites the design parts, because extracting a shared shell from a page another session was publishing the same hour risked both. SKILL.md section 7 says the SECOND lab extracts the shell; this is that lab and it did not.
+- Do instead: the next session that touches either page moves the generic five parts (course, grid, prisms, bodies' rendering, cameras, input, transport, decision log) into a shared studio-crew.js listed under `shared` in studios.json, and both pages load it; until then a bug fixed in one page's shell is fixed in the other by hand.
+- Evidence: diff omega-studio.js siphonophore-studio.js (parts A tail, D and E are near-identical).
+- Promoted: no
+
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
 - Lab: NCA swarm labs (`Tools/NCA/`) · Branch: `cece/swarm-x-live2` (DISCOVERIES D6, D7, D23, D25; summary item 6) · Date: 2026-10-01
 - What happened:
