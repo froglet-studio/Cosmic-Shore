@@ -38,9 +38,10 @@ namespace CosmicShore.Gameplay
     /// design: jousting an enemy MOVES material, jousting a friend only encourages them.</para>
     ///
     /// <para><b>How much a steal takes scales with the THIEF's element</b>
-    /// (<see cref="stealScale"/>): the Squirrel authors it on CHARGE, so a charged jouster takes
-    /// more petals per overtake. At rest it is x1, which is exactly the price Broadside puts on a
-    /// Strike - so the two hulls that land this verb still take the same petals until one of them
+    /// (<see cref="stealScale"/>): both hulls author it on CHARGE (the Squirrel's joust; the Rhino's
+    /// sword since 2026-10-26, Garrett: "Charge should control the amount of crystals stolen from
+    /// vessels with the sword"), x1 -> x2.5. At rest it is x1, which is exactly the price Broadside
+    /// puts on a Strike - so the two hulls that land this verb take the same petals until one of them
     /// has earned the difference.</para>
     ///
     /// <para>Nothing happens to the faster (overtaking) vessel beyond being paid.</para>
@@ -73,8 +74,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("A multiplier on how many petals a STEAL takes, scaled by the THIEF's level in " +
                  "its element (the Squirrel: CHARGE - Charge is threat, and the joust is the " +
                  "Squirrel's threat). x1 at rest keeps the priced Strike exactly; the multiplier " +
-                 "is what a charged jouster takes ON TOP of the price. Disabled = x1, which is " +
-                 "the Rhino's sword. Scales the opponent branch ONLY: the ally buff keeps " +
+                 "is what a charged jouster takes ON TOP of the price. Disabled = x1. The Rhino's " +
+                 "sword authors it on CHARGE too (2026-10-26). Scales the opponent branch ONLY: the ally buff keeps " +
                  "mirroring the base magnitude, so a friendly overtake can never out-pay an " +
                  "enemy one. Read through the thief's REPLICATED integer level " +
                  "(R_VesselElementalAbilityHandler.ReplicatedLevel). The steal is now decided " +
