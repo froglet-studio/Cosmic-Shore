@@ -388,6 +388,28 @@ asked for, and Mass keeps the tight hairpins.
 hull) feels right while shaping. **Not modelled:** the network (the shape would have to replicate: two triggers and a
 stick direction); a sound.
 
+## 1h. Round 20 (studio only) — the tunnel reticle (2026-10-27)
+
+**The team's call** (relayed by Yash, 2026-10-27, after round 19 *"was a hit, everybody liked it"*): the wireframe should
+be a **reticle**. Holding a trigger shows the tunnel without making it; the player shapes it with LT and the sticks; letting
+go of the triggers makes it in front of the hull and the hull goes in. *"This way I will have more control and time to
+create my tunnel more precisely, even in such fast movement."*
+
+| | |
+|---|---|
+| **Hold LT or RT** | the reticle: the tunnel as a cyan wireframe riding `gtReticleAhead` 30 u ahead of the nose, re-shaped every frame. Nothing is laid, no timer runs out. The shape rules are round 19's (§1g): LT shortens (and widens a little), RT widens the throat, the stick bends it while the hull holds its line |
+| **Let go of both** | `gateCommit`: a real black hole and white hole at the reticle's mouths and the hull in it at once (it dives the 30 u straight to the mouth, then the throat carries it round). A tunnel still falling together behind you is ended by the new one |
+| **Out of the white hole** | as round 19: the warp at once, most for a thin one; ridden through, it falls together in `gtCollapse` 0.8 s |
+
+Gone with round 19's flow: the mouth opening ahead of you to fly into (`gtAheadSeconds`, `gtAhead`), its funnel
+(`gtFunnel`, `gtFunnelRate`), the smallest mouth (`gtMouth`) and the hold limit (`gtHoldMax`). Their sliders are
+removed; the values stay in the studio's numbers because the game's round-18 gate still reads them.
+
+**The AI** plans as in round 19 from where the tunnel will start (`gtReticleAhead` + its speed × `gtAiAim`), holds the
+reticle with the plan's triggers and stick for `gtAiAim` 0.3 s, and lets go. **Scorecard** (Hard, seed 1; Mass / Time /
+Gate round 20, s): circuit I1 54.0 / 60.4 / **49.5**, I2 59.6 / 53.8 / **48.2**, I3 51.5 / 77.2 / **49.0**, I4 **49.2** /
+79.5 / 53.0; hairpins I1–I4 **31–39** / 66–95 / 43–50 (round 19: circuit I4 62.4, hairpins 44–53).
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
