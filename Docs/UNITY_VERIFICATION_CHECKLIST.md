@@ -15892,3 +15892,25 @@ errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
 - [ ] A Rhino assault from the hatch no longer shatters the Great Serpent in under 20 s; time it (the model says ~50 s
       at a constant 20 blows/s).
 - [ ] Other swarms (the research plans, the ecology swarm) show no new shields.
+
+## Rev 20 G: the arcade configure window - pedestals, LB / RB intensity, START (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`Docs/MENU_REDESIGN_B.md` section 74; approved board `R20ConfigureG2` on the Menu Redesign B canvas. No Unity editor in
+the cloud session. Proven offline: refcompile (player + editor OK), Amoebius builds, `author_menu_configure.py --check`
+/ `--self-test`, `author_ui_kit_sprites.py --check` / `--self-test`, `check_generated_assets.py`, `check_ui_colors.py`.
+- [ ] Open any arcade card (Scurry): preview + description left; right column = controls (hull named, two columns),
+      the intensity / pilots panel, START full width at the foot. No summary chips, no "Ready to launch".
+- [ ] Intensity: the numeral reads the picked level (I-IV); LB / RB step it; the pips light up to it; a locked level
+      shows its lock line and pressing toward it gives the locked feedback; clicking a pip picks it.
+- [ ] Pilots solo: your portrait on a pool of your team's colour, "Host" under you; three open seats. Press an open
+      seat / ADD AI PILOT / X: an AI appears with a roster portrait, "AI pilot", on the team with the fewest pilots.
+- [ ] Focus your team label and press left / right (or click its arrows): your team and pool colour change; the
+      match launches on that team. As host, do the same on an AI's seat; its team changes and stays.
+- [ ] ✕ on an AI removes it (refused while the card's minimum needs the seat).
+- [ ] With a friend in the party: their portrait and name show; a guest cannot add or move AI; after Ready the guest
+      sees "Waiting for others...".
+- [ ] A card that offers AI difficulty (Skim Race): the Easy / Medium / Hard row shows beside ADD AI PILOT and the AI
+      seats read "Medium AI"; on Scurry the row is hidden and they read "AI".
+- [ ] START launches on a press (no hold). The controls panel does NOT jump when the difficulty row shows.
+- [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
+- [ ] Arena and Maelstrom windows are unchanged.

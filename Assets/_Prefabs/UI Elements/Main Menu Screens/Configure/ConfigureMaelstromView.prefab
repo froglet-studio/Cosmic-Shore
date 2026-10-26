@@ -67,6 +67,7 @@ MonoBehaviour:
   - {fileID: 892106130539435395}
   - {fileID: 953191052199278553}
   - {fileID: 627326690240393432}
+  seatLineup: {fileID: 0}
   startButton: {fileID: 920073713374567388}
   waitingForOthersLabel: {fileID: 1057898906309097997}
   leaderboardButton: {fileID: 864224782174897508}
