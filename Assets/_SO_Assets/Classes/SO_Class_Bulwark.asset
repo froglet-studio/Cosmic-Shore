@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 26
   Name: Bulwark
-  Description: 'The heavy crew: the Rhino, the Grizzly and the Scarab. The slowest omega and the one that does not stop: it
-    ploughs the mass it touches. Helm flies, Arms fires the Siege cannon, Core holds the Switch wall and fires the
-    Breaker.'
+  Description: 'The heavy crew: the Scarab steers, the Grizzly shoots, the Butterfly shields. Three vessels flying as one
+    formation; the D-pad moves you between them. In the Scarab, RT is its cavitation dash; in the Grizzly, hold RT
+    to charge the cannon and release; in the Butterfly, hold LT for the shield and press RT for the ward.'
   CrewNames: []
   CrewNameTemplate: '{0} and {1}'
   SeatCount: 3

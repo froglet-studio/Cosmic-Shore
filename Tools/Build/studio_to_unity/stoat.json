@@ -59,7 +59,17 @@
     {"key": "dpSweetHalf", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotHalfWidth"},
     {"key": "dpSweetFall", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotFalloff"},
     {"key": "dpMissShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "missKickShare"},
-    {"key": "hyLen", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "hybridPathLengthShare"},
-    {"key": "hyCarry", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "hybridCarrySeconds"}
+    {"key": "drLenMin", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveLengthMin"},
+    {"key": "drLenMax", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveLengthMax"},
+    {"key": "drLatMax", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveLateralMax"},
+    {"key": "drTurnGain", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveTurnGain"},
+    {"key": "drTurnMax", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveTurnMax"},
+    {"key": "drWarpShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveWarpShare"},
+    {"key": "drWarpExp", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveWarpExponent"},
+    {"key": "drKeyRamp", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "driveKeyRampSeconds"},
+    {"key": "drAiNear", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "autopilotDriveNear"},
+    {"key": "drAiFar", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "autopilotDriveFar"},
+    {"key": "drAiCone", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "autopilotDriveConeDegrees"},
+    {"key": "drAiLeanDeg", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "autopilotDriveLeanDegrees"}
   ]
 }

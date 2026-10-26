@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -26,10 +27,17 @@ namespace CosmicShore.ScriptableObjects
         public const string ResourcePath = "ReplayConfig";
 
         [Header("Auto record")]
-        [Tooltip("Modes whose matches record themselves from Go to the end of the turn, on every peer " +
-                 "that plays them. Regatta was chosen first (2026-10-15); add a mode here to record it " +
-                 "too. Nothing else about a mode needs to change.")]
+        [Tooltip("Every match of every mode records itself from Go to the end of the turn, on every peer that " +
+                 "plays it (Yash, 2026-10-26: \"any game mode I play, it should be automatically recorded\"). " +
+                 "The menu's freestyle (the lava lamp) is never a match and never records. Untick to record only " +
+                 "the modes in Auto Record Modes.")]
+        [SerializeField] bool recordEveryMode = true;
+
+        [Tooltip("With Record Every Mode off, the modes that record themselves. Regatta was the first (2026-10-15).")]
         [SerializeField] List<GameModes> autoRecordModes = new() { GameModes.Regatta };
+
+        [Tooltip("Modes that never record, even with Record Every Mode on.")]
+        [SerializeField] List<GameModes> neverRecordModes = new() { GameModes.Random };
 
         [Tooltip("Seconds to wait, after the turn ends, for the end screen - the moment the final " +
                  "results exist. A replay whose end screen never comes is saved without results once " +
@@ -83,6 +91,12 @@ namespace CosmicShore.ScriptableObjects
                  "invisible drain and a lighter frame in the menu the player went back to.")]
         [SerializeField, Range(25, 2000)] int arenaDrainPrismsPerFrame = 150;
 
+        [Header("Watching: the camera")]
+        [Tooltip("The camera a replay opens on. Free is the Theater's free-flying camera (sticks / WASD, the Third " +
+                 "Eye's way of watching), seeded from the orbit framing so the race is in shot.")]
+        [SerializeField] TheaterShot startShot = TheaterShot.Free;
+
+        public TheaterShot StartShot => startShot;
         public float ResultsWaitSeconds => resultsWaitSeconds;
         public float StageDistance => stageDistance;
         public int ArenaPrismStride => arenaPrismStride;
@@ -97,8 +111,16 @@ namespace CosmicShore.ScriptableObjects
         public int CloudIndexSize => cloudIndexSize;
 
         /// <summary>Whether a match of <paramref name="mode"/> records itself.</summary>
-        public bool ShouldAutoRecord(GameModes mode) =>
-            autoRecordModes != null && autoRecordModes.Contains(mode);
+        /// <summary>
+        /// Whether a match of <paramref name="mode"/> in <paramref name="sceneName"/> records itself. Never in
+        /// <paramref name="menuSceneName"/>: the menu's freestyle (the lava lamp) is not a match.
+        /// </summary>
+        public bool ShouldAutoRecord(GameModes mode, string sceneName, string menuSceneName)
+        {
+            if (!string.IsNullOrEmpty(menuSceneName) && sceneName == menuSceneName) return false;
+            if (neverRecordModes != null && neverRecordModes.Contains(mode)) return false;
+            return recordEveryMode || (autoRecordModes != null && autoRecordModes.Contains(mode));
+        }
 
         /// <summary>
         /// The config in use: the authored asset if there is one, otherwise a code-default instance

@@ -6907,7 +6907,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 0, y: 14}
-  m_SizeDelta: {x: 1100, y: 20}
+  m_SizeDelta: {x: 1400, y: 20}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &580474174560309949
 CanvasRenderer:
@@ -6937,7 +6937,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit
+  m_text: Sticks / WASD fly the camera    A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}

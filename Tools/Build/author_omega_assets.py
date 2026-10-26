@@ -81,20 +81,21 @@ def guid_for(name: str) -> str:
     return hashlib.md5(f"CosmicShore/Omega/{name}".encode()).hexdigest()
 
 
-# (name, VesselClassType id, OmegaMath.Crew value, first member's page flight (cruise, turn, roll), card description)
+# (name, VesselClassType id, OmegaMath.Crew value, the MOBILITY member's page flight (cruise, turn, roll), card description)
 CREWS = (
     ("Warden", 25, 0, (60, 110, 130),
-     "The field crew: the Stoat, the Thresher and the Butterfly. Apart, each flies its own hull (swap seats with the\n"
-     "    D-pad); hold LT with the crew together to combine into the Warden's omega form, a lance of plates with the\n"
-     "    wrecking ball at its prow. Helm flies, Arms swings the Ripple whip, Core holds the Fold ward and fires\n"
-     "    Annihilation."),
-    ("Bulwark", 26, 1, (58, 90, 100),
-     "The heavy crew: the Rhino, the Grizzly and the Scarab. The slowest omega and the one that does not stop: it\n"
-     "    ploughs the mass it touches. Helm flies, Arms fires the Siege cannon, Core holds the Switch wall and fires the\n"
-     "    Breaker."),
+     "The field crew: the Stoat steers, the Sparrow shoots, the Rhino shields. Three vessels flying as one formation;\n"
+     "    press left or right on the D-pad to sit in another one (the camera goes with you) while the other two are\n"
+     "    flown by their AI. In the Stoat, RT is its sling boost; in the Sparrow, aim and fire its guns on RT; in the\n"
+     "    Rhino, hold LT for the shield and press RT for the ward."),
+    ("Bulwark", 26, 1, (75, 120, 150),
+     "The heavy crew: the Scarab steers, the Grizzly shoots, the Butterfly shields. Three vessels flying as one\n"
+     "    formation; the D-pad moves you between them. In the Scarab, RT is its cavitation dash; in the Grizzly, hold RT\n"
+     "    to charge the cannon and release; in the Butterfly, hold LT for the shield and press RT for the ward."),
     ("Tempest", 27, 2, (66, 120, 140),
-     "The fast crew: the Squirrel, the Sparrow and the Manta. The fastest omega. Helm flies, Arms fires the Pulsefire\n"
-     "    battery, Core holds the Afterburner veil and fires Kabloom."),
+     "The fast crew: the Squirrel steers, the Thresher smashes, the Manta shields. Three vessels flying as one\n"
+     "    formation; the D-pad moves you between them. In the Squirrel, RT is its skim boost; in the Thresher, hold RT to\n"
+     "    swing the wrecking ball; in the Manta, hold LT for the shield and press RT for the ward."),
 )
 CREW_BY_NAME = {c[0]: c for c in CREWS}
 
@@ -255,7 +256,8 @@ def patch_prefab(text: str, c: CrewPaths) -> str:
 # ===================================================================================================== assets
 CONFIG_KEYS = ("crew", "combineSeconds", "gatherRange", "meterPerCrystal", "meterPerSkim", "regen", "drain", "combinedCrystal",
                "shieldDrain", "combineAt", "finisherAt", "finisherCone", "finisherCost", "splitSeconds", "omegaContactPlough",
-               "startMeter", "ploughRadius", "cannonRange", "foldBoost", "formationSpread", "memberCatchUp",
+               "startMeter", "ploughRadius", "cannonRange", "foldBoost", "formationSpread", "formationBack", "shieldRadius",
+               "wardCost", "wardCooldown",
                "mouseAimRadiansPerPixel", "aiAimRange", "aiShieldMass", "aiFinisherMass", "debrisSpeed", "debrisSpeedLimit",
                "finisherExplosions", "cannonExplosions")
 SOUNDS = ("combineSound", "splitSound", "finisherSound", "weaponSound", "moveSound")
@@ -283,8 +285,11 @@ def config_asset(c: CrewPaths) -> str:
             "  ploughRadius: 7\n"
             "  cannonRange: 140\n"
             "  foldBoost: 1.5\n"
-            "  formationSpread: 40\n"
-            "  memberCatchUp: 1.4\n"
+            "  formationSpread: 18\n"
+            "  formationBack: 10\n"
+            "  shieldRadius: 40\n"
+            "  wardCost: 0.2\n"
+            "  wardCooldown: 3\n"
             "  mouseAimRadiansPerPixel: 0.0035\n"
             "  aiAimRange: 120\n"
             "  aiShieldMass: 3\n"
@@ -500,9 +505,9 @@ def check_crew(files: "dict[str, str]", c: CrewPaths, errors: "list[str]") -> No
     tr = d.get(TRANSFORMER_ID, "")
     need(f"guid: {SCRIPT['OmegaVesselTransformer']}" in tr, "the transformer is not OmegaVesselTransformer")
     cruise, turn, roll = c.flight
-    need(f"  DefaultThrottleScaler: {cruise}\n" in tr, f"DefaultThrottleScaler is not the first member's cruise {cruise}")
+    need(f"  DefaultThrottleScaler: {cruise}\n" in tr, f"DefaultThrottleScaler is not the mobility member's cruise {cruise}")
     for field, value in (("PitchScaler", turn), ("YawScaler", turn), ("RollScaler", roll)):
-        need(f"  {field}: {value}\n" in tr, f"{field} is not the first member's {value}")
+        need(f"  {field}: {value}\n" in tr, f"{field} is not the mobility member's {value}")
     crew = d.get(CREW_ID, "")
     need(f"guid: {SCRIPT['OmegaCrew']}" in crew, "OmegaCrew is not on the prefab")
     need(f"  config: {{fileID: 11400000, guid: {c.config_guid}, type: 2}}\n" in crew, f"OmegaCrew.config is not Omega{c.name}Config (a null config never seats the crew)")
@@ -631,7 +636,7 @@ def self_test() -> int:
         "the donor's hash": (c.prefab, lambda t: re.sub(r"  GlobalObjectIdHash: \d+", "  GlobalObjectIdHash: 1", t, count=1)),
         "a Stoat executor left behind": (c.prefab, lambda t: t.replace("  _executors: []\n", "  _executors:\n  - {fileID: 5137264980012345603}\n", 1)),
         "the Stoat's transformer back": (c.prefab, lambda t: t.replace(SCRIPT["OmegaVesselTransformer"], TWO_STICK_SCRIPT)),
-        "the first member's turn rate lost": (c.prefab, lambda t: t.replace("  PitchScaler: 110\n", "  PitchScaler: 48\n")),
+        "the mobility member's turn rate lost": (c.prefab, lambda t: t.replace("  PitchScaler: 110\n", "  PitchScaler: 48\n")),
         "the crew off the root": (c.prefab, lambda t: t.replace(f"  - component: {{fileID: {CREW_ID}}}\n", "")),
         "the crew's config unwired": (c.prefab, lambda t: t.replace(f"  config: {{fileID: 11400000, guid: {c.config_guid}, type: 2}}", "  config: {fileID: 0}")),
         "a dangling reference": (c.prefab, lambda t: t.replace(f"  flight: {{fileID: {TRANSFORMER_ID}}}", "  flight: {fileID: 12345}")),
