@@ -3431,3 +3431,18 @@ Rev 4 column and is byte-identical.
 
 Affects Yash's shared vessel panel (`ArenaLaunchPanel`, the hull strip and claim, #1558): its strip and claim are reused
 as they are; only where they sit moved. Editor check: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 25 configure card".
+
+## 79. The friends drawer: the people glyph, no maximise (2026-10-26)
+
+Shombith, 2026-10-26: "you used elemental icon for friends you should never do that. Change this plus remove the
+maximize button from the friends panel". The drawer's title wears `chrome_people` (the leaderboard's Friends tab glyph)
+in NeutralLightest instead of the Space element glyph, and the window has only its minimise: `FriendsDrawer` loses the
+Maximised state, `maximiseButton`, its two glyphs and `maximisedWidth`. **The rule, standing:** an element glyph means an
+element (an ability, a petal, an element bar) and nothing else - never people, a social feature, or decoration;
+`author_menu_friends_drawer.py` now fails if the title wears any of the four. The re-emit also sweeps documents an older
+version parented under the drawer that their parent no longer listed (old plates and focus rings under the minimise and
+maximise buttons).
+
+The same mistake was on the cell-change loading screen (section 47.4): its four build steps ("Laying prisms" ...) wore
+the Mass, Time, Charge and Space glyphs. They now wear none (`EnvironmentLoadVeilContent.stepGlyphs` is empty; the veil
+already drew a step without one), and `author_load_veil_content.py` fails if an element glyph comes back.

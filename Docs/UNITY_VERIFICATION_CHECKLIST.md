@@ -16110,6 +16110,15 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Friends drawer: people glyph, no maximise (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Verified offline: reference compile, Amoebius builds, `author_menu_friends_drawer.py --check` / `--self-test`, `gates.sh`.
+
+1. Open Menu_Main, press the presence orb. **Pass:** the drawer's title shows the two-people glyph (grey), not an element
+   icon; the top-right has only the minimise bar, which slides the drawer back; no maximise / restore button; no stray
+   plate or ring behind the minimise.
+2. Change cell in freestyle. **Pass:** the loading screen's four steps are words only, no element icons.
+
 ## Rev 25 configure card: Arena and Voyage on the Arcade card, the signal sign, the open border (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
