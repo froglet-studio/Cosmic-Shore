@@ -52,13 +52,9 @@ PrefabInstance:
       propertyPath: borderUnselectedSprite
       value: 
       objectReference: {fileID: 21300000, guid: b1b4d4f216f225f29ae183237dae7b8b, type: 3}
-    - target: {fileID: 7116141844331670, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
-      propertyPath: m_Material
-      value: 
-      objectReference: {fileID: 2100000, guid: 98a465c1ae2c92cf5f432d18040907eb, type: 2}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_AnchorMin.y
@@ -66,7 +62,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_AnchorMax.y
@@ -78,23 +74,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_Pivot.y
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -8
+      value: -11
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -39
+      value: -8
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 104
+      value: -38
       objectReference: {fileID: 0}
     - target: {fileID: 926340977599119165, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 104
+      value: 62
       objectReference: {fileID: 0}
     - target: {fileID: 1142445929648679279, guid: 193269dbb53bc958da25f728cc90b55f, type: 3}
       propertyPath: m_AnchorMin.x
@@ -299,6 +295,7 @@ MonoBehaviour:
   nameText: {fileID: 804878794239538363}
   statusText: {fileID: 696615267766136344}
   canvasGroup: {fileID: 22514386452205391}
+  cardArt: {fileID: 11400000, guid: 95b8c3657701e162c43795a8e4769e47, type: 2}
 --- !u!225 &22514386452205391
 CanvasGroup:
   m_ObjectHideFlags: 0

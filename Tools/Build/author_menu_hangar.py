@@ -221,13 +221,14 @@ def ref(fid):
 
 # Rev 25 round 2 (Shombith 2026-10-26: "Left side vessel holders should use the open border card as well. The mockup's
 # vessels were colorful and looked way better"): each vessel is a card in the Hangar's open angled border (its body and
-# outline are kit sprites drawn at this size, so KitTile still swaps the outline on selection), the hull large on top
-# drawn with Hull_Lit.mat (the arcade card's treatment: lifted toward a cool grey and edged in white, so the fleet's
-# dark hulls read on the navy body), the name and status under it - never on the picture.
+# outline are kit sprites drawn at this size, so KitTile still swaps the outline on selection), the hull large on top,
+# the name and status under it - never on the picture. Section 81 ("Go ahead with the colourful card renders"): the
+# picture is the hull's own colourful three-quarter render (HangarCardArtSO, Tools/Build/author_hangar_card_art.py), a
+# 3:1 cut-out that fills the art band, drawn as rendered (no material: Hull_Lit would grey its colours).
 TILE_W, TILE_H = 220, 124                     # author_ui_kit_sprites.TILE_W / TILE_H: the open card's sprites
-TILE_ART_TOP, TILE_ART_H, TILE_ART_SPRITE = 8, 62, 104             # the hull, from the card's top
+TILE_ART_TOP, TILE_ART_H = 8, 62             # the art band, from the card's top
 TILE_NAME_Y, TILE_STATUS_Y = 28, 8           # the name and status rows, from the card's foot
-HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
+CARD_ART = "Assets/_SO_Assets/UI/HangarCardArt.asset"   # written by author_hangar_card_art.py (run it first)
 WINDOW_BACKDROP_ALPHA = 0.95                  # author_menu_arcade.WINDOW_BACKDROP_ALPHA (asserted by that generator's load)
 
 
@@ -253,11 +254,10 @@ def tile_variant_text():
             ("Border#img", "m_Sprite", sprite("kit_open_tile_line1")), ("Border#img", "m_Type", 0),
             ("FocusRing#img", "m_Sprite", sprite("kit_open_tile_line2")), ("FocusRing#img", "m_Type", 0),
             ("root#tile", "borderSelectedSprite", sprite("kit_open_tile_line2")),
-            ("root#tile", "borderUnselectedSprite", sprite("kit_open_tile_line1")),
-            ("Art#img", "m_Material", ("ref", f"{{fileID: 2100000, guid: {HULL_LIT_MAT}, type: 2}}"))]
-    # The card icons carry wide clear margins (the hull is about 60 % of the square), so the art is drawn larger than its
-    # band: the hull fills the band and only clear pixels cross into the word rows.
-    mods += rect_mods("Art#rt", (0.5, 1), (0.5, 1), (0.5, 0.5), (-8, -(TILE_ART_TOP + TILE_ART_H / 2)), (TILE_ART_SPRITE, TILE_ART_SPRITE))
+            ("root#tile", "borderUnselectedSprite", sprite("kit_open_tile_line1"))]
+    # The art band spans the card inside its border (the right side leans in at the floor, so the band stops short of
+    # it); the 3:1 art keeps its aspect (KitTile's Art preserves it) and fills the band's height.
+    mods += rect_mods("Art#rt", (0, 1), (1, 1), (0.5, 1), (-lean_room / 2 + 4, -TILE_ART_TOP), (-8 - lean_room, TILE_ART_H))
     mods += rect_mods("Lock#rt", (1, 1), (1, 1), (1, 1), (-22, -16), (20, 20))
     mods += rect_mods("Name#rt", (0, 0), (1, 0), (0, 0), (14, TILE_NAME_Y), (-14 - lean_room, 24))
     mods += rect_mods("Status#rt", (0, 0), (1, 0), (0, 0), (14, TILE_STATUS_Y), (-14 - lean_room, 18))
@@ -283,7 +283,8 @@ def tile_variant_text():
         docs.append(stub_doc(d(key), key, K.source_fid("KitTile", key), base, pid))
     docs.append(f"--- !u!114 &{tile_c}\n" + K.mono(root_go, VESSEL_TILE,
                 f"  tile: {ref(d('root#tile'))}\n  icon: {ref(d('Art#img'))}\n  nameText: {ref(d('Name#tmp'))}\n"
-                f"  statusText: {ref(d('Status#kt'))}\n  canvasGroup: {ref(cg_c)}\n"))
+                f"  statusText: {ref(d('Status#kt'))}\n  canvasGroup: {ref(cg_c)}\n"
+                f"  cardArt: {{fileID: 11400000, guid: {K.meta_guid(CARD_ART)}, type: 2}}\n"))
     docs.append(f"--- !u!225 &{cg_c}\n" + canvas_group(True)(None, root_go))
     docs.append(f"--- !u!114 &{le_c}\n" + le(ph=TILE_H)(None, root_go))
     # Motion (section 22.8): rows rise in by list position. The tile dims itself through the same
@@ -1473,6 +1474,10 @@ def validate_prefabs(files, guids):
         assert m, f"HangarVesselTile.{field} missing"
         cls, script = target_kind(tile, m.group(1), files)
         assert (cls == want) if isinstance(want, int) else (script == want), f"HangarVesselTile.{field} is wrong"
+    # Section 81: the list shows the hulls' colourful renders, so the tile must reach the art table.
+    assert re.search(r"^  cardArt: \{fileID: 11400000, guid: " + K.meta_guid(CARD_ART) + r", type: 2\}$", tbody, re.M), \
+        "HangarVesselTile.cardArt must name the Hangar card art table (author_hangar_card_art.py)"
+    assert f"guid: {M._lattice_guid('hull_lit_mat')}" not in tile, "the colourful card art must not be drawn with Hull_Lit"
 
 
 def validate_scene(before_text, after_text, files, guids):
@@ -1551,6 +1556,12 @@ def self_test(current, files, guids):
         f2[view_path] = fn(files[view_path])
         return lambda: validate_prefabs(f2, guids)
 
+    def tile_plant(fn):
+        f2 = dict(files)
+        tile_path = f"{OUT_DIR}/HangarVesselTile.prefab"
+        f2[tile_path] = fn(files[tile_path])
+        return lambda: validate_prefabs(f2, guids)
+
     _, dbody = doc_of(files[view_path], detail)
     name_ref = str(K.FileIds("HangarView")("Header/Title#tmp"))
     vibe_ref = re.search(r"  vibe: \{fileID: (-?\d+)\}", dbody).group(1)
@@ -1592,6 +1603,12 @@ def self_test(current, files, guids):
             r"(\n  headerTitleText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "a vibe segment unwired": view_plant(lambda t: re.sub(r"(\n    segments:\n    - )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the rail missing a line": view_plant(lambda t: t.replace("m_Name: Line3\n", "m_Name: Lime3\n", 1)),
+        "the list's tile without its card art": tile_plant(lambda t: re.sub(
+            r"(\n  cardArt: )\{[^}]*\}", r"\1{fileID: 0}", t, count=1)),
+        "the card art drawn through Hull_Lit": tile_plant(lambda t: t.replace(
+            "    m_RemovedComponents: []", "    - target: {fileID: 0}\n      propertyPath: m_Material\n      value: \n"
+            f"      objectReference: {{fileID: 2100000, guid: {M._lattice_guid('hull_lit_mat')}, type: 2}}\n"
+            "    m_RemovedComponents: []", 1)),
         "the stage with no vessel table": view_plant(lambda t: t.replace(
             f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}", "prefabs: {fileID: 0, guid: 0", 1)),
     }

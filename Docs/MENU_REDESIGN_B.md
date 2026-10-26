@@ -3469,7 +3469,7 @@ not need to be that big. We can make the detail view bigger also see texts are o
 - **Colour:** the mockup's colourful hulls were crops of the artist files' clay contact sheets (`Docs/VesselModels/sheets`,
   tan body, lime engine). The fleet's card art follows `Docs/VesselModels/COLOR.md` (lime is never on a vessel; the class
   livery is neutral), so the cards show the shipped renders, lifted by `Hull_Lit`. Colourful card art is a re-render in
-  `render_cards.py` and a colour-language decision, not a UI change.
+  `render_cards.py` and a colour-language decision, not a UI change. (Superseded for the Hangar list by section 81.)
 
 **Arcade card** (`author_menu_arcade.py`): the genre flower moved to the body's right edge, 34 across (was 46 beside the
 hull); a two-genre card stacks two, centred, and the title takes the line between the hull and the flowers.
@@ -3487,3 +3487,36 @@ hull); a two-genre card stacks two, centred, and the title takes the line betwee
 **How this round was checked:** an offline renderer of the generated prefabs (nested prefabs and their overrides, layout
 groups, sprites, TMP text, masks) drew every changed screen, and it reports any text on an art image and any text wider
 than its box; the final renders report none. The renderer lives in the session scratchpad, not the repo.
+
+## 81. The Hangar list's colourful card art (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26: "Go ahead with the colourful card renders" (section 80 had left the list on the fleet's card icons,
+lifted by `Hull_Lit`).
+
+**What the list shows now:** each hull's three-quarter view in its model's slot colours (tan body, cyan glass, lime engine,
+orange accents), the look of the Rev 24 mockup, filling the card's art band above the name and status.
+
+**Where the art comes from:** `Tools/Build/author_hangar_card_art.py` cuts it from the vessel-model contact sheets
+(`Docs/VesselModels/sheets/<vessel>_after.jpg`, the Blender Cycles renders `vessel_model/build.py` makes; the second cell of
+the first row, the front three-quarter view). It keys out the studio grey, un-blends the grey from the edge pixels (no grey
+fringe on the navy card), trims the hull and fits it to one 600 x 200 clear canvas, so every card frames its hull the same
+way. The Wrasse uses `wrassekite_after.jpg` (its card icon is still a placeholder), the Rhino and the Urchin their rigged
+sheets, the Jacks `jack_after.jpg`. A hull with no sheet falls back to its card icon on the same canvas. All 20 hulls the
+Hangar lists have a sheet. The art was not re-rendered: Blender is not installable in this environment, and the sheets are
+the committed Cycles renders.
+
+- `Assets/_Graphics/Hangar/Cards/<Vessel>.png`: the art (20 sprites).
+- `Assets/_SO_Assets/UI/HangarCardArt.asset`: `HangarCardArtSO`, the vessel to art table (not `_SO_Assets/Hangar/`: that
+  folder retired with TRY and `author_menu_hangar.py` guards that it stays gone).
+- `HangarVesselTile.cardArt` names the table; `Configure` shows `cardArt.For(vessel)`, else `SO_Vessel.IconActive`.
+- The tile's art is a band across the card's top (8 down, 62 tall, inside the leaning right side), drawn as rendered: the
+  `Hull_Lit` material is gone from the tile, since it would grey the colours. KitTile's Art keeps the aspect.
+
+**Only the Hangar list reads it.** Every other screen keeps `SO_Vessel.IconActive`, the fleet's card art in the colour scheme
+of `Docs/VesselModels/COLOR.md` (Garrett's vessel colour language), which this art does not follow. Re-run the generator
+when a model's sheet is re-rendered; `--check` fails when the art drifts from the sheets.
+
+**How it was checked:** `author_hangar_card_art.py --check` / `--self-test` (a blank card, a card painted the studio grey, a
+hull dropped from the table and a card on the wrong canvas are all caught); `author_menu_hangar.py --check` / `--self-test`
+(new plants: the tile without its card art, the art drawn through `Hull_Lit`); the reference compile; `gates.sh`; and an
+offline render of the tile with six hulls' art (no text on the art, no overflow).

@@ -16110,6 +16110,19 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Hangar list: colourful card art (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline: reference compile (0 errors in project code),
+`author_hangar_card_art.py --check` / `--self-test`, `author_menu_hangar.py --check` / `--self-test`, `gates.sh`, an offline
+render of the tile. Docs/MENU_REDESIGN_B.md section 81.
+
+1. Let Unity import `Assets/_Graphics/Hangar/Cards/` and `Assets/_SO_Assets/UI/HangarCardArt.asset`. **Pass:** the 20 PNGs
+   import as single sprites; the asset's inspector lists 20 entries, each with a vessel and its art; no missing script.
+2. Open the Hangar. **Pass:** every vessel card shows its hull in colour (tan, cyan, lime, orange), in the band above the
+   name, not greyed; no grey halo around a hull; the Wrasse shows the kite model, not the Sparrow.
+3. Open any other screen with vessel cards (the configure vessel strip, the Arena roster). **Pass:** those still show the
+   fleet's card icons, unchanged.
+
 ## Round 2: Hangar (opaque, open-border list, one tab row), arcade card flower, configure card (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline: reference compile, the generators' `--check` / `--self-test`, `gates.sh`, and
