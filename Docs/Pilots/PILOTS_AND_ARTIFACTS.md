@@ -20,6 +20,34 @@ This replaces the old model in `Assets/_SO_Assets/Captains/Elemental/` (four cap
 - **8 unnamed spare portraits** (`PilotPortrait_01`, `PilotPortrait_Placeholder01-07`); four sit on the Grizzly, Termite and Urchin placeholder captains.
 - **This plan: 40 pilots, 24 with art, 16 without** (Heist, Trapper, Snap, Nul, Timebomb, Ironclad, Glimmer, Pack, Lariat, Pod, Murmur, Roost, Pincer, Shoal, Comb, Raid).
 
+### Stand-ins and the artist list (2026-10-26)
+
+The 8 spare portraits stand in for 8 pilots, matched by character (Shombith, 2026-10-26):
+
+| Pilot | Spare portrait |
+|---|---|
+| Nul | `PilotPortrait_01` (robed mandrill) |
+| Trapper | `PilotPortrait_Placeholder01` (rat archer) |
+| Heist | `PilotPortrait_Placeholder02` (zebra in a trench coat) |
+| Raid | `PilotPortrait_Placeholder03` (fox brawler) |
+| Timebomb | `PilotPortrait_Placeholder04` (hare with a sword on its back) |
+| Lariat | `PilotPortrait_Placeholder05` (hare in a red shirt) |
+| Pack | `PilotPortrait_Placeholder06` (rabbit in a teal vest) |
+| Ironclad | `PilotPortrait_Placeholder07` (armoured kangaroo) |
+
+**The other 8 wait for an artist; no art is generated for them** (Shombith: "Dont create art we will wait for an artist"). Briefs, to match the painted set (full-body anthropomorphic animal pilot, standing, three-quarter view, painterly, rugged pilot gear, transparent background, 220x280 delivered):
+
+| Pilot | Vessel | Brief |
+|---|---|---|
+| Snap | Goby | Pistol shrimp. Coral shell, antennae swept back, one oversized snapping claw raised like a pistol, teal flight suit. Cocky. |
+| Glimmer | Angler | Anglerfish. Wide toothy grin, a glowing lure on a stalk lighting its face cyan, dark navy suit. Sly and patient. |
+| Pod | Orca | Orca. Black and white, eye patch, dorsal fin through the back of the suit, navy suit with cyan trim. A calm commander. |
+| Murmur | Starling | Starling. Glossy purple-green plumage speckled white, yellow beak, wings worn as a cape over a leather jacket. |
+| Roost | Starling | Owl. Pale face disk, ear tufts, big amber eyes, a feather cloak over an olive flight suit. Watchful. |
+| Pincer | Jacks | Crab. Red carapace as shoulder armour, eyes on stalks, two pincers for hands. Wide, planted stance. |
+| Shoal | Jacks | Jack (trevally). Silver-blue scales, yellow fins, forked tail, a lean racer in a navy suit. |
+| Comb | Honeyguide | Honeybee. Gold and black stripes, glassy wings, antennae, a honeycomb badge on the chest. Busy and precise. |
+
 ## The 20 vessels
 
 The Hangar class list (`SO_Classlist_Classes`) without the three omega crews (Warden, Bulwark, Tempest). The Grizzly is playable but not on that list.
@@ -125,7 +153,7 @@ kept = the Notion idea as written; reshaped = it was a number, broke the PvP rul
 
 1. Two pilots per vessel: the six legacy vessels had four each (one per element). Keep two, or grow the flagships back to three or four (the Hangar has four card slots)?
 1. Which 20: swap the Grizzly in for one of these? (Ironclad moved to the Shrike because the Grizzly is not on the list.)
-1. Art for 16 pilots: use the 8 spare portraits as stand-ins for 8 of them now?
+1. The spare stand-ins: keep them for good, or have the artist repaint them with the other eight?
 1. New names (Snap, Glimmer, Pack, Lariat, Pod, Murmur, Roost, Pincer, Shoal, Comb, Raid) are working names: keep, rename,?
 1. Artifacts in competitive play: off in ranked/arena, or a fixed power budget per match?
 1. How artifacts are found: cell drops, quest rewards, the Elemental Converter (the captain-upgrade economy is de-scoped).
