@@ -1,0 +1,143 @@
+{
+ "after": [],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "area_owner": "Yash (vessel AI)",
+ "asked_by": "Garrett 2026-10-26 (the Regatta balance plan; Yash follows it)",
+ "convergence": {
+  "min_evals": 1500,
+  "min_improvement": 0.002,
+  "window_evals": 1200
+ },
+ "evaluator": {
+  "args": {
+   "hull": "Rhino",
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "limit": 400,
+   "mode": "Regatta",
+   "model": "rhino_drive",
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "shipped": "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta.asset"
+  },
+  "module": "drive_fit"
+ },
+ "goal": "Stage 1 of the Regatta balance plan, Regatta's own variant: the drive this hull flies in Regatta (`<policy>_Regatta`), searched on Regatta's four circuits, so stage 2 levels the course with trained AIs.",
+ "id": "drive-rhino-regatta",
+ "kind": "search",
+ "paths": [
+  "Tools/Build/",
+  "Assets/Resources/AIBoostPolicies/",
+  "Assets/Resources/RaceLines/",
+  "Assets/_Prefabs/Spacevessels/"
+ ],
+ "plan": "regatta-balance",
+ "promote": "A PROPOSAL for the AI owner (Yash): if they agree, write the best fields into Assets/Resources/AIBoostPolicies/<the Rhino's policy>_Regatta.asset with the learner's writer (learn_drives_from_flights.py), never by hand; the AI learning sweep keeps imitating people on top of it.",
+ "ref": "origin/Ys-bleeding-edge",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 1500,
+   "init": 333.0,
+   "lo": 150,
+   "name": "cornerSpeed"
+  },
+  {
+   "hi": 400,
+   "init": 160.0,
+   "lo": 60,
+   "name": "minCornerSpeed"
+  },
+  {
+   "hi": 400,
+   "init": 120.0,
+   "lo": 0,
+   "name": "brakeMarginUnits"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.25,
+   "lo": 0.0,
+   "name": "brakeLeadSeconds"
+  },
+  {
+   "hi": 300,
+   "init": 50.0,
+   "lo": 0,
+   "name": "minSpeedGain"
+  },
+  {
+   "hi": 120,
+   "init": 30.0,
+   "lo": 10,
+   "name": "cornerReleaseDegrees"
+  },
+  {
+   "hi": 3.0,
+   "init": 1.5,
+   "lo": 0.2,
+   "name": "engageRunwaySeconds"
+  },
+  {
+   "hi": 2.0,
+   "init": 0.5,
+   "lo": 0.1,
+   "name": "releaseRunwaySeconds"
+  },
+  {
+   "hi": 40,
+   "init": 12.0,
+   "lo": 4,
+   "name": "alignDegrees"
+  },
+  {
+   "hi": 60,
+   "init": 25.0,
+   "lo": 8,
+   "name": "releaseAlignDegrees"
+  },
+  {
+   "hi": 0.9,
+   "init": 0.35,
+   "lo": 0.1,
+   "name": "stickBand"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.6,
+   "lo": 0.2,
+   "name": "releaseStickBand"
+  },
+  {
+   "hi": 10,
+   "init": 4.0,
+   "lo": 0.5,
+   "name": "throttleSlewPerSecond"
+  },
+  {
+   "hi": 0.8,
+   "init": 0.3,
+   "lo": 0.0,
+   "name": "brakeSteerFloor"
+  }
+ ],
+ "stage": 1,
+ "status": "ready",
+ "title": "Rhino AI drive for Regatta, I1-I4 (the Regatta variant stage 2 races)",
+ "updated": "2026-10-26",
+ "value": 7
+}

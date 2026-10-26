@@ -1,0 +1,101 @@
+{
+ "after": [],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "area_owner": "Yash (vessel AI)",
+ "asked_by": "Garrett 2026-10-26 (the Regatta balance plan; Yash follows it)",
+ "convergence": {
+  "min_evals": 1500,
+  "min_improvement": 0.002,
+  "window_evals": 1200
+ },
+ "evaluator": {
+  "args": {
+   "hull": "Dolphin",
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "limit": 400,
+   "mode": "Regatta",
+   "model": "dolphin_drive",
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "shipped": ""
+  },
+  "module": "drive_fit"
+ },
+ "goal": "Stage 1 of the Regatta balance plan, Regatta's own variant: the drive this hull flies in Regatta (`<policy>_Regatta`), searched on Regatta's four circuits, so stage 2 levels the course with trained AIs.",
+ "id": "drive-dolphin-regatta",
+ "kind": "search",
+ "paths": [
+  "Tools/Build/",
+  "Assets/Resources/AIBoostPolicies/",
+  "Assets/Resources/RaceLines/",
+  "Assets/_Prefabs/Spacevessels/"
+ ],
+ "plan": "regatta-balance",
+ "promote": "A PROPOSAL for the AI owner (Yash): if they agree, write the best fields into Assets/Resources/AIBoostPolicies/<the Dolphin's policy>_Regatta.asset with the learner's writer (learn_drives_from_flights.py), never by hand; the AI learning sweep keeps imitating people on top of it.",
+ "ref": "origin/Ys-bleeding-edge",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 45,
+   "init": 12,
+   "lo": 4,
+   "name": "alignDegrees"
+  },
+  {
+   "hi": 3.5,
+   "init": 2.5,
+   "lo": 0.2,
+   "name": "engageRunwaySeconds"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.95,
+   "lo": 0.3,
+   "name": "spendAtCharge01"
+  },
+  {
+   "hi": 8.0,
+   "init": 4.0,
+   "lo": 0.5,
+   "name": "maxHoldOffSeconds"
+  },
+  {
+   "hi": 30.0,
+   "init": 3.0,
+   "lo": 0.0,
+   "name": "peakMarginUnits"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.2,
+   "lo": 0.05,
+   "name": "minDischargeSeconds"
+  },
+  {
+   "hi": 120.0,
+   "init": 30.0,
+   "lo": 0.0,
+   "name": "minPulseGainUnits"
+  }
+ ],
+ "stage": 1,
+ "status": "ready",
+ "title": "Dolphin AI drive for Regatta, I1-I4 (the Regatta variant stage 2 races)",
+ "updated": "2026-10-26",
+ "value": 7
+}

@@ -1,0 +1,105 @@
+{
+ "after": [
+  "regatta-course-i1",
+  "regatta-course-i2",
+  "regatta-course-i3",
+  "regatta-course-i4"
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.3
+ },
+ "area_owner": "Yash (Regatta); every hull's owner for its baseline",
+ "asked_by": "Garrett 2026-10-26 (the Regatta balance plan; Yash follows it)",
+ "blocked_reason": "stage 3 starts once the four stage-2 courses are promoted (their settings go into evaluator.args.courses)",
+ "convergence": {
+  "min_evals": 1500,
+  "min_improvement": 0.001,
+  "window_evals": 1000
+ },
+ "evaluator": {
+  "args": {
+   "courses": {},
+   "hulls": [
+    "Manta",
+    "Dolphin",
+    "Rhino",
+    "Urchin",
+    "Squirrel",
+    "Serpent",
+    "Sparrow",
+    "Scarab",
+    "Stoat"
+   ],
+   "minimality": 0.02,
+   "seeds": {}
+  },
+  "module": "regatta_elements"
+ },
+ "goal": "Stage 3 of the Regatta balance plan: one Time level per hull (its mobility element) that brings the fleet's race times together on the stage-2 courses with the least tuning; it becomes each vessel's new elemental baseline.",
+ "id": "regatta-elements",
+ "kind": "search",
+ "paths": [
+  "Tools/Build/",
+  "Assets/_Prefabs/Spacevessels/",
+  "Assets/_SO_Assets/",
+  "Assets/Resources/"
+ ],
+ "plan": "regatta-balance",
+ "promote": "A PROPOSAL for the hulls' owners (who_works_where.py names them): the levels become each vessel's elemental baseline (its Time starting level), through author_regatta_assets.py's StartingElements and the vessel's own assets, never by hand; then regatta_balance.py and the editor confirm the spread.",
+ "ref": "origin/Ys-bleeding-edge",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 10,
+   "init": 0,
+   "lo": -5,
+   "name": "time_Manta",
+   "type": "int"
+  },
+  {
+   "hi": 10,
+   "init": 0,
+   "lo": -5,
+   "name": "time_Dolphin",
+   "type": "int"
+  },
+  {
+   "hi": 10,
+   "init": 0,
+   "lo": -5,
+   "name": "time_Serpent",
+   "type": "int"
+  },
+  {
+   "hi": 10,
+   "init": 0,
+   "lo": -5,
+   "name": "time_Sparrow",
+   "type": "int"
+  },
+  {
+   "hi": 10,
+   "init": 0,
+   "lo": -5,
+   "name": "time_Scarab",
+   "type": "int"
+  },
+  {
+   "hi": 10,
+   "init": 0,
+   "lo": -5,
+   "name": "time_Stoat",
+   "type": "int"
+  }
+ ],
+ "stage": 3,
+ "status": "blocked",
+ "title": "The smallest elemental baseline that closes Regatta's last gap",
+ "updated": "2026-10-26",
+ "value": 8
+}

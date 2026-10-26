@@ -108,6 +108,10 @@ vessel's design document calls its games:
   second event measures that event, or reads the same for every variant (L-STU-32, L-STU-42). Before
   quoting a scorecard, print the frames around each column's worst peak. A control that is not ~0, or a
   column that sits exactly at a lab limit on every run, is a yardstick bug until shown otherwise.
+- **A scorecard is a loss function.** When a round's question is "which values of these dials are best"
+  rather than "which of these three feels right", do not grid it by hand: wrap the lab's `runBatch` as a
+  compute evaluator (`/compute-job` section 7, "a lab as a loss") and let the team's idle machines search it
+  (`/compute`). The human still decides between the searched answer and the shipped one, on the page.
 - **Skilled and rookie**: score with a skilled pilot AND a sloppy one (`aiNoise`). The Stoat's
   "Comet is the expert's style" (21% rookie catch rate against 88%) came only from the rookie
   column.

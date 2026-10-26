@@ -95,3 +95,6 @@ clear a flag.** Open slots on Rhino / Serpent are blocked on design; proposals l
 `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 and are un-implemented until Garrett marks them
 up. A flagged row is a finding to REPORT, not a defect to silently fix — several are shipped,
 play-tested behaviour. For any actual edit, use the `/vessel` skill.
+
+Stage 3 of `/regatta-balance` searches one Time level per hull as a new mobility baseline: before anyone agrees
+to a searched level, use this table to say what that level does on that hull (which ability, which channel).
