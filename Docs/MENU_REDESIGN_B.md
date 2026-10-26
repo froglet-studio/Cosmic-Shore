@@ -3304,3 +3304,55 @@ Rev 4 column, section 43, and are the follow-up).
   in the editor (checklist entry "Rev 20 G").
 
 - **With Yash's `ConfigurePilotsFit` (bleeding-edge #1563, merged in 2026-10-26).** It grows the Rev 4 Pilots section to its tallest domain column and moves the next section and START down with it. The arcade view no longer has that section (its pilots are the pedestal lineup, its domain columns a hidden seat book), so the fit is authored on the Arena and Maelstrom views only; a fit on the arcade view would move START and the lineup to fit columns nobody sees. `author_menu_configure.py` asserts the arcade view carries none, and its self-test plants one there (Yash's two plants now target the Arena view).
+
+
+## 75. Rev 24: the Hangar, option C taken forward; element flowers on the cards (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on the Rev 22 C board: "bring the vessel list to the left side and keep the vessel like this and the
+text above like this. LB and RB changes the overview parts only. Now the header text can change as per the tab we are in";
+"Use the petals in game of the elements with the bars"; "I just care about the angled panel border"; "for the vibe ... they
+can be like bars"; then, on the Rev 24 boards: "In upgrades we do upgrade the elemental petals and they always start with 1
+value. That same petal can be showed in the arcade game cards updated with the real value the players have. Go ahead an
+implement". Boards: page "Rev 24 - Hangar C taken forward" (R24HangarAbilities / Upgrades / Games / Pilots / Artifacts,
+R24Borders, R24Notes), copied into `Docs/MenuRedesignB/board/`.
+
+- **The element flower, outside a match.** `KitElementFlower` (`Assets/_Scripts/UI/Kit/`) is the vessel HUD's flower: five
+  copies of `Resources/ElementPetals/<element>_petal` rotated 72 degrees apart, coloured by
+  `ElementalBarsConfigSO.DistributePetalValues` and `ColorForTick` exactly as `ElementalBarsView` colours them (1 = one
+  white petal, 5 = all white, 6 = one blue, 10 = all blue). It writes five colours when the level or element changes, never
+  per frame. `author_menu_hangar.element_flower` authors one (the petals rotated in the prefab, so the editor shows the
+  flower); `ElementFlowerTests` holds the fill to the HUD's at every Hangar level.
+- **Every element starts at 1.** `HangarUpgradeStore.StartLevel = 1`, applied on read (`Shown`): a saved 0 or no record is
+  a 1, nothing migrates. The first UPGRADE buys level 2 for 200 (100 x the level bought). `LevelChanged` fires on a buy.
+- **The arcade cards.** `GameCard.GenreFlower` / `GenreFlowerSecondary` replace the single white genre petal on
+  `ArcadeGameCard.prefab`: the genre's element (`ModeGenre`, unchanged) as a flower filled to the player's level for that
+  element on the card's hull (`ResolveModeVessel`, the Mode Map's rule). The cards redraw on `LevelChanged` and when the
+  cloud profile lands (`PlayerDataService.OnProfileChanged`). The Arena and Toy cards keep the petal (no flower wired).
+- **Layout** (`author_menu_hangar.build_view`, reference 1920 x 1080, height-matched): the list on the left (230 wide);
+  the header (kicker, Display name, line) over the centre; the 3D vessel over the sea with no box (the bay's glows stay);
+  the vibe bars at the bottom left; UNLOCK over the stage's lower right (so it never meets the bars at 16:10); the dossier
+  710 x 890 at the right.
+- **The border** (R24Borders "2 Rail"): `kit_cradle_fill` (new in `author_ui_kit_sprites.py`, the open cradle with its
+  fade-in from the top, drawn at the dossier's size) plus seven straight lines rotated in place (`line_node`; the kit's
+  node emitter now writes a z rotation, `Node.rot`, byte-neutral for every other node), a faint dash where the rail ends
+  and `kit_corner_tri` in the bottom-left corner. Pages keep 60 units off the right side so nothing crosses the diagonal
+  (asserted from the geometry).
+- **Tabs.** `HangarTabsView` keeps its five pages and adds three groups: OVERVIEW (Abilities, Upgrades, Games - LB / RB, the
+  parts row with its LB / RB keycaps), PILOTS and ARTIFACTS - Y steps them (Y opens the profile only on Home). The header
+  follows the tab: OVERVIEW the vessel (`HangarVesselDetailView.kickerTemplate`, "VESSEL - OWNED"), PILOTS the page's own
+  (`IHangarHeader`: "PILOT - MASS - SPARROW", the name, the quote), ARTIFACTS the group's templates.
+- **Upgrades** (`HangarUpgradesPage`, rewritten): four flower tiles down the right, the focused one framed in the selection
+  blue (pad focus moves it, no press); the left names the element and step, the ability and its line, the flower NOW and
+  NEXT, the level-5 box (`UpgradeLabel` / `UpgradeDescription`), and UPGRADE with the price. The moment is kept (crystals
+  fly, the flower pops, the hull morphs, LEVEL N). Still look-only.
+- **Abilities** rows start with the flower; the crystal glyph is gone (`elementGlyph` left empty). **Pilots** are four rows
+  (portrait, name, line, flower); the rev-3 hero is gone from the prefab (its fields stay optional). **Vibe** is ten
+  segments per scale (`HangarVibeView.segments`; the rail and thumb still work if authored).
+- **Also on 2026-10-26:** the NOW PLAYING card is off Menu_Main ("Remove this man ASAP"; `author_menu_profile.py` stops
+  mounting it and fails if it is back), and the configure window's AI Easy / Medium / Hard row shows on every card - unlocked
+  where the mode's AI reads it, dimmed and locked on Medium elsewhere (the Rev 7 rule, `ArcadeLaunchPanel.SetAIDifficultyOffered`).
+- **Proof without an editor:** refcompile player and editor OK, Amoebius builds, the generators' `--check` / `--self-test`
+  (new controls: a petal turned out of place, the parts row unwired, the header not following the tab, a vibe segment
+  unwired, the rail missing a line, the card mounted in Menu_Main again), `gates.sh` all OK, and a rect render of the
+  prefab. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Rev 24 Hangar".
+

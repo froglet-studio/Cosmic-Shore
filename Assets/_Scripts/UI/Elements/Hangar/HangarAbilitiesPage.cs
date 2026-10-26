@@ -47,6 +47,8 @@ namespace CosmicShore.UI
             public TMP_Text elementText;
             public TMP_Text descriptionText;
             public Image elementGlyph;
+            [Tooltip("Rev 24: the element as the HUD's flower at the level the player bought on this vessel (replaces the glyph).")]
+            public KitElementFlower flower;
             [Tooltip("The keycap (hidden for a passive ability or on touch).")]
             public CanvasGroup keycapGroup;
             public TMP_Text keycapText;
@@ -150,6 +152,8 @@ namespace CosmicShore.UI
                     row.elementText.color = c;
                 }
                 if (row.elementGlyph) row.elementGlyph.color = c;
+                if (row.flower)
+                    row.flower.Set(row.element, vessel ? HangarUpgradeStore.GetLevel(vessel.Class, row.element) : HangarUpgradeStore.StartLevel);
                 if (row.hex) row.hex.color = open ? new Color(1f, 1f, 1f, 0.08f) : new Color(c.r, c.g, c.b, 0.35f);
                 if (row.halo) row.halo.SetColour(open ? Color.clear : c);
 
@@ -178,6 +182,17 @@ namespace CosmicShore.UI
         {
             if (active && !_active) _demoClock = demoLeadSeconds;
             _active = active;
+        }
+
+        // A level bought on UPGRADES shows on these flowers too.
+        void OnEnable() => HangarUpgradeStore.LevelChanged += HandleUpgrade;
+        void OnDisable() => HangarUpgradeStore.LevelChanged -= HandleUpgrade;
+
+        void HandleUpgrade(VesselClassType vessel, Element element, int level)
+        {
+            if (!_vessel || vessel != _vessel.Class) return;
+            foreach (var row in rows)
+                if (row != null && row.element == element && row.flower) row.flower.SetLevel(level);
         }
 
         void Update()

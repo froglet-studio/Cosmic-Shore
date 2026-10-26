@@ -854,7 +854,7 @@ PORTRAIT_BOB_MAT = M._lattice_guid("card_portrait_bob_mat")
 ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay inside the overscan margin
 HULL_ICON = 60                         # the hull, lit (Hull_Lit.mat) - no plate behind it (section 73)
 HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
-PETAL = 46                             # the petal sprite carries a wide transparent margin: the shape reads about 18
+FLOWER = 46                            # the petals reach 0.42 of the sprite from its centre: the flower reads about 39 across
 
 
 def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
@@ -918,11 +918,12 @@ def build_card(placeholder_art):
     title = root.child(N("Title", "Title", R((0, 0), (1, 0), (text_x / 2 - 8, BODY_H / 2 + 14), (-text_x - 16, 30), (0.5, 0.5))))
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
-    for i, key in enumerate(("Petal", "PetalSecondary")):
-        n = root.child(N(key, "GenrePetal" if i == 0 else "GenrePetalSecondary",
-                         R((0, 0), None, (text_x - 12 + i * 26, BODY_H / 2 - 18), (PETAL, PETAL), (0, 0.5))))
-        n.add("cr", 222, K.canvas_renderer()).add("img", 114, lambda ctx, go: K.image(
-            (1.0, 1.0, 1.0, 1.0), None, preserve=True)(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
+    # Rev 24 (Shombith 2026-10-26): the genre's element as the HUD's whole flower, filled to the level the player bought
+    # for it on the mode's hull in the Hangar (GameCard.GenreFlower; every element starts at 1). A two-genre mode draws two.
+    for i, key in enumerate(("Flower", "FlowerSecondary")):
+        H.element_flower(root, key, "GenreFlower" if i == 0 else "GenreFlowerSecondary",
+                         R((0, 0), None, (text_x - 6 + i * (FLOWER + 6), BODY_H / 2 - 20), (FLOWER, FLOWER), (0, 0.5)),
+                         ("Time", "Space")[i], active=i == 0)
 
     # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
     picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
@@ -968,8 +969,10 @@ def build_card(placeholder_art):
              "  Index: 0\n"
              f"  VesselIcon: {ref(ctx.c('VesselIcon', 'img'))}\n"
              f"  VesselList: {K.ref(11400000, VESSEL_LIST, 2)}\n"
-             f"  GenrePetal: {ref(ctx.c('Petal', 'img'))}\n"
-             f"  GenrePetalSecondary: {ref(ctx.c('PetalSecondary', 'img'))}\n"
+             "  GenrePetal: {fileID: 0}\n"
+             "  GenrePetalSecondary: {fileID: 0}\n"
+             f"  GenreFlower: {ref(ctx.c('Flower', 'flower'))}\n"
+             f"  GenreFlowerSecondary: {ref(ctx.c('FlowerSecondary', 'flower'))}\n"
              f"  AvatarSpace: {ref(ctx.rt('Picks'))}\n"
              f"  ProfileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
              "  LocalPickBorder: {fileID: 0}\n"
@@ -1393,7 +1396,7 @@ FIELDS = [
                                       partyCountText=S["kt"], leaveGroup=225)),
     ("PartyPanel", "root#friends", dict(onlineContent=224, requestsContent=224)),
     ("ArcadeGameCard", "root#card", dict(GameTitle=TMP, BackgroundImage=IMG, StarImage=IMG, VesselIcon=IMG,
-                                         GenrePetal=IMG, GenrePetalSecondary=IMG, AvatarSpace=224, tile=S["tile"],
+                                         GenreFlower=H.FLOWER_SCRIPT, GenreFlowerSecondary=H.FLOWER_SCRIPT, AvatarSpace=224, tile=S["tile"],
                                          starPaint=S["th"])),
     ("ArcadeView", "Weekly#weekly", dict(GameTitle=TMP, TimeRemaining=TMP, BackgroundImage=IMG)),
 ]

@@ -27,6 +27,12 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
                                              (section 74, the configure pedestals)
     kit_pool / kit_pool_rim                  the pool of light a configure pedestal's pilot stands on, 120 x 30:
                                              a soft ellipse falling off to clear, and its 1.5-unit rim
+    kit_cradle_fill                          the Rev 24 Hangar dossier's body (Bracket_Large's open cradle, 710 x
+                                             890): open at the top and fading in from clear, the right side leaning
+                                             in from 46 % down; half a texel per unit (a soft fill, its edges under
+                                             the border's lines), drawn simple at its design size
+    kit_corner_tri                           the 22-unit right triangle in a panel's bottom-left corner (the old
+                                             Hangar's corner mark)
 
 THE SLIVER (Docs/STYLE_FOUNDATION.md §5): a 45 deg cut on TWO OPPOSITE corners. Normal = top-left
 and bottom-right; `_flip` = top-right and bottom-left (§5 "flippable"). `fill` is the whole
@@ -82,6 +88,13 @@ BRACKET = 22                 # corner bracket arm, canvas units
 SPARK_W, SPARK_H = 48, 2     # spark streak, canvas units
 POOL_W, POOL_H = 120, 30     # a pedestal's pool of light, canvas units (drawn simple)
 POOL_RIM = 1.5               # the pool's rim, canvas units
+CRADLE_W, CRADLE_H = 710, 890  # the Rev 24 Hangar dossier, canvas units (author_menu_hangar.DOSSIER_W / _H)
+CRADLE_LEAN = 56             # how far in the right side's foot sits (Bracket_Large measured: 48 of 740 at its scale)
+CRADLE_KNEE = 0.46           # where the right side starts leaning, as a fraction of the height down
+CRADLE_TEXELS = 0.5          # a soft fill: half a texel per unit, 355 x 445
+# The open top: alpha by depth (units from the top) - clear, 0.72 by 110, 0.9 by 60 %, 0.95 at the floor.
+CRADLE_RAMP = ((0.0, 0.0), (110.0, 0.72), (0.6 * CRADLE_H, 0.9), (float(CRADLE_H), 0.95))
+CORNER_TRI = 22              # the corner mark's legs, canvas units
 # The outline sprites carry a soft INNER glow under the band (the owner, 2026-10-17: "make the
 # borders glow everywhere in the menu"). Baked into the texture, so every kit border glows in its
 # own tint at zero runtime cost. It runs GLOW_U units inward from the band's inner edge, inside the
@@ -311,6 +324,31 @@ def build_spark():
     return np.repeat(bump[None, :], h, axis=0), 0
 
 
+def cradle_inside(xs, ys):
+    """The open cradle: the full width down to the knee, then a right side leaning in to CRADLE_LEAN at the floor."""
+    knee = CRADLE_KNEE * CRADLE_H
+    right = np.where(ys <= knee, float(CRADLE_W), CRADLE_W - CRADLE_LEAN * (ys - knee) / (CRADLE_H - knee))
+    return (xs >= 0) & (xs <= right) & (ys >= 0) & (ys <= CRADLE_H)
+
+
+def build_cradle_fill():
+    w_tex, h_tex = int(CRADLE_W * CRADLE_TEXELS), int(CRADLE_H * CRADLE_TEXELS)
+    n = 4
+    xs = ((np.arange(w_tex * n) + 0.5) / n / CRADLE_TEXELS)[None, :]
+    ys = ((np.arange(h_tex * n) + 0.5) / n / CRADLE_TEXELS)[:, None]
+    depth, level = zip(*CRADLE_RAMP)
+    ramp = np.interp(ys, depth, level)
+    a = cradle_inside(xs, ys) * ramp
+    return a.reshape(h_tex, n, w_tex, n).mean(axis=(1, 3)), 0
+
+
+def build_corner_tri():
+    """A right triangle filling the bottom-left half of its square: the legs along the bottom and the left edge."""
+    t = CORNER_TRI * TEXELS_PER_UNIT
+    xs, ys = grid(t, t)
+    return downsample(ys >= xs, t, t), 0
+
+
 def sprite_set():
     """(name, alpha, 9-slice border in texels as (left, bottom, right, top))."""
     out = []
@@ -349,6 +387,10 @@ def sprite_set():
     a, _ = build_spark()
     out.append(("kit_spark", a, (0, 0, 0, 0), dict(spark=True)))
     out.append(("kit_spark_v", a.T.copy(), (0, 0, 0, 0), dict(spark_v=True)))
+    a, _ = build_cradle_fill()
+    out.append(("kit_cradle_fill", a, (0, 0, 0, 0), dict(cradle=True)))
+    a, _ = build_corner_tri()
+    out.append(("kit_corner_tri", a, (0, 0, 0, 0), dict(corner_tri=True)))
     return out
 
 
@@ -459,6 +501,20 @@ def check_sprite(name, alpha, border, meta):
         assert row[len(row) // 2] > 0.95, f"{name}: the streak must be solid in the middle"
     elif meta.get("spark_v"):
         check_sprite(name, alpha.T, border, dict(spark=True))
+    elif meta.get("cradle"):
+        assert alpha.shape == (int(CRADLE_H * CRADLE_TEXELS), int(CRADLE_W * CRADLE_TEXELS)), f"{name}: wrong size"
+        assert alpha[0].max() < 0.01, f"{name}: the cradle is open at the top"
+        assert alpha[-1, 0] > 0.9, f"{name}: the floor's left corner must be solid"
+        assert alpha[-1, -1] == 0, f"{name}: the right side's foot leans in - the bottom-right corner must be empty"
+        assert alpha[int(0.3 * h), -1] > 0.5, f"{name}: above the knee the body reaches the right edge"
+        col = alpha[:, 0]
+        assert np.all(np.diff(col) >= -1e-9), f"{name}: the body must not get lighter toward the floor"
+        floor = alpha[-2]
+        lean = (w - 1 - np.nonzero(floor > 0.5)[0].max()) / CRADLE_TEXELS
+        assert abs(lean - CRADLE_LEAN) <= 4, f"{name}: the foot leans in {lean:.1f} units, expected {CRADLE_LEAN}"
+    elif meta.get("corner_tri"):
+        assert alpha[-1, 0] == 1.0 and alpha[0, -1] == 0.0, f"{name}: solid in the bottom-left, clear in the top-right"
+        assert abs(alpha.mean() - 0.5) < 0.02, f"{name}: a right triangle covers half its square"
     elif meta.get("banner") == "body":
         b = border[0]
         mid = alpha[:, b:w - b]
@@ -632,7 +688,7 @@ def render_files():
     for name, alpha, border, meta in sprite_set():
         check_sprite(name, alpha, border, meta)
         bl, bb, br, bt = border
-        max_size = 128 if max(alpha.shape) <= 128 else 256
+        max_size = 128 if max(alpha.shape) <= 128 else 256 if max(alpha.shape) <= 256 else 512
         files[name + ".png"] = encode_png(alpha)
         files[name + ".png.meta"] = unity_empty_scalars(META.format(
             guid=guid_for(name), sprite_id=guid_for(name + "/sprite"), ppu=PPU,

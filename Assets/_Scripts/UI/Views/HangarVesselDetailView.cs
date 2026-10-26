@@ -78,6 +78,9 @@ namespace CosmicShore.UI
         [Header("Words")]
         [SerializeField] private string lockedWord = "Locked";
         [SerializeField] private string ownedWord = "Owned";
+        [Tooltip("Rev 24: the header's kicker above the vessel's name on OVERVIEW; {state} is the owned / locked word. " +
+                 "Upper-cased. Empty shows nothing.")]
+        [SerializeField] private string kickerTemplate = "VESSEL · {state}";
         [Tooltip("The unlock button; {cost} is filled in.")]
         [SerializeField] private string unlockTemplate = "UNLOCK - {cost}";
         [SerializeField] private string unlockFreeWord = "UNLOCK - FREE";
@@ -163,6 +166,11 @@ namespace CosmicShore.UI
 
             bool isLocked = _currentShip.IsLocked;
             int cost = _currentShip.UnlockCost;
+
+            // Rev 24: the header above the vessel belongs to the tabs (it follows the tab); OVERVIEW shows this one.
+            if (tabs)
+                tabs.SetVesselHeader(TemplateText.Fill(kickerTemplate, "state", isLocked ? lockedWord : ownedWord).ToUpperInvariant(),
+                                     _currentShip.CardName.ToUpperInvariant(), _currentShip.Description);
 
             if (chipLabel)
             {

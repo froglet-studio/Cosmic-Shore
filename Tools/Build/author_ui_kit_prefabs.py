@@ -40,6 +40,7 @@ referenced guid resolves to a .meta in the repo (or is a known package script).
 
 import argparse
 import hashlib
+import math
 import os
 import re
 import struct
@@ -277,6 +278,12 @@ def rect(amin=(0.5, 0.5), amax=None, pos=(0, 0), size=(100, 100), pivot=(0.5, 0.
 STRETCH = rect((0, 0), (1, 1), (0, 0), (0, 0))
 
 
+def rot_z(deg):
+    """A z rotation as Unity serializes m_LocalRotation."""
+    h = math.radians(deg) / 2
+    return "{x: 0, y: 0, z: %s, w: %s}" % (f32(math.sin(h)), f32(math.cos(h)))
+
+
 class Node:
     def __init__(self, key, name, r=None, active=True):
         self.key, self.name, self.rect, self.active = key, name, r or rect(), active
@@ -331,15 +338,16 @@ def emit_node(ctx, node, parent_rt, out):
     for ch in node.children:
         child_rts.append(ctx.rt(ch.key) if isinstance(ch, Node) else ctx.fid(ch.key + "#stub"))
     r = node.rect
+    deg = getattr(node, "rot", 0)     # a z rotation in degrees (an element flower's petals); none on nearly every node
     children = ("  m_Children:\n" + "".join(f"  - {{fileID: {c}}}\n" for c in child_rts)
                 if child_rts else "  m_Children: []\n")
     out.append(f"--- !u!224 &{rt}\nRectTransform:\n  m_ObjectHideFlags: 0\n"
                "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
                f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {go}}}\n"
-               "  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\n  m_LocalPosition: {x: 0, y: 0, z: 0}\n"
+               f"  m_LocalRotation: {rot_z(deg) if deg else '{x: 0, y: 0, z: 0, w: 1}'}\n  m_LocalPosition: {{x: 0, y: 0, z: 0}}\n"
                "  m_LocalScale: {x: 1, y: 1, z: 1}\n  m_ConstrainProportionsScale: 0\n"
                + children
-               + f"  m_Father: {{fileID: {parent_rt}}}\n  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}\n"
+               + f"  m_Father: {{fileID: {parent_rt}}}\n  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: {f32(deg)}}}\n"
                f"  m_AnchorMin: {v2(*r['amin'])}\n  m_AnchorMax: {v2(*r['amax'])}\n"
                f"  m_AnchoredPosition: {v2(*r['pos'])}\n  m_SizeDelta: {v2(*r['size'])}\n"
                f"  m_Pivot: {v2(*r['pivot'])}\n")

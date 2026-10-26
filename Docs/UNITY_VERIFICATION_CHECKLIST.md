@@ -16064,6 +16064,36 @@ the cloud session. Proven offline: refcompile (player + editor OK), Amoebius bui
 - [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
 - [ ] Arena and Maelstrom windows are unchanged.
 
+## Rev 24 Hangar, element flowers on the arcade cards, the AI difficulty row on every card, the now-playing card gone (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
+`author_menu_hangar.py` / `author_menu_arcade.py` / `author_menu_profile.py` / `author_ui_kit_sprites.py` `--check` and
+`--self-test`, `.claude/skills/ship/gates.sh`, a rect render of `HangarView.prefab` at 1920 and 1728 wide.
+
+1. Open the Hangar. **Pass:** the vessel list is on the left; the header (kicker, big name, line) sits over the 3D vessel; the
+   dossier on the right has the open angled border - no top edge, a short stub on the left, a diagonal right side, a
+   chamfered rail to the right of the tabs and a small corner triangle - and nothing inside it crosses the diagonal.
+2. Press Y. **Pass:** OVERVIEW -> PILOTS -> ARTIFACTS -> OVERVIEW. The header becomes the picked pilot ("PILOT - MASS -
+   SPARROW", the name, the quote) on PILOTS and "SPARROW - 1 SLOT / ARTIFACTS" on ARTIFACTS, and the vessel's again on
+   OVERVIEW. The LB / ABILITIES UPGRADES GAMES / RB row shows only on OVERVIEW.
+3. On OVERVIEW press LB / RB. **Pass:** Abilities -> Upgrades -> Games and back, wrapping inside OVERVIEW only; on PILOTS and
+   ARTIFACTS LB / RB do nothing. Clicking a tab or a part does the same as the pad.
+4. Abilities. **Pass:** each row starts with the element's in-game flower (the HUD's petals) - one white petal on a vessel
+   nobody upgraded - then the ability icon, name, element, line and keycap; no crystal icons.
+5. Upgrades on a fresh profile. **Pass:** the four flowers down the right each show 1 (one white petal) with "1" under them;
+   the left reads "CHARGE / LEVEL 1 TO 2", the ability, its line, NOW 1 -> NEXT 2 flowers, the level-5 box, and "UPGRADE
+   200". D-pad onto another element focuses it (blue frame) without pressing A.
+6. Buy a level. **Pass:** crystals fly to the hull, the flower pops to the new level (level 6 turns the first petal blue),
+   the hull morphs, LEVEL N shows; the Abilities and Pilots flowers for that element show the new level too.
+7. Leave the Hangar and open the Arcade. **Pass:** each card's genre petal is now a whole flower filled to the level bought
+   for that element on the card's hull (Brood Rush shows two flowers); a card on a hull never upgraded shows one white petal.
+8. Vibe. **Pass:** three rows of ten segments, lit from the left to the vessel's value (half for the Sparrow); no sliders.
+9. Simulator at 16:10 (1728 x 1080). **Pass:** the vibe bars and the UNLOCK button (on a locked vessel) do not overlap.
+10. Arcade -> any card -> configure. **Pass:** the AI Easy / Medium / Hard row is there on every card. On Skim Race, Regatta,
+    Slingshot, Warpline, Astro League, Brood Rush and Broadside it is bright and the host can pick; on every other card it is
+    dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
+11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
+
 ## Menu_Main slide lag: masks sleep while nothing under them can be seen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds, every menu generator `--check` / `--self-test`, `check_generated_assets.py`.
