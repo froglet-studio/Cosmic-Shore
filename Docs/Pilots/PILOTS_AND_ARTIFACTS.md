@@ -51,7 +51,9 @@ The 8 spare portraits stand in for 8 pilots, matched by character (Shombith, 202
 ## Implementation (started 2026-10-26)
 
 **Built on `claude/modest-sagan-0ybcgo`** (2026-10-13, slices 1-2 of `Docs/PILOTS_AND_ARTIFACTS.md` §10), merged into this
-branch on Shombith's call ("Build on it"). That branch's types stay the system: `PilotSO`, `ArtifactSO`,
+branch on Shombith's call ("Build on it"). That branch was Shombith's own session (`session_01B4RdWXJTrFgjjr21Fm7P7C`,
+"Pilots and artifacts doc", started 2026-10-12 from the desktop app; its pages: https://claude.ai/artifact/XWKtwqqbbwVxGmfQrfr81X
+and https://claude.ai/artifact/KtM3MAtYnrwu9biej4uXuM), measured 2026-10-26. That branch's types stay the system: `PilotSO`, `ArtifactSO`,
 `PilotArtifactCatalogSO`, `VesselKeyword`, `VesselRequirement`, `ElementalBoost`, the squad book in `SQUAD_DATA`, and
 the nine default pilots (each vessel's base kit). What this round added on top:
 
@@ -65,19 +67,22 @@ the nine default pilots (each vessel's base kit). What this round added on top:
 | `PilotLoadoutStore` | `System/Pilots/` | The Hangar's per-vessel seat, found ranks and slotted artifacts. DEVICE-only (PlayerPrefs) until the fair-play branch's `PlayerDataService` changes land, then it moves onto the profile (Shombith's backend) |
 | PILOTS tab | `HangarPilotsPage` | Reads the catalog, not `SO_Captain`: default (base kit) first, then the two pilots; no element flowers; a press seats a pilot, a press on the default or the seated pilot flies the base kit; the header names the focused pilot |
 | ARTIFACTS tab | `HangarArtifactsPage` (new) | Three slots and the seven artifacts that fit; a found artifact shows its rank and value and a press slots it; the rest read Undiscovered. Replaces the single "Undiscovered" slot |
-| Dev menu | `FrogletTools > Pilots` | Grant Every Artifact / Forget Every Artifact / Empty Every Pilot Seat (device store only; no asset written) |
+| Dev menu | `FrogletTools > Pilots` | Clear Every Artifact Slot / Empty Every Pilot Seat (device store only; no asset written) |
+| The match | `VesselPilotLoadout` (`Controller/Vessel/`) | On every vessel (`VesselStatus.PilotLoadout`, started in `VesselController.Initialize`). The local human's owner reads the store and publishes the seat and slots on `R_VesselActionHandler.NetPilot` / `NetArtifacts` (protocol 16); every peer reads them. Vessel code asks `IsPilot(status, PilotIds.X)`, `Apply(status, ArtifactStat.X, base)`, `TuningOf<T>(status)`. AI flies the base kit. The catalog moved to `Assets/Resources/Pilots/` so a vessel loads it unwired |
+| Free | `PilotLoadoutStore.EverythingIsFree` | Every pilot and artifact is free (Shombith, 2026-10-26): every artifact is held at rank III |
+| Tomahawk | `ShieldSwipeActionExecutor.TryThrow` / `AdvanceThrow`, `TomahawkThrowConfigSO`, `Pilots/Tuning/Tomahawk.asset` | RR / LL throw the Rhino's sword to that side instead of their flourishes: a spinning loop posed in the hull's frame that cuts with the sword's own effects and returns. Starts from the replicated mirrors and seat, so every peer throws |
 | Tests | `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests` (+1) | The roster's shape, `Apply` for each kind, the slot rule, the new `Validate` errors |
 
-**Not built yet (the next steps, in order):** (1) a match reads the seat and the slots: the pilot's rewrite in its
-vessel's action/executor code (one pilot at a time; Tomahawk and Mason first), and each artifact's stat bound to the
-number it moves (slice 3 of §10); (2) finding artifacts (the drop source is an open decision); (3) the squad screen
-(slice 5): a squad slot inherits its vessel's Hangar loadout; `SquadSlot`'s single `ArtifactId` predates the three slots
-and is reshaped then; (4) keywords for the 11 vessels the old branch did not cover, before any pilot or artifact leans on
+**Not built yet:** (1) the other 39 pilots and the 45 artifact bindings (in progress 2026-10-26, per vessel);
+(2) the squad screen (later, Shombith 2026-10-26): a squad slot inherits its vessel's Hangar loadout; `SquadSlot`'s single
+`ArtifactId` predates the three slots and is reshaped then; (3) AI pilots (an AI flies the base kit today); (4) keywords for the 11 vessels the old branch did not cover, before any pilot or artifact leans on
 one (every roster entry binds a vessel class today, so none does).
 
 **How to try it in Unity:** open Menu_Main > Hangar, pick a vessel, PILOTS tab: three rows (Rhino: Energy Sword, Tomahawk,
 Dozer); press Tomahawk, its row reads IN THE SEAT; press it again, the base kit is back. ARTIFACTS tab: three empty slots
-and seven Undiscovered rows; run FrogletTools > Pilots > Grant Every Artifact, reopen the tab, press rows to slot them.
+and seven rows, each at rank III (everything is free); press rows to slot them. Then fly the Rhino with Tomahawk seated: tap RT
+twice quickly and the sword spins out to the right, cutting, and comes back; LL throws left; RL / LR and the three-tap
+strings still play their flourishes.
 
 ## The 20 vessels
 
