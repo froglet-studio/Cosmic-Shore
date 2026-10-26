@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c306626a4184df3834f44fe03c2619a, type: 3}
+  m_Name: Pilot_Serpent_Scales
+  m_EditorClassIdentifier:
+  id: pilot.serpent.scales
+  displayName: Scales
+  ability: Seed Wall
+  description: The Seed Wall grows as overlapping scales. A brick that is hit hands its shield to the brick behind it instead of falling, so the wall wears down from the front.
+  flavor: 
+  portrait: {fileID: 21300000, guid: 815ff2c0c5c643d43824961fcfb8eb40, type: 3}
+  portraitIsStandIn: 0
+  icon: {fileID: 0}
+  requirement:
+    Vessel: 7
+    Keywords: []
+  isDefault: 0
+  elementalBoost:
+    Element: 0
+    Petals: 0
+  aiBehaviorDescription: Plants walls across lanes rivals use.

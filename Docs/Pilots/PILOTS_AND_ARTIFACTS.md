@@ -1,4 +1,4 @@
-# Pilots and Artifacts (DRAFT rev 2, 2026-10-26)
+# Pilots and Artifacts (rev 2, 2026-10-26; implementation started)
 
 Design draft from Shombith's requests of 2026-10-26, built from the Notion pilot table. Not approved, nothing implemented.
 Page with portraits and the Hangar loadout mockup: https://claude.ai/artifact/KQgwvDGzKwPnYum5xW6NX7
@@ -22,7 +22,7 @@ This replaces the old model in `Assets/_SO_Assets/Captains/Elemental/` (four cap
 
 ### Stand-ins and the artist list (2026-10-26)
 
-The 8 spare portraits stand in for 8 pilots, matched by character (Shombith, 2026-10-26):
+The 8 spare portraits stand in for 8 pilots, matched by character (Shombith, 2026-10-26), **for now only**: "Dont keep the spares for good". The artist paints all 16 (`portraitIsStandIn` marks the eight):
 
 | Pilot | Spare portrait |
 |---|---|
@@ -47,6 +47,37 @@ The 8 spare portraits stand in for 8 pilots, matched by character (Shombith, 202
 | Pincer | Jacks | Crab. Red carapace as shoulder armour, eyes on stalks, two pincers for hands. Wide, planted stance. |
 | Shoal | Jacks | Jack (trevally). Silver-blue scales, yellow fins, forked tail, a lean racer in a navy suit. |
 | Comb | Honeyguide | Honeybee. Gold and black stripes, glassy wings, antennae, a honeycomb badge on the chest. Busy and precise. |
+
+## Implementation (started 2026-10-26)
+
+**Built on `claude/modest-sagan-0ybcgo`** (2026-10-13, slices 1-2 of `Docs/PILOTS_AND_ARTIFACTS.md` §10), merged into this
+branch on Shombith's call ("Build on it"). That branch's types stay the system: `PilotSO`, `ArtifactSO`,
+`PilotArtifactCatalogSO`, `VesselKeyword`, `VesselRequirement`, `ElementalBoost`, the squad book in `SQUAD_DATA`, and
+the nine default pilots (each vessel's base kit). What this round added on top:
+
+| Piece | Where | What |
+|---|---|---|
+| The spec | `Docs/Pilots/pilots_and_artifacts.json` | The ONE source: 40 pilots, 45 artifacts, slots per vessel (3), stable ids (`pilot.rhino.tomahawk`, `artifact.sparrow.extra-bay`) and statIds. Printable ASCII only (the UI font) |
+| The generator | `Tools/Build/author_pilot_assets.py` (extended, not forked) | Writes `Pilots/Roster/Pilot_<Vessel>_<Name>.asset` x40, `Pilots/Artifacts/Artifact_<Fits>_<Name>.asset` x45, `ArtifactStat.cs`, and the catalog (defaults first, then the roster; each vessel's artifacts, then the fleet's). `--check` 205 files; `--self-test` 7 checks, 17 planted roster defects |
+| `PilotSO` | `ScriptableObjects/PilotsAndArtifacts/` | + `ability` (what it rewrites), `portraitIsStandIn`. `description` is the rule. Boost stays none: pilots are not tied to the elements |
+| `ArtifactSO` | same | + `stat` (`ArtifactStat`), `rankLabels`, `rankValues`, `kind` (`ArtifactValueKind`: Add, Percent, Multiply, Set), `Apply(base, rank)`, `IsFleet`. A hull artifact binds its class; a fleet artifact leaves it on Any |
+| `PilotArtifactCatalogSO` | same | + `slotsPerVessel` (3); `Validate` also names an artifact with no stat, a stat two artifacts change, and a missing or non-ASCII rank label |
+| `PilotLoadoutStore` | `System/Pilots/` | The Hangar's per-vessel seat, found ranks and slotted artifacts. DEVICE-only (PlayerPrefs) until the fair-play branch's `PlayerDataService` changes land, then it moves onto the profile (Shombith's backend) |
+| PILOTS tab | `HangarPilotsPage` | Reads the catalog, not `SO_Captain`: default (base kit) first, then the two pilots; no element flowers; a press seats a pilot, a press on the default or the seated pilot flies the base kit; the header names the focused pilot |
+| ARTIFACTS tab | `HangarArtifactsPage` (new) | Three slots and the seven artifacts that fit; a found artifact shows its rank and value and a press slots it; the rest read Undiscovered. Replaces the single "Undiscovered" slot |
+| Dev menu | `FrogletTools > Pilots` | Grant Every Artifact / Forget Every Artifact / Empty Every Pilot Seat (device store only; no asset written) |
+| Tests | `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests` (+1) | The roster's shape, `Apply` for each kind, the slot rule, the new `Validate` errors |
+
+**Not built yet (the next steps, in order):** (1) a match reads the seat and the slots: the pilot's rewrite in its
+vessel's action/executor code (one pilot at a time; Tomahawk and Mason first), and each artifact's stat bound to the
+number it moves (slice 3 of §10); (2) finding artifacts (the drop source is an open decision); (3) the squad screen
+(slice 5): a squad slot inherits its vessel's Hangar loadout; `SquadSlot`'s single `ArtifactId` predates the three slots
+and is reshaped then; (4) keywords for the 11 vessels the old branch did not cover, before any pilot or artifact leans on
+one (every roster entry binds a vessel class today, so none does).
+
+**How to try it in Unity:** open Menu_Main > Hangar, pick a vessel, PILOTS tab: three rows (Rhino: Energy Sword, Tomahawk,
+Dozer); press Tomahawk, its row reads IN THE SEAT; press it again, the base kit is back. ARTIFACTS tab: three empty slots
+and seven Undiscovered rows; run FrogletTools > Pilots > Grant Every Artifact, reopen the tab, press rows to slot them.
 
 ## The 20 vessels
 
@@ -153,7 +184,7 @@ kept = the Notion idea as written; reshaped = it was a number, broke the PvP rul
 
 1. Two pilots per vessel: the six legacy vessels had four each (one per element). Keep two, or grow the flagships back to three or four (the Hangar has four card slots)?
 1. Which 20: swap the Grizzly in for one of these? (Ironclad moved to the Shrike because the Grizzly is not on the list.)
-1. The spare stand-ins: keep them for good, or have the artist repaint them with the other eight?
+1. ~~The spare stand-ins~~ DECIDED 2026-10-26: not kept for good; the artist paints all 16.
 1. New names (Snap, Glimmer, Pack, Lariat, Pod, Murmur, Roost, Pincer, Shoal, Comb, Raid) are working names: keep, rename,?
 1. Artifacts in competitive play: off in ranked/arena, or a fixed power budget per match?
 1. How artifacts are found: cell drops, quest rewards, the Elemental Converter (the captain-upgrade economy is de-scoped).

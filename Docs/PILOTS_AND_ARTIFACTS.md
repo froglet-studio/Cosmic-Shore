@@ -8,6 +8,14 @@ suggestions for how to land it and are for Garrett and Shombit to accept, strike
 authored default pilots and keywords) have landed and are not yet editor-verified. §10 has the slice plan, what was measured before building, and what the
 code does differently from the sketch in §7.
 
+**2026-10-26 (Shombith): the content and three of its rules moved on.** The roster is now
+`Docs/Pilots/PILOTS_AND_ARTIFACTS.md` (rev 2, with its spec `Docs/Pilots/pilots_and_artifacts.json`): 40 pilots, two
+per Hangar vessel besides the default, and 45 artifacts. Decided there, and they win over this document where they
+differ: **pilots are not tied to the elements** (every authored `ElementalBoost` is none; the field stays as a lever);
+**a vessel has three artifact slots** and an artifact is found at **rank I, II or III**; the eight spare portraits stand
+in only until the artist paints those pilots. The slice-1 and slice-2 code below is the system it is built on
+(§10.1 row 2b).
+
 **Read first:** `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` (the fundamentals, *Elementals
 governs ALL buffing and debuffing*), `Docs/ElementalAbilitySystem/ARCHITECTURE.md` (the element →
 ability → level-5 upgrade contract), `Docs/ELEMENTAL_ECONOMY.md` (petals, the pot, the empty start).
@@ -367,6 +375,7 @@ to stand on. The design page that tracks this live is the Pilots & Artifacts art
 | 0 | Measure the legacy Captain and Squad code before reshaping anything (§5.1's claims) | **Done** 2026-10-13, §10.2 |
 | 1 | Data foundation: `VesselKeyword`, `VesselRequirement`, `ElementalBoost`, `PilotSO`, `ArtifactSO`, `PilotArtifactCatalogSO`, `SO_Vessel.Keywords`, the squad book in `SQUAD_DATA`, edit-mode tests | **Landed** 2026-10-13, not editor-verified (`Docs/UNITY_VERIFICATION_CHECKLIST.md`) |
 | 2 | Author the nine default pilots, every milestone vessel's keywords and the catalog asset, from a generator with a `--check` gate | **Landed** 2026-10-13, not editor-verified, §10.4 |
+| 2b | The 2026-10-26 roster: 40 pilots and 45 artifacts from `Docs/Pilots/pilots_and_artifacts.json` through this generator; `PilotSO.ability` / `portraitIsStandIn`; `ArtifactSO` stat, ranks and `Apply`; `slotsPerVessel`; the Hangar's PILOTS and ARTIFACTS tabs read the catalog (`PilotLoadoutStore`, device-only for now) | **Landed** 2026-10-26 on `claude/pensive-dijkstra-qxoxo0`, not editor-verified; `Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation |
 | 3 | Match start: a slot's starting element level plus the pilot's `ElementalBoost` through the `StartingElements` seam (§5.2); bind an artifact to its one parameter | Next |
 | 4 | Pilot kit swap through the action/executor path, so AI squad mates get it for free; replicated where the result is a world outcome | Queued |
 | 5 | Squad screen: four pickers per slot, named squads, one active, the pre-game "which squad" question; retire `PortSquadView`, `SquadSystem`, `Squad` and the captain screens in the same change | Queued |

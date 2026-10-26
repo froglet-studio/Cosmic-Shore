@@ -19,10 +19,18 @@ namespace CosmicShore.ScriptableObjects
     ///
     /// <para>Which parameter it changes, and by how much, binds in the match-start slice of the
     /// milestone; slice 1 is identity, compatibility and the at-risk flag the squad screen shows.</para>
+    ///
+    /// <para><b>2026-10-26 (Shombith, Docs/Pilots/PILOTS_AND_ARTIFACTS.md): three ranks, three slots.</b> An artifact
+    /// is found at rank I, II or III; <see cref="Stat"/> names the number it moves and <see cref="Apply"/> moves the
+    /// stat's BASE value by the rank's value (the elements still scale on top in the match). A vessel has
+    /// <see cref="PilotArtifactCatalogSO.SlotsPerVessel"/> slots. A hull artifact binds its vessel class; a fleet
+    /// artifact leaves the class on Any.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "Artifact", menuName = "ScriptableObjects/Pilots/Artifact")]
     public class ArtifactSO : ScriptableObject
     {
+        public const int RankCount = 3;
+
         [Header("Identity")]
         [Tooltip("Stable id saved in squad records. Never rename once players have saved it; " +
                  "lowercase with dots, e.g. artifact.sparrow.afterburner-acceleration.")]
@@ -46,6 +54,15 @@ namespace CosmicShore.ScriptableObjects
                  "name keywords when several hulls share it.")]
         [SerializeField] VesselRequirement requirement = new();
 
+        [Header("Value (2026-10-26)")]
+        [Tooltip("The number this artifact moves: the key vessel code reads its value by.")]
+        [SerializeField] ArtifactStat stat;
+        [Tooltip("What each rank reads as on screen (\"+1\", \"+10%\", \"5 pellets\"). Printable ASCII.")]
+        [SerializeField] string[] rankLabels = new string[RankCount];
+        [Tooltip("Each rank's value, applied to the stat's base value by Kind.")]
+        [SerializeField] float[] rankValues = new float[RankCount];
+        [SerializeField] ArtifactValueKind kind = ArtifactValueKind.Add;
+
         [Header("Risk")]
         [Tooltip("Carrying it into the HyperSea risks losing it. The squad screen flags it; the loss " +
                  "itself is milestone 2.")]
@@ -58,5 +75,32 @@ namespace CosmicShore.ScriptableObjects
         public Sprite Icon => icon;
         public VesselRequirement Requirement => requirement;
         public bool AtRisk => atRisk;
+        public ArtifactStat Stat => stat;
+        public ArtifactValueKind Kind => kind;
+
+        /// <summary>True for a fleet artifact: any hull may carry it (its requirement names no class).</summary>
+        public bool IsFleet => requirement == null || requirement.Vessel == VesselClassType.Any;
+
+        /// <summary>Rank 1 to 3; 0 (not found) and anything else reads empty.</summary>
+        public string RankLabel(int rank) =>
+            rank >= 1 && rank <= RankCount && rankLabels != null && rank <= rankLabels.Length ? rankLabels[rank - 1] : string.Empty;
+
+        public float RankValue(int rank) =>
+            rank >= 1 && rank <= RankCount && rankValues != null && rank <= rankValues.Length ? rankValues[rank - 1] : 0f;
+
+        /// <summary>The stat's value with this artifact at <paramref name="rank"/>; rank 0 (not found) leaves the base.</summary>
+        public float Apply(float baseValue, int rank)
+        {
+            if (rank < 1 || rank > RankCount) return baseValue;
+            float v = RankValue(rank);
+            return kind switch
+            {
+                ArtifactValueKind.Add => baseValue + v,
+                ArtifactValueKind.Percent => baseValue * (1f + v / 100f),
+                ArtifactValueKind.Multiply => baseValue * v,
+                ArtifactValueKind.Set => v,
+                _ => baseValue,
+            };
+        }
     }
 }

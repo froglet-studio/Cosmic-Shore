@@ -16,6 +16,12 @@ namespace CosmicShore.ScriptableObjects
     /// When one plays weaker than another, give it an <see cref="ElementalBoost"/>, which is extra
     /// starting level and so stays inside the element system.</para>
     ///
+    /// <para><b>2026-10-26 (Shombith, Docs/Pilots/PILOTS_AND_ARTIFACTS.md):</b> pilots are not tied to the elements, so
+    /// every authored pilot leaves its boost at none; the field stays as the balance lever should one be needed. Each
+    /// vessel has two pilots besides its default, each rewriting one ability (<see cref="Ability"/>, described by
+    /// <see cref="Description"/>), authored from <c>Docs/Pilots/pilots_and_artifacts.json</c> by
+    /// <c>Tools/Build/author_pilot_assets.py</c>.</para>
+    ///
     /// <para>The kit swap itself (which action and executor config the pilot replaces) is the next
     /// slice of the milestone and is not on this asset yet; slice 1 is identity, compatibility and
     /// balance. Successor to <c>SO_Captain</c> (§5.1), which this does not reuse: a captain was one
@@ -33,6 +39,10 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Name shown on the squad screen. Printable ASCII only: the UI font has no other glyphs.")]
         [SerializeField] string displayName;
 
+        [Tooltip("The ability the pilot rewrites, as the player reads it (\"Sword - special move\"). Empty on a default " +
+                 "pilot: it IS the base kit.")]
+        [SerializeField] string ability;
+
         [Tooltip("What the pilot changes, in one or two plain sentences. Name what it gives up.")]
         [TextArea(2, 5)]
         [SerializeField] string description;
@@ -42,6 +52,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] string flavor;
 
         [SerializeField] Sprite portrait;
+        [Tooltip("The portrait is a spare standing in until the artist paints this pilot (Shombith, 2026-10-26: not kept for good).")]
+        [SerializeField] bool portraitIsStandIn;
         [SerializeField] Sprite icon;
 
         [Header("Compatibility")]
@@ -64,9 +76,11 @@ namespace CosmicShore.ScriptableObjects
 
         public string Id => id;
         public string DisplayName => displayName;
+        public string Ability => ability;
         public string Description => description;
         public string Flavor => flavor;
         public Sprite Portrait => portrait;
+        public bool PortraitIsStandIn => portraitIsStandIn;
         public Sprite Icon => icon;
         public VesselRequirement Requirement => requirement;
         public bool IsDefault => isDefault;

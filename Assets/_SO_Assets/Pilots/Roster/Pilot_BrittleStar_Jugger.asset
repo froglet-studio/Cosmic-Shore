@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c306626a4184df3834f44fe03c2619a, type: 3}
+  m_Name: Pilot_BrittleStar_Jugger
+  m_EditorClassIdentifier:
+  id: pilot.brittlestar.jugger
+  displayName: Jugger
+  ability: Ring throw - special move
+  description: 'Catch the thrown ring: fly through it before it fuses and it is back on the hull with the fuse reset, and your spare is kept.'
+  flavor: 
+  portrait: {fileID: 21300000, guid: ff4aec4afaed5164c93ac128d7a4dc3a, type: 3}
+  portraitIsStandIn: 0
+  icon: {fileID: 0}
+  requirement:
+    Vessel: 16
+    Keywords: []
+  isDefault: 0
+  elementalBoost:
+    Element: 0
+    Petals: 0
+  aiBehaviorDescription: Throws, then catches when no target is in reach.

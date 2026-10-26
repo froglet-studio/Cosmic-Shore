@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   id: pilot.manta.default
   displayName: Yastri Trail
+  ability: 
   description: The Manta's base kit, flown as shipped. Every other Manta pilot swaps part of it for something different.
   flavor: 
   portrait: {fileID: 0}
+  portraitIsStandIn: 0
   icon: {fileID: 0}
   requirement:
     Vessel: 1

@@ -26,8 +26,12 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Every artifact. Pickers list them in this order.")]
         [SerializeField] List<ArtifactSO> artifacts = new();
 
+        [Tooltip("Artifact slots per vessel (Shombith, 2026-10-26: three). The Hangar draws up to four.")]
+        [SerializeField, Min(0)] int slotsPerVessel = 3;
+
         public IReadOnlyList<PilotSO> Pilots => pilots;
         public IReadOnlyList<ArtifactSO> Artifacts => artifacts;
+        public int SlotsPerVessel => slotsPerVessel;
 
         /// <summary>The pilot saved under <paramref name="id"/>. False for an empty or unknown id.</summary>
         public bool TryGetPilot(string id, out PilotSO pilot)
@@ -189,6 +193,7 @@ namespace CosmicShore.ScriptableObjects
             }
 
             var artifactIds = new HashSet<string>();
+            var stats = new HashSet<ArtifactStat>();
             for (int i = 0; i < (artifacts?.Count ?? 0); i++)
             {
                 var artifact = artifacts[i];
@@ -199,6 +204,11 @@ namespace CosmicShore.ScriptableObjects
                 CheckId(artifact.Id, where, artifactIds, problems);
                 CheckDisplayName(artifact.DisplayName, where, problems);
                 CheckRequirement(artifact.Requirement, where, problems);
+
+                if (artifact.Stat == ArtifactStat.None) problems.Add($"{where} names no stat to change.");
+                else if (!stats.Add(artifact.Stat)) problems.Add($"{where} changes {artifact.Stat}, which another artifact already changes.");
+                for (int rank = 1; rank <= ArtifactSO.RankCount; rank++)
+                    CheckDisplayName(artifact.RankLabel(rank), $"{where} rank {rank} label", problems);
             }
         }
 

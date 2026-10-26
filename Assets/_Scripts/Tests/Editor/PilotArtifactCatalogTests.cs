@@ -113,6 +113,8 @@ namespace CosmicShore.Tests
             return pilot;
         }
 
+        int _nextStat;
+
         ArtifactSO Artifact(string id, VesselClassType vessel, params VesselKeyword[] requires)
         {
             var artifact = ScriptableObject.CreateInstance<ArtifactSO>();
@@ -123,6 +125,11 @@ namespace CosmicShore.Tests
             so.FindProperty("id").stringValue = id;
             so.FindProperty("displayName").stringValue = id;
             WriteRequirement(so.FindProperty("requirement"), vessel, requires);
+            // 2026-10-26: an artifact names the stat it moves and reads as something at every rank.
+            so.FindProperty("stat").intValue = ++_nextStat;
+            var labels = so.FindProperty("rankLabels");
+            labels.arraySize = ArtifactSO.RankCount;
+            for (int i = 0; i < ArtifactSO.RankCount; i++) labels.GetArrayElementAtIndex(i).stringValue = "+" + (i + 1);
             so.ApplyModifiedPropertiesWithoutUndo();
             return artifact;
         }
@@ -288,6 +295,29 @@ namespace CosmicShore.Tests
             StringAssert.Contains("pilots[6] is empty", all);
             StringAssert.Contains("has no id", all);
             StringAssert.Contains("lists the keyword None", all);
+        }
+
+        [Test]
+        public void Validate_NamesArtifactValueErrors()
+        {
+            var noStat = Artifact("artifact.sparrow.no-stat", VesselClassType.Sparrow);
+            var first = Artifact("artifact.sparrow.first", VesselClassType.Sparrow);
+            var twin = Artifact("artifact.sparrow.twin", VesselClassType.Sparrow);
+            var so = new SerializedObject(noStat);
+            so.FindProperty("stat").intValue = (int)ArtifactStat.None;
+            so.FindProperty("rankLabels").GetArrayElementAtIndex(1).stringValue = "";
+            so.ApplyModifiedPropertiesWithoutUndo();
+            so = new SerializedObject(twin);
+            so.FindProperty("stat").intValue = (int)first.Stat;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            var problems = new List<string>();
+            Catalog(new PilotSO[0], new[] { noStat, first, twin }).Validate(problems);
+            string all = string.Join("\n", problems);
+
+            StringAssert.Contains("names no stat", all);
+            StringAssert.Contains("which another artifact already changes", all);
+            StringAssert.Contains("rank 2 label has no display name", all);
         }
 
         [Test]

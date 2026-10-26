@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c306626a4184df3834f44fe03c2619a, type: 3}
+  m_Name: Pilot_Starling_Murmur
+  m_EditorClassIdentifier:
+  id: pilot.starling.murmur
+  displayName: Murmur
+  ability: The swarm
+  description: 'Two murmurations: the swarm splits into two flocks that chase different objectives at once, and the next card you pick goes to the flock you are looking at.'
+  flavor: 
+  portrait: {fileID: 0}
+  portraitIsStandIn: 0
+  icon: {fileID: 0}
+  requirement:
+    Vessel: 21
+    Keywords: []
+  isDefault: 0
+  elementalBoost:
+    Element: 0
+    Petals: 0
+  aiBehaviorDescription: Looks at the flock nearer the objective.

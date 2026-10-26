@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c306626a4184df3834f44fe03c2619a, type: 3}
+  m_Name: Pilot_Orca_Longshift
+  m_EditorClassIdentifier:
+  id: pilot.orca.longshift
+  displayName: Longshift
+  ability: Gunner outrigger
+  description: 'Drop an outrigger: one gunner turret detaches and keeps firing at rival prisms for 8 s, and re-docks when the hull flies back through it.'
+  flavor: 
+  portrait: {fileID: 21300000, guid: 53fbd2d5784a14b4983f83d6f20382e3, type: 3}
+  portraitIsStandIn: 0
+  icon: {fileID: 0}
+  requirement:
+    Vessel: 20
+    Keywords: []
+  isDefault: 0
+  elementalBoost:
+    Element: 0
+    Petals: 0
+  aiBehaviorDescription: Drops a turret by a rival wall, then leaves.

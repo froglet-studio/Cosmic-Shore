@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   id: pilot.serpent.default
   displayName: Sniper Shot
+  ability: 
   description: The Serpent's base kit, flown as shipped. Every other Serpent pilot swaps part of it for something different.
   flavor: 
   portrait: {fileID: 0}
+  portraitIsStandIn: 0
   icon: {fileID: 0}
   requirement:
     Vessel: 7
