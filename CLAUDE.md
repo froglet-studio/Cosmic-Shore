@@ -44,7 +44,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
 - [`Docs/BRANCH_PARTS_STATUS.md`](Docs/BRANCH_PARTS_STATUS.md): **Current report on the A–M parts of `cece/nice-brahmagupta-ojclij`** (the 2026-10-12 branch test plan): which parts landed where, what is still to test and who owes each step. Answer any question about those parts or that plan from it, and update it when a part lands.
   Sections: Where each part stands; What landed, and how it differs from the plan; Open problems not caused by these parts; Re-measuring this report
-- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Read before touching any AI. Holds the LOCKED guided-path rule: to send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let them press it - never navigate for them.
+- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph (Shombith leads activation; Caleb heads FTUE with him; no one else is on it), dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Read before touching any AI. Holds the LOCKED guided-path rule: to send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let them press it - never navigate for them.
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
@@ -97,6 +97,10 @@ the engine renamed twice, retired tools brought back. **Every session:**
 - **No favourites among the core four.** Garrett, Caleb, Shombith and Yash carry equal weight. Never assign a task
   to anyone, and do not let one person's request override another's area without whoever decides there. **Shombith heads tooling** (the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the
   hooks; Shombith, 2026-10-23): changes to those go through him.
+- **Areas have owners; tickets do not.** An owner is who you ASK before changing an area: `who_works_where.py query`
+  prints the owner `Docs/TEAM.json` declares (`owners`) above the merge counts, which credit whoever merged. **Anything
+  on UGS or the backend is Shombith's: ask him directly**; for now Yash does the Cloud Code work, and anything posted
+  to the backend goes through Shombith first. Shombith leads activation, with Caleb heading FTUE (2026-10-26).
 
 Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
 The per-prompt team hooks (`team_context.py`, `team_activity.py`, `team_tasks_nudge.py`, deleted 2026-10-25) were switched off on

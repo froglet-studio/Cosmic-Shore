@@ -26,7 +26,7 @@ two-trigger chip). Time stays `Input: 0`, the passive sentinel (the ramp gesture
 |---|---|---|---|
 | Charge | **Sword Energy** | energy banked per cut and per super-shield pop, x1 at rest -> x2 at level 10, floored x0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, read live on the owner) | **Live Wire** - a return to the chop stance re-lights the energized tail (`ShieldSkimmerScaleConfigSO.LiveWireActive`) |
 | Mass | **Afterimage** | afterimage VOLUME, x1 -> x2.5, floored x0.25, read at the REPLICATED level (`RhinoSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`RhinoSwordAfterimageConfigSO.DangerActive`) |
-| Space | **Blade Reach** | the blade's resting length, 30 -> 50 (`Skimmer.Scale` on the ForceFieldSkimmer Variant; energy grows it on top toward 120) | **Breaker** (2026-10-13) - a shielded prism is cut in one slice (`RhinoSkimmerDamagePrismEffectSO.breakerElement`) |
+| Space | **Blade Reach** | the blade's resting length, 24 -> 40 (`Skimmer.Scale` on the Rhino's ForceFieldSkimmer instance; energy grows it on top toward 96) | **Breaker** (2026-10-13) - a shielded prism is cut in one slice (`RhinoSkimmerDamagePrismEffectSO.breakerElement`) |
 | Time | **Ramp Spool** | the ramp's wind-up, 220 u/s per second x1 -> x2.5, floored x0.5 | **Momentum** - above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino's elements |
 
 Every gate goes through `IsUpgradeActive` (the replicated unlock bits), never a raw level read.

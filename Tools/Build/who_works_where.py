@@ -60,6 +60,20 @@ class Team:
                 self.prefixes.append((pre, person['name']))
         self.prefixes.sort(key=lambda x: -len(x[0]))
         self.unattributed = data.get('unattributed_prefixes', {})
+        self.owners = data.get('owners', [])
+
+    def declared_owners(self, paths):
+        """The owners Docs/TEAM.json DECLARES for these paths (an area's owner said so). They win over the merge counts:
+        a merge credits whoever merged it, so work that reached bleeding-edge through someone else's integration branch
+        reads as theirs (FTUE through Ys-bleeding-edge read as Yash's, 2026-10-26)."""
+        hits = []
+        for o in self.owners:
+            for q in paths:
+                q = q.rstrip('/')
+                if any(q == p or q.startswith(p.rstrip('/') + '/') or p.startswith(q + '/') for p in o.get('paths', [])):
+                    hits.append(o)
+                    break
+        return hits
 
     @staticmethod
     def load(root):
@@ -200,8 +214,13 @@ def _iso(s):
         return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
 
 
-def print_query(paths, land, flight, days):
+def print_query(paths, land, flight, days, team=None):
     print(f'Who works on {", ".join(paths) or "the whole repo"} (last {days} days; read from origin/*, fetch first)')
+    owners = team.declared_owners(paths) if team and paths else []
+    if owners:
+        print('\nOWNER (declared in Docs/TEAM.json; this decides who to ask, not the merge counts below):')
+        for o in owners:
+            print(f'  {o["area"]}: {o["owner"]}' + (f' - {o["note"]}' if o.get('note') else '') + f'  ({o.get("said", "")})')
     print('\nIN FLIGHT (unmerged branches touching it - read before redoing or overriding):')
     if not flight:
         print('  none')
@@ -229,7 +248,8 @@ def print_query(paths, land, flight, days):
             people[p] += 2
     if people:
         print('\nTALK TO: ' + ', '.join(f'{p} ({n})' for p, n in people.most_common(6)) +
-              '  - their work is here; build on it, and ask before replacing it (Docs/TEAM.md).')
+              '  - their work is here; build on it, and ask before replacing it (Docs/TEAM.md).' +
+              ('\n  A merge counts for whoever merged it; the declared OWNER above is who decides.' if owners else ''))
 
 
 def build_map(team, days, cwd):
@@ -322,6 +342,12 @@ def self_test():
             bad.append('an unclaimed Claude commit was attributed to someone')
         if team.person('Claude', 'noreply@anthropic.com', 'Shombith', 'shombith@froglet.studio') != 'Shombith':
             bad.append('a Claude commit committed by a person is not theirs')
+        owned = Team({'owners': [{'area': 'Activation', 'owner': 'Alice', 'paths': ['Assets/FTUE', 'Docs/ACTIVATION.md']}]})
+        if [o['owner'] for o in owned.declared_owners(['Assets/FTUE/Quests/Q.asset'])] != ['Alice'] or \
+                not owned.declared_owners(['Assets']) or not owned.declared_owners(['Docs/ACTIVATION.md']):
+            bad.append('a declared owner is not found for a path inside, around or equal to its area')
+        if owned.declared_owners(['Assets/FTUEX', 'Docs/ACTIVATION.md.bak', 'Tools']):
+            bad.append('a declared owner matched a path outside its area')       # the negative control
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print('self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))
@@ -350,7 +376,7 @@ def main():
         if a.json:
             print(json.dumps({'paths': a.paths, 'days': a.days, 'inFlight': flight, 'landed': land}, indent=1))
         else:
-            print_query(a.paths, land, flight, a.days)
+            print_query(a.paths, land, flight, a.days, team)
         return 0
     if a.cmd == 'map':
         text = build_map(team, a.days, root)

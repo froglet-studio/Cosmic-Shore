@@ -97,6 +97,7 @@ S = dict(
     podium=script("LeaderboardPodiumSlot"), band=script("LeaderboardRewardBand"), node=script("KitIntensityNode"),
     dtile=script("KitDomainTile"), hull=script("KitHullTile"), close=script("ModalWindowCloseButton"),
     modal=script("ArcadeGameConfigureModal"), audio=script("MenuAudio"), cinema=script("ConfigureCinema"),
+    fit=script("ConfigurePilotsFit"),
     kt=K.kit_script("KitText"), th=K.kit_script("KitThemedGraphic"), button=K.kit_script("KitButton"),
     tile=K.kit_script("KitTile"), cover=K.kit_script("KitCoverImage"), entrance=K.kit_script("KitEntrance"),
     ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), shake=K.kit_script("KitShake"),
@@ -300,6 +301,9 @@ def section_label(parent, key, name, caption, r, token="TextLight", align="left"
 # --------------------------------------------------------------------------------------------
 
 COL_W, SEAT_H, TILE_H = 206, 40, 62
+COL_SPACING, STRIP_PAD, STRIP_GAP = 6, 4, 6   # a domain column's rows: tile, seat strip (its own top inset), open seat
+SEAT_MIN = 32             # a tightened seat row (ConfigurePilotsFit) never gets shorter than its 32 x 32 kick button
+ROW_GAP_COMPACT = 2       # the gap between a crowded column's rows
 
 
 NAME_RIGHT = 108          # the name stops here (from the right): role, (i) and the X live beyond it
@@ -514,7 +518,7 @@ def locked_secondary(body, token):
 def build_domain_column():
     root = N("root", "ConfigureDomainColumn", R(size=(COL_W, TILE_H + 10 + 2 * (SEAT_H + 6))))
     root.add("cg", 225, canvas_group(True))
-    root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 6, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), COL_SPACING, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
 
     tile = root.child(N("Tile", "Tile", TL(0, 0, COL_W, TILE_H)))
     tile.add("le", 114, le(ph=TILE_H))
@@ -540,7 +544,7 @@ def build_domain_column():
                                       primary=[c("Tile/Name", "tmp")], secondary=[c("Tile/Line", "tmp")]))
 
     strip = root.child(N("Strip", "Seats", TL(0, TILE_H + 6, COL_W, SEAT_H)))
-    strip.add("vlg", 114, K.hv_layout(True, (0, 0, 4, 0), 6, 0, (1, 1), (1, 0)))
+    strip.add("vlg", 114, K.hv_layout(True, (0, 0, STRIP_PAD, 0), STRIP_GAP, 0, (1, 1), (1, 0)))
 
     open_seat = root.child(N("OpenSeat", "OpenSeat", TL(0, 0, COL_W, SEAT_H)))
     open_seat.add("cg", 225, canvas_group(True)).add("le", 114, le(ph=SEAT_H))
@@ -1051,6 +1055,7 @@ def sweep_node():
 
 AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3))   # AIDifficulty (Assets/_Scripts/Data), easiest first
 AI_BTN_H = 52
+AI_ROW_GAP = 8            # between the domain columns and the AI row (ConfigurePilotsFit keeps it as the columns grow)
 
 
 def ai_row(card, inner, top):
@@ -1124,7 +1129,7 @@ AI_ROW_H = 30 + AI_BTN_H
 
 def column_height(kind):
     """The settings column hugs its sections (never past SET_H, the room above the launch row)."""
-    ai = 8 + AI_ROW_H if kind != "maelstrom" else 0
+    ai = AI_ROW_GAP + AI_ROW_H if kind != "maelstrom" else 0
     secs = [INTENSITY_SEC_H, SEC_HEAD + PILOTS_BODY_H + ai]
     secs += [SEC_HEAD + 4 * FORMAT_ROW_H] if kind == "maelstrom" else [HULL_SEC_H if kind == "arena" else VESSEL_SEC_H]
     h = 2 * PAD + sum(secs) + SEC_GAP * (len(secs) - 1)
@@ -1147,7 +1152,7 @@ def steps_row(chrome, kind):
                                 TL(i * (NODE_W + NODE_GAP), SEC_HEAD, NODE_W, NODE_H),
                                 [("root#in", "staggerIndex", i + 2, None)]))
     y += INTENSITY_SEC_H + SEC_GAP
-    ph = SEC_HEAD + PILOTS_BODY_H + (8 + AI_ROW_H if kind != "maelstrom" else 0)
+    ph = SEC_HEAD + PILOTS_BODY_H + (AI_ROW_GAP + AI_ROW_H if kind != "maelstrom" else 0)
     cp = section(steps, keys[2], y, ph, "Pilots", "1 of 4", 3 if kind == "maelstrom" else 2)
     for i, (dname, dval) in enumerate(DOMAINS):
         cp.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
@@ -1156,7 +1161,7 @@ def steps_row(chrome, kind):
     # Every Arena card offers the row too since bleeding-edge 2026-10-16; the panel still shows it only
     # where AIDifficultyRules.IsOfferedFor says the mode's AI reads it.
     if kind in ("arcade", "arena"):
-        ai_row(cp, SET_W - 2 * PAD, SEC_HEAD + PILOTS_BODY_H + 8)
+        ai_row(cp, SET_W - 2 * PAD, SEC_HEAD + PILOTS_BODY_H + AI_ROW_GAP)
     y += ph + SEC_GAP
     # The vessel comes LAST, under the pilots (Yash, 2026-10-25: intensity on top, the vessel panel below):
     # on the Arena it is the shared vessel panel, picking the hull of whichever seat above was tapped.
@@ -1169,7 +1174,112 @@ def steps_row(chrome, kind):
         format_section(steps, y)
         y += SEC_HEAD + 4 * FORMAT_ROW_H + SEC_GAP
     assert y - SEC_GAP + PAD == column_height(kind), f"{kind}: the column's sections and its height disagree"
+    steps.add("fit", 114, lambda ctx, go: pilots_fit_body(ctx, go, kind, keys))
     return steps
+
+
+def pilots_fit_body(ctx, go, kind, keys):
+    """ConfigurePilotsFit on the settings column: the tallest domain column decides the Pilots section's height,
+    the AI row drops under it and the next section and the launch row move down with it."""
+    moved = ["Format" if kind == "maelstrom" else "Step1", "Status", "Chips", "Start"]
+    return mono(go, S["fit"],
+                f"  pilotsSection: {ref(ctx.rt(keys[2]))}\n"
+                + refs("columns", [ctx.iref(f"Domain{d}", "root#dtile") for d, _ in DOMAINS])
+                + f"  aiRow: {ref(ctx.c('AIRow', 'cg') if kind != 'maelstrom' else 0)}\n"
+                f"  rowGap: {AI_ROW_GAP}\n"
+                + refs("below", [ctx.rt(k) for k in moved])
+                + f"  maxGrowth: {fmt(max_growth(kind))}\n"
+                f"  seatHeight: {SEAT_H}\n  minSeatHeight: {SEAT_MIN}\n  compactGap: {ROW_GAP_COMPACT}\n")
+
+
+def fmt(v):
+    return f"{v:.6g}"
+
+
+def max_growth(kind):
+    """How far the settings column may grow before START reaches BOTTOM."""
+    return BOTTOM - (foot_top(kind) + K.button_size("START GAME")[1])
+
+
+def column_natural(seats, open_seat):
+    """A domain column's height with `seats` full-size seat rows, and the open seat under them or not."""
+    rows = 3 if open_seat else 2
+    return (TILE_H + (rows - 1) * COL_SPACING + STRIP_PAD + seats * SEAT_H + max(0, seats - 1) * STRIP_GAP
+            + (SEAT_H if open_seat else 0))
+
+
+def pilots_fit(natural, room, most, rows, strip_gaps, column_gaps):
+    """ConfigurePilotsFit.Solve, line for line: (growth, seat row height)."""
+    need = natural - room
+    growth = min(max(need, 0.0), max(0.0, most))
+    over = need - growth
+    if over <= 0.01:
+        return growth, SEAT_H
+    rest = over - strip_gaps * (STRIP_GAP - ROW_GAP_COMPACT) - column_gaps * (COL_SPACING - ROW_GAP_COMPACT)
+    seat = SEAT_H
+    if rest > 0 and rows:
+        seat = min(max(SEAT_H - rest / rows, SEAT_MIN), SEAT_H)
+    residual = rest - rows * (SEAT_H - seat)
+    return growth + max(0.0, residual), seat
+
+
+MODAL_SCRIPT = "Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs"
+
+
+def seat_ceiling(kind):
+    """The modal's seat ceiling for a card of this window (MatchSeatCeiling's house cap), read from the code."""
+    with open(os.path.join(REPO, MODAL_SCRIPT), encoding="utf-8") as fh:
+        src = fh.read()
+    name = "MaxArenaSeats" if kind == "arena" else "MaxMatchSeats"
+    return int(re.search(rf"const int {name} = (\d+);", src).group(1))
+
+
+def arena_min_domains():
+    """The fewest domains any card on the Arena roster launches with (SO_ArcadeGame.MinDomainsAllowed)."""
+    with open(os.path.join(REPO, asset_path_of(ARENA_ROSTER)), encoding="utf-8") as fh:
+        guids = re.findall(r"^  - \{fileID: 11400000, guid: (\w+), type: 2\}", fh.read(), re.M)
+    least = None
+    for g in guids:
+        with open(os.path.join(REPO, asset_path_of(g)), encoding="utf-8") as fh:
+            v = int(re.search(r"^  MinDomainsAllowed: (\d+)$", fh.read(), re.M).group(1))
+        least = v if least is None else min(least, v)
+    assert guids, "the Arena roster lists no cards"
+    return least
+
+
+def asset_path_of(guid):
+    for root, _, files in os.walk(os.path.join(REPO, "Assets", "_SO_Assets")):
+        for f in files:
+            if f.endswith(".asset.meta"):
+                full = os.path.join(root, f)
+                with open(full, encoding="utf-8") as fh:
+                    if f"guid: {guid}\n" in fh.read():
+                        return os.path.relpath(full, REPO)[:-len(".meta")]
+    raise AssertionError(f"no asset with guid {guid}")
+
+
+def check_pilots_fit():
+    """Every domain column a match can launch with fits under its window's AI row without the launch row passing
+    BOTTOM; a lobby that cannot launch (every pilot in one domain of a card that needs two) may push START further,
+    but never off the screen. ConfigurePilotsFit.Solve is the same arithmetic."""
+    worst = []
+    for kind in VIEW_NAME:
+        ceiling = seat_ceiling(kind)
+        # One domain column holds at most every seat; a launchable Arena match keeps a pilot in a second domain,
+        # which also counts toward filling the match (the open seat goes when it is full).
+        others = 1 if kind == "arena" and arena_min_domains() >= 2 else 0
+        rooms = [PILOTS_BODY_H] if kind == "maelstrom" else [PILOTS_BODY_H, PILOTS_BODY_H + AI_ROW_GAP + AI_ROW_H]
+        most = max_growth(kind)
+        for elsewhere, cap in ((others, most), (0, most + 1080 - BOTTOM - 8)):
+            for seats in range(ceiling - elsewhere + 1):
+                open_seat = seats + elsewhere < ceiling
+                for room in rooms:
+                    growth, seat = pilots_fit(column_natural(seats, open_seat), room, most,
+                                              seats + (1 if open_seat else 0), max(0, seats - 1), 2 if open_seat else 1)
+                    assert growth <= cap + 0.01, (f"{kind}: {seats} pilots in one domain push the launch row "
+                                                  f"{growth - most:.1f} px past BOTTOM (seat rows at {seat:.1f})")
+                    worst.append((growth, kind, seats))
+    return max(worst)
 
 
 def build_view(kind):
@@ -1986,9 +2096,23 @@ def validate_prefabs(files):
     tmpl = f"rowTemplate: {{fileID: {K.FileIds('LeaderboardRow')('root#rt')}, guid: {asset_guid('LeaderboardRow')}"
     assert tmpl in panel, "the row template is not the LeaderboardRow prefab"
 
+    check_pilots_fit()
     for kind, view in VIEW_NAME.items():
         text = files[prefab_path(view)]
         V = K.FileIds(view)
+        # The settings column fits its tallest domain column (ConfigurePilotsFit): without it a second pilot in a
+        # domain runs into the AI row and a third sits behind its buttons.
+        _, fit = comp_doc(text, V("Steps#fit"))
+        assert fit and S["fit"] in fit, f"{view}: the settings column carries no ConfigurePilotsFit"
+        wired(text, fit, "pilotsSection", 224, view)
+        cols = re.findall(r"^  - \{fileID: (-?\d+)\}", fit.split("  columns:")[1].split("  aiRow:")[0], re.M)
+        assert len(cols) == 3 and all(A.kind_of(text, x) == (114, S["dtile"]) for x in cols), \
+            f"{view}: ConfigurePilotsFit needs the three domain columns"
+        moved = re.findall(r"^  - \{fileID: (-?\d+)\}", fit.split("  below:")[1].split("  maxGrowth:")[0], re.M)
+        assert len(moved) == 4 and "0" not in moved, f"{view}: ConfigurePilotsFit must move the next section and the launch row"
+        if kind != "maelstrom":
+            wired(text, fit, "aiRow", 225, view)
+        assert f"  maxGrowth: {fmt(max_growth(kind))}\n" in fit, f"{view}: ConfigurePilotsFit's maxGrowth is not the room above BOTTOM"
         cls, body = comp_doc(text, V("root#panel"))
         assert body and S[PANEL_CLASS[kind]] in body, f"{view}: the root carries no {PANEL_CLASS[kind]} launch panel"
         for field, want in PANEL_FIELDS.items():
@@ -2176,6 +2300,10 @@ def self_test(files):
          validate_prefabs),
         ("the AI difficulty row unwired", lambda f: f.__setitem__(view, re.sub(
             r"(  aiDifficultyPicker: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])), validate_prefabs),
+        ("the settings column no longer fitting its pilots", lambda f: f.__setitem__(view, re.sub(
+            r"(  aiRow: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])), validate_prefabs),
+        ("the launch row left behind as the pilots grow", lambda f: f.__setitem__(view, re.sub(
+            r"(  below:\n(?:  - \{fileID: -?\d+\}\n){3})  - \{fileID: -?\d+\}\n", r"\1", f[view])), validate_prefabs),
         ("the Arena's AI difficulty row unwired", lambda f: f.__setitem__(prefab_path("ConfigureArenaView"), re.sub(
             r"(  aiDifficultyPicker: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("ConfigureArenaView")])),
          validate_prefabs),

@@ -1772,6 +1772,7 @@ GameObject:
   - component: {fileID: 373793466270391403}
   - component: {fileID: 519163268376081946}
   - component: {fileID: 510665122717706261}
+  - component: {fileID: 721546983361439830}
   m_Layer: 5
   m_Name: Steps
   m_TagString: Untagged
@@ -1835,6 +1836,34 @@ MonoBehaviour:
   staggerIndex: 0
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &721546983361439830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 746636665431002876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba37e2bcd56f4560957ed9d39f582565, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pilotsSection: {fileID: 515073489556591486}
+  columns:
+  - {fileID: 333346351494020619}
+  - {fileID: 753007847684717323}
+  - {fileID: 936013986114148118}
+  aiRow: {fileID: 359549123780596004}
+  rowGap: 8
+  below:
+  - {fileID: 1024299595268444460}
+  - {fileID: 456494912019943762}
+  - {fileID: 882370222591958459}
+  - {fileID: 773760731818474329}
+  maxGrowth: 86.6
+  seatHeight: 40
+  minSeatHeight: 32
+  compactGap: 2
 --- !u!1 &24428445242533273
 GameObject:
   m_ObjectHideFlags: 0

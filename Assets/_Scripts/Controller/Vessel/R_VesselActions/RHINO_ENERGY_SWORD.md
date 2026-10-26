@@ -422,7 +422,7 @@ the skim pulse via `SkimmerHapticsByPrismEffect`. Audio is all free-riding on sa
 
 `ForcefieldCrackleController` + `ForcefieldCrackle.hlsl` were purpose-built for the base
 skimmer's SPHERE: impacts stored as unit directions, ripples measured as great-circle angles.
-On the blade's stretched capsule (built-in capsule mesh under the ~`(1.5, 30, 4.8)` blade
+On the blade's stretched capsule (built-in capsule mesh under the ~`(1.5, 24, 4.8)` blade
 scale) that collapses the whole blade length into the two poles. The adaptation:
 
 - **`ForcefieldCrackleCapsule_float`** (new entry in the same HLSL) measures in **world units**:
@@ -514,8 +514,8 @@ swing-model group `swingVelocityScale` 1 / `maxImpactSpeed` 0 / `proportionalDeb
 damage SOs and `PrismExplosion.prefab`'s speed band — see the swing-kinematics row in
 `CLAUDE.md`; `inertia` is not the lever on the proportional path).
 
-On `ShieldSkimmerScaleConfig.asset`: `baseScale` 30 (fallback; live base is the Space elemental
-scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
+On `ShieldSkimmerScaleConfig.asset`: `baseScale` 24 (fallback; live base is the Space elemental
+scale) · `maxScale` 96 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
 `energizeHoldSeconds` 1 · `touchEnergizeRateMultiplier` 2 (phone hold = 0.5 s) · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
 `liveWireUpgradeElement` Charge (the L5 that lets the stance re-light the tail) ·
 `crystalBurstFactorAtFullEnergy` 4 (the surge burst — the names predate the move) · `crystalBurstHoldSeconds` 2.5 · `crystalBurstGrowSpeed`
