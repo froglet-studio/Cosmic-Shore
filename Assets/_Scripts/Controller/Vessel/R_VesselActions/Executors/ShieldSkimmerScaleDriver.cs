@@ -6,40 +6,37 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Rhino energy sword's brain. Owns the sword transform's SCALE and the sword's
-    /// energy/energize state, and implements <see cref="IRhinoSwordState"/> so the shared
-    /// impact-effect SOs can read/drive it via <c>Skimmer.SwordState</c>.
+    /// The Rhino sword's brain. Owns the energize state, the blade's LENGTH (Space alone) and the
+    /// camera distance that follows it, and the omni-crystal surge's sword ring; implements
+    /// <see cref="IRhinoSwordState"/> so the shared impact-effect SOs can read/drive it via
+    /// <c>Skimmer.SwordState</c>.
     ///
     /// The sword's ORDINARY cutting is UNGATED — it always damages prisms on contact
-    /// (that logic lives in <c>RhinoSkimmerDamagePrismEffectSO</c>). Two things live here:
+    /// (that logic lives in <c>RhinoSkimmerDamagePrismEffectSO</c>). There is NO energy: the meter,
+    /// the energy banked per cut and the energize cost were discarded on 2026-10-26 (Garrett:
+    /// "lets discard the whole notion of energy as a resource on the rhino").
     ///
-    /// ENERGY — the Rhino's Shield resource (<see cref="shieldIndex"/>, normalized 0..1,
-    /// no passive decay: a meter you fill and spend):
-    ///  • GAIN: the prism effect banks energy per prism the sword destroys, scaled by CHARGE
-    ///    (<c>RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier</c>).
-    ///  • SPEND: energizing costs <see cref="ShieldSkimmerScaleConfigSO.EnergizeCostFraction"/>.
-    ///  • SURGE: an omni crystal (<see cref="Surge"/>) fills it, bursts the blade in all three
-    ///    dimensions and holds it energized with no stance for the surge's length.
-    ///
-    /// AUTHORITY — energy and the energize phase are decided on the machine that OWNS the vessel
-    /// and replicated by <see cref="RhinoSwordNetworkRelay"/>; every other peer mirrors them. Each
-    /// peer's local copy used to run its own state machine off its own kills and its own clock,
-    /// and an energized blade pops super-shielded mass, so that was a divergent prismscape.
+    /// AUTHORITY — the energize phase and the surge are decided on the machine that OWNS the vessel
+    /// and replicated by <see cref="RhinoSwordNetworkRelay"/>; every other peer mirrors them. An
+    /// energized blade pops super-shielded mass, so a phase run on each peer's own clock would be a
+    /// divergent prismscape.
     ///
     /// ENERGIZE — the supershield key. Holding the both-triggers lower/chop stance
     /// (<see cref="SetInStance"/>, fed by <see cref="ShieldSwipeActionExecutor"/>) for
     /// <c>EnergizeHoldSeconds</c> (divided by <c>touchEnergizeRateMultiplier</c> for a human on a phone)
-    /// spends the cost and ignites the blade: while
+    /// ignites the blade (no cost; the cooldown is the only limit): while
     /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
     /// binding. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
     /// <c>EnergizeCooldownSeconds</c> locks re-charging. The tail runs out once started - taking
     /// the stance again does not re-light it - UNLESS the CHARGE level-5 upgrade, <b>Live Wire</b>,
-    /// is active: then every return to the stance holds the blade lit again (until 2026-10-16 that
-    /// refresh was ungated, so a chop every few seconds kept any blade energized forever for one
-    /// payment). On the ignition edge the standing
-    /// blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the shell-tier
-    /// pairs) so a super-shielded prism already resting against the blade pops without
+    /// is active: then every return to the stance holds the blade lit again. On the ignition edge
+    /// the standing blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the
+    /// shell-tier pairs) so a super-shielded prism already resting against the blade pops without
     /// needing a fresh OnTriggerEnter.
+    ///
+    /// SURGE — an omni crystal (<see cref="Surge"/>) holds the blade energized with no stance for the
+    /// surge's length and raises a ring of trigger-driven sword copies round the hull with the
+    /// camera pulled back onto it (<see cref="RhinoSurgeSwordRing"/>).
     ///
     /// BINDING — a NON-energized blade inside super-shielded mass it cannot cut does not recoil;
     /// the armour DRAGS on it. While the shell tier reports the blade inside one or more live
@@ -52,27 +49,27 @@ namespace CosmicShore.Gameplay
     /// The ENTRY beat (first jiggle + punish thud) is the damage effect's. See
     /// <c>RHINO_ENERGY_SWORD.md</c> § "Binding".
     ///
-    /// The resting length reflects stored energy (Y-only elongation from the Space-driven
-    /// elemental base — the same meter the Rhino HUD draws through <see cref="OnScaleChanged"/>).
-    /// All LOOK is delegated to the prefab-authored <see cref="RhinoSwordFXController"/> on the
-    /// blade root. Sets <c>Skimmer.HasExternalScaleDriver</c> so the Skimmer's own elemental
-    /// scale write stands down. The swipe pose (rotation/position) is owned by
-    /// <see cref="ShieldSwipeActionExecutor"/> — only scale is ours. See <c>RHINO_ENERGY_SWORD.md</c>.
+    /// LENGTH — SPACE ALONE (Garrett, 2026-10-26: "Space alone can grow the sword, but move the camera
+    /// accordingly"). The blade's world length is the Skimmer's live Space scale
+    /// (<c>Skimmer.LiveElementalScale</c>, 24 at rest → 40 at Space 10, on Rhino.prefab), eased at
+    /// <c>SpaceLengthEaseSpeed</c>, along local Y only so the authored X/Z silhouette holds. Nothing
+    /// else resizes it - no energy, no surge burst. The driver sets <c>Skimmer.HasExternalScaleDriver</c>
+    /// so the Skimmer's own (un-eased) write stands down: one writer. The local human pilot's camera
+    /// pulls back with the blade (<see cref="RhinoSwordCamera"/>). All LOOK is delegated to the
+    /// prefab-authored <see cref="RhinoSwordFXController"/> on the blade root. The swipe pose
+    /// (rotation/position) is owned by <see cref="ShieldSwipeActionExecutor"/>. See
+    /// <c>RHINO_ENERGY_SWORD.md</c>.
     /// </summary>
     public class ShieldSkimmerScaleDriver : MonoBehaviour, IRhinoSwordState
     {
         [Header("Refs")]
-        [SerializeField] private ResourceSystem resourceSystem;
         [SerializeField] private Transform skimmerRoot;
 
         [Header("Config")]
         [SerializeField] private ShieldSkimmerScaleConfigSO config;
 
-        [Header("Energy Resource Index (Shield, normalized 0..1)")]
-        [SerializeField] private int shieldIndex = 1;
-
         [Header("Network")]
-        [Tooltip("Replicates energy + energize phase from the vessel's owner. On the Rhino root. " +
+        [Tooltip("Replicates the energize phase and the surge from the vessel's owner. On the Rhino root. " +
                  "Empty = this sword decides its own state locally (an un-networked vessel).")]
         [SerializeField] private RhinoSwordNetworkRelay relay;
 
@@ -87,22 +84,10 @@ namespace CosmicShore.Gameplay
         /// Energized.</summary>
         public event Action<RhinoSwordEnergizePhase, RhinoSwordEnergizePhase> EnergizePhaseChanged;
 
-        /// <summary>Fires each frame with (currentWorldLength, restingLength, maxLength) — the Rhino
-        /// HUD reads it as a 0..1 energy meter.</summary>
-        public event Action<float, float, float> OnScaleChanged;
-
         Skimmer _skimmer;
         SkimmerImpactor _skimmerImpactor;
         RhinoSwordFXController _fx;
         bool _fxWarned;
-
-        Vector3 _authoredShape; // local X/Y/Z silhouette captured from the Skimmer
-
-        // ── crystal burst ──
-        enum BurstPhase { None = 0, Growing = 1, Holding = 2, Returning = 3 }
-        BurstPhase _burst = BurstPhase.None;
-        Vector3 _burstTargetLocal;
-        float _burstHoldEnd;
 
         // ── energize (the supershield key) ──
         RhinoSwordEnergizePhase _energize = RhinoSwordEnergizePhase.Idle;
@@ -114,6 +99,11 @@ namespace CosmicShore.Gameplay
         // ── surge (omni crystal) ──
         bool _surging;
         float _surgeEnd;
+        RhinoSurgeSwordRing _ring;
+        readonly RhinoSwordCamera _camera = new();
+
+        // ── length (Space alone) ──
+        float _lengthWorld = -1f;   // the blade's current world length; < 0 until first written
 
         // ── binding (a non-energized blade inside super-shielded mass) ──
         readonly List<Prism> _bound = new(4);
@@ -121,23 +111,6 @@ namespace CosmicShore.Gameplay
         VesselTransformer _turnOwner;   // the transformer we are currently slowing, if any
         bool _wasBound;
         float _nextBindJiggle, _nextBindHaptic;
-
-        // Sword capsules (Skimmer.ElongateYOnly): the resting length grows only local Y and
-        // preserves the authored X/Z silhouette; the crystal burst overrides all three dims.
-        bool YOnly => _skimmer && _skimmer.ElongateYOnly;
-
-        // Resting size is the skimmer's live elemental (Space-driven) scale — element levels
-        // lengthen the sword and energy growth composes on top. Falls back to the config value.
-        float BaseScale => _skimmer ? Mathf.Max(0.01f, _skimmer.LiveElementalScale) : config.BaseScale;
-        // Keep max ≥ base: the two come from different sources (base = skimmer's live elemental
-        // scale, max = config), so a large elemental scale must never invert the resting clamp.
-        float MaxScale  => Mathf.Max(config.MaxScale, BaseScale);
-        float Range     => Mathf.Max(0.0001f, MaxScale - BaseScale);
-
-        public float MinScale => BaseScale;
-        public float CurrentScale => skimmerRoot
-            ? (YOnly ? skimmerRoot.lossyScale.y : skimmerRoot.lossyScale.x)
-            : BaseScale;
 
         /// <summary>Current energize phase (for FX and any future HUD readout).</summary>
         public RhinoSwordEnergizePhase EnergizePhase => _energize;
@@ -148,6 +121,24 @@ namespace CosmicShore.Gameplay
             _energize == RhinoSwordEnergizePhase.Cooldown && config != null && config.EnergizeCooldownSeconds > 0f
                 ? Mathf.Clamp01((_cooldownEnd - Time.time) / config.EnergizeCooldownSeconds)
                 : 0f;
+
+        /// <summary>The Charge card's gauge: the stance filling while Charging, full while lit (held, Live
+        /// Wire or a surge), draining over the let-go tail, empty otherwise. Owner-side clock; the HUD
+        /// only draws for the local pilot, who is the owner.</summary>
+        public float EnergizeGauge01
+        {
+            get
+            {
+                switch (_energize)
+                {
+                    case RhinoSwordEnergizePhase.Charging: return Charge01;
+                    case RhinoSwordEnergizePhase.Energized:
+                        if (_surging || !_tailCounting || config == null || config.EnergizedTailSeconds <= 0f) return 1f;
+                        return Mathf.Clamp01((_tailEnd - Time.time) / config.EnergizedTailSeconds);
+                    default: return 0f;
+                }
+            }
+        }
 
         /// <summary>Charge progress 0..1 while Charging (0 otherwise).</summary>
         public float Charge01 => _energize == RhinoSwordEnergizePhase.Charging && config != null
@@ -179,7 +170,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The sword's own Skimmer (blade root), for the components that share its GameObject.</summary>
         public Skimmer Skimmer => _skimmer;
 
-        /// <summary>The blade transform this driver scales (the skimmer root).</summary>
+        /// <summary>The blade transform (the skimmer root). Its length is Space's (see the class notes).</summary>
         public Transform BladeRoot => skimmerRoot;
 
         /// <summary>True where this sword's state is decided (see <see cref="RhinoSwordNetworkRelay"/>).</summary>
@@ -187,33 +178,26 @@ namespace CosmicShore.Gameplay
 
         // ── IRhinoSwordState ──
         public bool IsEnergized => _energize == RhinoSwordEnergizePhase.Energized;
-        public float Energy01 => GetShield01();
         public bool IsSurging => _surging;
-
-        public void AddEnergy(float amount01)
-        {
-            if (amount01 == 0f || !IsAuthority) return;
-            SetShield01(GetShield01() + amount01);
-        }
 
         public bool IsOwnAfterimage(Prism prism) => afterimage && afterimage.IsMine(prism);
 
-        public void Surge(float seconds, float energyFill01)
+        public void Surge(float seconds)
         {
             if (!IsAuthority || config == null || seconds <= 0f) return;
             float now = Time.time;
 
-            SetShield01(Mathf.Max(GetShield01(), Mathf.Clamp01(energyFill01)));
             if (_energize != RhinoSwordEnergizePhase.Energized)
                 SetEnergizePhase(RhinoSwordEnergizePhase.Energized, now);
 
+            bool started = !_surging;
             _surgeEnd = _surging ? Mathf.Max(_surgeEnd, now + seconds) : now + seconds;
             _surging = true;
             // A surge is not held by the stance, so the tail rules start from "already let go".
             _releasedSinceIgnition = true;
             _tailCounting = false;
 
-            StartBurst();
+            if (started) PlaySurgeStart();
         }
 
         public void SetInStance(bool inStance) => _inStance = inStance;
@@ -228,33 +212,9 @@ namespace CosmicShore.Gameplay
             Fx?.NotifyPopDenied(prismWorldPosition);
         }
 
-        /// <summary>The surge's look: the blade swells in all three dimensions, scaled by the energy at
-        /// that instant, holds, and returns. Photons and reach only - it spends nothing (the burst
-        /// used to drain the whole meter on EVERY elemental crystal the sword touched, which is
-        /// every petal a Rhino collects).</summary>
-        void StartBurst()
-        {
-            if (config == null || !skimmerRoot) return;
-            float energy = Mathf.Clamp01(GetShield01());
-            float factor = Mathf.Lerp(1f, config.CrystalBurstFactorAtFullEnergy, energy);
-
-            // A burst only ever GROWS the blade: the length target starts from the authored
-            // silhouette × factor but never drops below the current length (a Space-lengthened
-            // blade at low energy must not contract), and never exceeds MaxScale unless the blade
-            // is already longer.
-            float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
-            float currentWorldY = skimmerRoot.lossyScale.y;
-            float burstWorldY = Mathf.Max(currentWorldY, _authoredShape.y * parentY * factor);
-            burstWorldY = Mathf.Min(burstWorldY, Mathf.Max(MaxScale, currentWorldY));
-
-            _burstTargetLocal = new Vector3(
-                _authoredShape.x * factor,
-                burstWorldY / Mathf.Max(0.0001f, parentY),
-                _authoredShape.z * factor);
-            _burst = BurstPhase.Growing;
-
-            Fx?.NotifyCrystalBurst(energy);
-        }
+        /// <summary>The surge's opening beat: a full flash, a whole-blade crackle and a camera shake.
+        /// The ring itself fans out from <see cref="LateUpdate"/>.</summary>
+        void PlaySurgeStart() => Fx?.NotifySurge();
 
         RhinoSwordFXController Fx
         {
@@ -279,7 +239,6 @@ namespace CosmicShore.Gameplay
             skimmerRoot.TryGetComponent(out _skimmer);
             skimmerRoot.TryGetComponent(out _skimmerImpactor);
             if (_skimmer) _skimmer.SwordState = this;
-            _authoredShape = skimmerRoot.localScale;
             if (!relay) relay = GetComponentInParent<RhinoSwordNetworkRelay>();
             if (!afterimage) TryGetComponent(out afterimage);
         }
@@ -288,15 +247,12 @@ namespace CosmicShore.Gameplay
         {
             if (_skimmer)
             {
+                // One writer of the blade's scale: this driver eases the Space length itself.
                 _skimmer.HasExternalScaleDriver = true;
                 _skimmer.SwordState = this;
-                // Skimmer.Awake has run (all Awakes precede all OnEnables on a fresh instance),
-                // so the authored silhouette is captured and valid here.
-                _authoredShape = _skimmer.AuthoredShape;
             }
 
             // Pooled/re-enabled vessels start clean.
-            _burst = BurstPhase.None;
             _energize = RhinoSwordEnergizePhase.Idle;
             _inStance = false;
             _tailCounting = false;
@@ -306,12 +262,21 @@ namespace CosmicShore.Gameplay
             _cooldownEnd = 0f;
             _bindTurnMultiplier = 1f;
             _wasBound = false;
+            _lengthWorld = -1f;
         }
 
         void OnDisable()
         {
             if (_skimmer) _skimmer.HasExternalScaleDriver = false;
             ReleaseTurn();
+            _ring?.Collapse();
+            _camera.Release();
+        }
+
+        void OnDestroy()
+        {
+            _ring?.Dispose();
+            _camera.Release();
         }
 
         void Update()
@@ -322,7 +287,7 @@ namespace CosmicShore.Gameplay
             if (IsAuthority)
             {
                 UpdateEnergize();
-                if (relay) relay.Publish(GetShield01(), _energize, _surging);
+                if (relay) relay.Publish(_energize, _surging);
             }
             else
             {
@@ -330,31 +295,66 @@ namespace CosmicShore.Gameplay
             }
 
             UpdateBind(dt);
-            UpdateScale(dt);
-            Fx?.Tick(Mathf.Clamp01(GetShield01()), _energize, Charge01, dt);
+            UpdateLength(dt);
+            Fx?.Tick(_energize, Charge01, dt);
+        }
+
+        // After the swipe executor (Update) has posed the blade, so every ring copy takes this
+        // frame's pose and this frame's colour.
+        void LateUpdate()
+        {
+            if (!skimmerRoot || config == null) return;
+            var status = _skimmer ? _skimmer.VesselStatus : null;
+            float dt = Time.deltaTime;
+
+            float rest = _skimmer ? Mathf.Max(0.01f, _skimmer.RestElementalScale) : 1f;
+            float lengthRatio = _lengthWorld > 0f ? _lengthWorld / rest : 1f;
+            _camera.Tick(status, _surging, lengthRatio, config, dt);
+
+            if (_ring == null)
+            {
+                if (!_surging) return;
+                _ring = new RhinoSurgeSwordRing(skimmerRoot, this);
+            }
+            _ring.Tick(_surging, config, status, Fx ? Fx.BodyRenderer : null, dt);
+        }
+
+        // ── length (Space alone) ──────────────────────────────────────────────
+        // The Skimmer's live Space scale, eased, along local Y only (the authored X/Z silhouette holds).
+        // The first write snaps, so a fresh or re-enabled blade never grows in from its prefab size.
+        void UpdateLength(float dt)
+        {
+            if (!_skimmer || !_skimmer.IsInitialized) return;
+            float target = Mathf.Max(0.01f, _skimmer.LiveElementalScale);
+            _lengthWorld = _lengthWorld < 0f
+                ? target
+                : Mathf.MoveTowards(_lengthWorld, target, config.SpaceLengthEaseSpeed * dt);
+
+            var shape = _skimmer.AuthoredShape;
+            float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
+            float localY = _lengthWorld / Mathf.Max(0.0001f, parentY);
+            var current = skimmerRoot.localScale;
+            if (Mathf.Abs(current.y - localY) > 1e-4f || current.x != shape.x || current.z != shape.z)
+                skimmerRoot.localScale = new Vector3(shape.x, localY, shape.z);
         }
 
         // ── energize ──────────────────────────────────────────────────────────
         void UpdateEnergize()
         {
             float now = Time.time;
-            float cost = config.EnergizeCostFraction;
 
             switch (_energize)
             {
                 case RhinoSwordEnergizePhase.Idle:
-                    if (_inStance && now >= _cooldownEnd && GetShield01() >= cost)
+                    if (_inStance && now >= _cooldownEnd)
                         SetEnergizePhase(RhinoSwordEnergizePhase.Charging, now);
                     break;
 
                 case RhinoSwordEnergizePhase.Charging:
-                    if (!_inStance || GetShield01() < cost)
+                    if (!_inStance)
                         SetEnergizePhase(RhinoSwordEnergizePhase.Idle, now);
                     else if (now - _chargeStart >= EnergizeHoldSeconds)
-                    {
-                        SetShield01(GetShield01() - cost); // ignition spends the fraction
                         SetEnergizePhase(RhinoSwordEnergizePhase.Energized, now);
-                    }
                     break;
 
                 case RhinoSwordEnergizePhase.Energized:
@@ -399,17 +399,13 @@ namespace CosmicShore.Gameplay
         /// decides is what replicates.</summary>
         bool LiveWireActive() => config.LiveWireActive(_skimmer ? _skimmer.VesselStatus : null);
 
-        /// <summary>A non-owning peer: take energy, phase and surge from the owner's relay. The phase
+        /// <summary>A non-owning peer: take the phase and the surge from the owner's relay. The phase
         /// goes through <see cref="SetEnergizePhase"/>, so the ignition re-dispatch, the FX and the
         /// afterimage window fire here exactly as they do on the owner.</summary>
         void MirrorAuthority()
         {
-            if (resourceSystem && (uint)shieldIndex < (uint)resourceSystem.Resources.Count
-                && !Mathf.Approximately(resourceSystem.Resources[shieldIndex].CurrentAmount, relay.Energy01))
-                resourceSystem.SetResourceAmount(shieldIndex, relay.Energy01);
-
             bool surging = relay.IsSurging;
-            if (surging && !_surging) StartBurst();
+            if (surging && !_surging) PlaySurgeStart();
             _surging = surging;
 
             if (relay.Phase != _energize)
@@ -520,106 +516,6 @@ namespace CosmicShore.Gameplay
         {
             if (_turnOwner) _turnOwner.ExternalTurnRateMultiplier = 1f;
             _turnOwner = null;
-        }
-
-        // ── scale ─────────────────────────────────────────────────────────────
-        void UpdateScale(float dt)
-        {
-            if (_burst != BurstPhase.None)
-            {
-                UpdateBurst(dt);
-                return;
-            }
-
-            // Resting length reflects stored energy (Y-only, world units).
-            float energy = Mathf.Clamp01(GetShield01());
-            float targetWorldY = Mathf.Clamp(BaseScale + energy * Range, BaseScale, MaxScale);
-            float nowWorldY = skimmerRoot.lossyScale.y;
-            float speed = (targetWorldY >= nowWorldY) ? config.PrismGrowSpeed : config.ShrinkSpeed;
-            float nextWorldY = Mathf.MoveTowards(nowWorldY, targetWorldY, speed * dt);
-
-            SetLengthWorldY(nextWorldY);
-            OnScaleChanged?.Invoke(nextWorldY, BaseScale, MaxScale);
-        }
-
-        void UpdateBurst(float dt)
-        {
-            Vector3 cur = skimmerRoot.localScale;
-
-            switch (_burst)
-            {
-                case BurstPhase.Growing:
-                {
-                    var next = Vector3.MoveTowards(cur, _burstTargetLocal, config.CrystalBurstGrowSpeed * dt);
-                    skimmerRoot.localScale = next;
-                    if ((next - _burstTargetLocal).sqrMagnitude < 0.0025f)
-                    {
-                        skimmerRoot.localScale = _burstTargetLocal;
-                        _burst = BurstPhase.Holding;
-                        _burstHoldEnd = Time.time + config.CrystalBurstHoldSeconds;
-                    }
-                    break;
-                }
-                case BurstPhase.Holding:
-                    skimmerRoot.localScale = _burstTargetLocal;
-                    if (Time.time >= _burstHoldEnd) _burst = BurstPhase.Returning;
-                    break;
-
-                case BurstPhase.Returning:
-                {
-                    Vector3 rest = RestLocalScale();
-                    var back = Vector3.MoveTowards(cur, rest, config.CrystalBurstReturnSpeed * dt);
-                    skimmerRoot.localScale = back;
-                    if ((back - rest).sqrMagnitude < 0.0025f) _burst = BurstPhase.None;
-                    break;
-                }
-            }
-
-            // The HUD reads this as the ENERGY meter, so during a burst report the energy-based
-            // resting length (energy just drained to 0), not the transient ballooned Y — otherwise
-            // the meter pegs full for the whole hold while the tank is actually empty.
-            float energyNow = Mathf.Clamp01(GetShield01());
-            float restWorldY = Mathf.Clamp(BaseScale + energyNow * Range, BaseScale, MaxScale);
-            OnScaleChanged?.Invoke(restWorldY, BaseScale, MaxScale);
-        }
-
-        Vector3 RestLocalScale()
-        {
-            float energy = Mathf.Clamp01(GetShield01());
-            float targetWorldY = Mathf.Clamp(BaseScale + energy * Range, BaseScale, MaxScale);
-            float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
-            return new Vector3(_authoredShape.x, targetWorldY / Mathf.Max(0.0001f, parentY), _authoredShape.z);
-        }
-
-        void SetLengthWorldY(float worldY)
-        {
-            if (YOnly)
-            {
-                float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
-                float localY = worldY / Mathf.Max(0.0001f, parentY);
-                skimmerRoot.localScale = new Vector3(_authoredShape.x, localY, _authoredShape.z);
-                return;
-            }
-
-            float parent = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.x : 1f;
-            float local = worldY / Mathf.Max(0.0001f, parent);
-            skimmerRoot.localScale = new Vector3(local, local, local);
-        }
-
-        // ── energy resource ───────────────────────────────────────────────────
-        float GetShield01()
-        {
-            if (!resourceSystem) return 0f;
-            if ((uint)shieldIndex >= (uint)resourceSystem.Resources.Count) return 0f;
-            return Mathf.Clamp01(resourceSystem.Resources[shieldIndex].CurrentAmount);
-        }
-
-        void SetShield01(float v)
-        {
-            // A mirror never writes its own verdict: the owner's value arrives through the relay.
-            if (!resourceSystem || !IsAuthority) return;
-            if ((uint)shieldIndex >= (uint)resourceSystem.Resources.Count) return;
-            resourceSystem.SetResourceAmount(shieldIndex, Mathf.Clamp01(v));
         }
     }
 }

@@ -925,6 +925,28 @@ applies to new abilities, new resources on the meter list, and anything that add
     span on every device, keeping the gameplay length (the ring) independent of the view: a span the ring is derived
     from cannot be zoomed without changing the game.
 
+
+61. **A runtime COPY of a live vessel part (a second blade, a mirrored arm) is cloned under an INACTIVE holder and
+    stripped before it wakes.** The Rhino's surge ring (`RhinoSurgeSwordRing`, 2026-10-26) needed seven more swords that
+    cut exactly like the real one. A clone of the blade root carries everything that makes a blade a blade (mesh, both
+    trigger colliders, the kinematic body, `SkimmerImpactor` + `ImpactCollider` wired to the CLONE by Unity's internal
+    reference remap, its own `SkimmerSwingKinematics`) - and also the one-of-a-kind parts, whose serialized references
+    point OUTSIDE the clone and still reach the original: `RhinoSwordFXController.bladeTracers` names the fuselage's five
+    tracers, so a woken copy would re-seat and tint the pilot's own streaks. So: `Instantiate` under a holder whose
+    GameObject is INACTIVE (no Awake / OnEnable runs on the copy), `DestroyImmediate` the one-of-a-kind components, then
+    arm what is left (`Skimmer.Initialize(status)`, `HasExternalScaleDriver = true`, `SwordState` = the real sword's, so
+    every copy cuts through the same effect chain and reads the same energized state), and only then activate. Before
+    trusting the remap, list each copied component's serialized object references and sort them into "inside the clone"
+    (remapped) and "outside" (shared with the original). Pose every copy from the original's LIVE local pose in
+    LateUpdate, after the executor that writes it, and copy the body's MaterialPropertyBlock so the look follows too.
+62. **An ability that moves the camera writes a POINT-OF-USE multiplier on `CustomCameraController`, never
+    `_followOffset`** - the same rule `RearView`, `FollowHeightScale` and `SurroundFraming01` follow, for the same reason:
+    adaptive zoom and every settings re-apply write `_followOffset`, so the first of them to fire would silently undo the
+    ability. The Rhino has two (2026-10-26): `SurroundFraming01` (the surge: straight back and centred on the hull) and
+    `VesselDistanceScale` (the blade's Space length: the camera pulls back in proportion). Both reset in
+    `SetFollowTarget`, both are written only for the LOCAL HUMAN pilot (an AI, a remote copy or the lava lamp's
+    autopilot must never move this machine's camera), and the owner releases them on disable (`RhinoSwordCamera`). Keep
+    the hull where it sat on screen by scaling the LOOK POINT with the offset. FOV stays the player's (rule 21).
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

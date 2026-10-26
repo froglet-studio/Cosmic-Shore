@@ -4,14 +4,15 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Rhino energy sword's LOOK — a prefab-authored component on the blade root
+    /// The Rhino sword's LOOK — a prefab-authored component on the blade root
     /// (the ForceFieldSkimmer), driven by <see cref="ShieldSkimmerScaleDriver"/> (state)
     /// and tuned entirely through <see cref="ShieldSkimmerScaleConfigSO"/> plus the
     /// authored sibling assets. Four layers:
     ///
-    ///  1. HEAT RAMP — the blade sits at the config's RESTING colour (white-hot, never the
+    ///  1. RESTING COLOUR — the blade sits at the config's RESTING colour (white-hot, never the
     ///     pilot's domain colour: the sword friendly-fires, so a team-tinted blade would
-    ///     read as safe to allies) and brightens as stored energy fills. The blade uses the
+    ///     read as safe to allies). (Until 2026-10-26 it also brightened as stored energy
+    ///     filled; the Rhino has no energy any more.) The blade uses the
     ///     SHARED FresnelMaterial, so this never touches <c>renderer.material</c> — it
     ///     drives <c>_Color</c> through a MaterialPropertyBlock (RGB above 1 feeds gameplay
     ///     bloom; the AstroLeagueBall impact-flash precedent).
@@ -20,8 +21,7 @@ namespace CosmicShore.Gameplay
     ///     arcs; the IGNITION instant blends it fully to <c>EnergizedColor</c> — the shared
     ///     <c>SO_ColorSet.Danger</c> red — over <c>ColorTransitionSeconds</c> and detonates
     ///     a crackle burst along the whole blade through the authored
-    ///     <see cref="ForcefieldCrackleController"/> (the capsule-adapted overlay). Energy
-    ///     is brightness, state is hue; the two signals can never be confused.
+    ///     <see cref="ForcefieldCrackleController"/> (the capsule-adapted overlay).
     ///  3. IMPACT FEEDBACK — a decaying white-out flash per prism destroyed plus a
     ///     crackle spark at the exact blade point that made contact
     ///     (<see cref="SkimmerSwingKinematics.ClosestBladePoint"/>); a dim DENIED spark
@@ -59,6 +59,10 @@ namespace CosmicShore.Gameplay
                  "are all yours and nothing here overwrites them; this only re-seats each emitter " +
                  "every frame. Add or remove entries freely: the spread is derived from the count.")]
         [SerializeField] private TrailRenderer[] bladeTracers;
+
+        /// <summary>The blade body's renderer. The surge's sword ring copies its property block onto each copy,
+        /// so every sword in the ring wears the blade's live colour.</summary>
+        public MeshRenderer BodyRenderer => bodyRenderer;
 
         Skimmer _skimmer;
         SkimmerSwingKinematics _swing;
@@ -119,7 +123,7 @@ namespace CosmicShore.Gameplay
         // ── driver entry points ────────────────────────────────────────────────
 
         /// <summary>Per-frame look update, called by the driver after its state ticks.</summary>
-        public void Tick(float energy01, RhinoSwordEnergizePhase phase, float charge01, float dt)
+        public void Tick(RhinoSwordEnergizePhase phase, float charge01, float dt)
         {
             if (config == null) return;
 
@@ -136,15 +140,8 @@ namespace CosmicShore.Gameplay
             _energizedBlend = Mathf.MoveTowards(_energizedBlend, blendTarget, dt / config.ColorTransitionSeconds);
 
             float vis = config.VisibilityMultiplier;
-            Color restVisible = ScaleRgb(config.RestingBladeColor, vis);
-            Color fullVisible = ScaleRgb(config.FullEnergyColor, vis);
+            Color color = ScaleRgb(config.RestingBladeColor, vis);
             Color energizedVisible = ScaleRgb(config.EnergizedColor, vis);
-
-            // Heat ramp: stored energy reads as BRIGHTNESS (the resting and full-energy colours
-            // share a hue on purpose — see the config).
-            Color ramp = Color.Lerp(restVisible, fullVisible, energy01);
-            float brightness = Mathf.Lerp(1f, config.FullEnergyBrightness, energy01);
-            Color color = ScaleRgb(ramp, brightness);
 
             // …the energize blend rides above it and is the only thing that shifts HUE (to the
             // danger colour), and the impact flash rides above both.
@@ -215,9 +212,9 @@ namespace CosmicShore.Gameplay
                                   config.DeniedSparkIntensity, config.SparkWorldRadius * 0.7f);
         }
 
-        /// <summary>The elemental-crystal burst: full flash, a whole-blade crackle scaled by
-        /// the energy consumed, and the burst camera shake.</summary>
-        public void NotifyCrystalBurst(float energyConsumed01)
+        /// <summary>The omni-crystal surge's opening beat: full flash, a whole-blade crackle and the
+        /// burst camera shake. (The blade no longer bursts in size.)</summary>
+        public void NotifySurge()
         {
             if (config == null) return;
             Flash(config.PopFlashAmount);
@@ -225,7 +222,7 @@ namespace CosmicShore.Gameplay
             if (crackle)
             {
                 int sites = config.IgniteCrackleSites;
-                float intensity = Mathf.Lerp(config.SparkIntensity, config.IgniteCrackleIntensity, energyConsumed01);
+                float intensity = config.IgniteCrackleIntensity;
                 for (int i = 0; i < sites; i++)
                 {
                     float t = sites == 1 ? 0.5f : (float)i / (sites - 1);
@@ -234,8 +231,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            TryShakeCamera(config.BurstShakeMaxIntensity * Mathf.Clamp01(energyConsumed01),
-                           config.BurstShakeDuration);
+            TryShakeCamera(config.BurstShakeMaxIntensity, config.BurstShakeDuration);
         }
 
         /// <summary>
@@ -283,7 +279,7 @@ namespace CosmicShore.Gameplay
         void ApplyBodyColor(Color color)
         {
             if (!bodyRenderer || !_hasColorProp) return;
-            // Steady state (fixed energy, no flash) holds one colour — skip the MPB round-trip.
+            // Steady state (no flash, no blend moving) holds one colour — skip the MPB round-trip.
             if (_bodyColorApplied && ColorsClose(color, _appliedBodyColor)) return;
             _appliedBodyColor = color;
             _bodyColorApplied = true;

@@ -53,6 +53,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Live elemental scale in world units — the resting size an external scale driver should grow from.</summary>
         public float LiveElementalScale => Scale.EvaluateLive(VesselStatus);
 
+        /// <summary>The elemental scale at element level 0, world units - the yardstick an external scale driver
+        /// measures growth against (the Rhino's camera pulls back by the blade's length over this).</summary>
+        public float RestElementalScale => Scale.EvaluateAtNormalizedLevel(0f);
+
         /// <summary>
         /// The live reach as a 0..1 fraction of THIS skimmer's own authored range - 0 at the
         /// resting size, 1 at integer element level 10. A HUD readout of "how far does my skimmer
