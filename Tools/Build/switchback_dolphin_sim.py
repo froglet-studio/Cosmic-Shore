@@ -54,11 +54,34 @@ SPARROW_BOOST_BASE = {"boost_speed": 135.0, "boost_align": 12, "boost_release_al
                       "boost_min_hold": 0.6, "boost_min_rest": 0.4}
 SPARROW_BOOST_BREAKWATER = dict(SPARROW_BOOST_BASE, boost_align=45, boost_release_align=60, boost_stick=1.0,
                                 boost_release_stick=1.0, boost_engage=2.0, boost_release=1.25)
+# The Stoat in Warpline (2026-10-27): Stoat.prefab DefaultThrottleScaler 60, MinimumSpeed 0, Pitch/Yaw 48 deg/s,
+# RotationThrottleScaler 0; MinigameWarpline.unity: commit 160, approach lead 180, through 120; two laps of five rings.
+# The field pair's warp (StoatDipoleExecutor's path-watching autopilot) is modelled as a held boost to ~140 u/s, the
+# AI rivals' median in Yash's races: laid while the ring is further than 1.5 x autopilotLetGoNear at any bearing, let go
+# at autopilotLetGoNear. The pair's bend of the path is not modelled, so turns are the hull's alone (pessimistic).
+STOAT_WARPLINE = {"cruise": 60.0, "rts": 0.0, "base": 48.0, "drift": False,
+                  "commit": 160.0, "lead": 180.0, "through": 120.0}
+
+
+def stoat_warp(let_go_near, speed=140.0, min_hold=0.8, max_hold=15.0, relay=0.25):
+    """StoatDipoleConfig's path-watching hold as a boost (race() models it): lay at 1.5 x let_go_near, let go at it, or
+    after max_hold seconds (autopilotMaxHoldSeconds); the next pair relay seconds later (autopilotRelaySeconds)."""
+    return {"boost_speed": speed, "boost_align": 180, "boost_release_align": 180, "boost_stick": 1.0,
+            "boost_release_stick": 1.0, "boost_engage": 0.0, "boost_release": 0.0,
+            "boost_engage_dist": 1.5 * let_go_near, "boost_release_dist": let_go_near,
+            "boost_min_hold": min_hold, "boost_max_hold": max_hold, "boost_min_rest": relay}
+
+
 # The Butterfly in Waystation (2026-10-26): Butterfly.prefab DefaultMinimumSpeed 12 + DefaultThrottleScaler 55 at the AI's
 # full throttle (WaystationController.AIThrottleFloor 1) = 67 u/s, Pitch/Yaw 45 deg/s, RotationThrottleScaler 0, no drift;
 # MinigameWaystation.unity: commit 260, approach lead 300, through 220. Its fold is not modelled: cruise only is the floor.
 BUTTERFLY_WAYSTATION = {"cruise": 67.0, "rts": 0.0, "base": 45.0, "drift": False,
                         "commit": 260.0, "lead": 300.0, "through": 220.0}
+# The Stoat in Warpline with NO warp (2026-10-26): Stoat.prefab Pitch/Yaw 48 deg/s, RotationThrottleScaler 0; 140 u/s, the median
+# speed of the AI Stoat rivals in Yash's I3 races (its pairs warp it; the warp and the poles' pull are not modelled);
+# MinigameWarpline.unity: commit 160, approach lead 180, through 120, two laps of five rings.
+STOAT_WARPLINE_NO_WARP = {"cruise": 140.0, "rts": 0.0, "base": 48.0, "drift": False,
+                  "commit": 160.0, "lead": 180.0, "through": 120.0}
 
 
 def course_from_flight(path):
@@ -180,12 +203,14 @@ def race(course, regatta_fix=False, drift=True, lag=True, T=240.0, dt=1 / 60, tr
             to_ring = sub(ring, pos); off = ang(travel, to_ring); runway = norm(to_ring) / max(v, 1.0)
             since = t - held_at
             if boosting:
-                if extending or (since >= cfg.get("boost_min_hold", 0.6) and
+                if extending or since > cfg.get("boost_max_hold", 1e9) or (since >= cfg.get("boost_min_hold", 0.6) and
                                  (off > cfg.get("boost_release_align", 25) or stick > cfg.get("boost_release_stick", 0.6)
-                                  or runway < cfg.get("boost_release", 0.5))):
+                                  or runway < cfg.get("boost_release", 0.5)
+                                  or norm(to_ring) < cfg.get("boost_release_dist", 0.0))):
                     boosting = False; held_at = t
             elif since >= cfg.get("boost_min_rest", 0.4) and not extending and off <= cfg.get("boost_align", 12) \
-                    and stick <= cfg.get("boost_stick", 0.35) and runway >= cfg.get("boost_engage", 1.5):
+                    and stick <= cfg.get("boost_stick", 0.35) and runway >= cfg.get("boost_engage", 1.5) \
+                    and norm(to_ring) > cfg.get("boost_engage_dist", 0.0):
                 boosting = True; held_at = t
             if boosting: boost_share += dt
             tgt = cfg["boost_speed"] if boosting else CRUISE_
@@ -243,15 +268,32 @@ def self_test():
     if not (boost_["rings"] == 5 and cruise_["time"] and boost_["time"] and boost_["time"] < 0.6 * cruise_["time"]
             and boost_["boost"] > 0.5):
         bad.append(f"Sparrow boost on a straight: cruise {cruise_}, boosting {boost_}")
+    # the Stoat warping into narrow rings round a corner: let go late and the 167 u circle at warp speed overshoots
+    loop = {"gates": [{"p": [0, 0, 900.0], "a": [0, 0, 1], "r": 30.0}, {"p": [700.0, 0, 1300.0], "a": [1, 0, 0], "r": 30.0},
+                      {"p": [1400.0, 0, 700.0], "a": [0, 0, -1], "r": 30.0}], "start": [0, 0, 0], "heading": [0, 0, 1]}
+    late = race(loop, True, cfg=dict(STOAT_WARPLINE, **stoat_warp(60)), T=200)
+    early = race(loop, True, cfg=dict(STOAT_WARPLINE, **stoat_warp(250)), T=200)
+    if not (early["rings"] == 3 and early["misses"] <= late["misses"]):
+        bad.append(f"Stoat warp: let go at 60 u {late}, at 250 u {early}")
     print("switchback_dolphin_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
+
+
+def laps_of(course, path):
+    """A lapped circuit (Warpline): the recorded ring set flown again until the race's ring target."""
+    target = int(json.load(open(path, encoding="utf-8")).get("raceTarget") or 0)
+    gates = course["gates"]
+    if gates and target > len(gates):
+        course = dict(course, gates=[gates[k % len(gates)] for k in range(target)])
+    return course
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir"); ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--mode", default="Switchback",
-                    help="Switchback (the Dolphin), Waystation (the Butterfly, no fold) or Breakwater (the Sparrow's boost)")
+                    help="Switchback (the Dolphin), Waystation (the Butterfly, no fold), Breakwater (the Sparrow's boost) "
+                         "or Warpline (the Stoat's warp)")
     a = ap.parse_args()
     if a.self_test:
         sys.exit(self_test())
@@ -262,6 +304,22 @@ def main():
             print(f"{c['file']} (person {c['person']:.0f} s)")
             print(f"   the shipped steering: {race(c, False, cfg=BUTTERFLY_WAYSTATION, T=300)}")
             print(f"   Regatta's steering:   {race(c, True, cfg=BUTTERFLY_WAYSTATION, T=300)}")
+        return
+    if a.mode == "Warpline":
+        print("(seconds for both laps or None, rings threaded, mouths missed, break-offs; the person's time)")
+        for p in sorted(glob.glob(os.path.join(a.dir, "flight_Warpline_*.json"))):
+            c = laps_of(course_from_flight(p), p)
+            print(f"I{c['intensity']} {c['file']} (person {c['person']:.0f} s)")
+            r = race(c, True, cfg=STOAT_WARPLINE_NO_WARP, T=400)
+            print(f"   {'Regatta steering, 140 u/s, no warp':36}: {r['time']} s, {r['rings']}, missed {r['misses']}, "
+                  f"breaks {r['breaks']}")
+            for name, fix, near in (("shipped steering, warp let go 60 u", False, 60),
+                                    ("Regatta steering, warp let go 60 u", True, 60),
+                                    ("Regatta steering, warp let go 250 u", True, 250)):
+                # the shipped hold (15 s at most), then the Warpline variant's learned 1.0-2.36 s
+                hold = {"min_hold": 1.0, "max_hold": 2.357} if near == 250 else {}
+                r = race(c, fix, cfg=dict(STOAT_WARPLINE, **stoat_warp(near, **hold)), T=400)
+                print(f"   {name:36}: {r['time']} s, {r['rings']}, missed {r['misses']}, breaks {r['breaks']}")
         return
     if a.mode == "Breakwater":
         print("(seconds for one lap of stations or None, stations threaded, through the danger weave, share boosting)")

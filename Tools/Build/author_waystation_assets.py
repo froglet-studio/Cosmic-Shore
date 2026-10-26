@@ -220,7 +220,9 @@ for probe, why in (
     if not course.re.search(probe, scene, course.re.M):
         errors.append(f"the donor scene no longer provides: {why}")
 
-for stale in (EXISTING["SwitchbackController"], EXISTING["SwitchbackScoringRule"]):
+# Switchback's feature-layer prefab: a donor-only asset, so a leak of its field fails here by name.
+SWITCHBACK_FEATURES_PREFAB = "29ec5eb8fa7cb3fd1d816c63b5b39687"
+for stale in (EXISTING["SwitchbackController"], EXISTING["SwitchbackScoringRule"], SWITCHBACK_FEATURES_PREFAB):
     if stale in scene:
         errors.append(f"donor guid {stale} survived the clone")
 

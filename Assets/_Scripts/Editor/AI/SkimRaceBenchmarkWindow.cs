@@ -27,7 +27,7 @@ namespace CosmicShore.Editor.AI
         int _players = 2;
         float _limit = 0f;   // 0 = the intensity's default (SkimRaceRaceRecorder.DefaultLimitSeconds)
         float _timeout = 150f;
-        AIDifficulty _difficulty = AIDifficulty.Hard;
+        AIDifficulty _difficulty = AIDifficulty.Legendary;
 
         [MenuItem("FrogletTools/AI/Skim Race AI Benchmark", false, 101)]
         [FrogletTool(FrogletToolCategory.Ai, Importance = 3,
@@ -59,7 +59,7 @@ namespace CosmicShore.Editor.AI
 
         /// <summary>Entry point also used from the CLI (<c>unity command eval</c>).</summary>
         public static void StartFromEditor(int races, int intensity, int players, float limit, float timeout,
-            bool promptToSave = true, int qualityLevel = -1, AIDifficulty difficulty = AIDifficulty.Hard)
+            bool promptToSave = true, int qualityLevel = -1, AIDifficulty difficulty = AIDifficulty.Legendary)
         {
             var settings = new SkimRaceBenchmarkRunner.Settings
             {

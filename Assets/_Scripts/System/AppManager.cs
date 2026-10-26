@@ -107,6 +107,10 @@ namespace CosmicShore.Core
         // Eagerly resolved so the tournament brain is alive from bootstrap (subscribed to
         // OnMiniGameEnd + sceneLoaded) and survives every Single scene load.
         [Inject] MaelstromController tournamentController;
+        // Eagerly resolved so match replays record from the first match: the service works from
+        // GameDataSO's turn and end-screen events, and nothing else asks for it until the replay
+        // browser does (Docs/REPLAYS.md).
+        [Inject] ReplayService replayService;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -583,6 +587,19 @@ namespace CosmicShore.Core
                     c.Resolve<ApplicationStateMachine>(),
                     sceneTransitionManager,
                     c.Resolve<OfflineModeService>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Match replays (Docs/REPLAYS.md), built on Will Bogen's Theater: records the modes in
+            // ReplayConfigSO from Go to the end screen and saves each match beside a summary. It
+            // owns its Cloud Save index repository - nothing reads that index at sign-in, and the
+            // repository refuses to upload over a record it failed to load - so UGSDataService is
+            // not involved.
+            builder.RegisterFactory(
+                c => new ReplayService(
+                    c.Resolve<GameDataSO>(),
+                    new ReplayIndexRepository(new UGSCloudSaveProvider())),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

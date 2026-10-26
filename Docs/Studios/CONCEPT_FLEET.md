@@ -15,6 +15,49 @@ pages, the hub's cards and the catalog entries (`--check` is the drift gate). No
 a lab-only proposal, shown with its recipe value in each page's Vessel Config > Mechanic. The only shipped numbers are the
 game's own Skim Race courses, the course every concept is raced on.
 
+## 0. Building vessels together, asynchronously (the rule for every vessel and supervessel session)
+
+Several sessions build vessels at once, on different branches, for different people. They stay out of each other's
+way by reading and writing the SAME records, in this order, at the start and the end of every vessel session:
+
+1. **The id ledger below** (and `VesselClassType.cs` on `bleeding-edge` AND every in-flight branch: `git fetch origin`,
+   then `git grep -n "= <id>," origin/<branch> -- Assets/_Scripts/Data/Enums/VesselClassType.cs`). Claim an id by adding
+   the enum row AND the ledger row in the same commit, on your branch, before anything else is built on it. Never reuse
+   an id another branch claimed, merged or not (enum 14 was taken twice on 2026-10-13: 110 conflicts).
+2. **This file**: one section per vessel or crew (the design, what the lab measured, Found, Decisions needed, the Unity
+   clone). Add yours; update the status line of a vessel you touched. The report for people is built from it:
+   `python3 Tools/Build/team_report.py area concept-fleet --write` (`Docs/Reports/CONCEPT_FLEET.md`).
+3. **The Vessel Studio artifact** (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa): one page per vessel, published
+   into the ONE artifact from the repo copy (`/vessel-studio` §4); its Decisions tab is where a person records Keep /
+   Drop, and `/artifact-to-unity` reads them. Never a second artifact.
+4. **Unity**: a `Tools/Build/author_<vessel>_assets.py` generator that owns the prefab and every registration
+   (`--check`, `--self-test`), a design doc beside the code (`R_VesselActions/<VESSEL>.md` or `Crew/<CREW>.md`), the hand
+   test in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, `studio_to_unity/clones.json`. Say in the commit who else works there
+   (`Affects:`; `python3 Tools/Build/who_works_where.py query <paths>`), and build on their pattern rather than a new one
+   (the Flea and the Omega crews are Stoat clones; the crews use the Orca's seat plumbing).
+5. **Hand-offs**: a test, a decision or content for someone else goes on Froglet Tasks through `/team-tasks suggest`
+   (it waits for the person's approval; never filed on its own, never assigned). One ticket per branch.
+
+### The vessel id ledger (VesselClassType; re-check the branches before claiming)
+
+| Id | Vessel | Where | Since |
+|---|---|---|---|
+| -1, 0 | Any, Random | meta | |
+| 1-17 | Manta, Dolphin, Rhino, Urchin, Grizzly, Squirrel, Serpent, Termite, Falcon, Shrike, Sparrow, Scarab (12), Butterfly, Thresher, Stoat, Brittle Star, Angler | `bleeding-edge` | `Docs/claude/ABOUT_PROJECT.md` |
+| 18 | Goby (Goby and Pistol) | `bleeding-edge` | 2026-10-15 |
+| 19 | Wrasse (Wrasse and Grouper) | `bleeding-edge` | 2026-10-17 |
+| 20 | Orca (4 seats) | `bleeding-edge` | 2026-10-20 |
+| 21 | Starling | `bleeding-edge` | 2026-10-21 |
+| 22 | Jacks | `bleeding-edge` | 2026-10-21 |
+| 23 | Honeyguide (Honeyguide and Ratel) | `bleeding-edge` | 2026-10-21 |
+| 24 | Flea | `claude/flea-vessel` (Garrett's branch, unmerged) | 2026-10-24 |
+| 25 | Warden (Omega crew: Stoat, Thresher, Butterfly) | `Ys-bleeding-edge` | 2026-10-26 |
+| 26 | Bulwark (Omega crew: Rhino, Grizzly, Scarab) | `Ys-bleeding-edge` | 2026-10-26 |
+| 27 | Tempest (Omega crew: Squirrel, Sparrow, Manta) | `Ys-bleeding-edge` | 2026-10-26 |
+| **28** | **next free** (the Tether / Gibbon, the Dragonfly, the Marlin and the Albatross have none yet) | | |
+
+An id a branch claims and then abandons is released only when that branch is deleted; say so here.
+
 ## 1. How to playtest (the owner's round)
 
 1. Open the artifact (phone or PC). Each new vessel has a card in the hub under **New vessels - the concept fleet**.
@@ -369,3 +412,103 @@ restitution (L-STU-104). And a thrustless AI strands itself in several distinct 
 **Decisions needed (Yash, by flying it).** The feel knobs are all in Play Style Config: Springiness, Bounce damping, Latch
 slack, Pull, Landing bounce, Perch, Prefer far, Aim cone, Web speed, Space drag. And: should a web pass through what it hits
 (a prism between you and the anchor) or latch the first thing on its line? Today it latches what the crosshair picked.
+
+## 10. Round 3: the Omega crews, combiner crew vessels (Yash, 2026-10-26)
+
+**The ask** (Yash, 2026-10-26, after the Flea branch): *"now I wanna make a crew vessel, that stoat will be a part of. ...
+crew [vessels] contained around 2-3 pilots or we can swap between each seats and control the vessel in different way to
+make the actual vessel work. ... like Power Rangers SPD ... each vessel will have their own megaforms and then finally
+they will have their omegaforms. They can combine. ... Prototype me some artifacts. By combining all these now we have 21
+vessels inside game and here in my prototype somehow combine and make three crew vessels or the bigger versions."*
+
+**What was built:** one page in the Vessel Studio artifact, **Omega Crews** (`Docs/Studios/VesselStudio/omega.html`,
+engine `omega-studio.js`, hub card, catalog row), with the three crews as data so they can be compared by flying:
+
+| Crew | Members (Helm, Arms, Core) | Mega moves (RT, lab approximations of the shipped kit) | Omega weapon (Arms) | Core: shield / finisher |
+|---|---|---|---|---|
+| **Warden**, the field crew | **Stoat**, Thresher, Butterfly | dipole sling (boost arc), wrecking ball (sweep), fold gate (gate pair) | Ripple whip: a 60 u sweep, a wall in two hits | Fold ward / **Annihilation** (180 u cone) |
+| **Bulwark**, the heavy crew | Rhino, Grizzly, Scarab | plough (shove + ramp boost), charged cannon, cavitation dash | Siege cannon: a full charge breaks a wall | Switch wall / **Breaker** |
+| **Tempest**, the fast crew | Squirrel, Sparrow, Manta | skim boost, pulsefire, boost tunnel | Pulsefire battery: a wall under fire 2.5 s | Afterburner veil (tunnel rings behind) / **Kabloom** |
+
+**The rules the page tests (every number a proposal, Vessel Config > Crew numbers):**
+- **Mega forms.** The three members fly as themselves; you fly one, the AI the other two (the Orca's rule). Each has ONE
+  move on RT. A hull contact costs as the platform's does; the moves smash neutral mass.
+- **Combine.** Hold LT with every member inside the gather range (140 u) and the meter at or above 0.3: the two others
+  dock onto the caller in 1.6 s and the crew is the **omega form**, one body, the members' average flight x crew speed
+  (Warden 1.15, Bulwark 1.1, Tempest 1.3) and x crew turn (0.6 / 0.5 / 0.75). It ploughs mass it touches; a wall bounces it.
+- **Three seats.** Helm flies (hold LT 0.5 s to split). Arms aims a turret with the right stick and fires on RT. Core holds
+  the shield on LT (-0.06/s more meter) and fires the **finisher** on RT once the meter is at 0.9: a cone ahead,
+  everything in it including walls, costing 0.7 and splitting the crew (the Megazord's finishing move ends the fight).
+- **The omega meter.** +0.22 per crystal, +0.004 per skim, +0.02/s while apart; -0.035/s combined. Empty = forced split.
+- **One swap.** D-pad left / right, the arrow keys, a two-finger swipe: the arena's gesture (`Docs/CREW_STATIONS.md`) steps
+  you round the three seats; the AI takes the seat you leave, in both forms.
+- **The Omega Run (the mini-game, B6 of the vision).** The Skim Race course's crystals, three lit at a time from the
+  first untaken, so flying apart collects faster; **every third crystal is locked inside a shielded wall** across the
+  course that only the omega weapon (or the finisher) breaks, and the window does not pass a locked crystal. Apart for
+  the crystals, together for the walls: the meter couples the two.
+- **AI, input-only (D4).** Each member flies for the lit crystal nobody else claimed; when none is open it flies to the
+  wall's approach point. The crew calls a gather when a locked crystal is near (320 u) or is all that is lit, and the
+  meter allows; the caller holds back at half cruise while the others close. Omega Helm flies for the wall's approach
+  point (90 u out) then faces it; Arms turns the turret onto the nearest wall in range and fires; Core shields when mass
+  is about to hit and fires the finisher when a wall is in the cone. Easy / Medium = Hard plus `SkimRaceDifficulty.asset`'s
+  late notice and misjudged crystal, plus a lab-only late press.
+- **Elements, proposals:** Charge = weapon power (x1 to x1.6), Mass = ward cost (x1 to x0.4), Space = finisher reach
+  (x1 to x1.5), Time = combine speed (x1 to x0.5). L5 names: Overload, Bulwark, Horizon, Instant. Nothing signed off.
+
+**Scorecard columns (D5):** per intensity, the crew on AI at Easy / Medium / Hard, **Never combine** (cannot open a locked
+crystal: DNF is the expected answer) and **Always combined** (one body collects one crystal at a time). If the crew
+is not faster than both controls, combining and splitting are decoration. Measured below.
+
+### 10.1 Measured (round 1, 2026-10-26; headless, three seeds, median seconds; `omega_score.cjs` in the session's scratch, the page's own `runHeadless`)
+
+| Crew | Course | Easy | Medium | Hard | Never combine | Always combined | Hard combined % | Combines |
+|---|---|---|---|---|---|---|---|---|
+| Warden | I1 | 291 | 270 | 271 | DNF (0 walls) | **255** | 22% | 7 |
+| Warden | I2 | 371 | 363 | 361 | DNF | **339** | 30% | 9 |
+| Bulwark | I1 | 268 | 250 | 254 | DNF | **229** | 15% | 7 |
+| Bulwark | I2 | 319 | 350 | **328** | DNF | 353 | 21% | 9 |
+| Tempest | I1 | 230 | 220 | **212** | DNF | 262 | 29% | 5-6 |
+| Tempest | I2 | 286 | 306 | **297** | DNF | 385 | 38% | 6-8 |
+
+Every crew finishes every course with every wall broken (7 on I1, 9 on I2); **Never combine never opens a wall**: the
+control that proves the walls need the omega. Economy at the lab values: +0.22 per crystal apart (half combined),
++0.02/s apart, -0.05/s combined, finisher 0.7.
+
+**Found (the lab's honest answers):**
+- **The Tempest is the crew the design wants**: its crew beats both controls on both courses (212 vs 262 always; 297
+  vs 385). Fast members collect apart, the omega's battery opens walls, and it must split to refill.
+- **The Warden's omega has no reason to split**: always combined beats its crew on both courses (255 vs 271; 339 vs
+  361). Its whip opens a wall in one pass and the omega ploughs mass, so the only cost of staying combined is the meter,
+  which crystals half-refill. **Decision needed (designer):** either the omega pays more for staying combined (drain,
+  Combined crystal pay: both sliders in Vessel Config), or the Warden's members get a reason to be apart (the Butterfly's
+  gate pair and the Thresher's ball are worth little on this course).
+- **The Bulwark splits the difference**: always combined wins I1, the crew wins I2 (the longer, tilted course; the slow
+  omega loses more time lapping back for a crystal it skipped).
+- **The difficulty ladder barely separates a crew** (Medium is fastest in three of six rows, all within a few percent):
+  late notice and a misjudged crystal are one member's mistakes, and three members cover for each other. A crew's levels
+  need a crew mistake (a late or early combine call, a wasted finisher) before Hard can be shown fastest (D24).
+- **Fixed on the way** (the lab would have measured nothing without them): a gather that chases a moving leader at its own
+  speed never docks (members circled "gathering" for 500 s; the dock is kinematic now, 1.6 s); an objective window that
+  skips past a locked crystal lets the crew collect every open crystal first and leaves eight walls for one long omega
+  run (the window is anchored at the first untaken crystal: a wall gates the course); a cannon AI that waited for a turret
+  angle inside a cone it could not reach held its shot forever; a locked finale with an empty meter was a dead end (the
+  last crystal is never locked and the meter trickles back apart).
+
+**Next rounds (the owner flies it first):** Yash flies the three crews (Game Config > Crew) and records Keep / Drop per
+crew and the feel of the swap, the dock and the finisher on the Decisions tab. Then: a crew mistake for the levels, a
+body for each omega (today the three member bodies on struts), the Warden's reason to split, a second mini-game
+(a wall-breaking race against a rival crew), and the Unity port by `/artifact-to-unity` with the mini-game (`/arcadegame`)
+and the four abilities, per CLAUDE.md's artifact-to-Unity pipeline.
+
+### 10.2 The Unity clone (2026-10-26, `Ys-bleeding-edge`; Yash: "make this prototype in Ys-bleeding-edge, I wanna test there")
+
+Three hull classes, `Warden = 25`, `Bulwark = 26`, `Tempest = 27`, each a Stoat clone by `Tools/Build/author_omega_assets.py`
+carrying `OmegaCrew` (the forms, the seats, the meter, the members' moves, the crew weapon, the finisher, input-only AI
+seats), `OmegaVesselTransformer` (the page's cruise / turn / roll per form), `OmegaCrewView` (placeholder bodies and
+struts) and `OmegaCrystalEffectSO` (crystals fill the meter). `OmegaMath` is the page's part B line for line, held by
+`OmegaMathTests` to goldens from the page's own functions (`omegaFlight`, `slotOf`, the dock ease, the meter, `mults`,
+the `omegaCore` cone). In the Toybox's Vessel Changer, as every port must be (CLAUDE.md "Bring it to Unity"). What the
+clone folds (nine member moves into boost / smash / guns / cannon; a cannon that bursts at range instead of flying) and
+what is round 2 (the Omega Run mode via `/arcadegame`, member and omega bodies via `/vessel-model`, skims into the
+meter, rider seats, an omega camera) is written in `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md` §3 and §6;
+the hand test is `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not editor-verified: the Unity CLI was not available.

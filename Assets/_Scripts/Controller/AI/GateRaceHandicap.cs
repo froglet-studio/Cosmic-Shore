@@ -7,11 +7,11 @@ namespace CosmicShore.Gameplay
     /// (<see cref="SkimRaceHandicap"/>, numbers from <see cref="SkimRaceDifficultySO"/>) applied to the next
     /// RING instead of the next crystal. Proven first in the Stoat Flight Studio
     /// (<c>Docs/Studios/StoatFlightStudio.html</c>, <c>aiBelief</c>), where it made Medium 27-38% and Easy
-    /// 43-52% slower than Hard on every course (<c>Docs/Studios/VesselStudio/README.md</c>).
+    /// 43-52% slower than the unhandicapped pilot (then called Hard, now Legendary) on every course (<c>Docs/Studios/VesselStudio/README.md</c>).
     ///
     /// <para><b>It changes what the pilot BELIEVES, never what it does with a belief.</b> The race's own aim
     /// (<c>GateRaceController.ArmRacers</c>: line up behind the ring, then fly through it) runs unchanged on the
-    /// point this class hands it, so Hard (no handicap) is the shipped pilot byte for byte.</para>
+    /// point this class hands it, so Legendary (no handicap) is the shipped pilot byte for byte.</para>
     /// <list type="bullet">
     /// <item><b>Late notice.</b> After threading a ring the pilot notices the next one
     /// <see cref="SkimRaceHandicapLevel.ReactionSeconds"/> late (x 0.5-1.5 per ring). Until then it has no

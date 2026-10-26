@@ -28,6 +28,13 @@ namespace CosmicShore.Gameplay
     /// (<see cref="StoatSlingExecutor.WarpsFlight"/>, the studio's catch warp, 2026-10-14), to
     /// <see cref="StoatSlingConfigSO.CatchWarpShare"/> of the field's boost, so the two modes fly at one pace.</para>
     ///
+    /// <para><b>Hybrid mode draws both</b> (2026-10-26, <c>STOAT_DIPOLE.md</c> §1f): the laid pair's rings AND a short path,
+    /// <see cref="StoatModeActionSO.HybridPathLengthShare"/> of Mass mode's length, flown on the pilot's sticks with no
+    /// field — while the attractor holds the hull it is the line a release right now would send it down. The line warms
+    /// toward lime as the quarter-turn nears and is lime in the window; the catch warps the clock as in Time mode, and a
+    /// timed release CARRIES the boost on (the line stays lime) for <see cref="StoatModeActionSO.HybridCarrySeconds"/> × its
+    /// timing (<see cref="StoatSlingMath.CarryHolds"/>) before it fades.</para>
+    ///
     /// <para><b>Time 5 — Foresight</b> (the replicated unlock bit): the nearest rivals' paths are drawn too, in their
     /// domain colours, each flown forward on the turn and speed it is holding right now (measured from its pose, no
     /// input needed). Presentation only, local pilot only.</para>
@@ -59,6 +66,8 @@ namespace CosmicShore.Gameplay
         float _boost = 1f;
         bool _wasWarped;
         bool _timeMode;
+        bool _hybrid;
+        float _lineWarmth;
         StoatModeExecutor _mode;
         readonly Vector3[] _ring = new Vector3[RingSegments];
         const int RingSegments = 96;
@@ -90,7 +99,8 @@ namespace CosmicShore.Gameplay
         public float BoostMultiplier => _boost;
         /// <summary>The boost the warp would give at the pilot's Time level right now (the HUD's Time card's full mark).</summary>
         public float BoostTarget => config ? Mathf.Max(1f, config.Boost.EvaluateLive(_status)) : 1f;
-        /// <summary>True while the poles warp the predicted path (the line is lime and the boost is on).</summary>
+        /// <summary>True while the poles warp the predicted path (the line is lime and the boost is on). Hybrid mode: while
+        /// a release now would pay the whole kick, or a timed release's boost is still carrying.</summary>
         public bool IsWarped => _path.Warped;
         /// <summary>The last prediction's verdict and length.</summary>
         public StoatDipoleMath.PathResult LastPath => _path;
@@ -142,9 +152,12 @@ namespace CosmicShore.Gameplay
             }
 
             bool flying = transformer.IsActive && !_status.IsStationary && !_status.IsTranslationRestricted;
-            // Time mode draws the catch's rings, never a path (and so never warps one).
+            // Time mode draws the catch's rings, never a path (and so never warps one); Hybrid draws the rings AND a short path.
             _timeMode = _mode && _mode.IsTimeMode;
-            if (flying && !_timeMode) using (s_predictMarker.Auto()) Predict(transformer, hull);
+            _hybrid = _mode && _mode.IsHybridMode;
+            if (flying && !_timeMode)
+                using (s_predictMarker.Auto())
+                    Predict(transformer, hull, _hybrid && _mode.Config ? _mode.Config.HybridPathLengthShare : 1f);
             else _path = default;
 
             float dt = Time.deltaTime;
@@ -152,10 +165,20 @@ namespace CosmicShore.Gameplay
             if (flying && IsOverclocked) _path.Warped = true;   // the omni crystal: the line is lime and the boost on
             // Time mode: the catch warps the clock while its pair is held (the field's rule, "held" in place of "lime").
             bool warped = _path.Warped;
-            if (_timeMode && _sling && _sling.Config && !IsOverclocked)
+            if ((_timeMode || _hybrid) && _sling && _sling.Config && !IsOverclocked)
             {
                 warped = _sling.WarpsFlight;
                 target = _sling.Config.CatchWarpTarget(target);
+            }
+            // Hybrid: a timed release carries the boost on, and the line's lime is the timing cue (not "the pair is held").
+            _lineWarmth = _path.Warped ? 1f : 0f;
+            if (_hybrid && _sling && !IsOverclocked)
+            {
+                bool carrying = _mode.Config && _sling.LastSlingWasHybrid &&
+                                StoatSlingMath.CarryHolds(_sling.SecondsSinceSling, _sling.LastTiming, _mode.Config.HybridCarrySeconds);
+                warped |= carrying;
+                _lineWarmth = StoatSlingMath.HybridLineWarmth(_sling.Timing01, carrying);
+                _path.Warped = flying && _lineWarmth >= 1f;
             }
             _boost = flying ? StoatDipoleMath.StepBoost(_boost, warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
             transformer.FlightTimeScale = _boost;
@@ -171,7 +194,7 @@ namespace CosmicShore.Gameplay
             else ClearForesight();
         }
 
-        void Predict(VesselTransformer transformer, Transform hull)
+        void Predict(VesselTransformer transformer, Transform hull, float lengthShare)
         {
             StoatDipoleMath.Field field = default;
             bool hasField = _dipole && _dipole.TryGetField(out field);
@@ -195,8 +218,10 @@ namespace CosmicShore.Gameplay
                 // The target in the same units as `engine` (the published speed carries the speed multiplier and warp field).
                 TargetSpeed = target * transformer.SpeedMultiplier * WarpFieldRuntime.ScaleAt(hull.position),
             };
+            var path = config.Path();
+            path.Length *= Mathf.Clamp01(lengthShare);
             _path = StoatDipoleMath.PredictPath(start, engine, SteeringRate(transformer), field, hasField,
-                config.Flight(transformer.CruiseSpeed), config.Path(), _points, _jumps, response);
+                config.Flight(transformer.CruiseSpeed), path, _points, _jumps, response);
         }
 
         /// <summary>
@@ -222,10 +247,9 @@ namespace CosmicShore.Gameplay
                 if (_dots) _dots.Hide();
                 _worldDots ??= new StoatPathfinderWorldDots();
                 if (!_worldDots.Begin(cam)) return;
-                if (_timeMode) AddRings(hull: _status.Transform);
-                else
-                    _worldDots.Add(_points, _path.Count, _jumps, _path.JumpCount,
-                        _path.Warped ? config.WarpedColor : config.OpenColor,
+                if (_timeMode || _hybrid) AddRings(hull: _status.Transform);
+                if (!_timeMode)
+                    _worldDots.Add(_points, _path.Count, _jumps, _path.JumpCount, PathColor(),
                         config.WorldDotSize, config.WorldDotSpacing, config.WorldDotMinPixels);
                 _worldDots.End();
                 return;
@@ -234,13 +258,16 @@ namespace CosmicShore.Gameplay
             if (!_dots) return;
             // The flat overlay (dotsInWorld off) draws the path only; Time mode's rings are world dots.
             if (_timeMode) { _dots.Hide(); return; }
-            var pathColor = _path.Warped ? config.WarpedColor : config.OpenColor;
+            var pathColor = PathColor();
             _dots.Show(cam, _points, _path.Count, _jumps, _path.JumpCount, _path.Warped ? _path.LoopIndex : -1, pathColor,
                 config.DotPixels, config.DotGap, _path.Warped, config.DotDepthMinScale, config.DotDepthFade);
         }
 
+        /// <summary>The path's colour: lime while warped; in Hybrid mode eased from open toward lime by the orbit's timing.</summary>
+        Color PathColor() => Color.Lerp(config.OpenColor, config.WarpedColor, _hybrid ? _lineWarmth : _path.Warped ? 1f : 0f);
+
         /// <summary>
-        /// Time mode: the laid pair's DETECTION ring (faint) and ORBIT ring round its attractor, in the plane of the hull's
+        /// Time and Hybrid mode: the laid pair's DETECTION ring (faint) and ORBIT ring round its attractor, in the plane of the hull's
         /// pass. The orbit ring brightens once it has caught the hull, eases toward lime as the quarter-turn nears, and is
         /// lime while a release would pay the whole kick.
         /// </summary>
@@ -404,6 +431,7 @@ namespace CosmicShore.Gameplay
             ReleaseClock();
             _path = default;
             _wasWarped = false;
+            _lineWarmth = 0f;
             HideDots();
             ClearForesight();
         }
