@@ -452,3 +452,10 @@
 2026-10-26T04:46:34.760Z E-b44884c449: fix cb51edde0 is not in this checkout yet — waiting for a pull
 2026-10-26T04:46:34.836Z E-ed5bf7a724: fix cb51edde0 is not in this checkout yet — waiting for a pull
 2026-10-26T04:48:53.822Z PlayMode session ended (133s play run, exiting play mode): 7 fix(es) waiting; counted: none; fired: E-8b8883bb82 E-ed5bf7a724 E-b44884c449 E-c8e2f49696 E-cdf0c783c1 E-7cbbaadd58
+2026-10-26T04:59:27.606Z PlayMode session ended (107s play run, exiting play mode): 7 fix(es) waiting; counted: none; fired: E-8b8883bb82 E-ed5bf7a724 E-b44884c449 E-c8e2f49696
+2026-10-26T16:49:52.159Z EditMode session ended (724min editor span, script reload): 7 fix(es) waiting; counted: E-0de9ec6c70 2/2 E-41b7610878 2/2 E-5713660fbd 2/2 E-72dc400f89 2/2 E-76d7341dae 2/2 E-c523697cae 2/2 E-cb11787d50 2/2; fired: E-33f6725d3d E-8b8883bb82 E-ed5bf7a724 E-b44884c449 E-c8e2f49696 E-cdf0c783c1 E-7cbbaadd58 E-01b3e5fd59
+2026-10-26T16:50:28.799Z editor load: play=False capture=True minPlay=15s issues=100
+2026-10-26T16:50:49.166Z E-7cbbaadd58: fix 7d79733ad is not in this checkout yet — waiting for a pull
+2026-10-26T16:50:49.212Z E-b44884c449: fix cb51edde0 is not in this checkout yet — waiting for a pull
+2026-10-26T16:50:49.254Z E-ed5bf7a724: fix cb51edde0 is not in this checkout yet — waiting for a pull
+2026-10-26T17:02:27.397Z PlayMode session ended (670s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-8b8883bb82 E-ed5bf7a724 E-b44884c449 E-c8e2f49696 E-cdf0c783c1
