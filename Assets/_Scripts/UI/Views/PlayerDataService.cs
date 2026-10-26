@@ -99,6 +99,7 @@ namespace CosmicShore.UI
             MergeCloudProfile();
             StampSessionLifecycle();
             ApplyPendingDebugCrystals();
+            if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.StateAsync());
 
             if (_ugsDataService.ProfileRepo != null)
             {
@@ -606,6 +607,7 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.Economy.CrystalBalance);
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+            if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.EarnAsync(source ?? DebugSource, amount));
             return CurrentProfile.Economy.CrystalBalance;
         }
 
@@ -625,6 +627,7 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.Economy.CrystalBalance);
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+            if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.SpendAsync(source ?? DebugSource, amount, source));
             return true;
         }
 
@@ -645,6 +648,92 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Reward unlocked: {rewardId}");
+        }
+
+        /// <summary>
+        /// Claims a once-only reward and its crystals together (today's toy activity). With the server-owned
+        /// wallet on, the server checks the id (right day, not claimed before) and pays in one request; a
+        /// separate UnlockReward + AddCrystals would reach it as an unknown earn source and be refused.
+        /// </summary>
+        public void ClaimReward(string rewardId, int crystals, string source)
+        {
+            if (CurrentProfile == null || string.IsNullOrEmpty(rewardId) || IsRewardUnlocked(rewardId))
+                return;
+
+            if (!ServerEconomyGate.Enabled)
+            {
+                UnlockReward(rewardId);
+                if (crystals > 0) AddCrystals(crystals, source);
+                return;
+            }
+
+            CurrentProfile.Economy.UnlockedRewardIds ??= new List<string>();
+            CurrentProfile.Economy.UnlockedRewardIds.Add(rewardId);
+            int amount = Mathf.Max(0, crystals);
+            CurrentProfile.Economy.CrystalBalance += amount;
+            CurrentProfile.Economy.LifetimeCrystalsEarned += amount;
+            ScheduleSave();
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            if (amount > 0) _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.Economy.CrystalBalance);
+            ConfirmWithServer(ServerEconomy.ClaimAsync(rewardId, amount));
+        }
+
+        // ----------------- Server-owned wallet (fair play, Threat Board T3) -----------------
+
+        /// <summary>The earn/spend source the server allows only outside production (the Toolbox crystal field).</summary>
+        const string DebugSource = "debug";
+
+        int _pendingServerCalls;
+        ServerEconomyResult _latestServerWallet;
+
+        /// <summary>
+        /// Every wallet change is applied locally at once (the UI never waits) and then confirmed by the server.
+        /// When the last outstanding answer arrives, the server's wallet replaces the local one: a refused request
+        /// (a forged amount, a reward claimed twice, a spend the server balance cannot cover) is undone there.
+        /// Earlier answers are held, so two quick changes never flicker the balance back. A call that could not
+        /// reach the server leaves the local value until the next answer.
+        /// </summary>
+        void ConfirmWithServer(UniTask<ServerEconomyResult> request)
+        {
+            _pendingServerCalls++;
+            AwaitServerAsync(request).Forget();
+        }
+
+        async UniTaskVoid AwaitServerAsync(UniTask<ServerEconomyResult> request)
+        {
+            ServerEconomyResult result = null;
+            try { result = await request; }
+            finally
+            {
+                _pendingServerCalls--;
+                if (result != null) _latestServerWallet = result;
+                if (_pendingServerCalls == 0 && _latestServerWallet != null && this)
+                {
+                    ApplyServerWallet(_latestServerWallet);
+                    _latestServerWallet = null;
+                }
+            }
+        }
+
+        void ApplyServerWallet(ServerEconomyResult wallet)
+        {
+            if (CurrentProfile == null) return;
+            var economy = CurrentProfile.Economy;
+            bool changed = economy.CrystalBalance != wallet.crystalBalance;
+
+            economy.CrystalBalance = wallet.crystalBalance;
+            economy.LifetimeCrystalsEarned = wallet.lifetimeCrystalsEarned;
+            economy.LifetimeCrystalsSpent = wallet.lifetimeCrystalsSpent;
+            economy.UnlockedRewardIds = wallet.unlockedRewardIds ?? new List<string>();
+
+            ScheduleSave(); // PLAYER_PROFILE keeps a display copy; the server ignores it
+            if (changed)
+            {
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Server wallet applied. Balance: {economy.CrystalBalance}");
+                OnCrystalBalanceChanged?.Invoke(economy.CrystalBalance);
+            }
+            OnProfileChanged?.Invoke(CurrentProfile);
         }
 
         /// <summary>
@@ -680,6 +769,7 @@ namespace CosmicShore.UI
             {
                 CurrentProfile.Economy.CrystalBalance += pending;
                 ScheduleSave();
+                if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.EarnAsync(DebugSource, pending));
                 OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             }

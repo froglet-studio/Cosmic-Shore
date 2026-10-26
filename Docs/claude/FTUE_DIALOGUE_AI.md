@@ -4,6 +4,9 @@
 
 ### FTUE (First-Time User Experience) — the QUEST GRAPH
 
+> **Shombith leads activation; Caleb heads FTUE with him; no one else is on it** (Shombith, 2026-10-26). Name them on any
+> FTUE or activation task.
+>
 > **Activation work starts at `Docs/ACTIVATION.md`**: every onboarding plan and its status, who is on
 > what, the `ftue_*` analytics events, and the redesign (first-login spotlight guide, Lesson, Mentor,
 > ghost demo) - `Docs/ModePreview/TRAINING_PLAN.md`, merged into `Ys-bleeding-edge` 2026-10-15.

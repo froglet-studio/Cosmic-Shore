@@ -65,6 +65,14 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("If the availability check cannot run (offline, index not configured), ON rejects the change, OFF allows it with a warning log. OFF keeps first-run/offline name setup working.")]
         [SerializeField] bool blockWhenUniquenessUnknown = false;
 
+        [Header("Names Shown From Other Players")]
+        [Tooltip("Shown in place of another player's name when that name breaks the content filter or impersonates " +
+                 "the team (fair play, Threat Board T7). A modified game can write any name, so every player's own game " +
+                 "checks the names it RECEIVES. {tag} is a short code made from the hidden name, the same on every " +
+                 "player's game, so two hidden players never share a name (scores are matched by name). Empty shows nothing.")]
+        [SerializeField] string hiddenNameReplacement = "Pilot {tag}";
+
+        public string HiddenNameReplacement => hiddenNameReplacement ?? string.Empty;
         public int MinLength => minLength;
         public int MaxLength => maxLength;
         public bool AllowSpaces => allowSpaces;
