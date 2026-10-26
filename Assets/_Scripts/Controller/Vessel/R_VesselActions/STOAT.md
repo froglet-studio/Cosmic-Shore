@@ -9,7 +9,7 @@
 > gamepad's four bindings, so a phone pilot (and an AI Stoat on a phone) lays pairs, flies the orbit, holds and
 > switches modes. "Steam is the target" (§4, §7 until today) is superseded. See §4a.
 >
-> **2026-10-13 — ITS OWN VESSEL.** B switches Mass and Time (`STOAT_DIPOLE.md` §1a); since 2026-10-26 a third press gives Drive, the warp pair (§1f). Mass mode flies the round-15
+> **2026-10-13 — ITS OWN VESSEL.** B switches Mass and Time (`STOAT_DIPOLE.md` §1a); since 2026-10-26 a third press gives Gate, the warp gate (§1f). Mass mode flies the round-15
 > **field dipole** (`STOAT_DIPOLE.md`). The Squirrel prefab this was cloned from is gone from it: §4's "kept as
 > prototype debt" paragraph is resolved (stage 6 of the generator), and §6's open slots are designed and shipped
 > (`STOAT_DIPOLE.md` §5). Read STOAT_DIPOLE.md first; this file is the orbit's own record.

@@ -50,8 +50,10 @@ without changing them; a session that changes those asks Garrett first.
 - Yash: fly the Omega crews (no ticket yet: say yes and a session files it); playtest the concept pages and record Keep / Drop
   (T-20261017-b227); the round-2 sessions (T-20261017-3c5d); review Joseph Zhou's pull request (T-20261017-b900).
 - Garrett: fly the Flea (T-20261024-bd25); the open design questions (T-20261017-b999); the Marlin name.
-- Designer decision from the Omega lab: the Warden's omega has no reason to split (always combined beats its crew);
-  either staying combined costs more, or its members get a reason to be apart (CONCEPT_FLEET.md §10.1).
+- **Decided 2026-10-27 (design principle):** a Voltron vessel is designed from the ground up, with parts that are not
+  complete vessels and a loop that alternates apart / combined; never assembled from autonomous vessels (which is why the
+  Warden's omega had no reason to split). The composed crews are a test bed for the plumbing; the next round designs
+  one supervessel's parts and loop in the artifact first (CONCEPT_FLEET.md §10.4).
 - Any session: the AI ladders once the five settle (T-20261017-3244); a crew mistake for the Omega levels (Hard is not
   shown fastest yet).
 

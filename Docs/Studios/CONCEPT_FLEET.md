@@ -532,3 +532,25 @@ the instanced material (fixed: the colour is set on the material). The page's CR
 the artifact republished; the page keeps the round-1 combine (mega / omega forms), which the game does not have yet.
 `OMEGA_CREW.md` §1-2, §6 and the checklist's Omega section are the record.
 
+### 10.4 Decision (design principle, 2026-10-27): a Voltron vessel is designed from the ground up, never assembled
+
+"It's generally better to build a Voltron type character that is designed from the ground up to be both many separate
+vessels and one big vessel at alternating parts of its game loop than it is to build a mechanic for combining any
+characters that have been designed for a complete game loop as an autonomous entity."
+
+What it means for the Omega crews:
+- **Round 1 measured exactly this.** The Warden's omega never had a reason to split (§10.1): the Stoat, the Thresher
+  and the Butterfly each already have a complete loop of their own, so being apart buys the crew nothing, and being
+  combined costs only a meter. A combine mechanic bolted onto autonomous vessels has no loop of its own.
+- **The three crews as composed (§10.3) are a test bed, not the design.** The formation, the seat swap, the AI seats,
+  the attacker's turret and the defender's shield are plumbing that any combiner vessel uses; the Stoat / Sparrow /
+  Rhino compositions are placeholders standing in for parts that do not exist yet.
+- **The next round designs ONE supervessel from the ground up**, in the artifact first (`/vessel-studio`, then
+  `/artifact-to-unity`): three PARTS, none of which is a complete vessel on its own. Each part's solo loop is a piece
+  of the whole's (the scout that can only position, the gun that can only fire where the scout put it, the shield
+  that only holds while the gun works), and the game loop ALTERNATES on its own terms: an apart phase that only the
+  parts can do, a combined phase that only the whole can do, and a reason to go back (the Omega Run's walls were the
+  first sketch of that pressure). Its mini-game and its four abilities come with it, as every new vessel's do.
+- Until that design exists, nothing more is built on the assembled crews beyond what the test bed needs; no new crew
+  is composed from shipped vessels.
+

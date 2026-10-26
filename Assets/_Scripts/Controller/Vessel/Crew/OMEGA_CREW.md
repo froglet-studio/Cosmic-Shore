@@ -11,6 +11,15 @@ Yash, 2026-10-26: "I wanna make a crew vessel, that stoat start will be a part o
 control the vessel in different way ... each vessel will have their own megaforms and then finally they will have their
 omegaforms. They can combine." Then: "make this prototype in Ys-bleeding-edge, I wanna test there."
 
+## 0. The design principle this is a test bed for (2026-10-27)
+
+A Voltron-type vessel is designed from the ground up to be many separate vessels AND one big vessel at alternating
+parts of its own game loop; a mechanic that combines characters designed as complete, autonomous vessels is the wrong
+shape (the lab's round 1 showed it: an assembled omega has no reason to split). So the crews below, composed from
+shipped vessels, are PLACEHOLDER parts standing in for a supervessel whose parts do not exist yet; what is reusable is
+the plumbing (the formation, the seat swap, the AI seats, the attacker's turret, the defender's shield). The next round
+designs that supervessel's parts and its loop in the artifact first: `Docs/Studios/CONCEPT_FLEET.md` §10.4.
+
 ## 1. What a crew is (round 2, Yash's test of 2026-10-26)
 
 Three vessels of the shipped fleet, one hull class, one squad slot, one card (`SO_Class_<Crew>`, SeatCount 3), flying as
