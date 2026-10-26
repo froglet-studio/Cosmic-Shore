@@ -863,6 +863,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
                 // A PERCENT of the final form's body, not a count: the readout shows the threshold.
                 GameModes.Tandava                   => GetTandavaBreakPercent(),
+                GameModes.TandavaSevering           => GetTandavaBreakPercent(),   // Tandava's fork: the same shatter
                 _                                   => 0,
             };
 
