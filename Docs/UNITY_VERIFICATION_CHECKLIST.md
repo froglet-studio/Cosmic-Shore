@@ -142,6 +142,28 @@ only compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CRE
 the hull where it was · a combine that never ends · RT doing nothing in a seat · input still live in Arms / Core · a bar or
 body left behind after a vessel swap.
 
+### 🔴 Rhino round 3: Space L5 is the super-shield key, Charge L5 is the sword's steal (`cece/exciting-noether-dx1n4z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "have the sword only destroy supershielded prisms as the space L5 upgrade. have the
+sword only steal as the charge L5 upgrade."; design record `R_VesselActions/RHINO_ENERGY_SWORD.md`, third round):
+
+- **Space L5 = Shield Breaker.** `RhinoSkimmerDamagePrismEffectSO.superShieldUpgradeElement` = Space: the sword
+  pops super-shielded prisms only with the upgrade AND an energized blade; otherwise it binds. Breaker (a shielded
+  prism in one slice) is deleted.
+- **Charge L5 = Sword Steal.** `VesselOvertakeBySkimmerEffectSO.stealUpgradeElement` = Charge on the Rhino's steal
+  asset (None on the Squirrel's joust): below it a sword hit EJECTS the same petals as crystals at the strike, so
+  it still scores. Live Wire is deleted. The Charge ability is renamed **Energize**.
+
+**Verified without the editor:** `unity_refcompile` player and editor configs, 0 errors in project code;
+`check_generated_assets.py` OK on the 5 changed assets; `element_ability_table.py Rhino` resolves both gates
+(Charge 'Sword Steal' at `VesselOvertakeBySkimmerEffectSO.cs`, Space 'Shield Breaker' at
+`RhinoSkimmerDamagePrismEffectSO.cs`). New `RhinoLevelFiveKeysTests` not run (no editor). No `unity` CLI, so
+`/verify-unity` did not run.
+
+**To check in the editor:** run `RhinoLevelFiveKeysTests`; then RHINO_ENERGY_SWORD.md § "In-editor verification"
+steps 3a (Charge 0: petals burst out as crystals, Rhino levels unchanged; Charge 5: they land on the Rhino),
+4 (re-taking the stance never re-lights the tail) and 6 (energized blade binds below Space 5, pops at Space 5).
+
 ### 🔴 Rhino round 2: no energy; Charge steals; Space alone sets the length (camera follows); combo toasts, AI combos, ramp line on the Time card (`cece/wonderful-knuth-rzv8qp`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "Omnicrystal doesn't need the element buff, lets discard the whole notion of energy as
