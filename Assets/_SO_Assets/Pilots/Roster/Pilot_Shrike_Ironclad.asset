@@ -27,4 +27,5 @@ MonoBehaviour:
   elementalBoost:
     Element: 0
     Petals: 0
+  tuning: {fileID: 0}
   aiBehaviorDescription: Nests beside contested crystals.

@@ -85,13 +85,15 @@
    "vessel": "Rhino",
    "vesselId": 3,
    "ability": "Sword - special move",
-   "rule": "Throw the sword: double-tap the trigger and the energy blade spins out in an arc that follows your turn, cuts everything on its way, and comes back to the hull.",
+   "rule": "Throw the sword: tap one trigger twice (RR or LL) and the energy blade spins out to that side on a loop that swings with your turn, cuts everything on its way, and comes back. The two-tap flourishes on that trigger are given up.",
    "ai": "Throws at walls it cannot reach.",
    "kind": "reshaped",
    "source": "Was: speed while turning. The arc follows your turn. A thrown blade that hits a rival scores through the Sword Steal hit.",
    "portrait": "Assets/_Graphics/Pilots/Portrait_Tomahawk_Placeholder.png",
    "portraitIsStandIn": false,
-   "id": "pilot.rhino.tomahawk"
+   "id": "pilot.rhino.tomahawk",
+   "tuning": "Assets/_SO_Assets/Pilots/Tuning/Tomahawk.asset",
+   "built": "2026-10-26: ShieldSwipeActionExecutor.TryThrow / AdvanceThrow, tuning TomahawkThrowConfigSO"
   },
   {
    "name": "Dozer",

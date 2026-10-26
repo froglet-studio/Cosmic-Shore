@@ -69,6 +69,11 @@ namespace CosmicShore.ScriptableObjects
                  "weaker than another's. Usually none.")]
         [SerializeField] ElementalBoost elementalBoost;
 
+        [Header("Tuning (2026-10-26)")]
+        [Tooltip("The pilot's own numbers - an asset of the type its vessel code reads through " +
+                 "VesselPilotLoadout.Tuning<T>() (Tomahawk: TomahawkThrowConfigSO). Empty for a pilot with no knobs.")]
+        [SerializeField] ScriptableObject tuning;
+
         [Header("AI")]
         [Tooltip("How an AI squad mate flying this pilot should behave. Carried over from SO_Captain.")]
         [TextArea(2, 5)]
@@ -86,6 +91,7 @@ namespace CosmicShore.ScriptableObjects
         public bool IsDefault => isDefault;
         public ElementalBoost ElementalBoost => elementalBoost;
         public string AIBehaviorDescription => aiBehaviorDescription;
+        public ScriptableObject Tuning => tuning;
 
         /// <summary>True when this is the base-kit pilot of <paramref name="vesselClass"/>.</summary>
         public bool IsDefaultFor(VesselClassType vesselClass) =>

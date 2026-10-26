@@ -33,6 +33,19 @@ namespace CosmicShore.ScriptableObjects
         public IReadOnlyList<ArtifactSO> Artifacts => artifacts;
         public int SlotsPerVessel => slotsPerVessel;
 
+        /// <summary>Where the one shipped catalog lives under a Resources folder (author_pilot_assets.py writes it),
+        /// so a vessel finds it with no prefab wiring - the ElementalAbilityMapSO.LoadFor precedent.</summary>
+        public const string ResourcePath = "Pilots/PilotArtifactCatalog";
+
+        static PilotArtifactCatalogSO _loaded;
+
+        /// <summary>The shipped catalog, loaded once; null if it is missing from the build.</summary>
+        public static PilotArtifactCatalogSO Load()
+        {
+            if (!_loaded) _loaded = Resources.Load<PilotArtifactCatalogSO>(ResourcePath);
+            return _loaded;
+        }
+
         /// <summary>The pilot saved under <paramref name="id"/>. False for an empty or unknown id.</summary>
         public bool TryGetPilot(string id, out PilotSO pilot)
         {

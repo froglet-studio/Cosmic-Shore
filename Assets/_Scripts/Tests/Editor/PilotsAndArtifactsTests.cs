@@ -5,6 +5,8 @@ using NUnit.Framework;
 using UnityEditor;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using UnityEngine;
 using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Tests
@@ -17,7 +19,7 @@ namespace CosmicShore.Tests
     /// </summary>
     public class PilotsAndArtifactsTests
     {
-        const string CatalogPath = "Assets/_SO_Assets/Pilots/PilotArtifactCatalog.asset";
+        const string CatalogPath = "Assets/Resources/Pilots/PilotArtifactCatalog.asset";
 
         static PilotArtifactCatalogSO Catalog()
         {
@@ -76,6 +78,26 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1.25f, Artifact("artifact.shrike.quick-dock").Apply(1.6f, 3), 1e-4f, "the docked penalty becomes x1.25 at rank III");
             Assert.AreEqual("5 pellets", Artifact("artifact.serpent.fifth-pellet").RankLabel(1));
             Assert.AreEqual(string.Empty, Artifact("artifact.serpent.fifth-pellet").RankLabel(0));
+        }
+
+        [Test]
+        public void Tomahawk_LoopLeavesAndComesHome_WidestBesideTheHull()
+        {
+            Assert.IsTrue(Catalog().TryGetPilot(PilotIds.Tomahawk, out var tomahawk), "Tomahawk is in the catalog");
+            var cfg = tomahawk.Tuning as TomahawkThrowConfigSO;
+            Assert.IsNotNull(cfg, "Tomahawk's tuning is its throw config");
+            const float blade = 30f;
+            Assert.Less(cfg.LoopOffset(0f, 1, blade).magnitude, 1e-3f, "leaves from the mount");
+            Assert.Less(cfg.LoopOffset(1f, 1, blade).magnitude, 1e-3f, "comes home");
+            var right = cfg.LoopOffset(0.5f, 1, blade);
+            var left = cfg.LoopOffset(0.5f, -1, blade);
+            Assert.AreEqual(cfg.SideReachBlades * blade, right.x, 1e-3f, "widest to the right at half way");
+            Assert.AreEqual(-right.x, left.x, 1e-3f, "a left throw mirrors it");
+            Assert.Greater(cfg.LoopOffset(0.25f, 1, blade).z, 0f, "out ahead first");
+            Assert.Less(cfg.LoopOffset(0.75f, 1, blade).z, 0f, "home from behind");
+            Assert.AreEqual(1, cfg.SideOf("RR"));
+            Assert.AreEqual(-1, cfg.SideOf("LL"));
+            Assert.AreEqual(0, cfg.SideOf("RL"), "a mixed string keeps its flourish");
         }
 
         [Test]

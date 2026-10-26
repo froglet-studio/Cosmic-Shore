@@ -49,9 +49,17 @@ namespace CosmicShore.Core
 
         // ---- found artifacts ----
 
-        /// <summary>The rank the player found this artifact at, 1 to 3; 0 = not found yet.</summary>
-        public static int FoundRank(string artifactId) =>
-            string.IsNullOrEmpty(artifactId) ? 0 : Mathf.Clamp(PlayerPrefs.GetInt(FoundKey(artifactId), 0), 0, 3);
+        /// <summary>Every artifact is free (Shombith, 2026-10-26: "all of these can be unlocked for free not buy it").</summary>
+        public const bool EverythingIsFree = true;
+
+        /// <summary>The rank the player holds this artifact at, 1 to 3; 0 = not held. Everything is free, so every
+        /// artifact is held at the top rank unless a record says otherwise (a drop system would write one).</summary>
+        public static int FoundRank(string artifactId)
+        {
+            if (string.IsNullOrEmpty(artifactId)) return 0;
+            int saved = Mathf.Clamp(PlayerPrefs.GetInt(FoundKey(artifactId), 0), 0, 3);
+            return EverythingIsFree ? 3 : saved;
+        }
 
         /// <summary>Records a find. A rank only goes up; a lower find of one already held changes nothing.</summary>
         public static void Grant(string artifactId, int rank)

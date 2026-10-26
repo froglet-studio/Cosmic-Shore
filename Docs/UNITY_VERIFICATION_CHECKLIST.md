@@ -6507,7 +6507,7 @@ reads the catalog; new `HangarArtifactsPage`; `PilotLoadoutStore` (device); `Fro
 
 **Verify in editor:**
 1. Test Runner, EditMode: `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests` pass.
-2. Select `Assets/_SO_Assets/Pilots/PilotArtifactCatalog.asset`: 49 pilots (the nine defaults first) and 45
+2. Select `Assets/Resources/Pilots/PilotArtifactCatalog.asset`: 49 pilots (the nine defaults first) and 45
    artifacts, none Missing; Slots Per Vessel 3.
 3. Menu_Main > Hangar > Rhino > PILOTS: three rows - Energy Sword (IN THE SEAT), Tomahawk and Dozer with their portraits;
    no element flowers. Press Tomahawk: its row reads IN THE SEAT and the header reads "PILOT · RHINO · SWORD - SPECIAL
@@ -6531,7 +6531,7 @@ reads the catalog; new `HangarArtifactsPage`; `PilotLoadoutStore` (device); `Fro
 
 **Verify in editor:**
 1. Test Runner, EditMode: `PilotCatalogAssetTests` passes (3 tests).
-2. Select `Assets/_SO_Assets/Pilots/PilotArtifactCatalog.asset`: nine pilots listed, none Missing.
+2. Select `Assets/Resources/Pilots/PilotArtifactCatalog.asset`: nine pilots listed, none Missing.
 3. Select `Pilot_Manta_Default`: Requirement shows Vessel = Manta, Is Default ticked.
 4. Select `SO_Class_Squirrel`: Keywords shows Base Prism Production, Boost, Blade, Crystal Blast,
    Attach. Re-save it and confirm `git diff` shows no change beyond formatting.

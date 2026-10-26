@@ -15,7 +15,7 @@ MonoBehaviour:
   id: pilot.rhino.tomahawk
   displayName: Tomahawk
   ability: Sword - special move
-  description: 'Throw the sword: double-tap the trigger and the energy blade spins out in an arc that follows your turn, cuts everything on its way, and comes back to the hull.'
+  description: 'Throw the sword: tap one trigger twice (RR or LL) and the energy blade spins out to that side on a loop that swings with your turn, cuts everything on its way, and comes back. The two-tap flourishes on that trigger are given up.'
   flavor: 
   portrait: {fileID: 21300000, guid: 5f792de95e7e9b147ae4dca478c00292, type: 3}
   portraitIsStandIn: 0
@@ -27,4 +27,5 @@ MonoBehaviour:
   elementalBoost:
     Element: 0
     Petals: 0
+  tuning: {fileID: 11400000, guid: 8435d87a1b79215704ba3964cc01c0f4, type: 2}
   aiBehaviorDescription: Throws at walls it cannot reach.

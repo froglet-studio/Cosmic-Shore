@@ -17,9 +17,9 @@ namespace CosmicShore.UI
     /// (<see cref="PilotLoadoutStore"/>); one not found yet reads "Undiscovered" and does nothing. The header above the
     /// vessel names the slots (<see cref="IHangarHeader"/>). Replaces the single "Undiscovered" slot the tab drew before.
     ///
-    /// <para>Finding an artifact is not built yet (the HyperSea drops are an open decision), so on a fresh profile every row
-    /// is undiscovered: FrogletTools > Pilots > Grant Every Artifact gives them all at a random rank for testing. No match
-    /// reads a slot yet.</para>
+    /// <para>Every artifact is free (Shombith, 2026-10-26: "all of these can be unlocked for free not buy it"), so every
+    /// row is held at rank III (<see cref="PilotLoadoutStore.FoundRank"/>); the Undiscovered state stays for a drop system.
+    /// A match reads the slots through <c>VesselPilotLoadout</c>.</para>
     /// </summary>
     public class HangarArtifactsPage : MonoBehaviour, IHangarTabPage, IHangarHeader
     {

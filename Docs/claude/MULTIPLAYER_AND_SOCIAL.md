@@ -32,7 +32,9 @@ arena (`CrewStations`, `Docs/CREW_STATIONS.md`). **13** (2026-10-23/24, `cece/op
 a pilot asking the host to put an AI seat in a given hull from the Arena configure window's shared vessel panel
 (`Docs/HomeHub/ARCHITECTURE.md` §3.2.1). Both are on bleeding-edge since the 2026-10-25 merge, which ships 14.
 **15** (2026-10-26, `cece/wonderful-knuth-rzv8qp`) - `RhinoSwordNetworkRelay` drops its `n_energy` variable: the
-Rhino has no energy any more (`R_VesselActions/RHINO_ENERGY_SWORD.md`).
+Rhino has no energy any more (`R_VesselActions/RHINO_ENERGY_SWORD.md`). **16** (2026-10-26, `claude/pensive-dijkstra-qxoxo0`) -
+`R_VesselActionHandler.NetPilot` and `NetArtifacts`: the pilot in each vessel's seat and its slotted artifacts
+(`VesselPilotLoadout`, `Docs/Pilots/PILOTS_AND_ARTIFACTS.md`).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

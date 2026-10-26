@@ -16,7 +16,7 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class PilotCatalogAssetTests
     {
-        const string CatalogPath = "Assets/_SO_Assets/Pilots/PilotArtifactCatalog.asset";
+        const string CatalogPath = "Assets/Resources/Pilots/PilotArtifactCatalog.asset";
 
         static readonly string[] MilestoneVessels =
             { "Manta", "Dolphin", "Rhino", "Squirrel", "Serpent", "Sparrow", "Urchin", "Butterfly", "Thresher" };
