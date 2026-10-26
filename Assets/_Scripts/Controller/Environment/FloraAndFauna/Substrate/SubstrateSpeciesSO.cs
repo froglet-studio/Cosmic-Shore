@@ -60,6 +60,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] Shader memberShader;
         [Tooltip("The palette agents wear (plain / danger tier pairs of their domain, the neutral living-heart pair).")]
         [SerializeField] ThemeManagerDataContainerSO theme;
+        [Tooltip("The body at this multiple of the research body (Docs/ECOSYSTEM.md 64.4): 3.55 / the retired heart " +
+                 "size, so the body keeps its proportion to the one elemental crystal size. Stocks go by its cube and " +
+                 "contact radii by it (SubstrateSpeciesParams.WithBodyScale); speeds and senses stay world units. 1 = the research body.")]
+        [SerializeField, Min(0.01f)] float bodyScale = 1f;
         [Tooltip("RETIRED, not read (2026-10-26): every heart is the one elemental crystal size, " +
                  "ElementalCrystalSetSO.CrystalWorldScale. Still written by author_substrate_fauna.py.")]
 #pragma warning disable CS0414 // kept serialized so the shipped assets and their generator stay in step
@@ -142,7 +146,7 @@ namespace CosmicShore.Gameplay
         public float ThawReserveSeconds => thawReserveSeconds;
 
         /// <summary>A private copy for one population (a tuned asset never changes a live core under it).</summary>
-        public SubstrateSpeciesParams ToParams() => (species ?? new SubstrateSpeciesParams()).Clone();
+        public SubstrateSpeciesParams ToParams() => (species ?? new SubstrateSpeciesParams()).WithBodyScale(bodyScale);
 
         /// <summary>The heart's world scale: the one elemental crystal size, whatever the element.</summary>
         public float HeartWorldScale(Element e) => CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale;

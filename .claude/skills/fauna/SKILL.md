@@ -200,8 +200,14 @@ if it moves a number it should not, look for a loop rather than assuming you cau
 `ElementalCrystalSetSO.CrystalWorldScale` (3.55), like every elemental crystal, and is worth
 exactly one petal (Garrett, 2026-10-26). `FaunaVariantTuning.HeartWorldScale` is still
 serialized and still written by `author_lifeform_heart_sizes.py`, and nothing reads it — the
-§40.2 band it describes is retired. What a creature still owes its heart is a SEAT that holds
-a 3.55 heart: re-run `verify_fauna_heart_seat.py`, which measures at the one size.
+§40.2 band it describes is retired. **The BODY is scaled to the heart instead** (§64.4): each
+creature's body is k = 3.55 / its retired heart, through its prefab root (LightFauna), its variant
+`BaseBodyScale` (Boid), `KaijuScale` (worm), `UnitScale` + `ElementBodyScale` (swarm),
+`SubstrateSpeciesSO.bodyScale`, `BuilderColonyConfigSO.BodyScale` or `VoxelSize` (NCA). **A new species is
+sized the same way**: decide the heart:body proportion you want and set the body, never the heart; scale every
+length measured from the body with it (separation, reach, bite, contact radii, heart gap) and leave speeds
+and senses in world units. A seat still has to hold the heart: `verify_fauna_heart_seat.py` measures it in
+local units (3.55 / root scale).
 
 **Every lifeform drops exactly one elemental crystal** — enforced by `LifeFormCrystal`, and
 it must not be possible to author one that does not. A connected COLONY is a population, so

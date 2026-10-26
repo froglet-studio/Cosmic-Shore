@@ -87,6 +87,16 @@ SPECIES = [
 ]
 
 
+def prefab_root_scale(text):
+    """The creature's root scale: the heart is sized in WORLD units, so in the prefab's local
+    units (where every pose here is measured) it is the one size divided by the root's scale."""
+    for m in re.finditer(r"--- !u!4 &-?\d+\nTransform:\n(.*?)(?=\n--- |\Z)", text, re.S):
+        if "m_Father: {fileID: 0}" in m.group(1):
+            sm = re.search(r"m_LocalScale: \{x: ([\d.eE+-]+)", m.group(1))
+            return float(sm.group(1)) if sm else 1.0
+    return 1.0
+
+
 def one_crystal_size():
     src = open(os.path.join(REPO, "Assets/_Scripts/ScriptableObjects/ElementalCrystalSetSO.cs"),
                encoding="utf-8").read()
@@ -307,14 +317,14 @@ def check(spec):
 
     # Every heart is the one elemental crystal size (2026-10-26), read off the C# constant: the
     # configs' HeartWorldScale is still serialized and nothing reads it.
-    runtime = one_crystal_size()
+    runtime = one_crystal_size() / prefab_root_scale(prefab)
 
     prisms = all_overrides(prefab, spec["prism_fid"], "m_LocalPosition.z")
 
     out.append("%s" % spec["name"])
     out.append("  body   z [%.3f, %.3f]   mouth at %.3f   (cross-section x +-%.2f  y +-%.2f)"
                % (tail, mouth, mouth, max(abs(blo[0]), bhi[0]), max(abs(blo[1]), bhi[1])))
-    out.append("  heart  z %.3f   authored scale %.3f   runtime CrystalWorldScale %.3f"
+    out.append("  heart  z %.3f   authored scale %.3f   runtime (CrystalWorldScale / root scale) %.3f"
                % (heart_z, heart_authored, runtime))
     out.append("  prisms z %s" % (", ".join("%.2f" % p for p in sorted(prisms)) or "NONE"))
 

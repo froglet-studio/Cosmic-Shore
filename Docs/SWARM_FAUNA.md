@@ -85,9 +85,12 @@ renders every member at `lerp(prev, current, alpha)` for position and facing. Be
 therefore frame-rate independent; a hitch drops time after `MaxStepsPerFrame` rather than
 cascading.
 
-**Units.** The core runs in the research's units ("voxels", per step). `UnitScale` (2) converts
-to world units at the boundary, so the whale is ~130 world units long and adjacent tadpoles sit
-~5 units apart — a body made of individually shootable pieces.
+**Units.** The core runs in the research's units ("voxels", per step). `UnitScale` converts
+to world units at the boundary: 2 in the research, so the whale was ~130 world units long and adjacent tadpoles sat
+~5 units apart — a body made of individually shootable pieces. **Since 2026-10-26 the Swarm cell's configs ship
+`UnitScale` 4.088** (x 2.044, the members' bodies grown to the one 3.55 heart size, with `ElementBodyScale` scaling
+Charge/Space back to their x 1.545 and `Cruise` / `SortVMaxScale` holding world speeds): the whale is ~265 u long and
+tadpoles ~9 u apart. Tandava pins its own body at 2. `Docs/ECOSYSTEM.md` §64.4-64.5.
 
 ### 1.1 What the core does each step (in order)
 

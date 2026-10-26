@@ -580,6 +580,7 @@ namespace CosmicShore.Gameplay
             for (int e = 0; e < 4; e++)
             {
                 s.HeartWorldScale[e] = CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale;
+                s.ElementBodyScale[e] = SwarmFaunaConfigSO.Of(config.ElementBodyScale, SwarmFaunaConfigSO.ToElement(e));
                 s.DefaultHalf[e] = new SVector3(half[e].x, half[e].y, half[e].z);
             }
             return s;

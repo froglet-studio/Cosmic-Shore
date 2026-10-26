@@ -200,6 +200,17 @@ namespace CosmicShore.Gameplay
         public void WitherAway(string reason) => Die(reason);
 
         /// <summary>
+        /// Re-applies the one heart size while the heart still beats inside this segment. The
+        /// colony calls it as the segment's scale glides (a grown segment blooms from zero), since
+        /// a heart is sized in WORLD units against its parent. A released heart is left alone: it
+        /// belongs to the cell, and its capture animation owns its scale.
+        /// </summary>
+        public void KeepHeartSize()
+        {
+            if (crystal && crystal.IsEmbedded) ApplyHeartSize();
+        }
+
+        /// <summary>
         /// Element-as-data forwarding from the colony (see WormFauna.ProvisionHeart):
         /// re-provisions this segment's heart to the picked element — every member of the
         /// population carries one, so the colony's pick reaches all of them.

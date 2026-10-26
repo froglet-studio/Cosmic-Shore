@@ -932,6 +932,15 @@ def main():
                     help="fail if any asset differs from what this script would author")
     args = ap.parse_args()
 
+    # STANDS DOWN (Docs/ECOSYSTEM.md 64): nothing in the game reads HeartWorldScale, and since the fauna bodies were
+    # scaled to the one heart size (64.4) the band this script solves no longer describes the shipped bodies at all -
+    # re-authoring it would rewrite dead data, and checking it would fail on every body change. CI still runs it, so it
+    # passes, says why, and writes nothing. Its functions stay importable for the generators that call them.
+    if args.check or args.write:
+        print("RETIRED: lifeform hearts are one size (ElementalCrystalSetSO.CrystalWorldScale) and the authored "
+              "HeartWorldScale band is read by nothing (Docs/ECOSYSTEM.md 64) - standing down, nothing checked or written.")
+        return 0
+
     canonical = read_canonical_variants()
     deployments = read_deployment_variants()
     variants = canonical + deployments

@@ -559,6 +559,10 @@ namespace CosmicShore.Gameplay
                 Vector3 target = Vector3.one * SegmentTargetScale(i);
                 if ((seg.localScale - target).sqrMagnitude <= 1e-4f) continue;
                 seg.localScale = Vector3.Lerp(seg.localScale, target, glideT);
+                // The heart is sized in WORLD units against its segment's scale, so a segment
+                // that is still blooming (it starts at zero) or re-tapering carries its heart
+                // with it unless the one size is re-applied as the scale moves.
+                segments[i].KeepHeartSize();
             }
         }
 

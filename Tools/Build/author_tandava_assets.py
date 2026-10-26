@@ -458,7 +458,15 @@ for key, value in (("Model", 2), ("MultiDomain", MULTI_DOMAIN), ("PlanDensity", 
     cfg = set_key(cfg, key, value)
 # keys the shipped sort config predates (Unity has been reading their C# defaults): written explicitly here, in
 # declaration order, because each is a Tandava decision
-for key in ("ScriptedPlans", "ScriptedPlanPeriods", "ScriptedPlanWellClip", "SortTurnCarry", "SortVMaxScale", "MaxHitMaterialisationsPerFrame",
+# The Swarm cell's sort config grew its members to the one heart size (Docs/ECOSYSTEM.md 64.4: UnitScale, a per-element
+# body, the heart gap, the bite reach, and world-speed-keeping Cruise / SortVMaxScale). Tandava does NOT follow yet: its
+# forms, halo, dance reach, roam and reef are designed around this body in an 800 u arena (scaled whole, the dance
+# reaches 250 of the halo's 461 and a 67k forest feeds a 213k body), so this fork pins its own body back explicitly -
+# an open decision for the mode's owner, recorded in Docs/ECOSYSTEM.md 64.5.
+for key, value in (("ElementBodyScale", "{x: 1, y: 1, z: 1, w: 1}"), ("HeartPrismGap", num(0.6)), ("BiteRadius", num(10)),
+                   ("SortVMaxScale", num(SORT_VMAX_SCALE))):
+    cfg = set_key(cfg, key, value)
+for key in ("ScriptedPlans", "ScriptedPlanPeriods", "ScriptedPlanWellClip", "SortTurnCarry", "MaxHitMaterialisationsPerFrame",
             "UnifiedPrismBodies", "MacroLod", "Bestiary", "HuntEnter", "LurkCalm", "LocustPhaseSeconds"):
     assert not re.search(rf"(?m)^  {key}:", cfg), f"the shipped sort config now carries '{key}' - set it, do not insert it"
 cfg = insert_after(cfg, "TimePlan",
@@ -468,7 +476,7 @@ cfg = insert_after(cfg, "TimePlan",
                    "".join(f"  - {PLANS[k]['frameSteps']}\n" for k in PLAN_KEYS) +
                    "  ScriptedPlanWellClip:\n" +
                    "".join(f"  - {num(PLANS[k].get('wellClip', 1.0))}\n" for k in PLAN_KEYS))
-cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n  SortVMaxScale: {num(SORT_VMAX_SCALE)}\n")
+cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n")
 cfg = insert_after(cfg, "ProxyLingerSeconds",
                    f"  MaxHitMaterialisationsPerFrame: 48\n  UnifiedPrismBodies: 1\n  MacroLod: {MACRO_LOD}\n")
 cfg = insert_after(cfg, "DangerExit", "  Bestiary: 1\n  HuntEnter: 0.2\n  LurkCalm: 0.05\n  LocustPhaseSeconds: 2\n")

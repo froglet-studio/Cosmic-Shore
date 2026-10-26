@@ -12178,18 +12178,73 @@ the root).
 - **One size does not fit every body.** That was the band's reason to exist (§40.2: a uniform 3.5
   is 3.6× a Mass tadpole's width). A heart's pickup radius is its root world scale (the prefabs'
   root `SphereCollider` is radius 1), so every heart is now as easy to take as the old largest
-  ones, and small creatures carry hearts bigger than their bodies would choose. The Clawfish's
-  heart poked 1.09 u out of its mouth at 3.55, so `verify_fauna_heart_seat.py` now measures the
-  seat at the one size and the Clawfish's heart moved back to z −3.755 (its shallowest legal seat).
-  The quasicrystal alcove clears a 4.25 heart (`fit_quasicrystal_strut_sizes.py`), so 3.55 fits.
-  Every other seat is a play-test.
+  ones. **Answered for fauna in §64.4**: every creature's body was scaled to keep its old heart:body
+  proportion, so in its own local units each heart is exactly the size it used to be. The Clawfish's
+  heart poked 1.09 u out of its mouth at 3.55 on unscaled bodies; at its root scale 1.641 it sits at
+  z −2.4, 0.004 u behind the mouth (`verify_fauna_heart_seat.py` measures the heart in local units,
+  3.55 / root scale). The quasicrystal alcove clears a 4.25 heart (`fit_quasicrystal_strut_sizes.py`),
+  so 3.55 fits. Flora are unchanged: a plant's heart is 3.55 whatever its size.
 - **The retired field is still on 206 assets.** `FaunaVariantTuning.HeartWorldScale`,
   `FloraVariantTuning.HeartWorldScale`, and the heart vectors on `SwarmFaunaConfigSO`,
   `SubstrateSpeciesSO`, `BuilderColonyConfigSO` and `NcaCreatureConfigSO` are tooltipped RETIRED,
-  are still written by their generators (`author_lifeform_heart_sizes.py` and its
-  `--check` in CI, `author_swarm_fauna.py`, `author_substrate_fauna.py`, `author_nca_creatures.py`
+  are still written by their generators (`author_lifeform_heart_sizes.py`, whose `--check` and
+  `--write` now stand down because §64.4 moved the bodies it measures, `author_swarm_fauna.py`, `author_substrate_fauna.py`, `author_nca_creatures.py`
   and the flora authors), and nothing in the game reads them. Stripping them means changing those
   generators and the assets in one pass.
 - **Amoebius's hand port** (`Port/src/CosmicShore.Game`) still carries the old scaled reward. The
   engine's player build compiles the real scripts (`CosmicShore.Live`), which have the new one.
+
+### 64.4 The fauna were scaled to the heart (Garrett, 2026-10-26)
+
+*"Change the scale of the fauna to match the size of crystal. You will also need to crawl swarm behavior etc. for
+length scales and adjust accordingly."* Every creature's body is scaled by **k = 3.55 / its retired heart size**, so it
+keeps exactly the heart:body proportion it was designed with. **Lengths measured from the body** (spacing, separation,
+reach, bite and contact radii, heart gaps) scale by k. **Speeds stay in world units** (Garrett chose this over
+scaling them: a ×2.76 piranha would swim at 124-193 u/s, past the vessels that joust it). Senses of vessels, territory
+and arena distances stay in world units. A body's volume is its mass, so it grows by k³.
+
+| Creature | k | Body: before → after | Body-relative lengths: before → after | Body prism volume |
+|---|---|---|---|---|
+| Tadpole Mass / Time (4 species + 7 cell configs) | 2.044 | `BaseBodyScale` 0.4 → 0.8175 | cohesion 50/20 → 102.2/40.88, feed reach 45/20/15 → 91.97/40.88/30.66, separation 15 → 30.66, feed cluster 10 → 20.44 (both new per-variant fields) | ×8.54 |
+| Tadpole Charge / Space | 1.545 | 0.7 → 1.081 | cohesion 20 → 30.9, feed reach 15 → 23.17, separation 15 → 23.17, feed cluster 10 → 15.45 | ×3.69 |
+| Piranha (Astro League, Scarab Scramble) | 2.756 | 0.22 → 0.6064 | cohesion 35 → 96.47, feed reach 60 → 165.4, separation 15 → 41.34, feed cluster 10 → 27.56 | ×20.9 |
+| QuadFish | 2.029 | prefab root 1 → 2.0286 | separation 30 → 60.86, consume 40 → 81.14, feed cluster 12 → 24.34, attack 15 → 30.43, detection 70 → 82.14 (must cover consume) | ×8.35 |
+| Clawfish | 1.641 | root 1 → 1.6412; heart seat z −3.755 → −2.4 | separation 24 → 39.39, consume 36 → 59.08, feed cluster 12 → 19.69, attack 15 → 24.62, detection 60 → 60.08 | ×4.42 |
+| Brittlestar | 1.382 | root 1 → 1.3824 | separation 70 → 96.77, consume 40 → 55.3, feed cluster 12 → 16.59, attack 15 → 20.74, detection 70 → 96.77 | ×2.64 |
+| Shark | 0.839 | root 1 → 0.8385 (smaller: its heart was 4.234) | separation 100 → 83.85, consume 40 → 33.54, feed cluster 12 → 10.06, attack 15 → 12.58 (detection 100 kept) | ×0.59 |
+| Worm colony | 1.657 | `KaijuScale` 3 → 4.97 (segment spacing and whip follow it) | colony separation 160 → 265, mouth 28 → 46.38, bite 34 → 56.32, lunge arrive 10 → 16.57, tail whip 45 → 74.55 | ×4.55 |
+| Swarm members (Swarm cell, Sort/Field/Grid/EvoFate configs) | 2.044 Mass/Time, 1.545 Charge/Space | `UnitScale` 2 → 4.088 (the whole sim: spacing, wells, the creature's extent); new `ElementBodyScale` (0.756, 1, 0.756, 1) | heart gap 0.6 → 1.226, bite 10 → 20.44; eggs 20.45/40.31/22.18/12.8 → 75.45/344.25/81.84/109.31; world speeds held: `Cruise` 0.35 → 0.171, `SortVMaxScale` 1 → 0.489 | ×8.54 / ×3.69 |
+| Swarm cell forest (Borromean, per band) | | `LatticeScale` −1 → 1.942 Inner, 1.593 Middle, 1.63 Outer (site offsets and leaves together: same prisms, same colliders, no interpenetration) | each band's forest grows by its bill, keeping its designed margin | ×7.32 / ×4.04 / ×4.33 |
+| Substrate (10 species) | 2.044 Time/Mass, 1.545 Space/Charge | new `SubstrateSpeciesSO.bodyScale`, applied by `SubstrateSpeciesParams.WithBodyScale` | stocks (`Stock0`, `BirthStock`) ×k³, `HungerPerVol` ÷k³, NbrR, EatR, BiteR, JinkR, regime Size, leviathan BodyScale/BodyWell, siege SepR/ContactPad, arms PreyR0/PredR0/PreySize/PredSize/CatchR/ConfR ×k; heart gap 0.6 → 0.6k | ×k³ |
+| Builder colonies | 2.044 Fortress, 1.545 Thief Nest / Wearer | `BodyScale` (1.4, 0.9, 2.6) → (2.861, 1.839, 5.314) / (2.163, 1.39, 4.017) | heart gap 0.6 → 1.226 / 0.927; Fortress worker radius 3 → 6.13, ram 1 → 2.04, sting 4 → 8.18, pickup 6 → 12.26, carry drop 4 → 8.18; Thief snatch 5 → 7.72, separation 8 → 12.36, size 2.2 → 3.4, knock 4 → 6.18; Wearer heart contact 2 → 3.09 | ×8.54 / ×3.69 |
+| NCA lizard | 1.228 (its heart was 2.89) | `VoxelSize` 1.2 → 1.474 (the body is 52.8 → 64.9 u) | hit prism 4 → 4.913, mouth reach 2 → 2.457, mouth radius 9 → 11.06; `BodyVolume` 1975.1 → 3660.5 | ×1.85 |
+
+Before / after, panel for panel at one scale per row (original authored heart · every heart 3.55 on the old body · this
+change): `Docs/Ecology/FaunaScale/creatures_before_after.png` and `colonies_before_after.png`. The creatures are the
+shipped prefabs loaded through Amoebius's content library (`CosmicShore.Content`) and drawn in three.js; the colony
+members are their body prism from config beside the shipped crystal model.
+
+**What it costs.** No collider is added anywhere: every count is unchanged (the Swarm cell stays 1,169 of 1,200 at full
+engagement). What grows is **volume**. The Swarm cell's phase ladder is re-derived by `author_swarm_fauna.py`
+(`FrenzyEnterVolume` 557,000 → 3,114,000; the count ladder is unchanged), because its swarm, substrate, builder and NCA
+bodies all ride `LiveVolume`. The other cells' ladders are flora-derived and in the millions; the largest fauna addition
+is Wildlife Liberation's worms at their cap (about 213,000 against an 8.3 million Frenzy). A bigger body makes more
+food when it dies (its skeleton is its prisms) and, for the swarm and substrate, costs more food to grow (eggs and
+stocks are its volume, mass conserved).
+
+**What changed in code.** `FaunaVariantTuning.SeparationRadius` / `FeedingClusterRadius` (a tadpole variant now states
+its own; they were one value on the shared prefab), `SwarmFaunaConfigSO.ElementBodyScale` (UnitScale is one number per
+swarm, so a Charge/Space member scales its prism back), `SubstrateSpeciesSO.bodyScale` + `WithBodyScale` (the research
+numbers the harness asserts are untouched), the builder cores' body constants, and the worm's heart drift
+(`WormSegmentFauna.KeepHeartSize`: a segment blooms from scale 0, and its heart, sized in world units against it, grew
+to ~9.6 as it did; the colony now re-applies the one size while a segment's scale moves).
+
+### 64.5 Tandava is not scaled yet (open, for the mode's owner)
+
+Tandava's swarm (and its Severing fork) forks the Swarm cell's sort config, so it would inherit §64.4, but scaled whole
+it no longer fits its own design: the dance's reach (250) falls short of the doubled halo (461), its 67,000-volume reef
+cannot feed a 213,000-volume body, and `TandavaHarness.cs` pins the old cruise, speed, body reach and eggs.
+`author_tandava_assets.py` therefore pins its body back explicitly (`ElementBodyScale` 1, heart gap 0.6, bite 10, and its
+own `UnitScale` 2) - its members carry 3.55 hearts on their old bodies, the "before" state. Scaling it means re-fitting
+the arena, the halo, the dance reach and the reef together.
 

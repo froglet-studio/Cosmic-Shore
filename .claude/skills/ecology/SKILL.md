@@ -485,7 +485,10 @@ what the carve-out silently broke — see the traps below.
   vectors) are still serialized and generated and are read by NOTHING; wiring one back up revives
   the retired §40.2 band. A NEW producer of elemental crystals sets the one size at mint
   (`LifeFormCrystal.SetWorldScale` when parented), and a new heart SEAT has to hold a 3.55 heart
-  (`verify_fauna_heart_seat.py`).
+  (`verify_fauna_heart_seat.py`). **Bodies were scaled to match it** (§64.4: body x k = 3.55 / the
+  retired heart, body lengths x k, speeds kept, volume x k^3): a body-size change is a VOLUME change, so
+  re-derive any ladder or egg/stock price that counts fauna bodies (the Swarm cell's generator does), and
+  grow food by scaling a plant WHOLE (`LatticeScale`), never by adding plants (colliders).
 - **"Spindles and crystals but no prisms" is a prism WAITING to be drawn, not a prism that was
   never made.** `Prism.CreateBlockCoroutine` keeps every laid prism's renderer and collider off
   until it wins a per-frame creation completion (6/frame at gameplay tier); spindles and crystals

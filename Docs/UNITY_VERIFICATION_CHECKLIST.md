@@ -16549,5 +16549,30 @@ What changed and why: `Docs/ECOSYSTEM.md` §64.
 6. Any vessel fight that ejects petals: collect one. **Pass:** one petal back; the ejected crystals are the same size
    as every other elemental crystal.
 7. Look at the small creatures (Mass tadpole, piranha, swarm and substrate members, the Clawfish). **Pass:** the
-   heart reads as a heart and not as something swallowed; the Clawfish's heart sits inside its mouth (moved to
-   z -3.755). Anything that reads wrong is a seat to move, not a size to change.
+   heart reads as a heart and not as something swallowed; the Clawfish's heart sits inside its mouth (z -2.4 at
+   root scale 1.641, see the next entry). Anything that reads wrong is a seat to move, not a size to change.
+
+## 🔴 2026-10-26 — Fauna bodies scaled to the one heart size (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Compiled for real: the runtime scripts through Amoebius's `CosmicShore.Live` build
+(succeeded), the swarm core harness (211 checks, exit 0) and the substrate harness (197 checks, all passed; it runs the
+research body, so `WithBodyScale` at k != 1 is untested there; a scratch copy added `SwarmSortCore.cs` and
+`SwarmGridCore.cs` to its file list, whose absence fails the shipped `run.sh` on bleeding-edge too). Every generator
+`--check` (swarm, substrate, builders, NCA, Tandava, Tandava Severing, Arboretum, Lattice, Wildlife Liberation) and
+`verify_fauna_heart_seat.py` pass. The table and the reasons: `Docs/ECOSYSTEM.md` §64.4.
+
+1. Let Unity compile. **Pass:** no errors from `Boid.cs`, `FaunaConfigurationSO.cs`, `WormFauna.cs`,
+   `WormSegmentFauna.cs`, `SwarmFaunaConfigSO.cs`, `SwarmTickJob.cs`, `SwarmFauna.cs`, `SubstrateSpecies.cs`,
+   `SubstrateSpeciesSO.cs`, the three builder cores.
+2. Spawn Matrix toy: release each species. **Pass:** each creature's heart sits where it always did on its body
+   (the body grew around it); the shark is a little smaller than before.
+3. Freestyle or Blob cell: watch a tadpole school. **Pass:** tadpoles keep apart (no clumping into one blob) and still
+   eat trail prisms; they swim at their old speed.
+4. Wildlife Liberation: a worm colony. **Pass:** the worm is ~1.66x bigger; a freshly grown segment's heart grows in
+   with the segment and stays the size of the others (it used to balloon).
+5. Swarm cell: **Pass:** the three swarms keep their creature shapes (whale, pufferfish, jellyfish) with no members
+   overlapping; the forests are visibly larger plants; the cell does not reach Frenzy in the first minutes.
+6. Swarm cell substrate populations (pack, lurker, leviathan...) and builder colonies: **Pass:** bodies sit behind their
+   hearts with a gap, a pack still rings a pilot and strikes, a thief still snatches.
+7. Tandava: **Pass:** unchanged from before this entry (it is pinned at its old body, §64.5).
+

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: LizardNcaConfig
   m_EditorClassIdentifier:
   Weights: {fileID: 4900000, guid: 820e60314368ae69c951402113b50cfa, type: 3}
-  VoxelSize: 1.2
+  VoxelSize: 1.474
   ScaleShape: {x: 1.35, y: 0.6, z: 1.55}
   AlphaThreshold: 0.3
   MaxShown: 1600
@@ -36,11 +36,11 @@ MonoBehaviour:
   BiteRadiusVoxels: 3.5
   HitPrismSeconds: 2
   HitPrismPrefab: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}
-  HitPrismScale: {x: 4, y: 4, z: 4}
-  BodyVolume: 1975.1
+  HitPrismScale: {x: 4.913, y: 4.913, z: 4.913}
+  BodyVolume: 3660.5
   HealShareOfMeal: 0.5
-  MouthReach: 2
-  MouthRadius: 9
+  MouthReach: 2.457
+  MouthRadius: 11.06
   FeedInterval: 1.2
   PrismsPerMouthful: 3
   MatureFraction: 0.8

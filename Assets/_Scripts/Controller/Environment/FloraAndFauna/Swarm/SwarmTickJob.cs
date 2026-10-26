@@ -67,6 +67,7 @@ namespace CosmicShore.Gameplay
         public Vector3 Centre;                  // world position of the sim origin (the host cell's centre)
         public float UnitScale = 2f;            // world units per voxel
         public float PrismScale = 1f;
+        public float[] ElementBodyScale = { 1f, 1f, 1f, 1f };                  // per research element, on PrismScale
         public float HeartPrismGap = 0.6f;
         public float[] HeartWorldScale = { 2.298f, 1.737f, 2.298f, 1.737f };   // per research element
         public Vector3[] DefaultHalf = { Vector3.One, Vector3.One, Vector3.One, Vector3.One };
@@ -552,7 +553,7 @@ namespace CosmicShore.Gameplay
                 if (mc <= 0f && mp > 0f) { mc = 1f; }   // the molt finished this tick: Elem is already the new one
                 else if (mc <= 0f) mp = 0f;
 
-                var scale = new Vector3(h.Y * m, h.Z * m, h.X * m);
+                var scale = new Vector3(h.Y * m, h.Z * m, h.X * m) * S.ElementBodyScale[eff];
                 inst.PrevPos = S.Centre + _lastPos[i] * S.UnitScale;
                 inst.CurPos = S.Centre + cur * S.UnitScale;
                 inst.PrevFace = _lastFace[i]; inst.CurFace = face;

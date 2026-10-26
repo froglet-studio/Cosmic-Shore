@@ -325,7 +325,7 @@ trio, and the traps).
   was protecting against is now the cost to watch: one size cannot fit both a tadpole and a
   shark, so a small creature's heart is bigger than its body would choose. A heart's SEAT still
   has to hold the one size (`Tools/Build/verify_fauna_heart_seat.py` measures it at 3.55; the
-  Clawfish's seat moved back to z −3.755 for it).
+  Clawfish's seat is z −2.4 at its root scale 1.641).
   **Uniform root scale is NOT uniform apparent size, and the fix goes BELOW the root.** Each
   elemental prefab carries a size correction on its model child (Charge 1.0 / Mass 1.38 /
   Space 1.34 / Time 1.42) because the four FBX models are very different sizes in their own

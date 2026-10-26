@@ -30,7 +30,7 @@ MonoBehaviour:
     HeartWorldScale: 3.372
     LeafSize: {x: 5.60606, y: 4.67172, z: 2.7822}
     GrowPeriod: -1
-    LatticeScale: -1
+    LatticeScale: 1.942
     ShieldPeriod: -1
     WitherRingInterval: -1
     MaxTotalSpawnedObjects: 216

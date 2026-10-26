@@ -69,6 +69,8 @@ namespace CosmicShore.Gameplay
             if (tuning.CohesionRadius >= 0f) cohesionRadius = tuning.CohesionRadius;
             if (tuning.BehaviorUpdateRate >= 0f) behaviorUpdateRate = tuning.BehaviorUpdateRate;
             if (tuning.TrailBlockInteractionRadius >= 0f) trailBlockInteractionRadius = tuning.TrailBlockInteractionRadius;
+            if (tuning.SeparationRadius >= 0f) separationRadius = tuning.SeparationRadius;
+            if (tuning.FeedingClusterRadius >= 0f) feedingClusterRadius = tuning.FeedingClusterRadius;
             if (tuning.GoalWeight >= 0f) goalWeight = tuning.GoalWeight;
             if (tuning.MinSpeed >= 0f) minSpeed = tuning.MinSpeed;
             if (tuning.MaxSpeed >= 0f) maxSpeed = Mathf.Max(tuning.MaxSpeed, minSpeed);

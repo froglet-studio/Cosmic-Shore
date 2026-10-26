@@ -223,6 +223,7 @@ MonoBehaviour:
   LocustPhaseSeconds: 2
   HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
   PrismScale: 1
+  ElementBodyScale: {x: 1, y: 1, z: 1, w: 1}
   HeartPrismGap: 0.6
   BirthBloomSeconds: 0.8
   MoltHeartSeconds: 0.5

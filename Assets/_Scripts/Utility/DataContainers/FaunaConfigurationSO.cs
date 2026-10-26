@@ -207,6 +207,12 @@ namespace CosmicShore.Utility
         public float CohesionRadius = -1f;
         public float BehaviorUpdateRate = -1f;
         public float TrailBlockInteractionRadius = -1f;
+        [Tooltip("Boid-to-boid separation distance, world units. A BODY length: it scales with " +
+                 "BaseBodyScale, so a variant that changes its body size states its own. -1 = keep prefab.")]
+        public float SeparationRadius = -1f;
+        [Tooltip("Radius of one mouthful around the faced prism, world units. A BODY length " +
+                 "(the mouth's reach): it scales with BaseBodyScale. -1 = keep prefab.")]
+        public float FeedingClusterRadius = -1f;
         public float GoalWeight = -1f;
         public float MinSpeed = -1f;
         public float MaxSpeed = -1f;
