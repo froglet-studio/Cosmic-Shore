@@ -16470,6 +16470,35 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## The CODEX screen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 88. Run `CodexCatalogTests` in the Test Runner (edit mode).
+
+1. Main menu: the CODEX tab has no lock. Press it, or press LT from HANGAR. **Pass:** the Codex slides in. The
+   chapters run along the top, the grid is on the left and the open page on the right. Nothing sits under the top bar
+   or the friends orb, at 16:9 and 16:10.
+2. ETHIRIONS. **Pass:** five tiles (Charge, Mass, Space, Time, Omni) with their portraits. The first is open, and its
+   page lists its facts (Kind, Collection, Reward, ...).
+3. LB / RB. **Pass:** they step Ethirions, Elements, Flora, Fauna, Pilots, Vessels, Artifacts, Tools and stop at each
+   end. Under ECOLOGY, FLORA / FAUNA show beside the grid's title. On every other chapter they are hidden.
+4. Pad: move across the grid. **Pass:** the tile under the pad opens its page, its outline turns blue, and the grid
+   scrolls to keep it in view.
+5. Flora > Arbor. **Pass:** its facts, four element cells each showing an ethirion, and its elemental laws as rows.
+   The page scrolls when it is long.
+6. Pilots > Shrapnel. **Pass:** the portrait, the "Bigger bangs, brighter booms!" line, the signature, how it flies,
+   "Mass - Turret Stance" and "Shielded Prisms".
+7. Elements > Mass. **Pass:** one row per vessel naming its Mass ability and level-5 upgrade.
+8. Artifacts. **Pass:** no tiles, and the line "Artifacts are found far out in the HyperSea. None found yet."
+9. Tools > Connect the Dots. **Pass:** its category (Creation), facts, and the paintings as rows.
+
+## Configure: picked pilot's podium glows, no outline (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 86.
+
+1. Open an Arena card with three pilots, then press the third. **Pass:** no rectangle round any pilot. The picked seat's
+   podium glows brighter and wider in its team colour and breathes. Nothing overlaps the neighbouring portraits.
+2. Press another pilot. **Pass:** the glow moves to that podium, and the vessel strip names that pilot's vessel.
+
 ## Arcade SORT and FILTER (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md section 85. Run `ArcadeGridOrderTests` in the Test Runner (edit mode).
@@ -16491,7 +16520,8 @@ Docs/MENU_REDESIGN_B.md section 84.
 2. Hangar at 16:9 and 16:10. **Pass:** everything reads smaller with more space; nothing clipped at the edges; the
    dossier reaches near the foot; the vessel list ends above the friends orb.
 3. Open an Arcade card. **Pass:** the controls panel shows two columns with whole names ("Skyburst Rockets").
-4. Top bar. **Pass:** CODEX (locked, book glyph), HANGAR, HOME, ARK, PORT (locked); pressing CODEX says not open yet;
+4. Top bar. *(Superseded for CODEX by "The CODEX screen" above, section 88: CODEX is no longer locked and opens its screen;
+   check the order and the book glyph here.)* **Pass:** CODEX (locked, book glyph), HANGAR, HOME, ARK, PORT (locked); pressing CODEX says not open yet;
    LT / RT step HANGAR - HOME - ARK in that order and skip CODEX and PORT; the slide matches the bar.
 
 ## Configure intensity and vessel strip, friends SPECTATE, Hangar free view and sizes (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
@@ -16713,3 +16743,21 @@ configure view (compact AI row, `author_menu_configure.py`). EditMode: `AIDiffic
    Third Eye on an Easy AI: it shows a ring handicap and no autopilot belief (one handicap, not two).
 3. Joust or Dog Fight on Easy vs Legendary: the Easy AI reacts late and sometimes flies off to one side of its target.
 4. Maelstrom: the compact AI row sits under the domain columns, clear of Format; the pick holds across rounds.
+
+## 🔴 2026-10-26 — Per-mode intro cameras, shuffled within families (unverified: no Unity editor in the session)
+
+**Files:** `PreGameCinematicController.cs` (new `Play(center, pilot, mode, vessels, accent)`), `IntroCamera*.cs`
+under `Assets/_Scripts/UI/PreGameCinematic/`, `Resources/IntroCameraLibrary.asset` (`author_intro_cameras.py`),
+the `MiniGameHUD` call site. EditMode: `IntroCameraTests`. Verified offline: reference compile (player and editor
+configs, 0 errors, negative control fired), `author_intro_cameras.py --check` and `--self-test`. Design:
+`Docs/IntroCameras/README.md`.
+
+1. Run `IntroCameraTests`. **Pass:** green.
+2. Play Skim Race, Headlong, Dog Fight, Rampage, Wildlife Liberation and Hijack (one per family). **Pass:** each
+   opens with letterbox bars and its own title, tagline, objective and lower third, the camera frames the arena
+   (never inside geometry for long, never pointed at empty space), and the hand-off lands behind the vessel with
+   the normal field of view. Skip (button and pad South) cuts to the pilot in 0.3 s and the bars and captions go.
+3. Rematch one gate race three times. **Pass:** a different intro each time, never the same one twice in a row.
+4. Play Tandava. **Pass:** the old orbit, no bars, no captions.
+5. If intros fly too close or too far in most arenas, change `scaleMultiplier` on the library asset (through the
+   generator) and note the value here.

@@ -533,6 +533,17 @@ Anything found during implementation that needs a design decision. The implement
 
 ---
 
+## Refactor rows from the Codex ship (claude/new-session-76hnyc, 2026-10-26)
+
+Rows only; nothing here was changed on that branch (`/ship` section 3.6). Each row carries the measurement it rests on.
+
+| # | Kind | Row | Measurement |
+|---|---|---|---|
+| R1 | Debt created | `author_menu_codex.build_view` copies the Hangar's backdrop, sea, frame and 0.88 content block from `author_menu_hangar.build_view`. One `scaled_screen(root)` helper would serve both screens. | `grep -c WINDOW_BACKDROP_ALPHA`: hangar 4, codex 2. The two blocks are line-for-line the same. |
+| R2 | Inconsistency | Two RectTransform writers: `author_ui_kit_prefabs.emit_node` (:327) and `author_menu_arcade.emit_node` (:248). They already diverged once: the arcade one ignored `node.scale` until section 88. Unify them, or make the arcade one call the kit's. | Both functions are defined. `.claude/skills/ui-redesign-tracker` T10. |
+| R3 | Gate gap | `gates.sh` runs only `author_*_assets.py`, so the 21 `author_menu_*.py` generators that share `Menu_Main` are not gated. Add them to `gates.sh`. This is Shombith's tooling. | `ls Tools/Build/author_menu_*.py \| wc -l` = 21; `gates.sh` line 35 globs `author_*_assets.py`. T9. |
+| R4 | Incompleteness (a report, not debt) | Codex discovery (counts, silhouettes, NEW, the discovery toast) and artifact data are not built. Both are design and backend decisions. Discovery persistence would be cloud data, which is Shombith's. | `Docs/CODEX.md` section 5: nothing reads `UnlockedByDefault` / `DiscoveryKey`. `CodexCatalog.Build(Artifacts)` returns empty. |
+
 ## Deferred / out of scope
 
 Decisions taken during the redesign to explicitly not do something. Recorded so they don't get silently relitigated.

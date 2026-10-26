@@ -3666,3 +3666,111 @@ Unlocked options share), `author_menu_arcade.py` (`all_games_header`, `option_ro
 tab dropped, the sort row open on arrival, the explore view without its options); `ArcadeGridOrderTests` compile in the
 editor assembly (not run: no editor here); the player and editor reference compiles.
 
+
+## 86. The picked pilot's podium glows instead of an outline (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith, with a screenshot of the Arena card):** "The selection UI is overlapping. We do not need a selection
+icon we can glow the podium below more to see it."
+
+**Built** (`author_menu_configure.py`, `ConfigureSeatPedestal`):
+- The blue outline round the picked pilot (`Pilot/Pick/Editing/Band`) is gone. It covered the pilot and their hull and
+  ran over the next seat's portrait.
+- The seat the vessel strip is picking lights its podium instead: `Pilot/Lit`, under the hull and inside the seat's
+  width. It holds a wider pool of the team's light (`Halo`, `kit_pool`, tinted like the pool through the new
+  `podiumGlow` field) and a white-hot rim (`Core`, `kit_pool_rim`), breathing (KitAmbient Breathe, 1.6 s, down to 55 %).
+- `editingMark` now points at `Pilot/Lit`, so the modal's logic is unchanged. The pilot is still the button that points
+  the strip at its seat.
+
+**How it was checked:**
+- `author_menu_configure.py --check` and `--self-test`. Two new plants are both caught: the outline sprite back on the
+  pedestal, and `podiumGlow` unwired. The validator also asserts that the podium breathes.
+- `gates.sh`, including the player and editor reference compiles.
+
+## 87. Rev 26 mockups: the Codex (2026-10-26, awaiting board approval)
+
+**Asked (Shombith):** "Bring up the codex from the design board and create mockups there of how codex with eithirions
+and everything and details about all pilots and artifacts and elements and everything will show."
+
+**On the canvas:** page "Rev 26 - Codex" of Menu Redesign B (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with
+a copy in `Docs/MenuRedesignB/board/R26*.dc.html`. Eleven boards:
+- the front page;
+- one board per chapter: Ethirions, Elements, Ecology > Fauna, Ecology > Flora, Pilots, Vessels, Artifacts, Tools;
+- the in-match discovery toast;
+- notes.
+
+Each chapter screen keeps the Hangar's split: the grid on the left and the open page on the right. LB / RB step the
+chapters. CODEX is the top bar's first tab (section 84).
+
+**Data:** every number on the boards is the shipped value, from these sources:
+- Ethirions, ecology and tools: `Assets/Resources/Codex.asset` (`CodexSO`, Garrett's, `Docs/CODEX.md`). The art is
+  the baked `Assets/_Graphics/Codex/` portraits.
+- Pilots: `SO_Captain_<Hull>_<Element>`, for the name, flavour line, signature, how the AI flies and the portrait.
+- Vessels and elements: `element_ability_table.py`, for each ability and its level-5 upgrade. The art is the Hangar
+  card art.
+
+**Proposed, not in the game:**
+- Discovery. `Docs/CODEX.md` section 5 says every entry ships unlocked, and nothing reads `UnlockedByDefault` or
+  `DiscoveryKey` yet. The counts, the NEW badges, the silhouettes and the toast all assume discovery.
+- Artifacts. There is no artifact data in the game; the two shown come from the Rev 24 Hangar board.
+- Descriptions. The Codex asset's descriptions are blank, so they show as [bracketed] slots.
+- Copy. Each element's one-line meaning ("the strike you carry", "what you build", "how far you reach", "how fast you
+  move") is proposed wording, read off the fleet's ability table.
+
+Nothing is built in Unity until a board is approved.
+
+## 88. The CODEX screen, built (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith):** "Go ahead implement the codex I like the design" (the Rev 26 boards, section 87).
+
+**What the player gets:** CODEX, the top bar's first tab, now opens its screen. Its lock is lifted, so LT / RT reach it.
+- **Chapters** along the top: ETHIRIONS, ELEMENTS, ECOLOGY, PILOTS, VESSELS, ARTIFACTS, TOOLS. LB / RB step through
+  them. ECOLOGY has two stops, Flora and Fauna, with FLORA / FAUNA tabs beside the grid's title while it is open.
+- **The grid** on the left: one tile per entry (picture, name, a quiet line). The pad landing on a tile opens it. The
+  open tile's outline is the selection blue, with a glow.
+- **The page** on the right: picture, kicker and title, then a scroll of the entry's own words, its facts, its element
+  cells and its rows.
+- The layout is the Hangar's: the same backdrop and sea, drawn at its 0.88 scale. The grid stops above the friends orb.
+
+**What each chapter shows, all from the game's own data:**
+- **Ethirions, Flora, Fauna, Tools:** `Codex.asset` (`CodexSO.Load()`, Garrett's, `Docs/CODEX.md`).
+  - A lifeform's page has its facts and one cell per element (its heart is that element's ethirion), and its
+    elemental laws as rows.
+  - A tool's page has its category, facts, and its choices as rows (the paintings, the hulls, the domains).
+- **Elements:** each element's petal and authored line, and a row for every vessel naming that element's ability and
+  level-5 upgrade (`ElementalAbilityMapSO.LoadFor`). An element with no ability designed reads "Open slot".
+- **Pilots:** the Hangar's `ElementalCaptains` list, in the vessel list's order, then Charge to Time. The page shows the
+  flavour line, signature, how they fly as a wingmate, the ability their element answers to, and its upgrade.
+- **Vessels:** the Hangar's vessel list (`SO_Classlist_Classes`), each with its four abilities and upgrades and its
+  pilots. The art is the vessel's own `IconActive`, not the colourful Hangar card art (that stays Hangar-only).
+- **Artifacts:** the game has no artifact data, so this stop shows its authored empty line.
+
+Discovery is not built (`Docs/CODEX.md` section 5: nothing reads it yet), so every entry is listed. The counts,
+silhouettes, NEW badges and discovery toast from the boards wait for it.
+
+**Built:**
+- **C#** (`Assets/_Scripts/UI/Elements/Codex/`):
+  - `CodexCatalog` is the pure builder that turns the data into chapters and pages; `CodexCatalogTests` covers it.
+  - `CodexScreen` is the `IScreen` on the view's root.
+  - `CodexTile`, `CodexPageView` and `CodexLine` draw the tiles and the page; `CodexLine` is one line view for facts,
+    cells and rows, copied from hidden templates.
+  - Every word around the data is an authored field: `CodexWords`, the stop titles, the count and the empty lines.
+- **Generator** `Tools/Build/author_menu_codex.py`:
+  - It writes `CodexTile.prefab` and `CodexView.prefab`, places one CodexView instance as the first child of
+    `Screens`, and points `ScreenSwitcher.screens`' CODEX slot (id 6, root 0 since section 84) at it.
+  - `--check` and `--self-test` run eight plants: the slot left empty, a chapter tab dropped, the page unwired, a
+    template left visible, the outline repainted by a theme, no pilots list, FLORA / FAUNA always shown, and the
+    focus order changed.
+- **Top bar** `author_menu_topnav.py`:
+  - `LOCKED` is now PORT only, and `disabledScreens` is PORT.
+  - A re-run removes every document the script can mint, so CODEX's old lock view is deleted rather than stranded.
+  - Plants: "CODEX locked again" and "PORT without its lock view".
+- **Shared emitter:** `author_menu_arcade.emit_node` now writes a node's `scale`, as the kit emitter does. Every
+  existing node has scale 1, so its output is unchanged: every menu generator still reports no drift.
+
+**How it was checked:**
+- `author_menu_codex.py --check` and `--self-test`, and `author_menu_topnav.py --check` and `--self-test`.
+- Every `author_menu_*` generator's `--check` reports no drift.
+- `gates.sh`: ALL OK, including the player and editor reference compiles.
+- Offline renders of the view and the tile. The renderer does not lay out GridLayoutGroups or nested layout groups,
+  so the grid and the page's blocks were checked by their layout settings, not by the picture.
+- Not opened in the editor, and `CodexCatalogTests` has not been run.
