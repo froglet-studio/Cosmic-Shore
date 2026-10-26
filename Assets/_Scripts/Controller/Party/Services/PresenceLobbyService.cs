@@ -154,6 +154,9 @@ namespace CosmicShore.Gameplay
         public bool ConsumeMembershipLost() => _push.ConsumeMembershipLost();
 
         /// <inheritdoc/>
+        public void TakeDepartures(ISet<string> into) => _push.TakeDepartures(into);
+
+        /// <inheritdoc/>
         /// <remarks>
         /// Three-step algorithm:
         /// <list type="number">

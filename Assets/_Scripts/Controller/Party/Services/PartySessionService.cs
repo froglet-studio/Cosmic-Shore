@@ -137,7 +137,11 @@ namespace CosmicShore.Gameplay
         /// in <see cref="ClearSession"/> - the single point that nulls the reference -
         /// so no handler outlives the session object it was attached to.
         /// </summary>
-        private void OnSessionPlayerLeaving(string playerId) => PlayerLeaving?.Invoke(playerId);
+        private void OnSessionPlayerLeaving(string playerId)
+        {
+            _departures.Report(playerId);   // Block 5 step 7: a stated departure skips the second read
+            PlayerLeaving?.Invoke(playerId);
+        }
 
         // Block 5 (push instead of poll): the session's roster events. The SDK applies a change to the
         // local session BEFORE it raises these, so ISession.Players is already current and the drain
@@ -145,13 +149,21 @@ namespace CosmicShore.Gameplay
         // is not Unity's frame: HostConnectionService.Update drains it on the main thread (rule from
         // the August presence work, B16 there).
         private int _rosterChanged;
+        private readonly DepartureReports _departures = new();
+
+        /// <inheritdoc/>
+        public void TakeDepartures(System.Collections.Generic.ISet<string> into) => _departures.TakeInto(into);
 
         /// <inheritdoc/>
         public bool ConsumeRosterChanged() => System.Threading.Interlocked.Exchange(ref _rosterChanged, 0) == 1;
 
         private void MarkRosterChanged() => System.Threading.Interlocked.Exchange(ref _rosterChanged, 1);
         private void OnSessionPlayerJoined(string playerId) => MarkRosterChanged();
-        private void OnSessionPlayerHasLeft(string playerId) => MarkRosterChanged();
+        private void OnSessionPlayerHasLeft(string playerId)
+        {
+            _departures.Report(playerId);
+            MarkRosterChanged();
+        }
         private void OnSessionPlayerPropertiesChanged() => MarkRosterChanged();
 
         /// <summary>Wires every session event this service listens to; called right after each assignment.</summary>
@@ -356,6 +368,7 @@ namespace CosmicShore.Gameplay
             Detach(ActiveSession);
             ActiveSession         = null;
             System.Threading.Interlocked.Exchange(ref _rosterChanged, 0);
+            _departures.Clear();
             CreatedAtUnscaledTime = 0f;
         }
 

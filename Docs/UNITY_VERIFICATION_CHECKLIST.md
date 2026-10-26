@@ -3887,6 +3887,29 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Party: Block 5 step 7 - two absent reads before a player is removed (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 7, from the August work's c9c6db1772): one short
+read used to remove a player from the online list (`HostConnectionService.RefreshOnlinePlayersDiff`) and the party
+(`PartyMemberService.SyncFromSession`). Both now go through `AbsenceStrikes`: a player missing from a server read gets a
+strike, two in a row removes them, a sighting clears it. Re-reading the SDK's copy (a push tick, a party tick between
+GETs) adds no strike. A departure the service states removes at once: `PresencePushChannel` and `PartySessionService`
+collect `PlayerHasLeft` / `PlayerLeaving` ids (`DepartureReports`, `TakeDepartures` on both interfaces), and a member
+turning spectator still goes at once. An outgoing invite clears when its target leaves the online list, not on the
+first short read.
+**Verified without the editor:** 15 tests in `AbsenceStrikesTests`; seven negative controls (removing on one read,
+counting local-copy ticks, not passing the party departures, the presence channel or the party session not reporting,
+the invite clean-up ignoring the list, a spectator not counted as stated) each fail a test. The full edit-mode suite
+on Amoebius 662/666 (the 4 known failures); `unity_refcompile` player and editor OK; the Amoebius player build; the
+console-logging and conditional-compilation gates. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The 15 `AbsenceStrikesTests` pass in the Test Runner.
+2. Three MPPM players in the menu: the online list no longer blinks a player out and back in while nobody leaves
+   (most visible in the first minute, when voided reads are commonest).
+3. P1 invites P2, P2 accepts, then P2 leaves the party: P2 leaves P1's party slots within about a second (stated
+   departure). Stop P3's Play outright: P3 leaves the other online lists within two reads (a few seconds), or at once
+   when UGS pushes the leave.
+
 ### 🔴 Party: Block 5 step 6 - our party size goes out the frame the party changes (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 6, from the August work's 111676ba22):

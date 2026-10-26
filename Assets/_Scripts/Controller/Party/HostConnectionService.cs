@@ -213,6 +213,13 @@ namespace CosmicShore.Gameplay
         // RefreshAsync and the member scans, which already hold the mutex the publish waits on.
         private bool   _rosterMovedSincePublish;
         private ScriptableListPartyPlayerData _rosterList;
+
+        // Block 5 step 7: two absent reads before a player leaves a list (AbsenceStrikes). The online
+        // list's strikes live here; the party list's live in PartyMemberService. The departure sets are
+        // per-diff scratch, filled from each service's push.
+        private readonly AbsenceStrikes   _onlineAbsences   = new();
+        private readonly HashSet<string>  _onlineDepartures = new();
+        private readonly HashSet<string>  _partyDepartures  = new();
         private bool   _partyLeaveSubscribed;
         private bool   _handlingDefiniteSessionGone;
         private float  _rateLimitBackoffUntil;
@@ -1542,7 +1549,8 @@ namespace CosmicShore.Gameplay
                     // B31: one lobby read per tick. When the party session is due its read, this tick
                     // skips the presence read and works from the presence lobby as last read; the two
                     // back to back in one second was a 429 on every party read.
-                    if (fetchFromServer && !PartyReadDueThisTick())
+                    bool presenceRead = fetchFromServer && !PartyReadDueThisTick();
+                    if (presenceRead)
                         await _lobbyService.RefreshAsync();
 
                     // Periodic self-heal: if a simultaneous-create split left us in our
@@ -1570,9 +1578,10 @@ namespace CosmicShore.Gameplay
                         await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
                     }
 
-                    // Diff-based update - never Clear() + re-Add() (would flicker UI).
+                    // Diff-based update - never Clear() + re-Add() (would flicker UI). Only a tick that
+                    // read the lobby from the server counts toward a removal (Block 5 step 7).
                     if (connectionData.OnlinePlayers != null)
-                        RefreshOnlinePlayersDiff();
+                        RefreshOnlinePlayersDiff(serverRead: presenceRead);
 
                     // Scan composite invite_payloads for lines targeting us - and notice when the
                     // line behind the invite we last surfaced is GONE (see ForgetWithdrawnInvite).
@@ -1968,9 +1977,10 @@ namespace CosmicShore.Gameplay
             _scheduler.Boost();
         }
 
-        private void RefreshOnlinePlayersDiff()
+        private void RefreshOnlinePlayersDiff(bool serverRead)
         {
             var freshPlayerIds = new HashSet<string>();
+            _lobbyService.TakeDepartures(_onlineDepartures);
 
             foreach (var p in _lobbyService.ActiveLobby.Players)
             {
@@ -2011,9 +2021,21 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // Block 5 step 7 (the August presence work's c9c6db1772): a player missing from one read is
+            // not gone. A short read is the SDK's stale-index fault, a read landing mid-change, or the
+            // converge having just swapped us into a lobby whose roster has not filled; removing on it
+            // emptied the online panel and refilled it a tick later. Removal takes
+            // AbsenceStrikes.ReadsBeforeRemoval consecutive absent server reads, or one when the lobby's
+            // push said the player left.
             for (int i = connectionData.OnlinePlayers.Count - 1; i >= 0; i--)
             {
-                if (!freshPlayerIds.Contains(connectionData.OnlinePlayers[i].PlayerId))
+                string id = connectionData.OnlinePlayers[i].PlayerId;
+                if (freshPlayerIds.Contains(id))
+                {
+                    _onlineAbsences.Seen(id);
+                    continue;
+                }
+                if (_onlineAbsences.Absent(id, _onlineDepartures.Contains(id), serverRead))
                     connectionData.OnlinePlayers.RemoveAt(i);
             }
 
@@ -2023,17 +2045,26 @@ namespace CosmicShore.Gameplay
             List<string> departed = null;
             foreach (var targetId in _inviteService.OutgoingTargets)
             {
-                if (!freshPlayerIds.Contains(targetId))
-                {
-                    departed ??= new List<string>();
-                    departed.Add(targetId);
-                }
+                if (freshPlayerIds.Contains(targetId)) continue;
+                // The same rule, read from the list rather than the strikes (the loop above forgets a
+                // player's strikes as it removes them): absent now AND no longer listed means the
+                // removal was served. A target never listed at all clears at once, as before.
+                if (ContainsOnlinePlayer(targetId)) continue;
+                departed ??= new List<string>();
+                departed.Add(targetId);
             }
             if (departed != null)
             {
                 foreach (var id in departed)
                     _ = ClearOutgoingInviteIfPresentAsync(id, "presence-leave");
             }
+        }
+
+        private bool ContainsOnlinePlayer(string playerId)
+        {
+            foreach (var p in connectionData.OnlinePlayers)
+                if (p.PlayerId == playerId) return true;
+            return false;
         }
 
         private PartyPlayerData ReadOnlinePlayerData(IReadOnlyPlayer p)
@@ -2182,7 +2213,15 @@ namespace CosmicShore.Gameplay
             // reads here skipped its presence read (PartyReadDueThisTick), and LobbyReadPacer spaces
             // this read from any other.
             bool poll = bypassGraceGate || _scheduler.TryTakePartySessionPoll(Time.unscaledTime, _scheduler.IsBoosted);
-            try { if (poll) await _partySessionService.RefreshAsync(); }
+            bool serverRead = false;   // Block 5 step 7: only a GET that landed counts toward removing a member
+            try
+            {
+                if (poll)
+                {
+                    await _partySessionService.RefreshAsync();
+                    serverRead = true;
+                }
+            }
             catch (Exception e)
             {
                 // [stale-tick] The session this tick was polling is no longer the
@@ -2267,8 +2306,9 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(localId))
                 return;
 
+            _partySessionService.TakeDepartures(_partyDepartures);
             var joinedPlayerIds = _memberService.SyncFromSession(
-                _partySessionService.ActiveSession, localId);
+                _partySessionService.ActiveSession, localId, _partyDepartures, serverRead);
 
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join", callerHoldsLobbyMutex: true);   // RefreshPartyMembersAsync always runs under the lobby mutex

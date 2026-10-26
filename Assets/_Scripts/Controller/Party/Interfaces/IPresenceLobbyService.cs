@@ -56,6 +56,14 @@ namespace CosmicShore.Gameplay
         bool ConsumeMembershipLost();
 
         /// <summary>
+        /// Moves the ids of the players the active lobby's push said left since the last call into
+        /// <paramref name="into"/> (cleared first). The online-list diff removes these at once instead
+        /// of waiting for a second absent read (Block 5 step 7, <see cref="AbsenceStrikes"/>). Main
+        /// thread only.
+        /// </summary>
+        void TakeDepartures(System.Collections.Generic.ISet<string> into);
+
+        /// <summary>
         /// Joins an existing presence lobby or creates one if none exists.
         /// Safe to call multiple times - returns early if already joined.
         /// </summary>

@@ -39,7 +39,7 @@ this one.
 
 **Port order.** Bring the design, not the files. `UgsRequestPolicy`, `LobbyReadPacer` and the 400-line rule stay.
 
-**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-6 are done (below, each marked); steps 7-9 are next.
+**Progress (2026-10-26, `Ys-bleeding-edge`):** steps 1-7 are done (below, each marked); steps 8-9 are next.
 
 1. **Done 2026-10-26.** **Count voided ticks** (44587a2fa4). The benign branch at `HostConnectionService.cs:1552` and `:2089` is
    empty, and `UgsRequestCounter.Benign` is never counted, so a voided tick looks healthy. About 5 lines;
@@ -67,7 +67,10 @@ this one.
    happens only on launch and scene load (`HostConnectionService.cs:2697`), so partyCount lags a poll. About 40
    lines. Optionally the coalesced `OnPartyRosterChanged` channel (f6aecb6a5b + 4aece9257f + 9ee67e5f2a as one
    unit; today one change repaints `FriendsListPanel` three times).
-7. **Two absent reads before eviction** for poll-only absences (c9c6db1772). Today one absence evicts
+7. **Done 2026-10-26** (one `AbsenceStrikes` counter used by both lists; a strike needs a SERVER read, so a push tick
+   or a party tick between GETs re-reading the SDK's copy adds none; a departure the service states (`PlayerLeaving` /
+   `PlayerHasLeft`, collected by `DepartureReports`) or a member turning spectator removes at once, which covers
+   August's "graceful leave is not slowed down" by id instead of by a re-read). **Two absent reads before eviction** for poll-only absences (c9c6db1772). Today one absence evicts
    (`HostConnectionService.cs:1913-1917`, `PartyMemberService.cs:162-171`). About 110 lines.
 8. **Then relax:** delete the boost window, the 4 s converge and the per-tick reads, and keep one 20 s ±
    jitter safety poll. Re-measure with step 1's counter.

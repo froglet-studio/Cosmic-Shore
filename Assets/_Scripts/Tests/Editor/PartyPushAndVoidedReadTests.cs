@@ -281,6 +281,7 @@ namespace CosmicShore.Tests
 #pragma warning restore CS0067
             public float CreatedAtUnscaledTime => -1000f;
             public bool ConsumeRosterChanged() => false;
+            public void TakeDepartures(System.Collections.Generic.ISet<string> into) => into.Clear();
             public UniTask CreateAsync(int maxPlayers) => UniTask.CompletedTask;
             public UniTask JoinByIdAsync(string sessionId) => UniTask.CompletedTask;
             public UniTask JoinByIdAsync(string sessionId, bool asSpectator) => UniTask.CompletedTask;
@@ -298,6 +299,7 @@ namespace CosmicShore.Tests
             public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
             public bool ConsumeRosterDirty() => false;
             public bool ConsumeMembershipLost() => false;
+            public void TakeDepartures(System.Collections.Generic.ISet<string> into) => into.Clear();
             public UniTask JoinOrCreateAsync(int maxPlayers) => UniTask.CompletedTask;
             public UniTask LeaveAsync() => UniTask.CompletedTask;
             public UniTask RefreshAsync() { OnRefresh?.Invoke(); return UniTask.CompletedTask; }

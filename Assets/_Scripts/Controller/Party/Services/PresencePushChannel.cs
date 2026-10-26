@@ -33,6 +33,7 @@ namespace CosmicShore.Gameplay
         ISession _session;
         int _rosterDirty;
         int _membershipLost;
+        readonly DepartureReports _departures = new();
 
         /// <summary>The session currently listened to, or null.</summary>
         public ISession Session => _session;
@@ -73,6 +74,7 @@ namespace CosmicShore.Gameplay
             }
             Interlocked.Exchange(ref _rosterDirty, 0);
             Interlocked.Exchange(ref _membershipLost, 0);
+            _departures.Clear();
         }
 
         /// <summary>True once per burst of roster pushes (joins, leaves, property changes) since the last call.</summary>
@@ -81,9 +83,19 @@ namespace CosmicShore.Gameplay
         /// <summary>True once after the service removed us from the lobby or deleted it.</summary>
         public bool ConsumeMembershipLost() => Interlocked.Exchange(ref _membershipLost, 0) == 1;
 
+        /// <summary>
+        /// Moves the players the lobby said left since the last call into <paramref name="into"/>
+        /// (Block 5 step 7: a stated departure is removed at once, see <see cref="AbsenceStrikes"/>).
+        /// </summary>
+        public void TakeDepartures(System.Collections.Generic.ISet<string> into) => _departures.TakeInto(into);
+
         void MarkRosterDirty() => Interlocked.Exchange(ref _rosterDirty, 1);
         void OnPlayerJoined(string playerId) => MarkRosterDirty();
-        void OnPlayerHasLeft(string playerId) => MarkRosterDirty();
+        void OnPlayerHasLeft(string playerId)
+        {
+            _departures.Report(playerId);
+            MarkRosterDirty();
+        }
         void OnPlayerPropertiesChanged() => MarkRosterDirty();
         void OnMembershipLost() => Interlocked.Exchange(ref _membershipLost, 1);
     }
