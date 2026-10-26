@@ -16488,7 +16488,8 @@ Docs/MENU_REDESIGN_B.md section 84.
 2. Hangar at 16:9 and 16:10. **Pass:** everything reads smaller with more space; nothing clipped at the edges; the
    dossier reaches near the foot; the vessel list ends above the friends orb.
 3. Open an Arcade card. **Pass:** the controls panel shows two columns with whole names ("Skyburst Rockets").
-4. Top bar. **Pass:** CODEX (locked, book glyph), HANGAR, HOME, ARK, PORT (locked); pressing CODEX says not open yet;
+4. Top bar. *(Superseded for CODEX by "The CODEX screen" above, section 88: CODEX is no longer locked and opens its screen;
+   check the order and the book glyph here.)* **Pass:** CODEX (locked, book glyph), HANGAR, HOME, ARK, PORT (locked); pressing CODEX says not open yet;
    LT / RT step HANGAR - HOME - ARK in that order and skip CODEX and PORT; the slide matches the bar.
 
 ## Configure intensity and vessel strip, friends SPECTATE, Hangar free view and sizes (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
