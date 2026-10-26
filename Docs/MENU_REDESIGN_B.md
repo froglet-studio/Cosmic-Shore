@@ -3382,3 +3382,16 @@ Shombith, 2026-10-26: "For scoreboard I liked D". Board: R23ScoreD ("Rev 23 - Sc
   not stepping aside, a side with nowhere for its rows), `gates.sh` all OK, a rect render of the panel. Hand test:
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Scoreboard D".
 
+
+## 77. Rev 25 boards: the Arcade card in Arena and Voyage; intensity without Roman numerals (2026-10-26)
+
+Shombith, 2026-10-26: "the same card as in Arcade should be there in arena and voyages game configuration card selecting
+vessel and domain and AI. Send me mockups of that"; then "Also remove the roman numericals with numbers or just that
+signal sign". **Boards only for Arena and Voyage** (canvas page "Rev 25 - Arcade card in Arena and Voyage", copied into
+`Docs/MenuRedesignB/board/`): the G card with six seats, each pilot standing on the vessel they fly - A puts a team and a
+vessel stepper under every pilot, B keeps the team steppers and adds a strip of the card's hulls for the focused seat.
+Tandava (one crew, `MaxDomainsAllowed: 1`) carries no team stepper. Nothing is built for them until a pick.
+
+**Built now:** the Arcade window's intensity reads 1 - 4 instead of I - IV (`IntensityStepper.numerals`, authored by
+`author_menu_configure.py`; the unlock line follows). The boards show the other choice too: no number, just the four
+pips as a rising signal sign (B boards).

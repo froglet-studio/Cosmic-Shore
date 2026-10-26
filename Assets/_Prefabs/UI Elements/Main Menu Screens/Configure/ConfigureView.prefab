@@ -2415,10 +2415,10 @@ MonoBehaviour:
   previousButton: {fileID: 319093270395623414}
   nextButton: {fileID: 936567173108822052}
   numerals:
-  - I
-  - II
-  - III
-  - IV
+  - 1
+  - 2
+  - 3
+  - 4
   unlockLine: Play {level} to unlock
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
 --- !u!1 &943580286305292889

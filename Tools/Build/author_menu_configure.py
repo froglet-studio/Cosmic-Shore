@@ -1422,7 +1422,7 @@ def g_intensity(cfg, y):
              f"  hintText: {ref(ctx.c('Stepper/Hint', 'tmp'))}\n"
              f"  previousButton: {ref(ctx.c('Stepper/Prev', 'button'))}\n"
              f"  nextButton: {ref(ctx.c('Stepper/Next', 'button'))}\n"
-             "  numerals:\n  - I\n  - II\n  - III\n  - IV\n"
+             "  numerals:\n  - 1\n  - 2\n  - 3\n  - 4\n"
              "  unlockLine: Play {level} to unlock\n"
              f"  theme: {K.ref(11400000, K.THEME, 2)}\n"))
     return sec

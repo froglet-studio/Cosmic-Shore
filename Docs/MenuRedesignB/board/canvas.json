@@ -1846,6 +1846,46 @@
    "h": 1000,
    "page": "rev24",
    "title": "Rev 24 - notes"
+  },
+  "R25ArenaA.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev25",
+   "title": "Rev 25 - Arena A (steppers, intensity as a number)"
+  },
+  "R25ArenaB.dc.html": {
+   "x": 2020,
+   "y": 0,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev25",
+   "title": "Rev 25 - Arena B (vessel strip, intensity as a signal)"
+  },
+  "R25VoyageA.dc.html": {
+   "x": 0,
+   "y": 1180,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev25",
+   "title": "Rev 25 - Voyage A (steppers, number)"
+  },
+  "R25VoyageB.dc.html": {
+   "x": 2020,
+   "y": 1180,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev25",
+   "title": "Rev 25 - Voyage B (vessel strip, signal)"
+  },
+  "R25Notes.dc.html": {
+   "x": 0,
+   "y": 2360,
+   "w": 1920,
+   "h": 1000,
+   "page": "rev25",
+   "title": "Rev 25 - notes"
   }
  },
  "createdOnFiles": {
@@ -2219,7 +2259,12 @@
   "R24HangarPilots.dc.html",
   "R24HangarArtifacts.dc.html",
   "R24Borders.dc.html",
-  "R24Notes.dc.html"
+  "R24Notes.dc.html",
+  "R25ArenaA.dc.html",
+  "R25ArenaB.dc.html",
+  "R25VoyageA.dc.html",
+  "R25VoyageB.dc.html",
+  "R25Notes.dc.html"
  ],
  "pages": [
   {
@@ -2321,6 +2366,10 @@
   {
    "id": "rev24",
    "name": "Rev 24 - Hangar C taken forward"
+  },
+  {
+   "id": "rev25",
+   "name": "Rev 25 - Arcade card in Arena and Voyage"
   }
  ],
  "title": "Menu Redesign B"

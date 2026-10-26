@@ -265,6 +265,14 @@ canvas's `project/` files (Artifact read) into this folder.
 - [`R24Borders.dc.html`](R24Borders.dc.html) - The angled open border, four ways
 - [`R24Notes.dc.html`](R24Notes.dc.html) - Rev 24 notes
 
+### Rev 25 - Arcade card in Arena and Voyage  (page `rev25`)
+
+- [`R25ArenaA.dc.html`](R25ArenaA.dc.html) - Brood Rush: the Arcade G card, six seats, team and vessel steppers under each pilot, intensity as a number
+- [`R25ArenaB.dc.html`](R25ArenaB.dc.html) - Brood Rush: team steppers, a vessel strip for the focused seat, intensity as a signal sign
+- [`R25VoyageA.dc.html`](R25VoyageA.dc.html) - Tandava: one crew (no team stepper), vessel steppers, intensity as a number
+- [`R25VoyageB.dc.html`](R25VoyageB.dc.html) - Tandava: vessel strip, intensity as a signal sign
+- [`R25Notes.dc.html`](R25Notes.dc.html) - Rev 25 notes
+
 ### Item boards (before the paged rounds)
 
 - [`HomeOffline.dc.html`](HomeOffline.dc.html) - Item 6 · Home · offline, asking to go online
