@@ -1,6 +1,6 @@
 # Menu Redesign B - the mockup board, in git
 
-Every board of the **Menu Redesign B** canvas (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), Rev 3 to Rev 23,
+Every board of the **Menu Redesign B** canvas (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), Rev 3 to Rev 24,
 copied here on 2026-10-26 from canvas version `1793026445-9ded` so a parallel session can read the designs from the repo.
 The live canvas stays the source: new rounds are published there first, and this copy is refreshed by re-reading the
 canvas's `project/` files (Artifact read) into this folder.
@@ -254,6 +254,16 @@ canvas's `project/` files (Artifact read) into this folder.
 - [`R23ScoreE.dc.html`](R23ScoreE.dc.html) - Rev 23 - E Broadcast: a banner and four pilot cards over the world, esports lower third
 - [`R23ScoreF.dc.html`](R23ScoreF.dc.html) - Rev 23 - F Live board: hold Select mid-match for positions, gaps and team totals
 - [`R23Notes.dc.html`](R23Notes.dc.html) - Rev 23 - notes: the one match, what every option keeps, what each does
+
+### Rev 24 - Hangar C taken forward  (page `rev24`)
+
+- [`R24HangarUpgrades.dc.html`](R24HangarUpgrades.dc.html) - Overview > Upgrades: vessel list left, in-game element flowers with N/5, angled open border, vibe bars
+- [`R24HangarAbilities.dc.html`](R24HangarAbilities.dc.html) - Overview > Abilities
+- [`R24HangarGames.dc.html`](R24HangarGames.dc.html) - Overview > Games
+- [`R24HangarPilots.dc.html`](R24HangarPilots.dc.html) - Pilots: the header names the pilot
+- [`R24HangarArtifacts.dc.html`](R24HangarArtifacts.dc.html) - Artifacts: the header names the slot
+- [`R24Borders.dc.html`](R24Borders.dc.html) - The angled open border, four ways
+- [`R24Notes.dc.html`](R24Notes.dc.html) - Rev 24 notes
 
 ### Item boards (before the paged rounds)
 

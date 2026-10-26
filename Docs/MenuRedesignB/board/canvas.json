@@ -1790,6 +1790,62 @@
    "h": 1000,
    "page": "rev23",
    "title": "Rev 23 - notes: the one match, what every option keeps, what each does"
+  },
+  "R24HangarUpgrades.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev24",
+   "title": "Rev 24 - Overview > Upgrades: vessel list left, in-game element flowers with N/5, angled open border, vibe bars"
+  },
+  "R24HangarAbilities.dc.html": {
+   "x": 2100,
+   "y": 0,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev24",
+   "title": "Rev 24 - Overview > Abilities: the four abilities with their element flowers (info only)"
+  },
+  "R24HangarGames.dc.html": {
+   "x": 4200,
+   "y": 0,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev24",
+   "title": "Rev 24 - Overview > Games: the games that fly the Sparrow"
+  },
+  "R24HangarPilots.dc.html": {
+   "x": 0,
+   "y": 1260,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev24",
+   "title": "Rev 24 - Pilots: the header names the pilot (Shrapnel); one pilot per element"
+  },
+  "R24HangarArtifacts.dc.html": {
+   "x": 2100,
+   "y": 1260,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev24",
+   "title": "Rev 24 - Artifacts: the header names the slot; equipped, carried, undiscovered"
+  },
+  "R24Borders.dc.html": {
+   "x": 4200,
+   "y": 1260,
+   "w": 1920,
+   "h": 1080,
+   "page": "rev24",
+   "title": "Rev 24 - The angled open border, four ways (Cradle, Rail, Split, Echo)"
+  },
+  "R24Notes.dc.html": {
+   "x": 0,
+   "y": 2520,
+   "w": 1920,
+   "h": 1000,
+   "page": "rev24",
+   "title": "Rev 24 - notes"
   }
  },
  "createdOnFiles": {
@@ -2156,7 +2212,14 @@
   "R23ScoreD.dc.html",
   "R23ScoreE.dc.html",
   "R23ScoreF.dc.html",
-  "R23Notes.dc.html"
+  "R23Notes.dc.html",
+  "R24HangarUpgrades.dc.html",
+  "R24HangarAbilities.dc.html",
+  "R24HangarGames.dc.html",
+  "R24HangarPilots.dc.html",
+  "R24HangarArtifacts.dc.html",
+  "R24Borders.dc.html",
+  "R24Notes.dc.html"
  ],
  "pages": [
   {
@@ -2254,6 +2317,10 @@
   {
    "id": "rev23",
    "name": "Rev 23 - Scoreboard, six ways"
+  },
+  {
+   "id": "rev24",
+   "name": "Rev 24 - Hangar C taken forward"
   }
  ],
  "title": "Menu Redesign B"
