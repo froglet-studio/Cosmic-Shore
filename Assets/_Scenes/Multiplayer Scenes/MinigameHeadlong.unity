@@ -822,7 +822,7 @@ MonoBehaviour:
   courseOuterRadius: 1080
   courseInnerRadiusFallback: 480
   innerRadiusNucleusFactor: 1.22
-  laps: 3
+  laps: 5
   gateBloomSeconds: 0.9
   courseSeed: 0
   aiCommitDistance: 260

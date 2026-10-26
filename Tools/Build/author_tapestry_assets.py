@@ -56,7 +56,7 @@ EXISTING["BarrenCellConfig"] = lib.existing_guid("Assets/_SO_Assets/Cell Configs
     else "52de45c2fab54ea0a35bc37a311d80e6"
 
 # ── The round ────────────────────────────────────────────────────────────────
-ROUND_SECONDS = 150           # kept in sync with EndConditionOverridesSO.DefaultTapestryRoundSeconds
+ROUND_SECONDS = 90            # kept in sync with EndConditionOverridesSO.DefaultTapestryRoundSeconds (150 until 2026-10-26)
 CRYSTALS_BY_INTENSITY = [24, 16, 10, 6]
 SPAWN = common.spawn_block(150, 0, 0)   # Barren HAS a nucleus: 150 outside it, symmetric
 

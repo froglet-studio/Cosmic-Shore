@@ -187,7 +187,7 @@ namespace CosmicShore.Content.Editing
 
         static IEnumerable<Type> Required(Type t)
         {
-            foreach (var a in t.GetCustomAttributes(true).Where(a => a.GetType().Name == "RequireComponentAttribute"))
+            foreach (var a in t.GetCustomAttributes(true).Where(a => a.GetType().Name is "RequireComponent" or "RequireComponentAttribute"))
                 foreach (var f in new[] { "m_Type0", "m_Type1", "m_Type2" })
                     if (a.GetType().GetField(f)?.GetValue(a) is Type req) yield return req;
         }

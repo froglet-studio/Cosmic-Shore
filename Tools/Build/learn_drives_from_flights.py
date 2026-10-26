@@ -874,8 +874,16 @@ def copy_with(base_path, name, learned, fallback=None):
     base = open(start, encoding="utf-8").read()
     text = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {name}", base, count=1)
     for k, v in learned.items():
-        text = re.sub(rf"(?m)^  {re.escape(k)}: [^\n]*$", f"  {k}: {v}", text, count=1)
+        text, n = re.subn(rf"(?m)^  {re.escape(k)}: [^\n]*$", f"  {k}: {v}", text, count=1)
+        if not n:
+            UNWRITTEN.add((name, k))
     return os.path.join(OUT_DIR, name + ".asset"), text
+
+
+# (variant, field) a learner measured but could not write: the asset does not serialize the field (a field still at
+# its code default is not in the YAML until Unity saves it). Reported, so a number never vanishes silently
+# (StoatDipoleConfig.autopilotMaxOrbitDegrees, 2026-10-26).
+UNWRITTEN = set()
 
 
 def variant_texts(hull, learned):
@@ -978,6 +986,9 @@ def report(results, wrote):
                 lines.append(f"| `{k}` | {fmt(person.get(k))} | {fmt(ai.get(k))} | {fmt(learned.get(k))} |")
             lines.append("")
     lines.append("Written: " + (", ".join(os.path.relpath(p, REPO) for p in wrote) if wrote else "nothing") + ".")
+    if UNWRITTEN:
+        lines.append("\nNot written, the asset has no such serialized field (serialize it at its code default first): "
+                     + ", ".join(f"`{n}.{k}`" for n, k in sorted(UNWRITTEN)) + ".")
     return "\n".join(lines)
 
 
@@ -1240,6 +1251,8 @@ def self_test():
     # A variant overrides only the base's own fields and keeps its script.
     path, text = variant_text("Rhino", {"alignDegrees": 9.5, "notAField": 1})
     assert "alignDegrees: 9.5" in text and "notAField" not in text and "m_Name: RhinoAIBoostPolicy_Regatta" in text, text
+    assert ("RhinoAIBoostPolicy_Regatta", "notAField") in UNWRITTEN and \
+        ("RhinoAIBoostPolicy_Regatta", "alignDegrees") not in UNWRITTEN, "a dropped number is reported, a written one is not"
     path, text = variant_text("Rhino", {"alignDegrees": 9.5}, intensity=4)
     assert path.endswith(f"RhinoAIBoostPolicy_{MODE}_I4.asset") and f"m_Name: RhinoAIBoostPolicy_{MODE}_I4" in text, path
     path, text = variant_text("Manta", {"BoostStickBand": 0.5, "YastriStickBand": 0.8})

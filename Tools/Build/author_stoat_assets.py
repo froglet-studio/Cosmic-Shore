@@ -678,7 +678,10 @@ def dipole_config_asset() -> str:
             "  autopilotDrySeconds: 0.5\n"
             "  autopilotMinHoldSeconds: 0.8\n"
             "  autopilotMaxHoldSeconds: 15\n"
-            "  autopilotRelaySeconds: 0.25\n" +
+            "  autopilotRelaySeconds: 0.25\n"
+            # the code's own default (one lap round the sink), serialized so a mode's learned copy can carry its own
+            # (StoatDipoleConfig_Warpline: Yash's pairs turned him about 78 deg, 2026-10-26)
+            "  autopilotMaxOrbitDegrees: 360\n" +
             empty_event("openEvent") + empty_event("annihilateEvent") + empty_event("warpEvent"))
 
 

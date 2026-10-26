@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 27
   Name: Tempest
-  Description: The fast crew: the Squirrel, the Sparrow and the Manta. The fastest omega. Helm flies, Arms fires the Pulsefire
-    battery, Core holds the Afterburner veil and fires Kabloom.
+  Description: 'The fast crew: the Squirrel, the Sparrow and the Manta. The fastest omega. Helm flies, Arms fires the Pulsefire
+    battery, Core holds the Afterburner veil and fires Kabloom.'
   CrewNames: []
   CrewNameTemplate: '{0} and {1}'
   SeatCount: 3

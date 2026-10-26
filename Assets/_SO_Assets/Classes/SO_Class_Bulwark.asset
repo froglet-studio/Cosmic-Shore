@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 26
   Name: Bulwark
-  Description: The heavy crew: the Rhino, the Grizzly and the Scarab. The slowest omega and the one that does not stop: it
+  Description: 'The heavy crew: the Rhino, the Grizzly and the Scarab. The slowest omega and the one that does not stop: it
     ploughs the mass it touches. Helm flies, Arms fires the Siege cannon, Core holds the Switch wall and fires the
-    Breaker.
+    Breaker.'
   CrewNames: []
   CrewNameTemplate: '{0} and {1}'
   SeatCount: 3

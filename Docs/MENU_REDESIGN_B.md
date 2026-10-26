@@ -3303,3 +3303,27 @@ Rev 4 column, section 43, and are the follow-up).
   in the editor (checklist entry "Rev 20 G").
 
 - **With Yash's `ConfigurePilotsFit` (bleeding-edge #1563, merged in 2026-10-26).** It grows the Rev 4 Pilots section to its tallest domain column and moves the next section and START down with it. The arcade view no longer has that section (its pilots are the pedestal lineup, its domain columns a hidden seat book), so the fit is authored on the Arena and Maelstrom views only; a fit on the arcade view would move START and the lineup to fit columns nobody sees. `author_menu_configure.py` asserts the arcade view carries none, and its self-test plants one there (Yash's two plants now target the Arena view).
+
+## 75. The replay browser, the Arcade's REPLAYS button and My Replays in the Profile (2026-10-24 / 26, awaiting Shombith's approval)
+
+Built on `claude/match-replays-5t3dbr` for match replays (`Docs/REPLAYS.md` section 6), without a board round:
+
+- **MY REPLAYS** sits left of **BACK** in the Profile header (2026-10-26, on Ys-bleeding-edge; Yash: "inside profiles
+  should have my replay area where I can choose the last 10 games"): a Default transparent KitButtonSmall like BACK,
+  carrying `OpenModalButton` (`author_menu_profile.py` `build_view`). No pad shortcut: the profile's pad buttons are
+  ControllerButtonPress with empty screen lists, so it is reached with the D-pad and A. Only its four objects were
+  spliced into `ProfileView.prefab`; the generator's pre-existing text-width drift there is left for its owner.
+- **REPLAYS** sits left of **BACK** in the Arcade header (`author_menu_arcade.py` `replays_button`), a Default
+  transparent KitButton like Back, with `OpenModalButton` opening `ModalWindows.REPLAYS = 19` by type.
+- **The window is My Replays**: "My replays" in H1 with "Your last 10 games" (BodySmall) beside it; it lists the
+  newest 10 per section (`ReplayConfigSO.ListedReplays`, and the device keeps 10).
+- **The Replays window** (`author_menu_replays.py`) is the Credits window's frame (1200 x 900, dim, brackets, H1 title,
+  Close B, thin ControlActive scrollbar) holding ON THIS DEVICE and ON YOUR OTHER DEVICES sections of framed rows (H3
+  mode, BodySmall date and length, Body result, WATCH as an opaque Play button, DELETE as Default), and an empty line.
+- **The playback HUD** is its own root canvas: a top and a bottom SurfaceBlack band at 0.72 over the replay, the
+  title in H2, a scrub bar, Data readouts, a row of ButtonSmall transport buttons (PAUSE opaque Play) and a BodySmall
+  line naming the pad controls.
+
+Every word is an authored field (section 50). The Menu_Main instance sits just before Credits under ModalWindows; the
+two generators run in either order. Change anything here through the generators (replays, profile, arcade), never in
+the scene.

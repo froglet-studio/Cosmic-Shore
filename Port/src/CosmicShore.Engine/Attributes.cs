@@ -100,14 +100,18 @@ namespace CosmicShore.Engine
     }
 
 
-    /// <summary>Declares component dependencies (enforced by editor tooling later; inert at runtime).</summary>
+    /// <summary>
+    /// Declares component dependencies (enforced by editor tooling later; inert at runtime). Named as Unity names it,
+    /// with no Attribute suffix, so game code that reads the rules (<c>(RequireComponent)attrs[i]</c>,
+    /// <c>typeof(RequireComponent)</c>: TheaterGhost, CrystalDepthPrismBenchmarkWindow) compiles unchanged.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public sealed class RequireComponentAttribute : Attribute
+    public sealed class RequireComponent : Attribute
     {
         public readonly Type m_Type0, m_Type1, m_Type2;
-        public RequireComponentAttribute(Type requiredComponent) { m_Type0 = requiredComponent; }
-        public RequireComponentAttribute(Type requiredComponent, Type requiredComponent2) { m_Type0 = requiredComponent; m_Type1 = requiredComponent2; }
-        public RequireComponentAttribute(Type requiredComponent, Type requiredComponent2, Type requiredComponent3) { m_Type0 = requiredComponent; m_Type1 = requiredComponent2; m_Type2 = requiredComponent3; }
+        public RequireComponent(Type requiredComponent) { m_Type0 = requiredComponent; }
+        public RequireComponent(Type requiredComponent, Type requiredComponent2) { m_Type0 = requiredComponent; m_Type1 = requiredComponent2; }
+        public RequireComponent(Type requiredComponent, Type requiredComponent2, Type requiredComponent3) { m_Type0 = requiredComponent; m_Type1 = requiredComponent2; m_Type2 = requiredComponent3; }
     }
 
     /// <summary>Forbids adding the same component twice to one GameObject (inert marker; editor tooling enforces it later).</summary>
