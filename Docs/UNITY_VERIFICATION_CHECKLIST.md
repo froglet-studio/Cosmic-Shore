@@ -115,7 +115,7 @@ re-run in Python: continuous correction gives 0% still and a jerk of 1.6; stop-a
 
 **What landed:** Threat Board T1, the Steam part. New package `com.rlabrecque.steamworks.net` 2025.164.1 (Steamworks.NET,
 MIT, git package; approved by Shombith, 2026-10-25). `SteamPlatform` starts the Steam API on Windows, macOS and Linux
-only (a shell elsewhere), pumps its callbacks and issues the Web API ticket. `AuthenticationServiceFacade` (Yash's auth)
+only (a shell elsewhere), pumps its callbacks and issues the Web API ticket. `AuthenticationServiceFacade` (Shombith's auth)
 now: with no cached session, signs in WITH Steam (`SteamSignIn.TrySignInAsync`), falling back to anonymous; with a cached
 session, resumes it anonymously as before and then links Steam in the background (`SteamSignIn.LinkInBackground`). A
 refused Steam attempt does not raise `OnSignInFailed`. **Switched off**: `Resources/SteamConfig.asset` ships app id 0

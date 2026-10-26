@@ -2047,21 +2047,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261022-9bbd · open · dev · Fair play
 - **Task:** Server authority for scores and currency: UGS Access Control denies players' direct Leaderboards and Cloud Save writes; Cloud Code validates the weekly-challenge time against the course and applies currency earn/spend (today the client posts any time >= 0 and writes its own balance)
 - **Done when:** A direct AddPlayerScoreAsync or Cloud Save balance write from a client returns 403, and a valid run still posts through Cloud Code
-- **Who can take it:** Yash (UGS, leaderboards)
+- **Who can take it:** Shombith (UGS, backend owner); Yash (leaderboards UI)
 - **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.2
 
 ### T-20261022-6151 · open · dev · Fair play
 - **Task:** Platform sign-in and account linking: implement the Steam, Apple and Google sign-ins (AuthenticationController.cs:124-128 are stubs) and link them to the existing anonymous account, so a fair-play record survives a reinstall
 - **Done when:** A Steam player who clears the session token signs back into the same UGS player id
-- **Who can take it:** Yash (authentication)
+- **Who can take it:** Shombith (authentication, backend owner)
 - **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.1
 
 ### T-20261022-7708 · open · dev · Fair play
 - **Task:** Close the cheap holes before launch: compile PilotControl (host test tool that hands any hull to the AI) out of release builds; run DisplayNameValidator in Cloud Code before the public name write; add a Report button beside Block through the UGS Moderation SDK
 - **Done when:** A release build has no PilotControl, a slur written straight to the name API is refused, and a report reaches the UGS Moderation dashboard
-- **Who can take it:** Yash (PilotControl, UGS), Shombith (Report button UI)
+- **Who can take it:** Shombith (UGS, Report button UI); Yash (PilotControl)
 - **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 2 (T6-T8)
 
@@ -2084,14 +2084,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261024-af9e · open · dev · Fair play
 - **Task:** HIGH (Threat Board T4): every player reports the match result (scores, winner, duration) to Cloud Code; a host whose result disagrees with its guests' is a signal, and no reward is granted from an unchecked result
 - **Done when:** A 4-player match writes four reports; a host-side score edit in a test build is flagged
-- **Who can take it:** Yash (party / Netcode, UGS)
+- **Who can take it:** Shombith (Cloud Code, backend owner); Yash (party / Netcode, the in-match side)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.2; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
 
 ### T-20261024-9d7c · open · dev · Fair play
 - **Task:** HIGH (Threat Board T9): count leaves per match per account (mid-match guest leave, host quit); expose a leave rate so repeat quitters can later be matched together
 - **Done when:** Leave rate is recorded server-side for a test account that quits three matches
-- **Who can take it:** Yash (party layer)
+- **Who can take it:** Shombith (Cloud Code, backend owner); Yash (party layer)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.4; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
 
@@ -2382,28 +2382,28 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261024-c755 · open · setup · Fair play
 - **Task:** Deploy the server-owned crystal wallet: run node Tools/UGS/CloudCode/economy.test.cjs, deploy Tools/UGS/CloudCode/economy.js with the UGS CLI to the development environment, set ServerEconomyGate.Enabled = true in a test build and run the 'Server-owned wallet' editor checks; then production
 - **Done when:** Checklist entry 'Fair play: server-owned crystal wallet' is green on development, and the gate ships on with production deployed
-- **Who can take it:** Shombith (UGS layer owner); Yash (offered)
+- **Who can take it:** Shombith (UGS, backend owner)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
 
 ### T-20261024-a954 · open · setup · Fair play
 - **Task:** Deploy the server-checked weekly leaderboard: run weekly-score.test.cjs, deploy Tools/UGS/CloudCode/weekly-score.js, set ServerScoreGate.Enabled = true AND apply Tools/UGS/AccessControl/project-policy.json together (development first), then production
 - **Done when:** Checklist entry 'server-checked weekly leaderboard' is green; a direct client AddPlayerScoreAsync returns 403
-- **Who can take it:** Shombith (UGS layer owner); Yash (offered)
+- **Who can take it:** Shombith (UGS, backend owner)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
 
 ### T-20261024-1948 · open · setup · Fair play
 - **Task:** Deploy match reports: run match-report.test.cjs, deploy Tools/UGS/CloudCode/match-report.js (development first), set MatchReportGate.Enabled = true in a test build and run the 'Match reports' editor checks, then production
 - **Done when:** Checklist entry 'Fair play: match reports' is green; a quit guest shows left 1 in FAIRPLAY_CONDUCT
-- **Who can take it:** Shombith (UGS layer owner); Yash (offered, MPPM)
+- **Who can take it:** Shombith (UGS, backend owner); Yash (MPPM test, offered)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
 
 ### T-20261024-4c26 · open · setup · Fair play
 - **Task:** Switch on player reports: enable Moderation in the UGS dashboard (each environment), check a report from the profile popup reaches the queue (apply Tools/UGS/AccessControl/moderation-policy.json if it returns 403), and run the 'Report and Block' editor checks including the layout of the generated buttons
 - **Done when:** A Cheating report from Menu_Main appears in the Moderation dashboard and the checklist entry is green
-- **Who can take it:** Shombith (Menu_Main, UGS); Yash (offered)
+- **Who can take it:** Shombith (UGS, Menu_Main)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -2417,21 +2417,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261025-6e9a · open · setup · Fair play
 - **Task:** Fair play - T1 Steam sign-in: on the Steamworks partner site get the app id and a Web API publisher key; in the UGS dashboard add the Steam identity provider (development, then production); set appId and signInWithSteam in Assets/Resources/SteamConfig.asset
 - **Done when:** A test build signs in with Steam and the dashboard player shows a Steam identity (Tools/UGS/README.md, 'Switching on Steam sign-in')
-- **Who can take it:** Garrett (Steam partner account), Yash (UGS dashboard)
+- **Who can take it:** Garrett (Steam partner account: app id and Web API key); Shombith (UGS dashboard provider, SteamConfig)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
 
 ### T-20261025-885c · open · test · Fair play
 - **Task:** Fair play - T1 Steam sign-in editor checks: run the 'Steam sign-in on PC' steps in Docs/UNITY_VERIFICATION_CHECKLIST.md with the Steam client running (first launch signs in with Steam, an old anonymous player links, Steam closed falls back to anonymous)
 - **Done when:** All seven checks pass and the checklist entry is marked verified
-- **Who can take it:** Yash (authentication)
+- **Who can take it:** Shombith (authentication); Yash (offered, editor test)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
 
 ### T-20261025-7795 · open · dev · Fair play
 - **Task:** Fair play - T1 Apple and Google sign-in: add Sign in with Apple (iOS) and Google Play Games (Android) through their Unity plugins (new packages: ask first) and link them to the existing anonymous account the way SteamSignIn does
 - **Done when:** A phone build links its account to Apple or Google and a reinstall signs back in to the same player id
-- **Who can take it:** Yash (authentication)
+- **Who can take it:** Shombith (authentication)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Assets/_Scripts/System/Steam/SteamSignIn.cs
 
@@ -2445,6 +2445,6 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261025-cebb · open · decision · Fair play
 - **Task:** Fair play - R10 phase C: may the human-vs-AI flight classifier train on HumanFlightRecorder flights and the AI pilots' flights (Docs/AI_SYSTEM/AI_DATA_IN_UGS.md)? It would read them without trimming or replacing them, and needs the players' own consent question before any release-build sample (Docs/AntiCheat/README.md 4.4)
 - **Done when:** Yash and Garrett have said yes or no, and the answer is written in Docs/AntiCheat/README.md 4.4
-- **Who can take it:** Yash and Garrett (own the flight data)
+- **Who can take it:** Shombith (where the data is stored, backend owner); Yash and Garrett (own the AI flight data)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md

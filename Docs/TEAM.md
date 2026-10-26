@@ -70,8 +70,9 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    cannot open Unity, sign in to a dashboard or watch a first-timer play, so whatever its work leaves for a person
    goes on [`TEAM_TASKS.md`](TEAM_TASKS.md) through `python3 Tools/Build/team_tasks.py add`: the editor test, the
    playtest, the UGS or PostHog step, the missing content, the owner's decision. Each task names who can take it.
-   **Yash has offered to take tasks** (editor tests, playtests, UGS and dashboard setup, follow-up fixes); name the
-   area's owner where it is theirs. Tell the person what you added and suggest who to hand it to. Take a task
+   **Yash has offered to take tasks** (editor tests, playtests, follow-up fixes); name the area's owner where it is
+   theirs. **Anything on UGS or the backend** (Cloud Code, Cloud Save, Access Control, Moderation, authentication,
+   dashboards, deploys) **is Shombith's: name him first and ask him directly** (Shombith, 2026-10-26). Tell the person what you added and suggest who to hand it to. Take a task
    before starting it (`take <id> --who <name>`) and close it with a note (`done <id> --note ...`); a failed test
    is not done, it becomes a new `dev` task. `/ship` puts `team_tasks.py pr-section` in the PR body, so GitHub
    reviewers see the hand-offs, and every task is mirrored to a GitHub issue labelled `team-task`

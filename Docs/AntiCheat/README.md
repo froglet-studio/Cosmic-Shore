@@ -6,9 +6,11 @@ anticheat custom made for Cosmic Shore", like Valorant's Vanguard; isolate bad a
 before any of it ships (the same rule as `Docs/Legal/README.md`). The same design, with two diagrams, is the doc
 "Cosmic Shore Fair Play" (https://claude.ai/artifact/Q526NwB3r7uY2GoFwMGVn2, private until shared).
 
-Who else works here: **Yash** owns the UGS party/presence layer, authentication and the leaderboard service this
-design changes (`who_works_where.py`, 2026-10-22: six of his merges touch them in the last 30 days, nothing in
-flight). **Shombith** drives the UI and multiplayer scenes. **Garrett** owns product decisions (§8). The flight
+Who else works here: **Shombith** owns every UGS and backend service this design uses or changes (Cloud Code, Cloud
+Save, Access Control, Moderation, authentication, the dashboards and deploys; `Docs/TEAM.md`), plus the UI and
+multiplayer scenes: ask him directly for anything on the server side. **Yash** works on the party/presence layer and
+the leaderboard service (`who_works_where.py`, 2026-10-22: six of his merges touch them in the last 30 days).
+**Garrett** owns product decisions (§8). The flight
 recorder this design reuses for bot detection is Yash's (`HumanFlightRecorder`, `Docs/AI_SYSTEM/`).
 
 ---
@@ -165,7 +167,7 @@ That is a labelled dataset of *human* and *our-AI* flights for free, so the clas
 before the first bot farm exists. (The recorder is editor and development builds only today, and the team already
 decided players get their own consent question before it ships; the release-build anti-cheat sample is a smaller,
 separate stream, §4.7. It never replaces or trims the AI training flights, which stay whole under
-`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`; ask Yash or Garrett before the classifier reads them.)
+`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`; ask Yash or Garrett before the classifier reads them, and Shombith, who owns where they are stored.)
 
 What each behaviour looks like to the watcher:
 
@@ -318,7 +320,7 @@ Each phase stands on its own and is worth doing even if the next never happens.
 
 | Phase | What | Touches | Owner to check with |
 |---|---|---|---|
-| **A. Before launch** | Platform sign-in and account linking (T1); Access Control + Cloud Code for the weekly-challenge board and currency (T2, T3); server-side name check (T7); compile `PilotControl` out of release (T6); a Report button beside Block, through the UGS Moderation SDK (T8); the privacy policy section and a Code of Conduct (§4.7) | `AuthenticationServiceFacade`, `WeeklyChallengeLeaderboardService`, `UGSCloudSaveProvider`, `DisplayNameRegistry`, `FriendsServiceFacade`, `Docs/Legal/` | Yash (auth, UGS), Shombith (UI), counsel |
+| **A. Before launch** | Platform sign-in and account linking (T1); Access Control + Cloud Code for the weekly-challenge board and currency (T2, T3); server-side name check (T7); compile `PilotControl` out of release (T6); a Report button beside Block, through the UGS Moderation SDK (T8); the privacy policy section and a Code of Conduct (§4.7) | `AuthenticationServiceFacade`, `WeeklyChallengeLeaderboardService`, `UGSCloudSaveProvider`, `DisplayNameRegistry`, `FriendsServiceFacade`, `Docs/Legal/` | Shombith (auth, UGS, backend, UI), counsel |
 | **B. First patch** | Every participant reports the match result; the rules tier in Cloud Code; the trust record; the Undertow as a second presence lobby plus AI backfill; the shadow leaderboard; the notice-and-appeal screen; a review queue (a simple dashboard or the board) | Party/presence layer, `ServerPlayerVesselInitializerWithAI`, Cloud Code | Yash (party), Shombith (UI) |
 | **C. Mobile and bots** | App Attest + DeviceCheck, Play Integrity; the statistics tier; the human/AI flight classifier trained on recorder data | iOS/Android plugins, `HumanFlightRecorder` data | Yash (recorder), Garrett (store builds) |
 | **D. Only if the data demands** | Windows runtime attestation or Easy Anti-Cheat on PC; dedicated servers or distributed authority for ranked play (Unity's Multiplay hosting was deprecated on 1 Apr 2026) | Build pipeline, Netcode topology | Garrett |
