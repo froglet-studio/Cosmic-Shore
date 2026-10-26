@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play T3: vessel and Hangar unlocks bought and recorded on the server (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `economy.js` sells vessels (`unlockVessel`) and Hangar levels (`upgradeHangar`) at the prices authored
+in Unity (its CATALOG block, written by `Tools/Build/author_economy_catalog.py`, `--check` in the bleeding-edge guard)
+and records them in the protected wallet in the same write; `migrateUnlocks` brings an account's old unlocks across
+once, capped at 20,000 crystals of value. Client: `PlayerDataService.TryBuyVessel` / `TryBuyHangarLevel` (used by
+`VesselUnlockSystem.TryPurchaseVessel` and `HangarUpgradesPage`) spend locally at once and ask the server; the
+server's answer replaces the local vessels and Hangar levels (`VesselUnlockSystem.ApplyServerOwnership`), after the
+one-time migration. **Gated off** with the wallet (`ServerEconomyGate`): with it off, buying works exactly as before.
+Affects Shombith's backend (`UGSDataService.VesselList` getter) and the Hangar page (one call).
+
+**Verified without the editor:** economy tests 16 passed (5 new); planted faults caught (a vessel price changed in its
+asset fails `--check` naming the line; dropping "already owned" fails a test). `unity_refcompile` player and editor 0
+errors, a planted error caught; Amoebius 0 errors.
+
+**Test in the editor (economy.js redeployed to development, `ServerEconomyGate.Enabled = true` in a test build):**
+1. A fresh account: the first sign-in sends `migrateUnlocks` with nothing; starters stay unlocked.
+2. Buy a 100-crystal vessel in the Hangar: crystals drop at once, the vessel unlocks, and the dashboard's
+   `PLAYER_ECONOMY` shows it in `vessels` with a `vessel:<Name>` spend.
+3. Buy two Hangar levels: 100 then 200 crystals; `PLAYER_ECONOMY.hangar` shows `"<vessel>:<element>": 2`.
+4. Edit `HANGAR_DATA` in the dashboard to unlock a 4000-crystal vessel by hand, sign in again: it is locked again.
+5. An account with unlocks from before (gate off, then on): its first sign-in keeps them (up to the cap).
+
 ### 🔴 Fair play phase B: the trust record, the Undertow, the shadow board, the notice and appeal (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `Tools/UGS/CloudCode/trust.js` (the trust record and ladder; Tools/UGS/README.md "Switching on the trust

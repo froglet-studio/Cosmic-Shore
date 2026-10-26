@@ -27,7 +27,8 @@ The game ships with it **off** (`ServerEconomyGate.Enabled = false` in
 `Assets/_Scripts/System/CloudData/ServerEconomy.cs`). While it is off, nothing calls Cloud Code and the wallet
 works exactly as before. Turn it on in this order, development environment first:
 
-1. **Run the tests:** `node Tools/UGS/CloudCode/economy.test.cjs` prints `11 passed`.
+1. **Run the tests:** `node Tools/UGS/CloudCode/economy.test.cjs` prints `16 passed`, and
+   `python3 Tools/Build/author_economy_catalog.py --check` prints OK.
 2. **Install and sign in to the UGS CLI** (needs dashboard access to project
    `3030fd69-28ab-433f-b4bd-22b9b93c5118`):
    ```
@@ -168,8 +169,13 @@ game's old client-written copy in `PLAYER_PROFILE` is only a display cache the s
 - **Not yet:**
   - **Earn amounts are capped, not proven.** The server cannot see a match result until every player reports
     it (Threat Board T4), so a cheater can still claim the top placement reward every match, within the caps.
-  - **Vessel and hangar unlock records** stay in client-written keys. The crystals for them are spent on the
-    server, but an edited save could still show something as unlocked without paying.
+  - ~~Vessel and hangar unlock records~~ **moved to the server 2026-10-26**: `unlockVessel` and `upgradeHangar` charge
+    the catalog price and record the unlock in the same protected write, and the game replaces its own copies with the
+    server's list (`VesselUnlockSystem.ApplyServerOwnership`). An account's old unlocks come across once, capped at
+    20,000 crystals of value (`migrateUnlocks`). Prices: run `python3 Tools/Build/author_economy_catalog.py` after
+    changing a vessel's `UnlockCost`, a starter flag or the Hangar's `crystalsPerLevel`, then redeploy `economy.js`
+    (`--check` in the bleeding-edge guard fails until you do). Editor debug unlocks (the Froglet Toolbox) are undone
+    while the server wallet is on.
   - **Episode tokens** are unchanged. They are bought with real money and need each store's receipt check,
     which waits on the DLC-vs-tokens decision (`Docs/Legal/DLC_VS_TOKENS_QUESTIONNAIRE.md`).
   - **Offline changes:** if the server cannot be reached, the local change stands until the next server answer,

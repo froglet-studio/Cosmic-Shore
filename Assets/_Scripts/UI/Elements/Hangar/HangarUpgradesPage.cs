@@ -162,7 +162,8 @@ namespace CosmicShore.UI
             if (!_vessel || row.open || row.level >= HangarUpgradeStore.MaxLevel) return;
             int cost = HangarUpgradeStore.CostOfNext(row.level, crystalsPerLevel);
             var wallet = PlayerDataService.Instance;
-            if (!wallet || !wallet.TrySpendCrystals(cost, "hangar_upgrade")) { Redraw(row); return; }
+            // With the server wallet on, the server sells the level and records it (fair play T3).
+            if (!wallet || !wallet.TryBuyHangarLevel((int)_vessel.Class, (int)row.element, cost)) { Redraw(row); return; }
 
             int from = row.level;
             row.level = from + 1;

@@ -35,6 +35,9 @@ namespace CosmicShore.Core
         [Tooltip("Vessel list to sync unlock state with cloud on initialization.")]
         [SerializeField] SO_VesselList vesselList;
 
+        /// <summary>The shipped vessel list this service seeds the hangar from (also read by fair play's server ownership).</summary>
+        public SO_VesselList VesselList => vesselList;
+
         [Inject] AuthenticationDataVariable _authData;
 
         // ── Repositories ──

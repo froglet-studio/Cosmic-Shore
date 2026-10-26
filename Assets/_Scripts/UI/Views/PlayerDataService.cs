@@ -611,7 +611,34 @@ namespace CosmicShore.UI
             return CurrentProfile.Economy.CrystalBalance;
         }
 
-        public bool TrySpendCrystals(int amount, string source = null)
+        /// <summary>
+        /// Buys a vessel: the crystals leave the local wallet at once and, with the server wallet on, the server sells
+        /// it (<c>economy.js unlockVessel</c>), charging its own price and recording the vessel in the same write, so an
+        /// edited save can neither unlock it for free nor keep it. The server's answer replaces the local wallet and
+        /// vessels (<see cref="ApplyServerWallet"/>).
+        /// </summary>
+        public bool TryBuyVessel(string vesselName, int cost)
+        {
+            if (!ServerEconomyGate.Enabled) return cost <= 0 || TrySpendCrystals(cost, "vessel_unlock");
+            if (cost > 0 && !TrySpendCrystals(cost, "vessel_unlock", reportToServer: false)) return false;
+            ConfirmWithServer(ServerEconomy.UnlockVesselAsync(vesselName));
+            return true;
+        }
+
+        /// <summary>Buys the next Hangar level, the server way when its wallet is on (<see cref="TryBuyVessel"/>).</summary>
+        public bool TryBuyHangarLevel(int vessel, int element, int cost)
+        {
+            if (!ServerEconomyGate.Enabled) return TrySpendCrystals(cost, "hangar_upgrade");
+            if (!TrySpendCrystals(cost, "hangar_upgrade", reportToServer: false)) return false;
+            ConfirmWithServer(ServerEconomy.UpgradeHangarAsync(vessel, element));
+            return true;
+        }
+
+        public bool TrySpendCrystals(int amount, string source = null) => TrySpendCrystals(amount, source, reportToServer: true);
+
+        /// <param name="reportToServer">False when the caller sends the server its own request for this purchase (a
+        /// vessel or a Hangar level), so the server is asked once.</param>
+        public bool TrySpendCrystals(int amount, string source, bool reportToServer)
         {
             if (CurrentProfile == null || amount <= 0) return false;
             if (CurrentProfile.Economy.CrystalBalance < amount)
@@ -627,7 +654,7 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.Economy.CrystalBalance);
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
-            if (ServerEconomyGate.Enabled) ConfirmWithServer(ServerEconomy.SpendAsync(source ?? DebugSource, amount, source));
+            if (ServerEconomyGate.Enabled && reportToServer) ConfirmWithServer(ServerEconomy.SpendAsync(source ?? DebugSource, amount, source));
             return true;
         }
 
@@ -726,6 +753,7 @@ namespace CosmicShore.UI
             economy.LifetimeCrystalsEarned = wallet.lifetimeCrystalsEarned;
             economy.LifetimeCrystalsSpent = wallet.lifetimeCrystalsSpent;
             economy.UnlockedRewardIds = wallet.unlockedRewardIds ?? new List<string>();
+            ApplyServerUnlocks(wallet);
 
             ScheduleSave(); // PLAYER_PROFILE keeps a display copy; the server ignores it
             if (changed)
@@ -734,6 +762,41 @@ namespace CosmicShore.UI
                 OnCrystalBalanceChanged?.Invoke(economy.CrystalBalance);
             }
             OnProfileChanged?.Invoke(CurrentProfile);
+        }
+
+        bool _unlockMigrationSent;
+
+        /// <summary>
+        /// The server's unlock records replace the client's (fair play T3). Until this account's old unlocks have been
+        /// brought across once (<c>migrateUnlocks</c>), the local ones are sent instead and nothing is overwritten, so
+        /// the first server answer can never take away something the player had.
+        /// </summary>
+        void ApplyServerUnlocks(ServerEconomyResult wallet)
+        {
+            if (!wallet.unlocksMigrated)
+            {
+                if (_unlockMigrationSent) return;
+                _unlockMigrationSent = true;
+                ConfirmWithServer(ServerEconomy.MigrateUnlocksAsync(VesselUnlockSystem.LocallyBoughtVesselNames(), LocalHangarLevels()));
+                return;
+            }
+
+            var levels = CurrentProfile.Economy.HangarUpgrades ??= new List<HangarUpgradeLevel>();
+            levels.Clear();
+            foreach (var h in wallet.hangar ?? new List<ServerHangarLevel>())
+                if (h != null && h.level > 0)
+                    levels.Add(new HangarUpgradeLevel { Vessel = h.vessel, Element = h.element, Level = h.level });
+
+            VesselUnlockSystem.ApplyServerOwnership(wallet.vessels ?? new List<string>());
+        }
+
+        List<ServerHangarLevel> LocalHangarLevels()
+        {
+            var list = new List<ServerHangarLevel>();
+            foreach (var h in CurrentProfile?.Economy?.HangarUpgrades ?? new List<HangarUpgradeLevel>())
+                if (h != null && h.Level > 0)
+                    list.Add(new ServerHangarLevel { vessel = h.Vessel, element = h.Element, level = h.Level });
+            return list;
         }
 
         /// <summary>

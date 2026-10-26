@@ -22,6 +22,8 @@ run fairplay_paid_content       python3 Tools/Build/check_fairplay_paid_content.
 run fairplay_paid_self_test     python3 Tools/Build/check_fairplay_paid_content.py --self-test
 run fairplay_device_reads       python3 Tools/Build/check_fairplay_device_reads.py
 run fairplay_device_self_test   python3 Tools/Build/check_fairplay_device_reads.py --self-test
+run economy_catalog             python3 Tools/Build/author_economy_catalog.py --check
+run economy_catalog_self_test   python3 Tools/Build/author_economy_catalog.py --self-test
 run gamelist_scenes             python3 Tools/Build/check_gamelist_scenes.py
 run hud_onscreen                python3 Tools/Build/check_hud_onscreen.py
 run junie_skills                python3 Tools/Build/check_junie_skills.py
