@@ -905,6 +905,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   `holdHorizon` / `shieldDirs` / `flyMissile`; `OrcaTurret.HoldHorizon`; `Tools/Build/orca_crew_lab/parity.cjs`.
 - Promoted: no
 
+### L-STU-144 — A gather that chases a moving leader at its own speed never docks: dock kinematically
+- Lab: Omega Crews Studio (`Docs/Studios/VesselStudio/omega.html`) · Branch: `Ys-bleeding-edge` · By: the combiner-crew session (session_01JZzEha3L2L4aMuJYzunPm3) · Date: 2026-10-26
+- What happened: the combine was written as "each member flies to its slot round the caller"; the caller kept flying at cruise and the members, at the same cruise, circled it "gathering" for the whole 540 s limit (the trace showed form gather / mega flapping, spread 50-150 u, zero combines). A completion threshold of 8 u on a target moving at 60 u/s is never met by a steered body.
+- Do instead: once a gather is called and everyone is in range, the dock is an ANIMATION on a clock (1.6 s): the caller flies, the others are carried onto their slots (lerp position, slerp attitude, inherit the caller's velocity) and the form switches when the clock runs out. The steered approach is only for closing to gather range; while calling, the AI caller holds back at half cruise so the followers can close.
+- Evidence: `omega-studio.js` part B `stepWorld` (form 'gather'); the 10 s trace (`omega_trace.cjs`, scratch) before and after.
+- Promoted: no
+
+### L-STU-145 — An objective window that skips a gate lets the crew do everything else first and leaves the gates for one long run
+- Lab: Omega Crews Studio · Branch: `Ys-bleeding-edge` · By: the same session · Date: 2026-10-26
+- What happened: "three crystals lit = the first three untaken" let the members collect every open crystal round the whole course while the locked ones (behind walls) stayed lit and untouched; the crew then faced eight walls in a row with one omega and a draining meter, and the "combine only when near the locked crystal" rule never fired because nobody flew toward it. Scorecards read DNF across the board, and it looked like an AI bug.
+- Do instead: anchor the window at the first untaken objective (lit = the next three in order), so a gated objective gates the course; send idle members to the gate's approach point; decide the combine from "the locked one is near, or is all that is lit".
+- Evidence: `relight`, `assignTargets` (`toWall`), `wantCombine` in `omega-studio.js`; CONCEPT_FLEET.md section 10.1.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
