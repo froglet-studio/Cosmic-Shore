@@ -16110,6 +16110,33 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## Configure intensity and vessel strip, friends SPECTATE, Hangar free view and sizes (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline: reference compile, every menu generator's `--check` / `--self-test`,
+`gates.sh`, offline renders. Docs/MENU_REDESIGN_B.md section 82.
+
+1. Open any Arcade card. **Pass:** intensity is one small group under its caption (LB, four bars, RB), not spread across
+   the card; LB / RB and a tap on a bar still change it.
+2. Open Brood Rush (Arena) and a voyage. **Pass:** the hull strip shows icons only; only the picked hull is outlined
+   (hover outlines another); the < > chevrons sit outside the first and last tiles, never on them, and step the hulls
+   (Regatta: reach the ninth). Press CLAIM: the arrows leave, CHANGE stands where CLAIM was, START opens. Press CHANGE:
+   the strip and arrows are back, START says to claim a hull. Claim, press START (ready): CHANGE goes away.
+3. Two players on an Arena card: player A claims the Manta, then presses CHANGE. **Pass:** player B can now pick the
+   Manta.
+4. Friends drawer with a friend in a match. **Pass:** SPECTATE shows whole, inside the drawer, beside nothing it overlaps;
+   a friend going from online to in-match turns JOIN into SPECTATE without spilling.
+5. Hangar, mouse: drag (turns on any axis), Shift-drag (rolls), wheel (zooms, stops before entering the hull), right-drag
+   (moves), double-click (eases back and the idle turn resumes). **Pass:** each as said; the idle turn stays off while the
+   model is held; picking another vessel starts it framed.
+6. Hangar, pad: right stick turns, hold Y + right stick zooms (up / down) and rolls (left / right), right-stick press
+   resets; the line under the stage names the pad's controls once the pad is used. **Pass:** Y does nothing else here; LT /
+   RT still page the screens.
+7. Hangar, phone (or the Device Simulator): one finger turns, pinch zooms, twist rolls, two fingers move, double-tap
+   resets.
+8. Hangar layout at 16:9 and 16:10. **Pass:** CRYSTALS and its pill have room (the amount clear of the pill's edges, the
+   pill clear of the top bar and the tabs); the title, tabs, ability rows and vibe bars read smaller with space between;
+   nothing overlaps.
+
 ## Hangar list: colourful card art (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline: reference compile (0 errors in project code),

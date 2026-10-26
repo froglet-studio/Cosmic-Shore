@@ -812,7 +812,9 @@ def build_currency_pill():
     amt = root.child(Node("Amount", "Amount", rect(size=(label_width("0", "Data"), line_height("Data")))))
     amt.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("0", "Data", tok("TextLight"), "left")) \
         .add("kt", 114, kit_text("Data"))
-    root.add("hlg", 114, hv_layout(False, (16, 16, 8, 8), 10, 4, (1, 1), (0, 0)))
+    # Section 82 ("Crystals is looking too clamped up"): room inside the pill - more on the right, where the sliver's cut
+    # corner eats into it - and the amount a little apart from the crystal.
+    root.add("hlg", 114, hv_layout(False, (18, 24, 8, 8), 12, 4, (1, 1), (0, 0)))
     root.add("csf", 114, fitter(2, 2))
     return root
 

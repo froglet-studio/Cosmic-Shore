@@ -318,6 +318,10 @@ def pill_instance(key, name):
 
 HERO_H = 600
 VIBE_H = 156
+# Section 82: the stage's how-to-hold line, one per device (HangarVesselStage picks it; empty shows nothing).
+POINTER_HINT = "Drag to turn, Shift-drag to roll, wheel to zoom, right-drag to move, double-click to reset"
+PAD_HINT = "Right stick to turn, hold Y with it to zoom and roll, press it to reset"
+TOUCH_HINT = "Drag to turn, pinch to zoom, twist to roll, two fingers to move, double-tap to reset"
 RAW_IMAGE = "1344c3c82d62a2a41a3576d8abb8e3ea"     # UnityEngine.UI.RawImage
 STAGE_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarVesselStage.cs")
 VIBE_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarVibeView.cs")
@@ -349,16 +353,18 @@ TAB_NAMES = ["Abilities", "Upgrades", "Games", "Pilots", "Artifacts"]
 # follows the tab). LB / RB step through all five; Y is free.
 GROUPS = [(name, i, 1) for i, name in enumerate(TAB_NAMES)]
 PARTS = ()
-TAB_ROLE, TAB_PAD, TAB_GAP = "Body", 12, 10
+# Section 82 (Shombith, 2026-10-26: "The whole hangar is a bit cramped ... reducing the sizes a little"): the tabs read
+# in the smaller body size with more room between them.
+TAB_ROLE, TAB_PAD, TAB_GAP = "BodySmall", 12, 18
 SIDE = 40                                   # the screen's side margins
 LIST_W = 230                                # the vessel list, on the left
 DOSSIER_W, DOSSIER_H, DOSSIER_TOP = 710, 890, 150   # author_ui_kit_sprites.CRADLE_W / _H: the open cradle's fill
-CENTRE_L, CENTRE_R = SIDE + LIST_W + 20, SIDE + DOSSIER_W + 30
-HEADER_TOP, CENTRE_TOP, BOTTOM = 100, 270, 40
+CENTRE_L, CENTRE_R = SIDE + LIST_W + 44, SIDE + DOSSIER_W + 30   # section 82: the list header and the kicker apart
+HEADER_TOP, CENTRE_TOP, BOTTOM = 100, 248, 40
 PAD = 30                                    # the dossier's content inset
 PAD_R = 60                                  # a page's right inset: clears the right side leaning in to the floor
 PAGE_TOP_PARTS, PAGE_TOP, PAGE_BOTTOM = 84, 84, 30
-VIBE_W, VIBE_H, VIBE_SEGMENTS = 540, 124, 10
+VIBE_W, VIBE_H, VIBE_SEGMENTS = 490, 112, 10
 # The Rail border (R24Borders "2 Rail"): Bracket_Large's open cradle, closed on the right by a chamfered rail that stops
 # short of the tabs, with a corner mark. Lines in y-down dossier units.
 RAIL_LEAN, RAIL_KNEE, RAIL_STUB = 56, 0.46, 0.62
@@ -497,24 +503,29 @@ def page_header(page, key, title, line):
     label(page.child(N(f"{key}/Line", "Line", R((0, 1), (1, 1), (0, -24), (0, 18), (0.5, 1)))), line, "BodySmall", "NeutralLightest")
 
 
+ABILITY_ROW_H, ABILITY_TEXT_X = 100, 172
+
+
 def abilities_page(panel):
     page = page_node(panel, "Abilities", True, own_canvas=True)
     lst = list_node(page, "Tabs/Abilities/List", 0, spacing=8)
     for n, (name, _) in enumerate(ELEMENTS):
         k = f"Tabs/Abilities/{name}"
         # Information, not buttons (section 66): the AI demo plays each ability; nothing the player presses does.
-        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, 112), (0.5, 1)), 112, interactive=False)
+        # Section 82: a little smaller all through (100 tall, was 112).
+        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, ABILITY_ROW_H), (0.5, 1)), ABILITY_ROW_H, interactive=False)
         # Rev 24: the element as the HUD's own flower, at the level the player bought on this vessel.
-        element_flower(row, f"{k}/Flower", "Flower", TLr(12, 18, 76, 76), name)
-        halo(row, f"{k}/Halo", TLr(86, 4, 104, 104), round(0.25 * n, 2))
-        row.child(N(f"{k}/Hex", "Hex", TLr(110, 28, 56, 56))).add("cr", 222, K.canvas_renderer()) \
+        element_flower(row, f"{k}/Flower", "Flower", TLr(12, 16, 68, 68), name)
+        halo(row, f"{k}/Halo", TLr(80, 4, 92, 92), round(0.25 * n, 2))
+        row.child(N(f"{k}/Hex", "Hex", TLr(101, 25, 50, 50))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("SurfaceLight", 0.35), K.kit_sprite("kit_hex_fill"), preserve=True))
-        row.child(N(f"{k}/Icon", "Icon", TLr(120, 38, 36, 36))).add("cr", 222, K.canvas_renderer()) \
+        row.child(N(f"{k}/Icon", "Icon", TLr(110, 34, 32, 32))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True))
-        ellipsize(label(row.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (184, -16), (-(184 + 96), 26), (0, 1)))), name, "H3", "TextLight"))
-        label(row.child(N(f"{k}/Element", "Element", TLr(184, 48, 200, 18))), name, "Label", "NeutralLightest")
-        ellipsize(label(row.child(N(f"{k}/Desc", "Desc", R((0, 1), (1, 1), (184, -72), (-(184 + 96), 20), (0, 1)))), "", "BodySmall", "NeutralLightest"))
-        cap = row.child(N(f"{k}/Keycap", "Keycap", TRr(18, 36, 64, 40)))
+        tx = ABILITY_TEXT_X
+        ellipsize(label(row.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (tx, -14), (-(tx + 90), 26), (0, 1)))), name, "H3", "TextLight"))
+        label(row.child(N(f"{k}/Element", "Element", TLr(tx, 42, 200, 18))), name, "Label", "NeutralLightest")
+        ellipsize(label(row.child(N(f"{k}/Desc", "Desc", R((0, 1), (1, 1), (tx, -64), (-(tx + 90), 20), (0, 1)))), "", "BodySmall", "NeutralLightest"))
+        cap = row.child(N(f"{k}/Keycap", "Keycap", TRr(18, 33, 56, 34)))
         cap.add("cg", 225, canvas_group(True))
         cap.child(N(f"{k}/Keycap/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("SurfaceVeryDark", 0.7), K.kit_sprite("kit_sliver10_fill"), True))
@@ -982,12 +993,14 @@ def build_view(row_guid):
     # A screen, not a modal: ScreenSwitcher replays these on every enter (KitEntrance.ReplayUnder).
     label(header.child(N("Header/Kicker", "Kicker", R((0, 1), (1, 1), (0, 0), (0, 18), (0.5, 1)))),
           "VESSEL - OWNED", "Label", "NeutralLightest")
-    ellipsize(label(header.child(N("Header/Title", "Title", R((0, 1), (1, 1), (0, -22), (0, 76), (0.5, 1)))),
-                    "SQUIRREL", "Display", "TextLight", valign="bottom"))
-    label(header.child(N("Header/Line", "Line", R((0, 1), (1, 1), (0, -104), (0, 50), (0.5, 1)))),
+    ellipsize(label(header.child(N("Header/Title", "Title", R((0, 1), (1, 1), (0, -22), (0, 56), (0.5, 1)))),
+                    "SQUIRREL", "H1", "TextLight", valign="bottom"))
+    label(header.child(N("Header/Line", "Line", R((0, 1), (1, 1), (0, -84), (0, 44), (0.5, 1)))),
           "Get in your flow and stay there.", "Body", "NeutralLightest", valign="top", wrap=True)
-    bal = root.child(N("Header/Balance", "Balance", R((1, 1), None, (-SIDE, -96), (220, 40), (1, 1))))
-    bal.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 5, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
+    # Section 82 ("Crystals is looking too clamped up"): clear of the top bar, the word and the pill apart, the pill sized
+    # for the balance it shows (the kit pill's own padding, author_ui_kit_prefabs.build_currency_pill).
+    bal = root.child(N("Header/Balance", "Balance", R((1, 1), None, (-SIDE, -100), (220, 40), (1, 1))))
+    bal.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 5, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
     label(bal.child(N("Header/Balance/Label", "Label", R(size=(K.label_width("CRYSTALS", "Label"), K.line_height("Label"))))),
           "CRYSTALS", "Label", "NeutralLightest")
     bal.children.append(pill_instance("HeaderPill", "CrystalBalance"))
@@ -1034,7 +1047,12 @@ def build_view(row_guid):
         .add("stage", 114, lambda ctx, go: K.mono(go, STAGE_SCRIPT,
              f"  prefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n  modelRadius: 4\n  distanceFactor: 2.6\n"
              "  fieldOfView: 34\n  pitchDegrees: 18\n  idleDegreesPerSecond: 14\n  dragDegreesPerPixel: 0.35\n"
-             "  stickDegreesPerSecond: 160\n  idleResumeSeconds: 2.5\n  performSeconds: 0.55\n  performLunge: 1.4\n"
+             "  stickDegreesPerSecond: 160\n  idleResumeSeconds: 2.5\n"
+             "  zoomRange: {x: 0.6, y: 2.2}\n  wheelZoomStep: 1.12\n  padZoomPerSecond: 2.5\n  panLimit: 1.5\n"
+             "  resetSeconds: 0.35\n"
+             f"  hintText: {ref(ctx.c('Hero/Turn', 'tmp'))}\n"
+             f"  pointerHint: {POINTER_HINT}\n  padHint: {PAD_HINT}\n  touchHint: {TOUCH_HINT}\n"
+             "  performSeconds: 0.55\n  performLunge: 1.4\n"
              "  performRollDegrees: 90\n  performLightIntensity: 6\n"
              f"  fx: {ref(ctx.c('Hero/Clip/Fx', 'fx'))}\n  pulseSeconds: 0.6\n  pulseScale: 0.12\n"
              "  renderRate: 30\n  resolution: 768\n"))
@@ -1050,24 +1068,26 @@ def build_view(row_guid):
         .add("th", 114, themed("Purchase", 0.0)).add("le", 114, le(ignore=True, pw=20, ph=20))
     label(chip.child(N("Hero/Chip/Label", "Label", R(size=(K.label_width("OWNED", "Label"), K.line_height("Label"))))),
           "Owned", "Label", "TextLight")
-    # At the stage's foot, under the floor rings (Rev 25 round 2: nothing written over a picture).
-    label(hero.child(N("Hero/Turn", "TurnHint", R((0.5, 0), None, (0, 4), (360, 18), (0.5, 0)))),
-          "Drag or right stick to turn", "Label", "NeutralLightest", align="center")
+    # At the stage's foot, under the floor rings (Rev 25 round 2: nothing written over a picture). Section 82: how to hold
+    # the model (turn on any axis, zoom, move, reset), for the device in hand - the stage writes the line.
+    ellipsize(label(hero.child(N("Hero/Turn", "TurnHint", R((0, 0), (1, 0), (0, 4), (-40, 18), (0.5, 0)))),
+                    POINTER_HINT, "Label", "NeutralLightest", align="center"))
 
     # Rev 24 ("for the vibe they look like sliders ... they can be like bars"): each of the vessel's three scales is a row
     # of segments, lit from the left up to its value.
     vz = cz.child(N("Vibe", "Vibe", R((0, 0), None, (0, 0), (VIBE_W, VIBE_H), (0, 0))))
     label(vz.child(N("Vibe/Title", "Title", TLr(0, 0, 360, 18))), "VIBE - HOW IT PLAYS", "Label", "TextLight")
-    seg_x, seg_w, seg_gap = 110, 26, 4
+    seg_x, seg_w, seg_gap = 100, 22, 4
     for i in range(3):
         k = f"Vibe/Row{i}"
-        row = vz.child(N(k, f"Row{i}", R((0, 1), (1, 1), (0, -(30 + i * 32)), (0, 24), (0.5, 1))))
-        label(row.child(N(f"{k}/Left", "Left", TLr(0, 0, 100, 24))), "Casual", "Body", "TextLight", align="right")
+        row = vz.child(N(k, f"Row{i}", R((0, 1), (1, 1), (0, -(28 + i * 28)), (0, 22), (0.5, 1))))
+        label(row.child(N(f"{k}/Left", "Left", TLr(0, 0, 90, 22))), "Casual", "BodySmall", "TextLight", align="right")
         for j in range(VIBE_SEGMENTS):
-            row.child(N(f"{k}/Seg{j}", f"Seg{j}", TLr(seg_x + j * (seg_w + seg_gap), 7, seg_w, 10))) \
+            row.child(N(f"{k}/Seg{j}", f"Seg{j}", TLr(seg_x + j * (seg_w + seg_gap), 7, seg_w, 8))) \
                 .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight" if j < 5 else "SurfaceDark")))
-        label(row.child(N(f"{k}/Right", "Right", TLr(seg_x + VIBE_SEGMENTS * (seg_w + seg_gap) + 6, 0, 130, 24))),
-              "Challenging", "Body", "TextLight")
+        right_x = seg_x + VIBE_SEGMENTS * (seg_w + seg_gap) + 6
+        assert right_x + 120 <= VIBE_W, "the vibe bars run out of their box"
+        label(row.child(N(f"{k}/Right", "Right", TLr(right_x, 0, 120, 22))), "Challenging", "BodySmall", "TextLight")
     vz.add("vibe", 114, lambda ctx, go: K.mono(go, VIBE_SCRIPT, "  sliders:\n" + "".join(
         f"  - leftText: {ref(ctx.c(f'Vibe/Row{i}/Left', 'tmp'))}\n    rightText: {ref(ctx.c(f'Vibe/Row{i}/Right', 'tmp'))}\n"
         "    segments:\n" + "".join(f"    - {ref(ctx.c(f'Vibe/Row{i}/Seg{j}', 'img'))}\n" for j in range(VIBE_SEGMENTS))
@@ -1412,6 +1432,13 @@ def validate_prefabs(files, guids):
     assert all(f"m_Name: Line{i}\n" in view for i in range(len(rail_points(1, 1)) - 1)), "the dossier's rail is missing a line"
     _, stage = doc_of(view, hv("Hero/Clip/Stage#stage"))
     assert stage and f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}" in stage, "the stage has no vessel prefab table - it would build nothing"
+    # Section 82: the player holds the model - zoom range, and the line that says how, for each device.
+    assert f"  hintText: {{fileID: {hv('Hero/Turn#tmp')}}}" in stage, "the stage does not write its how-to-hold line"
+    for field, line in (("pointerHint", POINTER_HINT), ("padHint", PAD_HINT), ("touchHint", TOUCH_HINT)):
+        assert f"  {field}: {line}\n" in stage, f"the stage's {field} is not the authored line"
+    zr = re.search(r"  zoomRange: \{x: ([\d.]+), y: ([\d.]+)\}", stage)
+    assert zr and float(zr.group(1)) < 1 < float(zr.group(2)) <= 2.6, "the stage's zoom range must straddle the framed view " \
+        "and stop before the camera enters the hull (distanceFactor 2.6)"
     # Rev 4: the stage reaches its effects, the bay and the effects each batch on their own canvas, and
     # every UPGRADE row reaches its button and label (an unwired one would show a dead price).
     assert f"  fx: {{fileID: {hv('Hero/Clip/Fx#fx')}}}" in stage, "the stage does not reach its effects (HangarStageFx)"
@@ -1586,7 +1613,8 @@ def self_test(current, files, guids):
         "the Games tab's page unwired": view_plant(lambda t: t.replace(
             f"page: {{fileID: {K.FileIds('HangarView')('Tabs/Games#cg')}}}", "page: {fileID: 0}", 1)),
         "an ability name starting left of its row": view_plant(lambda t: re.sub(
-            r"(m_AnchorMin: \{x: 0, y: 1\}\n  m_AnchorMax: \{x: 1, y: 1\}\n  m_AnchoredPosition: \{x: )184(, y: -16\})", r"\g<1>-38\2", t, count=1)),
+            r"(m_AnchorMin: \{x: 0, y: 1\}\n  m_AnchorMax: \{x: 1, y: 1\}\n  m_AnchoredPosition: \{x: )" + str(ABILITY_TEXT_X)
+            + r"(, y: -14\})", r"\g<1>-38\2", t, count=1)),
         "the AI demo losing its step time": view_plant(lambda t: t.replace("\n  demoStepSeconds: 2.4\n", "\n", 1)),
         "TRY's window back over the stage": view_plant(lambda t: t.replace("m_Name: FallbackIcon\n", "m_Name: TryPreview\n", 1)),
         "the stage not reaching its effects": view_plant(lambda t: re.sub(
@@ -1609,6 +1637,8 @@ def self_test(current, files, guids):
             "    m_RemovedComponents: []", "    - target: {fileID: 0}\n      propertyPath: m_Material\n      value: \n"
             f"      objectReference: {{fileID: 2100000, guid: {M._lattice_guid('hull_lit_mat')}, type: 2}}\n"
             "    m_RemovedComponents: []", 1)),
+        "the stage that cannot zoom in": view_plant(lambda t: t.replace("  zoomRange: {x: 0.6, y: 2.2}", "  zoomRange: {x: 0.6, y: 1}", 1)),
+        "the stage's how-to-hold line unwired": view_plant(lambda t: re.sub(r"(\n  hintText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the stage with no vessel table": view_plant(lambda t: t.replace(
             f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}", "prefabs: {fileID: 0, guid: 0", 1)),
     }

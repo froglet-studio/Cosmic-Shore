@@ -328,8 +328,9 @@ def selectable(nav_mode=3):
 
 
 def tile_body(ring, fill, border, sliver, primary=(), unsel_primary="TextLight", secondary=(), art=(),
-              lock=None, lock_label=None, sel_border="Selection", on_click=()):
-    """KitTile, every reference a callable ctx -> fileID."""
+              lock=None, lock_label=None, sel_border="Selection", on_click=(), border_at_rest=True):
+    """KitTile, every reference a callable ctx -> fileID. border_at_rest False outlines only the pick and the pointed-at
+    tile (KitTile.borderAtRest; omitted when on, its C# default, so every other tile is unchanged)."""
     def body(ctx, go):
         f = lambda x: x(ctx)
         return mono(go, S["tile"],
@@ -340,6 +341,7 @@ def tile_body(ring, fill, border, sliver, primary=(), unsel_primary="TextLight",
                     f"  borderSelectedSprite: {K.sprite_ref(K.kit_sprite(f'kit_sliver{sliver}_line2'))}\n"
                     f"  borderUnselectedSprite: {K.sprite_ref(K.kit_sprite(f'kit_sliver{sliver}_line1'))}\n"
                     f"  selectedBorderToken: {K.TOKEN_INDEX[sel_border]}\n"
+                    + ("" if border_at_rest else "  borderAtRest: 0\n")
                     + refs("primaryGraphics", [f(x) for x in primary])
                     + f"  unselectedPrimaryToken: {K.TOKEN_INDEX[unsel_primary]}\n"
                     + refs("secondaryGraphics", [f(x) for x in secondary])
@@ -485,10 +487,14 @@ def small_button(key, name, variant, caption, r_anchor=(0, 0.5), pivot=(0, 0.5),
 
 
 def wrap_slot(parent, key, name, shown=True):
-    """A CanvasGroup + LayoutElement wrapper sized by its one child: a part that hides and closes up."""
+    """A CanvasGroup + LayoutElement wrapper sized by its one child: a part that hides and closes up.
+
+    The slot CONTROLS its child's width, so it reads the button's preferred width (its label) in the same layout pass.
+    Left uncontrolled, a layout group takes a child's current rect as its size, which the button's own fitter only sets
+    later in the pass: a JOIN that turned into SPECTATE kept JOIN's slot and ran past the drawer's edge (2026-10-26)."""
     n = parent.child(N(key, name, R((0, 0.5), None, (0, 0), (60, 32), (0, 0.5))))
     n.add("cg", 225, canvas_group(shown)).add("le", 114, le(ignore=not shown)) \
-        .add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 0, 4, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
+        .add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 0, 4, (1, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
     return n
 
 
@@ -1508,6 +1514,13 @@ def validate_prefabs(files, guids):
         want = f"{field}: {{fileID: {K.FileIds(name)('root#row')}, guid: {asset_guid(name)}"
         assert want in friends, f"FriendsListPanel.{field} does not name the {name} row component"
     assert "  embedded: 1\n" in friends and "  listPartyMembers: 0\n" in friends, "the panel's lists must be embedded"
+    # A button slot must size its button from the label, or a JOIN that becomes SPECTATE runs out of the row.
+    row = files[prefab_path("PartyOnlineRow")]
+    for slot in ("InviteSlot", "JoinSlot", "CancelSlot"):
+        _, hlg = doc_of(row, K.FileIds("PartyOnlineRow")(f"{slot}#hlg"))
+        assert "  m_ChildControlWidth: 1\n" in hlg, f"PartyOnlineRow {slot} must control its button's width"
+    inv, join = (K.button_size(w, small=True)[0] for w in ("INVITE", "SPECTATE"))
+    assert inv + 8 + join <= 202, f"INVITE + SPECTATE ({inv + 8 + join:.0f}) do not fit the row's button strip"
     check_profile_hovers(files)
 
     check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
@@ -1706,6 +1719,9 @@ def self_test(current, files, guids):
             prefab_path("PartyOnlineRow"), lambda t: re.sub(
                 r"(?m)^--- !u!114 &-?\d+\n(?:(?!^--- ).*\n)*?.*guid: " + S["profile"] + r", type: 3\}\n(?:(?!^--- ).*\n)*",
                 "", t, count=1)),
+        "the Join slot reading its button's rect (SPECTATE overflows)": prefab_plant(
+            prefab_path("PartyOnlineRow"), lambda t: in_one(
+                t, K.FileIds("PartyOnlineRow")("JoinSlot#hlg"), "  m_ChildControlWidth: 1\n", "  m_ChildControlWidth: 0\n")),
         "a seat's relay opens the card on the wrong avatar": prefab_plant(prefab_path("PartySlot"), lambda t: t.replace(
             f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Avatar/Icon#rt')}}}\n",
             f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Name#rt')}}}\n", 1)),

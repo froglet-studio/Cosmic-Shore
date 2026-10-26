@@ -594,10 +594,12 @@ def build_domain_column():
 
 
 # --------------------------------------------------------------------------------------------
-# ConfigureHullTile.prefab - one hull of the Arena strip (76 x 84)
+# ConfigureHullTile.prefab - one hull of the Arena strip (76 x 60)
 # --------------------------------------------------------------------------------------------
 
-HULL_W, HULL_H, HULL_GAP = 76, 84, 7
+# Section 82 (Shombith, 2026-10-26: "this place is a bit noisy"): the hull's icon alone - the caption row names the hull
+# on show - and no outline until the tile is the pick or under the pointer.
+HULL_W, HULL_H, HULL_GAP = 76, 60, 7
 
 
 def build_hull_tile():
@@ -605,19 +607,15 @@ def build_hull_tile():
     root.add("cg", 225, canvas_group(True))
     ring_node(root, "FocusRing", 10)
     frame_nodes(root, "Frame", 10, "SurfaceVeryDark", "SurfaceDark", raycast=True, themed_paint=False)
-    art_node(root, "Art", "Art", R((0.5, 1), None, (0, -10), (48, 44), (0.5, 1)), SQUIRREL_ICON, preserve=True)
-    nm = root.child(N("Name", "Name", R((0, 0), (1, 0), (0, 8), (-8, 18), (0.5, 0))))
-    nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("HULL", "Label", tok("NeutralLightest"), align="center"))) \
-        .add("kt", 114, K.kit_text("Label", "NeutralLightest", driven=True))
+    art_node(root, "Art", "Art", R((0.5, 0.5), None, (0, 0), (56, 46)), SQUIRREL_ICON, preserve=True)
     lock = image_node(root, "Lock", "Lock", TR(6, 6, 12, 14), "TextLight", K.chrome_sprite("chrome_lock"), preserve=True)
     lock.comps = [x for x in lock.comps if x[0] != "th"]
     root.add("tile", 114, A.tile_body(c("FocusRing", "img"), c("Frame/Fill", "img"), c("Frame/Border", "img"), 10,
-                                      primary=[c("Name", "tmp")], unsel_primary="NeutralLightest",
-                                      art=[c("Art", "img")], lock=c("Lock", "img")))
+                                      art=[c("Art", "img")], lock=c("Lock", "img"), border_at_rest=False))
     root.add("hull", 114, lambda ctx, go: mono(go, S["hull"],
              f"  tile: {ref(ctx.c('root', 'tile'))}\n"
              f"  art: {ref(ctx.c('Art', 'img'))}\n"
-             f"  nameText: {ref(ctx.c('Name', 'kt'))}\n"
+             "  nameText: {fileID: 0}\n"
              f"  group: {ref(ctx.c('root', 'cg'))}\n"))
     root.add("shake", 114, M.shake())
     root.add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
@@ -956,7 +954,7 @@ def format_section(steps, top):
 
 
 HULL_TILE_GAP = 4
-ARROW_W, ARROW_H, ARROW_GAP = 32, 56, 6
+ARROW_W, ARROW_GAP = 26, 6        # the strip's < > chevrons: fixed size (a KitButton sizes itself to its label)
 
 
 def foot_top(kind):
@@ -1155,15 +1153,17 @@ G_CARD_TOP = TOP + G_CTRL_H + G_GAP
 G_CARD_BOTTOM = G_STATUS_TOP - 8
 G_PAD_L, G_PAD_R, G_PAD_T, G_PAD_B = 26, 52, 14, 18   # the right inset clears the leaning side (CARD_LEAN)
 G_INNER = G_SET_W - G_PAD_L - G_PAD_R
-G_INT_BODY_H = 58
+# Section 82 (Shombith, 2026-10-26: "Decrease the size"): LB, the signal sign and RB as one small group under the caption.
+G_INT_BODY_H = 34
 G_INT_H = SEC_HEAD + G_INT_BODY_H
-BAR_W, BAR_SLOT, BAR_H0, BAR_STEP = 20, 28, 14, 13     # the signal sign: bars 20 wide, rising 13 a step (the R25 boards)
+INT_KEY_W, INT_KEY_H, INT_KEY_GLYPH, INT_GAP = 54, 32, 24, 14
+BAR_W, BAR_SLOT, BAR_H0, BAR_STEP = 12, 18, 8, 6       # the signal sign: bars 12 wide, rising 6 a step
 G_SEATS = {"arcade": 4, "arena": 6}                  # MaxMatchSeats / MaxArenaSeats (ArcadeGameConfigureModal)
 PED_GAP = {"arcade": 10, "arena": 6}
 G_ACT_H = 44
 AIC_BTN_W = 84
 AIC_W = 40 + 3 * AIC_BTN_W + 2 * 6
-STRIP_HEAD = 40                                      # the vessel strip's caption row: caption, the hull's name, CLAIM
+STRIP_HEAD = 38                                      # the vessel strip's caption row: caption, the hull's name, CLAIM / CHANGE
 STRIP_SLOTS = 6                                      # hull tiles on the strip; the < > arrows slide it over more hulls
 G_STRIP_H = STRIP_HEAD + HULL_H
 CARD_LEAN, CARD_KNEE, CARD_CHAMFER, CARD_RAIL = 40, 0.46, 30, 0.70
@@ -1394,11 +1394,14 @@ def g_intensity(cfg, y):
     label(sec.child(N("Stepper/Hint", "Hint", TR(0, 2, G_INNER - 160, 18))), "Play 2 to unlock 3", "BodySmall",
           "NeutralLightest", align="right")
     body = sec.child(N("Stepper", "Stepper", TL(0, SEC_HEAD, G_INNER, G_INT_BODY_H)))
-    bw, bh = 72, 48
-    prompt_button(body, "Stepper/Prev", "Previous", R((0, 0.5), None, (0, 0), (bw, bh), (0, 0.5)), "LB", None, key_size=34)
-    prompt_button(body, "Stepper/Next", "Next", R((1, 0.5), None, (0, 0), (bw, bh), (1, 0.5)), "RB", None, key_size=34)
+    bw, bh, pips_w = INT_KEY_W, INT_KEY_H, 4 * BAR_SLOT
+    prompt_button(body, "Stepper/Prev", "Previous", R((0, 0.5), None, (0, 0), (bw, bh), (0, 0.5)), "LB", None,
+                  key_size=INT_KEY_GLYPH)
+    prompt_button(body, "Stepper/Next", "Next", R((0, 0.5), None, (bw + 2 * INT_GAP + pips_w, 0), (bw, bh), (0, 0.5)),
+                  "RB", None, key_size=INT_KEY_GLYPH)
     tall = BAR_H0 + 3 * BAR_STEP
-    pips = body.child(N("Stepper/Pips", "Pips", R((0.5, 0.5), None, (0, 0), (4 * BAR_SLOT, tall + 2))))
+    assert tall + 2 <= G_INT_BODY_H and bh <= G_INT_BODY_H, "the intensity group is taller than its row"
+    pips = body.child(N("Stepper/Pips", "Pips", R((0, 0.5), None, (bw + INT_GAP, 0), (pips_w, tall + 2), (0, 0.5))))
     for i in range(4):
         key = f"Stepper/Pips/Pip{i + 1}"
         pip = pips.child(N(key, f"Pip{i + 1}", R((0, 0), (0, 1), (i * BAR_SLOT + BAR_SLOT / 2, 0), (BAR_SLOT, 0), (0.5, 0.5))))
@@ -1457,20 +1460,44 @@ def g_actions(cfg, y):
     ai_row(cfg, AIC_W, y, compact_x=G_PAD_L + G_INNER - AIC_W)
 
 
+def chevron(parent, key, name, r, glyph):
+    """A < or > that steps a strip: the glyph alone on a clear hit area, white when pointed at, the selection blue when
+    focused (a ColorTint on the glyph). Fixed size - a KitButton sizes itself to its label and spilled over the strip's
+    end tiles (section 82)."""
+    n = parent.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
+    label(n.child(N(f"{key}/Glyph", "Glyph", STRETCH)), glyph, "Body", "TextLight", align="center")
+    tint = (K.SELECTABLE_FIELDS.replace("  m_Transition: 0\n", "  m_Transition: 1\n")
+            .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n", "    m_NormalColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}\n")
+            .replace("    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+                     "    m_HighlightedColor: {r: 1, g: 1, b: 1, a: 1}\n")
+            .replace("    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+                     "    m_SelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}\n")
+            .replace("    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}\n",
+                     "    m_DisabledColor: {r: 0.6, g: 0.6, b: 0.6, a: 0.25}\n"))
+    n.add("button", 114, lambda ctx, go: mono(go, A.BUTTON, tint + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Glyph', 'tmp'))}\n"
+                                               + A.calls([])))
+    return n
+
+
 def g_vessel(cfg, y):
     """Rev 25 B: the card's hulls for the pressed seat - your own, or an AI's you may pick for - under the lineup. The
-    caption row names whose hull it is ("Your vessel", ArenaLaunchPanel), the hull, and holds CLAIM; under it < the hull
-    tiles > across the card's width."""
+    caption row names whose hull it is ("Your vessel", ArenaLaunchPanel), the hull, and holds CLAIM - or, once claimed,
+    CHANGE, which takes the claim back (section 82: "claim needs a change button"); under it < the hull icons > across
+    the card's width. Quiet (section 82, "a bit noisy"): no rule, no names on the tiles, an outline only on the pick."""
     sec = cfg.child(N("Step1", "Step1", TL(G_PAD_L, y, G_INNER, G_STRIP_H)))
     sec.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=3))
-    bw, bh = K.button_size("CLAIM", small=True)
+    (cw, bh), (gw, _) = K.button_size("CLAIM", small=True), K.button_size("CHANGE", small=True)
+    bw = max(cw, gw)
     label(sec.child(N("Step1/Caption", "Caption", TL(0, (STRIP_HEAD - 20) // 2 - 2, 180, 20))), "Your vessel", "Label", "TextLight")
     label_e(sec.child(N("Step1/Value", "Value", TL(184, (STRIP_HEAD - 24) // 2 - 2, G_INNER - 184 - bw - 16, 24))), "Dolphin",
             "Body", "TextLight", align="right")
-    claim = sec.child(N("Claim", "Claim", TR(0, (STRIP_HEAD - bh) // 2 - 2, bw, bh)))
-    claim.children.append(Inst("ClaimButton", "KitButtonSmall", "ClaimButton", STRETCH,
-                               K.button_mods("KitButtonSmall", "Cta", False, "CLAIM", small=True)))
-    image_node(sec, "Step1/Rule", "Rule", R((0, 1), (1, 1), (0, -(STRIP_HEAD - 4)), (0, 1), (0.5, 1)), "SurfaceDark")
+    for key, caption, variant, w in (("Claim", "CLAIM", "Cta", cw), ("Change", "CHANGE", "Default", gw)):
+        slot = sec.child(N(key, key, TR(0, (STRIP_HEAD - bh) // 2 - 2, w, bh)))
+        # CHANGE starts hidden (the panel shows it once the claim lands; the button has no CanvasGroup, so SetActive).
+        hidden = [("root#go", "m_IsActive", 0, None)] if key == "Change" else []
+        slot.children.append(Inst(f"{key}Button", "KitButtonSmall", f"{key}Button", STRETCH,
+                                  K.button_mods("KitButtonSmall", variant, False, caption, small=True) + hidden))
     tile_w = (G_INNER - 2 * (ARROW_W + ARROW_GAP) - (STRIP_SLOTS - 1) * HULL_TILE_GAP) // STRIP_SLOTS
     row_w = STRIP_SLOTS * tile_w + (STRIP_SLOTS - 1) * HULL_TILE_GAP
     x0 = (G_INNER - row_w) // 2
@@ -1478,11 +1505,11 @@ def g_vessel(cfg, y):
     for i in range(STRIP_SLOTS):
         strip.children.append(Inst(f"Hull{i + 1}", "ConfigureHullTile", f"Hull{i + 1}",
                                    TL(x0 + i * (tile_w + HULL_TILE_GAP), 0, tile_w, HULL_H)))
-    arrow_y = (HULL_H - ARROW_H) // 2
-    for name, caption, x in (("PrevVesselButton", "<", x0 - ARROW_GAP - ARROW_W), ("NextVesselButton", ">", x0 + row_w + ARROW_GAP)):
-        strip.children.append(Inst(name, "KitButtonSmall", name, TL(x, arrow_y, ARROW_W, ARROW_H),
-                                   K.button_mods("KitButtonSmall", "Default", False, caption, small=True)))
-    assert x0 - ARROW_GAP - ARROW_W >= 0 and tile_w >= 80, f"the vessel strip is too narrow for its tiles ({tile_w})"
+    prev_x, next_x = x0 - ARROW_GAP - ARROW_W, x0 + row_w + ARROW_GAP
+    chevron(strip, "PrevVesselButton", "PrevVesselButton", TL(prev_x, 0, ARROW_W, HULL_H), "<")
+    chevron(strip, "NextVesselButton", "NextVesselButton", TL(next_x, 0, ARROW_W, HULL_H), ">")
+    assert prev_x >= 0 and next_x + ARROW_W <= G_INNER and tile_w >= 80, \
+        f"the vessel strip's arrows or tiles do not fit its width ({prev_x}, {next_x + ARROW_W}, {tile_w})"
     return sec
 
 
@@ -1712,9 +1739,10 @@ def panel_body(ctx, go, kind):
     if kind == "arena":
         fields += (f"  roster: {K.ref(11400000, ARENA_ROSTER, 2)}\n"
                    "  vesselIcon: {fileID: 0}\n"
-                   f"  prevButton: {ref(ctx.iref('PrevVesselButton', 'root#button'))}\n"
-                   f"  nextButton: {ref(ctx.iref('NextVesselButton', 'root#button'))}\n"
+                   f"  prevButton: {ref(ctx.c('PrevVesselButton', 'button'))}\n"
+                   f"  nextButton: {ref(ctx.c('NextVesselButton', 'button'))}\n"
                    f"  selectVesselButton: {ref(ctx.iref('ClaimButton', 'root#button'))}\n"
+                   f"  changeVesselButton: {ref(ctx.iref('ChangeButton', 'root#button'))}\n"
                    + refs("hullTiles", [ctx.iref(f"Hull{i + 1}", "root#hull") for i in range(STRIP_SLOTS)])
                    + f"  seatCaptionText: {ref(ctx.c('Step1/Caption', 'tmp'))}\n"
                    "  ownSeatCaption: Your vessel\n"
@@ -2384,7 +2412,7 @@ PART_FIELDS = [
                                                  tile=S["tile"], borderImage=IMG, accent=IMG, columnGroup=225,
                                                  lineText=S["kt"], countText=S["kt"], openSeatGroup=225,
                                                  addAiGroup=225)),
-    ("ConfigureHullTile", "root#hull", dict(tile=S["tile"], art=IMG, nameText=S["kt"], group=225)),
+    ("ConfigureHullTile", "root#hull", dict(tile=S["tile"], art=IMG, group=225)),
     ("ConfigureSeatPedestal", "root#pedestal", dict(seatGroup=225, pilotGroup=225, openGroup=225, avatar=IMG, pool=IMG,
                                                     poolRim=IMG, localGlow=225, nameText=TMP, statusText=TMP,
                                                     teamStepper=S["team"], teamText=TMP, kickButton=S["button"],
@@ -2413,6 +2441,11 @@ def validate_prefabs(files):
         assert body, f"{name}: no {comp}"
         for field, want in wanted.items():
             wired(text, body, field, want, name)
+    # Section 82: the strip's tiles are quiet - an outline only on the pick (and under the pointer), no names.
+    hull_tile = files[prefab_path("ConfigureHullTile")]
+    _, hull_kt = comp_doc(hull_tile, K.FileIds("ConfigureHullTile")("root#tile"))
+    assert "  borderAtRest: 0\n" in hull_kt, "ConfigureHullTile: every hull is outlined at rest (the strip is noisy again)"
+    assert "  m_Name: Name\n" not in hull_tile, "ConfigureHullTile: the hull's name is back on the tile"
 
     # Rev 5: a seat row's hover never grows the row (its neighbours would be covered); the hull's name takes
     # the place of the name and role instead. The card names all four elements' abilities.
@@ -2525,9 +2558,13 @@ def validate_prefabs(files):
                         f"{view}: the +1 toast shares the preview's GameObject (hiding it hides the preview)"
         if kind == "arena":
             wired(text, body, "selectVesselButton", S["button"], view)
-            # The < > arrows step the shared vessel panel (and slide the strip past its seventh tile).
-            wired(text, body, "prevButton", S["button"], view)
-            wired(text, body, "nextButton", S["button"], view)
+            wired(text, body, "changeVesselButton", S["button"], view)
+            # The < > arrows step the shared vessel panel (and slide the strip past its seventh tile). Plain uGUI buttons
+            # of a fixed size: a KitButton fits itself to its label and spilled over the end tiles (section 82).
+            wired(text, body, "prevButton", A.BUTTON, view)
+            wired(text, body, "nextButton", A.BUTTON, view)
+            for arrow in ("PrevVesselButton", "NextVesselButton"):
+                assert f"  m_Name: {arrow}\n" in text and f"m_Name: {arrow}\n  m_TagString" in text, f"{view}: no {arrow}"
             wired(text, body, "seatCaptionText", TMP, view)
             tiles_block = re.match(r"(?:  - .*\n)*", body.split("  hullTiles:\n")[1]).group(0)
             hulls = re.findall(r"^  - \{fileID: (-?\d+)\}", tiles_block, re.M)
@@ -2756,6 +2793,14 @@ def self_test(files):
             r"(  pickButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[ped], count=1)), validate_prefabs),
         ("a pilots fit on the arcade view, moving START to fit the hidden seat book", lambda f: f.__setitem__(view,
             f[view] + f"  m_Script: {{fileID: 11500000, guid: {S['fit']}, type: 3}}\n"), validate_prefabs),
+        # Section 82.
+        ("the strip's arrows back to self-sizing kit buttons", lambda f: f.__setitem__(arena, re.sub(
+            r"(  prevButton: \{fileID: )-?\d+", lambda m: m.group(1) + re.search(
+                r"  selectVesselButton: \{fileID: (-?\d+)", f[arena]).group(1), f[arena], count=1)), validate_prefabs),
+        ("CHANGE unwired", lambda f: f.__setitem__(arena, re.sub(
+            r"(  changeVesselButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[arena], count=1)), validate_prefabs),
+        ("the hull tiles outlined at rest", lambda f: f.__setitem__(prefab_path("ConfigureHullTile"), f[
+            prefab_path("ConfigureHullTile")].replace("  borderAtRest: 0\n", "", 1)), validate_prefabs),
         ("the Arena's AI difficulty row unwired", lambda f: f.__setitem__(prefab_path("ConfigureArenaView"), re.sub(
             r"(  aiDifficultyPicker: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("ConfigureArenaView")])),
          validate_prefabs),

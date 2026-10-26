@@ -3520,3 +3520,59 @@ when a model's sheet is re-rendered; `--check` fails when the art drifts from th
 hull dropped from the table and a card on the wrong canvas are all caught); `author_menu_hangar.py --check` / `--self-test`
 (new plants: the tile without its card art, the art drawn through `Hull_Lit`); the reference compile; `gates.sh`; and an
 offline render of the tile with six hulls' art (no text on the art, no overflow).
+
+## 82. The configure card's intensity and vessel strip, the friends row's SPECTATE, the Hangar's free model view and its sizes (2026-10-26, awaiting in-editor approval)
+
+Shombith, 2026-10-26, on editor screenshots: "1st image (intensity): Decrease the size. 2nd image (the vessel strip): the
+left and right arrows are overlapping UIs. also claim needs a change button. This will only change in arena and voyage
+also this place is a bit noisy"; "Spectate is getting cut off"; "In the hangar screen where we can drag a model left and
+right give the user all axis we can rotate zoom in zoom out and everything with the model"; "Crystals is looking too
+clamped up. The whole hangar is a bit cramped. reducing the sizes a little bit might fix these issues".
+
+**Configure card** (`author_menu_configure.py`, every card):
+- Intensity is one small group under its caption: LB (54 x 32), the four signal bars (12 wide, 8 to 26 tall), RB. The row
+  is 62 tall (was 86); what it gives back goes to the pilots.
+- The vessel strip (Arena and Voyage only - the Arcade card has none):
+  - The arrows overlapped the end tiles because they were KitButtonSmall instances, which size themselves to their label
+    (44.5 wide in a 32 slot; the offline renderer does not run that fitter, so section 80's renders missed it). They are
+    plain fixed-size chevrons now (26 x 60, a clear hit area and the glyph; grey, white under the pointer, the selection
+    blue when focused), outside the tiles; the generator asserts they fit and that the panel's arrows are plain buttons.
+  - Quieter: the tiles show the hull's icon only (the caption row names the hull on show), only the pick and the
+    pointed-at tile are outlined (`KitTile.borderAtRest`, off for these tiles; every other tile keeps its outline), the
+    rule under the caption is gone, the strip is 60 tall (was 84), and the arrows leave once the hull is claimed.
+  - **CLAIM, then CHANGE.** A claim used to freeze the strip for the rest of the session. Once the claim lands, CHANGE
+    stands in CLAIM's place: it gives the claim back (`ReleaseArenaHullClaim`), the strip and the arrows come back, and
+    START waits for a new claim. Only for the pilot's own hull and only while they are not ready - a ready pilot's hull is
+    part of what the others are waiting on; when the ready state resets, CHANGE is offered again
+    (`ArenaLaunchPanel.changeVesselButton` / `OnVesselChangeRequested`, `ArcadeGameConfigureModal.HandleVesselChangeRequested`).
+
+**Friends row** (`author_menu_arcade.py`, `PartyOnlineRow`): a button slot now controls its button's width. Left
+uncontrolled, a layout group takes a child's current rect as its size, and the button's own fitter sets that rect later
+in the same pass, so a JOIN that became SPECTATE kept JOIN's slot and ran out of the drawer. INVITE + SPECTATE fit the
+row's 202 strip, and the generator asserts both.
+
+**Hangar - the player holds the model** (`HangarVesselStage`):
+
+| | Mouse | Touch | Pad |
+|---|---|---|---|
+| Turn (any axis: about the view's up and right) | drag | one finger | right stick |
+| Roll | Shift-drag | two-finger twist | hold Y, right stick left / right |
+| Zoom (0.6x to 2.2x, never into the hull) | wheel | pinch | hold Y, right stick up / down |
+| Move | right or middle drag | two-finger drag | - |
+| Reset (eases back) | double-click | double-tap | press the right stick |
+
+While the model is held the idle turn stays off (it would turn away what the player is looking at); a reset or another
+vessel brings it back. The line under the stage says how, for the device in hand (three authored lines on the stage).
+On the Hangar screen Y is free (it opens the profile on Home only) and the triggers stay the screens' paging.
+
+**Hangar - sizes** (`author_menu_hangar.py`): the vessel's name is H1 (36, was Display 48) and the stage starts 22 higher;
+the tabs are BodySmall with 18 between them; ability rows are 100 tall (was 112) with smaller flowers, icons and keycaps;
+the vibe bars are BodySmall with 22-wide segments; the list's header and the vessel's kicker are 24 further apart. The
+crystals sit 4 lower, 20 from their word, and the kit pill has more room inside (18 / 24 / 8 / 8, the amount 12 from the
+crystal).
+
+**How it was checked:** every menu generator's `--check`; `--self-test` with new plants (the Join slot reading its
+button's rect, the strip's arrows back to self-sizing kit buttons, CHANGE unwired, the hull tiles outlined at rest, the
+stage that cannot zoom in, the stage's line unwired); the reference compile; offline renders of the configure cards and
+the Hangar (no text on an image, nothing past its box).
+
