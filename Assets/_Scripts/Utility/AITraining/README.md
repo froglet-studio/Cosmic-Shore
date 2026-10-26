@@ -499,6 +499,25 @@ already write.
 - Ribcage and Wildlife Liberation have no seek target for cage mass or
   fauna. Fitness still reads `HostilePrismsDestroyed` and
   `LifeformsKilled`. Do not add a sensor until one is asked for.
+- **Skimming in the shared `AIPilot`.** The Skim Race pilot seeks prisms
+  (`SkimRacePilot`), but `AIPilot`, which every other mode flies, has no
+  prism-seeking. So an AI Dolphin, which banks blast energy only by
+  skimming, never arms its weapon there. Two rules for whoever builds it,
+  kept from the retired `claude/ai-pilot-intensity-levels` and
+  `claude/ai-training-tool-S3xw3-v2` branches (archived 2026-10-26):
+  - **Nudge the path, never swap the target.** Project the candidate prism
+    onto the objective-bound course. If its perpendicular offset exceeds the
+    skim standoff, steer sideways just enough to close the gap to the
+    standoff, and steer zero when already in range. A second target would
+    compete with the objective, which `AIObjectiveScoring`'s commitment
+    hysteresis exists to prevent. It is three or four tunables: detection
+    radius, standoff, minimum lead distance, nudge ceiling.
+  - **Query `PrismSpatialIndex`, not `Physics.OverlapSphere`.** A fresh
+    trail prism's collider stays off for its `Prism.waitTime` after it
+    spawns (0.6 s by default, 0.1 to 0.5 s on some prefabs),
+    so a collider scan is blind to exactly the mass worth skimming. This
+    framework's own `PrismSensor` scans colliders and has the same blind
+    spot.
 
 ## What this framework does NOT do
 

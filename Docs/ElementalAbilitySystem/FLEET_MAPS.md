@@ -128,8 +128,8 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
 | Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms, and the warhead spares your own domain's wildlife and pilots (one friendly-fire decision for the whole detonation) |
-| Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
-| Space | **HOLE (2026-09-28)** — gun range is now FIXED (1350 u/s, 257.8 u = 2x the old Space-1 range); SPACE scales nothing on the guns until the row is re-cut (`SPARROW_SPRAY_ACCURACY.md` Round 7) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
+| Mass | turret-fired prism stretch (2.5) | **Shielded Prisms** — prisms fired in the turret stance arrive shielded, with a wider hit sphere (lived at Space 5 in 2026-08 round 4, returned here by design sign-off: MASS owns the substance of what you fire; `Sparrow.asset`, read 2026-10-26 with `element_ability_table.py Sparrow`) |
+| Space | **HOLE (2026-09-28)** — gun range is now FIXED (1350 u/s, 257.8 u = 2x the old Space-1 range); SPACE scales nothing on the guns until the row is re-cut (`SPARROW_SPRAY_ACCURACY.md` Round 7) | **Piercing Bullets** — bullets and turret-stance prism rounds pierce through prisms; SPACE owns reach, the armour is Mass 5 |
 | Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped, for every debuff source class (`VesselElementalImmunity.wardedSources: All` → `ResourceSystem.IsImmuneTo`) |
 
 **TIME row, changed 2026-08 — do not restore the old design:**
