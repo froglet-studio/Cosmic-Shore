@@ -111,7 +111,7 @@ namespace CosmicShore.Gameplay
             public int State;                    // State* bits
             public float LvC, LvM, LvS, LvT;     // element levels, 0..1 (charge, mass, space, time)
             public float M0, M1, M2, M3;         // the hull's first four resource meters (CurrentAmount), -1 if absent
-            public int TimeMode;                 // the Stoat's mode: 2 Hybrid (catch sling + short path), 1 Time (catch sling), 0 Mass (field dipole), -1 another hull
+            public int TimeMode;                 // the Stoat's mode: 2 Drive (warp pair), 1 Time (catch sling), 0 Mass (field dipole), -1 another hull
             public bool Held;                    // the AI held the hull (the You / AI toggle)
             public Vector3 CamPos, CamFwd, CamUp;    // forward + up = the camera's full rotation
             public float Fov, Aspect;            // vertical field of view (degrees), width / height
