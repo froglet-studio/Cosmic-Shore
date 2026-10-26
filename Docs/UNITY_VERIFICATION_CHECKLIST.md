@@ -16438,6 +16438,27 @@ No Unity editor in the session. Verified offline only: reference compile (player
     dimmed on Medium, the pad skips it and a click does nothing. A guest sees the host's pick, never pickable.
 11. Profile screen. **Pass:** no NOW PLAYING card anywhere in Menu_Main; the Audio Studio still plays and changes tracks.
 
+## The CODEX screen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md section 88. Run `CodexCatalogTests` in the Test Runner (edit mode).
+
+1. Main menu: the CODEX tab has no lock. Press it, or press LT from HANGAR. **Pass:** the Codex slides in. The
+   chapters run along the top, the grid is on the left and the open page on the right. Nothing sits under the top bar
+   or the friends orb, at 16:9 and 16:10.
+2. ETHIRIONS. **Pass:** five tiles (Charge, Mass, Space, Time, Omni) with their portraits. The first is open, and its
+   page lists its facts (Kind, Collection, Reward, ...).
+3. LB / RB. **Pass:** they step Ethirions, Elements, Flora, Fauna, Pilots, Vessels, Artifacts, Tools and stop at each
+   end. Under ECOLOGY, FLORA / FAUNA show beside the grid's title. On every other chapter they are hidden.
+4. Pad: move across the grid. **Pass:** the tile under the pad opens its page, its outline turns blue, and the grid
+   scrolls to keep it in view.
+5. Flora > Arbor. **Pass:** its facts, four element cells each showing an ethirion, and its elemental laws as rows.
+   The page scrolls when it is long.
+6. Pilots > Shrapnel. **Pass:** the portrait, the "Bigger bangs, brighter booms!" line, the signature, how it flies,
+   "Mass - Turret Stance" and "Shielded Prisms".
+7. Elements > Mass. **Pass:** one row per vessel naming its Mass ability and level-5 upgrade.
+8. Artifacts. **Pass:** no tiles, and the line "Artifacts are found far out in the HyperSea. None found yet."
+9. Tools > Connect the Dots. **Pass:** its category (Creation), facts, and the paintings as rows.
+
 ## Configure: picked pilot's podium glows, no outline (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md section 86.

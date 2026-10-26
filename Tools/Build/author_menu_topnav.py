@@ -82,7 +82,9 @@ TABS = [("CODEX", "CodexLink", "OnClickCodexNav"), ("HANGAR", "HangarLink", "OnC
         ("PORT", "PortLink", "OnClickPortNav")]
 SCREEN_IDS = {"CODEX": 6, "HANGAR": 4, "HOME": 2, "ARK": 1, "PORT": 3}   # ScreenSwitcher.MenuScreens
 PROFILE_ID = 5                 # the screen with no tab (Rev 13): last in the strip, never slid to
-LOCKED = {"CODEX", "PORT"}     # disabledScreens: a locked tab wears the lock and its MenuAvailabilityView
+# disabledScreens: a locked tab wears the lock and its MenuAvailabilityView. Section 88 (Shombith 2026-10-26: "Go ahead
+# implement the codex"): CODEX has its screen (author_menu_codex.py) and its lock is lifted; PORT stays locked.
+LOCKED = {"PORT"}
 # Rev 13 (Shombith, 2026-10-25): "we do not need a separate profile screen ... keep the top bar count at 4". The
 # PROFILE tab (index 4) is retired: the profile opens from the Home pilot card (ScreenSwitcher.navHiddenScreens).
 # Its minted documents are removed on every run, so a scene still carrying the fifth tab loses it.
@@ -319,6 +321,16 @@ class Ids:
                         ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "stub_lock", "stub_label",
                          "trigger", "availability")}
 
+    def everything(self):
+        """Every fileID this script can mint, locked or not: a re-run removes them all before writing, so a tab whose
+        lock is lifted (CODEX, section 88) loses its lock view instead of stranding it."""
+        out = set(self.band.values()) | set(self.rule.values())
+        for t in self.tabs:
+            out |= set(t.values())
+        for k in self.keys:
+            out |= set(k.values())
+        return out
+
     def all(self):
         out = set(self.band.values()) | set(self.rule.values())
         for i, t in enumerate(self.tabs):
@@ -410,16 +422,16 @@ def screen_roots(sw):
 
 
 def screens_block(sw):
-    """The strip in TABS order, then PROFILE (no tab). CODEX has no panel yet (root 0: its locked slot is never entered;
-    ScreenSwitcher skips a null root when it lays the strip out)."""
+    """The strip in TABS order, then PROFILE (no tab). Each slot keeps the root the scene gives it: CODEX's is the
+    CodexView author_menu_codex.py places (section 88)."""
     roots = screen_roots(sw)
     order = [SCREEN_IDS[t[0]] for t in TABS] + [PROFILE_ID]
     return "  screens:\n" + "".join(f"  - id: {sid}\n    root: {{fileID: {roots.get(sid, '0')}}}\n" for sid in order)
 
 
 def disabled_hex():
-    """disabledScreens as Unity writes an int list: PORT, then CODEX (little-endian int32s)."""
-    return "".join(SCREEN_IDS[n].to_bytes(4, "little").hex() for n in ("PORT", "CODEX"))
+    """disabledScreens as Unity writes an int list (little-endian int32s): the locked tabs' screens, PORT."""
+    return "".join(SCREEN_IDS[n].to_bytes(4, "little").hex() for n in ("PORT",) if n in LOCKED)
 
 
 def set_block(doc, name, block):
@@ -457,7 +469,7 @@ def transform(text):
         for fid in sc.subtree(root):
             sc.remove(fid)
     for fid in list(sc.order):
-        if fid in generated or fid in ids.retired:
+        if fid in ids.everything() or fid in ids.retired:
             sc.remove(fid)
 
     items, xs, row_w = row()
@@ -569,7 +581,7 @@ def validate(before_text, after_text, guids):
     for root in RETIRED_ROOTS:
         if before.has(root):
             retired |= set(before.subtree(root))
-    retired |= Ids().retired
+    retired |= Ids().retired | Ids().everything()     # a lifted lock's view (CODEX, section 88) is removed, not stranded
     assert removed <= retired | generated, f"unexpected removals {sorted(removed - retired - generated)[:3]}"
     changed = {f for f in set(before.order) & set(sc.order) if before.docs[f] != sc.docs[f]}
     assert changed <= PATCHED | generated, f"unexpected edits {sorted(changed - PATCHED - generated)[:3]}"
@@ -638,8 +650,8 @@ def validate(before_text, after_text, guids):
     ids_in_strip = [int(x) for x in re.findall(r"  - id: (\d+)\n", re.search(r"^  screens:\n((?:  .*\n)*?)  NavBar:", sw, re.M).group(1))]
     assert ids_in_strip == [SCREEN_IDS[t[0]] for t in TABS] + [PROFILE_ID], f"the strip's order is not the tabs' ({ids_in_strip})"
     roots = screen_roots(sw)
-    assert all(roots[SCREEN_IDS[n]] != "0" for n in ("HANGAR", "HOME", "ARK", "PORT")), "a screen lost its panel"
-    assert f"disabledScreens: {disabled_hex()}\n" in sw, "CODEX and PORT must both be locked (disabledScreens)"
+    assert all(roots[SCREEN_IDS[n]] != "0" for n in ("CODEX", "HANGAR", "HOME", "ARK", "PORT")), "a screen lost its panel"
+    assert f"disabledScreens: {disabled_hex()}\n" in sw, "PORT, and only PORT, must be locked (disabledScreens)"
     assert "m_SizeDelta: {x: 0, y: 84}" in sc.docs[NAVBAR["rt"]]
     assert "NavBarLineSprites: []" in sw and "NavBarLine: {fileID: 0}" in sw
 
@@ -687,8 +699,8 @@ def self_test(current, guids):
         "unrelated document edited": lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1),
         "ARK lost its glyph": lambda s: s.replace(f"guid: {glyph_guid(3)}, type: 3}}", "guid: 0, type: 3}", 1),
         "the strip in the old order": lambda s: in_doc(s, SWITCHER, "  - id: 6\n", "  - id: 9\n"),
-        "CODEX not locked": lambda s: in_doc(s, SWITCHER, f"disabledScreens: {disabled_hex()}", "disabledScreens: 03000000"),
-        "CODEX without its lock view": lambda s: s.replace(f"      addedObject: {{fileID: {t[0]['availability']}}}\n", "", 1),
+        "CODEX locked again": lambda s: in_doc(s, SWITCHER, f"disabledScreens: {disabled_hex()}", f"disabledScreens: {disabled_hex()}06000000"),
+        "PORT without its lock view": lambda s: s.replace(f"      addedObject: {{fileID: {t[PORT]['availability']}}}\n", "", 1),
     }
     failed = []
     for name, plant in plants.items():
