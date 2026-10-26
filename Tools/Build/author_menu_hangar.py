@@ -62,6 +62,9 @@ SCROLL_RECT = "1aa08ab6e0800fa44ae55d278d1423e3"
 RECT_MASK_2D = "3312d7739989d2b4e91e6319e9a96d76"
 MASK = "31a19414c41e5ae4aae2af33fee712f6"
 PACKAGE = K.PACKAGE_GUIDS | {SCROLL_RECT, RECT_MASK_2D, MASK, "1344c3c82d62a2a41a3576d8abb8e3ea"}
+# The masks the menu authors: a RectMask2D that stops re-culling while nothing under it can be seen
+# (a closed window, a screen slid off the strip). Docs/PERFORMANCE_OPTIMIZATION.md, the 10-26 Menu_Main row.
+KIT_RECT_MASK_2D = K.kit_script("KitRectMask2D")
 
 HANGAR_SCREEN = K.meta_guid("Assets/_Scripts/UI/Screens/HangarScreen.cs")
 DETAIL_VIEW = K.meta_guid("Assets/_Scripts/UI/Views/HangarVesselDetailView.cs")
@@ -557,7 +560,7 @@ def games_page(panel):
     scroll = page.child(N("Tabs/Games/Scroll", "Scroll", R((0, 0), (1, 1), (0, -27), (0, -54))))
     vp = scroll.child(N("Tabs/Games/Scroll/Viewport", "Viewport", STRETCH))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("mask", 114, lambda ctx, go: K.mono(go, RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n"))
+        .add("mask", 114, lambda ctx, go: K.mono(go, KIT_RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n"))
     content = vp.child(N("Tabs/Games/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (5, 5, 5, 5), 10, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
     scroll.add("scroll", 114, lambda ctx, go: K.mono(go, SCROLL_RECT,
@@ -827,7 +830,7 @@ def build_view(row_guid):
     scroll = lz.child(N("List/Scroll", "Scroll", R((0, 0), (1, 1), (0, -13), (0, -26))))
     vp = scroll.child(N("List/Scroll/Viewport", "Viewport", STRETCH))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("mask", 114, lambda ctx, go: K.mono(go, RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n"
+        .add("mask", 114, lambda ctx, go: K.mono(go, KIT_RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n"
                                                                    "  m_Softness: {x: 0, y: 0}\n"))
     content = vp.child(N("List/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (5, 5, 5, 5), 10, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))

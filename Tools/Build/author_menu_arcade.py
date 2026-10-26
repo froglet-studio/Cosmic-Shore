@@ -71,6 +71,7 @@ MASK63 = 0x7FFFFFFFFFFFFFFF
 
 # --- package script guids, harvested from Menu_Main (never recalled) --------------------------
 SCROLL_RECT, RECT_MASK_2D, MASK = H.SCROLL_RECT, H.RECT_MASK_2D, H.MASK
+KIT_RECT_MASK_2D = H.KIT_RECT_MASK_2D
 BUTTON = T.BUTTON
 PACKAGE = H.PACKAGE | {BUTTON}
 
@@ -390,7 +391,7 @@ def mask(show):
 
 
 def rect_mask():
-    return lambda ctx, go: mono(go, RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
+    return lambda ctx, go: mono(go, KIT_RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
 
 
 def scroll_rect(content_key, viewport_key, sensitivity=30):
@@ -1470,7 +1471,7 @@ def check_card_a(card, name, band_key, card_w, band_h):
     assert (fit_w - card_w) / 2 > ART_DRIFT_REACH[0] and (fit_h - band_h) / 2 > ART_DRIFT_REACH[1], \
         f"{name}: overscan {ov} leaves less margin than the drift's reach {ART_DRIFT_REACH} - an edge would show"
     _, mk = doc_of(card, F(f"{band_key}#mask"))
-    assert mk and RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
+    assert mk and KIT_RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
     assert f"guid: {HULL_LIT_MAT}" in card, f"{name}: the hull is not lit (Hull_Lit.mat) - it vanishes on the navy body"
     assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
 

@@ -23,6 +23,10 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
                                              three corners flip it by scale
     kit_spark / kit_spark_v                  the travelling highlight (KitSpark): a 48 x 2 streak (and its
                                              2 x 48 vertical twin) clear at both ends, solid in the middle
+    kit_oct_line2                            the octagon's 2-unit outline, 48 x 48: an open seat's ring
+                                             (section 74, the configure pedestals)
+    kit_pool / kit_pool_rim                  the pool of light a configure pedestal's pilot stands on, 120 x 30:
+                                             a soft ellipse falling off to clear, and its 1.5-unit rim
 
 THE SLIVER (Docs/STYLE_FOUNDATION.md §5): a 45 deg cut on TWO OPPOSITE corners. Normal = top-left
 and bottom-right; `_flip` = top-right and bottom-left (§5 "flippable"). `fill` is the whole
@@ -76,6 +80,8 @@ OCT_CUT = 0.29               # corner cut as a fraction of the side - the mockup
 GRID = 24                    # blueprint grid pitch, canvas units (§5 spacing scale)
 BRACKET = 22                 # corner bracket arm, canvas units
 SPARK_W, SPARK_H = 48, 2     # spark streak, canvas units
+POOL_W, POOL_H = 120, 30     # a pedestal's pool of light, canvas units (drawn simple)
+POOL_RIM = 1.5               # the pool's rim, canvas units
 # The outline sprites carry a soft INNER glow under the band (the owner, 2026-10-17: "make the
 # borders glow everywhere in the menu"). Baked into the texture, so every kit border glows in its
 # own tint at zero runtime cost. It runs GLOW_U units inward from the band's inner edge, inside the
@@ -250,6 +256,35 @@ def build_oct():
     return downsample(convex_mask(xs, ys, oct_verts(OCT)), t, t), 0
 
 
+def build_oct_line(width=2.0):
+    t = OCT * TEXELS_PER_UNIT
+    xs, ys = grid(t, t)
+    verts = oct_verts(OCT)
+    band = convex_mask(xs, ys, verts) & ~convex_mask(xs, ys, verts, inset=width)
+    return downsample(band, t, t), 0
+
+
+def ellipse_r(xs, ys, w, h, inset=0.0):
+    """Normalised ellipse radius (1 on the edge) of the w x h ellipse centred in its box, shrunk by `inset` units."""
+    a, b = w / 2 - inset, h / 2 - inset
+    return np.sqrt(((xs - w / 2) / a) ** 2 + ((ys - h / 2) / b) ** 2)
+
+
+def build_pool():
+    """Alpha falls from solid at the centre to clear at the ellipse's edge (a squared falloff: light, not a disc)."""
+    w, h = POOL_W * TEXELS_PER_UNIT, POOL_H * TEXELS_PER_UNIT
+    xs, ys = grid(w, h)
+    r = ellipse_r(xs, ys, POOL_W, POOL_H)
+    return downsample(np.clip(1.0 - r, 0.0, 1.0) ** 2 / 1.0, w, h), 0
+
+
+def build_pool_rim():
+    w, h = POOL_W * TEXELS_PER_UNIT, POOL_H * TEXELS_PER_UNIT
+    xs, ys = grid(w, h)
+    band = (ellipse_r(xs, ys, POOL_W, POOL_H) <= 1.0) & (ellipse_r(xs, ys, POOL_W, POOL_H, POOL_RIM) > 1.0)
+    return downsample(band, w, h), 0
+
+
 def build_grid():
     """A 1-unit line along the top and the left edge of one 24-unit tile; tiled, they make the grid."""
     t = GRID * TEXELS_PER_UNIT
@@ -301,6 +336,12 @@ def sprite_set():
     out.append(("kit_fade_h", a, (0, 0, 0, 0), dict(fade_h=True)))
     a, _ = build_oct()
     out.append(("kit_oct_fill", a, (0, 0, 0, 0), dict(oct=True)))
+    a, _ = build_oct_line()
+    out.append(("kit_oct_line2", a, (0, 0, 0, 0), dict(oct_line=True)))
+    a, _ = build_pool()
+    out.append(("kit_pool", a, (0, 0, 0, 0), dict(pool=True)))
+    a, _ = build_pool_rim()
+    out.append(("kit_pool_rim", a, (0, 0, 0, 0), dict(pool_rim=True)))
     a, _ = build_grid()
     out.append(("kit_grid", a, (0, 0, 0, 0), dict(grid=True)))
     a, _ = build_bracket()
@@ -388,6 +429,23 @@ def check_sprite(name, alpha, border, meta):
         # the corner cut runs OCT_CUT of the side along the top edge
         measured = edge_crossing(alpha[0]) / w
         assert abs(measured - OCT_CUT) <= 0.02, f"{name}: the corner cut is {measured:.3f} of the side"
+    elif meta.get("oct_line"):
+        for r, c in ((0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)):
+            assert alpha[r, c] == 0, f"{name}: an octagon's bounding corners must be empty"
+        assert alpha[h // 2, w // 2] == 0, f"{name}: an outline must be hollow"
+        band = (alpha[h // 2, : w // 2] >= 0.5).sum() / TEXELS_PER_UNIT
+        assert abs(band - 2.0) <= 0.05, f"{name}: band is {band:.3f} units, expected 2"
+    elif meta.get("pool"):
+        assert alpha.shape == (POOL_H * TEXELS_PER_UNIT, POOL_W * TEXELS_PER_UNIT), f"{name}: wrong size"
+        assert alpha[h // 2, w // 2] > 0.9, f"{name}: the pool must be bright at its centre"
+        for r, c in ((0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1), (h // 2, 0), (0, w // 2)):
+            assert alpha[r, c] < 0.02, f"{name}: the pool must fade to clear at its edge ({r},{c})"
+        row = alpha[h // 2, w // 2:]
+        assert np.all(np.diff(row) <= 1e-9), f"{name}: the pool must fall off from its centre"
+    elif meta.get("pool_rim"):
+        assert alpha[h // 2, w // 2] == 0, f"{name}: a rim must be hollow"
+        band = (alpha[h // 2, : w // 2] >= 0.5).sum() / TEXELS_PER_UNIT
+        assert abs(band - POOL_RIM) <= 0.3, f"{name}: rim is {band:.3f} units, expected {POOL_RIM}"
     elif meta.get("grid") or meta.get("bracket"):
         t = TEXELS_PER_UNIT
         assert alpha.shape == ((GRID if meta.get("grid") else BRACKET) * t,) * 2, f"{name}: wrong tile size"
@@ -664,6 +722,15 @@ def self_test():
     a, _ = build_bracket()
     a3 = a.copy(); a3[:, :TEXELS_PER_UNIT] = 0.0
     expect_fail("bracket missing its left arm", lambda: check_sprite("ctl", a3, (0, 0, 0, 0), dict(bracket=True)))
+
+    # 12. a solid octagon checked as the outline
+    a, _ = build_oct()
+    expect_fail("octagon fill checked as its outline", lambda: check_sprite("ctl", a, (0, 0, 0, 0), dict(oct_line=True)))
+    # 13. a pool drawn as a hard disc (no falloff to its edge)
+    w, h = POOL_W * TEXELS_PER_UNIT, POOL_H * TEXELS_PER_UNIT
+    xs, ys = grid(w, h)
+    disc = downsample(ellipse_r(xs, ys, POOL_W, POOL_H) <= 1.0, w, h)
+    expect_fail("a hard disc checked as the pool", lambda: check_sprite("ctl", disc, (0, 0, 0, 0), dict(pool=True)))
 
     ok = True
     for label, fired, msg in controls:

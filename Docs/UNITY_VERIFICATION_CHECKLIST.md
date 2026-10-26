@@ -16042,6 +16042,38 @@ errors are bleeding-edge's), Amoebius `CosmicShore.Live` builds.
       at a constant 20 blows/s).
 - [ ] Other swarms (the research plans, the ecology swarm) show no new shields.
 
+## Rev 20 G: the arcade configure window - pedestals, LB / RB intensity, START (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`Docs/MENU_REDESIGN_B.md` section 74; approved board `R20ConfigureG2` on the Menu Redesign B canvas. No Unity editor in
+the cloud session. Proven offline: refcompile (player + editor OK), Amoebius builds, `author_menu_configure.py --check`
+/ `--self-test`, `author_ui_kit_sprites.py --check` / `--self-test`, `check_generated_assets.py`, `check_ui_colors.py`.
+- [ ] Open any arcade card (Scurry): preview + description left; right column = controls (hull named, two columns),
+      the intensity / pilots panel, START full width at the foot. No summary chips, no "Ready to launch".
+- [ ] Intensity: the numeral reads the picked level (I-IV); LB / RB step it; the pips light up to it; a locked level
+      shows its lock line and pressing toward it gives the locked feedback; clicking a pip picks it.
+- [ ] Pilots solo: your portrait on a pool of your team's colour, "Host" under you; three open seats. Press an open
+      seat / ADD AI PILOT / X: an AI appears with a roster portrait, "AI pilot", on the team with the fewest pilots.
+- [ ] Focus your team label and press left / right (or click its arrows): your team and pool colour change; the
+      match launches on that team. As host, do the same on an AI's seat; its team changes and stays.
+- [ ] ✕ on an AI removes it (refused while the card's minimum needs the seat).
+- [ ] With a friend in the party: their portrait and name show; a guest cannot add or move AI; after Ready the guest
+      sees "Waiting for others...".
+- [ ] A card that offers AI difficulty (Skim Race): the Easy / Medium / Hard row shows beside ADD AI PILOT and the AI
+      seats read "Medium AI"; on Scurry the row is hidden and they read "AI".
+- [ ] START launches on a press (no hold). The controls panel does NOT jump when the difficulty row shows.
+- [ ] Fly the preview (FLY / double-tap): the right column fades as before; LB / RB / X go to the vessel then.
+- [ ] Arena and Maelstrom windows are unchanged.
+
+## Menu_Main slide lag: masks sleep while nothing under them can be seen (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds, every menu generator `--check` / `--self-test`, `check_generated_assets.py`.
+
+1. Open Menu_Main, enter Play (Release code optimization, Third Eye closed), let it settle on Home past the 4-minute auto-capture, stop Play and send the capture. **Pass:** `ClipperRegistry.Cull` well under 1 ms (3.4-4.0 ms in the 10-25/26 captures, 0.3 ms on 10-18).
+2. Slide Home -> Hangar -> Ark -> Profile and back with LB/RB and the nav. **Pass:** every screen draws fully on arrival, nothing stays blank or half-clipped, no content shows from a neighbouring screen during the slide.
+3. On a notched phone or a Simulator device with a safe area: **Pass:** each screen's background still reaches the screen edges (the slot mask is padded out to the slot).
+4. Open and close the Arcade, Arena, Toy Box, Voyage and Settings windows; scroll the Arcade grid. **Pass:** cards and art bands clip correctly at the viewport edge on the first frame the window is visible.
+5. Freestyle (Select) and back. **Pass:** the hub reappears fully drawn.
+
 ## Tandava: Severing (Voyage 2) - the fork of Tandava with PR #1046's severing work
 
 Before these, check that **Tandava (Voyage 1) is unchanged**: its card, its scene and its creature behave exactly as on
