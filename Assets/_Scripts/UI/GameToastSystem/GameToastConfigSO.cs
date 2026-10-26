@@ -12,7 +12,8 @@ namespace CosmicShore.UI
     public class GameToastDefinition
     {
         [Tooltip("The situation this toast responds to.")]
-        public GameToastSituation situation;
+        [SerializeField] GameToastSituation situation;
+        public GameToastSituation Situation => situation;
 
         [Tooltip("Display template. Placeholders per situation:\n" +
                  "PlayerJoined/PlayerReady/PlayerDisconnected: {0}=player name\n" +
@@ -28,17 +29,20 @@ namespace CosmicShore.UI
                  "{1}=its score, {2}=target, {3}=its best single pilot\n" +
                  "Rich text (<b>, <i>, <color>) is supported.")]
         [TextArea]
-        public string messageTemplate;
+        [SerializeField] string messageTemplate;
+        public string MessageTemplate => messageTemplate;
 
         [Header("Presentation")]
         [Tooltip("Tint the whole line with the primary subject's domain UI color. " +
                  "Ignored when Use Domain Colored Names is on (the line stays white and " +
                  "only the names carry domain colors).")]
-        public bool tintWithDomainColor = true;
+        [SerializeField] bool tintWithDomainColor = true;
+        public bool TintWithDomainColor => tintWithDomainColor;
 
         [Tooltip("Wrap name arguments in <color>+<b> tags using each subject's domain color " +
                  "(two-tone lines like the joust toast).")]
-        public bool useDomainColoredNames;
+        [SerializeField] bool useDomainColoredNames;
+        public bool UseDomainColoredNames => useDomainColoredNames;
 
         [Range(0f, 1f)]
         [Tooltip("Alpha multiplier for this line (e.g. dim disconnect notices).")]
@@ -50,26 +54,31 @@ namespace CosmicShore.UI
                  "PrismsDestroyedMilestone, LifeformKilled, PrismsStolenMilestone): fire only when the player's total " +
                  "crosses a multiple of this. 1 = every increase (Skim Race's crystals); " +
                  "10 = every tenth (Scurry's crystals). Ignored by every other situation.")]
-        public int everyN = 1;
+        [SerializeField] int everyN = 1;
+        public int EveryN => everyN;
 
         [Header("Idle Hint")]
         [Tooltip("When on, this entry is a HINT: it is never raised by gameplay, instead it " +
                  "shows automatically after Idle Seconds pass during an active turn without " +
                  "the Reset On situation firing.")]
-        public bool isIdleHint;
+        [SerializeField] bool isIdleHint;
+        public bool IsIdleHint => isIdleHint;
 
         [Tooltip("The situation whose activity resets this hint's idle timer (e.g. the Joust " +
                  "hint resets whenever a Joust toast fires).")]
-        public GameToastSituation resetOnSituation = GameToastSituation.None;
+        [SerializeField] GameToastSituation resetOnSituation = GameToastSituation.None;
+        public GameToastSituation ResetOnSituation => resetOnSituation;
 
         [Min(1f)]
         [Tooltip("Seconds of inactivity (since turn start or since the last Reset On " +
                  "situation) before the hint shows.")]
-        public float idleSeconds = 60f;
+        [SerializeField] float idleSeconds = 60f;
+        public float IdleSeconds => idleSeconds;
 
         [Tooltip("Re-show the hint after every further Idle Seconds of inactivity, instead " +
                  "of only once per turn.")]
-        public bool repeatWhileIdle = true;
+        [SerializeField] bool repeatWhileIdle = true;
+        public bool RepeatWhileIdle => repeatWhileIdle;
     }
 
     /// <summary>
@@ -94,7 +103,7 @@ namespace CosmicShore.UI
             for (int i = 0, count = toasts.Count; i < count; i++)
             {
                 var entry = toasts[i];
-                if (entry != null && entry.situation == situation && !string.IsNullOrEmpty(entry.messageTemplate))
+                if (entry != null && entry.Situation == situation && !string.IsNullOrEmpty(entry.MessageTemplate))
                 {
                     definition = entry;
                     return true;
@@ -111,7 +120,7 @@ namespace CosmicShore.UI
             for (int i = 0, count = toasts.Count; i < count; i++)
             {
                 var entry = toasts[i];
-                if (entry != null && entry.isIdleHint && !string.IsNullOrEmpty(entry.messageTemplate))
+                if (entry != null && entry.IsIdleHint && !string.IsNullOrEmpty(entry.MessageTemplate))
                     results.Add(entry);
             }
         }

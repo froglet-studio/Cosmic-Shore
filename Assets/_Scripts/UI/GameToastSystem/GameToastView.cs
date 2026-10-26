@@ -36,11 +36,11 @@ namespace CosmicShore.UI
 
             // Stick to the newest line only when the player was already reading the bottom.
             bool wasAtBottom = scrollRect == null ||
-                               scrollRect.verticalNormalizedPosition <= settings.stickToBottomThreshold;
+                               scrollRect.verticalNormalizedPosition <= settings.StickToBottomThreshold;
 
             // Retention cap: remove oldest from the top. Detach before Destroy so childCount
             // drops immediately (multiple spawns in one frame must not loop forever).
-            while (contentContainer.childCount >= settings.maxRetainedEntries)
+            while (contentContainer.childCount >= settings.MaxRetainedEntries)
             {
                 var oldest = contentContainer.GetChild(0);
                 oldest.SetParent(null);
@@ -55,7 +55,7 @@ namespace CosmicShore.UI
             LayoutRebuilder.ForceRebuildLayoutImmediate(contentContainer);
             item.AnimateIn(settings);
 
-            if (settings.autoScrollToBottom && wasAtBottom && scrollRect != null)
+            if (settings.AutoScrollToBottom && wasAtBottom && scrollRect != null)
                 scrollRect.verticalNormalizedPosition = 0f;
         }
 

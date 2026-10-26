@@ -56,23 +56,23 @@ namespace CosmicShore.UI
 
             float targetX = _rect.anchoredPosition.x;
             var start = _rect.anchoredPosition;
-            start.x += settings.slideInOffset;
+            start.x += settings.SlideInOffset;
             _rect.anchoredPosition = start;
             _canvasGroup.alpha = 0f;
 
             _sequence = DOTween.Sequence().SetLink(gameObject);
-            if (settings.useUnscaledTime)
+            if (settings.UseUnscaledTime)
                 _sequence.SetUpdate(true);
 
-            _sequence.Join(_rect.DOAnchorPosX(targetX, settings.slideInDuration)
-                .SetEase(settings.slideInEase));
-            _sequence.Join(_canvasGroup.DOFade(_baseAlpha, settings.slideInDuration));
+            _sequence.Join(_rect.DOAnchorPosX(targetX, settings.SlideInDuration)
+                .SetEase(settings.SlideInEase));
+            _sequence.Join(_canvasGroup.DOFade(_baseAlpha, settings.SlideInDuration));
 
-            if (settings.agedAlpha < 1f && settings.ageAfterSeconds > 0f)
+            if (settings.AgedAlpha < 1f && settings.AgeAfterSeconds > 0f)
             {
-                _sequence.AppendInterval(settings.ageAfterSeconds);
-                _sequence.Append(_canvasGroup.DOFade(settings.agedAlpha * _baseAlpha,
-                    settings.ageFadeDuration));
+                _sequence.AppendInterval(settings.AgeAfterSeconds);
+                _sequence.Append(_canvasGroup.DOFade(settings.AgedAlpha * _baseAlpha,
+                    settings.AgeFadeDuration));
             }
         }
 

@@ -8,25 +8,36 @@ namespace CosmicShore.Utility
     public class ShaderFaderSSU : MonoBehaviour
     {
         //Fading:
-        public bool automaticFading = true;
-        public bool isFaded;
+        [SerializeField] bool automaticFading = true;
+        public bool AutomaticFading => automaticFading;
+        [SerializeField] bool isFaded;
+        public bool IsFaded => isFaded;
         [Range(0, 1)]
-        public float fadeValue = 0f;
+        [SerializeField] float fadeValue = 0f;
+        public float FadeValue => fadeValue;
         [Min(0.01f)]
-        public float duration = 2f;
-        public bool unscaledTime;
-        public AnimationCurve fadeCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0, 0.55f, 0.55f), new Keyframe(1, 1, 0, 0, 0.55f, 0.55f));
+        [SerializeField] float duration = 2f;
+        public float Duration => duration;
+        [SerializeField] bool unscaledTime;
+        public bool UnscaledTime => unscaledTime;
+        [SerializeField] AnimationCurve fadeCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0, 0.55f, 0.55f), new Keyframe(1, 1, 0, 0, 0.55f, 0.55f));
+        public AnimationCurve FadeCurve => fadeCurve;
 
         //Materials:
-        public bool getChildObjects = true;
-        public bool poolMaterials = true;
+        [SerializeField] bool getChildObjects = true;
+        public bool GetChildObjects => getChildObjects;
+        [SerializeField] bool poolMaterials = true;
+        public bool PoolMaterials => poolMaterials;
         public List<Renderer> renderers = new List<Renderer>();
         public List<Graphic> graphics = new List<Graphic>();
 
         //Properties:
-        public List<FloatFaderSSU> floatProperties = new List<FloatFaderSSU>();
-        public List<VectorFaderSSU> vectorProperties = new List<VectorFaderSSU>();
-        public List<ColorFaderSSU> colorProperties = new List<ColorFaderSSU>();
+        [SerializeField] List<FloatFaderSSU> floatProperties = new List<FloatFaderSSU>();
+        public List<FloatFaderSSU> FloatProperties => floatProperties;
+        [SerializeField] List<VectorFaderSSU> vectorProperties = new List<VectorFaderSSU>();
+        public List<VectorFaderSSU> VectorProperties => vectorProperties;
+        [SerializeField] List<ColorFaderSSU> colorProperties = new List<ColorFaderSSU>();
+        public List<ColorFaderSSU> ColorProperties => colorProperties;
 
         //Internal:
         HashSet<Material> materials;

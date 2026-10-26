@@ -17,7 +17,7 @@ namespace CosmicShore.Core
 
         public IDialogueView ResolveView(DialogueSet set)
         {
-            return set.channel switch
+            return set.Channel switch
             {
                 DialogueChannel.MainMenu => Prefer(mainMenuOverride, mainMenuView),
                 DialogueChannel.InGameRadio => Prefer(inGameRadioOverride, inGameRadioView),

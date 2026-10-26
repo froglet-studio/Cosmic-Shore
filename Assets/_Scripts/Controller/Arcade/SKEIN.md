@@ -693,7 +693,7 @@ new virtual, consulted before the gate logic: Skein is the first gate race flown
 while attached the aim point is the RAIL, not the ring — aiming at a ring while riding leaves the
 range roughly constant as the cable corkscrews, `OrbitDetector` trips on swept angle without
 progress, and the pilot drops from 150 to 30 u/s mid-grind. Off-rail it returns false and the
-platform's ordinary gate aiming (including its crystal detour) takes over, which is exactly right:
+platform's ordinary gate aiming (which since 2026-10-26 never detours for a crystal) takes over, which is exactly right:
 then the pilot *is* flying.
 
 ### The three playtest changes
