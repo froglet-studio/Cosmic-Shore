@@ -99,6 +99,9 @@ player, editor and webgl: 0 errors in project code; planted errors in the overla
    join the shore host's party anyway (edit its lobby suffix to empty in the debugger): the host's Party log shows
    `pool check: OtherPool - removing` and the guest leaves the party; the guest's `FAIRPLAY_SIGNALS` gains `pool_bypass`.
    A normal shore guest shows `pool check: SamePool` and stays.
+9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
+   boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
+   (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
 
 ### 🔴 Fair play: minors are never penalised automatically (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
 

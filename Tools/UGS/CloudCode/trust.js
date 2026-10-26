@@ -47,7 +47,8 @@ const QUEUE_KEY = "queue";
 
 const RULES = {
   decayDays: 30,              // a signal older than this no longer counts (clean play earns trust back)
-  weights: { host_result_mismatch: 120, around_the_clock: 80, repetitive_results: 100, pool_bypass: 300 },
+  weights: { host_result_mismatch: 120, around_the_clock: 80, repetitive_results: 100, pool_bypass: 300, host_observed: 60 },
+  hostObservedMinReporters: 2,   // a host can lie: its observations count only once a second host saw the same account
   watchAt: 100,
   undertowAt: 300,
   quit: { minMatches: 10, rate: 0.5 },   // over the last 20 matches (match-report.js RULES.recentMatches)
@@ -56,7 +57,8 @@ const RULES = {
   shadowBoardSuffix: "_undertow",
   // The Code of Conduct rule a notice names (Docs/Legal/CODE_OF_CONDUCT_TEMPLATE.md "The rules").
   rule: { cheating: 1, automated: 2, exploit: 3, quitting: 6 },
-  kindOf: { host_result_mismatch: "cheating", around_the_clock: "automated", repetitive_results: "automated", pool_bypass: "cheating" },
+  kindOf: { host_result_mismatch: "cheating", around_the_clock: "automated", repetitive_results: "automated", pool_bypass: "cheating",
+            host_observed: "cheating", "host_observed/steering": "automated" },
   appealMaxChars: 500,
   adultAge: 18,
   queueMax: 500,
@@ -107,8 +109,11 @@ function applyReview(t, nowMs) {
 function evaluate(t, signals, conduct, birthYear, nowMs) {
   const nowYear = new Date(nowMs).getUTCFullYear();
   const minor = treatAsMinor(birthYear, nowYear);
-  const live = (Array.isArray(signals) ? signals : []).filter((s) => s && RULES.weights[s.kind] &&
+  let live = (Array.isArray(signals) ? signals : []).filter((s) => s && RULES.weights[s.kind] &&
     typeof s.at === "number" && s.at > t.clearedBefore && nowMs - s.at <= RULES.decayDays * DAY);
+  // Host-observed signals count only when at least two different hosts reported this account.
+  const reporters = new Set(live.filter((s) => s.kind === "host_observed").map((s) => s.reporter));
+  if (reporters.size < RULES.hostObservedMinReporters) live = live.filter((s) => s.kind !== "host_observed");
   const score = live.reduce((sum, s) => sum + RULES.weights[s.kind], 0);
 
   const recent = conduct && Array.isArray(conduct.recent) ? conduct.recent : [];
@@ -123,7 +128,8 @@ function evaluate(t, signals, conduct, birthYear, nowMs) {
   else stage = "shore";
 
   // The reasons kept: kind, when, the evidence the signal carried, so a reviewer and an appeal see what was found.
-  const reasons = live.map((s) => ({ kind: s.kind, at: s.at, evidence: s.diff || s.durations || s.activeHours || null,
+  const reasons = live.map((s) => ({ kind: s.kind, sub: s.sub, at: s.at,
+                                     evidence: s.diff || s.durations || s.activeHours || (s.kind === "host_observed" ? { measured: s.measured, limit: s.limit, mode: s.mode, matchId: s.matchId } : null),
                                      reporters: s.reporters || undefined, review: s.review || undefined }));
   if (quitter) reasons.push({ kind: "leave_rate", at: nowMs, evidence: { leaveRate, matches: recent.length } });
   return { stage, score, minor, reasons, leaveRate };
@@ -167,7 +173,7 @@ function poolOf(stage) {
 
 function noticeKind(t) {
   if (t.stage === "quitters") return "quitting";
-  const kinds = t.reasons.map((r) => RULES.kindOf[r.kind]).filter(Boolean);
+  const kinds = t.reasons.map((r) => RULES.kindOf[r.sub ? r.kind + "/" + r.sub : r.kind] || RULES.kindOf[r.kind]).filter(Boolean);
   return kinds.includes("cheating") ? "cheating" : kinds[0] || "cheating";
 }
 

@@ -129,6 +129,22 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     assert.equal(appeal(t, "again", NOW).reason, "already_open");
   });
 
+  await test("host observations count only once two different hosts saw the same account", () => {
+    const obs = (reporter, sub, d) => ({ kind: "host_observed", sub, measured: 900, limit: 400, reporter, at: NOW - d * DAY });
+    const one = [obs("h1", "speed", 1), obs("h1", "speed", 2), obs("h1", "speed", 3), obs("h1", "speed", 4), obs("h1", "speed", 5)];
+    assert.equal(evaluate(emptyTrust(), one, null, 1990, NOW).score, 0, "one host, however many reports, is not enough");
+    const two = [...one, obs("h2", "speed", 1)];
+    assert.equal(evaluate(emptyTrust(), two, null, 1990, NOW).score, 6 * RULES.weights.host_observed);
+  });
+
+  await test("a notice from AI-like steering names automation, not cheating", () => {
+    const st = (reporter, d) => ({ kind: "host_observed", sub: "steering", measured: 1, limit: 3, reporter, at: NOW - d * DAY });
+    const t = step(emptyTrust(), [st("h1", 1), st("h2", 1), st("h3", 2), st("h4", 2), st("h5", 3)], null, 1990, NOW).trust;
+    assert.equal(t.stage, "undertow");
+    t.matches = 3;
+    assert.equal(step(t, [st("h1", 1), st("h2", 1), st("h3", 2), st("h4", 2), st("h5", 3)], null, 1990, NOW).reply.notice.kind, "automated");
+  });
+
   await test("a host learns nothing without the guest's own pass", () => {
     const host = emptyTrust(), guest = emptyTrust(); guest.stage = "undertow"; guest.pass = "abc";
     assert.deepEqual(verify(host, guest, "wrong"), { ok: true, verified: false, same: false });

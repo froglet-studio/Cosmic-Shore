@@ -227,5 +227,30 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     assert.equal(priv.get("fp-shore/trust").value.matches, 0);
   });
 
+  // ---- Host-observed signals (T5/T6) ----
+  await test("the host's end report files its observations on each guest, naming the host", async () => {
+    const ps = ["obshost", "g7", "kid7"];
+    await call("kid7", { action: "start", matchId: "o1", mode: "Joust", hostId: "obshost", players: ps, birthYear: Y - 12 });
+    await call("obshost", { action: "start", matchId: "o1", mode: "Joust", hostId: "obshost", players: ps });
+    await call("obshost", { action: "end", matchId: "o1", mode: "Joust", hostId: "obshost", players: ps, scores: [], winner: "obshost",
+      observed: [{ id: "g7", kind: "speed", measured: 900, limit: 400 }, { id: "g7", kind: "speed", measured: 950, limit: 400 },
+                 { id: "g7", kind: "teleport", measured: 1, limit: 0 }, { id: "stranger", kind: "speed", measured: 999, limit: 1 },
+                 { id: "kid7", kind: "steering", measured: 1, limit: 3 }, { id: "kid7", kind: "speed", measured: 800, limit: 400 }] });
+    const g = signalsOf("g7");
+    assert.equal(g.length, 1, "one per guest and kind, unknown kinds and non-players dropped");
+    assert.deepEqual([g[0].kind, g[0].sub, g[0].measured, g[0].reporter], ["host_observed", "speed", 950, "obshost"]);
+    const k = signalsOf("kid7").map((x) => x.sub);
+    assert.deepEqual(k, ["speed"], "AI-like steering is never filed on a minor; speed is a security check and is");
+    assert.equal(signalsOf("stranger").length, 0);
+  });
+
+  await test("a guest cannot file observations about anyone", async () => {
+    const ps = ["h8", "liar"];
+    await call("liar", { action: "start", matchId: "o2", mode: "Joust", hostId: "h8", players: ps });
+    await call("liar", { action: "end", matchId: "o2", mode: "Joust", hostId: "h8", players: ps, scores: [], winner: "liar",
+      observed: [{ id: "h8", kind: "speed", measured: 999, limit: 1 }] });
+    assert.equal(signalsOf("h8").filter((x) => x.kind === "host_observed").length, 0);
+  });
+
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error("FAILED:", e); process.exit(1); });

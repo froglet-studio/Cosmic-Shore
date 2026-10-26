@@ -66,12 +66,16 @@ old direct write open.
 Off in the game (`MatchReportGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerMatchReports.cs`; while
 off, `MatchReporter` is never attached).
 
-1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `21 passed`.
+1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `24 passed`.
 2. `ugs deploy Tools/UGS/CloudCode/match-report.js` (development first).
 3. Set `MatchReportGate.Enabled = true` in a test build and run the "Match reports" editor checks in
    `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Read a player's `FAIRPLAY_CONDUCT` and a host's `FAIRPLAY_SIGNALS` in the
    dashboard (Cloud Save > Player data > protected).
 4. Production: deploy, then ship the build with the gate on.
+
+Host observations (T5/T6, phase B): the host's own `end` may carry `observed` (speed, jumps, steering about its
+guests); each is filed on the guest as a `host_observed` signal naming the host. `trust.js` counts them only once two
+different hosts reported the same account. Steering is never filed on a minor.
 
 Minors (R13): each `start` carries the birth year the age screen recorded, kept in the protected key `FAIRPLAY_AGE`
 (only ever moved younger). A player not surely 18, or of unknown age, gets no quit record, and every signal about them
@@ -101,7 +105,7 @@ Report and Block are live in the game (no gate): they appear on the player profi
 Off in the game (`FairPlayTrustGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerTrust.cs`). It needs
 match reports on first (they write the signals it reads).
 
-1. `node Tools/UGS/CloudCode/trust.test.cjs` prints `14 passed`.
+1. `node Tools/UGS/CloudCode/trust.test.cjs` prints `18 passed`.
 2. `ugs deploy Tools/UGS/CloudCode/trust.js` (development first). Redeploy `match-report.js` and `weekly-score.js` too
    (both read the trust record now).
 3. **Twin boards:** for each weekly board (`weekly_challenge` and every regional `weekly_challenge_*`), create

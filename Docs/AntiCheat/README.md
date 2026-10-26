@@ -217,6 +217,13 @@ Nobody can ask about an account that has not joined their party, so the check re
 pass (an older build) stays until `FairPlayTrustGate.RemoveUnverifiedGuests` is turned on. The server checks (results,
 scores, rewards) never depended on routing.
 
+**Host-observed signals reach the server (2026-10-26).** The host's movement monitor (T5 speed and jumps, T6 AI-like
+steering) used to keep its signals on the host. `MatchReporter` now sends them with the host's own `end` report, keyed
+by each guest's UGS id; `match-report.js` files them on the guest as `host_observed` naming the host, and only the
+match's host may file them. A host can lie, so `trust.js` counts them only once **two different hosts** reported the
+same account. AI-like steering is a behaviour profile and is never filed on a minor; speed and jumps are security checks
+and are. Both still need their limits set from logged play before any are raised (T5 ceilings, T6 limits).
+
 **Routing reads the record on the server.** The game has no stranger matchmaking (parties form inside the presence
 lobby), so a Cloud Code call at sign-in tells the client which presence lobby to join. If UGS Matchmaker is adopted
 later, note that its *rules* read Cloud Save's **protected** class (player-readable, server-written), while its
