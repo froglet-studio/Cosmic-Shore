@@ -7,7 +7,8 @@
     python3 Tools/Build/icon_kit/author.py --all [--check]  # every spec in specs/
 
 A spec (specs/<hull>.py) is HULL plus ICONS = [dict(name, element, act, draw)], where draw() returns a mask or
-[(mask, alpha), ...] in icon px. An icon may carry exempt={"gate": "who said so and why"}: the gate still runs and
+[(mask, alpha), ...] in icon px, plus optional CARDS (states.py): each card's states as coloured parts, drawn to
+Docs/Icons/sheets/<hull>_<card>.png on every run. An icon may carry exempt={"gate": "who said so and why"}: the gate still runs and
 prints, it just does not block the write (a hull's real silhouette fails `gap` on its ribs by design). The sheet lands in Docs/Icons/sheets/<hull>.png with the icon as HEAD last committed it as BEFORE
 (so a write does not erase its own comparison; a new icon has no BEFORE). The .meta is never rewritten for an icon that has one - the
 prefab's binding keeps its guid; a NEW icon gets the house sprite meta with a deterministic guid.
@@ -132,6 +133,11 @@ def run(hull, check=False, preview=False):
     sheet_path = sheet_mod.before_after(rows, os.path.join(SHEETS, f"{spec.HULL.lower()}.png"),
                                         title=f"{spec.HULL} ability icons - before / after (icon_kit)")
     print(f"  sheet: {os.path.relpath(sheet_path, ROOT)}")
+    # a card's STATES sheet, from the spec's CARDS (states.py): the card as the HUD draws it, before and after
+    import states as states_mod
+    for c in getattr(spec, "CARDS", []):
+        p = states_mod.sheet(spec, c, os.path.join(SHEETS, f"{spec.HULL.lower()}_{c['name']}.png"))
+        print(f"  states: {os.path.relpath(p, ROOT)}")
     if check:
         if getattr(spec, "REBIND", None) and not drift:
             metas = {i["name"]: os.path.join(out_dir, i.get("subdir", ""), i["name"] + ".png.meta") for i in spec.ICONS}

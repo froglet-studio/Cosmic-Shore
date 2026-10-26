@@ -53,3 +53,27 @@ REBIND = [
                                  binding=dict(element=4, gauge="ChargeFillGauge"),
                                  fields={"chargeSteps": "[]"})),
 ]
+
+
+def charge_fill_turned(angle):
+    """The hull part as the HUD turns it: `angle` degrees off the course line (the sheet's mid-drift state)."""
+    import numpy as np
+    from PIL import Image
+    from canvas import SS
+    m = charge_fill()
+    im = Image.fromarray((m * 255).astype(np.uint8)).rotate(angle, center=(64 * SS, 64 * SS), resample=Image.BILINEAR)
+    return np.asarray(im) > 127
+
+
+# The card's STATES sheet (states.py): Docs/Icons/sheets/dolphin_charge_fill.png.
+CARDS = [
+    dict(name="charge_fill", element="Time", before=OLD_RING,
+         title="Charge Fill Rate: the Dolphin from above turns by the live drift angle; the bank is the plate gauge",
+         parts=dict(hull=charge_fill, hull_35=lambda: charge_fill_turned(35.0)),
+         states=[("rest: bank empty, no drift", [("hull", "domain")]),
+                 ("drifting: half bank, nose 35 off course", [("hull_35", "domain")]),
+                 ("drifting: bank full", [("hull_35", "domain")]),
+                 ("drift ended: full, on the line", [("hull", "domain")])],
+         gauge={"rest: bank empty, no drift": (0.0, None), "drifting: half bank, nose 35 off course": (0.5, None),
+                "drifting: bank full": (1.0, None), "drift ended: full, on the line": (1.0, None)}),
+]

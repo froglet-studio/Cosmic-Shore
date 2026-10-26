@@ -212,3 +212,11 @@ vessel silhouette."
     `SetAbilityUpgraded(element, upgraded)` on the view, so an L5 that changes WHAT the act makes changes the
     card's part, not only its mark. A rebind `old=` step is retired once its icon's Image becomes a container
     (the sprite is cleared, so no reference remains to keep).
+39. **The judging sheet is declared in the spec, not scripted per round.** Every options and states sheet of
+    rounds 3-4 was a scratch script; a session without them would have rebuilt the sheet machinery before drawing
+    a line. `CARDS` in the spec names a card's parts, its states (part, colour key, alpha), its plate gauge per
+    state and the sprite it replaced (with the commit to read it from), and `author.py` draws
+    `Docs/Icons/sheets/<hull>_<card>.png` on every run (`states.py`). Colour keys are the HUD's own: domain,
+    shielded, blue, white, lime, danger - sampled from the palette and the bars config, never typed in. An options
+    round is the same sheet with one entry per candidate. SKILL.md §4.5 is the eight-step wiring recipe a session
+    follows for a live card.

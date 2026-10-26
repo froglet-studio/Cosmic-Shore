@@ -52,7 +52,14 @@ python3 Tools/Build/icon_kit/author.py <hull>             # ... and write the PN
 python3 Tools/Build/icon_kit/author.py <hull> --check     # drift gate (run it in /ship)
 python3 Tools/Build/icon_kit/verify.py --self-test        # the gates prove they fire
 python3 Tools/Build/icon_kit/verify.py <pngs>             # measure ANY icon, hand-drawn included
+python3 Tools/Build/icon_kit/mesh_silhouette.py "<fbx>" --out <sheet.png> [--mirror] [--take "<stack>"]   # the lettered view grid of a hull
+python3 Tools/Build/icon_kit/mesh_pose.py "<fbx>" --takes | --check   # a hull's authored takes; prove the offline skin on the file
 ```
+
+Every run also draws each card's STATES sheet from the spec's `CARDS` (`states.py`: the card before and after, in every
+state, per sample domain) to `Docs/Icons/sheets/<hull>_<card>.png` - that is the sheet the owner judges. An OPTIONS
+sheet (three candidates, the old first) is the same thing with one `CARDS` entry per candidate; delete the losers once
+the owner picks.
 
 A hull is a spec, `Tools/Build/icon_kit/specs/<hull>.py`: `HULL` and `ICONS = [dict(name, element,
 act, draw)]`, where `draw()` composes masks from `canvas.py` (the engine) and `motifs.py` (the
@@ -123,6 +130,35 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
 - Round caps are the old language. Every new icon is angular; a hull is redrawn whole so its four
   match, never one icon in the new language next to three in the old.
 - Two sheets, not one: look at 128 to judge the drawing, at 40 to judge the icon.
+
+## 4.5 Wiring a LIVE card, step by step (the Dolphin's and Sparrow's Time and Mass cards are the worked examples)
+
+1. **Measure the HUD**: the card's icon Image fileID and the view MonoBehaviour's fileID in `<Hull>HUDVariant.prefab`
+   (`grep -n "abilityIcons:"`, the `--- !u!114 &<id>` above it), what the view writes on it today, and what the
+   controller can read (`IVesselStatus`: `IsDrifting`, `IsBoosting`, `Course`, `Domain`, `IsTranslationRestricted`;
+   the SOAP events it already subscribes to).
+2. **Spec**: draw each PART as its own icon in `Parts/` (`subdir="Parts", family=False`, exemptions named), the
+   composite under the card's shipped name (its guid is kept), a `CARDS` entry with every state, and a `REBIND`
+   `pair=` step: `container=` the icon's fileID, `view=` the view's, children in draw order (first draws under),
+   `fields=` the sprites the view swaps, `binding=` for a plate gauge (`gauge=None` to unbind one),
+   `deactivate=` for a readout nothing binds any more.
+3. **View** (`<Hull>HUDView.cs`): `[SerializeField] Image` per part, `Sprite` per swap, a `Color` fallback,
+   `SetXColor(...)` (domain / shielded / blue from `ElementalBarsConfigSO`), `SetX(bool or float)` for the state
+   (swap, alpha, rotation, fillAmount; a `DOPunchScale` on the beat), reset in `Initialize()`, tweens killed in
+   `OnDestroy()`; `SetAbilityUpgraded` override when the L5 changes WHAT the act makes. Never a colour per element.
+4. **Controller** (`<Hull>HUDController.cs`): push the REAL number or flag every frame in `Update()` (the Squirrel's
+   `DriftAngleDegrees`, the Dolphin's `IsDrifting`, the Sparrow's `IsBoosting`) or from the event the HUD already
+   has (the Sparrow's stationary-mode event); resolve colours once per frame through `[Inject] GameDataSO`
+   (`ColorSet.GetDomainSignalColor`, `ThemeManagerData.GetShieldedSignalColor`; alpha 0 until resolved).
+5. **Editor wirer**: if `VesselAbilityRowWirer.cs` builds this hull's slots, teach it the parts so a re-run is a no-op.
+6. **Gates**: `author.py <hull>` then `--check`, `verify.py --self-test`, `check_console_logging.py`,
+   `check_conditional_compilation.py`, `check_element_colour.py`; read the states sheet.
+7. **Record**: `LESSONS.md` (the owner's words first), `Docs/ABILITY_LOCKUP.md`'s gauge table if a gauge moved,
+   `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` round status, a team task for the editor check
+   (`team_tasks.py add --area hud --kind test ...`, Yash or the owner) - there is no Unity CLI in a cloud session,
+   so every C# change ships editor-unverified and the commit says so.
+8. **Commit** the spec, PNGs + metas, prefab, C#, sheets and docs together, conventional message, "Affects: the
+   <Hull> HUD"; one card per commit.
 
 ## 5. Wiring and hand-off
 

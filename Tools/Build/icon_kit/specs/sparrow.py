@@ -231,3 +231,19 @@ REBIND = [
                                  fields={"stanceRoundsSprite": ("icon", "Sparrow_TurretStanceRounds"),
                                          "stanceRoundsShieldedSprite": ("icon", "Sparrow_TurretStanceRoundsShielded")})),
 ]
+
+
+# The cards' STATES sheets (states.py): Docs/Icons/sheets/sparrow_<name>.png, drawn on every author.py run.
+CARDS = [
+    dict(name="afterburner", element="Time", before="Sparrow_Afterburner", before_rev="f9e5f73e3~1",
+         title="Afterburner: the Sparrow folds its fans and its jets lengthen while the boost is held; no meter on the plate",
+         parts=dict(hull_rest=afterburner_hull_rest, hull_boost=afterburner_hull_boost, jets_rest=afterburner_jets_rest, jets_boost=afterburner_jets_boost),
+         states=[("rest: fans spread, idling jets", [("jets_rest", "blue"), ("hull_rest", "domain")]),
+                 ("boosting: folded, full burn", [("jets_boost", "blue"), ("hull_boost", "domain")])]),
+    dict(name="turret_stance", element="Mass", before="Sparrow_TurretStance", before_rev="386d7cb1e~1",
+         title="Turret Stance: the stopped Sparrow firing swelling rounds from both pods - a ghost while flying, solid in the stance, shielded octahedrons at Mass 5",
+         parts=dict(hull=turret_stance_hull, rounds=turret_stance_rounds, rounds_shielded=turret_stance_rounds_shielded),
+         states=[("flying: stance off (ghost)", [("rounds", "domain", 0.6), ("hull", "domain")]),
+                 ("in the stance", [("rounds", "domain"), ("hull", "domain")]),
+                 ("in the stance at Mass 5", [("rounds_shielded", "shielded"), ("hull", "domain")])]),
+]
