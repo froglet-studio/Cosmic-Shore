@@ -512,3 +512,23 @@ clone folds (nine member moves into boost / smash / guns / cannon; a cannon that
 what is round 2 (the Omega Run mode via `/arcadegame`, member and omega bodies via `/vessel-model`, skims into the
 meter, rider seats, an omega camera) is written in `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md` §3 and §6;
 the hand test is `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not editor-verified: the Unity CLI was not available.
+
+### 10.3 Round 2 (2026-10-26, Yash's first Unity test): the march formation with three roles
+
+Yash flew the round-1 clone and saw the Stoat alone with a black cube moving beside it on the D-pad, and asked for a
+different shape: "an aligned flock of three, group of three ... when I swap, my camera should just go to that particular
+vessel, and the other two will be controlled by AI ... the relative distance between each vessel will be the same ...
+the manoeuvre will be done by the Stoat, the shooting and everything by the right vessel, and the left one will protect
+... every big vessel needs a defence, attack and agility ... defender, midfielder and attacker ... one controlled by the
+player and two by AI, where the player can swap; later also swappable in multiplayer. For now, just make this much."
+
+Done the same day on `Ys-bleeding-edge`: every crew is a MOBILITY vessel (member 0, it leads and the formation flies with
+its numbers), an ATTACKER (member 1, to its right) and a DEFENDER (member 2, to its left): Warden = Stoat / Sparrow /
+Rhino, Bulwark = Scarab / Grizzly / Butterfly, Tempest = Squirrel / Thresher / Manta (proposals from the fleet's
+strengths; rearranged in `OmegaMath.Crews` and the page's CREWS). The Unity crew is a rigid formation: the swap moves
+the hull (and the camera) to the chosen member's place, the AI holds the other seats; the attack seat aims a turret
+and fires, the defence seat shields on LT and fires the ward on RT; the black bodies were the view's colour not reaching
+the instanced material (fixed: the colour is set on the material). The page's CREWS were recomposed the same way and
+the artifact republished; the page keeps the round-1 combine (mega / omega forms), which the game does not have yet.
+`OMEGA_CREW.md` §1-2, §6 and the checklist's Omega section are the record.
+
