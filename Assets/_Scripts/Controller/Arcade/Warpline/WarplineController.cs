@@ -33,5 +33,15 @@ namespace CosmicShore.Gameplay
 
         protected override RaceCourseSource CreateCourseSource() =>
             new WarplineCourseSource { Laps = laps };
+
+        /// <summary>
+        /// Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>, 2026-10-26): commit no earlier
+        /// than the approach point, which then lies inside the commit radius; aim through the ring's CENTRE; re-attack after
+        /// a missed mouth. With the shipped steering no AI Stoat finished any of Yash's 11 Warpline races (22 rivals, 2.6 rings
+        /// a minute, stalled on ring 0): its approach point sat 180 u out against a 160 u commit, and on its 167 u turning
+        /// circle (48 deg/s at 140 u/s) it circled 10-60 u off the 32-48 u mouths. Offline on those 11 courses
+        /// (<c>Tools/Build/switchback_dolphin_sim.py --mode Warpline</c>, no warp): 0 of 11 finished before, 11 of 11 after.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
     }
 }

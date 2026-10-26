@@ -59,6 +59,11 @@ SPARROW_BOOST_BREAKWATER = dict(SPARROW_BOOST_BASE, boost_align=45, boost_releas
 # MinigameWaystation.unity: commit 260, approach lead 300, through 220. Its fold is not modelled: cruise only is the floor.
 BUTTERFLY_WAYSTATION = {"cruise": 67.0, "rts": 0.0, "base": 45.0, "drift": False,
                         "commit": 260.0, "lead": 300.0, "through": 220.0}
+# The Stoat in Warpline (2026-10-26): Stoat.prefab Pitch/Yaw 48 deg/s, RotationThrottleScaler 0; 140 u/s, the median
+# speed of the AI Stoat rivals in Yash's I3 races (its pairs warp it; the warp and the poles' pull are not modelled);
+# MinigameWarpline.unity: commit 160, approach lead 180, through 120, two laps of five rings.
+STOAT_WARPLINE = {"cruise": 140.0, "rts": 0.0, "base": 48.0, "drift": False,
+                  "commit": 160.0, "lead": 180.0, "through": 120.0}
 
 
 def course_from_flight(path):
@@ -247,11 +252,21 @@ def self_test():
     return 0 if not bad else 1
 
 
+def laps_of(course, path):
+    """A lapped circuit (Warpline): the recorded ring set flown again until the race's ring target."""
+    target = int(json.load(open(path, encoding="utf-8")).get("raceTarget") or 0)
+    gates = course["gates"]
+    if gates and target > len(gates):
+        course = dict(course, gates=[gates[k % len(gates)] for k in range(target)])
+    return course
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir"); ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--mode", default="Switchback",
-                    help="Switchback (the Dolphin), Waystation (the Butterfly, no fold) or Breakwater (the Sparrow's boost)")
+                    help="Switchback (the Dolphin), Waystation (the Butterfly, no fold), Breakwater (the Sparrow's boost) "
+                         "or Warpline (the Stoat, no warp)")
     a = ap.parse_args()
     if a.self_test:
         sys.exit(self_test())
@@ -262,6 +277,14 @@ def main():
             print(f"{c['file']} (person {c['person']:.0f} s)")
             print(f"   the shipped steering: {race(c, False, cfg=BUTTERFLY_WAYSTATION, T=300)}")
             print(f"   Regatta's steering:   {race(c, True, cfg=BUTTERFLY_WAYSTATION, T=300)}")
+        return
+    if a.mode == "Warpline":
+        print("(seconds for both laps or None, rings threaded, mouths missed, break-offs; the person's time)")
+        for p in sorted(glob.glob(os.path.join(a.dir, "flight_Warpline_*.json"))):
+            c = laps_of(course_from_flight(p), p)
+            print(f"I{c['intensity']} {c['file']} (person {c['person']:.0f} s)")
+            print(f"   the shipped steering: {race(c, False, cfg=STOAT_WARPLINE, T=300)}")
+            print(f"   Regatta's steering:   {race(c, True, cfg=STOAT_WARPLINE, T=300)}")
         return
     if a.mode == "Breakwater":
         print("(seconds for one lap of stations or None, stations threaded, through the danger weave, share boosting)")

@@ -49,6 +49,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Warpline_FliesTheRegattaSteering_WhateverTheSceneSays()
+        {
+            var go = new GameObject("SwitchbackAISteeringTests_Warpline");
+            try
+            {
+                Assert.IsTrue(CommitsFromApproachPoint(go.AddComponent<WarplineController>()),
+                    "the AI Stoats would circle the rings again (0 of 22 finished in Yash's races, 2026-10-25/26)");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void OtherGateRaces_KeepTheirSceneSwitch()
         {
             // Negative control: Headlong did not opt in, so it reads its own (off) inspector switch.

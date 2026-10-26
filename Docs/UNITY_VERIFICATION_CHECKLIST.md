@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI Stoat retrained for Warpline (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `WarplineController.AICommitFromApproachPoint` = true (the Regatta gate steering); new
+`Resources/AIBoostPolicies/StoatDipoleConfig_Warpline` and `StoatSlingConfig_Warpline` learned from Yash's 11 races;
+`StoatDipoleConfig.asset` serializes `autopilotMaxOrbitDegrees: 360` (its code default); the AI learning sweep no longer
+holds Warpline. Why: `Assets/_Scripts/Controller/Arcade/WARPLINE.md` §3.1.
+
+**Verified without the editor:** reference compile player OK, editor no errors in changed files; `ai_learn.py` and
+`learn_drives_from_flights.py` self-tests OK; `--check` OK (Warpline, Regatta); `author_stoat_assets.py --check` OK;
+offline 0 of 11 recorded courses finished before, 11 of 11 after. NOT run: `SwitchbackAISteeringTests.Warpline_*`.
+
+**Verify in editor:**
+1. Run `SwitchbackAISteeringTests` (EditMode): all pass.
+2. Play Warpline (I1-I3) against two AI Stoats: they thread ring 0 and finish both laps; in FrogletTools > AI > Third
+   Eye their phase moves Approach -> Through ring N without circling a ring.
+3. They lay pairs often and briefly (about every 1.5 s, held up to about 2 s), not one pair held for many seconds.
+4. The Console shows nothing new.
+
+---
+
 ### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three mega forms that combine into one omega form with three seats (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** a first Unity clone of the Vessel Studio's Omega Crews lab (`Docs/Studios/VesselStudio/omega.html`,

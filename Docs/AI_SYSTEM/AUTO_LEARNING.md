@@ -64,7 +64,8 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 - **A new vessel or racing mode** is read by the sweep from its first recorded race (it shows under "No learner reads
   these yet" until a learner covers it).
 - **A mode another collaborator owns the AI of** goes in `ai_learn.HOLD` with the reason, so it is reported and never
-  written, until they say so. Today: Warpline (the Stoat's AI waits for Garrett's configuration, issue 1198).
+  written, until they say so. Today: none (Warpline, held for the Stoat's configuration since 2026-10-17, was lifted by
+  Yash on 2026-10-26).
 
 ## 4. What is automatic, and what is not yet
 
@@ -93,7 +94,7 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 | Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge; in Switchback also one variant per intensity (`_I<n>`, `PER_INTENSITY_MODES`, `MINIGAME_TRAINING_PLAN.md` §3.6) |
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
-| Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |
+| Stoat | drives (AIModeTuning) | its pair | its three configs (`<config>_Regatta`, `_Warpline`) |
 | Sparrow | drives (HoldBoost) | boost (state bit); the rocket (a SkyBurst press, 2026-10-26) | start / stop bands, shortest hold and rest; the rocket's range and aim (`rocketMinRange` / `rocketMaxRange`: p10 / p90 of the presses' distance to the ring, `rocketAimDegrees`: their median nose angle); in Breakwater never a boost release under 1.25 s (`FLOORS`, the danger weave) |
 | Serpent | drives (PelletBoost) | a ConsumeBoost press | start bands, seconds between pellets |
 | Scarab | drives (SnapDash) | throttle double-tap at TIME 5 | start bands, dash cooldown |
