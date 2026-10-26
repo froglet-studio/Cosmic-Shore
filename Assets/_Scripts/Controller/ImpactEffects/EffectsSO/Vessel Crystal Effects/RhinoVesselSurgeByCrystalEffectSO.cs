@@ -4,12 +4,17 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Rhino's OMNI-CRYSTAL ability, the <b>Surge</b>: collecting an omni crystal fills the
-    /// sword's energy, bursts the blade and holds it ENERGIZED for <see cref="surgeSeconds"/> with no
-    /// stance and no cost; lends the hull every element for the same length; and lays the Mass
-    /// afterimages THROUGHOUT the surge - the ability that otherwise waits for an energize to end.
-    /// When the surge's energize goes out, the ordinary afterimage window opens after it.
-    /// See <c>R_VesselActions/RHINO_SWORD_AFTERIMAGE.md</c> § "The surge".
+    /// The Rhino's OMNI-CRYSTAL ability, the <b>Surge</b> (reworked 2026-10-26, Garrett: "zoom out, re
+    /// center the camera on the rhino and surround it with swords. they should still be controlled by
+    /// the triggers. this can be an 8 second state"): collecting an omni crystal fills the sword's
+    /// energy and, for <see cref="surgeSeconds"/>, holds the blade ENERGIZED with no stance and no cost,
+    /// raises a ring of copies of the blade round the hull that the triggers swing with it, and pulls
+    /// the pilot's camera straight back and onto the hull so the whole ring is on screen
+    /// (<see cref="RhinoSurgeSwordRing"/>). It also lends the hull every element for the same length and
+    /// lays the Mass afterimages THROUGHOUT the surge. Nothing resizes: the burst that swelled the blade
+    /// is gone with the rest of the sword's resizing. When the surge's energize goes out, the ordinary
+    /// afterimage window opens after it. See <c>R_VesselActions/RHINO_ENERGY_SWORD.md</c> § "The
+    /// omni-crystal Surge".
     ///
     /// <para>Replaces the meter-fill this container used to carry (RhinoVesselChangeResourceByCrystalEffect,
     /// energy to full and nothing else) and the elemental-crystal BURST the sword ran on every petal it
@@ -28,8 +33,9 @@ namespace CosmicShore.Gameplay
     public sealed class RhinoVesselSurgeByCrystalEffectSO : VesselCrystalEffectSO
     {
         [Header("Energize")]
-        [Tooltip("Seconds the surge holds the blade energized (and lays afterimages).")]
-        [SerializeField, Min(0.1f)] float surgeSeconds = 6f;
+        [Tooltip("Seconds the surge lasts: the blade held energized, the sword ring raised round the hull, " +
+                 "the camera pulled back onto it, and afterimages laid.")]
+        [SerializeField, Min(0.1f)] float surgeSeconds = 8f;
 
         [Tooltip("The sword's energy meter is raised to at least this (0..1) - the full meter the old " +
                  "omni pickup granted.")]

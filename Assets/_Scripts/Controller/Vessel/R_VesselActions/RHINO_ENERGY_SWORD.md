@@ -1,5 +1,15 @@
 # Rhino Energy Sword — ungated blade, the energize ritual, energy meter, the omni-crystal surge
 
+> **2026-10-26 (Garrett): the blade never resizes, and the Surge is a sword ring.** "Lets halt all
+> resizing on the rhino sword." Stored energy no longer lengthens the blade, Space no longer
+> lengthens it (the Space row of the map now has NO scaling — an open slot, see the map's Space
+> entry), and the surge no longer bursts it. The blade keeps the scale authored on its root in
+> `Rhino.prefab` — `(1.5, 24, 4.8)`, a 24-unit blade — for its whole life. And the omni-crystal
+> Surge is now "zoom out, re center the camera on the rhino and surround it with swords. they
+> should still be controlled by the triggers. this can an 8 second state" (§ "The omni-crystal
+> Surge"). Older sections below that describe a growing blade are history; the length-driven
+> passages are marked.
+
 > **2026-10-16:** energy, energize phase and surge are now OWNER-authoritative and replicated by
 > `RhinoSwordNetworkRelay`; every peer poses the blade from the replicated trigger mirrors. Energy
 > per cut is Charge-scaled (×1 → ×2, floor ×0.5); a let-go tail now always runs out unless Charge
@@ -285,49 +295,74 @@ not an oscillator (the old driver's tick-decay loop is gone).
   else spends it. *(Until 2026-10-16 an **elemental** crystal collected by the sword triggered a
   burst that drained ALL energy to 0 — on every petal the Rhino flew through. Deleted; elemental
   crystals are now collected by the sword with no sword-side effect.)*
-- **Readout:** the blade's **resting length** reflects stored energy (Y-only elongation from the
-  Space-driven elemental base `Skimmer.LiveElementalScale`, 30 at rest → 50 at Space 10, toward
-  `MaxScale` 120), and the blade **brightens** toward `fullEnergyBrightness` (1.8) — energy is
+- **Readout:** the blade **brightens** toward `fullEnergyBrightness` (1.8) as energy fills and the
+  HUD's Charge gauge fills with it. *(Until 2026-10-26 the blade's resting LENGTH also grew with
+  energy, from the Space base toward `MaxScale`; that resizing is gone, and `OnScaleChanged`,
+  which no HUD read any more, went with it.)* Energy is
   brightness, never hue (`restingBladeColor` and `fullEnergyColor` are both white; the danger
   red is reserved for the energized blade, § "Blade FX"). *(An earlier pass ramped it teal → hot
-  cyan; stale.)* The Rhino HUD keeps reading the same meter through
-  `ShieldSkimmerScaleDriver.OnScaleChanged(current, base, max)`, and since 2026-10-16 the
+  cyan; stale.)* The Rhino HUD reads `ShieldSkimmerScaleDriver.Energy01`, and since 2026-10-16 the
   **Charge card** of the ability row is lit while the blade is energized, with an
   energize-cooldown veil; since 2026-10-17 it stays lit through the 5 s tail after the stance is
   let go and its authored gauge fills with energy 0..1.
 
-## The omni-crystal Surge (the burst look moved here, 2026-10-16)
+## The omni-crystal Surge — the sword ring (reworked 2026-10-26)
 
 An **omni** crystal collected by the hull runs `RhinoVesselSurgeByCrystalEffectSO`
 (`RhinoVesselSurgeByCrystalEffect.asset`, in `RhinoImpactorDataContainer`'s crystal list beside
 the unchanged `RhinoVesselExplosionByCrystalEffect` blast), which calls
-`IRhinoSwordState.Surge(surgeSeconds, energyFill)`:
+`IRhinoSwordState.Surge(surgeSeconds, energyFill)`. For **`surgeSeconds` (8 s)**:
 
-- the energy meter is raised to at least `energyFill` (1);
-- the blade **bursts** in all three dimensions (below) and is held **ENERGIZED** for
-  `surgeSeconds` (6 s) with no stance and no cost, overriding a cooldown;
+- **A ring of swords surrounds the hull** (`RhinoSurgeSwordRing`, owned and ticked by the driver).
+  `surgeRingSwordCount` (8) swords in all: the pilot's blade plus 7 copies, each the blade's LIVE
+  pose turned about the nose axis of the blade's parent (the frame the swipe pivots in) by
+  k × 45°. The triggers drive every one of them, because every copy is the blade's pose: the
+  swipe spins the ring, the chop folds every sword in toward the nose like a closing flower, and a
+  combo flourish plays on all eight. The ring fans out of the blade in `surgeRingUnfurlSeconds`
+  (0.35 s, eased) and folds back into it when the surge ends — a turn, never a size change.
+- **Every copy cuts.** A copy is a clone of the blade root (mesh, the sphere + capsule triggers,
+  the kinematic body, `SkimmerImpactor`, `ImpactCollider`, its own `SkimmerSwingKinematics`),
+  cloned under an INACTIVE holder so the one-sword parts are removed before it ever wakes
+  (`RhinoSwordFXController`, which would re-seat the pilot's tracers). Its `Skimmer` is initialised
+  with the vessel, its own scale write stands down, and its `SwordState` is the real sword — so
+  it runs the same prism chain (`RhinoSkimmerDamagePrismEffect`), banks into the same meter, and
+  pops super-shields while the blade is energized (which the surge holds it). Its own swing model
+  gives its cuts the velocity of the part of THAT sword that struck. Every copy wears the blade's
+  live colour (its property block is copied each frame).
+- **The camera pulls back and re-centres** (the local human pilot only). The ring eases
+  `CustomCameraController.SurroundFraming01` in over `surgeCameraBlendSeconds` (0.6 s): the
+  camera moves straight behind the hull at `surgeCameraDistanceScale` (×2: the Rhino's 70 → 140)
+  and looks at the hull itself (the 18-unit look lift fades out), so the hull is the centre of the
+  frame and the whole ring is on screen. Applied at the point of use, like the rear view, so
+  adaptive zoom keeps working underneath; cleared with the follow target. No FOV is touched.
+- the energy meter is raised to at least `energyFill` (1) and the blade is held **ENERGIZED** with
+  no stance and no cost, overriding a cooldown; the opening beat is a full flash, whole-blade
+  crackle and a camera shake scaled by the energy (`RhinoSwordFXController.NotifyCrystalBurst`);
 - every element is lent `elementBoost` (0.2 normalized = two levels), decaying to zero over the
   surge, never touching the base level;
 - the Mass **afterimages** lay throughout the surge (they otherwise wait for an energize to end;
-  `RHINO_SWORD_AFTERIMAGE.md`).
+  `RHINO_SWORD_AFTERIMAGE.md`) — from the pilot's blade only, not the copies.
 
 When the surge ends it hands over to the ordinary rules with the tail already spent, so the
-blade goes out the next frame (unless Live Wire is active and the stance is held), and the
-normal 5 s afterimage window follows. The surge is owner-authoritative (`Surge` is a no-op off
-the authority); the relay's surge bit replays the burst on every other peer. Omni-crystal
-collection resolves on the server and replays on a remote pilot's own machine
-(`OmniCrystalImpactor.ReplayOnRemoteOwner`); the elemental half lands where every crystal's
-elemental effect lands — the server and the owner.
+blade goes out the next frame (unless Live Wire is active and the stance is held), the ring folds
+away, the camera eases back, and the normal 5 s afterimage window follows. The surge is
+owner-authoritative (`Surge` is a no-op off the authority); the relay's surge bit raises the ring
+on every other peer, and because every peer poses the blade from the replicated trigger mirrors,
+every peer's ring stands in the same pose and cuts against its own copies — exactly the contract
+the blade already keeps. Omni-crystal collection resolves on the server and replays on a remote
+pilot's own machine (`OmniCrystalImpactor.ReplayOnRemoteOwner`); the elemental half lands where
+every crystal's elemental effect lands — the server and the owner.
 
-**The burst** (`ShieldSkimmerScaleDriver.StartBurst`) swells the blade to
-`authoredSilhouette × Lerp(1, crystalBurstFactorAtFullEnergy, energy)` (factor 4; the surge has
-just filled the meter, so in practice the full factor), holds `crystalBurstHoldSeconds` (2.5),
-and eases back. It **spends nothing**. A burst only ever GROWS: the length target is floored at
-the blade's current length (a Space-lengthened blade must not contract) and capped at
-`MaxScale` (the authored 120 — the Sparrow debuff that once lowered it is gone) unless the blade
-is already longer. Whole-blade crackle + camera shake scale with the energy at that instant.
-During the burst the HUD meter reports the energy-based resting length, not the transient
-ballooned size.
+**Known edges** (accepted for the first pass, in § Follow-ups): a kill by a copy sparks and
+flashes on the PILOT's blade (the FX has one blade); the copies have no swept-contact tier, so a
+very fast swing can step a copy past a thin prism the way the blade's own discrete trigger can;
+and for the 0.35 s fan-out every copy overlaps the blade, so a SHIELDED prism the blade touches in
+that window can lose its shield to one sword and its core to another (a brief free Breaker).
+
+> **History — the surge burst, DELETED 2026-10-26.** From 2026-10-16 the surge swelled the blade
+> to `authoredSilhouette × Lerp(1, crystalBurstFactorAtFullEnergy 4, energy)`, held 2.5 s and eased
+> back (`StartBurst`, the `crystalBurst*` keys). Gone with the rest of the resizing; the 6 s surge
+> became 8.
 
 > **History — the per-petal crystal burst, DELETED 2026-10-16.** The burst used to belong to the
 > SWORD: `RhinoSwordCrystalBurstEffectSO` (the sword container's only crystal effect) fired it
@@ -473,15 +508,16 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | Role | File |
 |---|---|
 | Per-vessel state contract + energize phases | `Executors/IRhinoSwordState.cs` (`RhinoSwordEnergizePhase`) |
-| Sword brain (energy, energize state machine, scale, burst phases, contact re-dispatch) | `Executors/ShieldSkimmerScaleDriver.cs` |
+| Sword brain (energy, energize state machine, surge, contact re-dispatch; NO scale since 2026-10-26) | `Executors/ShieldSkimmerScaleDriver.cs` |
+| The surge's sword ring + camera framing | `Executors/RhinoSurgeSwordRing.cs` · `Controller/Camera/CustomCameraController.cs` (`SurroundFraming01`, `SurroundDistanceScale`, `SurroundOffset`) · tests `Tests/Editor/RhinoSurgeSwordRingTests.cs` |
 | Blade look (heat ramp, energize blend, ignition/spark crackle, flashes, tracers, shake) | `Executors/RhinoSwordFXController.cs` (prefab-authored on the blade root) |
 | Gesture source (stance feed from the reparameterized triggers) | `Executors/ShieldSwipeActionExecutor.cs` (`FeedSwordStance`) |
 | Gesture thresholds | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
-| Tuning (scale mapping, energize, burst, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset` |
+| Tuning (energize, surge ring + camera, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset` |
 | Prism effect (damage, energize-gated super-shield pop, energy bank, the cut plane) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset` |
 | The slice (death visual) | `Utility/Effects/PrismSlice.cs` (batch/budget/retire) · `Utility/PrismSliceGeometry.cs` (the stamps) · `_Graphics/Materials/Graphs/PrismSlice.hlsl` + `PrismSlice.shader` · `_Graphics/Materials/PrismSliceMaterial.mat` · `Resources/PrismSliceConfig.asset` · `Vessel/Prism.cs` (`Slice`) · `Prisms/PrismFactory.cs` (`SpawnExplosion` routes it) |
 | Owner-authoritative replication (energy, energize phase, surge bit) | `Controller/Vessel/RhinoSwordNetworkRelay.cs` (on the Rhino root) |
-| Omni-crystal Surge (fill, burst, 6 s energized, +2 levels to every element) | `ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs` → `_SO_Assets/Effects/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffect.asset` (in `RhinoImpactorDataContainer`). *The sword-side `RhinoSwordCrystalBurstEffectSO` + asset were deleted 2026-10-16.* |
+| Omni-crystal Surge (fill, 8 s energized, the sword ring + camera, +2 levels to every element) | `ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs` → `_SO_Assets/Effects/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffect.asset` (in `RhinoImpactorDataContainer`). *The sword-side `RhinoSwordCrystalBurstEffectSO` + asset were deleted 2026-10-16.* |
 | AI sword hand (writes the trigger mirrors) | `Controller/AI/Rhino/RhinoSwordAutopilot.cs` (on the Rhino root; moved 2026-10-25) |
 | Box-overlap re-apply (energize rising edge) | `ImpactEffects/Impactors/SkimmerImpactor.cs` (`ReapplyPrismEffectsToOverlapping`) |
 | Shell-pair re-dispatch (energize rising edge) | `Controller/Managers/PrismShellContactManager.cs` (`RedispatchPairsForOwner`) |
@@ -514,12 +550,14 @@ swing-model group `swingVelocityScale` 1 / `maxImpactSpeed` 0 / `proportionalDeb
 damage SOs and `PrismExplosion.prefab`'s speed band — see the swing-kinematics row in
 `CLAUDE.md`; `inertia` is not the lever on the proportional path).
 
-On `ShieldSkimmerScaleConfig.asset`: `baseScale` 24 (fallback; live base is the Space elemental
-scale) · `maxScale` 96 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
+On `ShieldSkimmerScaleConfig.asset`: (the length keys `baseScale` 24 / `maxScale` 96 /
+`prismGrowSpeed` 30 / `shrinkSpeed` 10 are DELETED, 2026-10-26: the blade's size is its authored
+root scale in `Rhino.prefab`) · `energizeCostFraction` 0.1 ·
 `energizeHoldSeconds` 1 · `touchEnergizeRateMultiplier` 2 (phone hold = 0.5 s) · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
 `liveWireUpgradeElement` Charge (the L5 that lets the stance re-light the tail) ·
-`crystalBurstFactorAtFullEnergy` 4 (the surge burst — the names predate the move) · `crystalBurstHoldSeconds` 2.5 · `crystalBurstGrowSpeed`
-600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 1.2 · `restingBladeColor` white ·
+the surge: `surgeRingSwordCount` 8 · `surgeRingUnfurlSeconds` 0.35 · `surgeCameraDistanceScale` 2 ·
+`surgeCameraBlendSeconds` 0.6 (the `crystalBurst*` keys are DELETED with the burst, 2026-10-26) ·
+`visibilityMultiplier` 1.2 · `restingBladeColor` white ·
 `fullEnergyColor` white (same hue — energy is brightness) · `fullEnergyBrightness` 1.8 ·
 `energizedColor` (1.498, 0.006, 0.007) = `SO_ColorSet.Danger` · `colorTransitionSeconds` 0.25 · `igniteCrackleIntensity` 2.5 / `igniteCrackleSeconds` 0.9 /
 `igniteCrackleSites` 5 · `chargeCrackleInterval` 0.18 / `chargeCrackleIntensity` 1.1 ·
@@ -544,9 +582,10 @@ On `RhinoBladeCrackleMaterial.mat`: arc density/sharpness, ring thickness (fract
 ripple speed, core/glow/rim colors — live-tunable in the inspector, edit or play mode
 (`ForcefieldCrackleController` is `[ExecuteAlways]`).
 
-On `RhinoVesselSurgeByCrystalEffect.asset`: `surgeSeconds` 6 · `energyFill` 1 · `elementBoost`
-0.2 (two levels to each element, decaying over the surge). The burst's size and timing are the
-`crystalBurst*` keys on `ShieldSkimmerScaleConfig.asset` above. (`RhinoSwordCrystalBurstEffect.asset`,
+On `RhinoVesselSurgeByCrystalEffect.asset`: `surgeSeconds` 8 (6 until 2026-10-26) · `energyFill` 1 ·
+`elementBoost` 0.2 (two levels to each element, decaying over the surge). The ring and camera
+knobs are the `surge*` keys on `ShieldSkimmerScaleConfig.asset` above. The blade's length is the
+blade root's `m_LocalScale.y` override in `Rhino.prefab` (24). (`RhinoSwordCrystalBurstEffect.asset`,
 which had no knobs, is deleted.)
 
 ## In-editor verification
@@ -555,8 +594,9 @@ which had no knobs, is deleted.)
 2. **Cutting (regression):** fly through trail/opposing prisms — every prism the blade touches
    pops immediately, with a small blade flash + a spark at the blade point that hit. No timing,
    no stance required.
-3. **Energy + length + heat:** as kills accumulate the blade lengthens (HUD skimmer meter
-   tracks) and brightens (white, no hue change). No decay while idle. At a high Charge level the
+3. **Energy + heat, NO length:** as kills accumulate the Charge gauge fills and the blade
+   brightens (white, no hue change) — and the blade stays exactly the same length, at every energy
+   and every Space level (2026-10-26). No decay while idle. At a high Charge level the
    meter fills visibly faster per kill (up to ×2).
 4. **Energize ritual:** bank some energy, pull BOTH triggers fully and hold the centered chop —
    after ~1 s of rising anticipation arcs the blade IGNITES: danger red + a crackle burst along
@@ -582,15 +622,22 @@ which had no knobs, is deleted.)
    Breaker).
 8. **Crystals:** sword-collect an elemental crystal (fly through ejected petals) — the petal is
    collected, **the blade does nothing and the meter does not move** (the per-petal burst is
-   deleted). Then fly the hull through an **omni** crystal — the Surge: meter to full, the blade
-   bursts in all three dimensions with whole-blade crackle and camera shake, stays energized
-   ~6 s with no stance, the elements read two levels higher and fade back, afterimages lay
-   throughout; when it ends the blade goes out and the ordinary 5 s afterimage window follows.
+   deleted). Then fly the hull through an **omni** crystal — the Surge (2026-10-26): meter to
+   full, a flash + whole-blade crackle + shake, the blade does NOT grow; seven more red swords fan
+   out of the blade into a ring round the nose (8 in all, 45° apart) while the camera eases back to
+   about twice its distance and centres on the hull. Swipe: the whole ring spins. Chop (both
+   triggers): every sword folds toward the nose. Fly the ring through trail and super-shielded
+   mass: every sword cuts and pops. ~8 s later the ring folds back into the blade, the camera eases
+   in, the blade goes out and the ordinary 5 s afterimage window follows. The elements read two
+   levels higher and fade back; afterimages lay throughout. Tune on `ShieldSkimmerScaleConfig`
+   (`surge*`) and `RhinoVesselSurgeByCrystalEffect` (`surgeSeconds`).
 9. **Tracers:** five streaks comb the blade from tip to hilt through swipes, tinted with the
    live blade colour (white → danger red when energized).
 9a. **Multiplayer (MPPM two clients):** a half-pull sweep on A poses A's blade identically on B
     (B poses from A's replicated analog mirrors); A's energize ignites on B on the same edge and
     B's copy of A's meter tracks A's. A super-shielded prism A pops is popped on B too.
+    **The surge ring:** A takes an omni crystal — B sees A's ring fan out on the same edge, swing
+    with A's triggers, and fold away with it; B's camera does NOT move (only A's does).
 9b. **The slice:** cut trail prisms with a flat sweep, then a vertical chop, then by holding the
     blade out and flying past. Each kill should show a white seam along the stroke's plane, two
     halves that part and open (never through each other), cut faces cooling white → domain colour,
@@ -645,6 +692,17 @@ for lack of control by having it go quicker."*
   An AI Rhino is unaffected (its `RhinoSwordAutopilot` writes the mirrors; pad timing).
 
 ## Follow-ups
+
+- **The Space row is EMPTY (2026-10-26).** Halting the resizing took Space's only parameter (the
+  blade's length, 24 → 40). Its L5 **Breaker** still gates and is unaffected. The scaling slot
+  needs a design call (Garrett) — candidates that keep the blade one size: the surge ring's sword
+  count (Space = presence: 6 at rest → 12 at level 10), the swipe's arc (how far the triggers
+  carry the blade), or the camera pull-back. `Rhino.prefab`'s Skimmer `Scale.Max` was set 40 → 24
+  so `element_ability_table.py` stops reporting a channel nothing reads.
+- **Surge ring edges** (§ "The omni-crystal Surge"): a copy's kill sparks on the pilot's blade
+  (one FX controller — give each copy a light spark if it reads wrong); the copies have no swept
+  tier; the 0.35 s fan-out overlaps the blade (a brief free Breaker on shielded prisms — gate the
+  copies' colliders on the fan being past half if it shows in play).
 
 - ~~**Replication:** energy, energize state, and the blade's heat/flash look are
   local-authoritative.~~ **DONE 2026-10-16.** Energy, energize phase and surge are

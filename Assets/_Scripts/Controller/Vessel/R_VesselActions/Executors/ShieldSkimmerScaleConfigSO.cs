@@ -4,10 +4,11 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Tuning for the Rhino energy sword (RHINO_ENERGY_SWORD.md): the scale mapping the
-    /// blade's resting length follows from stored energy, the energize ritual (the
-    /// supershield key, and its Live Wire level-5), the omni-crystal surge's burst, and every blade-look/juice knob
-    /// (heat ramp, energized white-hot, impact flashes, crackle, camera shake).
+    /// Tuning for the Rhino energy sword (RHINO_ENERGY_SWORD.md): the energize ritual (the
+    /// supershield key, and its Live Wire level-5), the omni-crystal surge's sword ring and camera,
+    /// and every blade-look/juice knob (heat ramp, energized white-hot, impact flashes, crackle,
+    /// camera shake). The blade's SIZE is not here: it never changes at runtime (2026-10-26, no
+    /// resizing) and is the blade root's authored scale in Rhino.prefab.
     /// One shared asset (`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`)
     /// drives every Rhino, read by <see cref="ShieldSkimmerScaleDriver"/> and
     /// <see cref="RhinoSwordFXController"/>.
@@ -17,18 +18,6 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Skimmer/ShieldSkimmerScaleConfigSO")]
     public sealed class ShieldSkimmerScaleConfigSO : ScriptableObject
     {
-        [Header("Scale Mapping (world units, blade length)")]
-        [Tooltip("Resting length fallback when no Skimmer provides a live elemental (Space) scale.")]
-        [SerializeField] private float baseScale = 30f;      // energy = 0
-        [Tooltip("Blade length at FULL energy.")]
-        [SerializeField] private float maxScale  = 120f;     // energy = 1
-
-        [Header("Length Smoothing (world units/sec)")]
-        [Tooltip("How fast the resting length grows toward the stored-energy target.")]
-        [SerializeField] private float prismGrowSpeed = 30f;
-        [Tooltip("How fast the resting length eases back down (crystal drain, debuffs).")]
-        [SerializeField] private float shrinkSpeed = 10f;
-
         [Header("Energize (hold the both-triggers chop stance — the supershield key)")]
         [Tooltip("Fraction of max energy consumed each time the blade energizes.")]
         [SerializeField, Range(0f, 1f)] private float energizeCostFraction = 0.1f;
@@ -52,17 +41,19 @@ namespace CosmicShore.Gameplay
                  "chop. Gated on the replicated unlock bit. None disables it.")]
         [SerializeField] private Element liveWireUpgradeElement = Element.Charge;
 
-        [Header("Crystal Burst (all three dimensions) - the omni-crystal SURGE's look")]
-        [Tooltip("Uniform size factor the blade bursts to on a FULL-energy surge, " +
-                 "applied to the authored X/Y/Z silhouette (not just length). Less energy scales " +
-                 "the factor down toward 1 (no burst).")]
-        [SerializeField] private float crystalBurstFactorAtFullEnergy = 4f;
-        [Tooltip("Seconds the burst holds at full size before easing back.")]
-        [SerializeField] private float crystalBurstHoldSeconds = 2.5f;
-        [Tooltip("Local-scale units/sec the blade grows into the burst shape.")]
-        [SerializeField] private float crystalBurstGrowSpeed = 600f;
-        [Tooltip("Local-scale units/sec the blade eases back from the burst to its resting size.")]
-        [SerializeField] private float crystalBurstReturnSpeed = 150f;
+        [Header("Omni-crystal Surge - the sword ring and camera")]
+        [Tooltip("Swords in the ring a surge raises round the hull, the pilot's own blade included " +
+                 "(8 = the blade plus 7 copies, 45 degrees apart round the nose axis). Every copy is posed " +
+                 "from the blade's live pose, so the triggers swing the whole ring.")]
+        [SerializeField, Range(2, 16)] private int surgeRingSwordCount = 8;
+        [Tooltip("Seconds the ring takes to fan out of the blade when the surge starts, and to fold back " +
+                 "into it when the surge ends.")]
+        [SerializeField, Min(0.01f)] private float surgeRingUnfurlSeconds = 0.35f;
+        [Tooltip("Camera distance multiplier while the surge holds (the local pilot only): the camera " +
+                 "pulls straight back by this and re-centres on the hull, so the whole ring is on screen.")]
+        [SerializeField, Min(1f)] private float surgeCameraDistanceScale = 2f;
+        [Tooltip("Seconds the camera takes to move into the surge framing, and back out of it.")]
+        [SerializeField, Min(0.01f)] private float surgeCameraBlendSeconds = 0.6f;
 
         [Header("Blade Look — heat ramp")]
         [Tooltip("Brightness multiplier always applied to the blade's colour. Bloom (threshold 0.2, clamp 0.5) " +
@@ -116,7 +107,7 @@ namespace CosmicShore.Gameplay
         [Header("Blade Look — impact flashes")]
         [Tooltip("Flash strength (0..1) when the sword destroys a normal prism.")]
         [SerializeField, Range(0f, 1f)] private float hitFlashAmount = 0.35f;
-        [Tooltip("Flash strength (0..1) when the sword pops a super-shielded prism or bursts on a crystal.")]
+        [Tooltip("Flash strength (0..1) when the sword pops a super-shielded prism or a surge starts.")]
         [SerializeField, Range(0f, 1f)] private float popFlashAmount = 1f;
         [Tooltip("Seconds a full-strength flash takes to decay back to the heat-ramp colour.")]
         [SerializeField] private float flashDecaySeconds = 0.35f;
@@ -127,7 +118,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Shake intensity when the sword pops a super-shielded prism.")]
         [SerializeField] private float popShakeIntensity = 1.2f;
         [SerializeField] private float popShakeDuration = 0.25f;
-        [Tooltip("Shake intensity of a FULL-energy crystal burst (lerped from 0 by the energy consumed).")]
+        [Tooltip("Shake intensity when a FULL-energy surge raises the sword ring (lerped from 0 by the energy).")]
         [SerializeField] private float burstShakeMaxIntensity = 2.5f;
         [SerializeField] private float burstShakeDuration = 0.4f;
 
@@ -160,18 +151,10 @@ namespace CosmicShore.Gameplay
 
         // --- Public API ---
 
-        public float BaseScale => baseScale;
-
-        public float MaxScale => Mathf.Max(baseScale, maxScale);
-
-        public float PrismGrowSpeed => prismGrowSpeed;
-        public float ShrinkSpeed    => shrinkSpeed;
-
-        public float CrystalBurstFactorAtFullEnergy => Mathf.Max(1f, crystalBurstFactorAtFullEnergy);
-        public float CrystalBurstHoldSeconds        => Mathf.Max(0f, crystalBurstHoldSeconds);
-        public float CrystalBurstGrowSpeed          => Mathf.Max(0.01f, crystalBurstGrowSpeed);
-        public float CrystalBurstReturnSpeed        => Mathf.Max(0.01f, crystalBurstReturnSpeed);
-
+        public int   SurgeRingSwordCount      => Mathf.Clamp(surgeRingSwordCount, 2, 16);
+        public float SurgeRingUnfurlSeconds   => Mathf.Max(0.01f, surgeRingUnfurlSeconds);
+        public float SurgeCameraDistanceScale => Mathf.Max(1f, surgeCameraDistanceScale);
+        public float SurgeCameraBlendSeconds  => Mathf.Max(0.01f, surgeCameraBlendSeconds);
         public float EnergizeCostFraction    => Mathf.Clamp01(energizeCostFraction);
         public float EnergizeHoldSeconds     => Mathf.Max(0.01f, energizeHoldSeconds);
         public float TouchEnergizeRateMultiplier => Mathf.Max(0.01f, touchEnergizeRateMultiplier);
@@ -234,8 +217,8 @@ namespace CosmicShore.Gameplay
         // the one class of hit they cannot answer with flying. It also mutated THIS asset, and
         // ONE asset drives every Rhino, so shooting one pilot shrank every Rhino's sword in the
         // match. What a weapon may take from another pilot is their elemental PETALS.
-        // The `_maxScaleMultiplier` runtime state went with it, so MaxScale is now the authored
-        // value (the reader-less legacy prismMaxScale cap was deleted 2026-10-16). Do not
-        // reintroduce a debuff here.
+        // The `_maxScaleMultiplier` runtime state went with it, and on 2026-10-26 the blade stopped
+        // resizing altogether (the energy length, the Space length and the surge burst). Do not
+        // reintroduce a debuff, or a size, here.
     }
 }

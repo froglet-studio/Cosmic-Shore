@@ -43,7 +43,7 @@ hole, because the next reader cannot tell it from a designed one.
 |---|---|---|---|---|
 | Rhino | Charge | Sword Energy *(2026-10-16)* | `chargeEnergyGainMultiplier` ×1 → ×2, floored ×0.5 (`RhinoSkimmerDamagePrismEffect.asset`) — energy per cut | **Live Wire** |
 | Rhino | Mass | Afterimage *(2026-10-16; was Trail Slabs)* | `massVolumeMultiplier` ×1 → ×2.5, floored ×0.25 (`RhinoSwordAfterimageConfig.asset`) — afterimage VOLUME, at the replicated level | **Danger Afterimages** |
-| Rhino | Space | Blade Reach *(2026-10-16)* | `Skimmer.Scale` 24 → 40 (the Rhino's own `ForceFieldSkimmer Variant` instance in `Rhino.prefab`, nested-prefab override; 30 → 50 until 2026-10-26) — blade resting length | **Breaker** |
+| Rhino | Space | **OPEN again 2026-10-26** (was Blade Reach) | none: the sword no longer resizes (Garrett, 2026-10-26), so `Skimmer.Scale` on `Rhino.prefab` is pinned 24 → 24 and nothing reads it | **Breaker** (live) |
 | Rhino | Time | Ramp Spool | `timeAccelerationMultiplier` ×1 → ×2.5, floored ×0.5 (`RhinoRampBoostAction.asset`), read live since 2026-10-16 | **Momentum** *(2026-10-16)* |
 | Serpent | Charge | Sniper Shot | `cooldownMultiplierAtFullCharge` 0.45 on `SniperShotAction.asset`, read through `ElementalScaling.Multiplier` in the executor | **Pierce** |
 | Serpent | Mass | Seed Wall | `massSizeMultiplierAtFull` 2 on `SeedWallAction.asset`: brick size AND lattice spacing, snapshotted at placement (`SeedAssemblerActionExecutor.SnapshotWallShape`) | **Lockdown** |

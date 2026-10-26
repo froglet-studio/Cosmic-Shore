@@ -31,7 +31,8 @@ namespace CosmicShore.Gameplay
     /// ignites, stays lit for a tail after leaving the stance, then cools. "Energy" is the
     /// Rhino's Shield resource (normalized 0..1), banked per prism the sword destroys and
     /// spent as a fraction on each energize. An OMNI crystal SURGES the blade (energized with
-    /// no stance, temporary elements, afterimages while it lasts - <see cref="Surge"/>). See
+    /// no stance, a ring of swords round the hull, temporary elements, afterimages while it lasts -
+    /// <see cref="Surge"/>). See
     /// <c>RHINO_ENERGY_SWORD.md</c>.
     /// </summary>
     public interface IRhinoSwordState
@@ -61,11 +62,12 @@ namespace CosmicShore.Gameplay
         bool IsSurging { get; }
 
         /// <summary>
-        /// The omni-crystal pickup: fill the energy meter to at least <paramref name="energyFill01"/>,
-        /// burst the blade in all three dimensions, and hold it ENERGIZED for
-        /// <paramref name="seconds"/> with no stance and no cost - overriding a cooldown - while the
-        /// Mass afterimages, which otherwise wait for the energize to END, lay throughout. A no-op on
-        /// a peer that does not own the sword's state (the owner's surge replicates).
+        /// The omni-crystal pickup: fill the energy meter to at least <paramref name="energyFill01"/>
+        /// and hold the blade ENERGIZED for <paramref name="seconds"/> with no stance and no cost -
+        /// overriding a cooldown - while a ring of trigger-driven copies of the blade surrounds the hull
+        /// and the pilot's camera pulls back onto it (<see cref="RhinoSurgeSwordRing"/>), and the Mass
+        /// afterimages, which otherwise wait for the energize to END, lay throughout. Nothing resizes.
+        /// A no-op on a peer that does not own the sword's state (the owner's surge replicates).
         /// </summary>
         void Surge(float seconds, float energyFill01);
 

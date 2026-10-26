@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino: the sword never resizes; the omni-crystal Surge is an 8 s sword ring (`cece/wonderful-knuth-rzv8qp`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "halt all resizing on the rhino sword. change the omnicrystal ability to zoom out,
+re center the camera on the rhino and surround it with swords. they should still be controlled by the
+triggers. this can an 8 second state"; design record `R_VesselActions/RHINO_ENERGY_SWORD.md`):
+
+- **No resizing.** `ShieldSkimmerScaleDriver` writes no scale: energy no longer lengthens the blade, Space no
+  longer lengthens it, the surge no longer bursts it. The blade is its authored root scale in `Rhino.prefab`
+  (`1.5 × 24 × 4.8`). The driver still holds `Skimmer.HasExternalScaleDriver`, and the prefab's Space
+  `Skimmer.Scale` override is pinned 24 → 24, so nothing can resize it. The length/burst keys are gone from
+  `ShieldSkimmerScaleConfig.asset`. **Space now has no scaling** (an open slot; Breaker L5 is unchanged).
+- **The Surge** (`surgeSeconds` 6 → **8**): `RhinoSurgeSwordRing` clones the blade 7 times (8 swords, 45° apart
+  round the nose axis), each posed from the blade's live trigger pose, cutting through the same effect chain;
+  the local pilot's camera eases to `CustomCameraController.SurroundFraming01` (straight back ×2, centred on
+  the hull). Energized hold, element lending and afterimages are unchanged.
+
+**Verified without the editor:** `unity_refcompile` player: 88 assemblies, 0 errors (it caught one real
+error in the first draft of `RhinoSurgeSwordRing`, fixed); editor config compiles the new tests with no new
+errors; `check_abstract_member_implementations`, `check_conditional_compilation`, `check_console_logging`,
+`check_using_directives`, `check_elemental_floats`, `check_self_referential_locals` all OK;
+`element_ability_table.py Rhino` shows the Rhino's Space channel inert (24 → 24). No Unity editor or `unity`
+CLI in the session, so `/verify-unity` did not run. Not run: the new `RhinoSurgeSwordRingTests`, and
+nothing here has been seen in play.
+
+**Test in the editor:**
+1. `RhinoSurgeSwordRingTests` and `CameraLookAheadTests` / `RearViewLawTests` pass.
+2. Freestyle Rhino: cut ~30 prisms — the Charge gauge fills and the blade brightens, and its LENGTH NEVER
+   CHANGES. Level Space with crystals: still no change.
+3. Fly through an omni crystal: flash + shake; seven red swords fan out of the blade into a ring (8 in all)
+   in ~0.35 s; the camera eases back to ~2× and centres on the hull. Swipe → the ring spins; both triggers →
+   every sword folds toward the nose; a combo plays on all eight. The ring cuts trail prisms and pops
+   super-shielded ones. After 8 s it folds back into the blade and the camera eases in.
+4. No console errors, and the pilot's five blade tracers still follow ONLY the pilot's blade.
+5. Hierarchy during a surge: `ForceFieldSkimmer::SurgeRing` holds `ForceFieldSkimmer::Surge1..7`, none carrying
+   a `RhinoSwordFXController`.
+6. MPPM two clients: B sees A's ring on the same edge, posed by A's triggers; B's camera does not move.
+7. Lava lamp (Menu_Main, AI Rhino): an AI surge raises the ring and the menu camera does NOT pull back.
+
+**First-pass tuning** (`ShieldSkimmerScaleConfig.asset`): `surgeRingSwordCount` 8 · `surgeRingUnfurlSeconds`
+0.35 · `surgeCameraDistanceScale` 2 · `surgeCameraBlendSeconds` 0.6; `RhinoVesselSurgeByCrystalEffect.asset`
+`surgeSeconds` 8. The blade length is the blade root's `m_LocalScale.y` in `Rhino.prefab` (24).
+
 ### 🔴 Fair play: minors are never penalised automatically (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board R13. The age screen asked a birth year but kept only "13 or older"

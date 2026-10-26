@@ -60,6 +60,10 @@ namespace CosmicShore.Gameplay
                  "every frame. Add or remove entries freely: the spread is derived from the count.")]
         [SerializeField] private TrailRenderer[] bladeTracers;
 
+        /// <summary>The blade body's renderer. The surge's sword ring copies its property block onto each copy,
+        /// so every sword in the ring wears the blade's live colour.</summary>
+        public MeshRenderer BodyRenderer => bodyRenderer;
+
         Skimmer _skimmer;
         SkimmerSwingKinematics _swing;
 
@@ -215,8 +219,9 @@ namespace CosmicShore.Gameplay
                                   config.DeniedSparkIntensity, config.SparkWorldRadius * 0.7f);
         }
 
-        /// <summary>The elemental-crystal burst: full flash, a whole-blade crackle scaled by
-        /// the energy consumed, and the burst camera shake.</summary>
+        /// <summary>The omni-crystal surge's opening beat: full flash, a whole-blade crackle scaled by
+        /// the energy, and the burst camera shake. (The name predates the surge; the blade no longer
+        /// bursts in size - it does not resize at all.)</summary>
         public void NotifyCrystalBurst(float energyConsumed01)
         {
             if (config == null) return;
