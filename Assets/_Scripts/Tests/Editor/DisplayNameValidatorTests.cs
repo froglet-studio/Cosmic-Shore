@@ -291,6 +291,42 @@ namespace CosmicShore.Tests
                 _so.ApplyModifiedPropertiesWithoutUndo();
             }
         }
+
+        // ── Names received from other players (fair play, Threat Board T7) ──
+
+        [TestCase("Nova")]
+        [TestCase("Sky Walker")]
+        [TestCase("Pilot9898")]
+        public void ForDisplay_LeavesCleanNamesAlone(string name)
+        {
+            Assert.AreEqual(name, DisplayNameValidator.ForDisplay(name));
+        }
+
+        [Test]
+        public void ForDisplay_HidesASlurEvenPastEveryFormatRule()
+        {
+            // A modified game can write a name no format rule allows; the words are still judged.
+            string forged = "!!N1gg3r!! " + new string('x', _config.MaxLength * 2);
+            Assert.AreNotEqual(DisplayNameError.None, DisplayNameValidator.Validate(forged).Error);
+            StringAssert.StartsWith("Pilot ", DisplayNameValidator.ForDisplay(forged));
+        }
+
+        [TestCase("Admin")]
+        [TestCase("Froglet Support")]
+        public void ForDisplay_HidesImpersonationOfTheTeam(string name)
+        {
+            StringAssert.StartsWith("Pilot ", DisplayNameValidator.ForDisplay(name));
+        }
+
+        [Test]
+        public void ForDisplay_GivesEachHiddenNameItsOwnStableTag()
+        {
+            string a = DisplayNameValidator.ForDisplay("Admin");
+            string b = DisplayNameValidator.ForDisplay("Moderator");
+            Assert.AreNotEqual(a, b, "two hidden players must not share a name: scores are matched by name");
+            DisplayNameValidator.SetConfigOverride(_config); // clears the cache
+            Assert.AreEqual(a, DisplayNameValidator.ForDisplay("Admin"), "the tag is the same every time, on every machine");
+        }
     }
 }
 #endif

@@ -42,9 +42,39 @@ namespace CosmicShore.Engine.Services
         System.Threading.Tasks.Task<string> GetPlayerNameAsync(bool autoGenerate = true);
         System.Threading.Tasks.Task<string> UpdatePlayerNameAsync(string playerName);
         System.Threading.Tasks.Task DeleteAccountAsync();
+
+        // Steam sign-in (SteamSignIn, fair play T1). Amoebius has no Steam client, so SteamPlatform never
+        // starts and these are not reached; they exist so the shared source compiles.
+        PlayerInfo PlayerInfo { get; }
+        System.Threading.Tasks.Task<PlayerInfo> GetPlayerInfoAsync();
+        System.Threading.Tasks.Task SignInWithSteamAsync(string sessionTicket, string identity, SignInOptions options = null);
+        System.Threading.Tasks.Task LinkWithSteamAsync(string sessionTicket, string identity, LinkOptions options = null);
     }
 
     public class SignInOptions { public bool CreateAccount { get; set; } = true; }
+
+    /// <summary>Original: Unity.Services.Authentication.LinkOptions.</summary>
+    public class LinkOptions { public bool ForceLink { get; set; } }
+
+    /// <summary>The account's linked identities (original: Unity.Services.Authentication.PlayerInfo).</summary>
+    public class PlayerInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string SteamId { get; set; } = string.Empty;
+        public string GetSteamId() => SteamId;
+    }
+
+    /// <summary>Original: Unity.Services.Authentication.AuthenticationException.</summary>
+    public sealed class AuthenticationException : RequestFailedException
+    {
+        public AuthenticationException(int errorCode, string message) : base(errorCode, message) { }
+    }
+
+    /// <summary>The codes the game reads (original: Unity.Services.Authentication.AuthenticationErrorCodes).</summary>
+    public static class AuthenticationErrorCodes
+    {
+        public static readonly int AccountAlreadyLinked = 10003;
+    }
 
     public class AuthenticationService : IAuthenticationService
     {
@@ -152,6 +182,18 @@ namespace CosmicShore.Engine.Services
             ClearSessionToken();
             return System.Threading.Tasks.Task.CompletedTask;
         }
+
+        public PlayerInfo PlayerInfo => IsSignedIn ? new PlayerInfo { Id = PlayerId } : null;
+
+        public virtual System.Threading.Tasks.Task<PlayerInfo> GetPlayerInfoAsync()
+            => System.Threading.Tasks.Task.FromResult(PlayerInfo);
+
+        /// <summary>No Steam in Amoebius: refused the way UGS refuses a provider that is not set up.</summary>
+        public virtual System.Threading.Tasks.Task SignInWithSteamAsync(string sessionTicket, string identity, SignInOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Steam is not available in Amoebius."));
+
+        public virtual System.Threading.Tasks.Task LinkWithSteamAsync(string sessionTicket, string identity, LinkOptions options = null)
+            => System.Threading.Tasks.Task.FromException(new AuthenticationException(0, "Steam is not available in Amoebius."));
 
         /// <summary>Harness entry: raise <see cref="SignInFailed"/> as the SDK would.</summary>
         public void NotifySignInFailed(RequestFailedException e) => SignInFailed?.Invoke(e);

@@ -109,8 +109,67 @@ namespace CosmicShore.Utility
             }
         }
 
+        /// <summary>
+        /// The receiver-side check (fair play, Threat Board T7): true when a name another player sent breaks the
+        /// content filter or impersonates the team. Unlike <see cref="Validate"/> it ignores length and format, so a
+        /// name a modified game wrote past every format rule is still judged on its words.
+        /// </summary>
+        public static bool IsOffensive(string rawName)
+        {
+            var config = Config;
+            string sanitized = Sanitize(rawName);
+            if (string.IsNullOrEmpty(sanitized) || IsAllowlisted(sanitized, config))
+                return false;
+            return IsReserved(sanitized, config) ||
+                   (config.EnableProfanityFilter && ContainsBlockedTerm(sanitized, config));
+        }
+
+        static readonly Dictionary<string, string> s_shownNames = new();
+        const int ShownNamesCapacity = 512;
+
+        /// <summary>
+        /// The name to SHOW for a name received from another player: the name itself, or the authored
+        /// <see cref="DisplayNameValidationConfigSO.HiddenNameReplacement"/> when <see cref="IsOffensive"/>.
+        /// Every player's game applies the same rules, so every honest player sees the same replacement.
+        /// Cached, so a per-frame caller costs a dictionary lookup.
+        /// </summary>
+        public static string ForDisplay(string receivedName)
+        {
+            if (string.IsNullOrEmpty(receivedName))
+                return receivedName;
+            if (s_shownNames.TryGetValue(receivedName, out string shown))
+                return shown;
+
+            shown = IsOffensive(receivedName)
+                ? CosmicShore.UI.TemplateText.Fill(Config.HiddenNameReplacement, "tag", StableTag(receivedName))
+                : receivedName;
+            if (s_shownNames.Count >= ShownNamesCapacity) s_shownNames.Clear();
+            s_shownNames[receivedName] = shown;
+            return shown;
+        }
+
+        /// <summary>Four hex digits from an FNV-1a hash of the name: identical on every platform and process,
+        /// unlike <see cref="string.GetHashCode"/>.</summary>
+        static string StableTag(string name)
+        {
+            uint hash = 2166136261;
+            foreach (char c in name)
+            {
+                hash ^= c;
+                hash *= 16777619;
+            }
+            return (hash & 0xFFFF).ToString("X4");
+        }
+
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetShownNames() => s_shownNames.Clear();
+
         /// <summary>Test seam / hot-swap: pass null to fall back to the Resources asset.</summary>
-        public static void SetConfigOverride(DisplayNameValidationConfigSO config) => _config = config;
+        public static void SetConfigOverride(DisplayNameValidationConfigSO config)
+        {
+            _config = config;
+            s_shownNames.Clear();
+        }
 
         // ── Built-in deny lists ─────────────────────────────────────────────
         // These live in code, not the config asset, so the safety floor cannot be

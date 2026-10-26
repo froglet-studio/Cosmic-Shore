@@ -1,0 +1,12 @@
+{
+  "statements": [
+    {
+      "Sid": "fair-play-no-client-leaderboard-writes",
+      "Action": ["Write"],
+      "Effect": "Deny",
+      "Principal": "Player",
+      "Resource": "urn:ugs:leaderboards:/v1/projects/*/leaderboards/*/scores/players/*",
+      "Version": "1.0.0"
+    }
+  ]
+}

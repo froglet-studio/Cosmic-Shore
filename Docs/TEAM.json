@@ -1,5 +1,5 @@
 {
-  "comment": "Who is who in git, for Tools/Build/who_works_where.py and Docs/TEAM.md. Most commits are authored by Claude, so a person is found by their own commits, by the pull requests they merge, by a Claude commit they committed, and by branch prefixes they own. 'confirmed': false marks an identity inferred from history that the person has not confirmed; correct it here (any collaborator may) and run who_works_where.py map.",
+  "comment": "Who is who in git, for Tools/Build/who_works_where.py and Docs/TEAM.md. Most commits are authored by Claude, so a person is found by their own commits, by the pull requests they merge, by a Claude commit they committed, and by branch prefixes they own. 'confirmed': false marks an identity inferred from history that the person has not confirmed; correct it here (any collaborator may) and run who_works_where.py map. 'owners' declares who owns an area when the owner has said so; who_works_where.py prints it first and it wins over merge counts (a merge credits whoever merged it).",
   "core": [
     "Garrett",
     "Caleb",
@@ -39,7 +39,7 @@
         "108491327+FenrysUnchained@users.noreply.github.com"
       ],
       "branch_prefixes": [],
-      "role": "QA sessions (Docs/QA/RESULTS), arcade mode map and previews, card art.",
+      "role": "Heads FTUE with Shombith, inside the activation work Shombith leads; no one else is on it (2026-10-26). QA sessions (Docs/QA/RESULTS), arcade mode map and previews, card art.",
       "confirmed": true
     },
     {
@@ -54,7 +54,7 @@
         "shombith@froglet.studio"
       ],
       "branch_prefixes": [],
-      "role": "Heads tooling: the Amoebius engine, editor tools, the Claude skills (/ship and the rest) and the hooks (Shombith, 2026-10-23). Owns cloud and backend services and data (UGS). UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
+      "role": "Heads tooling: the Amoebius engine, editor tools, the Claude skills (/ship and the rest) and the hooks (Shombith, 2026-10-23). Owns cloud and backend services and data (UGS: Cloud Code, Cloud Save, Access Control, Moderation, authentication, dashboards, deploys): ask him directly. Leads activation (onboarding, FTUE, the first-run flow), with Caleb heading FTUE (2026-10-26). UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
       "confirmed": true
     },
     {
@@ -77,7 +77,7 @@
         "fix/weekly-challenge",
         "feat/red-console-logger"
       ],
-      "role": "Bug Hunt, party / multiplayer (UGS), diagnostics (redlog), leaderboards; the Vessel Studio and the Amoebius LAUNCHER / studio server / artifact library.",
+      "role": "Bug Hunt, party / multiplayer hardening (the UGS backend itself is Shombith's), diagnostics (redlog), leaderboards; the Vessel Studio and the Amoebius LAUNCHER / studio server / artifact library.",
       "confirmed": true
     },
     {
@@ -164,5 +164,39 @@
     "codex/": "a Codex session",
     "qa/": "QA results"
   },
+  "owners": [
+    {
+      "area": "Activation (onboarding, FTUE, the first-run flow)",
+      "owner": "Shombith (leads activation)",
+      "note": "Caleb heads FTUE with him; no one else is on it",
+      "said": "Shombith, 2026-10-26",
+      "paths": [
+        "Assets/FTUE",
+        "Docs/ACTIVATION.md",
+        "Docs/ModePreview/TRAINING_PLAN.md",
+        "Docs/claude/FTUE_DIALOGUE_AI.md",
+        "Assets/_Scripts/UI/Views/QuestTrackView.cs",
+        "Assets/_Scripts/UI/Views/QuestFrontier.cs",
+        "Assets/_Scripts/UI/Elements/QuestItemCard.cs",
+        "Assets/_Scripts/UI/Privacy"
+      ]
+    },
+    {
+      "area": "UGS and the backend (Cloud Code, Cloud Save, Access Control, Moderation, authentication, deploys)",
+      "owner": "Shombith",
+      "note": "Yash takes the Cloud Code work for now; every deploy, policy or write to the backend goes through Shombith first",
+      "said": "Shombith, 2026-10-18 and 2026-10-26",
+      "paths": [
+        "Tools/UGS",
+        "Assets/_Scripts/System/CloudData",
+        "Assets/_Scripts/System/Moderation",
+        "Assets/_Scripts/System/Steam",
+        "Assets/_Scripts/System/UGSKeys.cs",
+        "Assets/_Scripts/System/AuthenticationServiceFacade.cs",
+        "Assets/_Scripts/System/AuthenticationSceneController.cs",
+        "Assets/_Scripts/System/Systems/Authentication"
+      ]
+    }
+  ],
   "approvers_note": "Approvers on Froglet Tasks (Docs/TEAM.md rule 9): Editors of the page, who can let other people in (Shombith, 2026-10-25). Everyone else they share it with is a Contributor."
 }
