@@ -44,49 +44,49 @@ directly. The owner named first is the person the task waits on.
 ### T-20261015-7b5a · open · test · Activation
 - **Task:** Re-test the first-login spotlight in Unity: the 2026-10-06 playtest saw no dim, no frame, no caption and dead presses; a CanvasRenderer fix landed after it and was never re-tested.
 - **Done when:** On a fresh profile Menu_Main shows the dim, the pulsing frame on ARCADE, its caption and a pressable Settings gear, and the menu takes presses. Result written in the checklist section.
-- **Who can take it:** Andrew, anyone with the Unity Editor
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'First-login guide - spotlight draws nothing in Unity'
 
 ### T-20261015-b47d · open · test · Activation
 - **Task:** Hand-test the first-login guide, the microgame Lesson with its ghost demo, and the ftue_* analytics events, end to end.
 - **Done when:** All nine steps of the checklist section pass, or each failure is written there and added here as a dev task.
-- **Who can take it:** Andrew, anyone with the Unity Editor
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'Ghost demo + first-login guide + FTUE analytics'; Docs/ModePreview/TRAINING_PLAN.md 10.7
 
 ### T-20261015-9809 · open · setup · Activation
 - **Task:** Declare ftue_step_completed (quest_id, phase_index, step_id, step_name, seconds_since_launch), ftue_phase_completed (quest_id, phase_index, seconds_since_launch) and ftue_completed (quest_id, seconds_since_launch) in the UGS dashboard Event Manager; UGS silently drops undeclared events.
 - **Done when:** The three events and their parameters are in the Event Manager, and one test session's events show up in UGS.
-- **Who can take it:** Shombith (UGS, analytics handoff)
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 5; Docs/Analytics/event-taxonomy.md 4
 
 ### T-20261015-2fc0 · open · setup · Activation
 - **Task:** Build the activation funnel and D1/D7 retention in PostHog: game_first_launched > menu_ready > ftue_step_completed (guide) > ftue_phase_completed (phase 0) > game_started > game_completed, split by invite_wave.
 - **Done when:** The funnel and the retention charts exist and read real sessions; the paid-EA gate (D1 >= 35%, D7 >= 15%) can be read off them.
-- **Who can take it:** Ian (funnel owner, C3)
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 6.3; Docs/Analytics/POSTHOG_SETUP.md; Docs/Analytics/DATA_ARCHITECTURE.md
 
 ### T-20261015-99cd · open · test · Activation
 - **Task:** Watch three to five first-time players on a default build (master unlock at its shipped default) without helping them, and note where each one stalls.
 - **Done when:** Notes per player (where they stalled, how long to the first match, whether they came back) are linked here, and each stall is a new task.
-- **Who can take it:** Andrew, Shombith
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 6.4; STEAM_EA_INVESTOR_CHECKPOINT C2 / E7
 
 ### T-20261015-fb65 · open · decision · Activation
 - **Task:** Decide what Main Quest phases 1-5 become now that first login goes to the Game of the Week microgame; they still assume the freestyle flight school ended phase 0 and a Crystal Capture funnel follows.
 - **Done when:** The decision is recorded in TRAINING_PLAN 11 and the phases are re-authored or retired accordingly.
-- **Who can take it:** Garrett and the core four (product call)
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ModePreview/TRAINING_PLAN.md 11.1
 
 ### T-20261015-f4c7 · done · dev · Activation
 - **Task:** Reconcile Menu_Main between the first-login guide (merged into Ys-bleeding-edge 2026-10-15) and Menu Redesign B (claude/new-session-76hnyc) before either reaches bleeding-edge: the spotlight must find the restyled ARCADE entry, cards and Settings gear.
 - **Done when:** Both are on one branch, the spotlight walks the restyled menu in the editor, and author_first_login_guide.py --check passes.
-- **Who can take it:** Shombith (Menu_Main owner)
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 4; Docs/MENU_REDESIGN_B.md on claude/new-session-76hnyc
 - **Progress (2026-10-17, claude/new-session-76hnyc):** both are on one branch now (bleeding-edge merged in), author_first_login_guide.py --check passes, and the guide's targets were checked offline: the ARCADE hub (MenuHubButton, target 10), the Arcade grid's ArcadeExploreView / TryRevealCard, Settings (MenuGuideAlwaysAvailable on the restyled SettingsButton, now guarded by author_menu_home.py), and the Preview step (now spotlights FLY via ModePreviewWindow.guideTarget, because the rev-3 preview is full-screen). Left: the in-editor walk (Docs/UNITY_VERIFICATION_CHECKLIST.md 'Bleeding-edge merge 2026-10-17').
@@ -95,14 +95,14 @@ directly. The owner named first is the person the task waits on.
 ### T-20261015-d364 · open · content · Activation
 - **Task:** Write Mentor tip lists for the non-racing mode families (TRAINING_PLAN phase 5): only the racing family (SwitchesThreaded) and seven racing modes have tips today.
 - **Done when:** Every playable card composes a Mentor list (DrillCoverageTests asserts it once phase 6 lands); author_drill_assets.py --check passes.
-- **Who can take it:** Caleb, Garrett, anyone who writes game copy
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ModePreview/TRAINING_PLAN.md 4.2 and 10
 
 ### T-20261015-ed8e · open · content · Activation
 - **Task:** Author SO_ArcadeGame.Tips for the 54 of 56 arcade cards that have none, so GameBriefingView has something to teach before a match. Write them in each mode's author_<mode>_assets.py generator, not only in the asset.
 - **Done when:** Every card has two or more tips and every touched generator's --check passes.
-- **Who can take it:** Caleb (arcade mode map), anyone
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ArcadeLaunch/ARCHITECTURE.md (Tips); the /arcadegame skill
 
@@ -116,14 +116,14 @@ directly. The owner named first is the person the task waits on.
 ### T-20261015-013e · open · test · Activation
 - **Task:** Run the three progression QA items that have never been run: QA-PROGRESSION-GATE-ON, QA-PROGRESSION-GATE-OFF and QA-FTUE-QUEST-ROWS.
 - **Done when:** Results are submitted under Docs/QA/RESULTS and /qa-backlog has applied them.
-- **Who can take it:** Andrew, Caleb
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/QA/QA_BACKLOG.md
 
 ### T-20261015-ff1c · open · docs · Activation
 - **Task:** Fix stale activation docs: the unlock-chain tables in MENU_PROGRESSION_AND_IAP.md and QUEST_TRACK_AND_BREADCRUMB.md (live chain: Scurry > Hex Race > Joust > Maelstrom > Vessel Hangar), and QuestMap/QUEST_MAP.html, which still draws the retired breadcrumb nodes.
 - **Done when:** The three docs match the shipped GameModeQuestList.asset and the quest graph.
-- **Who can take it:** the area's owner (who_works_where.py; UGS and backend: Shombith); anyone
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 7
 
@@ -325,7 +325,7 @@ directly. The owner named first is the person the task waits on.
 ### T-20261015-aed4 · done · test · Activation
 - **Task:** First-login guide Skip and every-Lesson Skip on claude/new-session-76hnyc: SKIP (and pad Y) ends the quest for good; Lessons offer Skip on a fresh profile
 - **Done when:** Steps 1-2 of the checklist entry 'Style-B playtest fixes' pass in the editor
-- **Who can take it:** Yash (FTUE owner)
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 28
 - **Done:** 2026-10-15, Superseded: the owner switched the tutorial off (MainQuest questEnabled 0, DrillLibrary tutorialsEnabled 0), MENU_REDESIGN_B section 29
@@ -333,7 +333,7 @@ directly. The owner named first is the person the task waits on.
 ### T-20261015-a46a · open · decision · Activation
 - **Task:** Should a guide Skip be measured? It currently raises nothing (ftue_completed stays 'played through'). If yes, add and declare an ftue_skipped event in UGS and PostHog
 - **Done when:** Decided; if yes the event is declared and fired from QuestGraphRunner.HandleSkipRequested
-- **Who can take it:** Ian (funnel owner)
+- **Who can take it:** Caleb and Shombith (FTUE leads; no one else is on FTUE, Shombith 2026-10-26)
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 28
 

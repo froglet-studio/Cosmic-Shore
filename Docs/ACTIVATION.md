@@ -68,6 +68,9 @@ System's `ReleaseCompanion` (`Docs/HomeHub/ARCHITECTURE.md`).
 
 ## 4. Who is on what (avoid collisions)
 
+**FTUE / onboarding is led by Caleb with Shombith, and no one else is on it** (Shombith, 2026-10-26). Every
+activation task on `Docs/TEAM_TASKS.md` names them; the rows below are the branches the work touches, not owners.
+
 | Work | Branch / PR | Collides on |
 |---|---|---|
 | Microgame Training + first-login guide | merged into `Ys-bleeding-edge` 2026-10-15 from `claude/exciting-bell-69b398` (no PR of its own; last commit 2026-10-13) | `QuestGraphRunner`, quest nodes, `Menu_Main.unity`, `ArcadeExploreView`, `ScreenSwitcher`, `ModalWindowManager`, `MenuHubButton`, `GateRaceController` (the course-source refactor) |

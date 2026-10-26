@@ -32,7 +32,7 @@
         "108491327+FenrysUnchained@users.noreply.github.com"
       ],
       "branch_prefixes": [],
-      "role": "QA sessions (Docs/QA/RESULTS), arcade mode map and previews, card art.",
+      "role": "Leads FTUE / onboarding with Shombith; no one else is on it (2026-10-26). QA sessions (Docs/QA/RESULTS), arcade mode map and previews, card art.",
       "confirmed": true
     },
     {
@@ -47,7 +47,7 @@
         "shombith@froglet.studio"
       ],
       "branch_prefixes": [],
-      "role": "Owns all UGS / cloud and backend services and data (Cloud Code, Cloud Save, Access Control, Moderation, authentication, dashboards, deploys): ask him directly. UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
+      "role": "Owns all UGS / cloud and backend services and data (Cloud Code, Cloud Save, Access Control, Moderation, authentication, dashboards, deploys): ask him directly. Leads FTUE / onboarding with Caleb (2026-10-26). UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
       "confirmed": true
     },
     {
