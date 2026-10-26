@@ -14,15 +14,15 @@
   "reporter": "yskha",
   "machine": "COSMOS",
   "createdUtc": "2026-10-25T23:10:28.912Z",
-  "lastSeenUtc": "2026-10-26T01:27:26.658Z",
+  "lastSeenUtc": "2026-10-25T23:10:28.912Z",
   "fixedBy": "claude",
   "fixedUtc": "2026-10-26T04:03:40.181Z",
   "fixCommit": "cb51edde09",
   "resolvedUtc": "",
   "resolution": "",
-  "timesSeen": 11,
+  "timesSeen": 1,
   "regressions": 0,
-  "cleanSessions": 0,
+  "cleanSessions": 1,
   "cleanSessionsRequired": 2,
   "validationPaused": false
 }

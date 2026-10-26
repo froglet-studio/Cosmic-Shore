@@ -209,3 +209,12 @@
 2026-10-25T23:58:16.886Z PlayMode session ended (451s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-8b8883bb82 E-ed5bf7a724 E-b44884c449 E-cdf0c783c1
 2026-10-26T00:50:03.411Z PlayMode session ended (2489s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-8b8883bb82 E-ed5bf7a724 E-b44884c449 E-c8e2f49696
 2026-10-26T01:27:51.336Z PlayMode session ended (2210s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-8b8883bb82 E-ed5bf7a724 E-b44884c449 E-c8e2f49696
+2026-10-26T10:26:23.474Z editor load: play=False capture=True minPlay=15s issues=15
+2026-10-26T10:27:05.444Z E-b44884c449: fix cb51edde0 is not in this checkout yet — waiting for a pull
+2026-10-26T10:27:05.512Z E-ed5bf7a724: fix cb51edde0 is not in this checkout yet — waiting for a pull
+2026-10-26T15:11:43.467Z EditMode session ended (285min editor session): 0 fix(es) waiting; counted: none; fired: E-0a832d3776 E-0061e6c5f7 E-2599f09856 E-25b4ba509d
+2026-10-26T15:37:59.156Z scripts compiled clean: closed 1 compile error(s)
+2026-10-26T15:37:59.159Z editor load: play=False capture=True minPlay=15s issues=18
+2026-10-26T15:38:16.716Z E-b44884c449: fix cb51edde0 taken (PlayMode); needs 2 clean run(s)
+2026-10-26T15:38:16.786Z E-ed5bf7a724: fix cb51edde0 taken (PlayMode); needs 2 clean run(s)
+2026-10-26T15:49:36.863Z PlayMode session ended (657s play run, exiting play mode): 2 fix(es) waiting; counted: E-b44884c449 1/2 E-ed5bf7a724 1/2; fired: E-c8e2f49696
