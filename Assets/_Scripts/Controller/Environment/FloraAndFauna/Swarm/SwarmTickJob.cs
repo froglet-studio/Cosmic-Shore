@@ -85,7 +85,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Tandava (TANDAVA.md §3): a Charge member whose plan well is authored DANGER tier (1) wears a danger
         /// plate for as long as it holds that well - a designed body part (a feeding form's protectors), not a startle.
         /// Off (every census-planned swarm) = only the strike state machine raises danger, as shipped: the research plans'
-        /// tier-1 marks stay unread.</summary>
+        /// tier-1 marks stay unread. On, a scripted plan may also author a SHIELD well (2) on a non-Charge member - Tandava's
+        /// armour (2026-10-26: its Mass body is shielded in every pose but the ones it eats in, so a sword needs two slices);
+        /// the census planner's identity() never authors one, so no other swarm changes.</summary>
         public bool PlanDanger;
         /// <summary>World radius around a vessel inside which a member becomes a real proxy.</summary>
         public float EngageRadius = 160f;
@@ -454,7 +456,12 @@ namespace CosmicShore.Gameplay
                 int eff = c.EffectiveElement(i);
                 var h = S.DefaultHalf[eff];
                 int tier = 0;
-                if (c.TryGetLook(i, eff, out var look, out int lt)) { h = look; if (eff == 0 && (lt == 2 || (lt == 1 && S.PlanDanger))) tier = lt; }
+                if (c.TryGetLook(i, eff, out var look, out int lt))
+                {
+                    h = look;
+                    // Charge: shield, or (a scripted plan) danger. Any other element: only a scripted plan's shield - armour.
+                    if (eff == 0 ? lt == 2 || (lt == 1 && S.PlanDanger) : S.PlanDanger && lt == 2) tier = lt;
+                }
                 if (_strikeEff[i] != eff) { _strikeEff[i] = (sbyte)eff; _strike[i] = 0; }
                 _strike[i] = StrikeState(eff, i, _tick, c.Startle[i], _strike[i], S);
                 bool shielded = tier == 2;   // the mass stays shielded while a puff shows danger (round 11d-2)

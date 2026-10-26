@@ -1164,6 +1164,39 @@ static class TandavaHarness
                               $"{s.Meals} meals; stomach {s.C.Stomach.Sum():F0}; {Timeline(s)}");
         }
 
+        // The same assault against its armour: a blow on a member that wears a shield (the plans' tier 2 - the Mass body
+        // in every pose but the ones it eats in) only sheds it, and the next blow kills. A shed shield stays shed while
+        // the attacker stays near (SwarmTadpoleFauna.SetTier acts on change; the proxy lingers), so it is two blows a
+        // member here. Blade hits are the budget, so this row's rate is BLOWS a second.
+        Console.WriteLine("T40 the same assault against the armour (two blows a shielded member)");
+        foreach (float rate in new[] { 20f, 40f })
+        {
+            var s = MakeSim(b, new[] { 0, 0, 0, 0 }, 71);
+            var shed = new HashSet<int>();
+            float owed = 0f;
+            RunFor(s, RunCap, x =>
+            {
+                owed += rate / TickHz;
+                int n = (int)owed;
+                if (n <= 0) return;
+                owed -= n;
+                var order = Enumerable.Range(0, x.C.Cap).Where(i => x.C.Active[i] && x.C.Hatched[i])
+                                      .OrderBy(i => Vector3.Dot(x.C.Pos[i] - x.C.Anchor, x.C.BX)).Take(n).ToList();
+                foreach (int i in order)
+                {
+                    int e = x.C.EffectiveElement(i);
+                    bool armoured = e != 0 && x.C.TryGetLook(i, e, out _, out int lt) && lt == 2;
+                    if (armoured && shed.Add(i)) continue;
+                    shed.Remove(i);
+                    x.C.Kill(i);
+                    x.Lost++;
+                }
+            });
+            var d = s.D;
+            Console.WriteLine($"    {rate:F0} blows/s: {d.Outcome} at {d.Clock:F1} s as the {d.Form.Name}; alive {Active(s.C)} of {d.Form.PlanCount}; " +
+                              $"{s.Meals} meals; stomach {s.C.Stomach.Sum():F0}; {Timeline(s)}");
+        }
+
         Console.WriteLine(_fail == 0 ? "\ntandava: OK" : $"\ntandava: {_fail} FAILED");
         return _fail;
     }
