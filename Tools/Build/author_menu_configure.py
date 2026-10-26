@@ -1323,6 +1323,13 @@ def build_seat_pedestal():
                                                     (-4, -(WORDS_H + IMG_GAP + IMG_TOP)))))
     plain_image(img, "Pilot/Pool", "Pool", region(0.0, 0.16, 0.06, 0.94), (1.0, 1.0, 1.0, 0.85), K.kit_sprite("kit_pool"))
     plain_image(img, "Pilot/Rim", "Rim", region(0.02, 0.14, 0.12, 0.88), (1.0, 1.0, 1.0, 0.9), K.kit_sprite("kit_pool_rim"))
+    # The seat the vessel strip is picking: its podium glows (a wider pool of the team's light and a white-hot rim,
+    # breathing) - no outline round the pilot (Shombith 2026-10-26: "We do not need a selection icon we can glow the
+    # podium below more"; the outline ran over the neighbouring portraits). Under the hull, inside the seat's width.
+    lit = img.child(N("Pilot/Lit", "Lit", STRETCH))
+    lit.add("cg", 225, canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=1.6, amplitude=0.55))
+    plain_image(lit, "Pilot/Lit/Halo", "Halo", region(0.0, 0.24, 0.0, 1.0), (1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_pool"))
+    plain_image(lit, "Pilot/Lit/Core", "Core", region(0.02, 0.14, 0.12, 0.88), (1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_pool_rim"))
     hull = img.child(N("Pilot/Hull", "Hull", region(0.05, HULL_TO, 0.04, 0.96)))
     hull.add("cg", 225, canvas_group(True))
     art_node(hull, "Pilot/Hull/Art", "Art", STRETCH, SQUIRREL_ICON, preserve=True)
@@ -1330,13 +1337,10 @@ def build_seat_pedestal():
                       K.kit_sprite("kit_oct_fill"), alpha=0.4, preserve=True)
     glow.add("cg", 225, canvas_group(False))
     art_node(img, "Pilot/Avatar", "Avatar", region(AVATAR_FROM, 1.0), AVATAR_PLACEHOLDER, preserve=True)
-    # The pilot and their hull as one button; lit (the selection band) while the vessel strip picks this seat's hull.
+    # The pilot and their hull as one button (its podium glows while the vessel strip picks this seat's hull).
     pick = img.child(N("Pilot/Pick", "Pick", STRETCH))
     pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("button", 114, plain_button(c("Pilot/Pick", "img"), nav=0))
-    mark = pick.child(N("Pilot/Pick/Editing", "Editing", STRETCH))
-    mark.add("cg", 225, canvas_group(False))
-    image_node(mark, "Pilot/Pick/Editing/Band", "Band", STRETCH, "Selection", K.kit_sprite("kit_sliver10_line2"), sliced=True)
     label_e(pilot.child(N("Pilot/Name", "Name", foot(name_y, NAME_ROW))), "Pilot", "Body", "TextLight", align="center")
     label_e(pilot.child(N("Pilot/Status", "Status", foot(status_y, STATUS_ROW))), "Host", "Label", "NeutralLightest",
             align="center")
@@ -1402,7 +1406,8 @@ def build_seat_pedestal():
              f"  hullImage: {ref(ctx.c('Pilot/Hull/Art', 'img'))}\n"
              f"  hullGroup: {ref(ctx.c('Pilot/Hull', 'cg'))}\n"
              f"  pickButton: {ref(ctx.c('Pilot/Pick', 'button'))}\n"
-             f"  editingMark: {ref(ctx.c('Pilot/Pick/Editing', 'cg'))}\n"
+             f"  editingMark: {ref(ctx.c('Pilot/Lit', 'cg'))}\n"
+             f"  podiumGlow: {ref(ctx.c('Pilot/Lit/Halo', 'img'))}\n"
              f"  kickButton: {ref(ctx.iref(kick_wrap_key, 'root#button'))}\n"
              f"  kickGroup: {ref(ctx.c('KickGroup', 'cg'))}\n"
              f"  seatButton: {ref(ctx.c('Open', 'button'))}\n"
@@ -2452,7 +2457,8 @@ PART_FIELDS = [
                                                     teamStepper=S["team"], teamText=TMP, kickButton=S["button"],
                                                     kickGroup=225, seatButton=A.BUTTON, openNameText=TMP,
                                                     openLineText=TMP, teamGroup=225, hullImage=IMG, hullGroup=225,
-                                                    pickButton=A.BUTTON, editingMark=225)),
+                                                    pickButton=A.BUTTON, editingMark=225,
+                                                    podiumGlow=IMG)),
 ]
 # Rev 20 G: the arcade window drops the summary chips, the "Ready to launch" line and the step value under intensity
 # (the stepper's numeral says it).
@@ -2480,6 +2486,12 @@ def validate_prefabs(files):
     _, hull_kt = comp_doc(hull_tile, K.FileIds("ConfigureHullTile")("root#tile"))
     assert "  borderAtRest: 0\n" in hull_kt, "ConfigureHullTile: every hull is outlined at rest (the strip is noisy again)"
     assert "  m_Name: Name\n" not in hull_tile, "ConfigureHullTile: the hull's name is back on the tile"
+    # The seat being picked glows on its podium; no outline round the pilot (it ran over the neighbours' portraits).
+    ped = files[prefab_path("ConfigureSeatPedestal")]
+    P = K.FileIds("ConfigureSeatPedestal")
+    assert K.kit_sprite("kit_sliver10_line2") not in ped, "ConfigureSeatPedestal: the selection outline is back round the pilot"
+    _, lit_amb = comp_doc(ped, P("Pilot/Lit#amb"))
+    assert lit_amb and f"  mode: {M.AMBIENT['Breathe']}\n" in lit_amb, "ConfigureSeatPedestal: the picked seat's podium does not breathe"
 
     # Rev 5: a seat row's hover never grows the row (its neighbours would be covered); the hull's name takes
     # the place of the name and role instead. The card names all four elements' abilities.
@@ -2822,6 +2834,10 @@ def self_test(files):
          validate_prefabs),
         ("a pedestal whose pilot stands on no hull", lambda f: f.__setitem__(ped, re.sub(
             r"(  hullImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[ped], count=1)), validate_prefabs),
+        ("the selection outline back round the picked pilot", lambda f: f.__setitem__(ped, f[ped].replace(
+            K.kit_sprite("kit_pool_rim"), K.kit_sprite("kit_sliver10_line2"), 1)), validate_prefabs),
+        ("the picked seat's podium glow unwired", lambda f: f.__setitem__(ped, re.sub(
+            r"(  podiumGlow: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[ped], count=1)), validate_prefabs),
         ("a pedestal that cannot point the vessel strip at its seat", lambda f: f.__setitem__(ped, re.sub(
             r"(  pickButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[ped], count=1)), validate_prefabs),
         ("a pilots fit on the arcade view, moving START to fit the hidden seat book", lambda f: f.__setitem__(view,
