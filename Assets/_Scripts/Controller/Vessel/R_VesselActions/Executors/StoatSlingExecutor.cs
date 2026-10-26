@@ -90,6 +90,8 @@ namespace CosmicShore.Gameplay
         StoatDipoleExecutor _dipole;
         bool _resolvedSiblings;
         float _lastTiming = -1f;
+        float _lastSlingAt = float.NegativeInfinity;
+        bool _lastSlingHybrid;
 
         // The Time-mode pair under the trigger, and the orbit once it has caught the hull.
         bool _laid;          // a pair is laid and held by a trigger (every peer)
@@ -127,6 +129,10 @@ namespace CosmicShore.Gameplay
         public float SweetProgress01 => IsOrbiting && config ? Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / config.SweetSpotDegrees) : 0f;
         /// <summary>The last slingshot's timing, 0..1, or −1 before the first.</summary>
         public float LastTiming => _lastTiming;
+        /// <summary>Seconds since the last slingshot paid a kick (infinity before the first) — Hybrid mode's boost carry.</summary>
+        public float SecondsSinceSling => Time.time - _lastSlingAt;
+        /// <summary>True when the last slingshot was flown in Hybrid mode (only those carry the boost).</summary>
+        public bool LastSlingWasHybrid => _lastSlingHybrid;
         public StoatSlingConfigSO Config => config;
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -139,6 +145,8 @@ namespace CosmicShore.Gameplay
             _caught = false;
             _resolvedSiblings = false;
             _lastTiming = -1f;
+            _lastSlingAt = float.NegativeInfinity;
+            _lastSlingHybrid = false;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
             if (config == null)
                 CSDebug.LogError($"[Stoat] {name}: StoatSlingExecutor has no StoatSlingConfig — the triggers will sling nothing. " +
@@ -149,9 +157,9 @@ namespace CosmicShore.Gameplay
         /// waits for the release.</summary>
         public void BeginHold(Side side)
         {
-            // The triggers fly the orbit in TIME mode only; in Mass mode they lay the field dipole (StoatDipoleExecutor).
+            // The triggers fly the orbit in TIME and HYBRID mode; in Mass mode they lay the field dipole (StoatDipoleExecutor).
             ResolveSiblings();
-            if (_mode && !_mode.IsTimeMode) return;
+            if (_mode && !_mode.UsesOrbit) return;
             int i = (int)side;
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
@@ -355,6 +363,8 @@ namespace CosmicShore.Gameplay
                 float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
                 float kick = StoatSlingMath.TimedKick(squeeze, timing, config.MissKickShare, rate);
                 _lastTiming = timing;
+                _lastSlingAt = Time.time;
+                _lastSlingHybrid = _mode && _mode.IsHybridMode;
                 // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer). A timed kick can
                 // pass the shared 100 u/s displacement ceiling, so it raises the cap for its own life (vessel §4.ab2) —
                 // never the vessel's ceiling, which every knock-back shares.
@@ -446,7 +456,7 @@ namespace CosmicShore.Gameplay
             }
 
             ResolveSiblings();
-            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.IsTimeMode)) AutopilotSling();
+            if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.UsesOrbit)) AutopilotSling();
         }
 
         /// <summary>
