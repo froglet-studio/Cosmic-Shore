@@ -3774,3 +3774,49 @@ silhouettes, NEW badges and discovery toast from the boards wait for it.
 - Offline renders of the view and the tile. The renderer does not lay out GridLayoutGroups or nested layout groups,
   so the grid and the page's blocks were checked by their layout settings, not by the picture.
 - Not opened in the editor, and `CodexCatalogTests` has not been run.
+
+## 89. The Codex: Toys, live element icons, colour, and subtle motion (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith):** "Name tools to toys. Elements use the actual element icons and animated. ecology need colors.
+Vessel need colors. Make everything subtly animated."
+
+**Built:**
+- **Toys.** The chapter, its stop title and its kicker ("Toy - Creation") now say Toys. `CodexChapter.Tools` is now
+  `Toys`. `Codex.asset` keeps its `Tool` kingdom; only the player-facing words changed (the naming note in
+  `Docs/CODEX.md` says so).
+- **Elements** draw the HUD's own icons: `KitElementFlower`'s five petals over the element's shape (pentagon, triangle,
+  kite, diamond, from `Assets/_Graphics/ElementShapes`).
+  - The petals light one at a time (0.32 s apart), hold the full flower for 1.4 s and start again, and the shape
+    breathes 5 %.
+  - The vessels' ability rows use the shapes as their icons.
+  - The petals keep the HUD's white tick colours, so elements still carry no colour.
+- **Ecology colour.** A creature or plant drifts slowly through Jade, Ruby and Gold (`SO_ColorSet`'s domain signal
+  colours, 5 s per blend, 80 % strength). Those are the colours a lifeform wears in the world, where it takes its
+  owner's domain. The element colours stay out of the UI under the palette rule.
+- **Vessel colour.** A vessel's tile and page show the Hangar's colourful hull render (`HangarCardArtSO`), falling
+  back to its icon.
+- **Motion,** all subtle and all stopping when the Codex is not the shown screen:
+  - Every picture floats 4 units on a 4.5 s sine, each tile from its own phase.
+  - Tiles fade and rise in, 30 ms apart, each time a stop fills.
+  - The open tile's glow breathes.
+  - The page's picture and words fade and rise in each time a page opens.
+- **Cost.** Each picture has its own nested Canvas (it takes no clicks, so it needs no raycaster), so its per-frame
+  motion rebuilds only itself, not the menu canvas.
+
+**C#:**
+- `CodexPortrait` is new: it does the float, the colour drift, and the petal cycle and shape breath.
+- `CodexTile` uses a `portrait` and a `body`, and appears on each fill.
+- `CodexPageView` uses a `portrait` and a `reveal` group.
+- `CodexScreen` gains `elementShapes`, `cardArt` and `colorSet`, and sets `CodexPortrait.Animating` while shown.
+- `CodexCatalog.Build` takes the card art and the life palette. Items and pages carry their `Element` and `Palette`.
+- Three new tests: elements carry their element, only lifeforms take the palette, and vessels show their card art.
+
+**Generator:** `author_menu_codex.py` builds the portraits, the breathing glow, the tile body and the page reveal.
+Four new plants: card art unwired, glow standing still, page picture not alive, and the chapter called TOOLS again.
+All 12 plants fire.
+
+**How it was checked:**
+- `--check` and `--self-test` pass. The Codex, top-bar, Hangar and Arcade generators all show no drift.
+- `gates.sh`: ALL OK, including the player and editor reference compiles.
+- Offline renders of the tile and the page, with the element flower and shape in place.
+- Not opened in the editor, and the tests have not been run.
