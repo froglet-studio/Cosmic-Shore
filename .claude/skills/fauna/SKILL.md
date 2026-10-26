@@ -196,13 +196,12 @@ own crystal, so `heart = K · body^0.5` made the heart's size a function of the 
 (`Docs/ECOSYSTEM.md §45.3a`). **After any placement change, re-run the authoring gate — and
 if it moves a number it should not, look for a loop rather than assuming you caused it.**
 
-**HOW BIG — `Docs/ECOSYSTEM.md §40`:** authored per element in that species' own
-`FaunaVariantTuning.HeartWorldScale`, never a curve and never a per-prefab accident.
-**Never hand-edit it** — `python3 Tools/Build/author_lifeform_heart_sizes.py [--check]`
-owns the whole band (`K · bodyDiameter^0.5`, solved so the largest lifeform lands on
-`HEART_MAX` 4.6) and **fails the build** on an overshoot, on a non-monotone measurement,
-and on any drift. A bigger kill pays more, because the collect reward reads the crystal's
-world scale.
+**HOW BIG — `Docs/ECOSYSTEM.md §64`:** every heart is ONE size,
+`ElementalCrystalSetSO.CrystalWorldScale` (3.55), like every elemental crystal, and is worth
+exactly one petal (Garrett, 2026-10-26). `FaunaVariantTuning.HeartWorldScale` is still
+serialized and still written by `author_lifeform_heart_sizes.py`, and nothing reads it — the
+§40.2 band it describes is retired. What a creature still owes its heart is a SEAT that holds
+a 3.55 heart: re-run `verify_fauna_heart_seat.py`, which measures at the one size.
 
 **Every lifeform drops exactly one elemental crystal** — enforced by `LifeFormCrystal`, and
 it must not be possible to author one that does not. A connected COLONY is a population, so

@@ -130,8 +130,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("A grown creature whose body falls under this share of GrownVoxels dies of its wounds.")]
         [Range(0f, 1f)] public float DeathFraction = 0.35f;
 
-        [Tooltip("The creature's heart, world scale (Docs/ECOSYSTEM.md §40: K x bodyLength^0.5, written by " +
-                 "author_nca_creatures.py with the K author_lifeform_heart_sizes.py solves).")]
+        [Tooltip("RETIRED, not read (2026-10-26): every heart is the one elemental crystal size, " +
+                 "ElementalCrystalSetSO.CrystalWorldScale. Still written by author_nca_creatures.py.")]
         public float HeartWorldScale = 2.9f;
 
         [Tooltip("How far behind the head's front the heart sits, voxels (it must sit wholly behind the front plane).")]

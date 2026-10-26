@@ -202,10 +202,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < segments.Count; i++)
             {
                 var seg = segments[i];
-                // The colony's authored heart SIZE rides along with its element: a segment is
-                // a MEMBER of the population and carries the species' own heart, and it never
-                // gets an AssignLineage of its own to read one from (Docs/ECOSYSTEM.md §40.2).
-                if (seg) seg.ReprovisionHeart(element, HeartWorldScale);
+                // A segment is a MEMBER of the population and carries the colony's element, and
+                // it never gets an AssignLineage of its own to read one from.
+                if (seg) seg.ReprovisionHeart(element);
             }
         }
 
@@ -336,12 +335,11 @@ namespace CosmicShore.Gameplay
             seg.Colony = this;
             seg.Initialize(cell);
             // A colony breeds true: a member grown after the species config picked an
-            // element carries that element's heart - its MODEL and its SIZE - not the body
-            // prefab's authored one. No-ops when they already agree (EnsureElementalCrystal
-            // keeps a match), and the size is re-applied either way so a segment grown at
-            // any point in the colony's life matches the ones it grew beside.
+            // element carries that element's heart model, not the body prefab's authored one.
+            // No-ops when they already agree (EnsureElementalCrystal keeps a match), and the
+            // one heart size is re-applied either way.
             if (_pickedHeartElement != Element.None)
-                seg.ReprovisionHeart(_pickedHeartElement, HeartWorldScale);
+                seg.ReprovisionHeart(_pickedHeartElement);
             if (cell) cell.RegisterSpawnedObject(seg.gameObject);
             // The replication seam, at the one funnel every one of this colony's four segment
             // producers reaches (grow-head / grow-tail / grow-body / initial chain). AFTER the

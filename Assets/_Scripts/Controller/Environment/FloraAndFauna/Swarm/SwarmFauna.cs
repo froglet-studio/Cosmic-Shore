@@ -579,7 +579,7 @@ namespace CosmicShore.Gameplay
             };
             for (int e = 0; e < 4; e++)
             {
-                s.HeartWorldScale[e] = SwarmFaunaConfigSO.Of(config.HeartWorldScale, SwarmFaunaConfigSO.ToElement(e));
+                s.HeartWorldScale[e] = CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale;
                 s.DefaultHalf[e] = new SVector3(half[e].x, half[e].y, half[e].z);
             }
             return s;
@@ -613,7 +613,7 @@ namespace CosmicShore.Gameplay
             // a living heart wears the neutral (no-domain) crystal pair - the Crystal's own rule
             if (colors != null && colors.TryGetColorSetByDomain(Domains.Blue, out var neutral) && neutral != null)
             { hd = neutral.DullCrystalColor; hb = neutral.BrightCrystalColor; }
-            _render.SetColours(_tierDark, _tierBright, hd, hb, config.HeartWorldScale, 2f);
+            _render.SetColours(_tierDark, _tierBright, hd, hb, Vector4.one * CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale, 2f);
 
             // the prism OPENS with distance (BlockGraph's spread) - read each tier's own authored spread off the
             // base materials every live prism is cloned from (ThemeManager), so a member opens exactly as much
@@ -1051,7 +1051,7 @@ namespace CosmicShore.Gameplay
                 }
                 ref var s = ref inst[i];
                 var e = SwarmFaunaConfigSO.ToElement(s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom);
-                if (m.HeartElement != e) m.ReformHeart(e, SwarmFaunaConfigSO.Of(config.HeartWorldScale, e));
+                if (m.HeartElement != e) m.ReformHeart(e);
                 m.SetShape(new Vector3(s.Scale.X, s.Scale.Y, s.Scale.Z), s.PrismZ);
                 m.SetTier(s.Tier == 1, s.Shielded);
             }
@@ -1067,7 +1067,7 @@ namespace CosmicShore.Gameplay
             ref var s = ref _job.Instances[i];
             var e = SwarmFaunaConfigSO.ToElement(s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom);
             var member = Instantiate(config.TadpolePrefab, Uni(s.CurPos), Face(s.CurFace));
-            member.Bind(HostCell, this, i, e, SwarmFaunaConfigSO.Of(config.HeartWorldScale, e),
+            member.Bind(HostCell, this, i, e,
                         new Vector3(s.Scale.X, s.Scale.Y, s.Scale.Z), s.PrismZ, hideLive: _gpu,
                         memberDomain: MemberDomain(i),
                         memberAgeSeconds: Mathf.Max(0f, (_job.Tick + _alpha - s.BirthTick) / config.TickHz));

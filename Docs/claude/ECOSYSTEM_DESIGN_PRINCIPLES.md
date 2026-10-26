@@ -303,40 +303,29 @@ trio, and the traps).
   fixed at birth. And a heart is seated at the FRONT of its member's own prisms with the
   body trailing (the tadpole arrangement — that prefab puts its crystal at the origin and
   its body at z −5.81), never buried inside them (`§23.9`).
-  **A heart's SIZE is AUTHORED PER ELEMENT, in that species' own variant tuning — never a
-  curve, and never a per-prefab accident.** A lifeform is its species and its ELEMENT and
-  nothing else (`Docs/ECOSYSTEM.md §40`, which RETIRES §33's level curve), so everything an
-  element states about itself it states exactly once — including the size of the heart it
-  drops: `FaunaVariantTuning.HeartWorldScale` / `FloraVariantTuning.HeartWorldScale` (0 = not
-  authored → `ElementalCrystalSet.defaultHeartWorldScale`), applied at the single gate every
-  heart passes through (`Crystal.SetEmbeddedIn` → `LifeFormCrystal.ApplyHeartSize`) and
-  re-applied by `LifeForm`/`Fauna.ApplyHeartSize` when the variant lands. A crystal's world
-  scale is read AS GAMEPLAY by the collect reward
-  (`SkimmerAdjustElementLevelByCrystalEffectSO`) — it was read a SECOND time by the live domain
-  fauna buff, which was removed (`Docs/ECOSYSTEM.md §15`) — so the size IS the reward, and that
-  is the DESIGN rather than the hazard: **a bigger kill pays more**, the largest lifeform's heart being worth 4.0× a
-  SchwarzP Charge plant's. It only holds while the whole band stays under
-  `ElementalCrystalSetSO.MaxSafeHeartWorldScale` (**4.8**, under the 5.0 world scale at which
-  `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)` saturates) — past that, two visibly
-  different hearts pay the same, i.e. a size the player can see and a reward they cannot. The
-  band is MEASURED, never eyeballed: `Tools/Build/author_lifeform_heart_sizes.py` sizes every
-  heart as `K · bodyDiameter^0.5` (ordinary allometry — an organ does not scale 1:1 with body
-  length) with `K` SOLVED so the largest lifeform lands on the tool's own `HEART_MAX` (**4.6**),
-  which sits deliberately UNDER that 4.8 ceiling — two margins, neither of them slack to spend:
-  4.6 → 4.8 is headroom for a future bigger body, 4.8 → 5.0 is headroom against the reward cap
-  itself. It **FAILS the build** (`--check`) on an overshoot, on a NON-MONOTONE measurement (a
-  bigger lifeform carrying a smaller heart — the one place a body-size bug surfaces), and on any
-  hand-edit that drifts an asset off what it would author; the shipped band is
-  **1.16** (SchwarzP Charge) → **4.60** (Nerve flora — the anchor is a PLANT since the
-  nested-instance measurement fix, `§46.5`; the Shark reads 133.8 across, not 195.1, and its
-  heart is 4.23). Do not compensate a sizing change by retuning
-  `levelPerUnitScale`: it is shared with non-lifeform elemental crystals (the Wanderway
-  conveyor, Dog Fight's arena scatter) — compress the mapping instead. Work in WORLD scale
+  **EVERY ELEMENTAL CRYSTAL IS ONE SIZE AND ONE PETAL — a lifeform's heart included**
+  (Garrett, 2026-10-26: "the scale of the elemental crystals in the conversion animation found
+  in the ark is the perfect size for elemental crystals. lets fix all elemental crystals to that
+  one size and have them grant exactly one petal"). The size is
+  `ElementalCrystalSetSO.CrystalWorldScale` (**3.55**): in the Elemental Converter (the omni
+  combine on the Ark screen) the Charge crystal is 0.503 of the omni's half-extent, and the omni's
+  in-game size is fixed (`Crystal.prefab`, root 10), so 0.503 × 10 × 0.72 / 1.02 = 3.55
+  (`ElementalCrystalSizeTests` measures the meshes and the combine data and holds it). The reward
+  is the flat `SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal` =
+  `ResourceSystem.PetalNormalized`, read off nothing about the crystal. A heart is sized at the
+  single gate every heart passes through (`Crystal.SetEmbeddedIn` →
+  `LifeFormCrystal.ApplyHeartSize`, which takes no size) and re-applied by
+  `LifeForm`/`Fauna.ApplyHeartSize()` after the body scale lands; the GPU-drawn colonies (swarm,
+  substrate, builders) draw and lay out their hearts at the same constant. Work in WORLD scale
   (`LifeFormCrystal.SetWorldScale`); a local write drags the heart along with a growing body.
-  The §33 finding this SUPERSEDES is still worth carrying: the per-prefab scales it removed
-  (0.7 tadpole → 4.0 gyroid) were a 5.7× reward spread **nobody had authored**, and flattening
-  them traded that accident for a different one — one number cannot be right for both a tadpole
-  and a shark. The answer to an unauthored spread is a MEASURED band, not a constant.
+  This RETIRES the authored band of §40.2 (2026-08 to 2026-10: `HeartWorldScale` per element,
+  `K · bodyDiameter^0.5` from `Tools/Build/author_lifeform_heart_sizes.py`, reward = size × 0.1
+  capped at 0.5, "a bigger kill pays more"). The `HeartWorldScale` fields are still serialized
+  and still generated, and **nothing reads them** — do not wire them back up. What the band
+  was protecting against is now the cost to watch: one size cannot fit both a tadpole and a
+  shark, so a small creature's heart is bigger than its body would choose. A heart's SEAT still
+  has to hold the one size (`Tools/Build/verify_fauna_heart_seat.py` measures it at 3.55; the
+  Clawfish's seat moved back to z −3.755 for it).
   **Uniform root scale is NOT uniform apparent size, and the fix goes BELOW the root.** Each
   elemental prefab carries a size correction on its model child (Charge 1.0 / Mass 1.38 /
   Space 1.34 / Time 1.42) because the four FBX models are very different sizes in their own

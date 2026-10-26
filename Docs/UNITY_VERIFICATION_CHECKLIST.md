@@ -16522,3 +16522,32 @@ configure view (compact AI row, `author_menu_configure.py`). EditMode: `AIDiffic
    Third Eye on an Easy AI: it shows a ring handicap and no autopilot belief (one handicap, not two).
 3. Joust or Dog Fight on Easy vs Legendary: the Easy AI reacts late and sometimes flies off to one side of its target.
 4. Maelstrom: the compact AI row sits under the domain columns, clear of Format; the pick holds across rounds.
+
+## 🔴 2026-10-26 — Every elemental crystal is one size and one petal (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor or `unity` CLI in the session. The runtime scripts were compiled for real through Amoebius's
+`CosmicShore.Live` build (`dotnet build Port/src/CosmicShore.Live`: succeeded, every edited runtime file in the
+synced sources); the Editor and test files were not compiled. Offline gates: `check_elemental_economy.py` §2 and
+`--self-test`, `verify_fauna_heart_seat.py`, `audit_lifeform_crystals.py --self-test`,
+`author_lifeform_heart_sizes.py --check`, `check_console_logging.py`, `check_conditional_compilation.py`.
+What changed and why: `Docs/ECOSYSTEM.md` §64.
+
+1. Let Unity compile. **Pass:** no errors, in particular from `LifeFormCrystalValidator.cs`, `CodexHarvester.cs`,
+   `ElementalCrystalSizeTests.cs`, `LifeformHeartSizeTests.cs`, `SkimmerAdjustElementLevelByCrystalEffectTests.cs`,
+   `SkimRaceRingCrystalTests.cs`.
+2. Run the edit-mode tests `ElementalCrystalSizeTests`, `LifeformHeartSizeTests`,
+   `SkimmerAdjustElementLevelByCrystalEffectTests`, `SkimRaceRingCrystalTests`. **Pass:** green. If
+   `CrystalWorldScale_IsTheConvertersElementalToOmniRatio` fails, its message names the value to move
+   `ElementalCrystalSetSO.CrystalWorldScale` to.
+3. Open the Ark screen's Elemental Converter, then fly a mode that spawns the standard omni (`Crystal.prefab`; not
+   Skim Race, whose ring omni is smaller) with elemental crystals near it. **Pass:** an elemental crystal next to the
+   omni reads at the converter's proportion (about half the omni's size).
+4. Freestyle: kill a tadpole, a shark and a gyroid plant. **Pass:** the three hearts are the same size, and each
+   pickup lights exactly one petal of its element.
+5. Dog Fight, Bloomrush, Salvo, Tapestry: collect a scattered crystal. **Pass:** all scattered crystals are one size,
+   and each fills one whole petal (it used to fill a fraction of one).
+6. Any vessel fight that ejects petals: collect one. **Pass:** one petal back; the ejected crystals are the same size
+   as every other elemental crystal.
+7. Look at the small creatures (Mass tadpole, piranha, swarm and substrate members, the Clawfish). **Pass:** the
+   heart reads as a heart and not as something swallowed; the Clawfish's heart sits inside its mouth (moved to
+   z -3.755). Anything that reads wrong is a seat to move, not a size to change.

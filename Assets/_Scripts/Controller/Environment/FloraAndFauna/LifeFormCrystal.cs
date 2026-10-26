@@ -24,63 +24,24 @@ namespace CosmicShore.Gameplay
     {
         // --- Heart sizing (Docs/ECOSYSTEM.md §40.2) -------------------------------------
         //
-        // A lifeform heart's size is a function of its LIFEFORM: it is authored per element in
-        // that species' own variant tuning (FaunaVariantTuning.HeartWorldScale /
-        // FloraVariantTuning.HeartWorldScale) and sized to suit the body it beats inside, so a
-        // tadpole's heart is a tadpole's heart and a shark's is a shark's. There is no level
-        // curve and no level: the four elemental variations ARE the whole variation a species
-        // has, and each one states its heart size once, alongside everything else it states.
+        // EVERY HEART IS ONE SIZE: ElementalCrystalSetSO.CrystalWorldScale, the size of the
+        // elemental crystals in the Elemental Converter (Garrett, 2026-10-26). A heart is an
+        // elemental crystal like any other, and every elemental crystal is worth exactly one
+        // petal (SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal), so a size has
+        // nothing left to say about a lifeform. A tadpole's heart and a shark's heart read as the
+        // same pickup because they ARE the same pickup.
         //
-        // §33 previously flattened every heart to ONE size (3.5 world, x1.05 per level) because
-        // the per-PREFAB scales it replaced were an accident nobody authored - 0.7 on a tadpole
-        // up to 4.0 on a gyroid, a 5.7x reward spread that nobody had chosen. The flattening
-        // fixed the accident and created a different one: a uniform 3.5 renders 6.8-9.5 units
-        // ACROSS, which is 3.6x a Mass tadpole's own width and 1.1x a piranha's ENTIRE LENGTH,
-        // while being 11% of a shark. The band is now AUTHORED and DELIBERATE, generated from
-        // each lifeform's measured body by Tools/Build/author_lifeform_heart_sizes.py.
-        //
-        // THE ROOT SCALE IS THE GAMEPLAY NUMBER, and that is now the point rather than a
-        // hazard: the collect reward (SkimmerAdjustElementLevelByCrystalEffectSO) reads the
-        // root's lossyScale, so a bigger lifeform's heart is worth more - a bigger kill pays
-        // more. (It used to be read TWICE, the second reader being the domain fauna buff, which
-        // was removed - Docs/ECOSYSTEM.md §15.) What must NOT happen
-        // is a heart CLIPPING the reward cap, because a clipped heart is a size the player can
-        // see and a reward they cannot. The authoring tool holds the whole band under
-        // ElementalCrystalSetSO.MaxSafeHeartWorldScale and fails if it ever escapes.
+        // This retired the authored band (2026-08 to 2026-10): per-element HeartWorldScale values
+        // in each species' variant tuning, generated from the measured body by
+        // Tools/Build/author_lifeform_heart_sizes.py, with the reward following the size. Those
+        // fields are still serialized and still generated, and nothing reads them.
         //
         // A per-ELEMENT APPARENT-SIZE correction is a different thing and still never goes
         // here. The four exported crystal models are very different sizes in their own FBX
         // units, so each prefab carries a correction on its model child BELOW the root
         // (Charge 1.0 / Mass 1.38 / Space 1.34 / Time 1.42). Those children equalize apparent
-        // EXTENT per unit of root scale; the root states the lifeform's size. If an ELEMENT
-        // reads wrong on every species at once, fix that element's crystal PREFAB's model
-        // child. If ONE SPECIES reads wrong, fix that species' authored HeartWorldScale.
-
-        // Used only if Resources/ElementalCrystalSet is missing - the same misconfiguration the
-        // provisioning paths below already report loudly. Mirrors the shipped asset's value.
-        const float FallbackDefaultHeartWorldScale = 3f;
-
-        /// <summary>
-        /// The world scale a heart renders at when its species authors none - the set's single
-        /// default. An authored size always wins; this is the floor under a config that has not
-        /// been given one yet, and under the runtime-provisioned misconfiguration path.
-        /// </summary>
-        public static float DefaultHeartWorldScale
-        {
-            get
-            {
-                var set = ElementalCrystalSetSO.Load();
-                return set ? set.DefaultHeartWorldScale : FallbackDefaultHeartWorldScale;
-            }
-        }
-
-        /// <summary>
-        /// The world scale to render <paramref name="authored"/> at: the lifeform's own authored
-        /// size when it has one, else the set's default. A non-positive authored value is the
-        /// 'not authored' sentinel, so a config that has never been sized still gets a heart.
-        /// </summary>
-        public static float ResolveHeartWorldScale(float authored) =>
-            authored > 0f ? authored : DefaultHeartWorldScale;
+        // EXTENT per unit of root scale; the root carries the one size. If an ELEMENT reads
+        // wrong everywhere at once, fix that element's crystal PREFAB's model child.
 
         /// <summary>
         /// The LOCAL scale this crystal needs to render at <paramref name="worldScale"/> world
@@ -97,14 +58,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Sizes a heart to its lifeform's authored size immediately - it spawns AT size, so
-        /// nothing pops. <paramref name="authoredWorldScale"/> is the owner's
-        /// <see cref="ILifeFormEntity.HeartWorldScale"/>; non-positive falls back to the default.
+        /// Sizes a heart to the one elemental crystal size immediately - it spawns AT size, so
+        /// nothing pops. Re-apply it after anything that rewrites the parent chain's scale: the
+        /// size is WORLD scale, divided out of whatever the heart hangs from.
         /// </summary>
-        public static void ApplyHeartSize(Crystal crystal, float authoredWorldScale)
+        public static void ApplyHeartSize(Crystal crystal)
         {
             if (!crystal) return;
-            SetWorldScale(crystal, ResolveHeartWorldScale(authoredWorldScale));
+            SetWorldScale(crystal, ElementalCrystalSetSO.CrystalWorldScale);
         }
 
         /// <summary>Writes a crystal's WORLD scale, dividing out whatever it hangs from.</summary>
@@ -150,12 +111,12 @@ namespace CosmicShore.Gameplay
 
             Vector3 position = crystal ? crystal.transform.localPosition : Vector3.zero;
 
-            // The four elemental prefabs share ONE scale convention (root 1.5, and a root scale
-            // of r renders ~2r world units for every element - the model children compensate for
-            // each export's mesh size), so the authored crystal's root scale transfers directly
-            // to the replacement element. It is only a placeholder for the frames before the
-            // heart is sized: the moment it becomes a heart (Crystal.SetEmbeddedIn) the
-            // lifeform's own authored size overwrites it.
+            // The four elemental prefabs share ONE scale convention (one root scale renders one
+            // apparent size for every element - the model children compensate for each export's
+            // mesh size), so the authored crystal's root scale transfers directly to the
+            // replacement element. It is only a placeholder for the frames before the heart is
+            // sized: the moment it becomes a heart (Crystal.SetEmbeddedIn) ApplyHeartSize gives
+            // it the one elemental crystal size.
             float scale = crystal ? crystal.transform.localScale.x : 0f;
 
             SkimmerCrystalEffectSO[] authoredEffects = null;

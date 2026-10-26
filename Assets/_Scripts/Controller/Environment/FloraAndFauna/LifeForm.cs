@@ -65,32 +65,17 @@ namespace CosmicShore.Gameplay
         public Transform HeartTransform => crystal ? crystal.transform : transform;
 
         /// <summary>
-        /// Elemental contract: the WORLD scale this lifeform's heart renders at — authored per
-        /// element in the species' variant tuning and sized to suit this body
-        /// (Docs/ECOSYSTEM.md §40.2). Non-positive means 'not authored': the set's default is
-        /// used instead, so a config nobody has sized yet still grows a heart.
-        ///
-        /// <para>There is no level. A lifeform is its species and its element; its heart is one
-        /// of the things that element states about it, exactly once.</para>
-        /// </summary>
-        public float HeartWorldScale => heartWorldScale;
-
-        // Authored by the config's per-element variant tuning (ApplyVariantTuning). 0 = the
-        // sentinel every un-sized config carries, resolved against the set's default.
-        float heartWorldScale;
-
-        /// <summary>
-        /// Elemental contract: sizes this lifeform's heart to the value its element authored.
+        /// Elemental contract: sizes this lifeform's heart to the one elemental crystal size
+        /// (<see cref="CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale"/>).
         /// Called from the spawn path BEFORE Initialize — it spawns AT size, nothing pops.
         /// Idempotent, and safe before the crystal field is resolved.
         /// </summary>
-        public void ApplyHeartSize(float authoredWorldScale)
+        public void ApplyHeartSize()
         {
-            heartWorldScale = Mathf.Max(0f, authoredWorldScale);
             // Resolve early: the spawner calls this BEFORE Initialize, so the field it assigns
             // is not populated yet unless ApplyElement provisioned one.
             if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
-            LifeFormCrystal.ApplyHeartSize(crystal, heartWorldScale);
+            LifeFormCrystal.ApplyHeartSize(crystal);
         }
 
         /// <summary>Rooted flora never travel - which makes them trivially joustable.</summary>
@@ -156,10 +141,9 @@ namespace CosmicShore.Gameplay
             if (tuning == null) return;
             if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
             if (tuning.WitherRingInterval > 0f) witherRingInterval = tuning.WitherRingInterval;
-            // The element states the size of this lifeform's heart, like everything else it
-            // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
-            // which resolves to the set's default rather than to a zero-sized crystal.
-            if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
+            // Every heart is the one elemental crystal size; the tuning's HeartWorldScale is no
+            // longer read (Docs/ECOSYSTEM.md §40.2).
+            ApplyHeartSize();
         }
 
         public static event Action<string, int> OnLifeFormDeath;

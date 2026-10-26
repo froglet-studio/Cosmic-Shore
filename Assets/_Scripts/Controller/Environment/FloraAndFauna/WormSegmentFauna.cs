@@ -206,17 +206,12 @@ namespace CosmicShore.Gameplay
         /// EnsureElementalCrystal keeps a matching authored crystal and replaces a
         /// mismatched one with the set's model for the requested element.
         /// </summary>
-        public void ReprovisionHeart(Element element, float heartWorldScale = 0f)
+        public void ReprovisionHeart(Element element)
         {
             if (_dead || element == Element.None) return;
             heartElement = element;
-            // The colony's authored heart SIZE travels with its element, for the same reason
-            // the element does: a segment is a member of the population, not a body part, so
-            // it carries the species' heart rather than the platform default. A segment never
-            // gets AssignLineage of its own (the COLONY holds the config), so this forward is
-            // the only channel that reaches it - without it every worm member would render
-            // ElementalCrystalSet.defaultHeartWorldScale (Docs/ECOSYSTEM.md §40.2).
-            ApplyHeartSize(heartWorldScale);
+            // Every heart is the one elemental crystal size (Docs/ECOSYSTEM.md §40.2).
+            ApplyHeartSize();
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal) crystal.SetEmbeddedIn(this);
             PlaceHeart();

@@ -382,19 +382,10 @@ namespace CosmicShore.Utility
                  "-1 = keep prefab.")]
         public int MaxSpawnsPerFrame = -1;
 
-        [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
-                 "to suit THIS plant, so a rosette's heart is a rosette's and a gyroid " +
-                 "octagon's is an octagon's. 0 = keep the platform default on " +
-                 "ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward reads " +
-                 "the heart's world scale, so a bigger plant's " +
-                 "heart is worth more to whoever takes it. The whole authored band must " +
-                 "therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past it " +
-                 "two visibly different hearts pay the same. Authored by " +
-                 "Tools/Build/author_lifeform_heart_sizes.py, which measures the plant and " +
-                 "fails the build on an overshoot; do not hand-edit one in isolation. A " +
-                 "LATTICE species is additionally bounded by its own authored heart alcove " +
-                 "(QuasicrystalAssembler.heartSeatInset).")]
+        [Tooltip("RETIRED, not read (2026-10-26). Every elemental crystal, a lifeform's heart " +
+                 "included, is one size (ElementalCrystalSetSO.CrystalWorldScale) and worth one " +
+                 "petal. Still written by Tools/Build/author_lifeform_heart_sizes.py; nothing in " +
+                 "the game reads it.")]
         [Min(0f)] public float HeartWorldScale = 0f;
 
         [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +

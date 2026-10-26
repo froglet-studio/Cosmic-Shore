@@ -308,7 +308,7 @@ namespace CosmicShore.Gameplay
                 _tierDark[3 + slot] = dd; _tierBright[3 + slot] = db;
                 _tierDark[6 + slot] = sd; _tierBright[6 + slot] = sb;
             }
-            _render.SetColours(_tierDark, _tierBright, hd, hb, config.HeartWorldScale, 2f);
+            _render.SetColours(_tierDark, _tierBright, hd, hb, Vector4.one * config.HeartScale(_element), 2f);
             var set = config.Theme ? config.Theme.BaseMaterialSet : null;
             _render.SetSpread(TierSpread(set ? set.BlockMaterial : null),
                               TierSpread(set ? set.DangerousBlockMaterial : null),
@@ -604,7 +604,7 @@ namespace CosmicShore.Gameplay
             if (!host) return null;
             var member = Instantiate(config.MemberPrefab, U(_pos[k]), Face(_face[k]));
             float heart = config.HeartScale(_element);
-            member.Bind(host, null, k, _element, heart, config.BodyScale,
+            member.Bind(host, null, k, _element, config.BodyScale,
                         -(heart + config.HeartPrismGap + 0.5f * config.BodyScale.z), hideLive: _gpu,
                         memberDomain: domain,
                         memberAgeSeconds: Mathf.Max(0f, (_tick - _birthTick[k]) / config.TickHz));

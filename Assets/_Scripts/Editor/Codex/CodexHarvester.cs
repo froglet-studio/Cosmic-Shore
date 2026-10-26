@@ -123,9 +123,10 @@ namespace CosmicShore.Editor.Codex
                         ? $"{speciesCount} species — one of the four, per lifeform"
                         : null);
                     Add(entry.Stats, "Reward", "Raises the collecting vessel's " + element +
-                                               " level, scaled by the crystal's world size");
+                                               " level by one petal");
                     Add(entry.Stats, "Model", MeshSummary(crystal.gameObject));
-                    Add(entry.Stats, "Heart size", HeartSizeBandLine(set));
+                    Add(entry.Stats, "Size", $"{ElementalCrystalSetSO.CrystalWorldScale:0.00} world scale - " +
+                                             "every elemental crystal, a lifeform's heart included");
 
                     entries.Add(entry);
                 }
@@ -249,8 +250,6 @@ namespace CosmicShore.Editor.Codex
                 Add(variant.Stats, "Children per birth", cfg.OffspringPerBirth > 1
                     ? cfg.OffspringPerBirth.ToString() : null);
                 Add(variant.Stats, "Reproduction cooldown", Seconds(cfg.ReproductionCooldownSeconds));
-                Add(variant.Stats, "Heart size",
-                    HeartSizeLine(cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f));
                 Add(variant.Stats, "Initial seeding", Count(cfg.InitialSpawnCount, "plant"));
                 if (cfg.Element == Element.Charge)
                     Add(variant.Stats, "Elemental law", "Charge armours its leaves — grazing one " +
@@ -302,8 +301,6 @@ namespace CosmicShore.Editor.Codex
                 Add(variant.Stats, "Children per birth", cfg.OffspringPerBirth > 1
                     ? cfg.OffspringPerBirth.ToString() : null);
                 Add(variant.Stats, "Reproduction cooldown", Seconds(cfg.ReproductionCooldownSeconds));
-                Add(variant.Stats, "Heart size",
-                    HeartSizeLine(cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f));
                 Add(variant.Stats, "Initial spawn", Count(cfg.InitialSpawnCount, "creature"));
                 if (cfg.BandOuterRadius > 0f)
                     Add(variant.Stats, "Roams", $"{cfg.BandInnerRadius:0}–{cfg.BandOuterRadius:0} " +
@@ -609,46 +606,6 @@ namespace CosmicShore.Editor.Codex
             value > 0 ? $"{value} {noun}{(value == 1 ? "" : "s")}" : null;
 
         static string Seconds(float value) => value > 0f ? $"{value:0.##} s" : null;
-
-        /// <summary>
-        /// One lifeform's authored heart size. A non-positive value is the "not authored"
-        /// sentinel, and it is worth SAYING so rather than hiding the row: it means that
-        /// species renders the platform default, which is a real (and usually unintended)
-        /// state a reader of the codex should be able to see. Docs/ECOSYSTEM.md 40.2.
-        /// </summary>
-        static string HeartSizeLine(float authored) => authored > 0f
-            ? $"{authored:0.00} world scale"
-            : $"{LifeFormCrystal.DefaultHeartWorldScale:0.00} world scale (platform default — " +
-              "this variant authors none)";
-
-        /// <summary>
-        /// The BAND every lifeform heart in the project spans, measured from the shipped assets
-        /// rather than restated, so this line cannot drift from what was authored. It also names
-        /// the ceiling, because the band's whole design property is that it stays under the world
-        /// scale at which the collect reward saturates - past that, two visibly different hearts
-        /// pay the same (Docs/ECOSYSTEM.md 40.2).
-        /// </summary>
-        static string HeartSizeBandLine(ElementalCrystalSetSO set)
-        {
-            float lo = float.MaxValue, hi = 0f;
-            foreach (var cfg in LoadAll<FaunaConfigurationSO>())
-                Consider(cfg && cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f);
-            foreach (var cfg in LoadAll<FloraConfigurationSO>())
-                Consider(cfg && cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f);
-
-            void Consider(float v)
-            {
-                if (v <= 0f) return;
-                if (v < lo) lo = v;
-                if (v > hi) hi = v;
-            }
-
-            if (hi <= 0f)
-                return set ? $"{set.DefaultHeartWorldScale:0.00} world scale (nothing authored)" : null;
-
-            return $"{lo:0.00}–{hi:0.00} world scale across the roster — sized to the lifeform " +
-                   $"that carries it, held under {ElementalCrystalSetSO.MaxSafeHeartWorldScale:0.0}";
-        }
 
         static string SummarizeInt(IEnumerable<int?> values)
         {

@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """Author every lifeform's HEART SIZE, from its own measured body.
 
+RETIRED IN THE GAME, 2026-10-26 (Garrett): every elemental crystal, a lifeform's heart
+included, is ONE size - ElementalCrystalSetSO.CrystalWorldScale (3.55), the size of the
+elemental crystals in the Elemental Converter - and worth exactly one petal. Nothing in the
+game reads the HeartWorldScale this script writes any more (LifeFormCrystal.ApplyHeartSize
+takes no size). It still writes and --checks the serialized field so the shipped assets and
+CI stay in step until the field is stripped from the assets and this script is deleted;
+the measurement and the law below are kept as the record of the band that was.
+
 Docs/ECOSYSTEM.md §40.2.  Run with --check in CI; --write to author.
 
     python3 Tools/Build/author_lifeform_heart_sizes.py            # report only

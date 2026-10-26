@@ -122,10 +122,12 @@ namespace CosmicShore.Tests
         [Test]
         public void CrystalInTheRing_IsTwentyPercentLargerThanALevelOneElementalCrystal()
         {
-            // One element level is one crystal at world scale 1 (ElementalCrystalEjector). The Charge
-            // model is the reference the other elements' model corrections are equalized to.
+            // The ring's reference is an elemental crystal at ROOT SCALE 1 - the size a one-petal
+            // crystal was before every elemental crystal became ElementalCrystalSetSO.CrystalWorldScale
+            // (the ring's omni kept its size). The Charge model is the reference the other elements'
+            // model corrections are equalized to.
             var charge = LoadPrefab(ChargeCrystalPath).GetComponent<Crystal>();
-            float levelOneHalfExtent = BodyHalfExtentPerRootScale(charge) * ElementalCrystalEjector.PetalCrystalWorldScale;
+            float levelOneHalfExtent = BodyHalfExtentPerRootScale(charge) * 1f;
             Assert.Greater(levelOneHalfExtent, 0f, "could not measure the Charge crystal's mesh");
 
             var prefab = LoadPrefab(RingPrefabPath);

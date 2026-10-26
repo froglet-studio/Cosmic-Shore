@@ -106,14 +106,14 @@ namespace CosmicShore.Gameplay
         /// after LifeFormCrystal.EnsureElementalCrystal.
         ///
         /// This is also where a heart gets its SIZE: every lifeform heart in the game passes
-        /// through here, so sizing it from the owner's level here is what makes the size a
-        /// function of level alone rather than of whatever scale each species' prefab happened
-        /// to author (Docs/ECOSYSTEM.md §33). Later level changes re-apply the same curve.
+        /// through here, so this is what makes every heart the one elemental crystal size
+        /// (<see cref="ElementalCrystalSetSO.CrystalWorldScale"/>) rather than whatever scale
+        /// each species' prefab happened to author (Docs/ECOSYSTEM.md §40.2).
         /// </summary>
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
-            if (owner != null) LifeFormCrystal.ApplyHeartSize(this, owner.HeartWorldScale);
+            if (owner != null) LifeFormCrystal.ApplyHeartSize(this);
             var col = GetComponent<SphereCollider>();
             if (!col) return;
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;

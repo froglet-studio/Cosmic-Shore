@@ -474,17 +474,18 @@ what the carve-out silently broke — see the traps below.
   must keep its own per-plant budget: that budget is GEOMETRY (a gyroid octagon is 24 prisms around
   one crystal), so a cell-level `MaxTotalSpawnedObjectsOverride` does not thin the plant, it
   truncates a shape mid-figure.
-- **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
-  lifeform heart's world scale is read in four places (collect reward, pickup trigger radius,
-  vacuum speed, capture flourish — the live domain fauna buff was a fifth and was removed,
-  `Docs/ECOSYSTEM.md` §15); the reward is
-  `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)`, so it SATURATES. Past that point two
-  visibly different hearts pay the same — a size the player can see and a reward they cannot.
-  When a band is authored rather than uniform, solve its scale constant so the LARGEST member
-  lands on the ceiling: that makes clipping structurally impossible instead of merely unlikely,
-  and it uses the whole band. Do NOT answer an overshoot by retuning `levelPerUnitScale` — it is
-  shared with every non-lifeform elemental crystal (the Wanderway conveyor, Dog Fight's arena
-  scatter). Compress the mapping instead.
+- **Every elemental crystal is ONE size and ONE petal — do not size one per lifeform again.**
+  (Garrett, 2026-10-26, `Docs/ECOSYSTEM.md` §64.) A heart, an ejected petal, an arena scatter and
+  a toy's pickup are all `ElementalCrystalSetSO.CrystalWorldScale` (3.55, the Elemental
+  Converter's elemental-to-omni ratio held against the fixed omni by `ElementalCrystalSizeTests`),
+  and the pickup grants the flat `LevelGainPerCrystal` = one petal. The size is still read in
+  three places that are not the reward — the pickup trigger radius, the vacuum speed, the capture
+  flourish — so a different size on one crystal is a different pickup, not a different reward.
+  The per-species `HeartWorldScale` fields (and the swarm / substrate / builder / NCA heart
+  vectors) are still serialized and generated and are read by NOTHING; wiring one back up revives
+  the retired §40.2 band. A NEW producer of elemental crystals sets the one size at mint
+  (`LifeFormCrystal.SetWorldScale` when parented), and a new heart SEAT has to hold a 3.55 heart
+  (`verify_fauna_heart_seat.py`).
 - **"Spindles and crystals but no prisms" is a prism WAITING to be drawn, not a prism that was
   never made.** `Prism.CreateBlockCoroutine` keeps every laid prism's renderer and collider off
   until it wins a per-frame creation completion (6/frame at gameplay tier); spindles and crystals

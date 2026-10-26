@@ -32,8 +32,10 @@ What it measures, and from where
   prism poses   the `m_LocalPosition.z` overrides on the nested HealthBlock instances
   heart size    BOTH sizes, because a heart has two:
                   * the AUTHORED prefab scale, which is what the prefab view shows
-                  * the RUNTIME size, which `LifeFormCrystal.ApplyHeartSize` forces from
-                    the config's `HeartWorldScale` (Docs/ECOSYSTEM.md §40)
+                  * the RUNTIME size, which `LifeFormCrystal.ApplyHeartSize` forces: the
+                    one elemental crystal size, `ElementalCrystalSetSO.CrystalWorldScale`
+                    (Docs/ECOSYSTEM.md §40.2; it was the config's `HeartWorldScale` until
+                    2026-10-26)
                 A seat that clears one and not the other is a seat that looks right in
                 exactly one of the two places anyone ever looks at it.
 
@@ -83,6 +85,15 @@ SPECIES = [
         "negative_control_z": [(1.32, "mouth"), (-4.07, "depth")],
     },
 ]
+
+
+def one_crystal_size():
+    src = open(os.path.join(REPO, "Assets/_Scripts/ScriptableObjects/ElementalCrystalSetSO.cs"),
+               encoding="utf-8").read()
+    m = re.search(r"public const float CrystalWorldScale = ([\d.]+)f;", src)
+    if not m:
+        raise SystemExit("ElementalCrystalSetSO.CrystalWorldScale not found - the one heart size moved")
+    return float(m.group(1))
 
 
 def fbx_bounds(path):
@@ -294,21 +305,16 @@ def check(spec):
     crystal = open(os.path.join(REPO, spec["heart_prefab"]), encoding="utf-8").read()
     child = float(re.search(r"m_LocalScale: \{x: ([\d.]+)", crystal).group(1))
 
-    runtime = 0.0
-    for cfg in sorted(glob.glob(os.path.join(REPO, spec["configs"]))):
-        m = re.search(r"HeartWorldScale: ([\d.]+)", open(cfg, encoding="utf-8").read())
-        if m:
-            runtime = max(runtime, float(m.group(1)))
-    if runtime <= 0.0:
-        fail.append("%s: no config authors a HeartWorldScale" % spec["name"])
-        return False, out, fail
+    # Every heart is the one elemental crystal size (2026-10-26), read off the C# constant: the
+    # configs' HeartWorldScale is still serialized and nothing reads it.
+    runtime = one_crystal_size()
 
     prisms = all_overrides(prefab, spec["prism_fid"], "m_LocalPosition.z")
 
     out.append("%s" % spec["name"])
     out.append("  body   z [%.3f, %.3f]   mouth at %.3f   (cross-section x +-%.2f  y +-%.2f)"
                % (tail, mouth, mouth, max(abs(blo[0]), bhi[0]), max(abs(blo[1]), bhi[1])))
-    out.append("  heart  z %.3f   authored scale %.3f   runtime HeartWorldScale %.3f"
+    out.append("  heart  z %.3f   authored scale %.3f   runtime CrystalWorldScale %.3f"
                % (heart_z, heart_authored, runtime))
     out.append("  prisms z %s" % (", ".join("%.2f" % p for p in sorted(prisms)) or "NONE"))
 

@@ -410,7 +410,9 @@ cell a leaf refit cannot leave stale. **Check the handoff rather than assuming i
 nothing, SILENTLY — so fail by name, and say which tool closes it.
 
 **The ORDER is species generator → heart sizer → cell generator, and the middle step is easy to
-skip.** A species generator reads an existing heart back rather than inventing one, so a config
+skip.** (Since 2026-10-26 the heart sizer's output is read by nothing in the game — every heart is
+`ElementalCrystalSetSO.CrystalWorldScale`, `Docs/ECOSYSTEM.md` §64 — so skipping it only fails
+its CI `--check`; it no longer changes what the plant drops.) A species generator reads an existing heart back rather than inventing one, so a config
 it has just CREATED gets `HeartWorldScale: 0` — the sentinel that falls through to
 `ElementalCrystalSet.defaultHeartWorldScale` and silently stops tracking body size, which is
 exactly the non-monotone defect `author_lifeform_heart_sizes.py` exists to fail the build on.

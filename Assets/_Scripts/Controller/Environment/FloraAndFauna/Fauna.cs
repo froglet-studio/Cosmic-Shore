@@ -536,8 +536,8 @@ namespace CosmicShore.Gameplay
                 // body's CURRENT root scale, and ApplyVariantTuning then REWRITES that root
                 // scale from the variant's BaseBodyScale. Without this line every creature that
                 // authors a body scale wears a heart of `authored x BaseBodyScale` - 0.4 and 0.7
-                // on the shipped tadpoles, i.e. a silent 2.5x and 1.43x cut to the collect
-                // reward, with nothing reporting it.
+                // on the shipped tadpoles, i.e. a silent 2.5x and 1.43x cut to the one elemental
+                // crystal size, with nothing reporting it.
                 //
                 // It also covers a SECOND inversion one level up: the Boid / LightFauna spawn
                 // path runs Initialize (which provisions and sizes the heart) BEFORE
@@ -548,7 +548,7 @@ namespace CosmicShore.Gameplay
                 //
                 // Until 2026-08 this job was done by Fauna.SetLevel, as an incidental
                 // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
-                ApplyHeartSize(_heartWorldScale);
+                ApplyHeartSize();
             }
         }
 
@@ -674,15 +674,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The element this creature carries - single source: its crystal (the heart).</summary>
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
-        /// <summary>
-        /// The WORLD scale this creature's heart renders at — authored per element in the
-        /// species' variant tuning and sized to suit this body (Docs/ECOSYSTEM.md §40.2).
-        /// 0 means 'not authored' and resolves to the set's default.
-        /// </summary>
-        public float HeartWorldScale => _heartWorldScale;
-
-        float _heartWorldScale;
-
         /// <summary>Current travel speed (world units/s). Mobile subclasses (Boid, LightFauna)
         /// override with their live velocity; manager/rooted fauna read as stationary.</summary>
         public virtual float CurrentSpeed => 0f;
@@ -707,14 +698,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Sizes this creature's heart to the value its element authored. Called from the spawn
-        /// path BEFORE the creature is established, so it spawns AT size and nothing pops.
+        /// Sizes this creature's heart to the one elemental crystal size
+        /// (<see cref="CosmicShore.ScriptableObjects.ElementalCrystalSetSO.CrystalWorldScale"/>).
+        /// Called from the spawn path BEFORE the creature is established, so it spawns AT size
+        /// and nothing pops; called again whenever the body's scale is rewritten.
         /// </summary>
-        public void ApplyHeartSize(float authoredWorldScale)
+        public void ApplyHeartSize()
         {
-            _heartWorldScale = Mathf.Max(0f, authoredWorldScale);
             if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
-            LifeFormCrystal.ApplyHeartSize(crystal, _heartWorldScale);
+            LifeFormCrystal.ApplyHeartSize(crystal);
         }
 
         /// <summary>
@@ -754,10 +746,10 @@ namespace CosmicShore.Gameplay
                 if (_stomachLive) StartStomach();   // re-derive the upkeep (spawn-time: nothing has been eaten yet)
             }
 
-            // The element states the size of this creature's heart, like everything else it
-            // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
-            // which resolves to the set's default rather than to a zero-sized crystal.
-            if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
+            // Every heart is the one elemental crystal size; the tuning's HeartWorldScale is no
+            // longer read (Docs/ECOSYSTEM.md §40.2). The body scale was just rewritten above,
+            // and AssignLineage re-applies this after the whole lineage lands.
+            ApplyHeartSize();
 
             // Per-element body PRISM shape: retarget every body HealthPrism's TargetScale (the
             // bloom target - the clock growth stamp blooms toward it, so a post-Initialize

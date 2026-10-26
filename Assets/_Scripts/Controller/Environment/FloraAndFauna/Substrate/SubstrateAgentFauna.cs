@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
         /// TRUE body (volume = stock), and the heart of <paramref name="element"/> is provisioned. Called once, right
         /// after Instantiate, by <see cref="SubstrateFauna"/>.
         /// </summary>
-        public void Bind(Cell cell, SubstrateFauna population, int index, Element element, float heartWorldScale,
+        public void Bind(Cell cell, SubstrateFauna population, int index, Element element,
                          Vector3 bodyLocalScale, float bodyLocalZ, Domains agentDomain, float ageSeconds, bool hideLive = true)
         {
             Population = population;
@@ -68,14 +68,14 @@ namespace CosmicShore.Gameplay
             }
             SetShape(bodyLocalScale, bodyLocalZ);
 
-            ApplyHeartSize(heartWorldScale);
+            ApplyHeartSize();
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal)
             {
                 crystal.transform.localPosition = Vector3.zero;   // the heart leads; the body trails along -z
                 crystal.SetEmbeddedIn(this);
             }
-            ApplyHeartSize(heartWorldScale);
+            ApplyHeartSize();
 
             _hideLive = hideLive;
             if (hideLive) HideLiveVisuals();
@@ -188,20 +188,20 @@ namespace CosmicShore.Gameplay
         public void Starve()
         {
             if (_dead) return;
-            ApplyHeartSize(HeartWorldScale);
+            ApplyHeartSize();
             Die(StarvationKiller);
         }
 
         public override bool Predated(string predatorName, Transform devourTarget)
         {
-            if (!_dead) ApplyHeartSize(HeartWorldScale);
+            if (!_dead) ApplyHeartSize();
             return base.Predated(predatorName, devourTarget);
         }
 
         public override void OnBodyPrismExploded(HealthPrism prism, string killerName)
         {
             if (_dead) return;
-            ApplyHeartSize(HeartWorldScale);
+            ApplyHeartSize();
             base.OnBodyPrismExploded(prism, killerName);
         }
 

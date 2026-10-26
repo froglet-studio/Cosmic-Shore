@@ -7159,6 +7159,10 @@ have grown a leaf mid-life. Leaving the flag is leaving the guard standing for t
 
 ### 40.2 A heart is sized to its lifeform, by measurement
 
+> **SUPERSEDED 2026-10-26 (§64).** Every elemental crystal, a heart included, is now ONE size
+> (`ElementalCrystalSetSO.CrystalWorldScale`, 3.55) and worth exactly ONE petal. The law below is
+> kept as the record of the band that was; nothing in the game reads `HeartWorldScale` any more.
+
 **The law.** A heart's linear size scales as the SQUARE ROOT of its lifeform's linear size:
 
 ```
@@ -12120,3 +12124,72 @@ one new shard in its cell's cytoplasm, the `SnowChanger` field whose shards poin
   not changed here.
 - The shard condenses by scale and turn, not by shape: it does not start as the limb's silhouette. A
   silhouette morph would need the snow graph to fade per instance.
+
+## 64. Every elemental crystal is one size and one petal (Oct 2026)
+
+Garrett, 2026-10-26: *"the scale of the elemental crystals in the conversion animation found in
+the ark is the perfect size for elemental crystals. lets fix all elemental crystals to that one
+size and have them grant exactly one petal."* The omni crystal's size was already fixed.
+
+### 64.1 The size, taken from the converter
+
+The Elemental Converter (the omni combine on the Ark screen, `OmniCombinePlayer`) draws the four
+elemental crystals as shares of the omni they combine into. Its data
+(`Assets/_SO_Assets/Environment/OmniCombine/OmniCombineData.json`) gives, as largest axis
+half-extents: omni 1.606; Charge 0.808, Space 0.759, Mass 0.721, Time 0.712. The Charge crystal is
+the reference the game's four models are equalized to (each prefab's model child carries the
+per-element correction), so the ratio is Charge / omni = **0.503**.
+
+In play the omni is `Crystal.prefab` at root scale 10 (37 of the 39 crystal managers spawn it),
+whose body is 0.72 u of half-extent per unit of root scale, against the Charge body's 1.02
+(measured by `SkimRaceRingCrystalTests`). So an elemental crystal at the converter's ratio is
+
+```
+0.503 × (10 × 0.72) / 1.02 = 3.55 world scale      (7.2 u across, against the omni's 14.4 u)
+```
+
+`ElementalCrystalSetSO.CrystalWorldScale = 3.55`. `ElementalCrystalSizeTests` measures the two
+meshes and the combine data and fails, naming the value to move to, if the three drift apart.
+
+### 64.2 What reads it
+
+| Where an elemental crystal comes from | Before | Now |
+|---|---|---|
+| A lifeform's heart (`Crystal.SetEmbeddedIn` → `LifeFormCrystal.ApplyHeartSize`; `LifeForm`/`Fauna.ApplyHeartSize()`) | the species' authored `HeartWorldScale`, 1.04–4.60 | 3.55 |
+| Swarm, substrate and builder colonies (GPU-drawn hearts; the body prism laid behind the heart) | per-element `HeartWorldScale` vectors on the config | 3.55 in all four elements |
+| A petal knocked out of a hull (`ElementalCrystalEjector`) | world scale 1 | 3.55 |
+| Arena scatters: Dog Fight, Bloomrush, Salvo, Tapestry, and the Wanderway's microscenes | prefab root 1.5 × a random 0.5–1.2 (0.75–1.8) | 3.55 |
+| The four elemental prefabs' own root scale | 1.5 | 3.55, so an instance left alone is already right |
+
+The reward is `SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal` =
+`ResourceSystem.PetalNormalized` (0.1, one petal), read off nothing about the crystal. Its
+`levelPerUnitScale` and `maxLevelGainPerCrystal` were deleted from the class and the asset. Before,
+a heart paid 0.10–0.46 of an element level by its size and an arena scatter paid 0.075–0.18 — a
+fraction of a petal no flower can show. `Tools/Build/check_elemental_economy.py` §2 holds the flat
+petal, the ejector's size and the absent keys, and its self-test fires on each.
+
+What did NOT change: every omni crystal (the Skim Race ring's omni keeps its 1.70 scale; its
+`levelOneCrystalScale` is now described as "an elemental crystal at root scale 1"), and the
+elemental crystals a vessel wears as hull ornament (`CrystalHullFusion`, which reads meshes, not
+the root).
+
+### 64.3 What it costs, and what is left
+
+- **One size does not fit every body.** That was the band's reason to exist (§40.2: a uniform 3.5
+  is 3.6× a Mass tadpole's width). A heart's pickup radius is its root world scale (the prefabs'
+  root `SphereCollider` is radius 1), so every heart is now as easy to take as the old largest
+  ones, and small creatures carry hearts bigger than their bodies would choose. The Clawfish's
+  heart poked 1.09 u out of its mouth at 3.55, so `verify_fauna_heart_seat.py` now measures the
+  seat at the one size and the Clawfish's heart moved back to z −3.755 (its shallowest legal seat).
+  The quasicrystal alcove clears a 4.25 heart (`fit_quasicrystal_strut_sizes.py`), so 3.55 fits.
+  Every other seat is a play-test.
+- **The retired field is still on 206 assets.** `FaunaVariantTuning.HeartWorldScale`,
+  `FloraVariantTuning.HeartWorldScale`, and the heart vectors on `SwarmFaunaConfigSO`,
+  `SubstrateSpeciesSO`, `BuilderColonyConfigSO` and `NcaCreatureConfigSO` are tooltipped RETIRED,
+  are still written by their generators (`author_lifeform_heart_sizes.py` and its
+  `--check` in CI, `author_swarm_fauna.py`, `author_substrate_fauna.py`, `author_nca_creatures.py`
+  and the flora authors), and nothing in the game reads them. Stripping them means changing those
+  generators and the assets in one pass.
+- **Amoebius's hand port** (`Port/src/CosmicShore.Game`) still carries the old scaled reward. The
+  engine's player build compiles the real scripts (`CosmicShore.Live`), which have the new one.
+

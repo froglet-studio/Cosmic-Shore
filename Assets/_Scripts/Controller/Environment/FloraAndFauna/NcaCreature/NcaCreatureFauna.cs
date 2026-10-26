@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
             _mouth.SetParent(transform, false);
 
             if (!crystal) ProvisionHeart(Element.None);
-            ApplyHeartSize(config.HeartWorldScale);
+            ApplyHeartSize();
             BindBody();
             BindEntries();
         }

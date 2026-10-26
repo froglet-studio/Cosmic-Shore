@@ -212,16 +212,10 @@ namespace CosmicShore.Utility
         public float MaxSpeed = -1f;
 
         [Header("Heart")]
-        [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
-                 "to suit THIS creature, so a piranha's heart is a piranha's and a shark's is a " +
-                 "shark's. 0 = keep the platform default on ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward reads " +
-                 "the heart's world scale, so a bigger " +
-                 "creature's heart is worth more to whoever takes it. The whole authored band " +
-                 "must therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past " +
-                 "it two visibly different hearts pay the same. Authored by " +
-                 "Tools/Build/author_lifeform_heart_sizes.py, which measures the body and fails " +
-                 "the build on an overshoot; do not hand-edit one in isolation.")]
+        [Tooltip("RETIRED, not read (2026-10-26). Every elemental crystal, a lifeform's heart " +
+                 "included, is one size (ElementalCrystalSetSO.CrystalWorldScale) and worth one " +
+                 "petal. Still written by Tools/Build/author_lifeform_heart_sizes.py; nothing in " +
+                 "the game reads it.")]
         [Min(0f)] public float HeartWorldScale = 0f;
 
         [Header("Audio")]
