@@ -593,13 +593,15 @@ A session started by the + panel opens with "Vessel Studio: NEW STUDIO request" 
 `spec`) is the record. Then:
 
 1. `ArtifactData get` the request; set `status: "in progress"` and `reply` = your branch (pin `if_version`).
-2. Work on a new branch off Ys-bleeding-edge. Do §2 (intake first: answer every intake line for the vessel and the
+2. Work on a new branch: off Ys-bleeding-edge when Yash drives the session, otherwise off bleeding-edge
+   (`Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`, top). Do §2 (intake first: answer every intake line for the vessel and the
    mini-game before building) with the skills the prompt names (`/vessel` for a new or changed hull, `/vessel-ai`
    for its AI, `/arcadegame` or `/arenagame` for a new mini-game).
 3. The studio comes first (D33: the artifact is the source of truth). A NEW vessel gets a design studio (D2) before
    any Unity asset; its numbers are the studio's until the requester decides, then `/artifact-to-unity` clones them.
-4. Publish from your branch (§4) so the requester can fly it, and tell them the Sync panel merges it into
-   Ys-bleeding-edge when they are happy.
+4. Publish from your branch (§4) so the requester can fly it, and tell them where it lands when they are happy:
+   a PR into Ys-bleeding-edge for Yash, a PR into bleeding-edge (`/ship`) for anyone else. The Sync panel cannot do
+   it: `sync_job.py` refuses to merge into either.
 5. Set the request `status: "done"` with a `reply` saying what to test and where.
 
 ### Handling a job ("Vessel Studio Sync job <id> ...")

@@ -17,7 +17,7 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 | A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5, and keeps §3.55's minimum (the lab's CATALOG row plus any costly lesson). |
 | A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, a mechanical refactor-opportunity sweep (D8) over §3.6, and a lab audit (D9) over §3.55. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
-| PROMOTE an integration branch that was already reviewed PR by PR (Yash's `Ys-bleeding-edge`) | `/ship promote [branch]` | Runs §1.5 (merge bleeding-edge in, resolve, gates, push) and §5-§5.5 (the PR, CI) and nothing else - no review, no go/no-go. Was `/to-bleeding-edge`, folded in 2026-10-26 (Garrett: one shipping process, "to avoid confusion, drift"); that name stays as an alias. |
+| PROMOTE an integration branch that was already reviewed PR by PR (Yash's `Ys-bleeding-edge`, promoted only from a session Yash drives: `Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`, top) | `/ship promote [branch]` | Runs §1.5 (merge bleeding-edge in, resolve, gates, push) and §5-§5.5 (the PR, CI) and nothing else - no review, no go/no-go. Was `/to-bleeding-edge`, folded in 2026-10-26 (Garrett: one shipping process, "to avoid confusion, drift"); that name stays as an alias. |
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`, `/ship promote <branch>`).
 

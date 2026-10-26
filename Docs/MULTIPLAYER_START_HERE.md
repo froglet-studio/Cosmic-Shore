@@ -1,6 +1,7 @@
 # Multiplayer — START HERE
 
-**Read this before any multiplayer work on this branch (`Ys-bleeding-edge`), in Unity or in Amoebius.**
+**Read this before any multiplayer work, in Unity or in Amoebius.** Yash's sessions do it on his branch
+(`Ys-bleeding-edge`); every other session does it on a branch from `bleeding-edge` (§2).
 It holds what the owner wants, the rules that do not change, where everything lives, what is
 done, what the owner still has to test by hand, and what comes next. Each section points to the
 detailed document; this file stays short enough to read first. Keep it current: a session that
@@ -30,8 +31,11 @@ In the owner's words, condensed:
 These are on top of the root `CLAUDE.md`; they are decisions the owner has already made.
 
 - **A party is 4. Never 6, anywhere** (B25: the session's own seat count is the authority).
-- **Push only to `Ys-bleeding-edge`.** No pull request unless the owner asks. Fetch before
-  pushing; merge (never rebase or force-push) someone else's commits.
+- **Which branch depends on who drives the session** (Shombith, 2026-10-26; who counts as Yash's session:
+  `Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`, top). **Yash's sessions push only to `Ys-bleeding-edge`**, with no pull
+  request unless Yash asks. **Every other session branches from `bleeding-edge` and opens its PR into
+  `bleeding-edge`**, and never pushes to or opens a PR into `Ys-bleeding-edge`; it reads that branch first so it does
+  not redo Yash's work. Either way: fetch before pushing; merge (never rebase or force-push) someone else's commits.
 - **Do not change Unity versions or packages.** A new dependency in Amoebius (for example
   Steamworks.NET) is flagged to the owner first.
 - **Never accept consent or a privacy prompt on the owner's or a player's behalf** (harnesses
@@ -81,7 +85,9 @@ online), the Bug Hunt's after-Play send (`BugHuntAutoSend`) pushes whatever is n
 | A Load Time Insights report of every load while online: each launch, and each return to the menu (`loadKind: "menuReturn"`) | `LoadInsights` (records unarmed while online since 2026-10-25) | `net_logs.py show <n>`, section "Loads"; RELAY RISK marks a frame over 9 s |
 | New red console errors | Bug Ledger | `bug_ledger.py` |
 
-**The multiplayer sweep** (a scheduled Claude session, once a day; it can also be run by hand from any session):
+**The multiplayer sweep** (a scheduled Claude session, once a day; it can also be run by hand from any session). The
+steps below are Yash's sweep, on `Ys-bleeding-edge`; a sweep anyone else drives works on a branch from `bleeding-edge`
+and PRs into `bleeding-edge` instead (§2):
 
 1. `git fetch origin`, check out `Ys-bleeding-edge` and merge it; `python3 Tools/Build/net_logs.py collect`.
 2. For each test newer than the last sweep (`Docs/PartySystem/SWEEP_LOG.md`, newest first): `net_logs.py show <n>`.
@@ -252,7 +258,9 @@ Each step has the check that proves it done. Update the state in §4 when a step
 ## 7. How a session starts here
 
 1. Read this file, then the document for your track (§3).
-2. `git fetch origin Ys-bleeding-edge` and merge it before working.
+2. Yash's sessions: `git fetch origin Ys-bleeding-edge` and merge it before working. Every other session:
+   `git fetch origin`, branch from `origin/bleeding-edge`, and read what `Ys-bleeding-edge` has in your area
+   (`python3 Tools/Build/who_works_where.py query <paths>`) without merging it (§2).
 3. Amoebius work: read `Port/CLAUDE.md` and `Port/docs/MULTIPLAYER.md`; build with
    `dotnet build Port/src/CosmicShore.Player` (the .NET 10 SDK); test with
    `dotnet test Port/tests/CosmicShore.Tests`.

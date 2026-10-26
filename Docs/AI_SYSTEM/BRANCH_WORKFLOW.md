@@ -1,13 +1,23 @@
-# AI System — Branch Workflow (AI work lives on `Ys-bleeding-edge`)
+# AI System — Branch Workflow (Yash's work lives on `Ys-bleeding-edge`)
+
+**Only sessions Yash drives use `Ys-bleeding-edge` (Shombith, 2026-10-26).** It is Yash's integration branch. Every
+other session (Garrett's, Caleb's, Shombith's, anyone's), in every area including AI, multiplayer, `Port/` and the
+studios, branches from `bleeding-edge`, opens its PR into `bleeding-edge`, and never pushes to, merges into or opens a
+PR into `Ys-bleeding-edge`. Those sessions still READ it (`who_works_where.py`, and before claiming an enum value, a
+`GameModes` id or a GUID) so they do not redo Yash's work. A session is Yash's when Yash drives it: it runs on his
+account (an email `Docs/TEAM.json` lists for him), it continues a branch he started off `Ys-bleeding-edge`, or he asks
+for `Ys-bleeding-edge` in the chat. The scheduled sweeps whose own docs push to it (the AI learning sweep,
+`AUTO_LEARNING.md`) work for him too, and promoting it (`/ship promote Ys-bleeding-edge`) is his call. When in doubt,
+a session is not his, and it uses `bleeding-edge`. Everything below is the workflow of Yash's sessions.
 
 **2026-10-09: the `ai-system` branch is retired.** Its work (the Skim Race AI retunes, the perf
 diagnostics, these docs) was merged into `claude/peaceful-rubin-hhw49n` and from there into
-`Ys-bleeding-edge`, and the branch was deleted. Every AI session now works on **`Ys-bleeding-edge`**
-(the user's call). The same day `claude/peaceful-rubin-hhw49n` (the Stoat, the black and white
+`Ys-bleeding-edge`, and the branch was deleted. Every AI session Yash drives now works on **`Ys-bleeding-edge`**
+(his call). The same day `claude/peaceful-rubin-hhw49n` (the Stoat, the black and white
 holes, Amoebius, the Vessel Studio) was merged into `Ys-bleeding-edge` and deleted, so that work lives here too.
 The rules below are the old ones with that one change; the history is in `SYNC_LOG.md`.
 
-Run the sync report first, every time — it lists what is waiting to come in, and which of it is AI work:
+Yash's sessions run the sync report first, every time — it lists what is waiting to come in, and which of it is AI work:
 
 ```sh
 python3 Tools/Build/ai_branch_sync.py            # fetches, then reports
@@ -21,18 +31,20 @@ python3 Tools/Build/ai_branch_sync.py --no-fetch # offline / already fetched
 | Branch | Owner and purpose | What `Ys-bleeding-edge` does with it |
 |---|---|---|
 | `bleeding-edge` | The team's integration branch. Everyone's PRs land here, including **new vessel AI written by other people** (Urchin rails, Scarab jukes, Grizzly bombs). | **Pull only.** Merge the latest `bleeding-edge` INTO `Ys-bleeding-edge` (a merge commit) before and during work. New AI found here is *intake* (§4). **Nothing goes from `Ys-bleeding-edge` to `bleeding-edge` until the user has tested it** (Yash, 2026-10-15); then by pull request, when the user decides. |
-| `Ys-bleeding-edge` | **Home.** Ys's integration branch: everything in `bleeding-edge` plus multiplayer / party / networking, and now every vessel AI (review, restructure, diagnose, test, tune). | — |
+| `Ys-bleeding-edge` | **Yash's home.** Ys's integration branch: everything in `bleeding-edge` plus Yash's multiplayer / party / networking work, and his vessel AI work (review, restructure, diagnose, test, tune). Only Yash's sessions build here. | — |
 | `perf/performance-optimization` | Performance testing: the instruments (`prof`, `diag`, `burst`, `freeze`, `ab`), allocation gates, perf fixes. | **Two-way.** Pull its tools and fixes; merge Ys into perf when an AI change needs perf testing (§3). |
 
-**Ownership rule.** A change belongs on the branch that owns its area, then merges across:
+**Ownership rule (Yash's sessions only).** In a session Yash drives, a change belongs on the branch that owns its area,
+then merges across. Every other session puts every area, these included, on `bleeding-edge`; this table does not
+apply to it:
 
-| Area | Owning branch |
+| Area | Owning branch (Yash's sessions) |
 |---|---|
 | `Assets/_Scripts/Controller/AI/**`, mode/ability AI code, AI configs, `Docs/SKIM_RACE_AI*.md`, `Docs/AI_SYSTEM/**`, the Skim Race simulator | `Ys-bleeding-edge` |
 | Party, presence, lobby, netcode, multiplayer packages | `Ys-bleeding-edge` |
 | `Assets/_Scripts/Utility/PerformanceBenchmark/**`, `Docs/PERFORMANCE_OPTIMIZATION.md`, allocation / Burst gates | `perf/performance-optimization` |
 | Stoat, black holes, `Port/`, `Docs/Studios/**`, `/vessel-studio` | `Ys-bleeding-edge` |
-| Everything else (modes, vessels, ecology, UI) | `bleeding-edge` (via its authors). **Yash's own sessions: `Ys-bleeding-edge` too** (below) |
+| Everything else (modes, vessels, ecology, UI) | `Ys-bleeding-edge` too (below); other people's work in these areas reaches it through `bleeding-edge` |
 
 **Yash's sessions build on `Ys-bleeding-edge` first, whatever the area (Yash, 2026-10-25).** "I'm changing features and
 adding them to Ys-bleeding-edge, testing them first and then deciding whether to push it or not in bleeding edge." So a

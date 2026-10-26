@@ -124,4 +124,4 @@ by itself.
    (`STOAT_DIPOLE.md` §1b). The Test Range can test the shipped Stoat now. The user asked the same day for the
    studio's play to use the game's own vessel and prisms ("why are we using low-grade graphics?"); that is
    tier B, this plan.
-3. **Which branch builds R1–R3**: `Ys-bleeding-edge`, the home of all AI work since 2026-10-09 (`Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`). Decided by the user's move off `ai-system`.
+3. **Which branch builds R1–R3**: `Ys-bleeding-edge`, the home of all AI work since 2026-10-09 (`Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`). Decided by the user's move off `ai-system`. Since 2026-10-26 that holds for Yash's sessions only; anyone else builds them on a branch from `bleeding-edge` (Shombith).

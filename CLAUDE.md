@@ -40,7 +40,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
 - [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
   Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
-- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
+- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI. Yash's AI work is on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09); every other session's AI work branches from and PRs into `bleeding-edge` — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Yash's AI sessions run `python3 Tools/Build/ai_branch_sync.py` first.
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
 - [`Docs/BRANCH_PARTS_STATUS.md`](Docs/BRANCH_PARTS_STATUS.md): **Current report on the A–M parts of `cece/nice-brahmagupta-ojclij`** (the 2026-10-12 branch test plan): which parts landed where, what is still to test and who owes each step. Answer any question about those parts or that plan from it, and update it when a part lands.
   Sections: Where each part stands; What landed, and how it differs from the plan; Open problems not caused by these parts; Re-measuring this report
@@ -77,6 +77,11 @@ Cosmic Shore is built by **Garrett, Caleb, Shombith and Yash** (the core four) p
 all of it goes through Claude sessions, so git rarely says which person drove a change. On 2026-10-13 one merge
 needed about 110 conflict fixes because work had been done twice: the Stoat in two places, enum value 14 taken twice,
 the engine renamed twice, retired tools brought back. **Every session:**
+- **Build on `bleeding-edge`, the default branch.** Branch from it and open your PR into it, in every area (AI,
+  multiplayer, `Port/` and the studios included). **`Ys-bleeding-edge` is Yash's integration branch: only sessions
+  Yash drives build on it** (Shombith, 2026-10-26; who counts as Yash's session and his workflow:
+  `Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`, top). Every other session reads it (the next rule, and before claiming shared
+  numbers) but never branches from, merges, pushes to or opens a PR into it.
 - **Look before you touch.** Run `git fetch origin`, then `python3 Tools/Build/who_works_where.py query <the paths you
   will change>` (about 10 s). It shows who has unmerged work in flight there and who landed what.
 - **Say who else works there**, in a line or two. Read their branch, docs and skill, and build on them.

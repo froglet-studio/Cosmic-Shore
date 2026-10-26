@@ -125,7 +125,8 @@ is not in their checkout; no play-run lines at all means the ledger's play-mode 
 
 ## 6. The daily sweep (scheduled task, once a day)
 
-`collect` → fix what you can on `Ys-bleeding-edge` (§2-§3) → import bugs filed on the Team Bug Board
+`collect` → fix what you can (§2-§3) on `Ys-bleeding-edge` when Yash drives the sweep, else on a branch from
+`bleeding-edge` with its PR into `bleeding-edge` (`Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`, top) → import bugs filed on the Team Bug Board
 (`ArtifactData list` of `filed`, rows with `status == "new"`: `bug_ledger.py file --title … --notes …
 --severity … --reporter "Team Bug Board"`, commit, then mark the row `imported` with `importedAs`) →
 mirror into the board (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno) with `ArtifactData`

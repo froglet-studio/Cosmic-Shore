@@ -138,7 +138,10 @@ baselines with the fix. A regression that was NOT this change's (the base moved)
 
 ## 6. The scheduled run (once a day, from bleeding-edge)
 
-The GitHub Action does the measuring; a scheduled Claude session does the resolving:
+The GitHub Action does the measuring; a scheduled Claude session does the resolving. Steps 1-2 are Yash's run (he runs
+the performance work, and it lands on `Ys-bleeding-edge` first); a run anyone else drives, scheduled or by hand, works
+on a branch from `bleeding-edge` and opens its PR into `bleeding-edge`, never `Ys-bleeding-edge`
+(`Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`, top):
 
 1. `git fetch origin` and `git checkout Ys-bleeding-edge` (the working branch); `python3 Tools/Build/perf_hunt.py
    sweep --write --tasks` (and `--amoebius --no-build` after `dotnet build Port/src/CosmicShore.Player -c Release`).
