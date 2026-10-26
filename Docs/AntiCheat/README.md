@@ -182,8 +182,10 @@ What each behaviour looks like to the watcher:
 
 ### 4.5 The trust record
 
-One record per account, in UGS Cloud Save's **private** access class (server-only: the client can neither read
-nor write it):
+One record per account, kept by `Tools/UGS/CloudCode/trust.js` (**built 2026-10-26, gated off**). It lives in Cloud
+Save **private custom data** under the id `fp-<player id>`: the Cloud Code JS SDK has no private class for *player* data
+(only protected, which the player can read), and private custom data is the store neither the client nor anyone but the
+server can read or write. The design below is the shape it was planned in; what shipped is in `trust.js`'s header:
 
 ```
 trust: {
@@ -200,6 +202,27 @@ trust: {
 Every reason carries an evidence reference (the match, the samples) so a human reviewer and an appeal can see
 exactly what was found. (A UK small-claims judge restored an account Activision banned because Activision showed
 no evidence of cheating; `LEGAL.md` §P5.)
+
+**Built (2026-10-26):** `status` at sign-in rebuilds the record from `FAIRPLAY_SIGNALS`, `FAIRPLAY_CONDUCT` and
+`FAIRPLAY_AGE`, and returns only a presence-lobby suffix (empty on the shore, `_u1` Undertow, `_q1` quitters), the
+twin-board suffix and a notice when one is owed. The client appends the suffix to `PRESENCE_LOBBY`
+(`FairPlayTrust`, `PresenceLobbyService`), so an unflagged account joins exactly the lobby it always did. Weights,
+thresholds and the 30-day decay are `trust.js` `RULES`. A person decides by editing the record's `review` field in the
+dashboard; the review queue is private custom data `fairplay-review` (Tools/UGS/README.md). **Stated limit:** the
+lobby is chosen by the client, so a modified client can still join the shore lobby. **Closed for parties
+(2026-10-26):** each sign-in gets a random pool pass, which the client shows only to a party it joins (a member-only
+party-session property). The host asks `verifyGuest` about that pass and removes a guest the server places in another
+pool (`HostConnectionService.CheckJoinedMemberPoolAsync`); the server records `pool_bypass` against the flagged guest.
+Nobody can ask about an account that has not joined their party, so the check reveals no one's flag. A guest with no
+pass (an older build) stays until `FairPlayTrustGate.RemoveUnverifiedGuests` is turned on. The server checks (results,
+scores, rewards) never depended on routing.
+
+**Host-observed signals reach the server (2026-10-26).** The host's movement monitor (T5 speed and jumps, T6 AI-like
+steering) used to keep its signals on the host. `MatchReporter` now sends them with the host's own `end` report, keyed
+by each guest's UGS id; `match-report.js` files them on the guest as `host_observed` naming the host, and only the
+match's host may file them. A host can lie, so `trust.js` counts them only once **two different hosts** reported the
+same account. AI-like steering is a behaviour profile and is never filed on a minor; speed and jumps are security checks
+and are. Both still need their limits set from logged play before any are raised (T5 ceilings, T6 limits).
 
 **Routing reads the record on the server.** The game has no stranger matchmaking (parties form inside the presence
 lobby), so a Cloud Code call at sign-in tells the client which presence lobby to join. If UGS Matchmaker is adopted
@@ -322,7 +345,7 @@ Each phase stands on its own and is worth doing even if the next never happens.
 | Phase | What | Touches | Owner to check with |
 |---|---|---|---|
 | **A. Before launch** | Platform sign-in and account linking (T1); Access Control + Cloud Code for the weekly-challenge board and currency (T2, T3); server-side name check (T7); compile `PilotControl` out of release (T6); a Report button beside Block, through the UGS Moderation SDK (T8); the privacy policy section and a Code of Conduct (§4.7) | `AuthenticationServiceFacade`, `WeeklyChallengeLeaderboardService`, `UGSCloudSaveProvider`, `DisplayNameRegistry`, `FriendsServiceFacade`, `Docs/Legal/` | Shombith (auth, UGS, backend, UI), counsel |
-| **B. First patch** | Every participant reports the match result; the rules tier in Cloud Code; the trust record; the Undertow as a second presence lobby plus AI backfill; the shadow leaderboard; the notice-and-appeal screen; a review queue (a simple dashboard or the board) | Party/presence layer, `ServerPlayerVesselInitializerWithAI`, Cloud Code | Yash (party), Shombith (UI) |
+| **B. First patch** — **built 2026-10-26, gated off** (`MatchReportGate`, `FairPlayTrustGate`): match reports, `trust.js`, the Undertow and quitters' presence lobbies (AI backfill fills them as it fills any part-empty party), the shadow board (`weekly-score.js` + `SpliceOwnRow`), `FairPlayNoticeOverlay`, the review queue in private custom data. Not yet: `samePool` checks by a host, host-observed movement signals reaching the server | Every participant reports the match result; the rules tier in Cloud Code; the trust record; the Undertow as a second presence lobby plus AI backfill; the shadow leaderboard; the notice-and-appeal screen; a review queue (a simple dashboard or the board) | Party/presence layer, `ServerPlayerVesselInitializerWithAI`, Cloud Code | Yash (party), Shombith (UI) |
 | **C. Mobile and bots** | App Attest + DeviceCheck, Play Integrity; the statistics tier; the human/AI flight classifier trained on recorder data | iOS/Android plugins, `HumanFlightRecorder` data | Yash (recorder), Garrett (store builds) |
 | **D. Only if the data demands** | Windows runtime attestation or Easy Anti-Cheat on PC; dedicated servers or distributed authority for ranked play (Unity's Multiplay hosting was deprecated on 1 Apr 2026) | Build pipeline, Netcode topology | Garrett |
 | **E. If chat is ever added** | Moderation (filter, report, block, review), Apple 1.2 / Play UGC compliance, DSA/OSA notices | New | Garrett, counsel |
@@ -346,13 +369,14 @@ Each phase stands on its own and is worth doing even if the next never happens.
    shows client cheats.
 2. Online play requires a platform sign-in (Steam, Apple, Google); offline and solo stay anonymous.
 3. Paid content is never locked by a fair-play measure.
-4. One named person reviews flagged accounts and appeals.
+4. One named person reviews flagged accounts and appeals. **Decided 2026-10-26: Shombith** reviews the queue and
+   appeals (how: `Tools/UGS/README.md`, "Reviewing fair-play accounts").
 
 **For counsel:** the eight questions at the end of [`LEGAL.md`](LEGAL.md) §4. The two that change the design most:
 whether the 3-match delay can stand for EU and UK players flagged for cheating (question 4), and whether the
 Undertow itself is a "similarly significant" automated decision (question 1).
 
-All of these are hand-offs in [`HANDOFFS.md`](HANDOFFS.md), waiting for approval to be filed as a Froglet Tasks ticket. The `T-…` ids in §8b name records there.
+All of these are on Froglet Tasks ticket **T-20261026-4918** (issue #1565), one checklist line each; the `T-…` ids in §8b name the original records in [`HANDOFFS.md`](HANDOFFS.md).
 
 ## 8b. Priorities chosen on the Threat Board (Shombith, 2026-10-24)
 
@@ -376,7 +400,7 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | Medium | R14 Locking paid content | 8 | **Enforced 2026-10-25**: restrictions cover only play with or seen by others (§4.6); a gate in the bleeding-edge guard fails any fair-play code that names the paid layer, or paid code that names a fair-play record |
 | Medium | R16 Reading more from the device than needed | 8 | **Enforced 2026-10-25**: a gate fails fingerprint, process, installed-app, registry and outside-file reads in fair-play code, and `QUERY_ALL_PACKAGES` or a kernel driver anywhere (§5) |
 | Unset | T7 Display names checked on the client only | 12 | T-20261022-7708. **Done 2026-10-24 on the receiving side**: every player's game hides offensive names it receives (`Pilot {tag}`); a server check of the sender adds nothing a modified game cannot skip |
-| Not ticked | R15 False positives with no evidence or appeal | 12 | — (the ladder in §4.6 still requires evidence and appeal) |
+| Not ticked | R15 False positives with no evidence or appeal | 12 | **Built with phase B 2026-10-26, gated off**: every reason keeps its evidence, only a person restricts, a person's "clear" sets every signal aside, signals decay after 30 days, and the notice screen opens an appeal (`trust.js`, `FairPlayNoticeOverlay`) |
 
 ## 9. Sources
 

@@ -65,6 +65,44 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play phase B: the trust record, the Undertow, the shadow board, the notice and appeal (`claude/vigilant-archimedes-euoz8z`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `Tools/UGS/CloudCode/trust.js` (the trust record and ladder; Tools/UGS/README.md "Switching on the trust
+record"). Client: `FairPlayTrust` (`ServerTrust.cs`, gate `FairPlayTrustGate.Enabled = false`) asks `status` at sign-in,
+before the presence lobby join (`HostConnectionService.EnsureInitializedAsync`); `PresenceLobbyService` finds and
+creates its lobby under `PRESENCE_LOBBY` + the suffix (empty on the shore); `WeeklyChallengeLeaderboardService` splices
+the account's own row from `<board>_undertow` into the public page (`WeeklyChallengeRanking.SpliceOwnRow`);
+`FairPlayNoticeOverlay` (built at runtime like the privacy overlay; words in `Resources/FairPlayNoticeConfig.asset`)
+shows the notice and sends an appeal. **Gated off**: with the shipped gate nothing changes. Affects the party layer
+(Shombith's UGS; Yash's hardening) and the weekly board (Yash's leaderboards): one call each, a no-op while off.
+
+**Verified without the editor:** Cloud Code tests trust 14, match-report 22, weekly-score 7 passed; planted faults
+caught (a minor sent to the Undertow, the stage leaking to the client, the shadow board bypassed). `unity_refcompile`
+player, editor and webgl: 0 errors in project code; planted errors in the overlay and the splice caught.
+`FairPlayPhaseBTests` compile. Amoebius `dotnet build Port/src/CosmicShore.Live`: 0 errors. Nothing run in Play mode.
+
+**Test in the editor (with match reports and trust.js deployed to development, gate on, two MPPM players):**
+1. `FairPlayPhaseBTests` pass.
+2. A clean account: Party logs show the presence lobby query and create under `PRESENCE_LOBBY` exactly as before.
+3. Move a test account to the Undertow (dashboard: add three `host_result_mismatch` signals to its `FAIRPLAY_SIGNALS`
+   with `at` = now in ms, birth year 1990 in `FAIRPLAY_AGE`) and sign in: it joins `PRESENCE_LOBBY_u1`, sees only other
+   Undertow accounts in presence, its parties fill with AI; the clean account does not see it.
+4. Play three matches with it: on the next sign-in the notice appears (title, body naming rule 1, "automated checks",
+   the paid-content line); OK closes it; Appeal with a few words shows "Your appeal is with our team" and the record
+   in `fp-<id>` shows `appeal.state: open`; the account appears in the `fairplay-review` queue.
+5. Its weekly time: posted to `weekly_challenge_undertow`; its own leaderboard panel still shows its row at its rank;
+   the clean account's panel does not.
+6. Reviewer: add `review: {decision: "clear"}` to its record; next sign-in it is back in `PRESENCE_LOBBY`, no notice,
+   out of the queue. `restrict` with an `until` date: the notice shows at once with the date.
+7. Pad: A/B work on the notice; Esc closes it unless the appeal text box is focused.
+8. Pool pass (added 2026-10-26): with a shore host and a test client forced into the Undertow, make the Undertow client
+   join the shore host's party anyway (edit its lobby suffix to empty in the debugger): the host's Party log shows
+   `pool check: OtherPool - removing` and the guest leaves the party; the guest's `FAIRPLAY_SIGNALS` gains `pool_bypass`.
+   A normal shore guest shows `pool check: SamePool` and stays.
+9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
+   boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
+   (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+
 ### 🔴 Fair play: minors are never penalised automatically (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board R13. The age screen asked a birth year but kept only "13 or older"
