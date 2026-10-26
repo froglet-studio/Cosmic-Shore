@@ -27,9 +27,12 @@ needs; numpy unlocks the Regatta jobs, torch the NCA trainings, Node.js the lab 
 
 ## 2. What it does on your computer, and what it never does
 
-- **Never touches your checkout.** Jobs run in private, sparse git worktrees under `~/.froglet-compute/wt/`, results
-  live in `~/.froglet-compute/results/`. Your working tree, branch, index and stash are never read or written. The
-  self-test proves it (`compute.py self-test`: the scratch checkout must stay clean and must not become sparse).
+- **Never touches your checkout.** A job's files are exported from git's object store (`git archive`) into private
+  folders under `~/.froglet-compute/wt/`; results live in `~/.froglet-compute/results/`. No worktree, no
+  sparse-checkout: your working tree, branch, index, stash, worktree list and `.git/config` are never written (the
+  first version used sparse worktrees, which wrote `extensions.worktreeConfig` into the person's config). The
+  self-test proves it (`compute.py self-test`: the scratch checkout stays clean, gains no worktree and no config
+  extension).
 - **Gets out of your way.** It waits until you have been idle `--when-idle` minutes (10) on mains power, runs at the
   lowest OS priority (nice 19 / IDLE_PRIORITY_CLASS) on all cores but one, and the moment you touch the keyboard or
   mouse it checkpoints and stops. Idle time comes from the OS (Windows GetLastInputInfo, macOS HIDIdleTime, Linux
@@ -37,9 +40,16 @@ needs; numpy unlocks the Regatta jobs, torch the NCA trainings, Node.js the lab 
 - **Publishes to exactly one place**: `refs/heads/compute/<you>/<this machine>`, one commit per session, built with git
   plumbing (a private index; `write-tree`; `commit-tree`; `push`). It never pushes anywhere else, never opens a pull
   request, and never changes a game file. Its git identity is `froglet-compute (<you>)`.
-- **Updates itself**: between sessions the supervisor checks out `Tools/Compute` from `origin/bleeding-edge` (`--home`)
+- **Updates itself**: between sessions the supervisor exports `Tools/Compute` from `origin/bleeding-edge` (`--home`)
   and runs that, so a machine set up once keeps running the team's newest code. `--no-update` runs your checkout's.
-- **Stops cleanly**: `compute.py uninstall`, then delete `~/.froglet-compute` (and `git worktree prune`).
+  (Until 2026-10-26 this path never ran: its existence check read `git cat-file -e`'s empty output as "missing". The
+  self-test's second machine now runs through it.)
+- **Runs only code the team already runs** (section 7, `compute_lib.untrusted`): a job's code comes from
+  `bleeding-edge` or `Ys-bleeding-edge`, and a command job (an argv run as you) only from a job file on
+  `bleeding-edge`.
+- **Stops cleanly**: `compute.py uninstall`, then delete `~/.froglet-compute`. (A machine that ran the first version
+  also has `extensions.worktreeConfig = true` in its `.git/config` and worktrees under `~/.froglet-compute/wt/`:
+  `git worktree prune` after deleting the folder; the extension is harmless on any git from 2.20 on.)
 
 ## 3. The pieces
 
@@ -48,7 +58,7 @@ needs; numpy unlocks the Regatta jobs, torch the NCA trainings, Node.js the lab 
 | `Tools/Compute/compute.py` | the one command: top, run, install, doctor, board, scout, eval, promote, new, validate, self-test |
 | `Tools/Compute/compute_lib.py` | jobs (loading, validation, priority, epochs, convergence), the machine (capabilities, idle, battery), git transport |
 | `Tools/Compute/optimizers.py` | the searchers, pure Python: separable CMA-ES with IPOP restarts, MAP-Elites, random; JSON state for resume |
-| `Tools/Compute/worker.py` | the session: pick a job, prepare its worktree, run it on a process pool (search) or as a checkpointing subprocess (command), yield, publish |
+| `Tools/Compute/worker.py` | the session: pick a job, export its files, run it on a process pool (search) or as a checkpointing subprocess (command), yield, publish |
 | `Tools/Compute/board.py` | every machine's results merged: `Docs/Compute/BOARD.md` + `board.json` (generated) |
 | `Tools/Compute/scout.py` | the opportunity lenses: `Docs/Compute/OPPORTUNITIES.md` + `opportunities.json` (generated) |
 | `Tools/Compute/install.py` | the OS registration for set-and-forget |
@@ -70,7 +80,7 @@ One JSON file per job in `Docs/Compute/jobs/<id>.json` (`compute.py new <id> --e
 | `status` | `ready` (runnable), `proposed` (needs a person's or session's yes), `blocked` (waits; `blocked_reason` says on what), `paused`, `converged`, `promoted`, `retired` |
 | `value` | 0-10: what a converged answer is worth to the game |
 | `ref` | the git ref the job's GAME code is read at (`origin/Ys-bleeding-edge` for AI jobs, so they race the newest AI) |
-| `paths` | the sparse checkout the job needs from `ref` (the evaluator's own `PATHS` are added) |
+| `paths` | the folders the job needs from `ref`, exported (the evaluator's own `PATHS` are added) |
 | `requires` | capabilities: `python3`, `numpy`, `torch`, `cuda`, `node`, `dotnet8`, `bash` |
 | `after` | jobs that must converge first (a plan's stages) |
 | `evaluator` | `{module, args, timeout}` for a search job |
@@ -110,7 +120,7 @@ A module in `Tools/Compute/evaluators/`. The worker imports it in each pool proc
 | Name | Required | Meaning |
 |---|---|---|
 | `VERSION` | yes | bump it whenever the loss changes meaning (starts a new epoch) |
-| `PATHS` | yes | what it reads from the job's checkout (sparse paths) |
+| `PATHS` | yes | what it reads from the job's export of its ref |
 | `evaluate(params, ctx) -> dict` | yes | `{loss, metrics, valid, descriptors}`; LOWER loss is better; deterministic for the same params; an exception is caught and recorded as an invalid point |
 | `inputs(args) -> [paths]` | recommended | the files whose content defines the loss (hashed into the epoch) |
 | `setup(ctx)` | optional | once per process (load courses, tables) |
@@ -140,6 +150,16 @@ the later `updated` wins). A job is added like any other change: on a branch tha
 ride `Ys-bleeding-edge` (Yash's AI branch, `Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`). `compute-queue` is the scout sweep's
 own branch (section 9): it carries only `Docs/Compute/**` - job files, the board, the opportunities - never game code,
 so it needs no pull request. Before this system is on `bleeding-edge`, test a queue with `--queue <your branch>`.
+
+**What a worker will execute** is narrower than what it reads (`compute_lib.CODE_REFS`, `COMMAND_REFS`,
+`untrusted`), because every idle machine runs it with its person's credentials:
+
+- a job's `ref` (where its sims and command come from) must be `origin/bleeding-edge` or `origin/Ys-bleeding-edge`,
+  the branches the team already runs; a job pointing anywhere else shows `not run:` in `top` with the reason;
+- a `command` job runs only when its job file came from `bleeding-edge` (reviewed pull requests). From
+  `Ys-bleeding-edge`, `compute-queue` or a `--queue` test branch it is refused, since those are pushed without review
+  and an argv is arbitrary code;
+- jobs read from the working tree (`--local`, the self-test) are the person's own and are not restricted.
 
 ## 8. Promotion: a converged answer reaches the game only through its owner
 
@@ -214,3 +234,10 @@ course seeds in the model; the search's best finished I1-I3 about a third faster
 command; the Linux crontab path was not exercised either), a push to `compute/*` on the real origin, any torch job.
 The first person to `install` on Windows or macOS: run `compute.py doctor`, then `compute.py run --once` by hand, and
 tell the tooling owner (Shombith) if anything misbehaves.
+
+**Review round 1 (Shombith's session, 2026-10-26)**: jobs now run from `git archive` exports instead of sparse
+worktrees (the old path wrote `extensions.worktreeConfig` into the person's `.git/config`, reproduced on git 2.43);
+the self-update path was dead and now runs; the trust rules in section 7 were added. The self-test gained checks for
+each (no worktree added, no config extension, box2 runs through the self-updating supervisor, seven trust cases), and
+all of them fail against the previous code (the negative control). `drive-rhino-headlong` (44 evaluations) and
+`bioform-forge` (216) ran through the export path locally. Still not run: Windows, macOS, a real push, torch.

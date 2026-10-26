@@ -5,7 +5,7 @@ One loop, forever (or `--once`):
     wait until the person is away (idle >= --when-idle minutes, on mains power)
     fetch the queue refs and every machine's results
     pick the highest-priority job this machine can run (compute_lib.priority, divided by how many machines are on it)
-    check the job's code out into a private sparse worktree at the job's ref (never the person's working tree)
+    export the job's code at its ref into a private folder (never the person's working tree or repository config)
     run it for one session (--session minutes), yielding the moment the person comes back
     publish this machine's results to refs/heads/compute/<user>/<host>
 
@@ -49,21 +49,16 @@ def sparse_paths(job, module=None):
 
 
 def prepare_target(job, module=None, cwd=None, quiet=False):
-    """A private, sparse, detached worktree of the job's ref (default origin/bleeding-edge), at that ref's tip."""
+    """The job's paths at its ref's tip (default origin/bleeding-edge), exported into a private folder under
+    ~/.froglet-compute/wt (no worktree, no sparse-checkout: the person's repository config is never written)."""
     ref = job.get("ref") or "origin/bleeding-edge"
     sha = L.rev(ref, cwd=cwd)
     if not sha:
         raise RuntimeError(f"ref {ref} not found (fetch it: git fetch origin {ref.replace('origin/', '')})")
-    path = os.path.join(L.cache_dir(), "wt", L.slug(ref))
     patterns = sparse_paths(job, module)
-    if not os.path.isdir(os.path.join(path, ".git")) and not os.path.isfile(os.path.join(path, ".git")):
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        L.git("worktree", "prune", cwd=cwd, check=False)
-        L.git("worktree", "add", "--detach", "--no-checkout", path, sha, cwd=cwd)
-        L.git("sparse-checkout", "init", "--no-cone", cwd=path, check=False)
-    L.git("sparse-checkout", "set", "--no-cone", *patterns, cwd=path)
-    L.git("checkout", "--detach", "--force", "--quiet", sha, cwd=path)
+    parent = os.path.join(L.cache_dir(), "wt")
+    os.makedirs(parent, exist_ok=True)
+    path = L.export_tree(sha, patterns, parent, L.slug(ref), cwd=cwd)
     L.log(f"target {ref} @ {sha[:9]} ({len(patterns)} paths) at {path}", quiet)
     return path, sha
 
@@ -441,8 +436,11 @@ def ranked(jobs, machines, caps):
         ek, e = L.current_epoch(epochs)
         score, why = L.priority(j, machines, jobs, e)
         reason = None
+        distrust = L.untrusted(j)
         if problems:
             reason = "invalid: " + "; ".join(problems)
+        elif distrust:
+            reason = "not run: " + distrust
         elif j["status"] not in L.RUNNABLE:
             reason = f"status {j['status']}" + (f" ({j.get('blocked_reason')})" if j.get("blocked_reason") else "")
         else:

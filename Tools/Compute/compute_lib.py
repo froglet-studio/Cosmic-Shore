@@ -18,14 +18,24 @@ import re
 import shutil
 import socket
 import subprocess
+import tarfile
 import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(os.path.dirname(HERE))
+# The person's repository. A worker updated from bleeding-edge runs from an export of Tools/Compute that is not a git
+# checkout, so the supervisor hands the repository down in FROGLET_COMPUTE_REPO.
+REPO = os.environ.get("FROGLET_COMPUTE_REPO") or os.path.dirname(os.path.dirname(HERE))
 JOBS_DIR = "Docs/Compute/jobs"
 RESULTS_PREFIX = "compute"              # refs/heads/compute/<user>/<host>
 QUEUE_REFS = ("origin/bleeding-edge", "origin/Ys-bleeding-edge", "origin/compute-queue")
+# What a worker EXECUTES, as opposed to what it reads. A job file may sit on any queue ref, but the code it runs comes
+# only from refs the team already runs: bleeding-edge (every change a reviewed pull request) and Ys-bleeding-edge (the
+# AI branch everyone plays). compute-queue is pushed by the scout sweep without a pull request, so a job from it can
+# only point a shipped evaluator at one of those refs; a command job (an argv run as the person) only comes from
+# bleeding-edge.
+CODE_REFS = ("origin/bleeding-edge", "origin/Ys-bleeding-edge")
+COMMAND_REFS = ("origin/bleeding-edge",)
 STATUSES = ("ready", "proposed", "blocked", "converged", "promoted", "retired", "paused")
 RUNNABLE = ("ready",)
 KINDS = ("search", "command")
@@ -146,6 +156,41 @@ def publish(folder, user, host, message, cwd=None, push=True, quiet=False):
     return sha
 
 
+def export_tree(sha, paths, parent, name, cwd=None, keep=3):
+    """`paths` of commit `sha`, written into a private folder under `parent` straight from the object store
+    (`git archive`). No worktree and no sparse-checkout, so nothing is added to the repository's config or worktree
+    list. Reused while the commit and paths are the same; older exports of `name` beyond `keep` are deleted."""
+    present = sorted({p for p in paths if git_ok("cat-file", "-e", f"{sha}:{p.rstrip('/')}", cwd=cwd) is not None})
+    key = hashlib.sha1((sha + "\n" + "\n".join(present)).encode()).hexdigest()[:10]
+    path = os.path.join(parent, f"{name}-{sha[:12]}-{key}")
+    done = os.path.join(path, ".froglet-export")
+    if not os.path.exists(done):
+        shutil.rmtree(path, ignore_errors=True)
+        tmp = path + ".part"
+        shutil.rmtree(tmp, ignore_errors=True)
+        os.makedirs(tmp)
+        if present:
+            p = subprocess.Popen(["git", "archive", "--format=tar", sha, "--", *[x.rstrip("/") for x in present]],
+                                 cwd=cwd or REPO, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            with tarfile.open(fileobj=p.stdout, mode="r|") as tar:
+                if hasattr(tarfile, "data_filter"):
+                    tar.extractall(tmp, filter="data")
+                else:
+                    tar.extractall(tmp)
+            err = p.stderr.read().decode(errors="replace")
+            if p.wait() != 0:
+                shutil.rmtree(tmp, ignore_errors=True)
+                raise RuntimeError(f"git archive {sha[:9]}: {err.strip()}")
+        with open(os.path.join(tmp, ".froglet-export"), "w") as fh:
+            fh.write(sha + "\n" + "\n".join(present) + "\n")
+        os.replace(tmp, path)
+    old = sorted((d for d in os.listdir(parent) if d.startswith(name + "-") and not d.endswith(".part")
+                  and os.path.join(parent, d) != path), key=lambda d: os.path.getmtime(os.path.join(parent, d)))
+    for d in old[:max(0, len(old) - (keep - 1))]:
+        shutil.rmtree(os.path.join(parent, d), ignore_errors=True)     # a folder still in use stays; next time
+    return path
+
+
 # ── jobs ─────────────────────────────────────────────────────────────────────
 
 def _job_problems(j):
@@ -205,6 +250,20 @@ def validate_job(j):
     return _job_problems(j)
 
 
+def untrusted(j):
+    """Why a worker will not EXECUTE `j` (CODE_REFS, COMMAND_REFS), or None. A job read from the working tree
+    (`--local`, the self-test) is the person's own and is trusted."""
+    source = j.get("_ref")
+    if source is None:
+        return None
+    ref = j.get("ref") or "origin/bleeding-edge"
+    if ref not in CODE_REFS:
+        return f"its code ref {ref} is not one workers run ({', '.join(CODE_REFS)})"
+    if j.get("kind") == "command" and source not in COMMAND_REFS:
+        return f"a command job runs only from {', '.join(COMMAND_REFS)} (this one is on {source})"
+    return None
+
+
 def load_jobs_from_dir(d):
     jobs = {}
     if not os.path.isdir(d):
@@ -230,6 +289,7 @@ def load_jobs_from_ref(ref, cwd=None):
             except Exception:
                 continue
             j["_source"] = f"{ref}:{JOBS_DIR}/{name}"
+            j["_ref"] = ref
             jobs[j.get("id", name[:-5])] = j
     return jobs
 
@@ -326,7 +386,8 @@ def idle_seconds():
             li = LASTINPUTINFO()
             li.cbSize = ctypes.sizeof(LASTINPUTINFO)
             if ctypes.windll.user32.GetLastInputInfo(ctypes.byref(li)):
-                return (ctypes.windll.kernel32.GetTickCount() - li.dwTime) / 1000.0
+                # Both are 32-bit millisecond ticks that wrap every 49.7 days.
+                return ((ctypes.windll.kernel32.GetTickCount() - li.dwTime) & 0xFFFFFFFF) / 1000.0
         elif system == "Darwin":
             out = subprocess.run(["ioreg", "-c", "IOHIDSystem"], capture_output=True, text=True, timeout=10).stdout
             m = re.search(r'"HIDIdleTime"\s*=\s*(\d+)', out)

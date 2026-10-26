@@ -13,8 +13,8 @@
     python3 Tools/Compute/compute.py validate             every job file in Docs/Compute/jobs
     python3 Tools/Compute/compute.py self-test            the whole pipe, end to end, against a throwaway remote
 
-`run` never touches your working tree, branch or index: jobs run in private worktrees under ~/.froglet-compute and
-results are published with git plumbing to refs/heads/compute/<you>/<this machine>, nowhere else. Between sessions it
+`run` never touches your working tree, branch, index or repository config: jobs run in private exports under
+~/.froglet-compute and results are published with git plumbing to refs/heads/compute/<you>/<this machine>, nowhere else. Between sessions it
 updates itself from origin/bleeding-edge (--home), so a machine you set up once keeps running the team's newest code.
 """
 import argparse
@@ -78,19 +78,14 @@ def cmd_top(args):
 # ── run: the supervisor (updates itself between sessions) ────────────────────
 
 def _home_worktree(ref):
-    """A sparse worktree of `ref` holding only Tools/Compute, kept at the ref's tip. None when the ref has no
-    Tools/Compute (the system is not merged there yet): the worker then runs from this checkout."""
-    if not L.git_ok("cat-file", "-e", f"{ref}:Tools/Compute/compute.py"):
+    """Tools/Compute at `ref`'s tip, exported into ~/.froglet-compute/home (not a git checkout: the child is told the
+    person's repository through FROGLET_COMPUTE_REPO). None when the ref has no Tools/Compute (the system is not
+    merged there yet): the worker then runs from this checkout."""
+    if L.git_ok("cat-file", "-e", f"{ref}:Tools/Compute/compute.py") is None:   # prints nothing when it exists
         return None
-    path = os.path.join(L.cache_dir(), "home")
-    sha = L.rev(ref)
-    if not os.path.exists(os.path.join(path, ".git")):
-        L.git("worktree", "prune", check=False)
-        L.git("worktree", "add", "--detach", "--no-checkout", path, sha)
-        L.git("sparse-checkout", "init", "--no-cone", cwd=path, check=False)
-        L.git("sparse-checkout", "set", "--no-cone", "Tools/Compute/", cwd=path)
-    L.git("checkout", "--detach", "--force", "--quiet", sha, cwd=path)
-    return path
+    parent = os.path.join(L.cache_dir(), "home")
+    os.makedirs(parent, exist_ok=True)
+    return L.export_tree(L.rev(ref), ["Tools/Compute/"], parent, "compute")
 
 
 def cmd_run(args):
@@ -115,7 +110,8 @@ def cmd_run(args):
             L.fetch([args.home.replace("origin/", "")], results=False, quiet=True)
         home = _home_worktree(args.home)
         script = os.path.join(home, "Tools", "Compute", "compute.py") if home else os.path.abspath(__file__)
-        rc = subprocess.call([sys.executable, script, "run", *passthrough, "--in-home"], cwd=L.REPO)
+        rc = subprocess.call([sys.executable, script, "run", *passthrough, "--in-home"], cwd=L.REPO,
+                             env=dict(os.environ, FROGLET_COMPUTE_REPO=L.REPO))
         if args.once:
             return rc
         if rc not in (0, 1):

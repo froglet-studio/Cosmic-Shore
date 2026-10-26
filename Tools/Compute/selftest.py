@@ -6,7 +6,10 @@
     4. every job file validates and names an evaluator that imports
     5. end to end (skipped by --quick): a scratch repo + bare remote; two "machines" run the toy job; the remote must
        hold both results branches, the second machine must start from the first one's best, the board must merge
-       them, and the scratch repo's own checkout must be untouched (no dirty file, not made sparse).
+       them, and the scratch repo's own checkout must be untouched (no dirty file, not made sparse, no worktree
+       added, no extension written to its config). The second machine runs through the self-updating supervisor, so the
+       export of Tools/Compute from bleeding-edge is exercised too.
+    6. the trust rules (compute_lib.untrusted): what a queue ref may make a worker execute, with negative controls
 """
 import json
 import os
@@ -63,7 +66,8 @@ def end_to_end():
         for host in ("box1", "box2"):
             env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-" + host), FROGLET_COMPUTE_USER="selftest",
                        FROGLET_COMPUTE_HOST=host)
-            p = subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--job", "toy-smoke",
+            update = ["--no-update"] if host == "box1" else ["--home", "origin/bleeding-edge"]
+            p = subprocess.run([sys.executable, script, "run", *update, "--always", "--once", "--job", "toy-smoke",
                                 "--max-evals", "160", "--cores", "2", "--queue", "bleeding-edge"],
                                cwd=work, env=env, capture_output=True, text=True, timeout=600)
             outs.append(p.stdout + p.stderr)
@@ -80,6 +84,14 @@ def end_to_end():
             bad.append("end to end: the worker dirtied the checkout it was started from:\n" + _git("status", "--porcelain", cwd=work))
         if subprocess.run(["git", "config", "--get", "core.sparseCheckout"], cwd=work, capture_output=True, text=True).stdout.strip() == "true":
             bad.append("end to end: the worker made the person's own checkout sparse")
+        if subprocess.run(["git", "config", "--get", "extensions.worktreeConfig"], cwd=work, capture_output=True, text=True).stdout.strip():
+            bad.append("end to end: the worker wrote extensions.worktreeConfig into the person's repository config")
+        if _git("worktree", "list", "--porcelain", cwd=work).count("worktree ") != 1:
+            bad.append("end to end: the worker added a worktree to the person's repository:\n" + _git("worktree", "list", cwd=work))
+        home = os.path.join(tmp, "cache-box2", "home")
+        if not (os.path.isdir(home) and any(os.path.isfile(os.path.join(home, d, "Tools", "Compute", "compute.py"))
+                                            for d in os.listdir(home))):
+            bad.append("end to end: the supervisor did not run box2 from an export of bleeding-edge's Tools/Compute")
         if not os.path.isfile(os.path.join(work, "Docs", "Compute", "jobs", "toy-smoke.json")):
             bad.append("end to end: the person's checkout lost files")
         env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-board"))
@@ -95,6 +107,26 @@ def end_to_end():
                 bad.append(f"end to end: the best ({best}) is not better than the shipped values ({base})")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    return bad
+
+
+def trust_rules():
+    """What a queue ref may make a worker execute. Each case is (job, why it must or must not run)."""
+    bad = []
+    search = {"kind": "search", "ref": "origin/Ys-bleeding-edge"}
+    command = {"kind": "command"}
+    cases = [
+        (dict(search, _ref="origin/compute-queue"), True, "a search job from compute-queue on a code ref"),
+        (dict(search, _ref="origin/bleeding-edge", ref="origin/cece/some-branch"), False, "a job whose code ref is a personal branch"),
+        (dict(search, _ref="origin/compute-queue", ref="origin/compute/x/y"), False, "a job whose code ref is a results branch"),
+        (dict(command, _ref="origin/bleeding-edge"), True, "a command job from bleeding-edge"),
+        (dict(command, _ref="origin/compute-queue"), False, "a command job from compute-queue"),
+        (dict(command, _ref="origin/Ys-bleeding-edge"), False, "a command job from Ys-bleeding-edge"),
+        (dict(command, ref="origin/cece/some-branch"), True, "a job from the person's own working tree (--local)"),
+    ]
+    for job, runs, what in cases:
+        if (L.untrusted(job) is None) != runs:
+            bad.append(f"trust: {what} should {'run' if runs else 'be refused'} ({L.untrusted(job)})")
     return bad
 
 
@@ -126,6 +158,9 @@ def run(quick=False):
         if p:
             failures.append(f"job {jid}: " + "; ".join(p))
     print(f"jobs: {len(jobs)} " + ("ok" if not any(f.startswith("job ") for f in failures) else "FAILED"))
+    trust = trust_rules()
+    print("trust rules: " + ("ok" if not trust else "FAILED"))
+    failures += trust
     if not quick:
         e2e = end_to_end()
         print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched)" if not e2e else "FAILED"))

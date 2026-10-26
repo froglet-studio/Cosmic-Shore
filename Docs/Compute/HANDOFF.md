@@ -47,6 +47,22 @@ job (the NCA command job and its checkpoint relay between machines), the self-up
    means whatever merges to `bleeding-edge` runs on everyone's machine at idle. Decide whether that is right, or pin
    it (`--home` / `--no-update`).
 
+### Review round 1 (Shombith's session, 2026-10-26, branch `claude/eager-franklin-e6g77h`)
+
+| Risk | Found | Done |
+|---|---|---|
+| 1. The person's checkout | Reproduced on git 2.43: `sparse-checkout init` in a worktree writes `extensions.worktreeConfig = true` into the person's own `.git/config`, which `uninstall` never removed; every job also added a worktree to their repository | Jobs and the self-update now use `compute_lib.export_tree` (`git archive` into `~/.froglet-compute`). Nothing is written to the repository but objects and the `compute/*` remote-tracking refs. The self-test checks both |
+| 2. Pushes | `publish` is sound (plumbing, private index, one ref). `commit-tree` ignores `commit.gpgsign` (tested), so signing cannot hang a background worker | none needed |
+| 3. The installers | Not runnable here. Reading them: Linux under systemd has no `DISPLAY`, so idle is unknown and the worker runs while the person works (at nice 19, all cores but one). On Windows the task runs `python.exe`, which opens a console window. The Windows idle tick wrapped after 49.7 days of uptime | Tick wrap fixed. The other two are listed under Open below; they need a Windows or Linux desktop to test |
+| 4. Self-update | It never ran: `_home_worktree` read `git cat-file -e`'s empty output as "missing", so every worker ran the person's own checkout | Fixed. Box2 in the self-test now runs through it. Whether it should follow `bleeding-edge` is still the decision below |
+| new: what runs | Any queue ref could make every idle machine execute code: a command job's `argv` from `compute-queue` (pushed without review), and a job `ref` naming any branch whose `Tools/Build` the evaluator then imports | `compute_lib.untrusted` (README section 7): code only from `bleeding-edge` / `Ys-bleeding-edge`; command jobs only from a job file on `bleeding-edge`. Seven cases in the self-test, with negative controls |
+
+Open: the Linux idle source under systemd (try `loginctl` `IdleSinceHint`, or wait instead of running when idle is
+unknown), `pythonw.exe` for the Windows task, `nca-train-forged` points at `origin/cece/gifted-curie-x2cpd0` (not a
+code ref, so it is now refused, and `Tools/NCA` is not on `bleeding-edge`), and `nca3d.py` resumes with
+`torch.load` on checkpoints relayed from other machines' `compute/*` branches (unsafe on torch < 2.6 unless
+`weights_only=True`). Fix both NCA points before that job goes `ready`.
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).

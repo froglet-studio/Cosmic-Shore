@@ -9,7 +9,7 @@
 
 Every one of them runs `python3 Tools/Compute/compute.py run --when-idle <minutes> --quiet` from THIS checkout, so it
 uses this checkout's git credentials to publish results to refs/heads/compute/<user>/<host> - and nothing else: it
-never touches this checkout's working tree, branch or index (the worker runs in its own worktrees under
+never touches this checkout's working tree, branch, index or config (the worker runs in its own exports under
 ~/.froglet-compute). `uninstall` removes exactly what `install` added.
 """
 import os
