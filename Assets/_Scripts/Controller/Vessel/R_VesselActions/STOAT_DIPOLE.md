@@ -266,7 +266,18 @@ executors, serialized on the prefab — rule 14):
 | Space | Field Dipole | Space-5 Accretion: how far the open pair has grown |
 | Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Hybrid: the sweet spot while the orbit holds you, the boost (and its carry) between orbits |
 
-The Mass card reads the mode: full in Mass, **half in Hybrid**, empty in Time.
+The Mass card reads the mode: full in Mass, **half in Hybrid**, empty in Time, and its **icon follows the mode**
+(2026-10-26, `StoatHUDView.SetModeIcon`): `Stoat_ModeMass` (the thick trail and its path), `Stoat_ModeTime` (an orbit
+round a solid attractor), `Stoat_ModeHybrid` (a small orbit and the short dotted path leaving it), placeholders from
+`author_stoat_icon_placeholders.py` (`--check`) wired on `StoatHUDVariant.prefab`; an empty slot shows the card's own icon.
+
+**On a phone** (Android, iOS: `KitInputDevice.IsTouchPrimary`, and only while no pad is connected; never on PC or
+Steam) the Stoat flies the TotemButtons profile (`author_touch_profiles.py`): the cards round the right thumb are its
+buttons. **The Mass card is B** (its ability's Input 7, `Button2Action`, routed to `StoatModeAction` by the prefab's
+`_touchActionOverrides`), so a tap steps Mass → Time → Hybrid and the icon shows where you are; the **Space card is LT**
+(the left dipole, or the left catch in Time and Hybrid), the **Dipole disc is RT** and the **Hold disc is A**.
+`StoatSlingTests.Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo` pins the binding. Open: the Dipole disc and the Space
+card keep their dipole icons in Time and Hybrid mode, where the triggers lay the catch.
 
 The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
 `SO_Class_Stoat` are renders of the Stoat's own hull (since 2026-10-18 its model: `Tools/Build/vessel_model/render_cards.py Stoat`, `--check`).
