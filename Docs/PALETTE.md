@@ -794,10 +794,12 @@ channel, `Color.WithHueOf`):
 - The Fresnel materials move only their bright colour: their dark end is near-black.
 
 **Unchanged:** the omni keeps the palette's lime, embedded hearts keep the blue-white neutral, and
-team crystals keep their domain pair. Lime still means anyone collects. **Known consequence:** the
-omni converter (`OmniCombinePlayer`) draws Mass in `MassDepthPrisms`, so its Mass plates now fly in
-their own shade and dither into the omni's lime at the hand-off. Charge, Space and Time still fly in
-the omni body's material there. **To retune a shade**, rerun `kite_mote_colors.py`, then
+team crystals keep their domain pair. Lime still means anyone collects. **The omni converter**
+(`OmniCombinePlayer`, the Elemental Converter's conversion animation) shows the shades too: its config
+references the palette, and each crystal flies in its own shade at the omni body's brightness and eases
+to the omni's lime as its plates morph (`FlightBright`, written through the property block). A landed
+plate is already the omni's colour, so the omni still dithers in over plates that match it. The Omni
+Combine Lab does not model the colours; its parity harness holds the motion only. **To retune a shade**, rerun `kite_mote_colors.py`, then
 `author_elemental_crystal_colors.py` and `author_mass_crystal_look.py`. The Fresnel family still sits
 outside the live tint (§2.10, "Not reached by §2.2's tint"), so those three are generated from the
 palette rather than painted by it.

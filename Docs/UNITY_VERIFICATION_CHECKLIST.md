@@ -97,12 +97,13 @@ New palette field `EnvironmentColors.ElementalCrystalColors` (written by `kite_m
 `ElementalCrystalShadeTests`.
 
 **Verify in editor:**
-1. Run `ElementalCrystalShadeTests` (EditMode): all pass.
+1. Run `ElementalCrystalShadeTests` and `OmniCombineTests` (EditMode): all pass.
 2. Open `OriginalColorSetSO`: Environment Colors shows four Elemental Crystal Colors.
 3. Play any mode with free crystals (or kill a lifeform of each element): a free Mass crystal is a visibly darker,
    deeper green than the omni; Space reads cooler and Time warmer; Charge reads yellow-green. All still read as lime.
 4. Embedded hearts are still blue-white, and team crystals still wear their domain colour.
-5. The omni converter: the Mass plates fly in their darker green and dither into the omni's lime.
+5. The Elemental Converter (Ark screen, CONVERT): each of the four crystals waits and flies in its own shade, eases
+   to the omni's lime as its plates turn into the omni's, and the omni dithers in with no colour jump.
 6. The Console shows nothing new.
 
 ### 🔴 The AI Stoat retrained for Warpline (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
