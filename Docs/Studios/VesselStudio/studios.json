@@ -58,8 +58,8 @@
       "id": "stoat",
       "name": "Stoat",
       "file": "stoat.html",
-      "kind": "design studio - round 23",
-      "chip": "design studio · round 23",
+      "kind": "design studio - round 24",
+      "chip": "design studio · round 24",
       "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and three modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it), Time (the catch sling, timed at 90°) and Gate (a one-thumb wormhole slingshot: the left stick flies, the grid on your nose is the tunnel the right trigger would form, the right stick bends it and LT shortens it; pull RT and ride it - up to 120° round, straight and fastest when thin - and come out warped; no black or white hole, and everyone else sees the tube only as warped space). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
       "spec": [
         {
