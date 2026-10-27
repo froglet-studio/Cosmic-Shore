@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
         {
             public int Seq;
             public Vector3 A, T0, Side;
-            public float L, B, M, Theta, FormT;
+            public float L, S, R, B, M, Theta, FormT;
             public bool Out;
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -33,6 +33,8 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref T0);
                 serializer.SerializeValue(ref Side);
                 serializer.SerializeValue(ref L);
+                serializer.SerializeValue(ref S);
+                serializer.SerializeValue(ref R);
                 serializer.SerializeValue(ref B);
                 serializer.SerializeValue(ref M);
                 serializer.SerializeValue(ref Theta);
@@ -41,7 +43,7 @@ namespace CosmicShore.Gameplay
             }
 
             public bool Equals(TunnelState o) => Seq == o.Seq && Out == o.Out && A == o.A && T0 == o.T0 && Side == o.Side &&
-                                                  L == o.L && B == o.B && M == o.M && Theta == o.Theta && FormT == o.FormT;
+                                                  L == o.L && S == o.S && R == o.R && B == o.B && M == o.M && Theta == o.Theta && FormT == o.FormT;
         }
 
         readonly NetworkVariable<TunnelState> n_tunnel = new(
@@ -61,7 +63,7 @@ namespace CosmicShore.Gameplay
             if (!IsSpawned || !IsOwner) return;
             n_tunnel.Value = new TunnelState
             {
-                Seq = t.Seq, A = t.A, T0 = t.T0, Side = t.Side, L = t.L, B = t.B, M = t.M, Theta = t.Theta, FormT = t.FormT,
+                Seq = t.Seq, A = t.A, T0 = t.T0, Side = t.Side, L = t.L, S = t.S, R = t.R, B = t.B, M = t.M, Theta = t.Theta, FormT = t.FormT,
             };
         }
 
@@ -79,7 +81,7 @@ namespace CosmicShore.Gameplay
         {
             if (IsOwner || !_executor) return;
             if (now.Seq != before.Seq)
-                _executor.FormRemote(now.Seq, now.A, now.T0, now.Side, now.L, now.B, now.M, now.Theta, now.FormT);
+                _executor.FormRemote(now.Seq, now.A, now.T0, now.Side, now.L, now.S, now.R, now.B, now.M, now.Theta, now.FormT);
             if (now.Out && (!before.Out || now.Seq != before.Seq)) _executor.RiderOutRemote(now.Seq);
         }
     }

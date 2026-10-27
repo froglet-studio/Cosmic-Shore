@@ -23,8 +23,9 @@ namespace CosmicShore.Gameplay
     /// <c>formSeconds</c> (never longer than the dive to it), and the hull dives straight in. The last tunnel collapses
     /// at once.</item>
     /// <item><b>The ride</b> (<see cref="StepRide"/>, flown by <see cref="MeerkatVesselTransformer"/>): the tunnel flies
-    /// the hull, at its entry speed at both mouths and <c>throatSpeed</c> × it at the throat, and the hull comes out
-    /// with the speed it went in with, on the tunnel's last heading.</item>
+    /// the hull at its speed before the tunnel × <c>rideEntryMultiplier</c> going in, <c>rideMidMultiplier</c> at the throat and
+    /// <c>rideExitMultiplier</c> at the way out (round 6): it comes out a little boosted, on
+    /// the tunnel's last heading, and eases back to cruise.</item>
     /// <item><b>Its life</b>: it stays <c>staySeconds</c> once its rider is out, collapses to its centre over
     /// <c>collapseSeconds</c>, ripples the screen's edges there (<see cref="Ripples"/>) and fades over
     /// <see cref="MeerkatWormholeMath.FadeSeconds"/>. Everyone sees it (<see cref="Live"/>: the bridge, the bent
@@ -52,7 +53,7 @@ namespace CosmicShore.Gameplay
         public sealed class Tunnel
         {
             public Vector3 A, T0, Side;
-            public float L, B, M, Theta, FormT;
+            public float L, S, R, B, M, Theta, FormT;   // round 7: L = S (the shaft) + R (the bend's radius) x Theta
             public MeerkatWormholeMath.Window W;
             public bool Dying;
             public float DieT;
@@ -60,9 +61,10 @@ namespace CosmicShore.Gameplay
             public MeerkatWormholeExecutor Maker;
             public int Seq;
 
-            public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, L, Theta, s, out tangent);
+            public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, S, R, Theta, s, out tangent);
             public void Frame(float s, out Vector3 normal, out Vector3 binormal) =>
-                MeerkatWormholeMath.Frame(T0, Side, L, Theta, s, out normal, out binormal);
+                MeerkatWormholeMath.Frame(T0, Side, S, R, Theta, s, out normal, out binormal);
+            public float BendAngle(float s) => MeerkatWormholeMath.BendAngle(S, R, Theta, s);
             public float Radius(float s) => MeerkatWormholeMath.Radius(B, M, L, W.S0, W.S1, s);
             public float Fade => MeerkatWormholeMath.Fade(Dying, DieT);
             public MeerkatWormholeConfigSO Config => Maker ? Maker.config : null;
@@ -281,7 +283,7 @@ namespace CosmicShore.Gameplay
         {
             var t = new Tunnel
             {
-                A = a, T0 = t0, Side = side, L = sh.L, B = sh.B, M = sh.M, Theta = sh.Theta, FormT = formT,
+                A = a, T0 = t0, Side = side, L = sh.L, S = sh.S, R = sh.R, B = sh.B, M = sh.M, Theta = sh.Theta, FormT = formT,
                 W = MeerkatWormholeMath.NewWindow(sh.L), Colour = DomainColour(), Maker = this, Seq = seq,
             };
             _mine = t;
@@ -290,11 +292,13 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A remote peer's copy of a tunnel its owner formed (<see cref="MeerkatWormholeNetworkRelay"/>).</summary>
-        internal void FormRemote(int seq, Vector3 a, Vector3 t0, Vector3 side, float L, float b, float m, float theta, float formT)
+        internal void FormRemote(int seq, Vector3 a, Vector3 t0, Vector3 side, float L, float shaft, float bendRadius, float b,
+            float m, float theta, float formT)
         {
             if (!config || IsAuthority) return;
             if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
-            AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, B = b, M = m, Theta = theta }, formT, seq);
+            AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, S = shaft, R = bendRadius, B = b, M = m, Theta = theta },
+                formT, seq);
         }
 
         /// <summary>A remote peer hears that its owner's rider came out of tunnel <paramref name="seq"/>.</summary>
@@ -324,7 +328,8 @@ namespace CosmicShore.Gameplay
                 _ride = null;   // the tunnel went from under the hull (a despawn): fly on
                 return false;
             }
-            float v = MeerkatWormholeMath.RideSpeed(_vIn, config.ThroatSpeed, _rideS, t.L);
+            float v = MeerkatWormholeMath.RideSpeed(_vIn, config.RideEntryMultiplier, config.RideMidMultiplier,
+                config.RideExitMultiplier, _rideS, t.L);
             _rideS = Mathf.Min(t.L, _rideS + v * dt);
             if (_rideS < 0f)
             {
@@ -335,14 +340,15 @@ namespace CosmicShore.Gameplay
             {
                 position = t.At(_rideS, out heading);
                 t.Frame(_rideS, out _, out var binormal);
-                rotation = MeerkatWormholeMath.RideRotation(binormal, t.Theta, t.L, _rideS, _rideSIn, _q0).normalized;
+                rotation = MeerkatWormholeMath.RideRotation(binormal, t.BendAngle(_rideS) - t.BendAngle(_rideSIn), _q0).normalized;
             }
             speed = v;
             if (_rideS >= t.L - 1e-6f)
             {
-                // the page's gateOut: out with the speed you went in with
+                // the page's gateOut: out at rideExitMultiplier x the speed before the tunnel (a little boost, which the
+                // transformer eases back to cruise)
                 cameOut = true;
-                speed = _vIn;
+                speed = _vIn * Mathf.Max(0.05f, config.RideExitMultiplier);
                 _ride = null;
                 MeerkatWormholeMath.RiderOut(ref t.W);
                 if (_relay) _relay.PublishRiderOut(t.Seq);
@@ -472,7 +478,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             else if (d > Mathf.Min(config.AiStraightMinDistance, config.AiBentMinDistance) && CanForm &&
-                     MeerkatWormholeMath.TryPlan(config.Plan(), local, Mathf.Max(1f, _status.Speed),
+                     MeerkatWormholeMath.TryPlan(config.Plan(TurnRateDegrees()), local, Mathf.Max(1f, _status.Speed),
                          MeerkatWormholeMath.Clamp01(config.AiNoise), (float)_aiRand.NextDouble(),
                          d <= config.AiStraightMinDistance, out float lq, out float m))
             {
@@ -485,6 +491,13 @@ namespace CosmicShore.Gameplay
             if (!bend) return;
             _aiShaping = true;
             _aiStick = MeerkatWormholeMath.PlanStick(local, _aiM);
+        }
+
+        /// <summary>The hull's own turn rate, deg/s: its transformer's YawScaler (the studio's pitchYaw, 120 on the Meerkat).</summary>
+        float TurnRateDegrees()
+        {
+            var transformer = _status.VesselTransformer;
+            return transformer ? transformer.YawScaler : 120f;
         }
 
         /// <summary>RT, as a person presses it: through the replicated press path when the hull binds one.</summary>
@@ -524,6 +537,9 @@ namespace CosmicShore.Gameplay
         }
 
         // ------------------------------------------------------------------ helpers
+
+        /// <summary>This pilot's domain colour, the one its tunnels and its bridge-look reticle take.</summary>
+        public Color Colour => DomainColour();
 
         Color DomainColour()
         {

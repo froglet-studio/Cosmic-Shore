@@ -342,6 +342,17 @@ It follows intensity's path exactly, because it is the same kind of fact:
   `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
   installed. `[NonSerialized]`, survives `ResetRuntimeData` (and so the replay reload), reset by
   `ResetAllData` - the same lifetime as `RequestedAIDomains`.
+- **Each AI seat can carry its own** (Shombith, 2026-10-27: "AI pilot 1 can be Easy while AI pilot 2 is Hard, in
+  the same Regatta match"). Where an AI's pedestal can be selected to pick its hull (the Arena's shared vessel panel,
+  `SeatDifficultyAvailable`), the same selection points the AI row at THAT AI: a press sets its level, its pedestal
+  reads it ("Hard AI"), and pressing the row with your own seat selected sets every AI and clears their own levels.
+  The levels ride beside the placements exactly as the hulls do: `ArcadeGameConfigSO.AIDifficulties` (0 = none of its
+  own, the seat flies `AIDifficulty`), `LobbySnapshot.AiD0..AiD5` with the roster (protocol 19), and
+  `GameDataSO.RequestedAIDifficulties` at launch. The server stamps each AI pilot's level as it seats it
+  (`SetAIPilotDifficulty`, by player id) and every handicap reads the pilot's own (`AIDifficultyFor`): the autopilot
+  belief, the gate race's ring handicap (`GateRaceController.RaceHandicapLevel(pilot)`) and the Skim Race pilot. The
+  flight recorder writes each rival's level (`rivalDifficulties`). Arcade cards, whose hulls are pinned and whose
+  pedestals select nothing, keep the one row for every AI.
 - **It is offered on every mode, and every AI reads it** (Yash, 2026-10-26: "Every game mode should have easy,
   medium, hard AI. That's a generic rule."). A row that changed nothing would be a promise the match breaks, so
   the rule is carried by the AI, not by a list: every AI seat is configured through

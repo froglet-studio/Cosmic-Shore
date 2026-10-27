@@ -19,7 +19,8 @@ order, and the first **DOMAIN** whose **LEAD RUNNER** threads the last ring of t
 
 **How far to bend, and how long a tunnel the ring leaves room for.** The Meerkat cruises at 60 u/s on one thumb; its
 only speed past that is its wormhole. The reticle on its nose is the tunnel RT would form; the right stick bends it
-toward the next ring (the further it bends, the shorter and fatter it gets), LT shortens a straighter one, and the ride
+toward the next ring (up to 150°, on a bend of fixed radius), LT sets how long a straight shaft runs before the bend
+(round 7: the umbrella handle), and the ride
 rushes to 2.5 × the entry speed at the throat and comes out on the tunnel's last heading. A long straight tunnel needs a
 ring far away; a sharp bend turns you round a corner the hull alone turns slowly.
 

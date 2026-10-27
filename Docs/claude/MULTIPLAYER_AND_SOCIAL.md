@@ -35,7 +35,9 @@ a pilot asking the host to put an AI seat in a given hull from the Arena configu
 Rhino has no energy any more (`R_VesselActions/RHINO_ENERGY_SWORD.md`).
 **17** (2026-10-27, `claude/adoring-cerf-m94x1o`; 16 is taken on an in-flight branch) - the Meerkat: a new network
 prefab (`Meerkat.prefab`) and `MeerkatWormholeNetworkRelay`'s `n_tunnel` (each tunnel its owner forms, and its rider's
-way out; `R_VesselActions/MEERKAT.md`).
+way out; `R_VesselActions/MEERKAT.md`). **18** (2026-10-27, same branch) - `TunnelState` carries the tunnel's straight
+shaft and bend radius (round 7, the umbrella handle). **19** (2026-10-27, `Ys-bleeding-edge`) -
+`LobbySnapshot.AiD0..AiD5`, each placed AI's own difficulty beside its hull (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

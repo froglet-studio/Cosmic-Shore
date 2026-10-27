@@ -68,6 +68,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: What it adds; What each button runs; How it loads; Changing it
 - [`Docs/claude/PLUGINS_AND_CONNECTORS.md`](Docs/claude/PLUGINS_AND_CONNECTORS.md): Claude plugins and connectors that help build this game (unity-perf, Unity's official plugin, Sentry, Figma), the check-and-suggest rule a session follows before Unity perf, C# review, URP, UI, physics or package work, and the plugin-driven performance restart.
   Sections: The rule every session follows; Plugins; Connectors; The performance restart (planned 2026-10-08)
+- [`Docs/claude/VIDEOS_AND_PREVIEWS.md`](Docs/claude/VIDEOS_AND_PREVIEWS.md): **Show a change instead of handing over a "go and check" step** (Yash, 2026-10-27): a still by default, a clip (60 s max, 15 fps) for motion; measured cost (~8-10 min and ~10-15k tokens a clip once the recipe is known, against no tokens for the person at the editor); the Amoebius recipe (xvfb, `--frames`, `--render-from`, the control port, ffmpeg; the replay it records); what an Amoebius clip cannot show (the final look, feel, audio).
+  Sections: The rule; What it costs; How; What an Amoebius video does not show
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
 
@@ -304,6 +306,14 @@ shared across scenes.
   counts them) before deciding what a prefab should become, and take the shipped state from a
   DONOR SCENE, not the asset. Retire a fork with **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**
   (`Docs/GAMECANVAS.md §9`) — a guid swap by hand dangles every override and every scene reference.
+
+## Show the change, cheaply (read `Docs/claude/VIDEOS_AND_PREVIEWS.md`)
+
+A session that changed how something LOOKS or MOVES shows it when it can, instead of asking a person to go and check:
+a still by default, a short clip (60 s max, 15 fps, 1280x720) for motion or order of events, made in Amoebius in a cloud
+session or with Playwright for an artifact. The session reads at most 3-4 frames of its own clip (about 1.5k tokens
+each), sends the file with `SendUserFile`, never commits it, and says in the same message what only the Unity editor
+can judge (the final look, feel, audio). A clip never replaces `/verify-unity` or the checklist's hand test.
 
 ## Code Style
 

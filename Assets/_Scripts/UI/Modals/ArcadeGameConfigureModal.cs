@@ -549,7 +549,8 @@ namespace CosmicShore.UI
 
             config.AIDomains.Clear();
             config.AIDomains.AddRange(placements);
-            config.AIVessels.Clear();   // ally hulls are picked per session, not remembered
+            config.AIVessels.Clear();       // ally hulls are picked per session, not remembered
+            config.AIDifficulties.Clear();  // nor is each AI's own difficulty
 
             // Seat count first (it bounds the domain count), then the domain count against the
             // new bound - the same order a live placement takes through AddAiToDomain.
@@ -802,10 +803,8 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // The pick goes with its seat, so the bots after it keep theirs.
-            config.SyncAIVesselSlots();
-            config.AIDomains.RemoveAt(aiOrdinal);
-            config.AIVessels.RemoveAt(aiOrdinal);
+            // The picks go with their seat (hull and difficulty), so the bots after it keep theirs.
+            config.RemoveAISeat(aiOrdinal);
             HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
             BroadcastRosterToClients();
         }
@@ -955,12 +954,14 @@ namespace CosmicShore.UI
             config.SyncAIVesselSlots();
             var placed = new int[config.AIDomains.Count];
             var vessels = new int[config.AIDomains.Count];
+            var difficulties = new int[config.AIDomains.Count];
             for (int i = 0; i < placed.Length; i++)
             {
                 placed[i] = (int)config.AIDomains[i];
                 vessels[i] = (int)config.AIVessels[i];
+                difficulties[i] = (int)config.AIDifficulties[i];
             }
-            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed, vessels);
+            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed, vessels, difficulties);
         }
 
         /// <summary>
@@ -970,7 +971,7 @@ namespace CosmicShore.UI
         /// remainder recomputed over the same replicated player data the host used.
         /// </summary>
         void HandleRosterChangedOnClient(int playerCount, int domainCount, int[] placedAiDomains,
-                                         int[] placedAiVessels)
+                                         int[] placedAiVessels, int[] placedAiDifficulties)
         {
             // Same two-instance gate as HandleConfigOpenedOnClient.
             if (!UsesLaunchPanels) return;
@@ -988,10 +989,15 @@ namespace CosmicShore.UI
             if (placedAiVessels != null)
                 foreach (var v in placedAiVessels)
                     config.AIVessels.Add((VesselClassType)v);
+            config.AIDifficulties.Clear();
+            if (placedAiDifficulties != null)
+                foreach (var d in placedAiDifficulties)
+                    config.AIDifficulties.Add((AIDifficulty)d);
             config.SyncAIVesselSlots();
 
             RefreshTileVisibility();
             RefreshRoster();
+            ShowAIDifficultyForEditedSeat();
         }
 
         /// <summary>Total seats a match holds, humans included - the house party size. The old
@@ -1455,6 +1461,7 @@ namespace CosmicShore.UI
             // visible, kickable seat rather than an auto seat that re-balanced on every redraw.
             config.AIDomains.Clear();
             config.AIVessels.Clear();
+            config.AIDifficulties.Clear();
             _addAiArmed = false;
             if (vesselInfoPopup) vesselInfoPopup.Hide();   // it described the previous card's seat
             // The weekly challenge seats the card's MINIMUM - it is a personal objective, and every
@@ -2439,6 +2446,8 @@ namespace CosmicShore.UI
             }
             for (int i = 0; i < _aiChips.Count; i++)
                 if (_aiChips[i]) _aiChips[i].SetEditing(picker && _vesselSeat == i && MayEditAiSeat(i));
+            // The AI row follows the selection: the selected AI's own level, or every AI's (the card's).
+            ShowAIDifficultyForEditedSeat();
         }
 
         /// <summary>The < > arrows with an AI seat selected: ask the host to step its hull. The host decides
@@ -3104,6 +3113,8 @@ namespace CosmicShore.UI
             // How well the AI flies. A card that does not offer the setting launches on the
             // default, so a value remembered on a card nobody could see never reaches a match.
             gameData.RequestedAIDifficulty = OffersAIDifficulty ? config.AIDifficulty : AIDifficultyRules.Default;
+            // Each AI's own level (entry i for bot i, 0 = the card's), where an AI's pedestal can be selected to set it.
+            gameData.SetRequestedAIDifficulties(OffersAIDifficulty && SeatDifficultyAvailable ? config.AIDifficulties : null);
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +

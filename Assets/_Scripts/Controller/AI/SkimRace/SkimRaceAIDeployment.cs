@@ -57,7 +57,8 @@ namespace CosmicShore.Gameplay
             // Only where the card OFFERS the picker (AIDifficultyRules.IsOfferedFor - every mode since 2026-10-26): the
             // pick is pre-launch config that outlives the card it was made on, so without this a host
             // who chose Easy on Skim Race would hand Regatta's AI mistakes its lobby never showed.
-            var difficulty = AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty);
+            // The pilot's own level: its seat's (stamped when the server seated it), else the match's.
+            var difficulty = gameData.AIDifficultyFor(vessel.VesselStatus.Player);
             var handicap = AIDifficultyRules.IsOfferedFor(gameData.GameMode)
                 ? SkimRaceDifficultySO.Load().For(difficulty)
                 : default;

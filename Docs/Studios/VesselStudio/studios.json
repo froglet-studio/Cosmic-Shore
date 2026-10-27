@@ -202,6 +202,35 @@
       "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
     },
     {
+      "id": "orca",
+      "name": "Orca",
+      "file": "orca.html",
+      "kind": "crew lab - round 9 (Garrett's Crew of Four Lab)",
+      "chip": "4-seat vessel · round 9",
+      "summary": "Garrett's 4-seat vessel, in the game as the Orca: a Helm (Time) and three Gunner seats, the sniper (Space), the fast gun (Mass) and the bomb (Charge), each with its own missiles. Take the seats you want; the AI flies the rest. Round 9 adds play styles to choose between while you test: the helm's boost is the Tank, a Breath or the Tide; its shield is the Shield or a Dock; the missiles are flown by wire or are Seekers. Every default is the Orca as it ships.",
+      "spec": [
+        {
+          "k": "Seats",
+          "v": "Helm · Sniper · Fast gun · Bomb"
+        },
+        {
+          "k": "Play styles",
+          "v": "Tank / Breath / Tide · Shield / Dock · Fly-by-wire / Seeker"
+        },
+        {
+          "k": "Games",
+          "v": "Ring Race · Breach · Anchorage · Broadside"
+        },
+        {
+          "k": "Status",
+          "v": "in the Toybox Vessel Changer as the Orca; the round 9 styles are lab-only"
+        }
+      ],
+      "preview": "previews/orca.png",
+      "accent": "#13fff2",
+      "docs": "Docs/Studios/CREW_OF_FOUR_LAB.md"
+    },
+    {
       "id": "siphonophore",
       "name": "Siphonophore",
       "file": "siphonophore.html",
