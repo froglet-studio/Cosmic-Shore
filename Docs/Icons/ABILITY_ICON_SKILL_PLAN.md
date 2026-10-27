@@ -222,7 +222,11 @@ Then the **Sparrow's Time card** (2026-10-26): the hull in its own SpeedUp take 
 (`mesh_pose.py`), nose right, over a bare plate (the roll pip retired), with white exhaust plumes so the rest state
 moves; the view swaps hull and jets on the live boost flag. The **Sparrow's Mass card**: the stopped hull firing swelling
 rounds from both pods - a ghost while flying, solid in the stance, shielded octahedrons at Mass 5. Next: the
-Sparrow's Space and Charge cards, then the eleven placeholders.
+Sparrow's Space and Charge cards, then the eleven placeholders. **The Grizzly (2026-10-27)**: its four
+placeholders (Smash, Zap, Cannon, Boost) replaced by four kit icons drawn from its new model (`specs/grizzly.py`,
+`Docs/Icons/sheets/grizzly.png`): Dig In (the real hull side-on in its `dig` take, the anchor sunk into a ground plate),
+Weapon Systems (a three-chamber drum), Charged Cannon (a shell leaving its blast), Rush (the hull leaning into two
+exhaust bars). Single white sprites: `GrizzlyHUDView` is in flight on `grizzly-v3` (jtgjones), so tinted parts wait.
 
 | Round | What | Why first |
 |---|---|---|

@@ -359,7 +359,8 @@ C, or the gamepad, cycles the cameras. Hide the viewed hull's own skimmer sphere
    `studio-kinds.js` (or add a kind there), run `python3 .claude/skills/vessel-studio/vessel_pages.py`, and the page, the hub
    card and the catalog entry exist; then `bake_previews.cjs` and `parity_gate.py`. Only a SHIPPED vessel, or a design the
    kinds cannot express, gets a hand-written page: **copy a template, never a blank page** (§3): `squirrel.html` for a
-   shipped vessel with AI; the Stoat page's structure for a design studio. Walk D1–D25 and §1.5.11 against the copy. Put every setting under
+   shipped vessel with AI; the Stoat page's structure for a design studio (the Meerkat, 2026-10-27, is the Stoat page cut
+   down to one ability, with its own `meerkat.html` as the source and no copy script). Walk D1–D25 and §1.5.11 against the copy. Put every setting under
    one of the six universal tabs (D21, D25: Scene Config, Game Config, AI Config, Play Style Config, Input,
    Vessel Config), and mount the race panel (D17) with `sceneHost` and `players`. Build the panels by §1.5.
 4. **Gate** (§3.3), then READ the screenshots.
@@ -535,12 +536,14 @@ Omit `capabilities` to keep them. If they must ever be restated, the full set is
 { "artifact": {}, "sample": {}, "user": { "scopes": ["profile"] },
   "db": { "rules": [ { "path": "decisions", "read": "view", "write": "interact" },
                      { "path": "jobs",      "read": "view", "write": "interact" },
-                     { "path": "requests",  "read": "view", "write": "interact" } ] },
+                     { "path": "requests",  "read": "view", "write": "interact" },
+                     { "path": "profiles",  "read": "view", "write": "interact" } ] },
   "mcp": { "servers": [ { "server": "Claude Code Remote",
                           "tools": ["send_message", "create_session", "list_environments"] } ] } }
 ```
 
-Then `ArtifactData list` of `decisions`, `jobs` and `requests`. To record the published version in Amoebius's
+Then `ArtifactData list` of `decisions`, `jobs`, `requests` and `profiles` (`profiles` holds the section profiles the
+settings cards save, the Stoat's since round 27 and the Meerkat's: `{studio, section, sectionTitle, name, values, changed, by, createdAt}`, `studio` = stoat | meerkat). To record the published version in Amoebius's
 library, run `/amoebius-artifact` on this URL: it must report every file `unchanged` (a `changed` file means the
 repo and the artifact disagree). Whenever the Stoat changed, regenerate
 its hub copy before a build:
@@ -581,8 +584,9 @@ computer (`<Amoebius data>/studio/db/`), not the artifact's: carry a decision th
   `artifact`, `log`, `result`.
 - **Decisions** (`decisions`), Sync panel entries: `text`, `kind` = decision | refresh | merge | delete,
   `by`, `at`, `branch`, `sha`.
-- **Decisions**, Stoat studio log entries: `topic`, `choice`, `note`, `settings`, `style`, `createdAt`,
-  `by`. Each list orders by its own time field, so each shows its own entries.
+- **Decisions**, studio log entries (the Stoat, the Meerkat, the Goby, the Shrike): `studio`, `topic`, `choice`, `note`, `settings`,
+  `createdAt`, `by`. Each page shows its own `studio` (the Stoat also shows the older entries that have none); each list orders
+  by its own time field.
 - **Requests** (`requests`, the hub's studio agent): `vessel`, `kind`, `text`, `status` = open/done,
   `createdAt`, `by`, `reply`. Do the work, then set `status: done` and a `reply`.
 

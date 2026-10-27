@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79e5a66832b4490dada0056a58c42303, type: 3}
+  m_Name: MeerkatWormholeConfig
+  m_EditorClassIdentifier: 
+  reticleAhead: 30
+  bendMaxDegrees: 150
+  shaftMin: 60
+  shaftMax: 600
+  bendRadius: 60
+  throatRadius: 4
+  mouthRadius: 10
+  keyRampSeconds: 0.5
+  rideMidMultiplier: 2.5
+  reticleDelaySeconds: 0.5
+  reticleGrowSeconds: 0.8
+  formSeconds: 0.4
+  staySeconds: 10
+  collapseSeconds: 0.8
+  warpStrength: 0
+  dentStrength: 0
+  rippleStrength: 0
+  rippleEdge: 0.45
+  rippleSeconds: 1.2
+  reticleIdleAlpha: 0.4
+  reticleGlass: 0.15
+  bridgeVisibility: 1
+  bridgeGlass: 0.6
+  bridgeRings: 16
+  bridgeSpindlesPerRing: 12
+  bridgeRibs: 6
+  bridgeSpindleThickness: 1.6
+  bridgeShimmer: 0.5
+  aiWormhole: 1
+  aiStraightMinDistance: 300
+  aiBentMinDistance: 120
+  aiShapeSeconds: 0.3
+  aiNoise: 0
+  reticleSmoothSeconds: 0.15
+  reticleRings: 10
+  reticleSpindlesPerRing: 16
+  reticleRibs: 8
+  reticleSpindleThickness: 0.35
+  reticlePath: 0.5
+  rideSpeedTunnelScale: 5
+  rideEntryMultiplier: 1
+  rideExitMultiplier: 1.2
+  formEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  collapseEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

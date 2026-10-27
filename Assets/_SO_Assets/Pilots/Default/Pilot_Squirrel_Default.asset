@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c306626a4184df3834f44fe03c2619a, type: 3}
+  m_Name: Pilot_Squirrel_Default
+  m_EditorClassIdentifier:
+  id: pilot.squirrel.default
+  displayName: Boost Ring
+  ability: 
+  description: The Squirrel's base kit, flown as shipped. Every other Squirrel pilot swaps part of it for something different.
+  flavor: 
+  portrait: {fileID: 0}
+  portraitIsStandIn: 0
+  icon: {fileID: 0}
+  requirement:
+    Vessel: 6
+    Keywords: []
+  isDefault: 1
+  elementalBoost:
+    Element: 0
+    Petals: 0
+  tuning: {fileID: 0}
+  aiBehaviorDescription: 

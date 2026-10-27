@@ -1,0 +1,145 @@
+{
+  "id": "moonjelly",
+  "order": 11,
+  "name": "Moon Jelly",
+  "tagline": "the breather: slow breaths glide far and glow wide",
+  "round": "calm · level 1 · round 1",
+  "accent": "#cfe8ff",
+  "kind": "breath",
+  "chip": "calm · level 1 · round 1",
+  "summary": "The breather. One stick steers; one button breathes. Hold it to breathe in: the jelly slows and its bell swells with light. Let go and it pulses forward. Slow, steady breaths (three seconds or more, each like the last) build a calm chain: every pulse glides further and the glow, which is its reach for a crystal, grows wider. Rush and the calm breaks. Calm breaths fill the moon; with the moon full, one long breath lets go into a Moonrise, a glow four times as wide.",
+  "spec": [
+    {
+      "k": "Level",
+      "v": "1: one stick, one button"
+    },
+    {
+      "k": "Mechanic",
+      "v": "hold to breathe in, let go to pulse; slow and steady builds the calm"
+    },
+    {
+      "k": "Calm / intense",
+      "v": "drifting and breathing / the Moonrise"
+    },
+    {
+      "k": "Made from",
+      "v": "the Dolphin (charge, then release) + the Butterfly (slow, wide, quiet)"
+    }
+  ],
+  "fantasy": "Deep in the Hypersea, where the Shore's light never reaches, the cells go dark and crystals sleep unseen. The Moon Jelly is the only thing that glows down there. Old pilots say it is a crystal that learned to breathe. It drifts into the dark, and the others follow its light.",
+  "why": "Nothing in the fleet rewards slowing down. The Moon Jelly does: its best rhythm is a slow, calm breath, so playing it well means breathing slowly yourself. It is the first of three Level 1 vessels made for relaxed players (about 20 minutes a day, mostly calm with one tense moment), and its breath is the Siphonophore Bell's, taught on its own.",
+  "flight": {
+    "cruise": 20,
+    "pitchYaw": 80,
+    "roll": 90,
+    "grip": 20,
+    "accel": 1.2,
+    "topSpeed": 220
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Moonrise",
+      "param": "moonReach",
+      "range": [
+        1,
+        1.5
+      ],
+      "l5": "Full Moon",
+      "tip": "Charge widens the Moonrise."
+    },
+    "mass": {
+      "name": "Push",
+      "param": "pulseMax",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Tidal Pulse",
+      "tip": "Mass is the push of a full breath."
+    },
+    "space": {
+      "name": "Glow",
+      "param": "glow",
+      "range": [
+        1,
+        1.6
+      ],
+      "l5": "Lantern",
+      "tip": "Space widens the glow: its reach for a crystal."
+    },
+    "time": {
+      "name": "Glide",
+      "param": "drag",
+      "range": [
+        1,
+        0.6
+      ],
+      "l5": "Still Water",
+      "tip": "Time lengthens the glide after a pulse."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Lantern",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "A wide glow and a long glide: the calmest jelly."
+    },
+    {
+      "name": "Tidal",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Big pulses and a big Moonrise."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "breathe in (hold), let go to pulse; with the moon full, one long breath is a Moonrise",
+    "rt": "nothing: one button"
+  },
+  "notModelled": [
+    "The rhythm has no sound; the game would give it a slow breathing tone, so a player can breathe with it without watching the meter.",
+    "The glow only reaches crystals here; waking sleeping crystals and blooming plants (the story) are not modelled.",
+    "The course is the game's Skim Race track, one crystal at a time: a stand-in for a dark cell."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md section 12 (the calm three, Level 1), written for players who want about 20 minutes a day of calm with one tense moment. Nearest shipped relatives: the Dolphin's drift charge, the Butterfly's slow wide flight; the breath is the Octopus prototype's, slowed down."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}
