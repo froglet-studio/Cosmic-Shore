@@ -413,6 +413,12 @@
       <details class="card" id="grp-tree" open><summary>Wormhole · trunk <small>MeerkatWormholeConfig · its outside, for a third eye</small></summary><div class="rows"></div>
         <p class="src"><b>The tunnel's outer layer is a dead tree</b>, for everyone (its rider too). Pull RT and the tree <b>forms with the tunnel</b>, rippling out of its centre to both mouths; each <b>bare branch grows</b> out of the trunk's top half the moment the tunnel reaches its root. The way in is the trunk's <b>top cut</b> and the way out its <b>bottom cut</b>, the mouths in the cut faces among the <b>tree rings</b>. It is the <b>wall's own glass and bent space</b> (see-through in the middle, bright at its outline, the world behind it bent and flowing like water), so the tunnel shows inside it. It grows with the tunnel (<i>throatDiameterMax</i>, <i>mouthDiameterMax</i>).</p>
         <div class="btns"><button class="pick" type="button" data-reset="tree">Reset</button></div></details>
+      <details class="card" id="grp-omni" open><summary>Omnicrystal · the labyrinth <small>MeerkatWormholeConfig · round 16 proposal</small></summary><div class="rows"></div>
+        <p class="src"><b>The Meerkat's Omnicrystal ability.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and your next <b>RT digs the labyrinth</b> instead of a wormhole: a 3D warren from <b>one source</b> on your nose line, <i>labyrinthBranchPoints</i> forks branching every way, <i>labyrinthOpenings</i> openings spread over <i>labyrinthSpread</i> degrees round it, <i>labyrinthRadius</i> out, as wild as <i>labyrinthRandomness</i> - a water-slide park inside the soil. While it is armed your reticle is the labyrinth (in gold). You <b>slide</b> in, faster at every fork (<i>forkBoost</i>); at each fork <b>lean the left stick toward a channel</b> - left, right, up, down - to take it (the channels are marked <i>forkHintSeconds</i> before; no lean: the straightest). Out of an opening you fly on along it. Every labyrinth is new.</p>
+        <div class="btns"><button class="pick" type="button" id="omniGive" title="Arm the labyrinth now, as if you had flown through an omnicrystal">Give me an omnicrystal</button><button class="pick" type="button" data-reset="omni">Reset</button></div></details>
+      <details class="card" id="grp-soil" open><summary>Omnicrystal · the soil <small>MeerkatWormholeConfig · everyone's, the rider's too</small></summary><div class="rows"></div>
+        <p class="src"><b>The labyrinth is dug through soil.</b> Every channel has a <b>wall of earth</b> round it (<i>soilWall</i> x its radius), see-through face-on and bright where it turns away, in <b>layered strata</b> - loam, clay, sand and stone (<i>soilStrata</i>, <i>soilStrataThickness</i>) - with grain and grit (<i>soilGrain</i>). <b>Stones</b> lie in the soil round the walls (<i>soilPebbles</i>) and <b>roots</b> hang onto the channels (<i>soilRoots</i>). It is dug out with the labyrinth and falls in with it. Riding, the strata stream past and the other channels show through the walls.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="soil">Reset</button></div></details>
       <details class="card" id="grp-space" open><summary>Space · look <small>MeerkatWormholeConfig · the bent space, everyone's</small></summary><div class="rows"></div>
         <p class="src"><b>Off by default</b> (round 4: all lensing off; the bridge is the tunnel's look). Raised, <b>everyone sees</b> a tunnel bend space-time: the space round its tube bent away from it (<i>warpStrength</i>), its centre line clear, and each mouth a dent as wide as the mouth (<i>dentStrength</i>). Its collapse sends a <b>subtle circular ripple across the screen's edges only</b> (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>), never the centre where you aim, weaker the further away it is.</p>
         <div class="btns"><button class="pick" type="button" data-reset="space">Reset</button></div></details>
@@ -527,6 +533,20 @@
     trunkVisibility: 1, trunkTop: 1.5, trunkBase: 1.9, trunkBark: 0.22, trunkRidges: 16, trunkGnarl: 0.14,
     trunkGlass: 0.04, trunkRim: 0.55, trunkFresnel: 2.5, trunkRings: 7, trunkWarp: 0.25, trunkGrain: 0.5, trunkGrainLines: 22,
     branchCount: 8, branchLength: 2.4, branchThickness: 0.28, branchUp: 28, branchZone: 0.85, branchSymmetry: 0.45, branchForks: 2, branchGrowSeconds: 0.5,
+    // round 16 (Yash: "once it collects the Omnicrystal, it's going to rise up to a three-dimensional branching from a single
+    // source ... 5 to 10 branch points with multiple openings ... openings all around ... Wackadoodle labyrinth water slide
+    // park inside soil"): the OMNICRYSTAL ability. omniCount omnicrystals sit on the course line; collect one and your next RT
+    // digs the LABYRINTH: one source on your nose line, labyrinthBranchPoints forks in 3D, labyrinthOpenings openings spread
+    // over labyrinthSpread degrees round its centre, labyrinthRadius u out, labyrinthRandomness of jitter; channels
+    // labyrinthDiameter wide flaring to labyrinthMouthDiameter, dug rough (labyrinthRoughness), digging out from the source
+    // over labyrinthFormSeconds; drawn as rings every labyrinthRingSpacing u of labyrinthRingSides spindles and labyrinthRibs
+    // ribs. You slide (the ride multipliers, plus forkBoost a fork); at each fork the left stick leaned past forkLean toward a
+    // channel takes it (called out forkHintSeconds before). It is dug through soil (soil*): strata walls, stones, roots.
+    omniOn: 1, omniCount: 3, labyrinthBranchPoints: 8, labyrinthOpenings: 16, labyrinthRadius: 240, labyrinthSpread: 300, labyrinthRandomness: 0.45,
+    labyrinthDiameter: 12, labyrinthMouthDiameter: 22, labyrinthRoughness: 0.18, labyrinthFormSeconds: 0.8,
+    labyrinthRingSpacing: 12, labyrinthRingSides: 10, labyrinthRibs: 4, forkBoost: 0.08, forkLean: 0.25, forkHintSeconds: 0.9,
+    soilVisibility: 1, soilWall: 1.5, soilGlass: 0.025, soilRim: 0.45, soilFresnel: 2.2, soilStrata: 0.85, soilStrataThickness: 7,
+    soilGrain: 0.55, soilPebbles: 700, soilPebbleSize: 1.3, soilRoots: 30,
     // the AI's wormhole
     aiWormhole: 1, aiStraightMinDistance: 300, aiBentMinDistance: 120, aiShapeSeconds: 0.3, aiTau: 0.3, aiNoise: 0,
     // flight: one thumb (the left stick flies at full throttle, banking bankShare x the roll rate into a turn); the Stoat's
@@ -615,6 +635,34 @@
     ['tree', 'branchSymmetry', '...each pair mirrored (1) or each its own (0)', 0, 1, 0.05],
     ['tree', 'branchForks', '...times each forks', 0, 3, 1],
     ['tree', 'branchGrowSeconds', '...each grows over (s), once the tunnel reaches it', 0.1, 4, 0.05],
+    ['omni', 'omniOn', 'The Omnicrystal ability: an omnicrystal arms the labyrinth (0 = off)', 0, 1, 1],
+    ['omni', 'omniCount', 'Omnicrystals on the course (a new course or reset places them)', 0, 12, 1],
+    ['omni', 'labyrinthBranchPoints', 'Labyrinth: forks (branch points)', 1, 16, 1],
+    ['omni', 'labyrinthOpenings', '...openings (ways out)', 2, 48, 1],
+    ['omni', 'labyrinthRadius', '...how far it spreads from its centre (u)', 40, 900, 10],
+    ['omni', 'labyrinthSpread', '...its openings spread round it over (°, 360 = all round)', 20, 360, 5],
+    ['omni', 'labyrinthRandomness', '...randomness', 0, 1, 0.05],
+    ['omni', 'labyrinthDiameter', '...channel diameter (u)', 2, 60, 1],
+    ['omni', 'labyrinthMouthDiameter', '...source and opening diameter (u)', 4, 120, 1],
+    ['omni', 'labyrinthRoughness', '...dug rough: the walls\' unevenness', 0, 0.6, 0.01],
+    ['omni', 'labyrinthFormSeconds', '...digs itself out from the source over (s)', 0.05, 4, 0.05],
+    ['omni', 'labyrinthRingSpacing', '...its wireframe: a ring every (u)', 3, 60, 1],
+    ['omni', 'labyrinthRingSides', '...spindles round each ring', 3, 32, 1],
+    ['omni', 'labyrinthRibs', '...ribs along each channel (0 = none)', 0, 16, 1],
+    ['omni', 'forkBoost', 'Slide: each fork taken adds (× your speed before it)', 0, 0.5, 0.01],
+    ['omni', 'forkLean', 'At a fork: lean the left stick past this toward a channel', 0.05, 0.9, 0.05],
+    ['omni', 'forkHintSeconds', '...the fork is called out this long before (s)', 0, 3, 0.05],
+    ['soil', 'soilVisibility', 'The soil round the labyrinth, for everyone (0 = hidden)', 0, 1, 0.05],
+    ['soil', 'soilWall', 'Its wall round each channel (× the channel\'s radius)', 1.05, 4, 0.05],
+    ['soil', 'soilGlass', 'Its wall face-on (the see-through middle)', 0, 0.5, 0.01],
+    ['soil', 'soilRim', 'Its wall at the silhouette (Fresnel)', 0, 2, 0.05],
+    ['soil', 'soilFresnel', '...how tight to the silhouette (power)', 0.5, 8, 0.1],
+    ['soil', 'soilStrata', 'Strata: how distinct the layers are', 0, 1, 0.05],
+    ['soil', 'soilStrataThickness', '...one layer every (u)', 2, 80, 1],
+    ['soil', 'soilGrain', 'Grain and grit', 0, 1.5, 0.05],
+    ['soil', 'soilPebbles', 'Stones round the walls', 0, 1200, 10],
+    ['soil', 'soilPebbleSize', '...their size (u)', 0.2, 8, 0.1],
+    ['soil', 'soilRoots', 'Roots hanging onto the channels', 0, 80, 1],
     ['ai', 'aiWormhole', 'AI uses the wormhole (0 = no, 1 = yes)', 0, 1, 1],
     ['ai', 'aiStraightMinDistance', 'AI: a straight tunnel with its ring at least (u) away', 50, 2000, 10],
     ['ai', 'aiBentMinDistance', 'AI: a bending one from (u) away', 50, 2000, 10],
@@ -864,6 +912,7 @@
     NG = gates.length;
     placeField(curve);
     placeCrystals(curve);
+    placeOmni(curve);   // round 16
     $('seedOut').textContent = seed;
   }
   // ---- Warpline (round 8: the Meerkat's Time race): SlingshotCourse.ForIntensity's circuit with WarplineCourseSource's
@@ -935,6 +984,41 @@
   const crCore = new THREE.InstancedMesh(new THREE.OctahedronGeometry(3.2, 0), new THREE.MeshStandardMaterial({ color: CR_COL, emissive: CR_COL.clone().multiplyScalar(0.55), roughness: 0.2, metalness: 0.1, flatShading: true }), CR_MAX);
   const crShell = new THREE.InstancedMesh(new THREE.OctahedronGeometry(4.4, 0), new THREE.MeshBasicMaterial({ color: CR_COL, wireframe: true, transparent: true, opacity: 0.35, depthWrite: false }), CR_MAX);
   for (const m of [crCore, crShell]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; scene.add(m); }
+  // ---- round 16: omnicrystals (the Omnicrystal ability's pickup). omniCount of them, ON the course line half way between
+  // rings, bigger than a crystal and gold-white; any hull within OMNI_PICK u collects one, and that pilot's next RT digs
+  // the labyrinth (ab.omni). Every race starts with them back where they were.
+  const OMNI_MAX = 12, OMNI_PICK = 18;
+  const omni = { n: 0, home: [], alive: new Uint8Array(OMNI_MAX) };
+  for (let i = 0; i < OMNI_MAX; i++) omni.home.push(new V3());
+  const omCore = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(5.5, 0), new THREE.MeshStandardMaterial({ color: 0xfff1c9, emissive: 0xffc860, emissiveIntensity: 0.6, roughness: 0.25, metalness: 0.2, flatShading: true }), OMNI_MAX);
+  const omShell = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(8.5, 0), new THREE.MeshBasicMaterial({ color: 0xffd98a, wireframe: true, transparent: true, opacity: 0.5, depthWrite: false }), OMNI_MAX);
+  for (const m of [omCore, omShell]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; scene.add(m); }
+  function placeOmni(curve) {
+    const n = Math.min(OMNI_MAX, Math.max(0, Math.round(P.omniCount)));
+    for (let i = 0; i < n; i++) curve.getPointAt(((i + 0.5) / n + 0.5 / Math.max(1, NG)) % 1, omni.home[i]);
+    omni.n = n; resetOmni();
+  }
+  function resetOmni() { for (let i = 0; i < OMNI_MAX; i++) omni.alive[i] = 1; }
+  let omniFlash = 0;
+  function stepOmni() {
+    for (let i = 0; i < omni.n; i++) {
+      if (!omni.alive[i] || omni.home[i].distanceTo(hull.position) > OMNI_PICK) continue;
+      omni.alive[i] = 0;
+      if (P.omniOn > 0.5) { ftLive.ab.omni = true; ftLive.ab.omniSeed = (seed * 977 + i * 131 + Math.floor(simT * 10)) >>> 0; }
+      if (raceStats) raceStats.omni = (raceStats.omni || 0) + 1;
+      if (!curPilot) omniFlash = 1.8;
+    }
+  }
+  function drawOmni() {
+    let k = 0;
+    for (let i = 0; i < omni.n; i++) {
+      if (!omni.alive[i]) continue;
+      dum.position.copy(omni.home[i]); dum.rotation.set(simT * 0.6 + i, simT * 1.1 + i, 0); dum.scale.setScalar(1 + 0.08 * Math.sin(simT * 3 + i)); dum.updateMatrix(); omCore.setMatrixAt(k, dum.matrix);
+      dum.rotation.set(-simT * 0.4, -simT * 0.8 - i, 0); dum.updateMatrix(); omShell.setMatrixAt(k, dum.matrix); k++;
+    }
+    omCore.count = omShell.count = mode === 'fly' ? k : 0; omCore.instanceMatrix.needsUpdate = omShell.instanceMatrix.needsUpdate = true;
+    dum.rotation.set(0, 0, 0); dum.scale.setScalar(1);
+  }
   function placeCrystals(curve) {
     const rnd = mulberry32(seed * 131 + intensity * 7 + COURSE_KINDS.indexOf(courseKind) * 1009), per = 6, n = Math.min(CR_MAX, NG * per);
     const pt = new V3(), tg = new V3(), a1 = new V3(), a2 = new V3();
@@ -1011,7 +1095,7 @@
   const W = [];   // every tunnel's two mouths, for the lens
   function collectWells() {
     W.length = 0;
-    for (const pr of pairs) { W.push({ pr, sign: 1, p: pr.att }); W.push({ pr, sign: -1, p: pr.rep }); }
+    for (const pr of pairs) { if (!pr.wh || !pr.wh.chan || pr.wh.mouthIn) W.push({ pr, sign: 1, p: pr.att }); if (!pr.wh || !pr.wh.chan || pr.wh.mouthOut) W.push({ pr, sign: -1, p: pr.rep }); }
   }
 
   // ================= the collapse's ripple: subtle, circular, at the screen's edges only (Yash, 2026-10-27) =================
@@ -1088,7 +1172,7 @@
     for (const pr of pairs) if (pr.owned) pr.alive = false;
     myPair = null; snapCam = true; ai.tracking = -1; ai.misjudged = false; ai.unnoticed = false; ai.mistakes = 0; ai.gHold = 0; ai.gShaping = false;
     resetRivals();
-    PIL = {}; walls = []; pulses = []; lastCave = null; reviveField(); dyingPrisms.length = 0; resetCrystals();   // round 8: every race starts from the same world
+    PIL = {}; walls = []; pulses = []; lastCave = null; reviveField(); dyingPrisms.length = 0; resetCrystals(); resetOmni();   // round 8: every race starts from the same world
     if (!batching) showOverlay(); showStopBtn();
   }
   // Stop (/vessel-studio D18): end the run and go back to the start, and STAY there until Play. spawn() alone only
@@ -1127,6 +1211,7 @@
     if (inp.pad) { XSum = ease(2 * inp.L.x); YSum = -ease(2 * inp.L.y); TX = ease(2 * inp.R.x); TY = ease(2 * inp.R.y); }
     else { XSum = inp.kYaw; YSum = -inp.kPitch; TX = inp.kTx || 0; TY = inp.kTy || 0; }
     if (invertY) YSum = -YSum;
+    ftLive.leanX = XSum; ftLive.leanUp = -YSum;   // round 16: riding the labyrinth, the left stick's lean chooses at the forks
     YDiff -= Math.max(0, P.bankShare) * XSum;   // the bank into the turn (the one-thumb hulls' RollScaler)
     const rad = Math.PI / 180;
     gateHold(dt);
@@ -1153,6 +1238,7 @@
     }
     if (race === 'running') {
       raceT += dt;
+      if (omni.n) stepOmni();   // round 16: an omnicrystal arms the labyrinth
       if (crys.n) stepCrystals(dt);   // round 8: crystals (a tally; Alarm Call draws them in)
       if (raceStats && threaded % NG !== 0 && threaded > 0) raceStats.turnT += dt;   // the hairpins: from ring 1 to ring 8, the straight home left out
       const g = gates[threaded % NG], s0 = tv.subVectors(p0, g.p).dot(g.n), s1 = tv3.subVectors(hull.position, g.p).dot(g.n);
@@ -1180,7 +1266,7 @@
   // Per pilot: ftLive.ret (the reticle) and ftLive.gate = { pair, state: tube | done, s (along it) }; a made tunnel's
   // shape lives on its pair (pr.wh), so every pilot's tunnel warps the view.
   // ab (round 8): this pilot's abilities - when each is ready again (simT), Mass armed, the lookout's end, a Chain Dig asked for
-  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false } }; }
+  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false, omni: false, omniSeed: 1 } }; }
   const whA = new V3(), whB = new V3(), whC = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
   // The shape the right stick and LT ask for (round 7): a straight SHAFT, shaftMin with LT released to shaftMax squeezed,
   // then a BEND round bendRadius, as far as the right stick is pushed up to bendMaxDegrees, the way it is pushed. Its size
@@ -1206,6 +1292,7 @@
   function bendAngle(wh, s) { return wh.theta < 1e-4 ? 0 : Math.max(0, Math.min(wh.theta, (s - wh.S) / wh.R)); }
   // s u along the centreline: straight along t0 for the shaft S, then an arc of radius R bending toward side by theta.
   function whAt(wh, s, outP, outT) {
+    if (wh.poly) return polyAt(wh, s, outP, outT);
     if (wh.theta < 1e-4 || s <= wh.S) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
     const a = bendAngle(wh, s), R = wh.R;
     outP.copy(wh.A).addScaledVector(wh.t0, wh.S + R * Math.sin(a)).addScaledVector(wh.side, R * (1 - Math.cos(a)));
@@ -1214,12 +1301,14 @@
   }
   // The frame round the centreline at s: N toward the bend's centre, Bn across it (constant).
   function whFrame(wh, s, N, Bn) {
+    if (wh.poly) { polyFrame(wh, s, N, Bn); return; }
     const a = bendAngle(wh, s);
     N.copy(wh.side).multiplyScalar(Math.cos(a)).addScaledVector(wh.t0, -Math.sin(a));
     Bn.crossVectors(wh.t0, wh.side).normalize();
   }
   // The throat's radius at s: a hyperboloid, wide at the mouths, narrowest mid-way; falling together shrinks it.
   function whRadius(wh, s) {
+    if (wh.chan) return chanRadius(wh, s);
     const span = Math.max(1e-3, wh.s1 - wh.s0), u = (s - wh.s0) / span, k = Math.min(1, span / wh.L);
     const b = wh.b * k, M = Math.max(b, wh.M * k);
     return Math.sqrt(b * b + (M * M - b * b) * (2 * u - 1) ** 2) * (wh.cave != null ? Math.max(0.02, wh.cave) : 1);
@@ -1242,7 +1331,13 @@
   function stepTunnel(pr, dt) {
     const wh = pr.wh; if (!pr.alive || pr.dying) return;
     pr.t = 0;   // its pair never lets go on its own (holdCap): the tunnel's life is this
-    if (wh.phase === 'form') {
+    if (wh.phase === 'form' && wh.chan) {   // round 16: a labyrinth channel digs out from its start once the front reaches it
+      if (wh.wait > 0) { wh.wait -= dt; wh.s0 = wh.s1 = 0; }
+      else {
+        wh.grow = Math.min(1, wh.grow + dt / Math.max(0.05, wh.formT)); wh.s0 = 0; wh.s1 = wh.L * easeOutC(wh.grow);
+        if (wh.grow >= 1) { wh.s1 = wh.L; wh.phase = wh.out ? 'stay' : 'open'; }
+      }
+    } else if (wh.phase === 'form') {
       wh.grow = Math.min(1, wh.grow + dt / Math.max(0.05, wh.formT));
       const h = 0.5 * wh.L * easeOutC(wh.grow); wh.s0 = 0.5 * wh.L - h; wh.s1 = 0.5 * wh.L + h;
       if (wh.grow >= 1) { wh.s0 = 0; wh.s1 = wh.L; wh.phase = wh.out ? 'stay' : 'open'; }
@@ -1286,6 +1381,12 @@
       else whC.copy(r.side);
       whC.addScaledVector(fwd, -whC.dot(fwd)); if (whC.lengthSq() > 1e-8) r.side.copy(whC.normalize()); else r.side.copy(right);
       Object.assign(r, sh); r.s0 = 0; r.s1 = r.L;
+      if (ftLive.ab.omni && P.omniOn > 0.5) {   // round 16: an omnicrystal armed: the reticle is the labyrinth RT would dig
+        const key = ftLive.ab.omniSeed + '|' + ['labyrinthBranchPoints', 'labyrinthOpenings', 'labyrinthRadius', 'labyrinthSpread', 'labyrinthRandomness'].map((k) => P[k]).join();
+        if (r.labKey !== key) { r.lay = labLayout(P, ftLive.ab.omniSeed); r.labKey = key; }
+        r.right = (r.right || new V3()).copy(right); r.up = (r.up || new V3()).copy(up);
+        r.net = labBuild(r.lay, r.A, r.t0, right, up);
+      } else r.net = null;
     } else { ftLive.ret = null; ftLive.retAge = 0; }
   }
   // RT pulled (trackHold's press, Garrett: "the wormhole that will form when they pull the right trigger"): the reticle
@@ -1304,6 +1405,7 @@
   // only the carrier of its two mouths' warp (setLensUniforms) and the tube's (updateTubeWarp).
   function gateFade(pr) { if (pr.dying) return; pr.dying = true; pr.dieT = 0; }   // fades out over FADE_S
   function gateCommit(r) {
+    if (r.net) { labCommit(r); return; }   // round 16: an omnicrystal armed: the labyrinth
     const old = ftLive.gate; if (old && old.pair.alive && !old.pair.dying && old.pair.wh.phase !== 'collapse' && old.pair.wh.phase !== 'cavein') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }   // the last one goes back to its centre now
     basis();
     const vIn = Math.max(1, speed), dive = hull.position.distanceTo(r.A) / vIn;
@@ -1326,6 +1428,7 @@
   // In the throat: carried along the curve, at your speed before the tunnel x rideMultiplier (round 6), turned
   // with it; out of the white hole, slung on its heading (gateOut).
   function gateTransit(dt) {
+    if (ftLive.gate.net) { labTransit(dt); return; }   // round 16: sliding the labyrinth
     const g = ftLive.gate, wh = g.pair.wh;
     const u = clamp01(g.s / Math.max(1e-3, wh.L));   // 0 on the dive in (the ride runs the whole tube, mouth 0 to mouth L, however much of it has formed)
     // round 6: your speed before the tunnel x rideMultiplier - the entry multiplier on the dive in and at the way in, the
@@ -1521,7 +1624,7 @@
   // the right stick, its shaft set by LT, exactly as a reticle would be. At the far mouth the ride carries straight on
   // into it (chainOn) at throat speed, and the tunnel behind collapses.
   function chainPress() {
-    const g = ftLive.gate; if (!g || g.state !== 'tube' || g.next || !abUp('time')) return;
+    const g = ftLive.gate; if (!g || g.state !== 'tube' || g.next || g.net || !abUp('time')) return;
     if (g.s < Math.max(0, P.chainShare) * g.pair.wh.L) return;
     ftLive.ab.chainReq = true;
   }
@@ -1677,7 +1780,7 @@
   // ripples out of its centre (its window [s0, s1]) they CONDENSE in one by one, growing from nothing at the window's
   // front, and EVAPORATE the same way as it collapses - the game's Spindle condense / evaporate fades. A shimmer runs
   // through them from the way in to the way out. Spindles near the camera fade out, so riding through never fills the view.
-  const BR_MAX = 12000, BR_CAM_NEAR = 4, BR_CAM_FULL = 30;
+  const BR_MAX = 30000, BR_CAM_NEAR = 4, BR_CAM_FULL = 30;
   const brGeo = new THREE.LatheGeometry([[0, -0.5], [0.3, -0.36], [0.48, -0.14], [0.5, 0], [0.48, 0.14], [0.3, 0.36], [0, 0.5]].map(([x, y]) => new THREE.Vector2(x, y)), 6);
   const bridgeMesh = new THREE.InstancedMesh(brGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }), BR_MAX);
   bridgeMesh.setColorAt(0, new THREE.Color());   // sizes the colour buffer to BR_MAX: before count goes to 0, or it is empty and every spindle is black
@@ -1701,7 +1804,10 @@
     const fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1, A = vis * fade; if (A <= 0.004) return nFill;
     const base = pilotColor(pr.pilot), col = base.clone().lerp(brW, clamp01(P.bridgeWhite));
     if (whFill(nFill, wh, A, base, brW.clone().lerp(base, 0.4), P.bridgeGlass)) nFill++;
-    drawFrame(wh, A, col, BR_CAM_NEAR, BR_CAM_FULL);
+    if (wh.chan) {   // round 16: a labyrinth channel; the one you would take at the next fork is lit
+      const g = ftLive.gate, next = g && g.state === 'tube' && g.net === pr.net && (g.pair.kids || []).length > 1 ? forkPick(g) : null;
+      drawChanFrame(wh, A * (pr === next ? 3 : 1), col, BR_CAM_NEAR, BR_CAM_FULL, 1);
+    } else drawFrame(wh, A, col, BR_CAM_NEAR, BR_CAM_FULL);
     return nFill;
   }
   // The wormhole's geometry (round 9, Yash: "the reticles and the bridges geometry need to be same, and the same position same
@@ -1942,11 +2048,384 @@
       scene.remove(tr.glass); twScene.remove(tr.warp); tr.glass.geometry.dispose(); tr.mats.glass.dispose(); tr.mats.warp.dispose(); trunks.delete(pr);
     }
   }
+  // ================= round 16: the Omnicrystal ability, the LABYRINTH (Yash, 2026-10-28) =================
+  // "once it collects the Omnicrystal, it's going to rise up to a three-dimensional branching from a single source ... from a
+  // single source, it's going to have 5 to 10 branch points with multiple openings, lots of openings ... openings all
+  // around ... a pretty big branching network ... Wackadoodle labyrinth water slide park inside soil." Collect an
+  // omnicrystal (omniPerLap on the course line) and your next RT digs the labyrinth instead of a wormhole: one entrance on
+  // your nose line (the source), labyrinthBranchPoints forks branching in 3D, labyrinthOpenings openings spread over
+  // labyrinthSpread degrees round its centre, labyrinthRadius u out, jittered by labyrinthRandomness. You slide in; at
+  // each fork the left stick, leaned toward a channel (past forkLean), takes it (no lean: the straightest). Every channel
+  // is its own tunnel (a pair with its own wh on a sampled path, wh.poly), dug through soil (the soil, below).
+  const iclamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v)));
+  // The labyrinth in the hull's own frame (x right, y up, z ahead), from a seed: a random tree of labyrinthBranchPoints
+  // forks (each leaf grown in turn, shallow ones first, until there are that many), its extra openings added to random
+  // forks (up to 4 channels a fork) until there are labyrinthOpenings leaves; the openings' directions from the centre
+  // (Fibonacci over the spread cone, jittered) dealt to the subtrees by splitting along the long axis, so neighbours share
+  // a branch; each fork sits toward its openings' mean direction, deeper forks further out. depth = the path length from
+  // the source (the burrow digs out along it).
+  function labLayout(Pv, seed) {
+    const R = rng(seed), Rad = Math.max(40, Pv.labyrinthRadius), B = iclamp(Pv.labyrinthBranchPoints, 1, 16);
+    const M = Math.max(B + 1, iclamp(Pv.labyrinthOpenings, 2, 48)), half = Math.min(180, Math.max(10, Pv.labyrinthSpread / 2)) * Math.PI / 180, rnd = clamp01(Pv.labyrinthRandomness);
+    const nodes = [{ parent: -1, kids: [], depth: 0 }];
+    const add = (par) => { nodes.push({ parent: par, kids: [], depth: nodes[par].depth + 1 }); nodes[par].kids.push(nodes.length - 1); };
+    let forks = 0; const grow = (i) => { add(i); add(i); forks++; };
+    grow(0);
+    while (forks < B) {
+      const lv = nodes.map((n, i) => i).filter((i) => !nodes[i].kids.length), w = lv.map((i) => 1 / (1 + nodes[i].depth * (1.5 - rnd)));
+      let x = R() * w.reduce((a, b) => a + b, 0), k = 0; while (k < lv.length - 1 && (x -= w[k]) > 0) k++;
+      grow(lv[k]);
+    }
+    let leaves = forks + 1;
+    while (leaves < M) {
+      const fk = nodes.map((n, i) => i).filter((i) => nodes[i].kids.length && nodes[i].kids.length < 4); if (!fk.length) break;
+      add(fk[Math.floor(R() * fk.length)]); leaves++;
+    }
+    // the openings' directions round the centre
+    const dirs = [], ga = Math.PI * (3 - Math.sqrt(5)), c0 = Math.cos(half);
+    for (let i = 0; i < leaves; i++) {
+      const ct = 1 - (1 - c0) * (i + 0.5 + (R() - 0.5) * rnd) / leaves, st = Math.sqrt(Math.max(0, 1 - ct * ct)), ph = i * ga + (R() - 0.5) * rnd * 1.2;
+      dirs.push(new V3(st * Math.cos(ph), st * Math.sin(ph), ct).normalize());
+    }
+    const nLeaves = (i) => (nodes[i].kids.length ? nodes[i].kids.reduce((a, k) => a + nLeaves(k), 0) : 1);
+    const assign = (i, pts) => {
+      const n = nodes[i]; n.dirs = pts;
+      if (!n.kids.length) { n.dir = pts[0]; return; }
+      const mean = pts.reduce((a, p) => a.add(p), new V3()).divideScalar(pts.length);
+      let ax = new V3(1, 0.3, 0.2).normalize();   // the long axis of the points (power iteration on their spread)
+      for (let it = 0; it < 8; it++) { const nx = new V3(); for (const p of pts) { const d = p.clone().sub(mean); nx.addScaledVector(d, d.dot(ax)); } if (nx.lengthSq() < 1e-12) break; ax = nx.normalize(); }
+      const sorted = pts.slice().sort((a, b) => a.dot(ax) - b.dot(ax)); let at = 0;
+      for (const k of n.kids) { const c = nLeaves(k); assign(k, sorted.slice(at, at + c)); at += c; }
+    };
+    assign(0, dirs);
+    const maxD = Math.max(...nodes.map((n) => n.depth)), C = new V3(0, 0, Rad * 0.8);
+    nodes.forEach((n) => {
+      const mean = n.dirs.reduce((a, p) => a.add(p), new V3());
+      const m = mean.length() > 1e-6 ? mean.normalize() : new V3(0, 0, 1);
+      if (!n.kids.length) { n.p = C.clone().addScaledVector(n.dir, Rad); return; }
+      if (!n.depth) { n.p = new V3(0, 0, Rad * 0.3); return; }   // the first fork, soon after the source
+      const f = 0.15 + 0.6 * n.depth / (maxD + 1);
+      n.p = C.clone().addScaledVector(m, Rad * f).add(new V3(R() - 0.5, R() - 0.5, R() - 0.5).multiplyScalar(Rad * 0.3 * rnd));
+    });
+    const src = { p: new V3(0, 0, 0), t: new V3(0, 0, 1) };
+    const tan = (i) => { const n = nodes[i]; if (!n.kids.length) return n.dir.clone(); const m = n.kids.reduce((a, k) => a.add(nodes[k].p), new V3()).divideScalar(n.kids.length); const from = n.parent < 0 ? src.p : nodes[n.parent].p; const t = m.sub(from); return t.lengthSq() > 1e-6 ? t.normalize() : new V3(0, 0, 1); };
+    nodes.forEach((n, i) => { n.t = tan(i); });
+    // edges: the source to the first fork, then every fork to each of its channels; path depths from the source
+    const edges = [{ a: src, b: nodes[0], ai: -1, bi: 0, kids: [] }];
+    nodes[0].pd = src.p.distanceTo(nodes[0].p);
+    const walk = (i) => { for (const k of nodes[i].kids) { nodes[k].pd = nodes[i].pd + nodes[i].p.distanceTo(nodes[k].p); edges.push({ a: nodes[i], b: nodes[k], ai: i, bi: k, kids: [] }); walk(k); } };
+    walk(0);
+    edges.forEach((e) => { e.kids = edges.map((k, j) => (k.ai === e.bi ? j : -1)).filter((j) => j >= 0); e.za = e.ai < 0 ? 0 : e.a.pd; e.zb = e.b.pd; });
+    const D = Math.max(...edges.map((e) => e.zb));
+    return { D, nodes, edges, entry: 0, forks, openings: leaves, src };
+  }
+  // A channel's centreline: a Hermite curve from a (heading ta) to b (heading tb), sampled evenly by length (NS points)
+  // with a frame carried along it (no twist).
+  const NS = 26;
+  function chanPath(pa, ta, pb, tb) {
+    const d = pa.distanceTo(pb), raw = [], len = [0];
+    for (let i = 0; i <= 48; i++) {
+      const t = i / 48, t2 = t * t, t3 = t2 * t;
+      raw.push(new V3().copy(pa).multiplyScalar(2 * t3 - 3 * t2 + 1).addScaledVector(ta, d * (t3 - 2 * t2 + t)).addScaledVector(pb, -2 * t3 + 3 * t2).addScaledVector(tb, d * (t3 - t2)));
+      if (i) len.push(len[i - 1] + raw[i].distanceTo(raw[i - 1]));
+    }
+    const L = len[48], Pp = [], T = [], N = [], B = [];
+    for (let k = 0, j = 0; k < NS; k++) {
+      const want = L * k / (NS - 1); while (j < 47 && len[j + 1] < want) j++;
+      const f = (want - len[j]) / Math.max(1e-6, len[j + 1] - len[j]); Pp.push(new V3().lerpVectors(raw[j], raw[j + 1], clamp01(f)));
+    }
+    for (let k = 0; k < NS; k++) T.push(new V3().subVectors(Pp[Math.min(NS - 1, k + 1)], Pp[Math.max(0, k - 1)]).normalize());
+    for (let k = 0; k < NS; k++) {
+      const n = k ? N[k - 1].clone() : (Math.abs(T[0].y) < 0.9 ? new V3(0, 1, 0) : new V3(1, 0, 0));
+      n.addScaledVector(T[k], -n.dot(T[k])).normalize(); N.push(n); B.push(new V3().crossVectors(T[k], n));
+    }
+    return { L, P: Pp, T, N, B };
+  }
+  // The labyrinth in the world: the source at A, its axis along t0, right and up the hull's. Each edge gets its own wh.
+  function labBuild(lay, A, t0, rightV, upV) {
+    const W = (v, out) => out.copy(A).addScaledVector(rightV, v.x).addScaledVector(upV, v.y).addScaledVector(t0, v.z);
+    const Wd = (v) => new V3().addScaledVector(rightV, v.x).addScaledVector(upV, v.y).addScaledVector(t0, v.z).normalize();
+    const b = Math.max(0.5, 0.5 * P.labyrinthDiameter), M = Math.max(b, 0.5 * P.labyrinthMouthDiameter);
+    const edges = lay.edges.map((e, i) => {
+      const path = chanPath(W(e.a.p, new V3()), Wd(e.a.t), W(e.b.p, new V3()), Wd(e.b.t));
+      const wh = { poly: path, A: path.P[0].clone(), t0: path.T[0].clone(), side: path.N[0].clone(), L: path.L, S: path.L, R: 1, theta: 0, fat: 0, m: 0, b, M,
+        chan: true, mouthIn: e.ai < 0, mouthOut: !e.kids.length, za: e.za, zb: e.zb, D: lay.D, seed: i * 7.31 + 1.3, s0: 0, s1: path.L };
+      return { wh, kids: e.kids, za: e.za, zb: e.zb };
+    });
+    return { edges, entry: lay.entry, D: lay.D };
+  }
+  // A point and heading s along a channel (beyond its ends: straight on along its end headings).
+  function polyAt(wh, s, outP, outT) {
+    const pp = wh.poly, n = NS - 1, f = s / Math.max(1e-6, wh.L) * n;
+    if (f <= 0) { outP.copy(pp.P[0]).addScaledVector(pp.T[0], s); if (outT) outT.copy(pp.T[0]); return outP; }
+    if (f >= n) { outP.copy(pp.P[n]).addScaledVector(pp.T[n], s - wh.L); if (outT) outT.copy(pp.T[n]); return outP; }
+    const i = Math.floor(f), k = f - i;
+    outP.lerpVectors(pp.P[i], pp.P[i + 1], k); if (outT) outT.lerpVectors(pp.T[i], pp.T[i + 1], k).normalize();
+    return outP;
+  }
+  function polyFrame(wh, s, N, Bn) {
+    const pp = wh.poly, n = NS - 1, f = Math.max(0, Math.min(n, s / Math.max(1e-6, wh.L) * n)), i = Math.min(n - 1, Math.floor(f)), k = f - i;
+    N.lerpVectors(pp.N[i], pp.N[i + 1], k).normalize(); Bn.lerpVectors(pp.B[i], pp.B[i + 1], k).normalize();
+  }
+  // A channel's radius at s: labyrinthDiameter, flaring to labyrinthMouthDiameter over 3 mouth radii at the source and at
+  // every opening.
+  function chanRadius(wh, s) {
+    const fl = Math.min(0.35 * wh.L, 3 * wh.M); let r = wh.b;
+    if (wh.mouthIn) r += (wh.M - wh.b) * (1 - smooth(0, fl, s));
+    if (wh.mouthOut) r += (wh.M - wh.b) * (1 - smooth(0, fl, wh.L - s));
+    return r * (wh.cave != null ? Math.max(0.02, wh.cave) : 1);
+  }
+  // The labyrinth's wireframe (the reticle, and the dug channels): rings every labyrinthRingSpacing u of labyrinthRingSides
+  // spindles, dug rough by labyrinthRoughness, and labyrinthRibs ribs along each channel, condensing at the window's fronts;
+  // brightness from nearLight at the source to full at the openings.
+  const chanH = (x) => { const v = Math.sin(x * 12.9898) * 43758.5453; return v - Math.floor(v); };
+  function drawChanFrame(wh, A, col, n0, n1, nearLight) {
+    const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.004) return;
+    const nR = Math.max(2, Math.round(wh.L / Math.max(3, P.labyrinthRingSpacing))), nS = Math.max(3, Math.round(P.labyrinthRingSides)), nRib = Math.max(0, Math.round(P.labyrinthRibs));
+    const th = Math.max(0.05, P.bridgeSpindleThickness), sh = clamp01(P.bridgeShimmer), edge = Math.max(4, 0.06 * wh.L), rough = Math.max(0, P.labyrinthRoughness);
+    const ringS = (i) => wh.L * (i + 0.5) / nR, jit = (i, j) => 1 + rough * (2 * chanH(wh.seed + i * 7.13 + (j % nS) * 3.31) - 1);
+    const grow = (s) => smooth(0, edge, Math.min(s - wh.s0, wh.s1 - s));
+    const near = nearLight == null ? 1 : clamp01(nearLight), depth = (s) => (wh.za + (wh.zb - wh.za) * s / wh.L) / Math.max(1, wh.D);
+    const glow = (u) => (near + (1 - near) * u) * 0.85 * (1 + sh * 1.4 * Math.pow(Math.max(0, Math.sin(2 * Math.PI * (u * 1.5 - simT * 0.5))), 4));
+    for (let i = 0; i < nR; i++) {
+      const s = ringS(i), g = grow(s); if (g <= 0) continue;
+      const r = chanRadius(wh, s), br = A * glow(depth(s));
+      for (let j = 0; j < nS; j++) {
+        whSurf(wh, s, j / nS * Math.PI * 2, r * jit(i, j), 0, brA); whSurf(wh, s, (j + 1) / nS * Math.PI * 2, r * jit(i, j + 1), 0, brB);
+        brM.addVectors(brA, brB).multiplyScalar(0.5); brA.lerp(brM, 1 - g); brB.lerp(brM, 1 - g);
+        spindle(brA, brB, th * g, br, col, n0, n1);
+      }
+    }
+    for (let k = 0; k < nRib; k++) {
+      const j = Math.round(k * nS / Math.max(1, nRib)), phi = j / nS * Math.PI * 2;
+      for (let i = 0; i < nR - 1; i++) {
+        const s1 = ringS(i), s2 = ringS(i + 1), g = Math.min(grow(s1), grow(s2)); if (g <= 0) continue;
+        whSurf(wh, s1, phi, chanRadius(wh, s1) * jit(i, j), 0, brA); whSurf(wh, s2, phi, chanRadius(wh, s2) * jit(i + 1, j), 0, brB);
+        brM.addVectors(brA, brB).multiplyScalar(0.5); brA.lerp(brM, 1 - g); brB.lerp(brM, 1 - g);
+        spindle(brA, brB, th * 0.8 * g, A * 0.8 * glow(depth((s1 + s2) / 2)), col, n0, n1);
+      }
+    }
+  }
+  // Your labyrinth reticle: the whole labyrinth RT would dig now, its channels emerging from the source (emerge 0..1), in
+  // the omnicrystal's gold toward your domain colour; the source's channel brighter.
+  const OMNI_COL = new THREE.Color(0xffd98a);
+  function drawLab(r, A, emerge) {
+    if (!r || !r.net) return;
+    const col = OMNI_COL.clone().lerp(pilotColor(0), 0.35), front = emerge * r.net.D;
+    r.net.edges.forEach((e, i) => {
+      const wh = e.wh, f = clamp01((front - e.za) / Math.max(1, e.zb - e.za)); if (f <= 0) return;
+      wh.s0 = 0; wh.s1 = wh.L * f;
+      drawChanFrame(wh, A * (i === r.net.entry ? 1.6 : 1), col, RET_NEAR, RET_FULL, P.reticleNearLight);
+    });
+  }
+  // The fork ahead of a rider: which channel it takes there - the one whose start points most along the left stick's lean
+  // (held past forkLean any time on the way: g.leanW, in the world), else the straightest.
+  const fkP = new V3(), fkT = new V3(), fkQ = new V3();
+  function forkSide(k, out) { whAt(k.wh, Math.min(k.wh.L, 30), out).sub(fkP); return out.addScaledVector(fkT, -out.dot(fkT)); }
+  function forkPick(g) {
+    const kids = g.pair.kids || []; if (kids.length < 2) return kids[0] || null;
+    const wh = g.pair.wh; whAt(wh, wh.L, fkP, fkT);
+    let best = kids[0], bs = -Infinity;
+    for (const k of kids) {
+      forkSide(k, fkQ);
+      const sc = g.leanW ? (fkQ.lengthSq() > 1e-6 ? fkQ.normalize().dot(g.leanW) : -1) : -fkQ.length();
+      if (sc > bs) { bs = sc; best = k; }
+    }
+    return best;
+  }
+  // How near a ring a channel can take you: the nearest of the openings it leads to (the AI's choice at a fork).
+  const aiEnd = new V3();
+  function netReach(pr, tgt) { const k = pr.kids || []; return k.length ? Math.min(...k.map((c) => netReach(c, tgt))) : whAt(pr.wh, pr.wh.L, aiEnd).distanceTo(tgt); }
+  // RT with an omnicrystal: dig the labyrinth, you in its source. One burrow at a time: the last labyrinth (and the last
+  // tunnel) falls in now. The omnicrystal is spent.
+  function labCommit(r) {
+    const old = ftLive.gate; if (old && old.pair.alive && !old.pair.dying && !old.net && old.pair.wh.phase !== 'collapse' && old.pair.wh.phase !== 'cavein') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }
+    if (ftLive.lastNet) for (const pr of ftLive.lastNet.pairs) if (pr.alive && !pr.dying && pr.wh.phase !== 'collapse' && pr.wh.phase !== 'cavein') { pr.wh.phase = 'collapse'; pr.wh.grow = 1; }
+    basis();
+    const vIn = Math.max(1, speed), T = Math.max(0.05, P.labyrinthFormSeconds);
+    const built = labBuild(r.lay, r.A, r.t0, r.right, r.up);
+    const net = { pairs: [], D: built.D, up: r.up.clone(), pebbles: [], roots: [], pilot: curPilot };
+    built.edges.forEach((e, i) => {
+      const wh = e.wh;
+      Object.assign(wh, { s0: 0, s1: 0, t: 0, phase: 'form', grow: 0, wait: T * e.za / built.D, formT: Math.max(0.05, T * (e.zb - e.za) / built.D), stay: 0, out: false });
+      const pr = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true); pr.wh = wh; pr.net = net; pr.edge = i; whSync(pr); pairs.push(pr); net.pairs.push(pr);
+    });
+    built.edges.forEach((e, i) => { net.pairs[i].kids = e.kids.map((k) => net.pairs[k]); });
+    seedNet(net);
+    ftLive.lastNet = net; ftLive.ab.omni = false;
+    myPair = net.pairs[built.entry];
+    ftLive.retGhost = { view: r, a: 1, formT: T };
+    const wh = myPair.wh;
+    whQ.setFromUnitVectors(fwd, wh.t0);
+    ftLive.gate = { pair: myPair, net, state: 'tube', s: -hull.position.distanceTo(wh.A), sIn: 0, oN: 0, oB: 0, vIn, forks: 0, leanW: null, prev: null, dist: 0,
+      tIn: wh.t0.clone(), q0: whQ.clone().multiply(hull.quaternion) };
+    if (raceStats && race === 'running') { raceStats.slings++; raceStats.labyrinths = (raceStats.labyrinths || 0) + 1; }
+    slings++;
+    if (stance) stance = false;
+    if (!curPilot) portalFlash = 1;
+  }
+  // Sliding the labyrinth: the entry multiplier rising to the middle one through the forks, easing to the exit one on the
+  // last channel, plus forkBoost a fork taken; at each fork into the channel forkPick chooses.
+  function labTransit(dt) {
+    const g = ftLive.gate; let wh = g.pair.wh;
+    const lm = Math.hypot(ftLive.leanX || 0, ftLive.leanUp || 0);
+    if (lm > Math.max(0.05, P.forkLean)) { basis(); g.leanW = new V3().addScaledVector(right, ftLive.leanX / lm).addScaledVector(up, ftLive.leanUp / lm); }
+    const u = clamp01(g.s / Math.max(1e-3, wh.L)), e = Math.max(0.05, P.rideEntryMultiplier), m = Math.max(0.05, P.rideMidMultiplier), x = Math.max(0.05, P.rideExitMultiplier);
+    const mul = wh.mouthIn && wh.mouthOut ? rideMultiplier(P, u) : wh.mouthIn ? e + (m - e) * smooth(0, 1, u) : wh.mouthOut ? x + (m - x) * (1 - smooth(0, 1, u)) : m;
+    const v = g.vIn * mul * (1 + Math.max(0, P.forkBoost) * g.forks);
+    g.s += v * dt; g.dist += v * dt;
+    while (g.s >= wh.L && (g.pair.kids || []).length) {
+      const pick = forkPick(g), many = g.pair.kids.length > 1;
+      whAt(wh, wh.L, whA, whB); whQ.setFromUnitVectors(g.tIn, whB); g.q0 = whQ.clone().multiply(g.q0); g.tIn = whB.clone();
+      g.s -= wh.L; g.prev = g.pair; g.pair = pick; if (many) { g.forks++; if (!curPilot) forkFlash = 0.9; }
+      g.leanW = null; g.aiPick = null; wh = pick.wh;
+    }
+    if (g.s < 0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }
+    else {
+      whAt(wh, Math.min(g.s, wh.L), whA, whB);
+      hull.position.copy(whA);
+      whQ.setFromUnitVectors(g.tIn, whB); hull.quaternion.copy(whQ).multiply(g.q0).normalize();
+    }
+    velNow.copy(whB).multiplyScalar(v);
+    if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
+    if (g.s >= wh.L - 1e-6) {   // out of an opening, on its heading
+      g.state = 'done'; g.used = true;
+      for (const pr of g.net.pairs) { pr.wh.out = true; if (pr.wh.phase === 'open') pr.wh.phase = 'stay'; }
+      speed = g.vIn * x;
+      if (raceStats && race === 'running') raceStats.catches++;
+      lastGate = { lab: true, len: Math.round(g.dist), forks: g.forks }; slingFlash = 1.6;
+    }
+  }
+  let forkFlash = 0;
+  // ================= round 16: the soil the labyrinth is dug through =================
+  // Yash, 2026-10-28: "the same effect using a subterranean underground, like a soil underground soil where it's going
+  // through the wormhole and I can see the burrowing of the soil." Every channel has a wall of soil round it (soilWall x its
+  // radius, as rough as the wireframe), drawn in the wall's own way - see-through face-on (soilGlass), bright where it turns
+  // away (soilRim, soilFresnel) - but in earth: layered strata (soilStrata contrast, soilStrataThickness u a layer, loam,
+  // clay, sand and stone, the layers level with the network's up), grain and grit (soilGrain). Round the walls lie
+  // soilPebbles stones (lit, faceted, soilPebbleSize u), and soilRoots roots hang down onto the channels from above. All of
+  // it shows only where its channel has formed (the window), so the soil is dug out with the burrow and falls in with it.
+  // Everyone sees it, the rider too: riding, the strata stream past on the walls and the other channels show through them.
+  // (Built for the Gopher studio on 2026-10-28; Yash moved the burrow network into the Meerkat's Omnicrystal ability.)
+  const SOIL_ALONG = 6, SOIL_SEG = 16, PEB_MAX = 3000;
+  const soilMat = new THREE.ShaderMaterial({
+    uniforms: { upV: { value: new V3(0, 1, 0) }, strata: { value: 0.7 }, bandH: { value: 14 }, grain: { value: 0.5 }, glass: { value: 0.05 }, rim: { value: 0.6 },
+      power: { value: 2.2 }, alpha: { value: 1 }, f0: { value: 0 }, f1: { value: 1 }, edge: { value: 0.05 }, seed: { value: 0 } },
+    vertexShader: [
+      'attribute float aS; varying float vS; varying vec3 vW; varying vec3 vN; varying vec3 vV;',
+      'void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vec4 mv = viewMatrix * w; vV = normalize(-mv.xyz);',
+      '  vN = normalize(normalMatrix * normal); vS = aS; gl_Position = projectionMatrix * mv; }',
+    ].join('\n'),
+    fragmentShader: [
+      'uniform vec3 upV; uniform float strata; uniform float bandH; uniform float grain; uniform float glass; uniform float rim; uniform float power;',
+      'uniform float alpha; uniform float f0; uniform float f1; uniform float edge; uniform float seed;',
+      'varying float vS; varying vec3 vW; varying vec3 vN; varying vec3 vV;',
+      'float h(vec3 q){ return fract(sin(dot(q, vec3(127.1, 311.7, 74.7)) + seed) * 43758.5453); }',
+      'float vn(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);',
+      '  return mix(mix(mix(h(i), h(i + vec3(1,0,0)), f.x), mix(h(i + vec3(0,1,0)), h(i + vec3(1,1,0)), f.x), f.y),',
+      '             mix(mix(h(i + vec3(0,0,1)), h(i + vec3(1,0,1)), f.x), mix(h(i + vec3(0,1,1)), h(i + vec3(1,1,1)), f.x), f.y), f.z); }',
+      'void main(){',
+      '  if (vS < f0 || vS > f1) discard;',
+      '  float w = smoothstep(0.0, edge, min(vS - f0, f1 - vS));',
+      '  float lv = dot(vW, upV) / bandH + 0.8 * vn(vW * 0.018) - 0.4;',          // the layers, gently undulating
+      '  float k = floor(lv), fl = fract(lv), pick = fract(sin(k * 12.9898 + 4.1) * 43758.5453);',
+      '  vec3 c = pick < 0.3 ? vec3(0.36, 0.22, 0.12) : pick < 0.55 ? vec3(0.66, 0.40, 0.18) : pick < 0.8 ? vec3(0.80, 0.64, 0.40) : vec3(0.50, 0.48, 0.44);',
+      '  c = mix(vec3(0.55, 0.40, 0.26), c, strata);',
+      '  float seam = (1.0 - smoothstep(0.0, 0.06, fl)) + (1.0 - smoothstep(0.0, 0.06, 1.0 - fl));',   // dark seams between layers
+      '  float g = 0.6 * vn(vW * 0.7) + 0.4 * vn(vW * 2.3);',
+      '  float peb = smoothstep(0.80, 0.86, vn(vW * 0.21 + 3.1));',                // stones caught in the wall
+      '  c *= (1.0 - 0.6 * grain) + 1.2 * grain * g; c = mix(c, vec3(0.78, 0.76, 0.70), 0.7 * peb); c *= 1.0 - 0.55 * strata * clamp(seam, 0.0, 1.0);',
+      '  float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), power);',
+      '  gl_FragColor = vec4(c * (glass + rim * fr) * alpha * w, 1.0);',
+      '}'].join('\n'),
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  });
+  // A channel's soil wall: a rough tube round it, built once (it does not move); aS = the share of the way along.
+  function soilWallR(wh, s, phi) {
+    const rough = Math.max(0, P.labyrinthRoughness), n = Math.sin(phi * 3 + wh.seed + s * 0.11) * Math.sin(phi * 5 - s * 0.07 + wh.seed * 1.7);
+    return chanRadius(wh, s) * Math.max(1.05, P.soilWall) * (1 + 0.6 * rough * n);
+  }
+  function buildSoil(wh) {
+    const nA = Math.max(4, Math.round(wh.L / SOIL_ALONG)), pos = [], aS = [], idx = [], q = new V3();
+    for (let r = 0; r <= nA; r++) for (let j = 0; j <= SOIL_SEG; j++) {
+      const s = wh.L * r / nA, phi = j / SOIL_SEG * Math.PI * 2;
+      whSurf(wh, s, phi, soilWallR(wh, s, phi), 0, q); pos.push(q.x, q.y, q.z); aS.push(r / nA);
+    }
+    for (let r = 0; r < nA; r++) for (let j = 0; j < SOIL_SEG; j++) { const a = r * (SOIL_SEG + 1) + j, b = a + SOIL_SEG + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('aS', new THREE.Float32BufferAttribute(aS, 1));
+    g.setIndex(idx); g.computeVertexNormals(); return g;
+  }
+  // The stones and roots of a network, placed once when it is dug (seeded by where it is, so every peer's soil matches).
+  const pebMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, flatShading: true }), PEB_MAX);
+  pebMesh.setColorAt(0, new THREE.Color()); pebMesh.instanceColor.setUsage(THREE.DynamicDrawUsage); pebMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  pebMesh.frustumCulled = false; pebMesh.count = 0; scene.add(pebMesh);
+  const PEB_COLS = [0x6b4a30, 0x8a6a48, 0x9c9184, 0x5c5650, 0xa0703c].map((h) => new THREE.Color(h));
+  function seedNet(net) {
+    const R = rng(Math.floor(Math.abs(net.pairs[0].wh.A.x * 13.7 + net.pairs[0].wh.A.y * 7.3 + net.pairs[0].wh.A.z * 3.1)) % 100000 + 11);
+    const tot = net.pairs.reduce((a, pr) => a + pr.wh.L, 0), pick = () => { let x = R() * tot; for (const pr of net.pairs) { x -= pr.wh.L; if (x <= 0) return pr; } return net.pairs[net.pairs.length - 1]; };
+    const q = new V3(), nP = Math.max(0, Math.min(1200, Math.round(P.soilPebbles)));
+    net.pebbles = [];
+    for (let i = 0; i < nP; i++) {
+      const pr = pick(), wh = pr.wh, s = R() * wh.L, phi = R() * Math.PI * 2, d = soilWallR(wh, s, phi) * (1.12 + 1.8 * R() * R());
+      whSurf(wh, s, phi, d, 0, q);
+      net.pebbles.push({ pr, u: s / wh.L, p: q.clone(), size: Math.max(0.1, P.soilPebbleSize) * (0.45 + 1.1 * R() * R()), rot: new THREE.Quaternion().setFromEuler(new THREE.Euler(R() * 6.3, R() * 6.3, R() * 6.3)),
+        sq: new V3(1 + 0.6 * R(), 0.6 + 0.5 * R(), 1 + 0.4 * R()), col: PEB_COLS[Math.floor(R() * PEB_COLS.length)].clone().multiplyScalar(0.7 + 0.5 * R()) });
+    }
+    net.roots = [];
+    const nR = Math.max(0, Math.min(80, Math.round(P.soilRoots))), up = net.up;
+    for (let i = 0; i < nR; i++) {
+      const pr = pick(), wh = pr.wh, s = R() * wh.L, top = whAt(wh, s, new V3()).addScaledVector(up, soilWallR(wh, s, Math.PI / 2) * (1.6 + 2.2 * R()));
+      const pts = [top], len = soilWallR(wh, s, 0) * (0.8 + 1.4 * R()), wig = new V3(R() - 0.5, R() - 0.5, R() - 0.5).normalize();
+      for (let k = 1; k <= 6; k++) pts.push(top.clone().addScaledVector(up, -len * k / 6).addScaledVector(wig, Math.sin(k * 1.3 + i) * 0.12 * len).addScaledVector(wh.t0, (R() - 0.5) * 0.15 * len));
+      net.roots.push({ pr, u: s / wh.L, pts, th: 0.25 + 0.35 * R() });
+    }
+  }
+  const pebS = new V3(), pebM = new THREE.Matrix4(), rootCol = new THREE.Color(0.55, 0.32, 0.14);
+  const cover = (pr, u) => { const wh = pr.wh, e = Math.max(4, 0.06 * wh.L) / wh.L; return smooth(0, e, Math.min(u - wh.s0 / wh.L, wh.s1 / wh.L - u)); };
+  function drawSoil() {
+    const vis = clamp01(P.soilVisibility); let nPeb = 0;
+    const nets = new Set();
+    for (const pr of pairs) {
+      if (!pr.wh || !pr.wh.chan) continue;
+      if (pr.net) nets.add(pr.net);
+      const wh = pr.wh, fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1, cave = wh.cave != null ? clamp01(wh.cave) : 1, A = vis * fade * cave;
+      if (!pr.soil && A > 0.004 && pr.alive) {
+        const m = new THREE.Mesh(buildSoil(wh), soilMat.clone()); m.frustumCulled = false; m.renderOrder = 3; scene.add(m); pr.soil = m;
+      }
+      if (!pr.soil) continue;
+      let f0 = wh.s0 / wh.L, f1 = wh.s1 / wh.L; if (f0 <= 1e-3) f0 = -1; if (f1 >= 1 - 1e-3) f1 = 2;
+      const U = pr.soil.material.uniforms;
+      U.upV.value.copy(pr.net ? pr.net.up : Y_UP); U.strata.value = clamp01(P.soilStrata); U.bandH.value = Math.max(1, P.soilStrataThickness); U.grain.value = Math.max(0, P.soilGrain);
+      U.glass.value = Math.max(0, P.soilGlass); U.rim.value = Math.max(0, P.soilRim); U.power.value = Math.max(0.5, P.soilFresnel); U.alpha.value = A;
+      U.f0.value = f0; U.f1.value = f1; U.edge.value = Math.max(4, 0.06 * wh.L) / wh.L; U.seed.value = wh.seed;
+      pr.soil.visible = A > 0.004 && pr.alive;
+    }
+    for (const net of nets) {
+      const live = net.pairs.some((pr) => pr.alive);
+      if (!live || vis <= 0.004) continue;
+      for (const pb of net.pebbles) {
+        if (nPeb >= PEB_MAX || !pb.pr.alive) continue;
+        const fade = pb.pr.dying ? Math.max(0, 1 - pb.pr.dieT / FADE_S) : 1, c = cover(pb.pr, pb.u) * fade * (pb.pr.wh.cave != null ? clamp01(pb.pr.wh.cave) : 1);
+        if (c <= 0.01) continue;
+        pebS.copy(pb.sq).multiplyScalar(pb.size * c); pebM.compose(pb.p, pb.rot, pebS); pebMesh.setMatrixAt(nPeb, pebM); pebMesh.setColorAt(nPeb, pb.col); nPeb++;
+      }
+      for (const rt of net.roots) {
+        if (!rt.pr.alive) continue;
+        const c = cover(rt.pr, rt.u) * vis * (rt.pr.dying ? Math.max(0, 1 - rt.pr.dieT / FADE_S) : 1); if (c <= 0.01) continue;
+        for (let k = 0; k < rt.pts.length - 1; k++) spindle(rt.pts[k], rt.pts[k + 1], rt.th * (1 - 0.6 * k / rt.pts.length) * 2, 0.8 * c, rootCol);
+      }
+    }
+    pebMesh.count = nPeb; pebMesh.instanceMatrix.needsUpdate = true; if (pebMesh.instanceColor) pebMesh.instanceColor.needsUpdate = true;
+  }
+  function sweepSoil() {   // a channel gone: its soil goes with it
+    for (const pr of pairs) if (pr.soil && (!pr.alive)) { scene.remove(pr.soil); pr.soil.geometry.dispose(); pr.soil.material.dispose(); pr.soil = null; }
+  }
 
   // Your reticle (rounds 23, 26): faint at rest, full while the right stick or LT shapes it, rippling out of its centre as
   // it comes back; and as a tunnel forms, the reticle fading. Its grid is yours alone and only while you shape it; a
   // formed tunnel shows everyone its bridge (drawBridge) and bends space round it (updateTubeWarp, setLensUniforms).
-  const retDraw = [];
+  const retDraw = [], labDraw = [];
   function updateWormholes() {
     whNv = 0; whEye.copy(cam.position); let nFill = 0;
     const you = mode === 'fly' ? liveOf(0) : null;
@@ -1954,15 +2433,17 @@
       const lt = you.ret.flq || 0, rest = clamp01(P.reticleIdleAlpha), e = you.ret.emerge;
       const ra = (rest + (1 - rest) * clamp01(Math.max(you.ret.m / 0.3, lt * 2))) * (0.35 + 0.65 * e);
       const v = e >= 1 ? you.ret : Object.assign({}, you.ret, { s0: 0.5 * you.ret.L * (1 - e), s1: 0.5 * you.ret.L * (1 + e) });
-      retDraw.push([v, ra]);
+      if (you.ret.net) labDraw.push([you.ret, Math.max(0.85, ra) * (0.35 + 0.65 * e), e]); else retDraw.push([v, ra]);
     }
-    if (you && you.retGhost) retDraw.push([you.retGhost.view, Math.max(0, you.retGhost.a) * 0.8]);
+    if (you && you.retGhost) { if (you.retGhost.view.net) labDraw.push([you.retGhost.view, Math.max(0, you.retGhost.a) * 0.8, 1]); else retDraw.push([you.retGhost.view, Math.max(0, you.retGhost.a) * 0.8]); }
     brN = 0;
     for (const [v, a] of retDraw) drawReticle(v, a);
+    for (const [v, a, e] of labDraw) drawLab(v, a, e);
+    labDraw.length = 0;
     retDraw.length = 0;
     treeWarpOn = false;
-    if (mode === 'fly') for (const pr of pairs) if (pr.alive && pr.wh) { nFill = drawBridge(pr, nFill); drawTrunk(pr); }
-    sweepTrunks();
+    if (mode === 'fly') for (const pr of pairs) if (pr.alive && pr.wh) { nFill = drawBridge(pr, nFill); if (!pr.wh.chan) drawTrunk(pr); }
+    sweepTrunks(); drawSoil(); sweepSoil();
     bridgeMesh.count = brN; bridgeMesh.instanceMatrix.needsUpdate = true; if (bridgeMesh.instanceColor) bridgeMesh.instanceColor.needsUpdate = true;
     for (let i = nFill; i < wfMeshes.length; i++) wfMeshes[i].visible = false;
     whGeo.setDrawRange(0, whNv); whLines.visible = whNv > 0;
@@ -1975,7 +2456,7 @@
   // half-float buffer as a screen-space offset: the wall's view normal, strongest at the silhouette (a glass tube's
   // edges), bending IN toward the entry and OUT toward the exit (cos of the way along). The lens pass adds it to its bend
   // (tWarp), so the world behind a tunnel is bent exactly where the grid runs. The mouths keep their own dents (wells).
-  const TW_MAX = 6, TW_NV = WH_RINGS * (WH_SEG + 1), twClear = new THREE.Color();
+  const TW_MAX = 40, TW_NV = WH_RINGS * (WH_SEG + 1), twClear = new THREE.Color();
   const twScene = new THREE.Scene(), twMeshes = [];
   const twMat = new THREE.ShaderMaterial({
     uniforms: { k: { value: 0 } },
@@ -2297,7 +2778,21 @@
     // The one-thumb mix: the LEFT stick flies (yaw, pitch; full throttle), the RIGHT stick bends the reticle, LT lengthens its shaft
     // it, an RT press forms it. The AI holds its line while it shapes (aiShapeSeconds), then presses RT.
     const gate = ftLive.gate, riding = !!(gate && gate.state === 'tube'); let lt = 0, rt = 0, bend = false;
-    if (riding) {
+    if (riding && gate.net) {   // round 16, the labyrinth: at a fork, lean toward the channel that leads nearest the ring (once a fork; a rookie sometimes leans wrong)
+      ai.gHold = 0; ai.gShaping = false;
+      const kids = gate.pair.kids || [];
+      if (kids.length > 1 && !blind) {
+        if (!gate.aiPick) {
+          const ds = kids.map((k) => netReach(k, tgt)); let bi = ds.indexOf(Math.min(...ds));
+          if (aiRand() < 0.35 * clamp01(P.aiNoise)) bi = (bi + 1) % kids.length;
+          gate.aiPick = kids[bi];
+        }
+        whAt(gate.pair.wh, gate.pair.wh.L, fkP, fkT); forkSide(gate.aiPick, fkQ);
+        const lx = fkQ.dot(right), ly = fkQ.dot(up), lm = Math.hypot(lx, ly);
+        if (lm > 1e-6) { inp.L.x = easeInv(0.9 * lx / lm) / 2; let pb = easeInv(0.9 * ly / lm) / 2; if (invertY) pb = -pb; inp.L.y = pb; }
+      }
+    }
+    else if (riding) {
       ai.gHold = 0; ai.gShaping = false;
       // round 8, Chain Dig (Time L5): past chainShare of the ride, if a tunnel from the far mouth fits the next leg, bend
       // the right stick for it and press RT. One try a tunnel.
@@ -2313,6 +2808,9 @@
           lt = plan.lq; rt = 1; ai.chains = (ai.chains || 0) + 1;
         }
       }
+    }
+    else if (!blind && P.aiWormhole > 0.5 && ftLive.ab.omni && ftLive.ret && ftLive.ret.net && ftLive.ret.emerge >= 0.6 && loc.z < 0 && d > 0.5 * Math.max(40, P.labyrinthRadius)) {
+      rt = 1; ai.gShaping = false;   // round 16: an omnicrystal armed and the ring ahead: dig the labyrinth
     }
     else if (ai.gShaping) {   // shaped, and its reticle caught up (round 3: the reticle eases): pull RT
       ai.gHold -= dt; lt = ai.gL; bend = true;
@@ -2590,7 +3088,7 @@
     // Out of the far mouth the camera keeps to the tunnel's line until it is past the mouth itself (camTail): straight
     // behind the nose would cut the bend for its first `back` u, a sideways jump at the way out.
     const gr = ftLive.gate && ftLive.gate.state === 'tube' && camMode !== 'free' ? ftLive.gate : null;
-    if (gr) { camTail = { wh: gr.pair.wh, s: gr.s }; whAtX(gr.pair.wh, gr.s - back, want); look.copy(hull.position); }
+    if (gr) { camTail = { wh: gr.pair.wh, s: gr.s }; if (gr.s - back < 0 && gr.prev) whAtX(gr.prev.wh, gr.prev.wh.L + gr.s - back, want); else whAtX(gr.pair.wh, gr.s - back, want); look.copy(hull.position); }
     else if (camTail && camMode !== 'free' && mode === 'fly') {
       camTail.s += Math.max(0, speed) * dt;
       if (camTail.s - back >= camTail.wh.L) camTail = null; else { whAtX(camTail.wh, camTail.s - back, want); look.copy(hull.position); }
@@ -2710,7 +3208,7 @@
     const c = hctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, cw, ch);
     const sc = Math.max(0.7, Math.min(1.15, cw / 900));
     const font = (px, w) => (w || 600) + ' ' + Math.round(px * sc) + 'px "Chakra Petch", "Segoe UI", sans-serif';
-    const cyan = '#4fd8ff', lime = '#9dff2e', amber = '#ffb347', ink = '#e8ecff', dim = '#9aa6d6';
+    const cyan = '#4fd8ff', lime = '#9dff2e', amber = '#ffb347', ink = '#e8ecff', dim = '#9aa6d6', gold = '#ffd98a';
     const pad = 14 * sc;
     // phone play: keep the HUD clear of the trigger columns and the button bar
     const padL = playMode ? 112 : pad, padR = playMode ? 112 : pad, tY = playMode ? 46 : 0;
@@ -2756,8 +3254,26 @@
     if (race === 'running' && !stopped) {
       const g = ftLive.gate, ret = ftLive.ret;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText('OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u tunnel · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
-      if (ret || (g && g.pair.alive && g.state === 'tube')) {
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE LABYRINTH · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u of slide' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u tunnel · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (omniFlash > 0) { c.globalAlpha = Math.min(1, omniFlash); c.fillStyle = gold; c.font = font(20, 700); c.fillText('OMNICRYSTAL! · your next RT digs the LABYRINTH', cw / 2, ch * 0.24); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (ret && ret.net && ret.lay) {   // round 16: armed, the reticle is the labyrinth
+        c.fillStyle = gold;
+        c.fillText('LABYRINTH  ·  ' + ret.lay.forks + ' forks  ·  ' + ret.lay.openings + ' openings  ·  ' + Math.round(2 * P.labyrinthRadius) + ' u across', cw / 2, tY + pad + 14 * sc);
+        c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT digs it and you slide in  ·  lean the left stick toward a channel at each fork', cw / 2, tY + pad + 30 * sc);
+      } else if (g && g.net && g.pair.alive && g.state === 'tube') {
+        const kids = g.pair.kids || [], left = Math.max(0, g.pair.wh.L - g.s) / Math.max(1, velNow.length());
+        c.fillStyle = gold; c.fillText('IN THE LABYRINTH  ·  ' + g.forks + (g.forks === 1 ? ' fork taken' : ' forks taken') + '  ·  ' + (kids.length > 1 ? kids.length + ' channels ahead' : kids.length ? 'on to the next fork' : 'an opening ahead'), cw / 2, tY + pad + 14 * sc);
+        if (kids.length > 1 && left <= Math.max(0, P.forkHintSeconds)) {   // the fork: each channel marked where it leads, the one you would take lit
+          const pick = forkPick(g);
+          for (const k of kids) {
+            whAt(k.wh, Math.min(k.wh.L, 40), tv); tv.applyMatrix4(cam.matrixWorldInverse); if (tv.z > -1) continue;
+            whAt(k.wh, Math.min(k.wh.L, 40), tv); tv.project(cam);
+            const x = (tv.x * 0.5 + 0.5) * cw, y = (-tv.y * 0.5 + 0.5) * ch, on = k === pick;
+            c.strokeStyle = on ? lime : 'rgba(232,236,255,0.45)'; c.lineWidth = on ? 4 : 2; c.beginPath(); c.arc(x, y, (on ? 18 : 12) * sc, 0, Math.PI * 2); c.stroke();
+          }
+          c.font = font(12, 600); c.fillStyle = dim; c.fillText(g.leanW ? 'leaning: the lit channel' : 'lean the left stick toward a channel · no lean: the straightest', cw / 2, ch * 0.66);
+        }
+      } else if (ret || (g && g.pair.alive && g.state === 'tube')) {
         const wh = ret || g.pair.wh, line = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°';
         c.fillStyle = ret ? cyan : lime;
         c.fillText(ret ? line + '  ·  max ' + Math.round(P.bendMaxDegrees * wh.fat) + '°' : 'IN THE THROAT  ·  ' + line, cw / 2, tY + pad + 14 * sc);
@@ -2776,7 +3292,9 @@
       c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = ink;
       c.fillText('AI PILOT · ' + youLevel.toUpperCase() + (P.aiWormhole > 0.5 ? '' : ' · NO WORMHOLE') + (courseKind === 'hairpin' ? ' · HAIRPINS' : ''), cw / 2, ch - pad - 4 * sc);
     }
-    if (portalFlash > 0) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText('INTO THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
+    if (forkFlash > 0) { c.globalAlpha = Math.min(1, forkFlash * 2); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = lime; c.fillText('FORK TAKEN', cw / 2, ch * 0.7); c.globalAlpha = 1; }
+    if (ftLive.ab.omni && P.omniOn > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube')) { c.textAlign = 'left'; c.font = font(12, 700); c.fillStyle = gold; c.fillText('◆ OMNICRYSTAL: the labyrinth is armed (RT)', padL, pad + 41 * sc); }
+    if (portalFlash > 0) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText(ftLive.gate && ftLive.gate.net ? 'INTO THE LABYRINTH' : 'INTO THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
     // top-right: the race
     c.textAlign = 'right'; c.font = font(14, 700); c.fillStyle = ink;
     const lap = Math.min(laps, Math.floor(threaded / NG) + 1);
@@ -2824,7 +3342,7 @@
       c.globalAlpha = clamp01(1.8 - (simT - lastCave.t)); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffffff';
       c.fillText(lastCave.harmless ? 'CAVE-IN · silenced: harmless' : 'CAVE-IN · ' + lastCave.caved + ' prisms' + (lastCave.buried ? ' · ' + lastCave.buried + ' buried' : ''), cw / 2, ch * 0.34); c.globalAlpha = 1;
     }
-    slingFlash = Math.max(0, slingFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
+    forkFlash = Math.max(0, forkFlash - dt); omniFlash = Math.max(0, omniFlash - dt); slingFlash = Math.max(0, slingFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
   // ---- round 8: the four-icon ability row, for the pilot the camera is on ----
   const viewedId = () => (mode === 'fly' && watchIdx > 0 && rivals[watchIdx - 1] ? rivals[watchIdx - 1].id : 0);
@@ -3123,6 +3641,32 @@
       txt(c, 'the right stick ' + (st.tubes.length > 2 ? 'centred, half and fully over' : st.tubes[0].sh.m < 0.05 ? 'centred and fully over' : 'half and fully over') + (cfg.lt ? ' · LT ' + cfg.lt : ''), 6, H - 6, '#9aa6d6', 9.5);
     },
   };
+  // ---------- round 16: the labyrinth, from above and from the side: its forks and openings, a dot sliding a route ----------
+  SCENES.labyrinth = {
+    make(Pv) { const lay = labLayout(Pv, 7); return { lay }; },
+    bounds(st) { let b = { x0: -40, x1: 40, y0: -20, y1: 60 }; for (const n of st.lay.nodes) b = bUnion(b, { x0: n.p.x - 15, x1: n.p.x + 15, y0: n.p.z - 15, y1: n.p.z + 15 }); return b; },
+    period: () => 5,
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      previewBg(c, W, H, 43);
+      const V = view || makeView(SCENES.labyrinth.bounds(st), W, H, 12), lay = st.lay, soil = cfg.what === 'soil', R = Math.max(40, Pv.labyrinthRadius);
+      const dw = Math.max(1, Pv.labyrinthDiameter * V.s), mw = Math.max(dw, Pv.labyrinthMouthDiameter * V.s);
+      const pt = (v) => [V.X(v.x), V.Y(v.z)], hi = (v) => 0.45 + 0.55 * clamp01(0.5 + v.y / (2 * R));   // higher = brighter (seen from above)
+      for (const e of lay.edges) {
+        const a = pt(e.a.p), b = pt(e.b.p), k = hi(e.b.p);
+        if (soil) { c.strokeStyle = 'rgba(150,100,55,' + (0.3 * clamp01(Pv.soilVisibility)).toFixed(3) + ')'; c.lineWidth = dw * Math.max(1.05, Pv.soilWall) * 1.6; c.lineCap = 'round'; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
+        c.strokeStyle = 'rgba(255,217,138,' + (0.2 * k).toFixed(3) + ')'; c.lineWidth = dw; c.lineCap = 'round'; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+        c.strokeStyle = 'rgba(255,230,170,' + (0.85 * k).toFixed(3) + ')'; c.lineWidth = 1; c.stroke();
+      }
+      for (const n of lay.nodes) { const q = pt(n.p); if (n.kids.length) { c.fillStyle = '#ffd98a'; c.beginPath(); c.arc(q[0], q[1], 2.5, 0, TAU); c.fill(); } else { c.strokeStyle = '#9dff2e'; c.lineWidth = 1.4; c.beginPath(); c.arc(q[0], q[1], mw / 2, 0, TAU); c.stroke(); } }
+      // a dot sliding from the source, taking each fork's channels in turn
+      let e = 0, route = [0], k = 0; while (lay.edges[e].kids.length && route.length < 12) { e = lay.edges[e].kids[k++ % lay.edges[e].kids.length]; route.push(e); }
+      const u = (tt % 5) / 5 * route.length, i = Math.min(route.length - 1, Math.floor(u)), f = u - i, ed = lay.edges[route[i]], a = pt(ed.a.p), b = pt(ed.b.p);
+      c.fillStyle = '#9dff2e'; c.beginPath(); c.arc(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, 3.5, 0, TAU); c.fill();
+      ship(c, V.X(0), V.Y(0), 0, 1, '#ffd27a', 6);
+      txt(c, 'from above · ' + lay.forks + ' forks · ' + lay.openings + ' openings · ' + Math.round(2 * R) + ' u across · spread ' + Math.round(Pv.labyrinthSpread) + '°', 6, 13, '#e8ecff', 10);
+      txt(c, 'brighter = higher · the dot takes each fork\'s channels in turn' + (soil ? ' · brown: the soil walls' : ''), 6, H - 6, '#9aa6d6', 9.5);
+    },
+  };
   // ---------- the bridge, in plan: rings of spindles across the tube, ribs along it, the glass under them ----------
   SCENES.bridge = {
     make(Pv) { return { tb: tunnelPlan(Pv, 0, 0.55), vis: clamp01(Pv.bridgeVisibility), glass: Pv.bridgeGlass, nR: Math.max(2, Math.round(Pv.bridgeRings)), nS: Math.max(3, Math.round(Pv.bridgeSpindlesPerRing)), nRib: Math.max(0, Math.round(Pv.bridgeRibs)), th: Pv.bridgeSpindleThickness, sh: clamp01(Pv.bridgeShimmer) }; },
@@ -3387,6 +3931,34 @@
     timeLevel: { scene: 'ability', cfg: { ab: 'time' }, at: [0.3, 0.6], d: 'The Time element\'s level. Level 5 and up unlocks Chain Dig (a proposal): late in a ride, RT digs the next tunnel from the far mouth and you carry straight on at throat speed.', lo: 'One tunnel at a time.', hi: 'Chain Dig.' },
     chainShare: { scene: 'ability', cfg: { ab: 'time', over: { timeLevel: 5 } }, d: 'L5 Chain Dig: from this share of the way through a tunnel you ride, RT digs the next one (the amber tick).', lo: 'Early: lots of time to aim.', hi: 'Late: right at the far mouth.' },
     aiNewAbilities: { scene: 'ability', cfg: { ab: 'charge' }, d: 'Whether the AI pilots use the round-8 abilities: Lookout when ready (with rivals or crystals near), Hardened Bridge with a rival within 600 u, Cave-in on a tunnel it has left with a rival in it (L5) or 6 prisms in reach, and Chain Dig when a tunnel from the far mouth fits the next leg. All by pressing the buttons a player has. Off: the AI flies as it did before round 8.', lo: 'Wormhole only.', hi: 'The whole kit.' },
+    omniOn: { scene: 'labyrinth', d: 'The Meerkat\'s Omnicrystal ability. Fly through an omnicrystal (gold, on the course line) and your next RT digs the labyrinth instead of a wormhole: a 3D warren from one source, forks branching every way, openings all round, dug through soil. You slide through it and lean the left stick to choose at each fork. 0: omnicrystals do nothing.', lo: 'Off.', hi: 'On.' },
+    omniCount: { scene: 'labyrinth', d: 'How many omnicrystals sit on the course line, half way between rings. A new course, or a reset, places them.', lo: 'None.', hi: 'Plenty.' },
+    labyrinthBranchPoints: { scene: 'labyrinth', d: 'How many forks the labyrinth has, branching in 3D from its one source.', lo: 'A few forks.', hi: 'A maze.' },
+    labyrinthOpenings: { scene: 'labyrinth', d: 'How many ways out it has, spread round it. A fork splits two to four ways, so there are at most 3 x forks + 1 openings (and at least forks + 1).', lo: 'A few holes.', hi: 'Holes everywhere.' },
+    labyrinthRadius: { scene: 'labyrinth', d: 'How far the labyrinth spreads: its openings lie this far from its centre (the centre sits about this far ahead of you).', lo: 'Compact.', hi: 'A huge park.' },
+    labyrinthSpread: { scene: 'labyrinth', d: 'Over how wide a cone round its centre the openings spread, measured from straight ahead: 360 is all round, back toward you included.', lo: 'Openings ahead only.', hi: 'All round.' },
+    labyrinthRandomness: { scene: 'labyrinth', d: 'How irregular it is: the forks wander off their even places and the openings off their even spread. Every labyrinth is new; this sets how wild.', lo: 'Orderly.', hi: 'Wackadoodle.' },
+    labyrinthDiameter: { scene: 'labyrinth', d: 'How wide every channel is.', lo: 'Tight.', hi: 'Roomy.' },
+    labyrinthMouthDiameter: { scene: 'labyrinth', d: 'How wide the source and the openings are: each channel flares to this at a mouth.', lo: 'Pinholes.', hi: 'Big holes.' },
+    labyrinthRoughness: { scene: 'labyrinth', d: 'How uneven the dug walls are: its wireframe rings and its soil walls wobble by this share.', lo: 'Bored smooth.', hi: 'Clawed out.' },
+    labyrinthFormSeconds: { scene: 'labyrinth', d: 'RT: the labyrinth digs itself out from the source to every opening over this long, while you dive in.', lo: 'At once.', hi: 'Slowly.' },
+    labyrinthRingSpacing: { scene: 'labyrinth', d: 'Its wireframe (your reticle while an omnicrystal is armed, and its dug channels): a ring of spindles every this many u.', lo: 'Dense rings.', hi: 'Sparse rings.' },
+    labyrinthRingSides: { scene: 'labyrinth', d: 'How many spindles make each ring.', lo: 'A rough triangle.', hi: 'Round.' },
+    labyrinthRibs: { scene: 'labyrinth', d: 'Spindles running along each channel, ring to ring.', lo: 'Rings only.', hi: 'A cage.' },
+    forkBoost: { scene: 'labyrinth', d: 'The slide: each fork you take adds this much (x your speed before the labyrinth), on top of the ride multipliers, so a deep run is a fast one.', lo: 'No extra.', hi: 'Faster every fork.' },
+    forkLean: { scene: 'labyrinth', d: 'At a fork, lean the LEFT stick toward the channel you want (left, right, up, down or between) past this much; a lean held any time on the way counts. No lean: the straightest channel.', lo: 'A touch chooses.', hi: 'A firm lean.' },
+    forkHintSeconds: { scene: 'labyrinth', d: 'How long before a fork its channels are marked on screen, the one you would take lit.', lo: 'At the last moment.', hi: 'Early warning.' },
+    soilVisibility: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The soil the labyrinth is dug through: a wall of layered earth round every channel, stones round it and roots hanging onto it, dug out with it and falling in with it. Everyone sees it, the rider too. 0 hides it.', lo: 'No soil.', hi: 'All the soil.' },
+    soilWall: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How far the soil wall sits from each channel\'s centre, as a multiple of its radius.', lo: 'A skin of earth.', hi: 'Thick earth.' },
+    soilGlass: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The soil wall where you look straight at it: low keeps it see-through, so the channels behind show.', lo: 'Clear.', hi: 'Solid earth.' },
+    soilRim: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The soil wall where it turns away from you (a Fresnel rim): riding, this is the wall streaming past.', lo: 'Faint.', hi: 'Bright walls.' },
+    soilFresnel: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How tight the rim hugs the silhouette.', lo: 'A broad glow.', hi: 'A thin edge.' },
+    soilStrata: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How distinct the soil\'s layers are: loam, clay, sand and stone, level with the labyrinth, dark seams between them.', lo: 'One brown.', hi: 'Bold strata.' },
+    soilStrataThickness: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How thick one layer of soil is.', lo: 'Thin bands.', hi: 'Broad bands.' },
+    soilGrain: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'The grain and grit in the walls, and the stones caught in them.', lo: 'Smooth clay.', hi: 'Gritty.' },
+    soilPebbles: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How many stones lie in the soil round the walls (lit, faceted).', lo: 'None.', hi: 'Stony ground.' },
+    soilPebbleSize: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How big the stones are.', lo: 'Grit.', hi: 'Boulders.' },
+    soilRoots: { scene: 'labyrinth', cfg: { what: 'soil' }, d: 'How many roots hang down from above onto the channels.', lo: 'None.', hi: 'Root-bound.' },
   };
 
   // ---------- the card ----------
@@ -3628,6 +4200,34 @@
     lopeRate: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     lopeArch: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     lopeSquash: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
+    omniOn: ['MeerkatWormholeConfig.omniOn', 'new'],
+    omniCount: ['MeerkatWormholeConfig.omniCount', 'new'],
+    labyrinthBranchPoints: ['MeerkatWormholeConfig.labyrinthBranchPoints', 'new'],
+    labyrinthOpenings: ['MeerkatWormholeConfig.labyrinthOpenings', 'new'],
+    labyrinthRadius: ['MeerkatWormholeConfig.labyrinthRadius', 'new'],
+    labyrinthSpread: ['MeerkatWormholeConfig.labyrinthSpread', 'new'],
+    labyrinthRandomness: ['MeerkatWormholeConfig.labyrinthRandomness', 'new'],
+    labyrinthDiameter: ['MeerkatWormholeConfig.labyrinthDiameter', 'new'],
+    labyrinthMouthDiameter: ['MeerkatWormholeConfig.labyrinthMouthDiameter', 'new'],
+    labyrinthRoughness: ['MeerkatWormholeConfig.labyrinthRoughness', 'new'],
+    labyrinthFormSeconds: ['MeerkatWormholeConfig.labyrinthFormSeconds', 'new'],
+    labyrinthRingSpacing: ['MeerkatWormholeConfig.labyrinthRingSpacing', 'new'],
+    labyrinthRingSides: ['MeerkatWormholeConfig.labyrinthRingSides', 'new'],
+    labyrinthRibs: ['MeerkatWormholeConfig.labyrinthRibs', 'new'],
+    forkBoost: ['MeerkatWormholeConfig.forkBoost', 'new'],
+    forkLean: ['MeerkatWormholeConfig.forkLean', 'new'],
+    forkHintSeconds: ['MeerkatWormholeConfig.forkHintSeconds', 'new'],
+    soilVisibility: ['MeerkatWormholeConfig.soilVisibility', 'new'],
+    soilWall: ['MeerkatWormholeConfig.soilWall', 'new'],
+    soilGlass: ['MeerkatWormholeConfig.soilGlass', 'new'],
+    soilRim: ['MeerkatWormholeConfig.soilRim', 'new'],
+    soilFresnel: ['MeerkatWormholeConfig.soilFresnel', 'new'],
+    soilStrata: ['MeerkatWormholeConfig.soilStrata', 'new'],
+    soilStrataThickness: ['MeerkatWormholeConfig.soilStrataThickness', 'new'],
+    soilGrain: ['MeerkatWormholeConfig.soilGrain', 'new'],
+    soilPebbles: ['MeerkatWormholeConfig.soilPebbles', 'new'],
+    soilPebbleSize: ['MeerkatWormholeConfig.soilPebbleSize', 'new'],
+    soilRoots: ['MeerkatWormholeConfig.soilRoots', 'new'],
   };
   // round 8: the proposed kit. Lab-only until Yash decides (no MeerkatWormholeConfig field, no studio_to_unity map row).
   for (const [grp, key] of SPEC) if (/^ab/.test(grp) || key === 'aiNewAbilities') GAME_NAMES[key] = ['lab: round 8 proposal, not in the game (Yash judges it here first)', 'lab'];
@@ -4018,7 +4618,7 @@
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
     syncRivalMeshes(); updateCamera(dt); updateWormholes(); updateAiThinking(); updateRings(now);
-    drawCrystals(); drawWalls(); drawPulses(); syncAbilityButtons();   // round 8
+    drawCrystals(); drawOmni(); drawWalls(); drawPulses(); syncAbilityButtons();   // round 8
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================
@@ -4033,7 +4633,7 @@
     // Config; the ability and all three of its cards (look, shape, ride; Yash, 2026-10-27) in Play Style Config; the
     // stand-in hull in Vessel Config
     R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
-      ['style', 'Play Style Config', ['mainCard', 'grp-reticle', 'grp-look', 'grp-tree', 'grp-space', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
+      ['style', 'Play Style Config', ['mainCard', 'grp-omni', 'grp-soil', 'grp-reticle', 'grp-look', 'grp-tree', 'grp-space', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
       ['others', 'Vessel Config', ['grp-abCharge', 'grp-abMass', 'grp-abSpace', 'grp-abTime', 'grp-lope']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
@@ -4136,6 +4736,9 @@
   buildDocks();
   applyPlatform(true);
   requestAnimationFrame(frame);
+  // round 16: try the labyrinth without hunting an omnicrystal
+  function grantOmni(sd) { const lv = liveOf(0); if (!lv) return; lv.ab.omni = true; lv.ab.omniSeed = sd != null ? sd >>> 0 : (Math.random() * 1e9) >>> 0; omniFlash = 1.8; }
+  $('omniGive').addEventListener('click', () => { grantOmni(); toast('Omnicrystal armed: your next RT digs the labyrinth.'); });
   window.__meerkatStudio = { gateForm, get cam() { return cam; }, openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; },
     tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } manualNow += dt * 1000; advance(dt, manualNow); },
     sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } },
@@ -4152,6 +4755,11 @@
   // defineProperties, not assign: assign copies a getter's value once, so ftLive reads stale forever.
   Object.defineProperties(window.__meerkatStudio, Object.getOwnPropertyDescriptors({
     SHIPPED, SPEC,
+    // round 16: the Omnicrystal ability - arm it, read the live labyrinths and the ride
+    grantOmni, get omni() { return omni; },
+    labyrinths() { const nets = [...new Set(pairs.filter((pr) => pr.net).map((pr) => pr.net))]; return nets.map((n) => ({ channels: n.pairs.length, alive: n.pairs.filter((pr) => pr.alive).length, openings: n.pairs.filter((pr) => pr.wh.mouthOut).length, dug: +(n.pairs.reduce((a, pr) => a + (pr.wh.s1 - pr.wh.s0) / pr.wh.L, 0) / n.pairs.length).toFixed(2), soil: n.pairs.filter((pr) => pr.soil && pr.soil.visible).length, pebbles: n.pebbles.length, roots: n.roots.length })); },
+    labRide() { const g = ftLive.gate; return g && g.net && g.state === 'tube' ? { edge: g.pair.edge, s: +g.s.toFixed(1), forks: g.forks, kids: (g.pair.kids || []).map((k) => k.edge), next: forkPick(g) ? forkPick(g).edge : null, lean: !!g.leanW } : null; },
+    get pebbleCount() { return pebMesh.count; },
     // rounds 13-14: each live tree's state (for a recorder): shown, the tunnel window it shows, its brightness, its age, branch growth
     trunks() { return [...trunks].map(([pr, tr]) => { const U = tr.mats.U; return { visible: tr.glass.visible, warp: tr.warp.visible, f0: +U.f0.value.toFixed(3), f1: +U.f1.value.toFixed(3), alpha: +tr.mats.glass.uniforms.alpha.value.toFixed(3), age: +(simT - tr.t0).toFixed(2), verts: tr.glass.geometry.attributes.position.count, branches: tr.roots.map((r, i) => +U.bg.value[i].toFixed(2)), centre: whAt(pr.wh, 0.5 * pr.wh.L, new V3()).toArray().map((x) => +x.toFixed(1)) }; }); },
     reset(sd) { if (sd != null) seed = sd; ai.seed = 1; buildCourse(); spawn(); },
