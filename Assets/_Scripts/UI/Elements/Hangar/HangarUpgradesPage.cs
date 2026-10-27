@@ -66,8 +66,11 @@ namespace CosmicShore.UI
         [Tooltip("Optional line under the part's title.")]
         [SerializeField] private TMP_Text headerLineText;
 
-        [Tooltip("What the upgrade moment's ring and banner draw in: gold, because an upgrade is spent crystals. Docs/UI_COLOR_RULES.md: an element never has a fixed colour in the UI - its petal's shape says which it is.")]
-        [SerializeField] private UIColorToken elementTint = UIColorToken.Purchase;
+        [Tooltip("What the upgrade moment's ring, banner and flying crystals draw in over the vessel preview: silver " +
+                 "(Garrett flagged the gold there, 2026-10-27; Docs/VesselModels/COLOR.md: the preview stays in the neutral " +
+                 "family, as the cards' class livery does). The UPGRADE button itself stays gold: that is the spend. An " +
+                 "element never has a fixed colour in the UI - its petal's shape says which it is.")]
+        [SerializeField] private UIColorToken elementTint = UIColorToken.NeutralLightest;
 
         [Header("Price")]
         [Tooltip("Crystals per level: the next level costs this x that level (the owner: 100).")]

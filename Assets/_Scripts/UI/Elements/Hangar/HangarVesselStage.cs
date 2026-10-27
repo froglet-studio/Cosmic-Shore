@@ -43,6 +43,10 @@ namespace CosmicShore.UI
         [Header("Data")]
         [Tooltip("Class -> prefab table the model is harvested from (Assets/_SO_Assets/Vessel Prefab Container.asset).")]
         [SerializeField] private VesselPrefabContainer prefabs;
+        [Tooltip("What the hull's DOMAIN-role slots wear on the stage: the class livery, silver plates that say \"your team's " +
+                 "colour goes here\" (Docs/VesselModels/COLOR.md; Garrett flagged gold here, 2026-10-27). Empty: the prefab's " +
+                 "authored placeholder.")]
+        [SerializeField] private Material liveryMaterial;
 
         [Header("Framing")]
         [SerializeField, Min(0.5f)] private float modelRadius = 4f;
@@ -170,7 +174,7 @@ namespace CosmicShore.UI
                 return;
             }
             EnsureRig();
-            if (!VesselModelBuilder.TryBuildLive(prefab, modelRadius, null, out _model))
+            if (!VesselModelBuilder.TryBuildLive(prefab, modelRadius, liveryMaterial, out _model))
             {
                 if (_surface) _surface.enabled = false;
                 return;
