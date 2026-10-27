@@ -2,7 +2,7 @@
 
 **Studio:** `Docs/Studios/VesselStudio/meerkat.html` (its own source of truth; no copy script), a page of the one Vessel
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
-**Owner:** Yash (the Vessel Studio). **Status:** design only. There is no Meerkat in the game yet.
+**Owner:** Yash (the Vessel Studio). **Status:** in the game since 2026-10-27 (see "In the game" below).
 
 ## Where it came from
 
@@ -129,16 +129,29 @@ at strength 1, at full strength within 300 u of the collapse.
 - **AI (Hard, seed 7):** 100 s for 15 of 16 rings, 17 tunnels formed and ridden (the Stoat's Gate AI raced 98-101 s on
   circuits).
 
+## In the game (2026-10-27)
+
+The Meerkat is in Unity as `VesselClassType.Meerkat = 28` (`Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md`):
+- **Where:** flown from the Toybox's Vessel Changer, and raced in its Time mini-game **Burrow Run**
+  (`GameModes.BurrowRun = 71`, eight rings, two laps).
+- **Numbers:** every key in the table above is a `MeerkatWormholeConfig` field at its shipped value.
+  `studio_to_unity/meerkat.json` maps 36 keys, 0 drift.
+- **The port:** the page's arithmetic, ported line for line and held to its numbers (`MeerkatWormholeMathTests`).
+- **Lab-only:** `aiTau`, `roll` (the one-thumb hull only banks: `bankShare` × `roll` is the prefab's `RollScaler`) and
+  the `lope*` keys.
+- **Verification:** not yet verified in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
 ## What is not decided or not built
 
-- **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in. A real hull is `/vessel-model` work.
-- **The game.** There is no `VesselClassType` value, prefab, `MeerkatWormholeConfig` SO or action yet. Claiming the enum
-  value needs a check of `bleeding-edge` and the in-flight branches (`CLAUDE.md`, team rules).
-  `/artifact-to-unity` brings the Meerkat into the Toybox's Vessel Changer.
+- **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in, in the studio and in the game. A real
+  hull is `/vessel-model` work.
+- **Its other three abilities and the element map** (`/vessel-studio` D37) are not designed yet. The game's map has
+  four open slots; the wormhole is its one ability.
+- **The bridge from the game's `Spindle` prefabs.** The game draws each spindle as a tapered mesh (a prefab per spindle
+  would be ~280 objects per tunnel).
 - **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
-  It is unlinked from the studio now (its rows left `stoat.json`). Removing it from the Stoat is part of the same port.
-- **Its mini-game and its other three abilities** (the element map, `/vessel-studio` D37) are not designed yet. The
-  wormhole is its one ability so far.
-- **The play styles** are the Stoat's (they leaned its slings and holes). The Meerkat has none yet.
+  It is unlinked from the studio now. Removing it from the Stoat is Garrett's call (the Stoat's owner).
+- **The play styles.** The Meerkat has none yet.
+- **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
 
 The parked black/white-hole look for tunnels is in `Docs/Studios/STOAT_PARKED_HOLE_LOOK.md`.
