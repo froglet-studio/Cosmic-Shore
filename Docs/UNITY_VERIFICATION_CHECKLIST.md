@@ -15900,3 +15900,12 @@ the component is added, before `Resources` exists. The method now returns when `
 
 - [ ] In any scene, select a GameObject, **Add Component ▸ ResourceSystem**: no `NullReferenceException` in the Console.
 - [ ] Fly any vessel in Freestyle, die and respawn: resources still return to their initial amounts.
+
+## 🔴 2026-10-26 — Wanderway conveyor: recycled shielded prisms re-theme after Initialize (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/prism-clock-followup-prompts-two-mhvad9` bbb47c111b) (unverified: no Unity CLI in the session)
+
+`Microscene.RearrangeIntoAsync` used to clear a prism's kind before `Prism.Initialize`, while it was still
+"created" from its last life, so every recycled shielded prism shattered and played `ShieldDeactivate` over its
+grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
+
+- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
+- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
