@@ -55,9 +55,11 @@ namespace CosmicShore.Utility
         Task _indexLoad;
         bool _disposed;
 
-        public ReplayService(GameDataSO gameData, ReplayIndexRepository index, SceneNameListSO sceneNames = null)
+        public ReplayService(GameDataSO gameData, ReplayIndexRepository index, SceneNameListSO sceneNames = null,
+                             SO_GameList gameList = null)
         {
             _sceneNames = sceneNames;
+            _gameList = gameList;
             _gameData = gameData;
             _index = index;
 
@@ -71,6 +73,9 @@ namespace CosmicShore.Utility
         }
 
         const string ReplayCommand = "replay";
+
+        /// <summary>Every arcade card (AppManager's master list), so a replay finds its mode's card from any scene.</summary>
+        readonly SO_GameList _gameList;
 
         /// <summary>
         /// A watched replay lives across scene loads (<see cref="ReplayMatch"/>): its match scene gets a director,
@@ -108,10 +113,13 @@ namespace CosmicShore.Utility
             return true;
         }
 
-        static SO_ArcadeGame FindCard(GameModes mode, IEnumerable<SO_ArcadeGame> cards)
+        SO_ArcadeGame FindCard(GameModes mode, IEnumerable<SO_ArcadeGame> cards)
         {
             if (cards != null)
                 foreach (var card in cards)
+                    if (card && card.Mode == mode) return card;
+            if (_gameList && _gameList.Games != null)
+                foreach (var card in _gameList.Games)
                     if (card && card.Mode == mode) return card;
             // The menu has every card loaded; a card list that misses one still finds it here.
             foreach (var card in Resources.FindObjectsOfTypeAll<SO_ArcadeGame>())

@@ -600,7 +600,8 @@ namespace CosmicShore.Core
                 c => new ReplayService(
                     c.Resolve<GameDataSO>(),
                     new ReplayIndexRepository(new UGSCloudSaveProvider()),
-                    c.Resolve<SceneNameListSO>()),
+                    c.Resolve<SceneNameListSO>(),
+                    gameList),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
