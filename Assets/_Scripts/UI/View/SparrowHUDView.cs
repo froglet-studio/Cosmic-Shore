@@ -11,19 +11,39 @@ namespace CosmicShore.UI
 {
     public class SparrowHUDView : VesselHUDView
     {
-        [Header("Missiles")]
+        [Header("Skyburst Rockets - the Charge card")]
+        [Tooltip("The legacy rack ladder (0..N held). The fallback when no bay rocket sprite is authored.")]
         [SerializeField] private Sprite[] missileIcons;
+        [Tooltip("The Charge card's icon Image. With the bay built it is a transparent container: the four " +
+                 "rockets are generated under it.")]
         [SerializeField] private Image missileIcon;
 
-        [Tooltip("Seconds the missile charge gauge takes to travel to a new value. Short - the " +
-                 "gauge moves once per prism destroyed, so anything long would still be catching " +
-                 "up when the next one lands - but never zero: nothing on this HUD pops.")]
-        [SerializeField] private float missileChargeTweenDuration = 0.12f;
+        [Tooltip("The real rocket, nose up, at the sprite's centre (Sparrow_BayRocket). The view clones it into " +
+                 "the bay: a held rocket is solid, an empty one a ghost, and the one charging fills tail to nose " +
+                 "with its own charge (Garrett 2026-10-27: \"it fills up one use at a time on the sub icon\"). " +
+                 "No meter on the plate - the rockets are the meter.")]
+        [SerializeField] private Sprite bayRocketSprite;
+        [Tooltip("How many rockets the bay draws: one per base shot (1 / ShotCost01).")]
+        [Min(1)] [SerializeField] private int bayRocketCount = 4;
+        [Tooltip("The rocket sprite's authored size, in icon pixels (the kit draws on 128).")]
+        [SerializeField] private float bayRocketAuthoredSize = 128f;
+        [Tooltip("Centre-to-centre spacing of the rockets, in authored icon pixels. The kit's rockets are 26 px " +
+                 "wide, so 30 leaves a gap and they never touch.")]
+        [SerializeField] private float bayRocketPitch = 30f;
+        [Tooltip("Where the rocket's TAIL sits in the sprite, as a bottom-origin fill amount (the kit: 10 / 128).")]
+        [Range(0f, 1f)] [SerializeField] private float bayRocketTail01 = 0.078125f;
+        [Tooltip("Where the rocket's NOSE sits in the sprite, as a bottom-origin fill amount (the kit: 118 / 128).")]
+        [Range(0f, 1f)] [SerializeField] private float bayRocketNose01 = 0.921875f;
+        [Tooltip("Alpha of an empty rocket (the ghost). 0.5 and below vanishes on a phone (the icon kit's gate).")]
+        [Range(0f, 1f)] [SerializeField] private float bayRocketGhostAlpha = 0.6f;
+        [Tooltip("The rockets' colour until the controller's first push names the pilot's domain.")]
+        [SerializeField] private Color bayRocketFallbackColor = Color.white;
 
-        [Tooltip("Extra time the gauge takes to travel when it RESETS (a rocket was just earned, " +
-                 "so the fill runs off the top and starts again from empty). Slower than an " +
-                 "ordinary step because it is the beat worth seeing.")]
-        [SerializeField] private float missileChargeResetTweenDuration = 0.3f;
+        [Tooltip("Seconds the charging rocket's fill takes to rise to a new value. Short - it moves once per " +
+                 "prism destroyed, so anything long would still be catching up when the next one lands - but " +
+                 "never zero: nothing on this HUD pops. A DROP (a rocket was earned or fired) snaps: the rocket " +
+                 "turning solid is the beat, and a fill running backwards would read as one being lost.")]
+        [SerializeField] private float missileChargeTweenDuration = 0.12f;
 
         [Header("Afterburner - the Time card")]
         [Tooltip("The Sparrow itself, seen from above (its real mesh, nose right): the part that TEACHES " +
@@ -164,6 +184,20 @@ namespace CosmicShore.UI
         private Tween _missileChargeTween;
         private float _missileCharge = -1f;
 
+        // One rocket of the bay: the ghost (always drawn) and the fill over it (held = 1, charging = its charge).
+        struct BayRocket
+        {
+            public Image Ghost, Fill;
+        }
+
+        const string BayName = "RocketBay";
+        private RectTransform _bayHost;
+        readonly List<BayRocket> _bayRockets = new();
+        private int _bayHeld;
+        private float _bayCharge;
+        private Color _bayColor = Color.white;
+        private Vector2 _bayLaidSize;
+
         const string GunHeatGaugeName = "GunHeatGauge";
         private Image _gunHeatGauge;
         private float _gunHeat = -1f;
@@ -207,6 +241,13 @@ namespace CosmicShore.UI
         {
             if (missileIcon)
                 missileIcon.enabled = false;
+
+            // The bay: empty, nothing charging, in the fallback colour until the first push.
+            _bayHeld = 0;
+            _bayCharge = 0f;
+            _missileCharge = -1f;
+            _bayColor = bayRocketFallbackColor;
+            PaintBay();
 
             // The hull part sits at rest, fans spread, in the fallback colour until the controller's
             // first push names the pilot's domain.
@@ -257,6 +298,7 @@ namespace CosmicShore.UI
 
         public void InitializeMissileIcon()
         {
+            if (_bayHost) return;   // the bay draws the card; the container stays transparent
             if (!missileIcon || missileIcons == null || missileIcons.Length == 0)
                 return;
 
@@ -268,57 +310,53 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// How close the NEXT rocket is, 0..1, on the Charge card's gauge — the ability lockup
-        /// has already re-homed that Image into the card and masked it to the trapezoid, so this
-        /// only ever writes <c>fillAmount</c>, exactly like every other vessel's meter.
+        /// How close the NEXT rocket is, 0..1: the rocket after the last one held fills tail to nose.
         ///
-        /// <para>Distinct from <see cref="SetMissilesFromAmmo01"/>, which says how many rockets
-        /// the bay HOLDS: the icon ladder is the count, this is the charge. Earning a rocket
-        /// therefore fills this to the top and starts it again from empty — the reset IS the
-        /// signal that one was created, so it is deliberately given its own longer travel rather
-        /// than snapping.</para>
+        /// <para>Distinct from <see cref="SetMissilesFromAmmo01"/>, which says how many rockets the bay
+        /// HOLDS. A rise is one prism's worth and tweens; a DROP means the bay changed (a rocket was
+        /// earned, so the charge starts again on the next one, or one was fired) and snaps, because the
+        /// held count has already moved the fill to the right rocket.</para>
         /// </summary>
         public void SetMissileCharge(float charge01)
         {
-            if (!TryGetAbilityGauge(Element.Charge, out var gauge) || !gauge) return;
-
             charge01 = Mathf.Clamp01(charge01);
             if (Mathf.Approximately(charge01, _missileCharge)) return;
 
-            // A DROP means the RACK changed - a rocket rolled over into the bay, or one was
-            // fired - so the bar is starting again rather than stepping. That is worth watching,
-            // and a rise is one prism's worth, which is not.
-            bool reset = charge01 < _missileCharge;
+            bool rise = _missileCharge >= 0f && charge01 > _missileCharge;
             _missileCharge = charge01;
 
             _missileChargeTween?.Kill();
-            _missileChargeTween = gauge
-                .DOFillAmount(charge01, reset ? missileChargeResetTweenDuration
-                                              : missileChargeTweenDuration)
-                .SetEase(reset ? Ease.InOutQuad : Ease.OutQuad)
-                .SetLink(gauge.gameObject);
+            if (!rise || !_bayHost || missileChargeTweenDuration <= 0f)
+            {
+                _bayCharge = charge01;
+                PaintBay();
+                return;
+            }
+            _missileChargeTween = DOTween.To(() => _bayCharge, v => { _bayCharge = v; PaintBay(); },
+                                             charge01, missileChargeTweenDuration)
+                                         .SetEase(Ease.OutQuad)
+                                         .SetLink(_bayHost.gameObject);
         }
 
         /// <summary>
-        /// How many rockets the bay HOLDS right now, drawn from the authored icon ladder.
-        ///
-        /// <para><b>It counts ROCKETS, not tank fraction.</b> It used to spread <c>ammo01</c>
-        /// across the sprite range and ROUND, which conflates two different quantities and was
-        /// wrong even at the old one-cost weapon: at cost 0.5 a 0.75-full tank holds ONE rocket
-        /// and <c>round(0.75 x 2)</c> drew TWO. Now it is <c>floor(ammo / cost)</c> — the same
-        /// arithmetic <see cref="CosmicShore.Gameplay.FireGunActionExecutor.ChargeToNextShot"/>
-        /// takes the fractional part of, so the ladder and the charge gauge are two readings of
-        /// one division and cannot disagree.</para>
-        ///
-        /// <para>The count is CLAMPED to the art: the ladder has three sprites (0/1/2) while the
-        /// bay now holds four base rockets, so a full bay reads as the top sprite. That
-        /// under-reports rather than lying about which rocket is next, and closing it is an ART
-        /// task (five sprites), not a code one.</para>
+        /// How many rockets the bay HOLDS right now: <c>floor(ammo / cost)</c>, the same division
+        /// <see cref="CosmicShore.Gameplay.FireGunActionExecutor.ChargeToNextShot"/> takes the
+        /// fractional part of, so the count and the charging rocket cannot disagree. With the bay
+        /// built the held rockets turn solid; without it (no bay sprite) the legacy ladder steps.
         /// </summary>
         /// <param name="cost01">One BASE shot's cost as a fraction of the full tank. 0 =
-        /// unknown, in which case the ladder falls back to the tank fraction it used to show.</param>
+        /// unknown, in which case the count falls back to the tank fraction.</param>
         public void SetMissilesFromAmmo01(float ammo01, float cost01)
         {
+            if (_bayHost)
+            {
+                int held = LadderState(ammo01, cost01, bayRocketCount + 1);
+                if (held == _bayHeld) return;
+                _bayHeld = held;
+                PaintBay();
+                return;
+            }
+
             if (!missileIcon || missileIcons == null || missileIcons.Length == 0)
                 return;
 
@@ -327,6 +365,103 @@ namespace CosmicShore.UI
 
             missileIcon.sprite = sprite;
             missileIcon.enabled = true;
+        }
+
+        /// <summary>
+        /// The pilot's domain colour for the rockets - yours, like the other cards' parts. Pushed every
+        /// frame with the other cards' colours, which also re-lays the bay once the card has its size.
+        /// </summary>
+        public void SetBayColor(Color color)
+        {
+            if (_bayColor == color && (!_bayHost || _bayHost.rect.size == _bayLaidSize)) return;
+            _bayColor = color;
+            PaintBay();
+        }
+
+        /// <summary>
+        /// How full rocket <paramref name="index"/> is drawn, 0..1 of its length (tail to nose), for
+        /// <paramref name="held"/> rockets held and the next one at <paramref name="charge01"/>. Pure, so it
+        /// is tested without a canvas.
+        /// </summary>
+        public static float BayRocketFill(int index, int held, float charge01)
+        {
+            if (index < held) return 1f;
+            return index == held ? Mathf.Clamp01(charge01) : 0f;
+        }
+
+        // Find-or-create the bay under the Charge card's icon (a transparent container since 2026-10-27): per rocket
+        // a ghost and a vertical fill over it, point-anchored at the rocket's authored centre.
+        void BuildBay()
+        {
+            if (!missileIcon || !bayRocketSprite || bayRocketCount <= 0) return;
+            if (_bayHost && _bayRockets.Count == bayRocketCount) return;
+
+            var hostImage = ResolveGeneratedChild<Image>(missileIcon.rectTransform, BayName);   // a holder: it draws nothing
+            hostImage.enabled = false;
+            hostImage.raycastTarget = false;
+            _bayHost = hostImage.rectTransform;
+            Stretch(_bayHost);
+
+            _bayRockets.Clear();
+            for (int i = 0; i < bayRocketCount; i++)
+            {
+                var ghost = ResolveGeneratedChild<Image>(_bayHost, $"Rocket{i}");
+                ghost.raycastTarget = false;
+                ghost.sprite = bayRocketSprite;
+                Stretch(ghost.rectTransform);
+
+                var fill = ResolveGeneratedChild<Image>(ghost.rectTransform, "Fill");
+                fill.raycastTarget = false;
+                fill.sprite = bayRocketSprite;
+                fill.type = Image.Type.Filled;
+                fill.fillMethod = Image.FillMethod.Vertical;
+                fill.fillOrigin = (int)Image.OriginVertical.Bottom;
+                Stretch(fill.rectTransform);
+
+                _bayRockets.Add(new BayRocket { Ghost = ghost, Fill = fill });
+            }
+
+            LayOutBay();
+        }
+
+        // Each rocket at its authored centre (bayRocketPitch apart, the row centred), stretched to the card so the
+        // sprite's own margins land where the kit drew them.
+        void LayOutBay()
+        {
+            if (!_bayHost) return;
+            var size = _bayHost.rect.size;
+            _bayLaidSize = size;
+            float kx = bayRocketAuthoredSize > 0f ? size.x / bayRocketAuthoredSize : 0f;
+            float first = -bayRocketPitch * (_bayRockets.Count - 1) * 0.5f;
+            for (int i = 0; i < _bayRockets.Count; i++)
+            {
+                var ghost = _bayRockets[i].Ghost;
+                if (ghost) ghost.rectTransform.anchoredPosition = new Vector2((first + i * bayRocketPitch) * kx, 0f);
+            }
+            PaintBay();
+        }
+
+        void PaintBay()
+        {
+            if (!_bayHost) return;
+            // Re-laid when the card's size changes: the bay is generated before the lockup's first layout pass.
+            if (_bayHost.rect.size != _bayLaidSize)
+            {
+                LayOutBay();
+                return;
+            }
+
+            var ghostColor = _bayColor;
+            ghostColor.a *= bayRocketGhostAlpha;
+            for (int i = 0; i < _bayRockets.Count; i++)
+            {
+                var r = _bayRockets[i];
+                if (!r.Ghost || !r.Fill) continue;
+                r.Ghost.color = ghostColor;
+                r.Fill.color = _bayColor;
+                float f = BayRocketFill(i, _bayHeld, _bayCharge);
+                r.Fill.fillAmount = f <= 0f ? 0f : f >= 1f ? 1f : Mathf.Lerp(bayRocketTail01, bayRocketNose01, f);
+            }
         }
 
         /// <summary>
@@ -491,6 +626,7 @@ namespace CosmicShore.UI
             }
 
             BuildGunSpray();
+            BuildBay();
         }
 
         /// <summary>
