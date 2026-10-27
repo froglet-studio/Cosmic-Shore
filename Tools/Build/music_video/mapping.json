@@ -1,161 +1,99 @@
 {
- "_about": "The music -> gameplay mapping the composer reads. Every number here is a decision somebody can change after watching a cut; LEARNINGS.md says why each one is what it is. Features are normalised against the SONG (0..1), not the segment, so a quiet song's loudest bar still reads as its drop.",
- "feature_weights": {
-  "energy": 1.0,
-  "onset_density": 0.8,
-  "bass": 0.6,
-  "brightness": 0.5,
-  "flatness": 0.3
+ "_about": "The music -> gameplay mapping the composer reads. Every number here is a decision somebody can change after watching a cut; LEARNINGS.md says why each one is what it is. Features are normalised against the SONG (0..1), not the segment, so a quiet song's loudest bar still reads as its drop. Since cut 3 the music is answered by ORCHESTRATED GAMEPLAY (events), never by the camera: cameras are steady mounts or slow orbits, and there are no pulses or shakes.",
+ "render": {
+  "fps": 60,
+  "step_hz": 240,
+  "accum": 4,
+  "size": "1920x1080",
+  "msaa": 8,
+  "render_scale": 2.0,
+  "aniso": 16,
+  "_why": "Nothing is real time: every sub-frame is drawn at 2x supersampling with 8x MSAA, and four 240 Hz sub-frames are averaged in linear light into each 60 fps output frame (a 180-degree shutter), so motion is smooth and blurred the way a camera sees it."
  },
+ "feature_weights": {"energy": 1.0, "onset_density": 0.8, "bass": 0.6, "brightness": 0.5, "flatness": 0.3},
  "diversity_penalty": 0.6,
  "same_mode_penalty": 0.9,
- "intensity_by_energy": [
-  0.3,
-  0.55,
-  0.8
- ],
- "fov": {
-  "min": 52,
-  "max": 74
- },
+ "intensity_by_energy": [0.3, 0.55, 0.8],
+ "fov": {"min": 56, "max": 68},
  "accents": {
-  "downbeat_pulse": {
-   "min_energy": 0.35,
-   "amount_per_strength": 5.0,
-   "frames": 8
-  },
-  "beat_pulse": {
-   "min_energy": 0.6,
-   "amount_per_strength": 2.0,
-   "frames": 5
-  },
-  "onset_shake": {
-   "min_energy": 0.7,
-   "min_onset": 0.75,
-   "amount": 1.2,
-   "frames": 6
-  }
+  "_why": "Camera accents (FOV pulses, shakes) made cuts 1-2 jitter; they are off. The beat lands through events.",
+  "downbeat_pulse": {"min_energy": 2.0, "amount_per_strength": 0.0, "frames": 1},
+  "beat_pulse": {"min_energy": 2.0, "amount_per_strength": 0.0, "frames": 1},
+  "onset_shake": {"min_energy": 2.0, "min_onset": 2.0, "amount": 0.0, "frames": 1}
+ },
+ "events": {
+  "_about": "Orchestration templates. `on`: start (the shot's first frame), bar (every downbeat), beat (every beat), strong (beats in the top half of beat strength), onset (hard onsets, top quartile), half (half way through the shot). `min_energy` gates a template by the beat's energy. {i} cycles 0,1,2,3 per firing; {dir} cycles the four herd directions per firing.",
+  "defaults": {"max_per_second": 6}
  },
  "archetypes": [
   {
-   "name": "skim-race-chase",
-   "what": "A Squirrel on the Skim Race rails from just behind: speed, the rail flashing past, rings ahead. The driving, forward-motion beat.",
-   "mode": "SkimRace",
-   "players": 4,
-   "target": {
-    "energy": 0.6,
-    "onset_density": 0.7,
-    "bass": 0.6,
-    "brightness": 0.35,
-    "flatness": 0.3
-   },
-   "camera": [
-    "mv camera main",
-    "mv chase nearest 22 6 40 5"
+   "name": "skim-race-mount",
+   "what": "The pilot's own Squirrel on the Skim Race rails from a steady mount behind and beside it: the rail flashing under, rings ahead, the pack's wakes around. Boosts land on the downbeats; the prisms around it burst on hard hits.",
+   "mode": "SkimRace", "players": 4,
+   "target": {"energy": 0.6, "onset_density": 0.7, "bass": 0.6, "brightness": 0.35, "flatness": 0.3},
+   "camera": ["mv camera main", "mv mount local 26 9 10 45 2"],
+   "events": [
+    {"on": "bar", "cmd": "action local FullSpeedStraightAction 40"},
+    {"on": "strong", "min_energy": 0.55, "cmd": "action ai{i} FullSpeedStraightAction 30"},
+    {"on": "onset", "min_energy": 0.6, "cmd": "blast local 4 25"}
    ],
-   "settle_frames": 300,
-   "tempo_scales": [],
-   "luminance": 0.03
+   "settle_seconds": 5, "luminance": 0.03
   },
   {
-   "name": "skim-race-flyby",
-   "what": "The pack of racers passing the camera on the rails with their wakes: a fixed vantage the race sweeps through. For a bar that lifts.",
-   "mode": "SkimRace",
-   "players": 4,
-   "target": {
-    "energy": 0.5,
-    "onset_density": 0.55,
-    "bass": 0.5,
-    "brightness": 0.4,
-    "flatness": 0.3
-   },
-   "camera": [
-    "mv camera main",
-    "mv flyby nearest 14 80 7 {shot_frames}"
+   "name": "skim-race-orbit",
+   "what": "A slow orbit around the pilot's Squirrel as it takes a ring: the wake fanning, the rail curving away. For a bar that breathes.",
+   "mode": "SkimRace", "players": 4,
+   "target": {"energy": 0.4, "onset_density": 0.45, "bass": 0.45, "brightness": 0.4, "flatness": 0.35},
+   "camera": ["mv camera main", "mv orbit local 34 9 6"],
+   "events": [
+    {"on": "bar", "cmd": "action local FullSpeedStraightAction 30"}
    ],
-   "settle_frames": 300,
-   "luminance": 0.03
+   "settle_seconds": 5, "luminance": 0.03
   },
   {
-   "name": "wildlife-cage-wide",
-   "what": "The Wildlife Liberation cage from inside, the fleet threading its lattice with brittlestar swarms around it: texture and breath. For a breakdown or a held bar.",
-   "mode": "WildlifeLiberation",
-   "players": 4,
-   "intensity": 3,
-   "target": {
-    "energy": 0.3,
-    "onset_density": 0.25,
-    "bass": 0.35,
-    "brightness": 0.7,
-    "flatness": 0.6
-   },
-   "camera": [
-    "mv camera main",
-    "mv orbit local 60 18 {slow_degps}"
+   "name": "wildlife-cage-mount",
+   "what": "Inside the Wildlife Liberation cage, mounted beside the pilot's Sparrow: the brittlestar swarm herded across the frame in a new direction every bar, cage prisms bursting on the downbeats.",
+   "mode": "WildlifeLiberation", "players": 4, "intensity": 3,
+   "target": {"energy": 0.55, "onset_density": 0.6, "bass": 0.7, "brightness": 0.75, "flatness": 0.5},
+   "camera": ["mv camera main", "mv mount local 30 10 9 45 1.5"],
+   "events": [
+    {"on": "start", "cmd": "herd 0,1,0 140"},
+    {"on": "bar", "cmd": "herd {dir} 140"},
+    {"on": "bar", "min_energy": 0.5, "cmd": "blast local 6 30"},
+    {"on": "strong", "min_energy": 0.6, "cmd": "action local FullSpeedStraightAction 30"}
    ],
-   "settle_frames": 600,
-   "luminance": 0.19
+   "settle_seconds": 10, "luminance": 0.19
   },
   {
-   "name": "wildlife-cage-chase",
-   "what": "Chasing a vessel through the cage's shells, prisms whipping past on every side. Dense, claustrophobic drive.",
-   "mode": "WildlifeLiberation",
-   "players": 4,
-   "intensity": 3,
-   "target": {
-    "energy": 0.55,
-    "onset_density": 0.6,
-    "bass": 0.7,
-    "brightness": 0.75,
-    "flatness": 0.5
-   },
-   "camera": [
-    "mv camera main",
-    "mv chase local 24 7 35 5"
+   "name": "wildlife-cage-orbit",
+   "what": "A slow orbit in the cage: the lattice turning around the pilot, the swarm drawn through it. For a breakdown.",
+   "mode": "WildlifeLiberation", "players": 4, "intensity": 3,
+   "target": {"energy": 0.3, "onset_density": 0.25, "bass": 0.35, "brightness": 0.7, "flatness": 0.6},
+   "camera": ["mv camera main", "mv orbit local 40 12 5"],
+   "events": [
+    {"on": "start", "cmd": "herd 1,0,0 140"},
+    {"on": "bar", "cmd": "herd {dir} 140"}
    ],
-   "settle_frames": 600,
-   "luminance": 0.19
+   "settle_seconds": 10, "luminance": 0.19
   },
   {
    "name": "joust-melee",
-   "what": "Twelve vessels jousting in one arena of crystal: ride one jouster through the melee, magenta and cyan wakes crossing the cavern. The drop. (An orbit wider than ~40 u sits inside the prism mass at I3+, so the drop rides a hull.)",
-   "mode": "Joust",
-   "players": 12,
-   "target": {
-    "energy": 0.85,
-    "onset_density": 0.8,
-    "bass": 0.75,
-    "brightness": 0.55,
-    "flatness": 0.3
-   },
-   "camera": [
-    "mv camera main",
-    "mv chase fastest 24 7 40 6"
+   "what": "The Joust cavern from a mount beside the pilot: the AI jousters sent at the pilot and at each other so passes cross the frame on the bars, crystal bursting around the pilot on every downbeat, boosts on the strong beats. The drop.",
+   "mode": "Joust", "players": 12, "intensity": 3,
+   "target": {"energy": 0.85, "onset_density": 0.8, "bass": 0.75, "brightness": 0.55, "flatness": 0.3},
+   "camera": ["mv camera main", "mv mount local 28 10 10 50 2"],
+   "events": [
+    {"on": "start", "cmd": "converge ai0 ai1"},
+    {"on": "start", "cmd": "aim ai2 local"},
+    {"on": "start", "cmd": "aim ai3 local"},
+    {"on": "half", "cmd": "converge ai2 ai3"},
+    {"on": "half", "cmd": "aim ai0 local"},
+    {"on": "bar", "min_energy": 0.5, "cmd": "blast local 8 40"},
+    {"on": "strong", "min_energy": 0.6, "cmd": "action ai{i} FullSpeedStraightAction 30"},
+    {"on": "onset", "min_energy": 0.75, "cmd": "blast ai{i} 5 30"}
    ],
-   "settle_frames": 420,
-   "intensity": 3,
-   "luminance": 0.11
-  },
-  {
-   "name": "joust-orbit",
-   "what": "A tight orbit on one jouster inside the crystal cavern (close enough to stay in the open air around it).",
-   "mode": "Joust",
-   "players": 12,
-   "target": {
-    "energy": 0.8,
-    "onset_density": 0.85,
-    "bass": 0.65,
-    "brightness": 0.55,
-    "flatness": 0.3
-   },
-   "camera": [
-    "mv camera main",
-    "mv orbit fastest 32 10 {fast_degps}"
-   ],
-   "settle_frames": 420,
-   "intensity": 3,
-   "luminance": 0.11
+   "settle_seconds": 7, "luminance": 0.11
   }
  ],
- "_luminance_note": "Measured mean luminance of the first cut's shots (0..1): Skim Race I2 0.03, Joust I3 0.11, Wildlife cage I3 0.19. The brightness targets follow that order so a bright bar lands in a bright arena (score.py's luminance_vs_brightness read -1.0 on cut 1)."
+ "_luminance_note": "Measured mean luminance of the first cut's shots (0..1): Skim Race I2 0.03, Joust I3 0.11, Wildlife cage I3 0.19. The brightness targets follow that order so a bright bar lands in a bright arena."
 }

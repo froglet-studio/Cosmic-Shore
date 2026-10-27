@@ -54,6 +54,9 @@ namespace CosmicShore.Player
 
         bool Scripted => _lastFrame >= 0;
 
+        /// <summary>A scripted run's fixed step rate (--step-hz; 60 unless a recording wants sub-frames).</summary>
+        public static int StepHz = 60;
+
         /// <summary>--render-from N: skip drawing before frame N (a test run ticks through menus fast, then renders).</summary>
         public static int RenderFrom;
 
@@ -205,7 +208,7 @@ namespace CosmicShore.Player
             // run passes the real frame time unclamped, because Time.unscaledDeltaTime is the wall clock in
             // Unity. Time.Advance caps deltaTime at the project's Maximum Allowed Timestep, so a slow frame
             // cannot run away the simulation. FrameTimingManager measures the real frame in both kinds of run.
-            float step = Scripted ? 1f / 60f : (float)dt;
+            float step = Scripted ? 1f / StepHz : (float)dt;
             _inputBridge.BeforeTick();
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
@@ -222,6 +225,7 @@ namespace CosmicShore.Player
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled || PlayerDiagnostics.Visible;
             _boot.Tick(step);
+            MusicVideoDirector.AfterTick(_frameIndex, step);
             if (_boot.QuitNow) _window.Close();
             ParityRun.AfterTick(_frameIndex);
             // One clock for every frame figure (session report, F3, the control port, the game's DiagnosticsHUD):
@@ -324,6 +328,8 @@ namespace CosmicShore.Player
             }
             if (FrameRecorder.TryPath(_frameIndex, out var recPath))
                 Capture(recPath, w, h);
+            else if (FrameRecorder.WantsSubFrame(_frameIndex) && FrameRecorder.Accumulate(_frameIndex, ReadBack(w, h), w, h, out var averaged, out var accPath))
+                CosmicShore.Client.MiniPng.Write(accPath, averaged, w, h, flipY: true);
             Control?.AfterPresent(p => Capture(p, w, h), w, h);
             if (Scripted && _frameIndex >= _lastFrame)
             {
@@ -448,13 +454,15 @@ namespace CosmicShore.Player
             _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, _virtualColor, 0);
         }
 
-        unsafe void Capture(string path, int w, int h)
+        void Capture(string path, int w, int h) => CosmicShore.Client.MiniPng.Write(path, ReadBack(w, h), w, h, flipY: true);
+
+        unsafe byte[] ReadBack(int w, int h)
         {
             var pixels = new byte[w * h * 4];
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Control?.VirtualSize != null && _virtualFbo != 0 ? _virtualFbo : 0u);
             fixed (byte* p = pixels)
                 _gl.ReadPixels(0, 0, (uint)w, (uint)h, PixelFormat.Rgba, PixelType.UnsignedByte, p);
-            CosmicShore.Client.MiniPng.Write(path, pixels, w, h, flipY: true);
+            return pixels;
         }
     }
 }

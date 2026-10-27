@@ -18,6 +18,7 @@ birth year, data collection DECLINED, pilot name "Director").
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -35,6 +36,7 @@ class Player:
     """One Amoebius player under xvfb with a control port."""
 
     def __init__(self, port, profile, log_path, size="1600x900", dll=PLAYER_DLL, extra=()):
+        # the virtual screen must be larger than the window, and the pointer (screen centre) off it
         self.port = port
         self.log = open(log_path, "w")
         env = dict(os.environ)
@@ -45,7 +47,7 @@ class Player:
         dotnet_root = os.path.dirname(DOTNET)
         env.setdefault("DOTNET_ROOT", dotnet_root)
         env["PATH"] = dotnet_root + os.pathsep + env.get("PATH", "")
-        cmd = ["xvfb-run", "-a", "-s", "-screen 0 3400x2200x24", DOTNET, dll,
+        cmd = ["xvfb-run", "-a", "-s", "-screen 0 4200x2400x24", DOTNET, dll,
                "--control-port", str(port), "--size", size, "--frames", "4000000", "--render-from", "999999999", *extra]
         self.proc = subprocess.Popen(cmd, stdout=self.log, stderr=subprocess.STDOUT, cwd=ROOT, env=env)
 
@@ -134,45 +136,61 @@ def shoot_one(shot, plan, out_dir, port, profile, dll):
         print(f"{name}: {msg}", flush=True)
         logf.write(line + "\n"); logf.flush()
 
-    fps = plan.get("fps", 30)
-    every = max(1, round(60 / fps))
-    frames = int(round((shot["t1"] - shot["t0"]) * 60))
-    log(f"shot {name}: {shot['mode']} {shot['t0']:.2f}-{shot['t1']:.2f} s = {frames} game frames, every {every}")
-    p = Player(port, profile, os.path.join(d, "player.log"), dll=dll)
+    render = plan.get("render", {})
+    step_hz = int(render.get("step_hz", 60))
+    every = int(shot.get("every", max(1, round(step_hz / plan.get("fps", 30)))))
+    accum = int(shot.get("accum", 1))
+    frames = int(shot.get("frames", round((shot["t1"] - shot["t0"]) * step_hz)))
+    k = step_hz / 60.0                      # the menu / card / settle waits were measured at 60 Hz
+    log(f"shot {name}: {shot['mode']} {shot['t0']:.2f}-{shot['t1']:.2f} s = {frames} sim frames at {step_hz} Hz, one output frame per {every} (accum {accum})")
+    extra = ["--step-hz", str(step_hz)]
+    if render.get("msaa") is not None: extra += ["--msaa", str(render["msaa"])]
+    if render.get("render_scale") is not None: extra += ["--render-scale", str(render["render_scale"])]
+    if render.get("aniso") is not None: extra += ["--aniso", str(render["aniso"])]
+    p = Player(port, profile, os.path.join(d, "player.log"), size=render.get("size", "1600x900"), dll=dll, extra=extra)
     try:
         p.wait_up()
         answer_first_run(p, log)
         p.wait_scene(MENU)
-        p.wait(90)                      # the menu finishes building
+        p.wait(int(90 * k))             # the menu finishes building
         p.do("key F7")                  # the game's diagnostics panel starts visible in the engine
         out = p.do(f"arcade {shot['mode']}")
         log(out.strip())
         if "no card" in out or "no mode" in out:
             raise RuntimeError(out.strip())
-        p.wait(60)
+        p.wait(int(60 * k))
         if shot.get("players"):
             log(p.do(f"arcade players {shot['players']}").strip())
         if shot.get("intensity"):
             log(p.do(f"arcade intensity {shot['intensity']}").strip())
-        p.wait(10)
+        p.wait(int(10 * k))
         log(p.do("arcade start").strip())
         s = p.wait_scene(MENU, invert=True)
         log(f"in {s.get('scene')} at frame {s.get('frame')}")
-        p.wait(120)
+        p.wait(int(120 * k))
         log(p.do("arcade ready").strip())
         for pre in shot.get("pre", []):          # commands before the settle (e.g. autopilot early)
             log(f"{pre} -> {p.do(pre).strip()}")
-        p.wait(int(shot.get("settle_frames", 240)))
+        # the race must be running before the camera is taken: wait until the local pilot moves, then settle
+        for _ in range(40):
+            st = p.do("mv status")
+            m = re.search(r"local speed ([0-9.]+)", st)
+            if m and float(m.group(1)) > 5.0:
+                break
+            p.wait(int(30 * k))
+        log(f"race running: {st.strip().splitlines()[-1][:120] if st.strip() else st}")
+        p.wait(int(shot.get("settle_frames", 240 * k)))
         for c in shot.get("setup", ["mv hud off", "mv autopilot on"]):
             log(f"{c} -> {p.do(c).strip()}")
         for c in shot.get("camera", []):
             log(f"{c} -> {p.do(c).strip()}")
-        p.wait(int(shot.get("lead_frames", 30)))  # the camera settles on its subject
-        for a in shot.get("accents", []):      # cues are relative to the recording's first frame
-            at = int(round((a["t"] - shot["t0"]) * 60))
+        p.wait(int(shot.get("lead_frames", 30 * k)))  # the camera settles on its subject
+        for a in shot.get("events", []) + shot.get("accents", []):   # cues are relative to the recording's first frame
+            at = int(round((a["t"] - shot["t0"]) * step_hz))
             if 0 <= at < frames:
                 p.do(f"mv cue {at} {a['cmd']}")
-        log(p.do(f"mv record {d} {frames} {every}").strip())
+        log(f"{len(shot.get('events', []))} events cued")
+        log(p.do(f"mv record {d} {frames} {every} {accum}").strip())
         p.wait(frames + 3)
         n = len([f for f in os.listdir(d) if f.endswith(".png")])
         log(f"{n} frames recorded")

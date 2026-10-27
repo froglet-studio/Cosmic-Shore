@@ -35,7 +35,7 @@ def main(argv=None):
     ap.add_argument("--frames", help="frames root (default <plan dir>/frames)")
     ap.add_argument("--out", help="output MP4 (default <plan dir>/video.mp4)")
     ap.add_argument("--captions", action="store_true", help="burn the shot name and beat features into the picture (review cuts)")
-    ap.add_argument("--height", type=int, default=900)
+    ap.add_argument("--height", type=int, default=0, help="scale the picture to this height (0 = keep the frames' own size)")
     a = ap.parse_args(argv)
     plan = json.load(open(a.plan))
     pdir = os.path.dirname(os.path.abspath(a.plan))
@@ -67,7 +67,7 @@ def main(argv=None):
     open(lst, "w").write("\n".join(lines) + "\n")
     t0 = plan["shots"][0]["t0"]
     dur = plan["shots"][-1]["t1"] - t0
-    vf = [f"fps={fps}", f"scale=-2:{a.height}:flags=lanczos", "format=yuv420p"]
+    vf = [f"fps={fps}"] + ([f"scale=-2:{a.height}:flags=lanczos"] if a.height > 0 else []) + ["format=yuv420p"]
     if a.captions:
         # one drawtext per shot, enabled over its video time span
         at = 0.0

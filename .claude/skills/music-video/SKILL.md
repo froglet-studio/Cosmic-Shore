@@ -82,7 +82,9 @@ the score said, what the person said, what changed in the mapping.
 | "the drop needs a fight, not a race" | raise the fight archetype's `target.energy` / lower the race's; or add an archetype |
 | "it cuts too often / too rarely" | `--beats`, and the composer's cut snapping (section boundary > downbeat > beat) |
 | "the camera is inside the wall" | that archetype's camera distance (orbit) or intensity; see LEARNINGS (Joust I3 orbit) |
-| "nothing happens on the hits" | `accents.*.amount_per_strength`, `min_energy`; or a camera with a subject (chase/flyby) |
+| "nothing happens on the hits" | the archetype's `events` (boosts, blasts, converges, herds on `bar` / `strong` / `onset`); never a camera accent |
+| "it jitters / it is not smooth" | the camera is a `mount` or a slow `orbit` (≤ 8 deg/s); `render.accum` 4 at `step_hz` 240 for motion blur; never pulses or shakes |
+| "it looks cheap / like a prototype" | `render`: 1080p+, `msaa` 8, `render_scale` 2, `aniso` 16; compare a still with Unity before touching the engine |
 | "too dark / too bright for the music" | `fov` range, or the archetype's `target.brightness` |
 | "I want to see X (a kaiju, a crack drift, a ring joust)" | a new archetype: mode, players, intensity, camera, target; shoot a still of it first with the control port (`mv orbit name:Worm ...`) |
 
@@ -100,9 +102,10 @@ mapping is song-agnostic because every feature is normalised against the song it
 ## 8. The engine verb, when a shot needs a hand
 
 With a player on a control port (`Port/CLAUDE.md` § The loop), `do "mv ..."`: `hud off|on`,
-`autopilot on|off`, `camera main|replay`, `orbit SUBJECT DIST HEIGHT DEGPS`, `chase SUBJECT BACK UP [LEAD] [SMOOTH]`,
-`flyby SUBJECT SIDE AHEAD UP FRAMES`, `dolly X,Y,Z X,Y,Z FRAMES [SUBJECT]`, `fov F`, `pulse AMOUNT FRAMES`,
-`shake AMOUNT FRAMES`, `cue N CMD` (N frames after the next record starts), `record DIR FRAMES [EVERY]`,
-`in N CMD`, `release`, `status`. Subjects: `local`, `ai0`.., `nearest`, `name:TEXT`. `vessels` prints every
-vessel's distance and screen position from the camera; `screenshot` shows the shot. Build a new archetype
-from stills before putting it in the mapping.
+`autopilot on|off`, `camera main|replay`, `mount SUBJECT BACK UP SIDE [LEAD] [SMOOTH]`, `orbit SUBJECT DIST HEIGHT DEGPS`,
+`dolly X,Y,Z X,Y,Z FRAMES [SUBJECT]`, `fov F`, `action SUBJECT INPUTEVENT [FRAMES]`, `aim SUBJECT SUBJECT2|X,Y,Z|clear`,
+`converge A B`, `blast SUBJECT N [FORCE]`, `herd X,Y,Z DIST [NAME]` / `herd off`, `cue N CMD` (N frames after the
+next record starts), `record DIR FRAMES [EVERY] [ACCUM]`, `in N CMD`, `release`, `status`. Subjects: `local`,
+`ai0`.., `nearest`, `fastest`, `name:TEXT`. `vessels` prints every vessel's distance and screen position from the
+camera; `screenshot` shows the shot. A camera straight behind a hull on its axis showed nothing at 23 u; sit
+off-axis (behind, above and beside). Build a new archetype from stills before putting it in the mapping.

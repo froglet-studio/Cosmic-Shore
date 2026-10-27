@@ -88,6 +88,7 @@ namespace CosmicShore.Player
                     case "--headless": headless = true; break;
                     case "--realtime": s_realtime = true; break;
                     case "--diag": PlayerDiagnostics.StartVisible = true; break;
+                    case "--step-hz" when i + 1 < args.Length: int.TryParse(args[++i], out PlayerWindow.StepHz); PlayerWindow.StepHz = Math.Max(1, PlayerWindow.StepHz); break;
                     case "--render-from" when i + 1 < args.Length: int.TryParse(args[++i], out PlayerWindow.RenderFrom); break;
                     case "--quiet": quiet = true; break;
                     case "--yaml-roundtrip" when i + 2 < args.Length:
@@ -307,11 +308,12 @@ namespace CosmicShore.Player
                 frameNow = f;
                 script.BeforeTick(f);
                 ArcadeAutoStart.Tick(f);
-                MusicVideoDirector.Tick(f, 1f / 60f);
+                MusicVideoDirector.Tick(f, 1f / PlayerWindow.StepHz);
                 control?.BeforeTick(f);
                 long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);
-                boot.Tick(1f / 60f);
+                boot.Tick(1f / PlayerWindow.StepHz);
+                MusicVideoDirector.AfterTick(f, 1f / PlayerWindow.StepHz);
                 if (boot.QuitNow) quit = true;
                 ParityRun.AfterTick(f);
                 double tickMs = System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds;

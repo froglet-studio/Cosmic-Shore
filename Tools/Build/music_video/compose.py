@@ -104,24 +104,27 @@ def pick(archetypes, feats, weights, used_names, used_modes, mapping, force=None
     return best, best_d, why
 
 
-def accents_for(an, t0, t1, feats, mapping):
+def events_for(an, t0, t1, feats, arch, mapping):
+    """Orchestration events at song times, from the archetype's templates and the beat's own hits."""
     out = []
-    acc = mapping["accents"]
     strength = dict(zip(an["beats"], an["beat_strength"]))
-    downbeats = set(an["downbeats"])
-    for b in an["beats"]:
-        if not (t0 <= b < t1):
+    downbeats = [b for b in an["downbeats"] if t0 <= b < t1]
+    beats = [b for b in an["beats"] if t0 <= b < t1]
+    med = float(np.median(list(strength.values()))) if strength else 0.5
+    strong = [b for b in beats if strength.get(b, 0) >= med]
+    c = an["curves"]; hz = c["hz"]; on = np.array(c["onset"]); peak = np.percentile(on, 99)
+    onsets = [o for o in an["onsets"] if t0 <= o < t1 and on[min(int(o * hz), len(on) - 1)] / peak >= 0.75]
+    dirs = ["0,1,0", "1,0,0", "0,-1,0", "-1,0,0"]
+    counters = {}
+    for tpl in arch.get("events", []):
+        if feats["energy"] < tpl.get("min_energy", 0.0):
             continue
-        s = strength.get(b, 0.5)
-        if b in downbeats and feats["energy"] >= acc["downbeat_pulse"]["min_energy"]:
-            out.append({"t": round(b, 3), "cmd": f"pulse {acc['downbeat_pulse']['amount_per_strength'] * s:.1f} {acc['downbeat_pulse']['frames']}", "why": "downbeat"})
-        elif feats["energy"] >= acc["beat_pulse"]["min_energy"]:
-            out.append({"t": round(b, 3), "cmd": f"pulse {acc['beat_pulse']['amount_per_strength'] * s:.1f} {acc['beat_pulse']['frames']}", "why": "beat"})
-    if feats["energy"] >= acc["onset_shake"]["min_energy"]:
-        c = an["curves"]; hz = c["hz"]; on = np.array(c["onset"]); peak = np.percentile(on, 99)
-        for o in an["onsets"]:
-            if t0 <= o < t1 and on[min(int(o * hz), len(on) - 1)] / peak >= acc["onset_shake"]["min_onset"]:
-                out.append({"t": round(o, 3), "cmd": f"shake {acc['onset_shake']['amount']} {acc['onset_shake']['frames']}", "why": "hard onset"})
+        when = {"start": [t0], "half": [(t0 + t1) / 2], "bar": downbeats, "beat": beats, "strong": strong, "onset": onsets}[tpl["on"]]
+        for t in when:
+            i = counters.get(tpl["cmd"], 0); counters[tpl["cmd"]] = i + 1
+            cmd = tpl["cmd"].replace("{i}", str(i % 4)).replace("{dir}", dirs[i % 4])
+            out.append({"t": round(float(t), 3), "cmd": cmd, "why": tpl["on"]})
+    out.sort(key=lambda e: e["t"])
     return out
 
 
@@ -129,6 +132,10 @@ def compose(an, mapping, start, end, beats, fps, forced):
     cuts = cut_points(an, start, end, beats)
     shots, used_names, used_modes = [], [], []
     tempo = an["tempo"]
+    render = dict(mapping.get("render", {}))
+    render.setdefault("fps", fps); render.setdefault("step_hz", 60); render.setdefault("accum", 1)
+    step_hz, out_fps = int(render["step_hz"]), int(render["fps"])
+    every = max(1, round(step_hz / out_fps)); accum = min(int(render["accum"]), every)
     for i, (t0, t1) in enumerate(zip(cuts, cuts[1:])):
         feats = beat_features(an, t0, t1)
         arch, dist, why = pick(mapping["archetypes"], feats, mapping["feature_weights"], used_names, used_modes, mapping, forced.get(str(i)))
@@ -137,18 +144,18 @@ def compose(an, mapping, start, end, beats, fps, forced):
         thresholds = mapping["intensity_by_energy"]
         intensity = arch.get("intensity", 1 + sum(1 for th in thresholds if e >= th))
         fov = mapping["fov"]["min"] + (mapping["fov"]["max"] - mapping["fov"]["min"]) * feats["brightness"]
-        frames = int(round((t1 - t0) * 60))
-        subs = {"shot_frames": frames, "slow_degps": f"{8 + 12 * e:.0f}", "fast_degps": f"{tempo / 120 * (30 + 50 * e):.0f}"}
+        frames = int(round((t1 - t0) * step_hz))
+        subs = {"shot_frames": frames, "slow_degps": f"{4 + 6 * e:.0f}", "fast_degps": f"{tempo / 120 * (8 + 12 * e):.0f}"}
         camera = [c.format(**subs) for c in arch["camera"]]
         camera.insert(1, f"mv fov {fov:.0f}")
         shot = {
             "name": f"{i + 1:02d}-{arch['name']}",
-            "t0": round(t0, 3), "t1": round(t1, 3), "frames": frames,
+            "t0": round(t0, 3), "t1": round(t1, 3), "frames": frames, "every": every, "accum": accum,
             "mode": arch["mode"], "players": arch.get("players", 4), "intensity": int(intensity),
-            "settle_frames": arch.get("settle_frames", 300),
+            "settle_frames": int(arch.get("settle_seconds", 5) * step_hz),
             "setup": ["mv hud off", "mv autopilot on"],
             "camera": camera,
-            "accents": accents_for(an, t0, t1, feats, mapping),
+            "events": events_for(an, t0, t1, feats, arch, mapping),
             "features": feats,
             "archetype": arch["name"], "what": arch["what"],
             "why": why,
@@ -157,7 +164,7 @@ def compose(an, mapping, start, end, beats, fps, forced):
         print(f"beat {i + 1}: {t0:.2f}-{t1:.2f} s  {arch['name']}  I{intensity} fov {fov:.0f}  {feats}  <- {why}")
     return {
         "song": an["path"], "song_name": an["song"], "tempo": tempo,
-        "segment": {"start": start, "end": end}, "fps": fps,
+        "segment": {"start": start, "end": end}, "fps": out_fps, "render": render,
         "mapping": os.path.relpath(os.path.join(HERE, "mapping.json"), os.getcwd()),
         "shots": shots,
     }

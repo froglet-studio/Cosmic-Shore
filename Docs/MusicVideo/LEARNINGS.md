@@ -8,7 +8,7 @@ person said, and what changed in `Tools/Build/music_video/mapping.json` (or the 
 
 | Milestone | State | Where |
 |---|---|---|
-| M1: three ~5 s beats over ~15 s of one song | **two cuts made 2026-10-27, waiting on Garrett's feedback** (SKY FIRE 41.0-56.0 s: build → the drop at 46.37 → drop). Cut 1: Skim Race flyby → Joust chase → Wildlife chase. Cut 2 (closer cameras, bright bars in brighter arenas, the alive-subject rule): Wildlife chase → Joust chase → Skim Race chase. The scorecard prefers cut 2 on five of seven criteria (no dead frames, luminance now follows brightness, less stuck time); motion-vs-energy and motion-vs-onsets are still under their floors in both. | `milestones/M1-sky-fire-41-56/cut1`, `cut2` |
+| M1: three ~5 s beats over ~15 s of one song | **cuts 1-2 judged by Garrett (prototype look, jitter, camera dances - see below); cut 3 in progress with orchestrated gameplay and offline-quality frames.** Cuts 1-2 (2026-10-27) (SKY FIRE 41.0-56.0 s: build → the drop at 46.37 → drop). Cut 1: Skim Race flyby → Joust chase → Wildlife chase. Cut 2 (closer cameras, bright bars in brighter arenas, the alive-subject rule): Wildlife chase → Joust chase → Skim Race chase. The scorecard prefers cut 2 on five of seven criteria (no dead frames, luminance now follows brightness, less stuck time); motion-vs-energy and motion-vs-onsets are still under their floors in both. | `milestones/M1-sky-fire-41-56/cut1`, `cut2` |
 | M2: a whole song | not started (same pipeline, `--start 0 --end <duration> --beats <sections>`) | |
 | M3: every song in `Assets/_Audio/Music` | not started | |
 | M4: the skill and tools a cheaper model repeats for a new song | the skill exists (`/music-video`) and ran this cut end to end; it is proven when a session that is not this one makes M2 from it | |
@@ -118,6 +118,44 @@ and the floors should move to sit just under a liked cut's numbers.
   and `fastest` resolve once at the first frame of a shot.
 - **Measured luminance per arena is now in the mapping** (`luminance` on each archetype) and the
   brightness targets follow it; luminance-vs-brightness went from -1.0 to +0.5.
+
+### Garrett's feedback on cuts 1 and 2 (2026-10-27) and what changed for cut 3
+
+Garrett: *"they both have the same fundamental issues. this looks like a prototype rendering. it is not
+smooth. it is the opposite at times with an eye-straining jitter. we are not rendering in real time. we
+don't have frame rate constraints. we should be cheating and calculating one beautiful screenshot-worthy
+frame at a time. this didn't look like cosmic shore. it looked like a cheap imitation. it should be the
+cinematic over-the-top version if it makes a mistake. ideally people watching still believe it is real
+unity gameplay but it should be better or equal in every way. never less than."* And: *"keep it to
+orchestrated gameplay not camera dances. keep things as smooth and inviting as you can, and orchestrate
+the fights, the timing of explosions, the directions that swarms move etc."*
+
+What was wrong, measured:
+- **The jitter was the camera, not the frame pacing.** frames.csv showed every output frame exactly
+  1/30 s apart. The strain came from (1) a FOV pulse on EVERY beat above energy 0.6 (one every 0.49 s at
+  123 bpm) plus shakes on hard onsets, (2) the camera posed BEFORE the simulation tick, so it was always
+  one frame behind the hull it followed, (3) a chase that re-resolved `nearest`/`fastest` every frame,
+  and (4) 30 fps with no motion blur at racing speed.
+- **The look was the renderer at 1600x900, 4x MSAA, scale 1.** The engine's post stack is exactly what
+  the game's `GamePlay PostProcessing Profile` turns on (Bloom + Panini; Vignette, White Balance and DoF
+  are authored but inactive), so the gap is resolution, anti-aliasing and motion, not a missing effect.
+- **A subject 23 u from the camera on its forward axis rendered nothing** while a 3/4 view from 30 u showed
+  the full Squirrel and wake: cameras sit off-axis (behind, above AND beside).
+
+What cut 3 does instead (all in the mapping's `render` block and the archetypes' `events`):
+- **One beautiful frame at a time.** 1920x1080, 8x MSAA, 2x supersampling, 16x anisotropy; the run
+  steps at 240 Hz and every 60 fps output frame is the linear-light average of 4 sub-frames (a 180-degree
+  shutter: real motion blur). About 0.5 s per sub-frame in the software renderer, so a 5 s shot is
+  about 10 minutes of wall time; two shots at once on 4 cores.
+- **The camera is a mount, posed after the tick.** `mv mount SUBJECT back up side lead smooth`: it rides the
+  subject exactly, off-axis, with only the heading low-passed (2 e-folds/s); orbits are 5-8 deg/s. No
+  pulses, no shakes, no flybys. The subject is resolved once per shot and held.
+- **The music is answered by the game.** `events` per archetype: boosts (`action … FullSpeedStraightAction`)
+  on downbeats and strong beats, prisms devastated around the pilot (`blast`, the game's own
+  `Prism.Damage(devastate)`) on downbeats and hard onsets, AI jousters steered at the pilot and at each
+  other (`aim`, `converge`, through `AIPilot.SetExternalTargetProvider`), the brittlestar swarm herded in a
+  new direction every bar (`herd`, through `Fauna.Goal`, which the creatures re-resolve only every 1-5 s so
+  a per-frame write wins).
 
 ## Log
 

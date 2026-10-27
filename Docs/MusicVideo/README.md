@@ -19,18 +19,22 @@ next one reads. A session (or `/music-video`) runs them in order:
 | Step | Tool | Reads | Writes |
 |---|---|---|---|
 | 1. Measure the song | `analyze_song.py SONG` | the audio (anything ffmpeg decodes) | `out/<song>.analysis.json`: tempo, beats, downbeats, onsets, sections labelled intro / build / drop / breakdown / verse / outro, per-frame curves (43 Hz: loudness, spectral centroid = brightness, flatness, bass share, highs share, onset strength), and the best 15 s windows ranked by how much changes inside them |
-| 2. Compose | `compose.py ANALYSIS --start S --end E [--beats N]` | the analysis + [`mapping.json`](../../Tools/Build/music_video/mapping.json) | `out/<song>_S-E/plan.json`: the cut points (snapped to a section boundary, else a downbeat, else a beat), one **shot** per beat with its mode, player count, intensity, camera program, field of view and the accents (FOV pulses on downbeats, shakes on hard onsets) at exact song times, plus the beat's features and the reason for every choice |
+| 2. Compose | `compose.py ANALYSIS --start S --end E [--beats N]` | the analysis + [`mapping.json`](../../Tools/Build/music_video/mapping.json) | `out/<song>_S-E/plan.json`: the cut points (snapped to a section boundary, else a downbeat, else a beat), one **shot** per beat with its mode, player count, intensity, steady camera mount, field of view and the **orchestration events** (boosts, prism bursts, AI jousters steered at the pilot, swarm herding) at exact song times, plus the beat's features and the reason for every choice; the `render` block (60 fps from 240 Hz sub-frames averaged 4:1, 1080p, 8x MSAA, 2x supersampling) |
 | 3. Shoot | `shoot.py PLAN [--jobs 2]` | the plan, the built player | `frames/<shot>/f*.png` + `frames.csv` (game time per frame) + `shoot.log` per shot |
 | 4. Assemble | `assemble.py PLAN [--captions]` | frames + the song | `video.mp4` at true game speed with the song segment, and `video_sheet.png` (first / middle / last frame of every shot) |
 | 5. Score | `score.py PLAN` | frames + analysis | `scorecard.json`: the criteria, the leaky-ReLU penalties, the loss, what is below its floor |
 
 The engine side is one verb, **`mv`**, on the Amoebius player (`Port/src/CosmicShore.Player/MusicVideoDirector.cs`,
 reachable from `--do` and the control port): it hides the HUD, puts the local pilot on autopilot, takes the
-gameplay camera (its rig stood down, so the look is the game's own) or the CameraManager's replay camera,
-poses it every frame on a **subject** (`local`, `ai0`…, `nearest`, `name:Worm`) as an orbit, chase, dolly or
-flyby, pulses the field of view or shakes on a schedule, and starts a `FrameRecorder` range from the next
-frame. Because a scripted run steps every clock by exactly 1/60 s, frame 300 is always game second 5, so a
-beat computed from the song lands on an exact frame whatever the software renderer's speed.
+gameplay camera (its rig stood down, so the look is the game's own) and poses it AFTER every simulation tick
+as a steady **mount** on a subject (`local`, `ai0`…, `nearest`, `fastest`, `name:Worm`), a slow orbit or a
+dolly; it **orchestrates the game** (`action` fires a vessel's ability, `aim` / `converge` steer AI pilots,
+`blast` devastates the prisms around a subject with the game's own damage, `herd` draws every swarm creature
+toward a direction) at frames the song chose (`cue`); and it starts a `FrameRecorder` range from the next
+frame, averaging sub-frames in linear light for motion blur. Because a scripted run steps every clock by a
+fixed step (1/240 s for a cut), a beat computed from the song lands on an exact frame whatever the software
+renderer's speed. Nothing is rendered in real time: every sub-frame is drawn at full quality (`--step-hz`,
+`--msaa`, `--render-scale`, `--aniso`, `--size`).
 
 ## Why it is shaped this way
 
@@ -40,10 +44,12 @@ beat computed from the song lands on an exact frame whatever the software render
 - **Measure, map, decide, score: four separate files.** A new mapping never re-measures audio; a new
   song never changes the mapping; a scorecard names which criterion got worse. A cheaper model edits one
   JSON number, not a pipeline.
-- **The mapping is the learned thing.** `mapping.json` holds the **archetypes** (a scene, its mode and
-  camera program, and the feature target it is best for), the feature weights, the diversity penalties,
-  the intensity ladder, the FOV range and the accent rules. Feedback from a cut becomes a change there,
-  with the reason in `LEARNINGS.md`.
+- **The mapping is the learned thing.** `mapping.json` holds the **archetypes** (a scene, its mode, its
+  camera mount, its orchestration event templates and the feature target it is best for), the feature
+  weights, the diversity penalties, the intensity ladder, the FOV range and the render block. Feedback
+  from a cut becomes a change there, with the reason in `LEARNINGS.md`.
+- **The music is answered by the game, never by the camera** (Garrett, 2026-10-27): the camera is a steady
+  mount; the beat lands as a boost, a burst of prisms, a joust pass, a swarm turning.
 - **The loss is a Pareto front with leaky-ReLU floors, not one scalar.** Each criterion (motion tracks
   loudness, accents land on onsets, cuts sit on beats, bright bars read bright, no dead frames, no stuck
   frames, modes are diverse) has a floor; below it the penalty is steep, above it a small slope still
