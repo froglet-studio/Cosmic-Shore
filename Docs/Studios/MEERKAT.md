@@ -133,6 +133,69 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 16 (Yash, 2026-10-28: "we are not going to make it into Gopher. So remove everything from Gopher and add them to
+this Meerkat's Omnicrystal ability. So once it collects the Omnicrystal, it's going to rise up to a three-dimensional
+branching from a single source ... 5 to 10 branch points with multiple openings, lots of openings ... openings all around
+... configuration parameters to control the total how large volume the branching gonna spread up to, how many openings and
+directions, randomness ... Wackadoodle labyrinth water slide park inside soil"). ARTIFACT ONLY. The Gopher studio is gone
+(its page, card, preview and docs).**
+- **The Omnicrystal ability: the LABYRINTH.**
+  - **Omnicrystals:** `omniCount` (3) sit on the course line, half way between rings. They are bigger than crystals,
+    gold-white and faceted. Fly through one and your next RT digs the labyrinth instead of a wormhole. The reticle turns
+    into the whole labyrinth in gold, and the HUD says it is armed.
+  - **Try it at once:** **Give me an omnicrystal** on the Omnicrystal · the labyrinth card.
+- **Its shape: a 3D branching from one source.**
+  - The source sits on your nose line, and the first fork comes soon after it.
+  - It has `labyrinthBranchPoints` (8) forks, and each fork splits two to four ways.
+  - It has `labyrinthOpenings` (16) ways out: at most 3 × forks + 1, at least forks + 1.
+  - The openings lie `labyrinthRadius` (240 u) from its centre, spread over `labyrinthSpread` (300°, 360 = all round,
+    back toward you included).
+  - `labyrinthRandomness` (0.45) sets how wild it is. Every labyrinth is new.
+  - **How it is built** (`labLayout`):
+    - A random tree, grown shallow-first until it has that many forks; extra openings go to random forks.
+    - The openings' directions are a Fibonacci spread over the cone, jittered. They are dealt to the subtrees by splitting
+      along their long axis, so neighbouring openings share a branch.
+    - Each fork sits toward its openings' mean direction, deeper forks further out.
+  - **Channels:** `labyrinthDiameter` (12 u) wide, flaring to `labyrinthMouthDiameter` (22 u) at the source and every
+    opening, dug rough (`labyrinthRoughness`).
+  - **Digging:** it digs itself out from the source over `labyrinthFormSeconds` (0.8 s).
+  - **Wireframe:** rings every `labyrinthRingSpacing` (12 u) of `labyrinthRingSides` (10) spindles, and `labyrinthRibs`
+    (4) ribs.
+- **The water slide.**
+  - The ride multipliers apply, plus `forkBoost` (0.08) for every fork taken.
+  - At a fork, lean the LEFT stick toward the channel you want (left, right, up, down or between) past `forkLean`
+    (0.25). A lean held any time on the way counts. With no lean you take the straightest channel.
+  - `forkHintSeconds` (0.9 s) before a fork, each channel is marked where it leads, with the one you would take lit, in
+    the HUD and in the 3D.
+  - Out of an opening you fly on along it. The labyrinth stays `staySeconds`, then falls in.
+- **Inside soil.** The Gopher's soil, unchanged: strata walls, stones and roots (`soil*`, on the Omnicrystal · the soil
+  card). Everyone sees it, the rider too.
+- **The AI is input-only.**
+  - With an omnicrystal and the ring ahead, at least half the labyrinth's radius away, it presses RT.
+  - At each fork it leans toward the channel whose openings lie nearest the ring. A rookie sometimes leans the wrong way.
+- **Measured** (the level scorecard, seed 11, Hard):
+
+  | Course | Omnicrystals off | Omnicrystals on |
+  |---|---|---|
+  | 1 | 77.5 s | 79.5 s |
+  | 2 | 79.9 s | 82.1 s |
+  | 3 | 82.8 s | 82.8 s |
+  | 4 | 81.5 s | 79.9 s |
+
+  - Every level finishes every course.
+  - The labyrinth is about time-neutral for the AI: it is a fun detour, not a shortcut, because openings all round can
+    leave you facing away from the ring. A finding for Yash, not tuned away.
+  - With it off, the race is exactly the race before.
+  - Leaning left, right, up and down took four different routes through the same labyrinth.
+- **Built on the Meerkat's tunnels.** Each channel is its own pair with a sampled path (`wh.poly`); `whAt`, `whFrame` and
+  `whRadius` dispatch to it, so the drawing, glass, bent space and collapse work per channel. The tree is not drawn
+  round labyrinth channels.
+- **Cost:**
+  - A default labyrinth is about 24 channels.
+  - Wireframe: about 3,000 spindles (`BR_MAX` raised to 30,000).
+  - Soil: a wall mesh per channel, built once.
+  - Stones: up to 3,000, one instanced mesh.
+
 **Round 15 (Yash, 2026-10-28: "I have added some config settings in the artifact ... It's named tree1. Can you check
 those and then repolish the configurations to make it look more like a big branch through which this meerkat is
 traveling"). ARTIFACT ONLY.**
@@ -147,8 +210,8 @@ traveling"). ARTIFACT ONLY.**
     (`trunkGrain` 0.5, `trunkGrainLines` 22 round it). Riding through, they stream past along the walls.
   - The side branches now grow all along the limb (`branchZone` 0.85, `branchCount` 8, `branchLength` 2.4,
     `branchThickness` 0.28, `branchUp` 28°, `branchSymmetry` 0.45).
-- **The burrowing version became its own vessel, the Gopher** (`GOPHER.md`, `gopher.html`). Its single tunnel is a
-  network of channels dug through soil, with a choice at every fork. The Meerkat stays the one-way tree.
+- **The burrowing version was tried as its own vessel, the Gopher**: a network of channels through soil, with a choice
+  at every fork. It was removed the same day, and its network became the Meerkat's Omnicrystal ability (round 16).
 
 **Round 14 (Yash, 2026-10-28: "the moment AI or player ... press their right trigger to create the tunnel, the tunnel
 will automatically be created with the trunk, not separate from the trunk ... just extend the outer layer of the tube to
