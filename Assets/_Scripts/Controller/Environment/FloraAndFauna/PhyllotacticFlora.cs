@@ -181,6 +181,13 @@ namespace CosmicShore.Gameplay
             base.ApplyVariantTuning(tuning);
             if (tuning == null) return;
             if (tuning.MaxTotalSpawnedObjects >= 0) maxTotalSpawnedObjects = tuning.MaxTotalSpawnedObjects;
+            // The whole plant, uniformly: the lengths here and the cross-section in Stem/LeafPrismScale.
+            if (tuning.PlantScale > 0f)
+            {
+                _plantScale = tuning.PlantScale;
+                segmentLength *= _plantScale;
+                whorlRadius *= _plantScale;
+            }
             // Cell density scalar, applied AFTER the absolute so it scales whatever budget won.
             // Round half UP explicitly: Mathf.RoundToInt is banker's rounding, which would turn
             // an authored 150 x 0.9 into 134 on one species and 135 on the next.
@@ -342,7 +349,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 StemPrismScale(int depth, float segment, float lengthMul)
         {
-            float taper = Mathf.Pow(depthTaper, depth);
+            float taper = Mathf.Pow(depthTaper, depth) * _plantScale;
             float j = Jitter();
             return Floor(new Vector3(
                 LeafSize.x * stemScale.x * taper * j,
@@ -356,7 +363,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 LeafPrismScale(int depth, float reach)
         {
-            float taper = Mathf.Pow(depthTaper, depth);
+            float taper = Mathf.Pow(depthTaper, depth) * _plantScale;
             float j = Jitter();
             return Floor(new Vector3(
                 LeafSize.x * leafScale.x * taper * j,
@@ -382,6 +389,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Non-null ONLY for the duration of <see cref="TryPreviewGrowth"/>.</summary>
         System.Random _previewRng;
+
+        /// <summary><see cref="FloraVariantTuning.PlantScale"/>: 1 = the plant as authored.</summary>
+        float _plantScale = 1f;
 
         /// <summary>Floored at the prism scale animator's 0.5 minimum so nothing silently clamps.</summary>
         static Vector3 Floor(Vector3 s) =>
@@ -445,7 +455,13 @@ namespace CosmicShore.Gameplay
         {
             base.AddHealthBlock(healthPrism);
             if (healthPrism && _pendingPrismScale.HasValue)
+            {
+                // A plant grown by PlantScale is a size nobody has seen trimmed, and its longer stems would
+                // gap at the 10 u ceiling - so a scaled plant is ADMITTED. An unscaled one keeps the shipped
+                // trim below (Docs/ECOSYSTEM.md 34.9), so no existing garden changes look.
+                if (!Mathf.Approximately(_plantScale, 1f)) healthPrism.AdmitTargetScale(_pendingPrismScale.Value);
                 healthPrism.TargetScale = _pendingPrismScale.Value;
+            }
             _pendingPrismScale = null;
 
             // NOT calling AdmitTargetScale here, deliberately - see Docs/ECOSYSTEM.md §34.9.

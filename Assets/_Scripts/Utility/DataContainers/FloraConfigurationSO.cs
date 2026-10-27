@@ -335,6 +335,12 @@ namespace CosmicShore.Utility
                  "widened to match. -1 = keep prefab. See Docs/ECOSYSTEM.md 34.7.")]
         public float LatticeScale = -1f;
 
+        [Tooltip("PHYLLOTACTIC species only: scales the WHOLE plant uniformly - every segment, every whorl " +
+                 "and every prism's cross-section - so its shape and prism count are identical and its volume is " +
+                 "x PlantScale^3. It is how a cell grows more food without more plants or colliders (Docs/ECOSYSTEM.md " +
+                 "64.6; Borromean's LatticeScale means the same for that family). -1 = keep prefab.")]
+        public float PlantScale = -1f;
+
         [Tooltip("Seconds between shield refreshes on the health prisms (the Charge gyroid " +
                  "ships shielded leaves at 1). -1 = keep prefab.")]
         public float ShieldPeriod = -1f;

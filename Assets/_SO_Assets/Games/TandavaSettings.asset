@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: TandavaSettings
   m_EditorClassIdentifier:
   SwarmConfig: {fileID: 11400000, guid: 089a2139ed5858f13c72a46eb93a95b6, type: 2}
-  HatchPoint: {x: -430, y: 0, z: 0}
+  HatchPoint: {x: -878.92, y: 0, z: 0}
   HatchHeading: {x: 1, y: 0, z: 0}
   Forms:
   - DisplayName: Great Serpent
     Role: 0
     FillToEvolve: 0.9
     BankShare: 0.15
-    MealVolume: 4000
+    MealVolume: 25521
     Line: 'The {0} is hungry. Wherever it eats, its hood comes off its head to guard its mouth.'
     Variants:
     - DisplayName: Great Serpent
@@ -31,15 +31,15 @@ MonoBehaviour:
       - 3
       - 4
       CoilMouths:
-      - {x: -4.226, y: -1.286, z: 1.451}
-      - {x: -0.868, y: -1.644, z: -4.272}
-      - {x: -8.299, y: -0.6, z: -2.931}
-      CoilRoamRadius: 703.2
+      - {x: -8.638, y: -2.63, z: 2.966}
+      - {x: -1.775, y: -3.361, z: -8.732}
+      - {x: -16.963, y: -1.226, z: -5.99}
+      CoilRoamRadius: 1437.4
       LungePlanIndex: -1
       SnapPlanIndex: -1
       LungeMouth: {x: 0, y: 0, z: 0}
-      Mouth: {x: 137.063, y: -0.586, z: -0.081}
-      FeedMouth: {x: 136.22, y: 0, z: -0.02}
+      Mouth: {x: 280.156, y: -1.197, z: -0.165}
+      FeedMouth: {x: 278.435, y: 0, z: -0.041}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Great Serpent
       PlanIndex: 5
@@ -49,15 +49,15 @@ MonoBehaviour:
       - 8
       - 9
       CoilMouths:
-      - {x: -6.202, y: -0.972, z: -0.978}
-      - {x: 0.381, y: -1.563, z: -4.18}
-      - {x: -6.248, y: -0.173, z: -3.029}
-      CoilRoamRadius: 699.4
+      - {x: -12.676, y: -1.987, z: -1.999}
+      - {x: 0.778, y: -3.196, z: -8.543}
+      - {x: -12.771, y: -0.354, z: -6.191}
+      CoilRoamRadius: 1429.6
       LungePlanIndex: -1
       SnapPlanIndex: -1
       LungeMouth: {x: 0, y: 0, z: 0}
-      Mouth: {x: 151.419, y: -0.597, z: -0.026}
-      FeedMouth: {x: 150.784, y: 0, z: -0.006}
+      Mouth: {x: 309.5, y: -1.22, z: -0.053}
+      FeedMouth: {x: 308.203, y: 0, z: -0.012}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Great Serpent
       PlanIndex: 10
@@ -67,21 +67,21 @@ MonoBehaviour:
       - 13
       - 14
       CoilMouths:
-      - {x: -2.126, y: -1.751, z: 2.137}
-      - {x: -1.243, y: -1.731, z: -3.73}
-      - {x: -11.483, y: -1.301, z: -2.769}
-      CoilRoamRadius: 700.1
+      - {x: -4.345, y: -3.579, z: 4.369}
+      - {x: -2.541, y: -3.538, z: -7.623}
+      - {x: -23.472, y: -2.659, z: -5.66}
+      CoilRoamRadius: 1431
       LungePlanIndex: -1
       SnapPlanIndex: -1
       LungeMouth: {x: 0, y: 0, z: 0}
-      Mouth: {x: 125.906, y: -0.45, z: -0.329}
-      FeedMouth: {x: 124.746, y: 0, z: -0.092}
+      Mouth: {x: 257.351, y: -0.92, z: -0.672}
+      FeedMouth: {x: 254.981, y: 0, z: -0.189}
       HaloCentre: {x: 0, y: 0, z: 0}
   - DisplayName: Many-Headed Serpent
     Role: 0
     FillToEvolve: 0.9
     BankShare: 0.28
-    MealVolume: 4000
+    MealVolume: 25521
     Line: 'Its coils split: a {0}. Every head dips to the food when it eats.'
     Variants:
     - DisplayName: Five-Headed Serpent
@@ -92,15 +92,15 @@ MonoBehaviour:
       - 18
       - 19
       CoilMouths:
-      - {x: 78.735, y: 26.258, z: -31.256}
-      - {x: 72.202, y: 32.474, z: 18.158}
-      - {x: 82.981, y: 33.801, z: -9.706}
-      CoilRoamRadius: 661.9
+      - {x: 160.935, y: 53.671, z: -63.888}
+      - {x: 147.581, y: 66.376, z: 37.115}
+      - {x: 169.614, y: 69.088, z: -19.84}
+      CoilRoamRadius: 1352.9
       LungePlanIndex: 20
       SnapPlanIndex: 21
-      LungeMouth: {x: 168.143, y: 2.928, z: 0.332}
-      Mouth: {x: 146.821, y: 10.116, z: 0.185}
-      FeedMouth: {x: 143.836, y: 12.054, z: 0.049}
+      LungeMouth: {x: 343.685, y: 5.984, z: 0.678}
+      Mouth: {x: 300.102, y: 20.677, z: 0.377}
+      FeedMouth: {x: 294, y: 24.639, z: 0.1}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Seven-Headed Serpent
       PlanIndex: 22
@@ -110,15 +110,15 @@ MonoBehaviour:
       - 25
       - 26
       CoilMouths:
-      - {x: 76.904, y: 24.697, z: -28.268}
-      - {x: 69.317, y: 29.886, z: 17.053}
-      - {x: 80.452, y: 31.179, z: -10.456}
-      CoilRoamRadius: 665.4
+      - {x: 157.191, y: 50.481, z: -57.78}
+      - {x: 141.685, y: 61.088, z: 34.857}
+      - {x: 164.443, y: 63.729, z: -21.373}
+      CoilRoamRadius: 1360.1
       LungePlanIndex: 27
       SnapPlanIndex: 28
-      LungeMouth: {x: 157.563, y: 1.243, z: 0.436}
-      Mouth: {x: 134.239, y: 8.763, z: 0.248}
-      FeedMouth: {x: 129.615, y: 11.852, z: 0.101}
+      LungeMouth: {x: 322.059, y: 2.541, z: 0.89}
+      Mouth: {x: 274.384, y: 17.912, z: 0.507}
+      FeedMouth: {x: 264.933, y: 24.226, z: 0.206}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Ten-Headed Serpent
       PlanIndex: 29
@@ -128,15 +128,15 @@ MonoBehaviour:
       - 32
       - 33
       CoilMouths:
-      - {x: 76.367, y: 22.398, z: -21.804}
-      - {x: 67.474, y: 25.819, z: 15.112}
-      - {x: 77.83, y: 26.82, z: -10.612}
-      CoilRoamRadius: 668.6
+      - {x: 156.094, y: 45.782, z: -44.567}
+      - {x: 137.917, y: 52.774, z: 30.889}
+      - {x: 159.084, y: 54.82, z: -21.691}
+      CoilRoamRadius: 1366.6
       LungePlanIndex: 34
       SnapPlanIndex: 35
-      LungeMouth: {x: 144.239, y: -1.54, z: 0.883}
-      Mouth: {x: 114.719, y: 7.508, z: 0.972}
-      FeedMouth: {x: 107.491, y: 12.098, z: 0.242}
+      LungeMouth: {x: 294.825, y: -3.148, z: 1.804}
+      Mouth: {x: 234.486, y: 15.347, z: 1.987}
+      FeedMouth: {x: 219.711, y: 24.727, z: 0.495}
       HaloCentre: {x: 0, y: 0, z: 0}
   - DisplayName: Lord of the Dance
     Role: 1
@@ -156,7 +156,7 @@ MonoBehaviour:
       LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
-      HaloCentre: {x: 0.012, y: 3.854, z: 1.125}
+      HaloCentre: {x: 0.024, y: 7.877, z: 2.299}
     - DisplayName: Lord of the Dance
       PlanIndex: 37
       FeedPlanIndex: -1
@@ -168,7 +168,7 @@ MonoBehaviour:
       LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
-      HaloCentre: {x: 0.012, y: 3.854, z: -1.125}
+      HaloCentre: {x: 0.024, y: 7.877, z: -2.299}
     - DisplayName: Lord of the Dance
       PlanIndex: 38
       FeedPlanIndex: -1
@@ -180,12 +180,12 @@ MonoBehaviour:
       LungeMouth: {x: 0, y: 0, z: 0}
       Mouth: {x: 0, y: 0, z: 0}
       FeedMouth: {x: 0, y: 0, z: 0}
-      HaloCentre: {x: 0.012, y: 1.76, z: 0.937}
+      HaloCentre: {x: 0.024, y: 3.597, z: 1.916}
   - DisplayName: Antlion
     Role: 2
     FillToEvolve: 0.9
     BankShare: 0.4
-    MealVolume: 4000
+    MealVolume: 25521
     Line: 'The drum stops. The {0} drops out of the halo, jaws open. One last feast and the cycle is complete.'
     Variants:
     - DisplayName: Antlion
@@ -196,9 +196,9 @@ MonoBehaviour:
       CoilRoamRadius: 0
       LungePlanIndex: 41
       SnapPlanIndex: 42
-      LungeMouth: {x: 75.885, y: 0.182, z: -0.254}
-      Mouth: {x: 86.492, y: -0.219, z: -0.26}
-      FeedMouth: {x: 74.596, y: 0.173, z: -0.254}
+      LungeMouth: {x: 155.11, y: 0.371, z: -0.519}
+      Mouth: {x: 176.789, y: -0.448, z: -0.531}
+      FeedMouth: {x: 152.474, y: 0.354, z: -0.519}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Antlion
       PlanIndex: 43
@@ -208,9 +208,9 @@ MonoBehaviour:
       CoilRoamRadius: 0
       LungePlanIndex: 45
       SnapPlanIndex: 46
-      LungeMouth: {x: 66.554, y: 0.124, z: -0.101}
-      Mouth: {x: 83.336, y: -1.004, z: -0.11}
-      FeedMouth: {x: 65.57, y: 0.115, z: -0.101}
+      LungeMouth: {x: 136.036, y: 0.254, z: -0.206}
+      Mouth: {x: 170.339, y: -2.052, z: -0.224}
+      FeedMouth: {x: 134.026, y: 0.236, z: -0.206}
       HaloCentre: {x: 0, y: 0, z: 0}
     - DisplayName: Antlion
       PlanIndex: 47
@@ -220,13 +220,13 @@ MonoBehaviour:
       CoilRoamRadius: 0
       LungePlanIndex: 49
       SnapPlanIndex: 50
-      LungeMouth: {x: 83.307, y: 0.037, z: -0.303}
-      Mouth: {x: 93.412, y: -0.329, z: -0.312}
-      FeedMouth: {x: 81.975, y: 0.029, z: -0.303}
+      LungeMouth: {x: 170.28, y: 0.077, z: -0.619}
+      Mouth: {x: 190.933, y: -0.672, z: -0.637}
+      FeedMouth: {x: 167.556, y: 0.059, z: -0.619}
       HaloCentre: {x: 0, y: 0, z: 0}
   Director:
-    RoamRadius: 616
-    SenseRadius: 450
+    RoamRadius: 1259.104
+    SenseRadius: 919.8
     ApproachSpeed: 80
     DamageRef: 0.04
     ThreatRiseSeconds: 0.25
@@ -235,18 +235,18 @@ MonoBehaviour:
     WaryExit: 0.2
     FleeEnter: 0.65
     FleeExit: 0.4
-    FleeMinSeconds: 4
-    FleeReach: 500
-    LungeRadius: 380
+    FleeMinSeconds: 8.176
+    FleeReach: 1022
+    LungeRadius: 776.7
     LungeBodyMin: 0.7
     LungeEnter: 0.25
-    LungeSeconds: 2.5
-    LungeCooldownSeconds: 6
+    LungeSeconds: 5.11
+    LungeCooldownSeconds: 12.26
     LungeLead: 0.35
-    LungeReach: 40
-    SnapReach: 150
-    SnapLeadSeconds: 0.5
-    SnapHoldSeconds: 1.3
+    LungeReach: 81.76
+    SnapReach: 306.6
+    SnapLeadSeconds: 1.022
+    SnapHoldSeconds: 2.657
     TurnSnap: 0.3
     CruiseCalm: 1
     CruiseWary: 1.5
@@ -258,34 +258,34 @@ MonoBehaviour:
     TurnFlee: 2.5
     TurnFeed: 1
     TurnLunge: 3
-    SafeRadius: 350
+    SafeRadius: 715.4
     FearCalm: 0.5
     FearWary: 0.9
-    DistanceBias: 300
+    DistanceBias: 613.2
     StickBonus: 1.3
-    MinFood: 200
+    MinFood: 1276
     RestSeconds: 25
-    WanderReach: 350
-    ArriveMargin: 70
+    WanderReach: 715.4
+    ArriveMargin: 143.1
     MealBreakFraction: 0.2
     GiveUpSeconds: 6
-    FeedSettleSeconds: 4
+    FeedSettleSeconds: 8.176
     MaxFeedSeconds: 30
     LeaveWhenStomachFill: 0.98
     ShatterFraction: 0.35
     ArmFraction: 0.6
-    RiseSeconds: 5
-    DrumSeconds: 30
+    RiseSeconds: 10.22
+    DrumSeconds: 61.32
     HaloCount: 12
     HaloToBreak: 9
-    DanceReach: 250
+    DanceReach: 511
     MatchSeconds: 0
-  FoodPerPrism: 72.866
+  FoodPerPrism: 465.109
   FoodCheckSeconds: 0.5
-  HaloRadius: 167.3
+  HaloRadius: 341.96
   HaloMouthRadius: 24
-  GuardPostRadius: 201.91
-  GuardRadius: 40
+  GuardPostRadius: 412.71
+  GuardRadius: 81.76
   GuardMembers: 6
   GuardElement: 4
   HaloGuardScale: 0.35
@@ -297,7 +297,7 @@ MonoBehaviour:
   BurstSpeed: 70
   BurstScale: 3
   FlashSeconds: 0.6
-  FlashRadius: 260
+  FlashRadius: 531.44
   FlashStrength: 0.8
   AscensionPalette:
     MembraneBright: {r: 1.4, g: 1.12, b: 0.42, a: 1}
@@ -335,4 +335,4 @@ MonoBehaviour:
   NudgeThreshold: 25
   NudgeFraction: 0.2
   MaxNudge: 8
-  AiFlankBack: 70
+  AiFlankBack: 143.08

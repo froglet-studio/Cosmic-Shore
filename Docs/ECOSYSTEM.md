@@ -12239,12 +12239,82 @@ numbers the harness asserts are untouched), the builder cores' body constants, a
 (`WormSegmentFauna.KeepHeartSize`: a segment blooms from scale 0, and its heart, sized in world units against it, grew
 to ~9.6 as it did; the colony now re-applies the one size while a segment's scale moves).
 
-### 64.5 Tandava is not scaled yet (open, for the mode's owner)
+### 64.5 Tandava is scaled to its creature (Garrett, 2026-10-27: "go ahead and fix tandava etc.")
 
-Tandava's swarm (and its Severing fork) forks the Swarm cell's sort config, so it would inherit §64.4, but scaled whole
-it no longer fits its own design: the dance's reach (250) falls short of the doubled halo (461), its 67,000-volume reef
-cannot feed a 213,000-volume body, and `TandavaHarness.cs` pins the old cruise, speed, body reach and eggs.
-`author_tandava_assets.py` therefore pins its body back explicitly (`ElementBodyScale` 1, heart gap 0.6, bite 10, and its
-own `UnitScale` 2) - its members carry 3.55 hearts on their old bodies, the "before" state. Scaling it means re-fitting
-the arena, the halo, the dance reach and the reef together.
+Tandava's swarm (and its Severing fork) forks the Swarm cell's sort config, so it now **inherits §64.4's body**
+(`UnitScale` 4.088, `ElementBodyScale`, heart gap 1.226, the grown eggs) instead of pinning the research body back.
+Scaled alone that body did not fit the mode (the dance needed 461-511 u of an 800 u cell that let it roam 449; a 67,000
+reef fed a 229,000 stomach), so the **mode's world was scaled round it** by one rule, `author_tandava_assets.py`'s
+header:
+
+- **Lengths x K = 2.044** (the body's growth): the membrane 800 → 1,635.2, the flora band 240-720 → 490.6-1,471.7, the
+  body reach 160 → 327, the hatch −430 → −878.9, the pilots' line x 600 → 1,226.4, the halo's guard radius 40 → 81.8,
+  the flash 260 → 531, the bots' flank 70 → 143; and every creature-centred dial of `TandavaDirectorSettings` (sense,
+  flee reach, lunge radius and reach, the strike's `SnapReach` - the weapon's own reach - safe radius, distance bias,
+  wander, arrive margin, dance reach). The halo's radius and posts follow the plans (x K through `WORLD`).
+- **Travel and morph times x K**, because the creature keeps its world speed over K x the distance: `LungeSeconds`,
+  `LungeCooldownSeconds` (its way to food between charges), `FleeMinSeconds`, `FeedSettleSeconds`, `RiseSeconds`,
+  `DrumSeconds` (the pilots' rings are twice as far apart), `SnapLeadSeconds` / `SnapHoldSeconds` (the strike swings twice
+  as far), `StarvationSeconds` 30 → 61.3. Reaction times to pilots (threat rise and fall), the meal length and every
+  fraction are unchanged.
+- **Volumes x M = 6.38** (the eggs' mass ratio, 610.85 / 95.74 - the stomach IS eggs): the meal 4,000 → 25,521,
+  `MinFood` 200 → 1,276, and the **reef, every plant grown whole by s = M^(1/3) = 1.855** (Borromean through
+  `LatticeScale`, the five phyllotactic species through the new `PlantScale`, §64.6): no new plant, no new collider (the
+  cell is 347 colliders worst case, as before), the forest 67,000 → 427,000.
+- **Speeds stay world** (Garrett's §64.4 decision): `Cruise` and `SortVMaxScale` 3 → 1.4677 voxels a step, 60 u/s calm
+  as before. **What a vessel meets stays its size**: a ring's mouth (24), the pilots' spacing, the ring plausibility reach.
+- **The bite reach** is Tandava's own, 25.73 (the inherited 20.44 is 10 x K): the coils grew x K round a plant that grew
+  only x s (its mass, not its length), so the outer members of a coil sat just past a plant they used to touch and a
+  coil ate at about half its rate. 25.73 = (28 + 10) x K − 28 x s: the research touch, x K, less the grown plant.
+- Both cells moved to the **Tuned** petal burn (`PetalBurnRule` 1), Garrett's 2026-10-08 rule that
+  `check_elemental_economy.py` holds (they were the gate's two failures).
+
+**What the harness says** (`TandavaHarness.cs` 108 checks, `TandavaSeveringHarness.cs` 164 - both the same counts as
+before, all passing; their test geometry scaled the same way, `TandavaArena.K`):
+
+| | Research body (800 u cell) | One heart size (1,635 u cell) |
+|---|---|---|
+| Unopposed, to the cycle's end (3 seeds) | 116 / 131 / 148 s (Severing 154 / 167 / 174) | 226 / 254 / 237 s (Severing 334 / 335 / 336) |
+| Its first form change | 17-21 s | 22-34 s |
+| A Great Serpent meal, coiled | 2.5 s at 724 volume/s | 4.2 s at 3,220 volume/s |
+| A form change reads (60% coverage) | 1.0 s | 1.5 s |
+| Calm / fleeing (config) / lunging (measured) | 60 / 126 / 139 u/s | 60 / 126 / 130 u/s |
+| The live strike's swing (Many-Headed / Antlion) | 28-36 u / 28-38 u | 75-88 u / 67-81 u |
+| A Rhino culling 20 members a second shatters it in | 17.9 s | 15.5 s |
+
+**The decision this leaves for the mode's owner (Yash):** an unopposed hunt now runs about **twice as long** (the pacing
+check is 200 x K = 409 s). That is the price of world speeds in a world twice as wide. To get the old pace back, raise
+the mood levers' cruise (`CruiseCalm` and the rest, x K) - but then the creature outruns the vessels, the reason §64.4
+kept world speeds.
+
+**Two defects this found, fixed:**
+- **A creature parked short of a plant waited for ever.** When a plant lies past the roam, the goal is clamped; the body
+  arrives on it and stops, and a body at rest does not turn, so its mouth never reached the plant - the Severing Antlion
+  sat 171 u off one for 270 s and starved. Both directors now rest a plant they have sat parked short of for
+  `GiveUpSeconds` (6 s) and choose again. The geometry is the same at the research scale (x 1/K); the new timing only
+  happened to pick that plant.
+- **Severing's `SeverLink` tore the Ten-Headed Serpent in two.** At 6.5 plan voxels (the research 13 u) its coils read as
+  two pieces at most moments - harness T20 passed only at its 6 s snapshot, and failed at 9, 12 and 25 s even at the
+  research body (`TANDAVA_DIAG=knots`). At 8 voxels (32.7 u) no whole body leaves a knot over 17 members, and a 30% slice
+  still parts every form tested.
+
+Before / after (one scale per row): `Docs/Ecology/FaunaScale/tandava_before_after.png` - the arena, and the Great
+Serpent's head with its 3.55 hearts beside a halo ring's 24 u mouth.
+
+### 64.6 `PlantScale`: a phyllotactic plant grown whole
+
+`FloraVariantTuning.PlantScale` (−1 = keep the prefab) is the phyllotactic family's `LatticeScale`: `PhyllotacticFlora`
+multiplies its segment length, whorl radius and every stem and leaf prism's cross-section by it, so the plant's shape,
+its prism count and its collider count are unchanged and its volume (its food) is x `PlantScale`^3. A scaled plant's
+heart prism admits its new size (`HealthPrism.AdmitTargetScale`); an unscaled species keeps the shipped trim exactly.
+It is how a cell grows more food without more plants. Tandava is its first user (1.855 on five species, §64.5).
+
+### 64.7 The substrate harness and the arms-race policies
+
+`Tools/Build/substrate_harness/run.sh` had not compiled since `SwarmTickJob` began running the sort and grid cores (its
+netstandard2.1 profile build listed neither); both are in its core list now and **every substrate test passes** (197).
+The shoal's and the harriers' trained networks were **not retrained, and need not be**: every input they read is
+divided by the pond's radius, a perception radius or a speed, and those stayed in world units. What grew (body,
+spacing, catch and confusion radii, §64.4) feeds the steering spring and the catch rule, not the networks, and the
+harness's arms parity and behaviour checks (A1-A4) pass.
 

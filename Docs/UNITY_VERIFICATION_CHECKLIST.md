@@ -16574,5 +16574,32 @@ research body, so `WithBodyScale` at k != 1 is untested there; a scratch copy ad
    overlapping; the forests are visibly larger plants; the cell does not reach Frenzy in the first minutes.
 6. Swarm cell substrate populations (pack, lurker, leviathan...) and builder colonies: **Pass:** bodies sit behind their
    hearts with a gap, a pack still rings a pilot and strikes, a thief still snatches.
-7. Tandava: **Pass:** unchanged from before this entry (it is pinned at its old body, §64.5).
+7. Tandava: superseded by the 2026-10-27 entry below (it now inherits the grown body).
+
+## 🔴 2026-10-27 — Tandava and Tandava Severing scaled to their creature (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). Compiled for real: the runtime scripts through
+Amoebius's `CosmicShore.Live` build (0 errors); the Tandava harness (108 checks) and the Severing harness (164 checks)
+pass, the same counts as before; the swarm core harness passes; the substrate harness now compiles as shipped (its
+`run.sh` lists the sort and grid cores) and passes all 197. `author_tandava_assets.py`, `author_tandava_severing_assets.py`,
+the swarm, substrate, builder, NCA, Borromean, lattice and menu generators `--check`; `check_elemental_economy.py` passes
+(both Tandava cells are on the Tuned burn now). `author_flora_populations.py --check` reports the Tandava phyllotactic
+forks as drift, as it already did before this change (two generators write those files). The rule and the numbers:
+`Docs/ECOSYSTEM.md` §64.5-64.6; before / after: `Docs/Ecology/FaunaScale/tandava_before_after.png`.
+
+1. Let Unity compile. **Pass:** no errors from `TandavaDirectorCore.cs`, `TandavaSeveringDirectorCore.cs`,
+   `PhyllotacticFlora.cs`, `FloraConfigurationSO.cs`.
+2. Open the Voyage window and set sail for Tandava (or open `MinigameTandava` and Play). **Pass:** the cell is about twice
+   as wide as before; the creature hatches whole across the cell from the pilots; the reef's Coral, Lantern, Reed, Frond
+   and Tendril plants are visibly bigger than in any other cell, with the same shape, and the Borromean plants likewise.
+3. Fly at it. **Pass:** it swims at its old speed (a Squirrel keeps up), lunges at a pilot who comes close and strikes,
+   bolts when it is hurt; rolled up at a plant it eats (its stomach bar rises) and changes form in about half a minute.
+4. Leave it alone. **Pass:** it completes its cycle in about four minutes (it took about two before); it never parks
+   beside a plant for more than a few seconds without eating (the 2026-10-27 parked fix).
+5. The dance: **Pass:** the halo's rings stand round it inside the cell, a vessel fits through a ring's mouth as before,
+   and the drum gives about a minute to break nine.
+6. A plant in any other cell that uses a phyllotactic species (Coral, Lantern, Reed, Frond, Tendril): **Pass:** unchanged
+   (`PlantScale` −1 keeps the prefab; the heart's admitted size is only touched for a scaled plant).
+7. Tandava Severing: cut the Great Serpent through its middle. **Pass:** the piece crawls off as the Severed; the
+   Ten-Headed Serpent rolled up at a plant is never parted without a cut (`SeverLink` 32.7).
 

@@ -379,6 +379,12 @@ State all three when you add or resize one:
    `Flora.ApplyCellPrismScale` returns early. That is a statement about the code, not a
    rounding, and a cell's prism axis will then move some of its species and not others.
 
+**To give a cell more FOOD without more plants or colliders, grow each plant WHOLE**:
+Borromean's `FloraVariantTuning.LatticeScale` and the phyllotactic family's `PlantScale`
+(2026-10-27) both scale a plant's offsets AND its prisms by s, so its shape, prism count and
+collider count are unchanged and its volume is x s³ (`Docs/ECOSYSTEM.md` §64.5-64.6;
+Tandava's reef is the worked example, s = 1.855 from its creature's egg ratio).
+
 A species in **no SpawnProfile** (the worm colony) costs a cell nothing until somebody
 adopts it. Say so — and re-prove it by grepping the config GUIDs, because *an "it is wired
 nowhere" claim is true only on the date it was written*.
