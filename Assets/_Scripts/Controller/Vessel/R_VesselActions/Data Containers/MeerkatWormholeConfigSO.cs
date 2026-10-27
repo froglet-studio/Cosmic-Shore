@@ -50,7 +50,25 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...then collapses back to its centre in (s)")]
         [SerializeField, Range(0.2f, 3f)] float collapseSeconds = 0.8f;
 
-        [Header("Wormhole look (the artifact's Play Style Config > Wormhole look)")]
+        [Header("Reticle feel & look (the artifact's Play Style Config > Reticle, yours alone)")]
+        [Tooltip("Your reticle follows the sticks over (s, 0 = at once)")]
+        [SerializeField, Range(0f, 1f)] float reticleSmoothSeconds = 0.15f;
+        [Tooltip("Your reticle, right stick centred (brightness)")]
+        [SerializeField, Range(0f, 1f)] float reticleIdleAlpha = 0.4f;
+        [Tooltip("Your reticle's glass: a faint lit surface under it")]
+        [SerializeField, Range(0f, 2f)] float reticleGlass = 0.15f;
+        [Tooltip("...rings of spindles round it")]
+        [SerializeField, Range(2, 30)] int reticleRings = 10;
+        [Tooltip("...spindles round each ring")]
+        [SerializeField, Range(3, 32)] int reticleSpindlesPerRing = 16;
+        [Tooltip("...ribs of spindles along it (0 = none)")]
+        [SerializeField, Range(0, 16)] int reticleRibs = 8;
+        [Tooltip("...spindle thickness (u)")]
+        [SerializeField, Range(0.05f, 3f)] float reticleSpindleThickness = 0.35f;
+        [Tooltip("...the lime line you will fly (brightness, 0 = none)")]
+        [SerializeField, Range(0f, 1f)] float reticlePath = 0.5f;
+
+        [Header("Wormhole look (the artifact's Play Style Config > Wormhole look, Space look)")]
         [Tooltip("Space bent along the tube (strength)")]
         [SerializeField, Range(0f, 2f)] float warpStrength = 0.8f;
         [Tooltip("Space bent in at each mouth (strength)")]
@@ -61,10 +79,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 0.9f)] float rippleEdge = 0.45f;
         [Tooltip("...for (s)")]
         [SerializeField, Range(0.2f, 4f)] float rippleSeconds = 1.2f;
-        [Tooltip("Your reticle, right stick centred (brightness)")]
-        [SerializeField, Range(0f, 1f)] float reticleIdleAlpha = 0.4f;
-        [Tooltip("Your reticle's glass: a faint lit surface under it")]
-        [SerializeField, Range(0f, 2f)] float reticleGlass = 0.6f;
         [Tooltip("The formed tunnel's bridge, for everyone (0 = hidden)")]
         [SerializeField, Range(0f, 1f)] float bridgeVisibility = 1f;
         [Tooltip("...its glass surface (brightness)")]
@@ -111,8 +125,14 @@ namespace CosmicShore.ScriptableObjects
         public float RippleStrength => rippleStrength;
         public float RippleEdge => rippleEdge;
         public float RippleSeconds => rippleSeconds;
+        public float ReticleSmoothSeconds => reticleSmoothSeconds;
         public float ReticleIdleAlpha => reticleIdleAlpha;
         public float ReticleGlass => reticleGlass;
+        public int ReticleRings => reticleRings;
+        public int ReticleSpindlesPerRing => reticleSpindlesPerRing;
+        public int ReticleRibs => reticleRibs;
+        public float ReticleSpindleThickness => reticleSpindleThickness;
+        public float ReticlePath => reticlePath;
         public float BridgeVisibility => bridgeVisibility;
         public float BridgeGlass => bridgeGlass;
         public int BridgeRings => bridgeRings;

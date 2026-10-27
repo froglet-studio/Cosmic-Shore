@@ -114,7 +114,8 @@ def script_guid(name: str) -> str:
 CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
                "keyRampSeconds", "throatSpeed", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
-               "reticleIdleAlpha", "reticleGlass", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
+               "reticleSmoothSeconds", "reticleIdleAlpha", "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs",
+               "reticleSpindleThickness", "reticlePath", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
                "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "aiWormhole", "aiStraightMinDistance",
                "aiBentMinDistance", "aiShapeSeconds", "aiNoise"]
 
@@ -147,6 +148,16 @@ def config_asset(values: dict) -> str:
             f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3}}\n"
             "  m_Name: MeerkatWormholeConfig\n  m_EditorClassIdentifier: \n" + body +
             empty_event("formEvent") + empty_event("collapseEvent"))
+
+
+def config_retrofit(cfg: str, values: dict) -> str:
+    """A key the studio added after the config was first written joins it at the page's SHIPPED value (round 3: the reticle's
+    feel and spindles); a key already there is never touched - its number is studio_to_unity.py's. Idempotent."""
+    missing = [k for k in CONFIG_KEYS if not re.search(r"^  %s: " % k, cfg, re.M)]
+    if not missing:
+        return cfg
+    at = cfg.index("  formEvent:\n")
+    return cfg[:at] + "".join(f"  {k}: {num(values[k])}\n" for k in missing) + cfg[at:]
 
 
 def action_asset(name: str, trigger: int) -> str:
@@ -424,6 +435,10 @@ def author():
         write(ACTIONS + ".meta", folder_meta(ACTIONS_DIR_GUID))
     if not os.path.exists(CONFIG):   # a one-shot: after it exists only studio_to_unity.py writes its numbers
         write(CONFIG, config_asset(values)); write(CONFIG + ".meta", native_meta(CONFIG_GUID))
+    else:
+        old = read(CONFIG); new = config_retrofit(old, values)
+        if new != old:
+            write(CONFIG, new)
     for path, guid, name, k in ((FORM, FORM_GUID, "MeerkatWormholeFormAction", 0), (SHORTEN, SHORTEN_GUID, "MeerkatWormholeShortenAction", 1)):
         if not os.path.exists(path) or read(path) != action_asset(name, k):
             write(path, action_asset(name, k)); write(path + ".meta", native_meta(guid))
@@ -473,6 +488,11 @@ def self_test():
     cfg = config_asset(values)
     expect(check_config(cfg, values), 0, "a fresh config passes")
     expect(check_config(cfg.replace("  reticleAhead: 30\n", ""), values), 1, "a key missing")
+    old_cfg = cfg.replace("  reticleSmoothSeconds: 0.15\n", "").replace("  reticleRings: 10\n", "")
+    if config_retrofit(old_cfg, values) == old_cfg or check_config(config_retrofit(old_cfg, values), values):
+        fails.append("the config retrofit does not add a key the studio added later")
+    if config_retrofit(cfg, values) != cfg:
+        fails.append("the config retrofit is not idempotent")
     if "  lengthStraight: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))

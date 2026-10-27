@@ -25,8 +25,11 @@ the prefab:
 | RT (`RightStickAction`) | Forms the tunnel once the reticle is 60% grown, and dives in. The last tunnel collapses at once |
 | X (`Button1Action`) | The stance (`StoatHoldAction`), kept from the Stoat; forming a tunnel ends it |
 
-- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it: rings and lines cyan to white, a
-  faint glass surface, and the lime line you will fly once it is fully grown.
+- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it (round 3):
+  - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
+  - It is a see-through frame of thin spindles: `reticleRings` × `reticleSpindlesPerRing` round its throat and
+    `reticleRibs` along it, `reticleSpindleThickness` thick, cyan to white, over a faint glass (`reticleGlass`).
+  - The lime line you will fly runs through it (`reticlePath`).
 - **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
   then runs the arc mouth to mouth. Its speed starts and ends at the entry speed and rushes to `throatSpeed` × it at the
   throat. It comes out with the entry speed, on the tunnel's last heading.
@@ -64,7 +67,8 @@ line for line:
 2. It tries 21 bends × 9 LT squeezes, and keeps the one whose way out heads within 0.26 rad of the ring with 60 u to
    spare, straighter preferred.
 3. It holds its line (no left stick) while the right stick bends the reticle and LT squeezes for `aiShapeSeconds`.
-4. It presses RT through the REPLICATED press path.
+4. It waits for its eased reticle to catch up (within 0.03, 1 s at most).
+5. It presses RT through the REPLICATED press path.
 
 `aiNoise` bends it off the mark (0, Hard, by default). Easy and Medium race on the gate race's own handicap
 (`GateRaceHandicap`) in Burrow Run. `aiWormhole` off flies without tunnels.
@@ -99,4 +103,4 @@ line for line:
 | Look | `MeerkatWormholeView.cs`, `MeerkatWormholeLensPass.cs`, `_Graphics/Materials/Graphs/MeerkatWormhole*.shader`, `Resources/MeerkatWormhole*.mat` |
 | HUD | `UI/Controller/MeerkatHUDController.cs` |
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
-| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (36 keys, `--check` 0 drift) |
+| Studio map | `Tools/Build/studio_to_unity/meerkat.json` (42 keys, `--check` 0 drift) |

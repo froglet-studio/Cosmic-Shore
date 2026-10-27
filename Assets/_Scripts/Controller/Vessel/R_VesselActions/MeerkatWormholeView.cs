@@ -10,9 +10,10 @@ namespace CosmicShore.Gameplay
     /// What a Meerkat's wormhole LOOKS like (<c>R_VesselActions/MEERKAT.md</c>), the Vessel Studio's <c>whDraw</c> /
     /// <c>whFill</c> / <c>drawBridge</c> / <c>updateTubeWarp</c> (<c>Docs/Studios/VesselStudio/meerkat.html</c>) ported:
     /// <list type="bullet">
-    /// <item><b>Your reticle</b> (its pilot only): rings round the throat and lines along it, cyan at the way in shading to
-    /// white at the way out, a wall facing you brighter than the far one, the lime line you will fly once it is fully
-    /// grown, and a faint glass surface (<c>reticleGlass</c>). A formed tunnel draws no grid.</item>
+    /// <item><b>Your reticle</b> (its pilot only): a see-through frame of thin spindles (round 3) - rings round the throat
+    /// and ribs along it, cyan at the way in shading to white at the way out, a wall facing you brighter than the far one,
+    /// the lime line you will fly once it is fully grown (<c>reticlePath</c>), and a faint glass surface
+    /// (<c>reticleGlass</c>). A formed tunnel has no reticle.</item>
     /// <item><b>The bridge</b> (everyone, every tunnel): rings of spindles round the throat and ribs of spindles along it
     /// over a glass surface (<c>bridgeGlass</c>), in its maker's domain colour, condensing in from the centre as it forms
     /// and evaporating as it collapses, a shimmer running way in to way out; spindles near the camera fade.
@@ -29,9 +30,10 @@ namespace CosmicShore.Gameplay
         public const string AdditiveMaterialPath = "MeerkatWormholeAdditive";
         public const string GlassMaterialPath = "MeerkatWormholeGlass";
 
-        // the page's WH_RINGS / WH_SEG / WH_LONG / WH_PATH
-        const int Rings = 22, Seg = 24, Long = 12, PathSteps = 40;
+        // the page's WH_RINGS / WH_SEG / WH_PATH (the glass and the warp tube)
+        const int Rings = 22, Seg = 24, PathSteps = 40;
         const float SpindleNear = 4f, SpindleFull = 30f;   // BR_CAM_NEAR / BR_CAM_FULL
+        const float ReticleNear = 1f, ReticleFull = 8f;    // RET_NEAR / RET_FULL: a reticle spindle fades only right at the camera
         const int SpindleSides = 6;
 
         static readonly Color RetIn = new(0x3f / 255f, 0xe0 / 255f, 1f);          // WH_RET_IN 0x3fe0ff
@@ -72,9 +74,9 @@ namespace CosmicShore.Gameplay
             foreach (var e in MeerkatWormholeExecutor.Executors)
             {
                 if (!e || !e.TryGetReticle(out var ret, out var ghost, out bool hasGhost)) continue;
-                float glass = e.Config ? e.Config.ReticleGlass : 0f;
-                if (ret.Alpha > 0f) DrawReticle(ret, eye, ret.S0 <= 0f && ret.S1 >= ret.Shape.L, glass);
-                if (hasGhost) DrawReticle(ghost, eye, false, glass);
+                if (!e.Config) continue;
+                if (ret.Alpha > 0f) DrawReticle(ret, e.Config, eye, ret.S0 <= 0f && ret.S1 >= ret.Shape.L);
+                if (hasGhost) DrawReticle(ghost, e.Config, eye, false);
             }
 
             var live = MeerkatWormholeExecutor.Live;
@@ -100,56 +102,64 @@ namespace CosmicShore.Gameplay
             if (s_gi.Count > 0) Graphics.RenderMesh(glassParams, s_glass, 0, Matrix4x4.identity);
         }
 
-        // ------------------------------------------------------------------ the reticle (whDraw, whFill)
+        // ------------------------------------------------------------------ the reticle (drawReticle, whFill)
 
-        static void DrawReticle(in MeerkatWormholeExecutor.Reticle r, Vector3 eye, bool path, float glass)
+        /// <summary>
+        /// The page's round-3 <c>drawReticle</c> (Yash: "pretty transparent, just maybe wireframe looking with just spindles.
+        /// Tiny thinning spindles"): <c>reticleRings</c> rings of <c>reticleSpindlesPerRing</c> spindles round its throat and
+        /// <c>reticleRibs</c> ribs along it, <c>reticleSpindleThickness</c> thick, cyan at the way in to white at the way out, a
+        /// wall facing you brighter than the far one; over a faint glass (<c>reticleGlass</c>), with the lime line you will fly at
+        /// <c>reticlePath</c> once it is fully grown. The same spindles as the bridge, fading only right at the camera.
+        /// </summary>
+        static void DrawReticle(in MeerkatWormholeExecutor.Reticle r, ScriptableObjects.MeerkatWormholeConfigSO cfg, Vector3 eye, bool path)
         {
             float span = r.S1 - r.S0;
             if (span < 0.5f || r.Alpha <= 0.01f) return;
             var sh = r.Shape;
             float A = r.Alpha;
-            for (int i = 0; i < Rings; i++)
+            int nR = Mathf.Max(2, cfg.ReticleRings), nS = Mathf.Max(3, cfg.ReticleSpindlesPerRing), nRib = Mathf.Max(0, cfg.ReticleRibs);
+            float th = Mathf.Max(0.02f, cfg.ReticleSpindleThickness);
+            for (int i = 0; i < nR; i++)
             {
-                float s = r.S0 + span * i / (Rings - 1), rad = RetRadius(r, s), u = i / (float)(Rings - 1);
+                float u = i / (float)(nR - 1), s = r.S0 + span * u, rad = RetRadius(r, s);
                 var c = Color.Lerp(RetIn, RetOut, u);
                 float a = A * (0.35f + 0.65f * Mathf.Abs(2f * u - 1f));
-                for (int j = 0; j < Seg; j++)
+                for (int j = 0; j < nS; j++)
                 {
-                    var p1 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s, j / (float)Seg * Mathf.PI * 2f, rad, out var n1);
-                    var p2 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s, (j + 1) / (float)Seg * Mathf.PI * 2f, rad, out var n2);
-                    Line(p1, c * (a * Face(p1, n1, eye)), p2, c * (a * Face(p2, n2, eye)));
+                    var p1 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s, j / (float)nS * Mathf.PI * 2f, rad, out var n1);
+                    var p2 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s, (j + 1) / (float)nS * Mathf.PI * 2f, rad, out _);
+                    Spindle(p1, p2, th, a * Face(p1, n1, eye), c, eye, ReticleNear, ReticleFull);
                 }
             }
-            for (int j = 0; j < Long; j++)
+            for (int k = 0; k < nRib; k++)
             {
-                float phi = j / (float)Long * Mathf.PI * 2f;
-                for (int i = 0; i < Rings - 1; i++)
+                float phi = (k + 0.5f) / nRib * Mathf.PI * 2f;
+                for (int i = 0; i < nR - 1; i++)
                 {
-                    float s1 = r.S0 + span * i / (Rings - 1), s2 = r.S0 + span * (i + 1) / (Rings - 1);
+                    float s1 = r.S0 + span * i / (nR - 1), s2 = r.S0 + span * (i + 1) / (nR - 1);
                     var p1 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s1, phi, RetRadius(r, s1), out var n1);
-                    var p2 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s2, phi, RetRadius(r, s2), out var n2);
-                    Line(p1, Color.Lerp(RetIn, RetOut, i / (float)(Rings - 1)) * (A * 0.8f * Face(p1, n1, eye)),
-                         p2, Color.Lerp(RetIn, RetOut, (i + 1) / (float)(Rings - 1)) * (A * 0.8f * Face(p2, n2, eye)));
+                    var p2 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s2, phi, RetRadius(r, s2), out _);
+                    Spindle(p1, p2, th * 0.8f, A * 0.8f * Face(p1, n1, eye), Color.Lerp(RetIn, RetOut, (i + 0.5f) / (nR - 1)), eye,
+                            ReticleNear, ReticleFull);
                 }
             }
-            if (path)
+            float pa = A * MeerkatWormholeMath.Clamp01(cfg.ReticlePath);
+            if (path && pa > 0.01f)
             {
                 // the line you will fly: from the mouth to the way out, then on along its last heading
                 for (int i = 0; i < PathSteps; i++)
                 {
                     var a = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.L, sh.Theta, r.S0 + span * i / PathSteps, out _);
                     var b = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.L, sh.Theta, r.S0 + span * (i + 1) / PathSteps, out _);
-                    Line(a, Lime * A, b, Lime * A);
+                    Line(a, Lime * pa, b, Lime * pa);
                 }
                 var end = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.L, sh.Theta, r.S1, out var dir);
                 float on = Mathf.Max(80f, 0.5f * sh.L);
                 for (int i = 0; i < 6; i += 2)
-                    Line(end + dir * (on * i / 6f), Lime * (A * 0.8f), end + dir * (on * (i + 1) / 6f), Lime * (A * 0.8f));
+                    Line(end + dir * (on * i / 6f), Lime * (pa * 0.8f), end + dir * (on * (i + 1) / 6f), Lime * (pa * 0.8f));
             }
             if (!r.Ghost)
-            {
-                Fill(r.A, r.T0, r.Side, sh.L, sh.Theta, sh.B, sh.M, r.S0, r.S1, A * Mathf.Max(0f, glass), RetIn, RetOut);
-            }
+                Fill(r.A, r.T0, r.Side, sh.L, sh.Theta, sh.B, sh.M, r.S0, r.S1, A * Mathf.Max(0f, cfg.ReticleGlass), RetIn, RetOut);
         }
 
         static float RetRadius(in MeerkatWormholeExecutor.Reticle r, float s) =>
@@ -209,14 +219,15 @@ namespace CosmicShore.Gameplay
             b = Vector3.Lerp(b, m, 1f - g);
         }
 
-        static void Spindle(Vector3 a, Vector3 b, float thickness, float bright, Color col, Vector3 eye)
+        static void Spindle(Vector3 a, Vector3 b, float thickness, float bright, Color col, Vector3 eye,
+            float nearFrom = SpindleNear, float nearFull = SpindleFull)
         {
             if (bright <= 0.004f) return;
             var d = b - a;
             float len = d.magnitude;
             if (len < 0.05f) return;
             var mid = (a + b) * 0.5f;
-            float near = MeerkatWormholeMath.Smooth(SpindleNear, SpindleFull, Vector3.Distance(mid, eye));
+            float near = MeerkatWormholeMath.Smooth(nearFrom, nearFull, Vector3.Distance(mid, eye));
             if (near <= 0.004f) return;
             var c = col * (bright * near);
             c.a = 1f;

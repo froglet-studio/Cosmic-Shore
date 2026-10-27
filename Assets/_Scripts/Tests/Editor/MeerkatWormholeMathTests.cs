@@ -146,6 +146,26 @@ namespace CosmicShore.Tests
             Assert.IsFalse(MeerkatWormholeMath.TryPlan(p, new Vector3(0f, 0f, 40f), 60f, 0f, 0.5f, false, out _, out _));
         }
 
+        /// <summary>The page's round-3 easing: 1 - exp(-dt / tau). In the page, with the stick moved to 0.202, the reticle read
+        /// 0.04 after 0.05 s, 0.119 after 0.15 s and 0.194 after 0.5 s at 60 fps (reticleSmoothSeconds 0.15) - 2, 8 and 29 easing
+        /// steps, since the reticle reads the stick a frame late (the page's r.sx, the executor's _stick).</summary>
+        [Test]
+        public void ReticleEase_FollowsThePage()
+        {
+            float x = 0f;
+            const float target = 0.202f;
+            for (int k = 1; k <= 30; k++)
+            {
+                x += (target - x) * MeerkatWormholeMath.ReticleEase(1f / 60f, 0.15f);
+                if (k == 2) Assert.AreEqual(0.040f, x, 1.5e-3f);
+                if (k == 8) Assert.AreEqual(0.119f, x, 1.5e-3f);
+                if (k == 29) Assert.AreEqual(0.194f, x, 1.5e-3f);
+            }
+            Assert.AreEqual(1f, MeerkatWormholeMath.ReticleEase(1f / 60f, 0f), "0 s: it follows at once");
+            Assert.IsTrue(MeerkatWormholeMath.ReticleSettled(new Vector2(0.5f, 0f), new Vector2(0.49f, 0.01f), 0.25f, 0.24f));
+            Assert.IsFalse(MeerkatWormholeMath.ReticleSettled(new Vector2(0.5f, 0f), new Vector2(0.45f, 0f), 0.25f, 0.25f));
+        }
+
         [Test]
         public void Ease_AndItsInverse_RoundTrip()
         {

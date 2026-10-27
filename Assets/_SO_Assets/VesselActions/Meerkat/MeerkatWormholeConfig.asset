@@ -32,7 +32,7 @@ MonoBehaviour:
   rippleEdge: 0.45
   rippleSeconds: 1.2
   reticleIdleAlpha: 0.4
-  reticleGlass: 0.6
+  reticleGlass: 0.15
   bridgeVisibility: 1
   bridgeGlass: 0.6
   bridgeRings: 16
@@ -45,6 +45,12 @@ MonoBehaviour:
   aiBentMinDistance: 120
   aiShapeSeconds: 0.3
   aiNoise: 0
+  reticleSmoothSeconds: 0.15
+  reticleRings: 10
+  reticleSpindlesPerRing: 16
+  reticleRibs: 8
+  reticleSpindleThickness: 0.35
+  reticlePath: 0.5
   formEvent:
     Guid:
       Data1: 0

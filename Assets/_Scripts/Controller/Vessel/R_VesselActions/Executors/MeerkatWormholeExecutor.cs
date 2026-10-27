@@ -107,6 +107,8 @@ namespace CosmicShore.Gameplay
         Vector3 _retA, _retT0, _retSide = Vector3.right;
         MeerkatWormholeMath.Shape _retShape;
         Vector2 _stick;   // the right stick the reticle reads (the page's r.sx / r.sy, from the frame before)
+        Vector2 _eased;   // ...the reticle easing toward it over reticleSmoothSeconds (the page's r.fx / r.fy, round 3)
+        float _easedLq;   // ...and toward LT's squeeze (r.flq)
         bool _ltHeld;
         float _ltHeldFor;
         // the reticle fading as a tunnel forms (the page's retGhost)
@@ -122,7 +124,7 @@ namespace CosmicShore.Gameplay
 
         // the AI
         float _aiHold, _aiL, _aiM, _aiLt;
-        bool _aiShaping;
+        bool _aiShaping, _aiPlanned;
         Vector2 _aiStick;
         System.Random _aiRand;
         InputEvents? _formInput;
@@ -151,12 +153,13 @@ namespace CosmicShore.Gameplay
             _retLive = false;
             _retAge = 0f;
             _retSide = Vector3.right;
-            _stick = Vector2.zero;
+            _stick = _eased = Vector2.zero;
+            _easedLq = 0f;
             _ltHeld = false;
             _ghostAlpha = 0f;
             _ride = null;
             _aiHold = 0f;
-            _aiShaping = false;
+            _aiShaping = _aiPlanned = false;
             _formInput = null;
             _aiRand = new System.Random(GetInstanceID());
             if (!s_executors.Contains(this)) s_executors.Add(this);
@@ -224,6 +227,8 @@ namespace CosmicShore.Gameplay
             {
                 _retLive = false;
                 _retAge = 0f;
+                _stick = _eased = Vector2.zero;   // the page makes a fresh reticle: it grows back from straight
+                _easedLq = 0f;
                 return;
             }
             _retLive = true;
@@ -232,7 +237,11 @@ namespace CosmicShore.Gameplay
             Vector3 fwd = hull.forward, right = hull.right, up = hull.up;
             _retA = hull.position + fwd * Mathf.Max(0f, config.ReticleAhead);
             _retT0 = fwd;
-            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(), LtLive(), _stick.x, _stick.y);
+            // round 3 (Yash: "a little smoothy, so that it feels good"): the reticle eases toward what the sticks ask for
+            float ke = MeerkatWormholeMath.ReticleEase(dt, config.ReticleSmoothSeconds);
+            _eased += (_stick - _eased) * ke;
+            _easedLq += (LtLive() - _easedLq) * ke;
+            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(), _easedLq, _eased.x, _eased.y);
             Vector3 c = sh.Stick >= 0.05f ? right * sh.Dx + up * sh.Dy : _retSide;
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
@@ -389,7 +398,7 @@ namespace CosmicShore.Gameplay
             if (!_retLive || _retEmerge <= 0.001f) return hasGhost;
             // the page's updateWormholes: faint at rest, full while the right stick or LT shapes it, rippling out of its centre
             float rest = MeerkatWormholeMath.Clamp01(config.ReticleIdleAlpha), e = _retEmerge;
-            float alpha = (rest + (1f - rest) * MeerkatWormholeMath.Clamp01(Mathf.Max(_retShape.Stick / 0.3f, LtLive() * 2f))) *
+            float alpha = (rest + (1f - rest) * MeerkatWormholeMath.Clamp01(Mathf.Max(_retShape.Stick / 0.3f, _easedLq * 2f))) *
                           (0.35f + 0.65f * e);
             reticle = new Reticle
             {
@@ -417,18 +426,25 @@ namespace CosmicShore.Gameplay
             if (_ride != null)
             {
                 _aiHold = 0f;
+                _aiPlanned = false;
                 return;
             }
             float d = Vector3.Distance(hull.position, ai.ObjectivePosition);
             // the bearing of the point it steers for, at the range of the ring it is after (StoatDipoleMath.AutopilotGauge)
             var local = StoatDipoleMath.AutopilotGauge(Quaternion.Inverse(hull.rotation) * (ai.TargetPosition - hull.position), d);
             bool bend = false;
-            if (_aiHold > 0f)
+            if (_aiPlanned)
             {
                 _aiHold -= dt;
                 _aiLt = _aiL;
                 bend = true;
-                if (_aiHold <= 0f) PressForm();   // shaped: pull RT
+                // shaped, and (round 3: the reticle eases) its reticle caught up with its sticks: pull RT
+                if (_aiHold <= 0f && (MeerkatWormholeMath.ReticleSettled(_stick, _eased, _aiL, _easedLq) ||
+                                      _aiHold <= -MeerkatWormholeMath.AiSettleTimeout))
+                {
+                    _aiPlanned = false;
+                    PressForm();
+                }
             }
             else if (d > Mathf.Min(config.AiStraightMinDistance, config.AiBentMinDistance) && CanForm &&
                      MeerkatWormholeMath.TryPlan(config.Plan(), local, Mathf.Max(1f, _status.Speed),
@@ -438,6 +454,7 @@ namespace CosmicShore.Gameplay
                 _aiL = _aiLt = lq;
                 _aiM = m;
                 _aiHold = Mathf.Max(dt, config.AiShapeSeconds);
+                _aiPlanned = true;
                 bend = true;
             }
             if (!bend) return;
@@ -514,7 +531,7 @@ namespace CosmicShore.Gameplay
             _retLive = false;
             _ltHeld = false;
             _formInput = null;
-            _aiShaping = false;
+            _aiShaping = _aiPlanned = false;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

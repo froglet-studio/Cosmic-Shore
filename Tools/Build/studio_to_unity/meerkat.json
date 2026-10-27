@@ -182,6 +182,36 @@
       "key": "pitchYaw",
       "asset": "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
       "field": "PitchScaler"
+    },
+    {
+      "key": "reticleSmoothSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleSmoothSeconds"
+    },
+    {
+      "key": "reticleRings",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleRings"
+    },
+    {
+      "key": "reticleSpindlesPerRing",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleSpindlesPerRing"
+    },
+    {
+      "key": "reticleRibs",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleRibs"
+    },
+    {
+      "key": "reticleSpindleThickness",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleSpindleThickness"
+    },
+    {
+      "key": "reticlePath",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticlePath"
     }
   ]
 }

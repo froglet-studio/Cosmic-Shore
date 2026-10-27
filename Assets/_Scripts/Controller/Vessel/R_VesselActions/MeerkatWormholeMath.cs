@@ -139,6 +139,27 @@ namespace CosmicShore.Gameplay
         public static float ReticleEmerge(float age, float delaySeconds, float growSeconds) =>
             EaseOutCubic((age - Mathf.Max(0f, delaySeconds)) / Mathf.Max(0.05f, growSeconds));
 
+        /// <summary>
+        /// The page's <c>reticleEase</c> (round 3): the share of the way to what the sticks ask for that the reticle moves in
+        /// <paramref name="dt"/>, 1 - exp(-dt / <paramref name="smoothSeconds"/>); all of it when the time is 0.
+        /// </summary>
+        public static float ReticleEase(float dt, float smoothSeconds)
+        {
+            float tau = Mathf.Max(0f, smoothSeconds);
+            return tau < 1e-3f ? 1f : 1f - Mathf.Exp(-dt / tau);
+        }
+
+        /// <summary>
+        /// The page's <c>reticleSettled</c>: the eased reticle (<paramref name="eased"/>, <paramref name="easedLq"/>) has caught up
+        /// with the sticks (<paramref name="stick"/>, <paramref name="lqWant"/>) to within 0.03 - the AI pulls RT only then (or
+        /// 1 s past its shaping time, <see cref="AiSettleTimeout"/>).
+        /// </summary>
+        public static bool ReticleSettled(Vector2 stick, Vector2 eased, float lqWant, float easedLq) =>
+            Mathf.Abs(stick.x - eased.x) + Mathf.Abs(stick.y - eased.y) < 0.03f && Mathf.Abs(lqWant - easedLq) < 0.03f;
+
+        /// <summary>The AI pulls RT at the latest this long past its shaping time, settled or not.</summary>
+        public const float AiSettleTimeout = 1f;
+
         /// <summary>RT forms a tunnel only once its reticle has rippled at least this far into shape (<c>gateForm</c>).</summary>
         public const float FormableEmerge = 0.6f;
 

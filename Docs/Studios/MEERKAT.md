@@ -66,7 +66,19 @@ space-time will be the shader"*):
 In the studio a spindle is a tapered rod. In the game, the bridge is built from the `Spindle` prefabs, and the
 space-time bend stays the shader's.
 
-**The panels:** all three wormhole cards are in **Play Style Config**, in this order: Look, Shape, Ride.
+**The panels:** all the wormhole cards are in **Play Style Config**, in this order: Reticle (feel and look, yours
+alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple), Shape, Ride.
+
+**Round 3 (Yash, 2026-10-27: "I want it to be a little smoothy ... pretty transparent, just maybe wireframe looking with
+just spindles. Tiny thinning spindles"):**
+- **The reticle eases** toward what the right stick and LT ask for over `reticleSmoothSeconds` (0.15 s: 63% of the way
+  in 0.15 s). RT forms the tunnel you see.
+- **The AI waits for its reticle to catch up** with its sticks (within 0.03) before it pulls RT, 1 s at most. Measured,
+  seeds 1-4 at I1 and I3: every race finished, in 101-104 s (94-104 s without the easing).
+- **The reticle is a see-through frame of thin spindles**: 10 rings of 16 spindles and 8 ribs, 0.35 u thick, cyan to
+  white, over a faint glass. These are the same spindles as the bridge, and it replaces the line grid. The lime line you
+  will fly runs through it at half brightness.
+- **The screen effects (warp, dents, ripple) have their own card**, Space look.
 
 ## The parameters (the artifact's keys ARE the game's fields)
 
@@ -91,8 +103,14 @@ space-time bend stays the shader's.
 | look | `rippleStrength` | 0.3 | The collapse's ripple at the screen's edges (0 = none) |
 | look | `rippleEdge` | 0.45 | ...from this share of the way from the centre to a corner |
 | look | `rippleSeconds` | 1.2 s | ...running out and fading over this long |
-| look | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
-| look | `reticleGlass` | 0.6 | The faint lit surface under your reticle's grid |
+| reticle | `reticleSmoothSeconds` | 0.15 s | Your reticle eases toward the sticks over this long (0 = at once) |
+| reticle | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
+| reticle | `reticleGlass` | 0.15 | The faint lit surface under your reticle's spindles |
+| reticle | `reticleRings` | 10 | Rings of spindles round your reticle |
+| reticle | `reticleSpindlesPerRing` | 16 | ...spindles round each ring |
+| reticle | `reticleRibs` | 8 | ...ribs of spindles along it (0 = none) |
+| reticle | `reticleSpindleThickness` | 0.35 u | ...spindle thickness |
+| reticle | `reticlePath` | 0.5 | The lime line you will fly through it (0 = none) |
 | look | `bridgeVisibility` | 1 | The formed tunnel's bridge, for everyone (0 = hidden) |
 | look | `bridgeGlass` | 0.6 | ...its glass surface |
 | look | `bridgeRings` | 16 | ...rings of spindles along it |

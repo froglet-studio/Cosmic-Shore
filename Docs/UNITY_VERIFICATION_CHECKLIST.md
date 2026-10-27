@@ -97,8 +97,9 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
 2. **Lava lamp:**
    - Open the menu's freestyle, then the Toybox **Vessel Changer**, and pick **Meerkat**.
    - It flies on the left stick alone, at about 60 u/s.
-   - A cyan-to-white tube grid sits 30 u ahead of the nose. The right stick bends it, shorter and fatter as it bends,
-     and LT shortens it.
+   - A see-through frame of thin cyan-to-white spindles sits 30 u ahead of the nose. The right stick bends it, shorter
+     and fatter as it bends, and LT shortens it.
+   - It glides into each new shape over about 0.15 s instead of snapping (`reticleSmoothSeconds`; round 3).
 3. Pull **RT**:
    - The reticle fades.
    - A tunnel ripples out of its centre with a spindle bridge in your domain colour, and you dive in.
