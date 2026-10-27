@@ -646,17 +646,24 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
 
-### Meerkat ("Meerkats") — the soliton maker, a crew vessel — DIRECTION (Garrett, 2026-10-27), design gate Yash's
+### Meerkat ("Meerkats") — the soliton maker, a dynamic-seat crew vessel — DIRECTION (Garrett, 2026-10-27), design gate Yash's
 
 Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's direction):
 - **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
   included, and fires them out.
 - **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
-- **Charge · Sentinel mode** (Y / F, an active toggle): new tunnels leave a sentinel at their entrance, from a pool of 3.
-  A sentinel guards 1.5 × the opening radius, zaps enemy vessels' elements and shields same-domain prisms. It is a seat
-  any teammate can take: tap or click to shield any prism or attack, and the button hops it through its soliton to perch
-  at a new tunnel. A soliton lasts as long as its sentinel. L5 **Six sentinels**.
-- **Mass · passive**: prisms set down on a ring round the outside of the exit, sized by Mass. L5 **Danger prisms**.
+- **Charge · Sentinel mode** (Y / F, an active toggle): new tunnels leave a sentinel at their entrance, from a pool of
+  3; with the pool used up, the oldest retires with its soliton.
+  - A sentinel guards 1.5 × the opening radius, zaps enemy vessels' elements (Charge sets the petals per zap) and
+    shields same-domain prisms.
+  - It is a seat any teammate can take: tap or click, with no cooldown, to shield any prism or attack. The empty seat's
+    AI zaps a little slower than an average person taps.
+  - The button hops: the sentinel rides through its soliton and takes the flyer, and the old flyer becomes a sentinel
+    at a new soliton where it was.
+  - A soliton lasts as long as its sentinel. The vessel enters with one seat and never adds players.
+  - L5 **Six sentinels**.
+- **Mass · passive**: a minimal exit portal, a few low-mass prisms in a hexagon round the outside of the exit, once
+  per soliton, sized by Mass. L5 **Danger prisms**.
 
 Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are in the same doc. The two are to be judged
 in the artifact.
