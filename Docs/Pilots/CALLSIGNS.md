@@ -171,6 +171,8 @@ never as 2D text or a ring on the screen.
 
 ## 6. How to build it (on the pilot types from `claude/pensive-dijkstra-qxoxo0`, once they land)
 
+The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BUILD_PROMPT.md`.
+
 1. **`PilotVision` enum** with fixed values: `None = 0`, then ENSIGN 1 … GALLEON 17, the # column of §2. These are
    fixed numbers so Unity's serialization never drifts. Claim the numbers only after checking `bleeding-edge` and the
    in-flight branches.

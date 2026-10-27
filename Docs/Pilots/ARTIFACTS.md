@@ -222,6 +222,8 @@ Built on the types from `claude/pensive-dijkstra-qxoxo0` once they land, never b
 
 ## 9. Order
 
+The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BUILD_PROMPT.md`.
+
 1. The plain payload (Ark hold, grab, carry, crack) in one arena with an Ark. That proves the generalist answer.
 2. Two artifacts on any vessel: Javelin (offence) and Aegis (defence).
 3. An Ark's fall transferring its hold.
