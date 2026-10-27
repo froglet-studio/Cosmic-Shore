@@ -170,6 +170,14 @@
   button.pick:hover { border-color: var(--accent); }
   button.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
   .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+  .profiles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+  .profiles .plbl { font-family: var(--font-display); font-size: 0.78rem; letter-spacing: 0.06em; color: var(--dim); text-transform: uppercase; }
+  .profiles select { flex: 1 1 160px; min-width: 0; max-width: 100%; }
+  .profiles .pname { flex: 1 1 140px; min-width: 0; }
+  .profiles .pick { padding: 4px 9px; font-size: 0.8rem; }
+  .profiles .pick:disabled { opacity: 0.45; cursor: default; }
+  .profiles .pnow { flex-basis: 100%; margin: 0; color: var(--accent); }
+  .profiles .pnow:empty { display: none; }
   .hint { color: var(--dim); font-size: 0.82rem; margin: 6px 0 0; }
   .src { font-size: 0.75rem; color: var(--dim); margin: 4px 0 0; }
   .runs { width: 100%; border-collapse: collapse; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
@@ -259,7 +267,7 @@
 <div class="wrap">
   <header>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 26 · tunnels ripple in and out</span>
+    <span class="round">Round 27 · save a section as a profile</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
@@ -327,7 +335,7 @@
       <form id="logForm" autocomplete="off">
         <label>Topic
           <select id="logTopic">
-            <option>Wormhole style</option><option>Play styles</option><option>Sling feel</option><option>Black hole</option><option>Birth &amp; annihilation</option><option>White hole</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Other</option>
+            <option>Wormhole style</option><option>Play styles</option><option>Sling feel</option><option>Black hole</option><option>Birth &amp; annihilation</option><option>White hole</option><option>Portal</option><option>Lope & body</option><option>Course</option><option>Controls</option><option>Race result</option><option>Profile</option><option>Other</option>
           </select></label>
         <label>Decision <input type="text" id="logChoice" maxlength="400" required></label>
         <label class="full">Why (optional) <textarea id="logNote" rows="2" maxlength="1500"></textarea></label>
@@ -409,7 +417,7 @@
         <p class="src">How a white hole looks to everyone: its white-hot core and its bent sky.</p>
         <div class="btns"><button class="pick" type="button" data-reset="WL">Reset</button></div></details>
       <details class="card" id="grp-WM" open><summary>Wormhole · look <small>Gate mode · StoatModeAction</small></summary><div class="rows"></div>
-        <p class="src"><b>The grid is yours alone</b>: the reticle you shape, and (if <i>grid on your ride</i>) the tunnel you ride. Other players and the AIs never see a grid; they see only what everyone sees: space-time <b>bent in</b> at the black hole's mouth and <b>bent out</b> at the white hole's, each dent exactly as wide as the grid's mouth. <i>Concentrated hole</i> at 0 makes a tunnel a pure warp, no black core, no white core, no ring; at 1 its mouths are full black and white holes.</p>
+        <p class="src"><b>The grid is yours alone</b>: the reticle you shape, and (if <i>grid on your ride</i>) the tunnel you ride. Other players and the AIs never see a grid; they see only what everyone sees: space-time bent along the tube, the centre line clear and the space round it warped, each mouth a dent exactly as wide as the grid's mouth. No black or white hole: a tunnel is only bent space-time (the hole look is parked, <code>Docs/Studios/STOAT_PARKED_HOLE_LOOK.md</code>). Save a look you like as a profile below to fly it again or compare it.</p>
         <div class="btns"><button class="pick" type="button" data-reset="WM">Reset</button></div></details>
       <details class="card" id="grp-P"><summary>Pull &amp; momentum <small>Mass and Time · StoatDipoleConfig, StoatSlingConfig</small></summary><div class="rows"></div>
         <p class="src">Shared by Mass and Time: the most the pair can pull and turn you, the gravity speed it gives and how it fades, and how much of a release you keep as momentum.</p>
@@ -4875,6 +4883,7 @@
       const a = activeType(grp);
       document.querySelectorAll('#types-' + grp + ' button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === a)));
     }
+    if (typeof markProfiles === 'function') markProfiles();
   }
   function showTypeTip(grp, i, anchor, pinned) {
     const T = GROUP_TYPES[grp], ty = T.types[i], key = 'type:' + grp + ':' + i;
@@ -5111,7 +5120,7 @@
     o.out.title = 'shipped ' + SHIPPED[key] + (styled ? ' · your setting ' + b.toFixed(dec) + ', the play styles make it ' + e.toFixed(dec) : '');
   }
 
-  function resetGroup(grp) { if (GROUP_TYPES[grp]) { applyType(grp, -1); return; } for (const [g, key] of SPEC) if (g === grp) { BP[key] = SHIPPED[key]; outputs[key].inp.value = BP[key]; } recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare') buildCompare(playLives); }
+  function resetGroup(grp) { if (GROUP_TYPES[grp]) { applyType(grp, -1); return; } for (const [g, key] of SPEC) if (g === grp) { BP[key] = SHIPPED[key]; outputs[key].inp.value = BP[key]; } recomputeP(); refreshAllOuts(); persist(); markTypes(); if (mode === 'compare') buildCompare(playLives); }
   document.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => resetGroup(b.dataset.reset)));
   $('theirLife').addEventListener('click', () => { for (const [k, v] of [['formS', 6], ['annihilateS', 9]]) { BP[k] = v; outputs[k].inp.value = v; } recomputeP(); refreshAllOuts(); persist(); if (mode === 'compare') buildCompare(playLives); });
 
@@ -5428,14 +5437,109 @@
     const c = window.claude;
     if (!c || typeof c.use !== 'function') { status.textContent = 'Kept in this browser (Copy log to send it). The shared log is in the claude.ai artifact and in Amoebius (OPEN IN AMOEBIUS):'; if (window.VesselStudioTheme) status.appendChild(VesselStudioTheme.artifactLink()); status.className = 'hint status-warn'; renderLog(); return; }
     try { db = await c.use('db'); } catch (e) { db = null; }
-    try { const u = await c.use('user'); if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    try { const u = await c.use('user'); userNs = u; if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
     if (!db) { status.textContent = 'Kept in this browser (Copy log to send it).'; status.className = 'hint status-warn'; renderLog(); return; }
     status.textContent = 'Shared log: saved with the studio, readable by Claude.'; status.className = 'hint status-ok';
+    connectProfiles();
     db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => {
       remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog();
     }, (err) => { status.textContent = 'Shared log unavailable (' + (err && err.code || 'error') + '); kept in this browser.'; status.className = 'hint status-warn'; db = null; renderLog(); });
     renderLog();
   })();
+
+  // ================= section profiles (round 27, Yash: save a section's tweaks as a named profile, to replay and decide) =================
+  // Every settings card with a Reset button gets a Profiles row: name the card's current sliders and save them, pick one to
+  // load it back, delete your own. Saved in the shared db (the 'profiles' collection, readable by Claude) when the viewer
+  // serves it, else in this browser. A profile holds only its section's keys, so loading Wormhole · look never touches
+  // the flight numbers; the play styles still blend on top.
+  const LOCAL_PROFILES = 'stoat-studio-profiles';
+  let localProfiles = lsGet(LOCAL_PROFILES, []), remoteProfiles = null, userNs = null;
+  const profileNames = {};   // user id -> display name (resolved in render, never stored)
+  const profileKeys = (grp) => (GROUP_TYPES[grp] ? typeKeys(grp) : groupKeys(grp));
+  const sectionTitle = (grp) => { const s = $('grp-' + grp) && $('grp-' + grp).querySelector('summary'); return s ? (s.firstChild.textContent || grp).trim() : grp; };
+  function sectionValues(grp) { const o = {}; for (const k of profileKeys(grp)) o[k] = BP[k]; return o; }
+  function allProfiles(grp) {
+    return (remoteProfiles || []).concat(localProfiles.map((p) => Object.assign({ local: true }, p)))
+      .filter((p) => p.studio === 'stoat' && p.section === grp && p.values && typeof p.values === 'object')
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+  const profileId = (p) => (p.local ? 'l:' + p.localId : 'r:' + p.id);
+  function profileMatches(grp, p) { return profileKeys(grp).every((k) => !(k in p.values) || Math.abs(BP[k] - p.values[k]) < 1e-6); }
+  function applyProfile(grp, p) {
+    for (const k of profileKeys(grp)) { const v = k in p.values ? +p.values[k] : SHIPPED[k]; if (!Number.isFinite(v)) continue; BP[k] = v; if (outputs[k]) outputs[k].inp.value = v; }
+    recomputeP(); refreshAllOuts(); persist(); markTypes();
+    if (mode === 'compare') buildCompare(playLives);
+    toast('Loaded "' + p.name + '" into ' + sectionTitle(grp) + '.');
+  }
+  function profileLabel(p) {
+    const who = p.local ? 'this browser' : p.by && p.by === me ? 'you' : profileNames[p.by] || 'someone';
+    return p.name + ' · ' + who + ' · ' + new Date(p.createdAt || 0).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+  function changedFromShipped(values) { return Object.keys(values).filter((k) => SHIPPED[k] != null && Math.abs(values[k] - SHIPPED[k]) > 1e-9).map((k) => k + ' ' + values[k]); }
+  function renderProfiles() {
+    document.querySelectorAll('.profiles[data-grp]').forEach((host) => {
+      const grp = host.dataset.grp, sel = host.querySelector('select'), keep = sel.value, list = allProfiles(grp);
+      sel.innerHTML = '';
+      const none = document.createElement('option'); none.value = ''; none.textContent = list.length ? 'Saved profiles (' + list.length + ')' : 'No saved profiles yet'; sel.append(none);
+      for (const p of list) { const o = document.createElement('option'); o.value = profileId(p); o.textContent = profileLabel(p); sel.append(o); }
+      if ([...sel.options].some((o) => o.value === keep)) sel.value = keep;
+    });
+    markProfiles();
+    if (userNs && userNs.profiles) {   // names resolve in render, every time (ids only are stored)
+      const ids = [...new Set((remoteProfiles || []).map((p) => p.by).filter((id) => id && id !== me && !profileNames[id]))];
+      if (ids.length) userNs.profiles(ids).then((ps) => { let any = false; for (const id of ids) { const n = ps && ps[id] && ps[id].name; if (n) { profileNames[id] = n; any = true; } } if (any) renderProfiles(); }).catch(() => {});
+    }
+  }
+  function markProfiles() {
+    document.querySelectorAll('.profiles[data-grp]').forEach((host) => {
+      const grp = host.dataset.grp, sel = host.querySelector('select'), list = allProfiles(grp);
+      const cur = list.find((p) => profileId(p) === sel.value);
+      const on = list.find((p) => profileMatches(grp, p));
+      host.querySelector('.pnow').textContent = on ? 'Now: ' + on.name : '';
+      const del = host.querySelector('.pdel'); del.disabled = !cur || !(cur.local || !cur.by || cur.by === me);
+      host.querySelector('.pload').disabled = host.querySelector('.plog').disabled = !cur;
+    });
+  }
+  async function saveProfile(grp, name) {
+    const values = sectionValues(grp);
+    const doc = { studio: 'stoat', section: grp, sectionTitle: sectionTitle(grp), name, values, changed: changedFromShipped(values), slingMode, by: me || '', createdAt: Date.now() };
+    if (db) {
+      try { await db.collection('profiles').add(doc); toast('Saved "' + name + '" (shared, readable by Claude).'); return; }
+      catch (e) { toast('Could not save to the shared profiles (' + (e && e.code || 'error') + '); kept in this browser.'); }
+    } else toast('Saved "' + name + '" in this browser.');
+    doc.localId = 'p' + doc.createdAt; localProfiles.push(doc); lsSet(LOCAL_PROFILES, localProfiles); renderProfiles();
+  }
+  async function deleteProfile(p) {
+    if (p.local) { localProfiles = localProfiles.filter((x) => x.localId !== p.localId); lsSet(LOCAL_PROFILES, localProfiles); renderProfiles(); return; }
+    try { await db.doc('profiles/' + p.id).delete(); toast('Deleted "' + p.name + '".'); } catch (e) { toast('Could not delete it (' + (e && e.code || 'error') + ').'); }
+  }
+  function buildProfiles() {
+    document.querySelectorAll('details.card [data-reset]').forEach((rb) => {
+      const grp = rb.dataset.reset; if (!profileKeys(grp).length) return;
+      const card = rb.closest('details.card'), host = document.createElement('div');
+      host.className = 'profiles'; host.dataset.grp = grp; host.setAttribute('role', 'group'); host.setAttribute('aria-label', 'Profiles for ' + sectionTitle(grp));
+      host.innerHTML = '<span class="plbl">Profiles</span><select aria-label="Saved profiles"></select><button class="pick pload" type="button">Load</button><button class="pick plog" type="button" title="Record this profile in the decision log">Record</button><button class="pick pdel" type="button" title="Delete this profile (your own only)">Delete</button>' +
+        '<input type="text" class="pname" maxlength="60" placeholder="Name these settings" aria-label="Profile name"><button class="pick psave" type="button">Save as profile</button><span class="pnow hint"></span>';
+      const sel = host.querySelector('select'), name = host.querySelector('.pname');
+      const pick = () => allProfiles(grp).find((p) => profileId(p) === sel.value);
+      sel.addEventListener('change', markProfiles);
+      host.querySelector('.pload').addEventListener('click', () => { const p = pick(); if (p) applyProfile(grp, p); });
+      host.querySelector('.pdel').addEventListener('click', () => { const p = pick(); if (p) deleteProfile(p); });
+      host.querySelector('.plog').addEventListener('click', () => { const p = pick(); if (!p) return; const ch = changedFromShipped(p.values); record({ topic: 'Profile', choice: sectionTitle(grp) + ': "' + p.name + '"' + (ch.length ? ' (changed: ' + ch.join(', ') + ')' : ' (shipped numbers)'), note: '' }); });
+      const save = () => { const n = name.value.trim(); if (!n) { name.focus(); toast('Give the profile a name first.'); return; } saveProfile(grp, n); name.value = ''; };
+      host.querySelector('.psave').addEventListener('click', save);
+      name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+      const rows = card.querySelector(':scope > .rows');   // right under the sliders it saves
+      card.insertBefore(host, rows ? rows.nextSibling : rb.closest('.btns'));
+    });
+    renderProfiles();
+  }
+  function connectProfiles() {
+    if (!db) return;
+    db.collection('profiles').orderBy('createdAt', 'desc').limit(500).onSnapshot((snap) => {
+      remoteProfiles = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderProfiles();
+    }, () => { remoteProfiles = null; renderProfiles(); });
+  }
 
   // ================= sizing + loop =================
   let lastW = 0, lastH = 0;
@@ -5447,7 +5551,7 @@
   }
   window.addEventListener('resize', resize);
 
-  buildRail(); buildTypes(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
+  buildRail(); buildTypes(); buildProfiles(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
   let last = performance.now();
   // One step of the world: everything but drawing. The frame runs it once (or several times when the sim lab runs
   // fast); the sim lab's batch runs it thousands of times without drawing at all.

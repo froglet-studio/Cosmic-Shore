@@ -535,12 +535,14 @@ Omit `capabilities` to keep them. If they must ever be restated, the full set is
 { "artifact": {}, "sample": {}, "user": { "scopes": ["profile"] },
   "db": { "rules": [ { "path": "decisions", "read": "view", "write": "interact" },
                      { "path": "jobs",      "read": "view", "write": "interact" },
-                     { "path": "requests",  "read": "view", "write": "interact" } ] },
+                     { "path": "requests",  "read": "view", "write": "interact" },
+                     { "path": "profiles",  "read": "view", "write": "interact" } ] },
   "mcp": { "servers": [ { "server": "Claude Code Remote",
                           "tools": ["send_message", "create_session", "list_environments"] } ] } }
 ```
 
-Then `ArtifactData list` of `decisions`, `jobs` and `requests`. To record the published version in Amoebius's
+Then `ArtifactData list` of `decisions`, `jobs`, `requests` and `profiles` (`profiles` holds the section profiles the
+Stoat's settings cards save, round 27: `{studio, section, sectionTitle, name, values, changed, slingMode, by, createdAt}`). To record the published version in Amoebius's
 library, run `/amoebius-artifact` on this URL: it must report every file `unchanged` (a `changed` file means the
 repo and the artifact disagree). Whenever the Stoat changed, regenerate
 its hub copy before a build:

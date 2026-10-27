@@ -573,6 +573,18 @@ no camera jitter, real space-time warp visuals.
 stayed 10.0 s, collapsed in 0.8 s, sent one ripple; the camera through the ride turned at most 2.4° a frame. The AI waits
 for its reticle too: circuits 98.2-100.8 s, hairpins 72.5-88.2 s (round 25: 97.6-103.0, 71.7-85.9).
 
+## 1o. Round 27 (studio) — save a section as a profile (2026-10-27)
+
+Yash: *"I didnt find a way to save them in artifact to a new Wormhole Look settings, ... save my tweak settings to new
+profiles of those areas like Wormhole Look, etc, for future re-play and design decisions."* Every settings card with a
+Reset button (18 of them: Wormhole · look, Gate mode, Pull & momentum, the AI, the play styles, ...) now has a
+**Profiles** row under its sliders: name the card's current values and **Save as profile**; pick one and **Load** it
+(only that card's keys change; a key the profile lacks goes to its shipped value); **Record** writes it to the decision
+log (topic *Profile*, with what it changes from shipped); **Delete** removes your own. "Now: <name>" shows which
+profile the card matches. Profiles live in the studio's shared db (`profiles`, readable by Claude, everyone sees
+everyone's) or, where the viewer has no db, in that browser. Nothing in the game changes: a profile is a set of studio
+values; the one the team picks reaches Unity through `/artifact-to-unity` as usual.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
