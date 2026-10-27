@@ -16778,7 +16778,7 @@ configs, 0 errors, negative control fired), `author_intro_cameras.py --check` an
 1. Run `RearViewLawTests`. **Pass:** green.
 2. Fly any vessel with a pad: press D-pad down. **Pass:** the camera flips to the look-back view; press again, it
    flips back. Holding D-pad down does not flicker.
-3. Press LB + RB together. **Pass:** the camera does NOT flip (RB still boosts / flips on hulls bound to it).
+3. Press LB + RB together. **Pass:** the camera does NOT flip (on the Brittle Star, Grizzly and Shrike, RB still fires their RB ability).
 4. Arena with AI teammates: D-pad left / right still swap hulls, and D-pad down still flips the camera after a swap.
 5. Open the theater (8), scrub with the D-pad. **Pass:** D-pad down steps the pilot and does not flip the gameplay
    camera.

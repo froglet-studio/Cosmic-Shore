@@ -155,11 +155,18 @@ never as 2D text or a ring on the screen.
   the payload and flipped the camera at once. C stays on the keyboard. D-pad down was free in flight. The theater's
   D-pad transport (`TheaterGesture`) is read only while the local pilot's input is paused, which is exactly when the
   look-back gesture is not polled.
-- **RB is not free.** `GamepadInputStrategy` reads RB as `Throttle` (boost) and raises `FlipAction` from it, so on any
-  hull bound to those, a payload on RB would also boost and flip. The payload needs either:
-  - its own button,
-  - boost moved off RB, or
-  - an agreed rule: a press near a payload grabs it, otherwise it boosts.
+- **RB is free on all but three hulls** (measured 2026-10-27). `GamepadInputStrategy` raises `FlipAction` from RB
+  (the name is legacy), and three vessels bind an ability to it:
+  - Brittle Star: Charge Mode (Charge)
+  - Grizzly: Weapon Systems (Mass)
+  - Shrike: Targeting Array (Charge)
+
+  RB also writes `Throttle`, but that is read only when `toggleManualThrottle` is on, and no shipped prefab turns it
+  on. So **RB is not boost on any vessel**. On those three hulls a payload on RB would fight their ability. The
+  options:
+  - move those three abilities to another button;
+  - give the payload its own button;
+  - an agreed rule: a press near a payload grabs it, otherwise the ability fires.
 
   This is a decision, and it is recorded in §7.
 - **Keyboard and phone** need bindings and a touch gesture. Phones have per-hull touch profiles
@@ -192,7 +199,7 @@ never as 2D text or a ring on the screen.
 | What becomes of the 40 ability-rewrite pilots, their portraits, the Hangar PILOTS / ARTIFACTS tabs and the Tomahawk throw on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
 | Which pilot carries which of the seventeen sights | the pilot roster's author |
 | ENSIGN shows your own mass, or the rivals' | Garrett |
-| The payload's button, given RB is boost and flip today (§5) | Garrett |
+| The payload on RB, given Brittle Star, Grizzly and Shrike bind an ability to RB today (§5) | Garrett |
 | Whether artifacts get a sight once they are a fundamental | Garrett, through the fundamentals-curation process |
 | BANDIT on the Dolphin: its Charge level-5 upgrade already marks vessels inside the Echo Sight cone. BANDIT shows them all, everywhere, which may make that upgrade redundant on that hull | whoever owns the Dolphin's element map |
 | Where the plate sits on each hull | `/vessel-model` |
