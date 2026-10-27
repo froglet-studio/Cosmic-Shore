@@ -9,6 +9,7 @@
 > **Check it yourself:** `git fetch --unshallow origin` (once, on a shallow clone), `git fetch origin`, then
 > `python3 Tools/Build/attribution_audit.py` (`--person <name>` audits anyone). It reads git and writes nothing.
 
+**The same report as a page to share:** [Attribution Audit](https://claude.ai/artifact/5Z7fdnLhs7kqAvFXw85TFP).
 **Asked by:** Yash, 2026-10-27 ("did I put my name on someone else's work, accidentally or intentionally?").
 **Run by:** a Claude session on `Ys-bleeding-edge`, on a full (unshallowed) fetch of every branch.
 

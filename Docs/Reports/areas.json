@@ -664,7 +664,12 @@
       "docs": [
         "Docs/Reports/ATTRIBUTION_AUDIT.md"
       ],
-      "artifacts": [],
+      "artifacts": [
+        {
+          "name": "Attribution Audit (the page to share)",
+          "url": "https://claude.ai/artifact/5Z7fdnLhs7kqAvFXw85TFP"
+        }
+      ],
       "report": "Docs/Reports/ATTRIBUTION_AUDIT.md",
       "taskAreas": [],
       "test": [
