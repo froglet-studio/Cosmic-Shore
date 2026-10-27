@@ -12345,16 +12345,41 @@ to add is `verify_fauna_heart_seat.py` measuring the swing rather than the seate
 `Docs/Ecology/FaunaScale/mass_before_after.png`.
 
 **Where size cannot help, and what is left open:**
-- **The Brittlestar and the tadpole**: the heart sits ON the body (the Brittlestar's disc surface, the tadpole's spindle
-  runs through it), so scaling about the heart never moves the skin off it (68-76% / 16% of the swing crosses at every
-  scale). Their fix is a SEAT, not a size - seat the heart where the body is not, or give their hearts a shorter reach.
+- **The Brittlestar and the tadpole** each hold their heart in a quasi-spherical cavity (Garrett, 2026-10-27). The first
+  measurement said otherwise only because the dump placed skinned vertices by the renderer and not through their bones;
+  skinned properly (the shark, QuadFish and Clawfish numbers above do not move), the cavities are small against the
+  crystal: the Brittlestar's disc wall 1.8 u from its heart (with a knob and ~10 small pieces INSIDE the crystal's rest
+  hull), the tadpole's three-pronged head basket 1.1 u. To hold the crystal at rest / its whole swing they need
+  **x 2.5 / x 4.5** (the Brittlestar, the inner pieces aside) and **x 4.9 / x 10.5** (the tadpole - a schooling species
+  ~120 u long). Not applied yet: a decision for Garrett. Slices: `Docs/Ecology/FaunaScale/heart_cavities_slices.png`.
 - **The shark's teeth** (its danger prisms) sit 0.5-1.7 u from its heart - the heart is in its jaws - so they pass
   through the crystal at any size, as they did at rest before this change.
-- **Space for fauna.** With size now Mass's, Space's fauna identity is open (flora keep §51: the lattices are unchanged).
-  The candidates: Space as SPREAD (the widest school spacing and cohesion - the group, not the body, takes the room),
-  as ASPECT (the same body volume, stretched long and thin - flora's Space law, §51.1), or as REACH (it senses and
-  strikes from furthest). Undecided.
+- **Space for fauna**: §64.9.
 
 **What it costs.** No collider is added. A Mass shark's body prisms are x 47 the volume of its siblings' (about 2,000 a
 body), against cell Frenzy volumes in the millions; it is food when it dies.
+
+### 64.9 SPACE takes ROOM: spread, reach and aspect (Garrett, 2026-10-27)
+
+With size Mass's, Space's fauna identity is three things, one number - the plants' own Space reach,
+`FloraElementalForm.ReachScale(Space)` = **x 1.346**, so "Space reaches 1.35x further" is one law in the cell
+(`FaunaElementalForm`):
+
+- **SPREAD** - a Space school keeps x 1.35 the spacing (`LightFauna` separation; `Boid` separation and cohesion). It is
+  seen only in a population of two or more.
+- **REACH** - a Space creature senses and strikes from x 1.35 further (`LightFauna` detection and attack; `Boid`'s feeding
+  reach). Felt more than seen.
+- **ASPECT** - the body itself: x 1.346 along its length and x 0.862 across, the same volume
+  (`FaunaVariantTuning.BodyAspect`). The one of the three a lone creature shows, and the riskiest, so it is **authored
+  on the Space SHARK only** until it is seen in the game (`Docs/Ecology/FaunaScale/sharks_four_elements.png`: the four
+  sharks at one scale - Charge and Time 56 u, Space 76 u and thinner, Mass 203 u).
+
+Spread and reach are a code law keyed on the creature's ELEMENT (set at `AssignLineage` from the rolled variant), so
+every Space LightFauna and Boid has them with no config changed; both multiply where a radius is READ, so a pooled
+body that comes back as another element cannot compound them. The aspect is applied at the ROOT, so the posed,
+skinned body is stretched whole and nothing under it shears; the heart now divides its world size out of its parent
+PER AXIS (`LifeFormCrystal.SetWorldScale`; identical to before for a uniform parent), so a stretched creature's heart
+is still the one round size. `Fauna` remembers the prefab's root scale, and a variant that keeps the prefab gets it
+back (a pooled Mass or Space body no longer keeps its last size). `LightFauna`'s body ratio is taken by volume, so the
+aspect does not move its body-relative dials. The thinner Space body shows a little more of its crystal at rest.
 

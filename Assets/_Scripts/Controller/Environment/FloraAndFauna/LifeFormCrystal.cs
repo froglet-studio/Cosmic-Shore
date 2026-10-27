@@ -68,11 +68,17 @@ namespace CosmicShore.Gameplay
             SetWorldScale(crystal, ElementalCrystalSetSO.CrystalWorldScale);
         }
 
-        /// <summary>Writes a crystal's WORLD scale, dividing out whatever it hangs from.</summary>
+        /// <summary>Writes a crystal's WORLD scale, dividing out whatever it hangs from - per axis, so a heart in a
+        /// body stretched along one axis (Space's aspect, Docs/ECOSYSTEM.md 64.9) is still the one round size. The
+        /// same as a uniform divide when the parent is uniform.</summary>
         public static void SetWorldScale(Crystal crystal, float worldScale)
         {
             if (!crystal) return;
-            crystal.transform.localScale = Vector3.one * LocalScaleForWorld(crystal, worldScale);
+            var parent = crystal.transform.parent;
+            if (!parent) { crystal.transform.localScale = Vector3.one * worldScale; return; }
+            var l = parent.lossyScale;
+            static float Div(float w, float s) => Mathf.Abs(s) > 1e-4f ? w / Mathf.Abs(s) : w;
+            crystal.transform.localScale = new Vector3(Div(worldScale, l.x), Div(worldScale, l.y), Div(worldScale, l.z));
         }
 
         /// <summary>

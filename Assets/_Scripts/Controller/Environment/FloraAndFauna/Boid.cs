@@ -61,6 +61,11 @@ namespace CosmicShore.Gameplay
         /// Forager is a tri-state. This is what lets ONE tadpole prefab express the authored
         /// Mass/Space/Time behavior differences as data (see FaunaVariantTuning).
         /// </summary>
+        // The spacing and the reach as READ: a Space school spreads out and feeds from further (FaunaElementalForm).
+        float SeparationR => separationRadius * ElementSpread;
+        float CohesionR => cohesionRadius * ElementSpread;
+        float FeedReach => trailBlockInteractionRadius * ElementReach;
+
         public override void ApplyVariantTuning(FaunaVariantTuning tuning)
         {
             base.ApplyVariantTuning(tuning);
@@ -300,8 +305,8 @@ namespace CosmicShore.Gameplay
             // radius threshold or the inverse-square weight diff.normalized/distance - and
             // diff.normalized/distance == (diff/|diff|)/|diff| == diff/diff.sqrMagnitude - so
             // no per-neighbor sqrt is needed. Radii are squared once per behavior tick here.
-            float separationRadiusSqr = separationRadius * separationRadius;
-            float trailBlockInteractionRadiusSqr = trailBlockInteractionRadius * trailBlockInteractionRadius;
+            float separationRadiusSqr = SeparationR * SeparationR;
+            float trailBlockInteractionRadiusSqr = FeedReach * FeedReach;
 
             float averageSpeed = 0.0f;
             int separatedBoidCount = 0;
@@ -319,7 +324,7 @@ namespace CosmicShore.Gameplay
             // consumed by our own side effects mid-loop, so each is re-checked.
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
             int prismCount = spatialIndex != null && spatialIndex.IsAvailable
-                ? spatialIndex.QuerySphere(transform.position, cohesionRadius, PrismScratch)
+                ? spatialIndex.QuerySphere(transform.position, CohesionR, PrismScratch)
                 : 0;
 
             for (int i = 0; i < prismCount; i++)
@@ -475,7 +480,7 @@ namespace CosmicShore.Gameplay
             if (forager && cell != null && cell.LiveBlockCount > 0)
             {
                 float distToGoal = Vector3.Distance(target, transform.position);
-                if (distToGoal > trailBlockInteractionRadius)
+                if (distToGoal > FeedReach)
                 {
                     float arrivalMult = distToGoal / Mathf.Max(0.05f, maxSpeed * behaviorUpdateRate);
                     speedMult = Mathf.Clamp(arrivalMult, 1f, Mathf.Max(1f, huntSpeedMultiplier));
@@ -690,7 +695,7 @@ namespace CosmicShore.Gameplay
             IsFeedingHold ||
             (_feedTarget && !_feedTarget.destroyed &&
              (_feedTarget.transform.position - transform.position).sqrMagnitude
-                 <= trailBlockInteractionRadius * trailBlockInteractionRadius);
+                 <= FeedReach * FeedReach);
 
         /// <summary>
         /// Same forager edibility rule the inline graze used: unshielded prisms of ANY
@@ -739,7 +744,7 @@ namespace CosmicShore.Gameplay
             }
 
             Vector3 toTarget = feedTarget.transform.position - transform.position;
-            if (toTarget.sqrMagnitude > trailBlockInteractionRadius * trailBlockInteractionRadius)
+            if (toTarget.sqrMagnitude > FeedReach * FeedReach)
                 return false; // still approaching — flock steering owns movement
 
             _feedFocusPoint = feedTarget.transform.position;
@@ -765,7 +770,7 @@ namespace CosmicShore.Gameplay
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
             if (spatialIndex == null || !spatialIndex.IsAvailable) return;
 
-            int found = spatialIndex.QuerySphere(transform.position, trailBlockInteractionRadius, PrismScratch);
+            int found = spatialIndex.QuerySphere(transform.position, FeedReach, PrismScratch);
             Prism best = null;
             float bestSqr = float.PositiveInfinity;
             for (int i = 0; i < found; i++)
@@ -866,7 +871,7 @@ namespace CosmicShore.Gameplay
 
         public override float LeashTopSpeed => Mathf.Max(0f, maxSpeed);
         public override float LeashMinSpeed => Mathf.Max(0f, minSpeed);
-        public override float LeashMouthReach => Mathf.Max(0f, trailBlockInteractionRadius);
+        public override float LeashMouthReach => Mathf.Max(0f, FeedReach);
 
         public override bool TryGetLeashDash(out float dashMultiplier, out float tickSeconds)
         {

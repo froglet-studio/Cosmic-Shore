@@ -16620,3 +16620,16 @@ shipped prefabs headless, not in the editor (`Docs/ECOSYSTEM.md` §64.8; `Docs/E
    their own kind, and eat (the mouth reach grew with the body).
 4. Kill a Charge shark, then a Mass shark, reusing the pool. **Pass:** the next Charge shark is its normal size (a pooled
    body returns to the prefab size when its variant keeps it).
+
+## 🔴 2026-10-27 — Space fauna: spread, reach, and the Space shark's aspect (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. `CosmicShore.Live` builds (0 errors); the ported EditMode tests touching fauna,
+crystals, boids and lifeforms pass (14). `Docs/ECOSYSTEM.md` §64.9; `Docs/Ecology/FaunaScale/sharks_four_elements.png`.
+
+1. Let Unity compile. **Pass:** no errors from `FaunaElementalForm.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
+   `LifeFormCrystal.cs`, `FaunaConfigurationSO.cs`.
+2. Spawn Matrix: release a shark of each element. **Pass:** Charge and Time are the size they were; Mass is about 3.6x;
+   Space is about a third longer and slimmer; all four hearts are the same round size. Watch the Space shark swim and turn:
+   **Pass:** its body bends without skewing or tearing.
+3. A Blob or Wildlife cell with tadpoles: **Pass:** the Space school spreads wider than the others and still feeds.
+4. Any crystal elsewhere (a mode's arena scatter, a race ring, a toy): **Pass:** the same size and shape as before.

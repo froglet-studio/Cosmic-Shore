@@ -38,19 +38,21 @@ namespace CosmicShore.Gameplay
         // husk withers in place instead of drifting, and makes the death path idempotent.
         bool _withering;
 
-        // The prefab's own root scale, and this variant's body against it. A variant that sizes its body
-        // (FaunaVariantTuning.BaseBodyScale - a Mass creature grown to hold its heart's swing, Docs/ECOSYSTEM.md 64.8)
-        // carries the data's BODY-relative dials with it: separation, consume, the feeding cluster and the attack are
-        // authored for the prefab's body. Senses, territory and speeds stay in world units.
-        float _authoredRootScale = -1f;
+        // This variant's body against the prefab's (by volume, so Space's stretch at equal volume is 1). A variant that
+        // sizes its body (FaunaVariantTuning.BaseBodyScale - a Mass creature grown to hold its heart's swing,
+        // Docs/ECOSYSTEM.md 64.8) carries the data's BODY-relative dials with it: separation, consume, the feeding
+        // cluster and the attack are authored for the prefab's body. Speeds stay in world units; Space spreads its
+        // spacing and reaches further (ElementSpread, ElementReach - FaunaElementalForm).
         float _bodyRatio = 1f;
 
-        float SeparationRadius => Mathf.Max(0f, data.separationRadius) * _bodyRatio;
+        float SeparationRadius => Mathf.Max(0f, data.separationRadius) * _bodyRatio * ElementSpread;
         float ConsumeRadius => Mathf.Max(0f, data.consumeRadius) * _bodyRatio;
         float FeedingClusterRadius => data.feedingClusterRadius * _bodyRatio;
-        float AttackRange => data.attackRange * _bodyRatio;
-        /// <summary>Food is sensed in world units, but never less far than the mouth reaches.</summary>
-        float DetectionRadius => Mathf.Max(Mathf.Max(0f, data.detectionRadius), ConsumeRadius);
+        float AttackRange => data.attackRange * _bodyRatio * ElementReach;
+        /// <summary>Food is sensed in world units (further for Space), but never less far than the mouth reaches.</summary>
+        float DetectionRadius => Mathf.Max(Mathf.Max(0f, data.detectionRadius) * ElementReach, ConsumeRadius);
+
+        static float Volume(Vector3 s) => Mathf.Abs(s.x * s.y * s.z);
 
         // --- Intentional feeding (herbivore) -------------------------------
         // The behavior tick picks the nearest edible prism; per-frame code then
@@ -113,11 +115,9 @@ namespace CosmicShore.Gameplay
         /// <summary>A live domain change (a steal, or a mode's recolour): every live body prism takes the new team.</summary>
         public override void ApplyVariantTuning(FaunaVariantTuning tuning)
         {
-            if (_authoredRootScale < 0f) _authoredRootScale = transform.localScale.x;
-            // A pooled body may come back as another element: one that keeps the prefab gets the prefab's size back.
-            if (tuning != null && tuning.BaseBodyScale <= 0f) transform.localScale = Vector3.one * _authoredRootScale;
             base.ApplyVariantTuning(tuning);
-            _bodyRatio = _authoredRootScale > 0f ? transform.localScale.x / _authoredRootScale : 1f;
+            float authored = Volume(AuthoredRootScale);
+            _bodyRatio = authored > 1e-9f ? Mathf.Pow(Volume(transform.localScale) / authored, 1f / 3f) : 1f;
         }
 
         protected override void OnTeamChanged()

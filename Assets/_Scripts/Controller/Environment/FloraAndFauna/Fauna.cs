@@ -451,6 +451,18 @@ namespace CosmicShore.Gameplay
         // This individual's rolled variant (element + the block expressing it). Passed to
         // offspring so a lineage breeds true instead of re-rolling per birth.
         LifeformVariantPick<FaunaVariantTuning>? _variantPick;
+
+        // The prefab's own root scale, read before any variant rewrites it - so a pooled body that comes back as a
+        // variant which keeps the prefab gets the prefab's size and proportions back, not the last variant's.
+        Vector3 _authoredRootScale = -Vector3.one;
+
+        /// <summary>The root scale the prefab authored (read before the first variant touched it).</summary>
+        protected Vector3 AuthoredRootScale => _authoredRootScale.x < 0f ? transform.localScale : _authoredRootScale;
+
+        /// <summary>This creature's element spread and reach (<see cref="FaunaElementalForm"/>): 1 unless it is Space.
+        /// Multiplied where a spacing or a reach is READ.</summary>
+        protected float ElementSpread { get; private set; } = 1f;
+        protected float ElementReach { get; private set; } = 1f;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -520,6 +532,8 @@ namespace CosmicShore.Gameplay
 
                 var pick = config.RollVariant(inherit);
                 _variantPick = pick;
+                ElementSpread = FaunaElementalForm.Spread(pick.Element);
+                ElementReach = FaunaElementalForm.Reach(pick.Element);
 
                 if (pick.Element != Element.None)
                     ProvisionHeart(pick.Element);
@@ -737,8 +751,16 @@ namespace CosmicShore.Gameplay
         {
             if (tuning == null) return;
 
-            if (tuning.BaseBodyScale > 0f)
-                transform.localScale = Vector3.one * tuning.BaseBodyScale;
+            if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
+            transform.localScale = tuning.BaseBodyScale > 0f ? Vector3.one * tuning.BaseBodyScale : _authoredRootScale;
+            // Space's body: the same volume, longer and thinner (scaled at the ROOT, so the posed body is stretched
+            // whole and nothing below it shears; the heart divides it out per axis).
+            if (tuning.BodyAspect > 0f && !Mathf.Approximately(tuning.BodyAspect, 1f))
+            {
+                float a = tuning.BodyAspect, c = 1f / Mathf.Sqrt(a);
+                var s = transform.localScale;
+                transform.localScale = new Vector3(s.x * c, s.y * c, s.z * a);
+            }
 
             if (tuning.StarvationSeconds >= 0f)
             {

@@ -192,6 +192,10 @@ namespace CosmicShore.Utility
                  "Mass/Time tadpoles author 0.8 x 0.8 x 7 long tail prisms; Space keeps the " +
                  "spindle default). Zero = keep the prefab's authored prism scale.")]
         public Vector3 BodyPrismScale = Vector3.zero;
+        [Tooltip("SPACE's body: stretch the whole creature along its forward axis by this, and its two cross axes by " +
+                 "1/sqrt of it, so its volume is unchanged and only its proportions move (Docs/ECOSYSTEM.md 64.9). " +
+                 "0 or 1 = keep the prefab's proportions.")]
+        [Min(0f)] public float BodyAspect = 0f;
         [Tooltip("Material applied to the body's Spindle renderers (the per-element body look). " +
                  "None = keep the prefab's authored material.")]
         public Material BodyMaterial;

@@ -23,4 +23,5 @@ MonoBehaviour:
   Element: 3
   Variant:
     Enabled: 1
+    BodyAspect: 1.346
     HeartWorldScale: 4.234
