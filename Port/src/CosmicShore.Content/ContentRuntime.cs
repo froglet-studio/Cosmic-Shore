@@ -396,7 +396,14 @@ namespace CosmicShore.Content
 
         EngineObject LoadResource(string path, Type type)
         {
-            if (!_resources.TryGetValue(path, out var full)) return null;
+            // A Resources-relative name as Unity reads it; or, the port's own convenience for tooling
+            // (the music video director stages cells the scene never referenced), a full "Assets/..."
+            // path to any asset in the project. Unity returns null for the latter; no game code passes one.
+            if (!_resources.TryGetValue(path, out var full))
+            {
+                if (!path.StartsWith("Assets/", StringComparison.Ordinal)) return null;
+                full = path;
+            }
             var guid = Db.GuidOf(full);
             if (guid == null) return null;
             var ext = Path.GetExtension(full).ToLowerInvariant();

@@ -122,7 +122,7 @@ def events_for(an, t0, t1, feats, arch, mapping):
         when = {"start": [t0], "half": [(t0 + t1) / 2], "bar": downbeats, "beat": beats, "strong": strong, "onset": onsets}[tpl["on"]]
         for t in when:
             i = counters.get(tpl["cmd"], 0); counters[tpl["cmd"]] = i + 1
-            cmd = tpl["cmd"].replace("{i}", str(i % 4)).replace("{dir}", dirs[i % 4])
+            cmd = tpl["cmd"].replace("{i}", str(i % 4)).replace("{j}", str(i % 12)).replace("{b}", str(1 + i % 4)).replace("{dir}", dirs[i % 4]).replace("{dom}", ["Ruby", "Jade", "Gold", "Blue"][i % 4])
             out.append({"t": round(float(t), 3), "cmd": cmd, "why": tpl["on"]})
     out.sort(key=lambda e: e["t"])
     return out
@@ -153,7 +153,8 @@ def compose(an, mapping, start, end, beats, fps, forced):
             "t0": round(t0, 3), "t1": round(t1, 3), "frames": frames, "every": every, "accum": accum,
             "mode": arch["mode"], "players": arch.get("players", 4), "intensity": int(intensity),
             "settle_frames": int(arch.get("settle_seconds", 5) * step_hz),
-            "setup": ["mv hud off", "mv autopilot on"],
+            "stage": arch.get("stage", "arcade"),
+            "setup": ["mv hud off", "mv autopilot on"] + [c.format(**subs) for c in arch.get("stage_commands", [])],
             "camera": camera,
             "events": events_for(an, t0, t1, feats, arch, mapping),
             "features": feats,

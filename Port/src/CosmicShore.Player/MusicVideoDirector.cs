@@ -39,15 +39,20 @@ namespace CosmicShore.Player
     ///   mv fov DEGREES                             field of view
     ///   mv action SUBJECT INPUTEVENT [FRAMES]      perform the vessel's bound ability (an InputEvents name, e.g.
     ///                                              FullSpeedStraightAction) and release it FRAMES later (default 30)
-    ///   mv aim SUBJECT SUBJECT2|X,Y,Z|clear        steer an AI pilot at another subject or a point (SetExternalTargetProvider)
+    ///   mv aim SUBJECT|all SUBJECT2|X,Y,Z|clear    steer an AI pilot (or every AI pilot) at a subject or a point (SetExternalTargetProvider)
     ///   mv converge A B                            A and B fly at each other (a pass, a joust)
     ///   mv blast SUBJECT N [FORCE]                 devastate the N prisms nearest the subject, flung outward
+    ///   mv herd follow SUBJECT DIST [NAME]         every swarm creature is drawn to DIST ahead of a subject, every frame
     ///   mv herd X,Y,Z DIST [NAME]                  every swarm creature (Boid; NAME filters) is drawn toward
     ///                                              flock-centroid + direction * DIST, every frame until `mv herd off`
     ///   mv record DIR FRAMES [EVERY] [ACCUM]       record from the NEXT frame: FRAMES sim frames, one PNG per EVERY,
     ///                                              each the average of ACCUM sub-frames (ACCUM &lt;= EVERY)
     ///   mv cue N COMMAND…                          run COMMAND N frames after the next record's first frame
     ///   mv in N COMMAND…                           run COMMAND N frames from now
+    ///   mv cell NAME                               swap the scene's cell to a CellConfigDataSO by name (mv cells lists them)
+    ///   mv spawn vessel CLASS|all [N] [DOMAIN] [R]  release N AI-piloted vessels (the roster's 21 classes, cycled) in a ring
+    ///                                              of radius R ahead of the local pilot (the lava lamp's pipeline)
+    ///   mv spawn fauna|flora NAME [N] [ELEMENT]    release N lifeforms of a Toy Box catalogue species (mv lifeforms lists them)
     ///   mv release                                 give the camera back to the game
     ///   mv status                                  print the camera, subject, herd and schedule
     /// </summary>
@@ -71,7 +76,7 @@ namespace CosmicShore.Player
         static readonly SortedDictionary<int, List<string>> _schedule = new();
         static readonly List<(int at, string cmd)> _cues = new();
         static readonly List<(int at, Transform vessel, string ev)> _releases = new();
-        static Vector3 _herdDir; static float _herdDist; static string _herdName; static bool _herding;
+        static Vector3 _herdDir; static float _herdDist; static string _herdName; static bool _herding; static string _herdFollow;
         static int _frame;
 
         public static void Command(string arg)
@@ -135,16 +140,25 @@ namespace CosmicShore.Player
                 case "converge": Aim(w[1], w[2]); Aim(w[2], w[1]); return;
                 case "blast": Blast(w[1], I(w[2]), w.Length > 3 ? F(w[3]) : 30f); return;
                 case "herd":
-                    if (w[1] == "off") { _herding = false; Console.WriteLine("[mv] herd off"); return; }
+                    if (w[1] == "off") { _herding = false; _herdFollow = null; Console.WriteLine("[mv] herd off"); return; }
+                    if (w[1] == "follow") { _herdFollow = w[2]; _herdDist = w.Length > 3 ? F(w[3]) : 40f; _herdName = w.Length > 4 ? w[4] : null; _herding = true; Console.WriteLine($"[mv] herd follows {_herdFollow} at {_herdDist}"); return; }
                     _herdDir = V(w[1]).normalized; _herdDist = F(w[2]); _herdName = w.Length > 3 ? w[3] : null; _herding = true;
                     Console.WriteLine($"[mv] herd {_herdDir} x {_herdDist}{(_herdName != null ? " " + _herdName : "")}");
+                    return;
+                case "cell": SwapCell(string.Join(' ', w.Skip(1))); return;
+                case "cells": ListCells(); return;
+                case "lifeforms": ListLifeforms(w.Length > 1 ? w[1] : null); return;
+                case "spawn":
+                    if (w[1] == "vessel") SpawnVessels(w[2], w.Length > 3 ? I(w[3]) : 1, w.Length > 4 ? w[4] : null, w.Length > 5 ? F(w[5]) : 60f);
+                    else if (w[1] == "fauna" || w[1] == "flora") SpawnLifeforms(w[1] == "fauna", w[2], w.Length > 3 ? I(w[3]) : 1, w.Length > 4 ? w[4] : null);
+                    else Console.WriteLine("[mv] spawn vessel CLASS|all [N] [DOMAIN] [RADIUS] | spawn fauna|flora NAME [N] [ELEMENT]");
                     return;
                 case "release": Release(); return;
                 case "status":
                 {
                     var local = Resolve("local");
                     var st = local != null ? local.GetComponent<CosmicShore.Gameplay.IVesselStatus>() : null;
-                    Console.WriteLine($"[mv] frame {_frame} mode {_mode} subject {_subjectSpec} ({(_subject != null ? _subject.name : "none")}) cam {(_cam != null ? _cam.position.ToString() : "none")} fov {_fov} herd {_herding} schedule {_schedule.Count} hidden canvases {_hiddenCanvases.Count} local speed {(st != null ? st.Speed : 0f).ToString("F1", CultureInfo.InvariantCulture)} vessels {Vessels().Count}");
+                    Console.WriteLine($"[mv] frame {_frame} mode {_mode} subject {_subjectSpec} ({(_subject != null ? _subject.name : "none")}) cam {(_cam != null ? _cam.position.ToString() : "none")} fov {_fov} herd {_herding} schedule {_schedule.Count} hidden canvases {_hiddenCanvases.Count} local speed {(st != null ? st.Speed : 0f).ToString("F1", CultureInfo.InvariantCulture)} vessels {Vessels().Count} swapping {(HostCell()?.IsSwappingConfig ?? false)}");
                     foreach (var kv in _schedule) foreach (var c in kv.Value) Console.WriteLine($"[mv]   {kv.Key}: {c}");
                     return;
                 }
@@ -184,6 +198,13 @@ namespace CosmicShore.Player
         public static void AfterTick(int frame, float step)
         {
             if (_mode == CamMode.None || _cam == null) return;
+            if (_useMain && _stoodDown.Count > 0 && Camera.main != null && Camera.main.transform != _cam)
+            {
+                // The game switched its active camera (a cell swap, a spawn): take the new one the same way.
+                _manual = false; _cam = null;
+                TakeCamera();
+                if (_cam == null) return;
+            }
             Pose(step);
         }
 
@@ -206,8 +227,16 @@ namespace CosmicShore.Player
                     if (tn == "UniversalAdditionalCameraData" || tn == "DontDestroyOnLoad" || tn == "AudioListener" || tn == "Volume") continue;
                     if (mb.enabled) { mb.enabled = false; _stoodDown.Add(mb); }
                 }
+                // Camera controllers that live elsewhere in the scene (the menu's MainMenuCameraController poses the
+                // scene camera in LateUpdate, which the engine flushes after this director's post-tick pose).
+                foreach (var mb in CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+                {
+                    if (mb == null || !mb.enabled || _stoodDown.Contains(mb)) continue;
+                    string tn = mb.GetType().Name;
+                    if (tn.EndsWith("CameraController", StringComparison.Ordinal) || tn == "CameraManager") { mb.enabled = false; _stoodDown.Add(mb); }
+                }
                 t = main.transform;
-                Console.WriteLine($"[mv] took Camera.main ({_stoodDown.Count} rig behaviours stood down: {string.Join(", ", _stoodDown.Select(m => m.GetType().Name))})");
+                Console.WriteLine($"[mv] took Camera.main ({_stoodDown.Count} rig behaviours stood down: {string.Join(", ", _stoodDown.Select(m => m.GetType().Name).Distinct())})");
             }
             else Console.WriteLine("[mv] took the replay camera");
             _cam = t;
@@ -365,6 +394,18 @@ namespace CosmicShore.Player
 
         static void Aim(string subject, string target)
         {
+            if (subject == "all")
+            {
+                int n = 0;
+                foreach (var v in Vessels())
+                {
+                    var st = v.GetComponent<CosmicShore.Gameplay.IVesselStatus>();
+                    if (st?.Player != null && st.Player.IsLocalPilot) continue;
+                    n++;
+                }
+                for (int i = 0; i < n; i++) Aim($"ai{i}", target);
+                return;
+            }
             var t = Resolve(subject);
             var status = t != null ? t.GetComponent<CosmicShore.Gameplay.IVesselStatus>() : null;
             var pilot = status?.AIPilot;
@@ -406,11 +447,188 @@ namespace CosmicShore.Player
             var boids = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Boid>(FindObjectsSortMode.None)
                 .Where(b => b != null && b.gameObject.activeInHierarchy && (_herdName == null || b.name.Contains(_herdName, StringComparison.OrdinalIgnoreCase))).ToList();
             if (boids.Count == 0) return;
-            var centroid = Vector3.zero;
-            foreach (var b in boids) centroid += b.transform.position;
-            centroid /= boids.Count;
-            var goal = centroid + _herdDir * _herdDist;
+            Vector3 goal;
+            if (_herdFollow != null)
+            {
+                var s = Resolve(_herdFollow);
+                if (s == null) return;
+                goal = s.position + s.forward * _herdDist;
+            }
+            else
+            {
+                var centroid = Vector3.zero;
+                foreach (var b in boids) centroid += b.transform.position;
+                centroid /= boids.Count;
+                goal = centroid + _herdDir * _herdDist;
+            }
             foreach (var b in boids) b.Goal = goal;
+        }
+
+        // ---- staging: the cell, the fleet, the life ----
+
+        static CosmicShore.Gameplay.Cell HostCell()
+        {
+            // The scene's cell: the one with a config list (the lava lamp's, a mode's), never a toy miniature.
+            CosmicShore.Gameplay.Cell best = null; float bestScale = -1f;
+            foreach (var c in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Cell>(FindObjectsSortMode.None))
+            {
+                if (c == null || !c.gameObject.activeInHierarchy) continue;
+                float sc = c.transform.lossyScale.x;
+                if (sc > bestScale) { bestScale = sc; best = c; }
+            }
+            return best;
+        }
+
+        /// <summary>Every CellConfigDataSO asset in the project (Assets/_SO_Assets/Cell Configs/**), by path.</summary>
+        static List<string> CellConfigPaths()
+        {
+            var root = Environment.GetEnvironmentVariable("COSMIC_SHORE_PROJECT") ?? System.IO.Directory.GetCurrentDirectory();
+            var dir = System.IO.Path.Combine(root, "Assets", "_SO_Assets", "Cell Configs");
+            if (!System.IO.Directory.Exists(dir)) return new List<string>();
+            return System.IO.Directory.GetFiles(dir, "*Cell Config*.asset", System.IO.SearchOption.AllDirectories)
+                .Select(f => "Assets/" + System.IO.Path.GetRelativePath(System.IO.Path.Combine(root, "Assets"), f).Replace('\\', '/'))
+                .OrderBy(f => f).ToList();
+        }
+
+        static void ListCells()
+        {
+            var paths = CellConfigPaths();
+            Console.WriteLine($"[mv] {paths.Count} cell config asset(s): " + string.Join(", ", paths.Select(System.IO.Path.GetFileNameWithoutExtension)));
+        }
+
+        static CosmicShore.Utility.CellConfigDataSO FindCellConfig(string query)
+        {
+            // The scene's own list first (what the cell selector offers there), then any config asset in the project.
+            var cell = HostCell();
+            var field = cell?.GetType().GetField("CellConfigs", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+            if (field?.GetValue(cell) is System.Collections.IEnumerable own)
+                foreach (var o in own)
+                    if (o is CosmicShore.Utility.CellConfigDataSO c && c.name.Contains(query, StringComparison.OrdinalIgnoreCase)) return c;
+            foreach (var path in CellConfigPaths())
+            {
+                string stem = System.IO.Path.GetFileNameWithoutExtension(path);
+                if (!stem.Contains(query, StringComparison.OrdinalIgnoreCase)) continue;
+                var loaded = Resources.Load<CosmicShore.Utility.CellConfigDataSO>(path);
+                if (loaded != null) return loaded;
+                Console.WriteLine($"[mv] cell: {path} did not load");
+            }
+            return null;
+        }
+
+        static void SwapCell(string query)
+        {
+            var cell = HostCell();
+            if (cell == null) { Console.WriteLine("[mv] cell: no Cell in the scene"); return; }
+            var cfg = FindCellConfig(query);
+            if (cfg == null) { Console.WriteLine($"[mv] cell: no config matching '{query}' (mv cells lists them)"); return; }
+            if (cell.IsSwappingConfig) { Console.WriteLine("[mv] cell: a swap is already in flight"); return; }
+            bool ok = cell.RequestCellSwap(cfg, true);
+            Console.WriteLine($"[mv] cell -> {cfg.name} ({(string.IsNullOrEmpty(cfg.CellName) ? "" : cfg.CellName + ", ")}environment {(cfg.EnvironmentPrefab ? cfg.EnvironmentPrefab.name : "none")}): {(ok ? "swapping" : "refused")}");
+        }
+
+        static CosmicShore.ScriptableObjects.SpawnMatrixToyDefinitionSO s_catalogue;
+
+        /// <summary>The Toy Box's spawn-matrix definition: every species a player can release (Resources/Toybox).</summary>
+        static CosmicShore.ScriptableObjects.SpawnMatrixToyDefinitionSO Catalogue()
+        {
+            if (s_catalogue != null) return s_catalogue;
+            var box = Resources.Load<CosmicShore.ScriptableObjects.ToyboxSO>("Toybox");
+            if (box?.Toys != null)
+                foreach (var t in box.Toys)
+                    if (t is CosmicShore.ScriptableObjects.SpawnMatrixToyDefinitionSO sm) { s_catalogue = sm; break; }
+            return s_catalogue;
+        }
+
+        static void ListLifeforms(string filter)
+        {
+            var def = Catalogue();
+            if (def == null) { Console.WriteLine("[mv] lifeforms: no SpawnMatrixToyDefinitionSO loaded (the Toy Box's catalogue; Menu_Main loads it)"); return; }
+            bool Hit(string n) => filter == null || n.Contains(filter, StringComparison.OrdinalIgnoreCase);
+            Console.WriteLine("[mv] fauna: " + string.Join(", ", def.Fauna.Where(f => Hit(f.Name)).Select(f => $"{f.Name}({f.ElementConfigs?.Count(c => c) ?? 0})")));
+            Console.WriteLine("[mv] flora: " + string.Join(", ", def.Flora.Where(f => Hit(f.Name)).Select(f => $"{f.Name}({f.ElementConfigs?.Count(c => c) ?? 0})")));
+        }
+
+        static int ElementIndex(string element, int count, int i)
+        {
+            if (count <= 0) return 0;
+            if (string.IsNullOrEmpty(element) || element == "cycle") return i % count;
+            // Element configs are authored Mass, Charge, Space, Time in the catalogue's order; match by the config's own name later.
+            return i % count;
+        }
+
+        static void SpawnLifeforms(bool fauna, string name, int count, string element)
+        {
+            var def = Catalogue(); var cell = HostCell();
+            if (def == null || cell == null) { Console.WriteLine("[mv] spawn: needs the Toy Box catalogue and a Cell (Menu_Main's lava lamp has both)"); return; }
+            var local = Resolve("local");
+            var origin = local != null ? local.position : cell.transform.position;
+            int spawned = 0;
+            if (fauna)
+            {
+                var entry = def.Fauna.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase))
+                         ?? def.Fauna.FirstOrDefault(f => f.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+                var configs = entry?.ElementConfigs?.Where(c => c).ToArray();
+                if (configs == null || configs.Length == 0) { Console.WriteLine($"[mv] spawn fauna: no species matching '{name}' (mv lifeforms)"); return; }
+                var pick = string.IsNullOrEmpty(element) ? configs : configs.Where(c => c.name.Contains(element, StringComparison.OrdinalIgnoreCase)).DefaultIfEmpty(configs[0]).ToArray();
+                for (int i = 0; i < count; i++)
+                {
+                    var cfg = CosmicShore.Engine.Object.Instantiate(pick[i % pick.Length]);
+                    var pos = origin + UnityRandomInsideSphere() * 80f + local.forward * 60f;
+                    var f = CosmicShore.Gameplay.CellLifeSpawnerBase.SpawnFaunaBanded(cell, cfg, cell.ControllingDomain, origin, pos);
+                    if (f != null) spawned++;
+                }
+                Console.WriteLine($"[mv] spawned {spawned}/{count} {entry.Name} fauna");
+            }
+            else
+            {
+                var entry = def.Flora.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase))
+                         ?? def.Flora.FirstOrDefault(f => f.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+                var configs = entry?.ElementConfigs?.Where(c => c).ToArray();
+                if (configs == null || configs.Length == 0) { Console.WriteLine($"[mv] spawn flora: no species matching '{name}' (mv lifeforms)"); return; }
+                var pick = string.IsNullOrEmpty(element) ? configs : configs.Where(c => c.name.Contains(element, StringComparison.OrdinalIgnoreCase)).DefaultIfEmpty(configs[0]).ToArray();
+                for (int i = 0; i < count; i++)
+                {
+                    var cfg = CosmicShore.Engine.Object.Instantiate(pick[i % pick.Length]);
+                    var f = CosmicShore.Gameplay.CellLifeSpawnerBase.PlantFlora(cell, cfg, null);
+                    if (f != null) spawned++;
+                }
+                Console.WriteLine($"[mv] planted {spawned}/{count} {entry.Name} flora");
+            }
+        }
+
+        static readonly System.Random s_rng = new(11);
+        static Vector3 UnityRandomInsideSphere()
+        {
+            while (true)
+            {
+                var v = new Vector3((float)(s_rng.NextDouble() * 2 - 1), (float)(s_rng.NextDouble() * 2 - 1), (float)(s_rng.NextDouble() * 2 - 1));
+                if (v.sqrMagnitude <= 1f) return v;
+            }
+        }
+
+        static void SpawnVessels(string cls, int count, string domainName, float radius)
+        {
+            var init = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.MenuServerPlayerVesselInitializer>(FindObjectsSortMode.None).FirstOrDefault();
+            if (init == null) { Console.WriteLine("[mv] spawn vessel: no MenuServerPlayerVesselInitializer (the lava lamp's pipeline; Menu_Main only)"); return; }
+            var local = Resolve("local");
+            var origin = local != null ? local.position : Vector3.zero;
+            var fwd = local != null ? local.forward : Vector3.forward;
+            var classes = new List<CosmicShore.Data.VesselClassType>();
+            if (cls == "all") classes.AddRange(CosmicShore.Gameplay.ToyVesselRoster.Default);
+            else foreach (var part in cls.Split(','))
+                if (Enum.TryParse<CosmicShore.Data.VesselClassType>(part, true, out var vc)) classes.Add(vc);
+            if (classes.Count == 0) { Console.WriteLine($"[mv] spawn vessel: no class in '{cls}'"); return; }
+            var domains = new[] { CosmicShore.Data.Domains.Jade, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Blue, CosmicShore.Data.Domains.Gold };
+            for (int i = 0; i < count; i++)
+            {
+                var vc = classes[i % classes.Count];
+                var domain = !string.IsNullOrEmpty(domainName) && Enum.TryParse<CosmicShore.Data.Domains>(domainName, true, out var d) ? d : domains[i % domains.Length];
+                float a = i * (2f * Mathf.PI / Math.Max(count, 1));
+                var up = Vector3.up; var right = Vector3.Cross(up, fwd).normalized;
+                var pos = origin + (right * Mathf.Cos(a) + up * Mathf.Sin(a)) * radius + fwd * (radius * 0.5f);
+                init.RequestSpawnAiCompanion(vc, domain, new Pose(pos, Quaternion.LookRotation(fwd, up)));
+                Console.WriteLine($"[mv] released {vc} ({domain}) at {pos}");
+            }
         }
 
         // ---- HUD and pilots ----

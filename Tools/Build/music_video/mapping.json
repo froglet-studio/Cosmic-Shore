@@ -32,8 +32,8 @@
   "brightness": 0.5,
   "flatness": 0.3
  },
- "diversity_penalty": 0.6,
- "same_mode_penalty": 0.9,
+ "diversity_penalty": 0.9,
+ "same_mode_penalty": 0.0,
  "intensity_by_energy": [
   0.3,
   0.55,
@@ -70,192 +70,205 @@
  },
  "archetypes": [
   {
-   "name": "skim-race-mount",
-   "what": "The pilot's own Squirrel on the Skim Race rails from a steady mount behind and beside it: the rail flashing under, rings ahead, the pack's wakes around. Boosts land on the downbeats; the prisms around it burst on hard hits.",
-   "mode": "SkimRace",
-   "players": 4,
+   "name": "arboretum-fleet",
+   "stage": "menu",
+   "what": "The Arboretum cell: Borromean and coral-bloom flora, sharks and a brittlestar swarm, a fleet of ten hull classes laying their wakes around the pilot. The pilot's mount rides through it; abilities fire on the bars, the swarm turns every bar. A build, a verse.",
+   "mode": "Menu_Main",
+   "players": 0,
    "target": {
-    "energy": 0.6,
-    "onset_density": 0.7,
-    "bass": 0.6,
-    "brightness": 0.35,
-    "flatness": 0.3
+    "energy": 0.45,
+    "onset_density": 0.5,
+    "bass": 0.45,
+    "brightness": 0.6,
+    "flatness": 0.45
    },
+   "stage_commands": [
+    "mv cell Arboretum",
+    "mv spawn vessel all 10 Jade 50",
+    "mv spawn fauna Shark 3",
+    "mv spawn fauna Brittlestar 24",
+    "mv spawn flora Borromean 3",
+    "mv spawn flora Coral Bloom 2",
+    "mv aim all local",
+    "mv herd follow local 45"
+   ],
    "camera": [
     "mv camera main",
-    "mv mount local 26 9 10 45 2"
+    "mv mount local 34 11 12 50 1.5"
    ],
    "events": [
     {
      "on": "bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "strong",
+     "min_energy": 0.4,
      "cmd": "action local FullSpeedStraightAction 40"
     },
     {
+     "on": "onset",
+     "min_energy": 0.6,
+     "cmd": "blast local 5 25"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    }
+   ],
+   "settle_seconds": 3,
+   "luminance": 0.2
+  },
+  {
+   "name": "lattice-rally",
+   "stage": "menu",
+   "what": "The Lattice cell: lattice, gyroid and quasicrystal flora in their four elements, quadfish shoals, tadpoles, and all twenty-one hull classes released around the pilot, boosting on the strong beats, their abilities cycling on the bars; the pilot's domain shifts every bar (the mass effect in four colours). Bright, fast.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.7,
+    "onset_density": 0.75,
+    "bass": 0.5,
+    "brightness": 0.75,
+    "flatness": 0.3
+   },
+   "stage_commands": [
+    "mv cell Lattice",
+    "mv spawn vessel all 21 Blue 55",
+    "mv spawn fauna QuadFish 12",
+    "mv spawn fauna Tadpole 10",
+    "mv spawn flora Quasicrystal 2",
+    "mv spawn flora Nested Gyroid 2",
+    "mv aim all local",
+    "mv herd follow local 45"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 36 12 12 55 1.5"
+   ],
+   "events": [
+    {
+     "on": "bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "bar",
+     "cmd": "domain {dom}"
+    },
+    {
      "on": "strong",
-     "min_energy": 0.55,
-     "cmd": "action ai{i} FullSpeedStraightAction 30"
+     "min_energy": 0.5,
+     "cmd": "action ai{j} FullSpeedStraightAction 30"
     },
     {
      "on": "onset",
-     "min_energy": 0.6,
-     "cmd": "blast local 4 25"
-    }
-   ],
-   "settle_seconds": 5,
-   "luminance": 0.03
-  },
-  {
-   "name": "skim-race-orbit",
-   "what": "A slow orbit around the pilot's Squirrel as it takes a ring: the wake fanning, the rail curving away. For a bar that breathes.",
-   "mode": "SkimRace",
-   "players": 4,
-   "target": {
-    "energy": 0.4,
-    "onset_density": 0.45,
-    "bass": 0.45,
-    "brightness": 0.4,
-    "flatness": 0.35
-   },
-   "camera": [
-    "mv camera main",
-    "mv orbit local 34 9 6"
-   ],
-   "events": [
-    {
-     "on": "bar",
-     "cmd": "action local FullSpeedStraightAction 30"
-    }
-   ],
-   "settle_seconds": 5,
-   "luminance": 0.03
-  },
-  {
-   "name": "wildlife-cage-mount",
-   "what": "Inside the Wildlife Liberation cage, mounted beside the pilot's Sparrow: the 99-strong brittlestar swarm (I4: the richest cage, with sharks and clawfish) herded across the frame in a new direction every bar, cage prisms bursting on the downbeats.",
-   "mode": "WildlifeLiberation",
-   "players": 4,
-   "intensity": 4,
-   "target": {
-    "energy": 0.55,
-    "onset_density": 0.6,
-    "bass": 0.7,
-    "brightness": 0.75,
-    "flatness": 0.5
-   },
-   "camera": [
-    "mv camera main",
-    "mv mount local 30 10 9 45 1.5"
-   ],
-   "events": [
-    {
-     "on": "start",
-     "cmd": "herd 0,1,0 140"
+     "min_energy": 0.65,
+     "cmd": "blast ai{i} 5 30"
     },
     {
      "on": "bar",
-     "cmd": "herd {dir} 140"
-    },
-    {
-     "on": "bar",
-     "min_energy": 0.5,
-     "cmd": "blast local 6 30"
-    },
-    {
-     "on": "strong",
-     "min_energy": 0.6,
-     "cmd": "action local FullSpeedStraightAction 30"
+     "cmd": "aim all local"
     }
    ],
-   "settle_seconds": 10,
-   "luminance": 0.19
+   "settle_seconds": 3,
+   "luminance": 0.2
   },
   {
-   "name": "wildlife-cage-orbit",
-   "what": "A slow orbit in the cage: the lattice turning around the pilot, the swarm drawn through it. For a breakdown.",
-   "mode": "WildlifeLiberation",
-   "players": 4,
-   "intensity": 4,
-   "target": {
-    "energy": 0.3,
-    "onset_density": 0.25,
-    "bass": 0.35,
-    "brightness": 0.7,
-    "flatness": 0.6
-   },
-   "camera": [
-    "mv camera main",
-    "mv orbit local 40 12 5"
-   ],
-   "events": [
-    {
-     "on": "start",
-     "cmd": "herd 1,0,0 140"
-    },
-    {
-     "on": "bar",
-     "cmd": "herd {dir} 140"
-    }
-   ],
-   "settle_seconds": 10,
-   "luminance": 0.19
-  },
-  {
-   "name": "joust-melee",
-   "what": "The Joust cavern from a mount beside the pilot: the AI jousters sent at the pilot and at each other so passes cross the frame on the bars, crystal bursting around the pilot on every downbeat, boosts on the strong beats. The drop.",
-   "mode": "Joust",
-   "players": 12,
-   "intensity": 3,
+   "name": "kaiju-siege",
+   "stage": "menu",
+   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot and twelve hulls sent at its head: the pilot and the squads converge on it, prisms burst around its head on every downbeat, every hull's abilities cycle on the strong beats. The drop.",
+   "mode": "Menu_Main",
+   "players": 0,
    "target": {
     "energy": 0.85,
     "onset_density": 0.8,
-    "bass": 0.75,
-    "brightness": 0.55,
+    "bass": 0.8,
+    "brightness": 0.5,
     "flatness": 0.3
    },
+   "stage_commands": [
+    "mv cell Garland",
+    "mv spawn fauna Worm 1",
+    "mv spawn vessel all 12 Ruby 50",
+    "mv spawn fauna Shark 4",
+    "mv spawn fauna Brittlestar 16",
+    "mv aim local name:WormHead",
+    "mv aim all name:WormHead",
+    "mv herd follow local 50"
+   ],
    "camera": [
     "mv camera main",
-    "mv mount local 28 10 10 50 2"
+    "mv mount local 36 12 14 60 1.5"
    ],
    "events": [
     {
-     "on": "start",
-     "cmd": "converge ai0 ai1"
-    },
-    {
-     "on": "start",
-     "cmd": "aim ai2 local"
-    },
-    {
-     "on": "start",
-     "cmd": "aim ai3 local"
-    },
-    {
-     "on": "half",
-     "cmd": "converge ai2 ai3"
-    },
-    {
-     "on": "half",
-     "cmd": "aim ai0 local"
-    },
-    {
      "on": "bar",
-     "min_energy": 0.5,
-     "cmd": "blast local 8 40"
+     "cmd": "blast name:WormHead 10 40"
     },
     {
      "on": "strong",
+     "min_energy": 0.5,
+     "cmd": "action ai{j} Button{b}Action 40"
+    },
+    {
+     "on": "beat",
      "min_energy": 0.6,
-     "cmd": "action ai{i} FullSpeedStraightAction 30"
+     "cmd": "action ai{j} FullSpeedStraightAction 25"
     },
     {
      "on": "onset",
-     "min_energy": 0.75,
-     "cmd": "blast ai{i} 5 30"
+     "min_energy": 0.7,
+     "cmd": "blast local 6 30"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all name:WormHead"
     }
    ],
-   "settle_seconds": 7,
-   "luminance": 0.11
+   "settle_seconds": 3,
+   "luminance": 0.2
+  },
+  {
+   "name": "garland-shoal",
+   "stage": "menu",
+   "what": "The Garland cell in a slow orbit: sharks and a brittlestar shoal herded through the pilot's wake, six hulls circling, flora blooming. A breakdown, a held bar.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.3,
+    "onset_density": 0.3,
+    "bass": 0.4,
+    "brightness": 0.5,
+    "flatness": 0.55
+   },
+   "stage_commands": [
+    "mv cell Garland",
+    "mv spawn vessel all 6 Gold 50",
+    "mv spawn fauna Shark 4",
+    "mv spawn fauna Brittlestar 30",
+    "mv spawn flora Coral 2",
+    "mv spawn flora Lantern 2",
+    "mv aim all local",
+    "mv herd follow local 45"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv orbit local 48 14 5"
+   ],
+   "events": [
+    {
+     "on": "bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    }
+   ],
+   "settle_seconds": 3,
+   "luminance": 0.2
   }
  ],
- "_luminance_note": "Measured mean luminance of the first cut's shots (0..1): Skim Race I2 0.03, Joust I3 0.11, Wildlife cage I3 0.19. The brightness targets follow that order so a bright bar lands in a bright arena."
+ "_luminance_note": "Measured mean luminance of the first cut's shots (0..1): Skim Race I2 0.03, Joust I3 0.11, Wildlife cage I3 0.19. The brightness targets follow that order so a bright bar lands in a bright arena.",
+ "_stage_note": "Since cut 5 every archetype is STAGED in Menu_Main's lava-lamp cell (stage: menu): the cell selector's cells (any CellConfigDataSO by name), the Toy Box's spawn pipelines (the roster's 21 vessel classes as AI pilots, every catalogue species of fauna and flora) and the director's events compose each scene like an orchestra. The arcade-mode archetypes of cuts 1-4 are kept in milestones/ for the record."
 }

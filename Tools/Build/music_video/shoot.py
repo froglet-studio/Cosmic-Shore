@@ -153,6 +153,46 @@ def answer_first_run(p, log):
             p.wait(30)
 
 
+def stage_menu(p, shot, d, frames, every, accum, k, log, name):
+    """A shot staged in the menu's lava-lamp cell: the setup commands swap the cell and release the
+    fleet and the life (the Toy Box's own pipelines), then the camera, the cues and the recording."""
+    for c in shot.get("setup", []):
+        log(f"{c} -> {p.do(c).strip()[:200]}")
+        if c.startswith("mv cell"):
+            for _ in range(60):                 # the swap tears the old environment down and lays the new one
+                st = p.do("mv status")
+                if "swapping False" in st:
+                    break
+                p.wait(int(30 * k))
+            p.wait(int(120 * k))
+    p.wait(int(shot.get("settle_frames", 240 * k)))
+    for c in shot.get("camera", []):
+        log(f"{c} -> {p.do(c).strip()}")
+    p.wait(int(shot.get("lead_frames", 30 * k)))
+    for a in shot.get("events", []):
+        at = int(round((a["t"] - shot["t0"]) * STEP_HZ_OF[0]))
+        if 0 <= at < frames:
+            p.do(f"mv cue {at} {a['cmd']}")
+    log(f"{len(shot.get('events', []))} events cued")
+    log(p.do(f"mv record {d} {frames} {every} {accum}").strip())
+    want = frames // every
+    chunk = max(every * 8, 32)
+    done_frames = 0
+    while done_frames < frames + 3:
+        step_n = min(chunk, frames + 3 - done_frames)
+        p.wait(step_n)
+        done_frames += step_n
+        n_now = len([f for f in os.listdir(d) if f.endswith(".png")])
+        if n_now % 30 == 0 or n_now >= want:
+            log(f"  {n_now}/{want} frames")
+    n = len([f for f in os.listdir(d) if f.endswith(".png")])
+    log(f"{n} frames recorded")
+    return {"name": name, "frames": n, "dir": d, "ok": n >= want - 2}
+
+
+STEP_HZ_OF = [240]
+
+
 def shoot_one(shot, plan, out_dir, port, profile, dll):
     name = shot["name"]
     d = os.path.join(out_dir, name)
@@ -168,6 +208,7 @@ def shoot_one(shot, plan, out_dir, port, profile, dll):
 
     render = plan.get("render", {})
     step_hz = int(render.get("step_hz", 60))
+    STEP_HZ_OF[0] = step_hz
     every = int(shot.get("every", max(1, round(step_hz / plan.get("fps", 30)))))
     accum = int(shot.get("accum", 1))
     frames = int(shot.get("frames", round((shot["t1"] - shot["t0"]) * step_hz)))
@@ -184,6 +225,10 @@ def shoot_one(shot, plan, out_dir, port, profile, dll):
         p.wait_scene(MENU)
         p.wait(int(90 * k))             # the menu finishes building
         p.do("key F7")                  # the game's diagnostics panel starts visible in the engine
+        if shot.get("stage") == "menu":
+            r = stage_menu(p, shot, d, frames, every, accum, k, log, name)
+            logf.close()
+            return r
         out = p.do(f"arcade {shot['mode']}")
         log(out.strip())
         if "no card" in out or "no mode" in out:

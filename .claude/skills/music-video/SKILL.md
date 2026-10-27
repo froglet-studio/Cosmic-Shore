@@ -88,6 +88,7 @@ the score said, what the person said, what changed in the mapping.
 | "the small FX smear into streaks" | `render.accum` 2 (a 90-degree shutter) instead of 4 |
 | "it looks cheap / like a prototype" | `render`: 1080p+, `msaa` 8, `render_scale` 2, `aniso` 16; compare a still with Unity before touching the engine |
 | "too dark / too bright for the music" | `fov` range, or the archetype's `target.brightness` |
+| "too sparse / populate it" | stage the shot in the menu's lava-lamp cell (`stage: menu`): `stage_commands` with `mv cell`, `mv spawn vessel all N`, `mv spawn fauna/flora`; the arcade arenas are purpose-built and sparse |
 | "I want to see X (a kaiju, a crack drift, a ring joust)" | a new archetype: mode, players, intensity, camera, target; shoot a still of it first with the control port (`mv orbit name:Worm ...`) |
 
 Every change gets a LEARNINGS row with the reason. The loss is a Pareto front with leaky-ReLU floors
@@ -106,7 +107,9 @@ mapping is song-agnostic because every feature is normalised against the song it
 With a player on a control port (`Port/CLAUDE.md` § The loop), `do "mv ..."`: `hud off|on`,
 `autopilot on|off`, `camera main|replay`, `mount SUBJECT BACK UP SIDE [LEAD] [SMOOTH]`, `orbit SUBJECT DIST HEIGHT DEGPS`,
 `dolly X,Y,Z X,Y,Z FRAMES [SUBJECT]`, `fov F`, `action SUBJECT INPUTEVENT [FRAMES]`, `aim SUBJECT SUBJECT2|X,Y,Z|clear`,
-`converge A B`, `blast SUBJECT N [FORCE]`, `herd X,Y,Z DIST [NAME]` / `herd off`, `cue N CMD` (N frames after the
+`converge A B`, `blast SUBJECT N [FORCE]`, `herd X,Y,Z DIST [NAME]` / `herd off`, `cell NAME` (swap the scene's cell to any
+cell config; `cells` lists them), `spawn vessel CLASS|all N [DOMAIN] [R]` (AI pilots of the roster's 21 classes, Menu_Main
+only), `spawn fauna|flora NAME N [ELEMENT]` (`lifeforms` lists the Toy Box catalogue), `cue N CMD` (N frames after the
 next record starts), `record DIR FRAMES [EVERY] [ACCUM]`, `in N CMD`, `release`, `status`. Subjects: `local`,
 `ai0`.., `nearest`, `fastest`, `name:TEXT`. `vessels` prints every vessel's distance and screen position from the
 camera; `screenshot` shows the shot. A camera straight behind a hull on its axis showed nothing at 23 u; sit

@@ -207,6 +207,42 @@ and HDR. `accum` 2. Wildlife at I4.
   here, mid-command, with nothing after it run). Stop players with their control port's `quit`, and
   match a pattern only the player's command line carries (`[c]ontrol-port 478`, bracketed).
 
+### Garrett's feedback on cut 4 and what cut 5 does (2026-10-27)
+
+Garrett: *"again these scenes are too sparse. too austere. these should be populated environments rich in
+flora, fauna, multiple vessels and their various mass effect and trails, these environments should feel
+like we are being taken through something with a past and a future full of dynamic activity. use all the
+cells in the cell selector for inspiration. use lattice flora, borromean flora, sharks works, etc. compose
+scenes like an orchestra."* And: *"use all 21 vessels if you can and all of their abilities if you can."*
+
+The arcade arenas are purpose-built and sparse. The populated world is the **lava-lamp cell behind the
+menu** (Menu_Main, the Toy Box's home): the cell selector swaps it to any cell (Arboretum, Lattice,
+Garland, Crystal Wormhole…), the spawn matrix releases every species of fauna and flora and AI-piloted
+vessels of all 21 roster classes through the menu's own networked pipeline. Cut 5 stages every shot
+there, with new director verbs built on the game's own calls:
+- `mv cell NAME` (`Cell.RequestCellSwap`): the scene's own list first, then any of the 61
+  `CellConfigDataSO` assets, loaded by their `Assets/` path (the engine's `Resources.Load` now takes a full
+  path as a port-only convenience; Unity would return null, and no game code passes one).
+- `mv spawn vessel CLASS|all N [DOMAIN] [RADIUS]` (`MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion`,
+  the hangar station's call): a ring of AI pilots ahead of the local vessel, cycling the roster's 21
+  classes - Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow, Urchin, Scarab, Butterfly, Grizzly, Thresher,
+  Stoat, Goby, BrittleStar, Shrike, Angler, Wrasse, Orca, Starling, Jacks, Honeyguide. Twelve released at
+  once worked (21 vessels live with the local); no replicated-slot cap hit here, unlike the Joust card.
+- `mv spawn fauna|flora NAME N [ELEMENT]` (`CellLifeSpawnerBase.SpawnFaunaBanded` / `PlantFlora` on a
+  runtime clone of a catalogue config, as the spawn matrix does): the Toy Box catalogue
+  (`Resources/Toybox` → `Toy_SpawnMatrix`) holds 23 fauna species (Shark, Brittlestar, Worm Colony = the
+  kaiju, QuadFish, Tadpole, Clawfish, Leviathan, Pack Hunter, Stampede, the swarms…) and 27 flora
+  (Borromean, Nested Gyroid, SchwarzP, Quasicrystal, Mandelbulb, Coral Bloom, Lantern, Apollonia…), each in
+  its elements. `mv lifeforms` prints them. The Worm Colony spawned on request (28 segments), which the
+  Wildlife Liberation arena never did.
+- Abilities: `action aiN Button1Action..Button4Action` fires each hull's own bound abilities; the
+  composer's `{b}` cycles the four buttons, `{j}` the twelve nearest hulls, `{dom}` the four domains
+  (`domain X` = the Domain Changer toy's call: the mass effect in a new colour every bar).
+
+The arcade archetypes of cuts 1-4 are retired from the mapping (kept in `milestones/`); four staged
+scenes replace them: arboretum-fleet (build), lattice-rally (bright, all 21 hulls), kaiju-siege (the
+drop: a Worm Colony with twelve hulls converging), garland-shoal (breakdown).
+
 ## Log
 
 | Date | Cut | Score said | Person said | Changed |
