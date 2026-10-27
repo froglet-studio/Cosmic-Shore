@@ -516,6 +516,23 @@ mode; Mass and Time are untouched. In the game this is also a control-scheme que
 two-stick `VesselTransformer`; a one-thumb Gate needs either a per-mode scheme or the Stoat moving to a one-thumb
 transformer.
 
+## 1l. Round 24 (studio) — inside a real wormhole: a smooth ride, a 3D grid, no false visuals (2026-10-27)
+
+**Yash, playing round 23:** riding a tunnel, the camera "flipped 180 or 360" and jerked instead of going smoothly
+through the tube; the centre of the tunnel should bend nothing and everything around it should be bent, like the
+inside of a real wormhole; no black-hole or white-hole looks; make the grid 3D; save the hole looks for later.
+
+| Problem | Cause (measured) | Fix |
+|---|---|---|
+| The view flipping on entry | a mouth's dent is a screen-space lens; as the camera reached the mouth its radius grew past the screen and the image inverted, then vanished when the mouth went behind the camera | the dent fades as the camera comes within `gateDentNear` 3 × the mouth radius of it; inside, the tube's own warp takes over |
+| The camera jerking round the bend | the chase camera lerps its POSITION (k 7/s) and fell far behind a hull riding at 2.5 × speed, then swung round the curve | while you ride, the camera runs down the tube's **centreline** 18 u behind you (45 u in Follow) and looks 40 u ahead along it (`whAtX`: the straight run in and out included), eased in and out over ~0.1 s; through a 120° tunnel the view turns at most 5° a frame, its up at most 0.34° |
+| A flat-looking grid | lines of one brightness read as a drawing | **3D grid**: a wall facing the eye is bright, the far wall 0.28 (`whFace`); a faint glass surface under your grid, lit at its silhouette (`gateGridGlass` 0.6) |
+| Hole words on screen | the HUD still said "black hole + white hole · portal ON" in Gate mode | "one thumb · space-time bent into a tunnel" |
+
+**Parked for later:** every black-hole / white-hole piece the tunnel used (the round-22 core, its shader lines, the hole
+spheres, the light shells and gravitational wave, the markers) is listed with its commit in
+`Docs/Studios/STOAT_PARKED_HOLE_LOOK.md`. Mass and Time keep their holes.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
