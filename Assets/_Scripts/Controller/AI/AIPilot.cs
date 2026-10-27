@@ -177,6 +177,22 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] List<AIAbility> abilities;
 
+        /// <summary>
+        /// This pilot's ability by the name the match replay recorded it under
+        /// (<see cref="R_VesselActionHandler.ReplayActionName"/>), so a replay can re-run it on this vessel.
+        /// </summary>
+        public bool TryFindAbility(string actionName, out ShipActionSO action)
+        {
+            action = null;
+            if (abilities == null) return false;
+            foreach (var a in abilities)
+            {
+                if (a?.Ability && R_VesselActionHandler.ReplayActionName(a.Ability) == actionName) { action = a.Ability; return true; }
+                if (a?.SourceAsset && R_VesselActionHandler.ReplayActionName(a.SourceAsset) == actionName) { action = a.Ability ? a.Ability : a.SourceAsset; return true; }
+            }
+            return false;
+        }
+
         [SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;
 

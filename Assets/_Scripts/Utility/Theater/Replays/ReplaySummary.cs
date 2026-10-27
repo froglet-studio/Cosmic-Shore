@@ -117,6 +117,13 @@ namespace CosmicShore.Utility
         public List<ReplayGate> Gates = new();
 
         /// <summary>
+        /// The seed the match's course was built from (Skim Race's track, a gate race's rings), so watching the
+        /// replay in its real scene builds the same course (<c>CosmicShore.Gameplay.CourseSeedOverride</c>).
+        /// 0 for a mode with no seeded course, and for a summary written before 2026-10-27.
+        /// </summary>
+        public int CourseSeed;
+
+        /// <summary>
         /// Seconds as <c>m:ss</c> - a number format, not a sentence: the browser and the playback HUD
         /// put it inside authored templates. Negative and fractional seconds floor to whole ones.
         /// </summary>
