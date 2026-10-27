@@ -24,6 +24,8 @@ import arcade_mode_lib as lib  # noqa: E402
 import hull_time_race as htr  # noqa: E402
 
 MODE_DIR = "Assets/_Scripts/Controller/Arcade/SerpentTime"
+# Assets/_Prefabs/Trails/SpawnablePrism.prefab (its Prism component is fileID 4563009547826722997).
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
 FIELDS = """  rule: {{fileID: 11400000, guid: {rule}, type: 2}}
   cellData: {{fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}}
   courseOuterRadius: 1080
@@ -59,6 +61,8 @@ htr.author(dict(
     # The AI burns pellets (ConsumeBoostAction's AI path), so it arrives at up to 460 u/s on a ~100 u
     # circle: the approach sits outside 2x that circle, Switchback's numbers. The clamp covers twice 460.
     new_fields=FIELDS.format(rule="__RULE__", commit=260, lead=300, through=220, speed=1400),
+    # The gate debris (SerpentTimeController.debrisPrefab): the environment prism every arena lays.
+    new_field_lines=f"  debrisPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n",
     max_speed=460,
     target=16, laps=2, target_key="serpentTimeGateTarget", target_after="scarabRallyGateTarget",
     # A quarter-of-race deficit (4 gates) x 0.45 = 1.8 element levels - Thresher Time's number on the

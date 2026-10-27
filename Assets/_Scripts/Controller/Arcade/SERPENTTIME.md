@@ -21,6 +21,7 @@ to collect more crystals ... the cloak option make it cool". Four rules, all in 
 |---|---|---|
 | **Ring clusters** | Every gate stands as 3 rings (I1, I2) or 2 (I3, I4) side by side in its plane, any one of which threads it (`SerpentTimeCluster`: three rings are half a mouth each, 0.65 mouths out; two are 0.6, 0.7 out; turned 1.7 rad per gate). The course's own ring stays (the objective arrow, the race toasts and the AI's commit read it); only its drawing is hidden (`RaceGateRing.SetVisualHidden`). The local pilot's next cluster lights lime | Every peer, from the course it was sent |
 | **Seed Walls cost speed** | A hull whose path (plus a lead past its nose) passes a RIVAL's Seed Wall brick or seed (`SerpentWallAssembler.IsWallBrick`) drops to 0.5 throttle (bare brick) or 0.15 (shielded), recovering over 1.2 s; 0.5 s between hits. Your domain's walls let you through. The Serpent's own prism impact damages the brick and never slowed the hull, so the cost is this mode's | The machine that flies the hull |
+| **Gate debris** | 48 loose neutral prisms lie round every gate, 26-120 u beyond its outermost ring (never within 20 u of another gate's rings), the mass a Seed Wall laid at the gate is built from. Every 1.5 s each gate short of 48 loose pieces grows one back; a piece a wall took, a hull broke or a shot cleared stops counting. Laid from `SpawnablePrism` through `PrismTrailBuilder.LayOne` | Every peer, seeded per gate from the course, so the copies match |
 | **Rounds cost crystals** | Start with 1 round, +1 per crystal (`ElementalCrystalImpactor.OnCrystalCollected`), at most 3; a shot spends one (`SniperShotActionExecutor.Fired`, raised on the authoritative machine only). RT while scoped with no round is dropped (`R_VesselActionHandler.PressGate`); unscoped RT is still the cloak | The machine that flies the hull (the same machine whose rifle cooldown is authoritative), so nothing new is replicated |
 | **The AI plays dirty** | Picks the cheapest ring of each gate (distance here + through + on to the next gate, +120 for a walled ring while it holds a round, +600 without; 60 u hysteresis, held within 250 u). A ring is walled when rival bricks cover 40% of its mouth. Walled ring + a round, 90-1100 u out: scope (LT), settle 0.35 s, fire (RT) once the wall's centre is in the rifle's cone, lower both. Short of rounds it detours for crystals (900 u of extra flying with none, 250 below the cap). Just past a ring a rival still needs within 1400 u, it cloaks (80%, 15.5 s apart), so the seed and its wall land in that rival's gate. The platform's timed cloak is filtered off (`AIPilot.SetCycledAbilityFilter`). Every press is the replicated one | The server |
 
@@ -69,8 +70,8 @@ pellet still holds every corner.
 - Not run in the editor. The scene needs one open-and-save.
 - Every tunable of the dirty race is a serialized field on the controller with its C# default; the committed scene
   does not serialize them yet, so the first save writes the defaults.
-- Wall fuel is what is already there (trails and the arena's prisms). The studio's 48 regrowing debris prisms per gate
-  are not built (v2), so on a bare course a wall may grow small.
+- The gate debris is laid on every peer from the same seed, but a gate regrows from what that peer saw destroyed or
+  stolen, so after heavy fighting two peers' debris can differ by a few pieces (as their trails can).
 - A racing AI flies the waypoints, never a crystal (Yash, 2026-10-26) - except here, because a round IS a crystal;
   an AI holding three rounds takes none.
 - The AI's ring choice and shots are hand-written (round 1). Learning them from play is the automatic sweep's job

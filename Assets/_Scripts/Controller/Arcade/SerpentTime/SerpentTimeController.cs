@@ -74,6 +74,21 @@ namespace CosmicShore.Gameplay
         [Tooltip("How close (u) a brick's centre must pass to the hull's path to count as a hit.")]
         [SerializeField, Min(0.5f)] float wallContactRadius = 5f;
 
+        [Header("Gate debris (the walls' fuel)")]
+        [Tooltip("The prism every piece of gate debris is laid from: the environment prism (SpawnablePrism). " +
+                 "Authored by Tools/Build/author_serpent_time_assets.py. Unset = no debris, and a warning.")]
+        [SerializeField] Prism debrisPrefab;
+        [Tooltip("Loose prisms kept round each gate. A Seed Wall pulls its bricks from loose mass near its seed, so " +
+                 "this is what a wall laid at a gate is built from (with the trails flown through it).")]
+        [SerializeField, Min(0)] int debrisPerGate = 48;
+        [Tooltip("Every this many seconds, each gate short of its debris grows one piece back, so a gate is never " +
+                 "stripped bare for the rest of the race.")]
+        [SerializeField, Min(0.1f)] float debrisRegrowSeconds = 1.5f;
+        [Tooltip("How far beyond the gate's outermost ring (u) the debris lies: nearest and farthest.")]
+        [SerializeField] Vector2 debrisDistanceBeyondRings = new(26f, 120f);
+        [Tooltip("Size of one piece of debris (u).")]
+        [SerializeField] Vector3 debrisScale = new(2.6f, 2.6f, 2.6f);
+
         [Header("Dirty AI")]
         [Tooltip("Chance an AI cloaks just past a ring a rival still needs (when its cloak is ready).")]
         [SerializeField, Range(0f, 1f)] float aiCloakChance = 0.8f;
@@ -152,6 +167,26 @@ namespace CosmicShore.Gameplay
 
         const int MaxRings = 3;
 
+        /// <summary>Owner id no pilot carries: the debris is nobody's trail, and only pieces still carrying it count.</summary>
+        const string DebrisOwnerId = "SerpentTimeDebris";
+
+        /// <summary>How far (u) a gate's debris keeps from another gate's outermost ring.</summary>
+        const float DebrisClearOfOtherGates = 20f;
+
+        /// <summary>One gate's debris: where it lies, its own seeded draw, and the pieces laid so far.</summary>
+        sealed class GateDebris
+        {
+            public Vector3 Centre;
+            public float Nearest, Farthest;
+            public System.Random Rng;
+            public Trail Trail;
+            public readonly List<Prism> Pieces = new();
+        }
+
+        readonly List<GateDebris> _debris = new();
+        Transform _debrisRoot;
+        float _nextDebrisRegrowAt;
+
         readonly Dictionary<IPlayer, Pilot> _pilots = new();
         readonly List<RaceGateRing[]> _clusters = new();
         readonly List<RaceGate[]> _clusterGates = new();
@@ -174,6 +209,7 @@ namespace CosmicShore.Gameplay
             ElementalCrystalImpactor.OnCrystalCollected -= HandleCrystalCollected;
             SniperShotActionExecutor.Fired -= HandleShotFired;
             ReleasePilots();
+            ClearDebris();
             base.OnNetworkDespawn();
             _clusters.Clear();
             _clusterGates.Clear();
@@ -204,6 +240,7 @@ namespace CosmicShore.Gameplay
             _clusterGates.Clear();
 
             int rings = Mathf.Min(MaxRings, SerpentTimeCluster.RingsFor(Intensity, ringsPerGateByIntensity));
+            LayGateDebris(rings);
             if (rings <= 1) return;
 
             var theme = gameData ? gameData.ThemeManagerData : null;
@@ -226,6 +263,129 @@ namespace CosmicShore.Gameplay
                 _clusters.Add(cluster);
                 _clusterGates.Add(gates);
             }
+        }
+
+        // ── Gate debris (every peer) ──────────────────────────────────────
+
+        /// <summary>
+        /// Lay <see cref="debrisPerGate"/> loose prisms round every gate, beyond its outermost ring, in random directions
+        /// and poses: the mass a Seed Wall laid at the gate is built from (the studio's rule, <c>serpent.html</c>
+        /// <c>addDebris</c>). Every peer lays its own copy from the course it was sent - a wall is assembled on every
+        /// peer out of that peer's prisms - so each gate's draw is seeded from the gate itself and the copies match.
+        /// Laid behind the connecting panel, so the arena-ready gate waits for them.
+        /// </summary>
+        void LayGateDebris(int rings)
+        {
+            ClearDebris();
+            if (debrisPerGate <= 0) return;
+            if (!debrisPrefab)
+            {
+                CSDebug.LogWarning("[Serpent Time] No debris prefab on the controller: walls grow only from trails. " +
+                                   "Re-run Tools/Build/author_serpent_time_assets.py.");
+                return;
+            }
+
+            // At the scene root, at world identity: a laid prism's position is local to its parent, and the course is
+            // already in world coordinates.
+            _debrisRoot = new GameObject("SerpentTimeDebris").transform;
+
+            SerpentTimeCluster.Layout(rings, out float ringScale, out float spread);
+            float reachInMouths = rings > 1 ? spread + ringScale : 1f;
+            for (int i = 0; i < _course.Count; i++)
+            {
+                var gate = _course[i];
+                float reach = gate.Radius * reachInMouths;
+                // Never into another gate's rings: on a tight course two gates can sit closer than two debris shells.
+                float farthest = reach + Mathf.Max(debrisDistanceBeyondRings.x, debrisDistanceBeyondRings.y);
+                for (int j = 0; j < _course.Count; j++)
+                    if (j != i)
+                        farthest = Mathf.Min(farthest, Vector3.Distance(gate.Position, _course[j].Position)
+                                                       - _course[j].Radius * reachInMouths - DebrisClearOfOtherGates);
+                farthest = Mathf.Max(farthest, reach + 1f);
+                var debris = new GateDebris
+                {
+                    Centre = gate.Position,
+                    Nearest = Mathf.Min(reach + Mathf.Min(debrisDistanceBeyondRings.x, debrisDistanceBeyondRings.y), farthest),
+                    Farthest = farthest,
+                    Rng = new System.Random(DebrisSeed(i, gate.Position)),
+                    Trail = new Trail(),
+                };
+                _debris.Add(debris);
+                for (int n = 0; n < debrisPerGate; n++) LayDebris(debris, forReveal: true);
+            }
+            _nextDebrisRegrowAt = Time.time + debrisRegrowSeconds;
+        }
+
+        /// <summary>The same number on every peer: the gate's index and its position (the course is broadcast).</summary>
+        static int DebrisSeed(int gateIndex, Vector3 position) => unchecked(
+            gateIndex * 7919 ^ Mathf.RoundToInt(position.x) * 73856093 ^
+            Mathf.RoundToInt(position.y) * 19349663 ^ Mathf.RoundToInt(position.z) * 83492791);
+
+        void LayDebris(GateDebris gate, bool forReveal)
+        {
+            var r = gate.Rng;
+            Vector3 direction;
+            do direction = new Vector3(Signed(r), Signed(r), Signed(r));
+            while (direction.sqrMagnitude > 1f || direction.sqrMagnitude < 0.05f);
+            float distance = Mathf.Lerp(gate.Nearest, gate.Farthest, (float)r.NextDouble());
+            var rotation = Quaternion.Euler((float)r.NextDouble() * 360f, (float)r.NextDouble() * 360f,
+                                            (float)r.NextDouble() * 360f);
+
+            // A regrown piece comes mid-race, so it must not hold the arena-ready gate (a continuous source can never
+            // all-clear it) nor queue behind the cell's flora for its creation.
+            var prism = PrismTrailBuilder.LayOne(debrisPrefab,
+                new PrismLay(new SpawnPoint(gate.Centre + direction.normalized * distance, rotation, debrisScale), Domains.Blue),
+                _debrisRoot, gate.Trail, DebrisOwnerId, watchForReveal: forReveal);
+            if (!prism) return;
+            if (!forReveal) prism.CompletesAsLiveRibbon = true;
+            gate.Pieces.Add(prism);
+        }
+
+        static float Signed(System.Random r) => (float)r.NextDouble() * 2f - 1f;
+
+        /// <summary>Still loose debris: alive, still the debris's, not stolen into a wall (a steal re-colours it).</summary>
+        static bool IsLooseDebris(Prism prism) =>
+            prism && !prism.destroyed && prism.ownerID == DebrisOwnerId && prism.Domain == Domains.Blue &&
+            !SerpentWallAssembler.IsWallBrick(prism);
+
+        /// <summary>
+        /// The debris grows back: every <see cref="debrisRegrowSeconds"/>, each gate holding fewer than
+        /// <see cref="debrisPerGate"/> loose pieces grows one (the studio's rule). A piece a wall took, a hull broke or a
+        /// shot cleared no longer counts.
+        /// </summary>
+        void TickDebrisRegrow()
+        {
+            if (_debris.Count == 0 || !debrisPrefab || Time.time < _nextDebrisRegrowAt) return;
+            _nextDebrisRegrowAt = Time.time + debrisRegrowSeconds;
+
+            for (int g = 0; g < _debris.Count; g++)
+            {
+                var gate = _debris[g];
+                int loose = 0;
+                for (int i = gate.Pieces.Count - 1; i >= 0; i--)
+                {
+                    var piece = gate.Pieces[i];
+                    if (IsLooseDebris(piece)) loose++;
+                    // Gone, or handed to someone else (the pool re-issues a destroyed prism): stop tracking it.
+                    else if (!piece || piece.destroyed || piece.ownerID != DebrisOwnerId) gate.Pieces.RemoveAt(i);
+                }
+                if (loose < debrisPerGate) LayDebris(gate, forReveal: false);
+            }
+        }
+
+        void ClearDebris()
+        {
+            for (int g = 0; g < _debris.Count; g++)
+            {
+                var pieces = _debris[g].Pieces;
+                for (int i = 0; i < pieces.Count; i++)
+                    if (IsLooseDebris(pieces[i]) && !EnvironmentPrismPool.TryRelease(pieces[i]))
+                        Destroy(pieces[i].gameObject);
+            }
+            _debris.Clear();
+            // A piece a wall still holds stays parented here; the scene's teardown takes it.
+            if (_debrisRoot && _debrisRoot.childCount == 0) Destroy(_debrisRoot.gameObject);
+            _debrisRoot = null;
         }
 
         bool HasCluster(int ringIndex) => ringIndex >= 0 && ringIndex < _clusters.Count;
@@ -354,6 +514,8 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
+
+            TickDebrisRegrow();
 
             var players = gameData.Players;
             for (int i = 0; i < players.Count; i++)

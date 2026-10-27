@@ -67,6 +67,7 @@ def author(spec: dict):
     member, display, hull, class_id, scripts {name: path}, doc, donor_scene, donor_controller_guid,
     donor_rule_guid, donor_fields, new_fields, target, laps, target_key, target_after,
     comeback, description, preview_objective, preview_notes, build_after, max_speed, card_extra_checks,
+    new_field_lines (optional: serialized lines appended to the controller block, the mode's own fields),
     extra_toasts (optional: [(situation, template[, lib.toast kwargs])], the mode's own toasts after the race beats)
     """
     member = spec["member"]
@@ -87,7 +88,9 @@ def author(spec: dict):
     g_card, g_rule = guid(f"asset/ArcadeGame{member}"), guid(f"asset/{member}ScoringRule")
     g_preview, g_toasts = guid(f"asset/ModePreview_{member}"), guid(f"asset/GameToastConfig_{member}")
     g_scene = guid(f"asset/{scene_name}.unity")
-    new_fields = spec["new_fields"].replace("__RULE__", g_rule)
+    # A mode may author fields of its OWN controller after the shared block (Serpent Time's debris prefab).
+    base_fields = spec["new_fields"].replace("__RULE__", g_rule)
+    new_fields = base_fields + spec.get("new_field_lines", "")
 
     # 1. metas
     for k, p in scripts.items():
@@ -140,9 +143,14 @@ def author(spec: dict):
                                   f"network hash {old}", expected=scene.count(f"GlobalObjectIdHash: {old}\n"))
         return scene
 
-    scene, scene_errors = lib.committed_scene(scene_rel, clone_scene,
-                                              authored_blocks=(new_fields, "  spawnFormation: 1\n"))
-    errors += scene_errors
+    authored_blocks = (new_fields, "  spawnFormation: 1\n")
+    scene, _ = lib.committed_scene(scene_rel, clone_scene, authored_blocks=authored_blocks)
+    # One-shot migration for a scene committed before the mode authored its own field lines: append them to the
+    # controller block. Stands down once applied (the full block is then in the scene).
+    if new_fields not in scene and new_fields != base_fields and scene.count(base_fields) == 1:
+        scene = scene.replace(base_fields, new_fields)
+    errors += [f"{os.path.basename(scene_rel)}: authored block no longer in the committed scene:\n{block}"
+               for block in authored_blocks if block not in scene]
     g.emit_scene(scene_name, g_scene, scene)
 
     # 5. preview - a card without one offers no Test Flight.

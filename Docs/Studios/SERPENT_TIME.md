@@ -116,8 +116,8 @@ What the game now does (details: `Assets/_Scripts/Controller/Arcade/SERPENTTIME.
 | R5 a dirty AI | Picks the open ring, shoots walls when it holds a round, detours for crystals when short, cloaks just past a ring a rival still needs |
 | R6 the cloak | Unchanged (the shipped `CloakSeedWallActionSO`) |
 
-What the studio models and the game does not yet: the 48 regrowing debris prisms per gate (wall fuel in the game is
-trails and the arena's prisms), the snipe's level strip on a pilot as a mode rule (the rifle's own hit rules apply),
+The gate debris came over too (48 loose prisms round each gate, one grown back per gate every 1.5 s, kept 20 u clear of
+other gates). What the studio models and the game does not yet: the snipe's level strip on a pilot as a mode rule (the rifle's own hit rules apply),
 and the four AI play styles (the game's AI is one dirty pilot at the lobby's difficulty).
 
 ## 6. Round log
