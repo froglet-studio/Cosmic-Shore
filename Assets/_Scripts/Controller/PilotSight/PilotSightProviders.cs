@@ -110,6 +110,38 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// FLUME: every soliton, whoever made it, traced along its length so you see where it is and where it leads
+    /// (Docs/Pilots/CALLSIGNS.md §2, row 18). The Meerkat's tunnels are the only solitons so far
+    /// (<see cref="MeerkatWormholeExecutor.Live"/>, read only). Marked white: a soliton belongs to no one.
+    /// </summary>
+    public sealed class FlumeSight : PilotSightProvider
+    {
+        /// <summary>Marks along each tunnel, mouth to mouth.</summary>
+        const int Samples = 9;
+
+        public override void Gather(in PilotSightContext ctx, ref PilotSightPrismState prisms, PilotSightMarks marks)
+        {
+            var set = ctx.Set;
+            float minRadius = set ? set.CrystalMarkRadius : 6f;
+            var color = set ? set.CrystalMarkColor : Color.white;
+            float intensity = (set ? set.MarkIntensity : 1f) * ctx.Strength;
+            var live = MeerkatWormholeExecutor.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var tunnel = live[i];
+                if (tunnel == null || tunnel.L <= 0f) continue;
+                float fade = intensity * tunnel.Fade;
+                if (fade <= 0f) continue;
+                for (int k = 0; k < Samples; k++)
+                {
+                    float at = tunnel.L * k / (Samples - 1);
+                    marks.Add(tunnel.At(at, out _), Mathf.Max(minRadius, tunnel.Radius(at)), color, fade);
+                }
+            }
+        }
+    }
+
     /// <summary>The sight behind each callsign. Null for a callsign whose sight is not built yet.</summary>
     public static class PilotSightProviders
     {
@@ -118,6 +150,7 @@ namespace CosmicShore.Gameplay
         static readonly PilotSightProvider Citadel = new PrismPredicateSight(PilotVision.Citadel);
         static readonly PilotSightProvider Volt = new CrystalSight(Element.Charge);
         static readonly PilotSightProvider Bandit = new VesselSight(rivals: true);
+        static readonly PilotSightProvider Flume = new FlumeSight();
 
         public static PilotSightProvider For(PilotVision sight) => sight switch
         {
@@ -125,6 +158,7 @@ namespace CosmicShore.Gameplay
             PilotVision.Citadel => Citadel,
             PilotVision.Volt => Volt,
             PilotVision.Bandit => Bandit,
+            PilotVision.Flume => Flume,
             _ => null,
         };
     }

@@ -12,7 +12,7 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The shipped roster that Tools/Build/author_pilot_assets.py writes (Garrett, 2026-10-27): seventeen pilots, one per
+    /// The shipped roster that Tools/Build/author_pilot_assets.py writes (Garrett, 2026-10-27): eighteen pilots, one per
     /// callsign, on any vessel (Docs/Pilots/CALLSIGNS.md); Javelin and Aegis, payload transformations with four element
     /// tracks each and a twist at level 5 (Docs/Pilots/ARTIFACTS.md); the track numbers both transformations read; the
     /// spend rule (<see cref="PilotLoadoutStore.Price"/>) and the Hangar's slot rule (<see cref="PilotLoadoutStore.Toggle"/>).

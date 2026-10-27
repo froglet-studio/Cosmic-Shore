@@ -54,7 +54,8 @@ continuity of existence applies to the vessel's own body.
   by shape keys, measured 2026-08-26); **the Dolphin was rig-swapped on 2026-08-26** and is the
   only vessel that has ever changed families. Urchin/Rhino still wire shape-less test meshes; their
   rigs were swapped for the PUPPETRY with the morph honestly absent, because those rigs' element
-  shapes are LABELLED BUT INERT (below). Grizzly has no labeled shapes yet.
+  shapes are LABELLED BUT INERT (below). The Grizzly has four real shapes since its own model landed
+  (`Grizzly.fbx`, 2026-10-27, `Docs/VesselModels/Grizzly.md`).
   **The Scarab morphs PROCEDURALLY** — its hull is generated (`ScarabHullForm`), so its morphs are
   the four element extremes of that same pure function, baked to per-vertex deltas and blended at
   the fleet's shared feel (`ScarabHullBuilder` owns geometry, `ScarabAnimation` owns time via the

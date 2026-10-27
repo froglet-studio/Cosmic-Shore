@@ -1,0 +1,155 @@
+{
+  "id": "seahorse",
+  "order": 13,
+  "name": "Seahorse",
+  "tagline": "the gardener: hold on, grow, dart, puff",
+  "round": "calm · level 1 · round 1",
+  "accent": "#ffb36b",
+  "kind": "tend",
+  "chip": "calm · level 1 · round 1",
+  "summary": "The gardener. Slow and upright. Swim to a plant (any block) and hold the button to curl your tail round it: you stay still, the plant grows a garden round you, and your crystal is called in towards you. Let go and you dart off. A rival coming close is the tense moment: the second button puffs you up, slowing the rival and shielding your garden.",
+  "spec": [
+    {
+      "k": "Level",
+      "v": "1: one stick, two buttons"
+    },
+    {
+      "k": "Mechanic",
+      "v": "hold on to a plant: it grows and calls your crystal in; let go to dart"
+    },
+    {
+      "k": "Calm / intense",
+      "v": "tending / a rival comes, puff and dart"
+    },
+    {
+      "k": "Made from",
+      "v": "the Angler (grows plants, leads creatures) + the Serpent (a seed that gathers blocks)"
+    }
+  ],
+  "fantasy": "Seahorses do not race. They hold on. A Seahorse curls its tail round a plant and stays, and the plant grows faster for it. It is the only vessel the creatures trust. When something hungry comes, the father hides the young in his pouch and darts away. Every garden on the Shore was started by one.",
+  "why": "Most of the fleet destroys or steals. The Seahorse grows: waiting is a real choice (hold on and let the crystal come, or swim for it), and its tense moment comes to it, when a rival arrives. Holding on and carrying is the Siphonophore Bract's job, taught on its own.",
+  "flight": {
+    "cruise": 48,
+    "pitchYaw": 100,
+    "roll": 100,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 160
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Puff",
+      "param": "puffR",
+      "range": [
+        1,
+        1.4
+      ],
+      "l5": "Thorn Puff",
+      "tip": "Charge widens the puff."
+    },
+    "mass": {
+      "name": "Growth",
+      "param": "callSpeed",
+      "range": [
+        1,
+        1.6
+      ],
+      "l5": "Bloom",
+      "tip": "Mass is how fast a held plant calls the crystal in."
+    },
+    "space": {
+      "name": "Garden Reach",
+      "param": "callRange",
+      "range": [
+        1,
+        1.5
+      ],
+      "l5": "Meadow",
+      "tip": "Space is how far a held plant reaches for a crystal."
+    },
+    "time": {
+      "name": "Dart",
+      "param": "dart",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Flicker",
+      "tip": "Time makes the dart faster."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Gardener",
+      "lv": {
+        "charge": 0,
+        "mass": 10,
+        "space": 10,
+        "time": 0
+      },
+      "info": "Fast growth, a wide garden: it barely needs to swim."
+    },
+    {
+      "name": "Darter",
+      "lv": {
+        "charge": 10,
+        "mass": 0,
+        "space": 0,
+        "time": 10
+      },
+      "info": "A quick dart and a big puff."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    },
+    {
+      "ai": true,
+      "domain": "ruby",
+      "level": "Medium",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "hold on to a plant (hold, near a block); let go to dart",
+    "rt": "puff up (a rival near is slowed, your garden shielded)"
+  },
+  "scorecard": {
+    "rivals": 1,
+    "note": "Headless races seat one Hard rival Seahorse (Ruby): the puff has nothing to fend off alone."
+  },
+  "notModelled": [
+    "Creatures grazing in the garden and the pouch (the story) are not modelled; the puff slows a rival and shields the garden.",
+    "A held plant calls only your own crystal; a neutral block next to the plant becomes your garden's (a gentle steal).",
+    "The course is the game's Skim Race track with neutral mass beside it as the plants."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md section 12 (the calm three, Level 1), written for players who want about 20 minutes a day of calm with one tense moment. Nearest shipped relatives: the Angler's lure that grows plants, the Serpent's seed wall."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

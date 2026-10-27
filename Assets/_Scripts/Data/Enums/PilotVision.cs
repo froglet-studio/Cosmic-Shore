@@ -26,5 +26,6 @@ namespace CosmicShore.Data
         Bandit = 15,    // opposing vessels
         Needle = 16,    // switches: gates, Scarab switches, goals
         Galleon = 17,   // Arks, and the payload aboard
+        Flume = 18,     // solitons: the Meerkat's tunnels first (Garrett, 2026-10-27)
     }
 }

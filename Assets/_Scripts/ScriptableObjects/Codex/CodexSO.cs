@@ -67,7 +67,7 @@ namespace CosmicShore.ScriptableObjects
         public GameObject SourcePrefab;
 
         [Tooltip("Optional per-variant art. Empty is normal and is NOT a gap: an element-keyed " +
-                 "variant resolves to that element's own ethirion image (see " +
+                 "variant resolves to that element's own Etherion image (see " +
                  "CodexSO.VariantImage), and a variant whose identity is a colour draws its " +
                  "AccentColor instead. Only a variant that is a distinct OBJECT - a painting, a " +
                  "hull, a world - bakes art of its own.")]

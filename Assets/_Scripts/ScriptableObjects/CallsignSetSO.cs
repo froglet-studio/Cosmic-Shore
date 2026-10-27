@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The seventeen CALLSIGNS (Docs/Pilots/CALLSIGNS.md §2, §6.3): per sight its word, a one-line
+    /// The eighteen CALLSIGNS (Docs/Pilots/CALLSIGNS.md §2, §6.3): per sight its word, a one-line
     /// meaning, its glyphs and the sting that plays when it opens, plus the look of the sight on LB
     /// (fade, suppression, marks). Every word is authored text (CLAUDE.md, player-facing text): the
     /// rows live in the asset at <c>Resources/Pilots/CallsignSet</c>, written by

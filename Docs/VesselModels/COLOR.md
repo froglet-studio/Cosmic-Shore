@@ -75,8 +75,9 @@ Team first, then cockpit, then the shape, all against a dark ship that sits well
 
 Not changed:
 
-- **Grizzly's jet renderers still wear `LimeVesselMaterial`.** The Grizzly is jtgjones's, in flight on
-  `grizzly-v3`, so this is a team task, not an edit.
+- **Grizzly's jet renderers wore `LimeVesselMaterial`** until 2026-10-27, when the Grizzly's new model
+  (`Grizzly.fbx`, `Docs/VesselModels/Grizzly.md`) replaced the wedge's part renderers: its Engine slot remaps to
+  `EngineVesselMaterial`, so no Lime is left on the hull.
 - **Serpent's Lime** sits on the inactive `serpent.fbx` vestige, which nothing draws.
 - **Dolphin, Sparrow and Serpent** have no engine slot (three materials), so they show no ember until their
   models gain one.

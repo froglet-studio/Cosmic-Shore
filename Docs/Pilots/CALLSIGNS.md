@@ -5,7 +5,7 @@ moved off the shoulders to D-pad down (§5).
 
 **Built so far (`claude/squad-payload-pilots-artifacts`, 2026-10-27, unverified in the editor):** the first four
 sights, ENSIGN, CITADEL, VOLT and BANDIT (§6 steps 1, 3, 4, 5). `PilotVision` (None = 0 … Galleon = 17) and
-`CallsignSetSO` at `Resources/Pilots/CallsignSet` (all seventeen rows, written by
+`CallsignSetSO` at `Resources/Pilots/CallsignSet` (every row, written by
 `Tools/Build/author_callsign_assets.py`); `PilotSight`, ensured on every vessel by `VesselController.Initialize`, reads
 LB (keyboard V) for the local pilot only, fades the strength, weights a runtime Colour Adjustments volume by it, and
 publishes `_PilotVisionStrength / Sight / Domain / Volume`. The prism sights are answered in
@@ -17,11 +17,12 @@ Sight**. The hull plate (the one shared bit) waits on where each hull's plate si
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot vision on LB".
 
 **The pilots (§6 step 2), built 2026-10-27 (Garrett: "17 callsign pilots, any vessel").** Shombith's branch is merged;
-`PilotSO` carries one `vision`, and `author_pilot_assets.py` writes seventeen pilots, one per callsign, each named for
+`PilotSO` carries one `vision`, and `author_pilot_assets.py` writes one pilot per callsign (eighteen with FLUME), each named for
 its callsign (`Pilot_<Word>`, id `pilot.callsign.<word>`) and seated by any vessel. The pilot in a vessel's seat
 (`PilotLoadoutStore`, read in a match through `VesselPilotLoadout`) is that vessel's sight; an empty seat has none, and
-the set's Unassigned Sight is now only a tester's override for an empty seat. The Hangar PILOTS tab lists all seventeen
-in a scrolled column. Hand tests: "The callsign pilots" in the checklist.
+the set's Unassigned Sight is now only a tester's override for an empty seat. The Hangar PILOTS tab lists them all
+in a scrolled column. FLUME (18) has its sight too: `FlumeSight` traces every live Meerkat tunnel mouth to mouth
+(`MeerkatWormholeExecutor.Live`, read only). Hand tests: "The callsign pilots" in the checklist.
 
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §2 (2026-10-12), where a pilot swaps part of a vessel's kit. That section now points
@@ -54,11 +55,11 @@ which this reuses.
 
 - **Seeing one thing costs you everything else.** While LB is held you fly half-blind to the rest of the world. That
   is the price, and it is the only one.
-- **A squad is a set of eyes.** Its three pilot cards cover three of the seventeen sights. Building the deck means
+- **A squad is a set of eyes.** Its three pilot cards cover three of the eighteen sights. Building the deck means
   choosing what the squad can find and what it will never see coming. With the D-pad hull swap
   (`PilotSwap`), changing hulls also changes whose eyes you look through.
 
-## 2. The seventeen callsigns
+## 2. The eighteen callsigns
 
 Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movement and Cells have no callsign**
 (Garrett, 2026-10-27). The splits:
@@ -86,15 +87,19 @@ Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movem
 | 15 | Vessels: opponents | **BANDIT** | every opposing vessel, through mass | the vessel list, by domain |
 | 16 | Switch | **NEEDLE** | every ring that activates something: gates, Scarab switches, goals | `ScarabSwitch`, `RingThreadProbe`, `AstroLeagueGoal` |
 | 17 | Ark | **GALLEON** | the Arks, and the payload aboard | `Ark` |
+| 18 | Soliton | **FLUME** | every soliton, whoever made it: where it is, where it leads and how long it is (otherwise only seen by its lensing) | `MeerkatWormholeExecutor.Live`: the Meerkat's tunnels are the first (Garrett, 2026-10-27; `Docs/Studios/MEERKAT.md`) |
 
 A crystal sight includes **every crystal of that element**: field crystals, ejected crystals (`EjectedCrystal`), and
 the hearts lifeforms carry (`LifeFormCrystal`). So VOLT also shows which creatures and plants are carrying Charge.
+
+**FLUME** (added 2026-10-27 with the Soliton fundamental): a flume is a channel of water you ride through, and
+neither "flume" nor "soliton" means anything else in the game.
 
 **How the words were picked.**
 - **Each one evokes what it sees.** A manger is where the animals go to eat, a citadel is the fortress that does not
   fall, a hornet stings whoever touches it, and bandit and wingman are what pilots call hostiles and friendlies on the
   radio.
-- **Seventeen different first letters** (A B C D E G H I M N O R S T V W Z), so a glyph or a call is never mistaken for
+- **Eighteen different first letters** (A B C D E F G H I M N O R S T V W Z), so a glyph or a call is never mistaken for
   another.
 - **No word that already means something in the game:** no element, vessel, pilot or mode name, and none of the
   ecology's own words. These were rejected for that reason:

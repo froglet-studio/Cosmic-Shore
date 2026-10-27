@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -440,6 +441,64 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
         }
+
+        // ---------------------------------------------------------------- elemental crystals (section 97)
+
+        /// <summary>The player's crystals of one element, or null when they have never had any.</summary>
+        public ElementalCrystalBalance GetElementalCrystals(Element element)
+        {
+            var list = CurrentProfile?.Economy?.ElementalCrystals;
+            if (list == null) return null;
+            foreach (var b in list)
+                if (b != null && b.Element == (int)element) return b;
+            return null;
+        }
+
+        /// <summary>How many crystals of <paramref name="element"/> the player holds now.</summary>
+        public int GetElementalCrystalsHeld(Element element) => GetElementalCrystals(element)?.Held ?? 0;
+
+        /// <summary>How many crystals of <paramref name="element"/> the player has spent, ever.</summary>
+        public long GetElementalCrystalsSpent(Element element) => GetElementalCrystals(element)?.Spent ?? 0;
+
+        /// <summary>
+        /// Credits elemental crystals. Client-side for now, like the OmniCrystal balance before its server gate:
+        /// nothing calls it yet, because how a match pays them out is the owner's call (section 97 lists it).
+        /// </summary>
+        public int AddElementalCrystals(Element element, int amount, string source = null)
+        {
+            if (CurrentProfile?.Economy == null || amount <= 0 || !IsElement(element)) return GetElementalCrystalsHeld(element);
+            var b = ElementalBalanceFor(element);
+            b.Held += amount;
+            b.Earned += amount;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleSave();
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Added {amount} {element} crystals ({source}). Held: {b.Held}");
+            return b.Held;
+        }
+
+        /// <summary>Spends elemental crystals if the player holds enough; false (and nothing changes) otherwise.</summary>
+        public bool TrySpendElementalCrystals(Element element, int amount, string source = null)
+        {
+            if (CurrentProfile?.Economy == null || amount <= 0 || !IsElement(element)) return false;
+            var b = GetElementalCrystals(element);
+            if (b == null || b.Held < amount) return false;
+            b.Held -= amount;
+            b.Spent += amount;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleSave();
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Spent {amount} {element} crystals ({source}). Held: {b.Held}");
+            return true;
+        }
+
+        ElementalCrystalBalance ElementalBalanceFor(Element element)
+        {
+            var list = CurrentProfile.Economy.ElementalCrystals ??= new List<ElementalCrystalBalance>();
+            var b = GetElementalCrystals(element);
+            if (b == null) list.Add(b = new ElementalCrystalBalance { Element = (int)element });
+            return b;
+        }
+
+        static bool IsElement(Element e) => e is Element.Charge or Element.Mass or Element.Space or Element.Time;
 
         public void SetAvatarId(int avatarId)
         {

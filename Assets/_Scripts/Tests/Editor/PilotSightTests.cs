@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Pilot vision on LB (Docs/Pilots/CALLSIGNS.md §6): the seventeen authored callsigns, the four
+    /// Pilot vision on LB (Docs/Pilots/CALLSIGNS.md §6): the eighteen authored callsigns, the four
     /// sights built first, and the rule that a sight only writes rendering state. The look itself
     /// (fade, suppression, marks) is a hand test (Docs/UNITY_VERIFICATION_CHECKLIST.md).
     /// </summary>
@@ -27,20 +27,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheVisionValuesAreFixedOneToSeventeen()
+        public void TheVisionValuesAreFixedOneToEighteen()
         {
             var values = Enum.GetValues(typeof(PilotVision)).Cast<int>().OrderBy(v => v).ToArray();
-            Assert.AreEqual(Enumerable.Range(0, 18).ToArray(), values, "None = 0, then the seventeen sights; Unity serializes the number");
+            Assert.AreEqual(Enumerable.Range(0, 19).ToArray(), values, "None = 0, then the eighteen sights; Unity serializes the number");
             Assert.AreEqual(1, (int)PilotVision.Ensign);
             Assert.AreEqual(9, (int)PilotVision.Citadel, "the prism shader's CITADEL define");
             Assert.AreEqual(17, (int)PilotVision.Galleon);
+            Assert.AreEqual(18, (int)PilotVision.Flume);
         }
 
         [Test]
         public void EverySightHasOneAuthoredRow()
         {
             var set = LoadSet();
-            Assert.AreEqual(17, set.Count);
+            Assert.AreEqual(18, set.Count);
             foreach (PilotVision sight in Enum.GetValues(typeof(PilotVision)))
             {
                 if (sight == PilotVision.None) continue;
@@ -83,6 +84,18 @@ namespace CosmicShore.Tests
             foreach (var sight in BuiltFirst)
                 Assert.IsNotNull(PilotSightProviders.For(sight), $"{sight} is one of the first four sights");
             Assert.IsNull(PilotSightProviders.For(PilotVision.None), "None lights nothing");
+            Assert.IsInstanceOf<FlumeSight>(PilotSightProviders.For(PilotVision.Flume), "FLUME traces the solitons");
+        }
+
+        [Test]
+        public void FlumeWithNoSolitonMarksNothing()
+        {
+            var marks = new PilotSightMarks();
+            var state = new PilotSightPrismState();
+            if (MeerkatWormholeExecutor.Live.Count > 0) Assert.Ignore("a tunnel is live in this editor session");
+            PilotSightProviders.For(PilotVision.Flume).Gather(default, ref state, marks);
+            Assert.AreEqual(0, marks.Count);
+            Assert.AreEqual(0f, state.Sight, "FLUME writes no prism state");
         }
 
         [Test]

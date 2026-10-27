@@ -22,6 +22,7 @@ MonoBehaviour:
   cadence: {fileID: 11400000, guid: 9dc884f2725861be23f15bb77f5267e4, type: 2}
   chargeArcs: {fileID: 11400000, guid: c737a3419ec6c52c4b723e5c6a101711, type: 2}
   omniArcsMaterial: {fileID: 2100000, guid: df9f4366505dce6cc7b832d44a384d97, type: 2}
+  palette: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
   lead: {x: 2.2, y: 3.2}
   spread: {x: 2.7, y: 3.3}
   layoutYawDegrees: {x: 0, y: 360}

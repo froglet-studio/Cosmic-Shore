@@ -95,7 +95,7 @@ MonoBehaviour:
     type: 3}
   crystalModels:
   - model: {fileID: 3792360532212070197}
-    defaultMaterial: {fileID: 2100000, guid: 3fbc5051c8a40814186ae69a0cba15ff, type: 2}
+    defaultMaterial: {fileID: 2100000, guid: 51138c6af7b139ab085f10920a2faeb9, type: 2}
     explodingMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 8e9bcad022cf0e543937d40129bc918e, type: 2}
     spaceCrystalAnimator: {fileID: 0}

@@ -16,7 +16,7 @@ rewrites the same bytes), --check compares against disk and exits nonzero on dri
 
 THE ROSTER (Garrett, 2026-10-27): one pilot per callsign, any vessel. A pilot is a pair of eyes: it carries one
 callsign (PilotSO.vision) and changes nothing else. Its name is its callsign's word, read from
-Tools/Build/author_callsign_assets.py (the one list of the seventeen), so the two cannot drift. This replaces the
+Tools/Build/author_callsign_assets.py (the one list of the callsigns), so the two cannot drift. This replaces the
 2026-10-26 roster on Shombith's branch (40 pilots, each rewriting one ability, and 45 vessel-bound numeric
 artifacts), which was thrown out because it conflicts with CALLSIGNS.md and ARTIFACTS.md.
 
@@ -37,7 +37,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from author_callsign_assets import CALLSIGNS  # noqa: E402  (value, word, meaning): the seventeen
+from author_callsign_assets import CALLSIGNS  # noqa: E402  (value, word, meaning): one row per callsign
 
 PILOTS_DIR = "Assets/_SO_Assets/Pilots"
 ROSTER_DIR = PILOTS_DIR + "/Roster"
@@ -459,7 +459,7 @@ def self_test():
     plants = {
         "a callsign with two pilots": lambda s: s["pilots"].append(dict(s["pilots"][0])),
         "a callsign with no pilot": lambda s: s["pilots"].pop(0),
-        "a pilot with an unknown sight": lambda s: s["pilots"][1].update(vision=18),
+        "a pilot with an unknown sight": lambda s: s["pilots"][1].update(vision=99),
         "two artifacts share an id": lambda s: s["artifacts"][1].update(id=s["artifacts"][0]["id"]),
         "an artifact bound to a vessel": lambda s: s["artifacts"][0].update(vessel="Rhino"),
         "an unknown transform": lambda s: s["artifacts"][0].update(transform="Hydra"),

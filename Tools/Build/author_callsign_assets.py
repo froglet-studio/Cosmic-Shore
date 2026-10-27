@@ -2,7 +2,7 @@
 """
 Author the pilot sight's assets (Docs/Pilots/CALLSIGNS.md §6.3). This script OWNS them:
 
-  Assets/Resources/Pilots/CallsignSet.asset      CallsignSetSO: the seventeen callsigns + the sight's look
+  Assets/Resources/Pilots/CallsignSet.asset      CallsignSetSO: the eighteen callsigns + the sight's look
   Assets/Resources/Pilots/PilotSightMark.mat     the instanced mark material (PilotSightMark.shader)
 
 and their .meta files. The callsign words and lines are CALLSIGNS.md §2's table; a change is made
@@ -51,6 +51,7 @@ CALLSIGNS = [
     (15, 'BANDIT', 'Every opposing vessel, through mass.'),
     (16, 'NEEDLE', 'Every ring that activates something: gates, Scarab switches, goals.'),
     (17, 'GALLEON', 'The Arks, and the payload aboard.'),
+    (18, 'FLUME', 'Every soliton, whoever made it: where it is and where it leads.'),
 ]
 
 LOOK = {
@@ -155,15 +156,15 @@ def validate(callsigns=CALLSIGNS):
     errors = []
     values = enum_values()
     words = [w for _, w, _ in callsigns]
-    if len(callsigns) != 17 or sorted(v for v, _, _ in callsigns) != list(range(1, 18)):
-        errors.append('the set must hold exactly the seventeen callsigns, 1-17')
+    if sorted(v for v, _, _ in callsigns) != sorted(values.values()):
+        errors.append(f'the set must hold exactly one row per PilotVision sight, 1-{len(values)}')
     for value, word, meaning in callsigns:
         if values.get(word) != value:
             errors.append(f'{word} is {value} here but {values.get(word)} in PilotVision.cs')
         if not meaning:
             errors.append(f'{word} has no line')
     if len({w[0] for w in words}) != len(words):
-        errors.append('two callsigns share a first letter (CALLSIGNS.md §2: seventeen different first letters)')
+        errors.append('two callsigns share a first letter (CALLSIGNS.md §2: every first letter different)')
     if len(set(words)) != len(words):
         errors.append('a callsign word is used twice')
     return errors

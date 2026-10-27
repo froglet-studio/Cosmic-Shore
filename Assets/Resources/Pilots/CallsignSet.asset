@@ -217,6 +217,18 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+  - sight: 18
+    word: FLUME
+    meaning: 'Every soliton, whoever made it: where it is and where it leads.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
   fadeInSeconds: 0.25
   fadeOutSeconds: 0.35
   suppressSaturation: -70

@@ -55,11 +55,19 @@ namespace CosmicShore.UI
             public Image hex;
             [Tooltip("The breathing element glow behind the hex.")]
             public KitElementHalo halo;
+            [Tooltip("Section 90 (Shombith 2026-10-27: \"in the same info tab we have both the 2D icons and the 3D view of " +
+                     "them\"): the element's crystal in 3D, a 4x4 flipbook rendered from the crystal labs. Still on its first " +
+                     "frame until the row is played; then it runs its loop once.")]
+            public RawImage crystal;
+            [Tooltip("Frames a second of this crystal's flipbook (16 frames are one loop of its effect).")]
+            public float crystalFps = 8f;
             [HideInInspector] public HintBinding pad, key;
             [HideInInspector] public float lit;
             [HideInInspector] public float pressed;
             [HideInInspector] public HangarAbilityKind kind;
             [HideInInspector] public bool open;
+            [HideInInspector] public float spin = -1f, play = -1f;
+            [HideInInspector] public int frame = -1;
         }
 
         /// <summary>One vessel's element shown as another kind than its words read as.</summary>
@@ -93,6 +101,10 @@ namespace CosmicShore.UI
 
         [Header("Motion")]
         [SerializeField, Min(0.05f)] private float glowSeconds = 0.9f;
+        [Tooltip("Seconds the 2D flower takes to turn one petal and settle when its row plays (rotate and scale).")]
+        [SerializeField, Min(0.05f)] private float spinSeconds = 0.6f;
+        [Tooltip("How far the 2D flower grows at the top of its turn (0.18 = 18 %).")]
+        [SerializeField, Range(0f, 0.5f)] private float spinScale = 0.18f;
 
         [Header("Stage moves")]
         [Tooltip("Each ability's stage move is read from its name and description (HangarAbilityKinds). A row here " +
@@ -174,6 +186,9 @@ namespace CosmicShore.UI
                 row.key = open ? HintBinding.None : InputHintBindingMap.BindingFor(entry.Input, keyboard: true);
                 row.lit = 0f;
                 row.pressed = 0f;
+                row.spin = row.play = -1f;
+                SetCrystalFrame(row, 0);
+                if (row.flower) { row.flower.transform.localEulerAngles = Vector3.zero; row.flower.transform.localScale = Vector3.one; }
                 if (row.keycapGroup) row.keycapGroup.transform.localScale = Vector3.one;
                 row.open = open;
                 if (row.glow) row.glow.color = new Color(c.r, c.g, c.b, 0f);
@@ -208,6 +223,7 @@ namespace CosmicShore.UI
                     if (row.keycapGroup)
                         row.keycapGroup.transform.localScale = Vector3.one * Mathf.Lerp(1f, keyPressScale, Mathf.Sin(row.pressed * Mathf.PI));
                 }
+                Animate(row, dt);
                 if (row.lit <= 0f) continue;
                 row.lit = Mathf.Max(0f, row.lit - dt / glowSeconds);
                 if (row.glow)
@@ -218,11 +234,50 @@ namespace CosmicShore.UI
             }
         }
 
+        const int CrystalFrames = 16, CrystalColumns = 4;
+
+        /// <summary>The played row's 2D flower turns one petal (72 degrees, so it lands looking as it started) and swells;
+        /// its 3D crystal runs its loop once and rests on its first frame.</summary>
+        void Animate(Row row, float dt)
+        {
+            if (row.spin >= 0f)
+            {
+                row.spin += dt / spinSeconds;
+                float k = Mathf.Clamp01(row.spin);
+                float e = 1f - (1f - k) * (1f - k) * (1f - k);    // OutCubic
+                if (row.flower)
+                {
+                    var t = row.flower.transform;
+                    t.localEulerAngles = new Vector3(0f, 0f, -72f * e);
+                    t.localScale = Vector3.one * (1f + spinScale * Mathf.Sin(Mathf.PI * k));
+                    if (k >= 1f) { t.localEulerAngles = Vector3.zero; t.localScale = Vector3.one; }
+                }
+                if (k >= 1f) row.spin = -1f;
+            }
+            if (row.play >= 0f)
+            {
+                row.play += dt;
+                int f = Mathf.FloorToInt(row.play * Mathf.Max(1f, row.crystalFps));
+                if (f >= CrystalFrames) { row.play = -1f; f = 0; }
+                SetCrystalFrame(row, f);
+            }
+        }
+
+        static void SetCrystalFrame(Row row, int f)
+        {
+            if (!row.crystal || f == row.frame) return;
+            row.frame = f;
+            const float size = 1f / CrystalColumns;
+            row.crystal.uvRect = new Rect(f % CrystalColumns * size, 1f - (f / CrystalColumns + 1) * size, size, size);
+        }
+
         void Fire(Row row)
         {
             if (row == null || row.open || (row.button && !row.button.interactable)) return;
             row.lit = 1f;
             row.pressed = 1f;
+            row.spin = 0f;
+            row.play = 0f;
             if (row.halo) row.halo.Flash();
             if (_stage) _stage.Perform(Colour(row.element), row.kind);
         }
