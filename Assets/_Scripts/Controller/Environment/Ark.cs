@@ -283,6 +283,17 @@ namespace CosmicShore.Gameplay
 
         static bool IsLive(Prism prism) => prism && !prism.destroyed && prism.gameObject.activeInHierarchy;
 
+        /// <summary>Every live hull prism, nearest to <paramref name="near"/> first, into <paramref name="into"/>
+        /// (cleared first). Menu-rate: a sort over the hull.</summary>
+        public void GetLiveHullPrisms(Vector3 near, List<Prism> into)
+        {
+            into.Clear();
+            for (int i = 0; i < _prisms.Count; i++)
+                if (IsLive(_prisms[i])) into.Add(_prisms[i]);
+            into.Sort((a, b) => (a.transform.position - near).sqrMagnitude
+                .CompareTo((b.transform.position - near).sqrMagnitude));
+        }
+
         /// <summary>
         /// The hull prism destroyed LAST, or null: the one whose force the fall is credited to
         /// (<see cref="ArkFall"/>). Read when the hull is lost; a prism the pool has already

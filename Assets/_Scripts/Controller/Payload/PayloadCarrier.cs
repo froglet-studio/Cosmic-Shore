@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Core;
 using CosmicShore.Gameplay.Audio;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -28,6 +29,11 @@ namespace CosmicShore.Gameplay
     /// pooled prism destroyed with a vessel's hierarchy would corrupt its pool, so the root follows
     /// the hull instead.</para>
     ///
+    /// <para><b>A loaded payload.</b> When the slot this pilot flies carries an artifact
+    /// (<see cref="VesselPilotLoadout.Artifact"/>), every payload taken is loaded with it: RB then releases the
+    /// artifact's transformation (<see cref="PayloadTransformSO"/>) at the pilot's track levels instead of the plain
+    /// burst. The artifact itself never leaves the Ark; the payload carries only its effect.</para>
+    ///
     /// <para><b>Loose artifacts.</b> With nothing aboard, RB takes a loose <see cref="ArtifactPickup"/>
     /// in reach (any squad's: a spilled artifact is nobody's) before it asks the Ark for a parcel. With
     /// an artifact aboard, RB beside your own Ark stows it in that hold; anywhere else it lets it go.
@@ -50,9 +56,14 @@ namespace CosmicShore.Gameplay
         readonly List<(Prism prism, float dueAt)> _withering = new();
         float _nextRebindAt;
         ArtifactPickup _artifact;
+        ArtifactSO _loaded;
+        ArtifactLevels _loadedLevels;
 
         /// <summary>True while a parcel rides this vessel.</summary>
         public bool IsCarrying => _parcel.Count > 0;
+
+        /// <summary>The artifact the riding payload is loaded with, or null for a plain payload.</summary>
+        public ArtifactSO Loaded => IsCarrying ? _loaded : null;
 
         /// <summary>The loose artifact this vessel carries, or null.</summary>
         public ArtifactPickup Artifact => _artifact ? _artifact : null;
@@ -144,7 +155,8 @@ namespace CosmicShore.Gameplay
             {
                 case ArkHold.GrabResult.Granted:
                     Seat(hold);
-                    Notify(PayloadNotice.Grabbed, ArkHold.Config.GrabSound);
+                    Load();
+                    Notify(PayloadNotice.Grabbed, _loaded && !_loaded.LoadSound.IsNull ? _loaded.LoadSound : ArkHold.Config.GrabSound);
                     break;
                 case ArkHold.GrabResult.OutOfReach:
                     Notify(PayloadNotice.OutOfReach, ArkHold.Config.RefusedSound);
@@ -179,6 +191,14 @@ namespace CosmicShore.Gameplay
                 _seatScale.Add(scale);
                 prism.TargetScale = scale;
             }
+        }
+
+        // The slot's artifact and the pilot's levels on it, read once per payload taken.
+        void Load()
+        {
+            _loaded = _status?.PilotLoadout?.Artifact;
+            _loadedLevels = _loaded ? PilotLoadoutStore.Levels(_loaded.Id) : default;
+            if (_loaded && !_loaded.Transform) _loaded = null;
         }
 
         // ── Carry ────────────────────────────────────────────────────────────
@@ -290,28 +310,46 @@ namespace CosmicShore.Gameplay
             var release = new PayloadRelease(center, transform.forward, cfg.BurstRadius,
                 _status.PlayerName, _status.Domain);
 
+            if (_loaded) return ReleaseLoaded(release);
+
             int reached = PayloadBurst.Detonate(release, cfg.BurstEffects);
             Spend(release);
             Notify(PayloadNotice.Released, cfg.ReleaseSound);
             return reached;
         }
 
-        // Spent by the force that fired it: the parcel bursts outward as ordinary destruction in the
-        // carrier's name (a vessel ability is an active sink, Docs/ECOSYSTEM.md), which is also the
-        // burst's picture.
+        // The artifact's transformation takes the parcel and its root, or refuses and the payload stays aboard.
+        int ReleaseLoaded(in PayloadRelease release)
+        {
+            var artifact = _loaded;
+            var home = ArkHold.FindFor(_status.Domain, transform.position);
+            var launch = new PayloadLaunch(release, _parcel, _root, artifact, _loadedLevels, home);
+            if (!artifact.Transform.Release(launch))
+            {
+                RaiseLine(artifact.Transform.RefusedLine);
+                Notify(PayloadNotice.Refused, ArkHold.Config.RefusedSound);
+                return 0;
+            }
+            // Still flagged carried: a thrown parcel must not strike its thrower; the spend clears the flag.
+            _parcel.Clear();
+            _seatScale.Clear();
+            _root = null;               // the transformation owns the root now
+            _loaded = null;
+            EndParcel();
+            Notify(PayloadNotice.Released, artifact.ReleaseSound.IsNull ? ArkHold.Config.ReleaseSound : artifact.ReleaseSound);
+            return 1;
+        }
+
+        void RaiseLine(string line)
+        {
+            var player = _status?.Player;
+            if (player == null || !player.IsLocalUser || string.IsNullOrEmpty(line)) return;
+            ArkHold.RaiseLocalLine(line);
+        }
+
         void Spend(in PayloadRelease release)
         {
-            for (int i = 0; i < _parcel.Count; i++)
-            {
-                var prism = _parcel[i];
-                if (!prism || prism.destroyed) continue;
-                prism.SetCarried(false);
-                if (prism.prismProperties is { IsSuperShielded: true }) prism.DeactivateShields();
-                var outward = prism.transform.position - release.Center;
-                if (outward.sqrMagnitude < 0.01f) outward = release.Forward;
-                prism.Damage(outward.normalized * 40f, release.CarrierDomain, release.CarrierName, devastate: true);
-            }
-            _parcel.Clear();
+            PayloadBurst.SpendParcel(_parcel, release, _root ? _root.parent : null);
             _seatScale.Clear();
             EndParcel();
         }
@@ -338,6 +376,7 @@ namespace CosmicShore.Gameplay
 
         void EndParcel(bool keepRoot = false)
         {
+            if (!IsCarrying) _loaded = null;
             if (_source) _source.NotifyParcelGone(this);
             _source = null;
             if (!keepRoot && _root) { Destroy(_root.gameObject); _root = null; }

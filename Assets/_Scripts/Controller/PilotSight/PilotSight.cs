@@ -80,7 +80,8 @@ namespace CosmicShore.Gameplay
         public static PilotSight Local => s_local;
 
         /// <summary>This vessel's callsign.</summary>
-        public PilotVision Sight => _hasAssigned ? _assigned : Set.UnassignedSight;
+        public PilotVision Sight => _hasAssigned ? _assigned
+            : _status?.PilotLoadout?.Pilot is { } pilot ? pilot.Vision : Set.UnassignedSight;
 
         /// <summary>The LB fade, 0 (closed) to 1 (open).</summary>
         public float Strength => _strength;

@@ -385,6 +385,8 @@ namespace CosmicShore.Gameplay
                 _conveyor.CellRetired += OnCellRetired;
                 ArkHold.LocalNotice -= OnPayloadNotice;
                 ArkHold.LocalNotice += OnPayloadNotice;
+                ArkHold.LocalLine -= OnPayloadLine;
+                ArkHold.LocalLine += OnPayloadLine;
                 EnsureHud();
                 _hud.ShowBanner("STAY WITH THE ARK", BannerSeconds);
 
@@ -711,6 +713,13 @@ namespace CosmicShore.Gameplay
             _hud.ShowBanner(line, cfg.BannerSeconds);
         }
 
+        void OnPayloadLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, ArkHold.Config.BannerSeconds);
+        }
+
         void OnArkHullDestroyed()
         {
             EnsureHud();
@@ -996,6 +1005,7 @@ namespace CosmicShore.Gameplay
 
             if (_conveyor) _conveyor.CellRetired -= OnCellRetired;
             ArkHold.LocalNotice -= OnPayloadNotice;
+            ArkHold.LocalLine -= OnPayloadLine;
             _trailMarks.Clear();
             _primaryRollTo = _secondaryRollTo = null;
             FlushWithering();

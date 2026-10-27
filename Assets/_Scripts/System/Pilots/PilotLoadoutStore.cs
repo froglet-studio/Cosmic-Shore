@@ -1,38 +1,48 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// The player's pilots and artifacts (Docs/Pilots/PILOTS_AND_ARTIFACTS.md): which pilot sits in each vessel's seat, which
-    /// artifacts the player has found and at what rank, and which ones are slotted on each vessel. Ids are the
-    /// <c>PilotSO.Id</c> / <c>ArtifactSO.Id</c> strings (pilot.rhino.tomahawk), which players save and nobody renames.
+    /// The player's pilots and artifacts (Docs/Pilots/CALLSIGNS.md, Docs/Pilots/ARTIFACTS.md): which pilot sits in each
+    /// vessel's seat, which artifacts the player holds, which one is slotted on each vessel, the player's four track
+    /// levels on each artifact, and the elemental crystals they spend to raise them. Ids are the <c>PilotSO.Id</c> /
+    /// <c>ArtifactSO.Id</c> strings, which players save and nobody renames.
     ///
-    /// <para>Saved on the DEVICE (PlayerPrefs) for now. The player's profile is where it belongs, beside the Hangar's element
-    /// levels (<c>HangarUpgradeStore</c>), and moves there once the fair-play branch's profile changes land
-    /// (claude/vigilant-archimedes-euoz8z rewrites <c>PlayerDataService</c>; anything on the backend goes through Shombith).
-    /// An empty seat flies the vessel's base kit. Nothing in a match reads any of this yet.</para>
+    /// <para><b>A device-local stand-in.</b> Saved in PlayerPrefs for now. Per-element crystal balances and track levels
+    /// belong on the player's profile, beside the Hangar's element levels, and that is the backend: it goes through
+    /// Shombith (Docs/Pilots/ARTIFACTS.md §10). Everything that reads or spends goes through this class, so the move is
+    /// one class. Crystals are earned on the device too until then (<see cref="AddCrystals"/>).</para>
+    ///
+    /// <para><b>2026-10-27 (Garrett):</b> built on Shombith's store; the found RANKS of the numeric artifacts are gone
+    /// with them. Every artifact is still free to hold (Shombith, 2026-10-26).</para>
     /// </summary>
     public static class PilotLoadoutStore
     {
-        /// <summary>A seat changed: the vessel and the pilot id now in it (empty = the base kit).</summary>
+        /// <summary>A seat changed: the vessel and the pilot id now in it (empty = no pilot, so no sight).</summary>
         public static event Action<VesselClassType, string> PilotChanged;
-        /// <summary>A vessel's slotted artifacts, or the found ranks, changed.</summary>
+        /// <summary>A vessel's slotted artifact changed (Any: what the player holds changed).</summary>
         public static event Action<VesselClassType> ArtifactsChanged;
+        /// <summary>A track level or a crystal balance changed.</summary>
+        public static event Action UpgradesChanged;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
             PilotChanged = null;
             ArtifactsChanged = null;
+            UpgradesChanged = null;
         }
 
         const char Separator = ',';
         static string SeatKey(VesselClassType vessel) => $"pilots.seat.{(int)vessel}";
         static string SlotsKey(VesselClassType vessel) => $"artifacts.slots.{(int)vessel}";
-        static string FoundKey(string artifactId) => $"artifacts.found.{artifactId}";
+        static string HeldKey(string artifactId) => $"artifacts.found.{artifactId}";
+        static string TrackKey(string artifactId, Element element) => $"artifacts.track.{artifactId}.{(int)element}";
+        static string CrystalKey(Element element) => $"crystals.{(int)element}";
 
         // ---- the seat ----
 
@@ -47,41 +57,35 @@ namespace CosmicShore.Core
             PilotChanged?.Invoke(vessel, pilotId);
         }
 
-        // ---- found artifacts ----
+        // ---- held artifacts ----
 
         /// <summary>Every artifact is free (Shombith, 2026-10-26: "all of these can be unlocked for free not buy it").</summary>
         public const bool EverythingIsFree = true;
 
-        /// <summary>The rank the player holds this artifact at, 1 to 3; 0 = not held. Everything is free, so every
-        /// artifact is held at the top rank unless a record says otherwise (a drop system would write one).</summary>
-        public static int FoundRank(string artifactId)
-        {
-            if (string.IsNullOrEmpty(artifactId)) return 0;
-            int saved = Mathf.Clamp(PlayerPrefs.GetInt(FoundKey(artifactId), 0), 0, 3);
-            return EverythingIsFree ? 3 : saved;
-        }
+        /// <summary>True when the player holds this artifact. Everything is free, so every artifact is held unless a
+        /// record says otherwise (a find written by <see cref="Grant"/>, a loss by <see cref="Forget"/>).</summary>
+        public static bool Holds(string artifactId) =>
+            !string.IsNullOrEmpty(artifactId) && (EverythingIsFree || PlayerPrefs.GetInt(HeldKey(artifactId), 0) > 0);
 
-        /// <summary>Records a find. A rank only goes up; a lower find of one already held changes nothing.</summary>
-        public static void Grant(string artifactId, int rank)
+        /// <summary>Records a find (an artifact stowed home from a voyage).</summary>
+        public static void Grant(string artifactId)
         {
             if (string.IsNullOrEmpty(artifactId)) return;
-            rank = Mathf.Clamp(rank, 1, 3);
-            if (rank <= FoundRank(artifactId)) return;
-            PlayerPrefs.SetInt(FoundKey(artifactId), rank);
+            PlayerPrefs.SetInt(HeldKey(artifactId), 1);
             PlayerPrefs.Save();
             ArtifactsChanged?.Invoke(VesselClassType.Any);
         }
 
-        /// <summary>Forgets a find (dev tooling; the theft of milestone 2 would land here too).</summary>
+        /// <summary>Forgets a find (an artifact lost with a fallen Ark; dev tooling).</summary>
         public static void Forget(string artifactId)
         {
             if (string.IsNullOrEmpty(artifactId)) return;
-            PlayerPrefs.DeleteKey(FoundKey(artifactId));
+            PlayerPrefs.DeleteKey(HeldKey(artifactId));
             PlayerPrefs.Save();
             ArtifactsChanged?.Invoke(VesselClassType.Any);
         }
 
-        // ---- slots ----
+        // ---- the slot ----
 
         /// <summary>The vessel's slotted artifact ids, in slot order, into <paramref name="into"/> (cleared first).</summary>
         public static void GetSlotted(VesselClassType vessel, List<string> into)
@@ -90,14 +94,22 @@ namespace CosmicShore.Core
             Split(PlayerPrefs.GetString(SlotsKey(vessel), string.Empty), into);
         }
 
-        /// <summary>Slots the artifact if there is room and it is found, or takes it out if it is slotted. True when it
-        /// ends up slotted.</summary>
+        /// <summary>The vessel's first slotted artifact id, or empty.</summary>
+        public static string GetSlottedArtifact(VesselClassType vessel)
+        {
+            var saved = PlayerPrefs.GetString(SlotsKey(vessel), string.Empty);
+            int cut = saved.IndexOf(Separator);
+            return cut < 0 ? saved : saved.Substring(0, cut);
+        }
+
+        /// <summary>Slots the artifact if there is room and it is held, or takes it out if it is slotted. True when it
+        /// ends up slotted. With one slot, slotting another artifact replaces the one there.</summary>
         public static bool ToggleSlot(VesselClassType vessel, string artifactId, int slotCount)
         {
             var slotted = new List<string>();
             GetSlotted(vessel, slotted);
-            bool canSlot = FoundRank(artifactId) > 0;
-            bool now = Toggle(slotted, artifactId, slotCount, canSlot);
+            if (slotCount == 1 && slotted.Count == 1 && slotted[0] != artifactId && Holds(artifactId)) slotted.Clear();
+            bool now = Toggle(slotted, artifactId, slotCount, Holds(artifactId));
             PlayerPrefs.SetString(SlotsKey(vessel), string.Join(Separator.ToString(), slotted));
             PlayerPrefs.Save();
             ArtifactsChanged?.Invoke(vessel);
@@ -113,6 +125,69 @@ namespace CosmicShore.Core
             if (!canSlot || slotted.Count >= slotCount) return false;
             slotted.Add(id);
             return true;
+        }
+
+        // ---- upgrades: track levels and crystals (Docs/Pilots/ARTIFACTS.md §4) ----
+
+        /// <summary>The player's level on <paramref name="artifactId"/>'s <paramref name="element"/> track, 0 to 10.</summary>
+        public static int TrackLevel(string artifactId, Element element) =>
+            string.IsNullOrEmpty(artifactId) ? 0
+                : Mathf.Clamp(PlayerPrefs.GetInt(TrackKey(artifactId, element), 0), 0, ArtifactTrack.MaxLevel);
+
+        /// <summary>The player's four levels on an artifact.</summary>
+        public static ArtifactLevels Levels(string artifactId) => new(
+            TrackLevel(artifactId, Element.Mass), TrackLevel(artifactId, Element.Space),
+            TrackLevel(artifactId, Element.Time), TrackLevel(artifactId, Element.Charge));
+
+        /// <summary>The player's crystals of <paramref name="element"/> (Mass, Space, Time, Charge or Omni).</summary>
+        public static int Crystals(Element element) => Mathf.Max(0, PlayerPrefs.GetInt(CrystalKey(element), 0));
+
+        /// <summary>Add (or, negative, remove) crystals. Never below zero.</summary>
+        public static void AddCrystals(Element element, int amount)
+        {
+            if (element is Element.None || amount == 0) return;
+            PlayerPrefs.SetInt(CrystalKey(element), Mathf.Max(0, Crystals(element) + amount));
+            PlayerPrefs.Save();
+            UpgradesChanged?.Invoke();
+        }
+
+        /// <summary>Why a raise was refused, or <see cref="Raised"/>.</summary>
+        public enum RaiseResult
+        {
+            Raised = 0,
+            AtTop = 1,
+            NotEnoughCrystals = 2,
+            NoSuchTrack = 3,
+        }
+
+        /// <summary>
+        /// The spend rule, pure: raising a track from <paramref name="level"/> costs its next level's price, paid
+        /// entirely in the track's own crystals, or entirely in Omni when the player picks it (§4: Omni raises any one
+        /// track, the player's pick). <paramref name="balance"/> is the balance of whichever crystal pays.
+        /// </summary>
+        public static RaiseResult Price(ArtifactTrack track, int level, int balance, out int cost)
+        {
+            cost = 0;
+            if (track == null) return RaiseResult.NoSuchTrack;
+            cost = track.CostFrom(level);
+            if (cost <= 0) return RaiseResult.AtTop;
+            return balance >= cost ? RaiseResult.Raised : RaiseResult.NotEnoughCrystals;
+        }
+
+        /// <summary>Spend crystals to raise <paramref name="artifact"/>'s <paramref name="element"/> track one level,
+        /// paying in that element's crystals, or in Omni when <paramref name="payWithOmni"/>.</summary>
+        public static RaiseResult TryRaise(ArtifactSO artifact, Element element, bool payWithOmni = false)
+        {
+            if (!artifact) return RaiseResult.NoSuchTrack;
+            var payer = payWithOmni ? Element.Omni : element;
+            int level = TrackLevel(artifact.Id, element);
+            var result = Price(artifact.Track(element), level, Crystals(payer), out int cost);
+            if (result != RaiseResult.Raised) return result;
+            PlayerPrefs.SetInt(CrystalKey(payer), Crystals(payer) - cost);
+            PlayerPrefs.SetInt(TrackKey(artifact.Id, element), level + 1);
+            PlayerPrefs.Save();
+            UpgradesChanged?.Invoke();
+            return RaiseResult.Raised;
         }
 
         static void Split(string saved, List<string> into)

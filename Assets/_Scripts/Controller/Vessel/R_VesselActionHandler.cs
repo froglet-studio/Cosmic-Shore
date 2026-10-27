@@ -107,11 +107,10 @@ namespace CosmicShore.Gameplay
             NetworkVariableWritePermission.Owner);
 
         /// <summary>
-        /// The pilot in this vessel's seat (Docs/Pilots/PILOTS_AND_ARTIFACTS.md): the pilot's index in the
-        /// <c>PilotArtifactCatalogSO</c> plus one, 0 for the base kit. Owner-write - the owning machine reads the
-        /// pilot's Hangar choice (<c>PilotLoadoutStore</c>) and every peer must run the same pilot, because a pilot
-        /// changes outcomes (a thrown sword cuts prisms on every machine). Read through
-        /// <see cref="VesselPilotLoadout"/>, never directly. Protocol version 16.
+        /// The pilot in this vessel's seat (Docs/Pilots/CALLSIGNS.md): the pilot's index in the
+        /// <c>PilotArtifactCatalogSO</c> plus one, 0 for an empty seat. Owner-write - the owning machine reads the
+        /// pilot's Hangar choice (<c>PilotLoadoutStore</c>), and every peer learns whose eyes the hull carries (its
+        /// callsign plate). Read through <see cref="VesselPilotLoadout"/>, never directly. Protocol version 16.
         /// </summary>
         public NetworkVariable<ushort> NetPilot = new(
             0,
@@ -119,10 +118,9 @@ namespace CosmicShore.Gameplay
             NetworkVariableWritePermission.Owner);
 
         /// <summary>
-        /// The artifacts slotted on this vessel: up to four slots of 16 bits, slot 0 lowest, each
-        /// <c>(statId &lt;&lt; 4) | rank</c> (rank 1..3, 0 = empty). Owner-write, for the same reason as
-        /// <see cref="NetPilot"/>: an artifact moves a number other machines simulate too. Read through
-        /// <see cref="VesselPilotLoadout"/>. Protocol version 16.
+        /// The artifact in this vessel's slot (Docs/Pilots/ARTIFACTS.md): its catalog index plus one, 0 for none.
+        /// Owner-write, for the same reason as <see cref="NetPilot"/>. Read through <see cref="VesselPilotLoadout"/>.
+        /// Protocol version 16.
         /// </summary>
         public NetworkVariable<ulong> NetArtifacts = new(
             0,

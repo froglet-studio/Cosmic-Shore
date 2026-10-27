@@ -7,7 +7,7 @@ namespace CosmicShore.Data
     /// (Docs/PILOTS_AND_ARTIFACTS.md §1). Persisted inside <see cref="SavedSquad"/>.
     ///
     /// <para>Pilot and artifact are stored by their authored id, not by asset reference, because the
-    /// record is JSON in cloud save. An empty <see cref="PilotId"/> means the vessel's default pilot;
+    /// record is JSON in cloud save. An empty <see cref="PilotId"/> means an empty seat (no sight);
     /// an empty <see cref="ArtifactId"/> means no artifact is carried. Both are resolved, and checked
     /// against the vessel again, when the squad is read, so a stale id falls back rather than
     /// failing.</para>
@@ -31,7 +31,7 @@ namespace CosmicShore.Data
             ArtifactId = artifactId;
         }
 
-        /// <summary>True when no pilot was picked, so the vessel's default pilot flies.</summary>
+        /// <summary>True when no pilot was picked: the seat is empty, so the slot has no sight (Docs/Pilots/CALLSIGNS.md).</summary>
         public bool UsesDefaultPilot() => string.IsNullOrEmpty(PilotId);
 
         /// <summary>True when an artifact is carried into the match.</summary>

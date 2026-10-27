@@ -12,10 +12,11 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The 2026-10-26 roster (Docs/Pilots/PILOTS_AND_ARTIFACTS.md) on the shipped catalog that
-    /// Tools/Build/author_pilot_assets.py writes: two pilots and two artifacts per Hangar vessel, the fleet's five, how an
-    /// artifact's rank value applies to its stat, and the Hangar's slot rule (<see cref="PilotLoadoutStore.Toggle"/>).
-    /// <see cref="PilotCatalogAssetTests"/> holds the default pilots and the catalog's own validation.
+    /// The shipped roster that Tools/Build/author_pilot_assets.py writes (Garrett, 2026-10-27): seventeen pilots, one per
+    /// callsign, on any vessel (Docs/Pilots/CALLSIGNS.md); Javelin and Aegis, payload transformations with four element
+    /// tracks each and a twist at level 5 (Docs/Pilots/ARTIFACTS.md); the track numbers both transformations read; the
+    /// spend rule (<see cref="PilotLoadoutStore.Price"/>) and the Hangar's slot rule (<see cref="PilotLoadoutStore.Toggle"/>).
+    /// <see cref="PilotCatalogAssetTests"/> holds the catalog's own validation.
     /// </summary>
     public class PilotsAndArtifactsTests
     {
@@ -35,69 +36,109 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Roster_EveryHangarVesselHasTwoPilotsAndTwoArtifacts_ThenTheFleets()
+        public void Roster_OnePilotPerCallsign_NamedForIt_OnAnyVessel()
+        {
+            var set = PilotSight.Set;
+            Assert.IsNotNull(set, "no callsign set");
+            var pilots = Catalog().Pilots.Where(p => p).ToList();
+            var visions = pilots.Select(p => p.Vision).ToList();
+            CollectionAssert.AllItemsAreUnique(visions, "two pilots carry one callsign");
+            foreach (PilotVision v in System.Enum.GetValues(typeof(PilotVision)))
+                if (v != PilotVision.None) CollectionAssert.Contains(visions, v, $"no pilot carries {v}");
+            foreach (var p in pilots)
+            {
+                Assert.AreEqual(set.For(p.Vision)?.word, p.DisplayName, $"{p.name} is not named for its callsign");
+                Assert.AreEqual(VesselClassType.Any, p.Requirement.Vessel, $"{p.name} is bound to a vessel");
+                CollectionAssert.IsEmpty(p.Requirement.Keywords ?? new List<VesselKeyword>(), $"{p.name} requires keywords");
+            }
+        }
+
+        [Test]
+        public void Roster_JavelinAndAegis_AreTransformationsBoundToNoClass_OneSlotEach()
         {
             var catalog = Catalog();
-            var vessels = catalog.Pilots.Where(p => p && !p.IsDefault).Select(p => p.Requirement.Vessel).Distinct().ToList();
-            Assert.AreEqual(20, vessels.Count, "the 20 Hangar vessels each have pilots");
-            var pilots = new List<PilotSO>();
-            var artifacts = new List<ArtifactSO>();
-            foreach (var v in vessels)
+            Assert.AreEqual(1, catalog.SlotsPerVessel, "one artifact slot per squad slot (ARTIFACTS.md §2)");
+            Assert.IsInstanceOf<JavelinTransformSO>(Artifact("artifact.javelin").Transform);
+            Assert.IsInstanceOf<AegisTransformSO>(Artifact("artifact.aegis").Transform);
+            foreach (var a in catalog.Artifacts)
             {
-                catalog.GetPilotsFor(v, null, pilots);
-                Assert.AreEqual(2, pilots.Count(p => !p.IsDefault), $"{v} has two pilots besides its default");
-                catalog.GetArtifactsFor(v, null, artifacts);
-                Assert.AreEqual(2, artifacts.Count(a => !a.IsFleet), $"{v} has its own two artifacts");
-                Assert.AreEqual(5, artifacts.Count(a => a.IsFleet), $"{v} is offered the fleet's five");
-                Assert.IsFalse(artifacts.Take(2).Any(a => a.IsFleet), $"{v}: its own artifacts are listed first");
-            }
-            Assert.AreEqual(3, catalog.SlotsPerVessel, "three artifact slots per vessel (Shombith, 2026-10-26)");
-        }
-
-        [Test]
-        public void Roster_EveryPilotSaysWhatItRewrites_AndIsNotTiedToAnElement()
-        {
-            foreach (var p in Catalog().Pilots.Where(p => p && !p.IsDefault))
-            {
-                Assert.IsNotEmpty(p.Ability, p.name);
-                Assert.IsNotEmpty(p.Description, p.name);
-                Assert.IsNotEmpty(p.AIBehaviorDescription, p.name);
-                Assert.IsTrue(p.ElementalBoost.IsNone(), $"{p.name}: pilots are not tied to the elements");
-                Assert.IsFalse(p.PortraitIsStandIn && !p.Portrait, $"{p.name}: a stand-in with no portrait");
+                Assert.AreEqual(VesselClassType.Any, a.Requirement.Vessel, $"{a.name}: no vessel class appears in an artifact");
+                Assert.IsNotEmpty(a.Description, a.name);
+                foreach (var e in new[] { Element.Mass, Element.Space, Element.Time, Element.Charge })
+                    Assert.IsNotNull(a.Track(e), $"{a.name} has no {e} track");
             }
         }
 
         [Test]
-        public void Apply_EachKindMovesTheBaseValue()
+        public void Track_ValueLerpsZeroToTen_AndEachLevelCostsMoreUntilTheTop()
         {
-            Assert.AreEqual(5f, Artifact("artifact.scarab.fourth-switch").Apply(3f, 3), 1e-4f, "Set: 3 standing switches become 5 at rank III");
-            Assert.AreEqual(4f, Artifact("artifact.sparrow.extra-bay").Apply(3f, 1), 1e-4f, "Add: one more missile at rank I");
-            Assert.AreEqual(2f, Artifact("artifact.fleet.comet-shard").Apply(1f, 3), 1e-4f, "Multiply: crystal effects x2 at rank III");
-            Assert.AreEqual(130f, Artifact("artifact.sparrow.long-barrel").Apply(100f, 3), 1e-3f, "Percent: +30% at rank III");
-            Assert.AreEqual(1.6f, Artifact("artifact.shrike.quick-dock").Apply(1.6f, 0), 1e-4f, "rank 0 (not found) leaves the base");
-            Assert.AreEqual(1.25f, Artifact("artifact.shrike.quick-dock").Apply(1.6f, 3), 1e-4f, "the docked penalty becomes x1.25 at rank III");
-            Assert.AreEqual("5 pellets", Artifact("artifact.serpent.fifth-pellet").RankLabel(1));
-            Assert.AreEqual(string.Empty, Artifact("artifact.serpent.fifth-pellet").RankLabel(0));
+            var t = new ArtifactTrack { atZero = 4f, atTen = 16f, baseCost = 2, costStep = 1 };
+            Assert.AreEqual(4f, t.Value(0), 1e-4f);
+            Assert.AreEqual(10f, t.Value(5), 1e-4f);
+            Assert.AreEqual(16f, t.Value(10), 1e-4f);
+            Assert.AreEqual(16f, t.Value(14), 1e-4f, "clamped at the top");
+            Assert.AreEqual(2, t.CostFrom(0));
+            Assert.AreEqual(11, t.CostFrom(9));
+            Assert.AreEqual(0, t.CostFrom(10), "nothing to raise at the top");
+            Assert.IsFalse(ArtifactSO.Twisted(Element.Mass, new ArtifactLevels(4, 0, 0, 0)));
+            Assert.IsTrue(ArtifactSO.Twisted(Element.Mass, new ArtifactLevels(5, 0, 0, 0)), "the twist is at level 5");
+            Assert.AreEqual(10, new ArtifactLevels(13, -2, 0, 0).Mass, "levels clamp to 0-10");
+            Assert.AreEqual(0, new ArtifactLevels(13, -2, 0, 0).Space);
         }
 
         [Test]
-        public void Tomahawk_LoopLeavesAndComesHome_WidestBesideTheHull()
+        public void Javelin_ReadsItsTracks_AndTwistsAtFive()
         {
-            Assert.IsTrue(Catalog().TryGetPilot(PilotIds.Tomahawk, out var tomahawk), "Tomahawk is in the catalog");
-            var cfg = tomahawk.Tuning as TomahawkThrowConfigSO;
-            Assert.IsNotNull(cfg, "Tomahawk's tuning is its throw config");
-            const float blade = 30f;
-            Assert.Less(cfg.LoopOffset(0f, 1, blade).magnitude, 1e-3f, "leaves from the mount");
-            Assert.Less(cfg.LoopOffset(1f, 1, blade).magnitude, 1e-3f, "comes home");
-            var right = cfg.LoopOffset(0.5f, 1, blade);
-            var left = cfg.LoopOffset(0.5f, -1, blade);
-            Assert.AreEqual(cfg.SideReachBlades * blade, right.x, 1e-3f, "widest to the right at half way");
-            Assert.AreEqual(-right.x, left.x, 1e-3f, "a left throw mirrors it");
-            Assert.Greater(cfg.LoopOffset(0.25f, 1, blade).z, 0f, "out ahead first");
-            Assert.Less(cfg.LoopOffset(0.75f, 1, blade).z, 0f, "home from behind");
-            Assert.AreEqual(1, cfg.SideOf("RR"));
-            Assert.AreEqual(-1, cfg.SideOf("LL"));
-            Assert.AreEqual(0, cfg.SideOf("RL"), "a mixed string keeps its flourish");
+            var javelin = Artifact("artifact.javelin");
+            var so = (JavelinTransformSO)javelin.Transform;
+
+            var plain = so.Shot(javelin, new ArtifactLevels(0, 0, 0, 0));
+            Assert.AreEqual(4f, plain.Width, 1e-3f);
+            Assert.AreEqual(150f, plain.Range, 1e-3f);
+            Assert.AreEqual(0f, plain.Linger, 1e-3f);
+            Assert.AreEqual(1, plain.Cracks);
+            Assert.IsFalse(plain.WideBurst || plain.Pierces || plain.LineLingers || plain.AlsoShielded, "no twist at level 0");
+            Assert.IsTrue(plain.StopsAfter(1), "stops at its first crack");
+
+            var top = so.Shot(javelin, new ArtifactLevels(10, 10, 10, 10));
+            Assert.AreEqual(16f, top.Width, 1e-3f);
+            Assert.AreEqual(500f, top.Range, 1e-3f);
+            Assert.AreEqual(6, top.Cracks);
+            Assert.IsTrue(top.WideBurst && top.Pierces && top.LineLingers && top.AlsoShielded);
+            Assert.IsFalse(top.StopsAfter(100), "a piercing Javelin never stops for what it cracks");
+        }
+
+        [Test]
+        public void Aegis_ReadsItsTracks_AndReachesHomeOnlyWhenNear()
+        {
+            var aegis = Artifact("artifact.aegis");
+            var so = (AegisTransformSO)aegis.Transform;
+            Assert.IsNotEmpty(so.RefusedLine, "a refused Aegis says why (authored)");
+
+            var plain = so.Ward(aegis, new ArtifactLevels(0, 0, 0, 0));
+            Assert.AreEqual(8f, plain.Seconds, 1e-3f);
+            Assert.AreEqual(0, plain.Reraises);
+            Assert.AreEqual(30, plain.Covers(100), "30% of the hull at level 0");
+            Assert.IsTrue(plain.Reaches(120f));
+            Assert.IsFalse(plain.Reaches(121f), "released too far from the Ark");
+
+            var top = so.Ward(aegis, new ArtifactLevels(10, 10, 10, 10));
+            Assert.AreEqual(100, top.Covers(100), "the Mass twist covers the whole hull");
+            Assert.IsTrue(top.Reaches(10000f), "the Space twist reaches home from anywhere");
+            Assert.AreEqual(40f, top.Seconds, 1e-3f);
+            Assert.AreEqual(3, top.Reraises);
+            Assert.IsTrue(top.LeavesShield && top.ReraisesAtOnce);
+        }
+
+        [Test]
+        public void Price_PaysTheNextLevel_RefusesShortBalances_AndStopsAtTheTop()
+        {
+            var t = new ArtifactTrack { baseCost = 2, costStep = 1 };
+            Assert.AreEqual(PilotLoadoutStore.RaiseResult.Raised, PilotLoadoutStore.Price(t, 3, 5, out int cost));
+            Assert.AreEqual(5, cost);
+            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NotEnoughCrystals, PilotLoadoutStore.Price(t, 3, 4, out _));
+            Assert.AreEqual(PilotLoadoutStore.RaiseResult.AtTop, PilotLoadoutStore.Price(t, ArtifactTrack.MaxLevel, 999, out _));
+            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NoSuchTrack, PilotLoadoutStore.Price(null, 0, 999, out _));
         }
 
         [Test]
@@ -110,7 +151,7 @@ namespace CosmicShore.Tests
             CollectionAssert.AreEqual(new[] { "A", "B" }, slotted);
             Assert.IsFalse(PilotLoadoutStore.Toggle(slotted, "A", 2, true), "a slotted artifact comes out");
             CollectionAssert.AreEqual(new[] { "B" }, slotted);
-            Assert.IsFalse(PilotLoadoutStore.Toggle(slotted, "D", 2, false), "an artifact not found never goes in");
+            Assert.IsFalse(PilotLoadoutStore.Toggle(slotted, "D", 2, false), "an artifact not held never goes in");
             Assert.IsFalse(PilotLoadoutStore.Toggle(slotted, "", 2, true));
             CollectionAssert.AreEqual(new[] { "B" }, slotted);
         }

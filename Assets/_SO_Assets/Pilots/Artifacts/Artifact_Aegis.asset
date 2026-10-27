@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec69ea551184461c965b9ad5c413abae, type: 3}
+  m_Name: Artifact_Aegis
+  m_EditorClassIdentifier:
+  id: artifact.aegis
+  displayName: Aegis
+  description: Release the payload beside your Ark and it super-shields the Ark's hull for a while, guarding everything aboard.
+  lore: 
+  icon: {fileID: 0}
+  requirement:
+    Vessel: -1
+    Keywords: []
+  payloadTransform: {fileID: 11400000, guid: 579973c75075516d970b1477d474e346, type: 2}
+  tracks:
+  - element: 2
+    label: hull covered
+    atZero: 0.3
+    atTen: 0.8
+    baseCost: 2
+    costStep: 1
+    twistLine: It covers the whole hull.
+  - element: 3
+    label: release reach
+    atZero: 120
+    atTen: 320
+    baseCost: 2
+    costStep: 1
+    twistLine: It reaches home from anywhere.
+  - element: 4
+    label: seconds
+    atZero: 8
+    atTen: 40
+    baseCost: 2
+    costStep: 1
+    twistLine: When it ends it leaves an ordinary shield behind.
+  - element: 1
+    label: re-raises
+    atZero: 0
+    atTen: 3
+    baseCost: 2
+    costStep: 1
+    twistLine: A cracked plate re-raises at once.
+  loadSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  releaseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

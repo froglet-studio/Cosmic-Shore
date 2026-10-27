@@ -55,5 +55,32 @@ namespace CosmicShore.Gameplay
             s_scratch.Clear();
             return reached;
         }
+
+        /// <summary>
+        /// Spend a parcel in its carrier's name: each prism bursts outward from <paramref name="release"/>'s centre as
+        /// ordinary destruction (a vessel ability is an active sink, Docs/ECOSYSTEM.md), which is also the burst's
+        /// picture. Empties <paramref name="parcel"/>.
+        ///
+        /// <para>Every prism leaves the parcel's root for <paramref name="restParent"/> first: the root is destroyed
+        /// after a spend, and a pooled prism destroyed with a hierarchy corrupts its pool. A prism the spend could not
+        /// destroy (a silenced carrier's: the silence gate deflects even its own cargo) goes straight back to the pool.</para>
+        /// </summary>
+        public static void SpendParcel(List<Prism> parcel, in PayloadRelease release, Transform restParent)
+        {
+            for (int i = 0; i < parcel.Count; i++)
+            {
+                var prism = parcel[i];
+                if (!prism) continue;
+                prism.transform.SetParent(restParent, true);
+                if (prism.destroyed) continue;
+                prism.SetCarried(false);
+                if (prism.prismProperties is { IsSuperShielded: true }) prism.DeactivateShields();
+                var outward = prism.transform.position - release.Center;
+                if (outward.sqrMagnitude < 0.01f) outward = release.Forward;
+                prism.Damage(outward.normalized * 40f, release.CarrierDomain, release.CarrierName, devastate: true);
+                if (!prism.destroyed && !EnvironmentPrismPool.TryRelease(prism)) Object.Destroy(prism.gameObject);
+            }
+            parcel.Clear();
+        }
     }
 }

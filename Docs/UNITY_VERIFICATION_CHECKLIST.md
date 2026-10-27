@@ -6522,6 +6522,9 @@ pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
 
 ### 🔴 Pilots & artifacts 2b: the 40-pilot roster, 45 artifacts and the Hangar's PILOTS / ARTIFACTS tabs (`claude/pensive-dijkstra-qxoxo0`, 2026-10-26) — NOT EDITOR-VERIFIED
 
+> **Superseded 2026-10-27** by "The callsign pilots, Javelin and Aegis" (end of this file): the roster, ranks, default
+> pilots and Tomahawk below were removed. Skip these steps.
+
 **Landed** (`Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation; built on the two sections below):
 `author_pilot_assets.py` now also writes 40 roster pilots, 45 artifacts, `ArtifactStat.cs` and the catalog from
 `Docs/Pilots/pilots_and_artifacts.json`; `PilotSO` / `ArtifactSO` / the catalog gained fields; `HangarPilotsPage`
@@ -16991,7 +16994,7 @@ your Ark, lets it go elsewhere), `Ark.cs` (`LastFallenHullPrism`), `Prism.cs` (`
 the player and editor configs.
 
 Artifacts are ids until squad slots load them (phase 3). To test, put ids aboard every Ark through
-`Resources/PayloadConfig` ▸ **Test Cargo** (for example `Javelin`, `Aegis`). Ship it empty again; the generator's
+`Resources/PayloadConfig` ▸ **Test Cargo** (for example `artifact.javelin`, `artifact.aegis`). Ship it empty again; the generator's
 `--check` fails while it is not.
 
 1. Run `ArkFallTests`, `PayloadTests`. **Pass:** green.
@@ -17006,3 +17009,36 @@ Artifacts are ids until squad slots load them (phase 3). To test, put ids aboard
 7. Carry one while carrying nothing else and get destroyed. **Pass:** it floats where you died, takeable.
 8. (Needs two squads with Arks, phase 6.) A rival destroys your Ark's last hull prism. **Pass:** every artifact
    aboard appears in the rival Ark's hold, none spill.
+
+## 🔴 2026-10-27 — The callsign pilots, Javelin and Aegis (unverified: no Unity editor in the session)
+
+**Files:** `PayloadTransformSO.cs`, `JavelinTransformSO.cs` (`JavelinFlight`), `AegisTransformSO.cs` (`AegisWard`)
+in `Assets/_Scripts/Controller/Payload/Transforms/`; `ArtifactSO.cs` (`ArtifactTrack`, `ArtifactLevels`), `PilotSO.cs`
+(`vision`), `PilotArtifactCatalogSO.cs`, `PilotLoadoutStore.cs` (seat, one slot, track levels, crystals),
+`VesselPilotLoadout.cs`, `PilotSight.cs` (the seated pilot's sight), `PayloadCarrier.cs` (loads the slotted artifact,
+releases through it), `PayloadRelease.cs` (`SpendParcel`), `Ark.cs` (`GetLiveHullPrisms`), `ArkHold.cs` (`LocalLine`),
+`ArkwayRun.cs`, `HangarPilotsPage.cs`, `HangarArtifactsPage.cs`; assets from `author_pilot_assets.py`
+(`Docs/Pilots/pilots_and_artifacts.json`) and `HangarView.prefab` from `author_menu_hangar.py`. Tests:
+`PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`. Design: `Docs/Pilots/CALLSIGNS.md`,
+`Docs/Pilots/ARTIFACTS.md` §3, §4. The reference compile has no errors in the changed files (player and editor).
+
+1. Run `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`, `PilotSightTests`,
+   `ArkFallTests`. **Pass:** green.
+2. Select `Assets/Resources/Pilots/PilotArtifactCatalog.asset`. **Pass:** 17 pilots (ENSIGN first, GALLEON last), 2
+   artifacts (Javelin, Aegis), none Missing; Slots Per Vessel 1. Each artifact shows a Payload Transform and four tracks.
+3. Menu_Main > Hangar > any vessel > PILOTS. **Pass:** a scrolling column of 17 cards, each a callsign and its line;
+   press VOLT and it reads IN THE SEAT, the header reads "PILOT · <VESSEL> / VOLT / Hold LB: ..."; press it again and
+   the seat empties. The pad scrolls the column to the focused card.
+4. ARTIFACTS on the same vessel. **Pass:** one slot, two rows (Javelin, Aegis) reading HELD and M0 S0 T0 C0; press
+   Javelin to slot it, press Aegis and it replaces Javelin; press the slotted one to empty the slot.
+5. Seat VOLT, slot Javelin, fly the Wander toy **With Ark**. Hold LB. **Pass:** VOLT's sight, no Unassigned Sight needed.
+6. Grab a payload beside your Ark (RB). **Pass:** the load sound (empty) is not an error; RB away from the Ark throws
+   it down your heading: it flies about 150 units, cracking the first rival super-shield it meets (a Grizzly-sniped
+   look), and bursts where it stops. The six parcel prisms are spent (the hull is thinner by six), and no prism is left
+   floating or orphaned under a destroyed root (Hierarchy check).
+7. Slot Aegis, grab, fly 300 units away and press RB. **Pass:** AEGIS - RELEASE IT BESIDE YOUR ARK, and the parcel stays
+   on your hull. Fly back beside the Ark and press RB. **Pass:** about a third of the hull nearest you super-shields
+   for 8 s, then lowers; plates that were already super-shielded stay so.
+8. Twists: with a script or the inspector, set PlayerPrefs `artifacts.track.artifact.javelin.3` (Space) to 5 and
+   repeat step 6. **Pass:** the Javelin no longer stops at its first crack (it pierces). Delete the key after.
+

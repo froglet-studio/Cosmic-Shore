@@ -22,6 +22,22 @@ carries, and stows with RB beside their own Ark. A pickup is a scene root, so un
 `ArtifactPickup.StrikeAll` is there for a mode whose scene outlives it. Until squad slots load artifacts (§8.2), a
 tester puts ids aboard with `PayloadConfig`'s Test Cargo (ships empty). Hand tests: "The Ark's fall" in the checklist.
 
+**Javelin and Aegis (§9 step 2), built 2026-10-27, unverified in the editor.** `ArtifactSO` is now a payload
+transformation (`PayloadTransformSO`: `JavelinTransformSO`, `AegisTransformSO`, `Assets/_Scripts/Controller/Payload/Transforms/`)
+with four element tracks (`ArtifactTrack`: a value at 0 and at 10, a cost, a twist line at 5) and two empty sounds. No
+artifact carries a vessel class (the catalog's `Validate` and `author_pilot_assets.py` both refuse one). A vessel's slotted
+artifact (`PilotLoadoutStore`, one slot, read in a match through `VesselPilotLoadout`) loads every payload that player
+grabs; RB then releases it through the transformation instead of the plain burst. A refused release (an Aegis away
+from home) keeps the parcel on the hull and shows its authored line. The track levels and crystal balances live on the
+device for now (`PilotLoadoutStore`, the stand-in for the profile, §10). Numbers: `Docs/Pilots/pilots_and_artifacts.json`.
+Hand tests: "Javelin and Aegis" in the checklist.
+
+**Shombith's branch merged (Garrett, 2026-10-27: "it should merge and build but throw anything out that conflicts
+with what we have decided here").** Kept: the saved squads, `SquadSlot`, the cloud repository, `VesselKeyword` /
+`VesselRequirement`, the Hangar PILOTS and ARTIFACTS tabs, `NetPilot` / `NetArtifacts`. Thrown out: the 45 numeric
+artifacts and their ranks and stats, the 40 named pilots and the ability each rewrote (the Tomahawk throw), the
+default "base kit" pilots and `ElementalBoost`. `Docs/Pilots/PILOTS_AND_ARTIFACTS.md` is superseded.
+
 **Decided since (Garrett, 2026-10-27):** one Ark per squad of three vessels; an Ark felled by fauna spills its
 artifacts for anyone, and uncollected ones are lost when the instance expires; the RB abilities moved to Y, so RB is
 free for the payload.
@@ -34,9 +50,8 @@ free for the payload.
 
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §3 (2026-10-12): an artifact as a quantitative "fifth knob" on the vessel.
-- The 45 quantitative artifacts on Shombith's in-flight branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26). **That
-  branch is not touched.** Its `ArtifactSO`, catalog and the saved squads' artifact id are what this is built on.
-  What becomes of its roster is for Garrett and Shombith (§10).
+- The 45 quantitative artifacts on Shombith's branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26). Its `ArtifactSO`,
+  catalog and the saved squads' artifact id are what this is built on; the roster itself is gone (above).
 
 **Garrett's brief (2026-10-27):**
 
@@ -254,7 +269,6 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 | Decision | Who decides |
 |---|---|
 | Singularity moving super-shielded mass, an exception to *Prism movement* | Garrett, through the fundamentals-curation process |
-| What becomes of the 45 quantitative artifacts and the Hangar ARTIFACTS tab on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
-| Per-element crystal balances and artifacts on the player profile | Shombith (backend) |
+| Per-element crystal balances and artifacts on the player profile (built on the device until then: `PilotLoadoutStore`) | Shombith (backend) |
 | Thieves hoarding artifacts | the ecology owner (ecology is LOCKED: `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`) |
 | An artifact sight among the pilot callsigns | Garrett, through the fundamentals-curation process |

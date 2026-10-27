@@ -58,6 +58,7 @@ namespace CosmicShore.Gameplay
             s_config = null;
             s_configResolved = false;
             LocalNotice = null;
+            LocalLine = null;
         }
 
         /// <summary>The live payload tuning (the Resources asset, or its defaults when missing).</summary>
@@ -236,6 +237,11 @@ namespace CosmicShore.Gameplay
         public static event Action<PayloadNotice> LocalNotice;
 
         internal static void RaiseLocalNotice(PayloadNotice notice) => LocalNotice?.Invoke(notice);
+
+        /// <summary>Raised on this machine with an authored line for the local pilot (a refused artifact's).</summary>
+        public static event Action<string> LocalLine;
+
+        internal static void RaiseLocalLine(string line) => LocalLine?.Invoke(line);
     }
 
     /// <summary>What just happened to the local pilot's payload (a HUD reads the authored line for it).</summary>
@@ -248,5 +254,6 @@ namespace CosmicShore.Gameplay
         ArtifactTaken = 4,
         ArtifactStowed = 5,
         ArtifactDropped = 6,
+        Refused = 7,
     }
 }

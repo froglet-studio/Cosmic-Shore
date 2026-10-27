@@ -15,19 +15,22 @@ namespace CosmicShore.ScriptableObjects
     /// state that falls back to the default pilot or to no artifact, not a fault.</para>
     ///
     /// <para>Small, menu-time lists: linear scans are deliberate. Do not call these per frame.</para>
+    ///
+    /// <para><b>2026-10-27 (Garrett):</b> no default "base kit" pilot (a pilot is a pair of eyes, not part of the kit:
+    /// an empty seat has no sight), and one artifact slot per vessel (a squad of three risks up to three artifacts,
+    /// Docs/Pilots/ARTIFACTS.md §5).</para>
     /// </summary>
     [CreateAssetMenu(fileName = "PilotArtifactCatalog", menuName = "ScriptableObjects/Pilots/Pilot and Artifact Catalog")]
     public class PilotArtifactCatalogSO : ScriptableObject
     {
-        [Tooltip("Every pilot, including each vessel's default pilot. Pickers list them in this order, " +
-                 "default first.")]
+        [Tooltip("Every pilot. Pickers list them in this order.")]
         [SerializeField] List<PilotSO> pilots = new();
 
         [Tooltip("Every artifact. Pickers list them in this order.")]
         [SerializeField] List<ArtifactSO> artifacts = new();
 
-        [Tooltip("Artifact slots per vessel (Shombith, 2026-10-26: three). The Hangar draws up to four.")]
-        [SerializeField, Min(0)] int slotsPerVessel = 3;
+        [Tooltip("Artifact slots per vessel: one, the squad slot's artifact card (Garrett, 2026-10-27). The Hangar draws up to four.")]
+        [SerializeField, Min(0)] int slotsPerVessel = 1;
 
         public IReadOnlyList<PilotSO> Pilots => pilots;
         public IReadOnlyList<ArtifactSO> Artifacts => artifacts;
@@ -76,39 +79,17 @@ namespace CosmicShore.ScriptableObjects
             return false;
         }
 
-        /// <summary>The base-kit pilot of <paramref name="vesselClass"/>. False when none is authored yet.</summary>
-        public bool TryGetDefaultPilot(VesselClassType vesselClass, out PilotSO pilot)
-        {
-            pilot = null;
-            if (pilots == null) return false;
-
-            foreach (var candidate in pilots)
-            {
-                if (!candidate || !candidate.IsDefaultFor(vesselClass)) continue;
-                pilot = candidate;
-                return true;
-            }
-            return false;
-        }
-
         /// <summary>
         /// Fills <paramref name="into"/> (cleared first) with every pilot a <paramref name="vesselClass"/>
-        /// hull declaring <paramref name="keywords"/> can fly: its default pilot first, then the rest
-        /// in authored order. Empty for a hull that is not concrete (Random).
+        /// hull declaring <paramref name="keywords"/> can fly, in authored order. Empty for a hull that is not
+        /// concrete (Random).
         /// </summary>
         public void GetPilotsFor(VesselClassType vesselClass, IReadOnlyList<VesselKeyword> keywords, List<PilotSO> into)
         {
             into.Clear();
             if (pilots == null) return;
-
-            if (TryGetDefaultPilot(vesselClass, out var defaultPilot) && IsOffered(defaultPilot, vesselClass, keywords))
-                into.Add(defaultPilot);
-
             foreach (var pilot in pilots)
-            {
-                if (!pilot || pilot == defaultPilot) continue;
-                if (IsOffered(pilot, vesselClass, keywords)) into.Add(pilot);
-            }
+                if (pilot && IsOffered(pilot, vesselClass, keywords)) into.Add(pilot);
         }
 
         /// <inheritdoc cref="GetPilotsFor(VesselClassType, IReadOnlyList{VesselKeyword}, List{PilotSO})"/>
@@ -142,19 +123,12 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// The pilot <paramref name="slot"/> flies: its chosen pilot when that pilot still exists and
-        /// can still fly the slot's vessel, otherwise the vessel's default pilot. Null only when the
-        /// vessel is not concrete or has no default pilot authored.
+        /// The pilot <paramref name="slot"/> flies: its chosen pilot when that pilot still exists and can still fly
+        /// the slot's vessel, otherwise none (an empty seat: no sight).
         /// </summary>
-        public PilotSO ResolvePilot(SquadSlot slot, IReadOnlyList<VesselKeyword> keywords)
-        {
-            if (!slot.UsesDefaultPilot()
-                && TryGetPilot(slot.PilotId, out var chosen)
-                && IsOffered(chosen, slot.Vessel, keywords))
-                return chosen;
-
-            return TryGetDefaultPilot(slot.Vessel, out var defaultPilot) ? defaultPilot : null;
-        }
+        public PilotSO ResolvePilot(SquadSlot slot, IReadOnlyList<VesselKeyword> keywords) =>
+            !slot.UsesDefaultPilot() && TryGetPilot(slot.PilotId, out var chosen) && IsOffered(chosen, slot.Vessel, keywords)
+                ? chosen : null;
 
         /// <summary>
         /// The artifact <paramref name="slot"/> carries: its chosen artifact when that artifact still
@@ -167,16 +141,15 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// Appends one line to <paramref name="problems"/> per authoring error: empty or missing
-        /// entries, empty or duplicate ids, requirements naming Random or None, default pilots that
-        /// are unbound, carry keywords or share a class, boosts into no element, and display names the
-        /// UI font cannot draw. An empty list means the catalog is consistent.
+        /// Appends one line to <paramref name="problems"/> per authoring error: empty or missing entries, empty or
+        /// duplicate ids, requirements naming Random or None, display names the UI font cannot draw, a pilot with no
+        /// sight, an artifact bound to a vessel class (none may be, ARTIFACTS.md §3), an artifact with no payload
+        /// transformation, and track sets that are not one each of Mass, Space, Time and Charge. An empty list means
+        /// the catalog is consistent.
         /// </summary>
         public void Validate(List<string> problems)
         {
             var pilotIds = new HashSet<string>();
-            var defaultClasses = new HashSet<VesselClassType>();
-
             for (int i = 0; i < (pilots?.Count ?? 0); i++)
             {
                 var pilot = pilots[i];
@@ -187,26 +160,10 @@ namespace CosmicShore.ScriptableObjects
                 CheckId(pilot.Id, where, pilotIds, problems);
                 CheckDisplayName(pilot.DisplayName, where, problems);
                 CheckRequirement(pilot.Requirement, where, problems);
-
-                if (pilot.IsDefault)
-                {
-                    var requirement = pilot.Requirement;
-                    if (requirement == null || !requirement.IsBoundToClass())
-                        problems.Add($"{where} is a default pilot but is not bound to a vessel class.");
-                    else if (!defaultClasses.Add(requirement.Vessel))
-                        problems.Add($"{where} is a second default pilot for {requirement.Vessel}.");
-
-                    if (requirement != null && HasRealKeyword(requirement))
-                        problems.Add($"{where} is a default pilot but requires keywords; a vessel's own base kit needs none.");
-                }
-
-                var boost = pilot.ElementalBoost;
-                if (boost.Petals > 0 && boost.IsNone())
-                    problems.Add($"{where} boosts {boost.Petals} petals into {boost.Element}, which is not Charge, Mass, Space or Time.");
+                if (pilot.Vision == PilotVision.None) problems.Add($"{where} carries no sight; every pilot is a pair of eyes.");
             }
 
             var artifactIds = new HashSet<string>();
-            var stats = new HashSet<ArtifactStat>();
             for (int i = 0; i < (artifacts?.Count ?? 0); i++)
             {
                 var artifact = artifacts[i];
@@ -217,11 +174,21 @@ namespace CosmicShore.ScriptableObjects
                 CheckId(artifact.Id, where, artifactIds, problems);
                 CheckDisplayName(artifact.DisplayName, where, problems);
                 CheckRequirement(artifact.Requirement, where, problems);
+                if (artifact.Requirement != null && artifact.Requirement.IsBoundToClass())
+                    problems.Add($"{where} is bound to {artifact.Requirement.Vessel}; no vessel class appears in an artifact.");
+                if (!artifact.Transform) problems.Add($"{where} has no payload transformation.");
 
-                if (artifact.Stat == ArtifactStat.None) problems.Add($"{where} names no stat to change.");
-                else if (!stats.Add(artifact.Stat)) problems.Add($"{where} changes {artifact.Stat}, which another artifact already changes.");
-                for (int rank = 1; rank <= ArtifactSO.RankCount; rank++)
-                    CheckDisplayName(artifact.RankLabel(rank), $"{where} rank {rank} label", problems);
+                var seen = new HashSet<Element>();
+                foreach (var track in artifact.Tracks)
+                {
+                    if (track == null) { problems.Add($"{where} has an empty track."); continue; }
+                    if (track.element is not (Element.Mass or Element.Space or Element.Time or Element.Charge))
+                        problems.Add($"{where} has a {track.element} track; tracks are Mass, Space, Time and Charge.");
+                    else if (!seen.Add(track.element)) problems.Add($"{where} has two {track.element} tracks.");
+                    CheckDisplayName(track.label, $"{where} {track.element} track label", problems);
+                    CheckDisplayName(track.twistLine, $"{where} {track.element} twist", problems);
+                }
+                if (seen.Count != 4) problems.Add($"{where} has {seen.Count} element tracks, not 4.");
             }
         }
 
@@ -260,14 +227,6 @@ namespace CosmicShore.ScriptableObjects
                 problems.Add($"{where} lists the keyword None; remove it.");
                 return;
             }
-        }
-
-        static bool HasRealKeyword(VesselRequirement requirement)
-        {
-            if (requirement.Keywords == null) return false;
-            foreach (var keyword in requirement.Keywords)
-                if (keyword != VesselKeyword.None) return true;
-            return false;
         }
     }
 }

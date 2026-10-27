@@ -16,13 +16,21 @@ measured yet. Until §6 step 2 lands on Shombith's `PilotSO`, a tester picks the
 Sight**. The hull plate (the one shared bit) waits on where each hull's plate sits (/vessel-model). Hand tests:
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot vision on LB".
 
+**The pilots (§6 step 2), built 2026-10-27 (Garrett: "17 callsign pilots, any vessel").** Shombith's branch is merged;
+`PilotSO` carries one `vision`, and `author_pilot_assets.py` writes seventeen pilots, one per callsign, each named for
+its callsign (`Pilot_<Word>`, id `pilot.callsign.<word>`) and seated by any vessel. The pilot in a vessel's seat
+(`PilotLoadoutStore`, read in a match through `VesselPilotLoadout`) is that vessel's sight; an empty seat has none, and
+the set's Unassigned Sight is now only a tester's override for an empty seat. The Hangar PILOTS tab lists all seventeen
+in a scrolled column. Hand tests: "The callsign pilots" in the checklist.
+
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §2 (2026-10-12), where a pilot swaps part of a vessel's kit. That section now points
   here.
-- The ability-rewrite pilots on Shombith's in-flight branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26: 40 pilots,
-  each rewriting one vessel ability, with Tomahawk built). **That branch is not touched.** What becomes of its roster,
-  its portraits, its Hangar tabs and the Tomahawk throw is for Garrett and Shombith to settle together (§7). Its
-  types (`PilotSO`, the catalog, the saved squads, `VesselPilotLoadout`) are what this is built on.
+- The ability-rewrite pilots on Shombith's branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26: 40 pilots, each
+  rewriting one vessel ability, with Tomahawk built). Merged 2026-10-27 and then thrown out where it conflicted
+  (Garrett: "throw anything out that conflicts with what we have decided here"): the 40 pilots, the default pilots and
+  the Tomahawk throw are gone; its types (`PilotSO`, the catalog, the saved squads, `VesselPilotLoadout`) and Hangar
+  tabs carry the callsign pilots. The 40 portrait PNGs stay in `Assets/_Graphics/Pilots/`, unreferenced.
 
 **Read first:** `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` (the fundamentals list) and the Dolphin's Echo Sight
 (`EchoSightActionExecutor`, `EchoSightVesselHighlighter`): the game's existing "touches nothing but photons" ability,
@@ -207,8 +215,7 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 
 | Decision | Who decides |
 |---|---|
-| What becomes of the 40 ability-rewrite pilots, their portraits, the Hangar PILOTS / ARTIFACTS tabs and the Tomahawk throw on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
-| Which pilot carries which of the seventeen sights | the pilot roster's author |
+| What becomes of the 40 unreferenced pilot portraits | Garrett and Shombith, together |
 | Whether artifacts get a sight once they are a fundamental | Garrett, through the fundamentals-curation process |
 | BANDIT on the Dolphin: its Charge level-5 upgrade already marks vessels inside the Echo Sight cone. BANDIT shows them all, everywhere, which may make that upgrade redundant on that hull | whoever owns the Dolphin's element map |
 | Where the plate sits on each hull | `/vessel-model` |

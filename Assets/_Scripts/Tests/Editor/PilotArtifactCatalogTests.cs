@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
 using UnityEditor;
@@ -9,11 +10,11 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Pilot and artifact compatibility (Docs/PILOTS_AND_ARTIFACTS.md §4): a vessel declares the
-    /// keywords it satisfies, a pilot or artifact declares what it requires, and a squad slot is only
-    /// offered what matches. The pickers and the match-start resolve read the same catalog, so these
-    /// tests pin both halves: what is offered, and what a saved slot resolves to, including the stale
-    /// and incompatible ids a saved squad can carry.
+    /// Pilot and artifact compatibility (Shombith's Docs/PILOTS_AND_ARTIFACTS.md §4 requirement rule, kept): a vessel
+    /// declares the keywords it satisfies, a pilot or artifact declares what it requires. Since 2026-10-27 (Garrett,
+    /// Docs/Pilots/CALLSIGNS.md and ARTIFACTS.md) every pilot is one callsign on any vessel and no artifact names a
+    /// class, so the catalog tests pin that shape: what is offered, what a saved slot resolves to (including the retired
+    /// ids an old save carries), and every authoring error Validate names.
     /// </summary>
     [TestFixture]
     public class PilotArtifactCatalogTests
@@ -86,19 +87,9 @@ namespace CosmicShore.Tests
             Assert.IsTrue(nullList.IsMetBy(VesselClassType.Manta, MantaKeywords));
         }
 
-        [Test]
-        public void ElementalBoost_IsNoneUnlessItAddsPetalsToOneOfTheFourElements()
-        {
-            Assert.IsTrue(default(ElementalBoost).IsNone());
-            Assert.IsTrue(new ElementalBoost(Element.Mass, 0).IsNone());
-            Assert.IsTrue(new ElementalBoost(Element.Omni, 2).IsNone());
-            Assert.IsTrue(new ElementalBoost(Element.None, 2).IsNone());
-            Assert.IsFalse(new ElementalBoost(Element.Time, 1).IsNone());
-        }
-
         // ---------------------------------------------------------------- the catalog
 
-        PilotSO Pilot(string id, VesselClassType vessel, bool isDefault, params VesselKeyword[] requires)
+        PilotSO Pilot(string id, VesselClassType vessel, PilotVision vision, params VesselKeyword[] requires)
         {
             var pilot = ScriptableObject.CreateInstance<PilotSO>();
             pilot.name = id;
@@ -107,15 +98,17 @@ namespace CosmicShore.Tests
             var so = new SerializedObject(pilot);
             so.FindProperty("id").stringValue = id;
             so.FindProperty("displayName").stringValue = id;
-            so.FindProperty("isDefault").boolValue = isDefault;
+            so.FindProperty("vision").intValue = (int)vision;
             WriteRequirement(so.FindProperty("requirement"), vessel, requires);
             so.ApplyModifiedPropertiesWithoutUndo();
             return pilot;
         }
 
-        int _nextStat;
+        static readonly Element[] TrackElements = { Element.Mass, Element.Space, Element.Time, Element.Charge };
 
-        ArtifactSO Artifact(string id, VesselClassType vessel, params VesselKeyword[] requires)
+        /// <summary>An artifact as ARTIFACTS.md §3 shapes one: a payload transformation and one track per element.</summary>
+        ArtifactSO Artifact(string id, VesselClassType vessel = VesselClassType.Any, bool withTransform = true,
+                            params Element[] tracks)
         {
             var artifact = ScriptableObject.CreateInstance<ArtifactSO>();
             artifact.name = id;
@@ -124,12 +117,24 @@ namespace CosmicShore.Tests
             var so = new SerializedObject(artifact);
             so.FindProperty("id").stringValue = id;
             so.FindProperty("displayName").stringValue = id;
-            WriteRequirement(so.FindProperty("requirement"), vessel, requires);
-            // 2026-10-26: an artifact names the stat it moves and reads as something at every rank.
-            so.FindProperty("stat").intValue = ++_nextStat;
-            var labels = so.FindProperty("rankLabels");
-            labels.arraySize = ArtifactSO.RankCount;
-            for (int i = 0; i < ArtifactSO.RankCount; i++) labels.GetArrayElementAtIndex(i).stringValue = "+" + (i + 1);
+            WriteRequirement(so.FindProperty("requirement"), vessel, new VesselKeyword[0]);
+            if (withTransform)
+            {
+                var transform = ScriptableObject.CreateInstance<JavelinTransformSO>();
+                _created.Add(transform);
+                so.FindProperty("payloadTransform").objectReferenceValue = transform;
+            }
+            if (tracks.Length == 0) tracks = TrackElements;
+            var list = so.FindProperty("tracks");
+            list.arraySize = tracks.Length;
+            for (int i = 0; i < tracks.Length; i++)
+            {
+                var t = list.GetArrayElementAtIndex(i);
+                t.FindPropertyRelative("element").intValue = (int)tracks[i];
+                t.FindPropertyRelative("label").stringValue = "reach";
+                t.FindPropertyRelative("twistLine").stringValue = "It reaches further.";
+                t.FindPropertyRelative("baseCost").intValue = 1;
+            }
             so.ApplyModifiedPropertiesWithoutUndo();
             return artifact;
         }
@@ -162,108 +167,75 @@ namespace CosmicShore.Tests
             return catalog;
         }
 
-        PilotArtifactCatalogSO MilestoneSample(out PilotSO mantaDefault, out PilotSO shieldedWake, out PilotSO broadside,
-                                               out PilotSO sparrowDefault, out ArtifactSO afterburner)
+        // CALLSIGNS.md (Garrett, 2026-10-27): one pilot per callsign, and any vessel seats any of them.
+        PilotArtifactCatalogSO CallsignSample(out PilotSO ensign, out PilotSO volt, out ArtifactSO javelin)
         {
-            // Listed out of order on purpose: the default must still come first in the picker.
-            shieldedWake = Pilot("pilot.manta.shielded-wake", VesselClassType.Any, false, VesselKeyword.BasePrismProduction);
-            mantaDefault = Pilot("pilot.manta.default", VesselClassType.Manta, true);
-            broadside = Pilot("pilot.sparrow.broadside", VesselClassType.Sparrow, false);
-            sparrowDefault = Pilot("pilot.sparrow.default", VesselClassType.Sparrow, true);
-            afterburner = Artifact("artifact.sparrow.afterburner-acceleration", VesselClassType.Sparrow, VesselKeyword.Boost);
-            var anyBoost = Artifact("artifact.any.boost-cooldown", VesselClassType.Any, VesselKeyword.Boost);
-
-            return Catalog(new[] { shieldedWake, mantaDefault, broadside, sparrowDefault },
-                           new[] { afterburner, anyBoost });
+            ensign = Pilot("pilot.callsign.ensign", VesselClassType.Any, PilotVision.Ensign);
+            volt = Pilot("pilot.callsign.volt", VesselClassType.Any, PilotVision.Volt);
+            javelin = Artifact("artifact.javelin");
+            return Catalog(new[] { ensign, volt }, new[] { javelin, Artifact("artifact.aegis") });
         }
 
         [Test]
-        public void PilotsFor_ListsTheDefaultFirst_ThenEveryCompatiblePilotInAuthoredOrder()
+        public void PilotsFor_EveryHullIsOfferedEveryPilot_InAuthoredOrder()
         {
-            var catalog = MilestoneSample(out var mantaDefault, out var shieldedWake, out _, out _, out _);
+            var catalog = CallsignSample(out var ensign, out var volt, out _);
             var offered = new List<PilotSO> { null };   // stale contents must be cleared
 
             catalog.GetPilotsFor(VesselClassType.Manta, MantaKeywords, offered);
-
-            CollectionAssert.AreEqual(new[] { mantaDefault, shieldedWake }, offered);
-        }
-
-        [Test]
-        public void PilotsFor_OffersAGeneralisedPilotOnAnotherHull_ButNotAnotherHullsOwnPilot()
-        {
-            var catalog = MilestoneSample(out _, out var shieldedWake, out var broadside, out var sparrowDefault, out _);
-            var offered = new List<PilotSO>();
-
-            catalog.GetPilotsFor(VesselClassType.Sparrow, SparrowKeywords, offered);
-            CollectionAssert.AreEqual(new[] { sparrowDefault, shieldedWake, broadside }, offered);
+            CollectionAssert.AreEqual(new[] { ensign, volt }, offered);
 
             catalog.GetPilotsFor(VesselClassType.Thresher, new VesselKeyword[0], offered);
-            CollectionAssert.IsEmpty(offered, "no default authored and no keywords met");
+            CollectionAssert.AreEqual(new[] { ensign, volt }, offered, "a hull declaring no keywords still seats every pilot");
 
             catalog.GetPilotsFor(VesselClassType.Random, SparrowKeywords, offered);
             CollectionAssert.IsEmpty(offered, "a slot left on Random is offered nothing");
         }
 
         [Test]
-        public void ArtifactsFor_FiltersByClassAndKeywords()
+        public void ArtifactsFor_EveryHullIsOfferedEveryArtifact()
         {
-            var catalog = MilestoneSample(out _, out _, out _, out _, out var afterburner);
+            var catalog = CallsignSample(out _, out _, out var javelin);
             var offered = new List<ArtifactSO>();
 
             catalog.GetArtifactsFor(VesselClassType.Sparrow, SparrowKeywords, offered);
             Assert.AreEqual(2, offered.Count);
-            Assert.AreSame(afterburner, offered[0]);
+            Assert.AreSame(javelin, offered[0]);
 
-            catalog.GetArtifactsFor(VesselClassType.Manta, MantaKeywords, offered);
-            CollectionAssert.IsEmpty(offered, "the Manta has no Boost keyword");
+            catalog.GetArtifactsFor(VesselClassType.Butterfly, ButterflyKeywords, offered);
+            Assert.AreEqual(2, offered.Count, "no vessel class appears in an artifact");
         }
 
         [Test]
-        public void ResolvePilot_KeepsAValidPick_AndFallsBackToTheDefaultOtherwise()
+        public void ResolvePilot_KeepsAValidPick_AndOtherwiseLeavesTheSeatEmpty()
         {
-            var catalog = MilestoneSample(out var mantaDefault, out var shieldedWake, out _, out _, out _);
+            var catalog = CallsignSample(out _, out var volt, out _);
 
-            var picked = new SquadSlot(VesselClassType.Manta, Element.Mass, shieldedWake.Id);
-            Assert.AreSame(shieldedWake, catalog.ResolvePilot(picked, MantaKeywords));
-
-            var none = new SquadSlot(VesselClassType.Manta, Element.Mass);
-            Assert.AreSame(mantaDefault, catalog.ResolvePilot(none, MantaKeywords));
-
-            var stale = new SquadSlot(VesselClassType.Manta, Element.Mass, "pilot.retired");
-            Assert.AreSame(mantaDefault, catalog.ResolvePilot(stale, MantaKeywords), "an id that no longer exists falls back");
-
-            var otherHulls = new SquadSlot(VesselClassType.Manta, Element.Mass, "pilot.sparrow.broadside");
-            Assert.AreSame(mantaDefault, catalog.ResolvePilot(otherHulls, MantaKeywords), "a pilot this hull cannot fly falls back");
-
-            var random = new SquadSlot(VesselClassType.Random, Element.Mass, shieldedWake.Id);
-            Assert.IsNull(catalog.ResolvePilot(random, MantaKeywords), "no concrete hull, no pilot");
+            Assert.AreSame(volt, catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass, volt.Id), MantaKeywords));
+            Assert.IsNull(catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass), MantaKeywords),
+                "an empty seat flies no pilot (no sight)");
+            Assert.IsNull(catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass, "pilot.sparrow.shrapnel"), MantaKeywords),
+                "a retired named pilot's id resolves to an empty seat");
+            Assert.IsNull(catalog.ResolvePilot(new SquadSlot(VesselClassType.Random, Element.Mass, volt.Id), MantaKeywords),
+                "no concrete hull, no pilot");
         }
 
         [Test]
         public void ResolveArtifact_KeepsAValidPick_AndDropsAnythingElse()
         {
-            var catalog = MilestoneSample(out _, out _, out _, out _, out var afterburner);
+            var catalog = CallsignSample(out _, out _, out var javelin);
 
-            var carried = new SquadSlot(VesselClassType.Sparrow, Element.Time, null, afterburner.Id);
-            Assert.AreSame(afterburner, catalog.ResolveArtifact(carried, SparrowKeywords));
-
-            var wrongHull = new SquadSlot(VesselClassType.Manta, Element.Time, null, afterburner.Id);
-            Assert.IsNull(catalog.ResolveArtifact(wrongHull, MantaKeywords));
-
-            var stale = new SquadSlot(VesselClassType.Sparrow, Element.Time, null, "artifact.lost-to-a-pirate");
-            Assert.IsNull(catalog.ResolveArtifact(stale, SparrowKeywords));
-
+            Assert.AreSame(javelin, catalog.ResolveArtifact(new SquadSlot(VesselClassType.Manta, Element.Time, null, javelin.Id), MantaKeywords));
+            Assert.IsNull(catalog.ResolveArtifact(new SquadSlot(VesselClassType.Sparrow, Element.Time, null, "artifact.sparrow.extra-bay"), SparrowKeywords),
+                "a retired numeric artifact's id is dropped");
             Assert.IsNull(catalog.ResolveArtifact(new SquadSlot(VesselClassType.Sparrow, Element.Time), SparrowKeywords));
         }
 
         [Test]
         public void Validate_PassesAConsistentCatalog()
         {
-            var catalog = MilestoneSample(out _, out _, out _, out _, out _);
             var problems = new List<string>();
-
-            catalog.Validate(problems);
-
+            CallsignSample(out _, out _, out _).Validate(problems);
             CollectionAssert.IsEmpty(problems, string.Join("\n", problems));
         }
 
@@ -273,66 +245,49 @@ namespace CosmicShore.Tests
             var catalog = Catalog(
                 new[]
                 {
-                    Pilot("pilot.manta.default", VesselClassType.Manta, true),
-                    Pilot("pilot.manta.default-copy", VesselClassType.Manta, true),          // second default
-                    Pilot("pilot.manta.default", VesselClassType.Manta, false),              // reused id
-                    Pilot("pilot.loose-default", VesselClassType.Any, true),                 // unbound default
-                    Pilot("pilot.random", VesselClassType.Random, false),                    // bound to Random
-                    Pilot("pilot.dolphin.default", VesselClassType.Dolphin, true, VesselKeyword.Boost), // default with keywords
+                    Pilot("pilot.callsign.ensign", VesselClassType.Any, PilotVision.Ensign),
+                    Pilot("pilot.callsign.ensign", VesselClassType.Any, PilotVision.Volt),       // reused id
+                    Pilot("pilot.blind", VesselClassType.Any, PilotVision.None),                 // no sight
+                    Pilot("pilot.random", VesselClassType.Random, PilotVision.Bandit),           // bound to Random
                     null,
                 },
-                new[] { Artifact("", VesselClassType.Any, VesselKeyword.None) });           // no id, keyword None
+                new[]
+                {
+                    Artifact("artifact.rhino-only", VesselClassType.Rhino),                      // bound to a class
+                    Artifact("artifact.bare", withTransform: false),                             // no transformation
+                    Artifact("artifact.short", tracks: new[] { Element.Mass, Element.Space, Element.Time }),
+                    Artifact("artifact.twin", tracks: new[] { Element.Mass, Element.Mass, Element.Time, Element.Charge }),
+                    Artifact("artifact.omni", tracks: new[] { Element.Omni, Element.Space, Element.Time, Element.Charge }),
+                });
             var problems = new List<string>();
 
             catalog.Validate(problems);
             string all = string.Join("\n", problems);
 
-            StringAssert.Contains("second default pilot for Manta", all);
-            StringAssert.Contains("reuses the id 'pilot.manta.default'", all);
-            StringAssert.Contains("not bound to a vessel class", all);
+            StringAssert.Contains("reuses the id 'pilot.callsign.ensign'", all);
+            StringAssert.Contains("carries no sight", all);
             StringAssert.Contains("bound to Random", all);
-            StringAssert.Contains("requires keywords", all);
-            StringAssert.Contains("pilots[6] is empty", all);
-            StringAssert.Contains("has no id", all);
-            StringAssert.Contains("lists the keyword None", all);
+            StringAssert.Contains("pilots[4] is empty", all);
+            StringAssert.Contains("is bound to Rhino; no vessel class appears in an artifact", all);
+            StringAssert.Contains("has no payload transformation", all);
+            StringAssert.Contains("has 3 element tracks, not 4", all);
+            StringAssert.Contains("has two Mass tracks", all);
+            StringAssert.Contains("has a Omni track", all);
         }
 
         [Test]
-        public void Validate_NamesArtifactValueErrors()
+        public void Validate_RejectsATwistTheUiFontCannotDraw()
         {
-            var noStat = Artifact("artifact.sparrow.no-stat", VesselClassType.Sparrow);
-            var first = Artifact("artifact.sparrow.first", VesselClassType.Sparrow);
-            var twin = Artifact("artifact.sparrow.twin", VesselClassType.Sparrow);
-            var so = new SerializedObject(noStat);
-            so.FindProperty("stat").intValue = (int)ArtifactStat.None;
-            so.FindProperty("rankLabels").GetArrayElementAtIndex(1).stringValue = "";
-            so.ApplyModifiedPropertiesWithoutUndo();
-            so = new SerializedObject(twin);
-            so.FindProperty("stat").intValue = (int)first.Stat;
+            var artifact = Artifact("artifact.javelin");
+            var so = new SerializedObject(artifact);
+            so.FindProperty("tracks").GetArrayElementAtIndex(2).FindPropertyRelative("twistLine").stringValue = "Lingers → longer";
             so.ApplyModifiedPropertiesWithoutUndo();
 
             var problems = new List<string>();
-            Catalog(new PilotSO[0], new[] { noStat, first, twin }).Validate(problems);
-            string all = string.Join("\n", problems);
-
-            StringAssert.Contains("names no stat", all);
-            StringAssert.Contains("which another artifact already changes", all);
-            StringAssert.Contains("rank 2 label has no display name", all);
-        }
-
-        [Test]
-        public void Validate_RejectsADisplayNameTheUiFontCannotDraw()
-        {
-            var pilot = Pilot("pilot.manta.default", VesselClassType.Manta, true);
-            var so = new SerializedObject(pilot);
-            so.FindProperty("displayName").stringValue = "Ace ★";
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            var problems = new List<string>();
-            Catalog(new[] { pilot }, new ArtifactSO[0]).Validate(problems);
+            Catalog(new PilotSO[0], new[] { artifact }).Validate(problems);
 
             Assert.AreEqual(1, problems.Count, string.Join("\n", problems));
-            StringAssert.Contains("U+2605", problems[0]);
+            StringAssert.Contains("U+2192", problems[0]);
         }
     }
 }
