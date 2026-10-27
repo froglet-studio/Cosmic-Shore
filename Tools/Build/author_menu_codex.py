@@ -8,12 +8,15 @@ Author the CODEX screen of the style-B menu - the top bar's first tab - as prefa
         CodexTile.prefab   one entry on the orbit (section 91): a round node - a dark disc, the entry's picture, an
                            outline ring (painted by CodexTile) over a halo - with its name and a quiet line under it;
                            a uGUI Button that tints the picture, a CanvasGroup CodexOrbit dims by depth
+        CodexGuideTile.prefab  one entry on the Field Guide's strip (section 91.1): a square of the picture over its name
         CodexView.prefab   the whole screen: the sea under the top bar, then (drawn at the Hangar's 0.88) the chapter
-                           row (LB, the KitTextTabs, RB), the orbit on the left (title, count, FLORA / FAUNA while
-                           ECOLOGY is open, three tilted rings, the entries round the core - the picked entry's
-                           picture - placed by CodexOrbit, the empty line) and the solid reading panel on the right
-                           (kicker, title, then a scroll of gameplay, facts, element cells, rows and lore, each block
-                           copied from a hidden CodexLine template); CodexScreen on the root
+                           row (LB, the KitTextTabs, RB), the head row (title, FLORA / FAUNA while ECOLOGY is open,
+                           count) and two layouts, one shown at a time: the ORBIT for ELEMENTS (two tilted rings, the
+                           entries round the core - the picked entry's picture - placed by CodexOrbit, and the solid
+                           reading panel on the right) and the FIELD GUIDE for ECOLOGY and LEXICON (a two-page book -
+                           the picture's plate and its page - over a sideways strip of every entry). Each page is a
+                           CodexPageView: kicker, title, then a scroll of gameplay, facts, element cells, rows and lore,
+                           each block copied from a hidden CodexLine template; CodexScreen on the root
 
     Assets/_Scenes/Menu_Main.unity
         One CodexView instance, first child of Screens, and ScreenSwitcher.screens' CODEX entry pointed at its root -
@@ -48,7 +51,7 @@ TL, TR, ref, mono, refs = C.TL, C.TR, C.ref, C.mono, C.refs
 text, label, le = H.text, H.label, H.le
 image_node, art_node = A.image_node, A.art_node
 
-PREFABS = ("CodexTile", "CodexView")
+PREFABS = ("CodexTile", "CodexGuideTile", "CodexView")
 GRID = W.GRID                                       # UnityEngine.UI.GridLayoutGroup
 PACKAGE = W.PACKAGE
 S = dict(screen=C.script("CodexScreen"), tile=C.script("CodexTile"), page=C.script("CodexPageView"),
@@ -82,12 +85,25 @@ ZONE_TOP = CHAPTER_TOP + TAB_H + 28                 # the grid and the page star
 CONTENT_W = 1920 / CONTENT_SCALE
 PAGE_W = 700
 ORBIT_W = round(CONTENT_W - 2 * SIDE - PAGE_W - 40)
-ORBIT_HEAD = 44                                     # the orbit's title row (title, FLORA / FAUNA, count)
+HEAD_ROW = 44                                       # the shared title row (title, FLORA / FAUNA, count) under the chapters
+LAYOUT_TOP = ZONE_TOP + HEAD_ROW                    # both layouts start under it
 NODE_W, NODE_H, DISC, NODE_PORTRAIT = 150, 178, 120, 100
-RING_CAPACITY = (4, 8, 12)
-RING_RADIUS = (270, 440, 600)
-RING_TILT = 0.46
-CORE, CORE_HALO = 240, 440
+RING_CAPACITY = (4, 8)
+# Section 91.1 (Shombith 2026-10-27, a screenshot of the entries crowding the core: "make the spacing a lot bigger"):
+# the elements' seven entries sit on two wide rings, the inner one clear of the core, the outer one at the zone's edge.
+RING_RADIUS = (330, 570)
+RING_TILT = 0.56
+CORE, CORE_HALO, CORE_BADGE = 220, 400, 70
+# Section 91.1 ("keep this design only for elements section others can have design B"): ECOLOGY and LEXICON are the
+# Field Guide (Rev 30 board B) - a two-page book, the picture's plate on the left and its page on the right, over a
+# strip of every entry.
+ORBIT_CHAPTERS = ("Elements",)
+BOOK_BOTTOM = 232                                   # the book stops above the strip
+PLATE_SPLIT = 0.44                                  # the plate's share of the book's width
+PLATE_PORTRAIT = 520
+STRIP_LEFT, STRIP_H, STRIP_BOTTOM = 260, 184, 22    # the strip starts right of the friends orb
+GUIDE_TILE, GUIDE_PORTRAIT, GUIDE_GAP = 150, 92, 14
+GUIDE_COLUMNS = 3                                   # element cells across the guide's wider page
 PAGE_PAD = 36
 HEAD_H = 96                                         # the page's head: the kicker over the title (no picture: the core is it)
 CELL_W, CELL_H, CELL_GAP, CELL_COLUMNS = 306, 150, 16, 2
@@ -205,6 +221,38 @@ def build_tile():
     return root
 
 
+def build_guide_tile():
+    """One entry on the Field Guide's strip (section 91.1, board B): a square of the picture over its name, the open one
+    outlined in the selection blue over a breathing glow. The strip's layout group places it."""
+    root = N("root", "CodexGuideTile", R(size=(GUIDE_TILE, GUIDE_TILE)))
+    root.add("cg", 225, H.canvas_group(True)).add("le", 114, le(pw=GUIDE_TILE, ph=GUIDE_TILE))
+    glow = root.child(N("Glow", "Glow", R((0, 0), (1, 1), (0, 0), (22, 22))))
+    glow.add("cg", 225, H.canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.55))
+    C.plain_image(glow, "Glow/Image", "Image", STRETCH, tok("Selection", 0.35), K.kit_sprite("kit_sliver14_fill"), preserve=False)
+    body = root.child(N("Body", "Body", STRETCH))
+    body.add("cg", 225, H.canvas_group(True))
+    fill = body.child(N("Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.92), K.kit_sprite("kit_sliver14_fill"), True, raycast=True)) \
+        .add("th", 114, H.themed("SurfaceVeryDark", 0.92))
+    # Painted by CodexTile (the selection blue on the open entry), so it carries no KitThemedGraphic.
+    outline = body.child(N("Frame", "Frame", STRETCH))
+    outline.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
+    portrait_node(body, "Portrait", R((0.5, 1), None, (0, -(14 + GUIDE_PORTRAIT / 2)), (GUIDE_PORTRAIT, GUIDE_PORTRAIT)), 26)
+    H.ellipsize(label(body.child(N("Name", "Name", TL(8, GUIDE_TILE - 36, GUIDE_TILE - 16, 24))), "Entry", "BodySmall",
+                      "TextLight", align="center"))
+    root.add("button", 114, C.tint_button("Portrait/Motion/Art", nav=4, normal=0.82))
+    root.add("tile", 114, lambda ctx, go: mono(go, S["tile"],
+             f"  button: {ref(ctx.c('root', 'button'))}\n  portrait: {ref(ctx.c('Portrait', 'portrait'))}\n"
+             f"  nameText: {ref(ctx.c('Name', 'tmp'))}\n  subText: {{fileID: 0}}\n"
+             f"  frame: {ref(ctx.c('Frame', 'img'))}\n  glow: {ref(ctx.c('Glow', 'cg'))}\n  body: {ref(ctx.c('Body', 'cg'))}\n"
+             "  scan: {fileID: 0}\n  scanSeconds: 0.42\n"
+             "  appearSeconds: 0.28\n  appearStagger: 0.03\n  appearRise: 14\n"
+             f"  theme: {K.ref(11400000, K.THEME, 2)}\n  restToken: {K.TOKEN_INDEX['SurfaceLight']}\n"
+             f"  selectedToken: {K.TOKEN_INDEX['Selection']}\n"))
+    return root
+
+
 # --------------------------------------------------------------------------------------------
 # CodexView.prefab
 # --------------------------------------------------------------------------------------------
@@ -221,28 +269,36 @@ def chapter_row(content):
     return width
 
 
-def orbit_zone(content):
-    """The left of the screen (section 91): the title row, then the orbit - the rings drawn behind, and the entries with
-    the core's picture among them, which CodexOrbit places and sorts front over back."""
-    # Placed by its top-left corner: x SIDE, y ZONE_TOP down, as tall as the content less ZONE_TOP and the orb's clearance.
-    z = content.child(N("Orbit", "Orbit", R((0, 0), (0, 1), (SIDE, -ZONE_TOP), (ORBIT_W, -(ZONE_TOP + ORB_CLEAR)), (0, 1))))
-    z.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
-    label(z.child(N("Orbit/Title", "Title", TL(0, 0, 300, 34))), "Elements", "H3", "TextLight")
-    label(z.child(N("Orbit/Count", "Count", TR(0, 6, 260, 24))), "7 entries", "Label", "NeutralLightest", align="right")
-    eco = z.child(N("Orbit/Ecology", "EcologyTabs", TL(260, -9, 320, TAB_H)))
+def head_row(content):
+    """The chapter's title, FLORA / FAUNA while ECOLOGY is open, and the count: one row both layouts sit under."""
+    z = content.child(N("Head", "Head", R((0, 1), (1, 1), (0, -ZONE_TOP), (-2 * SIDE, HEAD_ROW), (0.5, 1))))
+    label(z.child(N("Head/Title", "Title", TL(0, 0, 300, 34))), "Elements", "H3", "TextLight")
+    label(z.child(N("Head/Count", "Count", TR(0, 6, 260, 24))), "7 entries", "Label", "NeutralLightest", align="right")
+    eco = z.child(N("Head/Ecology", "EcologyTabs", TL(260, -9, 320, TAB_H)))
     eco.add("cg", 225, H.canvas_group(False))
     eco.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), TAB_GAP, 3, (0, 0), (0, 0)))
     for name in ("Flora", "Fauna"):
-        H.text_tab(eco, f"Orbit/Ecology/{name}", name, name.upper(), "BodySmall", K.label_width(name.upper(), "BodySmall") + 12, TAB_H)
+        H.text_tab(eco, f"Head/Ecology/{name}", name, name.upper(), "BodySmall", K.label_width(name.upper(), "BodySmall") + 12, TAB_H)
+    empty = content.child(N("Empty", "Empty", R((0, 0.5), (1, 0.5), (0, 0), (-120, 120))))
+    empty.add("cg", 225, H.canvas_group(False))
+    label(empty, "", "Body", "NeutralLightest", align="center", wrap=True)
 
-    # The orbit's area: under the title row. Rings and Nodes both fill it, so a ring and its entries share a centre.
-    area = R((0, 0), (1, 1), (0, -ORBIT_HEAD / 2), (0, -ORBIT_HEAD))
-    rings = z.child(N("Orbit/Rings", "Rings", area))
+
+def orbit_layout(content):
+    """The Orbit (section 91): the rings drawn behind, the entries with the core's picture among them (CodexOrbit places
+    and sorts them front over back) on the left, and the solid reading panel on the right."""
+    lay = content.child(N("OrbitLayout", "OrbitLayout", STRETCH))
+    lay.add("cg", 225, H.canvas_group(True))
+    # Placed by its top-left corner: x SIDE, y LAYOUT_TOP down, as tall as the content less that and the orb's clearance.
+    z = lay.child(N("Orbit", "Orbit", R((0, 0), (0, 1), (SIDE, -LAYOUT_TOP), (ORBIT_W, -(LAYOUT_TOP + ORB_CLEAR)), (0, 1))))
+    z.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
+    # Rings and Nodes both fill the zone, so a ring and its entries share a centre.
+    rings = z.child(N("Orbit/Rings", "Rings", STRETCH))
     for i, radius in enumerate(RING_RADIUS, 1):
         # A thin circle stretched to its ring's ellipse; CodexOrbit sizes it and hides it while its ring is empty.
         C.plain_image(rings, f"Orbit/Rings/Ring{i}", f"Ring{i}", R(size=(2 * radius, round(2 * radius * RING_TILT))),
                       tok("SurfaceLight", 0.4), K.kit_sprite("kit_ring_line"), preserve=False)
-    nodes = z.child(N("Orbit/Nodes", "Nodes", area))
+    nodes = z.child(N("Orbit/Nodes", "Nodes", STRETCH))
     nodes.add("orbit", 114, lambda ctx, go: mono(go, S["orbit"],
               f"  center: {ref(ctx.rt('Orbit/Nodes/Core'))}\n  core: {ref(ctx.rt('Orbit/Nodes/Core'))}\n"
               + refs("rings", [ctx.rt(f"Orbit/Rings/Ring{i}") for i in range(1, len(RING_RADIUS) + 1)])
@@ -256,10 +312,52 @@ def orbit_zone(content):
     halo.add("cg", 225, H.canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=3.2, amplitude=0.35))
     C.plain_image(halo, "Orbit/Nodes/Core/Halo/Image", "Image", STRETCH, tok("Selection", 0.4), K.kit_sprite("kit_ring_glow"),
                   preserve=False)
-    portrait_node(core, "Orbit/Nodes/Core/Portrait", STRETCH, 110)
-    empty = z.child(N("Orbit/Empty", "Empty", R((0, 0.5), (1, 0.5), (0, 0), (-120, 120))))
-    empty.add("cg", 225, H.canvas_group(False))
-    label(empty, "", "Body", "NeutralLightest", align="center", wrap=True)
+    portrait_node(core, "Orbit/Nodes/Core/Portrait", STRETCH, CORE_BADGE)
+    # Placed by its top-right corner: SIDE in from the right, y LAYOUT_TOP down, 40 clear of the foot.
+    page_zone(lay, "Page", R((1, 0), (1, 1), (-SIDE, -LAYOUT_TOP), (PAGE_W, -(LAYOUT_TOP + 40)), (1, 1)), CORE_PORTRAIT)
+
+
+def guide_layout(content):
+    """The Field Guide (Rev 30 board B, section 91.1): a two-page book - the plate (the entry's picture, large, and its
+    caption) on the left, its page on the right - over a strip of every entry, the open one lit."""
+    lay = content.child(N("Guide", "Guide", STRETCH))
+    lay.add("cg", 225, H.canvas_group(False))
+    left = right = SIDE
+    top, bottom = LAYOUT_TOP + 8, BOOK_BOTTOM
+    book = lay.child(N("Guide/Book", "Book", R((0, 0), (1, 1), ((left - right) / 2, (bottom - top) / 2), (-(left + right), -(top + bottom)))))
+    book.add("in", 114, M.entrance("Rise", stagger=1))
+    plate = book.child(N("Guide/Plate", "Plate", R((0, 0), (PLATE_SPLIT, 1), (0, 0), (0, 0))))
+    H.framed(plate, "Guide/Plate/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=1.0)
+    halo = plate.child(N("Guide/Plate/Halo", "Halo", R(size=(PLATE_PORTRAIT + 160, PLATE_PORTRAIT + 160))))
+    halo.add("cg", 225, H.canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=3.2, amplitude=0.35))
+    C.plain_image(halo, "Guide/Plate/Halo/Image", "Image", STRETCH, tok("Selection", 0.22), K.kit_sprite("kit_ring_glow"),
+                  preserve=False)
+    portrait_node(plate, GUIDE_PORTRAIT_KEY, R(size=(PLATE_PORTRAIT, PLATE_PORTRAIT)), CORE_BADGE)
+    label(plate.child(N(GUIDE_PLATE_KEY, "Caption", R((0, 0), (1, 0), (0, 40), (-60, 22), (0.5, 0.5)))), "Flora - Branching",
+          "Label", "NeutralLightest")
+    # The spine: a thin selection-blue line where the pages meet.
+    C.plain_image(book, "Guide/Spine", "Spine", R((PLATE_SPLIT, 0), (PLATE_SPLIT, 1), (0, 0), (2, -40)), tok("Selection", 0.6), None)
+    page_zone(book, "Guide/Page", R((PLATE_SPLIT, 0), (1, 1), (4, 0), (-8, 0)), GUIDE_PORTRAIT_KEY, GUIDE_PLATE_KEY,
+              columns=GUIDE_COLUMNS, glow=False)
+
+    # The strip: every entry, scrolling sideways when there are more than fit; centred when they all fit.
+    sv = lay.child(N("Guide/Strip", "Strip", R((0, 0), (1, 0), ((STRIP_LEFT - SIDE) / 2, STRIP_BOTTOM + STRIP_H / 2),
+                                                 (-(STRIP_LEFT + SIDE), STRIP_H))))
+    sv.add("in", 114, M.entrance("Rise", stagger=2))
+    vp = sv.child(N("Guide/Strip/Viewport", "Viewport", STRETCH))
+    vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("mask", 114, lambda ctx, go: K.mono(go, S["mask"], "  m_Padding: {x: -24, y: -24, z: -24, w: -24}\n"
+                                                              "  m_Softness: {x: 0, y: 0}\n"))
+    sc = vp.child(N("Guide/Strip/Viewport/Content", "Content", R((0.5, 0.5), None, (0, 0), (0, GUIDE_TILE + 20))))
+    sc.add("hlg", 114, K.hv_layout(False, (10, 10, 10, 10), GUIDE_GAP, 4, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 0))
+    sv.add("scroll", 114, lambda ctx, go: K.mono(go, A.SCROLL_RECT,
+           f"  m_Content: {ref(ctx.rt('Guide/Strip/Viewport/Content'))}\n  m_Horizontal: 1\n  m_Vertical: 0\n"
+           "  m_MovementType: 2\n  m_Elasticity: 0.1\n  m_Inertia: 1\n  m_DecelerationRate: 0.135\n"
+           f"  m_ScrollSensitivity: 30\n  m_Viewport: {ref(ctx.rt('Guide/Strip/Viewport'))}\n"
+           "  m_HorizontalScrollbar: {fileID: 0}\n  m_VerticalScrollbar: {fileID: 0}\n"
+           "  m_HorizontalScrollbarVisibility: 2\n  m_VerticalScrollbarVisibility: 2\n"
+           "  m_HorizontalScrollbarSpacing: -3\n  m_VerticalScrollbarSpacing: -3\n"
+           "  m_OnValueChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"))
 
 
 def line_template(parent, key, kind):
@@ -293,7 +391,7 @@ def line_template(parent, key, kind):
     return n, f"{key}/Icon", f"{key}/Title", f"{key}/Line"
 
 
-def block(content, key, name, cells=False):
+def block(content, key, name, cells=False, columns=CELL_COLUMNS):
     b = content.child(N(key, name, R(size=(0, 0))))
     b.add("cg", 225, H.canvas_group(True)).add("le", 114, le())
     b.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 8, 0, (1, 1), (1, 0)))
@@ -305,53 +403,54 @@ def block(content, key, name, cells=False):
                    "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
                    "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
                    f"  m_CellSize: {{x: {CELL_W}, y: {CELL_H}}}\n  m_Spacing: {{x: {CELL_GAP}, y: {CELL_GAP}}}\n"
-                   f"  m_Constraint: 1\n  m_ConstraintCount: {CELL_COLUMNS}\n"))
+                   f"  m_Constraint: 1\n  m_ConstraintCount: {columns}\n"))
         # No ContentSizeFitter: the block's layout group sizes the grid from its preferred height (a fitter under a
         # layout group is the "child of a layout group should not have a Content Size Fitter" warning).
     return b, holder
 
 
-def page_zone(content):
-    # Placed by its top-right corner: SIDE in from the right, y ZONE_TOP down, 40 clear of the foot.
-    z = content.child(N("Page", "Page", R((1, 0), (1, 1), (-SIDE, -ZONE_TOP), (PAGE_W, -(ZONE_TOP + 40)), (1, 1))))
+def page_zone(parent, k, r, portrait_key, plate_key=None, columns=2, glow=True):
+    """A CodexPageView at key `k`: kicker, title, then a scroll of gameplay, facts, element cells, rows and lore. Words
+    only - its picture is `portrait_key` elsewhere (the orbit's core, or the Field Guide's plate)."""
+    z = parent.child(N(k, k.rsplit("/", 1)[-1], r))
     z.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    # Section 91: a SOLID reading panel (no sea through it) in the selection blue's border and glow - the picture is the
-    # orbit's core, so the page is words only.
-    glow = z.child(N("Page/Glow", "Glow", R((0, 0), (1, 1), (0, 0), (28, 28))))
-    glow.add("cg", 225, H.canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=3.2, amplitude=0.3))
-    C.plain_image(glow, "Page/Glow/Image", "Image", STRETCH, tok("Selection", 0.14), K.kit_sprite("kit_sliver14_fill"), preserve=False)
-    H.framed(z, "Page/Frame", 14, "SurfaceVeryDark", "Selection", fill_alpha=1.0)
+    if glow:
+        # Section 91: a SOLID reading panel (no sea through it) in the selection blue's border and glow.
+        g = z.child(N(f"{k}/Glow", "Glow", R((0, 0), (1, 1), (0, 0), (28, 28))))
+        g.add("cg", 225, H.canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=3.2, amplitude=0.3))
+        C.plain_image(g, f"{k}/Glow/Image", "Image", STRETCH, tok("Selection", 0.14), K.kit_sprite("kit_sliver14_fill"), preserve=False)
+    H.framed(z, f"{k}/Frame", 14, "SurfaceVeryDark", "Selection" if glow else "SurfaceDark", fill_alpha=1.0)
     # The page's words fade and rise in each time a page opens (CodexPageView.Reveal, section 89).
-    rv = z.child(N("Page/Reveal", "Reveal", STRETCH))
+    rv = z.child(N(f"{k}/Reveal", "Reveal", STRETCH))
     rv.add("cg", 225, H.canvas_group(True))
-    label(rv.child(N("Page/Kicker", "Kicker", R((0, 1), (1, 1), (0, -PAGE_PAD), (-2 * PAGE_PAD, 20), (0.5, 1)))),
+    label(rv.child(N(f"{k}/Kicker", "Kicker", R((0, 1), (1, 1), (0, -PAGE_PAD), (-2 * PAGE_PAD, 20), (0.5, 1)))),
           "Element", "Label", "NeutralLightest")
-    H.ellipsize(label(rv.child(N("Page/Title", "Title", R((0, 1), (1, 1), (0, -(PAGE_PAD + 24)), (-2 * PAGE_PAD, 60), (0.5, 1)))),
+    H.ellipsize(label(rv.child(N(f"{k}/Title", "Title", R((0, 1), (1, 1), (0, -(PAGE_PAD + 24)), (-2 * PAGE_PAD, 60), (0.5, 1)))),
                       "Charge", "H1", "TextLight", valign="bottom"))
-    sv = rv.child(N("Page/Scroll", "Scroll", R((0, 0), (1, 1), (0, -(PAGE_PAD + HEAD_H) / 2), (-2 * PAGE_PAD, -(2 * PAGE_PAD + HEAD_H)))))
-    vp = sv.child(N("Page/Scroll/Viewport", "Viewport", STRETCH))
+    sv = rv.child(N(f"{k}/Scroll", "Scroll", R((0, 0), (1, 1), (0, -(PAGE_PAD + HEAD_H) / 2), (-2 * PAGE_PAD, -(2 * PAGE_PAD + HEAD_H)))))
+    vp = sv.child(N(f"{k}/Scroll/Viewport", "Viewport", STRETCH))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("mask", 114, lambda ctx, go: K.mono(go, S["mask"], "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n"))
-    pc = vp.child(N("Page/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
+    pc = vp.child(N(f"{k}/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     pc.add("vlg", 114, K.hv_layout(True, (0, 8, 0, 24), 22, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
     # Gameplay first, lore last (section 90: "gameplay info above lore"); both type themselves in (CodexPageView).
-    gp = pc.child(N("Page/Gameplay", "Gameplay", R(size=(0, 26))))
+    gp = pc.child(N(f"{k}/Gameplay", "Gameplay", R(size=(0, 26))))
     gp.add("cg", 225, H.canvas_group(True))
     label(gp, "", "Body", "TextLight", valign="top", wrap=True)
     keys = {}
-    for bkey, bname, kind in (("Page/Facts", "Facts", "fact"), ("Page/Cells", "By element", "cell"), ("Page/Rows", "Rows", "row")):
-        b, holder = block(pc, bkey, bname, cells=(kind == "cell"))
+    for bkey, bname, kind in ((f"{k}/Facts", "Facts", "fact"), (f"{k}/Cells", "By element", "cell"), (f"{k}/Rows", "Rows", "row")):
+        b, holder = block(pc, bkey, bname, cells=(kind == "cell"), columns=columns)
         tkey = f"{holder.key}/Template"
         keys[kind] = line_template(holder, tkey, kind)
-    lore = pc.child(N("Page/Lore", "Lore", R(size=(0, 0))))
+    lore = pc.child(N(f"{k}/Lore", "Lore", R(size=(0, 0))))
     lore.add("cg", 225, H.canvas_group(False)).add("le", 114, le())
     lore.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 8, 0, (1, 1), (1, 0)))
-    label(lore.child(N("Page/Lore/Heading", "Heading", R(size=(0, 22)))), "Lore", "Label", "NeutralLightest")
-    label(lore.child(N("Page/Body", "Body", R(size=(0, 26)))), "", "Body", "NeutralLightest", valign="top", wrap=True)
+    label(lore.child(N(f"{k}/Lore/Heading", "Heading", R(size=(0, 22)))), "Lore", "Label", "NeutralLightest")
+    label(lore.child(N(f"{k}/Body", "Body", R(size=(0, 26)))), "", "Body", "NeutralLightest", valign="top", wrap=True)
     sv.add("scroll", 114, lambda ctx, go: K.mono(go, A.SCROLL_RECT,
-           f"  m_Content: {ref(ctx.rt('Page/Scroll/Viewport/Content'))}\n  m_Horizontal: 0\n  m_Vertical: 1\n"
+           f"  m_Content: {ref(ctx.rt(k + '/Scroll/Viewport/Content'))}\n  m_Horizontal: 0\n  m_Vertical: 1\n"
            "  m_MovementType: 2\n  m_Elasticity: 0.1\n  m_Inertia: 1\n  m_DecelerationRate: 0.135\n"
-           f"  m_ScrollSensitivity: 30\n  m_Viewport: {ref(ctx.rt('Page/Scroll/Viewport'))}\n"
+           f"  m_ScrollSensitivity: 30\n  m_Viewport: {ref(ctx.rt(k + '/Scroll/Viewport'))}\n"
            "  m_HorizontalScrollbar: {fileID: 0}\n  m_VerticalScrollbar: {fileID: 0}\n"
            "  m_HorizontalScrollbarVisibility: 2\n  m_VerticalScrollbarVisibility: 2\n"
            "  m_HorizontalScrollbarSpacing: -3\n  m_VerticalScrollbarSpacing: -3\n"
@@ -361,10 +460,12 @@ def page_zone(content):
               f"  group: {ref(ctx.c(n_key(t), 'cg'))}\n"
               f"  icon: {ref(ctx.c(i, 'img') if i else 0)}\n"
               f"  title: {ref(ctx.c(t, 'tmp'))}\n  line: {ref(ctx.c(l, 'tmp'))}\n"))(icon, title, line))
-    z.add("page", 114, lambda ctx, go: mono(go, S["page"], page_body(ctx)))
+    z.add("page", 114, lambda ctx, go: mono(go, S["page"], page_body(ctx, k, portrait_key, plate_key)))
 
 
 CORE_PORTRAIT = "Orbit/Nodes/Core/Portrait"
+GUIDE_PORTRAIT_KEY = "Guide/Plate/Portrait"
+GUIDE_PLATE_KEY = "Guide/Plate/Caption"
 
 
 def n_key(child_key):
@@ -372,25 +473,28 @@ def n_key(child_key):
     return child_key.rsplit("/", 1)[0]
 
 
-def page_body(ctx):
-    t = lambda b: f"Page/{b}" + ("/Cells" if b == "Cells" else "") + "/Template"
-    return (f"  pageGroup: {ref(ctx.c('Page', 'cg'))}\n  portrait: {ref(ctx.c(CORE_PORTRAIT, 'portrait'))}\n"
-            f"  reveal: {ref(ctx.c('Page/Reveal', 'cg'))}\n  revealSeconds: 0.32\n  revealRise: 12\n"
-            f"  kickerText: {ref(ctx.c('Page/Kicker', 'tmp'))}\n  titleText: {ref(ctx.c('Page/Title', 'tmp'))}\n"
-            f"  gameplayText: {ref(ctx.c('Page/Gameplay', 'tmp'))}\n"
-            f"  loreBlock: {ref(ctx.c('Page/Lore', 'cg'))}\n  loreHeading: {ref(ctx.c('Page/Lore/Heading', 'tmp'))}\n"
-            f"  bodyText: {ref(ctx.c('Page/Body', 'tmp'))}\n  loreHeadingText: {ystr(LORE_HEADING)}\n"
+def page_body(ctx, k, portrait_key, plate_key=None):
+    t = lambda b: f"{k}/{b}" + ("/Cells" if b == "Cells" else "") + "/Template"
+    return (f"  pageGroup: {ref(ctx.c(k, 'cg'))}\n  portrait: {ref(ctx.c(portrait_key, 'portrait'))}\n"
+            f"  reveal: {ref(ctx.c(k + '/Reveal', 'cg'))}\n  revealSeconds: 0.32\n  revealRise: 12\n"
+            f"  kickerText: {ref(ctx.c(k + '/Kicker', 'tmp'))}\n  titleText: {ref(ctx.c(k + '/Title', 'tmp'))}\n"
+            f"  gameplayText: {ref(ctx.c(k + '/Gameplay', 'tmp'))}\n"
+            f"  loreBlock: {ref(ctx.c(k + '/Lore', 'cg'))}\n  loreHeading: {ref(ctx.c(k + '/Lore/Heading', 'tmp'))}\n"
+            f"  bodyText: {ref(ctx.c(k + '/Body', 'tmp'))}\n  loreHeadingText: {ystr(LORE_HEADING)}\n"
             "  typeRate: 140\n  lineStagger: 0.05\n  lineSeconds: 0.26\n  lineFrom: 0.92\n"
-            f"  scroll: {ref(ctx.c('Page/Scroll', 'scroll'))}\n"
-            f"  factsBlock: {ref(ctx.c('Page/Facts', 'cg'))}\n  factsHeading: {ref(ctx.c('Page/Facts/Heading', 'tmp'))}\n"
+            f"  plateText: {ref(ctx.c(plate_key, 'tmp') if plate_key else 0)}\n"
+            f"  plateTemplate: {ystr(PLATE_TEMPLATE)}\n"
+            f"  scroll: {ref(ctx.c(k + '/Scroll', 'scroll'))}\n"
+            f"  factsBlock: {ref(ctx.c(k + '/Facts', 'cg'))}\n  factsHeading: {ref(ctx.c(k + '/Facts/Heading', 'tmp'))}\n"
             f"  factTemplate: {ref(ctx.c(t('Facts'), 'line'))}\n"
-            f"  cellsBlock: {ref(ctx.c('Page/Cells', 'cg'))}\n  cellsHeading: {ref(ctx.c('Page/Cells/Heading', 'tmp'))}\n"
+            f"  cellsBlock: {ref(ctx.c(k + '/Cells', 'cg'))}\n  cellsHeading: {ref(ctx.c(k + '/Cells/Heading', 'tmp'))}\n"
             f"  cellTemplate: {ref(ctx.c(t('Cells'), 'line'))}\n"
-            f"  rowsBlock: {ref(ctx.c('Page/Rows', 'cg'))}\n  rowsHeading: {ref(ctx.c('Page/Rows/Heading', 'tmp'))}\n"
+            f"  rowsBlock: {ref(ctx.c(k + '/Rows', 'cg'))}\n  rowsHeading: {ref(ctx.c(k + '/Rows/Heading', 'tmp'))}\n"
             f"  rowTemplate: {ref(ctx.c(t('Rows'), 'line'))}\n")
 
 
 LORE_HEADING = "Lore"
+PLATE_TEMPLATE = "{kicker} - {title}"
 ART = {n: K.meta_guid(CODEX_ART.format(n)) for n in
        ("ethirion_omni", "flora_branching", "tool_vessel-changer", "tool_lifeform-matrix")}
 ART["prism"] = K.meta_guid("Assets/_Graphics/ObjectiveIcons/objective_prism.png")
@@ -504,6 +608,7 @@ def words_block():
 def screen_body(ctx):
     shapes = [K.ref(21300000, SHAPES[e], 3) for e in ELEMENTS]
     tile = K.ref(F("CodexTile")("root#tile"), asset_guid("CodexTile"))
+    guide_tile = K.ref(F("CodexGuideTile")("root#tile"), asset_guid("CodexGuideTile"))
     flips = [flipbook_guid(e.lower()) for e in ELEMENTS]
     return (f"  vessels: {K.ref(11400000, K.meta_guid(VESSEL_LIST), 2)}\n"
             f"  roster: {K.ref(11400000, K.meta_guid(ROSTER), 2)}\n"
@@ -515,14 +620,20 @@ def screen_body(ctx):
             + f"  countTemplate: {ystr('{count} entries')}\n"
             + str_list("emptyLines", EMPTY_LINES)
             + refs("chapterTabs", [ctx.c(f"Chapters/{n}", "tab") for n in CHAPTERS])
-            + f"  ecologyTabsGroup: {ref(ctx.c('Orbit/Ecology', 'cg'))}\n"
-            f"  floraTab: {ref(ctx.c('Orbit/Ecology/Flora', 'tab'))}\n  faunaTab: {ref(ctx.c('Orbit/Ecology/Fauna', 'tab'))}\n"
+            + f"  ecologyTabsGroup: {ref(ctx.c('Head/Ecology', 'cg'))}\n"
+            f"  floraTab: {ref(ctx.c('Head/Ecology/Flora', 'tab'))}\n  faunaTab: {ref(ctx.c('Head/Ecology/Fauna', 'tab'))}\n"
             "  shoulderInput: 1\n"
-            f"  gridTitle: {ref(ctx.c('Orbit/Title', 'tmp'))}\n  gridCount: {ref(ctx.c('Orbit/Count', 'tmp'))}\n"
-            f"  orbit: {ref(ctx.c('Orbit/Nodes', 'orbit'))}\n  gridContent: {ref(ctx.rt('Orbit/Nodes'))}\n"
-            f"  tilePrefab: {tile}\n"
-            f"  emptyGroup: {ref(ctx.c('Orbit/Empty', 'cg'))}\n  emptyText: {ref(ctx.c('Orbit/Empty', 'tmp'))}\n"
-            f"  page: {ref(ctx.c('Page', 'page'))}\n")
+            f"  gridTitle: {ref(ctx.c('Head/Title', 'tmp'))}\n  gridCount: {ref(ctx.c('Head/Count', 'tmp'))}\n"
+            f"  emptyGroup: {ref(ctx.c('Empty', 'cg'))}\n  emptyText: {ref(ctx.c('Empty', 'tmp'))}\n"
+            "  orbitLayout:\n"
+            f"    group: {ref(ctx.c('OrbitLayout', 'cg'))}\n    content: {ref(ctx.rt('Orbit/Nodes'))}\n"
+            f"    tilePrefab: {tile}\n    orbit: {ref(ctx.c('Orbit/Nodes', 'orbit'))}\n    scroll: {{fileID: 0}}\n"
+            f"    page: {ref(ctx.c('Page', 'page'))}\n"
+            "  orbitChapters:\n" + "".join(f"  - {STOPS.index(c)}\n" for c in ORBIT_CHAPTERS)
+            + "  guideLayout:\n"
+            f"    group: {ref(ctx.c('Guide', 'cg'))}\n    content: {ref(ctx.rt('Guide/Strip/Viewport/Content'))}\n"
+            f"    tilePrefab: {guide_tile}\n    orbit: {{fileID: 0}}\n    scroll: {ref(ctx.c('Guide/Strip', 'scroll'))}\n"
+            f"    page: {ref(ctx.c('Guide/Page', 'page'))}\n")
 
 
 def build_view():
@@ -537,10 +648,11 @@ def build_view():
     k = 0.5 / CONTENT_SCALE
     content = frame.child(N("Frame/Content", "Content", R((0.5 - k, 1 - 1 / CONTENT_SCALE), (0.5 + k, 1), (0, 0), (0, 0), (0.5, 1))))
     content.scale = CONTENT_SCALE
-    # Hierarchy is focus order (ScreenSwitcher.Refocus takes the first live Selectable): the orbit first, so the pad
-    # lands on an entry; then the page; the chapter row last.
-    orbit_zone(content)
-    page_zone(content)
+    # Hierarchy is focus order (ScreenSwitcher.Refocus takes the first live Selectable): the layouts first, so the pad
+    # lands on an entry; the head and the chapter row last.
+    orbit_layout(content)
+    guide_layout(content)
+    head_row(content)
     chapter_row(content)
     root.add("screen", 114, lambda ctx, go: mono(go, S["screen"], screen_body(ctx)))
     return root
@@ -553,7 +665,7 @@ FOLDER_META = ("fileFormatVersion: 2\nguid: {g}\nfolderAsset: yes\nDefaultImport
 def prefab_outputs():
     # The folder's own .meta, so Unity does not mint one with a random guid on every machine.
     out = {OUT_DIR + ".meta": FOLDER_META.format(g=asset_guid("CodexFolder"))}
-    for name, build in (("CodexTile", build_tile), ("CodexView", build_view)):
+    for name, build in (("CodexTile", build_tile), ("CodexGuideTile", build_guide_tile), ("CodexView", build_view)):
         out[prefab_path(name)] = P.prefab_text(build(), name)
         out[prefab_path(name) + ".meta"] = K.PREFAB_META.format(g=asset_guid(name))
     return out
@@ -621,22 +733,29 @@ def validate(files):
     for name in PREFABS:
         A.check_file(prefab_path(name), files[prefab_path(name)], guids, minted)
 
+    for tname in ("CodexTile", "CodexGuideTile"):
+        ttext = files[prefab_path(tname)]
+        _, tbody = A.doc_of(ttext, F(tname)("root#tile"))
+        assert tbody and S["tile"] in tbody, f"{tname}.prefab: the root carries no CodexTile"
+        for field, want in (("button", A.BUTTON), ("portrait", S["portrait"]), ("nameText", K.TMP_UGUI),
+                            ("frame", K.IMAGE), ("glow", 225), ("body", 225)):
+            C.wired(ttext, tbody, field, want, tname)
+        # Section 89: the open entry's glow breathes.
+        _, amb = A.doc_of(ttext, F(tname)("Glow#amb"))
+        assert amb and S["ambient"] in amb and f"  mode: {M.AMBIENT['Breathe']}\n" in amb, f"{tname}: the open entry's glow must breathe"
+        assert "  m_Alpha: 0\n" in A.doc_of(ttext, F(tname)("Glow#cg"))[1], f"{tname}: the glow must start hidden"
+        frame_go = F(tname)("Frame#go")
+        assert not re.search(r"m_GameObject: \{fileID: %s\}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: \{fileID: 11500000, guid: %s"
+                             % (frame_go, K.kit_script("KitThemedGraphic")), ttext), \
+            f"{tname}: the outline must not carry a KitThemedGraphic (it would repaint the selection colour)"
     tile = files[prefab_path("CodexTile")]
-    _, tbody = A.doc_of(tile, F("CodexTile")("root#tile"))
-    assert tbody and S["tile"] in tbody, "CodexTile.prefab: the root carries no CodexTile"
-    for field, want in (("button", A.BUTTON), ("portrait", S["portrait"]), ("nameText", K.TMP_UGUI), ("subText", K.TMP_UGUI),
-                        ("frame", K.IMAGE), ("glow", 225), ("body", 225)):
-        C.wired(tile, tbody, field, want, "CodexTile")
-    # Section 89 ("Make everything subtly animated"): the open tile's glow breathes, every picture floats, and an element
-    # draws the HUD's flower over its shape (all four shapes wired).
-    _, amb = A.doc_of(tile, F("CodexTile")("Glow#amb"))
-    assert amb and S["ambient"] in amb and f"  mode: {M.AMBIENT['Breathe']}\n" in amb, "CodexTile: the open tile's glow must breathe"
     # Section 91: an entry is a round node, not a card.
     for key in ("Fill", "Frame"):
         _, img = A.doc_of(tile, F("CodexTile")(f"{key}#img"))
         want = K.kit_sprite("kit_ring_fill" if key == "Fill" else "kit_ring_line")
         assert img and f"guid: {want}" in img, f"CodexTile: the {key} must be the orbit's round node"
-    for name, key in (("CodexTile", "Portrait"), ("CodexView", CORE_PORTRAIT)):
+    for name, key in (("CodexTile", "Portrait"), ("CodexGuideTile", "Portrait"), ("CodexView", CORE_PORTRAIT),
+                      ("CodexView", GUIDE_PORTRAIT_KEY)):
         text = files[prefab_path(name)]
         _, pbody = A.doc_of(text, F(name)(f"{key}#portrait"))
         assert pbody and S["portrait"] in pbody, f"{name}: {key} carries no CodexPortrait"
@@ -649,11 +768,6 @@ def validate(files):
         _, canvas = A.doc_of(text, F(name)(f"{key}#canvas"))
         assert canvas and "  m_OverrideSorting: 0\n" in canvas, \
             f"{name}: {key} needs its own Canvas (no override sorting), so its motion rebuilds only itself"
-    frame_go = F("CodexTile")("Frame#go")
-    assert not re.search(r"m_GameObject: \{fileID: %s\}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: \{fileID: 11500000, guid: %s"
-                         % (frame_go, K.kit_script("KitThemedGraphic")), tile), \
-        "CodexTile: the outline must not carry a KitThemedGraphic (it would repaint the selection colour)"
-    assert "  m_Alpha: 0\n" in A.doc_of(tile, F("CodexTile")("Glow#cg"))[1], "CodexTile: the glow must start hidden"
 
     view = files[prefab_path("CodexView")]
     V = F("CodexView")
@@ -662,10 +776,22 @@ def validate(files):
     tabs = re.findall(r"^  - \{fileID: (-?\d+)\}", sbody.split("  chapterTabs:")[1].split("  ecologyTabsGroup:")[0], re.M)
     assert tabs == [str(V(f"Chapters/{n}#tab")) for n in CHAPTERS], "CodexScreen.chapterTabs must be the chapter tabs, in order"
     for field, want in (("ecologyTabsGroup", 225), ("floraTab", S["tab"]), ("faunaTab", S["tab"]), ("gridTitle", K.TMP_UGUI),
-                        ("gridCount", K.TMP_UGUI), ("orbit", S["orbit"]), ("gridContent", 224), ("emptyGroup", 225),
-                        ("emptyText", K.TMP_UGUI), ("page", S["page"])):
+                        ("gridCount", K.TMP_UGUI), ("emptyGroup", 225), ("emptyText", K.TMP_UGUI)):
         C.wired(view, sbody, field, want, "CodexScreen")
-    assert f"  tilePrefab: {K.ref(F('CodexTile')('root#tile'), asset_guid('CodexTile'))}\n" in sbody, "CodexScreen.tilePrefab is not CodexTile"
+    # Section 91.1: the Orbit for ELEMENTS only, the Field Guide for the rest; each layout fully wired.
+    lay = layouts(sbody)
+    for name, wants in (("orbitLayout", (("group", 225), ("content", 224), ("orbit", S["orbit"]), ("page", S["page"]))),
+                        ("guideLayout", (("group", 225), ("content", 224), ("scroll", A.SCROLL_RECT), ("page", S["page"])))):
+        for field, want in wants:
+            C.wired(view, lay[name], field, want, f"CodexScreen.{name}")
+    assert f"  tilePrefab: {K.ref(F('CodexTile')('root#tile'), asset_guid('CodexTile'))}\n" in lay["orbitLayout"], \
+        "the Orbit's entries must be CodexTile (the round node)"
+    assert f"  tilePrefab: {K.ref(F('CodexGuideTile')('root#tile'), asset_guid('CodexGuideTile'))}\n" in lay["guideLayout"], \
+        "the Field Guide's entries must be CodexGuideTile (the strip's square)"
+    chapters = re.search(r"^  orbitChapters:\n((?:  - .*\n)*)", sbody, re.M)
+    assert chapters and re.findall(r"^  - (\d+)", chapters.group(1), re.M) == [str(STOPS.index(c)) for c in ORBIT_CHAPTERS], \
+        "only ELEMENTS is the Orbit (\"keep this design only for elements section\")"
+    assert "  m_Alpha: 0\n" in A.doc_of(view, V("Guide#cg"))[1], "the Field Guide must start hidden (ELEMENTS opens first)"
     assert sbody.count(f"guid: {K.meta_guid(VESSEL_LIST)}") == 1, "CodexScreen must read the Hangar's vessel list"
     assert f"  roster: {K.ref(11400000, K.meta_guid(ROSTER), 2)}\n" in sbody, \
         "CodexScreen: Flora and Fauna must follow the Toy Box's Spawn Matrix (\"reconcile it against the toy box\")"
@@ -687,22 +813,27 @@ def validate(files):
     assert titles and len(re.findall(r"^  - ", titles.group(1), re.M)) == len(STOPS), "CodexScreen.stopTitles needs one title per stop"
     assert "Artifacts are found far out in the HyperSea" in sbody, "the Artifacts lexicon card must say where artifacts come from"
 
-    _, pbody = A.doc_of(view, V("Page#page"))
-    assert pbody and S["page"] in pbody, "the Page carries no CodexPageView"
-    for field, want in (("pageGroup", 225), ("portrait", S["portrait"]), ("reveal", 225), ("kickerText", K.TMP_UGUI), ("titleText", K.TMP_UGUI),
-                        ("bodyText", K.TMP_UGUI), ("gameplayText", K.TMP_UGUI), ("loreBlock", 225),
-                        ("scroll", A.SCROLL_RECT), ("factsBlock", 225), ("factTemplate", S["line"]),
-                        ("cellsBlock", 225), ("cellTemplate", S["line"]), ("rowsBlock", 225), ("rowTemplate", S["line"])):
-        C.wired(view, pbody, field, want, "CodexPageView")
-    for tkey in ("Page/Facts/Template", "Page/Cells/Cells/Template", "Page/Rows/Template"):
-        _, cg = A.doc_of(view, V(f"{tkey}#cg"))
-        assert cg and "  m_Alpha: 0\n" in cg, f"{tkey}: a line template must start hidden"
-        _, lbody = A.doc_of(view, V(f"{tkey}#line"))
-        assert lbody and f"  group: {{fileID: {V(tkey + '#cg')}}}\n" in lbody, f"{tkey}: its CodexLine must show and hide its own group"
-    # Gameplay above lore: the page's content runs Gameplay, Facts, Cells, Rows, Lore, top to bottom.
-    order = re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V("Page/Scroll/Viewport/Content#rt"))[1], re.M).group(1)
-    want = [str(V(f"{k}#rt")) for k in ("Page/Gameplay", "Page/Facts", "Page/Cells", "Page/Rows", "Page/Lore")]
-    assert re.findall(r"fileID: (-?\d+)", order) == want, "the page must read gameplay first and lore last"
+    for k, picture in (("Page", CORE_PORTRAIT), ("Guide/Page", GUIDE_PORTRAIT_KEY)):
+        _, pbody = A.doc_of(view, V(f"{k}#page"))
+        assert pbody and S["page"] in pbody, f"the {k} carries no CodexPageView"
+        for field, want in (("pageGroup", 225), ("portrait", S["portrait"]), ("reveal", 225), ("kickerText", K.TMP_UGUI),
+                            ("titleText", K.TMP_UGUI), ("bodyText", K.TMP_UGUI), ("gameplayText", K.TMP_UGUI), ("loreBlock", 225),
+                            ("scroll", A.SCROLL_RECT), ("factsBlock", 225), ("factTemplate", S["line"]),
+                            ("cellsBlock", 225), ("cellTemplate", S["line"]), ("rowsBlock", 225), ("rowTemplate", S["line"])):
+            C.wired(view, pbody, field, want, f"{k} CodexPageView")
+        # Words only: the picture is the orbit's core, or the Field Guide's plate.
+        assert f"  portrait: {{fileID: {V(picture + '#portrait')}}}\n" in pbody, f"the {k}'s picture must be {picture}"
+        for tkey in (f"{k}/Facts/Template", f"{k}/Cells/Cells/Template", f"{k}/Rows/Template"):
+            _, cg = A.doc_of(view, V(f"{tkey}#cg"))
+            assert cg and "  m_Alpha: 0\n" in cg, f"{tkey}: a line template must start hidden"
+            _, lbody = A.doc_of(view, V(f"{tkey}#line"))
+            assert lbody and f"  group: {{fileID: {V(tkey + '#cg')}}}\n" in lbody, f"{tkey}: its CodexLine must show and hide its own group"
+        # Gameplay above lore: the page's content runs Gameplay, Facts, Cells, Rows, Lore, top to bottom.
+        order = re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V(f"{k}/Scroll/Viewport/Content#rt"))[1], re.M).group(1)
+        want = [str(V(f"{k}/{b}#rt")) for b in ("Gameplay", "Facts", "Cells", "Rows", "Lore")]
+        assert re.findall(r"fileID: (-?\d+)", order) == want, f"the {k} must read gameplay first and lore last"
+    _, gbody = A.doc_of(view, V("Guide/Page#page"))
+    assert f"  plateText: {{fileID: {V(GUIDE_PLATE_KEY + '#tmp')}}}\n" in gbody, "the Field Guide's plate caption is not wired"
     # The orbit: its centre and core are the Core, its rings the three ring images, and the page's picture is the core.
     _, obody = A.doc_of(view, V("Orbit/Nodes#orbit"))
     assert obody and S["orbit"] in obody, "Orbit/Nodes carries no CodexOrbit"
@@ -711,18 +842,16 @@ def validate(files):
     rings = re.findall(r"^  - \{fileID: (-?\d+)\}", obody.split("  rings:")[1].split("  ringCapacity:")[0], re.M)
     assert rings == [str(V(f"Orbit/Rings/Ring{i}#rt")) for i in range(1, len(RING_RADIUS) + 1)], \
         "CodexOrbit.rings must be the drawn rings, inside first"
-    assert f"  portrait: {{fileID: {V(CORE_PORTRAIT + '#portrait')}}}\n" in A.doc_of(view, V("Page#page"))[1], \
-        "the page's picture must be the orbit's core (the panel is words only)"
     nkids = re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V("Orbit/Nodes#rt"))[1], re.M).group(1)
     assert f"{{fileID: {V('Orbit/Nodes/Core#rt')}}}" in nkids, "the Core must sit among the entries (CodexOrbit sorts it by depth)"
-    _, eco = A.doc_of(view, V("Orbit/Ecology#cg"))
+    _, eco = A.doc_of(view, V("Head/Ecology#cg"))
     assert "  m_Alpha: 0\n" in eco, "FLORA / FAUNA must start hidden (shown only while ECOLOGY is open)"
     content_rt = A.doc_of(view, V("Frame/Content#rt"))[1]
     assert f"m_LocalScale: {{x: {K.f32(CONTENT_SCALE)}, y: {K.f32(CONTENT_SCALE)}, z: 1}}" in content_rt, \
         "the Codex is drawn at the Hangar's scale"
     order = re.search(r"^  m_Children:\n((?:  - .*\n)*)", content_rt, re.M).group(1)
     kids = re.findall(r"fileID: (-?\d+)", order)
-    assert kids[:2] == [str(V("Orbit#rt")), str(V("Page#rt"))], "focus order: the orbit first, then the page, the chapters last"
+    assert kids[:2] == [str(V("OrbitLayout#rt")), str(V("Guide#rt"))], "focus order: the layouts first, the chapters last"
 
     sc_text = files[SCENE]
     inst, stub = scene_ids()
@@ -738,6 +867,16 @@ def validate(files):
     anchors = set(re.findall(r"^--- !u!\d+ &(-?\d+)", sc_text, re.M)) | {"0"}
     for m in re.finditer(r"\{fileID: (-?\d+)\}", sc_text):
         assert m.group(1) in anchors, f"Menu_Main: dangling local fileID {m.group(1)}"
+
+
+def layouts(sbody):
+    """CodexScreen's two CodexLayout blocks, each de-indented to read like a component's own fields."""
+    out = {}
+    for name in ("orbitLayout", "guideLayout"):
+        m = re.search(r"^  %s:\n((?:    .*\n)*)" % name, sbody, re.M)
+        assert m, f"CodexScreen.{name} is missing"
+        out[name] = "".join(line[2:] + "\n" for line in m.group(1).splitlines())
+    return out
 
 
 def drift(files):
@@ -770,15 +909,24 @@ def self_test(files):
             f"  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {K.kit_script('KitThemedGraphic')}, type: 3}}\n"))),
         ("the ecology read from no Toy Box", lambda f: f.__setitem__(view, re.sub(r"(  roster: )\{fileID: \d+, guid: \w+, type: 2\}", r"\1{fileID: 0}", f[view], count=1))),
         ("FLORA / FAUNA shown on every chapter", lambda f: f.__setitem__(view, re.sub(
-            r"(--- !u!225 &%s\nCanvasGroup:\n(?:  .*\n)*?  m_Alpha: )0" % V("Orbit/Ecology#cg"), r"\g<1>1", f[view], count=1))),
+            r"(--- !u!225 &%s\nCanvasGroup:\n(?:  .*\n)*?  m_Alpha: )0" % V("Head/Ecology#cg"), r"\g<1>1", f[view], count=1))),
         ("a lexicon card dropped", lambda f: f.__setitem__(view, f[view].replace("title: Artifacts\n", "title: Relics\n", 1))),
         ("the pictures bobbing again", lambda f: f.__setitem__(tile, f[tile].replace("  introSeconds: 0.55\n", "  floatAmplitude: 4\n  introSeconds: 0.55\n", 1))),
         ("lore above gameplay", lambda f: f.__setitem__(view, f[view].replace(
             f"  - {{fileID: {V('Page/Gameplay#rt')}}}\n  - {{fileID: {V('Page/Facts#rt')}}}\n",
             f"  - {{fileID: {V('Page/Facts#rt')}}}\n  - {{fileID: {V('Page/Gameplay#rt')}}}\n", 1))),
         ("the orbit unwired", lambda f: f.__setitem__(view, re.sub(r"(  orbit: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("the Lexicon drawn as the Orbit", lambda f: f.__setitem__(view, f[view].replace(
+            "  orbitChapters:\n  - 0\n", "  orbitChapters:\n  - 0\n  - 3\n", 1))),
+        ("the Field Guide's strip unwired", lambda f: f.__setitem__(view, f[view].replace(
+            f"    scroll: {{fileID: {V('Guide/Strip#scroll')}}}\n", "    scroll: {fileID: 0}\n", 1))),
+        ("the Field Guide's page showing the core", lambda f: f.__setitem__(view, f[view].replace(
+            f"  portrait: {{fileID: {V(GUIDE_PORTRAIT_KEY + '#portrait')}}}\n",
+            f"  portrait: {{fileID: {V(CORE_PORTRAIT + '#portrait')}}}\n", 1))),
+        ("the Field Guide shown over the Orbit", lambda f: f.__setitem__(view, re.sub(
+            r"(--- !u!225 &%s\nCanvasGroup:\n(?:  .*\n)*?  m_Alpha: )0" % V("Guide#cg"), r"\g<1>1", f[view], count=1))),
         ("a ring missing from the orbit", lambda f: f.__setitem__(view, f[view].replace(
-            f"  - {{fileID: {V('Orbit/Rings/Ring3#rt')}}}\n  ringCapacity:", "  ringCapacity:", 1))),
+            f"  - {{fileID: {V('Orbit/Rings/Ring2#rt')}}}\n  ringCapacity:", "  ringCapacity:", 1))),
         ("the node back to a square card", lambda f: f.__setitem__(tile, f[tile].replace(
             K.kit_sprite("kit_ring_fill"),
             K.kit_sprite("kit_sliver14_fill"), 1))),
@@ -788,8 +936,8 @@ def self_test(files):
             r"(  portrait: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("the ETHIRIONS chapter back", lambda f: f.__setitem__(view, f[view].replace("  m_text: LEXICON\n", "  m_text: ETHIRIONS\n", 1))),
         ("the chapters before the grid in focus order", lambda f: f.__setitem__(view, f[view].replace(
-            f"  m_Children:\n  - {{fileID: {V('Orbit#rt')}}}\n  - {{fileID: {V('Page#rt')}}}\n",
-            f"  m_Children:\n  - {{fileID: {V('Page#rt')}}}\n  - {{fileID: {V('Orbit#rt')}}}\n", 1))),
+            f"  m_Children:\n  - {{fileID: {V('OrbitLayout#rt')}}}\n  - {{fileID: {V('Guide#rt')}}}\n",
+            f"  m_Children:\n  - {{fileID: {V('Guide#rt')}}}\n  - {{fileID: {V('OrbitLayout#rt')}}}\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
@@ -803,7 +951,7 @@ def main():
     args = ap.parse_args()
     files = outputs()
     validate(files)
-    print("OK: CodexTile.prefab, CodexView.prefab and the Menu_Main CODEX slot validate")
+    print("OK: CodexTile.prefab, CodexGuideTile.prefab, CodexView.prefab and the Menu_Main CODEX slot validate")
     if args.self_test:
         return 0 if self_test(files) else 1
     stale = drift(files)

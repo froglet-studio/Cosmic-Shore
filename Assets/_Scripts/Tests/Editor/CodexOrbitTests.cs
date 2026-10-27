@@ -9,7 +9,8 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The Codex orbit (Docs/MENU_REDESIGN_B.md section 91): entries fill the rings from the inside out, the last ring
     /// takes whatever is left, and arranging turns the picked entry to the front of its ring - the bottom of the
-    /// ellipse, drawn largest and on top.
+    /// ellipse, drawn largest and on top - while every other ring turns a gap to the front, so no entry stacks on the
+    /// pick (section 91.1).
     /// </summary>
     public class CodexOrbitTests
     {
@@ -56,6 +57,25 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0f, picked.anchoredPosition.x, 0.01f, "the picked node is at the front, centred");
             Assert.Less(picked.anchoredPosition.y, 0f, "the front is the bottom of the ellipse");
             Assert.AreEqual(nodes.Count - 1, picked.GetSiblingIndex(), "the front draws on top");
+        }
+
+        [TestCase(0)]
+        [TestCase(4)]
+        public void Arrange_LeavesThePickAloneAtTheFront(int pick)
+        {
+            var orbit = Orbit();
+            var nodes = new List<RectTransform>();
+            for (int i = 0; i < 7; i++)
+            {
+                var go = new GameObject($"node{i}", typeof(RectTransform));
+                go.transform.SetParent(_root.transform, false);
+                nodes.Add((RectTransform)go.transform);
+            }
+            orbit.Arrange(nodes, nodes.Count, pick);
+            // Nothing else on the centre line in front of the core: an entry there is behind it (the top of a ring).
+            for (int i = 0; i < nodes.Count; i++)
+                if (i != pick && Mathf.Abs(nodes[i].anchoredPosition.x) < 100f)
+                    Assert.Greater(nodes[i].anchoredPosition.y, 0f, $"node {i} stacks on the pick at the front");
         }
     }
 }

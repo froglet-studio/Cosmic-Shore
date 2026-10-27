@@ -47,6 +47,10 @@ namespace CosmicShore.UI
         [SerializeField, Min(0.05f)] private float lineSeconds = 0.26f;
         [Tooltip("The scale a line grows in from (a layout group places it, so it grows rather than slides).")]
         [SerializeField, Range(0.5f, 1f)] private float lineFrom = 0.92f;
+        [Tooltip("The plate's caption under the picture (the Field Guide's left page). Optional.")]
+        [SerializeField] private TMP_Text plateText;
+        [Tooltip("The plate's caption. {kicker} and {title} are the page's. Empty: none.")]
+        [SerializeField] private string plateTemplate = "{kicker} - {title}";
         [Tooltip("Scrolled back to the top whenever a new page opens.")]
         [SerializeField] private ScrollRect scroll;
 
@@ -83,7 +87,12 @@ namespace CosmicShore.UI
         public void Show(CodexPage page)
         {
             KitVisibility.SetShown(pageGroup, page != null);
-            if (page == null) return;
+            if (page == null)
+            {
+                // Nothing open (an empty chapter, or this page's layout put away): its picture stops moving.
+                if (portrait) portrait.Select(false);
+                return;
+            }
             if (portrait)
             {
                 portrait.Show(page.Image, page.Flipbook, page.Element, page.Palette, 0f);
@@ -91,6 +100,7 @@ namespace CosmicShore.UI
             }
             if (kickerText) kickerText.text = page.Kicker;
             if (titleText) titleText.text = page.Title;
+            if (plateText) plateText.text = TemplateText.Fill(plateTemplate, "kicker", page.Kicker, "title", page.Title);
             _gameplayChars = Words(gameplayText, page.Gameplay);
             _loreChars = Words(bodyText, page.Body);
             KitVisibility.SetShown(loreBlock, _loreChars > 0);

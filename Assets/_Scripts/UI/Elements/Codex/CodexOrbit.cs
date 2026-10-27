@@ -86,22 +86,48 @@ namespace CosmicShore.UI
             _turn = new float[ringCount];
             _from = new float[ringCount];
             _to = new float[ringCount];
-            if (picked >= 0 && picked < _count) _turn[_ring[picked]] = _to[_ring[picked]] = Front - _angle[picked];
+            if (picked >= 0 && picked < _count)
+                for (int r = 0; r < ringCount; r++)
+                {
+                    float rest = Rest(r, picked);
+                    if (!float.IsNaN(rest)) _turn[r] = _to[r] = rest;
+                }
             _clock = -1f;
             Place();
         }
 
-        /// <summary>Turns the picked entry's ring so the entry swings round to the front.</summary>
+        /// <summary>
+        /// Turns the picked entry's ring so the entry swings round to the front, and every other ring so the front falls
+        /// in the gap between two of its entries: only the pick ever sits at the front (Shombith 2026-10-27, a screenshot
+        /// of two fronts stacked over the core: "make the spacing a lot bigger").
+        /// </summary>
         public void Focus(int picked)
         {
             if (picked < 0 || picked >= _count) return;
-            int r = _ring[picked];
             for (int i = 0; i < _turn.Length; i++) _from[i] = _to[i] = _turn[i];
-            // The shortest way round.
-            float want = Front - _angle[picked];
-            float delta = Mathf.DeltaAngle(_turn[r] * Mathf.Rad2Deg, want * Mathf.Rad2Deg) * Mathf.Deg2Rad;
-            _to[r] = _turn[r] + delta;
+            for (int r = 0; r < _turn.Length; r++)
+            {
+                float want = Rest(r, picked);
+                if (float.IsNaN(want)) continue;
+                // The shortest way round.
+                _to[r] = _turn[r] + Mathf.DeltaAngle(_turn[r] * Mathf.Rad2Deg, want * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+            }
             _clock = 0f;
+        }
+
+        /// <summary>The turn ring <paramref name="r"/> settles at for this pick; NaN for an empty ring.</summary>
+        float Rest(int r, int picked)
+        {
+            if (_ring[picked] == r) return Front - _angle[picked];
+            int first = _ring.IndexOf(r);
+            if (first < 0) return float.NaN;
+            int n = 0;
+            for (int i = first; i < _ring.Count && _ring[i] == r; i++) n++;
+            // The nearest turn that puts the front half a step past one of the ring's entries.
+            float step = 2f * Mathf.PI / n;
+            float gap = Front - _angle[first] + step / 2f;
+            float k = Mathf.Round((_turn[r] - gap) / step);
+            return gap + k * step;
         }
 
         void Update()

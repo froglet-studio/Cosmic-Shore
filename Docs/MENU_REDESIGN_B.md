@@ -4010,3 +4010,30 @@ Shombith picked board C: "Go with C, implement it". The grid of cards is gone. G
 - **Not verified in the editor.** Both reference compiles are clean, and the offline render shows the rings, core and
   panel. The orbit's placement is runtime-only, so the offline renderer cannot show the entries on their rings.
   `CodexOrbitTests` covers the ring fill and the picked entry's front position.
+
+### 91.1 More room in the Orbit; the Field Guide for Ecology and Lexicon (2026-10-27)
+
+Shombith, with a screenshot of the built Orbit (two entries stacked at the front, over the core): "make the spacing a
+lot bigger and keep this design only for elements section others can have design B".
+
+- **The Orbit is ELEMENTS only** (`CodexScreen.orbitChapters`). Its seven entries sit on two rings, of half-widths 330 and
+  570 at a tilt of 0.56 (before: three rings of 270 / 440 / 600 at 0.46). The core is 220 square.
+- **Only the pick sits at the front.** Picking an entry turns its ring to bring it to the front. Every other ring turns
+  until the front falls in the gap between two of its entries (`CodexOrbit.Rest`). The first frame of a chapter is
+  arranged the same way. That gap is what stacked Charge over Omni in the screenshot.
+- **ECOLOGY and LEXICON are the Field Guide** (Rev 30 board B, the `Guide` layout):
+  - **The book:** the plate on the left (44 %), with the entry's picture at 520 over a breathing halo and the caption
+    "{kicker} - {title}" (`CodexPageView.plateText` / `plateTemplate`). A thin selection-blue spine runs down the middle,
+    and the page is on the right: the same words-only `CodexPageView`, with three columns of element cells.
+  - **The strip:** every entry as a 150 square (`CodexGuideTile.prefab`: the picture over its name, outlined blue with a
+    glow when open). It sits under the book and starts right of the friends orb. It scrolls sideways when there are more
+    entries than fit and is centred when they all fit. The pad keeps the open entry in view.
+  - The board's callouts (labelled points on the picture) are not built: no entry carries callout data yet.
+- **Shared head row** (`Head`): the chapter title, FLORA / FAUNA and the count sit over both layouts. Switching layout
+  hides the other one and lets go of its pick, so its pictures stop animating unseen.
+- **`CodexScreen`** now holds two `CodexLayout`s, each with a group, content, tile prefab, an optional orbit or strip
+  scroll, and a page. Navigation is the same in both: left and right step through the entries, and up goes to the
+  chapter tab.
+- Generator: `author_menu_codex.py` writes three prefabs (`CodexTile`, `CodexGuideTile`, `CodexView`), with 21 planted
+  defects. The new ones are the Lexicon drawn as the Orbit, the strip unwired, the guide page showing the core, and the
+  guide shown over the orbit.

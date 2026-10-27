@@ -16988,3 +16988,22 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 6. **Panel.** **Pass:** solid, with no sea through the words; a blue border; the element cells sit in two columns that
    fit.
 7. **Profiler.** With nothing turning, look in the profiler. **Pass:** no Canvas rebuilds come from the orbit.
+
+## 🔴 2026-10-27 — Codex: wider Orbit (Elements only) + Field Guide for Ecology and Lexicon (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §91.1.
+
+1. **Tests.** Run `CodexOrbitTests`. **Pass:** green.
+2. **Elements.** Open CODEX. **Pass:**
+   - four elements on the inner ring and Omni, Prisms and Spindles on the outer;
+   - no entry overlaps another;
+   - only the picked entry sits at the front, under the core.
+3. **Pick round.** Pick each entry in turn. **Pass:** its ring brings it to the front, the other ring turns aside, and
+   nothing ever stacks at the front.
+4. **Ecology.** RB to ECOLOGY. **Pass:**
+   - the book shows: the picture's plate on the left with "Flora - <name>" under it, the page on the right;
+   - the strip under it lists every Flora species, the first lit blue;
+   - with more than fit, the strip scrolls and the pad keeps the lit one in view.
+5. **Lexicon.** **Pass:** the same book. The eight cards fit the strip, centred.
+6. **Back to Elements.** **Pass:** the orbit returns with its pick; no Field Guide picture keeps animating (profiler:
+   nothing from the hidden layout).
