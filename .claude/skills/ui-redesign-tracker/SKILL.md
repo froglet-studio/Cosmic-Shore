@@ -120,6 +120,28 @@ another session had published Rev 28 to 31 (Ark tabs, Squads, the Codex rethough
 right before the publish, take the first free `rev<N>` page id AND board prefix (`R<N>*.dc.html`), and keep every
 page and board the other session added (send the index with only your keys changed).
 
+**T14 — the doc's section numbers are claimed the same way, and C# comments cite them** (claude/awesome-dirac-hssan7,
+2026-10-27). This branch wrote the Ark's sections as 90-94 of `Docs/MENU_REDESIGN_B.md`; the Port merged 90-91 into
+bleeding-edge first, and the merge conflicted on the doc alone. Renumbering is not a doc edit: the runtime classes'
+docstrings say `Docs/MENU_REDESIGN_B.md section 93`, so a renumber is a sweep over `Assets/_Scripts`, `Tools/Build` and
+`Docs/` for `MENU_REDESIGN_B.md section <N>` and `§<N>`, split by which branch's section each hit means (the other
+branch's comments cite the SAME numbers and must not move). Read the base's last section number right before the PR,
+not when the branch starts.
+
+**T15 — a menu generator's node key is its fileID, so a node named for its CONTENT collides with a sibling named for its
+ROLE** (claude/awesome-dirac-hssan7, 2026-10-27). A squad card had a `Pilot` value label (one of the four pick rows) and a
+`Pilot` full-figure image; both became `<card>/Pilot`, and `author_menu_arcade.check_file` failed with `duplicate fileID
+anchors`. It names three fileIDs and no node. Grep the generator for the shared key, and name the figure by what it is
+(`Figure`), not by what it shows.
+
+**T16 — check a canvas board's script offline before publishing it** (claude/awesome-dirac-hssan7, 2026-10-27). A
+`.dc.html` board's `class Component extends DCLogic` runs in node with a two-line stub (`class DCLogic { constructor(p)
+{ this.props = p; } setState(o) { Object.assign(this.state, o); } }`): build it with `new Function('DCLogic', js +
+'return Component;')`, call `renderVals()`, and check that every `{{hole}}` in the template is a key it returns (loop
+variables against one item of their list). Then press the handlers in order (make, pick, create). On the Rev 31 boards
+this caught a `create` that read the draft after clearing it, and it gives the layout numbers (which card overlaps the
+list) without rendering, which the canvas type asks sessions not to do.
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:

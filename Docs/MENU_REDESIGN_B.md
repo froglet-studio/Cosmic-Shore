@@ -3981,6 +3981,9 @@ messages in the selection blue, your messages looking like everyone else's, and 
 
 ## 92. The Ark's tabs: Squads and Decor beside the converter (2026-10-27, awaiting in-editor approval)
 
+> **The Squads page below is superseded by section 95 (the deck)**: the three cards with CHANGE buttons and PLAY
+> Arcade / Arena / Mission are gone. The tab row, Decor, the data and the joining described here still stand.
+
 Shombith (2026-10-27): "Ark - add two more tabs along with the converter. 1. Squads - Users can make / join up to 4
 squads and they can use the squad to go into a mission or arena or arcade as they want. Inside the ark they will see
 the squad members with their selected vessel, element and pilot and artifact for each squad mate. 2. Decor - Its just
