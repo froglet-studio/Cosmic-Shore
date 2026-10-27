@@ -301,18 +301,14 @@ def register_network(text: str) -> str:
 
 OPEN_SLOT = ("(open design slot) The wormhole is the Meerkat's one ability so far (Docs/Studios/MEERKAT.md): which "
              "element it is, the other three abilities and the level-5 upgrades are not designed yet.")
-
-
-def yaml_single(text: str) -> str:
-    """A YAML single-quoted scalar: an apostrophe inside it is doubled, or the asset does not parse."""
-    return "'" + text.replace("'", "''") + "'"
+OPEN_SLOT_YAML = OPEN_SLOT.replace("'", "''")   # inside a single-quoted YAML scalar an apostrophe is doubled
 
 
 def map_asset(donor_map: str) -> str:
     text = replace_once(donor_map, "  m_Name: Stoat\n", "  m_Name: Meerkat\n", "map name")
     text = replace_once(text, f"  vesselClass: {STOAT_CLASS_ID}\n", f"  vesselClass: {MEERKAT_CLASS_ID}\n", "map vesselClass")
     entries = "  entries:\n" + "".join(
-        f"  - Element: {e}\n    AbilityLabel: '(open design slot)'\n    AbilityDescription: {yaml_single(OPEN_SLOT)}\n"
+        f"  - Element: {e}\n    AbilityLabel: '(open design slot)'\n    AbilityDescription: '{OPEN_SLOT_YAML}'\n"
         "    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
         "    UpgradeLabel: \n    UpgradeDescription: \n" for e in (3, 4, 2, 1))
     return text[:text.index("  entries:\n")] + entries
@@ -410,7 +406,7 @@ def check_registrations(container, network, lists, cls, kmap, fusion):
          "SO_Class_Meerkat: wrong class, locked, or not owned from the start")
     want(f"  vesselClass: {MEERKAT_CLASS_ID}\n" in kmap and kmap.count("(open design slot)") >= 4 and "Field Dipole" not in kmap,
          "ElementalAbilityMaps/Meerkat: not the Meerkat's four open design slots")
-    want(OPEN_SLOT.replace("'", "''") in kmap and f"'{OPEN_SLOT}'" not in kmap,
+    want(OPEN_SLOT_YAML in kmap and f"'{OPEN_SLOT}'" not in kmap,
          "ElementalAbilityMaps/Meerkat: an apostrophe in a quoted description is not doubled, so the asset does not parse")
     want(len(fusion_entries(fusion, MEERKAT_CLASS_ID)) == 4, "CrystalHullFusionConfig: not 4 Meerkat entries")
     return errs

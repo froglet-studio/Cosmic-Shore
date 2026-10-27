@@ -439,8 +439,8 @@ namespace CosmicShore.Engine.Rendering.RenderGraphModule
         public Color clearColor;
         public FilterMode filterMode;
         public TextureWrapMode wrapMode;
-        public int depthBufferBits;
-        public RenderTextureFormat colorFormat;
+        public DepthBits depthBufferBits;
+        public CosmicShore.Engine.Experimental.Rendering.GraphicsFormat colorFormat;
 
         public TextureDesc(int width, int height)
         {
