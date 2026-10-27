@@ -133,6 +133,31 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 12 (Yash, 2026-10-28: "the mouth diameter should have a min and max ... the wormhole will be larger while
+traveling more distance ... an upper coating around the wormhole to be visible from a third perspective ... the pattern
+of the omnicrystal ... like a tree trunk ... we use the upper part of the tree to get inside and the root area to get out
+... Do it in artifact first"). ARTIFACT ONLY: not in Unity until Yash imports it.**
+- **Size grows with length.** `throatDiameter` and `mouthDiameter` are now the shortest tunnel's size, and
+  `throatDiameterMax` (18) and `mouthDiameterMax` (56) the longest's. A tunnel in between grows in proportion to its
+  length (`shapeFor`). Measured: an 85 u tunnel is 8.4 / 27.1 u, a 730 u one 17.6 / 54.8 u.
+- **The tree** (`drawTree`, the Wormhole · tree card). A formed tunnel is a tree to everyone watching from outside.
+  Whoever rides it does not see it: the ride stays the clear pipe.
+  - **Crown, at the way in:** `crownBranches` (7) limbs reach back `crownLength` (1.6) × the mouth's radius,
+    `crownSpread` (60°) off the axis, forking twice.
+  - **Trunk:** bark of the omni crystal's own four plate shapes (Mass triangles, Space squares, Time rhombi, Charge
+    pentagons) spiralling round it, `coatPerRing` (14) a row at `coatPlateScale` (0.9). They stand `coatLift` (0.18) ×
+    the radius off the wall, tilted `coatTilt` (22°) like scales, with a wave (`coatWave` 0.6, `coatWaveSpeed` 0.3)
+    running crown to roots, as the omni crystal's flip wave does.
+  - **Roots, at the way out:** `rootCount` (9) limbs splay `rootLength` (1.8) × the mouth's radius, curling
+    `rootSpread` (50°), forking once.
+  - Limbs are `coatLimbThickness` (0.15) × the mouth's radius at their base. `coatVisibility` 0 hides the tree.
+  - Pieces near any camera shrink away.
+- **Cost:** about 1,000 to 1,700 plates for a long tunnel (capped at 2,400 a shape), drawn as four instanced meshes,
+  plus about 170 spindles in the bridge's existing instanced mesh.
+  - Suggested for Unity: build each tunnel's bark once when it forms (it does not move) and run the wave in the plate
+    shader, so a frame costs only the four draws.
+- **Not decided:** whether the tree also shows its maker's element levels (each plate family is an element).
+
 **Round 11 (Yash, 2026-10-28: "make the wormhole look very realistic ... not super calculative ... performant and
 realistic, fun to travel without getting dizzy ... a pleasant water ride experience through a water pipe. Transparent
 pipe ... the reticle ... just pure wireframe and it should be less lit in the front side and more lit back, so I can see
@@ -232,7 +257,10 @@ just spindles. Tiny thinning spindles"):**
 | shape | `shaftMax` | 600 u | The shaft with LT fully squeezed |
 | shape | `bendRadius` | 60 u | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
 | shape | `throatDiameter` | 8 u | The throat's diameter (fixed, set at edit time; round 10) |
-| shape | `mouthDiameter` | 26 u | The entry and exit diameter (fixed, set at edit time; round 10: was 20) |
+| shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
+| shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
+| shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
+| tree | `coatVisibility` … `coatLimbThickness` | see the page | The tree round a formed tunnel (round 12, artifact only so far): bark, crown, roots |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
