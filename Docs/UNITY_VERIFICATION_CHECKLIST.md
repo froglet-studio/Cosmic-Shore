@@ -16950,6 +16950,10 @@ compile. Run `FactionChatTests` (edit mode).
    Signed out or Vivox off: "Faction messages are offline", with TRY AGAIN, retrying every 15 s.
 3. Type a message and press Enter, X or SEND. **Pass:** it appears at the foot with YOU and a neutral bar (not the blue);
    the field clears; the hint counts down 3 s.
+3a. The Rev 32 D look (`Docs/MENU_REDESIGN_B.md` §91). **Pass:** every message is a card lit from its top-left
+   corner (periwinkle border fading out, a soft glow), only as wide as its words; yours sit on the right with the avatar
+   after the card, a full periwinkle-to-violet border and a brighter fill. The field has the gradient border and a glow
+   behind it; with the pad on it, the selection-blue outline shows round it. SEND is lit periwinkle with dark words.
 4. Send again within 3 s. **Pass:** not sent; the words stay; "Not sent: too fast..." in red.
 5. Type `<size=300>hi` and send. **Pass:** shown as typed, not as large text.
 6. A second player (MPPM or a second editor) sends. **Pass:** it arrives within a second or two, with their avatar and

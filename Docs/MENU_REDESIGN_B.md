@@ -3856,7 +3856,8 @@ stepped with LB / RB.
   - A or Y on a message (or a click) opens REPORT MESSAGE, MUTE PILOT and CANCEL:
     - Report goes to UGS Moderation as verbal abuse.
     - Mute is kept on this device only.
-  - Your own messages carry a neutral bar and YOU, never the selection blue (`Docs/UI_COLOR_RULES.md`).
+  - Your own messages carry a neutral bar and YOU, never the selection blue (`Docs/UI_COLOR_RULES.md`). Replaced by the
+    sea-lit cards of section 91 (Rev 32 D).
 - **WEEKLY LEADERBOARD:** the weekly challenge window's own board (World / Regional / Friends, podium, rows, your best
   run, rewards). It has no BACK, and this week's title and countdown sit at the tab row's right. The configure card's
   LEADERBOARD button still opens the window, unchanged.
@@ -3914,3 +3915,45 @@ after the old panel's transform, so neither re-run moves the other (`.claude/ski
 3. A standard Vivox text channel seats about 200 at once. Past that, the faction needs large text channels (an
    enterprise feature, through Vivox) or rooms.
 4. There is no word filter: reports and mutes are the tools for now.
+
+## 91. Rev 32 D: the Port's messages and field, sea-lit (2026-10-27, awaiting in-editor approval)
+
+**Asked (Shombith):** "I dont like the chat bg per person also the input field bg, make them look brigter and better ...
+more mockups", then on the four looks, "Go with D implement".
+
+**On the canvas:** page "Rev 32 - Port: brighter messages and field" (another session had taken Rev 28-31 on the same
+day), with a copy in `Docs/MenuRedesignB/board/R32Port*.dc.html`:
+- `R32PortCompare` shows the four looks side by side: two messages, then the field at rest, typing and not sent.
+- `R32PortA` to `R32PortD` are the full screens: A lit cards, B glass bubbles, C bright ribbons, D sea-lit panels.
+
+**D, built:**
+- **Messages are cards sized to their words**, up to 860 wide (`FactionMessageRow.SizeCard`).
+  - Each card is lit from its top-left corner: a periwinkle-to-violet border fading out, a navy fill lifting toward
+    the corner, and a soft periwinkle glow there.
+  - Everyone else's messages sit on the left, avatar first.
+  - **Yours** sit on the right, avatar last, with the full periwinkle-to-violet border, a brighter fill, a white name
+    and YOU.
+  - The colours are data: `FactionMessageRow`'s two `Look`s (others, yours), authored by the generator.
+- **The field** has the same gradient border with a soft glow behind it and a lit corner.
+  - Its words are white and its placeholder is lighter.
+  - The pad's focus is the selection outline round the field (its transition target), so focus still reads as
+    focus.
+- **SEND** is lit periwinkle-to-violet with dark words. It is a plain Button whose focus is the same outline.
+- **New kit piece:** `KitTwoToneGradient`, two authored colours across a graphic along an angle, multiplied by the
+  graphic's colour so fades and tints still apply. `KitGradient` stays the PLAY button's one-colour lighten.
+- **Colour rules held:**
+  - Nothing is drawn in the selection blue but the focus outlines.
+  - No element colours.
+  - The periwinkle and violet are the sea lines' own (`#7F98FF`, `#9C8CFF`).
+  - They have no theme token: design feedback queue #18 in `Docs/UI_REDESIGN_TASKS.md`.
+
+**Generator:** `author_menu_port.py` builds the new row, field and SEND. It has 13 plants now; the new ones are your
+messages in the selection blue, your messages looking like everyone else's, and the field without its gradient.
+
+**How it was checked:**
+- `--check` and `--self-test`, and the menu sweep.
+- `check_ui_colors.py`.
+- The reference compile: 0 errors in project code.
+- `dotnet build Port/src/CosmicShore.Live`: 0 errors.
+- Not opened in the editor: the hand test is "The Port" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, step 3a.
+

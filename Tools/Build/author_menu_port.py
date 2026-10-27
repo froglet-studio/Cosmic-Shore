@@ -3,12 +3,14 @@
 Author the PORT screen of the style-B menu - the top bar's last tab - as prefabs, and open it in Menu_Main
 (Docs/MENU_REDESIGN_B.md section 90; the Rev 27 boards on the "Menu Redesign B" canvas, Shombith 2026-10-27: "lets open
 up the port now. Right now the port will only contain one tab called faction messages", "The weekly leaderboard can
-also go to the port for now", "use the sea line background like everywhere", Vivox for the chat).
+also go to the port for now", "use the sea line background like everywhere", Vivox for the chat; section 91, Rev 32 D:
+"Go with D", the sea-lit messages and field).
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Port/
-        FactionMessageRow.prefab  one message: avatar, name, YOU, time, the words; your own messages carry a neutral
-                                  bar and fill (never the selection blue); a uGUI Button whose focus outline is the
-                                  selection colour, so the pad can walk the feed
+        FactionMessageRow.prefab  one message (Rev 32 D, section 91): the avatar and a card sized to its words, lit from
+                                  its top-left corner in the sea's periwinkle; yours on the right with the full
+                                  periwinkle-to-violet border (never the selection blue); a uGUI Button whose focus
+                                  outline is the selection colour, so the pad can walk the feed
         PortView.prefab           the whole screen: the veil and the sea under the top bar, the tab row (LB, FACTION
                                   MESSAGES, WEEKLY LEADERBOARD, RB), then
                                   - Messages: the faction card, the rules, the muted pilots and the controls on the
@@ -133,53 +135,96 @@ def focus_button(target_key, nav=3):
 # FactionMessageRow.prefab
 # --------------------------------------------------------------------------------------------
 
-def build_row():
-    root = N("root", "FactionMessageRow", R(size=(ROW_W, 72)))
-    root.add("hlg", 114, K.hv_layout(False, (16, 16, 10, 10), 16, 0, (1, 1), (0, 0)))
-    # Out of layout, under everything: your own message's quiet fill and bar, and the focus outline.
-    fill = root.child(N("SelfFill", "SelfFill", STRETCH))
-    fill.add("cg", 225, H.canvas_group(False)).add("le", 114, le(ignore=True))
-    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark", 0.55), K.kit_sprite("kit_sliver10_fill"), True)) \
-        .add("th", 114, H.themed("SurfaceDark", 0.55))
-    bar = root.child(N("SelfBar", "SelfBar", R((0, 0), (0, 1), (1, 0), (2, -16), (0, 0.5))))
-    bar.add("cg", 225, H.canvas_group(False)).add("le", 114, le(ignore=True))
-    bar.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"))).add("th", 114, H.themed("NeutralLightest"))
-    focus = root.child(N("Focus", "Focus", R((0, 0), (1, 1), (0, 0), (4, 4))))
-    focus.add("le", 114, le(ignore=True))
-    # Authored in the selection colour with the tint's alpha 0 at rest: the Button's transition shows it on focus.
-    focus.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Selection"), K.kit_sprite("kit_sliver10_line1"), True,
-                                                                      raycast=True))
+# --- Rev 32 D: the sea-lit look (Shombith 2026-10-27, "Go with D") -----------------------------------------------
+# The sea's own colours (SeaLines.shader's mid and end, #7F98FF / #9C8CFF) lift the cards and the field; none is the
+# selection blue (that is only the focus outline) and none is an element's colour (Docs/UI_COLOR_RULES.md).
+def rgba(hexs, a=1.0):
+    h = hexs.lstrip("#")
+    return tuple(round(int(h[i:i + 2], 16) / 255, 4) for i in (0, 2, 4)) + (a,)
 
+
+LOOKS = {
+    "othersLook": dict(borderFrom=rgba("#96ACFF", 0.9), borderTo=rgba("#9C8CFF", 0.15), fillFrom=rgba("#242B70"),
+                       fillTo=rgba("#181E56"), glow=rgba("#7F98FF", 0.28), ringFrom=rgba("#5B66B3"), ringTo=rgba("#5B66B3"),
+                       name=rgba("#D3DAFF")),
+    "yoursLook": dict(borderFrom=rgba("#A9BCFF"), borderTo=rgba("#B49BFF"), fillFrom=rgba("#3C4296"), fillTo=rgba("#272D76"),
+                      glow=rgba("#AAA0FF", 0.35), ringFrom=rgba("#A9BCFF"), ringTo=rgba("#B49BFF"), name=rgba("#FFFFFF")),
+}
+BODY_TEXT, TIME_TEXT = rgba("#F6F7FF"), rgba("#AEB6E8")
+FIELD = dict(borderFrom=rgba("#9FB2FF"), borderTo=rgba("#B49BFF"), fill=rgba("#1B2262"), glow=rgba("#7F98FF", 0.4),
+             corner=rgba("#7F98FF", 0.3), placeholder=rgba("#A9B1E6"), count=rgba("#C2C9F2"))
+SEND = dict(fillFrom=rgba("#A9BCFF"), fillTo=rgba("#B49BFF"), text=rgba("#141A52"))
+CARD_MAX, CARD_PAD = 860, 36
+GRAD = C.script("KitTwoToneGradient")
+BLOOM = H.BLOOM
+
+
+def gradient(c_from, c_to, angle=-45):
+    """A KitTwoToneGradient: from the lit corner (top-left at -45 degrees, the left edge at 0) to the far one."""
+    return lambda ctx, go: mono(go, GRAD, f"  from: {K.col(c_from)}\n  to: {K.col(c_to)}\n  angle: {K.f32(angle)}\n")
+
+
+def tinted(parent, key, name, r, sprite, colour, grad=None, raycast=False, ignore=True, sliced=False, angle=-45):
+    """An Image painted by its own colour (and, with `grad`, a KitTwoToneGradient over it), out of layout by default."""
+    n = parent.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(colour, sprite, sliced, raycast=raycast))
+    if grad:
+        n.add("grad", 114, gradient(*grad, angle=angle))
+    if ignore:
+        n.add("le", 114, le(ignore=True))
+    return n
+
+
+def build_row():
+    root = N("root", "FactionMessageRow", R(size=(ROW_W, 80)))
+    # Yours aligns right with the avatar last (FactionMessageRow.Show); everyone else's aligns left.
+    root.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 6, (1, 1), (0, 0)))
     av = root.child(N("Avatar", "Avatar", R(size=(AVATAR, AVATAR))))
     av.add("le", 114, le(mw=AVATAR, mh=AVATAR, pw=AVATAR, ph=AVATAR))
-    A.image_node(av, "Avatar/Back", "Back", STRETCH, "SurfaceLight", K.kit_sprite("kit_oct_fill"))
+    tinted(av, "Avatar/Ring", "Ring", STRETCH, K.kit_sprite("kit_oct_fill"), (1.0, 1.0, 1.0, 1.0),
+           grad=(LOOKS["othersLook"]["ringFrom"], LOOKS["othersLook"]["ringTo"]), ignore=False)
     A.art_node(av, "Avatar/Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-4, -4)), A.AVATAR_PLACEHOLDER, preserve=True)
 
-    col = root.child(N("Column", "Column", R(size=(ROW_W - AVATAR - 48, 52))))
-    col.add("le", 114, le(fw=1)).add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 0, (1, 1), (1, 0)))
-    head = col.child(N("Column/Head", "Head", R(size=(0, 22))))
-    head.add("le", 114, le(ph=22)).add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 12, 3, (1, 1), (0, 0)))
-    nm = head.child(N("Column/Head/Name", "Name", R(size=(240, 22))))
-    nm.add("le", 114, le(pw=240))
-    H.ellipsize(label(nm, "PILOT", "Label", "TextLight"))
-    you = head.child(N("Column/Head/You", "You", R(size=(40, 22))))
-    you.add("le", 114, le(pw=40)).add("cg", 225, H.canvas_group(False))
-    label(you, "YOU", "Label", "NeutralLightest")
-    tm = head.child(N("Column/Head/Time", "Time", R(size=(80, 22))))
-    tm.add("le", 114, le(pw=80))
-    label(tm, "now", "DataSmall", "NeutralLightest")
-    body = col.child(N("Column/Body", "Body", R(size=(0, 26))))
-    label(body, "Message", "Body", "TextLight", valign="top", wrap=True)
+    card = root.child(N("Card", "Card", R(size=(600, 72))))
+    card.add("le", 114, le(pw=600)).add("vlg", 114, K.hv_layout(True, (CARD_PAD // 2, CARD_PAD // 2, 11, 13), 5, 0, (1, 1), (1, 0)))
+    o = LOOKS["othersLook"]
+    tinted(card, "Card/Border", "Border", STRETCH, K.kit_sprite("kit_sliver10_fill"), (1.0, 1.0, 1.0, 1.0), grad=(o["borderFrom"], o["borderTo"]), sliced=True)
+    tinted(card, "Card/Fill", "Fill", R((0, 0), (1, 1), (0, 0), (-2, -2)), K.kit_sprite("kit_sliver10_fill"), (1.0, 1.0, 1.0, 1.0),
+           grad=(o["fillFrom"], o["fillTo"]), sliced=True)
+    tinted(card, "Card/Glow", "Glow", R((0, 1), None, (110, -36), (260, 110)), BLOOM, o["glow"])
+    # The pad's focus outline: the selection colour, shown only by the Button's transition (its tint carries the alpha).
+    tinted(card, "Card/Focus", "Focus", R((0, 0), (1, 1), (0, 0), (8, 8)), K.kit_sprite("kit_sliver10_line1"), tok("Selection"), raycast=True, sliced=True)
+
+    head = card.child(N("Card/Head", "Head", R(size=(0, 20))))
+    head.add("le", 114, le(ph=20)).add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (1, 1), (0, 0)))
+    plain_label(head.child(N("Card/Head/Name", "Name", R(size=(160, 20)))), "PILOT", "Label", "TextLight")
+    you = head.child(N("Card/Head/You", "You", R(size=(40, 20))))
+    you.add("cg", 225, H.canvas_group(False))
+    plain_label(you, "YOU", "Label", "TextLight")
+    tm = head.child(N("Card/Head/Time", "Time", R(size=(60, 20))))
+    tm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("now", "DataSmall", TIME_TEXT))
+    body = card.child(N("Card/Body", "Body", R(size=(0, 26))))
+    body.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Message", "Body", BODY_TEXT, valign="top", wrap=True))
     # The words are the sender's: never rich text (a typed <size=500> must stay text).
     body.comps = [(k, cid, (lambda b: (lambda ctx, go: b(ctx, go).replace("  m_isRichText: 1\n", "  m_isRichText: 0\n")))(fn))
                   if k == "tmp" else (k, cid, fn) for k, cid, fn in body.comps]
 
-    root.add("button", 114, focus_button("Focus"))
+    root.add("button", 114, focus_button("Card/Focus"))
+
+    def looks():
+        out = ""
+        for field, look in LOOKS.items():
+            out += f"  {field}:\n" + "".join(f"    {k}: {K.col(v)}\n" for k, v in look.items())
+        return out
     root.add("row", 114, lambda ctx, go: mono(go, S["row"],
-             f"  button: {ref(ctx.c('root', 'button'))}\n  avatar: {ref(ctx.c('Avatar/Icon', 'img'))}\n"
-             f"  nameText: {ref(ctx.c('Column/Head/Name', 'tmp'))}\n  timeText: {ref(ctx.c('Column/Head/Time', 'tmp'))}\n"
-             f"  bodyText: {ref(ctx.c('Column/Body', 'tmp'))}\n  youTag: {ref(ctx.c('Column/Head/You', 'cg'))}\n"
-             f"  selfBar: {ref(ctx.c('SelfBar', 'cg'))}\n  selfFill: {ref(ctx.c('SelfFill', 'cg'))}\n"))
+             f"  button: {ref(ctx.c('root', 'button'))}\n  layout: {ref(ctx.c('root', 'hlg'))}\n"
+             f"  avatarHolder: {ref(ctx.rt('Avatar'))}\n  avatar: {ref(ctx.c('Avatar/Icon', 'img'))}\n"
+             f"  avatarRing: {ref(ctx.c('Avatar/Ring', 'grad'))}\n  card: {ref(ctx.c('Card', 'le'))}\n"
+             f"  cardBorder: {ref(ctx.c('Card/Border', 'grad'))}\n  cardFill: {ref(ctx.c('Card/Fill', 'grad'))}\n"
+             f"  cardGlow: {ref(ctx.c('Card/Glow', 'img'))}\n"
+             f"  nameText: {ref(ctx.c('Card/Head/Name', 'tmp'))}\n  timeText: {ref(ctx.c('Card/Head/Time', 'tmp'))}\n"
+             f"  bodyText: {ref(ctx.c('Card/Body', 'tmp'))}\n  youTag: {ref(ctx.c('Card/Head/You', 'cg'))}\n"
+             f"  maxCardWidth: {CARD_MAX}\n  cardPadding: {CARD_PAD}\n  headExtra: 110\n" + looks()))
     return root
 
 
@@ -265,41 +310,47 @@ def input_field(ctx, go):
     body = body.replace("  m_OnFocusSelectAll: 1\n", "  m_OnFocusSelectAll: 0\n")
     body = body.replace("  m_ResetOnDeActivation: 1\n", "  m_ResetOnDeActivation: 0\n")
     body = body.replace("  m_RestoreOriginalTextOnEscape: 1\n", "  m_RestoreOriginalTextOnEscape: 0\n")
-    # The border is authored white; the tint is its colour: quiet at rest, the selection colour on focus.
+    # The pad's focus shows as the selection outline round the field (its alpha carried by the tint), never on the border.
+    body = body.replace(f"  m_TargetGraphic: {ref(ctx.c(key + '/Border', 'img'))}\n", f"  m_TargetGraphic: {ref(ctx.c(key + '/FocusRing', 'img'))}\n")
     body = body.replace("  m_Transition: 0\n", "  m_Transition: 1\n")
-    rest, sel = K.col(tok("SurfaceLight")), K.col(tok("Selection"))
-    body = re.sub(r"    m_NormalColor: \{[^}]*\}\n", f"    m_NormalColor: {rest}\n", body, count=1)
-    body = re.sub(r"    m_HighlightedColor: \{[^}]*\}\n", f"    m_HighlightedColor: {K.col(tok('NeutralLightest'))}\n", body, count=1)
-    body = re.sub(r"    m_PressedColor: \{[^}]*\}\n", f"    m_PressedColor: {sel}\n", body, count=1)
-    body = re.sub(r"    m_SelectedColor: \{[^}]*\}\n", f"    m_SelectedColor: {sel}\n", body, count=1)
-    body = re.sub(r"    m_DisabledColor: \{[^}]*\}\n", f"    m_DisabledColor: {K.col(tok('SurfaceDark'))}\n", body, count=1)
+    for name, a in (("Normal", 0), ("Highlighted", 0.5), ("Pressed", 1), ("Selected", 1), ("Disabled", 0)):
+        body = re.sub(r"    m_%sColor: \{[^}]*\}\n" % name, f"    m_{name}Color: {{r: 1, g: 1, b: 1, a: {a}}}\n", body, count=1)
     assert "Window/NamePage" not in body and "  m_CharacterLimit: 140\n" in body
     return body
 
 
 def composer(feed):
+    """Rev 32 D: the field has the cards' periwinkle-to-violet border, a soft glow behind it and a lit corner; the pad's
+    focus is the selection outline round it (the field's transition target). SEND is lit periwinkle with dark words."""
     key = "Messages/Feed/Composer"
     cp = feed.child(N(key, "Composer", R((0, 0), (1, 0), (0, COMPOSER_BOTTOM), (-2 * FEED_PAD, COMPOSER_H), (0.5, 0))))
     cp.add("cg", 225, H.canvas_group(True))
     f = cp.child(N(f"{key}/Field", "Field", R((0, 0), (1, 1), (-(SEND_W + 16) / 2, 0), (-(SEND_W + 16), 0))))
-    fill = f.child(N(f"{key}/Field/Fill", "Fill", STRETCH))
-    fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
-    C.plain_image(f, f"{key}/Field/Border", "Border", STRETCH, (1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver10_line1"),
-                  preserve=False)
+    tinted(f, f"{key}/Field/Glow", "Glow", R((0, 0), (1, 1), (0, 0), (60, 48)), BLOOM, FIELD["glow"], ignore=False)
+    tinted(f, f"{key}/Field/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10)), K.kit_sprite("kit_sliver10_line1"),
+           tok("Selection"), ignore=False, sliced=True)
+    tinted(f, f"{key}/Field/Border", "Border", STRETCH, K.kit_sprite("kit_sliver10_fill"), (1.0, 1.0, 1.0, 1.0),
+           grad=(FIELD["borderFrom"], FIELD["borderTo"]), ignore=False, sliced=True, angle=0)
+    tinted(f, f"{key}/Field/Fill", "Fill", R((0, 0), (1, 1), (0, 0), (-4, -4)), K.kit_sprite("kit_sliver10_fill"), FIELD["fill"],
+           raycast=True, ignore=False, sliced=True)
+    tinted(f, f"{key}/Field/Corner", "Corner", R((0, 1), None, (150, -10), (420, 90)), BLOOM, FIELD["corner"], ignore=False)
     area = f.child(N(f"{key}/Field/TextArea", "TextArea", R((0, 0), (1, 1), (-50, 0), (-136, -8))))
     area.add("mask", 114, A.rect_mask())
     ph = area.child(N(f"{key}/Field/TextArea/Placeholder", "Placeholder", STRETCH))
-    ph.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Message all pilots", "Body", tok("NeutralLightest"))) \
-        .add("kt", 114, K.kit_text("Body", "NeutralLightest"))
+    ph.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Message all pilots", "Body", FIELD["placeholder"]))
     tx = area.child(N(f"{key}/Field/TextArea/Text", "Text", STRETCH))
-    tx.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "Body", tok("TextLight"))) \
-        .add("kt", 114, K.kit_text("Body", "TextLight"))
+    tx.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "Body", (1.0, 1.0, 1.0, 1.0)))
     cnt = f.child(N(f"{key}/Field/Count", "Count", R((1, 0.5), None, (-18, 0), (100, 20), (1, 0.5))))
-    label(cnt, "0 / 140", "DataSmall", "NeutralLightest", align="right")
+    cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0 / 140", "DataSmall", FIELD["count"], align="right"))
     f.add("input", 114, input_field)
-    cp.children.append(P.kit_button(f"{key}/Send", "Send", "Default", "SEND", R((1, 0.5), None, (0, 0), (SEND_W, COMPOSER_H), (1, 0.5)),
-                                    opaque=False))
+    s = cp.child(N(f"{key}/Send", "Send", R((1, 0.5), None, (0, 0), (SEND_W, COMPOSER_H), (1, 0.5))))
+    tinted(s, f"{key}/Send/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10)), K.kit_sprite("kit_sliver10_line1"),
+           tok("Selection"), ignore=False, sliced=True)
+    tinted(s, f"{key}/Send/Fill", "Fill", STRETCH, K.kit_sprite("kit_sliver10_fill"), (1.0, 1.0, 1.0, 1.0),
+           grad=(SEND["fillFrom"], SEND["fillTo"]), raycast=True, ignore=False, sliced=True, angle=0)
+    lab = s.child(N(f"{key}/Send/Label", "Label", STRETCH))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("SEND", "Button", SEND["text"], align="center"))
+    s.add("button", 114, focus_button(f"{key}/Send/FocusRing"))
     hint = feed.child(N("Messages/Feed/Hint", "Hint", R((0, 0), (1, 0), (0, 12), (-2 * FEED_PAD - 4, 22), (0.5, 0))))
     plain_label(hint, "Enter sends. Every pilot in All Pilots sees it.", "BodySmall", "NeutralLightest")
 
@@ -312,7 +363,7 @@ def feed_scroll(feed):
         .add("mask", 114, lambda ctx, go: K.mono(go, S["mask"], "  m_Padding: {x: -6, y: -6, z: -6, w: -6}\n  m_Softness: {x: 0, y: 0}\n"))
     # Anchored to the foot: a short feed sits on the field, newest last, as a chat reads.
     ct = vp.child(N("Messages/Feed/Scroll/Viewport/Content", "Content", R((0, 0), (1, 0), (0, 0), (0, 0), (0.5, 0))))
-    ct.add("vlg", 114, K.hv_layout(True, (0, 0, 6, 6), 6, 6, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    ct.add("vlg", 114, K.hv_layout(True, (0, 0, 6, 6), 10, 6, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
     sv.add("scroll", 114, lambda ctx, go: K.mono(go, A.SCROLL_RECT,
            f"  m_Content: {ref(ctx.rt('Messages/Feed/Scroll/Viewport/Content'))}\n  m_Horizontal: 0\n  m_Vertical: 1\n"
            "  m_MovementType: 2\n  m_Elasticity: 0.1\n  m_Inertia: 1\n  m_DecelerationRate: 0.135\n"
@@ -396,7 +447,7 @@ def pane_body(ctx):
             "  loadingTitle: Tuning in to the faction...\n  offlineTitle: Faction messages are offline\n"
             "  offlineLine: Check your connection. Port keeps trying every 15 seconds.\n"
             f"  input: {ref(ctx.c('Messages/Feed/Composer/Field', 'input'))}\n"
-            f"  sendButton: {ref(I('Messages/Feed/Composer/Send', 'root#button'))}\n"
+            f"  sendButton: {ref(ctx.c('Messages/Feed/Composer/Send', 'button'))}\n"
             f"  composerGroup: {ref(ctx.c('Messages/Feed/Composer', 'cg'))}\n"
             f"  countText: {ref(ctx.c('Messages/Feed/Composer/Field/Count', 'tmp'))}\n"
             "  countTemplate: '{count} / {max}'\n"
@@ -563,7 +614,7 @@ def outputs():
 
 PANE_FIELDS = (("factionNameText", K.TMP_UGUI), ("feedScroll", A.SCROLL_RECT), ("feedContent", 224), ("statusGroup", 225),
                ("statusTitle", K.TMP_UGUI), ("statusLine", K.TMP_UGUI), ("loadingGroup", 225), ("retryGroup", 225),
-               ("retryButton", K.kit_script("KitButton")), ("input", INPUT), ("sendButton", K.kit_script("KitButton")),
+               ("retryButton", K.kit_script("KitButton")), ("input", INPUT), ("sendButton", A.BUTTON),
                ("composerGroup", 225), ("countText", K.TMP_UGUI), ("hintText", K.TMP_UGUI), ("actionsGroup", 225),
                ("actionsPanel", 224), ("reportButton", K.kit_script("KitButton")), ("muteButton", K.kit_script("KitButton")),
                ("muteLabel", K.TMP_UGUI), ("cancelButton", K.kit_script("KitButton")), ("mutedGroup", 225),
@@ -580,20 +631,30 @@ def validate(files):
     row = files[prefab_path("FactionMessageRow")]
     _, rbody = A.doc_of(row, F("FactionMessageRow")("root#row"))
     assert rbody and S["row"] in rbody, "FactionMessageRow.prefab: the root carries no FactionMessageRow"
-    for field, want in (("button", A.BUTTON), ("avatar", K.IMAGE), ("nameText", K.TMP_UGUI), ("timeText", K.TMP_UGUI),
-                        ("bodyText", K.TMP_UGUI), ("youTag", 225), ("selfBar", 225), ("selfFill", 225)):
+    R_ = F("FactionMessageRow")
+    for field, want in (("button", A.BUTTON), ("layout", K.HLAYOUT), ("avatarHolder", 224), ("avatar", K.IMAGE),
+                        ("avatarRing", GRAD), ("card", K.LAYOUT_ELEMENT), ("cardBorder", GRAD), ("cardFill", GRAD),
+                        ("cardGlow", K.IMAGE), ("nameText", K.TMP_UGUI), ("timeText", K.TMP_UGUI), ("bodyText", K.TMP_UGUI),
+                        ("youTag", 225)):
         C.wired(row, rbody, field, want, "FactionMessageRow")
-    _, tbody = A.doc_of(row, F("FactionMessageRow")("Column/Body#tmp"))
+    _, tbody = A.doc_of(row, R_("Card/Body#tmp"))
     assert "  m_isRichText: 0\n" in tbody, "FactionMessageRow: a message's words must never be rich text"
-    for key in ("SelfBar", "SelfFill", "Column/Head/You"):
-        assert "  m_Alpha: 0\n" in A.doc_of(row, F("FactionMessageRow")(f"{key}#cg"))[1], f"FactionMessageRow: {key} must start hidden"
-    # Docs/UI_COLOR_RULES.md: the selection blue never marks your own row; it is only the focus outline.
+    assert "  m_Alpha: 0\n" in A.doc_of(row, R_("Card/Head/You#cg"))[1], "FactionMessageRow: YOU must start hidden"
+    # Rev 32 D: both looks authored, yours brighter than everyone else's, and neither in the selection blue (that is only
+    # the focus outline, Docs/UI_COLOR_RULES.md) nor in an element's colour.
     sel = K.col(tok("Selection"))
-    for key in ("SelfBar", "SelfFill"):
-        assert sel not in A.doc_of(row, F("FactionMessageRow")(f"{key}#img"))[1], f"FactionMessageRow: {key} must not be the selection blue"
-    _, bbody = A.doc_of(row, F("FactionMessageRow")("root#button"))
-    assert "  m_Transition: 1\n" in bbody and f"m_TargetGraphic: {{fileID: {F('FactionMessageRow')('Focus#img')}}}" in bbody, \
-        "FactionMessageRow: the pad's focus must show on the row's outline"
+    looks = {}
+    for field in LOOKS:
+        m = re.search(r"^  %s:\n((?:    .*\n)+)" % field, rbody, re.M)
+        assert m, f"FactionMessageRow.{field} is not authored"
+        looks[field] = m.group(1)
+        assert sel not in m.group(1), f"FactionMessageRow.{field} must not use the selection blue"
+        assert "a: 0}" not in m.group(1).split("glow:")[0], f"FactionMessageRow.{field}: a clear border or fill draws nothing"
+    assert looks["othersLook"] != looks["yoursLook"], "FactionMessageRow: your messages must look different from everyone else's"
+    _, bbody = A.doc_of(row, R_("root#button"))
+    assert "  m_Transition: 1\n" in bbody and f"m_TargetGraphic: {{fileID: {R_('Card/Focus#img')}}}" in bbody, \
+        "FactionMessageRow: the pad's focus must show on the card's outline"
+    assert f"  maxCardWidth: {CARD_MAX}\n" in rbody, "FactionMessageRow: cards are sized to their words, up to a maximum"
 
     view = files[prefab_path("PortView")]
     V = F("PortView")
@@ -617,7 +678,12 @@ def validate(files):
     assert f"  profileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n" in pbody, "FactionMessagesPane needs the profile icons"
     assert "  maxLength: 140\n" in pbody and "  minIntervalSeconds: 3\n" in pbody and "  minPostAge: 13\n" in pbody, \
         "the faction rules the boards state: 140 characters, 3 s apart, 13 to post"
+    for key in ("Messages/Feed/Composer/Field/Border#grad", "Messages/Feed/Composer/Send/Fill#grad"):
+        _, gbody = A.doc_of(view, V(key))
+        assert gbody and GRAD in gbody and sel not in gbody, f"PortView: {key.split('#')[0]} must carry the sea-lit gradient (Rev 32 D)"
     _, ibody = A.doc_of(view, V("Messages/Feed/Composer/Field#input"))
+    assert f"m_TargetGraphic: {{fileID: {V('Messages/Feed/Composer/Field/FocusRing#img')}}}" in ibody, \
+        "the field's focus must show as the selection outline round it, not on its gradient border"
     assert "  m_RichText: 0\n" in ibody and "  m_CharacterLimit: 140\n" in ibody and "  m_ShouldActivateOnSelect: 0\n" in ibody, \
         "the field: no rich text, 140 characters, and the pad's focus alone must not open the keyboard"
     for key in ("Messages/Feed/Actions", "Messages/Feed/Toast", "Messages/Side/Muted", "Leaderboard", "Messages/Feed/Status/Retry"):
@@ -684,8 +750,14 @@ def self_test(files):
         ("the leaderboard tab dropped", lambda f: f.__setitem__(view, f[view].replace(f"  - {{fileID: {V('Tabs/Leaderboard#tab')}}}\n", "", 1))),
         ("the send button unwired", lambda f: f.__setitem__(view, re.sub(r"(  sendButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("rich text back on the messages", lambda f: f.__setitem__(row, f[row].replace("  m_isRichText: 0\n", "  m_isRichText: 1\n", 1))),
-        ("your own row in the selection blue", lambda f: f.__setitem__(row, f[row].replace(
-            K.col(tok("NeutralLightest")), sel, 1))),
+        ("your own messages in the selection blue", lambda f: f.__setitem__(row, f[row].replace(
+            f"  yoursLook:\n    borderFrom: {K.col(LOOKS['yoursLook']['borderFrom'])}", f"  yoursLook:\n    borderFrom: {sel}", 1))),
+        ("your messages looking like everyone else's", lambda f: f.__setitem__(row, re.sub(
+            r"(  yoursLook:\n)(?:    .*\n)+", lambda m: "  yoursLook:\n" + "".join(f"    {k}: {K.col(v)}\n" for k, v in LOOKS["othersLook"].items()),
+            f[row], count=1))),
+        ("the field's gradient border dropped", lambda f: f.__setitem__(view, re.sub(
+            r"(--- !u!114 &%s\nMonoBehaviour:\n(?:  .*\n)*?  m_Script: \{fileID: 11500000, guid: )\w+"
+            % V("Messages/Feed/Composer/Field/Border#grad"), r"\g<1>0", f[view], count=1))),
         ("the field opening the keyboard on focus", lambda f: f.__setitem__(view, f[view].replace(
             "  m_ShouldActivateOnSelect: 0\n", "  m_ShouldActivateOnSelect: 1\n", 1))),
         ("the message actions shown at rest", lambda f: f.__setitem__(view, re.sub(

@@ -302,6 +302,17 @@ avatars are the weekly leaderboard board's). The chat runs on Unity Vivox (`Docs
 - [`R27PortStates.dc.html`](R27PortStates.dc.html) - Rev 27 - Port: empty, loading, offline, not sent
 - [`R27Notes.dc.html`](R27Notes.dc.html) - Rev 27 - notes and decisions
 
+### Rev 32 - Port: brighter messages and field  (page `rev32`)
+
+Copied 2026-10-27 from canvas version `1793129499-cf66`. Four looks for the message backgrounds and the field; D was
+picked and built (`Docs/MENU_REDESIGN_B.md` section 91).
+
+- [`R32PortCompare.dc.html`](R32PortCompare.dc.html) - the four looks side by side: two messages, the field at rest, typing, not sent
+- [`R32PortA.dc.html`](R32PortA.dc.html) - A: Lit cards
+- [`R32PortB.dc.html`](R32PortB.dc.html) - B: Glass bubbles
+- [`R32PortC.dc.html`](R32PortC.dc.html) - C: Bright ribbons
+- [`R32PortD.dc.html`](R32PortD.dc.html) - D: Sea-lit panels (picked)
+
 ### Item boards (before the paged rounds)
 
 - [`HomeOffline.dc.html`](HomeOffline.dc.html) - Item 6 · Home · offline, asking to go online
