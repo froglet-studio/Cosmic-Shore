@@ -133,6 +133,23 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 15 (Yash, 2026-10-28: "I have added some config settings in the artifact ... It's named tree1. Can you check
+those and then repolish the configurations to make it look more like a big branch through which this meerkat is
+traveling"). ARTIFACT ONLY.**
+- **`tree1` could not be read.** The shared `profiles` collection is empty, and so are `decisions` (nothing newer than
+  2026-10-17) and `requests`. The profile was most likely kept in the browser that saved it: a section profile falls
+  back to that browser when the viewer does not serve the shared db. These defaults are therefore a polish by look, not
+  `tree1`'s numbers. To send them: Load `tree1`, then press **Record**, or Save it again while signed in to claude.ai.
+- **A big branch:**
+  - The limb is thicker (`trunkTop` 1.5, `trunkBase` 1.9 × the mouth) and more gnarled (`trunkBark` 0.22,
+    `trunkRidges` 16, `trunkGnarl` 0.14).
+  - **New: bark grain.** Thin fissures run along the wood, broken into lengths, on the trunk and every branch
+    (`trunkGrain` 0.5, `trunkGrainLines` 22 round it). Riding through, they stream past along the walls.
+  - The side branches now grow all along the limb (`branchZone` 0.85, `branchCount` 8, `branchLength` 2.4,
+    `branchThickness` 0.28, `branchUp` 28°, `branchSymmetry` 0.45).
+- **The burrowing version became its own vessel, the Gopher** (`GOPHER.md`, `gopher.html`). Its single tunnel is a
+  network of channels dug through soil, with a choice at every fork. The Meerkat stays the one-way tree.
+
 **Round 14 (Yash, 2026-10-28: "the moment AI or player ... press their right trigger to create the tunnel, the tunnel
 will automatically be created with the trunk, not separate from the trunk ... just extend the outer layer of the tube to
 some tree-like structure with big similar symmetrical or asymmetrical but similar branches from the top half ... the
@@ -477,11 +494,11 @@ any useful area is very fat, so the throat may need a floor and a ceiling.
 5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
    the length again. A floor and ceiling on the throat is one way to keep both.
 
-## Two kits: Garrett's and the Mix (round 15, 2026-10-27, for Yash to judge)
+## Two kits: Garrett's and the Mix (round 16, 2026-10-27, for Yash to judge)
 
 Yash, 2026-10-27: *"Make two variants, one with his kit only, one with a mix of his kit with the ones you recommend ...
 Do this for every decision ... whatever his extra features there are, add those. And remove our extra features which he
-already made."* The studio page (`Docs/Studios/VesselStudio/meerkat.html`, round 15) now has a **Kit** dropdown at the
+already made."* The studio page (`Docs/Studios/VesselStudio/meerkat.html`, round 16) now has a **Kit** dropdown at the
 top of Play Style Config. It picks what every Meerkat in the race flies, and it is kept in the page's saved state and in
 section profiles:
 
@@ -493,9 +510,9 @@ section profiles:
   table is exactly Garrett's.
 - **Round 8 (archived)**: the round-8 proposals unchanged (Lookout, Hardened Bridge on LB, Cave-in, Chain Dig). They are
   kept to replay. **LB now conflicts with the fleet's pilot sight.**
-- **Off**: no kit, the wormhole alone. Its headless races are byte-identical to the page before round 15 with round 8's
+- **Off**: no kit, the wormhole alone. Its headless races are byte-identical to the page before round 16 with round 8's
   abilities switched off. Round 8's races are byte-identical to that page as it shipped. Both were measured with
-  `runBatch` against the round-14 page.
+  `runBatch` against the page before them (rounds 14 and 15).
 
 Round 8's Lookout and Hardened Bridge are not in Garrett's kit or the Mix: his Sentinel mode and exit portal cover them.
 **These are prototypes for Yash to fly and judge.** Every kit number is lab-only: there is no `MeerkatWormholeConfig`
@@ -590,7 +607,7 @@ AI hopped the person out after 3 s. The race finished in 1:26.3.
   would be ~280 objects per tunnel).
 - **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
   It is unlinked from the studio now. Removing it from the Stoat is Garrett's call (the Stoat's owner).
-- **The kit** (round 15): Garrett's kit and the Mix are prototypes in the studio (§ Two kits), for Yash to judge.
+- **The kit** (round 16): Garrett's kit and the Mix are prototypes in the studio (§ Two kits), for Yash to judge.
   Neither is decided, and nothing of either is in Unity.
 - **The play styles.** The Meerkat has none yet.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
