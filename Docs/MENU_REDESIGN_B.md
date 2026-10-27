@@ -3936,3 +3936,21 @@ beside the vessel".**
   pilot on the outer side and facing in. A base-kit seat shows the hull's first pilot as a lit silhouette; an open seat
   shows a dashed outline.
 
+## 92. Rev 29 mockups: Squads, six ways (2026-10-27, awaiting a pick)
+
+**Asked (Shombith):** "Yes keep it out give me more variations. I do not like this style at all", then "Too much noise".
+Arcade stays out of Take into (Mission, locked as on Home, and Arena only).
+
+**On the canvas:** page "Rev 29 - Squads, six ways (quiet)" of Menu Redesign B, copies in
+`Docs/MenuRedesignB/board/R29*.dc.html`. Six layouts of the same screen, and notes:
+- A Hangar bay: three bays on a faint floor, a thin line over the picked bay.
+- B Formation: the squad flies at you in a V from the horizon; the pilots are a roster along the bottom.
+- C The deck: each mate a card, the pilot stepping out of its frame (a squad is a twelve-card deck).
+- D The Ark's bays: the squad's Ark in cutaway, a vessel and its pilot in each docking bay, the banner on its hull.
+- E Lineup: three tall slanted panels, the pilots large, the vessel above each.
+- F Dossier: one row per mate, the picked one in a preview on the right.
+
+Quiet by rule: no idle motion (the domain switch's nanobot rebuild is the only animation), no glows or scan lines, each
+mate's four picks as one line of text, the picked seat marked by one thin line in the domain colour. Rev 28's spot-lit
+podium is set aside. Make squad, join and the Unity build follow the layout picked here.
+
