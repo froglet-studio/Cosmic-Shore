@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
         Vector3 _lag, _lagVelocity;                       // G: world axes, fraction of the follow distance
         Vector3 _kick, _kickVelocity;                     // kicks: camera-local, fraction of the follow distance
         Vector3 _kickAngles, _kickAngularVelocity;        // kicks: camera-local Euler degrees
-        float _trauma, _skimRumble, _drift;
+        float _trauma, _skimRumble, _drift, _slide;
         Vector3 _lastPoint, _velocity;
         int _primed;                                      // 0 = no point yet, 1 = a point, 2 = a velocity
         float _clock, _noiseTime;
@@ -62,7 +62,7 @@ namespace CosmicShore.Gameplay
             _lag = _lagVelocity = Vector3.zero;
             _kick = _kickVelocity = Vector3.zero;
             _kickAngles = _kickAngularVelocity = Vector3.zero;
-            _trauma = _skimRumble = _drift = 0f;
+            _trauma = _skimRumble = _drift = _slide = 0f;
             _velocity = Vector3.zero;
             _primed = 0;
             LocalOffset = Vector3.zero;
@@ -204,7 +204,14 @@ namespace CosmicShore.Gameplay
             // drift speed only (a slow slide is a gentle one), and through the spring, so it builds with an
             // accelerating start, swings a little past and settles, instead of easing in along a straight line.
             float speedShare = Mathf.SmoothStep(0f, 1f, _velocity.magnitude / (distance * c.DriftFullSpeed));
-            Vector3 slideRest = view * new Vector3(-drift * c.DriftSlide * gForce * speedShare, 0f, 0f);
+            // The slide's rest point is eased before it reaches the spring: a drift ending (or the nose coming
+            // back) would otherwise snap the rest to zero and the spring would whip the hull back with an
+            // overshoot - the jerk that broke the Squirrel's flow. Out is slower than in, so the hull glides home.
+            float slideTarget = drift * speedShare;
+            bool growing = Mathf.Abs(slideTarget) > Mathf.Abs(_slide) && slideTarget * _slide >= 0f;
+            float slideRate = growing ? c.DriftSlideIn : c.DriftSlideOut;
+            _slide = Mathf.Lerp(_slide, slideTarget, 1f - Mathf.Exp(-slideRate * dt));
+            Vector3 slideRest = view * new Vector3(-_slide * c.DriftSlide * gForce, 0f, 0f);
 
             // e'' = -w^2 (e - rest) - 2 z w e': settles at rest = behind the push, plus the slide. The rest is
             // held for the frame, so the exact step is the spring's step around that rest point.

@@ -909,7 +909,7 @@ MonoBehaviour:
   - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: fcbf39a50ea36d566289b4d999a065fb, type: 2}
-  - InputEvent: 3
+  - InputEvent: 14
     ShipActions:
     - {fileID: 11400000, guid: 30193df2c492c5ba431b666c13b91521, type: 2}
   - InputEvent: 6

@@ -339,7 +339,7 @@ rings), Fabricator 50.2. Frenzy: Zephyr 55.5, Fabricator 55.8, Balanced 57.1, Hu
 Garrett's redesign, built in Unity and in the studio's Unity set in the same change (contract
 `R_VesselActions/BRITTLE_STAR.md` §1, §3):
 
-- **Charge Mode** (RB; key 4 / the CHARGE touch button in the studio): the five cords become **whips** — a wave equation on
+- **Charge Mode** (Y in the game, RB until 2026-10-27; key 4 / the CHARGE touch button in the studio): the five cords become **whips** — a wave equation on
   the link directions (`BrittleStarCord`), inextensible, heavy, 150% long (120 u) — that RT, analog, shortens to 100% (80 u)
   and stiffens into **five sabers**. Using them cools the guns.
 - **Space Mode** (X, `Mode.Destruction` in code): the five projectile streams are back, RT's pull setting their rate (up to

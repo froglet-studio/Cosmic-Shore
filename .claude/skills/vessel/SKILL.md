@@ -956,6 +956,21 @@ applies to new abilities, new resources on the meter list, and anything that add
     `SetFollowTarget`, both are written only for the LOCAL HUMAN pilot (an AI, a remote copy or the lava lamp's
     autopilot must never move this machine's camera), and the owner releases them on disable (`RhinoSwordCamera`). Keep
     the hull where it sat on screen by scaling the LOOK POINT with the offset. FOV stays the player's (rule 21).
+63. **To move an ability to another button, change the BINDING's owner, then measure who reads the old button.**
+    `cece/sweet-mendel-yoq3vo` (2026-10-27) moved the three RB abilities to Y. What it learned:
+    - **RB is `FlipAction` (InputEvents 3), and the name is legacy**: it fires whatever a hull binds there. RB also
+      writes `InputStatus.Throttle`, but a hull reads that only with `toggleManualThrottle`, which no shipped prefab
+      sets. Reading `GamepadInputStrategy` alone said "RB is boost and flip". The prefabs said "RB is three
+      abilities". Ask the consumers (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`, the maps'
+      `Input:`), never the producer.
+    - **A binding lives in two places**: the prefab's `_inputEventShipActions` and the `ElementalAbilityMapSO`'s
+      `Input` (which the HUD chip reads). A generator that authors the vessel owns both. Change its table, or the
+      next run puts the old button back. The Shrike's generator re-applies bindings on every run. The Brittle Star's
+      applies them only inside its one-shot clone, so after editing its table you also edit the prefab line, and its
+      `--check` confirms the two agree.
+    - **The executors find their controls by event** (`Enum.GetValues(typeof(InputEvents))`), so the AI follows a
+      rebind with no change. The control-chip tests name events, so update those.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

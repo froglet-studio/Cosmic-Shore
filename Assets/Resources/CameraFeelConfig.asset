@@ -68,8 +68,10 @@ MonoBehaviour:
   rumbleFrequency: 6.5
   driftFullSlipDegrees: 35
   driftSlide: 0.08
+  driftSlideIn: 3
+  driftSlideOut: 1.2
   driftFullSpeed: 4
-  driftRumble: 0.5
+  driftRumble: 0.15
   breathAngle: 0.1
   breathFrequency: 0.15
   vessels:

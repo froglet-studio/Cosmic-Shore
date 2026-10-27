@@ -16,14 +16,14 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Targeting Array
-    AbilityDescription: 'RB: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a
-      plant, then the centre of the mass nearest your aim - and every nest flora with a ready missile
+    AbilityDescription: 'Y: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a plant,
+      then the centre of the mass nearest your aim - and every nest flora with a ready missile
       launches it, one each per 0.8 s, homing while you paint. A missile blows on contact in an 18 u
       blast (a shield takes the hit first); a rival hull inside it is a petal hit (petals only -
       nothing is moved). The card counts the missiles left across every flora. A collected crystal
       becomes a nest flora that grows large missiles (one per 6 s, up to 4). Space widens the lock
       cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone).'
-    Input: 3
+    Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

@@ -25,13 +25,15 @@ the fleet's one-thumb model (`SingleStickVesselTransformer`, via `BrittleStarVes
 | Speed Mode | **A** | Space | Select Speed Mode (press again: back to Cruise) |
 | Creation Mode | **B** | R | Select Creation Mode (press again: Cruise) |
 | Space Mode | **X** | Q / middle mouse | Select Space Mode — the five guns (`Mode.Destruction` in code; press again: Cruise) |
-| Charge Mode | **RB** | E | Select Charge Mode — the five cords (press again: Cruise) |
+| Charge Mode | **Y** | F | Select Charge Mode — the five cords (press again: Cruise) |
 | RT (held, **analog**) | **RT** | Right Shift / LMB (read as a full pull) | Space Mode: the five guns' rate. Charge Mode: the cords from whip (released) to saber (pulled). Every other mode: the one aimed turret's rate |
 | Aim | **right stick** | P ; L ' (no aim on the mouse scheme) | Direction turns the ring (brings a turret round; turns the five guns or cords with it); deflection moves the guns / cords in and out |
 | Ring Detonation | **LT** | Left Shift / RMB | Throw the ring — only with a spare ring in stock |
 
 Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape; touch has no overrides. Charge Mode
-is on `FlipAction` (InputEvents 3: RB / E), the only free face control the input layer raised when it shipped. Turning
+is on `Button4Action` (InputEvents 14: Y / F) since 2026-10-27, when Garrett moved every RB ability to Y because the
+shoulders belong to the pilot (LB sight, RB payload; `Docs/Pilots/CALLSIGNS.md` §5). It shipped on `FlipAction`
+(InputEvents 3: RB / E), the only free face control the input layer raised at the time. Turning
 the phone no longer raises it (2026-10-21, `DeviceOrientationHandler`): on a phone every control is an on-screen button
 (next section).
 
@@ -45,7 +47,7 @@ lifting a thumb raises nothing, and six buttons sit round the right thumb.
 | Speed Mode card (Time) | `Button1Action` (A) | Select Speed Mode (tap again: Cruise) |
 | Creation Mode card (Mass) | `Button2Action` (B) | Select Creation Mode |
 | Space Mode card (Space) | `Button3Action` (X) | Select Space Mode |
-| Charge Mode card (Charge) | `FlipAction` (RB) | Select Charge Mode |
+| Charge Mode card (Charge) | `Button4Action` (Y) | Select Charge Mode |
 | **Fire** (extra, primary) | `RightStickAction` (RT), held, **aims while held** | Fires while the finger is down; dragging that finger from where it landed is the right stick, so it turns the ring and moves the guns / cords in and out as it fires |
 | **Ring** (extra, primary) | `LeftStickAction` (LT), held, **aims while held** | Throws the ring on the press (it flies along the nose, not the aim); dragging the held finger then turns the ring without firing |
 
@@ -347,7 +349,7 @@ variant's wiring holds. The Charge card still wears the Ring Detonation icon (fo
 
 | Element | Ability | Input | The one dial | L5 |
 |---|---|---|---|---|
-| Charge | Charge Mode (the five cords; the card shows the spare rings LT throws) | RB (3) | cord width and rounds ×1 → ×1.8, disk thickness ×1 → ×4 | **open** |
+| Charge | Charge Mode (the five cords; the card shows the spare rings LT throws) | Y (14) | cord width and rounds ×1 → ×1.8, disk thickness ×1 → ×4 | **open** |
 | Mass | Creation Mode | B (7) | corner-trail blocks ×1 → ×1.8 (the mode flies ×0.5) | **open** |
 | Space | Space Mode (the five guns; RT fires one turret in the other modes) | X (8) | every gun's range ×1 → ×2 | **open** |
 | Time | Speed Mode | A (6) | speed ×6 → ×8 | **open** |
@@ -483,7 +485,7 @@ None of that is a play test. In order:
    and turns red after ~6 s (raise Space to 10: ~20 s); the guns stop; **your trail turns to danger prisms** while overheated in Space Mode. Release
    and wait ~5 s: the card drops below a third and the guns fire again. Profiler with 3–4 AI Brittle Stars bursting:
    ~2,000 rounds alive per hull (~4,000 at Space 10).
-7. **RB** (Charge): five cords (fresnel tubes in your domain's colour) grow out of the turrets, **120 u long and loose**.
+7. **Y** (Charge): five cords (fresnel tubes in your domain's colour) grow out of the turrets, **120 u long and loose**.
    Flick the right stick round: the ring snaps over and a **wave travels slowly down each cord** (about a second to the
    tip), bounces back and keeps swinging for a few seconds; turn the hull hard and the cords trail and swing. Squeeze RT
    slowly: the cords **shorten to 80 u and stiffen**, becoming five sabers at a full pull that still flex a little when
@@ -539,7 +541,7 @@ None of that is a play test. In order:
   Kept so the enum values, the control asset's guid and the HUD variant's wiring did not move in the redesign. The fix:
   rename the two view fields with `[FormerlySerializedAs]`, the enum members in code (their values are static), and
   `git mv` the control asset (its guid survives); then `author_brittlestar_assets.py --check` and the HUD audit.
-- **R2 — a gap this branch walked past (fleet input layer).** `InputEvents` has no fourth face-button event: the gamepad
+- **R2 — a gap this branch walked past (fleet input layer). RESOLVED:** `Button4Action` (pad Y / F) exists since the Angler (2026-10-16), and Charge Mode moved to it on 2026-10-27. The original note: `InputEvents` has no fourth face-button event: the gamepad
   raises A / B / X (`Button1-3Action`) and RB (`FlipAction`) only (`GamepadInputStrategy.ProcessButtonInput`), so a
   vessel that needs a fourth mode control must borrow `FlipAction` (`DeviceOrientationHandler` raised it when a phone
   was turned until 2026-10-21; it no longer does). Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
