@@ -5,6 +5,13 @@ D37). Studio page: `Docs/Studios/VesselStudio/serpent.html`, in the one Vessel S
 (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Started 2026-10-27 by Shombith; he will explain more as it goes, so
 this file grows a round at a time.
 
+**Where to fly it.** On its own (private, Shombith's; share it from its Share menu):
+https://claude.ai/artifact/5TbEm7vjqTDWVhXBiNPAZK, built from the repo page minus the hub's Sync tag and links (as the
+Shrike's standalone is). The hub card is on this branch (`claude/dazzling-ride-dpyvkx`, based on `Ys-bleeding-edge`), but
+the one hub artifact belongs to an account outside the Froglet organisation, so this session could not publish to it: its
+owner (Yash drives the Vessel Studio) republishes from this branch, or merges it into `Ys-bleeding-edge` with the Sync panel,
+and the Serpent card appears there.
+
 ## 1. The brief (Shombith, 2026-10-27, his words)
 
 > "we are gonna make the serpent and its time game the best game. This needs to be an dirty time game. I think there can
