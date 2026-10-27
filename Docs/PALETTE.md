@@ -802,6 +802,27 @@ the omni body's material there. **To retune a shade**, rerun `kite_mote_colors.p
 outside the live tint (§2.10, "Not reached by §2.2's tint"), so those three are generated from the
 palette rather than painted by it.
 
+**Through the bloom (measured 2026-10-27, `Tools/Build/crystal_bloom_preview.py`).** Garrett's bar: each crystal
+distinct AND reading as lime (not green, not yellow, not white) *after* the gameplay bloom. The tool renders each free
+crystal from its real mesh and shader formula, then runs URP 17's own bloom chain with the gameplay profile. In that
+chain the threshold is `Mathf.GammaToLinearSpace(0.2)`, about 0.033 in linear. The clamp of 0.5 applies per
+channel before the threshold, and the knee is hard-coded to half the threshold. It measures the light each crystal
+adds over the sky, at a near and a far size. What it found for the shipped shades:
+
+| crystal | after bloom | the problem |
+|---|---|---|
+| Space `#40ff00` | 10% green near, 27% far | its shade sits ON the 105° green edge, and the shading carries it over |
+| Time `#9bcf00` | 89% yellow near, 74% far | its shade sits ON the 75° yellow edge; the per-channel clamp cuts green more than red |
+| Omni / Space | 0.023 apart (far) | the closest pair, about one just-noticeable difference |
+| Charge | lime, but OKLab L 0.28-0.34 | `ElementalCrystalDimming` 0.45 leaves it dark green-black, outside lime's lightness |
+
+Nothing clips, whitens or turns yellow from bloom alone: the 0.5 clamp keeps every glow below saturation. Bloom
+raises lightness and chroma but barely moves hue. A candidate set that passes (`--propose`, all four inside the lime
+boundary, at most 5% off-lime after bloom at both sizes, Mass darkest, Space coolest, Time warmest) is Charge
+`#5fd200`, Mass `#89bf00`, Space `#52df00`, Time `#a4df00`: closest pair 0.050 after bloom. It is NOT applied; the
+shades are the Wrasse's too. Charge's lightness is a separate decision: undimmed it collides with Mass (0.030),
+because its shader paints mostly the dull end of its pair.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)
