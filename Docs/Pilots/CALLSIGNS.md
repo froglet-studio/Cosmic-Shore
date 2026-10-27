@@ -33,8 +33,8 @@ which this reuses.
 
 - **Seeing one thing costs you everything else.** While LB is held you fly half-blind to the rest of the world. That
   is the price, and it is the only one.
-- **A squad is a set of eyes.** Eight pilots cover eight of the seventeen sights. Building the squad, like building an
-  8-card deck, means choosing what it can find and what it will never see coming. With the D-pad hull swap
+- **A squad is a set of eyes.** A squad is three vessels (Garrett, 2026-10-27), so three pilots cover three of the
+  seventeen sights. Building the squad means choosing what it can find and what it will never see coming. With the D-pad hull swap
   (`PilotSwap`), changing hulls also changes whose eyes you look through.
 
 ## 2. The seventeen callsigns
@@ -147,28 +147,24 @@ never as 2D text or a ring on the screen.
 | Pad | Does | Status |
 |---|---|---|
 | **LB** (hold) | the pilot's sight | proposed; LB is unbound on a vessel today |
-| **RB** | grab and activate the payload | proposed; **conflict below** |
+| **RB** | grab and activate the payload | proposed; RB is free on every vessel since 2026-10-27 |
 | **D-pad down** | look-back camera | **moved here 2026-10-27** (`RearViewGesture`, was LB + RB together) |
 | D-pad left / right | swap hulls (`PilotSwap`) | shipped |
+| **Y** | the three abilities that were on RB | **moved here 2026-10-27** |
 
 - **The look-back camera is now D-pad down.** It moved because LB + RB together would have opened the sight, grabbed
   the payload and flipped the camera at once. C stays on the keyboard. D-pad down was free in flight. The theater's
   D-pad transport (`TheaterGesture`) is read only while the local pilot's input is paused, which is exactly when the
   look-back gesture is not polled.
-- **RB is free on all but three hulls** (measured 2026-10-27). `GamepadInputStrategy` raises `FlipAction` from RB
-  (the name is legacy), and three vessels bind an ability to it:
+- **Every RB ability moved to Y** (Garrett, 2026-10-27), so RB is free on every vessel. Measured that day, RB raised
+  `FlipAction` (the name is legacy) and three vessels bound an ability to it. All three now sit on `Button4Action`
+  (pad Y, keyboard F), which none of them used:
   - Brittle Star: Charge Mode (Charge)
   - Grizzly: Weapon Systems (Mass)
   - Shrike: Targeting Array (Charge)
 
   RB also writes `Throttle`, but that is read only when `toggleManualThrottle` is on, and no shipped prefab turns it
-  on. So **RB is not boost on any vessel**. On those three hulls a payload on RB would fight their ability. The
-  options:
-  - move those three abilities to another button;
-  - give the payload its own button;
-  - an agreed rule: a press near a payload grabs it, otherwise the ability fires.
-
-  This is a decision, and it is recorded in §7.
+  on, so RB was never boost. The keyboard's E (the old `FlipAction` key) is free for the payload too.
 - **Keyboard and phone** need bindings and a touch gesture. Phones have per-hull touch profiles
   (`Docs/claude/ARCHITECTURE_CORE.md`, Input Strategy).
 
@@ -199,7 +195,6 @@ never as 2D text or a ring on the screen.
 | What becomes of the 40 ability-rewrite pilots, their portraits, the Hangar PILOTS / ARTIFACTS tabs and the Tomahawk throw on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
 | Which pilot carries which of the seventeen sights | the pilot roster's author |
 | ENSIGN shows your own mass, or the rivals' | Garrett |
-| The payload on RB, given Brittle Star, Grizzly and Shrike bind an ability to RB today (§5) | Garrett |
 | Whether artifacts get a sight once they are a fundamental | Garrett, through the fundamentals-curation process |
 | BANDIT on the Dolphin: its Charge level-5 upgrade already marks vessels inside the Echo Sight cone. BANDIT shows them all, everywhere, which may make that upgrade redundant on that hull | whoever owns the Dolphin's element map |
 | Where the plate sits on each hull | `/vessel-model` |

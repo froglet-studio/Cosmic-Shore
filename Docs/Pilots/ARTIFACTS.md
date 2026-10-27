@@ -3,6 +3,10 @@
 **Status: THE ARTIFACT CONCEPT** (Garrett, 2026-10-27, rev 2). Design only: no payload or artifact code exists on
 `bleeding-edge`. It is the partner of the pilot concept, [`CALLSIGNS.md`](CALLSIGNS.md).
 
+**Decided since (Garrett, 2026-10-27):** one Ark per squad of three vessels; an Ark felled by fauna spills its
+artifacts for anyone, and uncollected ones are lost when the instance expires; the RB abilities moved to Y, so RB is
+free for the payload.
+
 **What changed from rev 1 (same day):**
 - Artifacts work with **any vessel**, not one class.
 - **Upgrades are paid in elemental crystals**, not earned by extracting.
@@ -69,10 +73,8 @@ can never be robbed, and that is what keeps *PvP is petals only* (LOCKED) untouc
 **Silence applies.** A carrier who takes a scored hit is silenced (`Docs/ElementalAbilitySystem/SILENCE.md`). While
 silenced, a payload harms no rival prism and no Ark.
 
-**The button.** RB is free on every vessel but three. Brittle Star (Charge Mode), Grizzly (Weapon Systems) and Shrike
-(Targeting Array) bind an ability to it through `FlipAction`. RB is not boost anywhere: its `Throttle` is read only
-with `toggleManualThrottle`, which no shipped prefab turns on. What those three do is open (§10, and
-`CALLSIGNS.md` §5).
+**The button.** RB is free on every vessel. The three abilities that were on it (Brittle Star, Grizzly, Shrike) moved
+to Y on 2026-10-27 (`CALLSIGNS.md` §5). On the keyboard, E is free for it too.
 
 ## 3. Artifacts work with any vessel
 
@@ -149,15 +151,16 @@ an element level:
   - Your scored hits **silence raiders**, and a silenced pilot cannot harm an Ark's health prisms (`SILENCE.md`).
   - **Aegis** shields the hull, and **Keystone** walls it.
   - Every payload you fire thins your own hull.
-- **If fauna finish an Ark, nobody earned it.** The proposal is that its artifacts spill as loose objects anyone can
-  grab with RB and carry to their own Ark. That is for the ecology owner and Garrett to settle (§10).
-- **"That vessel's Ark":** whether a voyage has one Ark per squad or one per player is open (§10). Either way the
-  rule is the same: an Ark's fall takes everything aboard it.
+- **If fauna finish an Ark, nobody earned it, so its artifacts spill** (Garrett, 2026-10-27). They become loose
+  objects in the world, and anyone can grab one with RB and carry it to their own Ark. **An artifact nobody collects is
+  lost when the instance expires.** It is gone for good, not returned to its owner.
+- **One Ark per squad** (Garrett, 2026-10-27), and a squad is three vessels. An Ark's fall takes everything aboard,
+  so a squad risks up to three artifacts (one per slot) plus anything it found and brought home on this voyage.
 
 ## 6. The loop
 
-1. **Bring.** Before a voyage, each squad slot picks one artifact from the player's collection (the deck). The
-   artifacts brought ride in the Ark; the rest of the collection stays safe at home.
+1. **Bring.** Before a voyage, each of the squad's three slots picks one artifact from its player's collection. The
+   artifacts brought ride in the squad's one Ark; the rest of each collection stays safe at home.
 2. **Hunt.** Artifacts are found on voyages, never bought:
    - in **vaults**, small super-shielded shells in the HyperSea that a payload or a specialist opens;
    - in **hoards** (proposed, ecology owner's call), using the thieves of `Docs/BUILDERS_AND_THIEVES.md`;
@@ -184,7 +187,8 @@ super-shielded, and GALLEON shows Arks.
 3. No artifact names a vessel class. One that must lean on a vessel names a shared concept the fleet has.
 4. An artifact never leaves its Ark during a voyage except in a finder's hands on the way home. Payloads carry its
    effect, not the artifact.
-5. An Ark's fall takes everything aboard. That is the only theft.
+5. An Ark's fall takes everything aboard. That is the only theft. One Ark per squad of three. If fauna fell it, its
+   artifacts spill for anyone, and any left uncollected are lost when the instance expires.
 6. A loaded payload touches vessels only by moving petals as a scored hit. Silence makes a carrier's payload harmless.
 7. Upgrades are elemental crystals on four tracks (0 to 10, a twist at 5), and they stay with the artifact.
 8. Every artifact name and line is authored text. Every payload and artifact sound is an exposed `EventReference`,
@@ -209,7 +213,8 @@ Built on the types from `claude/pensive-dijkstra-qxoxo0` once they land, never b
    - `SquadSlot.ArtifactId` already exists.
 3. **Upgrades.** Per-element crystal balances plus each artifact's track levels on the player profile. That is the
    backend, so it goes through Shombith. The Ark screen gets an artifact panel beside the Converter.
-4. **The fall.** When `Ark` dies, the hold's contents move to the credited squad's Ark, server-side, in one step.
+4. **The fall.** When `Ark` dies, the hold's contents move to the credited squad's Ark, server-side, in one step. With
+   no squad to credit (fauna), they spawn as `ArtifactPickup`s that the instance deletes, uncollected, when it ends.
 5. **The voyage.** Vaults, the hold and extraction belong to the voyage mode built on the Arkway (`ECOSYSTEM.md` §41),
    through `/arcadegame`'s recipe.
 6. **`/verify-unity`** before any C# commit (LOCKED).
@@ -226,9 +231,6 @@ Built on the types from `claude/pensive-dijkstra-qxoxo0` once they land, never b
 
 | Decision | Who decides |
 |---|---|
-| The payload on RB, given Brittle Star, Grizzly and Shrike bind an ability to RB today (§2) | Garrett |
-| One Ark per squad or one per player on a voyage | Garrett |
-| An Ark finished by fauna: its artifacts spill for anyone, or are lost | Garrett and the ecology owner |
 | Singularity moving super-shielded mass, an exception to *Prism movement* | Garrett, through the fundamentals-curation process |
 | What becomes of the 45 quantitative artifacts and the Hangar ARTIFACTS tab on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
 | Per-element crystal balances and artifacts on the player profile | Shombith (backend) |

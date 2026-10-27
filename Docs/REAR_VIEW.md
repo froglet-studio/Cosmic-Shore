@@ -269,7 +269,7 @@ hull could fail to author.
 Until 2026-10-27 the chord was LB + RB, and the right shoulder is not a free button:
 `GamepadInputStrategy` reads it as `Throttle` and raises `FlipAction` from it, so completing the
 chord also boosted and flipped on any vessel bound to those. Moving the gesture to D-pad down ended
-that overlap. (Measured 2026-10-27: no shipped prefab enables `toggleManualThrottle`, so RB never boosted anything; `FlipAction` on RB fires an ability on the Brittle Star, the Grizzly and the Shrike only.)
+that overlap. (Measured 2026-10-27: no shipped prefab enables `toggleManualThrottle`, so RB never boosted anything; `FlipAction` on RB fired an ability on the Brittle Star, the Grizzly and the Shrike only, and those moved to Y the same day, so RB now fires nothing.)
 
 ---
 

@@ -16778,7 +16778,24 @@ configs, 0 errors, negative control fired), `author_intro_cameras.py --check` an
 1. Run `RearViewLawTests`. **Pass:** green.
 2. Fly any vessel with a pad: press D-pad down. **Pass:** the camera flips to the look-back view; press again, it
    flips back. Holding D-pad down does not flicker.
-3. Press LB + RB together. **Pass:** the camera does NOT flip (on the Brittle Star, Grizzly and Shrike, RB still fires their RB ability).
+3. Press LB + RB together. **Pass:** the camera does NOT flip (and RB alone fires nothing: the RB abilities moved to Y, next entry).
 4. Arena with AI teammates: D-pad left / right still swap hulls, and D-pad down still flips the camera after a swap.
 5. Open the theater (8), scrub with the D-pad. **Pass:** D-pad down steps the pilot and does not flip the gameplay
    camera.
+
+## 🔴 2026-10-27 — RB abilities moved to Y (unverified: no Unity editor in the session)
+
+**Files:** `BrittleStar.prefab` / `Grizzly.prefab` / `Shrike.prefab` (`_inputEventShipActions`: InputEvent 3 → 14),
+their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike's card text now says Y),
+`author_brittlestar_assets.py` and `author_shrike_assets.py` (the binding tables; both `--check` green),
+`ControlChipBindingTests.GrizzlyMovedAbilitiesDrawAChipOnBothDevices`. Why: RB is the payload's
+(`Docs/Pilots/ARTIFACTS.md` §2). Pad Y = `Button4Action`, keyboard F.
+
+1. Run `ControlChipBindingTests`. **Pass:** green.
+2. Brittle Star: Y (keyboard F) selects Charge Mode, the five cords; press again, Cruise. RB does nothing. The Charge
+   card's chip shows Y on a pad and F on the keyboard.
+3. Grizzly: Y / F cycles the weapon; RB does nothing; the Weapon Systems chip shows Y / F.
+4. Shrike: Y / F is Charge mode (RT then paints a target); RB does nothing; the chip shows Y / F.
+5. Each of the three flown by the AI still uses that ability (the executors look the control up by event, not by
+   number).
+6. Phone: each of the three still reaches the ability through its card, as before.
