@@ -342,7 +342,10 @@ KIT_TEXT_TAB = K.kit_script("KitTextTab")
 MENU_AUDIO = K.meta_guid("Assets/_Scripts/UI/MenuAudio.cs")
 VESSEL_PREFABS = K.meta_guid("Assets/_SO_Assets/Vessel Prefab Container.asset")
 GLYPH_SET = K.meta_guid("Assets/Resources/ControlGlyphSet.asset")
-CAPTAINS = K.meta_guid("Assets/_SO_Assets/Captains/Elemental/ElementalCaptains.asset")
+PILOT_CATALOG = K.meta_guid("Assets/Resources/Pilots/PilotArtifactCatalog.asset")   # written by author_pilot_assets.py (run it first)
+ARTIFACTS_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarArtifactsPage.cs")
+ARTIFACT_SLOTS = 4                          # slot frames drawn; PilotCatalogSO.slotsPerVessel shows the first N
+ARTIFACT_ROWS = 8                           # a vessel's two artifacts and the fleet's five, and one spare
 GAME_LISTS = [K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"),
               K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArenaGames.asset")]
 ELEMENTS = [("Charge", 1), ("Mass", 2), ("Space", 3), ("Time", 4)]
@@ -742,12 +745,14 @@ def games_page(panel):
 
 
 def pilots_page(panel):
-    """Rev 24: four pilot rows - portrait, name, what they are best at, their element's flower at the bought level. The
-    header above the vessel names the picked pilot (HangarPilotsPage is an IHangarHeader)."""
+    """Docs/Pilots/PILOTS_AND_ARTIFACTS.md: the vessel's pilots (two each, up to four rows) - portrait, name, the ability it
+    rewrites and how, and its state (in the seat, stand-in art, art to come). A pilot is not tied to an element, so a row
+    carries no element flower (the rev-24 rows read the per-element captains). A press seats the pilot; the header above
+    the vessel names the focused one (HangarPilotsPage is an IHangarHeader)."""
     page = page_node(panel, "Pilots", False, top=PAGE_TOP)
     label(page.child(N("Tabs/Pilots/Line", "Line", R((0, 1), (1, 1), (0, 0), (0, 36), (0.5, 1)))),
-          "One pilot per element. The pilot you fly with is the one that element answers to.", "BodySmall", "NeutralLightest",
-          valign="top", wrap=True)
+          "Seat one pilot. Each one rewrites one ability. Press the seated pilot again to fly the base kit.", "BodySmall",
+          "NeutralLightest", valign="top", wrap=True)
     lst = list_node(page, "Tabs/Pilots/List", 48, spacing=10)
     for i in range(4):
         k = f"Tabs/Pilots/Card{i}"
@@ -757,10 +762,10 @@ def pilots_page(panel):
             .add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), K.kit_sprite("kit_sliver10_line2"), True))
         c.child(N(f"{k}/Portrait", "Portrait", TLr(12, 14, 76, 96))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True))
-        ellipsize(label(c.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (104, -18), (-(104 + 100), 30), (0, 1)))), "", "H3", "TextLight"))
-        ellipsize(label(c.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (104, -54), (-(104 + 100), 52), (0, 1)))), "", "BodySmall",
+        ellipsize(label(c.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (104, -18), (-(104 + 180), 30), (0, 1)))), "", "H3", "TextLight"))
+        label(c.child(N(f"{k}/State", "State", TRr(18, 22, 170, 18))), "", "Label", "ControlActive", align="right")
+        ellipsize(label(c.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (104, -54), (-(104 + 24), 56), (0, 1)))), "", "BodySmall",
                         "NeutralLightest", valign="top", wrap=True))
-        element_flower(c, f"{k}/Flower", "Flower", TRr(16, 26, 72, 72))
     label(page.child(N("Tabs/Pilots/Empty", "Empty", R((0, 1), (1, 1), (0, -60), (0, 40), (0.5, 1)))),
           "No pilots fly this vessel yet.", "BodySmall", "NeutralLightest").add("cg", 225, canvas_group(False))
 
@@ -769,32 +774,74 @@ def pilots_page(panel):
         for i in range(4):
             k = f"Tabs/Pilots/Card{i}"
             cards_ += (f"  - group: {ref(ctx.c(k, 'cg'))}\n    button: {ref(ctx.c(k, 'button'))}\n    portrait: {ref(ctx.c(f'{k}/Portrait', 'img'))}\n"
-                       f"    nameText: {ref(ctx.c(f'{k}/Name', 'tmp'))}\n    elementGlyph: {{fileID: 0}}\n"
-                       f"    underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n    lineText: {ref(ctx.c(f'{k}/Line', 'tmp'))}\n"
-                       f"    flower: {ref(ctx.c(f'{k}/Flower', 'flower'))}\n")
+                       f"    nameText: {ref(ctx.c(f'{k}/Name', 'tmp'))}\n    lineText: {ref(ctx.c(f'{k}/Line', 'tmp'))}\n"
+                       f"    stateText: {ref(ctx.c(f'{k}/State', 'tmp'))}\n    underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n")
         return K.mono(go, PILOTS_SCRIPT,
-                      f"  captains: {K.ref(11400000, CAPTAINS, 2)}\n  elementTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
-                      "  heroGroup: {fileID: 0}\n  heroPortrait: {fileID: 0}\n  heroFrame: {fileID: 0}\n  heroEyebrowText: {fileID: 0}\n"
-                      "  heroNameText: {fileID: 0}\n  heroDescriptionText: {fileID: 0}\n  heroQuoteText: {fileID: 0}\n  heroAiText: {fileID: 0}\n"
+                      f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n"
                       f"  emptyGroup: {ref(ctx.c('Tabs/Pilots/Empty', 'cg'))}\n  cards:\n{cards_}"
-                      "  eyebrowTemplate: The {element} {vessel}\n  quoteTemplate: \"\\u201C{quote}\\u201D\"\n"
-                      "  aiTemplate: 'As your wingmate: {behaviour}'\n"
-                      "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
-                      "  headerKickerTemplate: \"PILOT \\xB7 {element} \\xB7 {vessel}\"\n")
+                      "  lineTemplate: '{ability}: {rule}'\n  seatedWord: IN THE SEAT\n  standInWord: STAND-IN ART\n"
+                      "  noArtWord: ART TO COME\n  baseKitWord: Base kit\n"
+                      "  headerKickerTemplate: \"PILOT \\xB7 {vessel} \\xB7 {ability}\"\n  headerLineTemplate: '{rule}'\n")
     page.add("logic", 114, body)
     return page
 
 
 def artifacts_page(panel):
-    """The header names the slot (HangarTabsView's Artifacts group); the page is the slot itself."""
+    """Docs/Pilots/PILOTS_AND_ARTIFACTS.md: the vessel's artifact slots across the top (ARTIFACT_SLOTS frames; the catalog's
+    slot count shows the first N) and every artifact that fits it below (its own, then the fleet's). A found artifact shows
+    its rank and value and a press slots it; one not found yet reads Undiscovered. The header above the vessel names the
+    slots (HangarArtifactsPage is an IHangarHeader)."""
     page = page_node(panel, "Artifacts", False, top=PAGE_TOP)
-    slot = page.child(N("Tabs/Artifacts/Slot", "Slot", R((0, 1), (1, 1), (0, -10), (0, 110), (0.5, 1))))
-    framed(slot, "Tabs/Artifacts/Slot", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.65)
-    slot.child(N("Tabs/Artifacts/Slot/Hex", "Hex", TLr(20, 27, 64, 56))).add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceLight", 0.4), K.kit_sprite("kit_hex_line2"), preserve=True))
-    label(slot.child(N("Tabs/Artifacts/Slot/Title", "Title", R((0, 1), (1, 1), (52, -28), (-144, 26), (0.5, 1)))), "Undiscovered", "H3", "TextLight")
-    label(slot.child(N("Tabs/Artifacts/Slot/Line", "Line", R((0, 1), (1, 1), (52, -58), (-144, 40), (0.5, 1)))),
-          "Artifacts are found in the HyperSea. Fly far and bring one home.", "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    slots = page.child(N("Tabs/Artifacts/Slots", "Slots", R((0, 1), (1, 1), (0, 0), (0, 96), (0.5, 1))))
+    slots.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 0, (1, 1), (1, 1)))
+    for i in range(ARTIFACT_SLOTS):
+        k = f"Tabs/Artifacts/Slot{i}"
+        sl = slots.child(N(k, f"Slot{i}", R(size=(140, 96))))
+        sl.add("cg", 225, canvas_group(True))
+        framed(sl, k, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.65)
+        sl.child(N(f"{k}/Glow", "Glow", R((0, 0), (1, 1), (0, 0), (4, 4)))).add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), K.kit_sprite("kit_sliver14_line2"), True)).add("le", 114, le(ignore=True))
+        sl.child(N(f"{k}/Hex", "Hex", TLr(14, 14, 26, 22))).add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, K.image(tok("SurfaceLight", 0.4), K.kit_sprite("kit_hex_line2"), preserve=True)).add("le", 114, le(ignore=True))
+        ellipsize(label(sl.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (0, -44), (-28, 22), (0.5, 1)))), "Empty", "Body", "TextLight"))
+        ellipsize(label(sl.child(N(f"{k}/Value", "Value", R((0, 1), (1, 1), (0, -70), (-28, 18), (0.5, 1)))), "", "BodySmall",
+                        "ControlActive"))
+    lst = list_node(page, "Tabs/Artifacts/List", 116, spacing=8)
+    for i in range(ARTIFACT_ROWS):
+        k = f"Tabs/Artifacts/Row{i}"
+        c = kit_row(lst, k, f"Row{i}", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), 84)
+        c.add("cg", 225, canvas_group(True))
+        c.child(N(f"{k}/Underline", "Selected", R((0, 0), (1, 1), (0, 0), (6, 6)))).add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), K.kit_sprite("kit_sliver10_line2"), True))
+        ellipsize(label(c.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (20, -14), (-(20 + 200), 28), (0, 1)))), "", "H3", "TextLight"))
+        ellipsize(label(c.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (20, -46), (-(20 + 200), 24), (0, 1)))), "", "BodySmall",
+                        "NeutralLightest"))
+        label(c.child(N(f"{k}/Tag", "Tag", TRr(18, 16, 170, 18))), "", "Label", "NeutralLightest", align="right")
+        ellipsize(label(c.child(N(f"{k}/Value", "Value", TRr(18, 40, 170, 30))), "", "H3", "ControlActive", align="right"))
+    label(page.child(N("Tabs/Artifacts/Empty", "Empty", R((0, 1), (1, 1), (0, -140), (0, 40), (0.5, 1)))),
+          "No artifacts fit this vessel yet.", "BodySmall", "NeutralLightest").add("cg", 225, canvas_group(False))
+
+    def body(ctx, go):
+        slots_ = "".join(f"  - group: {ref(ctx.c(f'Tabs/Artifacts/Slot{i}', 'cg'))}\n"
+                         f"    nameText: {ref(ctx.c(f'Tabs/Artifacts/Slot{i}/Name', 'tmp'))}\n"
+                         f"    valueText: {ref(ctx.c(f'Tabs/Artifacts/Slot{i}/Value', 'tmp'))}\n"
+                         f"    fill: {ref(ctx.c(f'Tabs/Artifacts/Slot{i}/Glow', 'img'))}\n" for i in range(ARTIFACT_SLOTS))
+        rows_ = ""
+        for i in range(ARTIFACT_ROWS):
+            k = f"Tabs/Artifacts/Row{i}"
+            rows_ += (f"  - group: {ref(ctx.c(k, 'cg'))}\n    button: {ref(ctx.c(k, 'button'))}\n"
+                      f"    nameText: {ref(ctx.c(f'{k}/Name', 'tmp'))}\n    lineText: {ref(ctx.c(f'{k}/Line', 'tmp'))}\n"
+                      f"    valueText: {ref(ctx.c(f'{k}/Value', 'tmp'))}\n    tagText: {ref(ctx.c(f'{k}/Tag', 'tmp'))}\n"
+                      f"    underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n")
+        return K.mono(go, ARTIFACTS_SCRIPT,
+                      f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n  slots:\n{slots_}  rows:\n{rows_}"
+                      f"  emptyGroup: {ref(ctx.c('Tabs/Artifacts/Empty', 'cg'))}\n"
+                      "  emptySlotWord: Empty\n  emptySlotLine: Press a found artifact\n  undiscoveredWord: Undiscovered\n"
+                      "  hullTagTemplate: HULL {rank}\n  fleetTagTemplate: FLEET {rank}\n"
+                      "  rankWords:\n  - \n  - RANK I\n  - RANK II\n  - RANK III\n"
+                      "  headerKickerTemplate: \"{vessel} \\xB7 {slots} SLOTS\"\n  headerTitle: ARTIFACTS\n"
+                      "  headerLineTemplate: '{slotted} of {slots} slotted. {found} found. Each one moves one number of the kit.'\n")
+    page.add("logic", 114, body)
     return page
 
 
@@ -848,15 +895,16 @@ def build_tabs(panel):
     def body(ctx, go):
         entries = ""
         for name in TAB_NAMES:
-            logic = f"{{fileID: {ctx.c(f'Tabs/{name}', 'logic')}}}" if name != "Artifacts" else "{fileID: 0}"
+            logic = f"{{fileID: {ctx.c(f'Tabs/{name}', 'logic')}}}"
             button = ref(ctx.c(f'Tabs/Parts/{name}', 'tab')) if name in PARTS else "{fileID: 0}"
             entries += f"  - button: {button}\n    page: {ref(ctx.c(f'Tabs/{name}', 'cg'))}\n    pageLogic: {logic}\n"
         groups = ""
         for name, first, count in GROUPS:
             parts = "{fileID: 0}"
             if name == "Artifacts":
-                words = ("    kickerTemplate: \"{vessel} \\xB7 1 SLOT\"\n    titleTemplate: ARTIFACTS\n"
-                         "    lineTemplate: A real upgrade to a knob the elements do not reach. Carry one and you can lose it.\n")
+                # The page names its own slots (HangarArtifactsPage.TryGetHeader); these words show only without a catalog.
+                words = ("    kickerTemplate: '{vessel}'\n    titleTemplate: ARTIFACTS\n"
+                         "    lineTemplate: Each artifact moves one number of the kit.\n")
             else:
                 words = "    kickerTemplate: \n    titleTemplate: \n    lineTemplate: \n"
             groups += (f"  - button: {ref(ctx.c(f'Tabs/Header/{name}', 'tab'))}\n    firstPage: {first}\n    pageCount: {count}\n"
@@ -1409,7 +1457,7 @@ def validate_prefabs(files, guids):
         ok = cls == want if isinstance(want, int) else script == want
         assert ok, f"HangarVesselDetailView.{field} points at the wrong kind of object ({cls}, {script})"
     assert "abilityRowPrefab" not in body, "HangarVesselDetailView still names the retired ability-row prefab"
-    # Rev 3: five pages, each wired to its page and (but Artifacts) its component. Rev 24: OVERVIEW's three parts carry their
+    # Rev 3: five pages, each wired to its page and its component (ARTIFACTS too, since the pilots work). Rev 24: OVERVIEW's three parts carry their
     # buttons in the parts row; the three tabs (OVERVIEW, PILOTS, ARTIFACTS) are groups over the pages, and the header the
     # tabs write is wired.
     hv = K.FileIds("HangarView")
@@ -1419,8 +1467,7 @@ def validate_prefabs(files, guids):
     for name in TAB_NAMES:
         button = f"{{fileID: {hv(f'Tabs/Parts/{name}#tab')}}}" if name in PARTS else "{fileID: 0}"
         assert f"button: {button}\n    page: {{fileID: {hv(f'Tabs/{name}#cg')}}}" in pages_part, f"page {name}: button or page unwired"
-        if name != "Artifacts":
-            assert f"pageLogic: {{fileID: {hv(f'Tabs/{name}#logic')}}}" in pages_part, f"page {name}: page logic unwired"
+        assert f"pageLogic: {{fileID: {hv(f'Tabs/{name}#logic')}}}" in pages_part, f"page {name}: page logic unwired"
     assert groups_part.count("  - button: ") == len(TAB_NAMES), "HangarTabsView must name five tabs on the one row"
     for name, first, count in GROUPS:
         parts = "{fileID: 0}"

@@ -128,6 +128,9 @@ namespace CosmicShore.Gameplay
                 VesselStatus.CameraFollowTarget = transform;
 
             VesselStatus.ActionHandler.Initialize(VesselStatus);
+            // The pilot in the seat and the slotted artifacts (Docs/Pilots/PILOTS_AND_ARTIFACTS.md): started here so
+            // the owner publishes them before anything asks, and every peer reads the same loadout.
+            VesselStatus.PilotLoadout.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.Initialize(this);
             VesselStatus.AIPilot.Initialize(this);
 
