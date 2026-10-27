@@ -12,6 +12,18 @@ ability → level-5 upgrade contract), `Docs/ELEMENTAL_ECONOMY.md` (petals, the 
 
 ---
 
+> **SUPERSEDED FOR PILOTS (Garrett, 2026-10-27).** The pilot concept is now
+> [`Docs/Pilots/CALLSIGNS.md`](Pilots/CALLSIGNS.md): **a pilot grants a vision power.** Hold the left bumper and the
+> one thing your pilot sees (one of seventeen callsigns built from the fundamentals) lights up while everything else
+> is suppressed. A pilot no longer swaps any part of a vessel's kit, so §2 below (and every "pilot as kit side-grade"
+> line in §0, §4 and §6) is history, kept for the record.
+>
+> **SUPERSEDED FOR ARTIFACTS TOO (Garrett, 2026-10-27).** The artifact concept is now
+> [`Docs/Pilots/ARTIFACTS.md`](Pilots/ARTIFACTS.md): **an artifact transforms the payload**, a parcel of the Ark's
+> hull that any vessel grabs and fires to crack super-shielded mass. An artifact no longer turns a "fifth knob", so §3
+> is history too. The squad-as-a-deck frame (§1), the compatibility keywords (§4) and the data foundation built from
+> §7 still stand.
+
 ## 0. The one-paragraph version
 
 Every squad mate brings **four choices** into a match: a **vessel**, an **element**, a **pilot**
@@ -47,7 +59,7 @@ because, unlike elements, they reach into vessel-specific kit.
   artifact)` and grows the system from one squad to **several named squads with an active one**.
   Where a slot's pilot is unset, it resolves to the vessel's **default pilot** (§2.3).
 
-## 2. Pilots (DECIDED)
+## 2. Pilots (SUPERSEDED 2026-10-27 by `Docs/Pilots/CALLSIGNS.md`)
 
 ### 2.1 The state of the art this is built against: elements
 
@@ -104,7 +116,7 @@ its default pilot is giving it some part of its kit*. Consequences:
   mis-scoped (it belongs to an artifact's quantitative lane, or it needs a cost) or the default
   pilot is under-specified.
 
-## 3. Artifacts (DECIDED, with one PROPOSED carve-out)
+## 3. Artifacts (SUPERSEDED 2026-10-27 by `Docs/Pilots/ARTIFACTS.md`)
 
 ### 3.1 What an artifact is
 
