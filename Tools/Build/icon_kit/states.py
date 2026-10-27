@@ -119,12 +119,13 @@ def sheet(spec, c, out):
     d = ImageDraw.Draw(im)
     d.text((10, 6), f"{spec.HULL} {element.upper()} card - {c.get('title', c['name'])}", fill=(230, 230, 230, 255), font=font)
 
-    def row(y, label, imgs, with_gauge=True):
+    def row(y, label, imgs, with_gauge=True, marks_style=None):
         d.text((10, y), label, fill=(230, 230, 230, 255), font=font)
         x, yy = 10, y + 26
         for (name, icon) in imgs:
             g = gauges.get(name) if with_gauge else None
-            cd = card.card(icon, element, gauge=g[0] if g else None, gauge_color=g[1] if g else None, gauge_marks=c.get("gauge_marks"), gauge_marks_style=c.get("gauge_marks_style", "lines"))
+            cd = card.card(icon, element, gauge=g[0] if g else None, gauge_color=g[1] if g else None, gauge_marks=c.get("gauge_marks"),
+                           gauge_marks_style=marks_style or c.get("gauge_marks_style", "lines"))
             im.alpha_composite(cd, (x, yy))
             d.text((x, yy + cd.height + 2), name[:30], fill=(170, 170, 190, 255), font=font)
             x += cd.width + 8
@@ -134,7 +135,8 @@ def sheet(spec, c, out):
     old = before_image(spec.HULL, c["before"], c.get("before_rev", "HEAD")) if c.get("before") else None
     if old is not None:
         # the old card is drawn WITHOUT this round's gauge: a meter the card did not have is not part of its before
-        row(y, f"BEFORE  {c['before']} as committed ({c.get('before_rev', 'HEAD')})", [(n, old) for n, _p in states], with_gauge=c.get("before_gauge", False))
+        row(y, f"BEFORE  {c['before']} as committed ({c.get('before_rev', 'HEAD')})", [(n, old) for n, _p in states], with_gauge=c.get("before_gauge", False),
+            marks_style=c.get("before_gauge_marks_style"))
         y += chh + 70
     for key in sample:
         row(y, f"AFTER  {key.capitalize()} pilot", [(n, compose(parts, c["parts"], key, domains)) for n, parts in states])
@@ -158,7 +160,7 @@ def _lockup(spec, slot_element, slot_icon, slot_gauge, domain_key, domains, slot
         if sib is None:
             cards.append(card.card(None, el, locked=True))
         else:
-            cards.append(card.card(compose(sib["state"], sib["parts"], domain_key, domains), el, gauge=sib.get("gauge"),
+            cards.append(card.card(compose(sib["state"], sib["parts"], domain_key, domains), el, gauge=sib.get("gauge"), gauge_marks_style=sib.get("gauge_marks_style", "segments"),
                                    gauge_marks=sib.get("gauge_marks")))
     w = sum(c.width for c in cards) + 4 * (len(cards) - 1)
     row = Image.new("RGBA", (w, max(c.height for c in cards)), NAVY)

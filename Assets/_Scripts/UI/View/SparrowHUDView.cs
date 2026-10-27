@@ -88,11 +88,64 @@ namespace CosmicShore.UI
                  "reached, each plateau expiring).")]
         [SerializeField, Min(0.5f)] private float gunHeatMarkThickness = 2f;
 
-        [Tooltip("A phase mark the heat has already passed - the gun is at or beyond that stage.")]
-        [SerializeField] private Color gunHeatMarkPassedColor = new(1f, 1f, 1f, 0.95f);
+        [Tooltip("A phase join the heat has already passed is a GAP cut through the fill, so the fill reads as one " +
+                 "bar per level reached (Garrett 2026-10-27: the boundaries should read without dominating the " +
+                 "card). The plate showing through - match AbilityLockupStyle's gauge track colour.")]
+        [SerializeField] private Color gunHeatGapColor = new(0.086f, 0.094f, 0.129f, 0.9f);
 
-        [Tooltip("A phase mark still ahead of the heat.")]
+        [Tooltip("A phase join still ahead of the heat: a short tick in from each slanted edge of the plate.")]
         [SerializeField] private Color gunHeatMarkAheadColor = new(1f, 1f, 1f, 0.35f);
+
+        [Tooltip("Length, in canvas units, of an ahead tick, in from each edge of the gauge.")]
+        [SerializeField, Min(1f)] private float gunHeatTickLength = 7f;
+
+        [Tooltip("How far the plate's slanted edge sits in from the gauge's rect at the BOTTOM of the card, in " +
+                 "canvas units (AbilityLockupStyle's trapezoid inset): a tick starts at the slant at its own " +
+                 "height, so the stencil never clips it.")]
+        [SerializeField, Min(0f)] private float gunHeatTickSlantInset = 9f;
+
+        [Header("Gun Spray (the Space card's icon)")]
+        [Tooltip("One cannon round, centred in its sprite. The view clones it once per entry of Gun Spray Rounds " +
+                 "and lays the clones out on their rays inside the LIVE cone. Empty = the card keeps the legacy " +
+                 "weapon-mode sprite swap.")]
+        [SerializeField] private Sprite gunSprayRoundSprite;
+
+        [Tooltip("The round the turret stance fires (a bare prism), swapped onto every clone while the stance is " +
+                 "held. Prisms fly square-on, so these clones are never turned.")]
+        [SerializeField] private Sprite gunSprayPrismRoundSprite;
+
+        [Tooltip("Space 5 (Piercing Bullets): a hostile prism on the centre line, drawn under the rounds so they " +
+                 "read as flying through it.")]
+        [SerializeField] private Sprite gunSprayPierceSprite;
+
+        [Tooltip("Where the rounds leave the gun, in AUTHORED icon pixels (y down) - the icon kit's SPRAY_MUZZLE.")]
+        [SerializeField] private Vector2 gunSprayMuzzle = new(2f, 64f);
+
+        [Tooltip("The authored icon size the muzzle and distances are measured in (the kit draws at 128).")]
+        [SerializeField, Min(1f)] private float gunSprayAuthoredSize = 128f;
+
+        [Tooltip("Each round: its distance from the muzzle (authored px) and where it sits across the cone " +
+                 "(-1 = lower edge, +1 = upper edge). Every rank puts one round on an edge so the angle is drawn. " +
+                 "The icon kit's SPRAY_RANKS (Tools/Build/icon_kit/specs/sparrow.py).")]
+        [SerializeField] private GunSprayRound[] gunSprayRounds =
+        {
+            new(20f, 1f), new(20f, -0.4f), new(42f, -1f), new(42f, 0.3f), new(64f, 1f),
+            new(64f, -0.55f), new(86f, -1f), new(86f, 0.6f), new(110f, 1f), new(110f, -1f),
+        };
+
+        [Tooltip("The CARD's half-angle, in degrees, at each of the gun's three real caps (sustainable, blow-out, " +
+                 "collapse). The real angles are too small to see until the blow-out, so each level gets a " +
+                 "readable angle and the card interpolates the live value between them (SprayCardAngle).")]
+        [SerializeField] private float[] gunSprayCardAngles = { 8f, 19f, 30f };
+
+        [Tooltip("The rounds' colour until the controller's first push names the pilot's domain.")]
+        [SerializeField] private Color gunSprayFallbackColor = Color.white;
+
+        [Tooltip("Opacity of the Space 5 prism (it is a target, not the subject).")]
+        [SerializeField, Range(0f, 1f)] private float gunSprayPierceAlpha = 0.6f;
+
+        [Tooltip("The Space 5 prism's danger tint when the elemental bars config is missing.")]
+        [SerializeField] private Color gunSprayPierceFallbackColor = new(1f, 0.33f, 0.1f, 1f);
 
         [Header("Blocked Input Highlights")]
         [SerializeField] private Color blockedInputColor = Color.red;
@@ -115,7 +168,40 @@ namespace CosmicShore.UI
         private Image _gunHeatGauge;
         private float _gunHeat = -1f;
         readonly List<float> _gunHeatJoins = new();
-        readonly List<Image> _gunHeatMarks = new();
+        readonly List<HeatJoinMarks> _gunHeatMarks = new();
+
+        /// <summary>One round of the Space card's spray: how far from the muzzle, and where across the cone.</summary>
+        [System.Serializable]
+        public struct GunSprayRound
+        {
+            [Tooltip("Distance from the muzzle, in authored icon pixels.")]
+            public float distance;
+
+            [Tooltip("Where the round sits across the cone: -1 the lower edge, 0 the centre line, +1 the upper edge.")]
+            [Range(-1f, 1f)] public float side;
+
+            public GunSprayRound(float distance, float side)
+            {
+                this.distance = distance;
+                this.side = side;
+            }
+        }
+
+        // A phase join's three Images: the gap cut through the fill once passed, the two edge ticks while ahead.
+        struct HeatJoinMarks
+        {
+            public Image Gap, TickLeft, TickRight;
+        }
+
+        const string GunSprayName = "GunSpray";
+        private RectTransform _gunSprayHost;
+        private Image _gunSprayPierce;
+        readonly List<Image> _gunSprayImages = new();
+        private float _gunSprayAngle = -1f;
+        private bool _gunSprayStance;
+        private bool _gunSprayPierced;
+        private Color _gunSprayColor = Color.white;
+        private Vector2 _gunSprayLaidSize;
 
         public override void Initialize()
         {
@@ -147,13 +233,18 @@ namespace CosmicShore.UI
             if (afterburnerJetsIcon)
             {
                 if (afterburnerJetsRestSprite) afterburnerJetsIcon.sprite = afterburnerJetsRestSprite;
-                if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
-                    barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+                EnsureBarsConfig();
                 afterburnerJetsIcon.color = barsConfig ? barsConfig.BlueColor : afterburnerJetsFallbackColor;
             }
 
             if (weaponModeIcon)
                 weaponModeIcon.enabled = false;
+
+            // The Space card's spray: one stream, not yet in the stance, in the fallback colour until the first push.
+            _gunSprayAngle = -1f;
+            _gunSprayStance = false;
+            _gunSprayColor = gunSprayFallbackColor;
+            LayOutGunSpray(0f);
 
             foreach (var h in highlights.Where(h => h.image))
             {
@@ -305,11 +396,18 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// The base call does the card's upgrade mark; Mass 5 also changes WHAT the stance fires, so
-        /// the rounds part swaps to its shielded shape and colour.
+        /// the rounds part swaps to its shielded shape and colour, and Space 5 shows the Space card's
+        /// rounds piercing a prism.
         /// </summary>
         public override void SetAbilityUpgraded(Element element, bool upgraded)
         {
             base.SetAbilityUpgraded(element, upgraded);
+            if (element == Element.Space && upgraded != _gunSprayPierced)
+            {
+                // Space 5 (Piercing Bullets): the prism the rounds fly through appears on the centre line.
+                _gunSprayPierced = upgraded;
+                PaintGunSpray();
+            }
             if (element != Element.Mass || upgraded == _stanceShielded) return;
             _stanceShielded = upgraded;
             PaintStanceRounds();
@@ -362,7 +460,8 @@ namespace CosmicShore.UI
         /// linear gauge. The HUD prefab authors no meter for it, so one is generated here and
         /// bound into the Space entry; the lockup then re-homes it into the card and masks it to
         /// the plate exactly like an authored gauge. An authored gauge always wins, and nothing is
-        /// generated for a card with no icon (a locked card refuses a gauge).
+        /// generated for a card with no icon (a locked card refuses a gauge). The card's icon is
+        /// generated here too: the spray's round Images under the card's (transparent) icon.
         ///
         /// <para>Idempotent: the lockup may rebuild, and after the first build the gauge no
         /// longer lives under this transform, so it is held by reference.</para>
@@ -373,7 +472,7 @@ namespace CosmicShore.UI
             {
                 var binding = abilityIcons[i];
                 if (binding.element != Element.Space) continue;
-                if (!binding.icon || binding.gauge) return;   // locked card, or authored art wins
+                if (!binding.icon || binding.gauge) break;   // locked card, or authored art wins
 
                 if (!_gunHeatGauge)
                 {
@@ -388,8 +487,10 @@ namespace CosmicShore.UI
 
                 binding.gauge = _gunHeatGauge;
                 abilityIcons[i] = binding;
-                return;
+                break;
             }
+
+            BuildGunSpray();
         }
 
         /// <summary>
@@ -410,10 +511,11 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Where the spread curve changes phase, as fractions of the heat ceiling - one mark is
-        /// drawn across the gauge at each. Marks the heat has passed are bright, marks still ahead
-        /// are dim, so the card says WHICH stage the gun is in (accurate / first cap / blow-out /
-        /// collapse) and how far it is to the next, not just how hot it is.
+        /// Where the spread curve changes phase, as fractions of the heat ceiling. Each join has a
+        /// GAP cut through the fill once the heat has passed it, so the fill reads as one bar per
+        /// level reached, and a short dim TICK in from each edge while it is still ahead - the card
+        /// says WHICH level the gun is on and how far the next is, without lines across the whole
+        /// card (Garrett 2026-10-27).
         /// </summary>
         public void SetGunHeatPhaseJoins(List<float> joins01)
         {
@@ -425,46 +527,233 @@ namespace CosmicShore.UI
             var parent = gauge.rectTransform;
             for (int i = 0; i < _gunHeatJoins.Count; i++)
             {
-                if (i >= _gunHeatMarks.Count || !_gunHeatMarks[i])
+                if (i >= _gunHeatMarks.Count || !_gunHeatMarks[i].Gap)
                 {
-                    var mark = ResolveGeneratedChild<Image>(parent, $"HeatPhaseMark{i}");
-                    mark.raycastTarget = false;
-                    if (i < _gunHeatMarks.Count) _gunHeatMarks[i] = mark;
-                    else _gunHeatMarks.Add(mark);
+                    var marks = new HeatJoinMarks
+                    {
+                        Gap = ResolveGeneratedChild<Image>(parent, $"HeatPhaseGap{i}"),
+                        TickLeft = ResolveGeneratedChild<Image>(parent, $"HeatPhaseTickL{i}"),
+                        TickRight = ResolveGeneratedChild<Image>(parent, $"HeatPhaseTickR{i}"),
+                    };
+                    marks.Gap.raycastTarget = marks.TickLeft.raycastTarget = marks.TickRight.raycastTarget = false;
+                    if (i < _gunHeatMarks.Count) _gunHeatMarks[i] = marks;
+                    else _gunHeatMarks.Add(marks);
                 }
 
-                var img = _gunHeatMarks[i];
-                img.gameObject.SetActive(true);
-                var rt = img.rectTransform;
-                rt.anchorMin = new Vector2(0f, _gunHeatJoins[i]);
-                rt.anchorMax = new Vector2(1f, _gunHeatJoins[i]);
-                rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = Vector2.zero;
-                rt.sizeDelta = new Vector2(0f, gunHeatMarkThickness);
+                float y = _gunHeatJoins[i];
+                var m = _gunHeatMarks[i];
+                float slant = gunHeatTickSlantInset * (1f - y);   // the plate narrows toward its base
+                PlaceHeatMark(m.Gap, 0f, 1f, y, 0f, 0f);
+                PlaceHeatMark(m.TickLeft, 0f, 0f, y, gunHeatTickLength, slant);
+                PlaceHeatMark(m.TickRight, 1f, 1f, y, gunHeatTickLength, -slant);
             }
 
             for (int i = _gunHeatJoins.Count; i < _gunHeatMarks.Count; i++)
-                if (_gunHeatMarks[i]) _gunHeatMarks[i].gameObject.SetActive(false);
+            {
+                var m = _gunHeatMarks[i];
+                if (m.Gap) m.Gap.gameObject.SetActive(false);
+                if (m.TickLeft) m.TickLeft.gameObject.SetActive(false);
+                if (m.TickRight) m.TickRight.gameObject.SetActive(false);
+            }
 
             PaintGunHeatMarks();
+        }
+
+        // A horizontal mark at height y01 of the gauge, spanning anchors x0..x1 (a stretched gap), or `width` canvas
+        // units in from that edge (x0 == x1: a tick, pivoted on the edge so it grows inward, shifted `dx` to the slant).
+        void PlaceHeatMark(Image img, float x0, float x1, float y01, float width, float dx)
+        {
+            var rt = img.rectTransform;
+            rt.anchorMin = new Vector2(x0, y01);
+            rt.anchorMax = new Vector2(x1, y01);
+            rt.pivot = new Vector2(x0, 0.5f);
+            rt.anchoredPosition = new Vector2(dx, 0f);
+            rt.sizeDelta = new Vector2(width, gunHeatMarkThickness);
         }
 
         void PaintGunHeatMarks()
         {
             float heat = Mathf.Max(0f, _gunHeat);
             for (int i = 0; i < _gunHeatJoins.Count && i < _gunHeatMarks.Count; i++)
-                if (_gunHeatMarks[i])
-                    _gunHeatMarks[i].color = heat >= _gunHeatJoins[i]
-                        ? gunHeatMarkPassedColor
-                        : gunHeatMarkAheadColor;
+            {
+                var m = _gunHeatMarks[i];
+                if (!m.Gap) continue;
+                bool passed = heat >= _gunHeatJoins[i];
+                m.Gap.gameObject.SetActive(passed);
+                m.TickLeft.gameObject.SetActive(!passed);
+                m.TickRight.gameObject.SetActive(!passed);
+                m.Gap.color = gunHeatGapColor;
+                m.TickLeft.color = m.TickRight.color = gunHeatMarkAheadColor;
+            }
+        }
+
+        #endregion
+
+        #region Gun Spray
+
+        /// <summary>
+        /// The card's half-angle for the gun's REAL half-angle: piecewise-linear from the curve's
+        /// caps (0, sustainable, blow-out, collapse) onto <paramref name="cardAngles"/> (0, then one
+        /// per cap), clamped at the last. The real angles are a degree or two until the blow-out -
+        /// invisible on a 60 px card - so each level gets a readable angle and the live value moves
+        /// between them. A cap the profile does not author (no blow-out, no collapse: it does not
+        /// exceed the cap before it) is skipped, so the card holds at the widest level the gun reaches.
+        /// </summary>
+        public static float SprayCardAngle(float realHalfAngle, float sustainableCap, float blowoutCap,
+                                           float collapseCap, IReadOnlyList<float> cardAngles)
+        {
+            if (cardAngles == null || cardAngles.Count == 0) return 0f;
+
+            float real = Mathf.Max(0f, realHalfAngle);
+            float prevReal = 0f, prevCard = 0f;
+            int levels = Mathf.Min(3, cardAngles.Count);
+            for (int i = 0; i < levels; i++)
+            {
+                float cap = i == 0 ? sustainableCap : i == 1 ? blowoutCap : collapseCap;
+                if (cap <= prevReal) continue;
+                if (real <= cap) return Mathf.Lerp(prevCard, cardAngles[i], (real - prevReal) / (cap - prevReal));
+                prevReal = cap;
+                prevCard = cardAngles[i];
+            }
+            return prevCard;
+        }
+
+        /// <summary>
+        /// The gun's live spread, pushed every frame by the controller: the real half-angle and the
+        /// profile's three caps (0 for a stage it does not author). Lays the rounds out on their rays.
+        /// </summary>
+        public void SetGunSpread(float realHalfAngle, float sustainableCap, float blowoutCap, float collapseCap)
+        {
+            float angle = SprayCardAngle(realHalfAngle, sustainableCap, blowoutCap, collapseCap, gunSprayCardAngles);
+            // Re-laid when the angle moves OR the card's size does: the spray is generated before the lockup's
+            // first layout pass, when the container still measures zero.
+            if (Mathf.Abs(angle - _gunSprayAngle) < 0.05f && (!_gunSprayHost || _gunSprayHost.rect.size == _gunSprayLaidSize)) return;
+            LayOutGunSpray(angle);
+        }
+
+        /// <summary>The pilot's domain colour for the rounds - yours, like the Mass card's.</summary>
+        public void SetGunSprayColor(Color color)
+        {
+            if (_gunSprayColor == color) return;
+            _gunSprayColor = color;
+            PaintGunSpray();
+        }
+
+        // Find-or-create the spray under the Space card's icon (a transparent container since 2026-10-27): the
+        // Space 5 prism first (it draws under), then one Image per round. Stretched to the container, so a round
+        // sprite drawn at its own centre lands exactly where the authored layout puts it.
+        void BuildGunSpray()
+        {
+            if (!weaponModeIcon || !gunSprayRoundSprite || gunSprayRounds == null || gunSprayRounds.Length == 0) return;
+            if (_gunSprayHost && _gunSprayImages.Count == gunSprayRounds.Length) return;
+
+            var parent = weaponModeIcon.rectTransform;
+            var hostImage = ResolveGeneratedChild<Image>(parent, GunSprayName);   // a holder: it draws nothing
+            hostImage.enabled = false;
+            hostImage.raycastTarget = false;
+            _gunSprayHost = hostImage.rectTransform;
+            Stretch(_gunSprayHost);
+
+            _gunSprayPierce = ResolveGeneratedChild<Image>(_gunSprayHost, "Pierce");
+            _gunSprayPierce.raycastTarget = false;
+            _gunSprayPierce.sprite = gunSprayPierceSprite;
+            Stretch(_gunSprayPierce.rectTransform);
+
+            _gunSprayImages.Clear();
+            for (int i = 0; i < gunSprayRounds.Length; i++)
+            {
+                var img = ResolveGeneratedChild<Image>(_gunSprayHost, $"Round{i}");
+                img.raycastTarget = false;
+                Stretch(img.rectTransform);
+                _gunSprayImages.Add(img);
+            }
+
+            float angle = Mathf.Max(0f, _gunSprayAngle);
+            _gunSprayAngle = -1f;
+            LayOutGunSpray(angle);
+        }
+
+        static void Stretch(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = Vector2.zero;
+            rt.anchoredPosition = Vector2.zero;
+        }
+
+        // Each round on its own ray from the muzzle at (side x angle) degrees, turned to fly along it (a prism round
+        // flies square-on). Authored pixels are y-down; the canvas is y-up.
+        void LayOutGunSpray(float angle)
+        {
+            _gunSprayAngle = angle;
+            if (!_gunSprayHost || _gunSprayImages.Count == 0) return;
+
+            var size = _gunSprayHost.rect.size;
+            _gunSprayLaidSize = size;
+            float half = gunSprayAuthoredSize * 0.5f;
+            float kx = size.x / gunSprayAuthoredSize, ky = size.y / gunSprayAuthoredSize;
+            for (int i = 0; i < _gunSprayImages.Count && i < gunSprayRounds.Length; i++)
+            {
+                var img = _gunSprayImages[i];
+                if (!img) continue;
+                var round = gunSprayRounds[i];
+                float a = angle * round.side;
+                float rad = a * Mathf.Deg2Rad;
+                float px = gunSprayMuzzle.x + round.distance * Mathf.Cos(rad);
+                float py = gunSprayMuzzle.y - round.distance * Mathf.Sin(rad);
+                var rt = img.rectTransform;
+                rt.anchoredPosition = new Vector2((px - half) * kx, (half - py) * ky);
+                rt.localEulerAngles = new Vector3(0f, 0f, _gunSprayStance ? 0f : a);
+            }
+            PaintGunSpray();
+        }
+
+        void PaintGunSpray()
+        {
+            var sprite = _gunSprayStance && gunSprayPrismRoundSprite ? gunSprayPrismRoundSprite : gunSprayRoundSprite;
+            foreach (var img in _gunSprayImages)
+            {
+                if (!img) continue;
+                img.sprite = sprite;
+                img.color = _gunSprayColor;
+            }
+
+            if (!_gunSprayPierce) return;
+            bool show = _gunSprayPierced && gunSprayPierceSprite;
+            _gunSprayPierce.enabled = show;
+            if (!show) return;
+            EnsureBarsConfig();
+            var danger = barsConfig ? barsConfig.FireColor : gunSprayPierceFallbackColor;
+            danger.a = gunSprayPierceAlpha;
+            _gunSprayPierce.color = danger;
+        }
+
+        void EnsureBarsConfig()
+        {
+            if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
+                barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
         }
 
         #endregion
 
         #region Weapon Mode
 
+        /// <summary>
+        /// The turret stance on the Space card: with the spray built, every round swaps to a prism
+        /// round and stops turning; without it (no round sprite authored) the legacy whole-icon swap.
+        /// </summary>
         public void SetWeaponMode(bool isStationary)
         {
+            // Recorded first: the controller's first push can land before the lockup has generated the spray.
+            bool changed = _gunSprayStance != isStationary;
+            _gunSprayStance = isStationary;
+            if (_gunSprayHost)
+            {
+                if (changed) LayOutGunSpray(Mathf.Max(0f, _gunSprayAngle));
+                return;
+            }
+
             if (!weaponModeIcon || weaponModeIcons == null || weaponModeIcons.Length < 2)
                 return;
 

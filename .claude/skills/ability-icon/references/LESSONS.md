@@ -246,3 +246,21 @@ consider how they distinguish themselves too."
     candidate, with the BEFORE row first: `CARDS` entries share a `group=`, the spec declares `LOCKUP` (its other
     cards as the HUD draws them today, parts and colours), and `author.py` writes `<hull>_<group>_options.png`
     (`states.options_sheet`). The family gate (IoU at 24 px) measures the same thing; the sheet lets the owner see it.
+
+42. **A live QUALITY is drawn as the thing doing it; its LEVELS are segments in the plate.** The Sparrow's Space card
+    (2026-10-27). Garrett: "the icon we had before the current had a way to show that there were different heat
+    buckets that had different spread. if you could convey the realtime spread value and which level they are on
+    that would be best." Then: "i like what option E is trying to do, but the clarity of F is good. lets try to get E
+    using more shots and the whole space to define the angle"; "i like the ease of reading the lines as the
+    boundaries between levels but i don't like how it visually dominates the whole space"; "option E2 looks great".
+    What landed: the icon is ten rounds on their rays inside the gun's live cone (one stream cold, the card's full
+    height in the collapse; every rank puts one round on a cone EDGE so the angle is drawn, not guessed); the heat
+    gauge's phase joins are a GAP through the fill once passed and a short dim edge tick while ahead
+    (`card.py gauge_marks_style="segments"`, `SparrowHUDView.PaintGunHeatMarks`). Three things it taught:
+    (a) **measure the mechanic before drawing the ability text** - the description said Space extends the guns'
+    range, but Round 7 of SPARROW_SPRAY_ACCURACY.md fixed the range; the first options round drew "reach" and was
+    wrong for that reason. (b) **A real value too small to see gets a readable value per level**, interpolated
+    between knots (`SprayCardAngle`), never a fake constant: the card still moves every frame. (c) **When a part
+    repeats N times along a live layout, generate the N Images in the view from ONE part sprite** and serialize the
+    layout (the kit's SPRAY_RANKS = the view's `gunSprayRounds`); the prefab gets only the sprites and the
+    container step - ten prefab children would be ten things to keep in step.

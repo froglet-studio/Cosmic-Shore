@@ -22,8 +22,8 @@ namespace CosmicShore.UI
         // get GameObjectInjector.InjectRecursive at spawn (the Dolphin's HUD controller is the pattern).
         [Inject] GameDataSO _gameData;
 
-        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge and " +
-                 "its phase-transition marks. Resolved off the vessel if left empty.")]
+        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge, " +
+                 "its phase-transition marks and the spray's live cone. Resolved off the vessel if left empty.")]
         [SerializeField] private GunSprayAccuracy gunSprayAccuracy;
 
         [Header("Events")]
@@ -135,6 +135,18 @@ namespace CosmicShore.UI
             }
 
             view.SetGunHeat(gunSprayAccuracy.Heat01);
+
+            // The Space card's spray: the REAL half-angle and the profile's three caps (0 for a stage it does
+            // not author); the view maps them onto the card's readable angles.
+            if (profile == null)
+            {
+                view.SetGunSpread(0f, 0f, 0f, 0f);
+                return;
+            }
+            var stages = profile.Stages;
+            view.SetGunSpread(gunSprayAccuracy.HalfAngleDegrees, stages.MaxHalfAngleDegrees,
+                              stages.BlowsOut ? stages.BlowoutMaxHalfAngleDegrees : 0f,
+                              stages.Collapses ? stages.CollapseMaxHalfAngleDegrees : 0f);
         }
 
         private IEnumerator InitialAmmoPaintRoutine()
@@ -176,6 +188,7 @@ namespace CosmicShore.UI
             var domain = ResolveDomainSignalColor();
             view.SetAfterburnerHullColor(domain);
             view.SetStanceColors(domain, ResolveShieldedColor());
+            view.SetGunSprayColor(domain);
             view.SetBoosting(_vesselStatus.IsBoosting);
         }
 
