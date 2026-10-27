@@ -553,6 +553,26 @@ now buys a turn at full speed and the rush through its throat, no speed after it
 should race, the levers that keep "out as you went in" are a faster ride (`gtTubeSpeed`), longer tunnels (`gtLenMax`), or
 a faster one-thumb cruise; `gateKeepMomentum` 0 is the old boost.
 
+## 1n. Round 26 (studio) — a tunnel's life: rippling in, staying, rippling out (2026-10-27)
+
+**Yash:** the reticle should come back about 0.5 s after the exit and fade in like a wave emerging into the tunnel's
+shape, reshapeable; on RT the tunnel forms the same way out of the centre of its geometry while the reticle fades; it
+stays 10 s, then collapses the reverse way back to its centre, a ripple spreading out to infinity; every step smooth,
+no camera jitter, real space-time warp visuals.
+
+| Step | Built (`stepTunnel`, `gateHold`, `gateCommit`) |
+|---|---|
+| The reticle comes back | `gateReticleDelay` 0.5 s after you are out (and at the start of a race), then ripples out of its centre into the full tube over `gateReticleGrow` 0.8 s (ease-out; the window grows from the tube's middle to both mouths, its radius with it). You can reshape it as it grows; RT works once it is 60% there |
+| RT: the tunnel forms | the warp - its mouths' dents, the tube's warp, your grid - ripples out of the same centre to both mouths over `gateFormSeconds` 0.4 s (never longer than 90% of your dive to its mouth, so the mouth is there when you are); the reticle fades out over the same time |
+| The ride | unchanged (round 25): in and out at your entry speed, the camera on the centreline |
+| It stays | `gateStaySeconds` 10 s after you are out (making another tunnel sends the last one back at once) |
+| It collapses | back to its centre over `gtCollapse` 0.8 s, then fades, and a space-time ripple (the gravitational wave, `gateCollapseRipple` 0.4) spreads from its centre out to infinity |
+
+**Measured** (headless): the reticle at 0 / 0.68 / 1 of its shape at 0.25 / 0.75 / 1.25 s; a 460 u tunnel growing
+106 → 297 → 403 → 449 → 460 u over 0.4 s; the reticle absent for 0.5 s after the exit, then back over ~0.5 s; the tunnel
+stayed 10.0 s, collapsed in 0.8 s, sent one ripple; the camera through the ride turned at most 2.4° a frame. The AI waits
+for its reticle too: circuits 98.2-100.8 s, hairpins 72.5-88.2 s (round 25: 97.6-103.0, 71.7-85.9).
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
