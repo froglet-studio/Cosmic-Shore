@@ -121,6 +121,7 @@ namespace CosmicShore.Gameplay
         float _rideS, _rideSIn, _vIn;
         Quaternion _q0;
         int _seq;
+        Transform _tunnelScaleKey;   // the vessel holding the speed tunnel's ride scale (VesselSpeedTunnel.SetEffectScale)
 
         // the AI
         float _aiHold, _aiL, _aiM, _aiLt;
@@ -210,6 +211,7 @@ namespace CosmicShore.Gameplay
             StepRipples();
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
+            StepSpeedTunnelScale();
             if (_ltHeld) _ltHeldFor += dt;
             if (_status.AutoPilotEnabled) Autopilot(dt);
             else _aiShaping = false;
@@ -408,6 +410,29 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// Round 5 ("use 5x the normal value when going through the wormhole"): while a tunnel flies the hull, the game's speed
+        /// tunnel (<see cref="VesselSpeedTunnel"/>, the dolly zoom every vessel has) is <c>rideSpeedTunnelScale</c> times as
+        /// strong. It only ever reaches the camera of the vessel the law is driven by (the local pilot's).
+        /// </summary>
+        void StepSpeedTunnelScale()
+        {
+            var key = _status.Transform;
+            if (_ride != null && key)
+            {
+                VesselSpeedTunnel.SetEffectScale(config.RideSpeedTunnelScale, key);
+                _tunnelScaleKey = key;
+            }
+            else ReleaseSpeedTunnelScale();
+        }
+
+        void ReleaseSpeedTunnelScale()
+        {
+            if (!_tunnelScaleKey) return;
+            VesselSpeedTunnel.ClearEffectScale(_tunnelScaleKey);
+            _tunnelScaleKey = null;
+        }
+
         // ------------------------------------------------------------------ the AI (input only)
 
         /// <summary>
@@ -526,6 +551,7 @@ namespace CosmicShore.Gameplay
             for (int i = s_tunnels.Count - 1; i >= 0; i--)
                 if (s_tunnels[i].Maker == this) s_tunnels.RemoveAt(i);
             s_executors.Remove(this);
+            ReleaseSpeedTunnelScale();
             _ride = null;
             _mine = null;
             _retLive = false;

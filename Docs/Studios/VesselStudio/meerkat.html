@@ -449,6 +449,8 @@
     // ride and life: in and out at your entry speed, throatSpeed x it at the throat; the reticle comes back reticleDelaySeconds
     // after you are out and ripples into shape over reticleGrowSeconds; a tunnel forms over formSeconds, stays staySeconds
     // after you are out, then collapses back to its centre over collapseSeconds
+    // round 5: riding, the game's speed tunnel (its dolly zoom) is rideSpeedTunnelScale x its normal strength
+    rideSpeedTunnelScale: 5,
     throatSpeed: 2.5, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
@@ -483,6 +485,7 @@
     ['shape', 'mouthFlare', 'Mouth radius (× throat)', 1, 5, 0.1],
     ['shape', 'keyRampSeconds', 'LT on a key or touch: full after (s)', 0.05, 3, 0.05],
     ['ride', 'throatSpeed', 'Fastest at the throat (× your entry speed)', 1, 8, 0.1],
+    ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
     ['ride', 'reticleGrowSeconds', '...rippling into shape over (s)', 0.05, 3, 0.05],
     ['ride', 'formSeconds', 'RT: the tunnel ripples out of its centre over (s)', 0.05, 2, 0.05],
@@ -1803,6 +1806,22 @@
   function updateCamera(dt) {
     const r = mode === 'fly' && watchIdx > 0 ? rivals[watchIdx - 1] : null;
     if (r) asPilot(r, () => cameraStep(dt)); else cameraStep(dt);
+    speedTunnel(dt, r);
+  }
+  // The game's SPEED TUNNEL (Docs/SPEED_TUNNEL.md, VesselSpeedTunnel + SpeedTunnelConfig.asset), the quasi dolly zoom every
+  // vessel has: effect = clamp01((speed - 70) / (280 - 70)); the camera's field of view narrows by 25 deg x effect (and in the
+  // game the Panini projection relaxes by 0.5 x effect - the studio shows the field of view only). Round 5 (Yash:
+  // "use 5x the normal value when going through the wormhole"): riding a tunnel, the effect is rideSpeedTunnelScale x it,
+  // up to 5x the law's full strength - the push-in peaks at the throat, where the ride is fastest.
+  const ST_MIN = 70, ST_MAX = 280, ST_FOV_DROP = 25, ST_RESP = 12, ST_MAX_EFFECT = 5, CAM_HOME_FOV = 68;
+  let stEffect = 0;
+  function speedTunnel(dt, r) {
+    const live = r ? r.ftLive : ftLive, vel = r ? r.velNow : velNow, v = vel ? vel.length() : 0;
+    const riding = !!(live && live.gate && live.gate.state === 'tube');
+    const want = Math.min(ST_MAX_EFFECT, clamp01((v - ST_MIN) / (ST_MAX - ST_MIN)) * (riding ? Math.max(0, P.rideSpeedTunnelScale) : 1));
+    stEffect += (want - stEffect) * (1 - Math.exp(-ST_RESP * dt));
+    const fov = Math.max(1, CAM_HOME_FOV - ST_FOV_DROP * stEffect);
+    if (Math.abs(fov - cam.fov) > 1e-3) { cam.fov = fov; cam.updateProjectionMatrix(); }
   }
   let camRide = 0; const camRideP = new V3(), camRideL = new V3();
   // A point s along a tunnel's centreline, the straight run in before its mouth and out after it included.
@@ -2357,6 +2376,7 @@
     throatBent: { scene: 'tunnel', d: 'The throat\'s radius of the sharpest-bent tunnel.', lo: 'Thin bends.', hi: 'Fat, easy bends.' },
     mouthFlare: { scene: 'tunnel', d: 'Each mouth\'s radius, as a multiple of the throat (+6 u): the tube is narrowest mid-way and widest at its mouths.', lo: 'Almost a pipe.', hi: 'Wide funnels at both ends.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT shortens the tunnel.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
+    rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
     throatSpeed: { scene: 'tunnel', d: 'The ride starts and ends at the speed you went in with (you come out with your own momentum) and rushes to this many times it at the throat. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
     reticleDelaySeconds: { scene: 'tunnelLife', d: 'Out of a tunnel (and at the start), your reticle comes back after this long, so you see the clean exit first.', lo: 'Back at once.', hi: 'A longer clean view.' },
     reticleGrowSeconds: { scene: 'tunnelLife', d: 'The reticle ripples out of its centre into the full tube over this long; you can reshape it meanwhile, and pull RT once it is 60% there.', lo: 'Pops back.', hi: 'Grows slowly.' },
@@ -2576,6 +2596,7 @@
     mouthFlare: ['MeerkatWormholeConfig.mouthFlare', 'linked'],
     keyRampSeconds: ['MeerkatWormholeConfig.keyRampSeconds', 'linked'],
     throatSpeed: ['MeerkatWormholeConfig.throatSpeed', 'linked'],
+    rideSpeedTunnelScale: ['MeerkatWormholeConfig.rideSpeedTunnelScale', 'linked'],
     reticleDelaySeconds: ['MeerkatWormholeConfig.reticleDelaySeconds', 'linked'],
     reticleGrowSeconds: ['MeerkatWormholeConfig.reticleGrowSeconds', 'linked'],
     formSeconds: ['MeerkatWormholeConfig.formSeconds', 'linked'],

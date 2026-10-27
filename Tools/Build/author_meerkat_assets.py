@@ -112,7 +112,7 @@ def script_guid(name: str) -> str:
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
 CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
-               "keyRampSeconds", "throatSpeed", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
+               "keyRampSeconds", "throatSpeed", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs",
                "reticleSpindleThickness", "reticlePath", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",

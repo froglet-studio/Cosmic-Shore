@@ -69,6 +69,11 @@ space-time bend stays the shader's.
 **The panels:** all the wormhole cards are in **Play Style Config**, in this order: Reticle (feel and look, yours
 alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple), Shape, Ride.
 
+**Round 5 (Yash, 2026-10-27: "use 5x the normal value when going through the wormhole"):** riding a tunnel, the game's
+speed tunnel (its dolly zoom: a narrower field of view and a relaxed Panini projection, `Docs/SPEED_TUNNEL.md`) is
+`rideSpeedTunnelScale` (5) × its normal strength. The studio previews the field of view: 68° at the mouth, 23.8° at the
+throat of a straight tunnel, then back to 68°.
+
 **Round 4 (Yash, 2026-10-27: "Turn off all lensing"):** the tube's warp, the mouths' dents and the collapse's ripple ship
 at 0. The wormhole's look is the bridge and your reticle. The Space look sliders stay, to bring any of them back; at 0
 the game's lens pass does not run at all.
@@ -97,6 +102,7 @@ just spindles. Tiny thinning spindles"):**
 | shape | `mouthFlare` | 2 | Mouth radius as a multiple of the throat (+6 u) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `throatSpeed` | 2.5 | Fastest at the throat, as a multiple of your entry speed |
+| ride | `rideSpeedTunnelScale` | 5 | Riding: the game's speed-tunnel dolly zoom, × its normal strength |
 | ride | `reticleDelaySeconds` | 0.5 s | The reticle comes back this long after you are out |
 | ride | `reticleGrowSeconds` | 0.8 s | ...growing out of its centre over this long |
 | ride | `formSeconds` | 0.4 s | RT: the tunnel forms over this long |

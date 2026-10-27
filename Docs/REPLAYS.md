@@ -208,7 +208,10 @@ prisms - plus the recorded race rings, at the stage origin. Nothing waits, so it
 - **Recording.** `TheaterWorldRecorder` is `PrismSpatialIndex.LifeObserver` while a match records. At Go it takes every
   prism standing as a birth (`PrismSpatialIndex.VisitLive`), then logs births (`Register`), deaths (`MarkDestroyed`,
   `Unregister`; a double report is dropped), restorations (`MarkRestored`) and moves (`UpdatePosition`,
-  `UpdatePositionsBatch`) on the vessels' `Time.time` clock. Each birth takes a new id, because the index reuses a slot
+  `UpdatePositionsBatch`) on the vessels' `Time.time` clock. Creatures' body members are VIRTUAL entries (`RegisterVirtual`: swarm,
+  substrate, NCA and builder-colony fauna, no GameObject) and are recorded too (2026-10-27), as boxes sized from their
+  bounding radius; a member suspended while its proxy prism stands is a death, and its return a restoration where it
+  last was. Each birth takes a new id, because the index reuses a slot
   once its prism is gone. Moves are thinned (Move Min Seconds and Distance, Move Jump Distance) and the whole log is
   capped (Max World Events). With no observer the index pays one null check per call.
 - **On disk.** A birth or restoration is 51 bytes (time, id, position, rotation, size, domain, shield/danger flags),
