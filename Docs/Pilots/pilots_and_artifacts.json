@@ -1,6 +1,9 @@
 {
- "about": "Pilots and artifacts: the ONE spec. Tools/Build/author_pilot_assets.py writes the Unity assets from it (--check is the drift gate). Design: Docs/Pilots/PILOTS_AND_ARTIFACTS.md (2026-10-26 draft) building on Docs/PILOTS_AND_ARTIFACTS.md (2026-10-12). id and statId values are saved by players or serialized: never rename an id, never renumber or reuse a statId. Text is printable ASCII (the UI font has no other glyphs). A rank label's 'kind' defaults to what the label reads as (+N Add, +N% Percent, xN Multiply); 'Set' is given where the value replaces the base.",
+ "about": "Pilots and artifacts: the ONE spec. Tools/Build/author_pilot_assets.py writes the Unity assets from it (--check is the drift gate). Design: Docs/Pilots/PILOTS_AND_ARTIFACTS.md (2026-10-26 draft) building on Docs/PILOTS_AND_ARTIFACTS.md (2026-10-12). id and statId values are saved by players or serialized: never rename an id, never renumber or reuse a statId. Text is printable ASCII (the UI font has no other glyphs). A rank label's 'kind' defaults to what the label reads as (+N Add, +N% Percent, xN Multiply); 'Set' is given where the value replaces the base. awaitingDesign names Hangar vessels whose pilots and artifacts are not designed yet: each has none until a designer writes its two and two, then leaves this list (Meerkat joined the Hangar 2026-10-27 before its roster).",
  "slotsPerVessel": 3,
+ "awaitingDesign": [
+  "Meerkat"
+ ],
  "pilots": [
   {
    "name": "Shrapnel",

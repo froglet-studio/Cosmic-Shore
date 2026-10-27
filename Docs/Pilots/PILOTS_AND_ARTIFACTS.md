@@ -88,6 +88,11 @@ strings still play their flourishes.
 
 The Hangar class list (`SO_Classlist_Classes`) without the three omega crews (Warden, Bulwark, Tempest). The Grizzly is playable but not on that list.
 
+**Awaiting design (2026-10-27):** the Meerkat joined the Hangar on bleeding-edge before its pilots and artifacts were
+designed. The spec names it in `awaitingDesign`, where the generator requires it to have none; `--check` prints the list.
+When its two pilots and two artifacts are written into the spec, take it off the list. A vessel that joins the Hangar
+with neither its roster nor a place on that list fails `--check`, so a new hull is never silently missing its pilots.
+
 ## Pilots (40)
 
 kept = the Notion idea as written; reshaped = it was a number, broke the PvP rule, or repeated a level-5 upgrade; new = a game-asset-only pilot or a new name.

@@ -325,8 +325,12 @@ def validate_spec(spec):
     vessels = hangar_vessels()
     ids = enum_values(VESSEL_CLASS_CS, "VesselClassType")
     pilots, artifacts = spec["pilots"], spec["artifacts"]
-    if len(vessels) != 20:
-        out.append(f"the Hangar lists {len(vessels)} vessels without the omega crews, not 20")
+    # A Hangar vessel either has its two pilots and two artifacts, or waits, named in awaitingDesign, with none: a hull
+    # that joins the Hangar before its roster is designed shows up here as a name, never as an invented roster.
+    awaiting = spec.get("awaitingDesign", [])
+    for v in awaiting:
+        if v not in vessels:
+            out.append(f"awaitingDesign names {v}, which the Hangar does not list")
     def ascii_ok(t):
         return all(32 <= ord(c) <= 126 for c in t)
     for field, items in (("pilot", pilots), ("artifact", artifacts)):
@@ -339,12 +343,14 @@ def validate_spec(spec):
     if len({file_stem(p["name"]) + p["vessel"] for p in pilots}) != len(pilots):
         out.append("two pilots would share an asset name")
     for v in vessels:
+        want = 0 if v in awaiting else 2
+        why = " (it is awaiting design)" if v in awaiting else " (or name it in awaitingDesign)"
         n = sum(1 for p in pilots if p["vessel"] == v)
-        if n != 2:
-            out.append(f"{v} has {n} pilots, not 2")
+        if n != want:
+            out.append(f"{v} has {n} pilots, not {want}{why}")
         n = sum(1 for a in artifacts if a["fits"] == v)
-        if n != 2:
-            out.append(f"{v} has {n} artifacts of its own, not 2")
+        if n != want:
+            out.append(f"{v} has {n} artifacts of its own, not {want}{why}")
     for p in pilots:
         if p["vessel"] not in vessels:
             out.append(f"pilot {p['name']} flies {p['vessel']}, which the Hangar does not list")
@@ -569,6 +575,10 @@ def self_test():
         "a stat that is not a C# name": lambda s: s["artifacts"][9].update(stat="long barrel"),
         "a rank label the font cannot draw": lambda s: s["artifacts"][9]["ranks"].__setitem__(0, "4 \u2192 5"),
         "six slots": lambda s: s.update(slotsPerVessel=6),
+        "an awaiting vessel given a pilot": lambda s: s["pilots"].append(
+            dict(s["pilots"][0], name="Early", id="pilot.early.x", vessel=s["awaitingDesign"][0], portrait=None)),
+        "a Hangar vessel neither designed nor awaiting": lambda s: s.update(awaitingDesign=[]),
+        "awaitingDesign naming a vessel the Hangar does not list": lambda s: s["awaitingDesign"].append("Grizzly"),
     }
     for what, fn in plants.items():
         s = copy.deepcopy(spec)
@@ -612,6 +622,8 @@ def main():
             print("GUID:", p)
         for rel in changed:
             print("DRIFT:", rel)
+        if spec.get("awaitingDesign"):
+            print("awaiting design (no pilots or artifacts yet):", ", ".join(spec["awaitingDesign"]))
         print(f"check: {len(files)} files, {len(changed)} drifted, {len(problems)} guid problems")
         return 1 if changed or problems else 0
 
