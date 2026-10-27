@@ -635,6 +635,46 @@
         "The one thing a person can do today: ./Tools/Build/build_windows.sh --version <x.y.z>, launch the player, sign in, reach Menu_Main, open and close the pause menu, read Player.log (QA-BUILD-WINDOWS-PLAYER).",
         "Steam upload, once an app id exists: ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal"
       ]
+    },
+    "attribution": {
+      "title": "Attribution audit",
+      "aliases": [
+        "attribution",
+        "credit",
+        "stolen commits",
+        "who did what",
+        "attribution audit",
+        "took credit"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Caleb",
+        "Shombith"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "summary": "Whether one person's work took credit for another's: re-authored commits, others' commits pushed under a new name, names swapped in docs, area owners and team roles. 2026-10-27: Yash's work took none.",
+      "paths": [
+        "Tools/Build/attribution_audit.py",
+        "Docs/Reports/ATTRIBUTION_AUDIT.md"
+      ],
+      "docs": [
+        "Docs/Reports/ATTRIBUTION_AUDIT.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Attribution Audit (the page to share)",
+          "url": "https://claude.ai/artifact/5Z7fdnLhs7kqAvFXw85TFP"
+        }
+      ],
+      "report": "Docs/Reports/ATTRIBUTION_AUDIT.md",
+      "taskAreas": [],
+      "test": [
+        "git fetch --unshallow origin (once), git fetch origin, then python3 Tools/Build/attribution_audit.py --person <name>."
+      ]
     }
   }
 }
