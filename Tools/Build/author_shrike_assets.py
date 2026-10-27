@@ -31,7 +31,7 @@ WHAT IT MAKES
         - the executors: the Brittle Star's executor and its turrets object (gun, factory, round pool) removed;
           ShrikeExecutor added (config, hull, turn-end channel);
         - the bindings (shared; OWNED - re-applied to the shipped prefab): RT the mode's action, LT zoom, X Space mode,
-          RB Charge mode, B Time mode, A Mass (detach and leave a nest);
+          Y Charge mode, B Time mode, A Mass (detach and leave a nest);
         - the AI: no blind ability cycle, the no-op HoldBoostAIPolicy (no boost to drive); the executor's autopilot presses
           the replicated controls;
         - the HUD: ShrikeHUDVariant (a copy of BrittleStarHUDVariant: same internal fileIDs, the view swapped to
@@ -116,9 +116,11 @@ CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Shrike_large.png")
 CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Shrike_Hangar_Preview.png")
 
 # (control name, enum value, InputEvents it is bound to). The InputEvents numbers: RightStickAction=1 (RT / LMB /
-# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), FlipAction=3 (RB / E), Button1=6 (A / Space),
-# Button2=7 (B / R), Button3=8 (X / Q). Garrett, 2026-10-15: LT is always zoom, RT does the mode's action.
-CONTROLS = (("ShrikeTrigger", 4, 1), ("ShrikeZoom", 5, 2), ("ShrikeChargeMode", 7, 3), ("ShrikeMass", 3, 6),
+# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), Button1=6 (A / Space), Button2=7 (B / T), Button3=8 (X / Q),
+# Button4=14 (Y / F). Garrett, 2026-10-15: LT is always zoom, RT does the mode's action. Charge mode was FlipAction=3
+# (RB / E) until 2026-10-27, when Garrett moved every RB ability to Y: the shoulders belong to the pilot (LB sight,
+# RB payload; Docs/Pilots/CALLSIGNS.md section 5).
+CONTROLS = (("ShrikeTrigger", 4, 1), ("ShrikeZoom", 5, 2), ("ShrikeChargeMode", 7, 14), ("ShrikeMass", 3, 6),
             ("ShrikeTimeMode", 8, 7), ("ShrikeSpaceMode", 6, 8))
 # The first port's control assets, retired with the direct Lance / Sling / Paint / Dock controls.
 RETIRED_CONTROLS = ("ShrikeLance", "ShrikeSling", "ShrikePaint", "ShrikeDock")
@@ -622,10 +624,10 @@ def class_asset() -> str:
 
 
 # (element, label, InputEvents shown on its card, description, upgrade label, upgrade description). Garrett, 2026-10-15:
-# the modes (X Space, RB Charge, B Time) pick what RT does; LT is always zoom.
+# the modes (X Space, Y Charge, B Time) pick what RT does; LT is always zoom.
 MAP_ENTRIES = (
-    (1, "Targeting Array", 3,
-     "RB: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a plant, then the centre "
+    (1, "Targeting Array", 14,
+     "Y: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a plant, then the centre "
      "of the mass nearest your aim - and every nest flora with a ready missile launches it, one each per 0.8 s, homing "
      "while you paint. A missile blows on contact in an 18 u blast (a shield takes the hit first); a rival hull inside "
      "it is a petal hit (petals only - nothing is moved). The card counts the missiles left across every flora. A "

@@ -33,7 +33,7 @@ MonoBehaviour:
     AbilityDescription: Cycle your three weapons - explosives, sniper, and the
       plasma-claw flamethrower. Mass grows your trail prisms. At level 5 the
       claw stops destroying what it burns and STEALS it for your team instead.
-    Input: 3
+    Input: 14
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.4
     UnlockLevel: 5
