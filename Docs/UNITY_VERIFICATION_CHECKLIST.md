@@ -17187,3 +17187,18 @@ compile. Run `FactionChatTests` (edit mode).
    - no two are the same picture;
    - none is a blue sphere.
 3. **Hangar and Toy Box unchanged.** **Pass:** they still show every hull (`VesselModelBuilder.IsHull` only became public).
+
+## 🔴 2026-10-27 — Ark sea lines, Blue-only Codex, Hangar ship with silver plates (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.5. This entry supersedes step 1 of the "Hangar hull in the cards' silver" entry
+above.
+
+1. **Ark.** Open ARK > SQUADS, then DECOR. **Pass:**
+   - each opens on the dark veil with the moving sea lines, as the Codex and Hangar do, with no game world showing
+     through;
+   - CONVERTER still shows its 3D picture.
+2. **Codex.** Open ECOLOGY and step through Flora and Fauna. **Pass:** every picture tints Blue only, never jade, ruby,
+   gold or purple.
+3. **Hangar.** Step through every vessel. **Pass:**
+   - each looks like the ship in play (its own dark body, windows and engines);
+   - only its team-colour plates are silver.

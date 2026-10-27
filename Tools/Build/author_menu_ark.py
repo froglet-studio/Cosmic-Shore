@@ -221,6 +221,24 @@ def page_node(root, key, shown):
     return pg
 
 
+# The window backdrop every style-B window draws (author_menu_arcade.WINDOW_BACKDROP_ALPHA; the Codex and the Hangar
+# build the same pair): a near-opaque veil under the top bar, and the sea lines over it.
+WINDOW_BACKDROP_ALPHA = 0.95
+TOP_BAR = 84
+
+
+def page_backdrop(page, key):
+    """The veil and the sea behind a page that has no 3D picture of its own (Shombith 2026-10-27, of the Squads tab
+    showing the game world straight through: "Ark no sea line"). First under the page, so its content draws over it;
+    the page's CanvasGroup hides it with the page. The converter keeps its picture and draws none."""
+    under_bar = R((0, 0), (1, 1), (0, -TOP_BAR / 2), (0, -TOP_BAR))
+    veil = page.child(N(f"{key}/Backdrop", "Backdrop", under_bar))
+    veil.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceBlack", WINDOW_BACKDROP_ALPHA), raycast=True)) \
+        .add("th", 114, H.themed("SurfaceBlack", WINDOW_BACKDROP_ALPHA))
+    page.children.append(M.window_sea_node(f"{key}/Sea", "Sea", under_bar))
+
+
 def stretch_x(left, right, top, h):
     """A rect stretched across its parent between `left` and `right`, `top` down from the top, `h` tall."""
     return R((0, 1), (1, 1), ((left - right) / 2, -top), (-(left + right), h), (0.5, 1))
@@ -481,6 +499,7 @@ def refs_of(ctx, keys, comp):
 
 def squads_page(root):
     page = page_node(root, "Squads", False)
+    page_backdrop(page, "Squads")
     squad_list(page)
     squad_header(page)
     squad_empty(page)
@@ -543,6 +562,7 @@ def decor_page(root):
     """DECOR, locked (its tab refuses): the banner and the Ark's hull, outside and in. Drawn so that opening the tab is
     the one change (MenuAvailability.Available on the tab); nothing behind it yet."""
     page = page_node(root, "Decor", False)
+    page_backdrop(page, "Decor")
     title_band(page, "Decor/Title", "Decor", "The Ark's banner and its hull, outside and in.")
     pn = page.child(N("Decor/Slots", "Slots", stretch_x(COL_X, 40, 180, 320)))
     C.frame(pn, "Decor/Slots/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
@@ -805,6 +825,12 @@ def validate_tabs(view, V):
     entries = re.findall(r"  - button: \{fileID: (-?\d+)\}\n    page: \{fileID: (-?\d+)\}\n"
                          r"    pageLogic: \{fileID: (-?\d+)\}\n    availability: \{fileID: (-?\d+)\}\n", tabs)
     assert len(entries) == len(TABS), f"the Ark has {len(entries)} tabs, not {len(TABS)} ({', '.join(TABS)})"
+    # The pages with no 3D picture draw the window backdrop: the veil, then the sea lines, under everything else.
+    for t in ("Squads", "Decor"):
+        kids = re.findall(r"fileID: (-?\d+)", re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V(f"{t}#rt"))[1], re.M).group(1))
+        assert kids[:2] == [str(V(f"{t}/Backdrop#rt")), str(V(f"{t}/Sea#rt"))], \
+            f"the {t} tab must open on the veil and the sea lines (\"Ark no sea line\")"
+        assert f"guid: {M.SEA_WINDOW_MAT}" in A.doc_of(view, V(f"{t}/Sea#img"))[1], f"the {t} tab's sea is not the window sea"
     for t, (button, page, logic, gate) in zip(TABS, entries):
         assert A.kind_of(view, button)[1] == S["text_tab"], f"the {t} tab's button is not a KitTextTab"
         assert A.kind_of(view, page)[0] == 225, f"the {t} tab's page is not a CanvasGroup"
@@ -872,6 +898,8 @@ def self_test(files):
             r"(--- !u!224 &" + IDS["rt"] + r"\n(?:(?!--- ).*\n)*?  m_SizeDelta: )\{x: 0, y: 0\}", r"\1{x: 0, y: 170.4}",
             f[SCENE], count=1))),
         ("the wrong crystal on a row", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1))),
+        ("the Squads tab without its sea lines", lambda f: f.__setitem__(view, f[view].replace(
+            f"guid: {M.SEA_WINDOW_MAT}", f"guid: {M.SEA_PANEL_MAT}", 1))),
         ("Decor opened", lambda f: f.__setitem__(view, f[view].replace("  availability: 1\n", "  availability: 0\n", 1))),
         ("a card with no hull", lambda f: f.__setitem__(view, re.sub(
             r"(  hullImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),

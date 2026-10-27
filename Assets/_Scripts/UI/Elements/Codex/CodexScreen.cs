@@ -60,8 +60,11 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite[] elementShapes = new Sprite[4];
         [Tooltip("Each element's Etherion crystal in motion, Charge to Time: a 4x4 sheet of frames.")]
         [SerializeField] private Texture2D[] elementFlipbooks = new Texture2D[4];
-        [Tooltip("The domain palette: a lifeform's picture drifts through Jade, Ruby and Gold, the colours it wears in the world.")]
+        [Tooltip("The domain palette the Codex's pictures are tinted from.")]
         [SerializeField] private SO_ColorSet colorSet;
+        [Tooltip("The domains a picture is tinted with. Blue only (Shombith 2026-10-27: \"All codex should have blue domain " +
+                 "not anything else\"): Blue is nobody's team, and an encyclopedia page belongs to no one.")]
+        [SerializeField] private Domains[] pictureDomains = { Domains.Blue };
 
         [Header("Words")]
         [SerializeField] private CodexWords words = new();
@@ -218,12 +221,13 @@ namespace CosmicShore.UI
 
         Color[] _lifePalette;
 
-        /// <summary>The domains a lifeform is seen in, as the HUD paints them (SO_ColorSet's signal colours).</summary>
+        /// <summary>The picture's tint: <see cref="pictureDomains"/> as the HUD paints them (SO_ColorSet's signal colours).</summary>
         Color[] LifePalette()
         {
-            if (_lifePalette != null || !colorSet) return _lifePalette;
-            return _lifePalette = new[] { colorSet.GetDomainSignalColor(Domains.Jade), colorSet.GetDomainSignalColor(Domains.Ruby),
-                                          colorSet.GetDomainSignalColor(Domains.Gold) };
+            if (_lifePalette != null || !colorSet || pictureDomains is not { Length: > 0 }) return _lifePalette;
+            _lifePalette = new Color[pictureDomains.Length];
+            for (int i = 0; i < pictureDomains.Length; i++) _lifePalette[i] = colorSet.GetDomainSignalColor(pictureDomains[i]);
+            return _lifePalette;
         }
 
         void FillTiles(List<CodexItem> items)
