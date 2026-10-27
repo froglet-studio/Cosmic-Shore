@@ -7,10 +7,10 @@ using CosmicShore.UI;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Codex orbit (Docs/MENU_REDESIGN_B.md section 91): entries fill the rings from the inside out, the last ring
+    /// The Codex orbit (Docs/MENU_REDESIGN_B.md section 98): entries fill the rings from the inside out, the last ring
     /// takes whatever is left, and arranging turns the picked entry to the front of its ring - the bottom of the
     /// ellipse, drawn largest and on top - while every other ring turns a gap to the front, so no entry stacks on the
-    /// pick (section 91.1).
+    /// pick (section 98.1).
     /// </summary>
     public class CodexOrbitTests
     {

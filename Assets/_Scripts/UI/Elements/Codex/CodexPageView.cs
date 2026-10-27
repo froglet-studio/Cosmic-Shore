@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The open page on the right of the Codex (Docs/MENU_REDESIGN_B.md sections 88 and 90): the entry's picture, kicker
+    /// The open page on the right of the Codex (Docs/MENU_REDESIGN_B.md sections 88 and 97): the entry's picture, kicker
     /// and title, then what it does in play, its facts, its element cells and its rows, and its lore last ("gameplay info
     /// above lore") - each block copied from a hidden template line and hidden whole while it is empty. It draws a
     /// <see cref="CodexPage"/> and decides nothing.

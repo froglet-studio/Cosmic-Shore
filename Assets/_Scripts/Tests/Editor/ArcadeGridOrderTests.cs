@@ -11,7 +11,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Arcade grid's order and its ELEMENT and VESSEL dropdowns (<see cref="ArcadeGridOrder"/>, Docs/MENU_REDESIGN_B.md
-    /// sections 85 and 90). The view asks two questions about a game; these tests answer them by hand, so the rules are
+    /// sections 85 and 97). The view asks two questions about a game; these tests answer them by hand, so the rules are
     /// pinned without a scene.
     /// </summary>
     [TestFixture]

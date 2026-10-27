@@ -94,7 +94,7 @@ BRACKET = 22                 # corner bracket arm, canvas units
 SPARK_W, SPARK_H = 48, 2     # spark streak, canvas units
 POOL_W, POOL_H = 120, 30     # a pedestal's pool of light, canvas units (drawn simple)
 POOL_RIM = 1.5               # the pool's rim, canvas units
-# The Codex's orbit (Docs/MENU_REDESIGN_B.md section 91): a thin circle stretched into each ring's ellipse, and a soft
+# The Codex's orbit (Docs/MENU_REDESIGN_B.md section 98): a thin circle stretched into each ring's ellipse, and a soft
 # disc for the core and the picked node's halo. Canvas units.
 RING_D, RING_LINE = 256, 1.5
 CRADLE_W, CRADLE_H = 710, 1026  # the Rev 24 Hangar dossier, canvas units (author_menu_hangar.DOSSIER_W / _H)

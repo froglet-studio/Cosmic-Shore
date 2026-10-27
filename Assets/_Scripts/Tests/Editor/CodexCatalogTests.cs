@@ -10,7 +10,7 @@ using CosmicShore.UI;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Codex's chapters (<see cref="CodexCatalog"/>, Docs/MENU_REDESIGN_B.md sections 88 and 90), built from hand-made
+    /// The Codex's chapters (<see cref="CodexCatalog"/>, Docs/MENU_REDESIGN_B.md sections 88 and 97), built from hand-made
     /// assets so the rules are pinned without a scene: which entries a stop lists, in what order, and what each page says.
     /// </summary>
     [TestFixture]
@@ -126,7 +126,7 @@ namespace CosmicShore.Tests
         public void Element_ShowsItsEtherion_ButNoneOfTheCrystalsBuildNotes()
         {
             var mass = Build(CodexChapter.Elements)[1].Page;
-            Assert.IsEmpty(mass.Facts);                                          // "Kind", triangle counts: gone (section 90)
+            Assert.IsEmpty(mass.Facts);                                          // "Kind", triangle counts: gone (section 97)
             StringAssert.Contains("Etherions", mass.Gameplay);
             StringAssert.Contains("Mass", mass.Gameplay);
         }

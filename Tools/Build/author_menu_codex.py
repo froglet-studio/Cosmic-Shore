@@ -5,10 +5,10 @@ Author the CODEX screen of the style-B menu - the top bar's first tab - as prefa
 "Go ahead implement the codex I like the design").
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Codex/
-        CodexTile.prefab   one entry on the orbit (section 91): a round node - a dark disc, the entry's picture, an
+        CodexTile.prefab   one entry on the orbit (section 98): a round node - a dark disc, the entry's picture, an
                            outline ring (painted by CodexTile) over a halo - with its name and a quiet line under it;
                            a uGUI Button that tints the picture, a CanvasGroup CodexOrbit dims by depth
-        CodexGuideTile.prefab  one entry on the Field Guide's strip (section 91.1): a square of the picture over its name
+        CodexGuideTile.prefab  one entry on the Field Guide's strip (section 98.1): a square of the picture over its name
         CodexView.prefab   the whole screen: the sea under the top bar, then (drawn at the Hangar's 0.88) the chapter
                            row (LB, the KitTextTabs, RB), the head row (title, FLORA / FAUNA while ECOLOGY is open,
                            count) and two layouts, one shown at a time: the ORBIT for ELEMENTS (two tilted rings, the
@@ -145,13 +145,13 @@ SHAPES = {e: K.meta_guid(f"Assets/_Graphics/ElementShapes/{e.lower()}_{shape}_la
           for e, shape in zip(ELEMENTS, ("pentagon", "triangle", "kite", "diamond"))}
 PORTRAIT_SCRIPT = C.script("CodexPortrait")
 # Frames a second per sheet, Omni then Charge..Time: each sheet's 16 frames are one loop of its render (8.333 s, 3.2 s,
-# 8 s, 2.2 s, 2 s; the crystal render's report, section 90).
+# 8 s, 2.2 s, 2 s; the crystal render's report, section 97).
 FLIPBOOK_FPS = (1.92, 5, 2, 7.27, 8)
 KIT_AMBIENT = K.kit_script("KitAmbient")
 
 
 def portrait_node(parent, key, r, flower):
-    """A CodexPortrait (sections 89-90): a Motion child that holds still until the entry is picked and then plays its
+    """A CodexPortrait (sections 89 and 97): a Motion child that holds still until the entry is picked and then plays its
     element's entrance, carrying the picture, its flipbook and - for an element - a corner badge of the HUD's flower over
     the element's shape. CodexPortrait fills it and moves it; nothing here is drawn by code but the colours."""
     n = parent.child(N(key, "Portrait", r))
@@ -185,7 +185,7 @@ def portrait_node(parent, key, r, flower):
 
 
 def build_tile():
-    """One entry on the orbit (section 91): a round node - its picture on a dark disc, ringed by the outline CodexTile
+    """One entry on the orbit (section 98): a round node - its picture on a dark disc, ringed by the outline CodexTile
     paints (the selection blue on the open one) over a breathing halo - with the name and a quiet line under it.
     CodexOrbit places, scales and dims it by how far round to the front it is (the root's CanvasGroup)."""
     root = N("root", "CodexTile", R(size=(NODE_W, NODE_H)))
@@ -222,7 +222,7 @@ def build_tile():
 
 
 def build_guide_tile():
-    """One entry on the Field Guide's strip (section 91.1, board B): a square of the picture over its name, the open one
+    """One entry on the Field Guide's strip (section 98.1, board B): a square of the picture over its name, the open one
     outlined in the selection blue over a breathing glow. The strip's layout group places it."""
     root = N("root", "CodexGuideTile", R(size=(GUIDE_TILE, GUIDE_TILE)))
     root.add("cg", 225, H.canvas_group(True)).add("le", 114, le(pw=GUIDE_TILE, ph=GUIDE_TILE))
@@ -285,7 +285,7 @@ def head_row(content):
 
 
 def orbit_layout(content):
-    """The Orbit (section 91): the rings drawn behind, the entries with the core's picture among them (CodexOrbit places
+    """The Orbit (section 98): the rings drawn behind, the entries with the core's picture among them (CodexOrbit places
     and sorts them front over back) on the left, and the solid reading panel on the right."""
     lay = content.child(N("OrbitLayout", "OrbitLayout", STRETCH))
     lay.add("cg", 225, H.canvas_group(True))
@@ -318,7 +318,7 @@ def orbit_layout(content):
 
 
 def guide_layout(content):
-    """The Field Guide (Rev 30 board B, section 91.1): a two-page book - the plate (the entry's picture, large, and its
+    """The Field Guide (Rev 30 board B, section 98.1): a two-page book - the plate (the entry's picture, large, and its
     caption) on the left, its page on the right - over a strip of every entry, the open one lit."""
     lay = content.child(N("Guide", "Guide", STRETCH))
     lay.add("cg", 225, H.canvas_group(False))
@@ -433,7 +433,7 @@ def page_zone(parent, k, r, portrait_key, plate_key=None, columns=2, glow=True):
         .add("mask", 114, lambda ctx, go: K.mono(go, S["mask"], "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n"))
     pc = vp.child(N(f"{k}/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     pc.add("vlg", 114, K.hv_layout(True, (0, 8, 0, 24), 22, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
-    # Gameplay first, lore last (section 90: "gameplay info above lore"); both type themselves in (CodexPageView).
+    # Gameplay first, lore last (section 97: "gameplay info above lore"); both type themselves in (CodexPageView).
     gp = pc.child(N(f"{k}/Gameplay", "Gameplay", R(size=(0, 26))))
     gp.add("cg", 225, H.canvas_group(True))
     label(gp, "", "Body", "TextLight", valign="top", wrap=True)
@@ -808,7 +808,7 @@ def validate(files):
     for chapter in CHAPTERS:
         assert f"  m_text: {chapter.upper()}\n" in view, f"the {chapter.upper()} chapter tab is missing"
     for retired in ("ETHIRIONS", "PILOTS", "VESSELS", "ARTIFACTS", "TOYS", "TOOLS"):
-        assert f"  m_text: {retired}\n" not in view, f"{retired} is no chapter any more (section 90)"
+        assert f"  m_text: {retired}\n" not in view, f"{retired} is no chapter any more (section 97)"
     titles = re.search(r"^  stopTitles:\n((?:  - .*\n)*)", sbody, re.M)
     assert titles and len(re.findall(r"^  - ", titles.group(1), re.M)) == len(STOPS), "CodexScreen.stopTitles needs one title per stop"
     assert "Artifacts are found far out in the HyperSea" in sbody, "the Artifacts lexicon card must say where artifacts come from"

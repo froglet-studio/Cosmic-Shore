@@ -65,6 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Grizzly's new model: a bear-clade hull in place of the generic wedge (`cece/fervent-turing-kt23ax`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "make a new much more awesome model for the Grizzly"): `Grizzly.prefab` draws
+`Assets/_Models/Vessel Models/Grizzly.fbx` (new, `specs/grizzly.py`, dossier `Docs/VesselModels/Grizzly.md`) at
+`Ship_Wedge_Body/GrizzlyHull/Grizzly`. The model is a skinned hovering assembly: 15 bones, 4 real element morphs,
+13.9k tris. The wedge's eight MeshFilter/MeshRenderer pairs are gone; the part transforms keep their colliders, jets and
+guns. `BufoAnimation` makes the four pod bones follow the thrusters rigidly and the hump and keel follow the fins at
+0.35, and it finds the SkinnedMeshRenderer for the flares. `VesselCustomization` repaints the Domain slot by identity.
+The four Grizzly crystal-fusion bakes were dropped (stale for the new mesh), and the class card images were
+re-rendered from the model. The C# compiled clean headless (`unity_refcompile`: 0 errors in project code; a planted
+error in `BufoAnimation.cs` failed it). No Unity Editor was open.
+
+**Verify in editor:**
+1. Let `Grizzly.fbx` import. Open `Grizzly.prefab`: `Ship_Wedge_Body/GrizzlyHull/Grizzly` shows the bear (nose +Z,
+   the four pods' mouths on the four VesselJets, no wedge mesh anywhere), with no missing-script or missing-mesh
+   warnings.
+2. FrogletTools > Vessels > Audits > **Audit Vessel Elemental Morphs**: the Grizzly lists Charge / Mass / Space /
+   Time as real shapes. Then **Audit Vessel Construction** and **Audit Vessel Tails and Jets**.
+3. FrogletTools > Vessels > Wiring > **Bake Crystal Hull Fusions**; `CrystalHullFusionBakeTests` green.
+4. Fly it from the Toybox Vessel Changer:
+   - the domain colour lands on the hump saddle, pod collars, pauldron caps, knuckles and blaze;
+   - boost flares the ember mouths;
+   - the pods swing with the stick and stay on their exhausts;
+   - the hump rolls a little (it must not slide off the shoulders);
+   - the claws, Rush, Dig In, bombs and the sniper still work;
+   - collecting each element's crystal visibly morphs the hull.
+5. Menu: the Grizzly's card, hangar preview and silhouette show the new hull.
+6. The ability row: the four cards show Dig In (the bear planted, anchor in the ground), Weapon Systems (the drum),
+   Charged Cannon (the shell and blast) and Rush (the bear lunging), white, in Charge / Mass / Space / Time order,
+   with no placeholder left (`icon_kit/specs/grizzly.py`, `Docs/Icons/sheets/grizzly.png`).
+7. FrogletTools > UI > Codex: re-bake the Vessel Changer's Grizzly variant image from the new model.
+
 ### 🔴 The Meerkat: the wormhole vessel, its AI and Burrow Run (`claude/adoring-cerf-m94x1o`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed:** `VesselClassType.Meerkat = 28` and `GameModes.BurrowRun = 71`, cloned from the Vessel Studio's
@@ -6577,6 +6609,83 @@ pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
    that could not be cut).
 8. Profile with many crystals on screen: `CrystalDepthPrisms.LateUpdate` should be a few µs per
    visible crystal.
+
+---
+
+### 🔴 Pilots & artifacts 2b: the 40-pilot roster, 45 artifacts and the Hangar's PILOTS / ARTIFACTS tabs (`claude/pensive-dijkstra-qxoxo0`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation; built on the two sections below):
+`author_pilot_assets.py` now also writes 40 roster pilots, 45 artifacts, `ArtifactStat.cs` and the catalog from
+`Docs/Pilots/pilots_and_artifacts.json`; `PilotSO` / `ArtifactSO` / the catalog gained fields; `HangarPilotsPage`
+reads the catalog; new `HangarArtifactsPage`; `PilotLoadoutStore` (device); `FrogletTools > Pilots` dev menu;
+`author_menu_hangar.py` rebuilt both tabs in `HangarView.prefab`.
+
+**Not opened in Unity** (no editor or `unity` CLI in the session). Real-reference compile
+(`Tools/Build/unity_refcompile`): see the commit for the player and editor results. Generators: `author_pilot_assets.py
+--check` / `--self-test`, `author_menu_hangar.py --check` / `--self-test`, `check_generated_assets.py`.
+
+**Verify in editor:**
+1. Test Runner, EditMode: `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests` pass.
+2. Select `Assets/Resources/Pilots/PilotArtifactCatalog.asset`: 49 pilots (the nine defaults first) and 45
+   artifacts, none Missing; Slots Per Vessel 3.
+3. Menu_Main > Hangar > Rhino > PILOTS: three rows - Energy Sword (IN THE SEAT), Tomahawk and Dozer with their portraits;
+   no element flowers. Press Tomahawk: its row reads IN THE SEAT and the header reads "PILOT · RHINO · SWORD - SPECIAL
+   MOVE / TOMAHAWK / Throw the sword...". Press it again: Energy Sword is back in the seat. Nul (Brittle Star) reads
+   STAND-IN ART; Snap (Goby) has no portrait and reads ART TO COME.
+4. ARTIFACTS on the Sparrow: three empty slots and seven rows (Extra Bay, Long Barrel, then the fleet's five), all
+   held at rank III (everything is free, 2026-10-26); the header reads "SPARROW · 3 SLOTS". Press three rows to fill the
+   slots; a fourth press does nothing; press a slotted row to empty its slot. Quit and re-enter Play: the slots and the seat are kept.
+5. Pad: D-pad onto a pilot row changes the header without seating it; A seats it.
+6. **Tomahawk in a match** (`c0037f8e3`): seat Tomahawk on the Rhino, launch any Rhino mode. Tap RT twice quickly: the
+   toast reads "Tomahawk", the sword spins out flat to the right on a loop (ahead, wide beside the hull, behind, home) in
+   about 1.1 s, slicing prisms it passes, and returns to the fingers. LL throws left. Turn hard during a throw: the loop
+   swings with the hull. RL, LR and every three-tap string still play their flourishes; with the base kit seated RR / LL
+   play Twin Fang / Rising Crescent as before. Fail: the blade snaps at the start or the return, cuts nothing, or stays out.
+7. **Two machines** (protocol 16 on both): one seats Tomahawk and throws; the other sees the same throw and the same
+   prisms cut. A build on protocol 15 is refused at the join with `NetworkConfig mismatch` in the host console.
+
+---
+
+### 🔴 Pilots & artifacts slice 2: nine default pilots, vessel keywords, the catalog asset (`claude/modest-sagan-0ybcgo`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/PILOTS_AND_ARTIFACTS.md` §10.4): `Tools/Build/author_pilot_assets.py` wrote nine
+`Pilot_<Vessel>_Default.asset`, `PilotArtifactCatalog.asset`, and a `keywords` list on nine
+`SO_Class_*.asset`. Its `--check` is clean and was negative-controlled on disk.
+
+**Not opened in Unity.** Checked against the compiled schema with `check_generated_assets.py`.
+
+**Verify in editor:**
+1. Test Runner, EditMode: `PilotCatalogAssetTests` passes (3 tests).
+2. Select `Assets/Resources/Pilots/PilotArtifactCatalog.asset`: nine pilots listed, none Missing.
+3. Select `Pilot_Manta_Default`: Requirement shows Vessel = Manta, Is Default ticked.
+4. Select `SO_Class_Squirrel`: Keywords shows Base Prism Production, Boost, Blade, Crystal Blast,
+   Attach. Re-save it and confirm `git diff` shows no change beyond formatting.
+
+---
+
+### 🔴 Pilots & artifacts slice 1: keywords, pilot/artifact SOs, catalog, saved squads (`claude/modest-sagan-0ybcgo`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (design: `Docs/PILOTS_AND_ARTIFACTS.md` §10): `VesselKeyword`, `VesselRequirement`,
+`ElementalBoost`, `SquadSlot` / `SavedSquad` / `SquadBook` in `CosmicShore.Data`; `PilotSO`,
+`ArtifactSO` and `PilotArtifactCatalogSO` under `ScriptableObjects/PilotsAndArtifacts/`; a
+`Keywords` list on `SO_Vessel`; `SQUAD_DATA` reshaped into the squad book (schema 1). No asset is
+authored yet, so nothing in a scene reads any of it. Also: the legacy `SquadSystem.Init` no longer
+builds a squad from null captain defaults, which on an install with no `squad.data` threw from
+`PortSquadView.Start` on every Menu_Main load (found by reading, not observed).
+
+**Not opened in Unity** (no editor or `unity` CLI in the session). Real-reference compile
+(`Tools/Build/unity_refcompile`): 0 project errors in the player and editor configs, gate
+negative-controlled on a runtime file and both test files. The 26 shipped edit-mode tests were run
+headless (NUnit, real source, engine stand-ins) and pass; two planted logic mutations failed 4 of them.
+
+**Verify in editor:**
+1. Test Runner, EditMode: `SquadBookTests` and `PilotArtifactCatalogTests` pass (26 tests).
+2. Create ▸ ScriptableObjects ▸ Pilots ▸ Pilot, Artifact, and Pilot and Artifact Catalog each make an
+   asset; the Pilot's Requirement shows Vessel (defaults to Any) and a Keywords list.
+3. Open any `SO_Class_*.asset`: a "Pilots & Artifacts" header with an empty Keywords list sits above
+   Gameplay Parameters, and the asset is not dirtied on open.
+4. Delete `squad.data` from `Application.persistentDataPath`, enter Play from Menu_Main: no
+   NullReferenceException from `Squad..ctor` / `PortSquadView.Start` in the console.
 
 ---
 
@@ -16906,6 +17015,37 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
    number).
 6. Phone: each of the three still reaches the ability through its card, as before.
 
+## 🔴 2026-10-27 — The Port: faction messages (Vivox) and the weekly leaderboard (unverified: no Unity editor in the session)
+
+`Docs/MENU_REDESIGN_B.md` section 90; the Rev 27 boards. **First:** switch Vivox on for the project (`Tools/UGS/README.md`,
+"Switching on faction messages (Vivox)"). Let Unity resolve the new package (`com.unity.services.vivox` 16.12.1) and
+compile. Run `FactionChatTests` (edit mode).
+
+1. Main menu: PORT has no lock. Press it, or LT / RT along the bar. **Pass:** the Port slides in over the sea lines, on
+   FACTION MESSAGES.
+2. First open, signed in. **Pass:** "Tuning in to the faction...", then either the recent messages or "No messages yet".
+   Signed out or Vivox off: "Faction messages are offline", with TRY AGAIN, retrying every 15 s.
+3. Type a message and press Enter, X or SEND. **Pass:** it appears at the foot with YOU and a neutral bar (not the blue);
+   the field clears; the hint counts down 3 s.
+3a. The Rev 32 D look (`Docs/MENU_REDESIGN_B.md` §91). **Pass:** every message is a card lit from its top-left
+   corner (periwinkle border fading out, a soft glow), only as wide as its words; yours sit on the right with the avatar
+   after the card, a full periwinkle-to-violet border and a brighter fill. The field has the gradient border and a glow
+   behind it; with the pad on it, the selection-blue outline shows round it. SEND is lit periwinkle with dark words.
+4. Send again within 3 s. **Pass:** not sent; the words stay; "Not sent: too fast..." in red.
+5. Type `<size=300>hi` and send. **Pass:** shown as typed, not as large text.
+6. A second player (MPPM or a second editor) sends. **Pass:** it arrives within a second or two, with their avatar and
+   name.
+7. Pad: walk the feed (up / down); Y or A on the second player's message. **Pass:** REPORT MESSAGE / MUTE PILOT / CANCEL
+   beside it; B closes. MUTE: their messages vanish, "Muted pilots: 1" with UNMUTE ALL appears; UNMUTE ALL brings them
+   back. REPORT: "Report sent. Thank you."; the report is in the dashboard's Moderation queue.
+8. Set the age screen's year to a 10-year-old (PlayerPrefs `FairPlayBirthYear`). **Pass:** the feed reads, but the
+   field and SEND are dimmed, and the hint says this account can read but not send.
+9. RB. **Pass:** WEEKLY LEADERBOARD: the weekly window's board (World / Regional / Friends tiles, podium, rows, best
+   run, rewards) with no BACK, and this week's name and countdown at the tab row's right. LB returns.
+10. Leave the Port (LT / RT). **Pass:** in Vivox's dashboard the player leaves `faction_all` (it is held only while the
+    tab is shown).
+11. The configure card's LEADERBOARD still opens the weekly window as before.
+
 ## 🔴 2026-10-27 — Codex rebuilt (Elements / Ecology / Lexicon), Arcade dropdowns, Hangar max level 5 (unverified: no Unity editor in the session)
 
 **Files:**
@@ -16951,7 +17091,7 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 
 ## 🔴 2026-10-27 — Hangar silver + Mass flip + 2D/3D elements + elemental crystals + Omni controls row (unverified: no Unity editor in the session)
 
-**Spec:** `Docs/MENU_REDESIGN_B.md` §90.1.
+**Spec:** `Docs/MENU_REDESIGN_B.md` §97.1.
 
 1. **Tests.** Run `PlayerProfileDataTests` and `ElementFlowerTests`. **Pass:** green.
 2. **Silver preview.** Hangar: UPGRADE an element. **Pass:**
@@ -16972,7 +17112,7 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 
 ## 🔴 2026-10-27 — Codex Orbit (Rev 30 board C) (unverified: no Unity editor in the session)
 
-**Spec:** `Docs/MENU_REDESIGN_B.md` §91.
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.
 
 1. **Tests.** Run `CodexOrbitTests` and `CodexCatalogTests`. **Pass:** green.
 2. **Orbit.** Open CODEX. **Pass:**
@@ -16991,7 +17131,7 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 
 ## 🔴 2026-10-27 — Codex: wider Orbit (Elements only) + Field Guide for Ecology and Lexicon (unverified: no Unity editor in the session)
 
-**Spec:** `Docs/MENU_REDESIGN_B.md` §91.1.
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.1.
 
 1. **Tests.** Run `CodexOrbitTests`. **Pass:** green.
 2. **Elements.** Open CODEX. **Pass:**
@@ -17010,7 +17150,7 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 
 ## 🔴 2026-10-27 — Hangar hull in the cards' silver; Codex pictures to bake (unverified: no Unity editor in the session)
 
-**Spec:** `Docs/MENU_REDESIGN_B.md` §91.2.
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.2.
 
 1. **Silver.** Open the Hangar and step through every vessel. **Pass:**
    - each hull reads silver: a cool grey body with bright steel edges, pale-blue windows and pale-blue plates, like its
@@ -17026,7 +17166,7 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 
 ## 🔴 2026-10-27 — Codex: population fauna pictures + Toy Box names (unverified: no Unity editor in the session)
 
-**Spec:** `Docs/MENU_REDESIGN_B.md` §91.3.
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.3.
 
 1. **Reset.** Discard the local changes to `Assets/Resources/Codex.asset` from the earlier scan.
 2. **Scan.** FrogletTools > UI > Codex, then Scan & Merge. **Pass:** the report adds entries named as in the Toy Box
@@ -17039,7 +17179,7 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 
 ## 🔴 2026-10-27 — Codex Vessel Changer pictures without the skimmer sphere (unverified: no Unity editor in the session)
 
-**Spec:** `Docs/MENU_REDESIGN_B.md` §91.4.
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.4.
 
 1. FrogletTools > UI > Codex, then **Bake All**, then save.
 2. **Pass:**

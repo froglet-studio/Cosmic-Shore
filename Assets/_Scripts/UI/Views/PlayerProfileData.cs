@@ -100,7 +100,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// The player's ELEMENTAL crystals, one entry per element that has ever had any (Docs/MENU_REDESIGN_B.md
-        /// section 90; Shombith 2026-10-27: "put them in cloud data"). Held is what the player has now; Earned and
+        /// section 97; Shombith 2026-10-27: "put them in cloud data"). Held is what the player has now; Earned and
         /// Spent are lifetime totals, so the Hangar can show held and spent and the Ark can convert them. Here beside
         /// the OmniCrystal balance because they are the same kind of money and ride the same save.
         /// </summary>

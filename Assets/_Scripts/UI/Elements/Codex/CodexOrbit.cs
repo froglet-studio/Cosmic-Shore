@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Codex as an orbit (Docs/MENU_REDESIGN_B.md section 91; the approved Rev 30 board C, Shombith 2026-10-27: "Go
+    /// The Codex as an orbit (Docs/MENU_REDESIGN_B.md section 98; the approved Rev 30 board C, Shombith 2026-10-27: "Go
     /// with C, implement it"): a chapter's entries ride tilted rings around the core, the picked entry's picture.
     ///
     /// <para>The rings fill from the inside out (<see cref="ringCapacity"/>), each entry spaced evenly round its ring. A

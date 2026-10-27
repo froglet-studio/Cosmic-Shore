@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// An entry's picture in the Codex - on a tile and on the open page (Docs/MENU_REDESIGN_B.md sections 89 and 90).
+    /// An entry's picture in the Codex - on a tile and on the open page (Docs/MENU_REDESIGN_B.md sections 89 and 97).
     ///
     /// <para>It holds STILL until it is picked (Shombith 2026-10-27: "Remove the bobbing animation and use some cool
     /// selection animations"). Picking it plays an entrance in its element's own motion, then its life while it stays

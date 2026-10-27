@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The ALL GAMES grid's order and filters (Docs/MENU_REDESIGN_B.md sections 85 and 90), as a pure function of the
+    /// The ALL GAMES grid's order and filters (Docs/MENU_REDESIGN_B.md sections 85 and 97), as a pure function of the
     /// roster and two questions about a game, so the view owns no ordering rule of its own and the rules can be tested
     /// without a scene. The order is fixed: favourites first, then A-Z under them (Shombith 2026-10-27: "Favorites to
     /// the top by default, A-Z under. Drop the sort controls"). The two filters are an element (the card's genre) and a

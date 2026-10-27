@@ -1149,7 +1149,7 @@ def replays_button(parent):
 
 
 def all_games_header(content):
-    """ALL GAMES and its count on the left; the ELEMENT and VESSEL dropdowns on the right (sections 85, 90). Each button
+    """ALL GAMES and its count on the left; the ELEMENT and VESSEL dropdowns on the right (sections 85, 97). Each button
     names its choice ("Vessel: Sparrow") and opens its list under this line; ArcadeGridOptions owns the lists and the
     choice."""
     allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (CONTENT_W, ALLG_H), (0, 1))))
@@ -1671,7 +1671,7 @@ def validate_prefabs(files, guids):
     _, opts = doc_of(view, V("AllGames#options"))
     assert opts, "ArcadeView has no ArcadeGridOptions on ALL GAMES"
     assert "sortButton" not in opts and "m_Name: SortRow" not in view and "m_text: 'Sort:" not in view, \
-        "the sort control is retired: favourites first, A-Z under (section 90)"
+        "the sort control is retired: favourites first, A-Z under (section 97)"
     for field in ("elementButton", "elementLabel", "elementRow", "vesselButton", "vesselLabel", "vesselRow"):
         assert re.search(r"^  " + field + r": \{fileID: -?[1-9]\d*\}", opts, re.M), f"ArcadeGridOptions.{field} is unwired"
     assert "  vesselChoices:\n" + "".join(f"  - {c}\n" for _, c in VESSEL_CHOICES) in opts, \

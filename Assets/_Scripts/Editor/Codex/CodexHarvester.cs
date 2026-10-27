@@ -211,7 +211,7 @@ namespace CosmicShore.Editor.Codex
 
         /// <summary>
         /// The Toy Box's Spawn Matrix names every species a player can release and lists that species' configs
-        /// (Docs/MENU_REDESIGN_B.md section 91.3). Config -> the roster's name for its species.
+        /// (Docs/MENU_REDESIGN_B.md section 98.3). Config -> the roster's name for its species.
         /// </summary>
         static Dictionary<Object, string> RosterNames()
         {

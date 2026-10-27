@@ -77,7 +77,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Omni crystal")]
         [Tooltip("What this hull does when it flies into an OMNI crystal, in a few words (the configure window's controls " +
-                 "list shows it beside the four elements: Docs/MENU_REDESIGN_B.md section 90). Empty: the list shows the " +
+                 "list shows it beside the four elements: Docs/MENU_REDESIGN_B.md section 97). Empty: the list shows the " +
                  "panel's default Omni line. Words only: the effect itself is the prefab's vesselCrystalEffects.")]
         [SerializeField] string omniAbilityLabel;
 

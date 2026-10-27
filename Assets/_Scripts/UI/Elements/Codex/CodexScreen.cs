@@ -11,10 +11,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The CODEX screen, the top bar's first tab (Docs/MENU_REDESIGN_B.md sections 88 and 90). The chapters along the
+    /// The CODEX screen, the top bar's first tab (Docs/MENU_REDESIGN_B.md sections 88 and 97). The chapters along the
     /// top - ELEMENTS (the four elements and their Etherions, Omni, prisms, spindles), ECOLOGY (Flora / Fauna, every
     /// species the Toy Box offers) and LEXICON (one card each for the arcade, quests, voyages, missions, vessels, pilots,
-    /// artifacts and toys) - step on LB / RB. Each chapter is drawn in one of two layouts (section 91, Shombith 2026-10-27:
+    /// artifacts and toys) - step on LB / RB. Each chapter is drawn in one of two layouts (section 98, Shombith 2026-10-27:
     /// "keep this design only for elements section others can have design B"): ELEMENTS as the Orbit (Rev 30 board C,
     /// the entries on tilted rings round the picked one's picture, <see cref="CodexOrbit"/>), ECOLOGY and LEXICON as the
     /// Field Guide (board B, a two-page book - the picture's plate and its page - over a strip of every entry). Left /

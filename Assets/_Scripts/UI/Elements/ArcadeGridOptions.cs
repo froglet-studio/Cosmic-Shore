@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Arcade's two dropdowns beside ALL GAMES, ELEMENT and VESSEL (Docs/MENU_REDESIGN_B.md sections 85 and 90;
+    /// The Arcade's two dropdowns beside ALL GAMES, ELEMENT and VESSEL (Docs/MENU_REDESIGN_B.md sections 85 and 97;
     /// Shombith 2026-10-27: "Drop the sort controls, the locked/unlocked filter and solo/multiplayer. Two dropdowns:
     /// elements and vessels"). The grid's order is fixed - favourites first, A-Z under them (<see cref="ArcadeGridOrder"/>).
     /// Each button opens its list of choices just under the ALL GAMES line - a row of tabs, the chosen one underlined -

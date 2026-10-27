@@ -442,7 +442,7 @@ namespace CosmicShore.UI
             ScheduleSave();
         }
 
-        // ---------------------------------------------------------------- elemental crystals (section 90)
+        // ---------------------------------------------------------------- elemental crystals (section 97)
 
         /// <summary>The player's crystals of one element, or null when they have never had any.</summary>
         public ElementalCrystalBalance GetElementalCrystals(Element element)
@@ -462,7 +462,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Credits elemental crystals. Client-side for now, like the OmniCrystal balance before its server gate:
-        /// nothing calls it yet, because how a match pays them out is the owner's call (section 90 lists it).
+        /// nothing calls it yet, because how a match pays them out is the owner's call (section 97 lists it).
         /// </summary>
         public int AddElementalCrystals(Element element, int amount, string source = null)
         {

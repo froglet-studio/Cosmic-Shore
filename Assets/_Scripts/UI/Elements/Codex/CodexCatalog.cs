@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    /// <summary>The Codex's stops, in LB / RB order (Docs/MENU_REDESIGN_B.md sections 88 and 90). Flora and Fauna are
+    /// <summary>The Codex's stops, in LB / RB order (Docs/MENU_REDESIGN_B.md sections 88 and 97). Flora and Fauna are
     /// the two stops of the ECOLOGY chapter. Values index nothing serialized but the authored names, so they stay explicit.
     /// Section 90 (Shombith 2026-10-27): the etherions folded into ELEMENTS, and the pilots, vessels, artifacts and toys
     /// drill-downs became one LEXICON of cards.</summary>
@@ -57,7 +57,7 @@ namespace CosmicShore.UI
         public Color[] Palette;
         public string Kicker = string.Empty;
         public string Title = string.Empty;
-        /// <summary>What it does in play: read first, right under the title (section 90: "gameplay info above lore").</summary>
+        /// <summary>What it does in play: read first, right under the title (section 97: "gameplay info above lore").</summary>
         public string Gameplay = string.Empty;
         /// <summary>Its lore: read last, under every block of facts.</summary>
         public string Body = string.Empty;
@@ -83,7 +83,7 @@ namespace CosmicShore.UI
 
     /// <summary>
     /// A card the Codex shows whole, from authored words alone: Omni, prisms and spindles in ELEMENTS, and each card of
-    /// the LEXICON (vessels, pilots, artifacts, toys - section 90: "keep them as higher-level lexicon cards").
+    /// the LEXICON (vessels, pilots, artifacts, toys - section 97: "keep them as higher-level lexicon cards").
     /// </summary>
     [Serializable]
     public sealed class CodexCard
@@ -148,7 +148,7 @@ namespace CosmicShore.UI
 
     /// <summary>
     /// Builds the Codex's chapters from the game's own data, as a pure function so the rules can be tested without a
-    /// scene (Docs/MENU_REDESIGN_B.md section 90):
+    /// scene (Docs/MENU_REDESIGN_B.md section 97):
     /// <list type="bullet">
     /// <item>ELEMENTS - the four elements, each with its Etherion crystal and every hull's ability for it (from the hull's
     /// <see cref="ElementalAbilityMapSO"/>), then the authored cards (Omni, prisms, spindles);</item>
@@ -206,7 +206,7 @@ namespace CosmicShore.UI
             {
                 var el = Four[i];
                 string name = Name(words, el);
-                // The element and its Etherion are one entry (section 90): the crystal is its picture, and none of the
+                // The element and its Etherion are one entry (section 97): the crystal is its picture, and none of the
                 // harvested crystal stats (triangle counts, heart sizes) is shown - they were build notes, not play.
                 var crystal = codex ? codex.EthirionFor(el) : null;
                 var flip = flipbooks != null && i < flipbooks.Length ? flipbooks[i] : null;

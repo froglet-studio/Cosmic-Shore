@@ -245,7 +245,7 @@ namespace CosmicShore.UI
             // SO_GameList, because that list is also the roster the tournament pool and the
             // client-side mode lookup read.
             //
-            // Order and filters (sections 85 and 90): favourites first, A-Z under them, narrowed by the ELEMENT and
+            // Order and filters (sections 85 and 97): favourites first, A-Z under them, narrowed by the ELEMENT and
             // VESSEL dropdowns, applied by the one pure rule in ArcadeGridOrder. Without the options the grid shows
             // every game. A card a guided path points at always stays.
             var progressionService = GameModeProgressionService.Instance;
