@@ -20,7 +20,7 @@ MonoBehaviour:
   throatBent: 40
   mouthFlare: 2
   keyRampSeconds: 0.5
-  throatSpeed: 2.5
+  rideMidMultiplier: 2.5
   reticleDelaySeconds: 0.5
   reticleGrowSeconds: 0.8
   formSeconds: 0.4
@@ -52,6 +52,8 @@ MonoBehaviour:
   reticleSpindleThickness: 0.35
   reticlePath: 0.5
   rideSpeedTunnelScale: 5
+  rideEntryMultiplier: 1
+  rideExitMultiplier: 1.2
   formEvent:
     Guid:
       Data1: 0

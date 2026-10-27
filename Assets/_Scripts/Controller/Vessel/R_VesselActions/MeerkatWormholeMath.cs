@@ -229,14 +229,24 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's <c>gateTransit</c> speed: the ride starts and ends at the entry speed <paramref name="vIn"/> and rushes to
-        /// <paramref name="throatSpeed"/> × it at the throat; the dive to the mouth (<paramref name="s"/> &lt; 0) is at vIn.
+        /// The page's <c>rideMultiplier</c> (round 6, Yash: "enter the wormhole with v and then it will speed up to v plus dv,
+        /// and then while exiting it will exit at little bit boosted"): at <paramref name="u"/> (0 the way in, 1 the way out) the
+        /// multiplier on the speed before the tunnel rises from <paramref name="entry"/> to <paramref name="mid"/> at the throat
+        /// and eases to <paramref name="exit"/> at the way out, smoothly (sin(pi u) on each half: its slope is 0 at the throat).
         /// </summary>
-        public static float RideSpeed(float vIn, float throatSpeed, float s, float L)
+        public static float RideMultiplier(float entry, float mid, float exit, float u)
         {
-            float u = Clamp01(s / Mathf.Max(1e-3f, L));
-            return vIn * (1f + (Mathf.Max(0.1f, throatSpeed) - 1f) * (s < 0f ? 0f : Mathf.Sin(Mathf.PI * u)));
+            u = Clamp01(u);
+            float w = Mathf.Sin(Mathf.PI * u), e = Mathf.Max(0.05f, entry), m = Mathf.Max(0.05f, mid), x = Mathf.Max(0.05f, exit);
+            return u < 0.5f ? e + (m - e) * w : x + (m - x) * w;
         }
+
+        /// <summary>
+        /// The page's <c>gateTransit</c> speed: the speed before the tunnel <paramref name="vIn"/> × <see cref="RideMultiplier"/>;
+        /// the dive to the mouth (<paramref name="s"/> &lt; 0) is at the entry multiplier.
+        /// </summary>
+        public static float RideSpeed(float vIn, float entry, float mid, float exit, float s, float L) =>
+            vIn * RideMultiplier(entry, mid, exit, s < 0f ? 0f : s / Mathf.Max(1e-3f, L));
 
         /// <summary>The ride's facing at <paramref name="s"/>: the entry facing <paramref name="q0"/> turned about the binormal by the arc swept.</summary>
         public static Quaternion RideRotation(Vector3 binormal, float theta, float L, float s, float sIn, Quaternion q0) =>

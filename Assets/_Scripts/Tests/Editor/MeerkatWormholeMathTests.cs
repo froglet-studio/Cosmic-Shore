@@ -176,10 +176,14 @@ namespace CosmicShore.Tests
         [Test]
         public void Ride_StartsAndEndsAtTheEntrySpeed_AndPeaksAtTheThroat()
         {
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, -40f, 300f), 1e-4f, "the dive");
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, 0f, 300f), 1e-4f, "the way in");
-            Assert.AreEqual(150f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, 150f, 300f), 1e-3f, "the throat");
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, 300f, 300f), 1e-3f, "the way out");
+            // round 6: entry 1, middle 2.5, exit 1.2 x the speed before the tunnel (the page measured 60 in, ~150 at the throat,
+            // 72 out of the far mouth, easing back to cruise)
+            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, -40f, 300f), 1e-4f, "the dive");
+            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 0f, 300f), 1e-4f, "the way in");
+            Assert.AreEqual(150f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 150f, 300f), 1e-3f, "the throat");
+            Assert.AreEqual(72f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 300f, 300f), 1e-3f, "the way out");
+            Assert.AreEqual(1f + 1.5f * Mathf.Sin(Mathf.PI * 0.25f), MeerkatWormholeMath.RideMultiplier(1f, 2.5f, 1.2f, 0.25f), 1e-5f);
+            Assert.AreEqual(1.2f + 1.3f * Mathf.Sin(Mathf.PI * 0.75f), MeerkatWormholeMath.RideMultiplier(1f, 2.5f, 1.2f, 0.75f), 1e-5f);
         }
 
         [Test]

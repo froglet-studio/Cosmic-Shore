@@ -112,7 +112,7 @@ def script_guid(name: str) -> str:
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
 CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
-               "keyRampSeconds", "throatSpeed", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
+               "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs",
                "reticleSpindleThickness", "reticlePath", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
@@ -150,9 +150,16 @@ def config_asset(values: dict) -> str:
             empty_event("formEvent") + empty_event("collapseEvent"))
 
 
+# Studio keys renamed after the config was first written: old -> new (round 6: the ride's three multipliers).
+RENAMED = {"throatSpeed": "rideMidMultiplier"}
+
+
 def config_retrofit(cfg: str, values: dict) -> str:
     """A key the studio added after the config was first written joins it at the page's SHIPPED value (round 3: the reticle's
     feel and spindles); a key already there is never touched - its number is studio_to_unity.py's. Idempotent."""
+    for old, new in RENAMED.items():   # a key the studio renamed keeps its number under the new name (FormerlySerializedAs)
+        if not re.search(r"^  %s: " % new, cfg, re.M):
+            cfg = re.sub(r"^  %s: " % old, f"  {new}: ", cfg, count=1, flags=re.M)
     missing = [k for k in CONFIG_KEYS if not re.search(r"^  %s: " % k, cfg, re.M)]
     if not missing:
         return cfg
@@ -493,6 +500,9 @@ def self_test():
         fails.append("the config retrofit does not add a key the studio added later")
     if config_retrofit(cfg, values) != cfg:
         fails.append("the config retrofit is not idempotent")
+    renamed = cfg.replace("  rideMidMultiplier: ", "  throatSpeed: ")
+    if "  rideMidMultiplier: 2.5\n" not in config_retrofit(renamed, values) or "  throatSpeed:" in config_retrofit(renamed, values):
+        fails.append("the config retrofit does not carry a renamed key's number to its new name")
     if "  lengthStraight: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))

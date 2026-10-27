@@ -23,8 +23,9 @@ namespace CosmicShore.Gameplay
     /// <c>formSeconds</c> (never longer than the dive to it), and the hull dives straight in. The last tunnel collapses
     /// at once.</item>
     /// <item><b>The ride</b> (<see cref="StepRide"/>, flown by <see cref="MeerkatVesselTransformer"/>): the tunnel flies
-    /// the hull, at its entry speed at both mouths and <c>throatSpeed</c> × it at the throat, and the hull comes out
-    /// with the speed it went in with, on the tunnel's last heading.</item>
+    /// the hull at its speed before the tunnel × <c>rideEntryMultiplier</c> going in, <c>rideMidMultiplier</c> at the throat and
+    /// <c>rideExitMultiplier</c> at the way out (round 6): it comes out a little boosted, on
+    /// the tunnel's last heading, and eases back to cruise.</item>
     /// <item><b>Its life</b>: it stays <c>staySeconds</c> once its rider is out, collapses to its centre over
     /// <c>collapseSeconds</c>, ripples the screen's edges there (<see cref="Ripples"/>) and fades over
     /// <see cref="MeerkatWormholeMath.FadeSeconds"/>. Everyone sees it (<see cref="Live"/>: the bridge, the bent
@@ -324,7 +325,8 @@ namespace CosmicShore.Gameplay
                 _ride = null;   // the tunnel went from under the hull (a despawn): fly on
                 return false;
             }
-            float v = MeerkatWormholeMath.RideSpeed(_vIn, config.ThroatSpeed, _rideS, t.L);
+            float v = MeerkatWormholeMath.RideSpeed(_vIn, config.RideEntryMultiplier, config.RideMidMultiplier,
+                config.RideExitMultiplier, _rideS, t.L);
             _rideS = Mathf.Min(t.L, _rideS + v * dt);
             if (_rideS < 0f)
             {
@@ -340,9 +342,10 @@ namespace CosmicShore.Gameplay
             speed = v;
             if (_rideS >= t.L - 1e-6f)
             {
-                // the page's gateOut: out with the speed you went in with
+                // the page's gateOut: out at rideExitMultiplier x the speed before the tunnel (a little boost, which the
+                // transformer eases back to cruise)
                 cameOut = true;
-                speed = _vIn;
+                speed = _vIn * Mathf.Max(0.05f, config.RideExitMultiplier);
                 _ride = null;
                 MeerkatWormholeMath.RiderOut(ref t.W);
                 if (_relay) _relay.PublishRiderOut(t.Seq);

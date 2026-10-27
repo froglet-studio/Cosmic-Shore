@@ -31,8 +31,9 @@ the prefab:
     `reticleRibs` along it, `reticleSpindleThickness` thick, cyan to white, over a faint glass (`reticleGlass`).
   - The lime line you will fly runs through it (`reticlePath`).
 - **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
-  then runs the arc mouth to mouth. Its speed starts and ends at the entry speed and rushes to `throatSpeed` × it at the
-  throat. It comes out with the entry speed, on the tunnel's last heading.
+  then runs the arc mouth to mouth. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
+  to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
+  on the tunnel's last heading, a little boosted, and eases back to cruise.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
 - **The dolly zoom.** While a tunnel flies the hull, the game's speed tunnel (`VesselSpeedTunnel`: the narrower field of
   view and relaxed Panini every vessel gets with speed) is `rideSpeedTunnelScale` (5) × its normal strength

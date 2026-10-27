@@ -383,7 +383,7 @@
         <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. The <b>right stick bends it</b> any way, as far as it is pushed, up to <i>bendMaxDegrees</i>; the further it bends the shorter (<i>lengthStraight</i> to <i>lengthBent</i>) and fatter (<i>throatStraight</i> to <i>throatBent</i>) it gets. <b>LT</b> shortens a straighter one. Its mouths are <i>mouthFlare</i> × the throat.</p>
         <div class="btns"><button class="pick" type="button" data-reset="shape">Reset</button></div></details>
       <details class="card" id="grp-ride" open><summary>Wormhole · ride <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> starts and ends at the speed you went in with and rushes to <i>throatSpeed</i> × it at the throat: you come out with your own momentum, on the tunnel's last heading. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
+        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> is your speed before the tunnel times three multipliers: <i>rideEntryMultiplier</i> going in (1 = no change), rising to <i>rideMidMultiplier</i> at the throat and easing to <i>rideExitMultiplier</i> at the way out - a little boost you come out with, on the tunnel's last heading, before you ease back to cruise. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
         <div class="btns"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course (any setting you change shows on its next wormhole).">Watch the AI fly it</button><button class="pick" type="button" data-reset="ride">Reset</button></div></details>
       <details class="card" id="grp-reticle" open><summary>Reticle · feel &amp; look <small>MeerkatWormholeConfig · yours alone</small></summary><div class="rows"></div>
         <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is a <b>see-through frame of thin spindles</b>: <i>reticleRings</i> rings of <i>reticleSpindlesPerRing</i> spindles round its throat and <i>reticleRibs</i> ribs along it, <i>reticleSpindleThickness</i> thick, cyan at the way in to white at the way out, over a faint glass (<i>reticleGlass</i>). Fully grown, the lime line you will fly runs through it (<i>reticlePath</i>). Faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
@@ -446,12 +446,14 @@
     // straight it is lengthStraight long with a throatStraight throat, at the sharpest bend lengthBent long and throatBent
     // fat; mouths are mouthFlare x the throat (+6 u); LT on a key or touch reaches a full squeeze in keyRampSeconds
     reticleAhead: 30, bendMaxDegrees: 120, lengthStraight: 600, lengthBent: 120, throatStraight: 3, throatBent: 40, mouthFlare: 2, keyRampSeconds: 0.5,
-    // ride and life: in and out at your entry speed, throatSpeed x it at the throat; the reticle comes back reticleDelaySeconds
+    // ride and life (round 6, Yash: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
+    // exiting it will exit at little bit boosted"): the ride is your speed before the tunnel x rideEntryMultiplier going in,
+    // rideMidMultiplier at the throat, rideExitMultiplier coming out (rideMultiplier); the reticle comes back reticleDelaySeconds
     // after you are out and ripples into shape over reticleGrowSeconds; a tunnel forms over formSeconds, stays staySeconds
     // after you are out, then collapses back to its centre over collapseSeconds
     // round 5: riding, the game's speed tunnel (its dolly zoom) is rideSpeedTunnelScale x its normal strength
     rideSpeedTunnelScale: 5,
-    throatSpeed: 2.5, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
+    rideEntryMultiplier: 1, rideMidMultiplier: 2.5, rideExitMultiplier: 1.2, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
     // round 4 (Yash, 2026-10-27: "Turn off all lensing"): the warp, the dents and the ripple ship at 0 - the bridge and your
@@ -484,7 +486,9 @@
     ['shape', 'throatBent', 'Throat radius, sharpest bend (u)', 5, 120, 1],
     ['shape', 'mouthFlare', 'Mouth radius (× throat)', 1, 5, 0.1],
     ['shape', 'keyRampSeconds', 'LT on a key or touch: full after (s)', 0.05, 3, 0.05],
-    ['ride', 'throatSpeed', 'Fastest at the throat (× your entry speed)', 1, 8, 0.1],
+    ['ride', 'rideEntryMultiplier', 'Ride: going in (× your speed before the tunnel)', 0.5, 3, 0.05],
+    ['ride', 'rideMidMultiplier', 'Ride: fastest, at the throat (× your speed before the tunnel)', 0.5, 8, 0.1],
+    ['ride', 'rideExitMultiplier', 'Ride: coming out (× your speed before the tunnel)', 0.5, 3, 0.05],
     ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
     ['ride', 'reticleGrowSeconds', '...rippling into shape over (s)', 0.05, 3, 0.05],
@@ -1054,14 +1058,14 @@
     if (stance) stance = false;
     if (!curPilot) portalFlash = 1;
   }
-  // In the throat: carried along the curve, from your entry speed up to gtTubeSpeed x it at the throat and back (round 25), turned
+  // In the throat: carried along the curve, at your speed before the tunnel x rideMultiplier (round 6), turned
   // with it; out of the white hole, slung on its heading (gateOut).
   function gateTransit(dt) {
     const g = ftLive.gate, wh = g.pair.wh;
     const u = clamp01(g.s / Math.max(1e-3, wh.L));   // 0 on the dive in (the ride runs the whole tube, mouth 0 to mouth L, however much of it has formed)
-    // round 25 (Yash: "come out with the same momentum and speed as you went inside"): the ride starts and ends at your
-    // entry speed and rushes to gtTubeSpeed x it at the throat - no jolt going in, none coming out
-    const v = g.vIn * (1 + (Math.max(0.1, P.throatSpeed) - 1) * (g.s < 0 ? 0 : Math.sin(Math.PI * u)));
+    // round 6: your speed before the tunnel x rideMultiplier - the entry multiplier on the dive in and at the way in, the
+    // middle one at the throat, the exit one at the way out
+    const v = g.vIn * rideMultiplier(P, g.s < 0 ? 0 : u);
     g.s = Math.min(wh.L, g.s + v * dt);
     if (g.s < 0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }   // still diving to the mouth
     else {
@@ -1073,12 +1077,19 @@
     if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
     if (g.s >= wh.L - 1e-6) gateOut(g);
   }
-  // Out of the far mouth with the speed and momentum you went in with, on the tunnel's last heading (round 25, Yash: "come
-  // out with the same momentum and speed as you went inside"); the tunnel stays staySeconds, then goes back to its centre.
+  // The ride's multiplier at u (0 the way in, 1 the way out) on your speed before the tunnel (round 6): it rises from
+  // rideEntryMultiplier to rideMidMultiplier at the throat and eases to rideExitMultiplier at the way out, smoothly - its
+  // slope is 0 at the throat (sin(pi u) on each half).
+  function rideMultiplier(Pv, u) {
+    const w = Math.sin(Math.PI * clamp01(u)), e = Math.max(0.05, Pv.rideEntryMultiplier), m = Math.max(0.05, Pv.rideMidMultiplier), x = Math.max(0.05, Pv.rideExitMultiplier);
+    return u < 0.5 ? e + (m - e) * w : x + (m - x) * w;
+  }
+  // Out of the far mouth on the tunnel's last heading, at rideExitMultiplier x your speed before the tunnel (round 6: a little
+  // boost, which eases back to cruise as you fly on); the tunnel stays staySeconds, then goes back to its centre.
   function gateOut(g) {
     const wh = g.pair.wh;
     g.state = 'done'; g.used = true; wh.out = true; if (wh.phase === 'open') wh.phase = 'stay';
-    speed = g.vIn;
+    speed = g.vIn * Math.max(0.05, P.rideExitMultiplier);
     if (raceStats && race === 'running') raceStats.catches++;
     lastGate = { len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI) }; slingFlash = 1.6;
   }
@@ -2039,7 +2050,7 @@
     c.font = font(11, 500); c.fillStyle = dim; c.fillText('u/s   cruise ' + P.cruise, pad + 52 * sc, ch - pad - 28 * sc);
     const bw = 180 * sc, by = ch - pad - 14 * sc;
     c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(pad, by, bw, 5 * sc);
-    c.fillStyle = v > P.cruise * 1.05 ? lime : ink; c.fillRect(pad, by, bw * Math.min(1, v / (P.cruise * Math.max(1, P.throatSpeed))), 5 * sc);
+    c.fillStyle = v > P.cruise * 1.05 ? lime : ink; c.fillRect(pad, by, bw * Math.min(1, v / (P.cruise * Math.max(1, P.rideMidMultiplier))), 5 * sc);
     // bottom-right: the two triggers (LT shortens, RT forms)
     const trig = (side, x) => {
       const h = holds[side], r = 22 * sc, y = ch - pad - r - 6 * sc;
@@ -2219,9 +2230,9 @@
   SCENES.tunnel = {
     make(Pv, cfg) {
       const ms = cfg.sticks || [0.5, 1], tubes = ms.map((m) => tunnelPlan(Pv, cfg.lt || 0, m));
-      // a dot riding the sharpest one: from the entry speed up to throatSpeed x it at the throat and back
+      // a dot riding the sharpest one: the entry multiplier, up to the middle one at the throat, the exit one at the way out
       const main = tubes[tubes.length - 1], ride = [0]; let t = 0;
-      for (let i = 1; i < main.pts.length; i++) { const u = (i - 0.5) / (main.pts.length - 1); t += 1 / (1 + (Math.max(1, Pv.throatSpeed) - 1) * Math.sin(Math.PI * u)); ride.push(t); }
+      for (let i = 1; i < main.pts.length; i++) { const u = (i - 0.5) / (main.pts.length - 1); t += 1 / rideMultiplier(Pv, u); ride.push(t); }
       return { tubes, main, ride, rideT: t };
     },
     bounds(st, cfg) {
@@ -2295,7 +2306,8 @@
   // ---------- a tunnel's life on a clock: the reticle, RT, the ride, the stay, the collapse ----------
   SCENES.tunnelLife = {
     make(Pv, cfg) {
-      const ride = Math.max(0.3, Pv.lengthStraight / Math.max(1, Pv.cruise * (1 + 0.64 * (Math.max(1, Pv.throatSpeed) - 1))));
+      const ends = 0.5 * (rideMultiplier(Pv, 0) + rideMultiplier(Pv, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, Pv.rideMidMultiplier) - ends);   // the curve's mean
+      const ride = Math.max(0.3, Pv.lengthStraight / Math.max(1, Pv.cruise * meanMul));
       const shape = cfg.ai ? Math.max(0, Pv.aiShapeSeconds) : 0.6, form = Math.max(0.05, Pv.formSeconds);
       const tRT = shape, tOut = tRT + Math.max(form, ride), tCol = tOut + Math.max(0, Pv.staySeconds), tGone = tCol + Math.max(0.05, Pv.collapseSeconds);
       const tRet = tOut + Math.max(0, Pv.reticleDelaySeconds), tRetFull = tRet + Math.max(0.05, Pv.reticleGrowSeconds);
@@ -2377,7 +2389,9 @@
     mouthFlare: { scene: 'tunnel', d: 'Each mouth\'s radius, as a multiple of the throat (+6 u): the tube is narrowest mid-way and widest at its mouths.', lo: 'Almost a pipe.', hi: 'Wide funnels at both ends.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT shortens the tunnel.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
     rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
-    throatSpeed: { scene: 'tunnel', d: 'The ride starts and ends at the speed you went in with (you come out with your own momentum) and rushes to this many times it at the throat. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
+    rideEntryMultiplier: { scene: 'tunnel', d: 'The ride is your speed before the tunnel times a multiplier: this one going in (the dive to the mouth and the way in). 1 = you enter at exactly the speed you had. The green dot rides the sharpest tunnel.', lo: 'Slows you as you enter.', hi: 'A kick going in.' },
+    rideMidMultiplier: { scene: 'tunnel', d: 'The ride rises from the entry multiplier to this many times your speed before the tunnel at the throat, then eases to the exit multiplier. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
+    rideExitMultiplier: { scene: 'tunnel', d: 'You come out of the far mouth at this many times your speed before the tunnel, on its last heading, and ease back to cruise as you fly on. A little over 1 = a small boost for taking the tunnel.', lo: 'Out at your speed.', hi: 'A big boost out.' },
     reticleDelaySeconds: { scene: 'tunnelLife', d: 'Out of a tunnel (and at the start), your reticle comes back after this long, so you see the clean exit first.', lo: 'Back at once.', hi: 'A longer clean view.' },
     reticleGrowSeconds: { scene: 'tunnelLife', d: 'The reticle ripples out of its centre into the full tube over this long; you can reshape it meanwhile, and pull RT once it is 60% there.', lo: 'Pops back.', hi: 'Grows slowly.' },
     formSeconds: { scene: 'tunnelLife', d: 'Pull RT and the tunnel ripples out of its centre to both mouths over this long (never longer than your dive to it), while the reticle fades.', lo: 'Snaps open.', hi: 'Opens slowly.' },
@@ -2595,7 +2609,9 @@
     throatBent: ['MeerkatWormholeConfig.throatBent', 'linked'],
     mouthFlare: ['MeerkatWormholeConfig.mouthFlare', 'linked'],
     keyRampSeconds: ['MeerkatWormholeConfig.keyRampSeconds', 'linked'],
-    throatSpeed: ['MeerkatWormholeConfig.throatSpeed', 'linked'],
+    rideEntryMultiplier: ['MeerkatWormholeConfig.rideEntryMultiplier', 'linked'],
+    rideMidMultiplier: ['MeerkatWormholeConfig.rideMidMultiplier', 'linked'],
+    rideExitMultiplier: ['MeerkatWormholeConfig.rideExitMultiplier', 'linked'],
     rideSpeedTunnelScale: ['MeerkatWormholeConfig.rideSpeedTunnelScale', 'linked'],
     reticleDelaySeconds: ['MeerkatWormholeConfig.reticleDelaySeconds', 'linked'],
     reticleGrowSeconds: ['MeerkatWormholeConfig.reticleGrowSeconds', 'linked'],

@@ -44,11 +44,6 @@
       "field": "keyRampSeconds"
     },
     {
-      "key": "throatSpeed",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "throatSpeed"
-    },
-    {
       "key": "reticleDelaySeconds",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "reticleDelaySeconds"
@@ -217,6 +212,21 @@
       "key": "rideSpeedTunnelScale",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rideSpeedTunnelScale"
+    },
+    {
+      "key": "rideEntryMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideEntryMultiplier"
+    },
+    {
+      "key": "rideMidMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideMidMultiplier"
+    },
+    {
+      "key": "rideExitMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideExitMultiplier"
     }
   ]
 }

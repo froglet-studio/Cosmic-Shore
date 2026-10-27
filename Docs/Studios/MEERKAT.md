@@ -69,6 +69,13 @@ space-time bend stays the shader's.
 **The panels:** all the wormhole cards are in **Play Style Config**, in this order: Reticle (feel and look, yours
 alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple), Shape, Ride.
 
+**Round 6 (Yash, 2026-10-27: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
+exiting it will exit at little bit boosted"):** the ride is your speed before the tunnel times three multipliers. It is
+`rideEntryMultiplier` (1) going in, rises to `rideMidMultiplier` (2.5, was `throatSpeed`) at the throat, and eases to
+`rideExitMultiplier` (1.2) at the way out, then the hull eases back to cruise. Measured: in at 60 u/s with no slowdown,
+about 150 at the throat, out at 72, back to 60 within about 1.5 s. The AI still finishes every race (98-103 s, seeds 1-4,
+I1 and I3).
+
 **Round 5 (Yash, 2026-10-27: "use 5x the normal value when going through the wormhole"):** riding a tunnel, the game's
 speed tunnel (its dolly zoom: a narrower field of view and a relaxed Panini projection, `Docs/SPEED_TUNNEL.md`) is
 `rideSpeedTunnelScale` (5) × its normal strength. The studio previews the field of view: 68° at the mouth, 23.8° at the
@@ -101,7 +108,9 @@ just spindles. Tiny thinning spindles"):**
 | shape | `throatBent` | 40 u | Throat radius, sharpest bend |
 | shape | `mouthFlare` | 2 | Mouth radius as a multiple of the throat (+6 u) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
-| ride | `throatSpeed` | 2.5 | Fastest at the throat, as a multiple of your entry speed |
+| ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
+| ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
+| ride | `rideExitMultiplier` | 1.2 | ...coming out: a little boost, easing back to cruise |
 | ride | `rideSpeedTunnelScale` | 5 | Riding: the game's speed-tunnel dolly zoom, × its normal strength |
 | ride | `reticleDelaySeconds` | 0.5 s | The reticle comes back this long after you are out |
 | ride | `reticleGrowSeconds` | 0.8 s | ...growing out of its centre over this long |

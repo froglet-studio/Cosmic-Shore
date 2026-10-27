@@ -1,6 +1,7 @@
 using CosmicShore.Gameplay;
 using FMODUnity;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -37,8 +38,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.05f, 3f)] float keyRampSeconds = 0.5f;
 
         [Header("Wormhole ride (the artifact's Play Style Config > Wormhole ride)")]
-        [Tooltip("Fastest at the throat (× your entry speed)")]
-        [SerializeField, Range(1f, 8f)] float throatSpeed = 2.5f;
+        [Tooltip("Ride: going in (× your speed before the tunnel)")]
+        [SerializeField, Range(0.5f, 3f)] float rideEntryMultiplier = 1f;
+        [Tooltip("Ride: fastest, at the throat (× your speed before the tunnel)")]
+        [FormerlySerializedAs("throatSpeed")]
+        [SerializeField, Range(0.5f, 8f)] float rideMidMultiplier = 2.5f;
+        [Tooltip("Ride: coming out (× your speed before the tunnel)")]
+        [SerializeField, Range(0.5f, 3f)] float rideExitMultiplier = 1.2f;
         [Tooltip("Riding: the speed tunnel's dolly zoom (× its normal strength)")]
         [SerializeField, Range(0f, 5f)] float rideSpeedTunnelScale = 5f;
         [Tooltip("The reticle comes back after you are out in (s)")]
@@ -116,7 +122,9 @@ namespace CosmicShore.ScriptableObjects
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
-        public float ThroatSpeed => throatSpeed;
+        public float RideEntryMultiplier => rideEntryMultiplier;
+        public float RideMidMultiplier => rideMidMultiplier;
+        public float RideExitMultiplier => rideExitMultiplier;
         public float RideSpeedTunnelScale => rideSpeedTunnelScale;
         public float ReticleDelaySeconds => reticleDelaySeconds;
         public float ReticleGrowSeconds => reticleGrowSeconds;
