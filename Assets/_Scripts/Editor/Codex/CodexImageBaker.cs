@@ -390,9 +390,105 @@ namespace CosmicShore.Editor.Codex
             var harvested = HarvestModel(prefab, flat, temporaries, out bounds);
             if (harvested) return harvested;
 
-            // Nothing to photograph. One shape reaches here: a COLONY, whose root is a brain with
-            // no body at all - the geometry belongs to its member prefabs.
-            return BuildColonyChain(prefab, flat, temporaries, out bounds);
+            // Nothing to photograph on the prefab itself. Two shapes reach here, both a brain with no
+            // body of its own: a COLONY (a chain of member prefabs) and a POPULATION (a school of members
+            // the GPU draws).
+            var colony = BuildColonyChain(prefab, flat, temporaries, out bounds);
+            if (colony) return colony;
+            return BuildPopulation(prefab, flat, temporaries, out bounds);
+        }
+
+        /// <summary>The serialized fields a population's root reads its species or config through.</summary>
+        static readonly string[] PopulationConfigFields = { "species", "config" };
+
+        /// <summary>
+        /// The member prefab each kind of population draws: a substrate species' agent proxy
+        /// (<c>SubstrateSpeciesSO.agentPrefab</c>), a swarm's tadpole (<c>SwarmFaunaConfigSO.TadpolePrefab</c>) and a
+        /// builder colony's worker (<c>BuilderColonyConfigSO.MemberPrefab</c>). Probed by NAME, as the colony chain is.
+        /// </summary>
+        static readonly string[] PopulationMemberFields = { "agentPrefab", "TadpolePrefab", "MemberPrefab" };
+
+        const int PopulationMembers = 9;
+
+        /// <summary>
+        /// A POPULATION's body is its members. A substrate pack, a swarm and a builder colony are each a heartless,
+        /// bodiless anchor whose lifeforms live in a simulation and are drawn from one GPU buffer, so the prefab
+        /// carries no mesh (Shombith 2026-10-27, after a bake: "None of the fauna got their images" - every one of
+        /// them "nothing to photograph"). This photographs a small loose school of the member the GPU draws - the
+        /// same body prism every agent wears - on a golden-angle disc, each turned and sized a little differently.
+        /// </summary>
+        static GameObject BuildPopulation(GameObject prefab, bool flat, List<Object> temporaries, out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+            var member = PopulationMember(prefab);
+            if (!member) return null;
+
+            var root = new GameObject("CodexPopulationModel") { hideFlags = HideFlags.HideAndDontSave };
+            Material shared = flat ? BuildFlatMaterial() : null;
+            if (shared) temporaries.Add(shared);
+
+            float spacing = 0f;
+            bool any = false;
+            for (int i = 0; i < PopulationMembers; i++)
+            {
+                var holder = new GameObject(member.name) { hideFlags = HideFlags.HideAndDontSave };
+                holder.transform.SetParent(root.transform, false);
+                if (!AddMemberMeshes(holder.transform, member, temporaries, ref shared))
+                {
+                    Object.DestroyImmediate(holder);
+                    continue;
+                }
+                any = true;
+                if (spacing <= 0f) spacing = Mathf.Max(0.01f, MemberSize(holder.transform)) * 1.5f;
+
+                const float GoldenAngle = 2.39996323f;
+                float a = i * GoldenAngle;
+                float r = Mathf.Sqrt((i + 0.5f) / PopulationMembers) * spacing * 1.8f;
+                holder.transform.localPosition = new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a * 1.7f) * spacing * 0.35f,
+                                                             Mathf.Sin(a) * r);
+                holder.transform.localRotation = Quaternion.Euler(Mathf.Sin(a) * 12f, 25f + Mathf.Cos(a) * 18f, 0f);
+                holder.transform.localScale = Vector3.one * (0.85f + 0.3f * Mathf.Repeat(i * 0.618f, 1f));
+            }
+
+            if (!any)
+            {
+                Object.DestroyImmediate(root);
+                return null;
+            }
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        static GameObject PopulationMember(GameObject prefab)
+        {
+            foreach (var component in prefab.GetComponents<Component>())
+            {
+                if (!component) continue;
+                var so = new SerializedObject(component);
+                foreach (var field in PopulationConfigFields)
+                {
+                    var config = so.FindProperty(field)?.objectReferenceValue;
+                    if (!config) continue;
+                    var configSo = new SerializedObject(config);
+                    foreach (var memberField in PopulationMemberFields)
+                    {
+                        var member = PrefabProperty(configSo, memberField);
+                        if (member) return member;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>The largest dimension of a member laid at its holder's origin.</summary>
+        static float MemberSize(Transform holder)
+        {
+            var renderers = holder.GetComponentsInChildren<MeshRenderer>(true);
+            if (renderers.Length == 0) return 0f;
+            var b = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+            return Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
         }
 
         /// <summary>
@@ -471,6 +567,19 @@ namespace CosmicShore.Editor.Codex
             holder.transform.localPosition = new Vector3(0f, 0f, z);
             holder.transform.localScale = Vector3.one * Mathf.Max(0.05f, scale);
 
+            if (!AddMemberMeshes(holder.transform, member, temporaries, ref shared))
+            {
+                Object.DestroyImmediate(holder);
+                return false;
+            }
+
+            z -= step;
+            return true;
+        }
+
+        /// <summary>Copy a member prefab's body meshes under <paramref name="holder"/>. False when it has none.</summary>
+        static bool AddMemberMeshes(Transform holder, GameObject member, List<Object> temporaries, ref Material shared)
+        {
             bool any = false;
             foreach (var filter in member.GetComponentsInChildren<MeshFilter>(true))
             {
@@ -479,19 +588,11 @@ namespace CosmicShore.Editor.Codex
                 if (!renderer || !renderer.enabled) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, member.transform,
                         NonBodyNameHints)) continue;
-                AddMesh(holder.transform, member.transform, filter.transform, filter.sharedMesh,
+                AddMesh(holder, member.transform, filter.transform, filter.sharedMesh,
                         renderer.sharedMaterials, ref shared, temporaries);
                 any = true;
             }
-
-            if (!any)
-            {
-                Object.DestroyImmediate(holder);
-                return false;
-            }
-
-            z -= step;
-            return true;
+            return any;
         }
 
         static GameObject PrefabProperty(SerializedObject so, string field)

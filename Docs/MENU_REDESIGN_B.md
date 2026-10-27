@@ -4063,3 +4063,31 @@ the empty ones".
   Borromean. To fill them: **FrogletTools > UI > Codex**, then **Scan & Merge** (adds the entries), then **Bake Missing**
   (renders their pictures), then save. A species the harvester cannot find (one with no flora or fauna config, such as a
   swarm field) stays empty and is listed in the scan's report.
+
+### 91.3 Pictures for the GPU-drawn fauna, and Toy Box names in the Codex (2026-10-27)
+
+Shombith, after Scan & Merge and Bake Missing ("Baked 0 image(s)", with every swarm and substrate species reported as
+"nothing to photograph"): "None of the fauna got their images".
+
+- **Why nothing was photographed.** The substrate packs (Harrier, Leech, Leviathan, Locust, Lurker, Mobber, Pack
+  Hunter, Shoal, Siege, Stampede), the swarms (Bench, Tandava, NCA Lizard) and the builder colonies (Fortress, Thief
+  Nest, Wearer) are POPULATIONS. Each root is a heartless, bodiless anchor, and its lifeforms live in a simulation and
+  are drawn from one GPU buffer, so the prefab carries no mesh at all.
+- **The fix: `CodexImageBaker.BuildPopulation`.** After the prefab's own meshes and the colony chain, the baker finds
+  the member the GPU draws, by field name: `SubstrateSpeciesSO.agentPrefab`, `SwarmFaunaConfigSO.TadpolePrefab` or
+  `BuilderColonyConfigSO.MemberPrefab`, reached through the root's `species` or `config`. It photographs a loose school
+  of nine members on a golden-angle disc, each turned and sized a little differently. Each member wears the same body
+  prism every agent wears.
+- **Why a picture would not have reached its page anyway.** The harvester named a species after its config assets.
+  The substrate ones came out as "Substrate Harrier Fauna Config Data", because the suffix strip did not know
+  " Config Data" and only stripped the element before the kingdom. The bench swarms, four Toy Box species on one
+  prefab, came out as one entry. The Codex screen lists the Toy Box roster and finds each page by the roster's name,
+  so those pages were unreachable.
+- **The fix: `CodexHarvester.GroupSpecies`.** Every config the Toy Box's Spawn Matrix lists becomes that roster
+  species, under the roster's name ("Harrier", "Swarm Field"). A config the roster does not list joins the roster
+  species that uses its prefab (the odd `WormColonyFaunaConfig` stays with the Worm Colony). Anything else groups by
+  prefab, as before. The suffix strip now also drops " Config Data" / " Config" and takes the element and kingdom in
+  either order.
+- **Before re-running:** discard the local `Assets/Resources/Codex.asset` changes from the first scan. Those entries
+  carry the config-asset names, and the merge never renames an entry, so they would linger beside the new ones as
+  extra Field Guide entries.
