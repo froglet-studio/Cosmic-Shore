@@ -40,6 +40,12 @@ the prefab:
   to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
   on the tunnel's last heading, a little boosted, and eases back to cruise.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
+- **The ride camera** (round 8, Yash: "I don't want any camera Y offset. I want the camera to go inside the tunnel"):
+  while a tunnel flies the hull, its pilot's camera sits ON the tube's centreline `rideCameraBack` (18 u) behind the hull,
+  looks `rideCameraLookAhead` (40 u) ahead along it, and eases in and out over `rideCameraBlendSeconds` (0.25 s)
+  (`MeerkatWormholeExecutor.StepRideCamera`, through `CustomCameraController.Spectate`). Once eased in it has no height and
+  no lag, so the view stays inside the tube round the bend; the page measured it within 0.23 u of the centreline in a
+  4 u throat.
 - **The dolly zoom.** While a tunnel flies the hull, the game's speed tunnel (`VesselSpeedTunnel`: the narrower field of
   view and relaxed Panini every vessel gets with speed) is `rideSpeedTunnelScale` (5) × its normal strength
   (`Docs/SPEED_TUNNEL.md` § The ride scale). The push-in peaks at the throat, where the ride is fastest.

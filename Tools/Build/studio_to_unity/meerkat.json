@@ -214,6 +214,21 @@
       "field": "rideSpeedTunnelScale"
     },
     {
+      "key": "rideCameraBack",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideCameraBack"
+    },
+    {
+      "key": "rideCameraLookAhead",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideCameraLookAhead"
+    },
+    {
+      "key": "rideCameraBlendSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideCameraBlendSeconds"
+    },
+    {
       "key": "rideEntryMultiplier",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rideEntryMultiplier"

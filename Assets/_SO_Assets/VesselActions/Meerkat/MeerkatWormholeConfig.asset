@@ -24,6 +24,9 @@ MonoBehaviour:
   rideMidMultiplier: 2.5
   rideExitMultiplier: 1.2
   rideSpeedTunnelScale: 5
+  rideCameraBack: 18
+  rideCameraLookAhead: 40
+  rideCameraBlendSeconds: 0.25
   reticleDelaySeconds: 0.5
   reticleGrowSeconds: 0.8
   formSeconds: 0.4
