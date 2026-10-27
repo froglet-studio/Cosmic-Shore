@@ -108,7 +108,8 @@ class Kit:
     def polar_bm(self, phis, ts, rmax, ztop, zbot, wall, at, centre, slot=H):
         """A solid over the polar region rho <= rmax(phi) about `centre` (x, y), with `at(phi, rho)` -> (x, y): a top
         surface on rings at fractions `ts` (ascending, < 1), a rim wall at rmax with loops at z fractions `wall` between
-        the top rim and the bottom rim, and a bottom surface on the same rings. Returns (bm, bands): bands[k][j] is the
+        the top rim and the bottom rim (or (fraction, radius scale) pairs, for a stepped edge; the scale may be a function of
+        phi, for an edge that is steep on one side and battered on another), and a bottom surface on the same rings. Returns (bm, bands): bands[k][j] is the
         face between loop k and k+1 at column j (loops: top rings outward, wall, bottom rings inward)."""
         bmesh, Vector = self.bmesh, self.Vector
         bm = bmesh.new()
@@ -119,11 +120,15 @@ class Kit:
             return Vector((x, y, z))
         for t in ts:
             loops.append([P(p, t * rmax(p), ztop(*at(p, t * rmax(p)))) for p in phis])
-        for fz in wall:
+        for w in wall:
+            # a wall loop is a z fraction between the top rim and the bottom rim, or (fraction, radius scale) for a
+            # stepped edge: a ledge, a recessed band, a lip
+            fz, rs = (w, 1.0) if not isinstance(w, tuple) else w
             row = []
             for p in phis:
                 x, y = at(p, rmax(p))
-                row.append(Vector((x, y, ztop(x, y) + (zbot(x, y) - ztop(x, y)) * fz)))
+                xs, ys = at(p, rmax(p) * (rs(p) if callable(rs) else rs))
+                row.append(Vector((xs, ys, ztop(x, y) + (zbot(x, y) - ztop(x, y)) * fz)))
             loops.append(row)
         for t in reversed(ts):
             loops.append([P(p, t * rmax(p), zbot(*at(p, t * rmax(p)))) for p in phis])
@@ -173,11 +178,11 @@ class Kit:
         return self.piece(b, slot, pid, bevel=bevel)
 
     # ------------------------------------------------------------------ the parts every Ark shares
-    def cradle(self, name, centre, along, up, pid, prism, core_top, column=False, ped_len=None):
+    def cradle(self, name, centre, along, up, pid, prism, core_top, column=False, ped_len=None, band=True):
         """A socket: a U channel under a prism of `prism` = (across, up, along) centred at `centre`, with a floor,
         domain side rails, end stops, two Engine-slot regen pads, and a pedestal down to the core (`core_top(x, y)`):
-        a box, or with `column=True` a round column with a flared foot and head and a domain band (a tall support in
-        open space). With `ped_len` the pedestal runs that far straight back along the socket's -up instead (a socket on
+        a box, or with `column=True` a round column with a flared foot and head and (unless `band=False`) a domain band
+        (a tall support in open space). With `ped_len` the pedestal runs that far straight back along the socket's -up instead (a socket on
         a wall). Its own bone `name` is recorded with head at the prism's centre, tail along it, Z = the prism's up."""
         Vector, Matrix, f = self.Vector, self.Matrix, self.f
         pw, ph, pl = prism
@@ -193,7 +198,7 @@ class Kit:
         if ped_len is not None:
             out.append(self.boxm("pedestal", (pw * 0.55, pl * 0.55, ped_len), (0, 0, fz - 0.3 - ped_len / 2 + 0.1), M, H, pid, bevel=0.1))
         elif column:
-            out += self.column(floor_bottom, core_top(floor_bottom.x, floor_bottom.y) - 0.3, 1.1, pid)
+            out += self.column(floor_bottom, core_top(floor_bottom.x, floor_bottom.y) - 0.3, 1.1, pid, band=band)
         else:
             ped_h = max(0.6, floor_bottom.z - core_top(floor_bottom.x, floor_bottom.y) + 0.3)
             ped = f.box("pedestal", (pw * 0.55, pl * 0.55, ped_h), center=(0, 0, 0))
