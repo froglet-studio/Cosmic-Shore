@@ -3978,3 +3978,35 @@ quest oo, also hate the UI now, create some new mockups".
   - **Every option** puts solid panels under its words; the sea behind the text is what washed the build out. Each shows
     the real abilities from the shipped ability maps.
   - Waiting on a pick before the build changes again.
+
+## 91. The Codex as an Orbit (Rev 30 board C, 2026-10-27, awaiting in-editor approval)
+
+Shombith picked board C: "Go with C, implement it". The grid of cards is gone. Generator: `Tools/Build/author_menu_codex.py`
+(`--check`, `--self-test`, 17 planted defects).
+
+- **The orbit (left).** A chapter's entries ride three tilted rings (`CodexOrbit`, on `Orbit/Nodes`):
+  - The rings hold 4, 8 and 12 entries, inside first. The outer ring takes any overflow. Their half-widths are 270, 440
+    and 600, at a tilt of 0.46. Each ring is a thin circle (`kit_ring_line`) stretched to its ellipse, hidden while
+    empty.
+  - Depth is how far round to the front an entry is. The front (the bottom of the ellipse) draws at 1.05x and full
+    alpha, on top. The back draws at 0.62x and half alpha, underneath.
+  - **The core** is the picked entry's picture, 240 square over a breathing selection-blue halo (`kit_ring_glow`). It
+    sits among the entries at mid depth, so an entry passing in front covers it and one passing behind is covered. It
+    is the page's `CodexPortrait`: it plays the element's entrance and the crystal flipbook (section 90).
+  - **Picking an entry** turns its ring the shortest way round until the entry is at the front (0.6 s, OutCubic). Only
+    that ring moves, and nothing moves while nothing is turning.
+- **The entries.** Each is a round node: a dark disc (`kit_ring_fill`, new), the picture on it, and an outline ring
+  that `CodexTile` paints selection blue on the open entry, over a breathing halo. The name and a quiet line sit under
+  it. The pick's scan line is gone; it was a card's effect.
+- **Pad and keys.** `CodexScreen` wires each entry's navigation explicitly: left and right step to the previous and next
+  entry (wrapping), and up goes to the open chapter's tab (FLORA or FAUNA under ECOLOGY). The navigation is explicit
+  because the entries move, and automatic navigation would follow where they happen to be drawn. LB / RB still step
+  chapters.
+- **The page (right).** A solid reading panel, 700 wide, in the selection blue's border and a soft breathing glow. Words
+  only: kicker, title, then gameplay, facts, element cells (two columns now) and rows, with lore last. The sea no
+  longer shows through the text (section 90.3).
+- **New kit sprite:** `kit_ring_fill`, a solid disc (`author_ui_kit_sprites.py`, checked as a quarter-pi of its square).
+- **Retired:** the grid's ScrollRect and GridLayoutGroup, and `CodexScreen.gridScroll` / `EnsureVisible`.
+- **Not verified in the editor.** Both reference compiles are clean, and the offline render shows the rings, core and
+  panel. The orbit's placement is runtime-only, so the offline renderer cannot show the entries on their rings.
+  `CodexOrbitTests` covers the ring fill and the picked entry's front position.

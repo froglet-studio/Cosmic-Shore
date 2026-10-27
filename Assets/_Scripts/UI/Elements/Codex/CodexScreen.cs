@@ -12,8 +12,10 @@ namespace CosmicShore.UI
     /// <summary>
     /// The CODEX screen, the top bar's first tab (Docs/MENU_REDESIGN_B.md sections 88 and 90). The chapters along the
     /// top - ELEMENTS (the four elements and their Etherions, Omni, prisms, spindles), ECOLOGY (Flora / Fauna, every
-    /// species the Toy Box offers) and LEXICON (one card each for vessels, pilots, artifacts and toys) - step on LB / RB;
-    /// the grid on the left, the open page on the right, the Hangar's split. Every word of data comes from the game's own
+    /// species the Toy Box offers) and LEXICON (one card each for the arcade, quests, voyages, missions, vessels, pilots,
+    /// artifacts and toys) - step on LB / RB. Section 91 (Rev 30 board C, "Orbit"): a chapter's entries ride tilted rings
+    /// round the picked entry's picture on the left (<see cref="CodexOrbit"/>), its page in a solid panel on the right.
+    /// Left / right on the pad or the keys steps round the entries; up leaves for the chapters. Every word of data comes from the game's own
     /// assets through <see cref="CodexCatalog"/>; every word around it is authored here or in the prefab.
     ///
     /// <para>Nothing is hidden behind discovery: the game has none yet (Docs/CODEX.md section 5), so every entry is
@@ -56,10 +58,12 @@ namespace CosmicShore.UI
         [Tooltip("Step the chapters with the pad's shoulder buttons (LB / RB).")]
         [SerializeField] private bool shoulderInput = true;
 
-        [Header("Grid")]
+        [Header("Orbit")]
         [SerializeField] private TMP_Text gridTitle;
         [SerializeField] private TMP_Text gridCount;
-        [SerializeField] private ScrollRect gridScroll;
+        [Tooltip("Places the entries on its rings and turns the picked one to the front.")]
+        [SerializeField] private CodexOrbit orbit;
+        [Tooltip("The entries' parent (the orbit's nodes, with the core's picture among them).")]
         [SerializeField] private RectTransform gridContent;
         [SerializeField] private CodexTile tilePrefab;
         [Tooltip("Shown instead of the grid on a stop with nothing in it.")]
@@ -71,6 +75,7 @@ namespace CosmicShore.UI
 
         readonly List<CodexItem>[] _items = new List<CodexItem>[StopCount];
         readonly List<CodexTile> _tiles = new();
+        readonly List<RectTransform> _nodes = new();
         CodexChapter _stop = CodexChapter.Elements;
         int _selected = -1;
         int _shown;
@@ -122,7 +127,6 @@ namespace CosmicShore.UI
                 if (_tiles[i].Button && _tiles[i].Button.gameObject == selected)
                 {
                     if (i != _selected) Select(i);
-                    EnsureVisible(_tiles[i]);
                     break;
                 }
         }
@@ -156,7 +160,6 @@ namespace CosmicShore.UI
             _selected = -1;
             if (items.Count > 0) Select(0);
             else if (page) page.Show(null);
-            if (gridScroll) gridScroll.verticalNormalizedPosition = 1f;
 
             // The pad stays in the grid: a tile it was on may have just been reused or hidden.
             if (EventSystem.current && _shown > 0)
@@ -194,6 +197,7 @@ namespace CosmicShore.UI
                 tile.name = $"CodexTile{_tiles.Count + 1}";
                 tile.Picked += t => Select(t.Index);
                 _tiles.Add(tile);
+                _nodes.Add((RectTransform)tile.transform);
             }
             _shown = items.Count;
             for (int i = 0; i < _tiles.Count; i++)
@@ -201,6 +205,33 @@ namespace CosmicShore.UI
                 bool used = i < items.Count;
                 if (_tiles[i].TryGetComponent(out CanvasGroup group)) KitVisibility.SetShown(group, used);
                 if (used) _tiles[i].Show(i, items[i]);
+            }
+            if (orbit) orbit.Arrange(_nodes, _shown, 0);
+            WireNavigation();
+        }
+
+        /// <summary>
+        /// The pad and the arrow keys round the orbit: left and right step to the previous and next entry (wrapping), up
+        /// leaves for the open chapter's tab. Explicit, because the entries move: automatic navigation would follow where
+        /// they happen to be drawn this frame.
+        /// </summary>
+        void WireNavigation()
+        {
+            Selectable up = KitVisibility.IsShown(ecologyTabsGroup) ? (_stop == CodexChapter.Fauna ? faunaTab : floraTab) : null;
+            if (!up)
+                for (int i = 0; i < chapterTabs.Length && i < TabStops.Length; i++)
+                    if (chapterTabs[i] && chapterTabs[i].IsSelected) up = chapterTabs[i];
+            for (int i = 0; i < _shown; i++)
+            {
+                var button = _tiles[i].Button;
+                if (!button) continue;
+                button.navigation = new Navigation
+                {
+                    mode = Navigation.Mode.Explicit,
+                    selectOnLeft = _tiles[(i - 1 + _shown) % _shown].Button,
+                    selectOnRight = _tiles[(i + 1) % _shown].Button,
+                    selectOnUp = up,
+                };
             }
         }
 
@@ -210,22 +241,8 @@ namespace CosmicShore.UI
             if (index < 0 || index >= items.Count) return;
             _selected = index;
             for (int i = 0; i < _shown; i++) _tiles[i].IsSelected = i == index;
+            if (orbit) orbit.Focus(index);
             if (page) page.Show(items[index].Page);
-        }
-
-        /// <summary>Scrolls the grid so a tile the pad moved onto is in view.</summary>
-        void EnsureVisible(CodexTile tile)
-        {
-            if (!gridScroll || !gridScroll.viewport || !gridContent) return;
-            float view = gridScroll.viewport.rect.height, content = gridContent.rect.height;
-            if (content <= view) return;
-            var rt = (RectTransform)tile.transform;
-            float top = -rt.anchoredPosition.y - rt.rect.height * (1f - rt.pivot.y);
-            float bottom = top + rt.rect.height;
-            float scrolled = (1f - gridScroll.verticalNormalizedPosition) * (content - view);
-            if (top < scrolled) scrolled = top;
-            else if (bottom > scrolled + view) scrolled = bottom - view;
-            gridScroll.verticalNormalizedPosition = 1f - Mathf.Clamp01(scrolled / (content - view));
         }
     }
 }

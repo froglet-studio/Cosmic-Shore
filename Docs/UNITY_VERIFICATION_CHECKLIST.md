@@ -16969,3 +16969,22 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
    then reopen the Hangar. **Pass:** "3 HELD". Reload the profile from the cloud. **Pass:** still 3.
 8. **Omni row.** Configure any Sparrow card. **Pass:** the controls list ends with "Omni crystal: reloads its missiles"
    with the Omni icon. A hull with no line reads "Omni crystal: fly into it".
+
+## 🔴 2026-10-27 — Codex Orbit (Rev 30 board C) (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §91.
+
+1. **Tests.** Run `CodexOrbitTests` and `CodexCatalogTests`. **Pass:** green.
+2. **Orbit.** Open CODEX. **Pass:**
+   - ELEMENTS shows seven round entries on two tilted rings round a large Charge crystal;
+   - the front entries are larger, brighter and drawn over the back ones and over the core.
+3. **Pick.** Click an entry on the far side. **Pass:** its ring turns until it is at the front, the core shows its
+   picture with its element's entrance, and the panel's words type in.
+4. **Pad.** D-pad left / right. **Pass:** the selection steps round the entries (wrapping), turning their rings. Up
+   reaches the chapter tab; under ECOLOGY it reaches FLORA or FAUNA.
+5. **Chapters.** LB / RB through ECOLOGY (Flora, Fauna) and LEXICON. **Pass:**
+   - each fills the rings inside first;
+   - nothing is cut off at the panel or the screen's edge with the most entries (Flora or Fauna).
+6. **Panel.** **Pass:** solid, with no sea through the words; a blue border; the element cells sit in two columns that
+   fit.
+7. **Profiler.** With nothing turning, look in the profiler. **Pass:** no Canvas rebuilds come from the orbit.
