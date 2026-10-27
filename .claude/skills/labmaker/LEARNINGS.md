@@ -1026,6 +1026,41 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-STU-149 — An AI that holds a tap button down after a miss never presses again
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Bract's net casts on a fresh RT press. Its AI held RT while "want" stayed true, so after one cast that caught nothing (a misjudged crystal) it never cast again: a run stalled at 6 of 24 crystals for 450 s, the Bract circling its freed crystal 10 u away with RT held.
+- Do instead: for any edge-triggered ability, the AI's "want" includes the cooldown (or releases for a frame after each press), so a miss is followed by a new press. Look for "rt held, cool 0, never fires" when a run stalls.
+- Evidence: siphonophore-studio.js zooidAI ("a cast is a tap"); the stall probe in the round 2 commit 1039d5ecdc.
+- Promoted: no
+
+### L-STU-150 — Count how often the AI USES an ability, not only the finish time; a rule from another ability can starve it
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Pulse Jet changed nothing in the scorecard. Its use count showed why: the AI Bell jetted 8 times a run, because Slipstream (built one step earlier) blocked the pulse while leading and the Bell led most of its travel. Allowing the jet while leading took it to ~115 jets a run and I1 Hard from 343 to 332 s. The Ram Spool's count (about one ram a run, no red ram) showed the Lance makes the ram redundant.
+- Do instead: every ability added to a lab reports its own use count (and hits, chains, steals) in the headless result next to the finish time; a flat finish time with a near-zero count is an unused ability, not a neutral one.
+- Evidence: runHeadless extra { jets, onBeat, chainTop, lashes, hits, stolen, rams, redRams }; CONCEPT_FLEET.md 11.5 steps 3 and 4.
+- Promoted: no
+
+### L-STU-151 — A crew loop is chaotic: two or three seeds mislead; use eight and quote mean and spread
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: with three seeds, Mass level 5 plus the lash read 60 s faster than Mass 5 alone (392/356/354 against 433/421/415); with eight seeds and the coiled-steering fix the two were 344 and 350, inside one standard deviation. Three AIs, a fuse policy and a wall rhythm make tiny changes move whole runs by 30-60 s.
+- Do instead: compare variants in the same build behind a run option, on eight seeds, and quote mean and standard deviation; a difference smaller than the spread is a plateau. Remove the option once decided.
+- Evidence: scratch siph_mean.cjs; CONCEPT_FLEET.md 11.5 step 2.
+- Promoted: no
+
+### L-STU-152 — A "clean run" measured in seconds punishes the fast player; measure it in distance
+- Lab: Sea Turtle (seaturtle.html, kind `tide`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Rapids burst needed 0.8 s through the Rapids without touching a rock. The AI flying the mechanic (tucked, fast) earned 0 bursts a run; the control without the mechanic (slower) earned 6.5. A tucked turtle crossed the Rapids in about 0.5 s.
+- Do instead: a reward for getting THROUGH something is measured in distance (here 30 u), never in time, or the better pilot is the one it stops paying.
+- Evidence: studio-kinds.js K.tide (`rapidsLen`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
+### L-STU-153 — When a side mechanic loses to doing nothing, tie its reward to its story before tuning its numbers
+- Lab: Seahorse (seahorse.html, kind `tend`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: holding a plant to call the crystal in was slower than swimming (282 s against 179); doubling and nearly tripling the call speed barely moved it, because the cost was the 111 s spent flying to plants beside the course. Making a crystal a plant calls in count two (it grew in the garden, which is the vessel's story) took it to 155 s against 179.
+- Do instead: split the mechanic's time (the probe: holding / going to it / everything else) before touching its numbers; if the cost is the detour, no speed number fixes it, and the reward has to be worth the detour.
+- Evidence: studio-kinds.js K.tend (`gardenWorth`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it

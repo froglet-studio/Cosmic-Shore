@@ -57,6 +57,7 @@ MonoBehaviour:
   warplineGateTarget: 10
   thresherTimeGateTarget: 16
   wrasseRunGateTarget: 16
+  burrowRunGateTarget: 16
   regattaGateTarget: 24
   hijackStealTarget: 500
   hexRaceCrystalCountBuild: 0
@@ -104,6 +105,7 @@ MonoBehaviour:
   warplineGateTargetBuild: 10
   thresherTimeGateTargetBuild: 16
   wrasseRunGateTargetBuild: 16
+  burrowRunGateTargetBuild: 16
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 500
   autoRestoreBuildValuesBeforeBuild: 1

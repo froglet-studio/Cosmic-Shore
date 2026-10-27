@@ -70,7 +70,7 @@ namespace CosmicShore.Data
         /// Regatta's gate races). Every other <c>GateRaceController</c> mode drops the belief at arm time.</summary>
         public static bool HasOwnHandicap(GameModes mode) =>
             mode == GameModes.SkimRace || mode == GameModes.Slingshot || mode == GameModes.Warpline
-            || mode == GameModes.Regatta;
+            || mode == GameModes.Regatta || mode == GameModes.BurrowRun;
 
         /// <summary>The easiest and the hardest difficulty, in the order the row draws them.</summary>
         public const AIDifficulty Easiest = AIDifficulty.Easy;
