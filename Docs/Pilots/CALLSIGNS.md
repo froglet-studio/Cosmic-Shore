@@ -28,7 +28,7 @@ which this reuses.
   |---|---|
   | Kit | what the vessel does |
   | Elements | how strongly it does it |
-  | Artifacts and the payload | what everyone fights over |
+  | Artifacts and the payload | what everyone fights over ([`ARTIFACTS.md`](ARTIFACTS.md)) |
   | Pilot | where to look |
 
 - **Seeing one thing costs you everything else.** While LB is held you fly half-blind to the rest of the world. That
