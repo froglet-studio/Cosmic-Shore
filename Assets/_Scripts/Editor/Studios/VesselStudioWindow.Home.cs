@@ -302,6 +302,9 @@ namespace CosmicShore.Editor.Studios
         }
 
         const float SpecLine = 16f, ButtonH = 26f;
+        const string ConfigsLabel = "CONFIGS";
+        const string ConfigsTip = "This vessel's config assets in Unity's own Inspector: change them in Play mode and see it at once. " +
+                                  "The artifact still owns its numbers (the next clone writes them back).";
 
         static GUIStyle _specKey, _specVal;
         static GUIStyle SpecKey => _specKey ??= new GUIStyle(Look.Note) { wordWrap = false, font = EditorStyles.miniFont };
@@ -363,6 +366,10 @@ namespace CosmicShore.Editor.Studios
             var chipRect = new Rect(x, y, kw, 20f);
             FrogletEditorPalette.DrawCard(chipRect, accent.WithAlpha(0.08f), accent);
             GUI.Label(chipRect, chip, Look.Tinted(Look.Chip, accent));
+            // Unity's own: this vessel's config assets, each in Unity's Inspector (D41; not a tuner, VesselConfigsWindow)
+            float cfx = x + w - Look.Button.CalcSize(new GUIContent(ConfigsLabel)).x - 24f;
+            var configsRect = new Rect(cfx, y - 3f, x + w - cfx, 26f);
+            if (Button(ref cfx, y - 3f, ConfigsLabel, accent, false, ConfigsTip)) VesselConfigsWindow.Open(s.id, s.name ?? s.id);
             y += 26f;
             float sh = Look.Body.CalcHeight(new GUIContent(s.summary ?? ""), w);
             GUI.Label(new Rect(x, y, w, sh), s.summary ?? "", Look.Body);
@@ -392,7 +399,8 @@ namespace CosmicShore.Editor.Studios
             }
 
             // the whole card opens the studio, as on the web hub (drawn after the buttons, so they keep their clicks)
-            if (!btnRow.Contains(Event.current.mousePosition) && GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);
+            if (!btnRow.Contains(Event.current.mousePosition) && !configsRect.Contains(Event.current.mousePosition) &&
+                GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);
             EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
         }
 

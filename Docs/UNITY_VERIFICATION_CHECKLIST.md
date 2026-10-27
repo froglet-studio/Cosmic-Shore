@@ -65,6 +65,72 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's look swap and every vessel's CONFIGS in the Inspector (`claude/adoring-cerf-m94x1o`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Yash: "two options so that I can swap between my look versus his look"; "if I choose my vessel, I will
+get its configuration ... at least the inspector panel"):
+- Garrett's before/after (the entry below) merged in, and his contour-field lens ported to round 7's tunnel: a straight
+  shaft along +z, then one bend round (R, 0, S). `MeerkatWormholeLens.shader`'s `MWTube` takes the nearer of the shaft
+  and the bend; `_MWTubeShape` is now (shaft, bend radius, theta, throat) and `_MWTubeWin.w` the mouth.
+- `MeerkatWormholeConfigSOEditor`: **YASH'S LOOK** (spindle reticle, spindle bridge) and **GARRETT'S LOOK** (bridge
+  reticle, contour field) on top of the config's own Inspector. They set `reticleLook` and `formedLook` only.
+- `VesselConfigsWindow`: each card on the Vessel Studio home has **CONFIGS**, which lists that vessel's config assets
+  (its studio map's assets, its prefab, its own action and config assets, its element map). **INSPECT** opens each in
+  Unity's own Inspector. Not a tuner (/vessel-studio D41).
+
+**Verified without the editor:** reference compile, player and editor (the five changed editor files gated), 0 errors
+in project code. `MeerkatWormholeMathTests` 32/32 under dotnet, including the frame test now on the round-7 shape. The
+lens compiles in glslang HLSL mode against the black-hole lens's URP mock (a planted error fails it). The ported
+`MWTube` matches a brute-force distance to the shaft-and-bend centreline on 300 random points (error 0.0). `parity_gate.py` ok.
+
+**Verify in editor:**
+1. EditMode `VesselStudioWindowTests` (three new cases) and `MeerkatWormholeMathTests` pass. No shader errors on
+   `MeerkatWormholeLens`.
+2. FrogletTools ▸ Vessels ▸ Vessel Studio: each card has **CONFIGS** at the right of its chip row; clicking it does not
+   open the studio. On the Meerkat card it lists `MeerkatWormholeConfig` (45 artifact keys) first, then `Meerkat`
+   (the prefab), the two Meerkat actions and the element map. **INSPECT** opens a floating Inspector; **INSPECT ALL**
+   opens one per asset. A concept studio (Gibbon) says it has no vessel in Unity yet.
+3. Play the Meerkat in the lava lamp with `MeerkatWormholeConfig` open. **YASH'S LOOK**: a cyan spindle reticle with a
+   lime path, and RT forms a spindle bridge. **GARRETT'S LOOK**: the reticle is a bridge in your domain colour, and RT
+   forms bent space only. Each swap shows at once.
+4. Garrett's look on a sharp tunnel (LT squeezed, right stick fully over): the bent shell follows the straight shaft
+   and then the bend, with no seam where they meet and none at either mouth.
+5. Change any Meerkat look field in Play mode: it shows at once. After Play mode the asset keeps it, and
+   `studio_to_unity.py --check` lists a mapped one as drift.
+
+---
+
+### 🔴 The Meerkat's before and after: the bridge reticle and the contour-field tunnel (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett's pick from the Tube Lens Lab, `R_VesselActions/MEERKAT.md` §2.1):
+- `MeerkatWormholeConfig`: `reticleLook` (Bridge), `formedLook` (ContourField) and 16 `field*` numbers.
+- `MeerkatWormholeView`: the reticle drawn as the bridge; no bridge on a formed tunnel.
+- `MeerkatWormholeLensPass` and `MeerkatWormholeLens.shader`: the contour-field ray march, in the existing lens draw.
+- `MeerkatWormholeMath.TubeWorldToLocal`, with a new test.
+
+**Verified without the editor:**
+- `MeerkatWormholeLens.shader`, both stages, compiled with glslang in HLSL mode against the black-hole lens's URP mock.
+  The unmodified shader is the control, and a planted error fails it.
+- The contour field's arithmetic is the lab's GLSL. The lab was rendered headless (SwiftShader) and reviewed by Garrett.
+- `author_meerkat_assets.py --check` OK.
+
+**NOT run:** the game in the Editor; the shader under Unity's own compiler; the new test in Unity's runner; frame cost.
+
+**Verify in editor:**
+1. EditMode `MeerkatWormholeMathTests` passes (28 + 3 cases). No shader errors on `MeerkatWormholeLens` in the Console.
+2. Lava lamp, pick the **Meerkat**: the reticle on the nose is a spindle bridge in your domain colour over faint glass,
+   not cyan wire. The right stick bends it and LT shortens it, as before.
+3. Pull **RT**: no spindles or glass appear. The tunnel shows as bent space only: the world seen through its wall is
+   swept round the tube's rings, the bend gathers into ribs that run toward the exit, and it fades to nothing just off
+   the wall. It ripples in from the centre and, after 10 s, collapses back with the tunnel.
+4. Ride it: the view through the walls bends smoothly, with no flip at either mouth. Your own hull is not bent.
+5. Look at a tunnel from far away, from the side, and with a vessel in front of it: the vessel is not bent.
+6. On the config in play mode: `formedLook` Bridge brings back the bridge; `reticleLook` Spindles brings back round 3's
+   reticle; `fieldPitch` 0 sweeps the view along the tube instead.
+7. Profile a ride (`prof`): note the cost of "Meerkat wormhole lens" on PC and on a phone.
+
+---
+
 ### 🔴 The Meerkat: the wormhole vessel, its AI and Burrow Run (`claude/adoring-cerf-m94x1o`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed:** `VesselClassType.Meerkat = 28` and `GameModes.BurrowRun = 71`, cloned from the Vessel Studio's
@@ -97,8 +163,10 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
 2. **Lava lamp:**
    - Open the menu's freestyle, then the Toybox **Vessel Changer**, and pick **Meerkat**.
    - It flies on the left stick alone, at about 60 u/s.
-   - A see-through frame of thin cyan-to-white spindles sits 30 u ahead of the nose. The right stick bends it, shorter
-     and fatter as it bends, and LT shortens it.
+   - A see-through frame of thin cyan-to-white spindles sits 30 u ahead of the nose (round 7: an umbrella handle). LT
+     sets how far its straight shaft runs (60 u released, 600 u squeezed) before one bend of fixed radius; the right
+     stick sets the bend's direction and angle (150° fully over). The throat and mouths stay narrow (4 u, 10 u) at
+     every shape.
    - It glides into each new shape over about 0.15 s instead of snapping (`reticleSmoothSeconds`; round 3).
 3. Pull **RT**:
    - The reticle fades.
@@ -117,7 +185,8 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
    - Eight rings a lap, two laps.
    - It finishes and scores by time.
    - Easy, Medium and Hard are offered.
-8. **Two players (MPPM):** the second player sees the first one's tunnels, bridge and bent space.
+8. **Two players (MPPM):** the second player sees the first one's tunnels, bridge and bent space, with the same shaft
+   and bend (protocol version 18).
 9. The Console shows nothing new.
 
 ---

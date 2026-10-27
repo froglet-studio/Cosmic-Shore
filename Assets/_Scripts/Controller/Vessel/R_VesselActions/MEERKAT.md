@@ -20,19 +20,25 @@ the prefab:
 
 | Input | What it does |
 |---|---|
-| Right stick | Bends the reticle any way, as far as it is pushed, up to `bendMaxDegrees`. The further it bends, the shorter (`lengthStraight` to `lengthBent`) and fatter (`throatStraight` to `throatBent`) it gets |
-| LT (`LeftStickAction`) | Shortens a straighter reticle. A pad's analog trigger is read live; a key or touch ramps to full in `keyRampSeconds` |
+| Right stick | The bend's direction (any way) and angle, as far as it is pushed, up to `bendMaxDegrees` (150°) |
+| LT (`LeftStickAction`) | The straight shaft before the bend: `shaftMin` released to `shaftMax` squeezed. A pad's analog trigger is read live; a key or touch ramps to full in `keyRampSeconds` |
 | RT (`RightStickAction`) | Forms the tunnel once the reticle is 60% grown, and dives in. The last tunnel collapses at once |
 | X (`Button1Action`) | The stance (`StoatHoldAction`), kept from the Stoat; forming a tunnel ends it |
 
-- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it (round 3):
+- **The shape** (round 7, the umbrella handle): a straight shaft of S, then one bend of radius `bendRadius` through the
+  stick's angle θ, so the tunnel is S + `bendRadius` × θ long (`MeerkatWormholeMath.ShapeFor` / `At` / `BendAngle`). The
+  throat (`throatRadius`) and mouths (`mouthRadius`) are fixed and narrow.
+- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it. Since Garrett's before/after
+  (2026-10-27, §2.1) it draws in the bridge's look (`reticleLook` Bridge). Round 3's frame, below, is `reticleLook`
+  Spindles:
   - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
   - It is a see-through frame of thin spindles: `reticleRings` × `reticleSpindlesPerRing` round its throat and
     `reticleRibs` along it, `reticleSpindleThickness` thick, cyan to white, over a faint glass (`reticleGlass`).
   - The lime line you will fly runs through it (`reticlePath`).
 - **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
-  then runs the arc mouth to mouth. Its speed starts and ends at the entry speed and rushes to `throatSpeed` × it at the
-  throat. It comes out with the entry speed, on the tunnel's last heading.
+  then runs the shaft and the bend mouth to mouth, turning only on the bend. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
+  to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
+  on the tunnel's last heading, a little boosted, and eases back to cruise.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
 - **The dolly zoom.** While a tunnel flies the hull, the game's speed tunnel (`VesselSpeedTunnel`: the narrower field of
   view and relaxed Panini every vessel gets with speed) is `rideSpeedTunnelScale` (5) × its normal strength
@@ -59,8 +65,43 @@ the prefab:
   - The pass is injected from script while a tunnel or ripple is live, the `BlackHoleLensPass` route, and draws nothing
     otherwise.
 - **The network.** The owner publishes each tunnel it forms, and its rider's way out, through
-  `MeerkatWormholeNetworkRelay` (one `NetworkVariable`, protocol version 17). Every peer runs the same life from
+  `MeerkatWormholeNetworkRelay` (one `NetworkVariable`, protocol version 18: round 7 added the shaft and the bend radius). Every peer runs the same life from
   there.
+
+### 2.1 Before and after RT (Garrett, 2026-10-27, from the Tube Lens Lab)
+
+**One-click swap** (Yash, 2026-10-27): the config's Inspector has **YASH'S LOOK** (`reticleLook` Spindles, `formedLook`
+Bridge: round 3's reticle, then the spindle bridge) and **GARRETT'S LOOK** (Bridge, ContourField), from
+`Editor/Studios/MeerkatWormholeConfigSOEditor.cs`. They set those two switches and nothing else. The contour field
+measures round 7's tunnel: a straight shaft, then the bend (`MeerkatWormholeLens.shader` `MWTube`).
+
+Garrett flew the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF, source
+`Docs/Studios/StoatTubeLensLab.html`) and picked a look: *"this looks so good it doesn't need the grid or anything else,
+lets the lensing alone sell the effect."* Two switches on the config hold it, and both old looks are one setting away:
+- **Before RT, `reticleLook` = Bridge:** the reticle draws exactly as the formed tunnel's bridge did: its spindles
+  (`bridge*` counts and thickness), glass (`bridgeGlass`) and shimmer, in its pilot's domain colour. It condenses out of its
+  centre as it emerges, at the reticle's own brightness (`reticleIdleAlpha`, eased). No lime path. `Spindles` brings back
+  round 3's cyan frame.
+- **After RT, `formedLook` = ContourField:** a formed tunnel draws nothing: no bridge, no glass. It is only bent space.
+  `MeerkatWormholeLensPass` ray-marches each pixel through a thin shell on the wall, from `fieldInner` × r inside to
+  `fieldOuter` × r outside, graded to zero at its edge (`fieldProfile`). Inside the shell the ray is turned by a field
+  whose lines on the wall are the tube's own contours: `fieldPitch` 0° runs along the long lines, 90° round the rings.
+  - `fieldDrag` pulls rays along the lines, `fieldTwist` turns them round, and `fieldGlass` × `fieldGlassIndex` refracts.
+  - `fieldStrength` is about the bend, in degrees, of a head-on wall crossing; `fieldGrazing` evens out skimming rays.
+  - `fieldFlow` In then out bends in at the way in and out at the way out.
+  - `fieldRibs` gathers the field on `fieldRibRings` × `fieldRibLines` grid lines, which travel toward the exit at
+    `fieldRibTravel` rings a second.
+  - The tube is measured over its LIVE window, so the field ripples in from the centre and collapses with the tunnel.
+  - The four tunnels nearest the camera take part. A vessel in front of the first shell a ray meets is not bent.
+  `Bridge` brings back round 3's bridge and glass.
+- **Numbers:** the lab's export, Garrett's pick: strength 18, pitch 90, drag 1, twist 0, glass 0.4 at Δn 0.04,
+  grazing 0.6, flow In then out, inner 0.1, outer 0.12, profile Smooth, ribs 0.9, sharpness 8, travel 1.5.
+- **Not in the studio yet.** These 18 fields are not on the Meerkat page and not in `studio_to_unity/meerkat.json`, so
+  `--check` neither maps nor drifts them. Bringing them onto the page (a Before/After panel) and mapping them is Yash's
+  next step; the lab's GLSL (`tube`, `prof`, `ribF`, `fieldDir`, `trace`) is what `MeerkatWormholeLens.shader` ports.
+- **Cost.** Up to 256 march steps per covered pixel, at full resolution, in the existing lens draw. While a tunnel is
+  ridden, every pixel is covered. Not profiled yet: profile before tuning (`/perf-hunt`), and move the march to a
+  half-resolution offset target (as the tube warp does) if it shows.
 
 ## 3. The AI (input only, `/vessel-ai`)
 
@@ -68,8 +109,9 @@ The platform `AIPilot` flies the line. `MeerkatWormholeExecutor.Autopilot` adds 
 line for line:
 1. It waits until its reticle is back and its ring is more than `aiBentMinDistance` away. Only a bent tunnel is planned
    inside `aiStraightMinDistance`.
-2. It tries 21 bends × 9 LT squeezes, and keeps the one whose way out heads within 0.26 rad of the ring with 60 u to
-   spare, straighter preferred.
+2. It tries 21 bends × 9 shafts (LT), and among those whose way out heads within 0.26 rad of the ring with 60 u to
+   spare keeps the one that reaches the ring soonest: the ride at its mean speed, the flight on, and the turn left at
+   the hull's `YawScaler` (round 7).
 3. It holds its line (no left stick) while the right stick bends the reticle and LT squeezes for `aiShapeSeconds`.
 4. It waits for its eased reticle to catch up (within 0.03, 1 s at most).
 5. It presses RT through the REPLICATED press path.
@@ -104,7 +146,8 @@ line for line:
 | Executor (reticle, form, ride, life, AI) | `Executors/MeerkatWormholeExecutor.cs` |
 | Flight and ride | `Controller/Vessel/MeerkatVesselTransformer.cs` |
 | Network | `Controller/Vessel/MeerkatWormholeNetworkRelay.cs` |
-| Look | `MeerkatWormholeView.cs`, `MeerkatWormholeLensPass.cs`, `_Graphics/Materials/Graphs/MeerkatWormhole*.shader`, `Resources/MeerkatWormhole*.mat` |
+| Look | `MeerkatWormholeView.cs`, `MeerkatWormholeLensPass.cs` (with the contour field, §2.1), `_Graphics/Materials/Graphs/MeerkatWormhole*.shader`, `Resources/MeerkatWormhole*.mat` |
+| The contour field's lab | `Docs/Studios/StoatTubeLensLab.html` (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF) |
 | HUD | `UI/Controller/MeerkatHUDController.cs` |
 | Prefab and registrations | `Tools/Build/author_meerkat_assets.py` (`--check`, `--self-test`) |
 | Studio map | `Tools/Build/studio_to_unity/meerkat.json` (42 keys, `--check` 0 drift) |
