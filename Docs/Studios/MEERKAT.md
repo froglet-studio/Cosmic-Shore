@@ -265,8 +265,8 @@ and maps the new keys in `studio_to_unity/meerkat.json`.
 
 Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
 applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
-Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Garrett gave it in four
-messages the same day; this section is all four together. **Built so far:** only the fleet-wide prism rule it leans on
+Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Garrett gave it in five
+messages the same day; this section is all five together. **Built so far:** only the fleet-wide prism rule it leans on
 (shielded prisms bounce, `Docs/PRISM_MOTION.md` 1a). Everything else here is design.
 
 **The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
@@ -288,8 +288,16 @@ options"*):
   two-finger swipe. It steps through the flyer's seat, then each sentinel, then the next hull's seats. So any player on
   the Meerkat's team can take a sentinel. A sentinel no person sits in is guarded by its AI, which zaps on its own
   (below).
-- **Killable only when empty:** Charge abilities kill a sentinel nobody controls. One a player is sitting in cannot be
-  killed.
+- **One meerkat holds the elements; any other dies instead of losing them** (Garrett: *"only one meerkat takes element
+  damage. the rest die if they would loose elements. so they would only loose elements instead if the meerkat player had
+  moved off all meerkats and the team mate player was the only one"*):
+  - The Meerkats have one element meter, as every crew does. It lives with **the meerkat the Meerkat's own player is
+    in**: the flyer, or the sentinel they took.
+  - **Every other meerkat**, the flyer or a sentinel, is **killed by any hit that would take its elements**, whether it
+    is empty, held by its AI or held by a teammate. That widens the earlier "Charge abilities kill an empty sentinel".
+  - **If the Meerkat's player has moved off every meerkat** (the swap took them to another hull), a teammate in a
+    meerkat holds the elements instead, and loses petals rather than dying.
+  - Proposal: with several teammates in meerkats, the flyer's, else the one seated longest.
 - **A soliton lasts as long as its sentinel.** A tunnel with a sentinel stands until that sentinel is killed or leaves
   it (below); `staySeconds` applies only to a tunnel made with Sentinel mode off.
 
@@ -303,7 +311,13 @@ options"*):
 **A sentinel:**
 - **Its guard:** a sphere **1.5 × its tunnel's opening radius** round the entrance.
 - **Enemy vessels in the guard are zapped**, knocking out their elements. **Charge sets how many petals one zap knocks
-  out.**
+  out**, in **sub-petal ticks** (Garrett: *"things that hit a lot (like sparrow bullets) will need subpetal ticks ... this
+  will be balanced later for now do something reasonable"*):
+  - A zap is a fraction of a petal accrued on the victim (`ResourceSystem.AccrueElementalLoss`: only WHOLE petals ever
+    leave, `Docs/ELEMENTAL_ECONOMY.md` §2), the path a Sparrow bullet uses at 0.1 of a petal.
+  - **Starting point: 0.1 of a petal a zap at Charge L0, rising to 0.25 at L10** (an `ElementalFloat`).
+  - The AI at about 5 zaps a second takes 0.5 of a petal a second at L0. A person tapping about 6-7 times a second at L10
+    takes about 1.6. To be balanced later.
   - A zap is a scored hit, so it stays inside PvP-is-petals-only.
   - Knocking out elements is a ranged verb, so the petals are EJECTED as free crystals (`Docs/ELEMENTAL_ECONOMY.md`).
   - The hit silences the victim for what it is worth (`SILENCE.md`).
@@ -327,7 +341,9 @@ options"*):
   - The person in a sentinel seat presses the Sentinel mode button. Their meerkat rides through its own soliton and
     comes out of the far mouth **as the flyer**: that person now flies the hull. They shape nothing on the way.
   - **The old flyer becomes a sentinel** wherever it was, often where the AI had taken it, perched in front of a **new
-    soliton** made there at once. Whoever was flying, a person or the AI, now sits in that sentinel.
+    soliton** made there at once. Whoever was flying, a person or the AI, now sits in that sentinel. **The flyer's AI
+    shapes that soliton** (Garrett: *"let the flyer ai decide effectively"*): its own tunnel planner (`aiGatePlan`,
+    `MeerkatWormholeExecutor.Autopilot`) picks the bend and shaft, as it would for its next tunnel.
   - The soliton the hopper rode lasts as long as its sentinel, so it collapses once the hopper is out.
   - **The seat count does not change**: one sentinel left and one was made, so the pool is untouched.
 
@@ -395,14 +411,25 @@ grows and shrinks with it.
 - **Mass:** a minimal exit portal of a few low-mass prisms, once per soliton.
 - **A dynamic-seat vessel:** one seat at the start, seats made and lost in play, never more players.
 
+**Decided (Garrett, 2026-10-27, fifth message):**
+- **The hop's new soliton** is shaped by the flyer's AI planner.
+- **Zaps** are sub-petal ticks through the economy's accrual: 0.1 → 0.25 of a petal a zap is the starting point, to be
+  balanced later.
+- **A teammate on another machine can take a sentinel.** Only the meerkat the Meerkat's player is in takes element
+  damage; any other dies instead, unless that player has moved off every meerkat.
+
 **Open:**
-- The new soliton made at the old flyer's place in a hop: what shape it takes (proposal: the flyer's reticle as it
-  stands at that moment, or a straight one along its heading).
-- The petals per zap at L0 and L10, and the AI's exact zap rate (proposal: about 5 a second).
+- **When the flyer dies** (the Meerkat's player sat in a sentinel, so a hit kills the flyer): the hull respawns as the
+  mode's rules say, or the next hop makes its hopper the flyer with no sentinel left behind.
+- With several teammates in meerkats after the Meerkat's player has left: which one holds the elements (proposal
+  above).
 - **For the crew owners**, since a seat ring that changes during the match is new:
   - how the card and `check_crew_vessels.py` express "Meerkats" (one name for a mob of one kind, not "X and Y");
-  - whether a teammate on another machine can take a sentinel (`HostsRiders`, `Docs/CREW_STATIONS.md`);
-  - how `CrewStations` adds and removes a seat mid-match.
+  - how `CrewStations` adds and removes a seat mid-match, and how a remote teammate holds one (`HostsRiders`,
+    `ICrewRelay`, `Docs/CREW_STATIONS.md`);
+  - **where the one element meter lives when it moves between machines.** Element levels are simulated on the machine
+    that owns a hull and do not replicate (`/duo-vessel` §3.3's trap), and here the holder can move to a teammate's
+    machine.
 
 **Where this meets round 8 (for Yash):**
 1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
