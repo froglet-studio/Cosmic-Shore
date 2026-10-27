@@ -49,6 +49,17 @@ namespace CosmicShore.Gameplay
         // SFX can tell a creature (fauna) kill from a generic block destroy. Reset on pool reuse.
         bool _destroyedByCreature;
 
+        /// <summary>The force that destroyed this prism (the destroyed channel's attacker name), or
+        /// null while it stands. An Ark's fall is credited to whoever took its LAST hull prism
+        /// (Docs/Pilots/ARTIFACTS.md §5). Reset on pool reuse.</summary>
+        public string DestroyerName { get; private set; }
+
+        /// <summary>Game time this prism was destroyed (meaningless while it stands).</summary>
+        public float DestroyedAt { get; private set; }
+
+        /// <summary>True when fauna took this prism (a creature kill credits nobody).</summary>
+        public bool DestroyedByCreature => _destroyedByCreature;
+
         // Set transiently by Damage the same way, so the destroyed-channel payload can say
         // whether DIRECT GUNFIRE killed this prism. It exists for the weapon that reloads by
         // destroying mass (VesselRearmOnPrismDestruction): a Sparrow's tank is filled by its
@@ -984,6 +995,7 @@ namespace CosmicShore.Gameplay
             _ownerHidden = false;
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            DestroyerName = null;         // pool reuse: the next life has no destroyer yet
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
             // (AdmitTargetScale) must not carry that ceiling into its next life.
@@ -1655,6 +1667,8 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = volumeAtDeath;
 
             destroyed = true;
+            DestroyerName = attackerPlayerName;
+            DestroyedAt = Time.time;
             _creationQueued = false;   // as the waiting coroutine did: killed while waiting never completes (a Restore registers itself)
             devastated = devastate;
 

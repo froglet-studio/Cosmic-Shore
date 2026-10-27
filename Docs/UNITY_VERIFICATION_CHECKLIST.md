@@ -16903,3 +16903,29 @@ Until pilots carry a sight (Shombith's pilot types), a tester picks one on `Reso
 8. Cost: Profiler with 1000+ marks (VOLT in a crystal-dense mode) and a full prism field under ENSIGN. Note the frame
    cost against LB released; record it in `Docs/Pilots/CALLSIGNS.md` §6 before choosing instanced or shader-side marks
    for the other target sights.
+
+## 🔴 2026-10-27 — The Ark's fall: the hold to the raiders, or spilled for anyone (unverified: no Unity editor in the session)
+
+**Files:** `ArkFall.cs`, `ArtifactPickup.cs` (`Assets/_Scripts/Controller/Payload/`), `ArkHold.cs` (artifacts aboard
+by id, `Stow`, `FindHome`, settles once on the fall), `PayloadCarrier.cs` (RB takes a loose artifact, stows it beside
+your Ark, lets it go elsewhere), `Ark.cs` (`LastFallenHullPrism`), `Prism.cs` (`DestroyerName`, `DestroyedAt`,
+`DestroyedByCreature`), `PayloadConfigSO.cs` + `ArtifactPickup.mat` from `author_payload_assets.py`, `ArkwayRun`
+(three banners), `ArkFallTests.cs`. Design: `Docs/Pilots/ARTIFACTS.md` §5, §8.4. The reference compile is clean on
+the player and editor configs.
+
+Artifacts are ids until squad slots load them (phase 3). To test, put ids aboard every Ark through
+`Resources/PayloadConfig` ▸ **Test Cargo** (for example `Javelin`, `Aegis`). Ship it empty again; the generator's
+`--check` fails while it is not.
+
+1. Run `ArkFallTests`, `PayloadTests`. **Pass:** green.
+2. Test Cargo = two ids. Wander toy, **With Ark**; let fauna eat the whole hull (or wait for the food web). **Pass:**
+   when the voyage ends on THE ARK HAS FALLEN, two pearl-white faceted bodies hang about 40 units from where the Ark
+   was, slowly turning, lit like the world.
+3. Fly to one and press RB (E). **Pass:** the banner reads ARTIFACT ABOARD; the body rides above and behind your hull.
+4. Press RB away from any Ark. **Pass:** ARTIFACT LET GO; it stays where you let it go and RB beside it takes it again.
+5. Start a new voyage while carrying one, fly alongside the new Ark and press RB. **Pass:** ARTIFACT STOWED IN THE
+   HOLD; the body is gone.
+6. Leave one uncollected and leave freestyle (or reload the scene). **Pass:** it is gone, with no console errors.
+7. Carry one while carrying nothing else and get destroyed. **Pass:** it floats where you died, takeable.
+8. (Needs two squads with Arks, phase 6.) A rival destroys your Ark's last hull prism. **Pass:** every artifact
+   aboard appears in the rival Ark's hold, none spill.

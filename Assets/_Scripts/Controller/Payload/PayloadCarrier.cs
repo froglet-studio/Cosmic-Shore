@@ -28,6 +28,11 @@ namespace CosmicShore.Gameplay
     /// pooled prism destroyed with a vessel's hierarchy would corrupt its pool, so the root follows
     /// the hull instead.</para>
     ///
+    /// <para><b>Loose artifacts.</b> With nothing aboard, RB takes a loose <see cref="ArtifactPickup"/>
+    /// in reach (any squad's: a spilled artifact is nobody's) before it asks the Ark for a parcel. With
+    /// an artifact aboard, RB beside your own Ark stows it in that hold; anywhere else it lets it go.
+    /// A vessel carries one thing at a time.</para>
+    ///
     /// <para><b>Silence.</b> A silenced carrier's burst harms nothing: the crack asks
     /// <see cref="Prism.DeflectsSilenced"/> on every rival prism (<see cref="SuperShieldCrack"/>), the
     /// one silence gate on prism harm. The parcel is still spent.</para>
@@ -44,9 +49,13 @@ namespace CosmicShore.Gameplay
         readonly List<Vector3> _seatScale = new();
         readonly List<(Prism prism, float dueAt)> _withering = new();
         float _nextRebindAt;
+        ArtifactPickup _artifact;
 
         /// <summary>True while a parcel rides this vessel.</summary>
         public bool IsCarrying => _parcel.Count > 0;
+
+        /// <summary>The loose artifact this vessel carries, or null.</summary>
+        public ArtifactPickup Artifact => _artifact ? _artifact : null;
 
         /// <summary>Prisms in the parcel riding now.</summary>
         public int ParcelCount => _parcel.Count;
@@ -80,6 +89,9 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             Unlisten();
+            // A vessel that dies with an artifact aboard lets it go where it is: still loose, still anyone's.
+            if (_artifact) _artifact.Drop();
+            _artifact = null;
             StrikeParcel();
             for (int i = 0; i < _withering.Count; i++) ReleasePrism(_withering[i].prism);
             _withering.Clear();
@@ -111,8 +123,9 @@ namespace CosmicShore.Gameplay
         {
             if (ie != InputEvents.PayloadAction) return;
             if (_status == null || _status.AutoPilotEnabled) return;
-            if (IsCarrying) Release();
-            else TryGrab();
+            if (Artifact) DeliverArtifact();
+            else if (IsCarrying) Release();
+            else if (!TryTakeArtifact()) TryGrab();
         }
 
         // ── Grab ─────────────────────────────────────────────────────────────
@@ -227,6 +240,42 @@ namespace CosmicShore.Gameplay
             int ring = count - 1;
             float a = 2f * Mathf.PI * (index - 1) / ring;
             return new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * spacing;
+        }
+
+        // ── Loose artifacts ──────────────────────────────────────────────────
+
+        /// <summary>Take the nearest loose artifact in reach. False when there is none, or the claim
+        /// was refused (someone else holds it).</summary>
+        public bool TryTakeArtifact()
+        {
+            if (_status == null || IsCarrying || Artifact) return false;
+            var pickup = ArtifactPickup.FindNear(transform.position, ArkHold.Config.PickupReach);
+            if (!pickup || !pickup.TryClaim(this)) return false;
+            _artifact = pickup;
+            Notify(PayloadNotice.ArtifactTaken, ArkHold.Config.ArtifactTakenSound);
+            return true;
+        }
+
+        /// <summary>Stow the carried artifact in your squad's Ark when it is in reach, otherwise let it
+        /// go where it is. True when it was stowed.</summary>
+        public bool DeliverArtifact()
+        {
+            var pickup = Artifact;
+            if (!pickup || _status == null) return false;
+            var cfg = ArkHold.Config;
+            var at = transform.position;
+            var home = ArkHold.FindFor(_status.Domain, at);
+            bool inReach = home && (home.Ark.Position - at).sqrMagnitude <= cfg.GrabReach * cfg.GrabReach;
+            _artifact = null;
+            if (inReach && home.Stow(pickup.ArtifactId))
+            {
+                pickup.Strike();
+                Notify(PayloadNotice.ArtifactStowed, cfg.ArtifactStowedSound);
+                return true;
+            }
+            pickup.Drop();
+            Notify(PayloadNotice.ArtifactDropped, default);
+            return false;
         }
 
         // ── Release ──────────────────────────────────────────────────────────

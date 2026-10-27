@@ -62,6 +62,27 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float witherSeconds = 0.8f;
 
+        [Header("Artifacts loose in the world (an Ark felled by fauna)")]
+        [Tooltip("Radius around a fallen Ark that its spilled artifacts land on, world units.")]
+        [Min(0f)]
+        [SerializeField] float spillRadius = 40f;
+
+        [Tooltip("How close a vessel must be to a loose artifact for RB to take it.")]
+        [Min(1f)]
+        [SerializeField] float pickupReach = 30f;
+
+        [Tooltip("World size of a loose artifact's body.")]
+        [Min(0.1f)]
+        [SerializeField] float pickupSize = 3f;
+
+        [Tooltip("Lit material a loose artifact wears. Placeholder until artifacts are given a look.")]
+        [SerializeField] Material pickupMaterial;
+
+        [Tooltip("TESTING ONLY, ships empty: artifact ids put aboard every Ark's hold when it is created, until " +
+                 "squad slots load their artifacts (Docs/Pilots/ARTIFACTS.md §8.2). Lets a tester fell an Ark " +
+                 "and watch its cargo move or spill.")]
+        [SerializeField] string[] testCargo = System.Array.Empty<string>();
+
         // The lines themselves live in the asset (author_payload_assets.py), never as C# defaults:
         // a missing asset shows nothing rather than a hardcoded sentence (CLAUDE.md, player-facing text).
         [Header("Text (authored; empty shows nothing)")]
@@ -77,6 +98,15 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Banner when the hold has no hull left to give.")]
         [SerializeField] string holdEmptyLine = "";
 
+        [Tooltip("Banner when the local pilot takes a loose artifact.")]
+        [SerializeField] string artifactTakenLine = "";
+
+        [Tooltip("Banner when the local pilot stows an artifact in their squad's Ark.")]
+        [SerializeField] string artifactStowedLine = "";
+
+        [Tooltip("Banner when the local pilot lets an artifact go away from their Ark.")]
+        [SerializeField] string artifactDroppedLine = "";
+
         [Min(0f)]
         [SerializeField] float bannerSeconds = 3f;
 
@@ -84,6 +114,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] EventReference grabSound;
         [SerializeField] EventReference releaseSound;
         [SerializeField] EventReference refusedSound;
+        [SerializeField] EventReference artifactTakenSound;
+        [SerializeField] EventReference artifactStowedSound;
 
         public float GrabReach => grabReach;
         public int ParcelPrisms => parcelPrisms;
@@ -103,5 +135,15 @@ namespace CosmicShore.ScriptableObjects
         public EventReference GrabSound => grabSound;
         public EventReference ReleaseSound => releaseSound;
         public EventReference RefusedSound => refusedSound;
+        public EventReference ArtifactTakenSound => artifactTakenSound;
+        public EventReference ArtifactStowedSound => artifactStowedSound;
+        public float SpillRadius => spillRadius;
+        public float PickupReach => pickupReach;
+        public float PickupSize => pickupSize;
+        public Material PickupMaterial => pickupMaterial;
+        public string[] TestCargo => testCargo ?? System.Array.Empty<string>();
+        public string ArtifactTakenLine => artifactTakenLine;
+        public string ArtifactStowedLine => artifactStowedLine;
+        public string ArtifactDroppedLine => artifactDroppedLine;
     }
 }

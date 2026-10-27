@@ -23,10 +23,18 @@ MonoBehaviour:
   burstEffects:
   - {fileID: 11400000, guid: 21b48b5625e24e20b6d2edca3495fcc3, type: 2}
   witherSeconds: 0.8
+  spillRadius: 40
+  pickupReach: 30
+  pickupSize: 3
+  pickupMaterial: {fileID: 2100000, guid: 15b92e56815b4aa19c8047de1bc2d75d, type: 2}
+  testCargo: []
   grabbedLine: PAYLOAD ABOARD - RB TO RELEASE
   releasedLine: 
   outOfReachLine: BRING IT ALONGSIDE THE ARK FOR A PAYLOAD
   holdEmptyLine: THE ARK HAS NO HULL TO SPARE
+  artifactTakenLine: ARTIFACT ABOARD - RB BESIDE YOUR ARK TO STOW IT
+  artifactStowedLine: ARTIFACT STOWED IN THE HOLD
+  artifactDroppedLine: ARTIFACT LET GO
   bannerSeconds: 3
   grabSound:
     Guid:
@@ -43,6 +51,20 @@ MonoBehaviour:
       Data4: 0
     Path: 
   refusedSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  artifactTakenSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  artifactStowedSound:
     Guid:
       Data1: 0
       Data2: 0

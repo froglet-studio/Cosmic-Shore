@@ -5,6 +5,7 @@ Author the PLAIN payload's assets (Docs/Pilots/ARTIFACTS.md §2). This script OW
   Assets/Resources/PayloadConfig.asset                                  PayloadConfigSO
   Assets/_SO_Assets/Effects/Payload Prism Effects/PayloadCrackPrismEffect.asset
                                                                         PayloadCrackPrismEffectSO
+  Assets/_Graphics/Materials/ArtifactPickup.mat                         a loose artifact's lit body (URP Lit)
 
 and their .meta files (fixed guids). Every tuning value, authored line and (empty) FMOD slot is
 written from SPEC below, so a change is made here and re-run, never in the inspector.
@@ -30,6 +31,9 @@ EFFECT_DIR = 'Assets/_SO_Assets/Effects/Payload Prism Effects'
 EFFECT_DIR_GUID = '69f2bf7725e64b88a3c86239ce48e10a'
 EFFECT = EFFECT_DIR + '/PayloadCrackPrismEffect.asset'
 EFFECT_GUID = '21b48b5625e24e20b6d2edca3495fcc3'
+PICKUP_MAT = 'Assets/_Graphics/Materials/ArtifactPickup.mat'
+PICKUP_MAT_GUID = '15b92e56815b4aa19c8047de1bc2d75d'
+URP_LIT_GUID = '933532a4fcc9baf4fa0491de14d08ed7'  # Packages/com.unity.render-pipelines.universal Lit.shader
 
 # The tuning and the authored text. Starting values: a payload is six plates of an Ark's ~150,
 # the hold keeps a dozen, and the burst reaches about a cell-core cluster.
@@ -43,14 +47,22 @@ SPEC = {
     'seatSpeed': 120,
     'burstRadius': 60,
     'witherSeconds': 0.8,
+    # Artifacts spilled by an Ark that fauna felled (ARTIFACTS.md §5).
+    'spillRadius': 40,
+    'pickupReach': 30,
+    'pickupSize': 3,
+    'testCargo': (),          # TESTING ONLY: ships empty
     'grabbedLine': 'PAYLOAD ABOARD - RB TO RELEASE',
     'releasedLine': '',
     'outOfReachLine': 'BRING IT ALONGSIDE THE ARK FOR A PAYLOAD',
     'holdEmptyLine': 'THE ARK HAS NO HULL TO SPARE',
+    'artifactTakenLine': 'ARTIFACT ABOARD - RB BESIDE YOUR ARK TO STOW IT',
+    'artifactStowedLine': 'ARTIFACT STOWED IN THE HOLD',
+    'artifactDroppedLine': 'ARTIFACT LET GO',
     'bannerSeconds': 3,
 }
 EFFECT_SPEC = {'alsoShielded': 1, 'leaveRegularShield': 1}
-SOUNDS = ('grabSound', 'releaseSound', 'refusedSound')  # shipped EMPTY (the FMOD rule)
+SOUNDS = ('grabSound', 'releaseSound', 'refusedSound', 'artifactTakenSound', 'artifactStowedSound')  # shipped EMPTY (the FMOD rule)
 
 
 def script_guid(name):
@@ -94,7 +106,12 @@ def config_asset(spec=SPEC):
     out += '  burstEffects:\n'
     out += f'  - {{fileID: 11400000, guid: {EFFECT_GUID}, type: 2}}\n'
     out += f'  witherSeconds: {num(spec["witherSeconds"])}\n'
-    for key in ('grabbedLine', 'releasedLine', 'outOfReachLine', 'holdEmptyLine'):
+    for key in ('spillRadius', 'pickupReach', 'pickupSize'):
+        out += f'  {key}: {num(spec[key])}\n'
+    out += f'  pickupMaterial: {{fileID: 2100000, guid: {PICKUP_MAT_GUID}, type: 2}}\n'
+    out += '  testCargo:' + (' []\n' if not spec['testCargo'] else '\n' + ''.join(f'  -{text(c)}\n' for c in spec['testCargo']))
+    for key in ('grabbedLine', 'releasedLine', 'outOfReachLine', 'holdEmptyLine',
+                'artifactTakenLine', 'artifactStowedLine', 'artifactDroppedLine'):
         out += f'  {key}:{text(spec[key])}\n'
     out += f'  bannerSeconds: {num(spec["bannerSeconds"])}\n'
     for s in SOUNDS:
@@ -107,6 +124,26 @@ def effect_asset(spec=EFFECT_SPEC):
     for key, value in spec.items():
         out += f'  {key}: {value}\n'
     return out
+
+
+def pickup_material():
+    # A pearl-white, faceted metal: lit like the world, with no element's colour (elements have none).
+    return ('%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!21 &2100000\nMaterial:\n  serializedVersion: 8\n'
+            '  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n'
+            '  m_PrefabAsset: {fileID: 0}\n  m_Name: ArtifactPickup\n'
+            f'  m_Shader: {{fileID: 4800000, guid: {URP_LIT_GUID}, type: 3}}\n'
+            '  m_Parent: {fileID: 0}\n  m_ModifiedSerializedProperties: 0\n  m_ValidKeywords: []\n'
+            '  m_InvalidKeywords: []\n  m_LightmapFlags: 4\n  m_EnableInstancingVariants: 1\n  m_DoubleSidedGI: 0\n'
+            '  m_CustomRenderQueue: -1\n  stringTagMap:\n    RenderType: Opaque\n  disabledShaderPasses: []\n'
+            '  m_LockedProperties: \n  m_SavedProperties:\n    serializedVersion: 3\n    m_TexEnvs: []\n    m_Ints: []\n'
+            '    m_Floats:\n    - _Metallic: 0.7\n    - _Smoothness: 0.8\n    - _Surface: 0\n    - _WorkflowMode: 1\n'
+            '    m_Colors:\n    - _BaseColor: {r: 0.92, g: 0.92, b: 0.9, a: 1}\n    - _Color: {r: 0.92, g: 0.92, b: 0.9, a: 1}\n'
+            '    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}\n  m_BuildTextureStacks: []\n  m_AllowLocalizedText: 1\n')
+
+
+def material_meta(guid):
+    return (f'fileFormatVersion: 2\nguid: {guid}\nNativeFormatImporter:\n  externalObjects: {{}}\n'
+            '  mainObjectFileID: 2100000\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n')
 
 
 def asset_meta(guid):
@@ -126,6 +163,8 @@ def outputs(spec=SPEC, effect_spec=EFFECT_SPEC):
         EFFECT_DIR + '.meta': folder_meta(EFFECT_DIR_GUID),
         EFFECT: effect_asset(effect_spec),
         EFFECT + '.meta': asset_meta(EFFECT_GUID),
+        PICKUP_MAT: pickup_material(),
+        PICKUP_MAT + '.meta': material_meta(PICKUP_MAT_GUID),
     }
 
 
@@ -139,6 +178,13 @@ def validate(files):
         block = cfg.split(f'  {s}:\n', 1)
         if len(block) < 2 or 'Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0' not in block[1][:120]:
             errors.append(f'{s} is not an empty EventReference (the FMOD rule ships it empty)')
+    if PICKUP_MAT_GUID not in cfg:
+        errors.append('PayloadConfig does not name the pickup material: a spilled artifact would be invisible')
+    if '  testCargo: []\n' not in cfg:
+        errors.append('testCargo is a testing seam and ships empty')
+    for key in ('artifactTakenLine', 'artifactStowedLine'):
+        if not SPEC[key]:
+            errors.append(f'{key} is empty: the pilot would not be told what RB did with an artifact')
     if SPEC['parcelPrisms'] < 1 or SPEC['hullReserve'] < 1:
         errors.append('a payload takes at least one prism and the hold keeps at least one')
     return errors
@@ -164,6 +210,12 @@ def self_test():
     bad = dict(files); bad[CONFIG] = bad[CONFIG].replace('  grabSound:\n    Guid:\n      Data1: 0', '  grabSound:\n    Guid:\n      Data1: 7')
     if not validate(bad):
         print('self-test FAILED: a wired placeholder sound validated'); ok = False
+    bad = dict(files); bad[CONFIG] = bad[CONFIG].replace('  testCargo: []\n', '  testCargo:\n  - Javelin\n')
+    if not validate(bad):
+        print('self-test FAILED: a config shipping test cargo validated'); ok = False
+    bad = dict(files); bad[CONFIG] = bad[CONFIG].replace(PICKUP_MAT_GUID, '0' * 32)
+    if not validate(bad):
+        print('self-test FAILED: a config without the pickup material validated'); ok = False
     if not drift({CONFIG: files[CONFIG] + '# drift\n'}) and os.path.exists(os.path.join(ROOT, CONFIG)):
         print('self-test FAILED: --check did not see a changed asset'); ok = False
     if drift({CONFIG + '.missing': 'x'}) != [CONFIG + '.missing (missing)']:

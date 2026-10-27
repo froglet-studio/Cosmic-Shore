@@ -701,6 +701,9 @@ namespace CosmicShore.Gameplay
                 PayloadNotice.Released => cfg.ReleasedLine,
                 PayloadNotice.OutOfReach => cfg.OutOfReachLine,
                 PayloadNotice.HoldEmpty => cfg.HoldEmptyLine,
+                PayloadNotice.ArtifactTaken => cfg.ArtifactTakenLine,
+                PayloadNotice.ArtifactStowed => cfg.ArtifactStowedLine,
+                PayloadNotice.ArtifactDropped => cfg.ArtifactDroppedLine,
                 _ => null,
             };
             if (string.IsNullOrEmpty(line)) return;

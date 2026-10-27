@@ -13,6 +13,15 @@ plain one, `PayloadCrackPrismEffectSO`, shares `SuperShieldCrack` with the Grizz
 only from its own domain's Ark. The Ark is the local toy's, so the hold arbitrates on the machine that holds it; a
 networked Ark (the voyage, §8.5) makes the hold a server object.
 
+**The fall (§8.4), also built 2026-10-27, unverified in the editor.** The hold carries artifacts by id (the id
+`SquadSlot.ArtifactId` names on Shombith's branch; no second artifact type). When the last hull prism goes,
+`ArkFall` credits whoever destroyed THAT prism (`Prism.DestroyerName`) and moves everything aboard to that squad's
+standing Ark in one step. A creature kill, an unknown force, the Ark's own squad, or a raider with no Ark here earns
+nothing, and the artifacts spill as `ArtifactPickup`s (not mass: fauna cannot eat them) that anyone takes with RB,
+carries, and stows with RB beside their own Ark. A pickup is a scene root, so uncollected ones die with the instance;
+`ArtifactPickup.StrikeAll` is there for a mode whose scene outlives it. Until squad slots load artifacts (§8.2), a
+tester puts ids aboard with `PayloadConfig`'s Test Cargo (ships empty). Hand tests: "The Ark's fall" in the checklist.
+
 **Decided since (Garrett, 2026-10-27):** one Ark per squad of three vessels; an Ark felled by fauna spills its
 artifacts for anyone, and uncollected ones are lost when the instance expires; the RB abilities moved to Y, so RB is
 free for the payload.

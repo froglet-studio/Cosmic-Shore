@@ -21,6 +21,11 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>One Ark per squad.</b> A squad is a domain here, as it is everywhere a vessel's side is
     /// asked: a vessel may take a payload only from the Ark of its own domain.</para>
+    ///
+    /// <para><b>The hold also carries the voyage's artifacts</b> (ARTIFACTS.md §5), by artifact id
+    /// (the id <c>SquadSlot.ArtifactId</c> names). When the Ark falls the hold settles them in one
+    /// step (<see cref="ArkFall"/>): all of them to the credited squad's Ark, or, when fauna took
+    /// the last hull prism, spilled as <see cref="ArtifactPickup"/>s anyone can take with RB.</para>
     /// </summary>
     public sealed class ArkHold : MonoBehaviour
     {
@@ -32,6 +37,8 @@ namespace CosmicShore.Gameplay
 
         Ark _ark;
         readonly List<PayloadCarrier> _carriers = new();
+        readonly List<string> _artifacts = new();
+        bool _settled;
 
         /// <summary>Why a grab was refused, or <see cref="Granted"/>.</summary>
         public enum GrabResult
@@ -83,7 +90,52 @@ namespace CosmicShore.Gameplay
         /// <summary>Payloads off this hold riding a carrier right now.</summary>
         public int ParcelsOut => _carriers.Count;
 
-        internal void Bind(Ark ark) => _ark = ark;
+        /// <summary>The artifacts aboard, by id.</summary>
+        public IReadOnlyList<string> Artifacts => _artifacts;
+
+        internal void Bind(Ark ark)
+        {
+            if (_ark) _ark.HullDestroyed -= OnHullDestroyed;
+            _ark = ark;
+            _settled = false;
+            if (!s_holds.Contains(this)) s_holds.Add(this);
+            if (!_ark) return;
+            _ark.HullDestroyed += OnHullDestroyed;
+            // Until squad slots load their artifacts into the hold (phase 3), a tester can put
+            // cargo aboard every Ark from the config (it ships empty).
+            var cargo = Config.TestCargo;
+            for (int i = 0; i < cargo.Length; i++) Stow(cargo[i]);
+        }
+
+        /// <summary>Put an artifact aboard. Refused off the authority, for an empty id, or once the
+        /// Ark has fallen (its hold has been settled).</summary>
+        public bool Stow(string artifactId)
+        {
+            if (!IsAuthority || _settled || string.IsNullOrEmpty(artifactId)) return false;
+            if (_ark && _ark.IsHullLost) return false;
+            _artifacts.Add(artifactId);
+            return true;
+        }
+
+        /// <summary>Move every artifact aboard into <paramref name="into"/> and empty the hold.
+        /// Returns how many moved.</summary>
+        internal int TakeAll(List<string> into)
+        {
+            int n = _artifacts.Count;
+            into.AddRange(_artifacts);
+            _artifacts.Clear();
+            return n;
+        }
+
+        void OnHullDestroyed()
+        {
+            if (_settled || !IsAuthority) return;
+            _settled = true;
+            ArkFall.Settle(this);
+        }
+
+        /// <summary>True once the fallen Ark's hold has been settled.</summary>
+        public bool IsSettled => _settled;
 
         void OnEnable()
         {
@@ -92,7 +144,11 @@ namespace CosmicShore.Gameplay
 
         void OnDisable() => s_holds.Remove(this);
 
-        void OnDestroy() => StrikeParcels();
+        void OnDestroy()
+        {
+            if (_ark) _ark.HullDestroyed -= OnHullDestroyed;
+            StrikeParcels();
+        }
 
         /// <summary>The hold of <paramref name="domain"/>'s Ark nearest <paramref name="position"/>,
         /// or null. A probe: no squad having an Ark here is the ordinary case, not a fault.</summary>
@@ -150,6 +206,19 @@ namespace CosmicShore.Gameplay
             _carriers.Clear();
         }
 
+        /// <summary>The hold of <paramref name="domain"/>'s standing Ark, wherever it is, or null.
+        /// A probe: the credited squad may have no Ark here.</summary>
+        public static ArkHold FindHome(Domains domain, ArkHold except = null)
+        {
+            for (int i = 0; i < s_holds.Count; i++)
+            {
+                var hold = s_holds[i];
+                if (!hold || hold == except || !hold._ark || hold._ark.IsHullLost || hold.Domain != domain) continue;
+                return hold;
+            }
+            return null;
+        }
+
         /// <summary>Test seam: forget every registered hold.</summary>
         internal static void ClearRegistryForTests() => s_holds.Clear();
 
@@ -176,5 +245,8 @@ namespace CosmicShore.Gameplay
         Released = 1,
         OutOfReach = 2,
         HoldEmpty = 3,
+        ArtifactTaken = 4,
+        ArtifactStowed = 5,
+        ArtifactDropped = 6,
     }
 }

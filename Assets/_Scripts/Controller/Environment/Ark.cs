@@ -123,6 +123,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The domain the hull was laid in - the squad whose home this is.</summary>
         public Domains Domain { get; private set; }
 
+        /// <summary>Test seam: wear <paramref name="domain"/> without laying a hull.</summary>
+        internal void SetDomainForTests(Domains domain) => Domain = domain;
+
         /// <summary>The Ark's hold: where its payloads come from (<see cref="ArkHold"/>,
         /// Docs/Pilots/ARTIFACTS.md §2). Every Ark has one.</summary>
         public ArkHold Hold { get; private set; }
@@ -279,6 +282,25 @@ namespace CosmicShore.Gameplay
         }
 
         static bool IsLive(Prism prism) => prism && !prism.destroyed && prism.gameObject.activeInHierarchy;
+
+        /// <summary>
+        /// The hull prism destroyed LAST, or null: the one whose force the fall is credited to
+        /// (<see cref="ArkFall"/>). Read when the hull is lost; a prism the pool has already
+        /// re-issued (no longer destroyed) is not a candidate.
+        /// </summary>
+        public Prism LastFallenHullPrism()
+        {
+            Prism last = null;
+            float at = float.NegativeInfinity;
+            for (int i = 0; i < _prisms.Count; i++)
+            {
+                var prism = _prisms[i];
+                if (!prism || !prism.destroyed || prism.DestroyedAt < at) continue;
+                at = prism.DestroyedAt;
+                last = prism;
+            }
+            return last;
+        }
 
         // ── Wake ─────────────────────────────────────────────────────────────
 
