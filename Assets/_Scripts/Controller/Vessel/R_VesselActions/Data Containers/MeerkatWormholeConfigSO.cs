@@ -5,9 +5,6 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
-    /// <summary>How the Meerkat's reticle draws before RT.</summary>
-    public enum MeerkatReticleLook { Spindles = 0, Bridge = 1 }
-
     /// <summary>How a formed Meerkat tunnel shows after RT.</summary>
     public enum MeerkatFormedLook { Bridge = 0, ContourField = 1 }
 
@@ -81,18 +78,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float reticleSmoothSeconds = 0.15f;
         [Tooltip("Your reticle, right stick centred (brightness)")]
         [SerializeField, Range(0f, 1f)] float reticleIdleAlpha = 0.4f;
-        [Tooltip("Your reticle's glass: a faint lit surface under it")]
-        [SerializeField, Range(0f, 2f)] float reticleGlass = 0.15f;
-        [Tooltip("...rings of spindles round it")]
-        [SerializeField, Range(2, 30)] int reticleRings = 10;
-        [Tooltip("...spindles round each ring")]
-        [SerializeField, Range(3, 32)] int reticleSpindlesPerRing = 16;
-        [Tooltip("...ribs of spindles along it (0 = none)")]
-        [SerializeField, Range(0, 16)] int reticleRibs = 8;
-        [Tooltip("...spindle thickness (u)")]
-        [SerializeField, Range(0.05f, 3f)] float reticleSpindleThickness = 0.35f;
-        [Tooltip("...the lime line you will fly (brightness, 0 = none)")]
-        [SerializeField, Range(0f, 1f)] float reticlePath = 0.5f;
+        [Tooltip("Your reticle's colour: your domain colour toward white")]
+        [SerializeField, Range(0f, 1f)] float reticleWhite = 0.45f;
 
         [Header("Wormhole look (the artifact's Play Style Config > Wormhole look, Space look)")]
         [Tooltip("Space bent along the tube (strength)")]
@@ -119,11 +106,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.1f, 6f)] float bridgeSpindleThickness = 1.6f;
         [Tooltip("...a shimmer running way in to way out")]
         [SerializeField, Range(0f, 1f)] float bridgeShimmer = 0.5f;
+        [Tooltip("...its spindles' colour: the domain colour toward white")]
+        [SerializeField, Range(0f, 1f)] float bridgeWhite = 0.45f;
 
-        [Header("Before and after RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
-        [Tooltip("Before RT, your reticle draws as: Bridge = the formed tunnel's spindle bridge and glass in your domain " +
-                 "colour (Garrett's pick); Spindles = round 3's thin cyan spindle frame and lime path.")]
-        [SerializeField] MeerkatReticleLook reticleLook = MeerkatReticleLook.Bridge;
+        [Header("After RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
         [Tooltip("After RT, a formed tunnel shows as: ContourField = nothing drawn, only space bent in a thin shell on its " +
                  "wall (Garrett: \"lets the lensing alone sell the effect\"); Bridge = round 3's spindle bridge and glass.")]
         [SerializeField] MeerkatFormedLook formedLook = MeerkatFormedLook.ContourField;
@@ -201,12 +187,7 @@ namespace CosmicShore.ScriptableObjects
         public float RippleSeconds => rippleSeconds;
         public float ReticleSmoothSeconds => reticleSmoothSeconds;
         public float ReticleIdleAlpha => reticleIdleAlpha;
-        public float ReticleGlass => reticleGlass;
-        public int ReticleRings => reticleRings;
-        public int ReticleSpindlesPerRing => reticleSpindlesPerRing;
-        public int ReticleRibs => reticleRibs;
-        public float ReticleSpindleThickness => reticleSpindleThickness;
-        public float ReticlePath => reticlePath;
+        public float ReticleWhite => reticleWhite;
         public float BridgeVisibility => bridgeVisibility;
         public float BridgeGlass => bridgeGlass;
         public int BridgeRings => bridgeRings;
@@ -214,7 +195,7 @@ namespace CosmicShore.ScriptableObjects
         public int BridgeRibs => bridgeRibs;
         public float BridgeSpindleThickness => bridgeSpindleThickness;
         public float BridgeShimmer => bridgeShimmer;
-        public MeerkatReticleLook ReticleLook => reticleLook;
+        public float BridgeWhite => bridgeWhite;
         public MeerkatFormedLook FormedLook => formedLook;
         public float FieldStrength => fieldStrength;
         public float FieldPitch => fieldPitch;

@@ -133,6 +133,17 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 9 (Yash, 2026-10-28: "the wormhole look and the reticle look can be the same, just the reticle can be just a
+wireframe version of the actual wormhole look ... the reticles and the bridges geometry need to be same, and the same
+position same way ... The reticle is the silhouette of the geometry"):** one geometry. The bridge's rings, spindles per
+ring, ribs, thickness and shimmer (`bridge*`) draw both the formed tunnel and your reticle (the page's `drawFrame`, the
+game's `MeerkatWormholeView.BridgeFrame`): the same rings at the same places along the tunnel, condensing out of its
+centre the same way. The reticle is that frame bare, with no glass and no path. It keeps its own brightness
+(`reticleIdleAlpha`) and its own colour, your domain colour toward white by `reticleWhite`; the bridge's spindles take
+`bridgeWhite` the same way. Retired: `reticleGlass`, `reticleRings`, `reticleSpindlesPerRing`, `reticleRibs`,
+`reticleSpindleThickness`, `reticlePath`, and in the game Garrett's `reticleLook` switch (there is one reticle now).
+Measured on the page: the shaped reticle and the formed tunnel are the same 931 spindles (36 × 21 rings, 5 ribs).
+
 **Round 8 (Yash, 2026-10-28: "the updated look I want. By merging Garrett's look with my reticles ... I don't want any
 camera Y offset. I want the camera to go inside the tunnel"):** the look Yash tuned in Unity's `MeerkatWormholeConfig` is
 the studio's SHIPPED look now. Before RT the reticle draws as Garrett's bridge (`reticleLook` Bridge), with the bridge
@@ -211,12 +222,7 @@ just spindles. Tiny thinning spindles"):**
 | look | `rippleSeconds` | 1.2 s | ...running out and fading over this long |
 | reticle | `reticleSmoothSeconds` | 0.15 s | Your reticle eases toward the sticks over this long (0 = at once) |
 | reticle | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
-| reticle | `reticleGlass` | 0.15 | The faint lit surface under your reticle's spindles |
-| reticle | `reticleRings` | 10 | Rings of spindles round your reticle |
-| reticle | `reticleSpindlesPerRing` | 16 | ...spindles round each ring |
-| reticle | `reticleRibs` | 8 | ...ribs of spindles along it (0 = none) |
-| reticle | `reticleSpindleThickness` | 0.35 u | ...spindle thickness |
-| reticle | `reticlePath` | 0.5 | The lime line you will fly through it (0 = none) |
+| reticle | `reticleWhite` | 0.45 | Your reticle's colour: your domain colour toward white (round 9; its geometry is the bridge's) |
 | look | `bridgeVisibility` | 1 | The formed tunnel's bridge, for everyone (0 = hidden) |
 | look | `bridgeGlass` | 0.6 | ...its glass surface |
 | look | `bridgeRings` | 16 | ...rings of spindles along it |
@@ -224,6 +230,7 @@ just spindles. Tiny thinning spindles"):**
 | look | `bridgeRibs` | 6 | ...ribs of spindles along it (0 = none) |
 | look | `bridgeSpindleThickness` | 1.6 u | ...spindle thickness at the middle |
 | look | `bridgeShimmer` | 0.5 | ...a shimmer running way in to way out (0 = steady) |
+| look | `bridgeWhite` | 0.45 | ...its spindles' colour: the domain colour toward white (round 9) |
 | ai | `aiStraightMinDistance` | 300 u | The AI forms a straight tunnel only with its ring this far away |
 | ai | `aiBentMinDistance` | 120 u | ...a bending one from this far |
 | ai | `aiShapeSeconds` | 0.3 s | The AI shapes its reticle this long before RT |

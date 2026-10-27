@@ -34,12 +34,7 @@ MonoBehaviour:
   collapseSeconds: 0.8
   reticleSmoothSeconds: 0.123
   reticleIdleAlpha: 0.053
-  reticleGlass: 0.048
-  reticleRings: 30
-  reticleSpindlesPerRing: 21
-  reticleRibs: 5
-  reticleSpindleThickness: 0.25
-  reticlePath: 0.333
+  reticleWhite: 0.45
   warpStrength: 0
   dentStrength: 0
   rippleStrength: 0
@@ -52,7 +47,7 @@ MonoBehaviour:
   bridgeRibs: 5
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
-  reticleLook: 1
+  bridgeWhite: 0.45
   formedLook: 1
   fieldStrength: 18
   fieldPitch: 90

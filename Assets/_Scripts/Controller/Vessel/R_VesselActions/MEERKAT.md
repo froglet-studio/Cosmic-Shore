@@ -28,13 +28,13 @@ the prefab:
 - **The shape** (round 7, the umbrella handle): a straight shaft of S, then one bend of radius `bendRadius` through the
   stick's angle θ, so the tunnel is S + `bendRadius` × θ long (`MeerkatWormholeMath.ShapeFor` / `At` / `BendAngle`). The
   throat (`throatRadius`) and mouths (`mouthRadius`) are fixed and narrow.
-- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it. Since Garrett's before/after
-  (2026-10-27, §2.1) it draws in the bridge's look (`reticleLook` Bridge). Round 3's frame, below, is `reticleLook`
-  Spindles:
+- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it.
   - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
-  - It is a see-through frame of thin spindles: `reticleRings` × `reticleSpindlesPerRing` round its throat and
-    `reticleRibs` along it, `reticleSpindleThickness` thick, cyan to white, over a faint glass (`reticleGlass`).
-  - The lime line you will fly runs through it (`reticlePath`).
+  - It is the wormhole's own wireframe (round 9, Yash: *"the reticle is the silhouette of the geometry"*): the bridge's
+    `bridgeRings` × `bridgeSpindlesPerRing`, `bridgeRibs` and `bridgeSpindleThickness`, in the same places, condensing
+    the same way (`MeerkatWormholeView.BridgeFrame`), with no glass and no path.
+  - Its own controls are its brightness (`reticleIdleAlpha` at rest, full while you shape it) and its colour: your
+    domain colour toward white by `reticleWhite`. The bridge's spindles take `bridgeWhite` the same way.
 - **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
   then runs the shaft and the bend mouth to mouth, turning only on the bend. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
   to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
@@ -76,18 +76,18 @@ the prefab:
 
 ### 2.1 Before and after RT (Garrett, 2026-10-27, from the Tube Lens Lab)
 
-**One-click swap** (Yash, 2026-10-27): the config's Inspector has **YASH'S LOOK** (`reticleLook` Spindles, `formedLook`
-Bridge: round 3's reticle, then the spindle bridge) and **GARRETT'S LOOK** (Bridge, ContourField), from
-`Editor/Studios/MeerkatWormholeConfigSOEditor.cs`. They set those two switches and nothing else. The contour field
+**One-click swap** (Yash, 2026-10-27): the config's Inspector has **YASH'S LOOK** (`formedLook` Bridge: the spindle
+bridge after RT) and **GARRETT'S LOOK** (ContourField), from `Editor/Studios/MeerkatWormholeConfigSOEditor.cs`. They set
+that one switch. Round 9 retired `reticleLook`: the reticle is always the wormhole's wireframe. The contour field
 measures round 7's tunnel: a straight shaft, then the bend (`MeerkatWormholeLens.shader` `MWTube`).
 
 Garrett flew the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF, source
 `Docs/Studios/StoatTubeLensLab.html`) and picked a look: *"this looks so good it doesn't need the grid or anything else,
 lets the lensing alone sell the effect."* Two switches on the config hold it, and both old looks are one setting away:
-- **Before RT, `reticleLook` = Bridge:** the reticle draws exactly as the formed tunnel's bridge did: its spindles
-  (`bridge*` counts and thickness), glass (`bridgeGlass`) and shimmer, in its pilot's domain colour. It condenses out of its
-  centre as it emerges, at the reticle's own brightness (`reticleIdleAlpha`, eased). No lime path. `Spindles` brings back
-  round 3's cyan frame.
+- **Before RT** (his `reticleLook` Bridge; since round 9 the only reticle): the reticle draws as the formed tunnel's
+  bridge: its spindles (`bridge*` counts and thickness) and shimmer, in its pilot's domain colour. It condenses out of its
+  centre as it emerges, at the reticle's own brightness. No lime path. Round 9 also took its glass away (a bare
+  wireframe).
 - **After RT, `formedLook` = ContourField:** a formed tunnel draws nothing: no bridge, no glass. It is only bent space.
   `MeerkatWormholeLensPass` ray-marches each pixel through a thin shell on the wall, from `fieldInner` × r inside to
   `fieldOuter` × r outside, graded to zero at its edge (`fieldProfile`). Inside the shell the ray is turned by a field
