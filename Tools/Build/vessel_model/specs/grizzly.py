@@ -53,7 +53,7 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW vessel):
             Space (reach):   the barrel telescopes forward (the sniper's reach), the ear dishes rise;
             Time (rate):     the four thruster pods stretch aft and their bells flare, the hump sweeps back
   takes     rest (first); roar (the jaw drops, the head lifts); swipe (the right claw rakes down and in);
-            dig (the anchor rakes forward, both claws dig down). Single-frame poses, no blend-shape curves.
+            dig (the anchor plunges 1.3 down and rakes forward, both claws dig down). Single-frame poses, no blend-shape curves.
             BufoAnimation drives the hull in code; these document the parts' hinges for the sheet and the studio.
 """
 
@@ -628,7 +628,8 @@ def build(ctx):
     poses = {
         "roar": {"jaw": (28, 0, 0), "head": (-8, 0, 0), "ear.L": (-20, 0, 0), "ear.R": (-20, 0, 0)},
         "swipe": {"claw.R": (30, 0, 34), "shoulder.R": (0, 12, 0)},
-        "dig": {"keel": (-32, 0, 0), "claw.L": (34, 0, 0), "claw.R": (34, 0, 0)},
+        # the anchor PLUNGES as it rakes: dug in, its tines go well below the engines (the Dig In icon is this take)
+        "dig": {"keel": {"rot": (-24, 0, 0), "loc": (0, 0, -1.3)}, "claw.L": (34, 0, 0), "claw.R": (34, 0, 0)},
     }
     names = ("roar", "swipe", "dig")
     for p in names:
@@ -648,7 +649,7 @@ def build(ctx):
             "pose_expect": {
                 "roar": [("jaw", "z", -1, 0.10)],
                 "swipe": [("claw.R", "x", +1, 0.10)],
-                "dig": [("keel", "y", -1, 0.10), ("claw.L", "z", -1, 0.10)],
+                "dig": [("keel", "z", -1, 0.80), ("claw.L", "z", -1, 0.10)],
             },
             "shapes": ["Charge", "Mass", "Space", "Time"],
             "slots": list(SLOTS),

@@ -47,7 +47,7 @@ claws.
   - **Mass** 5.5 %: the torso and the reactor shell bulk out, and every floating part rides out with them.
   - **Space** 6.8 %: the barrel telescopes forward (the sniper's reach), and the dishes rise.
   - **Time** 7.6 %: the four pods stretch aft, their bells flare, and the reactor shell sweeps back.
-- **Takes**: `rest` (first, the build adds it), `dig` (the anchor rakes forward and the claws dig down), `roar` (the
+- **Takes**: `rest` (first, the build adds it), `dig` (the anchor plunges 1.3 units and rakes forward, and the claws dig down: the Dig In icon is this take), `roar` (the
   jaw drops, the head lifts and the ears tip back), `swipe` (the right claw rakes down and in). These are single-frame
   poses with no blend-shape curves. No code plays them yet.
 - **Budget**: 13,920 triangles, 7,028 vertices (the convention's ceiling is 14k).
@@ -97,6 +97,15 @@ elements now show on the hull for the first time.
 | 3 | bear from front and side; stern port smaller; the domain on the pauldrons, paws, jaw and flank showed stair edges | a deeper, blunter muzzle; a dark stern recess round a small ember port; fewer stations |
 | 4 | clean domain edges | the blaze, pauldron caps and knuckle plates became CONFORMAL plates (`offset_shell`) on hairline seams, the Orca's lesson |
 | 5 | 15 / 15 parts float; 13.9k tris | thinner lofts; the ear dishes lifted until clear of the brow, by measurement |
+
+## Supporting resources
+
+| resource | where | made by |
+|---|---|---|
+| class card, inactive, silhouette, squad and hangar preview images | `Assets/_Graphics/CardImages/Grizzly*.png`, `Design Assests/Hangar/Grizzly_Hangar_Preview.png`, wired into `SO_Class_Grizzly` (the legacy BUFO icons retired) | `vessel_model/render_cards.py Grizzly` |
+| the four ability-row icons (Dig In, Weapon Systems, Charged Cannon, Rush) | `Assets/_Graphics/Icons/AbilityIcons/Grizzly/`, bound in the embedded GrizzlyHUD in place of four `*-PLACEHOLDER.png` sprites; sheet `Docs/Icons/sheets/grizzly.png` | `icon_kit/author.py grizzly` (`icon_kit/specs/grizzly.py`) |
+| Hangar list card art | waits on the roster: the Grizzly is not in `SO_Classlist_Classes` (the Hangar list), so `author_hangar_card_art.py` (which has its sheet) makes no card until it is added there | `author_hangar_card_art.py` |
+| crystal hull fusion bakes, the codex's Vessels variant image | Editor-only bakers | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 
 ## Gates
 
