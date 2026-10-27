@@ -1,0 +1,651 @@
+{
+    "schemaVersion": 1,
+    "reportId": "0f85a7f3b7a6",
+    "timestamp": "2026-10-27T20:33:07.0076786Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "System Product Name (ASUS)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/new-session-76hnyc",
+    "gitCommitHash": "b074cea9ae",
+    "trigger": "Boot - Authentication -> Menu_Main",
+    "loadKind": "boot",
+    "completionReason": "Menu shown - the splash fades",
+    "interrupted": false,
+    "sceneFrom": "Authentication",
+    "sceneTo": "Menu_Main",
+    "gameMode": "",
+    "intensity": 0,
+    "totalPlayers": 0,
+    "humanPlayers": 0,
+    "aiBackfill": 0,
+    "isMultiplayer": false,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 10874.15625,
+    "visualReadyMs": 6444.9677734375,
+    "waitMs": 2400.626953125,
+    "humanWaitMs": 0.0,
+    "workMs": 8473.529296875,
+    "unattributedMs": 5524.515625,
+    "framesDuringLoad": 118,
+    "avgFpsDuringLoad": 10.85141658782959,
+    "worstFrameMs": 3622.60107421875,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4124.99072265625,
+            "endMs": 5872.1728515625,
+            "durationMs": 1747.18212890625,
+            "exclusiveMs": 1.23583984375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": 0,
+            "depth": 1,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4126.2265625,
+            "endMs": 6760.52783203125,
+            "durationMs": 2634.30126953125,
+            "exclusiveMs": 1979.6259765625,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4466.70166015625,
+            "endMs": 4516.4619140625,
+            "durationMs": 49.76025390625,
+            "exclusiveMs": 49.76025390625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4516.49267578125,
+            "endMs": 4521.7236328125,
+            "durationMs": 5.23095703125,
+            "exclusiveMs": 5.23095703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5895.26904296875,
+            "endMs": 5982.54248046875,
+            "durationMs": 87.2734375,
+            "exclusiveMs": 84.50830078125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 4,
+            "depth": 3,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 5934.59423828125,
+            "endMs": 5937.359375,
+            "durationMs": 2.76513671875,
+            "exclusiveMs": 2.76513671875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Pair init - inject + vessel.Initialize (DragonDragsJoin)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 5983.10888671875,
+            "endMs": 6444.755859375,
+            "durationMs": 461.64697265625,
+            "exclusiveMs": 461.64697265625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 6451.7958984375,
+            "endMs": 6491.06787109375,
+            "durationMs": 39.27197265625,
+            "exclusiveMs": 39.27197265625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 1,
+            "depth": 2,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 6492.21142578125,
+            "endMs": 6501.43603515625,
+            "durationMs": 9.224609375,
+            "exclusiveMs": 9.224609375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 1,
+            "depth": 2,
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 6758.2607421875,
+            "endMs": 7178.02587890625,
+            "durationMs": 419.76513671875,
+            "exclusiveMs": 419.76513671875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell environment spawn (cell 0, SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 7634.650390625,
+            "endMs": 7656.21044921875,
+            "durationMs": 21.56005859375,
+            "exclusiveMs": 1.4228515625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 10,
+            "depth": 1,
+            "label": "Spawnable node: SpawnableGarland (SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 7636.0732421875,
+            "endMs": 7655.00830078125,
+            "durationMs": 18.93505859375,
+            "exclusiveMs": 4.60693359375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 11,
+            "depth": 2,
+            "label": "Prism layout bake: SpawnableGarland",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 7637.8544921875,
+            "endMs": 7645.0205078125,
+            "durationMs": 7.166015625,
+            "exclusiveMs": 7.166015625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 11,
+            "depth": 2,
+            "label": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 7647.84619140625,
+            "endMs": 8880.7412109375,
+            "durationMs": 1232.89501953125,
+            "exclusiveMs": 1232.89501953125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 8897.89453125,
+            "endMs": 9948.4091796875,
+            "durationMs": 1050.5146484375,
+            "exclusiveMs": 1050.5146484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 5524.515625,
+            "percent": 50.80408477783203,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 2400.626953125,
+            "percent": 22.07644271850586,
+            "spanCount": 3,
+            "waitMs": 2400.626953125
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 2360.8212890625,
+            "percent": 21.710386276245118,
+            "spanCount": 8,
+            "waitMs": 0.0
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 546.1552734375,
+            "percent": 5.022507190704346,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 39.27197265625,
+            "percent": 0.3611496090888977,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 2.76513671875,
+            "percent": 0.025428516790270807,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 2,
+            "totalMs": 4381.4833984375,
+            "exclusiveMs": 1980.86181640625,
+            "maxSingleMs": 2634.30126953125,
+            "isWait": true
+        },
+        {
+            "label": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1232.89501953125,
+            "exclusiveMs": 1232.89501953125,
+            "maxSingleMs": 1232.89501953125,
+            "isWait": false
+        },
+        {
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1050.5146484375,
+            "exclusiveMs": 1050.5146484375,
+            "maxSingleMs": 1050.5146484375,
+            "isWait": false
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (DragonDragsJoin)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 461.64697265625,
+            "exclusiveMs": 461.64697265625,
+            "maxSingleMs": 461.64697265625,
+            "isWait": false
+        },
+        {
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 419.76513671875,
+            "exclusiveMs": 419.76513671875,
+            "maxSingleMs": 419.76513671875,
+            "isWait": true
+        },
+        {
+            "label": "Vessel instantiate+inject+spawn (Squirrel)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 87.2734375,
+            "exclusiveMs": 84.50830078125,
+            "maxSingleMs": 87.2734375,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 49.76025390625,
+            "exclusiveMs": 49.76025390625,
+            "maxSingleMs": 49.76025390625,
+            "isWait": false
+        },
+        {
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 1,
+            "totalMs": 39.27197265625,
+            "exclusiveMs": 39.27197265625,
+            "maxSingleMs": 39.27197265625,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 9.224609375,
+            "exclusiveMs": 9.224609375,
+            "maxSingleMs": 9.224609375,
+            "isWait": false
+        },
+        {
+            "label": "Prism layout bake: SpawnableGarland",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 7.166015625,
+            "exclusiveMs": 7.166015625,
+            "maxSingleMs": 7.166015625,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 5.23095703125,
+            "exclusiveMs": 5.23095703125,
+            "maxSingleMs": 5.23095703125,
+            "isWait": false
+        },
+        {
+            "label": "Spawnable node: SpawnableGarland (SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 18.93505859375,
+            "exclusiveMs": 4.60693359375,
+            "maxSingleMs": 18.93505859375,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 1,
+            "totalMs": 2.76513671875,
+            "exclusiveMs": 2.76513671875,
+            "maxSingleMs": 2.76513671875,
+            "isWait": false
+        },
+        {
+            "label": "Cell environment spawn (cell 0, SpawnableGarland)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 21.56005859375,
+            "exclusiveMs": 1.4228515625,
+            "maxSingleMs": 21.56005859375,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 6765.51708984375,
+            "durationMs": 3622.60107421875,
+            "during": "preSpawnDelayMs before vessel spawn (200ms)"
+        },
+        {
+            "atMs": 7180.8544921875,
+            "durationMs": 1465.8895263671875,
+            "during": "Pair init - inject + vessel.Initialize (DragonDragsJoin)"
+        },
+        {
+            "atMs": 1257.9825439453125,
+            "durationMs": 1259.1800537109375,
+            "during": "—"
+        },
+        {
+            "atMs": 8653.419921875,
+            "durationMs": 330.8302001953125,
+            "during": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)"
+        },
+        {
+            "atMs": 8771.23046875,
+            "durationMs": 329.2886962890625,
+            "during": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)"
+        },
+        {
+            "atMs": 8127.150390625,
+            "durationMs": 260.4100036621094,
+            "during": "Streamed prism lay (SpawnableGarland::BLOCK, 4259 prisms)"
+        },
+        {
+            "atMs": 1439.5391845703125,
+            "durationMs": 184.95359802246095,
+            "during": "—"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Boot - Authentication -> Menu_Main"
+        },
+        {
+            "atMs": 13.135100364685059,
+            "label": "Netcode scene load begins: Menu_Main"
+        },
+        {
+            "atMs": 4099.3701171875,
+            "label": "Unity scene loaded: Menu_Main (Single)"
+        },
+        {
+            "atMs": 4135.8544921875,
+            "label": "Netcode scene load complete: Menu_Main (client 0)"
+        },
+        {
+            "atMs": 4141.2490234375,
+            "label": "Netcode scene load completed on ALL clients: Menu_Main"
+        },
+        {
+            "atMs": 6444.97021484375,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 6505.6201171875,
+            "label": "Flora/fauna spawner started (cell 0, RandomLifeSpawner)"
+        }
+    ],
+    "counters": [
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 10
+        },
+        {
+            "name": "Vessels spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Crystals spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Prisms reused from the environment pool",
+            "value": 0
+        },
+        {
+            "name": "Prisms cloned by InstantiateAsync",
+            "value": 4259
+        },
+        {
+            "name": "Frames an async clone batch waited to integrate",
+            "value": 16
+        },
+        {
+            "name": "Prisms laid during load",
+            "value": 4259
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 4269
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism clone: InstantiateAsync batch, call to integrated (wall time)",
+            "count": 3,
+            "totalMs": 845.4515991210938,
+            "maxSingleMs": 427.1011962890625
+        },
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 4269,
+            "totalMs": 704.2667846679688,
+            "maxSingleMs": 103.1531982421875
+        },
+        {
+            "label": "Prism lay: Initialize (reset + grow coroutine start)",
+            "count": 4259,
+            "totalMs": 78.18669891357422,
+            "maxSingleMs": 4.254199981689453
+        },
+        {
+            "label": "Prism lay: team + pose",
+            "count": 4259,
+            "totalMs": 77.78700256347656,
+            "maxSingleMs": 2.6624999046325685
+        },
+        {
+            "label": "Prism lay: kind + trail.Add",
+            "count": 4259,
+            "totalMs": 24.21940040588379,
+            "maxSingleMs": 7.875999927520752
+        },
+        {
+            "label": "Prism lay: TargetScale (scale-manager registration)",
+            "count": 4259,
+            "totalMs": 8.910200119018555,
+            "maxSingleMs": 0.2930999994277954
+        }
+    ],
+    "errors": [
+        {
+            "timeSeconds": 5.7042717933654789,
+            "type": "Error",
+            "message": "[WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short…"
+        }
+    ],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "2.4s (22%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 3.6s during \"preSpawnDelayMs before vessel spawn (200ms)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "unattributed",
+            "severity": 0,
+            "title": "A large share of the load is unattributed",
+            "finding": "5.5s (51%) had no active span.",
+            "fixAdvice": "Add LoadInsights.Measure(...) spans around the code that runs there (check the stalls list and timeline gaps for where).",
+            "matchedMarker": ""
+        },
+        {
+            "id": "errors-during-load",
+            "severity": 1,
+            "title": "Errors fired during the load",
+            "finding": "1 error(s)/exception(s) during load — failures often add retry waits.",
+            "fixAdvice": "Fix the errors first; they may be the hidden cause of the slow path.",
+            "matchedMarker": ""
+        }
+    ]
+}
