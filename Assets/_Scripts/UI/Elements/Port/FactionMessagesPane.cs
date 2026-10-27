@@ -127,7 +127,7 @@ namespace CosmicShore.UI
         readonly List<FactionMessageRow> _rows = new();
         FactionChatLog _log;
         FeedState _state = FeedState.Loading;
-        bool _shown, _joined, _connecting, _sending;
+        bool _shown, _joined, _connecting, _sending, _countingDown, _refocus;
         float _retryAt = -1f, _toastUntil = -1f, _clockAt;
         DateTime _lastSentUtc = DateTime.MinValue;
         FactionMessageRow _actionsFor;
@@ -147,7 +147,8 @@ namespace CosmicShore.UI
                 input.characterLimit = maxLength;
                 input.richText = false;
                 input.onValueChanged.AddListener(_ => RedrawCount());
-                input.onSubmit.AddListener(_ => Send());
+                // Enter sends and keeps the keyboard in the field, so the next message can be typed straight away.
+                input.onSubmit.AddListener(_ => { _refocus = true; Send(); });
             }
             if (factionNameText) factionNameText.text = factionName;
             KitVisibility.SetShown(actionsGroup, false);
@@ -197,7 +198,8 @@ namespace CosmicShore.UI
             {
                 _clockAt = now + 1f;
                 RedrawTimes();
-                if (_lastSentUtc != DateTime.MinValue) RedrawHint(FactionSendRefusal.None, Wait());
+                // Only the "next message in N s" countdown ticks; a refusal line stays until the player acts.
+                if (_countingDown) RedrawHint(FactionSendRefusal.None, Wait());
             }
 
             var pad = Gamepad.current;
@@ -322,13 +324,19 @@ namespace CosmicShore.UI
         {
             if (!_shown || _sending || !input) return;
             string text = FactionChatRules.Clean(input.text);
-            if (string.IsNullOrEmpty(text)) return;
+            if (string.IsNullOrEmpty(text))
+            {
+                _refocus = false;
+                return;
+            }
             var refusal = _state != FeedState.Ready
                 ? FactionSendRefusal.Offline
                 : FactionChatRules.Check(text, maxLength, _lastSentUtc, DateTime.UtcNow, minIntervalSeconds, CanPost);
             if (refusal != FactionSendRefusal.None)
             {
                 RedrawHint(refusal, Wait());
+                if (_refocus) input.ActivateInputField();
+                _refocus = false;
                 return;
             }
             SendAsync(text).Forget();
@@ -343,11 +351,14 @@ namespace CosmicShore.UI
             if (!sent)
             {
                 RedrawHint(FactionSendRefusal.Offline, 0);
+                _refocus = false;
                 return;
             }
             _lastSentUtc = DateTime.UtcNow;
             input.text = string.Empty;
             RedrawHint(FactionSendRefusal.None, Wait());
+            if (_refocus) input.ActivateInputField();
+            _refocus = false;
         }
 
         void RedrawCount()
@@ -371,6 +382,7 @@ namespace CosmicShore.UI
                               : TemplateText.Fill(readyHint, "faction", factionName),
             };
             hintText.text = line;
+            _countingDown = refusal == FactionSendRefusal.None && wait > 0;
             // A problem reads in Danger; everything else is quiet information (Docs/UI_COLOR_RULES.md).
             bool problem = refusal is FactionSendRefusal.TooLong or FactionSendRefusal.TooSoon or FactionSendRefusal.Offline;
             hintText.color = UITheme.Resolve(theme, problem ? UIColorToken.Danger : UIColorToken.NeutralLightest);

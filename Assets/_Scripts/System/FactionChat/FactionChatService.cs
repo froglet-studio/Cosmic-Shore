@@ -146,8 +146,10 @@ namespace CosmicShore.Core
         {
             FactionChatRules.DecodeMetadata(m.Metadata, out int avatarId, out string name);
             var sent = m.ReceivedTime.Kind == DateTimeKind.Local ? m.ReceivedTime.ToUniversalTime() : m.ReceivedTime;
+            // A history read may not mark the player's own messages, so the sender id is compared too.
+            bool self = m.FromSelf || (AuthenticationService.Instance.IsSignedIn && m.SenderPlayerId == AuthenticationService.Instance.PlayerId);
             return new FactionMessage(m.MessageId, m.SenderPlayerId, string.IsNullOrEmpty(name) ? m.SenderDisplayName : name,
-                                      avatarId, FactionChatRules.Clean(m.MessageText), sent, m.FromSelf);
+                                      avatarId, FactionChatRules.Clean(m.MessageText), sent, self);
         }
     }
 }
