@@ -127,15 +127,42 @@
     what: 'RT: the tunnel ripples open from its centre.',
     how: 'a rising filtered-noise swish over a sine sweep 220 to 880 Hz',
     fn: function (t, out, P) { noise(t, P.len, out, 0.5, 'bandpass', 500 * P.pitch, 3200 * P.pitch, 1.4, 0.05); osc('sine', 220 * P.pitch, 880 * P.pitch, t, P.len, out, 0.25, 0.04); } });
-  def('rideRush', { label: 'Ride rush', group: 'Wormhole', loop: true, len: 1,
-    what: 'Riding a tunnel: wind that rises toward the throat and falls to the way out.',
-    how: 'band-passed noise; the page drives its centre with the ride speed',
+  // Yash, 2026-10-28: the first ride rush (band-passed noise up to 3 kHz) "is hurting": it is now bass all the way
+  // through, with a sudden high glint only now and then.
+  def('rideRush', { label: 'Ride rush (inside the tunnel)', group: 'Wormhole', loop: true, len: 1,
+    what: 'Riding a tunnel or the labyrinth: a deep bass drone and rumble that swells with the ride speed, and now and then a sudden short high glint (rare: about one every 3-7 s; Length spaces them further apart).',
+    how: 'a sub sine (42 Hz) and its fifth, low-passed noise rumble under 220 Hz, and seeded high sine glints 3-6 kHz',
     loopFn: function (out, P) {
-      var src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-      src.buffer = noiseBuf; src.loop = true; f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.value = 600 * P.pitch;
-      g.gain.value = 0.35; src.connect(f); f.connect(g); g.connect(out); src.start();
-      return { set: function (x) { f.frequency.setTargetAtTime((400 + 2600 * x) * P.pitch, ctx.currentTime, 0.08); g.gain.setTargetAtTime(0.15 + 0.35 * x, ctx.currentTime, 0.08); },
-               stop: function () { src.stop(); } };
+      var t = ctx.currentTime;
+      var sub = ctx.createOscillator(), fifth = ctx.createOscillator(), sg = ctx.createGain();
+      sub.type = 'sine'; fifth.type = 'triangle';
+      sub.frequency.value = 42 * P.pitch; fifth.frequency.value = 63 * P.pitch;
+      sg.gain.value = 0.28; sub.connect(sg); fifth.connect(sg); sg.connect(out);
+      var src = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), ng = ctx.createGain();
+      src.buffer = noiseBuf; src.loop = true; lp.type = 'lowpass'; lp.Q.value = 0.9; lp.frequency.value = 120 * P.pitch;
+      ng.gain.value = 0.25; src.connect(lp); lp.connect(ng); ng.connect(out);
+      // a slow throb, so the bass moves like water in a pipe
+      var lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.7; lg.gain.value = 0.07;
+      lfo.connect(lg); lg.connect(sg.gain);
+      sub.start(t); fifth.start(t); src.start(t); lfo.start(t);
+      var rs = 917, next = t + 1.5;
+      function rnd() { rs = (rs * 1664525 + 1013904223) >>> 0; return rs / 4294967296; }
+      return {
+        set: function (x) {
+          var now = ctx.currentTime;
+          sub.frequency.setTargetAtTime((42 + 16 * x) * P.pitch, now, 0.15);
+          fifth.frequency.setTargetAtTime((63 + 24 * x) * P.pitch, now, 0.15);
+          lp.frequency.setTargetAtTime((120 + 100 * x) * P.pitch, now, 0.15);
+          sg.gain.setTargetAtTime(0.22 + 0.14 * x, now, 0.15);
+          ng.gain.setTargetAtTime(0.17 + 0.2 * x, now, 0.15);
+          if (now >= next) {   // the rare treble glint: short, high, quiet, never twice close together
+            var f = (3000 + 3000 * rnd()) * P.pitch;
+            osc('sine', f, f * (rnd() < 0.5 ? 1.25 : 0.8), now, 0.07, out, 0.05, 0.002, 0.05);
+            next = now + (3 + 4 * rnd()) * Math.max(0.4, P.len);
+          }
+        },
+        stop: function () { sub.stop(); fifth.stop(); src.stop(); lfo.stop(); },
+      };
     } });
   def('exitPop', { label: 'Out of the tunnel', group: 'Wormhole', len: 0.3,
     what: 'Leaving the far mouth.',
@@ -300,7 +327,7 @@
       var b = bus(opts, 0.0001, c.tone);
       b.gain.gain.setValueAtTime(0.0001, ctx.currentTime);
       b.gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, c.vol), ctx.currentTime + 0.08);   // fade in
-      L = loops[id] = { name: name, node: r.loopFn(b.input, { pitch: c.pitch, len: 1 }), fade: b.gain };
+      L = loops[id] = { name: name, node: r.loopFn(b.input, { pitch: c.pitch, len: c.len }), fade: b.gain };
     }
     if (L.node && L.node.set) L.node.set(Math.max(0, Math.min(1, x || 0)));
   }

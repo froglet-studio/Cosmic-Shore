@@ -421,7 +421,7 @@
       </div>
 
       <details class="card" id="grp-shape" open><summary>Wormhole · shape <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. It is a <b>straight shaft, then a bend</b> - an umbrella handle: <b>LT</b> sets how long the shaft runs before it bends (<i>shaftMin</i> released to <i>shaftMax</i> squeezed), and the <b>right stick</b> sets which way it bends and how far, up to <i>bendMaxDegrees</i>, round a bend of radius <i>bendRadius</i>. <b>RT</b> confirms. Its size is fixed: a <i>throatDiameter</i> throat between <i>mouthDiameter</i> mouths, however it is shaped (set here, never by the sticks).</p>
+        <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. It is a <b>straight shaft, then a bend</b> - an umbrella handle: <b>LT</b> sets how long the shaft runs before it bends (<i>shaftMin</i> released to <i>shaftMax</i> squeezed), and the <b>right stick</b> sets which way it bends and how far, up to <i>bendMaxDegrees</i>, round a bend of radius <i>bendRadius</i>. <b>RT</b> confirms. Its size is fixed: a <i>throatDiameter</i> throat between <i>mouthDiameter</i> mouths, however it is shaped (set here, never by the sticks). <b>Round 17: your Mass sizes the trunk</b> (the HUD shows it): your Mass level plus <i>massPerCrystal</i> for every crystal you take this race, up to 10. At Mass 0 LT reaches only <i>massLengthAtZero</i> of its range and the trunk is <i>massDiameterAtZero</i> as wide; at 10, all of it - more Mass, a bigger trunk, further to go. Your last trunk's size then sizes the roots of your next omnicrystal.</p>
         <div class="btns"><button class="pick" type="button" data-reset="shape">Reset</button></div></details>
       <details class="card" id="grp-ride" open><summary>Wormhole · ride <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
         <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> is your speed before the tunnel times three multipliers: <i>rideEntryMultiplier</i> going in (1 = no change), rising to <i>rideMidMultiplier</i> at the throat and easing to <i>rideExitMultiplier</i> at the way out - a little boost you come out with, on the tunnel's last heading, before you ease back to cruise. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
@@ -435,8 +435,8 @@
       <details class="card" id="grp-tree" open><summary>Wormhole · trunk <small>MeerkatWormholeConfig · its outside, for a third eye</small></summary><div class="rows"></div>
         <p class="src"><b>The tunnel's outer layer is a dead tree</b>, for everyone (its rider too). Pull RT and the tree <b>forms with the tunnel</b>, rippling out of its centre to both mouths; each <b>bare branch grows</b> out of the trunk's top half the moment the tunnel reaches its root. The way in is the trunk's <b>top cut</b> and the way out its <b>bottom cut</b>, the mouths in the cut faces among the <b>tree rings</b>. It is the <b>wall's own glass and bent space</b> (see-through in the middle, bright at its outline, the world behind it bent and flowing like water), so the tunnel shows inside it. It grows with the tunnel (<i>throatDiameterMax</i>, <i>mouthDiameterMax</i>).</p>
         <div class="btns"><button class="pick" type="button" data-reset="tree">Reset</button></div></details>
-      <details class="card" id="grp-omni" open><summary>Omnicrystal · the labyrinth <small>MeerkatWormholeConfig · round 16 proposal</small></summary><div class="rows"></div>
-        <p class="src"><b>The Meerkat's Omnicrystal ability.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and your next <b>RT digs the labyrinth</b> instead of a wormhole: a 3D warren from <b>one source</b> on your nose line, <i>labyrinthBranchPoints</i> forks branching every way, <i>labyrinthOpenings</i> openings spread over <i>labyrinthSpread</i> degrees round it, <i>labyrinthRadius</i> out, as wild as <i>labyrinthRandomness</i> - a water-slide park inside the soil. While it is armed your reticle is the labyrinth (in gold). You <b>slide</b> in, faster at every fork (<i>forkBoost</i>); at each fork <b>lean the left stick toward a channel</b> - left, right, up, down - to take it (the channels are marked <i>forkHintSeconds</i> before; no lean: the straightest). Out of an opening you fly on along it. Every labyrinth is new.</p>
+      <details class="card" id="grp-omni" open><summary>Omnicrystal · the roots <small>MeerkatWormholeConfig · rounds 16-17 proposal</small></summary><div class="rows"></div>
+        <p class="src"><b>The Meerkat's Omnicrystal ability.</b> Fly through an <b>omnicrystal</b> (gold, on the course line; <i>omniCount</i> of them) and <b>roots grow at once</b> from where you took it, spreading <b>every way</b> in 3D (<i>labyrinthSpread</i>), and you slide straight into them (<i>omniAtOnce</i>; 0: it arms your next RT instead). <b>Their size is your last trunk's</b>: after the smallest trunk you can dig, <i>labyrinthBranchPointsMin</i> forks, <i>labyrinthOpeningsMin</i> tips and <i>labyrinthRadiusMin</i> of reach; after the biggest a full Mass can dig, the <i>...Max</i> numbers - a very large network. They look like <b>roots</b>: tapering to <i>rootTip</i> at the tips, wandering (<i>rootGnarl</i>), in a faint bark (<i>rootGlass</i>, <i>rootRim</i>, <i>rootGrain</i>), dug through soil. You <b>slide</b>, faster at every fork (<i>forkBoost</i>); at each fork <b>lean the left stick toward a root</b> - left, right, up, down - to take it (marked <i>forkHintSeconds</i> before; no lean: the straightest). Out of a tip you fly on along it.</p>
         <div class="btns"><button class="pick" type="button" id="omniGive" title="Arm the labyrinth now, as if you had flown through an omnicrystal">Give me an omnicrystal</button><button class="pick" type="button" data-reset="omni">Reset</button></div></details>
       <details class="card" id="grp-soil" open><summary>Omnicrystal · the soil <small>MeerkatWormholeConfig · everyone's, the rider's too</small></summary><div class="rows"></div>
         <p class="src"><b>The labyrinth is dug through soil.</b> Every channel has a <b>wall of earth</b> round it (<i>soilWall</i> x its radius), see-through face-on and bright where it turns away, in <b>layered strata</b> - loam, clay, sand and stone (<i>soilStrata</i>, <i>soilStrataThickness</i>) - with grain and grit (<i>soilGrain</i>). <b>Stones</b> lie in the soil round the walls (<i>soilPebbles</i>) and <b>roots</b> hang onto the channels (<i>soilRoots</i>). It is dug out with the labyrinth and falls in with it. Riding, the strata stream past and the other channels show through the walls.</p>
@@ -548,6 +548,11 @@
     // fixed mouthDiameter mouths (round 10, Yash: "options to control the diameter of the entry exit pair ... and the inner
     // diameter ... configurable at edit time ... the entrance and the exit of the wormhole need to be a little bit bigger":
     // diameters now, the mouths 20 -> 26); LT on a key or touch reaches a full squeeze in keyRampSeconds
+    // round 17 (Yash: "our trunk size will be determined by ... our mass ... it is more mass we have, we create bigger trunks,
+    // we move farther distance"): your Mass (massLevel, plus massPerCrystal for every crystal you take this race, up to 10)
+    // sets how much of the LT range you can dig (massLengthAtZero of it at Mass 0, all of it at 10) and how wide the trunk
+    // is (massDiameterAtZero x at Mass 0, full at 10)
+    massPerCrystal: 0.5, massLengthAtZero: 0.3, massDiameterAtZero: 0.6,
     reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
     // round 12: the size at the LONGEST tunnel (the two above are the shortest's); lengths between grow in between
     throatDiameterMax: 18, mouthDiameterMax: 56,
@@ -585,22 +590,33 @@
     // root; it is the wall's glass and bent space (trunkWarp), flowing like water
     // round 15 (Yash: "make it look more like a big branch through which this meerkat is traveling"): a thicker, gnarled
     // limb with bark grain (trunkGrain, trunkGrainLines fissures round it) and its side branches all along it
+    // round 17 (Yash: "the trunks look need to be pretty subtle, because there are gonna be few many trunks on the scene at
+    // once"): a fainter glass, rim, grain and warp, and fewer branches
     trunkVisibility: 1, trunkTop: 1.5, trunkBase: 1.9, trunkBark: 0.22, trunkRidges: 16, trunkGnarl: 0.14,
-    trunkGlass: 0.04, trunkRim: 0.55, trunkFresnel: 2.5, trunkRings: 7, trunkWarp: 0.25, trunkGrain: 0.5, trunkGrainLines: 22,
-    branchCount: 8, branchLength: 2.4, branchThickness: 0.28, branchUp: 28, branchZone: 0.85, branchSymmetry: 0.45, branchForks: 2, branchGrowSeconds: 0.5,
+    trunkGlass: 0.012, trunkRim: 0.28, trunkFresnel: 3, trunkRings: 7, trunkWarp: 0.1, trunkGrain: 0.22, trunkGrainLines: 22,
+    branchCount: 6, branchLength: 2.4, branchThickness: 0.28, branchUp: 28, branchZone: 0.85, branchSymmetry: 0.45, branchForks: 2, branchGrowSeconds: 0.5,
     // round 16 (Yash: "once it collects the Omnicrystal, it's going to rise up to a three-dimensional branching from a single
     // source ... 5 to 10 branch points with multiple openings ... openings all around ... Wackadoodle labyrinth water slide
     // park inside soil"): the OMNICRYSTAL ability. omniCount omnicrystals sit on the course line; collect one and your next RT
-    // digs the LABYRINTH: one source on your nose line, labyrinthBranchPoints forks in 3D, labyrinthOpenings openings spread
-    // over labyrinthSpread degrees round its centre, labyrinthRadius u out, labyrinthRandomness of jitter; channels
+    // digs the LABYRINTH: one source on your nose line, labyrinthBranchPointsMax forks in 3D, labyrinthOpeningsMax openings spread
+    // over labyrinthSpread degrees round its centre, labyrinthRadiusMax u out, labyrinthRandomness of jitter; channels
     // labyrinthDiameter wide flaring to labyrinthMouthDiameter, dug rough (labyrinthRoughness), digging out from the source
     // over labyrinthFormSeconds; drawn as rings every labyrinthRingSpacing u of labyrinthRingSides spindles and labyrinthRibs
     // ribs. You slide (the ride multipliers, plus forkBoost a fork); at each fork the left stick leaned past forkLean toward a
     // channel takes it (called out forkHintSeconds before). It is dug through soil (soil*): strata walls, stones, roots.
-    omniOn: 1, omniCount: 3, labyrinthBranchPoints: 8, labyrinthOpenings: 16, labyrinthRadius: 240, labyrinthSpread: 300, labyrinthRandomness: 0.45,
+    // round 17 (Yash: "the bigger the trunk the bigger the network of the branches ... the last trunk size will determine how
+    // big of a network you can get by getting that omnicrystal ... Three-dimensional roots. Spread out any direction from the
+    // omnicrystal's position"): with omniAtOnce the omnicrystal grows the ROOTS at once, from where you took it, and you slide
+    // into them (0: it arms your next RT, round 16). Their size follows your last trunk (its length against the longest a
+    // full Mass can dig): forks labyrinthBranchPointsMin..Max, openings labyrinthOpeningsMin..Max, reach labyrinthRadiusMin..Max.
+    // They look like roots: tapering to rootTip x at the tips, gnarled by rootGnarl, a bark skin (rootGlass, rootRim,
+    // rootGrain), the wireframe at labyrinthFrame x the bridge's brightness
+    omniOn: 1, omniAtOnce: 1, omniCount: 3, labyrinthBranchPointsMin: 3, labyrinthBranchPointsMax: 12, labyrinthOpeningsMin: 5, labyrinthOpeningsMax: 30,
+    labyrinthRadiusMin: 90, labyrinthRadiusMax: 420, labyrinthSpread: 360, labyrinthRandomness: 0.45,
+    rootTip: 0.35, rootGnarl: 0.3, rootGlass: 0.015, rootRim: 0.35, rootGrain: 0.35, labyrinthFrame: 0.3,
     labyrinthDiameter: 12, labyrinthMouthDiameter: 22, labyrinthRoughness: 0.18, labyrinthFormSeconds: 0.8,
     labyrinthRingSpacing: 12, labyrinthRingSides: 10, labyrinthRibs: 4, forkBoost: 0.08, forkLean: 0.25, forkHintSeconds: 0.9,
-    soilVisibility: 1, soilWall: 1.5, soilGlass: 0.025, soilRim: 0.45, soilFresnel: 2.2, soilStrata: 0.85, soilStrataThickness: 7,
+    soilVisibility: 0.45, soilWall: 1.5, soilGlass: 0.025, soilRim: 0.45, soilFresnel: 2.2, soilStrata: 0.85, soilStrataThickness: 7,
     soilGrain: 0.55, soilPebbles: 700, soilPebbleSize: 1.3, soilRoots: 30,
     // the AI's wormhole
     aiWormhole: 1, aiStraightMinDistance: 300, aiBentMinDistance: 120, aiShapeSeconds: 0.3, aiTau: 0.3, aiNoise: 0,
@@ -664,6 +680,9 @@
     aiKit: 1, aiHopGain: 1.5,
   };
   const SPEC = [
+    ['shape', 'massPerCrystal', 'Mass: each crystal taken this race adds (levels, up to 10)', 0, 3, 0.1],
+    ['shape', 'massLengthAtZero', 'Mass 0 digs this share of the LT range (Mass 10: all of it)', 0.05, 1, 0.05],
+    ['shape', 'massDiameterAtZero', 'Mass 0 digs this x the diameters (Mass 10: full)', 0.1, 1, 0.05],
     ['shape', 'reticleAhead', 'The reticle rides this far ahead of the nose (u)', 0, 100, 1],
     ['shape', 'bendMaxDegrees', 'Sharpest bend, the right stick fully over (°)', 0, 180, 5],
     ['shape', 'shaftMin', 'The straight shaft before the bend, LT released (u)', 0, 600, 10],
@@ -722,14 +741,24 @@
     ['tree', 'branchForks', '...times each forks', 0, 3, 1],
     ['tree', 'branchGrowSeconds', '...each grows over (s), once the tunnel reaches it', 0.1, 4, 0.05],
     ['omni', 'omniOn', 'The Omnicrystal ability: an omnicrystal arms the labyrinth (0 = off)', 0, 1, 1],
+    ['omni', 'omniAtOnce', 'The omnicrystal grows the roots at once from where you take it (0 = it arms your next RT)', 0, 1, 1],
     ['omni', 'omniCount', 'Omnicrystals on the course (a new course or reset places them)', 0, 12, 1],
-    ['omni', 'labyrinthBranchPoints', 'Labyrinth: forks (branch points)', 1, 16, 1],
-    ['omni', 'labyrinthOpenings', '...openings (ways out)', 2, 48, 1],
-    ['omni', 'labyrinthRadius', '...how far it spreads from its centre (u)', 40, 900, 10],
+    ['omni', 'labyrinthBranchPointsMin', 'Roots: forks after the smallest trunk', 1, 16, 1],
+    ['omni', 'labyrinthBranchPointsMax', '...forks after the biggest trunk', 1, 24, 1],
+    ['omni', 'labyrinthOpeningsMin', '...openings (tips) after the smallest trunk', 2, 48, 1],
+    ['omni', 'labyrinthOpeningsMax', '...openings after the biggest trunk', 2, 72, 1],
+    ['omni', 'labyrinthRadiusMin', '...reach after the smallest trunk (u)', 20, 900, 10],
+    ['omni', 'labyrinthRadiusMax', '...reach after the biggest trunk (u)', 40, 1500, 10],
     ['omni', 'labyrinthSpread', '...its openings spread round it over (°, 360 = all round)', 20, 360, 5],
     ['omni', 'labyrinthRandomness', '...randomness', 0, 1, 0.05],
     ['omni', 'labyrinthDiameter', '...channel diameter (u)', 2, 60, 1],
     ['omni', 'labyrinthMouthDiameter', '...source and opening diameter (u)', 4, 120, 1],
+    ['omni', 'rootTip', 'Roots taper to (× the channel at the source)', 0.1, 1, 0.05],
+    ['omni', 'rootGnarl', '...gnarled: how much each root wanders', 0, 1, 0.05],
+    ['omni', 'rootGlass', '...their bark face-on', 0, 0.3, 0.005],
+    ['omni', 'rootRim', '...their bark at the silhouette (Fresnel)', 0, 2, 0.05],
+    ['omni', 'rootGrain', '...their bark grain', 0, 1.5, 0.05],
+    ['omni', 'labyrinthFrame', '...their spindle wireframe, once dug (× the bridge\'s brightness)', 0, 2, 0.05],
     ['omni', 'labyrinthRoughness', '...dug rough: the walls\' unevenness', 0, 0.6, 0.01],
     ['omni', 'labyrinthFormSeconds', '...digs itself out from the source over (s)', 0.05, 4, 0.05],
     ['omni', 'labyrinthRingSpacing', '...its wireframe: a ring every (u)', 3, 60, 1],
@@ -1162,7 +1191,11 @@
     for (let i = 0; i < omni.n; i++) {
       if (!omni.alive[i] || omni.home[i].distanceTo(hull.position) > OMNI_PICK) continue;
       omni.alive[i] = 0;
-      if (P.omniOn > 0.5) { ftLive.ab.omni = true; ftLive.ab.omniSeed = (seed * 977 + i * 131 + Math.floor(simT * 10)) >>> 0; }
+      if (P.omniOn > 0.5) {
+        ftLive.ab.omniSeed = (seed * 977 + i * 131 + Math.floor(simT * 10)) >>> 0;
+        if (P.omniAtOnce > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube')) rootsHere(ftLive.ab.omniSeed);   // round 17: at once, from here
+        else ftLive.ab.omni = true;
+      }
       if (raceStats) raceStats.omni = (raceStats.omni || 0) + 1;
       if (!curPilot) omniFlash = 1.8;
     }
@@ -1427,28 +1460,32 @@
   // shape lives on its pair (pr.wh), so every pilot's tunnel warps the view.
   // ab (round 8): this pilot's abilities - when each is ready again (simT), Mass armed, the lookout's end, a Chain Dig asked for
   // kit (round 17): Sentinel mode on or off, Cave-in's cooldown (the Mix), the last soliton ridden (not re-entered at once)
-  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false, omni: false, omniSeed: 1 }, kit: { sentinel: false, readyB: 0, lastRide: null, lastRideT: -9 } }; }
+  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false, omni: false, omniSeed: 1 }, kit: { sentinel: false, readyB: 0, lastRide: null, lastRideT: -9 }, lastTrunk: 0 }; }
   const whA = new V3(), whB = new V3(), whC = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
   // The shape the right stick and LT ask for (round 7): a straight SHAFT, shaftMin with LT released to shaftMax squeezed,
   // then a BEND round bendRadius, as far as the right stick is pushed up to bendMaxDegrees, the way it is pushed. Its size
   // is fixed: throat throatDiameter, mouths mouthDiameter (round 10: diameters; b and M are their radii). Returns the length mouth to mouth (L = S + R theta), the shaft (S),
   // the bend's radius (R), throat (b), mouth (M), turn (rad), how far the stick is pushed 0..1 (fat), and the bend's way in
   // the hull's frame (dx right, dy up).
-  function shapeFor(Pv, lq, sx, sy) {
+  // round 17: your Mass, 0-10 (massLevel plus massPerCrystal a crystal this race), and the share of a full trunk it digs
+  const massOf = (id) => Math.min(10, Math.max(0, P.massLevel + pil(id).crystals * Math.max(0, P.massPerCrystal)));
+  const massK = (id) => massOf(id) / 10;
+  function shapeFor(Pv, lq, sx, sy, mk) {
+    const k = mk == null ? 1 : clamp01(mk), kLen = Pv.massLengthAtZero + (1 - Pv.massLengthAtZero) * k, kDia = Pv.massDiameterAtZero + (1 - Pv.massDiameterAtZero) * k;
     const tx = Math.max(-1, Math.min(1, sx)), ty = Math.max(-1, Math.min(1, sy));
     const mRaw = Math.hypot(tx, ty), m = Math.min(1, mRaw), t = clamp01((m - 0.05) / 0.95);
-    const S = Math.max(0, Pv.shaftMin + (Math.max(Pv.shaftMin, Pv.shaftMax) - Pv.shaftMin) * clamp01(lq));
+    const S = Math.max(0, Pv.shaftMin + (Math.max(Pv.shaftMin, Pv.shaftMax) - Pv.shaftMin) * clamp01(lq) * kLen);
     const theta = Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180 * t, R = Math.max(1, Pv.bendRadius);
     // round 12 (Yash: "the min is for traveling the smallest distance. The max is for traveling the largest distance ... the
     // entire volume of the wormhole will increase"): throat and mouths grow with the tunnel's length, from throatDiameter /
     // mouthDiameter at the shortest tunnel to throatDiameterMax / mouthDiameterMax at the longest the sticks can ask for
     const L = Math.max(10, S + R * theta), Lmin = Math.max(10, Pv.shaftMin), Lmax = Math.max(Lmin + 1, Math.max(Pv.shaftMin, Pv.shaftMax) + R * Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180);
     const grow = clamp01((L - Lmin) / (Lmax - Lmin)), lerpD = (a, z) => a + (Math.max(a, z) - a) * grow;
-    let b = Math.max(0.5, 0.5 * lerpD(Pv.throatDiameter, Pv.throatDiameterMax)), M = Math.max(b, 0.5 * lerpD(Pv.mouthDiameter, Pv.mouthDiameterMax));
-    if (isGM(Pv)) { const a = kitThroat(Pv, L); b = a.b; M = a.M; }   // round 17, the kits: Space sets the surface area (Garrett)
-    return { L, S, R, b, M, theta, fat: t, m, dx: mRaw > 1e-6 ? tx / mRaw : 0, dy: mRaw > 1e-6 ? ty / mRaw : 0 };
+    let b = Math.max(0.5, 0.5 * kDia * lerpD(Pv.throatDiameter, Pv.throatDiameterMax)), M = Math.max(b, 0.5 * kDia * lerpD(Pv.mouthDiameter, Pv.mouthDiameterMax));
+    if (isGM(Pv)) { const a = kitThroat(Pv, L); b = a.b; M = a.M; }   // round 18, the kits: Space sets the surface area (Garrett)
+    return { L, S, R, b, M, theta, fat: t, m, mass: k, size: clamp01((S - Pv.shaftMin) / Math.max(1, Pv.shaftMax - Pv.shaftMin)),   /* round 17: the trunk's size, its shaft against the longest a full Mass digs */ dx: mRaw > 1e-6 ? tx / mRaw : 0, dy: mRaw > 1e-6 ? ty / mRaw : 0 };
   }
-  const whShape = (lq, sx, sy) => shapeFor(P, lq, sx, sy);
+  const whShape = (lq, sx, sy) => shapeFor(P, lq, sx, sy, massK(curPilot));
 
   // How far the centreline has turned at s (round 7): nothing along the shaft, then (s - S) / R round the bend.
   function bendAngle(wh, s) { return wh.theta < 1e-4 ? 0 : Math.max(0, Math.min(wh.theta, (s - wh.S) / wh.R)); }
@@ -1544,8 +1581,8 @@
       whC.addScaledVector(fwd, -whC.dot(fwd)); if (whC.lengthSq() > 1e-8) r.side.copy(whC.normalize()); else r.side.copy(right);
       Object.assign(r, sh); r.s0 = 0; r.s1 = r.L;
       if (ftLive.ab.omni && P.omniOn > 0.5) {   // round 16: an omnicrystal armed: the reticle is the labyrinth RT would dig
-        const key = ftLive.ab.omniSeed + '|' + ['labyrinthBranchPoints', 'labyrinthOpenings', 'labyrinthRadius', 'labyrinthSpread', 'labyrinthRandomness'].map((k) => P[k]).join();
-        if (r.labKey !== key) { r.lay = labLayout(P, ftLive.ab.omniSeed); r.labKey = key; }
+        const key = ftLive.ab.omniSeed + '|' + ftLive.lastTrunk + '|' + LAB_KEYS.map((k) => P[k]).join();
+        if (r.labKey !== key) { r.lay = labLayout(P, ftLive.ab.omniSeed, ftLive.lastTrunk, false); r.labKey = key; }
         r.right = (r.right || new V3()).copy(right); r.up = (r.up || new V3()).copy(up);
         r.net = labBuild(r.lay, r.A, r.t0, right, up);
       } else r.net = null;
@@ -1572,6 +1609,7 @@
     const old = ftLive.gate; if (old && !old.kitRide && !old.pair.wh.held && old.pair.alive && !old.pair.dying && old.pair.wh.phase !== 'collapse' && old.pair.wh.phase !== 'cavein') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }
     basis();
     const vIn = Math.max(1, speed), dive = hull.position.distanceTo(r.A) / vIn;
+    ftLive.lastTrunk = clamp01(r.size || 0);   // round 17: sizes the roots of your next omnicrystal
     const wh = { A: r.A.clone(), t0: r.t0.clone(), side: r.side.clone(), L: r.L, S: r.S, R: r.R, b: r.b, M: r.M, theta: r.theta, fat: r.fat, m: r.m, s0: 0.5 * r.L, s1: 0.5 * r.L, t: 0,
       phase: 'form', grow: 0, formT: Math.min(Math.max(0.05, P.formSeconds), Math.max(0.1, 0.9 * dive)), stay: 0, out: false };   // it ripples out of its centre
     ftLive.retGhost = { view: Object.assign({}, r), a: 1, formT: wh.formT };   // the reticle fades as the tunnel forms
@@ -2791,7 +2829,7 @@
     if (whFill(nFill, wh, A, base, brW.clone().lerp(base, 0.4), P.bridgeGlass)) nFill++;
     if (wh.chan) {   // round 16: a labyrinth channel; the one you would take at the next fork is lit
       const g = ftLive.gate, next = g && g.state === 'tube' && g.net === pr.net && (g.pair.kids || []).length > 1 ? forkPick(g) : null;
-      drawChanFrame(wh, A * (pr === next ? 3 : 1), col, BR_CAM_NEAR, BR_CAM_FULL, 1);
+      drawChanFrame(wh, A * Math.max(0, P.labyrinthFrame) * (pr === next ? 3 : 1), col, BR_CAM_NEAR, BR_CAM_FULL, 1);
     } else drawFrame(wh, A, col, BR_CAM_NEAR, BR_CAM_FULL);
     return nFill;
   }
@@ -3038,20 +3076,22 @@
   // single source, it's going to have 5 to 10 branch points with multiple openings, lots of openings ... openings all
   // around ... a pretty big branching network ... Wackadoodle labyrinth water slide park inside soil." Collect an
   // omnicrystal (omniPerLap on the course line) and your next RT digs the labyrinth instead of a wormhole: one entrance on
-  // your nose line (the source), labyrinthBranchPoints forks branching in 3D, labyrinthOpenings openings spread over
-  // labyrinthSpread degrees round its centre, labyrinthRadius u out, jittered by labyrinthRandomness. You slide in; at
+  // your nose line (the source), labyrinthBranchPointsMax forks branching in 3D, labyrinthOpeningsMax openings spread over
+  // labyrinthSpread degrees round its centre, labyrinthRadiusMax u out, jittered by labyrinthRandomness. You slide in; at
   // each fork the left stick, leaned toward a channel (past forkLean), takes it (no lean: the straightest). Every channel
   // is its own tunnel (a pair with its own wh on a sampled path, wh.poly), dug through soil (the soil, below).
+  const LAB_KEYS = ['labyrinthBranchPointsMin', 'labyrinthBranchPointsMax', 'labyrinthOpeningsMin', 'labyrinthOpeningsMax', 'labyrinthRadiusMin', 'labyrinthRadiusMax', 'labyrinthSpread', 'labyrinthRandomness'];
   const iclamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v)));
-  // The labyrinth in the hull's own frame (x right, y up, z ahead), from a seed: a random tree of labyrinthBranchPoints
+  // The labyrinth in the hull's own frame (x right, y up, z ahead), from a seed: a random tree of labyrinthBranchPointsMax
   // forks (each leaf grown in turn, shallow ones first, until there are that many), its extra openings added to random
-  // forks (up to 4 channels a fork) until there are labyrinthOpenings leaves; the openings' directions from the centre
+  // forks (up to 4 channels a fork) until there are labyrinthOpeningsMax leaves; the openings' directions from the centre
   // (Fibonacci over the spread cone, jittered) dealt to the subtrees by splitting along the long axis, so neighbours share
   // a branch; each fork sits toward its openings' mean direction, deeper forks further out. depth = the path length from
   // the source (the burrow digs out along it).
-  function labLayout(Pv, seed) {
-    const R = rng(seed), Rad = Math.max(40, Pv.labyrinthRadius), B = iclamp(Pv.labyrinthBranchPoints, 1, 16);
-    const M = Math.max(B + 1, iclamp(Pv.labyrinthOpenings, 2, 48)), half = Math.min(180, Math.max(10, Pv.labyrinthSpread / 2)) * Math.PI / 180, rnd = clamp01(Pv.labyrinthRandomness);
+  function labLayout(Pv, seed, size, atOnce) {
+    const k = clamp01(size || 0), lerpK = (a, z) => a + (z - a) * k;
+    const R = rng(seed), Rad = Math.max(20, lerpK(Pv.labyrinthRadiusMin, Pv.labyrinthRadiusMax)), B = iclamp(lerpK(Pv.labyrinthBranchPointsMin, Pv.labyrinthBranchPointsMax), 1, 24);
+    const M = Math.max(B + 1, iclamp(lerpK(Pv.labyrinthOpeningsMin, Pv.labyrinthOpeningsMax), 2, 72)), half = Math.min(180, Math.max(10, Pv.labyrinthSpread / 2)) * Math.PI / 180, rnd = clamp01(Pv.labyrinthRandomness);
     const nodes = [{ parent: -1, kids: [], depth: 0 }];
     const add = (par) => { nodes.push({ parent: par, kids: [], depth: nodes[par].depth + 1 }); nodes[par].kids.push(nodes.length - 1); };
     let forks = 0; const grow = (i) => { add(i); add(i); forks++; };
@@ -3083,12 +3123,12 @@
       for (const k of n.kids) { const c = nLeaves(k); assign(k, sorted.slice(at, at + c)); at += c; }
     };
     assign(0, dirs);
-    const maxD = Math.max(...nodes.map((n) => n.depth)), C = new V3(0, 0, Rad * 0.8);
+    const maxD = Math.max(...nodes.map((n) => n.depth)), C = new V3(0, 0, Rad * (atOnce ? 0.2 : 0.8));   // at once: spreading every way from where you are
     nodes.forEach((n) => {
       const mean = n.dirs.reduce((a, p) => a.add(p), new V3());
       const m = mean.length() > 1e-6 ? mean.normalize() : new V3(0, 0, 1);
       if (!n.kids.length) { n.p = C.clone().addScaledVector(n.dir, Rad); return; }
-      if (!n.depth) { n.p = new V3(0, 0, Rad * 0.3); return; }   // the first fork, soon after the source
+      if (!n.depth) { n.p = new V3(0, 0, Rad * (atOnce ? 0.15 : 0.3)); return; }   // the first fork, soon after the source
       const f = 0.15 + 0.6 * n.depth / (maxD + 1);
       n.p = C.clone().addScaledVector(m, Rad * f).add(new V3(R() - 0.5, R() - 0.5, R() - 0.5).multiplyScalar(Rad * 0.3 * rnd));
     });
@@ -3102,16 +3142,18 @@
     walk(0);
     edges.forEach((e) => { e.kids = edges.map((k, j) => (k.ai === e.bi ? j : -1)).filter((j) => j >= 0); e.za = e.ai < 0 ? 0 : e.a.pd; e.zb = e.b.pd; });
     const D = Math.max(...edges.map((e) => e.zb));
-    return { D, nodes, edges, entry: 0, forks, openings: leaves, src };
+    return { D, nodes, edges, entry: 0, forks, openings: leaves, src, Rad, size: k };
   }
   // A channel's centreline: a Hermite curve from a (heading ta) to b (heading tb), sampled evenly by length (NS points)
   // with a frame carried along it (no twist).
   const NS = 26;
-  function chanPath(pa, ta, pb, tb) {
+  function chanPath(pa, ta, pb, tb, gnarl, gseed) {
     const d = pa.distanceTo(pb), raw = [], len = [0];
+    const ch = new V3().subVectors(pb, pa).normalize(), u1 = new V3().crossVectors(ch, Math.abs(ch.y) < 0.9 ? Y_UP : new V3(1, 0, 0)).normalize(), u2 = new V3().crossVectors(ch, u1), gs = gseed || 0, ga = (gnarl || 0) * d * 0.12;
     for (let i = 0; i <= 48; i++) {
       const t = i / 48, t2 = t * t, t3 = t2 * t;
       raw.push(new V3().copy(pa).multiplyScalar(2 * t3 - 3 * t2 + 1).addScaledVector(ta, d * (t3 - 2 * t2 + t)).addScaledVector(pb, -2 * t3 + 3 * t2).addScaledVector(tb, d * (t3 - t2)));
+      if (ga > 0) { const env = Math.sin(Math.PI * t); raw[i].addScaledVector(u1, ga * env * Math.sin(t * 9.4 + gs)).addScaledVector(u2, ga * env * Math.sin(t * 6.1 + gs * 1.7)); }   // round 17: a root wanders
       if (i) len.push(len[i - 1] + raw[i].distanceTo(raw[i - 1]));
     }
     const L = len[48], Pp = [], T = [], N = [], B = [];
@@ -3132,9 +3174,9 @@
     const Wd = (v) => new V3().addScaledVector(rightV, v.x).addScaledVector(upV, v.y).addScaledVector(t0, v.z).normalize();
     const b = Math.max(0.5, 0.5 * P.labyrinthDiameter), M = Math.max(b, 0.5 * P.labyrinthMouthDiameter);
     const edges = lay.edges.map((e, i) => {
-      const path = chanPath(W(e.a.p, new V3()), Wd(e.a.t), W(e.b.p, new V3()), Wd(e.b.t));
+      const path = chanPath(W(e.a.p, new V3()), Wd(e.a.t), W(e.b.p, new V3()), Wd(e.b.t), e.ai < 0 ? 0 : P.rootGnarl, i * 2.17 + 0.4);
       const wh = { poly: path, A: path.P[0].clone(), t0: path.T[0].clone(), side: path.N[0].clone(), L: path.L, S: path.L, R: 1, theta: 0, fat: 0, m: 0, b, M,
-        chan: true, mouthIn: e.ai < 0, mouthOut: !e.kids.length, za: e.za, zb: e.zb, D: lay.D, seed: i * 7.31 + 1.3, s0: 0, s1: path.L };
+        chan: true, root: true, mouthIn: e.ai < 0, mouthOut: !e.kids.length, za: e.za, zb: e.zb, D: lay.D, seed: i * 7.31 + 1.3, s0: 0, s1: path.L };
       return { wh, kids: e.kids, za: e.za, zb: e.zb };
     });
     return { edges, entry: lay.entry, D: lay.D };
@@ -3155,9 +3197,10 @@
   // A channel's radius at s: labyrinthDiameter, flaring to labyrinthMouthDiameter over 3 mouth radii at the source and at
   // every opening.
   function chanRadius(wh, s) {
-    const fl = Math.min(0.35 * wh.L, 3 * wh.M); let r = wh.b;
+    const fl = Math.min(0.35 * wh.L, 3 * wh.M), tip = wh.root ? 1 - (1 - clamp01(P.rootTip)) * clamp01((wh.za + (wh.zb - wh.za) * s / wh.L) / Math.max(1, wh.D)) : 1;
+    let r = wh.b * tip;   // round 17: a root tapers from the source to its tips
     if (wh.mouthIn) r += (wh.M - wh.b) * (1 - smooth(0, fl, s));
-    if (wh.mouthOut) r += (wh.M - wh.b) * (1 - smooth(0, fl, wh.L - s));
+    if (wh.mouthOut) r += (wh.M * tip - r) * (1 - smooth(0, fl, wh.L - s));
     return r * (wh.cave != null ? Math.max(0.02, wh.cave) : 1);
   }
   // The labyrinth's wireframe (the reticle, and the dug channels): rings every labyrinthRingSpacing u of labyrinthRingSides
@@ -3223,6 +3266,12 @@
   function netReach(pr, tgt) { const k = pr.kids || []; return k.length ? Math.min(...k.map((c) => netReach(c, tgt))) : whAt(pr.wh, pr.wh.L, aiEnd).distanceTo(tgt); }
   // RT with an omnicrystal: dig the labyrinth, you in its source. One burrow at a time: the last labyrinth (and the last
   // tunnel) falls in now. The omnicrystal is spent.
+  // round 17: the omnicrystal's roots, grown at once from where you are, every way, sized by your last trunk; you slide in
+  function rootsHere(sd) {
+    basis();
+    const r = { lay: labLayout(P, sd, ftLive.lastTrunk, true), A: hull.position.clone(), t0: fwd.clone(), right: right.clone(), up: up.clone(), noGhost: true };
+    labCommit(r);
+  }
   function labCommit(r) {
     const old = ftLive.gate; if (old && !old.kitRide && !old.pair.wh.held && old.pair.alive && !old.pair.dying && !old.net && old.pair.wh.phase !== 'collapse' && old.pair.wh.phase !== 'cavein') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }
     if (ftLive.lastNet) for (const pr of ftLive.lastNet.pairs) if (pr.alive && !pr.dying && pr.wh.phase !== 'collapse' && pr.wh.phase !== 'cavein') { pr.wh.phase = 'collapse'; pr.wh.grow = 1; }
@@ -3239,7 +3288,7 @@
     seedNet(net);
     ftLive.lastNet = net; ftLive.ab.omni = false;
     myPair = net.pairs[built.entry];
-    ftLive.retGhost = { view: r, a: 1, formT: T };
+    if (!r.noGhost) ftLive.retGhost = { view: r, a: 1, formT: T };
     const wh = myPair.wh;
     whQ.setFromUnitVectors(fwd, wh.t0);
     ftLive.gate = { pair: myPair, net, state: 'tube', s: -hull.position.distanceTo(wh.A), sIn: 0, oN: 0, oB: 0, vIn, forks: 0, leanW: null, prev: null, dist: 0,
@@ -3375,6 +3424,7 @@
       if (!pr.wh || !pr.wh.chan) continue;
       if (pr.net) nets.add(pr.net);
       const wh = pr.wh, fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1, cave = wh.cave != null ? clamp01(wh.cave) : 1, A = vis * fade * cave;
+      if (wh.root) drawRootSkin(pr, fade * cave);   // round 17: a root's bark
       if (!pr.soil && A > 0.004 && pr.alive) {
         const m = new THREE.Mesh(buildSoil(wh), soilMat.clone()); m.frustumCulled = false; m.renderOrder = 3; scene.add(m); pr.soil = m;
       }
@@ -3403,8 +3453,37 @@
     }
     pebMesh.count = nPeb; pebMesh.instanceMatrix.needsUpdate = true; if (pebMesh.instanceColor) pebMesh.instanceColor.needsUpdate = true;
   }
-  function sweepSoil() {   // a channel gone: its soil goes with it
+  // Round 17 (Yash: "those will be looking like roots. Three-dimensional roots"): every root channel wears the trunk's own
+  // bark - its glass (rootGlass face-on, rootRim at the silhouette), its grain (rootGrain) - in a root's brown, on a tube
+  // that tapers with the channel (rootTip), built once; it shows only where its channel is dug.
+  const ROOT_IN = new THREE.Color(0.55, 0.36, 0.2), ROOT_OUT = new THREE.Color(0.82, 0.7, 0.5);
+  function buildRootSkin(wh) {
+    const nA = Math.max(4, Math.round(wh.L / 4)), SIDES = 12, pos = [], aS = [], aBi = [], aCap = [], aR = [], aB = [], aPh = [], idx = [], q = new V3();
+    for (let r = 0; r <= nA; r++) for (let j = 0; j <= SIDES; j++) {
+      const s = wh.L * r / nA; whSurf(wh, s, j / SIDES * Math.PI * 2, chanRadius(wh, s), 0, q);
+      pos.push(q.x, q.y, q.z); aS.push(r / nA); aBi.push(-1); aCap.push(0); aR.push(1); aB.push(0); aPh.push(j / SIDES);
+    }
+    for (let r = 0; r < nA; r++) for (let j = 0; j < SIDES; j++) { const a = r * (SIDES + 1) + j, b = a + SIDES + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    for (const [nm, arr] of [['aS', aS], ['aBi', aBi], ['aCap', aCap], ['aR', aR], ['aB', aB], ['aPhi', aPh]]) g.setAttribute(nm, new THREE.Float32BufferAttribute(arr, 1));
+    g.setAttribute('aBase', new THREE.Float32BufferAttribute(pos.slice(), 3));
+    g.setIndex(idx); g.computeVertexNormals(); return g;
+  }
+  function drawRootSkin(pr, A) {
+    const wh = pr.wh;
+    if (!pr.skin && pr.alive) { const mats = treeMaterials(), mesh = new THREE.Mesh(buildRootSkin(wh), mats.glass); mesh.frustumCulled = false; mesh.renderOrder = 3; scene.add(mesh); pr.skin = { mesh, mats }; }
+    if (!pr.skin) return;
+    let f0 = wh.s0 / wh.L, f1 = wh.s1 / wh.L; if (f0 <= 1e-3) f0 = -1; if (f1 >= 1 - 1e-3) f1 = 2;
+    const U = pr.skin.mats.U, G = pr.skin.mats.glass.uniforms;
+    U.f0.value = f0; U.f1.value = f1; U.edge.value = Math.max(4, 0.06 * wh.L) / wh.L; U.t.value = simT;
+    G.cIn.value.copy(ROOT_IN); G.cOut.value.copy(ROOT_OUT); G.alpha.value = A; G.glass.value = Math.max(0, P.rootGlass); G.rim.value = Math.max(0, P.rootRim);
+    G.power.value = Math.max(0.5, P.trunkFresnel); G.rings.value = 1; G.grain.value = Math.max(0, P.rootGrain); G.grainN.value = Math.max(2, Math.round(P.trunkGrainLines * 0.6));
+    pr.skin.mesh.visible = A > 0.004 && pr.alive;
+  }
+  function sweepSoil() {   // a channel gone: its soil and its bark go with it
     for (const pr of pairs) if (pr.soil && (!pr.alive)) { scene.remove(pr.soil); pr.soil.geometry.dispose(); pr.soil.material.dispose(); pr.soil = null; }
+    for (const pr of pairs) if (pr.skin && (!pr.alive)) { scene.remove(pr.skin.mesh); pr.skin.mesh.geometry.dispose(); pr.skin.mats.glass.dispose(); pr.skin.mats.warp.dispose(); pr.skin = null; }
   }
 
   // Your reticle (rounds 23, 26): faint at rest, full while the right stick or LT shapes it, rippling out of its centre as
@@ -3754,7 +3833,7 @@
     let best = null;
     for (let j = 0; j <= 20; j++) for (let i = 0; i <= 8; i++) {
       const t = j / 20, sq = i / 8;   // the bend (the right stick), and LT's squeeze (harder: a longer shaft before it)
-      const sh = shapeFor(P, sq, 0.05 + 0.95 * t, 0), th = sh.theta;
+      const sh = shapeFor(P, sq, 0.05 + 0.95 * t, 0, massK(curPilot)), th = sh.theta;
       if (turnOnly && th < 0.35) continue;
       const x = ahead + sh.S + sh.R * Math.sin(th), y = sh.R * (1 - Math.cos(th));
       const hx = Math.cos(th), hy = Math.sin(th), dx = tx - x, dy = ty - y, along = dx * hx + dy * hy;
@@ -3824,7 +3903,7 @@
         }
       }
     }
-    else if (!blind && P.aiWormhole > 0.5 && ftLive.ab.omni && ftLive.ret && ftLive.ret.net && ftLive.ret.emerge >= 0.6 && loc.z < 0 && d > 0.5 * Math.max(40, P.labyrinthRadius)) {
+    else if (!blind && P.aiWormhole > 0.5 && ftLive.ab.omni && ftLive.ret && ftLive.ret.net && ftLive.ret.emerge >= 0.6 && loc.z < 0 && d > 0.5 * Math.max(40, P.labyrinthRadiusMax)) {
       rt = 1; ai.gShaping = false;   // round 16: an omnicrystal armed and the ring ahead: dig the labyrinth
     }
     else if (ai.gShaping) {   // shaped, and its reticle caught up (round 3: the reticle eases): pull RT
@@ -4271,15 +4350,15 @@
     if (race === 'running' && !stopped && !(isGM() && KIT.seat)) {   // round 17: in a sentinel seat the seat's lines replace the flyer's
       const g = ftLive.gate, ret = ftLive.ret;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE LABYRINTH · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u of slide' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u tunnel · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
-      if (omniFlash > 0) { c.globalAlpha = Math.min(1, omniFlash); c.fillStyle = gold; c.font = font(20, 700); c.fillText('OMNICRYSTAL! · your next RT digs the LABYRINTH', cw / 2, ch * 0.24); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText(lastGate.lab ? 'OUT OF THE ROOTS · ' + lastGate.forks + (lastGate.forks === 1 ? ' fork · ' : ' forks · ') + lastGate.len + ' u of slide' : 'OUT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u tunnel · speed kept', cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (omniFlash > 0) { c.globalAlpha = Math.min(1, omniFlash); c.fillStyle = gold; c.font = font(20, 700); c.fillText(ftLive.gate && ftLive.gate.net && ftLive.gate.state === 'tube' ? 'OMNICRYSTAL! · the ROOTS grow from here' : 'OMNICRYSTAL! · your next RT digs the ROOTS', cw / 2, ch * 0.24); c.globalAlpha = 1; c.font = font(14, 700); }
       if (ret && ret.net && ret.lay) {   // round 16: armed, the reticle is the labyrinth
         c.fillStyle = gold;
-        c.fillText('LABYRINTH  ·  ' + ret.lay.forks + ' forks  ·  ' + ret.lay.openings + ' openings  ·  ' + Math.round(2 * P.labyrinthRadius) + ' u across', cw / 2, tY + pad + 14 * sc);
-        c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT digs it and you slide in  ·  lean the left stick toward a channel at each fork', cw / 2, tY + pad + 30 * sc);
+        c.fillText('ROOTS  ·  ' + ret.lay.forks + ' forks  ·  ' + ret.lay.openings + ' tips  ·  ' + Math.round(2 * ret.lay.Rad) + ' u across (your last trunk ' + Math.round(100 * ret.lay.size) + '%)', cw / 2, tY + pad + 14 * sc);
+        c.font = font(12, 600); c.fillStyle = dim; c.fillText('RT grows them and you slide in  ·  lean the left stick toward a root at each fork', cw / 2, tY + pad + 30 * sc);
       } else if (g && g.net && g.pair.alive && g.state === 'tube') {
         const kids = g.pair.kids || [], left = Math.max(0, g.pair.wh.L - g.s) / Math.max(1, velNow.length());
-        c.fillStyle = gold; c.fillText('IN THE LABYRINTH  ·  ' + g.forks + (g.forks === 1 ? ' fork taken' : ' forks taken') + '  ·  ' + (kids.length > 1 ? kids.length + ' channels ahead' : kids.length ? 'on to the next fork' : 'an opening ahead'), cw / 2, tY + pad + 14 * sc);
+        c.fillStyle = gold; c.fillText('IN THE ROOTS  ·  ' + g.forks + (g.forks === 1 ? ' fork taken' : ' forks taken') + '  ·  ' + (kids.length > 1 ? kids.length + ' channels ahead' : kids.length ? 'on to the next fork' : 'an opening ahead'), cw / 2, tY + pad + 14 * sc);
         if (kids.length > 1 && left <= Math.max(0, P.forkHintSeconds)) {   // the fork: each channel marked where it leads, the one you would take lit
           const pick = forkPick(g);
           for (const k of kids) {
@@ -4291,7 +4370,7 @@
           c.font = font(12, 600); c.fillStyle = dim; c.fillText(g.leanW ? 'leaning: the lit channel' : 'lean the left stick toward a channel · no lean: the straightest', cw / 2, ch * 0.66);
         }
       } else if (ret || (g && g.pair.alive && g.state === 'tube')) {
-        const wh = ret || g.pair.wh, line = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°';
+        const wh = ret || g.pair.wh, line = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°  ·  MASS ' + massOf(curPilot).toFixed(1);
         c.fillStyle = ret ? cyan : lime;
         c.fillText(ret ? line + '  ·  max ' + Math.round(P.bendMaxDegrees * wh.fat) + '°' : 'IN THE THROAT  ·  ' + line, cw / 2, tY + pad + 14 * sc);
         if (ret) { c.font = font(12, 600); c.fillStyle = dim; c.fillText('LT sets the shaft  ·  right stick bends its end  ·  RT forms it and you go  ·  left stick flies', cw / 2, tY + pad + 30 * sc); }
@@ -4310,8 +4389,8 @@
       c.fillText('AI PILOT · ' + youLevel.toUpperCase() + (P.aiWormhole > 0.5 ? '' : ' · NO WORMHOLE') + (courseKind === 'hairpin' ? ' · HAIRPINS' : ''), cw / 2, ch - pad - 4 * sc);
     }
     if (forkFlash > 0) { c.globalAlpha = Math.min(1, forkFlash * 2); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = lime; c.fillText('FORK TAKEN', cw / 2, ch * 0.7); c.globalAlpha = 1; }
-    if (ftLive.ab.omni && P.omniOn > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube')) { c.textAlign = 'left'; c.font = font(12, 700); c.fillStyle = gold; c.fillText('◆ OMNICRYSTAL: the labyrinth is armed (RT)', padL, pad + 41 * sc); }
-    if (portalFlash > 0 && !(isGM() && KIT.seat)) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText(ftLive.gate && ftLive.gate.net ? 'INTO THE LABYRINTH' : 'INTO THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
+    if (ftLive.ab.omni && P.omniOn > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube')) { c.textAlign = 'left'; c.font = font(12, 700); c.fillStyle = gold; c.fillText('◆ OMNICRYSTAL: the roots are armed (RT)', padL, pad + 41 * sc); }
+    if (portalFlash > 0 && !(isGM() && KIT.seat)) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText(ftLive.gate && ftLive.gate.net ? 'INTO THE ROOTS' : 'INTO THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
     // top-right: the race
     c.textAlign = 'right'; c.font = font(14, 700); c.fillStyle = ink;
     const lap = Math.min(laps, Math.floor(threaded / NG) + 1);
@@ -4671,12 +4750,12 @@
   };
   // ---------- round 16: the labyrinth, from above and from the side: its forks and openings, a dot sliding a route ----------
   SCENES.labyrinth = {
-    make(Pv) { const lay = labLayout(Pv, 7); return { lay }; },
+    make(Pv, cfg) { const lay = labLayout(Pv, 7, cfg.k != null ? cfg.k : 0.6, Pv.omniAtOnce > 0.5); return { lay }; },
     bounds(st) { let b = { x0: -40, x1: 40, y0: -20, y1: 60 }; for (const n of st.lay.nodes) b = bUnion(b, { x0: n.p.x - 15, x1: n.p.x + 15, y0: n.p.z - 15, y1: n.p.z + 15 }); return b; },
     period: () => 5,
     draw(c, W, H, tt, st, view, Pv, cfg) {
       previewBg(c, W, H, 43);
-      const V = view || makeView(SCENES.labyrinth.bounds(st), W, H, 12), lay = st.lay, soil = cfg.what === 'soil', R = Math.max(40, Pv.labyrinthRadius);
+      const V = view || makeView(SCENES.labyrinth.bounds(st), W, H, 12), lay = st.lay, soil = cfg.what === 'soil', R = lay.Rad;
       const dw = Math.max(1, Pv.labyrinthDiameter * V.s), mw = Math.max(dw, Pv.labyrinthMouthDiameter * V.s);
       const pt = (v) => [V.X(v.x), V.Y(v.z)], hi = (v) => 0.45 + 0.55 * clamp01(0.5 + v.y / (2 * R));   // higher = brighter (seen from above)
       for (const e of lay.edges) {
@@ -4691,7 +4770,7 @@
       const u = (tt % 5) / 5 * route.length, i = Math.min(route.length - 1, Math.floor(u)), f = u - i, ed = lay.edges[route[i]], a = pt(ed.a.p), b = pt(ed.b.p);
       c.fillStyle = '#9dff2e'; c.beginPath(); c.arc(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, 3.5, 0, TAU); c.fill();
       ship(c, V.X(0), V.Y(0), 0, 1, '#ffd27a', 6);
-      txt(c, 'from above · ' + lay.forks + ' forks · ' + lay.openings + ' openings · ' + Math.round(2 * R) + ' u across · spread ' + Math.round(Pv.labyrinthSpread) + '°', 6, 13, '#e8ecff', 10);
+      txt(c, 'from above · after a ' + (lay.size >= 0.99 ? 'biggest' : lay.size <= 0.01 ? 'smallest' : Math.round(100 * lay.size) + '%') + ' trunk · ' + lay.forks + ' forks · ' + lay.openings + ' tips · ' + Math.round(2 * R) + ' u across', 6, 13, '#e8ecff', 10);
       txt(c, 'brighter = higher · the dot takes each fork\'s channels in turn' + (soil ? ' · brown: the soil walls' : ''), 6, H - 6, '#9aa6d6', 9.5);
     },
   };
@@ -5097,9 +5176,9 @@
     aiNewAbilities: { scene: 'ability', cfg: { ab: 'charge' }, d: 'Whether the AI pilots use the round-8 abilities: Lookout when ready (with rivals or crystals near), Hardened Bridge with a rival within 600 u, Cave-in on a tunnel it has left with a rival in it (L5) or 6 prisms in reach, and Chain Dig when a tunnel from the far mouth fits the next leg. All by pressing the buttons a player has. Off: the AI flies as it did before round 8.', lo: 'Wormhole only.', hi: 'The whole kit.' },
     omniOn: { scene: 'labyrinth', d: 'The Meerkat\'s Omnicrystal ability. Fly through an omnicrystal (gold, on the course line) and your next RT digs the labyrinth instead of a wormhole: a 3D warren from one source, forks branching every way, openings all round, dug through soil. You slide through it and lean the left stick to choose at each fork. 0: omnicrystals do nothing.', lo: 'Off.', hi: 'On.' },
     omniCount: { scene: 'labyrinth', d: 'How many omnicrystals sit on the course line, half way between rings. A new course, or a reset, places them.', lo: 'None.', hi: 'Plenty.' },
-    labyrinthBranchPoints: { scene: 'labyrinth', d: 'How many forks the labyrinth has, branching in 3D from its one source.', lo: 'A few forks.', hi: 'A maze.' },
-    labyrinthOpenings: { scene: 'labyrinth', d: 'How many ways out it has, spread round it. A fork splits two to four ways, so there are at most 3 x forks + 1 openings (and at least forks + 1).', lo: 'A few holes.', hi: 'Holes everywhere.' },
-    labyrinthRadius: { scene: 'labyrinth', d: 'How far the labyrinth spreads: its openings lie this far from its centre (the centre sits about this far ahead of you).', lo: 'Compact.', hi: 'A huge park.' },
+    labyrinthBranchPointsMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'How many forks the roots have when your last trunk was the biggest a full Mass can dig (a smaller trunk gives fewer, down to labyrinthBranchPointsMin).', lo: 'A few forks.', hi: 'A maze.' },
+    labyrinthOpeningsMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'How many tips (ways out) the roots have after the biggest trunk, spread round them. A fork splits two to four ways, so there are at most 3 x forks + 1 openings (and at least forks + 1).', lo: 'A few holes.', hi: 'Holes everywhere.' },
+    labyrinthRadiusMax: { scene: 'labyrinth', cfg: { k: 1 }, d: 'How far the roots reach after the biggest trunk: their tips lie about this far from where they start.', lo: 'Compact.', hi: 'A huge park.' },
     labyrinthSpread: { scene: 'labyrinth', d: 'Over how wide a cone round its centre the openings spread, measured from straight ahead: 360 is all round, back toward you included.', lo: 'Openings ahead only.', hi: 'All round.' },
     labyrinthRandomness: { scene: 'labyrinth', d: 'How irregular it is: the forks wander off their even places and the openings off their even spread. Every labyrinth is new; this sets how wild.', lo: 'Orderly.', hi: 'Wackadoodle.' },
     labyrinthDiameter: { scene: 'labyrinth', d: 'How wide every channel is.', lo: 'Tight.', hi: 'Roomy.' },
@@ -5161,6 +5240,19 @@
     worldSuper: { scene: 'kit', cfg: { k: 'world' }, d: 'The share of them that is super-shielded: never moved, never swallowed; a plain prism fired into one is destroyed, a shielded one bounces.', lo: 'Rare.', hi: 'Common.' },
     aiKit: { scene: 'kit', cfg: { k: 'ai' }, d: 'Whether the AI pilots use the kit: Sentinel mode on, flying into any standing soliton that saves time, and (the Mix) Cave-in. All by pressing what a player presses. Off: they fly the wormhole alone (the rush, the surface area and the portals still apply).', lo: 'Wormhole only.', hi: 'The whole kit.' },
     aiHopGain: { scene: 'kit', cfg: { k: 'ai' }, d: 'Garrett\'s kit: an AI crew hops to one of its own sentinels (and the old flyer becomes a sentinel) when that saves at least this many seconds to its next ring. Garrett left the hop to people; the AI\'s rule is the studio\'s proposal, open in Garrett\'s design.', lo: 'Hops for a little.', hi: 'Hops only for a lot.' },
+    massPerCrystal: { scene: 'tunnel', d: 'Your Mass sizes your trunk. It starts at the Mass level (Vessel Config) and every crystal you take this race adds this much, up to 10; it resets each race. More Mass: a longer, wider tunnel, so you go further, and a bigger root network from your next omnicrystal.', lo: 'Crystals do not grow you.', hi: 'Every crystal counts.' },
+    massLengthAtZero: { scene: 'tunnel', cfg: { lt: 1 }, d: 'At Mass 0 you can dig only this share of the LT range (shaftMin up to shaftMax); at Mass 10, all of it. Between, in proportion.', lo: 'Low Mass digs short.', hi: 'Mass barely matters.' },
+    massDiameterAtZero: { scene: 'tunnel', d: 'At Mass 0 the throat and mouths are this times their full size; at Mass 10, full.', lo: 'Low Mass digs thin.', hi: 'Mass barely matters.' },
+    omniAtOnce: { scene: 'labyrinth', d: 'On: the omnicrystal grows the roots at once, spreading every way from where you took it, and you slide straight into them. Off: it arms your next RT instead (round 16).', lo: 'Arms RT.', hi: 'At once.' },
+    labyrinthBranchPointsMin: { scene: 'labyrinth', cfg: { k: 0 }, d: 'How many forks the roots have when your last trunk was the smallest you can dig. A bigger last trunk gives more, up to labyrinthBranchPointsMax.', lo: 'A sprig.', hi: 'Bushy even small.' },
+    labyrinthOpeningsMin: { scene: 'labyrinth', cfg: { k: 0 }, d: 'How many tips (ways out) the roots have after the smallest trunk.', lo: 'A few.', hi: 'Many.' },
+    labyrinthRadiusMin: { scene: 'labyrinth', cfg: { k: 0 }, d: 'How far the roots reach after the smallest trunk.', lo: 'Compact.', hi: 'Wide.' },
+    rootTip: { scene: 'labyrinth', d: 'The roots taper from the source to their tips: a tip is this times as wide as the channel at the source.', lo: 'Thin tips.', hi: 'No taper.' },
+    rootGnarl: { scene: 'labyrinth', d: 'How much each root wanders as it goes, as real roots do.', lo: 'Smooth curves.', hi: 'Gnarled.' },
+    rootGlass: { scene: 'labyrinth', d: 'The roots\' bark where you look straight at it: keep it low, so a big network stays quiet on screen.', lo: 'Clear.', hi: 'Milky.' },
+    rootRim: { scene: 'labyrinth', d: 'The roots\' bark where it turns away from you (Fresnel): their outline.', lo: 'Faint.', hi: 'Bright.' },
+    rootGrain: { scene: 'labyrinth', d: 'The bark grain along the roots.', lo: 'Smooth.', hi: 'Deep grain.' },
+    labyrinthFrame: { scene: 'labyrinth', d: 'The dug roots\' spindle wireframe, as a multiple of the bridge\'s brightness (your reticle keeps its own).', lo: 'Bark only.', hi: 'A bright cage.' },
   };
 
   // ---------- the card ----------
@@ -5404,9 +5496,9 @@
     lopeSquash: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     omniOn: ['MeerkatWormholeConfig.omniOn', 'new'],
     omniCount: ['MeerkatWormholeConfig.omniCount', 'new'],
-    labyrinthBranchPoints: ['MeerkatWormholeConfig.labyrinthBranchPoints', 'new'],
-    labyrinthOpenings: ['MeerkatWormholeConfig.labyrinthOpenings', 'new'],
-    labyrinthRadius: ['MeerkatWormholeConfig.labyrinthRadius', 'new'],
+    labyrinthBranchPointsMax: ['MeerkatWormholeConfig.labyrinthBranchPointsMax', 'new'],
+    labyrinthOpeningsMax: ['MeerkatWormholeConfig.labyrinthOpeningsMax', 'new'],
+    labyrinthRadiusMax: ['MeerkatWormholeConfig.labyrinthRadiusMax', 'new'],
     labyrinthSpread: ['MeerkatWormholeConfig.labyrinthSpread', 'new'],
     labyrinthRandomness: ['MeerkatWormholeConfig.labyrinthRandomness', 'new'],
     labyrinthDiameter: ['MeerkatWormholeConfig.labyrinthDiameter', 'new'],
@@ -5430,6 +5522,19 @@
     soilPebbles: ['MeerkatWormholeConfig.soilPebbles', 'new'],
     soilPebbleSize: ['MeerkatWormholeConfig.soilPebbleSize', 'new'],
     soilRoots: ['MeerkatWormholeConfig.soilRoots', 'new'],
+    massPerCrystal: ['MeerkatWormholeConfig.massPerCrystal', 'new'],
+    massLengthAtZero: ['MeerkatWormholeConfig.massLengthAtZero', 'new'],
+    massDiameterAtZero: ['MeerkatWormholeConfig.massDiameterAtZero', 'new'],
+    omniAtOnce: ['MeerkatWormholeConfig.omniAtOnce', 'new'],
+    labyrinthBranchPointsMin: ['MeerkatWormholeConfig.labyrinthBranchPointsMin', 'new'],
+    labyrinthOpeningsMin: ['MeerkatWormholeConfig.labyrinthOpeningsMin', 'new'],
+    labyrinthRadiusMin: ['MeerkatWormholeConfig.labyrinthRadiusMin', 'new'],
+    rootTip: ['MeerkatWormholeConfig.rootTip', 'new'],
+    rootGnarl: ['MeerkatWormholeConfig.rootGnarl', 'new'],
+    rootGlass: ['MeerkatWormholeConfig.rootGlass', 'new'],
+    rootRim: ['MeerkatWormholeConfig.rootRim', 'new'],
+    rootGrain: ['MeerkatWormholeConfig.rootGrain', 'new'],
+    labyrinthFrame: ['MeerkatWormholeConfig.labyrinthFrame', 'new'],
   };
   // round 8: the proposed kit. Lab-only until Yash decides (no MeerkatWormholeConfig field, no studio_to_unity map row).
   for (const [grp, key] of SPEC) if (/^ab/.test(grp) || key === 'aiNewAbilities') GAME_NAMES[key] = ['lab: round 8 proposal, not in the game (Yash judges it here first)', 'lab'];
@@ -6011,8 +6116,11 @@
   kitSyncUi();   // round 17: the kit's classes, its phone buttons and its note
   requestAnimationFrame(frame);
   // round 16: try the labyrinth without hunting an omnicrystal
-  function grantOmni(sd) { const lv = liveOf(0); if (!lv) return; lv.ab.omni = true; lv.ab.omniSeed = sd != null ? sd >>> 0 : (Math.random() * 1e9) >>> 0; omniFlash = 1.8; }
-  $('omniGive').addEventListener('click', () => { grantOmni(); toast('Omnicrystal armed: your next RT digs the labyrinth.'); });
+  function grantOmni(sd) {
+    const lv = liveOf(0); if (!lv) return; lv.ab.omniSeed = sd != null ? sd >>> 0 : (Math.random() * 1e9) >>> 0; omniFlash = 1.8;
+    if (P.omniAtOnce > 0.5 && mode === 'fly' && race === 'running' && !stopped && !(lv.gate && lv.gate.state === 'tube')) rootsHere(lv.ab.omniSeed); else lv.ab.omni = true;   // round 17
+  }
+  $('omniGive').addEventListener('click', () => { grantOmni(); toast(P.omniAtOnce > 0.5 && race === 'running' ? 'Omnicrystal: the roots grow from here.' : 'Omnicrystal armed: your next RT digs the roots.'); });
   window.__meerkatStudio = { gateForm, get cam() { return cam; }, openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; },
     tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } manualNow += dt * 1000; advance(dt, manualNow); },
     sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } },
