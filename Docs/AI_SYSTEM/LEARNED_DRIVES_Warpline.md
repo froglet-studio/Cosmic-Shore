@@ -17,12 +17,12 @@ By intensity (flights / finished): I1 5 / 5, I2 3 / 3, I3 6 / 6, I4 6 / 3
 | `StoatDipoleConfig.autopilotMinDistance` | 151.15 | - | 151.15 |
 | `StoatDipoleConfig.autopilotMinHoldSeconds` | 1.26 | - | 1.26 |
 | `StoatDipoleConfig.presses` | 39 | 0 | - |
-| `StoatModeAction.switches` | 3 | 0 | - |
-| `StoatSlingConfig.aiReleaseConeDegrees` | 16.59 | - | 16.59 |
-| `StoatSlingConfig.aiSlingIntervalSeconds` | 0.95 | - | 0.95 |
-| `StoatSlingConfig.aiSlingMinDistance` | 125.38 | - | 125.38 |
-| `StoatSlingConfig.aiSlingMinTurnDegrees` | 7.92 | - | 7.92 |
+| `StoatModeAction.switches` | 4 | 0 | - |
+| `StoatSlingConfig.aiReleaseConeDegrees` | 16.00 | - | 16.00 |
+| `StoatSlingConfig.aiSlingIntervalSeconds` | 0.94 | - | 0.94 |
+| `StoatSlingConfig.aiSlingMinDistance` | 123.28 | - | 123.28 |
+| `StoatSlingConfig.aiSlingMinTurnDegrees` | 7.84 | - | 7.84 |
 | `StoatSlingConfig.autopilotHold01` | 1.00 | - | 1.00 |
-| `StoatSlingConfig.presses` | 95 | 0 | - |
+| `StoatSlingConfig.presses` | 83 | 0 | - |
 
 Written: Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset, Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset.

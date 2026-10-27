@@ -520,9 +520,9 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // 1.5f matches the HCS SerializeField default (refreshIntervalSeconds).
+            // Block 5 step 8: one safety poll under the presence and party pushes.
             builder.RegisterFactory(
-                _ => new LobbyRefreshScheduler(1.5f),
+                _ => new LobbyRefreshScheduler(LobbyRefreshScheduler.SAFETY_POLL_SECONDS),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

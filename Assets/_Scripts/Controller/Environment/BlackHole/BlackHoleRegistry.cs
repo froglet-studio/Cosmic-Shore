@@ -242,6 +242,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Let a held pair go and set the speed it closes at (the Stoat's warp gate: it falls together in a set time
+        /// whatever length it was stretched to).
+        /// </summary>
+        public static void LetGo(Pair pair, float driftSpeed)
+        {
+            if (pair == null || !pair.Held) return;
+            pair.DriftSpeed = Mathf.Max(0f, driftSpeed);
+            LetGo(pair);
+        }
+
+        /// <summary>
+        /// Move a HELD pair: a new midpoint and half gap along its axis (the Stoat's warp gate stretches with the squeeze).
+        /// A held pair stands still otherwise, so its holes are placed here; a let-go pair is left to its closing law.
+        /// </summary>
+        public static void Reshape(Pair pair, Vector3 midpoint, float halfGap)
+        {
+            if (pair == null || !pair.Held || !pair.IsAlive) return;
+            pair.Midpoint = midpoint;
+            pair.HalfGap0 = Mathf.Max(0f, halfGap);
+            BlackHolePairMath.Positions(pair.Midpoint, pair.Axis, pair.HalfGap0, out var blackPos, out var whitePos);
+            pair.Black.transform.position = blackPos;
+            pair.White.transform.position = whitePos;
+        }
+
+        /// <summary>
         /// The settings a CRYSTAL pair (§13) is opened with: the config's Crystal Pair section, a throat of
         /// the size dial a drift pair's horizon is (<see cref="BlackHoleConfigSO.HorizonRadius"/>), and the
         /// pilots its mouths may carry. A pilot's sling passes only that pilot (a vessel may not move an

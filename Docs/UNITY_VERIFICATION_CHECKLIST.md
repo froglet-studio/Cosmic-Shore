@@ -103,44 +103,6 @@ offline 0 of 11 recorded courses finished before, 11 of 11 after. NOT run: `Swit
 
 ---
 
-### 🔴 The Omega crews (vessels 25 Warden, 26 Bulwark, 27 Tempest): three vessels marching as one formation with a mobility, an attack and a defence seat (`Ys-bleeding-edge`, 2026-10-26, round 2) — NOT EDITOR-VERIFIED
-
-**What landed:** the Vessel Studio's Omega Crews lab cloned into the game (`Docs/Studios/VesselStudio/omega.html`,
-CONCEPT_FLEET.md §10), rebuilt after Yash's first test the same day ("an aligned flock of three ... the manoeuvre will be
-done by the Stoat, the shooting by the right vessel, the left one will protect"): `OmegaMath` (the page's arithmetic,
-line for line, goldens from the page's own code in `OmegaMathTests`), `OmegaCrew` on each hull's root (the formation,
-the three seats, the moves, the shield and the ward, input-only AI seats; the Orca's lifecycle), `OmegaVesselTransformer`
-(always the mobility vessel's cruise and turn rates, a boost channel), `OmegaCrewView` (placeholder bodies, aim bar,
-fire, shield shards, ward shell; the colour on the material, which fixes the black bodies of the first test),
-`OmegaCrystalEffectSO` in the shared `OmegaImpactorDataContainer`, `OmegaHUDController` on the Stoat HUD, three
-Stoat-clone prefabs by `Tools/Build/author_omega_assets.py` (`--check` and `--self-test` green). The Unity CLI was not
-available, so nothing below was seen in the Editor; the headless reference compile (player + editor) is the only
-compile evidence. Design: `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md`.
-
-**Test (Menu_Main > freestyle > Toy Box > Vessel Changer > Warden; then Bulwark, Tempest):**
-1. **The formation.** The Stoat hull leads; two faceted bodies in your domain colour (not black) ride 18 u to each side and
-   10 u behind, and keep exactly those places through turns, rolls and boosts. The Mass card reads half.
-2. **The mobility seat.** RT: the Stoat's sling boost, the whole formation speeds up for 1.2 s, then the Charge card
-   refills over 4 s. Bulwark: the Scarab's dash. Tempest: the Squirrel's boost.
-3. **Swap to the attacker.** D-pad right (or the right arrow): the hull jumps to the right-hand place and the camera with
-   it; the Stoat's place now shows a body; the AI steers the formation and your flight sticks no longer turn it. The
-   right stick, the mouse or W A S D turn a thin bar from the hull (the turret, bounded); RT fires down it: Warden guns
-   (the nearest prism on the line dies, a bar to it), Bulwark cannon (hold, release: a burst at 140 u), Tempest wrecking
-   ball (held near mass, it smashes it).
-4. **Swap to the defender.** D-pad right again: the hull takes the left-hand place. LT: eight shards orbit the formation,
-   every hostile prism within 40 u of its centre dies, the Mass card drains and the Space card lights. RT: a shell swells
-   round the formation and mass within 60 u dies; the Space card then refills over 3 s. With the Mass card empty neither works.
-5. **Back to the leader.** D-pad left twice: the hull leads again and your sticks fly. The cursor is free again (it
-   locks for mouse aim in the attack seat).
-6. **AI seats.** In the mobility seat, the attacker's bar turns onto mass ahead and fires on its own; the defender's
-   shield comes up when mass is about to hit the formation.
-7. **Nothing leaks.** Swap to another vessel in the Vessel Changer: the bodies, bars, shards and shells disappear; the
-   console shows no errors from the crew.
-
-**PASS:** every step as described, no console errors. **FAIL:** a body that is black, drifts or lags · a swap that leaves
-the hull where it was or the camera behind · flight sticks still steering in the attack or defence seat · RT doing nothing
-in a seat · a body left behind after a vessel swap.
-
 ### 🔴 Rhino round 3: Space L5 is the super-shield key, Charge L5 is the sword's steal (`cece/exciting-noether-dx1n4z`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "have the sword only destroy supershielded prisms as the space L5 upgrade. have the
@@ -4094,6 +4056,49 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
 2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
+### 🔴 Party: Block 5 step 9 - leave on quit and background (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 9, from the August work's 52b8f5f656): the only
+leave was an async `OnDestroy` that Unity does not wait for, so a quitting player stayed in everyone's online list
+for ~30 s. `ApplicationLifecycleManager` now holds `Application.wantsToQuit` once while its `OnAppQuitRequested`
+subscribers' work runs (at most `QUIT_DRAIN_SECONDS`, 1.5 s; at once when nothing subscribes), then quits through
+`DesktopPlatformServices.Quit`. `HostConnectionService` leaves the presence lobby and the party session on quit
+(bounded to 1.2 s), leaves the presence lobby only on a mobile background, and rejoins on resume. `OnDestroy`'s leave
+stays as the backstop, skipped when the lobby is already gone.
+**Verified without the editor:** 7 `DepartureLeaveTests`; dropping the hold, letting a second click drain again,
+quitting without the party leave, leaving the party on background, marking the background Disconnected, or not
+rejoining on resume each fails a test. The full edit-mode suite on Amoebius 673/677 (the 4 known failures);
+`unity_refcompile` player and editor OK; the Amoebius player build; the console-logging and conditional-compilation
+gates. `/verify-unity` is not available in the cloud session.
+**Verify in a build** (stopping Play in the Editor raises no quit request, so this needs players):
+1. The 7 `DepartureLeaveTests` pass in the Test Runner.
+2. Two Windows builds online in the menu: close one with the window's X. It leaves the other's online list within
+   about a second (was ~30 s), and the close takes at most 1.5 s.
+3. On a phone, background the app for 10 s: the other player's list drops it; bring it back: it reappears within
+   about 2 s, still in its party.
+
+### 🔴 Party: Block 5 step 8 - one 20 s safety poll under the pushes (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2 step 8): the presence and party pushes (steps 4-5) carry
+every change, so `LobbyRefreshScheduler` became one safety poll: every `SAFETY_POLL_SECONDS` (20 s, +-10%), in the menu
+and in a match, a tick reads the presence lobby, runs the converge and reads the party session, the pacer holding the
+two reads a second apart. The boost window, the 6 s party-read timer, the 4 s converge timer and the 10 s in-match
+tick are gone; a push sync no longer GETs. The first poll comes 2 s after a presence join.
+**Verified without the editor:** `PartyRefreshRecoveryTests` (cadence, the post-join fire, the read budget),
+`PresencePushTests` (every poll converges; `Update` reads only on the safety tick, in any scene),
+`PartyPushAndVoidedReadTests` (the post-join poll) and `AbsenceStrikesTests` (a push sync does no GET); restoring the
+4 s converge timer, the in-match tick, a GET on push syncs or dropping the post-join fire each fails a test. The full
+edit-mode suite on Amoebius 666/670 (the 4 known failures); `unity_refcompile` player and editor OK; the Amoebius
+player build; the console-logging and conditional-compilation gates. `/verify-unity` is not available in the cloud
+session.
+**Verify in editor:**
+1. The party test suites above pass in the Test Runner.
+2. Two MPPM players in the menu: each appears in the other's online list within about 2 s of joining; an invite
+   arrives within about a second (by push); accept, and both party panels fill within about a second.
+3. After Play, `net_logs.py show 1`: `reads` is about 6 a minute per player in a party, 3 solo (was about 50), `429s` near 0, and
+   `presence pushes` / `party pushes` above 0.
+4. Leave a player in a match for a minute: the other's online list still shows them "in game".
 
 ### 🔴 Load Time Insights: the boot's menu load is timed while online (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
@@ -14673,6 +14678,33 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
 9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
    black screen), and the Theater's own playback runs.
 
+## 🔴 Replays record the world: prisms come back (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Yash: "yes start recording the world too". Every prism's birth, death, restoration and movement is recorded beside the
+vessels (`TheaterWorldRecorder` on `PrismSpatialIndex.LifeObserver`) and played as instanced boxes
+(`TheaterWorldPlayback`), `Docs/REPLAYS.md` §6.2. No Unity CLI in the session, so `/verify-unity` could not run. Checked
+offline: refcompile player and editor 0 errors in project code; `TheaterWorldTests` 7/7 in an offline NUnit harness
+(file round trip, a recording without a world, shift, seek forward / backward, swap-remove; two negative controls
+fail as they should); `ReplayStoreTests` 20/20 on the new format; the gates. Not measured: the frame cost of
+recording in a busy match, and of drawing ~50k recorded prisms - profile both.
+
+1. **The trails are the match's.** Play Skim Race or Joust to the end, then WATCH it. **Pass:** it opens at once (no
+   "Building the arena"); the pilots' trails grow behind the ghosts as they fly, coloured by domain, and the walls,
+   rails and flora stand as they did.
+2. **Destroyed prisms go.** Play a match where prisms are destroyed (a Rhino, a Dolphin crash). **Pass:** in the replay
+   they vanish at the moment they were destroyed.
+3. **Seek both ways.** Skip forward (RB) and back (LB) a few times, and let it loop. **Pass:** after each skip the world
+   matches that moment - trails shorter after a skip back - with no hitch longer than a frame or two.
+4. **Creatures move.** Watch a match with swarm fauna. **Pass:** their body prisms move with them (in steps, about five
+   a second).
+5. **Shielded prisms read lighter.** **Pass:** a shielded wall is drawn lighter than an unshielded one of its domain.
+6. **The file and the log.** **Pass:** the `.cstheater` is a few MB at most for a 3-minute match; no
+   `world recording reached its ... event cap` warning in an ordinary match; no errors while watching or leaving.
+7. **Old replays still play.** WATCH a replay recorded before this change. **Pass:** "Building the arena", then the
+   race in the rebuilt arena as before.
+8. **Profile it.** With the Profiler, record a busy match (four pilots, Joust) and watch its replay. **Pass:** the
+   recorder's cost does not show above noise during the match; drawing the world costs a few draw calls per domain.
+
 ## 🔴 Every mode records itself; replays open on the free camera (2026-10-26, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
 
 Yash: "any game mode I play, it should be automatically recorded ... simulate the entire game with my free cameras as in
@@ -16767,6 +16799,20 @@ configs, 0 errors, negative control fired), `author_intro_cameras.py --check` an
 4. Play Tandava. **Pass:** the old orbit, no bars, no captions.
 5. If intros fly too close or too far in most arenas, change `scaleMultiplier` on the library asset (through the
    generator) and note the value here.
+
+## Squirrel drift: subtle slip-angle rumble, a slide that glides home (2026-10-27)
+
+**Files:** `DriftAudioController.cs` (rumble strength = slip angle, same mapping as the loop volume, 0 to
+`driftHapticMax01` 0.3), `CameraFeel.cs` + `CameraFeelConfigSO.cs` + `Resources/CameraFeelConfig.asset`
+(`driftSlideIn` 3/s, `driftSlideOut` 1.2/s; camera `driftRumble` 0.5 -> 0.15). Verified offline: reference
+compile (player and editor, 0 errors), `CameraFeelTests` 31/31 on prisma_edit_mode_tests. No Unity CLI in session.
+
+1. Fly the Squirrel with a pad and chain drifts. **Pass:** the rumble is faint on a shallow drift and grows with
+   the slip angle, never louder than a light texture; the press/let-go kicks still land.
+2. Let go of a deep drift. **Pass:** the hull glides back to centre over about a second, no snap, no swing past
+   centre; a fresh drift started mid-return blends in without a jolt.
+3. If the return feels lazy, raise `driftSlideOut` on `CameraFeelConfig`; if the rumble is too faint, raise
+   `driftHapticMax01` on the Squirrel prefab's `DriftAudioController`.
 
 ## 🔴 2026-10-27 — Look-back camera moved to D-pad down (unverified: no Unity editor in the session)
 
