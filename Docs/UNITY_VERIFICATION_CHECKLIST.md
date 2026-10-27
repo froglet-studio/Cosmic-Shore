@@ -16902,3 +16902,25 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 5. Each of the three flown by the AI still uses that ability (the executors look the control up by event, not by
    number).
 6. Phone: each of the three still reaches the ability through its card, as before.
+
+## 🔴 2026-10-27 — Stoat flies Slingshot, Meerkat flies Warpline; the Time Race Prototyper (unverified: no Unity editor in the session)
+
+**Files:** `ArcadeGameWarpline.asset` + `ModePreview_Warpline.asset` (Vessels / preview: the Meerkat; `author_warpline_assets.py`),
+`SlingshotController.AICommitFromApproachPoint` = true, `Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot` and
+`StoatSlingConfig_Slingshot` (copies of the Warpline variants), `TimeRaceCourseConfigSO`, the three course sources,
+`TimeRacePrototyperWindow`, `IntroCameraLibrary.asset` (Warpline's words, Burrow Run added). Tests:
+`TimeRaceCourseConfigTests`, `SwitchbackAISteeringTests.Slingshot_*`. Docs: `Docs/TIME_RACE_PROTOTYPER.md`,
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §8.
+
+1. Run `TimeRaceCourseConfigTests` and `SwitchbackAISteeringTests`. **Pass:** green.
+2. Arcade: the Warpline card says "Meerkats only" and launches with a Meerkat; the Slingshot card still seats the Stoat.
+3. Warpline, I1, two Medium AI Meerkats: the AIs form tunnels and thread rings (finish, or report how many of 10).
+4. Slingshot, I1 and I3, two Medium AI Stoats: they no longer circle ring 1; they thread rings (finish, or how many of 16).
+5. FrogletTools > Game Modes > Time Race Prototyper: pick Slingshot, press **Start a prototype from the shipped course**;
+   the course draws, the shipped one faint under it; move Ring mouth radius on I1 and the rings redraw; New seed
+   rolls another course; Save as preset "test", Reset race to shipped, Load "test" brings the value back; Save.
+6. Switch **Use this course in the game** on, set I1's ring mouth to 90, Save and Play; Arcade > Slingshot at I1.
+   **Pass:** the rings are visibly bigger. Switch it off and Save: the next race is the shipped course.
+7. Freestyle (lava lamp): Vessel Changer > Stoat, then > Meerkat. **Pass:** each flies; the Stoat's LT/RT pair and B
+   mode switch work, the Meerkat's right-stick reticle and RT tunnel work.
+

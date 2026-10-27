@@ -279,8 +279,10 @@ _course = read_or_empty(SCRIPT_PATHS["BurrowRunCourseSource"])
 _m = re.search(r"DefaultLaps\s*=\s*(\d+);", _course)
 if not _m or int(_m.group(1)) != LAPS:
     errors.append(f"BurrowRunCourseSource.DefaultLaps is not {LAPS}")
-if "SlingshotCourse.ForIntensity" not in _course:
-    errors.append("BurrowRunCourseSource no longer cuts Slingshot's circuit (SlingshotCourse.ForIntensity)")
+_cut = read_or_empty("Assets/_Scripts/Controller/Arcade/Racing/TimeRaceCourseConfigSO.cs")
+if "TimeRaceCourseConfigSO.Circuit(Mode, request.Intensity)" not in _course or \
+        "var settings = SlingshotCourse.ForIntensity(intensity);" not in _cut:
+    errors.append("BurrowRunCourseSource no longer cuts Slingshot's circuit (TimeRaceCourseConfigSO.Circuit over SlingshotCourse.ForIntensity)")
 
 if G_SCRIPT["BurrowRunController"] not in scene or EXISTING["WarplineController"] in scene:
     errors.append("scene does not carry exactly the BurrowRunController script")

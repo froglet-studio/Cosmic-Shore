@@ -15,18 +15,17 @@ MonoBehaviour:
   Mode: 65
   IsMultiplayer: 1
   DisplayName: Warpline
-  Description: Stoats only, and time is everything. Squeeze LT and RT to hold a black hole
-    and a white hole open ahead of you - the difference pulls them apart sideways, the sum
-    lengthways. The dots show where you will fly; bend them with your poles and they turn
-    lime and you fly them faster. Shoot through the black hole and out of the white one.
-    Five long legs a lap, two laps.
+  Description: Meerkats only, and time is everything. The reticle on your nose is the tunnel
+    you would dig - bend it toward the next ring with the right stick, shorten it with LT,
+    and pull RT to ripple it open and dive through, out the far end with the speed you went
+    in with. Five long legs a lap, two laps.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 2ba6465369fa40e3a0333bae9af63b2f, type: 3}
   GolfScoring: 1
   SceneName: MinigameWarpline
   Vessels:
-  - {fileID: 11400000, guid: cc163188820f4e7a985561bc609da2e0, type: 2}
+  - {fileID: 11400000, guid: 8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
