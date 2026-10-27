@@ -15,7 +15,7 @@ MonoBehaviour:
   Mode: 73
   IsMultiplayer: 1
   DisplayName: Serpent Time
-  Description: Serpents only, against the clock. Your speed is your fuel: tap to burn
+  Description: Serpents only, against the clock. Your speed is your fuel - tap to burn
     a pellet, tap again to stack another on top - four in the tank, each one faster.
     Burn them all on a straight or keep one lit through the corners, and thread the
     rings at speed. Two laps. Fastest domain home wins.

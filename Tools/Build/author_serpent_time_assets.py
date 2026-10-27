@@ -59,7 +59,7 @@ htr.author(dict(
     # A quarter-of-race deficit (4 gates) x 0.45 = 1.8 element levels - Thresher Time's number on the
     # same 16-gate race. The Serpent's Time lengthens a pellet's burn (3 s -> 4.8 s).
     comeback=0.45,
-    description="""Serpents only, against the clock. Your speed is your fuel: tap to burn
+    description="""Serpents only, against the clock. Your speed is your fuel - tap to burn
     a pellet, tap again to stack another on top - four in the tank, each one faster.
     Burn them all on a straight or keep one lit through the corners, and thread the
     rings at speed. Two laps. Fastest domain home wins.""",
