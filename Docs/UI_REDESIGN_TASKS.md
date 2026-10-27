@@ -518,6 +518,7 @@ Anything found during implementation that needs a design decision. The implement
 | 15 | Menu B / T6 | — | **A `Label` role** (Chakra Petch SemiBold 14, caps, 0.14 em tracking) for section and field labels — §4's smallest Chakra role is Button small 14 with no tracking given. Adopt as a §4 row? | OPEN |
 | 16 | Menu B / T7 | — | **§10.1 transparent fills have no values** ("dark teal / green / amber tint"). Built as the role colour at 12% alpha (Play 24%), §3's "Team (Dark) @ 12%" idiom. Confirm. | OPEN |
 | 17 | Menu B | — | **The primary (top) nav has no spec rule.** Built as the brief and mockup specify: active tab Jade text + 2 px Jade underline. §10.8's nearest analogue would make the label Light with a Jade underline. Confirm. Live in `Menu_Main` since item 1 (2026-10-14), so an answer now changes a shipped screen: two token values on `KitTopNavTab`. | OPEN |
+| 18 | Port Rev 32 D | — | **The Port's sea-lit look has no theme tokens.** The message cards, the message field and SEND (`Docs/MENU_REDESIGN_B.md` §91, approved by Shombith 2026-10-27, "Go with D") are drawn in the sea lines' periwinkle and violet (`#7F98FF` / `#9C8CFF`, SeaLines.shader) with lighter and darker steps of them, authored as colours on `FactionMessageRow`'s two Looks and on `KitTwoToneGradient`s in `author_menu_port.py`. `UIThemeSO` has no sea / periwinkle token, so none of it follows a theme change. Should the theme gain a sea pair (and a lit-surface pair), or stay authored per screen? | OPEN |
 
 ---
 

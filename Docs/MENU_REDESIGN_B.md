@@ -3820,3 +3820,161 @@ All 12 plants fire.
 - `gates.sh`: ALL OK, including the player and editor reference compiles.
 - Offline renders of the tile and the page, with the element flower and shape in place.
 - Not opened in the editor, and the tests have not been run.
+
+## 90. Rev 27: the Port opens, with faction messages and the weekly leaderboard (2026-10-27, awaiting in-editor approval)
+
+**Asked (Shombith):** "Use the design board and lets open up the port now. Right now the port will only contain one tab
+called faction messages. Factions will be like different clans but thats in the future currently all players are in a
+single faction. So lets make a chatting system for the port and then open up port. Create some mockup designs on the
+design board." Then: "The weekly leaderboard can also go to the port for now"; "use the sea line background like
+everywhere"; on the chat service, "should we do vivox? We can" and "Lets implement".
+
+**On the canvas:** page "Rev 27 - Port" of Menu Redesign B (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with a
+copy in `Docs/MenuRedesignB/board/R27*.dc.html`. Five boards, all over the sea lines:
+- `R27PortMessages`: interactive. Type, press Enter or SEND, and wait out the 3 s cooldown.
+- `R27PortLeaderboard`: the weekly board as the second tab.
+- `R27PortActions`: a message's actions (report, mute), the muted list and the report toast.
+- `R27PortStates`: the empty, tuning-in, offline and not-sent states.
+- `R27Notes`: notes and the open decisions.
+
+**The chat service: Unity Vivox** (decided 2026-10-27). Vivox is UGS: it signs in with the same Authentication player
+id, sits in the same dashboard project, and the Moderation package already integrates with it (a report carries the
+shared channel). Messages are pushed, Vivox keeps channel history, and it runs on PC, iOS and Android. A clan later is
+another channel, and voice can come later on the same SDK. A Cloud Code poller was built first and dropped before
+commit. It added no package, but it was not real time and cost a Cloud Code call per poll. The new package is
+`com.unity.services.vivox` 16.12.1.
+
+**What the player gets:** PORT, the top bar's last tab, opens. Its lock is lifted, so LT / RT reach it. It has two tabs,
+stepped with LB / RB.
+- **FACTION MESSAGES.**
+  - On the left: the faction card ("All Pilots"; every player is in one faction for now), the three rules, the muted
+    pilots with UNMUTE ALL, and the controls.
+  - On the right: the feed (the channel's last 50 messages from Vivox history, then every new one pushed live, newest
+    at the foot), the field with its count, SEND and the hint line.
+  - Enter, X or SEND sends. A message can hold 140 characters, and a player can send one message every 3 s.
+  - A refused message stays in the field, with the reason under it in Danger.
+  - A or Y on a message (or a click) opens REPORT MESSAGE, MUTE PILOT and CANCEL:
+    - Report goes to UGS Moderation as verbal abuse.
+    - Mute is kept on this device only.
+  - Your own messages carry a neutral bar and YOU, never the selection blue (`Docs/UI_COLOR_RULES.md`). Replaced by the
+    sea-lit cards of section 91 (Rev 32 D).
+- **WEEKLY LEADERBOARD:** the weekly challenge window's own board (World / Regional / Friends, podium, rows, your best
+  run, rewards). It has no BACK, and this week's title and countdown sit at the tab row's right. The configure card's
+  LEADERBOARD button still opens the window, unchanged.
+- **Safety defaults** (proposed; decision 2 in the notes):
+  - A player whose recorded birth year says they may be under 13 can read but not send (`FairPlayAge.BirthYear`;
+    an unknown year can send).
+  - Message text is never rich text.
+  - Control characters and line breaks are removed before sending.
+
+**Built:**
+- **C#, the chat** (`Assets/_Scripts/System/FactionChat/`):
+  - `FactionChat.cs` holds the pure rules, the feed's log (each message once, in time order), the device mutes and
+    the metadata that carries the sender's avatar and name.
+  - `FactionChatService.cs` is the Vivox transport: it initialises and logs in once, joins the text-only channel
+    `faction_<id>` while the tab is shown and leaves when it is hidden, reads the history and sends.
+  - `FactionChatTests` covers the rules and the log: 10 tests, run headless with
+    `Tools/Build/prisma_edit_mode_tests/run.sh`.
+- **C#, the screen** (`Assets/_Scripts/UI/Elements/Port/`): `PortScreen` (the `IScreen`, two tabs), `FactionMessagesPane`,
+  `FactionMessageRow` and `PortLeaderboardPane`. The leaderboard pane drives the same `WeeklyChallengeLeaderboardPanel`
+  the window does. Every word is an authored field.
+- **ScreenSwitcher:**
+  - `disabledScreens` defaults to empty.
+  - The PlayFab-era `LeaderboardMenu` field and its `LoadView` on PORT are gone.
+  - The old `PortScreen` panel stays in Menu_Main, switched off; deleting it is a cleanup of its own.
+- **PlayerReports:** gains `OffensiveMessage = 3`, mapped to UGS Moderation's `VerbalAbuse`.
+- **Generator** `Tools/Build/author_menu_port.py`:
+  - It writes `FactionMessageRow.prefab` and `PortView.prefab` (Main Menu Screens/Port), places one PortView in the
+    old panel's place under `Screens`, and points `ScreenSwitcher.screens`' PORT slot (id 3) at it.
+  - `--check` and `--self-test` run 11 plants: the slot left on the old panel, a tab dropped, SEND unwired, rich text
+    on, your own row in the selection blue, the field opening the keyboard on focus, the actions shown at rest, the
+    board's BACK header on, no sea, the old panel on, and the rules loosened.
+- **Top bar:** `author_menu_topnav.py` sets `LOCKED = set()`, which removes PORT's lock view and empties
+  `disabledScreens`. `author_elemental_converter.py`'s spent one-shot now only asks that ARK is open.
+- **Amoebius:** `Port/src/CosmicShore.Engine/Services/VivoxSdk.cs` stands in for Vivox, like `ModerationSdk.cs`
+  (its own `feat(port)` commit), so the engine still compiles the game. In Amoebius the feed reads Offline.
+
+**Two generators, one parent:** the Codex and the Port both insert under `Screens`. The Codex takes the first child and
+writes its documents right after Screens'. The Port therefore takes the old panel's place and anchors its documents
+after the old panel's transform, so neither re-run moves the other (`.claude/skills/ui-redesign-tracker` T12).
+
+**How it was checked:**
+- Every `author_menu_*.py --check` (all 22 green); the Port's and the top bar's `--self-test`.
+- `gates.sh`: ALL OK.
+- The reference compile: 0 errors in project code, with Vivox 16.12.1's real source compiled in (89 assemblies).
+- `dotnet build Port/src/CosmicShore.Live`: 0 errors.
+- `FactionChatTests`: 10/10, with a negative control (a loosened age rule fails its test).
+- `check_ui_colors.py`.
+- Not opened in the Unity editor, and no message has been sent through a live Vivox channel: Vivox must first be
+  switched on for the project (`Tools/UGS/README.md`, "Switching on faction messages (Vivox)"). The hand test is
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` "The Port".
+
+**Open decisions (R27Notes):**
+1. The faction's name: "All Pilots" is a placeholder.
+2. Under-13 accounts: read-only (built), or no Port chat at all.
+3. A standard Vivox text channel seats about 200 at once. Past that, the faction needs large text channels (an
+   enterprise feature, through Vivox) or rooms.
+4. There is no word filter: reports and mutes are the tools for now.
+
+## 91. Rev 32 D: the Port's messages and field, sea-lit (2026-10-27, awaiting in-editor approval)
+
+**Asked (Shombith):** "I dont like the chat bg per person also the input field bg, make them look brigter and better ...
+more mockups", then on the four looks, "Go with D implement".
+
+**On the canvas:** page "Rev 32 - Port: brighter messages and field" (another session had taken Rev 28-31 on the same
+day), with a copy in `Docs/MenuRedesignB/board/R32Port*.dc.html`:
+- `R32PortCompare` shows the four looks side by side: two messages, then the field at rest, typing and not sent.
+- `R32PortA` to `R32PortD` are the full screens: A lit cards, B glass bubbles, C bright ribbons, D sea-lit panels.
+
+**D, built:**
+- **Messages are cards sized to their words**, up to 860 wide (`FactionMessageRow.SizeCard`).
+  - Each card is lit from its top-left corner: a periwinkle-to-violet border fading out, a navy fill lifting toward
+    the corner, and a soft periwinkle glow there.
+  - Everyone else's messages sit on the left, avatar first.
+  - **Yours** sit on the right, avatar last, with the full periwinkle-to-violet border, a brighter fill, a white name
+    and YOU.
+  - The colours are data: `FactionMessageRow`'s two `Look`s (others, yours), authored by the generator.
+- **The field** has the same gradient border with a soft glow behind it and a lit corner.
+  - Its words are white and its placeholder is lighter.
+  - The pad's focus is the selection outline round the field (its transition target), so focus still reads as
+    focus.
+- **SEND** is lit periwinkle-to-violet with dark words. It is a plain Button whose focus is the same outline.
+- **New kit piece:** `KitTwoToneGradient`, two authored colours across a graphic along an angle, multiplied by the
+  graphic's colour so fades and tints still apply. `KitGradient` stays the PLAY button's one-colour lighten.
+- **Colour rules held:**
+  - Nothing is drawn in the selection blue but the focus outlines.
+  - No element colours.
+  - The periwinkle and violet are the sea lines' own (`#7F98FF`, `#9C8CFF`).
+  - They have no theme token: design feedback queue #18 in `Docs/UI_REDESIGN_TASKS.md`.
+
+**Generator:** `author_menu_port.py` builds the new row, field and SEND. It has 13 plants now; the new ones are your
+messages in the selection blue, your messages looking like everyone else's, and the field without its gradient.
+
+**How it was checked:**
+- `--check` and `--self-test`, and the menu sweep.
+- `check_ui_colors.py`.
+- The reference compile: 0 errors in project code.
+- `dotnet build Port/src/CosmicShore.Live`: 0 errors.
+- Not opened in the editor: the hand test is "The Port" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, step 3a.
+
+**Follow-ups the Port leaves (rows, not fixed here):**
+1. **The old Port panel is dead.**
+   - Measured: `grep -rn LeaderboardsMenu Assets/_Scripts` shows only the class itself, `OfflineMenuWirer`'s gate
+     list and two comments; ScreenSwitcher no longer holds it.
+   - Menu_Main still carries the switched-off `PortScreen` GameObject (`6196685382603104254`) with `LeaderboardsMenu`
+     and its rows.
+   - Delete the panel, `LeaderboardsMenu.cs` and the wirer's `LeaderboardsMenu` gate entry in their own cleanup.
+2. **Two drivers of one board.**
+   - `PortLeaderboardPane` repeats about 60 lines of `WeeklyChallengeLeaderboardModal`: the scope usability, the
+     KitTile tab redraw, the header and the friend-id source.
+   - Extract a non-modal board driver that both use.
+   - This is not urgent: the two agree today, and both read the same service.
+3. **An extra fetch at load, possibly.**
+   - The Port's `WeeklyChallengeLeaderboardPanel` is in the scene at load with its pane hidden by alpha.
+   - If its own OnEnable fetches before `PortLeaderboardPane.Awake` sets `DrivenExternally`, the menu makes one
+     extra leaderboard read at load.
+   - Measure it in the editor (the network log) before changing anything.
+4. **A pre-existing failure.** `author_elemental_converter.py --self-test` fails on bleeding-edge as well
+   (`Menu_Main: fileID 7700130000000000002 is already taken`); its `--check` is green. Its synthesised pre-converter
+   scene no longer strips the converter's documents.
+

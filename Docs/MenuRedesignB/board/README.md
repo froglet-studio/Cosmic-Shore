@@ -291,6 +291,28 @@ the game has none of them yet (`Docs/MENU_REDESIGN_B.md` section 87).
 - [`R26CodexDiscovery.dc.html`](R26CodexDiscovery.dc.html) - Rev 26 - Discovery: the in-match toast when you meet something new
 - [`R26Notes.dc.html`](R26Notes.dc.html) - Rev 26 - notes
 
+### Rev 27 - Port  (page `rev27`)
+
+Copied 2026-10-27 from canvas version `1793126114-9235`. The messages and pilot names are sample text (the names and
+avatars are the weekly leaderboard board's). The chat runs on Unity Vivox (`Docs/MENU_REDESIGN_B.md` section 90).
+
+- [`R27PortMessages.dc.html`](R27PortMessages.dc.html) - Rev 27 - Port: Faction messages (interactive: type, Enter or Send, 3 s cooldown)
+- [`R27PortLeaderboard.dc.html`](R27PortLeaderboard.dc.html) - Rev 27 - Port: the weekly leaderboard as the second tab
+- [`R27PortActions.dc.html`](R27PortActions.dc.html) - Rev 27 - Port: message actions - report, mute
+- [`R27PortStates.dc.html`](R27PortStates.dc.html) - Rev 27 - Port: empty, loading, offline, not sent
+- [`R27Notes.dc.html`](R27Notes.dc.html) - Rev 27 - notes and decisions
+
+### Rev 32 - Port: brighter messages and field  (page `rev32`)
+
+Copied 2026-10-27 from canvas version `1793129499-cf66`. Four looks for the message backgrounds and the field; D was
+picked and built (`Docs/MENU_REDESIGN_B.md` section 91).
+
+- [`R32PortCompare.dc.html`](R32PortCompare.dc.html) - the four looks side by side: two messages, the field at rest, typing, not sent
+- [`R32PortA.dc.html`](R32PortA.dc.html) - A: Lit cards
+- [`R32PortB.dc.html`](R32PortB.dc.html) - B: Glass bubbles
+- [`R32PortC.dc.html`](R32PortC.dc.html) - C: Bright ribbons
+- [`R32PortD.dc.html`](R32PortD.dc.html) - D: Sea-lit panels (picked)
+
 ### Item boards (before the paged rounds)
 
 - [`HomeOffline.dc.html`](HomeOffline.dc.html) - Item 6 · Home · offline, asking to go online
