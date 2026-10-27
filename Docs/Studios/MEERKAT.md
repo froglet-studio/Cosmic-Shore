@@ -1,4 +1,4 @@
-# The Meerkat: the wormhole vessel (design studio, round 2, 2026-10-27)
+# The Meerkat: the wormhole vessel (design studio, round 8, 2026-10-27)
 
 **Studio:** `Docs/Studios/VesselStudio/meerkat.html` (its own source of truth; no copy script), a page of the one Vessel
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
@@ -71,6 +71,67 @@ space-time bend stays the shader's.
 
 **The panels:** all the wormhole cards are in **Play Style Config**, in this order: Reticle (feel and look, yours
 alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple), Shape, Ride.
+
+**Round 8 (Yash, 2026-10-27: "Stoat and Meerkat are the two vessels I really wanna complete myself ... all four
+abilities ... the abilities I wanna test first in artifact rather than inside game directly ... then we will see whether
+to add them or not in Unity"): the full four-ability kit, as PROPOSALS.** Nothing in this round is approved for Unity
+(`/vessel` §3's design gate is Yash's call): every new key is lab-only, tagged "lab" under its slider, and is not in
+`MeerkatWormholeConfig` or `Tools/Build/studio_to_unity/meerkat.json`. The kit follows the fleet's element language
+(Time = speed, Mass = making, Space = destroying, Charge = pilots and crystals) and PvP-is-petals-only: no ability moves
+or damages an opposing vessel.
+
+| Element · ability (button) | What it does | Its sliders | L5 upgrade |
+|---|---|---|---|
+| Charge · **Lookout** (Y, key E) | A pulse: for `lookoutSeconds` every crystal within `lookoutReach` is marked, and you see every rival's reticle and its next ring, through anything (drawn on the HUD) | `lookoutSeconds` 6, `lookoutReach` 700, `lookoutCooldownSeconds` 12 (from the marks' end) | **Alarm Call**: crystals inside the reach are drawn to you (`alarmPullSpeed` 90 u/s); team-mates see the marks too |
+| Mass · **Hardened Bridge** (LB, key Q) | LB **arms** the next tunnel (press again to disarm). Its bridge sets as a lattice of prisms, a tube lasting `wallSeconds` that no other team can cross through its wall: the move into it is taken away and the rest kept, so they slide along and go round. Its maker's team is never stopped | `wallSeconds` 20, `wallPrismDensity` 1 (a ring every 20 u, a prism every 10 u round), `hardenCooldownSeconds` 8 | **Shielded Bridge**: shielded prisms, immune to Cave-in, drawn pale |
+| Space · **Cave-in** (B, key F) | Your standing tunnel (not one you ride) implodes to its centre line now; every prism within `caveInReach` of the tube along its whole length is destroyed (field prisms and unshielded hardened prisms, yours included) | `caveInReach` 30, `caveInCooldownSeconds` 8 | **Burial**: a rival inside or touching the tunnel takes a scored hit, a petal lost and its abilities silenced (harmless) for `burialSilenceSeconds` 4; never pushed |
+| Time · **the wormhole** (RT) | Rounds 1-7, unchanged | (Play Style Config) | **Chain Dig**: from `chainShare` (0.7) of a ride, RT digs the next tunnel from the far mouth (shaped by the sticks as a reticle would be) and the ride holds `rideMidMultiplier` through the join; the tunnel behind collapses |
+
+- **Why LB toggles rather than LB held with RT:** RT is pulled while the right thumb bends the reticle, so a chord asks
+  both index fingers to land in the same instant (and on touch RT is a drag handle). A toggle is one press any time
+  before, and the Mass icon says ARMED.
+- **The controls:** Vessel Config, its Section dropdown: one section per ability (Charge, Mass, Space, Time), each with
+  an on/off switch, its element's level L0-L10 (the card says when the L5 upgrade is unlocked; scaling an ability by its
+  level is not modelled) and its sliders, each with an ⓘ preview. They ride the page's saved state and its section
+  profiles. AI Config has **AI uses the new abilities** (on).
+- **The HUD:** the four-icon row, lower right (bottom centre in phone play), in the locked order Charge, Mass, Space,
+  Time: key glyph, cooldown sweep and seconds, the level and an L5+ marker, white glyphs on neutral plates (elements have
+  no colour), the accent for what is live (marking, ARMED, a Chain Dig window: DIG!). Phone play has Y, LB and B buttons
+  under the RT handle.
+- **The world:** seeded crystals along the course line (six a leg; any hull within 14 u collects one; a tally only, so
+  a race without the kit is the race it was), and the seeded prism field (on Warpline a sleeve 30-250 u round the
+  course line; on the stand-in circuits the Stoat studio's band, bit for bit). Every race starts with the whole field
+  and every crystal back.
+- **The AI** (input-only, it presses the buttons a player has, behind the AI Config switch): Lookout whenever ready with
+  a rival or 3 crystals in reach; Harden with a rival within 600 u; Cave-in on a tunnel it has left with a rival in it
+  (L5) or 6 prisms in reach, never on its own unshielded wall; Chain Dig when a tunnel from the far mouth fits the next
+  leg (the same planner as its reticle, from the far mouth). A pilot a wall stopped flies round its nearer end.
+- **The course: Warpline**, the Meerkat's Time race (5 rings a lap, 2 laps), now the default; the 8-ring Circuit and
+  Hairpins stay selectable (Game Config, Intensity). The page ports `HeadlongCircuit.Generate`'s recipe with
+  `SlingshotCourse.ForIntensity`'s numbers (corner profile, angular spread, radial swing, out-of-plane offsets, ring
+  radii 48/40/32/26, the legality relaxation, ring 0 on the pole, rings facing the bisector with the axis jitter); a
+  seed's layout is the studio's own (mulberry32, not the game's Rng).
+
+Measured (headless, the level scorecard: median of seeds 11, 23, 37; the AI flies your hull alone, so walls and Burial
+do not come into it; "no WH" is the Hard pilot without the wormhole). Kit off = identical, race for race, to the page
+before round 8 on Circuit and Hairpins. Every course finished at every level, kit on and off.
+
+| Course | Kit off: Easy / Medium / Hard / no WH | Kit on: Easy / Medium / Hard / no WH |
+|---|---|---|
+| Warpline I1 | 93.0 / 91.1 / 90.0 / 110.9 | 82.1 / 79.9 / 78.4 / 110.9 |
+| Warpline I2 | 90.2 / 88.5 / 86.5 / 110.5 | 82.4 / 79.3 / 80.7 / 110.5 |
+| Warpline I3 | 95.0 / 93.4 / 92.0 / 122.0 | 89.0 / 83.6 / 83.2 / 122.0 |
+| Warpline I4 | 93.2 / 91.4 / 89.0 / 111.5 | 82.4 / 79.5 / 79.6 / 111.5 |
+| Circuit I1-I4 Hard | 102.5 / 101.3 / 106.8 / 106.3 | 102.5 / 95.9 / 99.0 / 95.4 |
+| Hairpins I1-I4 Hard | 106.6 / 101.1 / 97.7 / 94.8 | 103.6 / 97.5 / 94.5 / 94.0 |
+
+- Chain Dig is the kit's only speed: 5-9 chains a Warpline race take Hard 6-10 s faster.
+- With the kit on, **Medium beats Hard on Warpline I2 and I4 and Circuit I2-I3, and Easy beats it on Circuit I3** (by 0.1-3.4 s): Chain Dig rewards
+  whoever's line happens to leave a fitting leg, and the Hard pilot's one deterministic line does not always. The level
+  order (D24) no longer holds with the kit on; a finding for Yash, not tuned away.
+- Live races against three rivals (Hard, Medium, Easy) all ran to the end (all rivals 9-10 of 10 rings when the
+  first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
+  hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
 **Round 7 (Yash, 2026-10-27: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from where it can turn 90 or 120 or 150 degrees ... it can be a long umbrella stick like geometry"):** the tunnel no longer grows shorter and fatter as it bends. It
 is a straight shaft and then one bend of fixed radius `bendRadius` (60 u). LT sets the shaft (`shaftMin` 60 u released
@@ -204,8 +265,11 @@ and maps the new keys in `studio_to_unity/meerkat.json`.
 
 - **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in, in the studio and in the game. A real
   hull is `/vessel-model` work.
-- **Its other three abilities and the element map** (`/vessel-studio` D37) are not designed yet. The game's map has
-  four open slots; the wormhole is its one ability.
+- **Its other three abilities and the element map** (`/vessel-studio` D37): proposed in round 8 (Lookout, Hardened
+  Bridge, Cave-in, Chain Dig), for Yash to judge here. Not decided, not in Unity: the game's map still has four open
+  slots and the wormhole is its one ability. Not modelled: a team-mate riding your hardened tunnel (only its maker
+  rides a tunnel), scaling each ability by its element level, Garrett's after-RT look with a hardened tube (the page
+  still draws round 4's bridge).
 - **The bridge from the game's `Spindle` prefabs.** The game draws each spindle as a tapered mesh (a prefab per spindle
   would be ~280 objects per tunnel).
 - **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
