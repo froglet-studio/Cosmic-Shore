@@ -93,6 +93,7 @@ VESSELS = {
     "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py"},
     "Honeyguide": {"fbx": MODELS + "Honeyguide.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_honeyguide_assets.py"},
     "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS},
+    "Grizzly": {"fbx": MODELS + "Grizzly.fbx", "roles": FLEET_SLOTS},
     "Goby": {"fbx": MODELS + "Goby.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_goby_assets.py"},
     # the Jacks' card is one jack (the marlin's model waits for its own swordsman class, 2026-10-21)
     "Jacks": {"fbx": MODELS + "Jack.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_jacks_assets.py"},

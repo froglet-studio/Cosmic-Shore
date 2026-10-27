@@ -42,7 +42,7 @@ public interface IScreen
 | Home | `HomeScreen` | No | `Start()` |
 | Ark (ARK) — the Elemental Converter (2026-10-13; the arcade moved to `ModalWindows.ARCADE`) | `ElementalConverterView` (+ the disabled legacy `StoreScreen`) | Yes | `OnScreenEnter()` → idle crystals; CONVERT plays the omni combine (`Docs/Studios/OMNI_COMBINE_LAB.md` § In the game) |
 | Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
-| Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
+| Port (PORT) — faction messages and the weekly leaderboard (opened 2026-10-27, `Docs/MENU_REDESIGN_B.md` §90; the PlayFab-era `LeaderboardsMenu` panel is switched off) | `PortScreen` (`FactionMessagesPane`, `PortLeaderboardPane`) | Yes | `OnScreenEnter()` → the shown tab; the messages tab joins its Vivox channel while shown |
 | Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
 | Episodes | `EpisodeScreen` | No | Lazy `LoadView()` on panel toggle |
 
@@ -94,8 +94,9 @@ gradient) with one centred row under `NavBarButtons`: the `LeftArrrow` Button we
 "LT", five `KitTopNavTab` instances (`HangarLink`..`ProfileLink`, text labels, each with its
 `EventTrigger` -> `ScreenSwitcher.OnClick<X>Nav`), and `RightArrow` / "RT". `NavActiveImages` /
 `NavInactiveImages` point into the instances, so `UpdateNavBar` is unchanged; `NavBarLine` and
-`NavBarLineSprites` are deliberately empty. Locked PORT is drawn by an authored
-`MenuAvailabilityView` (padlock + dimmed word) that `disabledScreens` drives at runtime. The scene's
+`NavBarLineSprites` are deliberately empty. A locked tab is drawn by an authored
+`MenuAvailabilityView` (padlock + dimmed word) that `disabledScreens` drives at runtime (no tab is locked since
+PORT opened, §90). The scene's
 nav is generated: change it through `Tools/Build/author_menu_topnav.py` (`--check`, `--self-test`),
 not by hand. Details: `Docs/MENU_REDESIGN_B.md` §10.
 

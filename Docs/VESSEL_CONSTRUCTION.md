@@ -32,7 +32,8 @@ model each one's mesh subasset resolves to):
 > **Superseded for most rows on 2026-10-18** (`ccr-d93a6dfb-ugbxng`): the Urchin and Rhino draw their skinned
 > rigs (four real morphs; the placeholders' part GameObjects stay for colliders and jets, and the bones follow
 > them). The Scarab, Shrike, Stoat, Thresher, Brittle Star, Angler and Butterfly draw their own FBX models in
-> place of the procedural hulls. Only the Grizzly is still part-per-mesh. The current per-vessel record is
+> place of the procedural hulls. The Grizzly draws its own `Grizzly.fbx` since 2026-10-27, so no vessel is
+> part-per-mesh any more (`Vessel_Wedge_Scene (4).fbx` stays, for `TimeDandruff` and `ExplodableProjectile`). The current per-vessel record is
 > `Docs/VesselModels/README.md`. The table below is the census as it was measured, kept for the trap it
 > documents.
 

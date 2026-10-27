@@ -181,7 +181,7 @@ Also landed: **S3 again** — the 8 enums added since (57 members, all private a
 | S73 | `InputEvents.FlipAction` (pad RB / key E) is bound by no vessel, and RB / E's `InputStatus.Throttle` write is read only under `toggleManualThrottle`, which no prefab sets (`cece/sweet-mendel-yoq3vo`, 2026-10-27) | Honesty (a name describing a retired behaviour) | `grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab` = 0 after the RB abilities moved to Y; `grep -rn "toggleManualThrottle: 1" Assets` = 0; `GamepadInputStrategy.ProcessButtonInput` still raises both | When the payload takes RB (`Docs/Pilots/ARTIFACTS.md` §2), give it an honestly named event instead of reusing `FlipAction`, and decide whether manual throttle is retired. Report first: the phone's old flip gesture was already retired 2026-10-21 |
 | S74 | `author_brittlestar_assets.py` applies the prefab's bindings only inside its one-shot donor clone; `author_shrike_assets.py` re-applies them on every run (`cece/sweet-mendel-yoq3vo`, 2026-10-27) | Consistency | Moving Charge Mode to Y: the Shrike run rewrote its prefab; the Brittle Star run wrote the map and then its `--check` failed `BrittleStarChargeMode is not bound to InputEvents 14` until the prefab line was edited by hand | Make the Brittle Star's binding re-apply OWNED like the Shrike's (`author_shrike_assets.py` "re-applied the bindings") so its table is the one place a rebind is made |
 
-## 2. Bounded — M (25)
+## 2. Bounded — M (28)
 
 | # | Refactor | Kind | Evidence | Notes |
 |---|---|---|---|---|
@@ -210,6 +210,9 @@ Also landed: **S3 again** — the 8 enums added since (57 members, all private a
 | M23 | A 129-line separating-axis box-overlap kit copied into Caldera, Hesperides and Zephyr, with variants in ~12 more `Spawnable*` | Unification | 15 Spawnable files carry the 15-axis test (2 on 10-17); most of Caldera's growth 711 → 2,091 lines | one bit-identical `PrismBoxSeparation`; re-bake every touched arena (`bake_prism_layouts.py`) |
 | M24 | `VesselSilence`: a static registry keyed by player-NAME strings, with 2 static events | Honesty | `VesselSilence.cs:67` `Dictionary<string,…>`, 11 caller files on the hit path — the same class as M18 / U11 (bites only when two pilots share a name); LOCKED PvP area | key by `NetworkObjectId` / `IVesselStatus`; SOAP channels |
 | M25 | New static events and lazy `Resources` config singletons, each with its own resolve shape | Consistency | `KitInputDevice:24`, `MenuGuide:38`, `EnvironmentLoadVeil:48`, `DevDiagnostics:48`; config `Instance`s: `GamepadFlightConfigSO`, `IncorporealDepthSO`, `PrismInteractionLodConfigSO`, `PrismMotionConfigSO`, `SpindleLodProfileSO`, `TouchControlProfileLibrarySO` | ScriptableEvent channels; one shared config loader |
+| M26 | Two squad systems: the captain-era `SquadSystem` / `Squad` (`squad.data`) and its Port views (`PortSquadView`, `SquadMemberCard`, `PortSquadMemberConfigureView`) beside `SquadBook` (`SQUAD_DATA`, the Ark's Squads tab) | Vestige | `SquadSystem.` read by `PortSquadView` and `FactionMissionModal` only; `PortSquadView` is 1 instance in Menu_Main's Port screen; `DATA_INVENTORY.md` already marks `squad.data` "retired with slice 5" (claude/awesome-dirac-hssan7, 2026-10-27) | `FactionMissionModal` reads `SquadBook.GetActive()`; delete the rest (ask Shombith: the Port's owner) |
+| M27 | `SquadPickChip.Draw` hides its picture only when the chip has a second line: a layout fact used as a type test | Honesty | `SquadPickChip.cs` `else if (image && !picture && line)`; five chip kinds share the class (vessel tile, pilot, element, artifact, domain) | an authored `hidePictureWhenEmpty` per chip |
+| M28 | Doc comments in `ArcadeGameConfigureModal` whose `</summary>` runs straight into another `<summary>` (the earlier doc belongs to nothing) | Consistency | 3 sites on bleeding-edge `486be913` (lines 629, 1159, 3011 there), found by `/ship`'s orphan scan on claude/awesome-dirac-hssan7, not caused by it | move each doc onto its method (ask Yash: his file) |
 
 Elemental M rows (V5 dead `SkimmerImpactor` overrides, V8 `explosionPrismEffects`, U19 `*SignalColor`,
 C8 the 54 frozen `[Inject]` pairs) stay in `Docs/ElementalAbilitySystem/BACKLOG.md` and `ANTI_PATTERNS.md`
@@ -245,4 +248,4 @@ Rhino Charge/Space, Serpent Mass and Time L5 ability slots (`FLEET_GAPS.md`); th
 empty `SlowExplosionImpactorDataContainer`; `ScriptableEventSkimmerDebuffApplied` has no producer;
 Serpent cannot collect crystals; AI never rolls; profiler markers only in SkimRace AI; Termite/
 Falcon/Shrike have no near-field skimmer (confirm intent before wiring); Scoring R7/R11/R12 and
-NetDiag TODO-1..8; toy unlock persistence.
+NetDiag TODO-1..8; toy unlock persistence. `author_pilot_assets.py --check` is red since the Meerkat reached bleeding-edge (10-27): it has no pilots or artifacts in `Docs/Pilots/pilots_and_artifacts.json` (content, not a defect; Garrett's `Pilots/CALLSIGNS.md` may replace the roster first).

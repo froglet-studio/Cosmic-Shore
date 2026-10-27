@@ -10,7 +10,8 @@ namespace CosmicShore.UI
     ///
     /// <para>Rev 24 (Shombith, 2026-10-26: "for the vibe they look like sliders we can change they can be like bars rather
     /// than that"): each scale is a row of segments, lit from the left up to the value - read-only, so it no longer looks
-    /// like a control. A row authored with the rev-3 rail and thumb still works (the thumb is placed by ANCHOR along its
+    /// like a control. Section 90: one tick lights, at the value, on an odd row of ticks (a true middle). A row authored
+    /// with the rev-3 rail and thumb still works (the thumb is placed by ANCHOR along its
     /// rail, so it lands right at any width and before the first layout pass).</para>
     ///
     /// <para>The words and values are the vessel's own (<c>SO_Vessel.gameplayParameter1..3</c>, authored per class since
@@ -34,6 +35,9 @@ namespace CosmicShore.UI
         [SerializeField] private Slider[] sliders = new Slider[3];
 
         [Header("Segments")]
+        [Tooltip("Section 90 (Shombith 2026-10-27: \"Vibe: single active tick, odd tick count, no extra colour\"): light only " +
+                 "the one tick at the value, so an odd count has a true middle. Off: light every tick up to the value.")]
+        [SerializeField] private bool singleTick = true;
         [Tooltip("A lit segment.")]
         [SerializeField] private UIColorToken litToken = UIColorToken.TextLight;
         [Tooltip("A segment past the value.")]
@@ -56,10 +60,11 @@ namespace CosmicShore.UI
             float v = Mathf.Clamp01(p.Value);
             if (s.segments is { Length: > 0 })
             {
-                int lit = Mathf.RoundToInt(v * s.segments.Length);
+                int n = s.segments.Length;
+                int lit = Mathf.RoundToInt(v * n), at = Mathf.RoundToInt(v * (n - 1));
                 Color on = UITheme.Resolve(null, litToken), off = UITheme.Resolve(null, unlitToken);
-                for (int k = 0; k < s.segments.Length; k++)
-                    if (s.segments[k]) s.segments[k].color = k < lit ? on : off;
+                for (int k = 0; k < n; k++)
+                    if (s.segments[k]) s.segments[k].color = (singleTick ? k == at : k < lit) ? on : off;
             }
             if (s.thumb)
             {
