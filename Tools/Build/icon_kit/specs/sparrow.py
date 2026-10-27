@@ -245,6 +245,70 @@ def pierce_prism():
     return block(**PIERCE_PRISM)
 
 
+# ---- Skyburst Rockets (Charge) OPTIONS, 2026-10-27. Measured on the HUD first: the card is a LADDER of five rack
+# sprites (0..4 rockets held, SetMissilesFromAmmo01) over the plate gauge filling toward the NEXT rocket
+# (SetMissileCharge) - two readings of one tank (FireGunActionExecutor: Ammo01, a base rocket costs ShotCost01 =
+# 0.25, a heavy one from the stance costs two). The skill says a ladder is a how-much drawn as shapes, so every
+# candidate moves the COUNT onto the plate in the language Garrett just approved on the Space card: the plate is the
+# TANK, cut into one bar per rocket - full bars are rockets held, the bar filling is the next one. The icon spends its
+# shapes on the act: a rocket that goes off NEAR its target in two blasts (the prism-tearing burst and the wider
+# warhead), stocked by DESTROYING mass. Empty rack: the icon is a ghost (the promise); a rocket held: solid.
+# One CARDS entry per candidate; the losers are deleted once Garrett picks.
+import math as _m
+from motifs import burst
+from canvas import ring as _ring, band as _band
+
+RACK_MARKS = [0.25, 0.5, 0.75]          # ShotCost01 multiples: a join per rocket
+RACK_STATES = [("empty: earning the first", 0.15, 0.6),
+               ("2 held, charging the third", 0.62, 1.0),
+               ("rack full: 4 held", 1.0, 1.0)]
+
+
+def rocket_at(cx, cy, h, heading=45.0):
+    """The rack's rocket (nose, body, two swept fins), turned to fly at `heading` degrees (0 = right, 90 = up)."""
+    w = h * 0.2
+    pts = [(cx, cy - h / 2), (cx + w / 2, cy - h / 2 + h * 0.26), (cx + w / 2, cy + h * 0.2),
+           (cx + w * 1.0, cy + h / 2), (cx + w * 0.4, cy + h * 0.34), (cx - w * 0.4, cy + h * 0.34),
+           (cx - w * 1.0, cy + h / 2), (cx - w / 2, cy + h * 0.2), (cx - w / 2, cy - h / 2 + h * 0.26)]
+    return fill(rotate(pts, 90.0 - heading, cx, cy))
+
+
+# K - THE ROCKET: one rocket climbing at 45 degrees, big - the weapon itself.
+def skyburst_k():
+    return rocket_at(64, 64, 104, 45)
+
+
+# L - THE SKYBURST: a rocket lower-left, its nose into the double detonation upper-right - the jagged prism-tearing
+# burst inside the wider warhead ring (an open arc: the fuze goes off NEAR, not on contact).
+def skyburst_l():
+    m = rocket_at(36, 92, 58, 45)
+    m |= burst(84, 44, 24, spikes=9, inner=0.5, rot=10) & ~disc_(84, 44, 8)
+    m |= _band(84, 44, 38, 200, 470, w=7)
+    return m
+
+
+def disc_(cx, cy, r):
+    from canvas import disc
+    return disc(cx, cy, r)
+
+
+# M - THE HARVEST: the burst among prisms - it tears the hostile ones (danger) apart, flung outward; at Charge 5 your
+# own (domain) prisms inside it are spared. Teaches what it acts on and what changes.
+M_PRISMS = [(30, 30, -30), (100, 26, 20), (24, 96, -10), (104, 100, 30)]
+
+
+def skyburst_m_burst():
+    return burst(64, 64, 34, spikes=10, inner=0.5, rot=8) & ~disc_(64, 64, 11)
+
+
+def skyburst_m_prisms():
+    from motifs import prism
+    m = empty()
+    for x, y, _a in M_PRISMS:
+        m |= prism(x, y, 13)
+    return m
+
+
 ICONS = [
     dict(name="Sparrow_TurretStance", element="Mass", act="Turret Stance: the stopped Sparrow firing swelling rounds from both pods (composite)", draw=turret_stance,
          exempt={"gap": "Garrett 2026-10-26 - the real mesh", "components": "a hull and four rounds", "specks": "the blocks' seam slivers"}),
@@ -354,4 +418,24 @@ CARDS = [
                    ("Space 5: rounds pierce prisms", [("prism", "danger", 0.6), ("pierce", "domain")])],
          gauge={**{n: (g, None) for n, g, _r in HEAT_STATES}, "turret stance at 7.5 deg: prism rounds": (0.75, None),
                 "Space 5: rounds pierce prisms": (0.10, None)}),
+    # ---- Skyburst Rockets OPTIONS (2026-10-27): the plate is the tank in one bar per rocket; the icon is the act
+    dict(name="skyburst_option_k", group="skyburst", lockup_state=1, element="Charge", before="Assets/_Graphics/Icons/AbilityIcons/Sparrow/Ladder/Sparrow_Rockets_2.png", before_gauge_marks=[],
+         before_gauge_value=0.48, gauge_marks=RACK_MARKS, gauge_marks_style="segments",
+         title="K - THE ROCKET: one big rocket climbing; a ghost while the rack is empty. The plate: one bar per rocket",
+         parts=dict(r=skyburst_k),
+         states=[(n, [("r", "domain", a)]) for n, _g, a in RACK_STATES],
+         gauge={n: (g, None) for n, g, _a in RACK_STATES}),
+    dict(name="skyburst_option_l", group="skyburst", lockup_state=1, element="Charge", before="Assets/_Graphics/Icons/AbilityIcons/Sparrow/Ladder/Sparrow_Rockets_2.png", before_gauge_marks=[],
+         before_gauge_value=0.48, gauge_marks=RACK_MARKS, gauge_marks_style="segments",
+         title="L - THE SKYBURST: the rocket into its double blast (burst + the wider warhead arc); a ghost while empty",
+         parts=dict(r=skyburst_l),
+         states=[(n, [("r", "domain", a)]) for n, _g, a in RACK_STATES],
+         gauge={n: (g, None) for n, g, _a in RACK_STATES}),
+    dict(name="skyburst_option_m", group="skyburst", lockup_state=1, element="Charge", before="Assets/_Graphics/Icons/AbilityIcons/Sparrow/Ladder/Sparrow_Rockets_2.png", before_gauge_marks=[],
+         before_gauge_value=0.48, gauge_marks=RACK_MARKS, gauge_marks_style="segments",
+         title="M - THE HARVEST: the burst tearing hostile prisms apart (they stock the rack); at Charge 5 your own are spared",
+         parts=dict(b=skyburst_m_burst, p=skyburst_m_prisms),
+         states=[(n, [("p", "danger"), ("b", "domain", a)]) for n, _g, a in RACK_STATES]
+                + [("Charge 5: your prisms spared", [("p", "domain"), ("b", "domain")])],
+         gauge={**{n: (g, None) for n, g, _a in RACK_STATES}, "Charge 5: your prisms spared": (1.0, None)}),
 ]

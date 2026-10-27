@@ -183,7 +183,7 @@ def options_sheet(spec, group, entries, out, domain_key="jade"):
     rows = []
     old = before_image(spec.HULL, first["before"], first.get("before_rev", "HEAD")) if first.get("before") else None
     if old is not None:
-        rows.append((f"BEFORE  the {element} card as committed ({first['before']}), in the lockup", _lockup(spec, element, old, first.get("before_gauge_value"), domain_key, domains, first.get("gauge_marks")), []))
+        rows.append((f"BEFORE  the {element} card as committed ({first['before']}), in the lockup", _lockup(spec, element, old, first.get("before_gauge_value"), domain_key, domains, first.get("before_gauge_marks", first.get("gauge_marks"))), []))
     for c in entries:
         states = c["states"]
         gauges = c.get("gauge", {})
