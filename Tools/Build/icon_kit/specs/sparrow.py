@@ -310,6 +310,14 @@ REBIND = [
 ]
 
 
+# The hull's other cards as the HUD draws them today (states.py options sheets show a candidate beside them).
+LOCKUP = dict(
+    Charge=dict(parts=dict(rack=lambda: rockets(4)), state=[("rack", "white")]),
+    Mass=dict(parts=dict(hull=turret_stance_hull, rounds=turret_stance_rounds), state=[("rounds", "domain", 0.6), ("hull", "domain")]),
+    Space=dict(parts=dict(guns=cannons), state=[("guns", "white")]),
+    Time=dict(parts=dict(hull=afterburner_hull_rest, jets=afterburner_jets_rest), state=[("jets", "blue"), ("hull", "domain")]),
+)
+
 # The cards' STATES sheets (states.py): Docs/Icons/sheets/sparrow_<name>.png, drawn on every author.py run.
 CARDS = [
     dict(name="afterburner", element="Time", before="Sparrow_Afterburner", before_rev="f9e5f73e3~1",
@@ -325,7 +333,7 @@ CARDS = [
                  ("in the stance at Mass 5", [("rounds_shielded", "shielded"), ("hull", "domain")])]),
 
     # ---- Pulsefire Cannons OPTIONS (2026-10-27): one entry per candidate, the old first in each sheet
-    dict(name="cannons_option_b", element="Space", before="Sparrow_Cannons",
+    dict(name="cannons_option_b", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons",
          title="Option B - REACH: two streams from the pods; the view fills them by the live range (Space); stance swaps the rounds to prisms",
          parts=dict(rest=lambda: cannons_b(GUN_REACH_REST), full=cannons_b, stance=cannons_b_stance),
          states=[("Space low: short reach", [("rest", "domain")]),
@@ -333,7 +341,7 @@ CARDS = [
                  ("turret stance: prism rounds", [("stance", "domain")])],
          gauge={"Space low: short reach": (0.15, None), "Space full: full reach, guns hot": (0.7, None),
                 "turret stance: prism rounds": (0.3, None)}),
-    dict(name="cannons_option_c", element="Space", before="Sparrow_Cannons",
+    dict(name="cannons_option_c", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons",
          title="Option C - PIERCE: the streams meet a hostile prism; at Space 5 they go through it",
          parts=dict(wall=cannons_c_wall, stop=cannons_c_stop, through=cannons_c_through, stance=cannons_c_stance),
          states=[("base: rounds stop at the prism", [("wall", "danger"), ("stop", "domain")]),
@@ -341,7 +349,7 @@ CARDS = [
                  ("turret stance: prism rounds", [("wall", "danger"), ("stance", "domain")])],
          gauge={"base: rounds stop at the prism": (0.15, None), "Space 5: rounds pierce": (0.7, None),
                 "turret stance: prism rounds": (0.3, None)}),
-    dict(name="cannons_option_d", element="Space", before="Sparrow_Cannons",
+    dict(name="cannons_option_d", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons",
          title="Option D - WHO + REACH: the Sparrow firing from both pods; the streams fill by the live range",
          parts=dict(hull=cannons_d_hull, rest=lambda: cannons_d_rounds(GUN_REACH_REST), full=cannons_d_rounds,
                     stance=lambda: cannons_d_rounds(1.0, prism_round)),

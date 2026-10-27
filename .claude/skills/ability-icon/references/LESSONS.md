@@ -234,3 +234,15 @@ vessel silhouette."
     portrait is exempted from `components`/`gap` BY NAME with the reason, never by loosening `verify.py`. The
     generator that made the old art (`ToolPortraitBuilder`) was retired and the baker stands down on Tool pages, so
     a re-bake cannot put the spheres back.
+
+## 2026-10-27 - the Sparrow's Space card: options are judged in the LOCKUP
+
+Garrett: "going forward when showing vessel icons lets show the before and the other icons of the vessel so we can
+consider how they distinguish themselves too."
+
+41. **A candidate is judged beside its siblings, never alone.** The first Space options sheet showed each candidate on
+    its own card; one of them (the Sparrow firing from both pods) only looks wrong next to the Mass and Time cards,
+    where it is the third spiky hull in a row of four. The options sheet is now the hull's whole lockup per
+    candidate, with the BEFORE row first: `CARDS` entries share a `group=`, the spec declares `LOCKUP` (its other
+    cards as the HUD draws them today, parts and colours), and `author.py` writes `<hull>_<group>_options.png`
+    (`states.options_sheet`). The family gate (IoU at 24 px) measures the same thing; the sheet lets the owner see it.
