@@ -4091,3 +4091,16 @@ Shombith, after Scan & Merge and Bake Missing ("Baked 0 image(s)", with every sw
 - **Before re-running:** discard the local `Assets/Resources/Codex.asset` changes from the first scan. Those entries
   carry the config-asset names, and the merge never renames an entry, so they would linger beside the new ones as
   extra Field Guide entries.
+
+### 91.4 Vessel Changer pictures: the hull, not the skimmer (2026-10-27)
+
+Shombith: "fix the vessel changer pictures too". Twelve `tool_vessel-changer__<hull>.png` came out byte-identical:
+Angler, Brittlestar, Dolphin, Goby, Grizzly, Manta, Meerkat, Squirrel, Starling, Stoat, Thresher and Urchin.
+
+- **Cause.** Every ship prefab carries a skimmer: a builtin sphere scaled 15-60x. The Codex baker photographed the whole
+  prefab, so the sphere filled the frame, and after normalising every hull was the same blue ball. The Hangar stage and
+  the Toy Box never had this, because they build through `VesselModelBuilder`, whose hull filter drops builtin
+  primitives, trails, jets and VFX.
+- **Fix.** `CodexImageBaker.HarvestModel` takes an optional part filter, and `CodexVariantSubject.BuildHull` passes
+  `VesselModelBuilder.IsHull`, now public: one hull filter for every picture of a ship.
+- **To re-bake:** FrogletTools > UI > Codex, then **Bake All**. Bake Missing skips these, because a file already exists.
