@@ -33,7 +33,8 @@ free for the payload.
 
 ## 1. The concept
 
-A squad slot has four parts, and each one decides one thing:
+A squad is a **12-card deck** (Garrett, 2026-10-27): three vessels, each with four cards (vessel, element, pilot,
+artifact). The four cards of a slot each decide one thing:
 
 | Part | What it decides |
 |---|---|
@@ -159,7 +160,7 @@ an element level:
 
 ## 6. The loop
 
-1. **Bring.** Before a voyage, each of the squad's three slots picks one artifact from its player's collection. The
+1. **Bring.** Building the deck picks the three artifact cards: one per slot, from that player's collection. The
    artifacts brought ride in the squad's one Ark; the rest of each collection stays safe at home.
 2. **Hunt.** Artifacts are found on voyages, never bought:
    - in **vaults**, small super-shielded shells in the HyperSea that a payload or a specialist opens;

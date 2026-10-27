@@ -22,7 +22,8 @@ which this reuses.
 **everything else is suppressed**: dimmed and drained of colour, still there and still solid, just quiet.
 
 - **A pilot is a pair of eyes.** Each pilot carries one callsign, and the callsign is what they see.
-- **The four parts of a squad slot each do one job:**
+- **A squad is a 12-card deck** (Garrett, 2026-10-27): three vessels, each with four cards (vessel, element, pilot,
+  artifact). The four parts of a slot each do one job:
 
   | Part | What it decides |
   |---|---|
@@ -33,8 +34,8 @@ which this reuses.
 
 - **Seeing one thing costs you everything else.** While LB is held you fly half-blind to the rest of the world. That
   is the price, and it is the only one.
-- **A squad is a set of eyes.** A squad is three vessels (Garrett, 2026-10-27), so three pilots cover three of the
-  seventeen sights. Building the squad means choosing what it can find and what it will never see coming. With the D-pad hull swap
+- **A squad is a set of eyes.** Its three pilot cards cover three of the seventeen sights. Building the deck means
+  choosing what the squad can find and what it will never see coming. With the D-pad hull swap
   (`PilotSwap`), changing hulls also changes whose eyes you look through.
 
 ## 2. The seventeen callsigns
