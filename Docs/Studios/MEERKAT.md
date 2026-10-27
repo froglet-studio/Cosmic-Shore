@@ -133,6 +133,24 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 11 (Yash, 2026-10-28: "make the wormhole look very realistic ... not super calculative ... performant and
+realistic, fun to travel without getting dizzy ... a pleasant water ride experience through a water pipe. Transparent
+pipe ... the reticle ... just pure wireframe and it should be less lit in the front side and more lit back, so I can see
+the bending of the other end"):**
+- **The reticle** is still the bare wireframe. Its brightness now runs from `reticleNearLight` (0.25) × at its way in,
+  by your nose, to full at its far end, so the bend stands out. The page and the game draw it the same way.
+- **The formed tunnel** (Garrett's contour field, Unity only: the page does not draw the field) is retuned as a clear
+  pipe of gentle glass. Three looks were rendered in the Tube Lens Lab, from outside and riding through: round 10's
+  values, a water pipe, and a glassier pipe. Round 10's tore and swirled the world seen through the wall; the water pipe
+  bent it gently, so pillars seen through it stayed whole with a slight water wave. Its numbers:
+  - strength 6, pitch 0 (along the flow), drag 0.5, twist 0;
+  - glass 1 at Δn 0.05, grazing 0.9 (the lab: low grazing makes the ride view swirl);
+  - flow Even, outer 0.15, profile Smoother;
+  - ribs 0.25 at sharpness 3, travelling 1.2 rings/s, 16 × 12.
+- **Cost:** softer ribs let the march take larger steps (the rib term caps the step by 1 / (2 × sharpness + 4): 11.12
+  to 3 is a cap about 2.6 times looser). The glass term still costs four field reads a step; `fieldGlass` 0 is the
+  cheapest pipe if a profile shows it. Not profiled in Unity.
+
 **Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
 screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow, it's always
 center. Also, I want to have options to control the diameter of the entry exit pair ... and the inner diameter ...
@@ -233,6 +251,7 @@ just spindles. Tiny thinning spindles"):**
 | reticle | `reticleSmoothSeconds` | 0.15 s | Your reticle eases toward the sticks over this long (0 = at once) |
 | reticle | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
 | reticle | `reticleWhite` | 0.45 | Your reticle's colour: your domain colour toward white (round 9; its geometry is the bridge's) |
+| reticle | `reticleNearLight` | 0.25 | Its brightness at the way in against its far end, so the bend stands out (round 11; 1 = even) |
 | look | `bridgeVisibility` | 1 | The formed tunnel's bridge, for everyone (0 = hidden) |
 | look | `bridgeGlass` | 0.6 | ...its glass surface |
 | look | `bridgeRings` | 16 | ...rings of spindles along it |

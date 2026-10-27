@@ -104,6 +104,11 @@
       "field": "reticleWhite"
     },
     {
+      "key": "reticleNearLight",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleNearLight"
+    },
+    {
       "key": "bridgeVisibility",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "bridgeVisibility"

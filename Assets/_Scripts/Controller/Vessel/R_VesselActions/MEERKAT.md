@@ -34,6 +34,8 @@ the prefab:
   - It is the wormhole's own wireframe (round 9, Yash: *"the reticle is the silhouette of the geometry"*): the bridge's
     `bridgeRings` × `bridgeSpindlesPerRing`, `bridgeRibs` and `bridgeSpindleThickness`, in the same places, condensing
     the same way (`MeerkatWormholeView.BridgeFrame`), with no glass and no path.
+  - It is dim at its way in, by your nose, and brightest at its far end, so the bend stands out
+    (`reticleNearLight` 0.25, round 11).
   - Its own controls are its brightness (`reticleIdleAlpha` at rest, full while you shape it) and its colour: your
     domain colour toward white by `reticleWhite`. The bridge's spindles take `bridgeWhite` the same way.
 - **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
@@ -108,8 +110,18 @@ lets the lensing alone sell the effect."* Two switches on the config hold it, an
   - The tube is measured over its LIVE window, so the field ripples in from the centre and collapses with the tunnel.
   - The four tunnels nearest the camera take part. A vessel in front of the first shell a ray meets is not bent.
   `Bridge` brings back round 3's bridge and glass.
-- **Numbers:** the lab's export, Garrett's pick: strength 18, pitch 90, drag 1, twist 0, glass 0.4 at Δn 0.04,
-  grazing 0.6, flow In then out, inner 0.1, outer 0.12, profile Smooth, ribs 0.9, sharpness 8, travel 1.5.
+- **Numbers, round 11** (Yash, 2026-10-28: "a pleasant water ride experience through a water pipe. Transparent pipe
+  ... I should not feel too much of warping ... performant"): a clear pipe of gentle glass, rendered against round 10
+  in the Tube Lens Lab before choosing (`Docs/Studios/MEERKAT.md` Round 11).
+  - strength 6, pitch 0 (along the flow, not round it), drag 0.5, twist 0;
+  - glass 1 at Δn 0.05, grazing 0.9 (a ray skimming the wall from inside bends little, so the ride does not swirl);
+  - flow Even (no sign flip mid-ride);
+  - inner 0.1, outer 0.15, profile Smoother;
+  - ribs 0.25 at sharpness 3 (soft ripples that travel toward the exit at 1.2 rings/s, 16 × 12): softer ribs also
+    let the march take larger steps.
+  - Garrett's pick was strength 18, pitch 90, drag 1, glass 0.4 at Δn 0.04, grazing 0.6, flow In then out, outer 0.12,
+    ribs 0.9 at sharpness 8. Yash's round-8 tune was glass 1.579 at Δn 0.078, grazing 0.883, ribs 0.155 at 11.12,
+    9 rings.
 - **Not in the studio yet.** These 18 fields are not on the Meerkat page and not in `studio_to_unity/meerkat.json`, so
   `--check` neither maps nor drifts them. Bringing them onto the page (a Before/After panel) and mapping them is Yash's
   next step; the lab's GLSL (`tube`, `prof`, `ribF`, `fieldDir`, `trace`) is what `MeerkatWormholeLens.shader` ports.

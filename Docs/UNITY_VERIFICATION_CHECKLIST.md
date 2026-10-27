@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's round 11: a water-pipe tunnel and a reticle lit from its far end (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- `MeerkatWormholeConfig`'s contour field retuned as a clear pipe: strength 6, pitch 0, drag 0.5, glass 1 at 0.05,
+  grazing 0.9, flow Even, outer 0.15, ribs 0.25 at sharpness 3, travelling 1.2 rings/s, 16 × 12.
+- `reticleNearLight` 0.25 (artifact, then cloned): the reticle wireframe is dim at its way in and full at its far end.
+
+**Verified without the editor:**
+- Reference compile, player and editor: 0 errors in project code. `check_studio` and `author_meerkat_assets --check`
+  pass; `studio_to_unity` 42 mapped, 0 drift.
+- The field numbers were chosen in the Tube Lens Lab (the same GLSL the shader ports), rendered headless from outside
+  and riding through. That lab's tube is the old single arc, not round 7's shaft and bend.
+
+**Verify in editor:**
+1. Lava lamp, Meerkat with GARRETT'S LOOK. Pull RT and ride. Through the walls the world bends gently like a clear
+   water pipe: no tearing, no swirl, soft ripples drifting toward the exit. No dizziness.
+2. Before RT, the reticle is a bare wireframe: faint near your nose, brightest at its far end and its bend.
+3. Profile a ride (`prof`): the cost of "Meerkat wormhole lens" against round 10's settings.
+
+---
+
 ### 🔴 The Meerkat's round 10: the hull at the centre of the screen, and edit-time diameters (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:**

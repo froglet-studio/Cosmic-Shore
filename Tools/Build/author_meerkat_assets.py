@@ -119,7 +119,7 @@ def script_guid(name: str) -> str:
 CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "throatDiameter", "mouthDiameter",
                "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
-               "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
+               "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
                "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "bridgeWhite", "aiWormhole", "aiStraightMinDistance",
                "aiBentMinDistance", "aiShapeSeconds", "aiNoise"]
 

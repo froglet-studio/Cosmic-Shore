@@ -74,6 +74,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 1f)] float reticleIdleAlpha = 0.4f;
         [Tooltip("Your reticle's colour: your domain colour toward white")]
         [SerializeField, Range(0f, 1f)] float reticleWhite = 0.45f;
+        [Tooltip("...its brightness at the way in, against its far end (1 = even)")]
+        [SerializeField, Range(0f, 1f)] float reticleNearLight = 0.25f;
 
         [Header("Wormhole look (the artifact's Play Style Config > Wormhole look, Space look)")]
         [Tooltip("Space bent along the tube (strength)")]
@@ -179,6 +181,7 @@ namespace CosmicShore.ScriptableObjects
         public float ReticleSmoothSeconds => reticleSmoothSeconds;
         public float ReticleIdleAlpha => reticleIdleAlpha;
         public float ReticleWhite => reticleWhite;
+        public float ReticleNearLight => reticleNearLight;
         public float BridgeVisibility => bridgeVisibility;
         public float BridgeGlass => bridgeGlass;
         public int BridgeRings => bridgeRings;

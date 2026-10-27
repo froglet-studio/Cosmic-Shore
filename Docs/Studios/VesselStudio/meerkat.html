@@ -502,7 +502,9 @@
     // 2026-10-28: "the reticle is the silhouette of the geometry"): it is the wormhole's own wireframe - the bridge's rings,
     // spindles, ribs and thickness, in the same places, condensing the same way - with no glass and no path, at its own
     // brightness (reticleIdleAlpha at rest) and its own colour (your domain colour toward white by reticleWhite)
-    reticleSmoothSeconds: 0.123, reticleIdleAlpha: 0.053, reticleWhite: 0.45,
+    // Round 11 (Yash: "less lit in the front side and more lit back, so I can see the bending of the other end"): the
+    // reticle's brightness runs from reticleNearLight x at its way in (by your nose) to full at its far end
+    reticleSmoothSeconds: 0.123, reticleIdleAlpha: 0.053, reticleWhite: 0.45, reticleNearLight: 0.25,
     // the bridge (Yash, 2026-10-27): a formed tunnel's geometry, shown to everyone - rings of spindles round the throat and
     // ribs of spindles along it (the game will build it from its Spindle prefabs), and a glass surface under them; the
     // spindles condense out of the tunnel's centre as it forms, evaporate back as it collapses, and a shimmer runs through
@@ -566,6 +568,7 @@
     ['reticle', 'reticleSmoothSeconds', 'Your reticle follows the sticks over (s, 0 = at once)', 0, 1, 0.01],
     ['reticle', 'reticleIdleAlpha', 'Your reticle, right stick centred (brightness)', 0, 1, 0.05],
     ['reticle', 'reticleWhite', 'Your reticle\'s colour: your domain colour toward white', 0, 1, 0.05],
+    ['reticle', 'reticleNearLight', '...its brightness at the way in, against its far end (1 = even)', 0, 1, 0.05],
     ['look', 'bridgeVisibility', 'The formed tunnel\'s bridge, for everyone (0 = hidden)', 0, 1, 0.05],
     ['look', 'bridgeGlass', '...its glass surface (brightness)', 0, 2, 0.05],
     ['look', 'bridgeRings', '...rings of spindles along it', 2, 40, 1],
@@ -1663,13 +1666,14 @@
   // throat at fixed places along the tunnel, bridgeRibs ribs along it, bridgeSpindleThickness thick, condensing in from the
   // window's fronts and shimmering way in to way out. The bridge draws it over its glass; your reticle IS it, bare, at its
   // own brightness and colour. n0..n1: the camera distance its spindles fade in over.
-  function drawFrame(wh, A, col, n0, n1) {
+  function drawFrame(wh, A, col, n0, n1, nearLight) {   // nearLight: the way in's brightness against the far end (null = even)
     const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.004) return;
     const nR = Math.max(2, Math.round(P.bridgeRings)), nS = Math.max(3, Math.round(P.bridgeSpindlesPerRing)), nRib = Math.max(0, Math.round(P.bridgeRibs));
     const th = Math.max(0.05, P.bridgeSpindleThickness), sh = clamp01(P.bridgeShimmer), edge = Math.max(4, 0.06 * wh.L);
     const ringS = (i) => wh.L * (i + 0.5) / nR;
     const grow = (s) => smooth(0, edge, Math.min(s - wh.s0, wh.s1 - s));   // condense at the window's fronts
-    const glow = (u) => 0.85 * (1 + sh * 1.4 * Math.pow(Math.max(0, Math.sin(2 * Math.PI * (u * 1.5 - simT * 0.5))), 4));
+    const near = nearLight == null ? 1 : clamp01(nearLight);
+    const glow = (u) => (near + (1 - near) * u) * 0.85 * (1 + sh * 1.4 * Math.pow(Math.max(0, Math.sin(2 * Math.PI * (u * 1.5 - simT * 0.5))), 4));
     for (let i = 0; i < nR; i++) {   // the rings round the throat
       const s = ringS(i), g = grow(s); if (g <= 0) continue;
       const r = whRadius(wh, s), u = s / wh.L, br = A * glow(u);
@@ -1691,7 +1695,7 @@
   }
   // Your reticle (round 9): the wormhole's wireframe (drawFrame), no glass, in your domain colour toward white by reticleWhite.
   const RET_NEAR = 1, RET_FULL = 8;   // a reticle spindle fades only right at the camera (it is 30 u ahead of the nose)
-  function drawReticle(wh, A) { drawFrame(wh, A, pilotColor(0).lerp(brW, clamp01(P.reticleWhite)), RET_NEAR, RET_FULL); }
+  function drawReticle(wh, A) { drawFrame(wh, A, pilotColor(0).lerp(brW, clamp01(P.reticleWhite)), RET_NEAR, RET_FULL, P.reticleNearLight); }
   // Your reticle (rounds 23, 26): faint at rest, full while the right stick or LT shapes it, rippling out of its centre as
   // it comes back; and as a tunnel forms, the reticle fading. Its grid is yours alone and only while you shape it; a
   // formed tunnel shows everyone its bridge (drawBridge) and bends space round it (updateTubeWarp, setLensUniforms).
@@ -3072,6 +3076,7 @@
     bridgeSpindlesPerRing: { scene: 'bridge', d: 'How many spindles make each ring (each spindle is one edge of the ring\'s polygon).', lo: 'Angular rings.', hi: 'Round rings.' },
     bridgeRibs: { scene: 'bridge', d: 'How many lines of spindles run along the tunnel from ring to ring, mouth to mouth. 0 = rings only.', lo: 'Few ribs.', hi: 'A lattice.' },
     bridgeSpindleThickness: { scene: 'bridge', d: 'How thick each spindle is at its middle (a spindle tapers to a point at both ends).', lo: 'Fine threads.', hi: 'Heavy beams.' },
+    reticleNearLight: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is dimmer at its way in, by your nose, and brightest at its far end, so the bend at the other end stands out. This is the way in\'s brightness against the far end\'s; 1 lights it evenly.', lo: 'Only the far end shows.', hi: 'Even all along.' },
     reticleWhite: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is the wormhole\'s wireframe (its rings, spindles and ribs are the bridge\'s, in the same places), in your domain colour mixed toward white by this much.', lo: 'Your domain colour.', hi: 'White.' },
     bridgeWhite: { scene: 'bridge', d: 'The bridge\'s spindles are its maker\'s domain colour mixed toward white by this much (its glass keeps the domain colour).', lo: 'The domain colour.', hi: 'White spindles.' },
     bridgeShimmer: { scene: 'bridge', d: 'A shimmer of light running through the spindles from the way in to the way out, so the bridge reads as a passage. 0 = steady.', lo: 'Steady.', hi: 'A strong running pulse.' },
@@ -3313,6 +3318,7 @@
     bridgeShimmer: ['MeerkatWormholeConfig.bridgeShimmer', 'linked'],
     bridgeWhite: ['MeerkatWormholeConfig.bridgeWhite', 'linked'],
     reticleWhite: ['MeerkatWormholeConfig.reticleWhite', 'linked'],
+    reticleNearLight: ['MeerkatWormholeConfig.reticleNearLight', 'linked'],
     aiWormhole: ['MeerkatWormholeConfig.aiWormhole', 'linked'],
     aiStraightMinDistance: ['MeerkatWormholeConfig.aiStraightMinDistance', 'linked'],
     aiBentMinDistance: ['MeerkatWormholeConfig.aiBentMinDistance', 'linked'],

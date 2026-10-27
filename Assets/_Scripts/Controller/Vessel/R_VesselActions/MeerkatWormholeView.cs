@@ -113,7 +113,7 @@ namespace CosmicShore.Gameplay
         /// Your reticle, the page's round-9 <c>drawReticle</c>: the wormhole's wireframe (<see cref="BridgeFrame"/>, the bridge's
         /// own rings, spindles, ribs and thickness in the same places), bare - no glass - at the reticle's brightness, in its
         /// pilot's domain colour toward white by <c>reticleWhite</c>. Its spindles fade only right at the camera (it rides just
-        /// ahead of the nose). Garrett's "before field" (2026-10-27) made it the bridge; Yash's round 9 made it one geometry.
+        /// ahead of the nose), dim at its way in and bright at its far end (<c>reticleNearLight</c>, round 11). Garrett's "before field" (2026-10-27) made it the bridge; Yash's round 9 made it one geometry.
         /// </summary>
         static void DrawReticle(in MeerkatWormholeExecutor.Reticle r, ScriptableObjects.MeerkatWormholeConfigSO cfg,
             Vector3 eye, Color colour)
@@ -121,7 +121,7 @@ namespace CosmicShore.Gameplay
             if (r.S1 - r.S0 < 0.5f || r.Alpha <= 0.01f) return;
             var sh = r.Shape;
             BridgeFrame(r.A, r.T0, r.Side, sh.L, sh.S, sh.R, sh.Theta, sh.B, sh.M, r.S0, r.S1, r.Alpha, colour, cfg.ReticleWhite,
-                        cfg, eye, ReticleNear, ReticleFull, glass: false);
+                        cfg, eye, ReticleNear, ReticleFull, glass: false, nearLight: cfg.ReticleNearLight);
         }
 
         /// <summary>
@@ -130,9 +130,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         static void BridgeFrame(Vector3 a0, Vector3 t0, Vector3 side, float L, float S, float R, float theta, float b0, float m0, float s0, float s1,
             float A, Color baseCol, float whiten, ScriptableObjects.MeerkatWormholeConfigSO cfg, Vector3 eye, float nearFrom,
-            float nearFull, bool glass = true)
+            float nearFull, bool glass = true, float nearLight = 1f)
         {
             if (A <= 0.004f) return;
+            // round 11: brightness from nearLight x at the way in to full at the far end (1 = even; the reticle's reticleNearLight)
+            float near = MeerkatWormholeMath.Clamp01(nearLight);
             var white = Color.white;
             var col = Color.Lerp(baseCol, white, MeerkatWormholeMath.Clamp01(whiten));
             if (glass)
@@ -143,7 +145,7 @@ namespace CosmicShore.Gameplay
             {
                 float s = MeerkatWormholeMath.BridgeRingS(L, i, nR), g = MeerkatWormholeMath.BridgeGrow(L, s0, s1, s);
                 if (g <= 0f) continue;
-                float rad = MeerkatWormholeMath.Radius(b0, m0, L, s0, s1, s), br = A * MeerkatWormholeMath.BridgeGlow(s / L, sh, now);
+                float rad = MeerkatWormholeMath.Radius(b0, m0, L, s0, s1, s), br = A * (near + (1f - near) * s / L) * MeerkatWormholeMath.BridgeGlow(s / L, sh, now);
                 for (int j = 0; j < nS; j++)
                 {
                     var a = Surf(a0, t0, side, S, R, theta, s, j / (float)nS * Mathf.PI * 2f, rad, out _);
@@ -163,7 +165,8 @@ namespace CosmicShore.Gameplay
                     var a = Surf(a0, t0, side, S, R, theta, s1r, phi, MeerkatWormholeMath.Radius(b0, m0, L, s0, s1, s1r), out _);
                     var b = Surf(a0, t0, side, S, R, theta, s2r, phi, MeerkatWormholeMath.Radius(b0, m0, L, s0, s1, s2r), out _);
                     Grow(ref a, ref b, g);
-                    Spindle(a, b, th * 0.8f * g, A * 0.8f * MeerkatWormholeMath.BridgeGlow((s1r + s2r) / (2f * L), sh, now), col, eye,
+                    float ur = (s1r + s2r) / (2f * L);
+                    Spindle(a, b, th * 0.8f * g, A * 0.8f * (near + (1f - near) * ur) * MeerkatWormholeMath.BridgeGlow(ur, sh, now), col, eye,
                             nearFrom, nearFull);
                 }
             }
