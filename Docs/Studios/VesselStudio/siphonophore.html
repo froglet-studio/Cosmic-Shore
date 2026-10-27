@@ -158,7 +158,7 @@
   <header class="top">
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1 id="h1">Siphonophore Studio</h1>
-    <span class="round" id="round">voltron vessel &middot; round 1</span>
+    <span class="round" id="round">voltron vessel &middot; round 2</span>
     <p class="sub" id="sub">One vessel that is three zooids and one colony, taking turns. Apart, the Bell lights the dark crystals, the Sting opens their husks and the Bract nets them into its hold; none of them can score. Fused, the colony digests the hold into the score and rams the walls open, and cannot light, open or catch; the hold empty, it splits itself. Swap seats with the arena's gesture; the AI takes every seat you leave.</p>
   </header>
 
@@ -188,7 +188,7 @@
             <h2 id="ovTitle">Siphonophore</h2>
             <p id="ovText">The Tide Run: every crystal on the course is DARK inside a HUSK. The Bell's lantern lights it, the Sting's venom opens the husk, the Bract's net carries it in the hold; none of that scores. Hold B with the zooids close to FUSE: the colony digests the hold into the score and rams the walls open, then splits itself when the hold is empty. Every third crystal is behind a wall only the colony opens. Left / right swaps your seat.</p>
             <div class="keys">
-              <span>Gamepad</span><span id="keysGamepad">both sticks steer &middot; RT the zooid's one move (pulse / venom / net) &middot; LT the Bell's Slipstream (the Bract: ward) &middot; B hold = fuse &middot; D-pad left / right swaps seats</span>
+              <span>Gamepad</span><span id="keysGamepad">both sticks steer &middot; RT the zooid's one move (Pulse Jet: hold, let go on the beat / venom / net) &middot; LT the Bell's Slipstream, the Sting's lash (hold to coil), the Bract's ward &middot; B hold = fuse &middot; D-pad left / right swaps seats</span>
               <span>Keys</span><span id="keysKeys">W S pitch &middot; A D yaw &middot; Q E roll &middot; Space LT &middot; F RT &middot; H B (fuse) &middot; &larr; &rarr; swap seats</span>
               <span>Free cam</span><span>orbits the viewed body: drag to turn &middot; wheel to zoom &middot; J L / I K turn &middot; U O zoom</span>
               <span></span><span>Enter play &middot; P pause / resume &middot; R stop &middot; C next camera</span>
@@ -226,6 +226,11 @@
       <div class="panel" id="grp-intensity">
         <h3>Intensity</h3>
         <div class="field"><span>Course</span><select id="courseSel" class="arp-seg" aria-label="Course intensity"></select></div>
+      </div>
+      <div class="panel" id="grp-rivals">
+        <h3>Rivals <span>lab stand-ins</span></h3>
+        <div class="field"><span>Rivals</span><select id="rivalSel" aria-label="Rivals"><option value="0">None</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+        <p class="note">Rival vessels in the Ruby, Gold and Blue domains fly the course carrying petals (the ring of small crystals round each). They take no crystals; they are here so the Sting's Tentacle Lash has something to strike. A lash that strikes one sheds a petal as a crystal; with Mass at level 5 (Trawl) the Bract can net it and the colony digests it as a point.</p>
       </div>
       <div class="panel" id="grp-loop">
         <h3>The loop <span>apart, then the colony, then apart</span></h3>
@@ -276,7 +281,7 @@
         <p class="note" id="colonyInfo"></p>
       </div>
       <div class="panel" id="grp-kit">
-        <h3>Ability kit <span>round 2 proposal</span></h3>
+        <h3>Ability kit <span>round 2</span></h3>
         <p class="note">Each zooid owns one element: the Bell Space, the Sting Charge, the Bract Mass, the colony Time. Every zooid has a passive and two triggers; B calls the colony from any zooid. Each one is borrowed from a shipped vessel or a concept prototype, named under it.</p>
         <div id="kit" class="kit"></div>
         <h4>Why it is one vessel</h4>

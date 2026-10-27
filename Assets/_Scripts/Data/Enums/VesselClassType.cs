@@ -33,5 +33,6 @@ namespace CosmicShore.Data
         Starling = 21,    // the passive swarm card vessel: the swarm roams on its own, the pilot turns the view and picks cards: Controller/Vessel/R_VesselActions/STARLING.md
         Jacks = 22,    // the Jacks: two jacks that herd real fauna, one player: thumbs run them on the board, or fly them as the hull (two-thumb flight). Was "Marlin and Jacks"; the name Marlin is kept for a swordsman: Controller/Vessel/R_VesselActions/JACKS.md
         Honeyguide = 23,   // the Honeyguide and Ratel: two seats on one hull (its own model on the Sparrow's airframe) with the Ratel's Dynamo seat: Controller/Vessel/Crew/HONEYGUIDE.md
+        Meerkat = 28,   // the wormhole vessel: one thumb flies, the right stick bends a tunnel, RT dives through it (24-27 are claimed on in-flight branches: Flea, Warden, Bulwark, Tempest): Controller/Vessel/R_VesselActions/MEERKAT.md
     }
 }
