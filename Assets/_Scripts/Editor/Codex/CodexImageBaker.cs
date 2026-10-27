@@ -688,8 +688,15 @@ namespace CosmicShore.Editor.Codex
         /// dimension is 2 units. Reads the prefab ASSET — nothing is instantiated, so no gameplay
         /// component ever wakes up.
         /// </summary>
+        /// <param name="include">
+        /// Which parts belong in the picture, beyond the shared skips. A ship passes
+        /// <see cref="VesselModelBuilder.IsHull"/>: every ship prefab carries a skimmer, a builtin sphere
+        /// scaled 15-60x, and without the hull filter it fills the frame and every hull bakes the same blue
+        /// ball (Shombith 2026-10-27: twelve Vessel Changer pictures came out byte-identical).
+        /// </param>
         internal static GameObject HarvestModel(GameObject prefab, bool flat,
-            List<Object> temporaries, out Bounds bounds)
+            List<Object> temporaries, out Bounds bounds,
+            System.Func<Transform, Transform, Mesh, Renderer, bool> include = null)
         {
             bounds = new Bounds(Vector3.zero, Vector3.zero);
 
@@ -713,6 +720,7 @@ namespace CosmicShore.Editor.Codex
                 if (ToyModelBuilder.IsUnderHiddenLegacyModel(filter.transform, hiddenRoot)) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, prefab.transform,
                         NonBodyNameHints)) continue;
+                if (include != null && !include(prefab.transform, filter.transform, filter.sharedMesh, renderer)) continue;
                 AddMesh(root.transform, prefab.transform, filter.transform, filter.sharedMesh,
                         renderer.sharedMaterials, ref flatMaterial, temporaries);
                 any = true;
@@ -724,6 +732,7 @@ namespace CosmicShore.Editor.Codex
                 if (ToyModelBuilder.IsUnderHiddenLegacyModel(skinned.transform, hiddenRoot)) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(skinned.transform, prefab.transform,
                         NonBodyNameHints)) continue;
+                if (include != null && !include(prefab.transform, skinned.transform, skinned.sharedMesh, skinned)) continue;
                 AddMesh(root.transform, prefab.transform, skinned.transform, skinned.sharedMesh,
                         skinned.sharedMaterials, ref flatMaterial, temporaries);
                 any = true;

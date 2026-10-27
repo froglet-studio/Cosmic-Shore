@@ -17036,3 +17036,14 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
    - the report's failures list no longer names them.
 4. **Codex.** CODEX > ECOLOGY > FAUNA. **Pass:** those species show their pictures in the strip and on the plate, with
    no duplicate entries at the end of the strip.
+
+## 🔴 2026-10-27 — Codex Vessel Changer pictures without the skimmer sphere (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §91.4.
+
+1. FrogletTools > UI > Codex, then **Bake All**, then save.
+2. **Pass:**
+   - every `Assets/_Graphics/Codex/tool_vessel-changer__*.png` shows its own hull;
+   - no two are the same picture;
+   - none is a blue sphere.
+3. **Hangar and Toy Box unchanged.** **Pass:** they still show every hull (`VesselModelBuilder.IsHull` only became public).
