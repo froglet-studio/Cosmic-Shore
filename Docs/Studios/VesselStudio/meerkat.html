@@ -3939,6 +3939,7 @@
         (layout === 'phone'
           ? ''
           : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
+        kitStartLine() +   // round 16: what the kit adds (Play Style Config's Kit dropdown)
         '<div class="btns"><button class="pick primary" type="button" id="startBtn">Start</button><button class="pick" type="button" id="watchGateStart" title="The AI on your hull, the Follow camera">Watch the AI fly the wormhole</button></div>';
       $('startBtn').addEventListener('click', startRace);
       $('watchGateStart').addEventListener('click', watchGateAi);
@@ -3952,6 +3953,14 @@
     }
   }
   function hideOverlay() { $('overlay').hidden = true; }
+  // round 16: one line on the start card naming the kit and its buttons
+  function kitStartLine() {
+    const k = kitOf(BP);
+    if (k === 1) return '<p><b>Garrett\'s kit</b>: <kbd>Y</kbd> / <kbd>F</kbd> Sentinel mode, <kbd>LB</kbd> / <kbd>Q</kbd> held the pilot sight FLUME, fly into any soliton to ride it; <kbd>[</kbd> <kbd>]</kbd> / D-pad take a sentinel seat (click to shield or zap there; <kbd>Y</kbd> hops). The Kit dropdown is in Play Style Config.</p>';
+    if (k === 2) return '<p><b>The Mix</b>: <kbd>Y</kbd> / <kbd>F</kbd> Sentinel mode, <kbd>B</kbd> Cave-in (Space L5), <kbd>RT</kbd> late in a ride Chain Dig (Time L5), <kbd>LB</kbd> / <kbd>Q</kbd> held the pilot sight FLUME, fly into any soliton to ride it. The Kit dropdown is in Play Style Config.</p>';
+    if (k === 3) return '<p><b>Round 8 (archived)</b>: <kbd>E</kbd> Lookout, <kbd>Q</kbd> Hardened Bridge, <kbd>F</kbd> Cave-in. The Kit dropdown is in Play Style Config.</p>';
+    return '<p><b>No kit</b>: the wormhole alone. The Kit dropdown is in Play Style Config.</p>';
+  }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 
   // ================= illustrated tooltips =================
