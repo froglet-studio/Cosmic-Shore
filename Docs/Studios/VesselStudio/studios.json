@@ -558,6 +558,96 @@
       "preview": "previews/gecko.png",
       "accent": "#ff9ec6",
       "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "moonjelly",
+      "name": "Moon Jelly",
+      "file": "moonjelly.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind breath)",
+      "chip": "calm · level 1 · round 1",
+      "summary": "The breather. One stick steers; one button breathes. Hold it to breathe in: the jelly slows and its bell swells with light. Let go and it pulses forward. Slow, steady breaths (three seconds or more, each like the last) build a calm chain: every pulse glides further and the glow, which is its reach for a crystal, grows wider. Rush and the calm breaks. Calm breaths fill the moon; with the moon full, one long breath lets go into a Moonrise, a glow four times as wide.",
+      "spec": [
+        {
+          "k": "Level",
+          "v": "1: one stick, one button"
+        },
+        {
+          "k": "Mechanic",
+          "v": "hold to breathe in, let go to pulse; slow and steady builds the calm"
+        },
+        {
+          "k": "Calm / intense",
+          "v": "drifting and breathing / the Moonrise"
+        },
+        {
+          "k": "Made from",
+          "v": "the Dolphin (charge, then release) + the Butterfly (slow, wide, quiet)"
+        }
+      ],
+      "preview": "previews/moonjelly.png",
+      "accent": "#cfe8ff",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "seaturtle",
+      "name": "Sea Turtle",
+      "file": "seaturtle.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind tide)",
+      "chip": "calm · level 1 · round 1",
+      "summary": "The wayfinder. It has no throttle: the course line is a tide, a current you can see, and steering into it carries you. Hold the one button to tuck in your flippers and ride the tide fast; let go to spread them, slow down and turn. Out of the tide it only crawls. Where blocks crowd the tide it runs faster: the Rapids. Get through without touching a block and you shoot out with a burst; a bump only slows you a little, because the shell takes it.",
+      "spec": [
+        {
+          "k": "Level",
+          "v": "1: one stick, one button"
+        },
+        {
+          "k": "Mechanic",
+          "v": "the course is a current; hold to tuck in and ride it, let go to turn"
+        },
+        {
+          "k": "Calm / intense",
+          "v": "gliding the tide / threading the Rapids"
+        },
+        {
+          "k": "Made from",
+          "v": "the Urchin (latch onto a trail and ride it) + the Squirrel (flow, no hard decisions)"
+        }
+      ],
+      "preview": "previews/seaturtle.png",
+      "accent": "#7fd6a8",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "seahorse",
+      "name": "Seahorse",
+      "file": "seahorse.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind tend)",
+      "chip": "calm · level 1 · round 1",
+      "summary": "The gardener. Slow and upright. Swim to a plant (any block) and hold the button to curl your tail round it: you stay still, the plant grows a garden round you, and your crystal is called in towards you. Let go and you dart off. A rival coming close is the tense moment: the second button puffs you up, slowing the rival and shielding your garden.",
+      "spec": [
+        {
+          "k": "Level",
+          "v": "1: one stick, two buttons"
+        },
+        {
+          "k": "Mechanic",
+          "v": "hold on to a plant: it grows and calls your crystal in; let go to dart"
+        },
+        {
+          "k": "Calm / intense",
+          "v": "tending / a rival comes, puff and dart"
+        },
+        {
+          "k": "Made from",
+          "v": "the Angler (grows plants, leads creatures) + the Serpent (a seed that gathers blocks)"
+        }
+      ],
+      "preview": "previews/seahorse.png",
+      "accent": "#ffb36b",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
     }
   ],
   "newCard": {

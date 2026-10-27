@@ -268,6 +268,33 @@
         </div>
         <span class="open">Open studio &rarr;</span>
       </a>
+      <a class="bay" href="moonjelly.html" style="--accent: #cfe8ff">
+        <canvas id="pvMoonjelly" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Moon Jelly</b><span class="chip" style="color:#cfe8ff">calm · level 1 · round 1</span></div>
+          <p>The breather. One stick steers; one button breathes. Hold it to breathe in: the jelly slows and its bell swells with light. Let go and it pulses forward. Slow, steady breaths (three seconds or more, each like the last) build a calm chain: every pulse glides further and the glow, which is its reach for a crystal, grows wider. Rush and the calm breaks. Calm breaths fill the moon; with the moon full, one long breath lets go into a Moonrise, a glow four times as wide.</p>
+          <div class="spec"><span>Level</span><b>1: one stick, one button</b><span>Mechanic</span><b>hold to breathe in, let go to pulse; slow and steady builds the calm</b><span>Calm / intense</span><b>drifting and breathing / the Moonrise</b><span>Made from</span><b>the Dolphin (charge, then release) + the Butterfly (slow, wide, quiet)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="seaturtle.html" style="--accent: #7fd6a8">
+        <canvas id="pvSeaturtle" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Sea Turtle</b><span class="chip" style="color:#7fd6a8">calm · level 1 · round 1</span></div>
+          <p>The wayfinder. It has no throttle: the course line is a tide, a current you can see, and steering into it carries you. Hold the one button to tuck in your flippers and ride the tide fast; let go to spread them, slow down and turn. Out of the tide it only crawls. Where blocks crowd the tide it runs faster: the Rapids. Get through without touching a block and you shoot out with a burst; a bump only slows you a little, because the shell takes it.</p>
+          <div class="spec"><span>Level</span><b>1: one stick, one button</b><span>Mechanic</span><b>the course is a current; hold to tuck in and ride it, let go to turn</b><span>Calm / intense</span><b>gliding the tide / threading the Rapids</b><span>Made from</span><b>the Urchin (latch onto a trail and ride it) + the Squirrel (flow, no hard decisions)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
+      <a class="bay" href="seahorse.html" style="--accent: #ffb36b">
+        <canvas id="pvSeahorse" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>Seahorse</b><span class="chip" style="color:#ffb36b">calm · level 1 · round 1</span></div>
+          <p>The gardener. Slow and upright. Swim to a plant (any block) and hold the button to curl your tail round it: you stay still, the plant grows a garden round you, and your crystal is called in towards you. Let go and you dart off. A rival coming close is the tense moment: the second button puffs you up, slowing the rival and shielding your garden.</p>
+          <div class="spec"><span>Level</span><b>1: one stick, two buttons</b><span>Mechanic</span><b>hold on to a plant: it grows and calls your crystal in; let go to dart</b><span>Calm / intense</span><b>tending / a rival comes, puff and dart</b><span>Made from</span><b>the Angler (grows plants, leads creatures) + the Serpent (a seed that gathers blocks)</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
       <!-- concept-bays:end -->
       <button type="button" class="bay add" id="newStudioCard" aria-haspopup="dialog">
         <span class="plus" aria-hidden="true">+</span>
@@ -310,7 +337,7 @@
           <label for="askVessel" class="hint" style="color:var(--muted)">Vessel</label>
           <select id="askVessel"><option>Squirrel</option><option>Stoat</option><option>Meerkat</option><option>Brittle Star</option><option>Shrike</option><option>Goby &amp; Pistol</option><option>Siphonophore</option><option>Omega Crews</option>
           <!-- concept-options:start -->
-          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option>
+          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option><option>Moon Jelly</option><option>Sea Turtle</option><option>Seahorse</option>
           <!-- concept-options:end -->
           </select>
         </div>
@@ -324,7 +351,7 @@
         <div class="row">
           <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>Meerkat</option><option>Brittle Star</option><option>Shrike</option><option>Goby &amp; Pistol</option><option>Siphonophore</option><option>Omega Crews</option>
           <!-- concept-options:start -->
-          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option>
+          <option>Gibbon</option><option>Flea</option><option>Albatross</option><option>Remora</option><option>Dragonfly</option><option>Mole</option><option>Marlin</option><option>Eel</option><option>Octopus</option><option>Gecko</option><option>Moon Jelly</option><option>Sea Turtle</option><option>Seahorse</option>
           <!-- concept-options:end -->
           <option>Studio hub</option><option>New vessel</option></select>
           <select id="reqKind" aria-label="Kind"><option>Change the studio</option><option>Try a design</option><option>Bug</option><option>New studio</option></select>
@@ -490,6 +517,9 @@
   preview('pvEel', (g, w, h, t) => VesselStudioKinds.body.preview(g, w, h, t, '#b9ff5a', DOM));
   preview('pvOctopus', (g, w, h, t) => VesselStudioKinds.pulse.preview(g, w, h, t, '#d98bff', DOM));
   preview('pvGecko', (g, w, h, t) => VesselStudioKinds.surface.preview(g, w, h, t, '#ff9ec6', DOM));
+  preview('pvMoonjelly', (g, w, h, t) => VesselStudioKinds.breath.preview(g, w, h, t, '#cfe8ff', DOM));
+  preview('pvSeaturtle', (g, w, h, t) => VesselStudioKinds.tide.preview(g, w, h, t, '#7fd6a8', DOM));
+  preview('pvSeahorse', (g, w, h, t) => VesselStudioKinds.tend.preview(g, w, h, t, '#ffb36b', DOM));
   // concept-previews:end
   // ---- the studio agent ----
   const SPEC = {
@@ -512,6 +542,9 @@
     'Eel': 'Eel (concept, round 1; movement kind \'body\', a design: nothing ships). The body. A head leading a train of segments that follow its exact path: the body IS its trail, shielded mass a rival\'s hull bounces off. Longer is slower (72 u/s at 8 segments, 45 at 30), and it grows on crystals and skims. LT coils: the turn doubles and the body bunches up behind you; let go and the tail whips straight, cutting any rival or neutral mass it sweeps. RT sheds five segments as standing prisms for a speed burst. Elements: Charge = Shed Burst (scales shedKick; L5 Molt); Mass = Girth (scales segScale; L5 Armoured Body); Space = Whip Reach (scales whipReach; L5 Long Lash); Time = Tight Coil (scales coilTurn; L5 Spring Coil). Styles: Balanced, Wall, Lash, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
     'Octopus': 'Octopus (concept, round 1; movement kind \'pulse\', a design: nothing ships). The pulse jet. Hold LT to inhale: it slows, the mantle swells, the charge fills in 0.7 s. Release and it jets, up to 205 u/s, then fades toward a 20 u/s drift. The beat is yours: release at the same interval as your last two pulses and the chain grows, each pulse ×1.1 more, up to ×1.8. RT spends a pulse of charge on an ink cloud of danger prisms behind you. Charge-and-release movement with a rhythm layer you set yourself. Elements: Charge = Jet (scales jetMax; L5 Siphon Jet); Mass = Ink (scales inkCount; L5 Black Water); Space = Wide Beat (scales beatWindow; L5 Metronome); Time = Quick Breath (scales inhaleTime; L5 Gasp). Styles: Balanced, Drummer, Squid, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
     'Gecko': 'Gecko (concept, round 1; movement kind \'surface\', a design: nothing ships). The runner. Hold LT near any mass and it sticks, then runs along the structure: the chain of prisms guides its course, its speed climbs to 130 u/s, the camera rolls onto the surface, and a rival\'s rail it runs becomes yours. Let go, or press RT, and it hops off with a ×1.4 kick and three seconds of carried momentum to the next surface. Wall-running, where every prismscape is a wall. Elements: Charge = Hop (scales hopKick; L5 Spring Legs); Mass = Claim (scales convertScale; L5 Overgrow); Space = Grip Reach (scales stickReach; L5 Long Toes); Time = Run Speed (scales runCap; L5 Sprint). Styles: Balanced, Sprinter, Claimer, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
+    'Moon Jelly': 'Moon Jelly (concept, round 1; movement kind \'breath\', a design: nothing ships). The breather. One stick steers; one button breathes. Hold it to breathe in: the jelly slows and its bell swells with light. Let go and it pulses forward. Slow, steady breaths (three seconds or more, each like the last) build a calm chain: every pulse glides further and the glow, which is its reach for a crystal, grows wider. Rush and the calm breaks. Calm breaths fill the moon; with the moon full, one long breath lets go into a Moonrise, a glow four times as wide. Elements: Charge = Moonrise (scales moonReach; L5 Full Moon); Mass = Push (scales pulseMax; L5 Tidal Pulse); Space = Glow (scales glow; L5 Lantern); Time = Glide (scales drag; L5 Still Water). Styles: Balanced, Lantern, Tidal, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
+    'Sea Turtle': 'Sea Turtle (concept, round 1; movement kind \'tide\', a design: nothing ships). The wayfinder. It has no throttle: the course line is a tide, a current you can see, and steering into it carries you. Hold the one button to tuck in your flippers and ride the tide fast; let go to spread them, slow down and turn. Out of the tide it only crawls. Where blocks crowd the tide it runs faster: the Rapids. Get through without touching a block and you shoot out with a burst; a bump only slows you a little, because the shell takes it. Elements: Charge = Rapids Burst (scales burst; L5 Whitewater); Mass = Shell (scales shell; L5 Old Shell); Space = Tide Sense (scales tideR; L5 Moon Pull); Time = Tuck (scales tuck; L5 Streamline). Styles: Balanced, Voyager, Rapids Runner, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
+    'Seahorse': 'Seahorse (concept, round 1; movement kind \'tend\', a design: nothing ships). The gardener. Slow and upright. Swim to a plant (any block) and hold the button to curl your tail round it: you stay still, the plant grows a garden round you, and your crystal is called in towards you. Let go and you dart off. A rival coming close is the tense moment: the second button puffs you up, slowing the rival and shielding your garden. Elements: Charge = Puff (scales puffR; L5 Thorn Puff); Mass = Growth (scales callSpeed; L5 Bloom); Space = Garden Reach (scales callRange; L5 Meadow); Time = Dart (scales dart; L5 Flicker). Styles: Balanced, Gardener, Darter, Maxed. Every mechanic number is lab-only (Vessel Config > Mechanic shows them).',
     // concept-spec:end
   };
   let sample = null, db = null, user = null, me = '';

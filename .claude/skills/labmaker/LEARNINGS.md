@@ -1047,6 +1047,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: scratch siph_mean.cjs; CONCEPT_FLEET.md 11.5 step 2.
 - Promoted: no
 
+### L-STU-152 — A "clean run" measured in seconds punishes the fast player; measure it in distance
+- Lab: Sea Turtle (seaturtle.html, kind `tide`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Rapids burst needed 0.8 s through the Rapids without touching a rock. The AI flying the mechanic (tucked, fast) earned 0 bursts a run; the control without the mechanic (slower) earned 6.5. A tucked turtle crossed the Rapids in about 0.5 s.
+- Do instead: a reward for getting THROUGH something is measured in distance (here 30 u), never in time, or the better pilot is the one it stops paying.
+- Evidence: studio-kinds.js K.tide (`rapidsLen`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
+### L-STU-153 — When a side mechanic loses to doing nothing, tie its reward to its story before tuning its numbers
+- Lab: Seahorse (seahorse.html, kind `tend`) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: holding a plant to call the crystal in was slower than swimming (282 s against 179); doubling and nearly tripling the call speed barely moved it, because the cost was the 111 s spent flying to plants beside the course. Making a crystal a plant calls in count two (it grew in the garden, which is the vessel's story) took it to 155 s against 179.
+- Do instead: split the mechanic's time (the probe: holding / going to it / everything else) before touching its numbers; if the cost is the detour, no speed number fixes it, and the reward has to be worth the detour.
+- Evidence: studio-kinds.js K.tend (`gardenWorth`); CONCEPT_FLEET.md 12.2.
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it

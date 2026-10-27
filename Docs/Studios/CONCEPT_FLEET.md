@@ -797,3 +797,88 @@ Lance cannot cut), or the Lance stays and the spool is only speed against steeri
 Most of the gain is Slipstream and the AI's wall detour (Hard on I1 is about 80 s faster). The levels now separate in
 order on I1 (Hard 338, Medium 405, Easy 423), which the old AI did not do. Never fusing and always fused still digest
 nothing on every course.
+
+## 12. The calm three (Level 1) and the Orca (2026-10-27)
+
+Yash, 2026-10-27: vessels for relaxed players, "a balance between how much brain effort they're gonna put versus how
+much relaxed they're gonna get", about 20 minutes a day; single vessels at Level 1, the Siphonophore at Level 2, "from
+simplicity to complexity", each with a story. Then, after hearing that Garrett is building the Orca: compare the three
+with the Orca and make them playable.
+
+**The ladder.** Level 1: one stick and one button (the Seahorse adds a second), one verb, learnt in a minute, mostly
+calm with one tense moment. Level 2: the Siphonophore, which asks for several Level 1 skills at once. Each calm vessel
+teaches one of them: the Moon Jelly the Bell's breath, the Sea Turtle riding a leader's wake, the Seahorse holding on
+and carrying (the Bract's job).
+
+### 12.1 The three, as built (pages `moonjelly.html`, `seaturtle.html`, `seahorse.html`; kinds `breath`, `tide`, `tend` in `studio-kinds.js`)
+
+| | Moon Jelly (the Breather) | Sea Turtle (the Wayfinder) | Seahorse (the Gardener) |
+|---|---|---|---|
+| Made from | Dolphin + Butterfly (breath from the Octopus prototype) | Urchin + Squirrel (riding from the Remora and Albatross prototypes) | Angler + Serpent |
+| Controls | one stick; hold LT to breathe in, let go to pulse | one stick; hold LT to tuck in | one stick; hold LT on a block to hold on; RT puffs |
+| Calm part | slow, steady breaths (3 s or more, each like the last) build a calm chain: longer glides, a wider glow (its reach for a crystal) | the course line is a tide: tuck in and it carries you | holding a plant: it grows a garden and calls your crystal in; a crystal it calls counts two |
+| Tense part | the Moonrise: with the moon full, one long breath (3.2 s) lights four times as wide for 3 s and the crystal swims to the light | the Rapids: by a block the tide runs faster and pulls you toward it; 30 u clean is a burst | a rival comes while you hold a plant: puff (slows it, shields the garden) and dart |
+| Element: Charge / Mass / Space / Time | Moonrise / push / glow / glide | Rapids burst / shell / tide sense / tuck | puff / growth / garden reach / dart |
+
+### 12.2 Measured (headless, the page's own `raceHeadless`, seeds 11 / 22 / 33, seconds to 24 crystals on I1, 30 on I2)
+
+| | I1 Hard / Medium / Easy | I2 Hard / Medium / Easy | Without its mechanic (I1, I2) | Tense share | Uses a run (I1) |
+|---|---|---|---|---|---|
+| Moon Jelly | 127 / 123 / 122 | 169 / 167 / 166 | does not finish (20 of 24; it only drifts) | 7-9% | 3 Moonrises |
+| Sea Turtle | 118 / 121 / 127 | 173 / 177 / 184 | 155, 218 | 4-5% | 11 clean Rapids bursts |
+| Seahorse | 155 / 161 / 164 | 185 / 190 / 194 | 179, 239 | 8-12% | 13 (darts and puffs) |
+
+For scale, the concept fleet on I1 Hard: the Remora 81, the Octopus 120, the Albatross 264, the Flea 279 (same tool).
+
+Found while building them (each fixed, each measured):
+- **The Moon Jelly's calm chain is worth about 45 s on I1** (164 s when every breath is rushed). **Its Moonrise costs
+  the AI about 9 s on I1** (118 s with the moon never filling). A stronger pull and a wider Moonrise were tried and were
+  slower still. Its levels sit inside the noise: a forgiving vessel. **Decision needed (designer):** keep the Moonrise
+  as the tense moment it is, or give it a reward a race can measure.
+- **The Sea Turtle scraped the course ribbon** while riding the tide on the line (90 bumps a run): the tide now runs
+  16 u above the ribbon. **Its clean run was a time** (0.8 s), which a tucked turtle crosses too fast to earn; it is a
+  distance now (30 u). The AI spreads its flippers near a rock: tucked it turns at half rate and cannot steer clear.
+- **The Seahorse's gardening was slower than swimming** (282 s against 179) until a called crystal counted two: the AI
+  spent 111 s flying to plants beside the course. The AI now grabs any block of a clump within its 30 u tail reach and
+  prefers plants near its path. It puffs only to defend a plant it holds (it had puffed at its rival 30% of the run).
+
+Not modelled: sound (the breath has no tone yet), the seeds the turtle carries, the creatures grazing a garden, a calm
+course of their own. The course is the Skim Race track, one crystal at a time.
+
+### 12.3 The Orca (Garrett's), side by side
+
+The Orca is Garrett's (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`; lab `Docs/Studios/CrewOfFourLab.html`,
+artifact https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb). One hull with four seats, always full (an AI takes every
+empty seat). It never splits; a gunner's missile is flown by wire, first person, which is the nearest it comes to a
+second body. Its numbers below are read from `OrcaCrewConfig.asset`, `Orca.prefab` and the lab's round 7 scorecard;
+nothing of it was changed here.
+
+| | Moon Jelly | Sea Turtle | Seahorse | Orca |
+|---|---|---|---|---|
+| Bodies | 1 | 1 | 1 | 1 hull, 4 seats (+ a flown missile per gunner) |
+| People | 1 | 1 | 1 | up to 4 (AI fills the rest) |
+| Level (this ladder) | 1 | 1 | 1 | 2 to 3 for the crew; each seat alone is about 1.5 |
+| Buttons per seat | 1 | 1 | 2 | helm 2 + two sticks; gunner 2 + aim |
+| Speed | 20 u/s drift, pulses to 220 | 25 u/s crawl, tide 60, tucked 90 | 48 u/s swim, darts x2.2 | the Sparrow x0.85 (throttle 21.25, minimum 8.5), turn x0.55 |
+| Main verb | breathe | ride a current | hold on and grow | fly and fight together |
+| Calm / tense | about 92 / 8 | about 95 / 5 | about 90 / 10 | combat throughout (not measured as calm) |
+| Elements | one ability each, all one pilot's | same | same | one seat each: helm Time, sniper Space, fast gun Mass, bomb Charge |
+| Measured | I1 122-127 s | I1 118-127 s | I1 155-164 s | lab round 7, I2 Hard, 12 seeds: Ring Race 219 pts, Breach 183, Anchorage 72, Broadside 50 |
+| State | a lab page | a lab page | a lab page | in Unity (Toybox Vessel Changer), a stub flown through round 7 |
+
+**What the Orca already gives the calm idea:**
+- Every empty seat is an AI, so a relaxed player can sit in one seat and still have a full ship.
+- Seats are elements (round 6): one person, one element, one job. That is the Level 1 shape inside a bigger vessel.
+- The fly-by-wire missile is a moment of focus that ends by itself (5 s, or a press).
+
+**What the calm three could offer the Orca** (proposals for Garrett; nothing here changes his vessel):
+1. **A rest phase.** The Seahorse's hold-on as the helm's: touch a block and the Orca docks (the Shrike already docks).
+   Docked, the gunners reload, and the pen's prisms grow into a garden round the hull. Undock to fight. That gives the
+   Orca the calm-then-tense rhythm the three are built on.
+2. **A breathing boost.** The Moon Jelly's breath as the helm's boost: slow, steady presses refill the tank faster, so
+   the calmest helm keeps the crew moving.
+3. **A current.** The Sea Turtle's tide, read by the helm: the hull rides a current and the gunners get a steady
+   platform (the lab already measures a gunner's view sway).
+
+**Decision needed (Yash and Garrett):** whether the calm ideas go into the Orca (Garrett's call), stay as three Level 1
+vessels, or both. The Orca is the vessel with an owner and a Unity build; the three are lab pages.
