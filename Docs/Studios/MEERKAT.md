@@ -261,53 +261,83 @@ The game has it first (`R_VesselActions/MEERKAT.md` §2.1: `reticleLook`, `forme
 page does not yet: its Wormhole look still shows round 4's bridge. The next round brings the lab's field onto this page
 and maps the new keys in `studio_to_unity/meerkat.json`.
 
-## Garrett's direction: the soliton kit (2026-10-27, for Yash to judge)
+## Garrett's direction: the Meerkats and the soliton (2026-10-27, for Yash to judge)
 
 Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
 applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
-Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Nothing here is built.
-Garrett finished the Sentinel and Mass rows in a second message the same day.
+Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Garrett gave it in three
+messages the same day; this section is all three together. **Built so far:** only the fleet-wide prism rule it leans on
+(shielded prisms bounce, `Docs/PRISM_MOTION.md` 1a). Everything else here is design.
 
 **The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
 can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Soliton) with its own pilot sight
 (FLUME, `Docs/Pilots/CALLSIGNS.md`).
 
-| Element | Ability | What the element's level does | L5 upgrade | Source |
-|---|---|---|---|---|
-| **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton | Sets the soliton's **surface area** (below) | open | Garrett |
-| **Time** | **Passive**: the Meerkat rides **every** soliton faster, its own or anyone's | Scales the ride's rush (today `throatSpeed` 2.5 × the entry speed) | **Boost out**: the Meerkat leaves every soliton with a boost | Garrett |
-| **Charge** | **Sentinel**: left automatically at **every tunnel entrance**, an afterimage of the Meerkat that perches up like a real sentinel meerkat, guarding the way in. It **zaps enemy vessels**, knocking out their elements, and **zaps same-domain prisms**, turning them **shielded** | Proposal: the zap's reach and how often it fires | open | Garrett |
-| **Mass** | **Passive**: the soliton **makes prisms at its far end** (the way out) | Their **size** | **Danger prisms**: at Mass L5 the prisms it makes are danger prisms | Garrett |
+**The Meerkats, a crew vessel** (*"sentinels are seats that any player on the meerkats team can switch to (change the
+name to 'meerkats')"*):
+- **One flyer and up to six sentinel seats.** The hull is the flying meerkat; every sentinel it leaves is a seat. That
+  makes it a crew vessel (`/duo-vessel`), with a seat ring that grows and shrinks as sentinels are placed and killed.
+- **The card reads "Meerkats".** `Name` stays `Meerkat`, the one-word key the hangar's unlocks use, so no enum or class
+  renames. The crew rule that a card names its subvessels "X and Y" (`SO_Vessel.CrewNames`, `check_crew_vessels.py`)
+  does not fit a mob of one kind. How the card and the gate express "Meerkats" is the crew owners' call (§ Open).
+- **Switching** is the fleet's one swap (`PilotSwapGesture`, `CrewStations`): D-pad left / right, the arrow keys, a
+  two-finger swipe. It steps through the flyer's seat, then each sentinel, then the next hull's seats. So any player on
+  the Meerkat's team can take a sentinel. A sentinel no person sits in is guarded by its AI, which zaps on its own
+  (below).
+- **Killable only when empty:** Charge abilities kill a sentinel nobody controls. One a player is sitting in cannot be
+  killed.
+- **A soliton lasts as long as its sentinel.** A tunnel with a sentinel stands until that sentinel is killed or leaves
+  it (below); `staySeconds` applies only to a tunnel made with Sentinel mode off.
 
-**What everyone sees and does with a soliton:**
-- **The placement grid is the Meerkat's alone**: its reticle, already drawn only for its pilot.
-- **Everyone else sees the soliton by its lensing alone** once it is made: the contour field (§ Before and after RT).
-- **Any vessel can ride it**, not only its maker. A rider dives in at a mouth and rides it as the Meerkat does: in at its
-  entry speed, rushing through the throat, out at the far mouth on its last heading.
-- **It swallows prisms and fires them out of the other end.** Prisms near the way in are drawn in, run the tube and leave
-  the way out along its last heading.
-  - A fired prism is a MOVING prism (§ Prism movement): one that hits another prism destroys both, scored to the soliton's
-    maker. A SHIELDED one bounces instead (Garrett, 2026-10-27, `Docs/PRISM_MOTION.md` 1a: built). Mass is conserved,
-    because the prism is moved, never deleted.
-  - Super-shielded mass is never moved. Whether shielded mass is drawn in is open.
-  - A fired prism that reaches a vessel follows the shipped prism rules. PvP stays petals only.
+| Element | Ability | What the element's level does | L5 upgrade |
+|---|---|---|---|
+| **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton. It swallows prisms at its way in, shielded ones included, and fires them out of its way out | Sets the soliton's **surface area** (below) | open |
+| **Time** | **Passive**: the Meerkat rides **every** soliton faster, its own or anyone's | Scales the ride's rush (today `throatSpeed` 2.5 × the entry speed) | **Boost out**: the Meerkat leaves every soliton with a boost |
+| **Charge** | **Sentinel mode**, an active toggle. On, each tunnel the flyer makes leaves a sentinel perched at its entrance, an afterimage standing up like a real sentinel meerkat, drawn from a pool of **3**. Off, no new sentinels are placed and the placed ones stay where they are | Proposal: how often a sentinel zaps | **Six sentinels**: the pool is 6 |
+| **Mass** | **Passive**: the soliton sets prisms down round the **outside of its way out**, on a ring wider than the mouth, so they visibly stand clear of the soliton and mark where the exit is | Their **size** | **Danger prisms**: the prisms it sets down are danger prisms |
 
-**The Sentinel (Charge)**:
-- **Enemy vessels:** a zap is a scored hit, so it stays inside PvP-is-petals-only. Knocking out elements is a ranged
-  verb, so the petals are EJECTED as free crystals (`Docs/ELEMENTAL_ECONOMY.md`), and the hit silences the victim for
-  what it is worth (`SILENCE.md`).
-- **Same-domain prisms:** zapped into shielded prisms.
-- **With the soliton:** shielded prisms now bounce instead of annihilating, so the Meerkat's own mass round its
-  entrances becomes ammunition that survives. The soliton swallows it, fires it out, and it rebounds off what it hits.
-- **Open:** its reach, how often it zaps, how many sentinels can stand at once (one per tunnel, so they collapse
-  with it or outlast it), and whether a rival can knock one down.
+**A sentinel:**
+- **Its guard:** a sphere **1.5 × its tunnel's opening radius** round the entrance.
+- **Enemy vessels in the guard are zapped**, knocking out their elements:
+  - A zap is a scored hit, so it stays inside PvP-is-petals-only.
+  - Knocking out elements is a ranged verb, so the petals are EJECTED as free crystals (`Docs/ELEMENTAL_ECONOMY.md`).
+  - The hit silences the victim for what it is worth (`SILENCE.md`).
+- **Same-domain prisms in the guard are zapped shielded.** Shielded prisms now bounce, so the soliton swallows them,
+  fires them out, and they rebound off what they hit instead of breaking: the Meerkats' own mass becomes ammunition
+  that survives.
+- **Taken by a player** (*"a 2.5 d mode that allows them to click or tap their screen to shield prisms (including
+  opposing) or attack players"*):
+  - The seat's view is a perched 2.5D view over its entrance. It renders the real game, as every seat view does
+    (`CrewViewRender`), and an orthographic one gets no Panini (`OrthographicLens`).
+  - A tap or click on a prism shields it, **any domain's**, opposing prisms included.
+  - A tap or click on an opposing vessel attacks it: the zap above.
+- **The hop** (*"hitting the sentinel mode toggle they fly through the soliton and the flying meerkat makes a new tunnel
+  and stops as a sentinel in front of it"*):
+  - From a sentinel seat, the Sentinel mode button sends that meerkat flying through its own soliton.
+  - Out of the far mouth, it makes a new tunnel and perches as a sentinel at that tunnel's entrance.
+  - The soliton it left lasts as long as its sentinel, so that soliton collapses behind it.
+  - A sentinel leapfrogs forward this way.
 
-**Mass (passive):**
-- The soliton makes prisms at its way out on its own, for as long as it stands. Mass sets their size; at L5 they are
-  danger prisms, which burn the petals of whoever touches them.
-- They are the maker's domain, so a sentinel can zap them shielded.
-- **Open:** the rate, whether they are fired along the exit heading (as moving prisms) or set down at the mouth, and
-  a cap per soliton.
+**Mass's prisms:**
+- They are set down, never fired, on a ring round the exit, wider than the mouth and outside what the soliton
+  swallows. That is why they read as untouched by it and why they mark the exit.
+- They are the Meerkats' domain, so a sentinel at that end can zap them shielded.
+
+**The ability matrix** (`/duo-vessel` §3.2: every crew carries one, mobile, gamepad and mouse / keyboard; a 2D seat's
+controls are designed touch first). The flyer's wormhole controls are rounds 1-7's; what this section adds:
+
+| Seat | Ability | What it does | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|---|---|
+| Flyer | Soliton (Space) | RT forms the tunnel the reticle shows; LT sets the shaft; the right stick bends it | as today (the RT handle) | RT, LT, right stick | R-Shift, L-Shift, as today |
+| Flyer | Sentinel mode (Charge) | Toggles placing sentinels at new tunnel entrances (pool 3, 6 at L5) | its button round the right thumb | Y | F |
+| Flyer | Time and Mass | Passive | none | none | none |
+| Sentinel | Shield or attack | A prism: shielded (any domain). An opposing vessel: zapped | tap it | aim with the right stick, RT on it | click it |
+| Sentinel | Hop | Fly through its soliton, make a new tunnel, perch at its entrance | the Sentinel button | Y | F |
+| Any | Swap seat | The flyer, then each sentinel, then the next hull (the fleet's swap) | two-finger swipe | D-pad left / right | arrow keys |
+| Any | Pilot sight | Hold to see what your pilot sees (FLUME shows every soliton) | the fleet's | LB | the fleet's |
+
+Y / F is the fleet's face-button glyph pair (`ControlGlyphSet`). Round 8 had Lookout on Y. The gamepad aim for the
+sentinel seat is this write-up's proposal; tap and click are Garrett's.
 
 **Surface area (Space).** At a given Space level a soliton keeps one surface area A, so a longer tube is thinner and a
 shorter one fatter. The wall is round 7's hyperboloid with the mouth a fixed multiple k of the throat (M = k·b), and its
@@ -325,20 +355,37 @@ follow from A. At round 7's numbers (throat 4, mouth 10, so k = 2.5 and g = 1.59
 | 400 u | 16,004 u² | 3.7 (mouth 9.4) | 10.0 (mouth 25.0) |
 | 757 u (longest shaft, 150° bend) | 30,287 u² | 2.0 (mouth 5.0) | 5.3 (mouth 13.2) |
 
-The Space level would set A through an `ElementalFloat` (the two areas above are only examples). A shortest tube at
-any useful area is very fat, so the throat may need a floor and a ceiling.
+The Space level would set A through an `ElementalFloat` (the two areas above are only examples). A shortest tube at any
+useful area is very fat, so the throat may need a floor and a ceiling. The sentinel's guard (1.5 × the opening radius)
+grows and shrinks with it.
+
+**What everyone sees and does with a soliton:**
+- **The placement grid is the flyer's alone**: its reticle, drawn only for its pilot.
+- **Everyone else sees the soliton by its lensing alone**: the contour field (§ Before and after RT).
+- **Any vessel can ride it**, in at its entry speed, rushing through the throat, out on the last heading.
+- A fired prism is a MOVING prism: one that hits another prism destroys both, scored to the soliton's maker; a shielded
+  one bounces instead. Mass is conserved, because the prism is moved, never deleted. Super-shielded mass is never
+  moved.
+
+**Open (Garrett or Yash):**
+- When the pool is used up with Sentinel mode on: no new sentinel, or the oldest one retires (and its soliton with it).
+- How the hopping meerkat's new tunnel is shaped: straight on along the exit heading, or shaped with the sticks in flight.
+- How the card and the crew gate express "Meerkats" (one name for a mob of one kind), and whether teammates on other
+  hulls can ride a sentinel from another machine (`HostsRiders`, `Docs/CREW_STATIONS.md`).
+- How often a sentinel zaps, and what Charge's level scales.
+- The ring for Mass's prisms (how much wider than the mouth), their rate and a cap per soliton.
 
 **Where this meets round 8 (for Yash):**
 1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
    Time a passive and its L5 a boost out of every soliton.
-2. **Charge and Mass.** Garrett's Sentinel and passive mouth prisms replace round 8's Lookout and Hardened Bridge.
-3. **Space.** Round 8's Cave-in (destroy the prisms round your tunnel) has no slot in Garrett's kit. The soliton moves
-   prisms instead of destroying them.
-4. **LB.** Round 8 arms Hardened Bridge with **LB**, but LB is now the pilot's vision on every vessel
-   (`Docs/Pilots/CALLSIGNS.md` §5). In Garrett's kit Mass and Charge are passive, so the kit needs no button beyond
-   the wormhole's.
-5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
-   the length again. A floor and ceiling on the throat is one way to keep both.
+2. **Charge.** Round 8's Lookout (Y) gives way to Sentinel mode, also on Y.
+3. **Mass.** Round 8's Hardened Bridge, armed on LB, gives way to a passive. LB is the pilot's vision on every vessel
+   now (`Docs/Pilots/CALLSIGNS.md` §5), so nothing in this kit needs it.
+4. **Space.** Round 8's Cave-in (destroy the prisms round your tunnel) has no slot. The soliton moves prisms instead.
+5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); the surface area couples it to the
+   length again. A floor and ceiling on the throat is one way to keep both.
+6. **A crew vessel.** The sentinels make the Meerkats a crew (`/duo-vessel`); the studio page would need the crew
+   layout (both views on screen, the swap, an AI on every empty seat).
 
 ## What is not decided or not built
 
