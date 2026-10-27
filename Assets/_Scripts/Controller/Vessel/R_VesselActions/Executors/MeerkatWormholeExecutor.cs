@@ -525,6 +525,9 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ helpers
 
+        /// <summary>This pilot's domain colour, the one its tunnels and its bridge-look reticle take.</summary>
+        public Color Colour => DomainColour();
+
         Color DomainColour()
         {
             var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;

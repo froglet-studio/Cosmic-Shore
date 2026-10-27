@@ -203,5 +203,29 @@ namespace CosmicShore.Tests
             var centre = MeerkatWormholeMath.RippleDisplacement(new Vector2(0.1f, 0.05f), 1.6f, 0.01f, 0.5f, 0.45f);
             Assert.AreEqual(Vector2.zero, centre);
         }
+
+        // The lens shader measures the wall in the tunnel's own frame: the arc centred on (R, 0, 0), leaving the origin along +z.
+        [TestCase(0f, 600f)]
+        [TestCase(1.2f, 300f)]
+        [TestCase(2.094395f, 120f)]
+        public void TubeWorldToLocal_PutsTheArcWhereTheShaderLooks(float theta, float L)
+        {
+            var a = new Vector3(12f, -40f, 7f);
+            var t0 = new Vector3(0.3f, 0.2f, 0.9f).normalized;
+            var side = Vector3.Cross(t0, new Vector3(0.1f, 1f, -0.2f)).normalized;
+            var m = MeerkatWormholeMath.TubeWorldToLocal(a, t0, side);
+            foreach (float s in new[] { 0f, 0.37f * L, L })
+            {
+                var local = m.MultiplyPoint3x4(MeerkatWormholeMath.At(a, t0, side, L, theta, s, out var tangent));
+                var localT = m.MultiplyVector(tangent);
+                MeerkatWormholeMath.Frame(t0, side, L, theta, s, out var normal, out var binormal);
+                float ang = theta < 1e-4f ? 0f : theta / L * s, R = theta < 1e-4f ? 0f : L / theta;
+                var want = theta < 1e-4f ? new Vector3(0f, 0f, s) : new Vector3(R - R * Mathf.Cos(ang), 0f, R * Mathf.Sin(ang));
+                Assert.AreEqual(0f, Vector3.Distance(want, local), 1e-3f, $"point at s {s}");
+                Assert.AreEqual(0f, Vector3.Distance(new Vector3(Mathf.Sin(ang), 0f, Mathf.Cos(ang)), localT), 1e-4f, "tangent");
+                Assert.AreEqual(0f, Vector3.Distance(new Vector3(Mathf.Cos(ang), 0f, -Mathf.Sin(ang)), m.MultiplyVector(normal)), 1e-4f, "normal");
+                Assert.AreEqual(0f, Vector3.Distance(Vector3.up, m.MultiplyVector(binormal)), 1e-4f, "binormal");
+            }
+        }
     }
 }

@@ -169,6 +169,17 @@ The Meerkat is in Unity as `VesselClassType.Meerkat = 28` (`Assets/_Scripts/Cont
   the `lope*` keys.
 - **Verification:** not yet verified in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 
+## Before and after RT (Garrett, 2026-10-27)
+
+Garrett picked the Meerkat's look in the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF):
+- **Before RT:** the reticle looks like the bridge (spindles over glass in the pilot's domain colour).
+- **After RT:** a formed tunnel is ONLY a contour-field lens: space bent in a thin shell on the wall, along its rings,
+  graded to zero just off the surface. No bridge, no glass, no grid.
+
+The game has it first (`R_VesselActions/MEERKAT.md` §2.1: `reticleLook`, `formedLook` and the 16 `field*` fields). This
+page does not yet: its Wormhole look still shows round 4's bridge. The next round brings the lab's field onto this page
+and maps the new keys in `studio_to_unity/meerkat.json`.
+
 ## What is not decided or not built
 
 - **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in, in the studio and in the game. A real
