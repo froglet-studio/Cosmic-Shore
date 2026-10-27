@@ -133,6 +133,35 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 14 (Yash, 2026-10-28: "the moment AI or player ... press their right trigger to create the tunnel, the tunnel
+will automatically be created with the trunk, not separate from the trunk ... just extend the outer layer of the tube to
+some tree-like structure with big similar symmetrical or asymmetrical but similar branches from the top half ... the
+wormhole is actually a portion of the trunk of the dead tree ... the entire tree will be this watery glassy space-time
+warp effect, like the wall"). ARTIFACT ONLY: not in Unity until Yash imports it.**
+- **The problem:** round 13's trunk was hidden from whoever rode the tunnel. So watching an AI, its trunk appeared only
+  as it came out, and its dissolve and branches ran on their own clock after that.
+- **The tree is the tunnel's outer layer now**, made the frame RT forms the tunnel, and seen by everyone, its rider too.
+  - It shows exactly the tunnel's window: it ripples out of the centre to both mouths with the tunnel (`formSeconds`)
+    and falls back in with it as it collapses. The separate dissolve is gone.
+  - Each branch grows over `branchGrowSeconds` (0.5 s) from the moment the forming tunnel reaches its root, and shrinks
+    back as the collapse passes it.
+- **Its look is the wall's**:
+  - **Glass:** the same Fresnel glass as the tunnel, the maker's colour at the way in toward white at the way out
+    (`trunkGlass` 0.03 face-on, `trunkRim` 0.6 at the silhouette).
+  - **Bent space:** the tube's own warp, drawn into the same warp buffer, `trunkWarp` (0.25) strong, even with
+    `warpStrength` at 0.
+  - **Water:** both flow slowly from the top to the bottom. Above about 0.4 the warp melts the tree's shape into a blob.
+- **The branches are a dead tree's**:
+  - `branchCount` (6) bare branches out of the trunk's top `branchZone` (0.5, its top half), in pairs facing each other.
+    Each pair is turned about 70° round the trunk, so they make a crown, not a fence.
+  - `branchSymmetry` (0.7): 1 mirrors each pair exactly, lower moves each branch to its own place and angle.
+  - Each is `branchLength` (2.2) × the mouth's radius long and `branchThickness` (0.3) × it thick, and tapers to a point.
+  - They lean `branchUp` (40°) toward the top, curl up, are crooked, and fork `branchForks` (2) times on alternate sides.
+- **Retired:** `trunkGrowSeconds`, `trunkDissolveEdge`, `branchDelaySeconds`. **Added:** `trunkWarp`, `branchZone`,
+  `branchSymmetry`, `branchForks`.
+- **Cost:** one static mesh per tunnel (about 4,500 vertices), built once, drawn twice (glass, warp). The window and the
+  branch growth are uniforms. Suggested for Unity: the same, two passes in the field's existing warp buffer.
+
 **Round 13 (Yash, 2026-10-28: "the moment I activate the tunnel, the trunk shape should be created. Like dissolve
 shader ... slowly it will grow some random branches. Left and right ... the main tunnel's entry will be ... the cut
 portion of the trunk above, and the other end will be the trunk's below cut portion ... a Fresnel effect ... trunk-like
@@ -289,7 +318,7 @@ just spindles. Tiny thinning spindles"):**
 | shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
 | shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
 | shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
-| tree | `trunkVisibility` … `branchDelaySeconds` | see the page | The trunk round a formed tunnel, dissolving in and growing branches (round 13, artifact only so far; replaced round 12's plate tree) |
+| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
