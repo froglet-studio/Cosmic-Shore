@@ -1,8 +1,20 @@
 # Pilots: the pilot grants vision (callsigns, on the left bumper)
 
-**Status: THE PILOT CONCEPT** (Garrett, 2026-10-27: "take over this as the concept for pilots"). Design only: no
-vision code exists yet. The one piece of code it needed first has landed: the look-back camera moved off the shoulders
-to D-pad down (§5).
+**Status: THE PILOT CONCEPT** (Garrett, 2026-10-27: "take over this as the concept for pilots"). The look-back camera
+moved off the shoulders to D-pad down (§5).
+
+**Built so far (`claude/squad-payload-pilots-artifacts`, 2026-10-27, unverified in the editor):** the first four
+sights, ENSIGN, CITADEL, VOLT and BANDIT (§6 steps 1, 3, 4, 5). `PilotVision` (None = 0 … Galleon = 17) and
+`CallsignSetSO` at `Resources/Pilots/CallsignSet` (all seventeen rows, written by
+`Tools/Build/author_callsign_assets.py`); `PilotSight`, ensured on every vessel by `VesselController.Initialize`, reads
+LB (keyboard V) for the local pilot only, fades the strength, weights a runtime Colour Adjustments volume by it, and
+publishes `_PilotVisionStrength / Sight / Domain / Volume`. The prism sights are answered in
+`PrismDestructionSight.hlsl` after the existing composition (no slot in Lit's peer bank, no graph edit); MANGER's
+volume is in the shader with no provider yet; RAMPART and HORNET need prism states the instance does not carry yet.
+Crystal and vessel marks are one instanced draw (`PilotSightMarks`, `PilotSightMark.shader`); the cost is not
+measured yet. Until §6 step 2 lands on Shombith's `PilotSO`, a tester picks the sight on the set's **Unassigned
+Sight**. The hull plate (the one shared bit) waits on where each hull's plate sits (/vessel-model). Hand tests:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot vision on LB".
 
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §2 (2026-10-12), where a pilot swaps part of a vessel's kit. That section now points
@@ -147,8 +159,8 @@ never as 2D text or a ring on the screen.
 
 | Pad | Does | Status |
 |---|---|---|
-| **LB** (hold) | the pilot's sight | proposed; LB is unbound on a vessel today |
-| **RB** | grab and activate the payload | proposed; RB is free on every vessel since 2026-10-27 |
+| **LB** (hold) | the pilot's sight | **built 2026-10-27** (`PilotSightGesture`, keyboard V) |
+| **RB** | grab and activate the payload | **built 2026-10-27** (`InputEvents.PayloadAction`, keyboard E) |
 | **D-pad down** | look-back camera | **moved here 2026-10-27** (`RearViewGesture`, was LB + RB together) |
 | D-pad left / right | swap hulls (`PilotSwap`) | shipped |
 | **Y** | the three abilities that were on RB | **moved here 2026-10-27** |
