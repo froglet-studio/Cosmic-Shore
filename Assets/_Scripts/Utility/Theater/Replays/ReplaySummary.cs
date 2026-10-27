@@ -87,7 +87,12 @@ namespace CosmicShore.Utility
         /// Watching stands the arena somewhere else and shifts the poses by the difference
         /// (<see cref="ReplayStagePlacement"/>). A summary written before this field reads zero, which
         /// is where every arcade scene's cell sits.
+        ///
+        /// <para>Never sent to Cloud Save (<c>JsonIgnore</c>): Newtonsoft cannot write a <c>Vector3</c> (its
+        /// <c>normalized</c> refers back to a Vector3), and the index on other devices does not need it. The local
+        /// sidecar is written by <c>JsonUtility</c>, which keeps it.</para>
         /// </summary>
+        [Newtonsoft.Json.JsonIgnore]
         public Vector3 ArenaOrigin;
 
         /// <summary>When the recording started, as UTC ticks (the Theater recording's own stamp).</summary>
@@ -114,6 +119,7 @@ namespace CosmicShore.Utility
         /// so the replay rebuilds exactly them. Empty for a mode with no rings, and for a summary written
         /// before 2026-10-26.
         /// </summary>
+        [Newtonsoft.Json.JsonIgnore]
         public List<ReplayGate> Gates = new();
 
         /// <summary>

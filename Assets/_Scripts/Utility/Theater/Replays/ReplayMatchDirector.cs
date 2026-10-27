@@ -42,6 +42,9 @@ namespace CosmicShore.Utility
         const float EndHoldSeconds = 2f;
         const float ChaseDistance = 28f, ChaseHeight = 7f;
         const float FreeMoveSpeed = 0.9f, FreeLookSpeed = 140f, SceneRadius = 400f;
+        /// <summary>How long to wait for the HUD's Ready button (it shows after the intro) before pressing Ready in code.</summary>
+        const float ReadyButtonWaitSeconds = 20f;
+        const string ReadyButtonName = "ReadyButton";
 
         sealed class Binding
         {
@@ -58,6 +61,7 @@ namespace CosmicShore.Utility
         TheaterRecording _recording;
         Phase _phase;
         bool _readyPressed;
+        float _seatedAt = -1f;
         float _goTime, _endedAt = -1f;
         int _actionCursor;
         float _speed = 1f;
@@ -70,7 +74,7 @@ namespace CosmicShore.Utility
         Transform _rig;
         readonly TheaterFreeCamera _free = new();
         Vector3 _freePosition;
-        int _follow = -1;
+        int _follow = -1;   // -1 = free camera
 
         /// <summary>Create the director for the scene that just loaded to watch <see cref="ReplayMatch.Recording"/>.</summary>
         public static ReplayMatchDirector Create(GameDataSO gameData)
@@ -121,7 +125,7 @@ namespace CosmicShore.Utility
             float end = _recording.StartTime + _recording.Duration;
             if (t < end) return;
             if (_endedAt < 0f) _endedAt = Time.unscaledTime;
-            else if (Time.unscaledTime - _endedAt >= EndHoldSeconds) Leave();
+            else if (Time.unscaledTime - _endedAt >= EndHoldSeconds) Leave("the recording ended");
         }
 
         // ---------------------------------------------------------------- start
@@ -137,14 +141,30 @@ namespace CosmicShore.Utility
             return !skim || skim.TrackSeed != 0;
         }
 
+        /// <summary>
+        /// Press Ready the way a player does: the HUD's own button, once the intro has shown it, so the HUD
+        /// leaves its waiting state as it does in a match. A HUD that never shows it gets the controller's
+        /// Ready after <see cref="ReadyButtonWaitSeconds"/>. One press: a second restarts the countdown.
+        /// </summary>
         void PressReady()
         {
             if (_readyPressed) return;
+            if (_seatedAt < 0f) _seatedAt = Time.unscaledTime;
+
+            var go = GameObject.Find(ReadyButtonName);
+            if (go && go.TryGetComponent(out UnityEngine.UI.Button button) && button.IsInteractable())
+            {
+                _readyPressed = true;
+                _phase = Phase.WaitingForGo;
+                button.onClick.Invoke();
+                return;
+            }
+            if (Time.unscaledTime - _seatedAt < ReadyButtonWaitSeconds) return;
+
             var controller = FindAnyObjectByType<MiniGameControllerBase>();
             if (!controller) return;
             _readyPressed = true;
             _phase = Phase.WaitingForGo;
-            // One press: a second restarts the countdown (SkimRaceBenchmarkRunner learned this).
             controller.OnReadyClicked();
         }
 
@@ -196,6 +216,7 @@ namespace CosmicShore.Utility
                 if (seat is Player player && player.IsServer && !string.IsNullOrEmpty(tracks[i].PlayerName) && seat != local)
                     player.NetName.Value = tracks[i].PlayerName;
                 StandDownPilots(seat, b);
+                if (i == human) _follow = _bindings.Count;
                 _bindings.Add(b);
                 _byTrack[i] = b;
             }
@@ -297,7 +318,7 @@ namespace CosmicShore.Utility
             if (Pressed(pad?.dpad.up, Key.Equals)) SetSpeed(_speed * 2f);
             if (Pressed(pad?.dpad.down, Key.Minus)) SetSpeed(_speed * 0.5f);
             if (Pressed(pad?.buttonNorth, Key.Tab)) CycleCamera();
-            if (Pressed(pad?.buttonEast, Key.Escape)) Leave();
+            if (Pressed(pad?.buttonEast, Key.Escape)) Leave("the viewer left");
         }
 
         void TogglePause()
@@ -334,9 +355,10 @@ namespace CosmicShore.Utility
             Time.timeScale = _paused ? 0f : _speed;
         }
 
-        void Leave()
+        void Leave(string why)
         {
             if (_phase == Phase.Leaving) return;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Replay] leaving at {Position:0.0}s of {_recording.Duration:0.0}s: {why}");
             _phase = Phase.Leaving;
             Time.timeScale = 1f;
             ReplayMatch.Clear();
@@ -353,6 +375,8 @@ namespace CosmicShore.Utility
             if (main) _freePosition = main.transform.position;
             _rig = _cameras ? _cameras.BeginManualReplayCamera() : null;
             if (_rig && main) _free.Seed(main.transform.rotation);
+            // Opens behind the recorded pilot (Bind chose the human's seat), as the match looked to them.
+            if (_follow >= _bindings.Count) _follow = -1;
         }
 
         void CycleCamera()
