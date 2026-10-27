@@ -234,3 +234,18 @@ vessel silhouette."
     portrait is exempted from `components`/`gap` BY NAME with the reason, never by loosening `verify.py`. The
     generator that made the old art (`ToolPortraitBuilder`) was retired and the baker stands down on Tool pages, so
     a re-bake cannot put the spheres back.
+
+41. **When the act is hard to SEE on the mesh, change the pose in the model, not the drawing (2026-10-27, the
+    Grizzly).** Dig In wanted the anchor sunk into the ground, but in the model's first `dig` take the anchor only
+    raked, and its tines reached 3-6 px below the engine pods in the side view. A ground plate low enough to catch
+    them also caught the pods, and one high enough to clear the pods caught nothing. Extending the tines in the icon
+    would have been a drawing of the hull. The fix went in the model's spec (`vessel_model/specs/grizzly.py`): the
+    `dig` take now PLUNGES the anchor 1.3 units as it rakes, and the tines reach 20 px below the pods. The icon renders
+    that take (`mesh_silhouette(..., take="rig|dig")`), the plate sits 7 px under the pods, and the plate is cut 6 px
+    round the tines so they read as sunk into it. Two more:
+    - **A rolled hull's rear edge is not its engines' rows.** Rolled nose-down, the side view's leftmost column caught
+      only the upper engine row. Measure the rows on the UNROLLED silhouette, then turn the bars with the hull about
+      the same centre: `canvas.rotate` and the silhouette's `roll` share one convention.
+    - **A hull with an embedded HUD rebinds in the vessel prefab.** The Grizzly has no `<Hull>HUDVariant`: its
+      GrizzlyHUD lives in `Grizzly.prefab`, so `REBIND` names that file. A placeholder another screen also shows
+      (`CannonIcon-PLACEHOLDER.png` in `ModeControlsLibrary.asset`) is left to that screen's owner.

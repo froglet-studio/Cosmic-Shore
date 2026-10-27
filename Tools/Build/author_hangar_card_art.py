@@ -50,7 +50,7 @@ SHEET = {
     "Scarab": "scarab_after.jpg", "Stoat": "stoat_after.jpg", "Goby": "goby_after.jpg",
     "BrittleStar": "brittlestar_after.jpg", "Shrike": "shrike_after.jpg", "Angler": "angler_after.jpg",
     "Wrasse": "wrassekite_after.jpg", "Orca": "orca_after.jpg", "Starling": "starling_after.jpg",
-    "Jacks": "jack_after.jpg", "Honeyguide": "honeyguide_after.jpg",
+    "Jacks": "jack_after.jpg", "Honeyguide": "honeyguide_after.jpg", "Grizzly": "grizzly_after.jpg",
 }
 COLS = 4                    # build.py's contact sheet: four views a row, cells 1 : 0.781
 CELL_ASPECT = 0.781

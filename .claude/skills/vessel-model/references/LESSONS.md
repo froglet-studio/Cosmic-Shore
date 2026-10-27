@@ -596,3 +596,28 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     - **Build a hinged part SHUT and rotate it open by the take's angle.** The cocked hammer is the shut geometry turned
       by -75 degrees about its knuckle, and `snap` is +75. Round 1 cocked at 62 and snapped 55, so the shut pose
       stayed 7 degrees open. With one constant for both angles, the take is exact by construction.
+
+53. **A hull whose prefab's parts all pivot at the HULL'S CENTRE (2026-10-27, the Grizzly, `specs/grizzly.py`).** The
+    Grizzly flew the generic wedge: eight part meshes, every one pivoting at the body's origin, which `BufoAnimation`
+    swings by about 26 degrees relative to the hull. The new model keeps those part transforms (colliders, jets, guns)
+    and its bones FOLLOW them (the Rhino's pattern), but one rule did not fit every part:
+    - **A part whose FX lives on it follows rigidly.** The four engine pods follow their thrusters about the hull's
+      centre, because their VesselJets ride those transforms; a pod that pivoted elsewhere would leave its exhaust.
+    - **A part that SITS ON the body follows partly, about its own base.** The top fin's swing about the hull's
+      centre would slide the hump (now the reactor shell) a unit and a half off the shoulders. So the hump and keel
+      take 35 % of the fin's rotation about their own pivots (`humpFollow`, `keelFollow`), which reads as rolling
+      shoulders.
+    - **Read the camera before the silhouette.** The Grizzly's camera is straight behind (followOffset (0, 0, -60)), so
+      the read is the hump, the four mouths and the claws out wide. The head, the canopy and the ears are for the
+      cards and the hangar.
+    - **A long, flat muzzle reads as a crocodile.** A bear's muzzle is deep and blunt, and its brow rises steeply off
+      it. Round 1's snout was 40 % of the head and flat; round 3's was the same length, 20 % deeper and blunt at the
+      tip, and read as a bear.
+    - **Domain on a curved plate is a conformal plate, never a painted band.** Painting faces by a world threshold
+      (`n.z > 0.55`, `c.z > 0.62`) on a curved loft leaves a stair along the band's edge. A thin `offset_shell` over
+      the band, on a hairline seam, has edges that run along the body's own lines. This applies the Orca's armour-plate
+      lesson to trims, blazes and knuckles.
+    - **A tilted part meets its neighbour at its RIM.** A sensor dish tilted toward the brow touched the head at its
+      lower front rim. Raising its base made that worse, because the brow rises ahead of it, and `assembly_report`
+      measured a 0.08 % gap. Measure the clearance in the spec (a KD-tree of the neighbour's vertices; `lift_clear`)
+      and lift until it holds, instead of guessing an offset.

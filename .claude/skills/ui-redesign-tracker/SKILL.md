@@ -107,6 +107,41 @@ stranded the old lock view in the scene. It now removes `Ids.everything()` and a
 check. Any generator whose output depends on a set (locked tabs, shown seats, offered modes) needs the same: remove
 everything it can ever mint, then write what it mints now.
 
+**T12 — two generators that insert under the same parent must not both take "first"** (claude/affectionate-bardeen-pzh99d,
+2026-10-27, the Port). `author_menu_codex.py` puts its CodexView first under `Screens` and writes its documents right after
+Screens'. A second screen generator doing the same makes each one's re-run move the other, so the other's `--check`
+drifts. Take a place relative to something only you own: the Port takes the old Port panel's place among the children
+and anchors its documents after that panel's transform. Run the whole `author_menu_*.py --check` sweep (T9) after adding
+a screen.
+
+**T13 — the Menu Redesign B canvas is shared, so a round's number is claimed when you publish, not when you plan it**
+(claude/affectionate-bardeen-pzh99d, 2026-10-27). Rev 28 was free at noon; by the time the Port's looks were drawn,
+another session had published Rev 28 to 31 (Ark tabs, Squads, the Codex rethought). Re-read `project/canvas.json`
+right before the publish, take the first free `rev<N>` page id AND board prefix (`R<N>*.dc.html`), and keep every
+page and board the other session added (send the index with only your keys changed).
+
+**T14 — the doc's section numbers are claimed the same way, and C# comments cite them** (claude/awesome-dirac-hssan7,
+2026-10-27). This branch wrote the Ark's sections as 90-94 of `Docs/MENU_REDESIGN_B.md`; the Port merged 90-91 into
+bleeding-edge first, and the merge conflicted on the doc alone. Renumbering is not a doc edit: the runtime classes'
+docstrings say `Docs/MENU_REDESIGN_B.md section 93`, so a renumber is a sweep over `Assets/_Scripts`, `Tools/Build` and
+`Docs/` for `MENU_REDESIGN_B.md section <N>` and `§<N>`, split by which branch's section each hit means (the other
+branch's comments cite the SAME numbers and must not move). Read the base's last section number right before the PR,
+not when the branch starts.
+
+**T15 — a menu generator's node key is its fileID, so a node named for its CONTENT collides with a sibling named for its
+ROLE** (claude/awesome-dirac-hssan7, 2026-10-27). A squad card had a `Pilot` value label (one of the four pick rows) and a
+`Pilot` full-figure image; both became `<card>/Pilot`, and `author_menu_arcade.check_file` failed with `duplicate fileID
+anchors`. It names three fileIDs and no node. Grep the generator for the shared key, and name the figure by what it is
+(`Figure`), not by what it shows.
+
+**T16 — check a canvas board's script offline before publishing it** (claude/awesome-dirac-hssan7, 2026-10-27). A
+`.dc.html` board's `class Component extends DCLogic` runs in node with a two-line stub (`class DCLogic { constructor(p)
+{ this.props = p; } setState(o) { Object.assign(this.state, o); } }`): build it with `new Function('DCLogic', js +
+'return Component;')`, call `renderVals()`, and check that every `{{hole}}` in the template is a key it returns (loop
+variables against one item of their list). Then press the handlers in order (make, pick, create). On the Rev 31 boards
+this caught a `create` that read the draft after clearing it, and it gives the layout numbers (which card overlaps the
+list) without rendering, which the canvas type asks sessions not to do.
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:
