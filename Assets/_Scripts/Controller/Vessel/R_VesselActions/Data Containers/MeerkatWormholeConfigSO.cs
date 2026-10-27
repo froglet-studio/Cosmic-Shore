@@ -39,6 +39,8 @@ namespace CosmicShore.ScriptableObjects
         [Header("Wormhole ride (the artifact's Play Style Config > Wormhole ride)")]
         [Tooltip("Fastest at the throat (× your entry speed)")]
         [SerializeField, Range(1f, 8f)] float throatSpeed = 2.5f;
+        [Tooltip("Riding: the speed tunnel's dolly zoom (× its normal strength)")]
+        [SerializeField, Range(0f, 5f)] float rideSpeedTunnelScale = 5f;
         [Tooltip("The reticle comes back after you are out in (s)")]
         [SerializeField, Range(0f, 3f)] float reticleDelaySeconds = 0.5f;
         [Tooltip("...rippling into shape over (s)")]
@@ -115,6 +117,7 @@ namespace CosmicShore.ScriptableObjects
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
         public float ThroatSpeed => throatSpeed;
+        public float RideSpeedTunnelScale => rideSpeedTunnelScale;
         public float ReticleDelaySeconds => reticleDelaySeconds;
         public float ReticleGrowSeconds => reticleGrowSeconds;
         public float FormSeconds => formSeconds;

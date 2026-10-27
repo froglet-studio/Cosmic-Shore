@@ -51,6 +51,7 @@ MonoBehaviour:
   reticleRibs: 8
   reticleSpindleThickness: 0.35
   reticlePath: 0.5
+  rideSpeedTunnelScale: 5
   formEvent:
     Guid:
       Data1: 0

@@ -212,6 +212,11 @@
       "key": "reticlePath",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "reticlePath"
+    },
+    {
+      "key": "rideSpeedTunnelScale",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideSpeedTunnelScale"
     }
   ]
 }
