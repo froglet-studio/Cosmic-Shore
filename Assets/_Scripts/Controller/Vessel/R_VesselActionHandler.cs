@@ -347,7 +347,50 @@ namespace CosmicShore.Gameplay
 
             foreach (var t in actions)
                 t.StartAction(_executors, vesselStatus);
+            VesselActionTape.Observer?.OnInputAction(vesselStatus, controlType, device, true);
         }
+
+        /// <summary>
+        /// Run a press or release the match replay recorded (<see cref="VesselActionTape"/>), resolved against the
+        /// device it was recorded with. A recorded press already passed every gate it met in the match (mute,
+        /// silence), so the replay runs it as it ran then.
+        /// </summary>
+        public void ReplayInput(InputEvents controlType, byte device, bool down)
+        {
+            if (!down)
+            {
+                StopPressedActions(controlType, device);
+                return;
+            }
+            if (!TryResolveActions(controlType, device, out var actions)) return;
+            _inputAbilityStartTimes[controlType] = Time.time;
+            _heldInputs[controlType] = device;
+            foreach (var t in actions)
+                t.StartAction(_executors, vesselStatus);
+        }
+
+        /// <summary>Every action this vessel can run, by asset name: its input maps (all devices), for the replay to find one by name.</summary>
+        public bool TryFindAction(string actionName, out ShipActionSO action)
+        {
+            action = Find(_shipControlActions) ?? Find(_touchOverrideActions) ?? Find(_gamepadOverrideActions);
+            return action;
+
+            ShipActionSO Find(Dictionary<InputEvents, List<ShipActionSO>> map)
+            {
+                if (map == null) return null;
+                foreach (var list in map.Values)
+                    for (int i = 0; i < list.Count; i++)
+                        if (list[i] && ReplayActionName(list[i]) == actionName) return list[i];
+                return null;
+            }
+        }
+
+        /// <summary>An action's name as the replay records it: the asset's name, without Unity's "(Clone)".</summary>
+        public static string ReplayActionName(ShipActionSO action) =>
+            action ? action.name.Replace("(Clone)", string.Empty).Trim() : string.Empty;
+
+        /// <summary>The executors this vessel's actions run against, for a replayed autopilot action.</summary>
+        public ActionExecutorRegistry Executors => _executors;
 
         /// <summary>Release counterpart of <see cref="PerformShipControllerActions(InputEvents)"/>.</summary>
         public void StopShipControllerActions(InputEvents controlType) =>
@@ -378,6 +421,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < actions.Count; i++)
                 actions[i].StopAction(_executors, vesselStatus);
+            VesselActionTape.Observer?.OnInputAction(vesselStatus, controlType, device, false);
         }
 
         bool TryResolveActions(InputEvents controlType, byte device, out List<ShipActionSO> actions) =>

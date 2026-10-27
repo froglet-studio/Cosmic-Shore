@@ -808,7 +808,7 @@ namespace CosmicShore.Gameplay
             // runs is started below and restarted below, so the sweep is exactly this method's own.
             StopAllCoroutines();
             foreach (var ability in _activeAbilities)
-                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(ability.Ability, actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
             _boostDriver?.Release();
 
@@ -872,7 +872,7 @@ namespace CosmicShore.Gameplay
             // ones that had started - StopAllCoroutines alone would strand those ON.
             StopAllCoroutines();
             foreach (var ability in _activeAbilities)
-                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(ability.Ability, actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
 
             if (_commitDriftHeld)
@@ -1464,11 +1464,11 @@ namespace CosmicShore.Gameplay
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
-                action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Start(action.Ability, actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);
                 _activeAbilities.Remove(action);
-                action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(action.Ability, actionExecutorRegistry, VesselStatus);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Cooldown);
             }
         }

@@ -165,6 +165,8 @@ namespace CosmicShore.Utility
             _recorder.Begin(theater, ResolveSceneName(), (int)_gameData.GameMode, configName);
             var replayConfig = ReplayConfigSO.Resolve();
             if (replayConfig.RecordWorld) _recorder.RecordWorld(replayConfig.NewWorldRecorder());
+            // Every vessel's actions too, so the replay re-runs them on the real vessels (Docs/REPLAYS.md §6.3).
+            _recorder.RecordActions();
             _pending = NewSummary();
             _pending.ArenaOrigin = cell ? cell.transform.position : Vector3.zero;
 

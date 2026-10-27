@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
                 float offset = Mathf.Max(_action.ForwardOffset, c.Speed * _action.LeadSeconds);
                 if (c.Distance < offset + _policy.clearanceBeyondRing) return;
 
-                _action.StartAction(_executors, _status);
+                VesselActionTape.Start(_action, _executors, _status);
                 _pressed = true;
 
                 // The executor refuses a press on cooldown; only hold the line for a ring that exists.
@@ -110,7 +110,7 @@ namespace CosmicShore.Gameplay
             void ReleasePress()
             {
                 _pressed = false;
-                _action.StopAction(_executors, _status);
+                VesselActionTape.Stop(_action, _executors, _status);
             }
         }
     }
