@@ -108,7 +108,7 @@ namespace CosmicShore.Gameplay
             if (PauseSystem.Paused)
                 return;
 
-            // Look behind (C, or LB+RB together). Polled HERE rather than in a HUD or on a
+            // Look behind (C, or D-pad down). Polled HERE rather than in a HUD or on a
             // vessel because this is the one per-frame pump that is already gated on exactly
             // the conditions the gesture needs: local human pilot only (an AI hull and a remote
             // replica both carry an InputController and must not move the local camera), and

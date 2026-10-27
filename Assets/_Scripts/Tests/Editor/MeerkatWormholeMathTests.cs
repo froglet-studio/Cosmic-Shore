@@ -7,7 +7,7 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The Meerkat's wormhole arithmetic (<see cref="MeerkatWormholeMath"/>) held to the Vessel Studio page it was ported
     /// from (<c>Docs/Studios/VesselStudio/meerkat.html</c>). Every golden number here came from running the page's OWN
-    /// <c>shapeFor</c> / <c>whAt</c> / <c>whFrame</c> / <c>whRadius</c> / <c>stepTunnel</c> / <c>aiGatePlan</c> in node on
+    /// <c>shapeFor</c> / <c>bendAngle</c> / <c>whAt</c> / <c>whFrame</c> / <c>whRadius</c> / <c>stepTunnel</c> / <c>aiGatePlan</c> in node on
     /// the same inputs, at the page's shipped numbers (2026-10-27). A page change that moves one of these is a port to
     /// redo, not a test to loosen.
     /// </summary>
@@ -18,22 +18,23 @@ namespace CosmicShore.Tests
 
         static readonly MeerkatWormholeMath.ShapeSettings Shipped = new()
         {
-            LengthStraight = 600f, LengthBent = 120f, BendMaxDegrees = 120f,
-            ThroatStraight = 3f, ThroatBent = 40f, MouthFlare = 2f,
+            ShaftMin = 60f, ShaftMax = 600f, BendRadius = 60f, BendMaxDegrees = 150f, ThroatRadius = 4f, MouthRadius = 10f,
         };
 
-        // lq, sx, sy -> L, b, M, theta, fat, dx, dy
-        [TestCase(0f, 0f, 0f, 600f, 3f, 12f, 0f, 0f, 0f, 0f)]
-        [TestCase(0f, 0.3f, 0f, 473.684211f, 12.736842f, 31.473684f, 0.551157f, 0.263158f, 1f, 0f)]
-        [TestCase(0f, 0.7f, -0.2f, 257.426027f, 29.406744f, 64.813488f, 1.494761f, 0.713696f, 0.961524f, -0.274721f)]
-        [TestCase(0.5f, 0f, 0f, 360f, 3f, 12f, 0f, 0f, 0f, 0f)]
-        [TestCase(1f, 1f, 1f, 120f, 34.377468f, 54.430991f, 2.094395f, 1f, 0.707107f, 0.707107f)]
-        [TestCase(0f, 0.04f, 0f, 600f, 3f, 12f, 0f, 0f, 1f, 0f)]
-        public void ShapeFor_MatchesThePage(float lq, float sx, float sy, float L, float b, float m, float theta, float fat,
-            float dx, float dy)
+        // round 7 (the umbrella handle): lq, sx, sy -> L, S, R, b, M, theta, fat, dx, dy
+        [TestCase(0f, 0f, 0f, 60f, 60f, 60f, 4f, 10f, 0f, 0f, 0f, 0f)]
+        [TestCase(0f, 0.3f, 0f, 101.336745f, 60f, 60f, 4f, 10f, 0.688946f, 0.263158f, 1f, 0f)]
+        [TestCase(0.4f, 0.7f, -0.2f, 388.107071f, 276f, 60f, 4f, 10f, 1.868451f, 0.713696f, 0.961524f, -0.274721f)]
+        [TestCase(1f, 0f, 0f, 600f, 600f, 60f, 4f, 10f, 0f, 0f, 0f, 0f)]
+        [TestCase(1f, 1f, 1f, 757.079633f, 600f, 60f, 4f, 10f, 2.617994f, 1f, 0.707107f, 0.707107f)]
+        [TestCase(0f, 0.04f, 0f, 60f, 60f, 60f, 4f, 10f, 0f, 0f, 1f, 0f)]
+        public void ShapeFor_MatchesThePage(float lq, float sx, float sy, float L, float shaft, float bendRadius, float b,
+            float m, float theta, float fat, float dx, float dy)
         {
             var s = MeerkatWormholeMath.ShapeFor(Shipped, lq, sx, sy);
             Assert.AreEqual(L, s.L, Tol, "L");
+            Assert.AreEqual(shaft, s.S, Tol, "shaft");
+            Assert.AreEqual(bendRadius, s.R, Tol, "bend radius");
             Assert.AreEqual(b, s.B, Tol, "throat");
             Assert.AreEqual(m, s.M, Tol, "mouth");
             Assert.AreEqual(theta, s.Theta, 1e-5f, "theta");
@@ -42,21 +43,24 @@ namespace CosmicShore.Tests
             Assert.AreEqual(dy, s.Dy, 1e-5f, "dy");
         }
 
-        // s -> point, tangent, normal, binormal (A (1,2,3), t0 +z, side +x, L 300, theta 1.2)
-        [TestCase(0f, 1f, 2f, 3f, 0f, 0f, 1f, 1f, 0f, 0f)]
-        [TestCase(75f, 12.165878f, 2f, 76.880052f, 0.29552f, 0f, 0.955336f, 0.955336f, 0f, -0.29552f)]
-        [TestCase(150f, 44.666096f, 2f, 144.160618f, 0.564642f, 0f, 0.825336f, 0.825336f, 0f, -0.564642f)]
-        [TestCase(299f, 159.479249f, 2f, 235.645551f, 0.930582f, 0f, 0.366083f, 0.366083f, 0f, -0.930582f)]
+        // s -> point, tangent, normal, turned (A (1,2,3), t0 +z, side +x, shaft 100, bend radius 80, theta 1.2): straight
+        // along the shaft, then an arc of radius 80
+        [TestCase(0f, 1f, 2f, 3f, 0f, 0f, 1f, 1f, 0f, 0f, 0f)]
+        [TestCase(50f, 1f, 2f, 53f, 0f, 0f, 1f, 1f, 0f, 0f, 0f)]
+        [TestCase(100f, 1f, 2f, 103f, 0f, 0f, 1f, 1f, 0f, 0f, 0f)]
+        [TestCase(140f, 10.793395f, 2f, 141.354043f, 0.479426f, 0f, 0.877583f, 0.877583f, 0f, -0.479426f, 0.5f)]
+        [TestCase(195f, 51.08163f, 2f, 177.194953f, 0.927437f, 0f, 0.37398f, 0.37398f, 0f, -0.927437f, 1.1875f)]
         public void AtAndFrame_MatchThePage(float s, float px, float py, float pz, float tx, float ty, float tz,
-            float nx, float ny, float nz)
+            float nx, float ny, float nz, float turned)
         {
-            var p = MeerkatWormholeMath.At(new Vector3(1f, 2f, 3f), Vector3.forward, Vector3.right, 300f, 1.2f, s, out var t);
-            MeerkatWormholeMath.Frame(Vector3.forward, Vector3.right, 300f, 1.2f, s, out var n, out var bn);
+            var p = MeerkatWormholeMath.At(new Vector3(1f, 2f, 3f), Vector3.forward, Vector3.right, 100f, 80f, 1.2f, s, out var t);
+            MeerkatWormholeMath.Frame(Vector3.forward, Vector3.right, 100f, 80f, 1.2f, s, out var n, out var bn);
             Assert.AreEqual(px, p.x, Tol); Assert.AreEqual(py, p.y, Tol); Assert.AreEqual(pz, p.z, Tol);
             Assert.AreEqual(tx, t.x, 1e-5f); Assert.AreEqual(ty, t.y, 1e-5f); Assert.AreEqual(tz, t.z, 1e-5f);
             Assert.AreEqual(nx, n.x, 1e-5f); Assert.AreEqual(ny, n.y, 1e-5f); Assert.AreEqual(nz, n.z, 1e-5f);
             // the page's binormal is (0, 1, 0) at every s: t0 x side
             Assert.AreEqual(0f, bn.x, 1e-6f); Assert.AreEqual(1f, bn.y, 1e-6f); Assert.AreEqual(0f, bn.z, 1e-6f);
+            Assert.AreEqual(turned, MeerkatWormholeMath.BendAngle(100f, 80f, 1.2f, s), 1e-5f, "bendAngle");
         }
 
         [TestCase(0f, 300f, 0f, 26f)]
@@ -119,32 +123,29 @@ namespace CosmicShore.Tests
             Assert.AreEqual(MeerkatWormholeMath.Phase.Gone, w.Phase);
         }
 
-        // the target in the hull's frame (Unity: z forward), the judge noise and its roll, turn-only -> LT, stick (null: none)
-        [TestCase(0f, 0f, 900f, 0f, 0.5f, false, 0f, 0f)]
-        [TestCase(300f, 0f, 400f, 0f, 0.5f, false, 0.75f, 0.4775f)]
-        [TestCase(0f, -200f, 250f, 0f, 0.5f, true, 1f, 0.4775f)]
-        [TestCase(500f, 100f, 100f, 0f, 0.5f, false, 0.875f, 0.81f)]
-        [TestCase(-120f, 40f, 300f, 0.4f, 0.9f, false, 1f, 0.3886f)]
+        static MeerkatWormholeMath.PlanSettings PlanShipped => new()
+        {
+            ReticleAhead = 30f, ShapeSeconds = 0.3f, Shape = Shipped,
+            MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(1f, 2.5f, 1.2f), TurnRateRadians = 120f * Mathf.Deg2Rad,
+        };
+
+        // the target in the hull's frame (Unity: z forward), the judge noise and its roll, turn-only -> LT, stick
+        // (round 7: the plan that reaches the ring soonest, at pitchYaw 120 and the ride's mean speed)
+        [TestCase(0f, 0f, 900f, 0f, 0.5f, false, 1f, 0f)]
+        [TestCase(300f, 0f, 400f, 0f, 0.5f, false, 0.25f, 0.525f)]
+        [TestCase(0f, -200f, 250f, 0f, 0.5f, true, 0f, 0.4775f)]
+        [TestCase(500f, 100f, 100f, 0f, 0.5f, false, 0f, 0.715f)]
+        [TestCase(-120f, 40f, 300f, 0.4f, 0.9f, false, 0.25f, 0.7192f)]
         public void TryPlan_MatchesThePage(float x, float y, float z, float noise, float rand, bool turnOnly, float lq, float m)
         {
-            var p = new MeerkatWormholeMath.PlanSettings
-            {
-                ReticleAhead = 30f, ShapeSeconds = 0.3f, BendMaxDegrees = 120f, LengthStraight = 600f, LengthBent = 120f,
-            };
-            Assert.IsTrue(MeerkatWormholeMath.TryPlan(p, new Vector3(x, y, z), 60f, noise, rand, turnOnly, out float gotLq, out float gotM));
+            Assert.IsTrue(MeerkatWormholeMath.TryPlan(PlanShipped, new Vector3(x, y, z), 60f, noise, rand, turnOnly, out float gotLq, out float gotM));
             Assert.AreEqual(lq, gotLq, 1e-5f, "LT");
             Assert.AreEqual(m, gotM, 1e-4f, "stick");
         }
 
         [Test]
-        public void TryPlan_NothingFitsATargetUnderTheNose()
-        {
-            var p = new MeerkatWormholeMath.PlanSettings
-            {
-                ReticleAhead = 30f, ShapeSeconds = 0.3f, BendMaxDegrees = 120f, LengthStraight = 600f, LengthBent = 120f,
-            };
-            Assert.IsFalse(MeerkatWormholeMath.TryPlan(p, new Vector3(0f, 0f, 40f), 60f, 0f, 0.5f, false, out _, out _));
-        }
+        public void TryPlan_NothingFitsATargetUnderTheNose() =>
+            Assert.IsFalse(MeerkatWormholeMath.TryPlan(PlanShipped, new Vector3(0f, 0f, 40f), 60f, 0f, 0.5f, false, out _, out _));
 
         /// <summary>The page's round-3 easing: 1 - exp(-dt / tau). In the page, with the stick moved to 0.202, the reticle read
         /// 0.04 after 0.05 s, 0.119 after 0.15 s and 0.194 after 0.5 s at 60 fps (reticleSmoothSeconds 0.15) - 2, 8 and 29 easing
@@ -176,17 +177,23 @@ namespace CosmicShore.Tests
         [Test]
         public void Ride_StartsAndEndsAtTheEntrySpeed_AndPeaksAtTheThroat()
         {
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, -40f, 300f), 1e-4f, "the dive");
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, 0f, 300f), 1e-4f, "the way in");
-            Assert.AreEqual(150f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, 150f, 300f), 1e-3f, "the throat");
-            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 2.5f, 300f, 300f), 1e-3f, "the way out");
+            // round 6: entry 1, middle 2.5, exit 1.2 x the speed before the tunnel (the page measured 60 in, ~150 at the throat,
+            // 72 out of the far mouth, easing back to cruise)
+            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, -40f, 300f), 1e-4f, "the dive");
+            Assert.AreEqual(60f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 0f, 300f), 1e-4f, "the way in");
+            Assert.AreEqual(150f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 150f, 300f), 1e-3f, "the throat");
+            Assert.AreEqual(72f, MeerkatWormholeMath.RideSpeed(60f, 1f, 2.5f, 1.2f, 300f, 300f), 1e-3f, "the way out");
+            Assert.AreEqual(1f + 1.5f * Mathf.Sin(Mathf.PI * 0.25f), MeerkatWormholeMath.RideMultiplier(1f, 2.5f, 1.2f, 0.25f), 1e-5f);
+            Assert.AreEqual(1.2f + 1.3f * Mathf.Sin(Mathf.PI * 0.75f), MeerkatWormholeMath.RideMultiplier(1f, 2.5f, 1.2f, 0.75f), 1e-5f);
         }
 
         [Test]
         public void Ride_ComesOutOnTheTunnelsLastHeading()
         {
-            var q = MeerkatWormholeMath.RideRotation(Vector3.up, 1.2f, 300f, 300f, 0f, Quaternion.identity);
-            MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, 300f, 1.2f, 300f, out var tangent);
+            // a 100 u shaft, then 1.2 rad round an 80 u bend: the hull turns only on the bend
+            float turned = MeerkatWormholeMath.BendAngle(100f, 80f, 1.2f, 196f) - MeerkatWormholeMath.BendAngle(100f, 80f, 1.2f, 0f);
+            var q = MeerkatWormholeMath.RideRotation(Vector3.up, turned, Quaternion.identity);
+            MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, 100f, 80f, 1.2f, 196f, out var tangent);
             Assert.Less(Vector3.Angle(q * Vector3.forward, tangent), 0.01f);
         }
 
@@ -202,6 +209,32 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.45f, front, 1e-6f);
             var centre = MeerkatWormholeMath.RippleDisplacement(new Vector2(0.1f, 0.05f), 1.6f, 0.01f, 0.5f, 0.45f);
             Assert.AreEqual(Vector2.zero, centre);
+        }
+
+        // The lens shader measures the wall in the tunnel's own frame: the arc centred on (R, 0, 0), leaving the origin along +z.
+        // round 7: a straight shaft of S along +z, then a bend of radius R round (R, 0, S) - where MWTube looks
+        [TestCase(0f, 600f, 60f)]
+        [TestCase(1.2f, 100f, 80f)]
+        [TestCase(2.617994f, 60f, 60f)]
+        public void TubeWorldToLocal_PutsTheTubeWhereTheShaderLooks(float theta, float S, float R)
+        {
+            var a = new Vector3(12f, -40f, 7f);
+            var t0 = new Vector3(0.3f, 0.2f, 0.9f).normalized;
+            var side = Vector3.Cross(t0, new Vector3(0.1f, 1f, -0.2f)).normalized;
+            var m = MeerkatWormholeMath.TubeWorldToLocal(a, t0, side);
+            float L = S + R * theta;
+            foreach (float s in new[] { 0f, 0.5f * S, S, S + 0.37f * (L - S), L })
+            {
+                var local = m.MultiplyPoint3x4(MeerkatWormholeMath.At(a, t0, side, S, R, theta, s, out var tangent));
+                var localT = m.MultiplyVector(tangent);
+                MeerkatWormholeMath.Frame(t0, side, S, R, theta, s, out var normal, out var binormal);
+                float ang = theta < 1e-4f ? 0f : Mathf.Clamp((s - S) / R, 0f, theta);
+                var want = s <= S || theta < 1e-4f ? new Vector3(0f, 0f, s) : new Vector3(R - R * Mathf.Cos(ang), 0f, S + R * Mathf.Sin(ang));
+                Assert.AreEqual(0f, Vector3.Distance(want, local), 1e-3f, $"point at s {s}");
+                Assert.AreEqual(0f, Vector3.Distance(new Vector3(Mathf.Sin(ang), 0f, Mathf.Cos(ang)), localT), 1e-4f, "tangent");
+                Assert.AreEqual(0f, Vector3.Distance(new Vector3(Mathf.Cos(ang), 0f, -Mathf.Sin(ang)), m.MultiplyVector(normal)), 1e-4f, "normal");
+                Assert.AreEqual(0f, Vector3.Distance(Vector3.up, m.MultiplyVector(binormal)), 1e-4f, "binormal");
+            }
         }
     }
 }

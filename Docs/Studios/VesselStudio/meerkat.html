@@ -346,7 +346,7 @@
     <aside class="rail" aria-label="Studio controls">
       <div class="card" id="mainCard">
         <h3 id="mainH">The wormhole</h3>
-        <p class="src" style="margin-top:4px" id="mainP">The Meerkat's one ability. The left stick flies; the grid on your nose is the tunnel RT would form now: the right stick bends it, LT shortens it, RT forms it and you ride it, out with the speed you went in with. No black hole, no white hole: only bent space-time. Its settings: <b>Wormhole · look</b>, <b>Wormhole · shape</b> and <b>Wormhole · ride</b> below.</p>
+        <p class="src" style="margin-top:4px" id="mainP">The Meerkat's one ability. The left stick flies; the spindle frame on your nose is the tunnel RT would form now - a straight shaft, then a bend: LT sets how long the shaft runs, the right stick which way and how far it bends, RT forms it and you ride it, out a little faster than you went in. Its settings: <b>Reticle</b>, <b>Wormhole · look</b>, <b>Space · look</b>, <b>Wormhole · shape</b> and <b>Wormhole · ride</b> below.</p>
         <div class="btns" style="margin-top:6px"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course. Add rivals with + in Players to see theirs too.">Watch the AI fly the wormhole</button></div>
       </div>
 
@@ -380,10 +380,10 @@
       </div>
 
       <details class="card" id="grp-shape" open><summary>Wormhole · shape <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. The <b>right stick bends it</b> any way, as far as it is pushed, up to <i>bendMaxDegrees</i>; the further it bends the shorter (<i>lengthStraight</i> to <i>lengthBent</i>) and fatter (<i>throatStraight</i> to <i>throatBent</i>) it gets. <b>LT</b> shortens a straighter one. Its mouths are <i>mouthFlare</i> × the throat.</p>
+        <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. It is a <b>straight shaft, then a bend</b> - an umbrella handle: <b>LT</b> sets how long the shaft runs before it bends (<i>shaftMin</i> released to <i>shaftMax</i> squeezed), and the <b>right stick</b> sets which way it bends and how far, up to <i>bendMaxDegrees</i>, round a bend of radius <i>bendRadius</i>. <b>RT</b> confirms. Its size is fixed: a <i>throatRadius</i> throat between <i>mouthRadius</i> mouths, however it is shaped.</p>
         <div class="btns"><button class="pick" type="button" data-reset="shape">Reset</button></div></details>
       <details class="card" id="grp-ride" open><summary>Wormhole · ride <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> starts and ends at the speed you went in with and rushes to <i>throatSpeed</i> × it at the throat: you come out with your own momentum, on the tunnel's last heading. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
+        <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> is your speed before the tunnel times three multipliers: <i>rideEntryMultiplier</i> going in (1 = no change), rising to <i>rideMidMultiplier</i> at the throat and easing to <i>rideExitMultiplier</i> at the way out - a little boost you come out with, on the tunnel's last heading, before you ease back to cruise. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
         <div class="btns"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course (any setting you change shows on its next wormhole).">Watch the AI fly it</button><button class="pick" type="button" data-reset="ride">Reset</button></div></details>
       <details class="card" id="grp-reticle" open><summary>Reticle · feel &amp; look <small>MeerkatWormholeConfig · yours alone</small></summary><div class="rows"></div>
         <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is a <b>see-through frame of thin spindles</b>: <i>reticleRings</i> rings of <i>reticleSpindlesPerRing</i> spindles round its throat and <i>reticleRibs</i> ribs along it, <i>reticleSpindleThickness</i> thick, cyan at the way in to white at the way out, over a faint glass (<i>reticleGlass</i>). Fully grown, the lime line you will fly runs through it (<i>reticlePath</i>). Faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
@@ -443,13 +443,20 @@
     // The Meerkat's one ability, the WORMHOLE (Stoat Gate rounds 19-26, moved to its own vessel 2026-10-27, Yash). Every key
     // IS the field the game will get, by this exact name, on MeerkatWormholeConfig (GAME_NAMES): no studio-only names.
     // shape: the reticle rides reticleAhead u ahead of the nose; the right stick bends it up to bendMaxDegrees, any way;
-    // straight it is lengthStraight long with a throatStraight throat, at the sharpest bend lengthBent long and throatBent
-    // fat; mouths are mouthFlare x the throat (+6 u); LT on a key or touch reaches a full squeeze in keyRampSeconds
-    reticleAhead: 30, bendMaxDegrees: 120, lengthStraight: 600, lengthBent: 120, throatStraight: 3, throatBent: 40, mouthFlare: 2, keyRampSeconds: 0.5,
-    // ride and life: in and out at your entry speed, throatSpeed x it at the throat; the reticle comes back reticleDelaySeconds
+    // round 7 (Yash: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from
+    // where it can turn 90 or 120 or 150 degrees ... left trigger will control the length after which it will bend ... a long
+    // umbrella stick like geometry"): a straight SHAFT shaftMin (LT released) to shaftMax (LT squeezed) long, then a BEND
+    // round bendRadius, as far as the right stick asks up to bendMaxDegrees, any way; a fixed throatRadius throat between
+    // fixed mouthRadius mouths; LT on a key or touch reaches a full squeeze in keyRampSeconds
+    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, throatRadius: 4, mouthRadius: 10, keyRampSeconds: 0.5,
+    // ride and life (round 6, Yash: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
+    // exiting it will exit at little bit boosted"): the ride is your speed before the tunnel x rideEntryMultiplier going in,
+    // rideMidMultiplier at the throat, rideExitMultiplier coming out (rideMultiplier); the reticle comes back reticleDelaySeconds
     // after you are out and ripples into shape over reticleGrowSeconds; a tunnel forms over formSeconds, stays staySeconds
     // after you are out, then collapses back to its centre over collapseSeconds
-    throatSpeed: 2.5, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
+    // round 5: riding, the game's speed tunnel (its dolly zoom) is rideSpeedTunnelScale x its normal strength
+    rideSpeedTunnelScale: 5,
+    rideEntryMultiplier: 1, rideMidMultiplier: 2.5, rideExitMultiplier: 1.2, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
     // round 4 (Yash, 2026-10-27: "Turn off all lensing"): the warp, the dents and the ripple ship at 0 - the bridge and your
@@ -476,13 +483,16 @@
   const SPEC = [
     ['shape', 'reticleAhead', 'The reticle rides this far ahead of the nose (u)', 0, 100, 1],
     ['shape', 'bendMaxDegrees', 'Sharpest bend, the right stick fully over (°)', 0, 180, 5],
-    ['shape', 'lengthStraight', 'A straight tunnel is this long (u)', 60, 1500, 10],
-    ['shape', 'lengthBent', 'The sharpest bend\'s tunnel is this long (u)', 20, 600, 10],
-    ['shape', 'throatStraight', 'Throat radius, straight (u)', 1, 40, 0.5],
-    ['shape', 'throatBent', 'Throat radius, sharpest bend (u)', 5, 120, 1],
-    ['shape', 'mouthFlare', 'Mouth radius (× throat)', 1, 5, 0.1],
+    ['shape', 'shaftMin', 'The straight shaft before the bend, LT released (u)', 0, 600, 10],
+    ['shape', 'shaftMax', '...LT fully squeezed (u)', 20, 1500, 10],
+    ['shape', 'bendRadius', 'The bend\'s radius (u)', 10, 300, 5],
+    ['shape', 'throatRadius', 'Throat radius, fixed (u)', 1, 30, 0.5],
+    ['shape', 'mouthRadius', 'Mouth radius, fixed (u)', 2, 60, 1],
     ['shape', 'keyRampSeconds', 'LT on a key or touch: full after (s)', 0.05, 3, 0.05],
-    ['ride', 'throatSpeed', 'Fastest at the throat (× your entry speed)', 1, 8, 0.1],
+    ['ride', 'rideEntryMultiplier', 'Ride: going in (× your speed before the tunnel)', 0.5, 3, 0.05],
+    ['ride', 'rideMidMultiplier', 'Ride: fastest, at the throat (× your speed before the tunnel)', 0.5, 8, 0.1],
+    ['ride', 'rideExitMultiplier', 'Ride: coming out (× your speed before the tunnel)', 0.5, 3, 0.05],
+    ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
     ['ride', 'reticleGrowSeconds', '...rippling into shape over (s)', 0.05, 3, 0.05],
     ['ride', 'formSeconds', 'RT: the tunnel ripples out of its centre over (s)', 0.05, 2, 0.05],
@@ -911,8 +921,8 @@
   // The Meerkat's one ability (the Stoat's Gate mode, rounds 19-26, Garrett and Yash): a WORMHOLE SLINGSHOT, not a
   // teleport, and no black hole or white hole - only the wormhole. It flies on ONE THUMB - the left stick flies (stepFly),
   // so the right thumb is always free: the RETICLE (gateHold) is always on your nose, the tunnel an RT pull would form
-  // now, bent by the right stick any way (whShape: the further it bends, the shorter and fatter - straight is thin and
-  // lengthStraight long, the sharpest bend bendMaxDegrees is lengthBent short and throatBent fat) and shortened by LT;
+  // now (whShape, round 7: a straight shaft LT sets the length of, then a bend the right stick sets the way and amount of,
+  // round bendRadius up to bendMaxDegrees; a fixed throat and mouths);
   // pulling RT forms it (gateForm -> gateCommit) with you in it. You ride it in and out at your entry speed (gateTransit).
   // Only its maker sees the reticle's grid, and only while shaping it: a formed tunnel has none (Yash, 2026-10-27).
   // Everyone sees the tube's warp (updateTubeWarp) and its mouths' dents (setLensUniforms).
@@ -920,33 +930,34 @@
   // shape lives on its pair (pr.wh), so every pilot's tunnel warps the view.
   function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0 }; }
   const whA = new V3(), whB = new V3(), whC = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
-  // The shape the right stick and LT ask for: the BEND is the right stick - any way, as far as it is pushed; how far it
-  // bends makes it fatter and shorter, and LT squeezed shortens it further (a short straight hop: LT full). Returns
-  // mouths apart (L), throat (b), mouth (M), turn (rad), fatness 0..1 and the bend's way in the hull's frame (dx right, dy up).
+  // The shape the right stick and LT ask for (round 7): a straight SHAFT, shaftMin with LT released to shaftMax squeezed,
+  // then a BEND round bendRadius, as far as the right stick is pushed up to bendMaxDegrees, the way it is pushed. Its size
+  // is fixed: throat throatRadius, mouths mouthRadius. Returns the length mouth to mouth (L = S + R theta), the shaft (S),
+  // the bend's radius (R), throat (b), mouth (M), turn (rad), how far the stick is pushed 0..1 (fat), and the bend's way in
+  // the hull's frame (dx right, dy up).
   function shapeFor(Pv, lq, sx, sy) {
     const tx = Math.max(-1, Math.min(1, sx)), ty = Math.max(-1, Math.min(1, sy));
     const mRaw = Math.hypot(tx, ty), m = Math.min(1, mRaw), t = clamp01((m - 0.05) / 0.95);
-    const short = Math.max(t, clamp01(lq));
-    const L = Math.max(10, Pv.lengthStraight - (Pv.lengthStraight - Pv.lengthBent) * short);
-    const theta = Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180 * t;
-    const R = theta > 1e-3 ? L / theta : Infinity;
-    const b = Math.min(Pv.throatStraight + (Pv.throatBent - Pv.throatStraight) * t, 0.6 * R);
-    const M = Math.min(b * Math.max(1, Pv.mouthFlare) + 6, Math.max(b, 0.95 * R));
-    return { L, b, M, theta, fat: t, m, dx: mRaw > 1e-6 ? tx / mRaw : 0, dy: mRaw > 1e-6 ? ty / mRaw : 0 };
+    const S = Math.max(0, Pv.shaftMin + (Math.max(Pv.shaftMin, Pv.shaftMax) - Pv.shaftMin) * clamp01(lq));
+    const theta = Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180 * t, R = Math.max(1, Pv.bendRadius);
+    const L = Math.max(10, S + R * theta), b = Math.max(0.5, Pv.throatRadius), M = Math.max(b, Pv.mouthRadius);
+    return { L, S, R, b, M, theta, fat: t, m, dx: mRaw > 1e-6 ? tx / mRaw : 0, dy: mRaw > 1e-6 ? ty / mRaw : 0 };
   }
   const whShape = (lq, sx, sy) => shapeFor(P, lq, sx, sy);
 
-  // s u along the centreline: an arc from the black hole leaving along t0, bending toward side by theta over L.
+  // How far the centreline has turned at s (round 7): nothing along the shaft, then (s - S) / R round the bend.
+  function bendAngle(wh, s) { return wh.theta < 1e-4 ? 0 : Math.max(0, Math.min(wh.theta, (s - wh.S) / wh.R)); }
+  // s u along the centreline: straight along t0 for the shaft S, then an arc of radius R bending toward side by theta.
   function whAt(wh, s, outP, outT) {
-    if (wh.theta < 1e-4) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
-    const k = wh.theta / Math.max(1e-6, wh.L), R = 1 / k, a = k * s;
-    outP.copy(wh.A).addScaledVector(wh.t0, R * Math.sin(a)).addScaledVector(wh.side, R * (1 - Math.cos(a)));
+    if (wh.theta < 1e-4 || s <= wh.S) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
+    const a = bendAngle(wh, s), R = wh.R;
+    outP.copy(wh.A).addScaledVector(wh.t0, wh.S + R * Math.sin(a)).addScaledVector(wh.side, R * (1 - Math.cos(a)));
     if (outT) outT.copy(wh.t0).multiplyScalar(Math.cos(a)).addScaledVector(wh.side, Math.sin(a));
     return outP;
   }
   // The frame round the centreline at s: N toward the bend's centre, Bn across it (constant).
   function whFrame(wh, s, N, Bn) {
-    const a = wh.theta / Math.max(1e-6, wh.L) * s;
+    const a = bendAngle(wh, s);
     N.copy(wh.side).multiplyScalar(Math.cos(a)).addScaledVector(wh.t0, -Math.sin(a));
     Bn.crossVectors(wh.t0, wh.side).normalize();
   }
@@ -1036,7 +1047,7 @@
     const old = ftLive.gate; if (old && old.pair.alive && !old.pair.dying && old.pair.wh.phase !== 'collapse') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }   // the last one goes back to its centre now
     basis();
     const vIn = Math.max(1, speed), dive = hull.position.distanceTo(r.A) / vIn;
-    const wh = { A: r.A.clone(), t0: r.t0.clone(), side: r.side.clone(), L: r.L, b: r.b, M: r.M, theta: r.theta, fat: r.fat, m: r.m, s0: 0.5 * r.L, s1: 0.5 * r.L, t: 0,
+    const wh = { A: r.A.clone(), t0: r.t0.clone(), side: r.side.clone(), L: r.L, S: r.S, R: r.R, b: r.b, M: r.M, theta: r.theta, fat: r.fat, m: r.m, s0: 0.5 * r.L, s1: 0.5 * r.L, t: 0,
       phase: 'form', grow: 0, formT: Math.min(Math.max(0.05, P.formSeconds), Math.max(0.1, 0.9 * dive)), stay: 0, out: false };   // it ripples out of its centre
     ftLive.retGhost = { view: Object.assign({}, r), a: 1, formT: wh.formT };   // the reticle fades as the tunnel forms
     myPair = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true);
@@ -1051,31 +1062,38 @@
     if (stance) stance = false;
     if (!curPilot) portalFlash = 1;
   }
-  // In the throat: carried along the curve, from your entry speed up to gtTubeSpeed x it at the throat and back (round 25), turned
+  // In the throat: carried along the curve, at your speed before the tunnel x rideMultiplier (round 6), turned
   // with it; out of the white hole, slung on its heading (gateOut).
   function gateTransit(dt) {
     const g = ftLive.gate, wh = g.pair.wh;
     const u = clamp01(g.s / Math.max(1e-3, wh.L));   // 0 on the dive in (the ride runs the whole tube, mouth 0 to mouth L, however much of it has formed)
-    // round 25 (Yash: "come out with the same momentum and speed as you went inside"): the ride starts and ends at your
-    // entry speed and rushes to gtTubeSpeed x it at the throat - no jolt going in, none coming out
-    const v = g.vIn * (1 + (Math.max(0.1, P.throatSpeed) - 1) * (g.s < 0 ? 0 : Math.sin(Math.PI * u)));
+    // round 6: your speed before the tunnel x rideMultiplier - the entry multiplier on the dive in and at the way in, the
+    // middle one at the throat, the exit one at the way out
+    const v = g.vIn * rideMultiplier(P, g.s < 0 ? 0 : u);
     g.s = Math.min(wh.L, g.s + v * dt);
     if (g.s < 0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }   // still diving to the mouth
     else {
       whAt(wh, g.s, whA, whB); whFrame(wh, g.s, whN, whBn);
       hull.position.copy(whA).addScaledVector(whN, g.oN).addScaledVector(whBn, g.oB);
-      whQ.setFromAxisAngle(whBn, wh.theta / Math.max(1e-6, wh.L) * (g.s - g.sIn)); hull.quaternion.copy(whQ).multiply(g.q0).normalize();
+      whQ.setFromAxisAngle(whBn, bendAngle(wh, g.s) - bendAngle(wh, g.sIn)); hull.quaternion.copy(whQ).multiply(g.q0).normalize();
     }
     velNow.copy(whB).multiplyScalar(v);
     if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
     if (g.s >= wh.L - 1e-6) gateOut(g);
   }
-  // Out of the far mouth with the speed and momentum you went in with, on the tunnel's last heading (round 25, Yash: "come
-  // out with the same momentum and speed as you went inside"); the tunnel stays staySeconds, then goes back to its centre.
+  // The ride's multiplier at u (0 the way in, 1 the way out) on your speed before the tunnel (round 6): it rises from
+  // rideEntryMultiplier to rideMidMultiplier at the throat and eases to rideExitMultiplier at the way out, smoothly - its
+  // slope is 0 at the throat (sin(pi u) on each half).
+  function rideMultiplier(Pv, u) {
+    const w = Math.sin(Math.PI * clamp01(u)), e = Math.max(0.05, Pv.rideEntryMultiplier), m = Math.max(0.05, Pv.rideMidMultiplier), x = Math.max(0.05, Pv.rideExitMultiplier);
+    return u < 0.5 ? e + (m - e) * w : x + (m - x) * w;
+  }
+  // Out of the far mouth on the tunnel's last heading, at rideExitMultiplier x your speed before the tunnel (round 6: a little
+  // boost, which eases back to cruise as you fly on); the tunnel stays staySeconds, then goes back to its centre.
   function gateOut(g) {
     const wh = g.pair.wh;
     g.state = 'done'; g.used = true; wh.out = true; if (wh.phase === 'open') wh.phase = 'stay';
-    speed = g.vIn;
+    speed = g.vIn * Math.max(0.05, P.rideExitMultiplier);
     if (raceStats && race === 'running') raceStats.catches++;
     lastGate = { len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI) }; slingFlash = 1.6;
   }
@@ -1317,7 +1335,7 @@
 
 
   // ---- the triggers ----
-  // LT shortens the reticle (live; a key or touch ramps to full in keyRampSeconds); an RT press forms the tunnel.
+  // LT sets the reticle's shaft (live; a key or touch ramps to full in keyRampSeconds); an RT press forms the tunnel.
   function newHolds() { return { L: { on: false, t: 0, peak: 0, live: 0 }, R: { on: false, t: 0, peak: 0, live: 0 } }; }
   let holds = newHolds();   // per pilot
   function trackHold(side, raw, analog, dt) {
@@ -1528,24 +1546,27 @@
   function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, errSum: 0, errN: 0, misses: 0, turnT: 0 }; }
   const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
   const qInv = new THREE.Quaternion(), aiLoc = new V3();
-  // The AI's wormhole (input only, the triggers and the sticks a person has): try every bend and LT squeeze (its length
-  // and throat follow from them), keep the one whose way out heads within 15 deg of the ring with 60 u to spare
-  // (straighter preferred), then bend the reticle toward the ring as far as the plan asks and squeeze LT as it says. A
+  // The AI's wormhole (input only, the triggers and the sticks a person has): try every bend and LT squeeze (round 7: LT
+  // sets the shaft before the bend), keep the one whose way out heads within 15 deg of the ring with 60 u to spare
+  // and reaches it soonest, then bend the reticle toward the ring as far as the plan asks and squeeze LT as it says. A
   // rookie bends it off the mark. null: no tunnel fits this leg. turnOnly: a ring nearer than aiStraightMinDistance gets
   // only a tunnel that bends at least 20 deg (a straight one is for long legs).
   function aiGatePlan(loc, n, turnOnly) {
     const ahead = Math.max(0, P.reticleAhead) + speed * Math.max(0, P.aiShapeSeconds);   // where the tunnel will start when it pulls RT
-    const tx = -loc.z, ty = Math.hypot(loc.x, loc.y), tmax = Math.max(1, P.bendMaxDegrees) * Math.PI / 180;
+    const tx = -loc.z, ty = Math.hypot(loc.x, loc.y), v = Math.max(1, speed), turnRate = Math.max(0.2, P.pitchYaw * Math.PI / 180);
+    const ends = 0.5 * (rideMultiplier(P, 0) + rideMultiplier(P, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, P.rideMidMultiplier) - ends);
     let best = null;
     for (let j = 0; j <= 20; j++) for (let i = 0; i <= 8; i++) {
-      const t = j / 20, sq = i / 8;   // the bend (the right stick), and LT's squeeze (harder: shorter)
-      if (i > 0 && sq <= t) continue;   // a squeeze lighter than the bend changes nothing
-      const th = tmax * t, L = Math.max(10, P.lengthStraight - (P.lengthStraight - P.lengthBent) * Math.max(t, sq)), R = th > 1e-4 ? L / th : 0;
+      const t = j / 20, sq = i / 8;   // the bend (the right stick), and LT's squeeze (harder: a longer shaft before it)
+      const sh = shapeFor(P, sq, 0.05 + 0.95 * t, 0), th = sh.theta;
       if (turnOnly && th < 0.35) continue;
-      const x = ahead + (th > 1e-4 ? R * Math.sin(th) : L), y = th > 1e-4 ? R * (1 - Math.cos(th)) : 0;
+      const x = ahead + sh.S + sh.R * Math.sin(th), y = sh.R * (1 - Math.cos(th));
       const hx = Math.cos(th), hy = Math.sin(th), dx = tx - x, dy = ty - y, along = dx * hx + dy * hy;
       if (along < 60) continue;
-      const err = Math.atan2(Math.abs(dx * hy - dy * hx), along), score = err + 0.15 * t;
+      // round 7: the plan that reaches the ring SOONEST - the ride at its mean speed, then the flight from the way out to the
+      // ring at the speed you came in with, and the turn its error leaves (at pitchYaw); a hair's preference for straighter
+      const err = Math.atan2(Math.abs(dx * hy - dy * hx), along);
+      const score = sh.L / (v * meanMul) + Math.hypot(dx, dy) / v + err / turnRate + 0.05 * t;
       if (err < 0.26 && (!best || score < best.score)) best = { score, t, sq };
     }
     if (!best) return null;
@@ -1570,7 +1591,7 @@
     const loc = localOf(tgt), yawErr = Math.atan2(loc.x, -loc.z), pitchErr = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
     const rate = Math.max(0.2, P.pitchYaw * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
     const yawCmd = Math.max(-1, Math.min(1, yawErr / (rate * tau))), pitchCmd = Math.max(-1, Math.min(1, pitchErr / (rate * tau)));
-    // The one-thumb mix: the LEFT stick flies (yaw, pitch; full throttle), the RIGHT stick bends the reticle, LT shortens
+    // The one-thumb mix: the LEFT stick flies (yaw, pitch; full throttle), the RIGHT stick bends the reticle, LT lengthens its shaft
     // it, an RT press forms it. The AI holds its line while it shapes (aiShapeSeconds), then presses RT.
     const gate = ftLive.gate, riding = !!(gate && gate.state === 'tube'); let lt = 0, rt = 0, bend = false;
     if (riding) { ai.gHold = 0; ai.gShaping = false; }
@@ -1803,6 +1824,22 @@
   function updateCamera(dt) {
     const r = mode === 'fly' && watchIdx > 0 ? rivals[watchIdx - 1] : null;
     if (r) asPilot(r, () => cameraStep(dt)); else cameraStep(dt);
+    speedTunnel(dt, r);
+  }
+  // The game's SPEED TUNNEL (Docs/SPEED_TUNNEL.md, VesselSpeedTunnel + SpeedTunnelConfig.asset), the quasi dolly zoom every
+  // vessel has: effect = clamp01((speed - 70) / (280 - 70)); the camera's field of view narrows by 25 deg x effect (and in the
+  // game the Panini projection relaxes by 0.5 x effect - the studio shows the field of view only). Round 5 (Yash:
+  // "use 5x the normal value when going through the wormhole"): riding a tunnel, the effect is rideSpeedTunnelScale x it,
+  // up to 5x the law's full strength - the push-in peaks at the throat, where the ride is fastest.
+  const ST_MIN = 70, ST_MAX = 280, ST_FOV_DROP = 25, ST_RESP = 12, ST_MAX_EFFECT = 5, CAM_HOME_FOV = 68;
+  let stEffect = 0;
+  function speedTunnel(dt, r) {
+    const live = r ? r.ftLive : ftLive, vel = r ? r.velNow : velNow, v = vel ? vel.length() : 0;
+    const riding = !!(live && live.gate && live.gate.state === 'tube');
+    const want = Math.min(ST_MAX_EFFECT, clamp01((v - ST_MIN) / (ST_MAX - ST_MIN)) * (riding ? Math.max(0, P.rideSpeedTunnelScale) : 1));
+    stEffect += (want - stEffect) * (1 - Math.exp(-ST_RESP * dt));
+    const fov = Math.max(1, CAM_HOME_FOV - ST_FOV_DROP * stEffect);
+    if (Math.abs(fov - cam.fov) > 1e-3) { cam.fov = fov; cam.updateProjectionMatrix(); }
   }
   let camRide = 0; const camRideP = new V3(), camRideL = new V3();
   // A point s along a tunnel's centreline, the straight run in before its mouth and out after it included.
@@ -1992,7 +2029,7 @@
         const wh = ret || g.pair.wh, line = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°';
         c.fillStyle = ret ? cyan : lime;
         c.fillText(ret ? line + '  ·  max ' + Math.round(P.bendMaxDegrees * wh.fat) + '°' : 'IN THE THROAT  ·  ' + line, cw / 2, tY + pad + 14 * sc);
-        if (ret) { c.font = font(12, 600); c.fillStyle = dim; c.fillText('right stick bends it  ·  LT shortens it  ·  RT forms it and you go  ·  left stick flies', cw / 2, tY + pad + 30 * sc); }
+        if (ret) { c.font = font(12, 600); c.fillStyle = dim; c.fillText('LT sets the shaft  ·  right stick bends its end  ·  RT forms it and you go  ·  left stick flies', cw / 2, tY + pad + 30 * sc); }
       } else { c.fillStyle = dim; c.fillText('the reticle comes back in a moment', cw / 2, tY + pad + 14 * sc); }
     }
     if (stopped) {
@@ -2020,8 +2057,8 @@
     c.font = font(11, 500); c.fillStyle = dim; c.fillText('u/s   cruise ' + P.cruise, pad + 52 * sc, ch - pad - 28 * sc);
     const bw = 180 * sc, by = ch - pad - 14 * sc;
     c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(pad, by, bw, 5 * sc);
-    c.fillStyle = v > P.cruise * 1.05 ? lime : ink; c.fillRect(pad, by, bw * Math.min(1, v / (P.cruise * Math.max(1, P.throatSpeed))), 5 * sc);
-    // bottom-right: the two triggers (LT shortens, RT forms)
+    c.fillStyle = v > P.cruise * 1.05 ? lime : ink; c.fillRect(pad, by, bw * Math.min(1, v / (P.cruise * Math.max(1, P.rideMidMultiplier))), 5 * sc);
+    // bottom-right: the two triggers (LT sets the shaft, RT forms)
     const trig = (side, x) => {
       const h = holds[side], r = 22 * sc, y = ch - pad - r - 6 * sc;
       c.lineWidth = 5 * sc; c.strokeStyle = 'rgba(255,255,255,0.14)'; c.beginPath(); c.arc(x, y, r, -Math.PI / 2, Math.PI * 1.5); c.stroke();
@@ -2068,7 +2105,7 @@
     if (race === 'ready') {
       box.innerHTML = '<h2>The wormhole · intensity ' + intensity + '</h2>' +
         '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, and you can log it.</p>' +
-        '<p><b>One thumb flies</b>: the <b>left stick</b> (<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>). The grid on your nose is the tunnel <kbd>RT</kbd> would form: the <b>right stick</b> bends it (the arrows) - up to ' + P.bendMaxDegrees + '&deg;, shorter and fatter the more it bends; straight, it runs ' + P.lengthStraight + ' u. <kbd>LT</kbd> shortens it. Pull <kbd>RT</kbd> (<kbd>L</kbd>) and ride it, out with the speed you went in with.</p>' +
+        '<p><b>One thumb flies</b>: the <b>left stick</b> (<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>). The grid on your nose is the tunnel <kbd>RT</kbd> would form: the <b>right stick</b> bends it (the arrows) - which way and how far, up to ' + P.bendMaxDegrees + '&deg;, at the end of a straight shaft <kbd>LT</kbd> lengthens (' + P.shaftMin + ' to ' + P.shaftMax + ' u). Pull <kbd>RT</kbd> (<kbd>L</kbd>) and ride it, out with the speed you went in with.</p>' +
         (layout === 'phone'
           ? ''
           : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
@@ -2188,10 +2225,10 @@
   // ---------- what each number means, in plain words ----------
   // ---------- the wormhole, in plan (round 1): the reticle's tube for a stick centred, half over and fully over ----------
   function tunnelPlan(Pv, lq, m) {   // the 2D twin of whShape + whAt + whRadius: x right (the bend's way), y ahead
-    const sh = shapeFor(Pv, lq, m, 0), A = Math.max(0, Pv.reticleAhead), n = 48, pts = [], L2 = [], R2 = [];
+    const sh = shapeFor(Pv, lq, m, 0), A = Math.max(0, Pv.reticleAhead), n = 64, pts = [], L2 = [], R2 = [];
     for (let i = 0; i <= n; i++) {
-      const sA = sh.L * i / n, k = sh.theta / Math.max(1e-6, sh.L), a = k * sA;
-      const x = sh.theta > 1e-4 ? (1 - Math.cos(a)) / k : 0, y = A + (sh.theta > 1e-4 ? Math.sin(a) / k : sA);
+      const sA = sh.L * i / n, a = sh.theta < 1e-4 ? 0 : Math.max(0, Math.min(sh.theta, (sA - sh.S) / sh.R));
+      const x = sh.theta < 1e-4 || sA <= sh.S ? 0 : sh.R * (1 - Math.cos(a)), y = A + (sh.theta < 1e-4 || sA <= sh.S ? sA : sh.S + sh.R * Math.sin(a));
       const u = i / n, r = Math.sqrt(sh.b * sh.b + (sh.M * sh.M - sh.b * sh.b) * (2 * u - 1) ** 2), nx = Math.cos(a), ny = -Math.sin(a);
       pts.push([x, y]); L2.push([x - nx * r, y - ny * r]); R2.push([x + nx * r, y + ny * r]);
     }
@@ -2200,9 +2237,9 @@
   SCENES.tunnel = {
     make(Pv, cfg) {
       const ms = cfg.sticks || [0.5, 1], tubes = ms.map((m) => tunnelPlan(Pv, cfg.lt || 0, m));
-      // a dot riding the sharpest one: from the entry speed up to throatSpeed x it at the throat and back
+      // a dot riding the sharpest one: the entry multiplier, up to the middle one at the throat, the exit one at the way out
       const main = tubes[tubes.length - 1], ride = [0]; let t = 0;
-      for (let i = 1; i < main.pts.length; i++) { const u = (i - 0.5) / (main.pts.length - 1); t += 1 / (1 + (Math.max(1, Pv.throatSpeed) - 1) * Math.sin(Math.PI * u)); ride.push(t); }
+      for (let i = 1; i < main.pts.length; i++) { const u = (i - 0.5) / (main.pts.length - 1); t += 1 / rideMultiplier(Pv, u); ride.push(t); }
       return { tubes, main, ride, rideT: t };
     },
     bounds(st, cfg) {
@@ -2232,7 +2269,7 @@
       const q = m.pts[i]; c.fillStyle = '#9dff2e'; c.beginPath(); c.arc(V.X(q[0]), V.Y(q[1]), 3, 0, TAU); c.fill();
       ship(c, V.X(0), V.Y(0), 0, 1, '#ffd27a', 6);
       const sh = m.sh;
-      txt(c, Math.round(sh.L) + ' u · bends ' + Math.round(sh.theta * 180 / Math.PI) + '° · throat ' + (2 * sh.b).toFixed(0) + ' u · mouth ' + (2 * sh.M).toFixed(0) + ' u', 6, 13, '#e8ecff', 10);
+      txt(c, 'shaft ' + Math.round(sh.S) + ' u, then bends ' + Math.round(sh.theta * 180 / Math.PI) + '° round ' + Math.round(sh.R) + ' u · throat ' + (2 * sh.b).toFixed(0) + ' u · mouth ' + (2 * sh.M).toFixed(0) + ' u', 6, 13, '#e8ecff', 10);
       txt(c, 'the right stick ' + (st.tubes.length > 2 ? 'centred, half and fully over' : st.tubes[0].sh.m < 0.05 ? 'centred and fully over' : 'half and fully over') + (cfg.lt ? ' · LT ' + cfg.lt : ''), 6, H - 6, '#9aa6d6', 9.5);
     },
   };
@@ -2276,7 +2313,8 @@
   // ---------- a tunnel's life on a clock: the reticle, RT, the ride, the stay, the collapse ----------
   SCENES.tunnelLife = {
     make(Pv, cfg) {
-      const ride = Math.max(0.3, Pv.lengthStraight / Math.max(1, Pv.cruise * (1 + 0.64 * (Math.max(1, Pv.throatSpeed) - 1))));
+      const ends = 0.5 * (rideMultiplier(Pv, 0) + rideMultiplier(Pv, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, Pv.rideMidMultiplier) - ends);   // the curve's mean
+      const ride = Math.max(0.3, Math.max(Pv.shaftMin, Pv.shaftMax) / Math.max(1, Pv.cruise * meanMul));
       const shape = cfg.ai ? Math.max(0, Pv.aiShapeSeconds) : 0.6, form = Math.max(0.05, Pv.formSeconds);
       const tRT = shape, tOut = tRT + Math.max(form, ride), tCol = tOut + Math.max(0, Pv.staySeconds), tGone = tCol + Math.max(0.05, Pv.collapseSeconds);
       const tRet = tOut + Math.max(0, Pv.reticleDelaySeconds), tRetFull = tRet + Math.max(0.05, Pv.reticleGrowSeconds);
@@ -2350,14 +2388,17 @@
   };
   const TIPS = {
     reticleAhead: { scene: 'tunnel', d: 'The reticle (yours alone) rides this far ahead of your nose; pull RT and the tunnel forms there, and you dive straight into its mouth. The game: MeerkatWormholeConfig.reticleAhead.', lo: 'Right on your nose.', hi: 'Further out: a longer dive in.' },
-    bendMaxDegrees: { scene: 'tunnel', d: 'The right stick pushed fully over bends the tunnel this far, any way; half over, half as far. The more it bends, the shorter and fatter it gets.', lo: 'Gentle bends only.', hi: 'Turns you right round.' },
-    lengthStraight: { scene: 'tunnel', cfg: { sticks: [0, 1] }, d: 'A straight tunnel (right stick centred, LT untouched) is this long: the long, thin one, for distance.', lo: 'Short hops.', hi: 'Long jumps.' },
-    lengthBent: { scene: 'tunnel', d: 'The sharpest-bent tunnel is this long (and LT squeezed shortens a straighter one toward it).', lo: 'Tight turns.', hi: 'Wide, sweeping turns.' },
-    throatStraight: { scene: 'tunnel', cfg: { sticks: [0, 1] }, d: 'The throat\'s radius of a straight tunnel.', lo: 'A needle.', hi: 'A wide straight tube.' },
-    throatBent: { scene: 'tunnel', d: 'The throat\'s radius of the sharpest-bent tunnel.', lo: 'Thin bends.', hi: 'Fat, easy bends.' },
-    mouthFlare: { scene: 'tunnel', d: 'Each mouth\'s radius, as a multiple of the throat (+6 u): the tube is narrowest mid-way and widest at its mouths.', lo: 'Almost a pipe.', hi: 'Wide funnels at both ends.' },
-    keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT shortens the tunnel.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
-    throatSpeed: { scene: 'tunnel', d: 'The ride starts and ends at the speed you went in with (you come out with your own momentum) and rushes to this many times it at the throat. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
+    bendMaxDegrees: { scene: 'tunnel', d: 'The right stick pushed fully over bends the tunnel this far at the end of its shaft, any way; half over, half as far: 90, 120, 150 degrees.', lo: 'Gentle bends only.', hi: 'Turns you right round.' },
+    shaftMin: { scene: 'tunnel', cfg: { sticks: [0.6, 1] }, d: 'The tunnel is a straight shaft, then a bend. With LT released the shaft runs this far before it bends (the right stick centred: the whole tunnel is this straight shaft).', lo: 'Bends at once.', hi: 'A long run first.' },
+    shaftMax: { scene: 'tunnel', cfg: { sticks: [0.6, 1], lt: 1 }, d: 'With LT fully squeezed the shaft runs this far before it bends: a long umbrella handle. Half squeezed, half way between.', lo: 'Short handles only.', hi: 'Very long handles.' },
+    bendRadius: { scene: 'tunnel', d: 'The bend at the shaft\'s end turns round this radius: small for a tight hook, large for a sweeping one. A 150-degree bend is this x 2.6 long.', lo: 'A tight hook.', hi: 'A wide sweep.' },
+    throatRadius: { scene: 'tunnel', d: 'The tube\'s radius at its middle - the same for every tunnel, however it is shaped.', lo: 'A needle.', hi: 'A wide tube.' },
+    mouthRadius: { scene: 'tunnel', d: 'Each mouth\'s radius - the same for every tunnel: the tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
+    keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
+    rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
+    rideEntryMultiplier: { scene: 'tunnel', d: 'The ride is your speed before the tunnel times a multiplier: this one going in (the dive to the mouth and the way in). 1 = you enter at exactly the speed you had. The green dot rides the sharpest tunnel.', lo: 'Slows you as you enter.', hi: 'A kick going in.' },
+    rideMidMultiplier: { scene: 'tunnel', d: 'The ride rises from the entry multiplier to this many times your speed before the tunnel at the throat, then eases to the exit multiplier. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
+    rideExitMultiplier: { scene: 'tunnel', d: 'You come out of the far mouth at this many times your speed before the tunnel, on its last heading, and ease back to cruise as you fly on. A little over 1 = a small boost for taking the tunnel.', lo: 'Out at your speed.', hi: 'A big boost out.' },
     reticleDelaySeconds: { scene: 'tunnelLife', d: 'Out of a tunnel (and at the start), your reticle comes back after this long, so you see the clean exit first.', lo: 'Back at once.', hi: 'A longer clean view.' },
     reticleGrowSeconds: { scene: 'tunnelLife', d: 'The reticle ripples out of its centre into the full tube over this long; you can reshape it meanwhile, and pull RT once it is 60% there.', lo: 'Pops back.', hi: 'Grows slowly.' },
     formSeconds: { scene: 'tunnelLife', d: 'Pull RT and the tunnel ripples out of its centre to both mouths over this long (never longer than your dive to it), while the reticle fades.', lo: 'Snaps open.', hi: 'Opens slowly.' },
@@ -2569,13 +2610,16 @@
   const GAME_NAMES = {
     reticleAhead: ['MeerkatWormholeConfig.reticleAhead', 'linked'],
     bendMaxDegrees: ['MeerkatWormholeConfig.bendMaxDegrees', 'linked'],
-    lengthStraight: ['MeerkatWormholeConfig.lengthStraight', 'linked'],
-    lengthBent: ['MeerkatWormholeConfig.lengthBent', 'linked'],
-    throatStraight: ['MeerkatWormholeConfig.throatStraight', 'linked'],
-    throatBent: ['MeerkatWormholeConfig.throatBent', 'linked'],
-    mouthFlare: ['MeerkatWormholeConfig.mouthFlare', 'linked'],
+    shaftMin: ['MeerkatWormholeConfig.shaftMin', 'linked'],
+    shaftMax: ['MeerkatWormholeConfig.shaftMax', 'linked'],
+    bendRadius: ['MeerkatWormholeConfig.bendRadius', 'linked'],
+    throatRadius: ['MeerkatWormholeConfig.throatRadius', 'linked'],
+    mouthRadius: ['MeerkatWormholeConfig.mouthRadius', 'linked'],
     keyRampSeconds: ['MeerkatWormholeConfig.keyRampSeconds', 'linked'],
-    throatSpeed: ['MeerkatWormholeConfig.throatSpeed', 'linked'],
+    rideEntryMultiplier: ['MeerkatWormholeConfig.rideEntryMultiplier', 'linked'],
+    rideMidMultiplier: ['MeerkatWormholeConfig.rideMidMultiplier', 'linked'],
+    rideExitMultiplier: ['MeerkatWormholeConfig.rideExitMultiplier', 'linked'],
+    rideSpeedTunnelScale: ['MeerkatWormholeConfig.rideSpeedTunnelScale', 'linked'],
     reticleDelaySeconds: ['MeerkatWormholeConfig.reticleDelaySeconds', 'linked'],
     reticleGrowSeconds: ['MeerkatWormholeConfig.reticleGrowSeconds', 'linked'],
     formSeconds: ['MeerkatWormholeConfig.formSeconds', 'linked'],
@@ -2753,7 +2797,7 @@
       case 'AI': return 'The AI\'s wormhole' + changedText(groupOf('ai'));
       case 'Flight': return 'One-thumb flight' + typeName('flight') + changedText(groupOf('flight'));
       case 'Course': return (courseKind === 'hairpin' ? 'Hairpins, i' : 'Circuit, i') + 'ntensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
-      case 'Controls': return 'One thumb flies, the right stick bends, LT shortens, RT forms' + (invertY ? ', Y inverted' : '');
+      case 'Controls': return 'One thumb flies, LT sets the shaft, the right stick bends its end, RT forms' + (invertY ? ', Y inverted' : '');
       case 'Race result': return lastRun ? (lastRun.style === 'N' ? 'No wormhole (AI baseline): ' : 'The wormhole: ') + fmtTime(lastRun.time) + ', ' + lastRun.slings + ' tunnels (intensity ' + lastRun.intensity + ', seed ' + lastRun.seed + ')' : 'No finished race yet';
       default: return '';
     }

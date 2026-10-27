@@ -111,8 +111,8 @@ def script_guid(name: str) -> str:
 
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
-CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
-               "keyRampSeconds", "throatSpeed", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
+CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "throatRadius", "mouthRadius",
+               "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs",
                "reticleSpindleThickness", "reticlePath", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
@@ -150,14 +150,28 @@ def config_asset(values: dict) -> str:
             empty_event("formEvent") + empty_event("collapseEvent"))
 
 
+# Studio keys renamed after the config was first written: old -> new (round 6: the ride's three multipliers).
+RENAMED = {"throatSpeed": "rideMidMultiplier"}
+# Studio keys the page retired (round 7, the umbrella handle: a fixed narrow throat and mouth, LT sets the shaft before a
+# bend of fixed radius). Their lines leave the asset; the field is gone from MeerkatWormholeConfigSO.
+RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare"]
+
+
 def config_retrofit(cfg: str, values: dict) -> str:
     """A key the studio added after the config was first written joins it at the page's SHIPPED value (round 3: the reticle's
     feel and spindles); a key already there is never touched - its number is studio_to_unity.py's. Idempotent."""
-    missing = [k for k in CONFIG_KEYS if not re.search(r"^  %s: " % k, cfg, re.M)]
-    if not missing:
-        return cfg
-    at = cfg.index("  formEvent:\n")
-    return cfg[:at] + "".join(f"  {k}: {num(values[k])}\n" for k in missing) + cfg[at:]
+    for old, new in RENAMED.items():   # a key the studio renamed keeps its number under the new name (FormerlySerializedAs)
+        if not re.search(r"^  %s: " % new, cfg, re.M):
+            cfg = re.sub(r"^  %s: " % old, f"  {new}: ", cfg, count=1, flags=re.M)
+    for k in RETIRED:
+        cfg = re.sub(r"^  %s: .*\n" % k, "", cfg, flags=re.M)
+    for i, k in enumerate(CONFIG_KEYS):   # a new key goes in after the key before it, so the asset reads in the page's order
+        if re.search(r"^  %s: " % k, cfg, re.M):
+            continue
+        prev = next((m for m in (re.search(r"^  %s: .*\n" % q, cfg, re.M) for q in reversed(CONFIG_KEYS[:i])) if m), None)
+        at = prev.end() if prev else cfg.index("  formEvent:\n")
+        cfg = cfg[:at] + f"  {k}: {num(values[k])}\n" + cfg[at:]
+    return cfg
 
 
 def action_asset(name: str, trigger: int) -> str:
@@ -301,13 +315,14 @@ def register_network(text: str) -> str:
 
 OPEN_SLOT = ("(open design slot) The wormhole is the Meerkat's one ability so far (Docs/Studios/MEERKAT.md): which "
              "element it is, the other three abilities and the level-5 upgrades are not designed yet.")
+OPEN_SLOT_YAML = OPEN_SLOT.replace("'", "''")   # inside a single-quoted YAML scalar an apostrophe is doubled
 
 
 def map_asset(donor_map: str) -> str:
     text = replace_once(donor_map, "  m_Name: Stoat\n", "  m_Name: Meerkat\n", "map name")
     text = replace_once(text, f"  vesselClass: {STOAT_CLASS_ID}\n", f"  vesselClass: {MEERKAT_CLASS_ID}\n", "map vesselClass")
     entries = "  entries:\n" + "".join(
-        f"  - Element: {e}\n    AbilityLabel: '(open design slot)'\n    AbilityDescription: '{OPEN_SLOT}'\n"
+        f"  - Element: {e}\n    AbilityLabel: '(open design slot)'\n    AbilityDescription: '{OPEN_SLOT_YAML}'\n"
         "    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
         "    UpgradeLabel: \n    UpgradeDescription: \n" for e in (3, 4, 2, 1))
     return text[:text.index("  entries:\n")] + entries
@@ -385,6 +400,9 @@ def check_config(cfg: str, values: dict):
     for k in CONFIG_KEYS:
         if not re.search(r"^  %s: -?[\d.]+\n" % k, cfg, re.M):
             errs.append(f"MeerkatWormholeConfig.asset: no `{k}` (every studio key is a field, by the same name)")
+    for k in RETIRED:
+        if re.search(r"^  %s: " % k, cfg, re.M):
+            errs.append(f"MeerkatWormholeConfig.asset: `{k}` is retired (round 7) and still in the asset")
     if f"guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3" not in cfg:
         errs.append("MeerkatWormholeConfig.asset: does not name MeerkatWormholeConfigSO")
     return errs
@@ -405,6 +423,8 @@ def check_registrations(container, network, lists, cls, kmap, fusion):
          "SO_Class_Meerkat: wrong class, locked, or not owned from the start")
     want(f"  vesselClass: {MEERKAT_CLASS_ID}\n" in kmap and kmap.count("(open design slot)") >= 4 and "Field Dipole" not in kmap,
          "ElementalAbilityMaps/Meerkat: not the Meerkat's four open design slots")
+    want(OPEN_SLOT_YAML in kmap and f"'{OPEN_SLOT}'" not in kmap,
+         "ElementalAbilityMaps/Meerkat: an apostrophe in a quoted description is not doubled, so the asset does not parse")
     want(len(fusion_entries(fusion, MEERKAT_CLASS_ID)) == 4, "CrystalHullFusionConfig: not 4 Meerkat entries")
     return errs
 
@@ -493,7 +513,16 @@ def self_test():
         fails.append("the config retrofit does not add a key the studio added later")
     if config_retrofit(cfg, values) != cfg:
         fails.append("the config retrofit is not idempotent")
-    if "  lengthStraight: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
+    renamed = cfg.replace("  rideMidMultiplier: ", "  throatSpeed: ")
+    if "  rideMidMultiplier: 2.5\n" not in config_retrofit(renamed, values) or "  throatSpeed:" in config_retrofit(renamed, values):
+        fails.append("the config retrofit does not carry a renamed key's number to its new name")
+    retired = cfg.replace("  shaftMin: 60\n", "  lengthStraight: 600\n  shaftMin: 60\n")
+    if check_config(retired, values) == [] or "lengthStraight" in config_retrofit(retired, values):
+        fails.append("a retired key is neither flagged nor removed by the retrofit")
+    pre7 = re.sub(r"  (shaftMin|shaftMax|bendRadius|throatRadius|mouthRadius): .*\n", "", cfg)
+    if config_retrofit(pre7, values) != cfg:
+        fails.append("the config retrofit does not bring a round-6 asset to the round-7 one, in the page's order")
+    if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]

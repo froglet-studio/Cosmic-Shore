@@ -14,39 +14,34 @@
       "field": "bendMaxDegrees"
     },
     {
-      "key": "lengthStraight",
+      "key": "shaftMin",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "lengthStraight"
+      "field": "shaftMin"
     },
     {
-      "key": "lengthBent",
+      "key": "shaftMax",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "lengthBent"
+      "field": "shaftMax"
     },
     {
-      "key": "throatStraight",
+      "key": "bendRadius",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "throatStraight"
+      "field": "bendRadius"
     },
     {
-      "key": "throatBent",
+      "key": "throatRadius",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "throatBent"
+      "field": "throatRadius"
     },
     {
-      "key": "mouthFlare",
+      "key": "mouthRadius",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "mouthFlare"
+      "field": "mouthRadius"
     },
     {
       "key": "keyRampSeconds",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "keyRampSeconds"
-    },
-    {
-      "key": "throatSpeed",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "throatSpeed"
     },
     {
       "key": "reticleDelaySeconds",
@@ -212,6 +207,26 @@
       "key": "reticlePath",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "reticlePath"
+    },
+    {
+      "key": "rideSpeedTunnelScale",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideSpeedTunnelScale"
+    },
+    {
+      "key": "rideEntryMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideEntryMultiplier"
+    },
+    {
+      "key": "rideMidMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideMidMultiplier"
+    },
+    {
+      "key": "rideExitMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideExitMultiplier"
     }
   ]
 }

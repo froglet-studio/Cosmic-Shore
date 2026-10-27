@@ -1,9 +1,22 @@
 using CosmicShore.Gameplay;
 using FMODUnity;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
+    /// <summary>How the Meerkat's reticle draws before RT.</summary>
+    public enum MeerkatReticleLook { Spindles = 0, Bridge = 1 }
+
+    /// <summary>How a formed Meerkat tunnel shows after RT.</summary>
+    public enum MeerkatFormedLook { Bridge = 0, ContourField = 1 }
+
+    /// <summary>The contour field's strength along the tube (the Tube Lens Lab's flow buttons).</summary>
+    public enum MeerkatFieldFlow { Even = 0, InThenOut = 1, Throat = 2 }
+
+    /// <summary>The contour field's fall-off across its shell (the Tube Lens Lab's shape buttons).</summary>
+    public enum MeerkatFieldProfile { Smooth = 0, Smoother = 1, Linear = 2, Bell = 3 }
+
     /// <summary>
     /// Every number of the Meerkat's one ability, the WORMHOLE (<c>R_VesselActions/MEERKAT.md</c>). Cloned from the Vessel
     /// Studio (<c>Docs/Studios/VesselStudio/meerkat.html</c>, its <c>SHIPPED</c> block and <c>SPEC</c> rows): every field is
@@ -22,23 +35,30 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The reticle rides this far ahead of the nose (u)")]
         [SerializeField, Range(0f, 100f)] float reticleAhead = 30f;
         [Tooltip("Sharpest bend, the right stick fully over (°)")]
-        [SerializeField, Range(0f, 180f)] float bendMaxDegrees = 120f;
-        [Tooltip("A straight tunnel is this long (u)")]
-        [SerializeField, Range(60f, 1500f)] float lengthStraight = 600f;
-        [Tooltip("The sharpest bend's tunnel is this long (u)")]
-        [SerializeField, Range(20f, 600f)] float lengthBent = 120f;
-        [Tooltip("Throat radius, straight (u)")]
-        [SerializeField, Range(1f, 40f)] float throatStraight = 3f;
-        [Tooltip("Throat radius, sharpest bend (u)")]
-        [SerializeField, Range(5f, 120f)] float throatBent = 40f;
-        [Tooltip("Mouth radius (× throat)")]
-        [SerializeField, Range(1f, 5f)] float mouthFlare = 2f;
+        [SerializeField, Range(0f, 180f)] float bendMaxDegrees = 150f;
+        [Tooltip("The straight shaft before the bend, LT released (u)")]
+        [SerializeField, Range(0f, 600f)] float shaftMin = 60f;
+        [Tooltip("...LT fully squeezed (u)")]
+        [SerializeField, Range(20f, 1500f)] float shaftMax = 600f;
+        [Tooltip("The bend's radius (u)")]
+        [SerializeField, Range(10f, 300f)] float bendRadius = 60f;
+        [Tooltip("Throat radius, fixed (u)")]
+        [SerializeField, Range(1f, 30f)] float throatRadius = 4f;
+        [Tooltip("Mouth radius, fixed (u)")]
+        [SerializeField, Range(2f, 60f)] float mouthRadius = 10f;
         [Tooltip("LT on a key or touch: full after (s)")]
         [SerializeField, Range(0.05f, 3f)] float keyRampSeconds = 0.5f;
 
         [Header("Wormhole ride (the artifact's Play Style Config > Wormhole ride)")]
-        [Tooltip("Fastest at the throat (× your entry speed)")]
-        [SerializeField, Range(1f, 8f)] float throatSpeed = 2.5f;
+        [Tooltip("Ride: going in (× your speed before the tunnel)")]
+        [SerializeField, Range(0.5f, 3f)] float rideEntryMultiplier = 1f;
+        [Tooltip("Ride: fastest, at the throat (× your speed before the tunnel)")]
+        [FormerlySerializedAs("throatSpeed")]
+        [SerializeField, Range(0.5f, 8f)] float rideMidMultiplier = 2.5f;
+        [Tooltip("Ride: coming out (× your speed before the tunnel)")]
+        [SerializeField, Range(0.5f, 3f)] float rideExitMultiplier = 1.2f;
+        [Tooltip("Riding: the speed tunnel's dolly zoom (× its normal strength)")]
+        [SerializeField, Range(0f, 5f)] float rideSpeedTunnelScale = 5f;
         [Tooltip("The reticle comes back after you are out in (s)")]
         [SerializeField, Range(0f, 3f)] float reticleDelaySeconds = 0.5f;
         [Tooltip("...rippling into shape over (s)")]
@@ -94,6 +114,48 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...a shimmer running way in to way out")]
         [SerializeField, Range(0f, 1f)] float bridgeShimmer = 0.5f;
 
+        [Header("Before and after RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
+        [Tooltip("Before RT, your reticle draws as: Bridge = the formed tunnel's spindle bridge and glass in your domain " +
+                 "colour (Garrett's pick); Spindles = round 3's thin cyan spindle frame and lime path.")]
+        [SerializeField] MeerkatReticleLook reticleLook = MeerkatReticleLook.Bridge;
+        [Tooltip("After RT, a formed tunnel shows as: ContourField = nothing drawn, only space bent in a thin shell on its " +
+                 "wall (Garrett: \"lets the lensing alone sell the effect\"); Bridge = round 3's spindle bridge and glass.")]
+        [SerializeField] MeerkatFormedLook formedLook = MeerkatFormedLook.ContourField;
+
+        [Header("Contour field (the Tube Lens Lab's gateField* keys, Docs/Studios/StoatTubeLensLab.html)")]
+        [Tooltip("Strength (bend per wall crossing, °)")]
+        [SerializeField, Range(0f, 40f)] float fieldStrength = 18f;
+        [Tooltip("Pitch: along the tube 0°, round it 90° (°)")]
+        [SerializeField, Range(0f, 90f)] float fieldPitch = 90f;
+        [Tooltip("Drag: pull rays along the field lines")]
+        [SerializeField, Range(0f, 2f)] float fieldDrag = 1f;
+        [Tooltip("Twist: turn rays round the field lines")]
+        [SerializeField, Range(0f, 2f)] float fieldTwist;
+        [Tooltip("Glass: refract across the shell")]
+        [SerializeField, Range(0f, 2f)] float fieldGlass = 0.4f;
+        [Tooltip("Glass index at the wall (Δn)")]
+        [SerializeField, Range(0f, 0.25f)] float fieldGlassIndex = 0.04f;
+        [Tooltip("Grazing: 0 physical, 1 every crossing bends alike")]
+        [SerializeField, Range(0f, 1f)] float fieldGrazing = 0.6f;
+        [Tooltip("Flow along the tube: Even, In then out (bent in at the way in, out at the way out), Throat")]
+        [SerializeField] MeerkatFieldFlow fieldFlow = MeerkatFieldFlow.InThenOut;
+        [Tooltip("Inner thickness (× local radius)")]
+        [SerializeField, Range(0f, 0.6f)] float fieldInner = 0.1f;
+        [Tooltip("Outer thickness (× local radius)")]
+        [SerializeField, Range(0f, 1f)] float fieldOuter = 0.12f;
+        [Tooltip("Fall-off shape across the shell, from the wall to zero at its edge")]
+        [SerializeField] MeerkatFieldProfile fieldProfile = MeerkatFieldProfile.Smooth;
+        [Tooltip("Ribs: concentrate the field on the grid lines")]
+        [SerializeField, Range(0f, 1f)] float fieldRibs = 0.9f;
+        [Tooltip("Rib sharpness")]
+        [SerializeField, Range(1f, 24f)] float fieldRibSharpness = 8f;
+        [Tooltip("Ribs travel toward the exit (rings per second)")]
+        [SerializeField, Range(-4f, 4f)] float fieldRibTravel = 1.5f;
+        [Tooltip("Rib rings along the tube (the studio grid's WH_RINGS)")]
+        [SerializeField, Range(2, 64)] int fieldRibRings = 22;
+        [Tooltip("Rib lines round the tube (the studio grid's WH_LONG)")]
+        [SerializeField, Range(1, 48)] int fieldRibLines = 12;
+
         [Header("AI (the artifact's AI tab)")]
         [Tooltip("AI uses the wormhole (0 = no, 1 = yes)")]
         [SerializeField] bool aiWormhole = true;
@@ -114,7 +176,10 @@ namespace CosmicShore.ScriptableObjects
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
-        public float ThroatSpeed => throatSpeed;
+        public float RideEntryMultiplier => rideEntryMultiplier;
+        public float RideMidMultiplier => rideMidMultiplier;
+        public float RideExitMultiplier => rideExitMultiplier;
+        public float RideSpeedTunnelScale => rideSpeedTunnelScale;
         public float ReticleDelaySeconds => reticleDelaySeconds;
         public float ReticleGrowSeconds => reticleGrowSeconds;
         public float FormSeconds => formSeconds;
@@ -140,6 +205,28 @@ namespace CosmicShore.ScriptableObjects
         public int BridgeRibs => bridgeRibs;
         public float BridgeSpindleThickness => bridgeSpindleThickness;
         public float BridgeShimmer => bridgeShimmer;
+        public MeerkatReticleLook ReticleLook => reticleLook;
+        public MeerkatFormedLook FormedLook => formedLook;
+        public float FieldStrength => fieldStrength;
+        public float FieldPitch => fieldPitch;
+        public float FieldDrag => fieldDrag;
+        public float FieldTwist => fieldTwist;
+        public float FieldGlass => fieldGlass;
+        public float FieldGlassIndex => fieldGlassIndex;
+        public float FieldGrazing => fieldGrazing;
+        public MeerkatFieldFlow FieldFlow => fieldFlow;
+        public float FieldInner => fieldInner;
+        public float FieldOuter => fieldOuter;
+        public MeerkatFieldProfile FieldProfile => fieldProfile;
+        public float FieldRibs => fieldRibs;
+        public float FieldRibSharpness => fieldRibSharpness;
+        public float FieldRibTravel => fieldRibTravel;
+        public int FieldRibRings => fieldRibRings;
+        public int FieldRibLines => fieldRibLines;
+        /// <summary>A formed tunnel bends space through the contour field (the look is on and some coupling bends).</summary>
+        public bool ContourFieldOn => formedLook == MeerkatFormedLook.ContourField &&
+                                      (fieldStrength > 0f && (fieldDrag > 0f || fieldTwist > 0f) ||
+                                       fieldGlass > 0f && fieldGlassIndex > 0f);
         public bool AiWormhole => aiWormhole;
         public float AiStraightMinDistance => aiStraightMinDistance;
         public float AiBentMinDistance => aiBentMinDistance;
@@ -150,14 +237,17 @@ namespace CosmicShore.ScriptableObjects
 
         public MeerkatWormholeMath.ShapeSettings Shape() => new()
         {
-            LengthStraight = lengthStraight, LengthBent = lengthBent, BendMaxDegrees = bendMaxDegrees,
-            ThroatStraight = throatStraight, ThroatBent = throatBent, MouthFlare = mouthFlare,
+            ShaftMin = shaftMin, ShaftMax = shaftMax, BendRadius = bendRadius, BendMaxDegrees = bendMaxDegrees,
+            ThroatRadius = throatRadius, MouthRadius = mouthRadius,
         };
 
-        public MeerkatWormholeMath.PlanSettings Plan() => new()
+        /// <summary>The AI's plan rows; <paramref name="turnRateDegrees"/> is the hull's own turn (its transformer's YawScaler,
+        /// the studio's pitchYaw).</summary>
+        public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees) => new()
         {
-            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, BendMaxDegrees = bendMaxDegrees,
-            LengthStraight = lengthStraight, LengthBent = lengthBent,
+            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(),
+            MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(rideEntryMultiplier, rideMidMultiplier, rideExitMultiplier),
+            TurnRateRadians = turnRateDegrees * Mathf.Deg2Rad,
         };
     }
 }

@@ -34,12 +34,15 @@ One thumb flies, as the game's one-thumb hulls do (`SingleStickVesselTransformer
   into a turn. This leaves the right thumb always free.
 - **The reticle** is always on your nose, `reticleAhead` ahead. It shows the tunnel RT would form now. You see it, and
   no one else does.
-- **The right stick** bends the reticle any way, as far as it is pushed, up to `bendMaxDegrees`. The further it bends,
-  the shorter (`lengthStraight` to `lengthBent`) and fatter (`throatStraight` to `throatBent`) it gets.
-- **LT** shortens a straighter tunnel. On keys and touch it ramps to full in `keyRampSeconds`.
+- **The tunnel is an umbrella handle** (round 7): a straight shaft, then one bend of fixed radius `bendRadius`. Its
+  throat (`throatRadius`) and mouths (`mouthRadius`) are narrow and never change.
+- **LT** sets how far the shaft runs before the bend: `shaftMin` released, up to `shaftMax` squeezed. On keys and touch
+  it ramps to full in `keyRampSeconds`.
+- **The right stick** sets the bend's direction (left, right, up, down or between) and how far it turns, up to
+  `bendMaxDegrees` (150°) with the stick fully over: 90°, 120° and 150° are all there.
 - **RT** forms the tunnel and you dive into it. It ripples out of its centre to both mouths over `formSeconds`, never
   longer than your dive to it.
-- **The ride** starts and ends at your entry speed and rushes to `throatSpeed` x it at the throat. You come out with
+- **The ride** starts and ends at your entry speed and rushes to `rideMidMultiplier` x it at the throat. You come out with
   the speed and momentum you went in with, on the tunnel's last heading. While you ride, the camera runs down the
   tube's centreline.
 - **Out**, the reticle comes back after `reticleDelaySeconds` and grows out of its centre over `reticleGrowSeconds`.
@@ -69,6 +72,26 @@ space-time bend stays the shader's.
 **The panels:** all the wormhole cards are in **Play Style Config**, in this order: Reticle (feel and look, yours
 alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple), Shape, Ride.
 
+**Round 7 (Yash, 2026-10-27: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from where it can turn 90 or 120 or 150 degrees ... it can be a long umbrella stick like geometry"):** the tunnel no longer grows shorter and fatter as it bends. It
+is a straight shaft and then one bend of fixed radius `bendRadius` (60 u). LT sets the shaft (`shaftMin` 60 u released
+to `shaftMax` 600 u squeezed), the right stick the bend's direction and angle (up to `bendMaxDegrees`, now 150°), RT
+forms it. The throat (`throatRadius` 4 u) and mouths (`mouthRadius` 10 u) are narrow and fixed. The five old shape keys
+(`lengthStraight`, `lengthBent`, `throatStraight`, `throatBent`, `mouthFlare`) are retired. The hull turns only on the
+bend. The AI now picks the shaft and bend that reach its ring soonest (the ride at its mean speed, then the flight on,
+then the turn left over at `pitchYaw`): it finishes every race, I3 104-108 s and I4 94-111 s over four seeds.
+
+**Round 6 (Yash, 2026-10-27: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
+exiting it will exit at little bit boosted"):** the ride is your speed before the tunnel times three multipliers. It is
+`rideEntryMultiplier` (1) going in, rises to `rideMidMultiplier` (2.5, was `throatSpeed`) at the throat, and eases to
+`rideExitMultiplier` (1.2) at the way out, then the hull eases back to cruise. Measured: in at 60 u/s with no slowdown,
+about 150 at the throat, out at 72, back to 60 within about 1.5 s. The AI still finishes every race (98-103 s, seeds 1-4,
+I1 and I3).
+
+**Round 5 (Yash, 2026-10-27: "use 5x the normal value when going through the wormhole"):** riding a tunnel, the game's
+speed tunnel (its dolly zoom: a narrower field of view and a relaxed Panini projection, `Docs/SPEED_TUNNEL.md`) is
+`rideSpeedTunnelScale` (5) × its normal strength. The studio previews the field of view: 68° at the mouth, 23.8° at the
+throat of a straight tunnel, then back to 68°.
+
 **Round 4 (Yash, 2026-10-27: "Turn off all lensing"):** the tube's warp, the mouths' dents and the collapse's ripple ship
 at 0. The wormhole's look is the bridge and your reticle. The Space look sliders stay, to bring any of them back; at 0
 the game's lens pass does not run at all.
@@ -89,14 +112,17 @@ just spindles. Tiny thinning spindles"):**
 | Group | Key = `MeerkatWormholeConfig` field | Shipped | What it does |
 |---|---|---|---|
 | shape | `reticleAhead` | 30 u | The reticle rides this far ahead of the nose |
-| shape | `bendMaxDegrees` | 120° | The sharpest bend (right stick fully over) |
-| shape | `lengthStraight` | 600 u | A straight tunnel's length |
-| shape | `lengthBent` | 120 u | The sharpest bend's length |
-| shape | `throatStraight` | 3 u | Throat radius, straight |
-| shape | `throatBent` | 40 u | Throat radius, sharpest bend |
-| shape | `mouthFlare` | 2 | Mouth radius as a multiple of the throat (+6 u) |
+| shape | `bendMaxDegrees` | 150° | The sharpest bend (right stick fully over) |
+| shape | `shaftMin` | 60 u | The straight shaft before the bend, LT released |
+| shape | `shaftMax` | 600 u | The shaft with LT fully squeezed |
+| shape | `bendRadius` | 60 u | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
+| shape | `throatRadius` | 4 u | The throat's radius (fixed) |
+| shape | `mouthRadius` | 10 u | Both mouths' radius (fixed) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
-| ride | `throatSpeed` | 2.5 | Fastest at the throat, as a multiple of your entry speed |
+| ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
+| ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
+| ride | `rideExitMultiplier` | 1.2 | ...coming out: a little boost, easing back to cruise |
+| ride | `rideSpeedTunnelScale` | 5 | Riding: the game's speed-tunnel dolly zoom, × its normal strength |
 | ride | `reticleDelaySeconds` | 0.5 s | The reticle comes back this long after you are out |
 | ride | `reticleGrowSeconds` | 0.8 s | ...growing out of its centre over this long |
 | ride | `formSeconds` | 0.4 s | RT: the tunnel forms over this long |
@@ -162,6 +188,17 @@ The Meerkat is in Unity as `VesselClassType.Meerkat = 28` (`Assets/_Scripts/Cont
 - **Lab-only:** `aiTau`, `roll` (the one-thumb hull only banks: `bankShare` × `roll` is the prefab's `RollScaler`) and
   the `lope*` keys.
 - **Verification:** not yet verified in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+## Before and after RT (Garrett, 2026-10-27)
+
+Garrett picked the Meerkat's look in the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF):
+- **Before RT:** the reticle looks like the bridge (spindles over glass in the pilot's domain colour).
+- **After RT:** a formed tunnel is ONLY a contour-field lens: space bent in a thin shell on the wall, along its rings,
+  graded to zero just off the surface. No bridge, no glass, no grid.
+
+The game has it first (`R_VesselActions/MEERKAT.md` §2.1: `reticleLook`, `formedLook` and the 16 `field*` fields). This
+page does not yet: its Wormhole look still shows round 4's bridge. The next round brings the lab's field onto this page
+and maps the new keys in `studio_to_unity/meerkat.json`.
 
 ## What is not decided or not built
 

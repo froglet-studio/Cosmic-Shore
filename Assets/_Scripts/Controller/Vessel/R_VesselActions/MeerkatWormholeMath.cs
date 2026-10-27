@@ -9,11 +9,11 @@ namespace CosmicShore.Gameplay
     /// for line. No scene, no time, no input device: <c>MeerkatWormholeMathTests</c> holds every function to numbers taken
     /// from running the page's own code.
     ///
-    /// <para><b>The tunnel.</b> A circular arc of length <c>L</c> from its way in <c>A</c>, setting off along <c>t0</c> and
-    /// bending toward <c>side</c> through <c>theta</c> radians (straight when <c>theta</c> is 0). <c>s</c> runs 0 at the way
-    /// in to <c>L</c> at the way out. Its wall is a hyperboloid: throat radius <c>b</c> at the middle, mouth radius <c>M</c>
-    /// at both ends, over the window <c>[s0, s1]</c> that has formed (it ripples out of its centre, and collapses back to
-    /// it).</para>
+    /// <para><b>The tunnel</b> (round 7, an umbrella handle): from its way in <c>A</c> a straight SHAFT of length <c>S</c> along
+    /// <c>t0</c>, then a BEND of radius <c>R</c> toward <c>side</c> through <c>theta</c> radians; <c>L = S + R theta</c>.
+    /// <c>s</c> runs 0 at the way in to <c>L</c> at the way out. Its wall is a hyperboloid of FIXED size: throat radius
+    /// <c>b</c> at the middle, mouth radius <c>M</c> at both ends, over the window <c>[s0, s1]</c> that has formed (it ripples
+    /// out of its centre, and collapses back to it).</para>
     ///
     /// <para><b>Axes.</b> The page is three.js (x right, y up, z BACK); this class is Unity's (x right, y up, z forward),
     /// so the page's <c>-loc.z</c> is <c>local.z</c> here. Everything else is the same.</para>
@@ -23,18 +23,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The shape rows (<see cref="ScriptableObjects.MeerkatWormholeConfigSO"/>'s shape group).</summary>
         public struct ShapeSettings
         {
-            public float LengthStraight;   // u
-            public float LengthBent;       // u
+            public float ShaftMin;         // u, LT released
+            public float ShaftMax;         // u, LT squeezed
+            public float BendRadius;       // u
             public float BendMaxDegrees;   // deg
-            public float ThroatStraight;   // u
-            public float ThroatBent;       // u
-            public float MouthFlare;       // x the throat (+6 u)
+            public float ThroatRadius;     // u
+            public float MouthRadius;      // u
         }
 
-        /// <summary>What the sticks shape (the page's <c>shapeFor</c> return).</summary>
+        /// <summary>What the sticks shape (the page's <c>shapeFor</c> return): L mouth to mouth, S the shaft, R the bend's radius.</summary>
         public struct Shape
         {
-            public float L, B, M, Theta, Fat, Stick, Dx, Dy;
+            public float L, S, R, B, M, Theta, Fat, Stick, Dx, Dy;
         }
 
         public enum Phase { Form = 0, Open = 1, Stay = 2, Collapse = 3, Gone = 4 }
@@ -82,44 +82,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's <c>shapeFor</c>: the right stick (eased, <paramref name="sx"/>, <paramref name="sy"/>) bends the tunnel any
-        /// way, as far as it is pushed; the further it bends the shorter and fatter it gets. LT (<paramref name="lq"/>) shortens
-        /// a straighter one.
+        /// The page's <c>shapeFor</c> (round 7): a straight shaft, <see cref="ShapeSettings.ShaftMin"/> with LT
+        /// (<paramref name="lq"/>) released to <see cref="ShapeSettings.ShaftMax"/> squeezed, then a bend round
+        /// <see cref="ShapeSettings.BendRadius"/> as far as the right stick (eased, <paramref name="sx"/>, <paramref name="sy"/>)
+        /// is pushed, up to <see cref="ShapeSettings.BendMaxDegrees"/>, the way it is pushed. Its size is fixed.
         /// </summary>
         public static Shape ShapeFor(in ShapeSettings p, float lq, float sx, float sy)
         {
             float tx = Mathf.Max(-1f, Mathf.Min(1f, sx)), ty = Mathf.Max(-1f, Mathf.Min(1f, sy));
             float mRaw = Mathf.Sqrt(tx * tx + ty * ty), m = Mathf.Min(1f, mRaw), t = Clamp01((m - 0.05f) / 0.95f);
-            float shortShare = Mathf.Max(t, Clamp01(lq));
-            float L = Mathf.Max(10f, p.LengthStraight - (p.LengthStraight - p.LengthBent) * shortShare);
-            float theta = Mathf.Max(0f, p.BendMaxDegrees) * Mathf.PI / 180f * t;
-            float R = theta > 1e-3f ? L / theta : float.PositiveInfinity;
-            float b = Mathf.Min(p.ThroatStraight + (p.ThroatBent - p.ThroatStraight) * t, 0.6f * R);
-            float M = Mathf.Min(b * Mathf.Max(1f, p.MouthFlare) + 6f, Mathf.Max(b, 0.95f * R));
+            float S = Mathf.Max(0f, p.ShaftMin + (Mathf.Max(p.ShaftMin, p.ShaftMax) - p.ShaftMin) * Clamp01(lq));
+            float theta = Mathf.Max(0f, p.BendMaxDegrees) * Mathf.PI / 180f * t, R = Mathf.Max(1f, p.BendRadius);
+            float b = Mathf.Max(0.5f, p.ThroatRadius);
             return new Shape
             {
-                L = L, B = b, M = M, Theta = theta, Fat = t, Stick = m,
-                Dx = mRaw > 1e-6f ? tx / mRaw : 0f, Dy = mRaw > 1e-6f ? ty / mRaw : 0f,
+                L = Mathf.Max(10f, S + R * theta), S = S, R = R, B = b, M = Mathf.Max(b, p.MouthRadius), Theta = theta, Fat = t,
+                Stick = m, Dx = mRaw > 1e-6f ? tx / mRaw : 0f, Dy = mRaw > 1e-6f ? ty / mRaw : 0f,
             };
         }
 
+        /// <summary>The page's <c>bendAngle</c>: how far the centreline has turned at <paramref name="s"/> - nothing along the shaft, then (s - S) / R.</summary>
+        public static float BendAngle(float S, float R, float theta, float s) =>
+            theta < 1e-4f ? 0f : Mathf.Max(0f, Mathf.Min(theta, (s - S) / Mathf.Max(1e-6f, R)));
+
         /// <summary>The page's <c>whAt</c>: the point <paramref name="s"/> along the tunnel, and its heading there.</summary>
-        public static Vector3 At(Vector3 a, Vector3 t0, Vector3 side, float L, float theta, float s, out Vector3 tangent)
+        public static Vector3 At(Vector3 a, Vector3 t0, Vector3 side, float S, float R, float theta, float s, out Vector3 tangent)
         {
-            if (theta < 1e-4f)
+            if (theta < 1e-4f || s <= S)
             {
                 tangent = t0;
                 return a + t0 * s;
             }
-            float k = theta / Mathf.Max(1e-6f, L), R = 1f / k, ang = k * s;
+            float ang = BendAngle(S, R, theta, s);
             tangent = t0 * Mathf.Cos(ang) + side * Mathf.Sin(ang);
-            return a + t0 * (R * Mathf.Sin(ang)) + side * (R * (1f - Mathf.Cos(ang)));
+            return a + t0 * (S + R * Mathf.Sin(ang)) + side * (R * (1f - Mathf.Cos(ang)));
         }
 
         /// <summary>The page's <c>whFrame</c>: the wall's two normals at <paramref name="s"/> (in the bend's plane, and across it).</summary>
-        public static void Frame(Vector3 t0, Vector3 side, float L, float theta, float s, out Vector3 normal, out Vector3 binormal)
+        public static void Frame(Vector3 t0, Vector3 side, float S, float R, float theta, float s, out Vector3 normal, out Vector3 binormal)
         {
-            float ang = theta / Mathf.Max(1e-6f, L) * s;
+            float ang = BendAngle(S, R, theta, s);
             normal = side * Mathf.Cos(ang) - t0 * Mathf.Sin(ang);
             binormal = Vector3.Cross(t0, side).normalized;
         }
@@ -133,6 +135,26 @@ namespace CosmicShore.Gameplay
             float span = Mathf.Max(1e-3f, s1 - s0), u = (s - s0) / span, k = Mathf.Min(1f, span / L);
             float b = b0 * k, M = Mathf.Max(b, m0 * k), w = 2f * u - 1f;
             return Mathf.Sqrt(b * b + (M * M - b * b) * w * w);
+        }
+
+        /// <summary>
+        /// The contour field's frame (Garrett, 2026-10-27, the Tube Lens Lab): world to the tunnel's own frame, the way in
+        /// <paramref name="a"/> at the origin, its first heading <paramref name="t0"/> along +z and the side it bends toward
+        /// along +x, so <see cref="Frame"/>'s binormal is +y and the bend (round 7) is centred on (R, 0, S).
+        /// <c>MeerkatWormholeLens.shader</c> measures the wall in this frame.
+        /// </summary>
+        public static Matrix4x4 TubeWorldToLocal(Vector3 a, Vector3 t0, Vector3 side)
+        {
+            var z = t0.normalized;
+            var x = side - z * Vector3.Dot(side, z);
+            if (x.sqrMagnitude < 1e-10f) x = Vector3.Cross(Mathf.Abs(z.y) < 0.9f ? Vector3.up : Vector3.right, z);
+            x.Normalize();
+            var y = Vector3.Cross(z, x);
+            var m = Matrix4x4.identity;
+            m.SetRow(0, new Vector4(x.x, x.y, x.z, -Vector3.Dot(x, a)));
+            m.SetRow(1, new Vector4(y.x, y.y, y.z, -Vector3.Dot(y, a)));
+            m.SetRow(2, new Vector4(z.x, z.y, z.z, -Vector3.Dot(z, a)));
+            return m;
         }
 
         /// <summary>The page's reticle emerge (<c>gateHold</c>): 0 to 1 over <paramref name="growSeconds"/> after <paramref name="delaySeconds"/>.</summary>
@@ -229,52 +251,72 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The page's <c>gateTransit</c> speed: the ride starts and ends at the entry speed <paramref name="vIn"/> and rushes to
-        /// <paramref name="throatSpeed"/> × it at the throat; the dive to the mouth (<paramref name="s"/> &lt; 0) is at vIn.
+        /// The page's <c>rideMultiplier</c> (round 6, Yash: "enter the wormhole with v and then it will speed up to v plus dv,
+        /// and then while exiting it will exit at little bit boosted"): at <paramref name="u"/> (0 the way in, 1 the way out) the
+        /// multiplier on the speed before the tunnel rises from <paramref name="entry"/> to <paramref name="mid"/> at the throat
+        /// and eases to <paramref name="exit"/> at the way out, smoothly (sin(pi u) on each half: its slope is 0 at the throat).
         /// </summary>
-        public static float RideSpeed(float vIn, float throatSpeed, float s, float L)
+        public static float RideMultiplier(float entry, float mid, float exit, float u)
         {
-            float u = Clamp01(s / Mathf.Max(1e-3f, L));
-            return vIn * (1f + (Mathf.Max(0.1f, throatSpeed) - 1f) * (s < 0f ? 0f : Mathf.Sin(Mathf.PI * u)));
-        }
-
-        /// <summary>The ride's facing at <paramref name="s"/>: the entry facing <paramref name="q0"/> turned about the binormal by the arc swept.</summary>
-        public static Quaternion RideRotation(Vector3 binormal, float theta, float L, float s, float sIn, Quaternion q0) =>
-            Quaternion.AngleAxis(theta / Mathf.Max(1e-6f, L) * (s - sIn) * Mathf.Rad2Deg, binormal) * q0;
-
-        /// <summary>The AI rows (<see cref="ScriptableObjects.MeerkatWormholeConfigSO"/>'s ai group, with the shape rows it reads).</summary>
-        public struct PlanSettings
-        {
-            public float ReticleAhead, ShapeSeconds, BendMaxDegrees, LengthStraight, LengthBent;
+            u = Clamp01(u);
+            float w = Mathf.Sin(Mathf.PI * u), e = Mathf.Max(0.05f, entry), m = Mathf.Max(0.05f, mid), x = Mathf.Max(0.05f, exit);
+            return u < 0.5f ? e + (m - e) * w : x + (m - x) * w;
         }
 
         /// <summary>
-        /// The page's <c>aiGatePlan</c>: try every bend (21) and LT squeeze (9), keep the one whose way out heads within
-        /// 0.26 rad of the target with 60 u to spare (straighter preferred). <paramref name="local"/> is the target in the
-        /// hull's frame (Unity axes). <paramref name="noise"/> × (<paramref name="rand01"/> − 0.5) bends it off the mark (a
-        /// rookie). <paramref name="turnOnly"/>: only a tunnel that bends at least 0.35 rad (a near ring). False: none fits.
+        /// The page's <c>gateTransit</c> speed: the speed before the tunnel <paramref name="vIn"/> × <see cref="RideMultiplier"/>;
+        /// the dive to the mouth (<paramref name="s"/> &lt; 0) is at the entry multiplier.
+        /// </summary>
+        public static float RideSpeed(float vIn, float entry, float mid, float exit, float s, float L) =>
+            vIn * RideMultiplier(entry, mid, exit, s < 0f ? 0f : s / Mathf.Max(1e-3f, L));
+
+        /// <summary>The ride's facing: the entry facing <paramref name="q0"/> turned about the binormal by the angle the
+        /// centreline has turned since the way in (<see cref="BendAngle"/> at s minus at the entry).</summary>
+        public static Quaternion RideRotation(Vector3 binormal, float turnedRadians, Quaternion q0) =>
+            Quaternion.AngleAxis(turnedRadians * Mathf.Rad2Deg, binormal) * q0;
+
+        /// <summary>The page's <c>meanMul</c>: the mean of <see cref="RideMultiplier"/> over the ride (each half's sin averages 2/pi).</summary>
+        public static float MeanRideMultiplier(float entry, float mid, float exit)
+        {
+            float ends = 0.5f * (RideMultiplier(entry, mid, exit, 0f) + RideMultiplier(entry, mid, exit, 1f));
+            return ends + 2f / Mathf.PI * (Mathf.Max(0.05f, mid) - ends);
+        }
+
+        /// <summary>The AI rows (<see cref="ScriptableObjects.MeerkatWormholeConfigSO"/>'s ai group, with the shape and ride rows it reads).</summary>
+        public struct PlanSettings
+        {
+            public float ReticleAhead, ShapeSeconds, MeanRideMultiplier, TurnRateRadians;
+            public ShapeSettings Shape;
+        }
+
+        /// <summary>
+        /// The page's <c>aiGatePlan</c> (round 7): try every bend (21) and LT squeeze - the shaft before the bend - (9), keep the
+        /// one whose way out heads within 0.26 rad of the target with 60 u to spare and reaches it SOONEST: the ride at its mean
+        /// speed, the flight from the way out to the target at <paramref name="speed"/>, and the turn its error leaves, with a
+        /// hair's preference for straighter. <paramref name="local"/> is the target in the hull's frame (Unity axes).
+        /// <paramref name="noise"/> × (<paramref name="rand01"/> − 0.5) bends it off the mark (a rookie). <paramref name="turnOnly"/>:
+        /// only a tunnel that bends at least 0.35 rad (a near ring). False: none fits.
         /// </summary>
         public static bool TryPlan(in PlanSettings p, Vector3 local, float speed, float noise, float rand01, bool turnOnly,
             out float lq, out float m)
         {
             float ahead = Mathf.Max(0f, p.ReticleAhead) + speed * Mathf.Max(0f, p.ShapeSeconds);
-            float tx = local.z, ty = Mathf.Sqrt(local.x * local.x + local.y * local.y);
-            float tmax = Mathf.Max(1f, p.BendMaxDegrees) * Mathf.PI / 180f;
+            float tx = local.z, ty = Mathf.Sqrt(local.x * local.x + local.y * local.y), v = Mathf.Max(1f, speed);
+            float turnRate = Mathf.Max(0.2f, p.TurnRateRadians), meanMul = Mathf.Max(0.05f, p.MeanRideMultiplier);
             bool found = false;
             float bestScore = 0f, bestT = 0f, bestSq = 0f;
             for (int j = 0; j <= 20; j++)
             for (int i = 0; i <= 8; i++)
             {
                 float t = j / 20f, sq = i / 8f;
-                if (i > 0 && sq <= t) continue;
-                float th = tmax * t;
-                float L = Mathf.Max(10f, p.LengthStraight - (p.LengthStraight - p.LengthBent) * Mathf.Max(t, sq));
-                float R = th > 1e-4f ? L / th : 0f;
+                var sh = ShapeFor(p.Shape, sq, 0.05f + 0.95f * t, 0f);
+                float th = sh.Theta;
                 if (turnOnly && th < 0.35f) continue;
-                float x = ahead + (th > 1e-4f ? R * Mathf.Sin(th) : L), y = th > 1e-4f ? R * (1f - Mathf.Cos(th)) : 0f;
+                float x = ahead + sh.S + sh.R * Mathf.Sin(th), y = sh.R * (1f - Mathf.Cos(th));
                 float hx = Mathf.Cos(th), hy = Mathf.Sin(th), dx = tx - x, dy = ty - y, along = dx * hx + dy * hy;
                 if (along < 60f) continue;
-                float err = Mathf.Atan2(Mathf.Abs(dx * hy - dy * hx), along), score = err + 0.15f * t;
+                float err = Mathf.Atan2(Mathf.Abs(dx * hy - dy * hx), along);
+                float score = sh.L / (v * meanMul) + Mathf.Sqrt(dx * dx + dy * dy) / v + err / turnRate + 0.05f * t;
                 if (err < 0.26f && (!found || score < bestScore))
                 {
                     found = true;

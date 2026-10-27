@@ -96,7 +96,7 @@ mode's action.** The three modes are picked with face and shoulder buttons. Mass
 | Input | Control | What it does | Element dial |
 |---|---|---|---|
 | X / Q | **Space mode** | RT (held) fires the Void Lance. | Charge: radius 1.5 → 5. The Space upgrade "Void Pierce" lets it break super-shielded mass. |
-| RB / E | **Charge mode** | RT (held) paints a target for the flora's missiles. | Space: lock cone 5° → 14° |
+| Y / F | **Charge mode** (RB / E until 2026-10-27) | RT (held) paints a target for the flora's missiles. | Space: lock cone 5° → 14° |
 | B / R | **Time mode** | RT shoots the Void Sling. | Time: cooldown 6 → 2.5 s |
 | A / Space | **Mass** | Docked: detach, leaving a nest behind. | Mass: 12 → 32 nest blocks; trail wavelength 8 → 4 |
 | LT / RMB (held) | **Zoom** | The Serpent's eyepiece: a magnified window in the top left, cut to the mode's element petal, with the targeted mass lit. | none |
