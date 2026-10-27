@@ -124,11 +124,21 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// The pilot <paramref name="slot"/> flies: its chosen pilot when that pilot still exists and can still fly
-        /// the slot's vessel, otherwise none (an empty seat: no sight).
+        /// the slot's vessel, otherwise the first pilot the vessel is offered (every vessel needs a pilot, Garrett
+        /// 2026-10-27). Null only when the catalog offers the vessel none.
         /// </summary>
         public PilotSO ResolvePilot(SquadSlot slot, IReadOnlyList<VesselKeyword> keywords) =>
             !slot.UsesDefaultPilot() && TryGetPilot(slot.PilotId, out var chosen) && IsOffered(chosen, slot.Vessel, keywords)
-                ? chosen : null;
+                ? chosen : FirstPilotFor(slot.Vessel, keywords);
+
+        /// <summary>The first pilot, in authored order, a <paramref name="vesselClass"/> hull can fly; null when none.</summary>
+        public PilotSO FirstPilotFor(VesselClassType vesselClass, IReadOnlyList<VesselKeyword> keywords)
+        {
+            if (pilots == null) return null;
+            foreach (var pilot in pilots)
+                if (pilot && IsOffered(pilot, vesselClass, keywords)) return pilot;
+            return null;
+        }
 
         /// <summary>
         /// The artifact <paramref name="slot"/> carries: its chosen artifact when that artifact still

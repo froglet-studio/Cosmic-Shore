@@ -207,15 +207,15 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ResolvePilot_KeepsAValidPick_AndOtherwiseLeavesTheSeatEmpty()
+        public void ResolvePilot_KeepsAValidPick_AndOtherwiseFliesTheFirstPilot()
         {
-            var catalog = CallsignSample(out _, out var volt, out _);
+            var catalog = CallsignSample(out var ensign, out var volt, out _);
 
             Assert.AreSame(volt, catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass, volt.Id), MantaKeywords));
-            Assert.IsNull(catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass), MantaKeywords),
-                "an empty seat flies no pilot (no sight)");
-            Assert.IsNull(catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass, "pilot.sparrow.shrapnel"), MantaKeywords),
-                "a retired named pilot's id resolves to an empty seat");
+            Assert.AreSame(ensign, catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass), MantaKeywords),
+                "every vessel needs a pilot: an unset seat flies the first one offered");
+            Assert.AreSame(ensign, catalog.ResolvePilot(new SquadSlot(VesselClassType.Manta, Element.Mass, "pilot.sparrow.shrapnel"), MantaKeywords),
+                "a retired named pilot's id flies the first pilot offered");
             Assert.IsNull(catalog.ResolvePilot(new SquadSlot(VesselClassType.Random, Element.Mass, volt.Id), MantaKeywords),
                 "no concrete hull, no pilot");
         }

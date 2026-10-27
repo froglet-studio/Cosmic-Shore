@@ -103,6 +103,18 @@ namespace CosmicShore.Core
             return cut < 0 ? saved : saved.Substring(0, cut);
         }
 
+        /// <summary>The vessel's one slot set to <paramref name="artifactId"/> (empty, or one not held, clears it).</summary>
+        public static void SetSlottedArtifact(VesselClassType vessel, string artifactId)
+        {
+            if (vessel == VesselClassType.Any) return;
+            string id = Holds(artifactId) ? artifactId : string.Empty;
+            if (GetSlottedArtifact(vessel) == id) return;
+            if (id.Length == 0) PlayerPrefs.DeleteKey(SlotsKey(vessel));
+            else PlayerPrefs.SetString(SlotsKey(vessel), id);
+            PlayerPrefs.Save();
+            ArtifactsChanged?.Invoke(vessel);
+        }
+
         /// <summary>Slots the artifact if there is room and it is held, or takes it out if it is slotted. True when it
         /// ends up slotted. With one slot, slotting another artifact replaces the one there.</summary>
         public static bool ToggleSlot(VesselClassType vessel, string artifactId, int slotCount)

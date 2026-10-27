@@ -239,6 +239,10 @@ super-shielded, and GALLEON shows Arks.
    shipped empty.
 9. Ownership is server-authoritative: grabs, an Ark's fall, the transfer and extraction are arbitrated by the server,
    like the arena's lobby hull claim.
+10. Each vessel has its own pilot and its own artifact (Garrett, 2026-10-27): no two vessels in a squad share either.
+    Every vessel needs a pilot (an unset seat flies the hull's first offered pilot); an empty artifact slot is fine.
+11. Arena modes do not support artifacts; voyages support them but do not require one (Garrett, 2026-10-27). A vessel
+    in an arena match (`SO_ArcadeGame.ArenaRules`) loads no artifact, so its payloads are plain.
 
 ## 8. How to build it
 

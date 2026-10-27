@@ -17622,3 +17622,23 @@ Design: `Docs/Pilots/ARTIFACTS.md` §4. The reference compile has no errors in t
 7. Quit and re-enter Play. **Pass:** the levels are kept (device) and the crystals are what the profile saved.
 8. Reset Every Artifact Track. **Pass:** every level reads 0 again.
 
+
+## 🔴 2026-10-27 — Each vessel its own pilot and artifact; no artifacts in arena (unverified: no Unity editor in the session)
+
+**Files:** `SavedSquad.cs` (`KeepCardsOwn`, `FillPilots`), `SquadsPage.cs` (no empty pilot chip; a picked pilot swaps,
+a picked artifact moves; launching copies the card's artifact to that vessel's slot), `PilotLoadoutStore.cs`
+(`SetSlottedArtifact`), `PilotArtifactCatalogSO.cs` (`FirstPilotFor`; `ResolvePilot` never leaves a seat empty),
+`VesselPilotLoadout.cs` (a human always has a pilot; no artifact under `IsArenaMatch`), `HangarPilotsPage.cs` (pressing
+the seated pilot keeps it), `ArkView.prefab` from `author_menu_ark.py`. Design: `Docs/Pilots/ARTIFACTS.md` §7 rules 10-11.
+Affects: Shombith's pilots. The reference compile has no errors in the changed files (player and editor).
+
+1. Run `SquadBookTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`. **Pass:** green.
+2. Ark > SQUADS > make a squad. **Pass:** all three cards show a pilot, three different ones; the pilot row has five
+   pilot chips between < and > and no "No pilot" chip.
+3. On the leader pick the pilot Rogue One flies. **Pass:** Rogue One now flies the leader's old pilot.
+4. Grant the artifacts (dev), give the leader Javelin, then give Rogue Two Javelin. **Pass:** the leader's artifact
+   reads "No artifact"; empty artifacts are allowed on any card.
+5. Hangar > Pilots, press the seated pilot. **Pass:** it stays seated.
+6. Launch the squad into a non-arena mode with Javelin on your card, press RB at the Ark. **Pass:** a Javelin payload.
+7. Launch an arena game (one with `ArenaRules` on its card) with Javelin slotted. **Pass:** the payload is plain; every
+   peer agrees.

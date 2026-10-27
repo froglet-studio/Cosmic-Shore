@@ -135,14 +135,12 @@ namespace CosmicShore.UI
             HeaderChanged?.Invoke();
         }
 
-        /// <summary>A press: the pilot takes the seat, or leaves it if it already sits there.</summary>
+        /// <summary>A press: the pilot takes the seat. The seat is never emptied: every vessel needs a pilot.</summary>
         void Seat(int index)
         {
             if (index < 0 || index >= _pilots.Count || _vesselClass == VesselClassType.Any) return;
             Select(index);
-            var p = _pilots[index];
-            bool seated = PilotLoadoutStore.GetPilot(_vesselClass) == p.Id;
-            PilotLoadoutStore.SetPilot(_vesselClass, seated ? string.Empty : p.Id);
+            PilotLoadoutStore.SetPilot(_vesselClass, _pilots[index].Id);
         }
 
         static string CallsignOf(PilotSO p) => PilotSight.Set.For(p.Vision)?.word ?? string.Empty;
@@ -156,11 +154,12 @@ namespace CosmicShore.UI
         void RefreshStates()
         {
             string seated = _vesselClass == VesselClassType.Any ? string.Empty : PilotLoadoutStore.GetPilot(_vesselClass);
-            // A saved id the catalog no longer offers this hull is an empty seat, as the match will read it (ResolvePilot).
+            // An unset seat, or a saved id the catalog no longer offers this hull, flies the hull's first pilot, as the
+            // match reads it (VesselPilotLoadout).
             bool seatOffered = false;
             foreach (var p in _pilots)
                 if (p.Id == seated) seatOffered = true;
-            if (!seatOffered) seated = string.Empty;
+            if (!seatOffered) seated = _pilots.Count > 0 ? _pilots[0].Id : string.Empty;
             var selection = UITheme.Resolve(null, UIColorToken.Selection);
             for (int i = 0; i < cards.Length && i < _pilots.Count; i++)
             {

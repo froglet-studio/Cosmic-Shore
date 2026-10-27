@@ -10,7 +10,7 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The SHIPPED pilot assets, as Tools/Build/author_pilot_assets.py authors them: the catalog validates clean, every
     /// milestone vessel declares its keywords, and every one of them seats every callsign pilot (Garrett, 2026-10-27,
-    /// Docs/Pilots/CALLSIGNS.md: one pilot per callsign, any vessel). An unset seat resolves to no pilot (no sight).
+    /// Docs/Pilots/CALLSIGNS.md: one pilot per callsign, any vessel). An unset seat flies the first pilot (every vessel needs a pilot).
     /// </summary>
     [TestFixture]
     public class PilotCatalogAssetTests
@@ -68,8 +68,8 @@ namespace CosmicShore.Tests
                 CollectionAssert.AreEqual(catalog.Pilots, offered, $"{name} is not offered every pilot, in authored order");
                 catalog.GetArtifactsFor(vessel, artifacts);
                 CollectionAssert.AreEqual(catalog.Artifacts, artifacts, $"{name} is not offered every artifact");
-                Assert.IsNull(catalog.ResolvePilot(new SquadSlot(vessel.Class, Element.Mass), vessel.Keywords),
-                    $"{name}: an unset seat flies no pilot");
+                Assert.AreSame(catalog.Pilots[0], catalog.ResolvePilot(new SquadSlot(vessel.Class, Element.Mass), vessel.Keywords),
+                    $"{name}: an unset seat flies the first pilot");
             }
         }
     }

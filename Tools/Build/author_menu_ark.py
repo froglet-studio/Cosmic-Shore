@@ -401,15 +401,15 @@ def squad_picker(page):
                   None, TL(6, 2, 138, 38), label_rect=R((0, 0), (1, 0), (0, 4), (0, 16), (0.5, 0)), label_role="Label")
     small_button(pk, "Squads/Picker/Next", "Next", ">", TL(130 + VESSEL_TILES * 158, 4, 40, 50))
     label(pk.child(N("Squads/Picker/PilotCaption", "PilotCaption", TL(0, 82, 78, 16))), "Pilot", "Label", "NeutralLightest")
-    # Chip 0 is the empty seat; the rest page through the callsign pilots between < and > (one per callsign, any
-    # vessel: Garrett, 2026-10-27, Docs/Pilots/CALLSIGNS.md).
+    # The chips page through the callsign pilots between < and > (one per callsign, any vessel: Garrett, 2026-10-27,
+    # Docs/Pilots/CALLSIGNS.md). There is no empty seat: every vessel needs a pilot.
     def pilot_x(i):
-        return 84 if i == 0 else 330 + (i - 1) * 198
+        return 132 + i * 198
     for i in range(PILOT_CHIPS):
         pick_chip(pk, f"Squads/Picker/Pilot{i}", f"Pilot{i}", TL(pilot_x(i), 66, 190, 50), 50, "",
                   None, TL(4, 2, 34, 46), line_rect=TL(46, 28, 136, 16), label_rect=TL(46, 6, 136, 20), label_role="Body",
                   align="left")
-    small_button(pk, "Squads/Picker/PilotPrev", "PilotPrev", "<", TL(282, 66, 40, 50))
+    small_button(pk, "Squads/Picker/PilotPrev", "PilotPrev", "<", TL(84, 66, 40, 50))
     small_button(pk, "Squads/Picker/PilotNext", "PilotNext", ">", TL(pilot_x(PILOT_CHIPS), 66, 40, 50))
     label(pk.child(N("Squads/Picker/ElementCaption", "ElementCaption", TL(0, 134, 78, 16))), "Element", "Label", "NeutralLightest")
     for i, name in enumerate(("Charge", "Mass", "Space", "Time")):
@@ -489,7 +489,7 @@ SQUAD_WORDS = (
     + yfield("unknownFriendLine", "A friend") + yfield("aiModeLabel", "AI wingmate") + yfield("openModeLabel", "Open for a friend")
     + ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
     + ylist("domainNames", ("", "Jade", "Ruby", "Blue", "Gold"))
-    + yfield("basePilotLine", "No pilot") + yfield("basePilotDetail", "No sight on LB")
+    + yfield("basePilotLine", "No pilot")
     + yfield("pilotDetail", "{sight}") + yfield("noArtifactLine", "No artifact") + yfield("noArtifactChip", "None")
     + yfield("createWord", "Create squad") + yfield("saveWord", "Save squad")
     + yfield("deleteLabel", "Delete") + yfield("leaveLabel", "Leave") + yfield("confirmLabel", "Press again")

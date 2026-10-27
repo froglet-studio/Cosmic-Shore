@@ -16,7 +16,8 @@ namespace CosmicShore.Gameplay
     /// (<see cref="PilotLoadoutStore"/>) and publishes it on <see cref="R_VesselActionHandler.NetPilot"/> /
     /// <see cref="R_VesselActionHandler.NetArtifacts"/>; every other peer reads those. Other players see your pilot
     /// (its callsign plate, CALLSIGNS.md §4.2), so the seat is shared even though the sight is local. An AI flies with
-    /// no pilot and no artifact. Off the network (a menu vessel, an un-spawned test) the local choice is used directly.</para>
+    /// no pilot and no artifact. A human's vessel always has a pilot (an unset seat flies the hull's first offered pilot);
+    /// an arena match loads no artifact (<see cref="ArtifactsAllowedHere"/>). Off the network (a menu vessel, an un-spawned test) the local choice is used directly.</para>
     ///
     /// <para><b>2026-10-27 (Garrett):</b> built on Shombith's loadout; the ability rewrites (<c>Is</c>, <c>Tuning</c>)
     /// and the artifact stat arithmetic (<c>Apply</c>, ranks) are gone with the pilots and artifacts that needed them.
@@ -45,7 +46,7 @@ namespace CosmicShore.Gameplay
 
         public bool IsInitialized => _initialized;
 
-        /// <summary>The seated pilot, or null for an empty seat (no sight).</summary>
+        /// <summary>The seated pilot; null only for an AI (no sight).</summary>
         public PilotSO Pilot => _pilot;
 
         /// <summary>The slotted artifact that loads this pilot's payloads, or null for plain payloads.</summary>
@@ -74,15 +75,21 @@ namespace CosmicShore.Gameplay
             if (!_catalog || _status.Player == null || !_status.Player.IsLocalPilot || _status.IsInitializedAsAI) return;
             if (!VesselRequirement.IsConcrete(_class)) return;
 
-            if (_catalog.TryGetPilot(PilotLoadoutStore.GetPilot(_class), out var pilot)
-                && pilot.Requirement != null && pilot.Requirement.IsMetBy(_class, null))
-                _localPilotCode = (ushort)(IndexOf(_catalog.Pilots, pilot) + 1);
+            // Every vessel needs a pilot (Garrett, 2026-10-27): an unset or retired Hangar seat flies the first pilot
+            // the hull is offered.
+            if (!_catalog.TryGetPilot(PilotLoadoutStore.GetPilot(_class), out var pilot)
+                || pilot.Requirement == null || !pilot.Requirement.IsMetBy(_class, null))
+                pilot = _catalog.FirstPilotFor(_class, null);
+            if (pilot) _localPilotCode = (ushort)(IndexOf(_catalog.Pilots, pilot) + 1);
 
             if (_catalog.TryGetArtifact(PilotLoadoutStore.GetSlottedArtifact(_class), out var artifact)
                 && PilotLoadoutStore.Holds(artifact.Id)
                 && artifact.Requirement != null && artifact.Requirement.IsMetBy(_class, null))
                 _localArtifactCode = (ulong)(IndexOf(_catalog.Artifacts, artifact) + 1);
         }
+
+        /// <summary>False in an arena match (the card's <c>ArenaRules</c>): no artifact loads a payload there.</summary>
+        static bool ArtifactsAllowedHere => CrewStations.GameData == null || !CrewStations.GameData.IsArenaMatch;
 
         static int IndexOf<T>(System.Collections.Generic.IReadOnlyList<T> list, T item) where T : class
         {
@@ -115,6 +122,9 @@ namespace CosmicShore.Gameplay
             _artifactCode = artifactCode;
 
             _pilot = _catalog && pilotCode > 0 && pilotCode <= _catalog.Pilots.Count ? _catalog.Pilots[pilotCode - 1] : null;
+            // Arena modes do not support artifacts; voyages support them without requiring one (Garrett, 2026-10-27).
+            // The card's arena rule reaches every peer, so each one drops the artifact the same way.
+            if (!ArtifactsAllowedHere) artifactCode = 0;
             _artifact = _catalog && artifactCode > 0 && artifactCode <= (ulong)_catalog.Artifacts.Count
                 ? _catalog.Artifacts[(int)artifactCode - 1] : null;
             Changed?.Invoke();

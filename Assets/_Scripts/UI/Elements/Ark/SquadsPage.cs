@@ -162,9 +162,8 @@ namespace CosmicShore.UI
         [SerializeField] private string[] elementNames = { "", "Charge", "Mass", "Space", "Time", "Omni" };
         [Tooltip("Domain names, by Domains value (-, Jade, Ruby, Blue, Gold).")]
         [SerializeField] private string[] domainNames = { "", "Jade", "Ruby", "Blue", "Gold" };
-        [Tooltip("An empty pilot seat's word (no pilot, so no sight on LB).")]
+        [Tooltip("A squad card's pilot word when the catalog offers its vessel no pilot at all.")]
         [SerializeField] private string basePilotLine = "No pilot";
-        [SerializeField] private string basePilotDetail = "No sight on LB";
         [Tooltip("A pilot's line in the picker; {sight} is what its callsign lights on LB (CallsignSetSO).")]
         [SerializeField] private string pilotDetail = "{sight}";
         [SerializeField] private string noArtifactLine = "No artifact";
@@ -365,6 +364,7 @@ namespace CosmicShore.UI
         {
             _mode = Mode.Make;
             _seat = 0;
+            FillPilots(_draft);
             ShowVesselPageOf(_draft.Leader.Vessel);
             ShowPilotPageOf(_draft.Leader);
             Draw(snapDomain: true);
@@ -437,7 +437,11 @@ namespace CosmicShore.UI
         void EditSlot(System.Func<SquadSlot, SquadSlot> change)
         {
             if (_mode != Mode.Make || _draft == null) return;
+            string previousPilot = _draft.GetSlot(_seat).PilotId;
             _draft.SetSlot(_seat, change(_draft.GetSlot(_seat)));
+            // Each vessel has its own pilot and artifact: one moved onto this vessel leaves the others (the pilot swaps).
+            _draft.KeepCardsOwn(_seat, previousPilot);
+            FillPilots(_draft);
             Draw();
         }
 
@@ -470,17 +474,29 @@ namespace CosmicShore.UI
             _vesselPage = at < 0 ? 0 : at / Mathf.Max(1, vesselTiles.Length);
         }
 
-        int PilotsPerPage => Mathf.Max(1, pilotChips.Length - 1);
+        int PilotsPerPage => Mathf.Max(1, pilotChips.Length);
+
+        readonly List<string> _pilotIds = new();
+
+        /// <summary>Every vessel needs a pilot: a slot with none (or one another slot flies) takes the next free one.</summary>
+        void FillPilots(SavedSquad squad)
+        {
+            if (squad == null || !catalog) return;
+            _pilotIds.Clear();
+            foreach (var p in catalog.Pilots)
+                if (p) _pilotIds.Add(p.Id);
+            squad.FillPilots(_pilotIds);
+        }
 
         void PickPilot(int chip)
         {
             PilotsFor(_draft.GetSlot(_seat).Vessel);
-            // Chip 0 is the empty seat (an empty id, no sight); the rest are one page of the callsign pilots.
-            int index = _pilotPage * PilotsPerPage + chip - 1;
-            if (chip != 0 && index >= _pilots.Count) return;
+            // The chips are one page of the callsign pilots; there is no empty seat (every vessel needs a pilot).
+            int index = _pilotPage * PilotsPerPage + chip;
+            if (index < 0 || index >= _pilots.Count) return;
             EditSlot(s =>
             {
-                s.PilotId = chip == 0 ? null : _pilots[index].Id;
+                s.PilotId = _pilots[index].Id;
                 return s;
             });
         }
@@ -640,6 +656,8 @@ namespace CosmicShore.UI
             // The configure window opens on the hull last selected this session (unless the card remembers its own).
             if (_gameData && _gameData.selectedVesselClass) _gameData.selectedVesselClass.Value = mine.Vessel;
             if (!mine.UsesDefaultPilot()) PilotLoadoutStore.SetPilot(mine.Vessel, mine.PilotId);
+            // The card's artifact is what that vessel carries into the match (VesselPilotLoadout reads the slot).
+            PilotLoadoutStore.SetSlottedArtifact(mine.Vessel, mine.ArtifactId);
             InviteSquadMates(squad);
             // The launch panel opens the player on the squad's domain while this trip lasts (SquadLaunchIntent).
             SquadLaunchIntent.Set(squad);
@@ -963,12 +981,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < pilotChips.Length; i++)
             {
                 if (!pilotChips[i]) continue;
-                if (i == 0)
-                {
-                    pilotChips[i].Draw(true, basePilotLine, basePilotDetail, null, slot.UsesDefaultPilot());
-                    continue;
-                }
-                int index = _pilotPage * PilotsPerPage + i - 1;
+                int index = _pilotPage * PilotsPerPage + i;
                 var p = index < _pilots.Count ? _pilots[index] : null;
                 pilotChips[i].Draw(p, p ? p.DisplayName : null, p ? TemplateText.Fill(pilotDetail, "sight", SightOf(p)) : null,
                     p ? p.Portrait : null, p && p.Id == slot.PilotId);
