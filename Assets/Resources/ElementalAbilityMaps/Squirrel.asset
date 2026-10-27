@@ -75,3 +75,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: Live Wire
     UpgradeDescription: Danger prisms grant 10x boost energy when skimmed.
+  omniAbilityLabel: bursts into a ring of shielded blocks

@@ -17045,3 +17045,145 @@ compile. Run `FactionChatTests` (edit mode).
 10. Leave the Port (LT / RT). **Pass:** in Vivox's dashboard the player leaves `faction_all` (it is held only while the
     tab is shown).
 11. The configure card's LEADERBOARD still opens the weekly window as before.
+
+## 🔴 2026-10-27 — Codex rebuilt (Elements / Ecology / Lexicon), Arcade dropdowns, Hangar max level 5 (unverified: no Unity editor in the session)
+
+**Files:**
+- **Codex:** `CodexCatalog` / `CodexScreen` / `CodexPortrait` / `CodexTile` / `CodexPageView`, `CodexView.prefab`,
+  `CodexTile.prefab` (`author_menu_codex.py`).
+- **Arcade:** `ArcadeGridOrder`, `ArcadeGridOptions`, `ArcadeExploreView`, `ArcadeView.prefab`,
+  `ArcadeGameCard.prefab` (`author_menu_arcade.py`).
+- **Hangar:** `HangarUpgradeStore.MaxLevel`, `HangarVibeView`, `HangarView.prefab` (`author_menu_hangar.py`).
+- **Crystals:** `Assets/_Graphics/Codex/ethirion_*.png` (re-rendered, guids kept) and `Flipbooks/`.
+- **Spec:** `Docs/MENU_REDESIGN_B.md` section 90.
+
+1. **Tests.** Run `CodexCatalogTests`, `ArcadeGridOrderTests` and `ElementFlowerTests`.
+   **Pass:** green.
+2. **Chapters.** Open CODEX. **Pass:** the chapters are ELEMENTS, ECOLOGY and LEXICON, and LB / RB step through
+   Elements, Flora, Fauna and Lexicon.
+3. **Elements.** **Pass:** Charge, Mass, Space and Time show their crystals, then the Omni, Prisms and Spindles cards.
+   No triangle counts or heart sizes appear anywhere.
+4. **The pick.** Pick a tile. **Pass:**
+   - a blue scan line sweeps down it once;
+   - its crystal plays its element's entrance (Charge jolts, Mass drops and lands, Space warps in turning, Time ticks
+     into place);
+   - the crystal then animates.
+   **Fail:** any tile moves while not picked, or anything bobs.
+5. **The page.** **Pass:**
+   - the gameplay line types in under the title;
+   - the facts and rows grow in one by one;
+   - the LORE heading and its lore come last, and are hidden when there is no lore.
+6. **Fauna.** **Pass:** 23 species in the Toy Box's order, the swarm colonies included. The Shark still shows its
+   facts and element cells.
+7. **Lexicon.** **Pass:** four cards: Vessels, Pilots, Artifacts and Toys.
+8. **Arcade order.** **Pass:** the ALL GAMES line shows ELEMENT and VESSEL buttons, and no SORT. Favourites come
+   first, then A-Z.
+9. **Arcade filters.** **Pass:**
+   - VESSEL: Sparrow keeps only cards that seat the Sparrow;
+   - with ELEMENT: Mass picked as well, both filters apply.
+10. **Arcade card.** **Pass:** each card shows one white genre petal, not a flower.
+11. **Hangar upgrades.** **Pass:**
+    - an element stops at level 5 (UPGRADE greys out at 5);
+    - the balance reads OMNICRYSTALS with the Omni glyph.
+12. **Hangar vibe.** **Pass:** each bar shows nine ticks with one lit.
+13. **Profiler.** With the Codex shown and nothing picked, look in the profiler. **Pass:** no Canvas rebuilds come
+    from the Codex grid.
+
+## 🔴 2026-10-27 — Hangar silver + Mass flip + 2D/3D elements + elemental crystals + Omni controls row (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §97.1.
+
+1. **Tests.** Run `PlayerProfileDataTests` and `ElementFlowerTests`. **Pass:** green.
+2. **Silver preview.** Hangar: UPGRADE an element. **Pass:**
+   - the ring, the banner and the flying crystals are silver, not gold;
+   - the button itself is still gold.
+3. **Silver hull.** The 3D vessel's team-colour plates are silver-blue, not gold or jade.
+4. **Mass flip.** **Pass:**
+   - the Mass flower everywhere (Hangar, Codex badge, HUD pips) points the other way from before;
+   - its five petals keep their gaps.
+5. **ABILITIES tab.** **Pass:**
+   - each row shows its crystal (still), left of the keycap;
+   - pressing a row turns its flower one petal with a swell, and the crystal plays once and stops.
+6. **UPGRADES tab.** **Pass:** the line reads "CHARGE CRYSTALS 0 HELD - 0 SPENT" and follows the focused element.
+7. **Cloud data.** Call `PlayerDataService.Instance.AddElementalCrystals(Element.Mass, 3)` from the console or a test,
+   then reopen the Hangar. **Pass:** "3 HELD". Reload the profile from the cloud. **Pass:** still 3.
+8. **Omni row.** Configure any Sparrow card. **Pass:** the controls list ends with "Omni crystal: reloads its missiles"
+   with the Omni icon. A hull with no line reads "Omni crystal: fly into it".
+
+## 🔴 2026-10-27 — Codex Orbit (Rev 30 board C) (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.
+
+1. **Tests.** Run `CodexOrbitTests` and `CodexCatalogTests`. **Pass:** green.
+2. **Orbit.** Open CODEX. **Pass:**
+   - ELEMENTS shows seven round entries on two tilted rings round a large Charge crystal;
+   - the front entries are larger, brighter and drawn over the back ones and over the core.
+3. **Pick.** Click an entry on the far side. **Pass:** its ring turns until it is at the front, the core shows its
+   picture with its element's entrance, and the panel's words type in.
+4. **Pad.** D-pad left / right. **Pass:** the selection steps round the entries (wrapping), turning their rings. Up
+   reaches the chapter tab; under ECOLOGY it reaches FLORA or FAUNA.
+5. **Chapters.** LB / RB through ECOLOGY (Flora, Fauna) and LEXICON. **Pass:**
+   - each fills the rings inside first;
+   - nothing is cut off at the panel or the screen's edge with the most entries (Flora or Fauna).
+6. **Panel.** **Pass:** solid, with no sea through the words; a blue border; the element cells sit in two columns that
+   fit.
+7. **Profiler.** With nothing turning, look in the profiler. **Pass:** no Canvas rebuilds come from the orbit.
+
+## 🔴 2026-10-27 — Codex: wider Orbit (Elements only) + Field Guide for Ecology and Lexicon (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.1.
+
+1. **Tests.** Run `CodexOrbitTests`. **Pass:** green.
+2. **Elements.** Open CODEX. **Pass:**
+   - four elements on the inner ring and Omni, Prisms and Spindles on the outer;
+   - no entry overlaps another;
+   - only the picked entry sits at the front, under the core.
+3. **Pick round.** Pick each entry in turn. **Pass:** its ring brings it to the front, the other ring turns aside, and
+   nothing ever stacks at the front.
+4. **Ecology.** RB to ECOLOGY. **Pass:**
+   - the book shows: the picture's plate on the left with "Flora - <name>" under it, the page on the right;
+   - the strip under it lists every Flora species, the first lit blue;
+   - with more than fit, the strip scrolls and the pad keeps the lit one in view.
+5. **Lexicon.** **Pass:** the same book. The eight cards fit the strip, centred.
+6. **Back to Elements.** **Pass:** the orbit returns with its pick; no Field Guide picture keeps animating (profiler:
+   nothing from the hidden layout).
+
+## 🔴 2026-10-27 — Hangar hull in the cards' silver; Codex pictures to bake (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.2.
+
+1. **Silver.** Open the Hangar and step through every vessel. **Pass:**
+   - each hull reads silver: a cool grey body with bright steel edges, pale-blue windows and pale-blue plates, like its
+     arcade card;
+   - no purple, gold or jade anywhere;
+   - the engines keep their own colour.
+2. **Ship untouched.** Fly any vessel in a match. **Pass:** it still wears its normal dark hull and its team colour (the
+   swap is the stage copy's alone).
+3. **Codex pictures.** FrogletTools > UI > Codex, then Scan & Merge, then Bake Missing, then save. Reopen CODEX > ECOLOGY.
+   **Pass:**
+   - Mandelbulb, Coral Bloom, Watershed and Apollonia show pictures in the strip and on the plate;
+   - note any species still empty, from the scan report.
+
+## 🔴 2026-10-27 — Codex: population fauna pictures + Toy Box names (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.3.
+
+1. **Reset.** Discard the local changes to `Assets/Resources/Codex.asset` from the earlier scan.
+2. **Scan.** FrogletTools > UI > Codex, then Scan & Merge. **Pass:** the report adds entries named as in the Toy Box
+   (Harrier, Leech, Swarm Field, Fortress Builders, ...), with none named "... Config Data".
+3. **Bake.** Bake Missing, then save. **Pass:**
+   - the swarm, substrate and builder species bake: each picture is a small school of body prisms;
+   - the report's failures list no longer names them.
+4. **Codex.** CODEX > ECOLOGY > FAUNA. **Pass:** those species show their pictures in the strip and on the plate, with
+   no duplicate entries at the end of the strip.
+
+## 🔴 2026-10-27 — Codex Vessel Changer pictures without the skimmer sphere (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §98.4.
+
+1. FrogletTools > UI > Codex, then **Bake All**, then save.
+2. **Pass:**
+   - every `Assets/_Graphics/Codex/tool_vessel-changer__*.png` shows its own hull;
+   - no two are the same picture;
+   - none is a blue sphere.
+3. **Hangar and Toy Box unchanged.** **Pass:** they still show every hull (`VesselModelBuilder.IsHull` only became public).

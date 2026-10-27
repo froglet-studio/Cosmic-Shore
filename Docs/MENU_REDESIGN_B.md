@@ -4187,3 +4187,286 @@ press then remembers that pick for the card, as before. The weekly challenge kee
 - Not opened in the Unity editor. Needs a hand test with two friends: Take into Arena from a Ruby squad, open a card,
   and both the host and the invited squad mate start on Ruby.
 
+## 97. The Codex rebuilt around play, the Arcade's two dropdowns, and the first Hangar fixes (2026-10-27, awaiting in-editor approval)
+
+Shombith's review of section 89 (2026-10-27), with the later asks in the same session: "the models of the crystals
+are old ... update the whole codex and everything animate ... animate in the descriptions" and "Remove the bobbing
+animation and use some cool selection animations".
+
+**The Codex: three chapters, not seven.**
+- **ELEMENTS.** Charge, Mass, Space and Time, each with its Etherion crystal as its picture and every hull's ability
+  for it. Then three authored cards: **Omni**, **Prisms** and **Spindles**. The Etherions chapter is gone, and so are
+  the crystal build notes it showed (triangle counts, heart sizes, "dropped by 22 species").
+- **ECOLOGY.** Flora and Fauna follow the Toy Box's Spawn Matrix (`Toy_SpawnMatrix.asset`), so they list every species
+  a player can release, in its order: 23 fauna (the swarm colonies, Piranha, Pack Hunter, Leviathan and the rest) and 27
+  flora. Before this the Codex listed 6 and 16. Each species' Toy Box description is its gameplay line. Where
+  `Codex.asset` has the species (matched ignoring spaces and dashes), its picture, facts, element cells and elemental
+  laws fill in the rest. A species only the Codex knows still follows the list.
+- **LEXICON.** One card each for Vessels, Pilots, Artifacts and Toys, in place of their drill-downs. The words are
+  authored on `CodexScreen.words.lexicon`.
+- **Spelling.** The player reads **Etherion** everywhere. The serialized names (`CodexSO.ethirions`,
+  `CodexKingdom.Ethirion`, the `ethirion.*` ids and discovery keys) are unchanged, because a rename would break saved
+  data and Garrett's harvester.
+
+**The page reads play first.** Kicker and title, then what it does in play, then facts, element cells and rows, then
+the lore last, under a LORE heading (`CodexPageView.gameplayText`, `loreBlock`). Each element has a short authored lore
+line.
+
+**Motion (no bobbing).** Nothing moves until an entry is picked:
+- **The tile.** A bright scan line sweeps down it once (`CodexTile.scan`, 0.42 s).
+- **The picture.** It plays its element's entrance (`CodexPortrait`, 0.55 s). Charge jolts in on a crackle. Mass drops
+  from 46 units and lands heavy with a squash. Space warps in on a 120° turn from small. Time ticks into place in four
+  clock steps. Anything else punches up 12 %.
+- **While picked.** A crystal's flipbook plays its real element effect, rendered from the crystal labs (a 4×4 sheet,
+  `elementFlipbooks`, at 8 fps). The element badge's petals light one by one.
+- **The page.** The gameplay line and the lore type themselves in at 140 characters a second. Each line of facts,
+  cells and rows grows in, 50 ms after the one above it.
+- **Lifeforms** still drift through the domain colours.
+
+**The crystal pictures.** `Assets/_Graphics/Codex/ethirion_*.png` (also read by the Ark) were baked on 2026-09-25,
+before the Omni Motion Lab round 5 crystals graduated. They are re-rendered from the labs, keeping their guids, and
+each crystal gains a 16-frame flipbook in `Assets/_Graphics/Codex/Flipbooks/`.
+
+**The Arcade: two dropdowns.**
+- **Order.** Favourites come first, then A-Z under them, always (`ArcadeGridOrder.Apply`). The SORT control is gone.
+- **Filters.** ELEMENT (All, Charge to Time) and VESSEL (All, then each hull an arcade card seats, in the Hangar's list
+  order: 13 today). The two narrow together. The locked/unlocked and solo/multiplayer filters are gone.
+- **The card** shows its genre's one petal, white (`GameCard.GenrePetal`), not the flower filled to a hull's bought
+  level.
+
+**The Hangar, first pass.**
+- **Max level 5** (`HangarUpgradeStore.MaxLevel`). A level saved above 5 reads 5, so nothing is migrated.
+- **Vibe.** Nine ticks per bar. Only the tick at the value lights, in the text white; no other colour.
+- **OmniCrystals.** The balance reads OMNICRYSTALS, beside the Omni crystal glyph. The upgrade line and the shortfall
+  line say OmniCrystals too.
+
+**Still open from the same review** (they need a word from the owner, `Docs/UI_REDESIGN_TASKS.md` R5):
+- The Hangar items: the anti-aliasing pass; silver for the domain colour on the images Garrett flagged; flipping the
+  Mass element; merging the 2D and 3D elemental displays with RAS motion on the 2D side; the rainbow gradient; the
+  notch, the dashed outline and the hard line stops; and the elemental crystals held and spent.
+- Match setup and cinematics: map and level preview switching, OmniCrystal signalling on the objective area, the
+  glyphs panel and standard heptagons.
+
+**Generators:**
+- `author_menu_codex.py`: 15 plants, all fire. They include "the pictures bobbing again", "lore above gameplay", "the
+  ecology read from no Toy Box", "a lexicon card dropped" and "the ETHIRIONS chapter back".
+- `author_menu_arcade.py`: 29 plants, all fire.
+- `author_menu_hangar.py`: 29 plants, all fire.
+- Every `author_menu_*.py` passes `--check`.
+
+**Tests:**
+- `CodexCatalogTests` is rewritten for the three chapters: 11 tests, with the Toy Box reconciliation and the
+  space-blind match.
+- `ArcadeGridOrderTests` is rewritten for the fixed order and the two dropdowns.
+- `ElementFlowerTests` gains the cap at 5.
+- The player and editor reference compiles are clean. Not opened in the editor, and the tests have not been run.
+
+### 97.1 Round 2 (2026-10-27): silver, the Mass flip, 2D + 3D elements, elemental crystals in cloud data, the Omni row
+
+Shombith's answers to section 97's open questions: "the hangars vessel preview and the icons too" (silver);
+"turn the Mass icon upside down"; "in the same info tab we have both the 2D icons and the 3D view of them"; "put them in
+cloud data and tell me what to do"; "in the controls tab the omni crystal ability of the vessel should also show".
+
+- **Silver, not gold, over the vessel preview.** The upgrade moment's ring, banner and flying crystal icons draw in
+  silver (`HangarUpgradesPage.elementTint` = NeutralLightest; it was the Purchase gold). The UPGRADE and UNLOCK buttons
+  stay gold, because they spend. The 3D hull's domain slots wear the class livery,
+  `Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat`: COLOR.md's silver plates, rim (0.86, 0.90, 1.00) and face
+  (0.50, 0.56, 0.70). It is set as `HangarVesselStage.liveryMaterial` in place of the prefab's placeholder.
+- **The Mass icon is upside down.**
+  - `mass_triangle_label.png` is flipped in place.
+  - `mass_petal.png` is flipped and set at 60 %, so the five petals keep their gaps; the flower reads as a star of five
+    triangles.
+  - Every flower and the HUD pips draw it.
+- **2D and 3D in one tab.** Each ABILITIES row shows the element's 2D flower and icon, and now its crystal in 3D: the
+  Codex flipbook, still on its first frame. Playing a row turns the 2D flower one petal and swells it (rotate and
+  scale, 0.6 s), and runs the crystal's loop once.
+- **Elemental crystals, held and spent.**
+  - `ProfileEconomy.ElementalCrystals` is a list of `{Element, Held, Earned, Spent}` on the cloud profile, beside the
+    OmniCrystal balance. It rides the same save.
+  - `PlayerDataService` adds `GetElementalCrystalsHeld` / `Spent`, `AddElementalCrystals` and
+    `TrySpendElementalCrystals`.
+  - UPGRADES shows the focused element's line: "MASS CRYSTALS 7 HELD - 5 SPENT".
+  - **Nothing earns them yet.** Steps for the owner (cloud data is Shombith's):
+    1. Decide the earn rule: per match, per elemental crystal collected, or by the end-of-match element levels.
+       Matches only count `ElementalCrystalsCollected` in total today, not per element.
+    2. Have the match end call `AddElementalCrystals(element, n, "match")`. It belongs where the OmniCrystals are paid
+       out, so it shares the save.
+    3. When the economy moves to the server, give Cloud Code an elemental earn/spend pair, as the OmniCrystal wallet
+       has (`ServerEconomy.EarnAsync`/`SpendAsync` behind `ServerEconomyGate`), and gate these two calls the same way.
+       Yash does the Cloud Code work.
+    4. Point the Ark's CONVERT at `TrySpendElementalCrystals` (one of each) plus `AddCrystals` (one OmniCrystal). The
+       converter says it is waiting on these balances.
+- **The Omni row in the controls tab.**
+  - `VesselControlsPanel` adds an "Omni crystal: …" row after the four elements, with the Omni crystal icon, no button
+    and no cooldown.
+  - Its words come from `ElementalAbilityMapSO.omniAbilityLabel`, a new field. It is authored on seven maps from their
+    docs and the Codex: Squirrel, Dolphin, Sparrow, Scarab, Thresher, Stoat and Rhino.
+  - Every other hull reads "Omni crystal: fly into it". The Jacks and Starling maps belong to their own generators, so
+    their lines are left to those.
+
+**Generators:** `author_menu_hangar.py` has 32 plants and `author_menu_configure.py` gains its Omni plant; all fire, and
+every `author_menu_*` passes `--check`. **Tests:** `PlayerProfileDataTests` gains the two ElementalCrystals tests. The
+player and editor reference compiles are clean. Not opened in the editor.
+
+### 97.2 The Hangar's open cradle without the notch or the dash (2026-10-27)
+
+Shombith: "The dashed outline is the open triangle panel we put in the hangar bg remove that dashed outline and also on
+the top right we do not like the notch design. Make the corners fade into a gradient for that triangle."
+
+The dossier's border is now `open_cradle_border` (`author_menu_hangar.py`):
+- **Lines.** The left stub, the floor, the leaning right side and the right edge up to 260 units from the top.
+- **Open ends.** Both open ends dissolve over 220 units through the kit's alpha ramp (`kit_fade_h`) into the cradle
+  fill's own clear top.
+- **Removed.** The chamfered rail and its top-right notch, and the faint dash where the rail ended.
+- **Kept.** The small corner cutout (`kit_corner_tri`).
+
+The configure card's rail (Rev 25) is unchanged. Two new plants: "the dash back on the border" and "an open end
+stopping hard"; all 34 fire.
+
+### 97.3 The build fix, the Lexicon's ways to play, and Rev 30 boards (2026-10-27)
+
+Shombith, with a screenshot of the built Codex: "cant see anything", "In lexicon teach about missions arcades voyages too
+quest oo, also hate the UI now, create some new mockups".
+
+- **Cause of "can't see anything".** A tile waits its turn (30 ms per index) before it fades in. One long frame, such as
+  the hitch as the screen opens, could carry a waiting tile past the whole fade in a single step. That tile never drew
+  its last frame and stayed at alpha 0. Only the first tile, which waits for nothing, showed. `CodexTile.Update` now
+  always lands the final step.
+- **Lexicon.** It now has Arcade, Quests, Voyages and Missions cards first, the ways to play, then Vessels, Pilots,
+  Artifacts and Toys. The art is SkimRace's card, Tandava's card, the Duel for the Cell card and the star.
+- **Rev 30 boards** (canvas page `rev30`; R29 was taken by another session's Squads round; copies in
+  `Docs/MenuRedesignB/board/`):
+  - **A Vault** (interactive): a list on the left, the crystal alive on a stage in the middle (its flipbook and its
+    element's entrance), and a solid reading panel on the right.
+  - **B Field Guide**: a two-page plate with callouts, and an entry strip under the book.
+  - **C Orbit**: the Omni crystal at the core, the four elements orbiting it, ecology and lexicon on the outer ring.
+  - **Lexicon** (interactive): image cards and a reading panel.
+  - **Every option** puts solid panels under its words; the sea behind the text is what washed the build out. Each shows
+    the real abilities from the shipped ability maps.
+  - Waiting on a pick before the build changes again.
+
+## 98. The Codex as an Orbit (Rev 30 board C, 2026-10-27, awaiting in-editor approval)
+
+Shombith picked board C: "Go with C, implement it". The grid of cards is gone. Generator: `Tools/Build/author_menu_codex.py`
+(`--check`, `--self-test`, 17 planted defects).
+
+- **The orbit (left).** A chapter's entries ride three tilted rings (`CodexOrbit`, on `Orbit/Nodes`):
+  - The rings hold 4, 8 and 12 entries, inside first. The outer ring takes any overflow. Their half-widths are 270, 440
+    and 600, at a tilt of 0.46. Each ring is a thin circle (`kit_ring_line`) stretched to its ellipse, hidden while
+    empty.
+  - Depth is how far round to the front an entry is. The front (the bottom of the ellipse) draws at 1.05x and full
+    alpha, on top. The back draws at 0.62x and half alpha, underneath.
+  - **The core** is the picked entry's picture, 240 square over a breathing selection-blue halo (`kit_ring_glow`). It
+    sits among the entries at mid depth, so an entry passing in front covers it and one passing behind is covered. It
+    is the page's `CodexPortrait`: it plays the element's entrance and the crystal flipbook (section 97).
+  - **Picking an entry** turns its ring the shortest way round until the entry is at the front (0.6 s, OutCubic). Only
+    that ring moves, and nothing moves while nothing is turning.
+- **The entries.** Each is a round node: a dark disc (`kit_ring_fill`, new), the picture on it, and an outline ring
+  that `CodexTile` paints selection blue on the open entry, over a breathing halo. The name and a quiet line sit under
+  it. The pick's scan line is gone; it was a card's effect.
+- **Pad and keys.** `CodexScreen` wires each entry's navigation explicitly: left and right step to the previous and next
+  entry (wrapping), and up goes to the open chapter's tab (FLORA or FAUNA under ECOLOGY). The navigation is explicit
+  because the entries move, and automatic navigation would follow where they happen to be drawn. LB / RB still step
+  chapters.
+- **The page (right).** A solid reading panel, 700 wide, in the selection blue's border and a soft breathing glow. Words
+  only: kicker, title, then gameplay, facts, element cells (two columns now) and rows, with lore last. The sea no
+  longer shows through the text (section 97.3).
+- **New kit sprite:** `kit_ring_fill`, a solid disc (`author_ui_kit_sprites.py`, checked as a quarter-pi of its square).
+- **Retired:** the grid's ScrollRect and GridLayoutGroup, and `CodexScreen.gridScroll` / `EnsureVisible`.
+- **Not verified in the editor.** Both reference compiles are clean, and the offline render shows the rings, core and
+  panel. The orbit's placement is runtime-only, so the offline renderer cannot show the entries on their rings.
+  `CodexOrbitTests` covers the ring fill and the picked entry's front position.
+
+### 98.1 More room in the Orbit; the Field Guide for Ecology and Lexicon (2026-10-27)
+
+Shombith, with a screenshot of the built Orbit (two entries stacked at the front, over the core): "make the spacing a
+lot bigger and keep this design only for elements section others can have design B".
+
+- **The Orbit is ELEMENTS only** (`CodexScreen.orbitChapters`). Its seven entries sit on two rings, of half-widths 330 and
+  570 at a tilt of 0.56 (before: three rings of 270 / 440 / 600 at 0.46). The core is 220 square.
+- **Only the pick sits at the front.** Picking an entry turns its ring to bring it to the front. Every other ring turns
+  until the front falls in the gap between two of its entries (`CodexOrbit.Rest`). The first frame of a chapter is
+  arranged the same way. That gap is what stacked Charge over Omni in the screenshot.
+- **ECOLOGY and LEXICON are the Field Guide** (Rev 30 board B, the `Guide` layout):
+  - **The book:** the plate on the left (44 %), with the entry's picture at 520 over a breathing halo and the caption
+    "{kicker} - {title}" (`CodexPageView.plateText` / `plateTemplate`). A thin selection-blue spine runs down the middle,
+    and the page is on the right: the same words-only `CodexPageView`, with three columns of element cells.
+  - **The strip:** every entry as a 150 square (`CodexGuideTile.prefab`: the picture over its name, outlined blue with a
+    glow when open). It sits under the book and starts right of the friends orb. It scrolls sideways when there are more
+    entries than fit and is centred when they all fit. The pad keeps the open entry in view.
+  - The board's callouts (labelled points on the picture) are not built: no entry carries callout data yet.
+- **Shared head row** (`Head`): the chapter title, FLORA / FAUNA and the count sit over both layouts. Switching layout
+  hides the other one and lets go of its pick, so its pictures stop animating unseen.
+- **`CodexScreen`** now holds two `CodexLayout`s, each with a group, content, tile prefab, an optional orbit or strip
+  scroll, and a page. Navigation is the same in both: left and right step through the entries, and up goes to the
+  chapter tab.
+- Generator: `author_menu_codex.py` writes three prefabs (`CodexTile`, `CodexGuideTile`, `CodexView`), with 21 planted
+  defects. The new ones are the Lexicon drawn as the Orbit, the strip unwired, the guide page showing the core, and the
+  guide shown over the orbit.
+
+### 98.2 The Hangar's hull in the cards' silver; the Codex's missing pictures (2026-10-27)
+
+Shombith, with a Hangar screenshot (white body, purple plates) beside an arcade card's hull: "the silver should look like
+the ones in the arcade cards", and, of the Field Guide's empty entries: "Run the codex tool again to take screenshots for
+the empty ones".
+
+- **Silver on the stage.** The cards draw the hull through `Hull_Lit.mat`: the dark render lifted toward a cool grey, with
+  a white edge. The stage now gives the 3D copy the same look (`HangarVesselStage.silverSwaps`, applied by `WearSilver`
+  after the model is built):
+  - **Body** (BlueBase and its opaque twin) becomes `SilverBodyVesselMaterial`: rim 0.92 / 0.95 / 1, face 0.45 / 0.50 / 0.64.
+  - **Window** becomes `SilverWindowVesselMaterial`: rim 0.85 / 0.92 / 1, face 0.25 / 0.42 / 0.95.
+  - **Engine** keeps its own material.
+  - **Anything else on the vessel shader** (the domain plates, or whatever a hull authored in their place) becomes the
+    class livery.
+  - **The livery's colours were swapped** (its rim was the darker colour). They are now rim white and face pale blue
+    0.62 / 0.74 / 1.
+  - Only the stage copy's renderers change. The ship's shared materials and `Docs/VesselModels/COLOR.md` are untouched.
+  - Generator: `author_menu_hangar.py` wires the four pairs, with a new planted defect, "the stage's body back in the
+    dark gunmetal" (35 in all).
+- **The Codex's missing pictures** cannot be baked in this session: the baker renders in the Unity editor
+  (`CodexImageBaker`). The empty entries are the Toy Box species that have no `Codex.asset` entry yet. They include the
+  Mandelbulb family (Mandelbulb, Coral Bloom, Watershed, Apollonia), the swarms, Physarum, Snap Trap, the topiaries and
+  Borromean. To fill them: **FrogletTools > UI > Codex**, then **Scan & Merge** (adds the entries), then **Bake Missing**
+  (renders their pictures), then save. A species the harvester cannot find (one with no flora or fauna config, such as a
+  swarm field) stays empty and is listed in the scan's report.
+
+### 98.3 Pictures for the GPU-drawn fauna, and Toy Box names in the Codex (2026-10-27)
+
+Shombith, after Scan & Merge and Bake Missing ("Baked 0 image(s)", with every swarm and substrate species reported as
+"nothing to photograph"): "None of the fauna got their images".
+
+- **Why nothing was photographed.** The substrate packs (Harrier, Leech, Leviathan, Locust, Lurker, Mobber, Pack
+  Hunter, Shoal, Siege, Stampede), the swarms (Bench, Tandava, NCA Lizard) and the builder colonies (Fortress, Thief
+  Nest, Wearer) are POPULATIONS. Each root is a heartless, bodiless anchor, and its lifeforms live in a simulation and
+  are drawn from one GPU buffer, so the prefab carries no mesh at all.
+- **The fix: `CodexImageBaker.BuildPopulation`.** After the prefab's own meshes and the colony chain, the baker finds
+  the member the GPU draws, by field name: `SubstrateSpeciesSO.agentPrefab`, `SwarmFaunaConfigSO.TadpolePrefab` or
+  `BuilderColonyConfigSO.MemberPrefab`, reached through the root's `species` or `config`. It photographs a loose school
+  of nine members on a golden-angle disc, each turned and sized a little differently. Each member wears the same body
+  prism every agent wears.
+- **Why a picture would not have reached its page anyway.** The harvester named a species after its config assets.
+  The substrate ones came out as "Substrate Harrier Fauna Config Data", because the suffix strip did not know
+  " Config Data" and only stripped the element before the kingdom. The bench swarms, four Toy Box species on one
+  prefab, came out as one entry. The Codex screen lists the Toy Box roster and finds each page by the roster's name,
+  so those pages were unreachable.
+- **The fix: `CodexHarvester.GroupSpecies`.** Every config the Toy Box's Spawn Matrix lists becomes that roster
+  species, under the roster's name ("Harrier", "Swarm Field"). A config the roster does not list joins the roster
+  species that uses its prefab (the odd `WormColonyFaunaConfig` stays with the Worm Colony). Anything else groups by
+  prefab, as before. The suffix strip now also drops " Config Data" / " Config" and takes the element and kingdom in
+  either order.
+- **Before re-running:** discard the local `Assets/Resources/Codex.asset` changes from the first scan. Those entries
+  carry the config-asset names, and the merge never renames an entry, so they would linger beside the new ones as
+  extra Field Guide entries.
+
+### 98.4 Vessel Changer pictures: the hull, not the skimmer (2026-10-27)
+
+Shombith: "fix the vessel changer pictures too". Twelve `tool_vessel-changer__<hull>.png` came out byte-identical:
+Angler, Brittlestar, Dolphin, Goby, Grizzly, Manta, Meerkat, Squirrel, Starling, Stoat, Thresher and Urchin.
+
+- **Cause.** Every ship prefab carries a skimmer: a builtin sphere scaled 15-60x. The Codex baker photographed the whole
+  prefab, so the sphere filled the frame, and after normalising every hull was the same blue ball. The Hangar stage and
+  the Toy Box never had this, because they build through `VesselModelBuilder`, whose hull filter drops builtin
+  primitives, trails, jets and VFX.
+- **Fix.** `CodexImageBaker.HarvestModel` takes an optional part filter, and `CodexVariantSubject.BuildHull` passes
+  `VesselModelBuilder.IsHull`, now public: one hull filter for every picture of a ship.
+- **To re-bake:** FrogletTools > UI > Codex, then **Bake All**. Bake Missing skips these, because a file already exists.

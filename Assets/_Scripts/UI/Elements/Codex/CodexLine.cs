@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One line of a Codex page - a fact (label and value), an element cell (its ethirion, name and stats) or a row (an
+    /// One line of a Codex page - a fact (label and value), an element cell (its Etherion, name and stats) or a row (an
     /// ability, a vessel, a painting) - copied from its hidden template by <see cref="CodexPageView"/>. It draws what it
     /// is handed; an empty part hides.
     /// </summary>

@@ -43,6 +43,23 @@ namespace CosmicShore.UI
         [Header("Data")]
         [Tooltip("Class -> prefab table the model is harvested from (Assets/_SO_Assets/Vessel Prefab Container.asset).")]
         [SerializeField] private VesselPrefabContainer prefabs;
+        [Tooltip("What the hull's DOMAIN-role slots wear on the stage: the class livery, silver plates that say \"your team's " +
+                 "colour goes here\" (Docs/VesselModels/COLOR.md; Garrett flagged gold here, 2026-10-27). Empty: the prefab's " +
+                 "authored placeholder.")]
+        [SerializeField] private Material liveryMaterial;
+        [Tooltip("The stage's silver (Shombith 2026-10-27, pointing at an arcade card's hull: \"the silver should look like " +
+                 "the ones in the arcade cards\"): each pair swaps one of the ship's shared materials for its silver twin - " +
+                 "the dark body lifted to a cool grey with a bright steel edge, the window pale blue - the 3D twin of the " +
+                 "cards' Hull_Lit.mat. Any other material on the vessel shader (the domain plates, a stand-in) wears the livery.")]
+        [SerializeField] private MaterialSwap[] silverSwaps = { };
+
+        /// <summary>One of the ship's materials and what it wears on the stage.</summary>
+        [System.Serializable]
+        public struct MaterialSwap
+        {
+            public Material from;
+            public Material to;
+        }
 
         [Header("Framing")]
         [SerializeField, Min(0.5f)] private float modelRadius = 4f;
@@ -170,7 +187,7 @@ namespace CosmicShore.UI
                 return;
             }
             EnsureRig();
-            if (!VesselModelBuilder.TryBuildLive(prefab, modelRadius, null, out _model))
+            if (!VesselModelBuilder.TryBuildLive(prefab, modelRadius, liveryMaterial, out _model))
             {
                 if (_surface) _surface.enabled = false;
                 return;
@@ -181,6 +198,7 @@ namespace CosmicShore.UI
             _modelBaseScale = _model.transform.localScale;
             SetLayerRecursive(_model, _stage.gameObject.layer);
             ReskinMorphMeshes(prefab, _model.transform);
+            WearSilver(_model.transform);
             _shapes.Clear();
             VesselAnimation.CollectElementShapes(_model.transform, _shapes);
             if (_surface) _surface.enabled = true;
@@ -580,6 +598,39 @@ namespace CosmicShore.UI
             _camera.fieldOfView = fieldOfView;
             if (_target && _target.height > 0) _camera.aspect = (float)_target.width / _target.height;
             _camera.Render();
+        }
+
+        /// <summary>
+        /// Repaints the stage copy in the cards' silver: each shared material in <see cref="silverSwaps"/> becomes its
+        /// twin, and anything else drawn with the vessel shader (the domain plates, whatever a hull authored in their
+        /// place) becomes the livery. Only the copy's own renderer arrays change; the ship's assets are never touched.
+        /// </summary>
+        void WearSilver(Transform model)
+        {
+            if (silverSwaps.Length == 0 && !liveryMaterial) return;
+            foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
+            {
+                var materials = renderer.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    var next = Silver(materials[i]);
+                    if (next == materials[i]) continue;
+                    materials[i] = next;
+                    changed = true;
+                }
+                if (changed) renderer.sharedMaterials = materials;
+            }
+        }
+
+        Material Silver(Material material)
+        {
+            if (!material) return material;
+            foreach (var swap in silverSwaps)
+                if (swap.from == material && swap.to) return swap.to;
+            foreach (var swap in silverSwaps)
+                if (swap.to == material) return material;
+            return liveryMaterial && material.shader == liveryMaterial.shader ? liveryMaterial : material;
         }
 
         /// <summary>

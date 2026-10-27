@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -6,44 +7,50 @@ using UnityEngine.EventSystems;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Arcade's SORT and FILTER (Docs/MENU_REDESIGN_B.md section 85; Shombith, 2026-10-26: "In arcade games beside the
-    /// all games tasks I want to have a sort and filter button"). Each button opens its row of options just under the ALL
-    /// GAMES line - a row of tabs, the chosen one underlined - which pushes the grid down rather than floating over it,
-    /// so a pointer, a finger and the pad all use it the same way. Picking an option closes the row, returns the pad to
-    /// the button and raises <see cref="Changed"/>; the view re-fills the grid. The choice lasts the session.
+    /// The Arcade's two dropdowns beside ALL GAMES, ELEMENT and VESSEL (Docs/MENU_REDESIGN_B.md sections 85 and 97;
+    /// Shombith 2026-10-27: "Drop the sort controls, the locked/unlocked filter and solo/multiplayer. Two dropdowns:
+    /// elements and vessels"). The grid's order is fixed - favourites first, A-Z under them (<see cref="ArcadeGridOrder"/>).
+    /// Each button opens its list of choices just under the ALL GAMES line - a row of tabs, the chosen one underlined -
+    /// which pushes the grid down rather than floating over it, so a pointer, a finger and the pad all use it the same
+    /// way. Picking a choice closes the list, returns the pad to the button and raises <see cref="Changed"/>; the view
+    /// re-fills the grid. The choice lasts the session.
     /// </summary>
     public class ArcadeGridOptions : MonoBehaviour
     {
-        [Header("Sort")]
-        [SerializeField] private KitButton sortButton;
-        [Tooltip("The sort button's word. {choice} is the picked sort's name.")]
-        [SerializeField] private TMP_Text sortLabel;
-        [SerializeField] private string sortCaption = "Sort: {choice}";
-        [Tooltip("One name per ArcadeGridSort value, in its order. Empty: the button shows its caption without one.")]
-        [SerializeField] private string[] sortNames = { "Favourites", "A-Z", "Unlocked" };
-        [Tooltip("The row of sort options (hidden until the button is pressed).")]
-        [SerializeField] private CanvasGroup sortRow;
-        [Tooltip("One tab per ArcadeGridSort value, in its order.")]
-        [SerializeField] private KitTextTab[] sortTabs = { };
+        [Header("Element")]
+        [SerializeField] private KitButton elementButton;
+        [Tooltip("The element button's word. {choice} is the picked element's name.")]
+        [SerializeField] private TMP_Text elementLabel;
+        [SerializeField] private string elementCaption = "Element: {choice}";
+        [Tooltip("One name per choice: All, then Charge to Time.")]
+        [SerializeField] private string[] elementNames = { "All", "Charge", "Mass", "Space", "Time" };
+        [Tooltip("The list of element choices (hidden until the button is pressed).")]
+        [SerializeField] private CanvasGroup elementRow;
+        [Tooltip("One tab per choice: All, then Charge to Time.")]
+        [SerializeField] private KitTextTab[] elementTabs = { };
 
-        [Header("Filter")]
-        [SerializeField] private KitButton filterButton;
-        [SerializeField] private TMP_Text filterLabel;
-        [SerializeField] private string filterCaption = "Filter: {choice}";
-        [Tooltip("One name per ArcadeGridFilter value, in its order.")]
-        [SerializeField] private string[] filterNames = { "All", "Favourites", "Unlocked", "Solo", "Multiplayer", "Charge", "Mass", "Space", "Time" };
-        [SerializeField] private CanvasGroup filterRow;
-        [Tooltip("One tab per ArcadeGridFilter value, in its order.")]
-        [SerializeField] private KitTextTab[] filterTabs = { };
+        [Header("Vessel")]
+        [SerializeField] private KitButton vesselButton;
+        [SerializeField] private TMP_Text vesselLabel;
+        [SerializeField] private string vesselCaption = "Vessel: {choice}";
+        [Tooltip("One name per choice, in the same order as the vessel tabs (All first).")]
+        [SerializeField] private string[] vesselNames = { "All" };
+        [Tooltip("The vessel class each tab picks, in its order. Any is All.")]
+        [SerializeField] private VesselClassType[] vesselChoices = { VesselClassType.Any };
+        [SerializeField] private CanvasGroup vesselRow;
+        [SerializeField] private KitTextTab[] vesselTabs = { };
 
-        // The session's choice: the window is opened and closed many times, and the player's order should stay.
-        static ArcadeGridSort s_sort = ArcadeGridSort.FavouritesFirst;
-        static ArcadeGridFilter s_filter = ArcadeGridFilter.All;
+        // The session's choice: the window is opened and closed many times, and the player's filter should stay.
+        static int s_element, s_vessel;
 
-        public ArcadeGridSort Sort => s_sort;
-        public ArcadeGridFilter Filter => s_filter;
+        /// <summary>The picked element; <see cref="Data.Element.None"/> is All.</summary>
+        public Element Element => s_element <= 0 ? Element.None : Element.Charge + (s_element - 1);
 
-        /// <summary>The sort or the filter changed: the grid should be filled again.</summary>
+        /// <summary>The picked vessel class; <see cref="VesselClassType.Any"/> is All.</summary>
+        public VesselClassType Vessel =>
+            s_vessel >= 0 && s_vessel < vesselChoices.Length ? vesselChoices[s_vessel] : VesselClassType.Any;
+
+        /// <summary>A choice changed: the grid should be filled again.</summary>
         public event Action Changed;
 
         bool _wired;
@@ -60,17 +67,17 @@ namespace CosmicShore.UI
         {
             if (_wired) return;
             _wired = true;
-            if (sortButton) sortButton.onClick.AddListener(() => Toggle(sortRow, sortTabs, (int)s_sort));
-            if (filterButton) filterButton.onClick.AddListener(() => Toggle(filterRow, filterTabs, (int)s_filter));
-            for (int i = 0; i < sortTabs.Length; i++)
+            if (elementButton) elementButton.onClick.AddListener(() => Toggle(elementRow, elementTabs, s_element));
+            if (vesselButton) vesselButton.onClick.AddListener(() => Toggle(vesselRow, vesselTabs, s_vessel));
+            for (int i = 0; i < elementTabs.Length; i++)
             {
                 int v = i;
-                if (sortTabs[i]) sortTabs[i].onClick.AddListener(() => Pick(ref s_sort, (ArcadeGridSort)v, sortButton));
+                if (elementTabs[i]) elementTabs[i].onClick.AddListener(() => Pick(ref s_element, v, elementButton));
             }
-            for (int i = 0; i < filterTabs.Length; i++)
+            for (int i = 0; i < vesselTabs.Length; i++)
             {
                 int v = i;
-                if (filterTabs[i]) filterTabs[i].onClick.AddListener(() => Pick(ref s_filter, (ArcadeGridFilter)v, filterButton));
+                if (vesselTabs[i]) vesselTabs[i].onClick.AddListener(() => Pick(ref s_vessel, v, vesselButton));
             }
         }
 
@@ -80,14 +87,14 @@ namespace CosmicShore.UI
             Close();
             if (!open) return;
             KitVisibility.SetShown(row, true);
-            // On the pad the focus moves into the row, onto the current choice.
+            // On the pad the focus moves into the list, onto the current choice.
             if (current >= 0 && current < tabs.Length && tabs[current] && EventSystem.current)
                 EventSystem.current.SetSelectedGameObject(tabs[current].gameObject);
         }
 
-        void Pick<T>(ref T field, T value, KitButton back) where T : struct, Enum
+        void Pick(ref int field, int value, KitButton back)
         {
-            bool changed = !field.Equals(value);
+            bool changed = field != value;
             field = value;
             Close();
             Draw();
@@ -95,17 +102,17 @@ namespace CosmicShore.UI
             if (changed) Changed?.Invoke();
         }
 
-        /// <summary>Both rows shut (the window opening, an option picked, the other button pressed).</summary>
+        /// <summary>Both lists shut (the window opening, a choice picked, the other button pressed).</summary>
         public void Close()
         {
-            KitVisibility.SetShown(sortRow, false);
-            KitVisibility.SetShown(filterRow, false);
+            KitVisibility.SetShown(elementRow, false);
+            KitVisibility.SetShown(vesselRow, false);
         }
 
         void Draw()
         {
-            DrawOne(sortLabel, sortCaption, sortNames, (int)s_sort, sortTabs);
-            DrawOne(filterLabel, filterCaption, filterNames, (int)s_filter, filterTabs);
+            DrawOne(elementLabel, elementCaption, elementNames, s_element, elementTabs);
+            DrawOne(vesselLabel, vesselCaption, vesselNames, s_vessel, vesselTabs);
         }
 
         static void DrawOne(TMP_Text label, string caption, string[] names, int index, KitTextTab[] tabs)

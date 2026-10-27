@@ -50,3 +50,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 
     UpgradeDescription: 'OPEN since 2026-10-13 (design needed). Time 5 was "Perfect Release" (a launch timed inside a 0.25 s window left x1.6 faster); it retired when EVERY aimed launch out of the crosshair view took the boost (ThresherConfigSO.launchBoost, x4.8) - the crosshair move is rewarded, not the timing. No IsUpgradeActive(Time) gate remains.'
+  omniAbilityLabel: windmills the ball round the ship
