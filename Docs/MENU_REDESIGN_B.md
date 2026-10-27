@@ -3956,3 +3956,25 @@ The dossier's border is now `open_cradle_border` (`author_menu_hangar.py`):
 
 The configure card's rail (Rev 25) is unchanged. Two new plants: "the dash back on the border" and "an open end
 stopping hard"; all 34 fire.
+
+### 90.3 The build fix, the Lexicon's ways to play, and Rev 30 boards (2026-10-27)
+
+Shombith, with a screenshot of the built Codex: "cant see anything", "In lexicon teach about missions arcades voyages too
+quest oo, also hate the UI now, create some new mockups".
+
+- **Cause of "can't see anything".** A tile waits its turn (30 ms per index) before it fades in. One long frame, such as
+  the hitch as the screen opens, could carry a waiting tile past the whole fade in a single step. That tile never drew
+  its last frame and stayed at alpha 0. Only the first tile, which waits for nothing, showed. `CodexTile.Update` now
+  always lands the final step.
+- **Lexicon.** It now has Arcade, Quests, Voyages and Missions cards first, the ways to play, then Vessels, Pilots,
+  Artifacts and Toys. The art is SkimRace's card, Tandava's card, the Duel for the Cell card and the star.
+- **Rev 30 boards** (canvas page `rev30`; R29 was taken by another session's Squads round; copies in
+  `Docs/MenuRedesignB/board/`):
+  - **A Vault** (interactive): a list on the left, the crystal alive on a stage in the middle (its flipbook and its
+    element's entrance), and a solid reading panel on the right.
+  - **B Field Guide**: a two-page plate with callouts, and an entry strip under the book.
+  - **C Orbit**: the Omni crystal at the core, the four elements orbiting it, ecology and lexicon on the outer ring.
+  - **Lexicon** (interactive): image cards and a reading panel.
+  - **Every option** puts solid panels under its words; the sea behind the text is what washed the build out. Each shows
+    the real abilities from the shipped ability maps.
+  - Waiting on a pick before the build changes again.

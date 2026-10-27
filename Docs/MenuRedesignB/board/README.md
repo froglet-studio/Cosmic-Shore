@@ -352,3 +352,11 @@ the game has none of them yet (`Docs/MENU_REDESIGN_B.md` section 87).
 - [`TopNavHover.dc.html`](TopNavHover.dc.html) - Item 1 · Top nav · HANGAR active, pointer over ARK
 - [`TopNavLocked.dc.html`](TopNavLocked.dc.html) - Item 1 · Top nav · PORT pressed: locked, refused
 - [`MenuKit.dc.html`](MenuKit.dc.html) - Item 0 · Component kit (approved; reference copy)
+
+### Rev 30  (page `rev30`) - Codex rethought (2026-10-27)
+
+- [`R30CodexVault.dc.html`](R30CodexVault.dc.html) - Rev 30 - A Vault: list, living crystal, solid reading panel - interactive
+- [`R30CodexGuide.dc.html`](R30CodexGuide.dc.html) - Rev 30 - B Field Guide: the crystal as a plate, its page beside it
+- [`R30CodexOrbit.dc.html`](R30CodexOrbit.dc.html) - Rev 30 - C Orbit: Omni at the core, the elements orbiting it
+- [`R30CodexLexicon.dc.html`](R30CodexLexicon.dc.html) - Rev 30 - Lexicon: Arcade, Quests, Voyages, Missions, then Vessels, Pilots, Artifacts, Toys - interactive
+- [`R30Notes.dc.html`](R30Notes.dc.html) - Rev 30 - notes
