@@ -478,6 +478,44 @@ the play-style levels, the AI's sloppiness). The round-22 wormhole-look keys ARE
 | The dent (everyone sees it) | each mouth of a made tunnel is a graded lens, `gateDentStrength` 0.6, as wide as the grid's mouth × `gateDentWidth` 1: space pulled in at the black hole's mouth, pushed out at the white hole's |
 | The concentrated hole | `gateHoleCore` 0.12 × the mouth: a black shadow with its photon ring, and a white core; **0 = a pure warp of space-time**. The 3D hole spheres are no longer drawn on tunnels (the lens draws the core) |
 
+## 1k. Round 23 (studio) — one thumb, all wormhole (Garrett, with Yash, 2026-10-27)
+
+**Garrett's notes** (relayed by Yash, who asked that both designs converge): *"remove both the white hole and black hole.
+lean completely into the wormhole. make this a one thumb flyer so the right stick is always free to shape the tunnel ...
+continue to use the gridlines so the player can see the wormhole that will form when they pull the right trigger. once
+the wormhole forms keep the gridlines but use the warping effects to convey the same tube to other players. only the
+wormhole creating player should see the gridlines. everyone should see the visual warping that corresponds to the grid
+lines."*
+
+**How the two designs met** (Gate mode):
+
+| | Yash (rounds 19–22) | Garrett (round 23) | Built |
+|---|---|---|---|
+| Flight | the dual-stick mix; the hull held its line while shaping | a one-thumb flyer | **the left stick flies** as the game's one-thumb hulls do (`SingleStickVesselTransformer`: Ease(2 × stick) yaw/pitch, a bank into the turn `gateBankShare` 0.12 × roll, full throttle); keys WASD |
+| The bend | RT − LT plus both sticks, up to 120°, more bend = shorter and fatter | the right stick shapes the tunnel | **the right stick** bends it any way, up to `gtTurnMax` 120° (the arrows on keys); Yash's coupling kept |
+| Length | both triggers harder = shorter | (not said) | **LT** shortens it (Yash's earlier "LT shortens"); LT full + stick centred = a 120 u straight hop |
+| Seeing it | the reticle while the triggers are held | the grid always shows what RT would form | **the reticle is always on your nose** in Gate mode, faint at rest (`gateGridRestAlpha` 0.4), full while you shape |
+| Making it | A, or letting go (with a 0.15 s grace) | pull the right trigger | **an RT press forms it** and you are in it (A, the release grace and the touch A · Go button are gone) |
+| The holes | a concentrated core setting (round 22) | no black hole, no white hole | **gone**: no hole spheres, no cores, no light shells or gravitational wave when a tunnel forms or fades, no hole markers; the hole look cards hide in Gate mode |
+| Others see | the mouths' dents | the warping that matches the grid | **the tube's warp** (`updateTubeWarp`): every live tunnel draws its tube, ring for ring the grid's surface, into a half-float buffer of screen offsets (the wall's view normal × sin(π·rim), in near the entry, out near the exit), which the lens pass adds to its bend; `gateTubeWarp` 0.8. The mouths keep their dents |
+| Grid | yours only | only the creator | yours only: the reticle and your own tunnel while you ride it |
+
+**Measured** (headless): the left stick full right turns right and banks right at full speed (58 u/s at cruise 60) with
+the reticle up; the right stick full right → 120° right over 120 u, half right → 19° over 523 u (the ease makes the
+middle of the stick fine), full up → 120° up, LT full → a 120 u straight hop, centred → 600 u straight; the formed
+tunnel matched the reticle every time; RT again while riding does nothing; the reticle is back on exit.
+
+**Scorecard** (the AI flies one-thumb too: the left stick for the ring, then holds its line `gtAiAim` 0.3 s while its
+right stick and LT shape the plan, then pulls RT. Hard, seed 1, s): circuit I1–I4 **36.4 / 38.2 / 39.1 / 40.2**
+(round 22: 38.6–43.0), hairpins 44.3 / 41.9 / 39.6 / 38.4 (42–48); Mass 31–39 on the hairpins. Full throttle made Gate
+faster still: **the balance question for the team grows** (`gtWarpShare`, `gtFatCut`, `gtTubeSpeed` are the levers).
+
+**Open, for Yash and Garrett together:** does "lean completely into the wormhole" also retire Mass and Time (both are
+black-hole/white-hole modes, and the Stoat would become a wormhole-only, one-thumb vessel)? Round 23 changed only Gate
+mode; Mass and Time are untouched. In the game this is also a control-scheme question: the Stoat's prefab runs the
+two-stick `VesselTransformer`; a one-thumb Gate needs either a per-mode scheme or the Stoat moving to a one-thumb
+transformer.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
