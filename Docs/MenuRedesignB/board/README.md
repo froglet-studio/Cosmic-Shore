@@ -291,6 +291,17 @@ the game has none of them yet (`Docs/MENU_REDESIGN_B.md` section 87).
 - [`R26CodexDiscovery.dc.html`](R26CodexDiscovery.dc.html) - Rev 26 - Discovery: the in-match toast when you meet something new
 - [`R26Notes.dc.html`](R26Notes.dc.html) - Rev 26 - notes
 
+### Rev 27 - Port  (page `rev27`)
+
+Copied 2026-10-27 from canvas version `1793126114-9235`. The messages and pilot names are sample text (the names and
+avatars are the weekly leaderboard board's). The chat runs on Unity Vivox (`Docs/MENU_REDESIGN_B.md` section 90).
+
+- [`R27PortMessages.dc.html`](R27PortMessages.dc.html) - Rev 27 - Port: Faction messages (interactive: type, Enter or Send, 3 s cooldown)
+- [`R27PortLeaderboard.dc.html`](R27PortLeaderboard.dc.html) - Rev 27 - Port: the weekly leaderboard as the second tab
+- [`R27PortActions.dc.html`](R27PortActions.dc.html) - Rev 27 - Port: message actions - report, mute
+- [`R27PortStates.dc.html`](R27PortStates.dc.html) - Rev 27 - Port: empty, loading, offline, not sent
+- [`R27Notes.dc.html`](R27Notes.dc.html) - Rev 27 - notes and decisions
+
 ### Item boards (before the paged rounds)
 
 - [`HomeOffline.dc.html`](HomeOffline.dc.html) - Item 6 · Home · offline, asking to go online

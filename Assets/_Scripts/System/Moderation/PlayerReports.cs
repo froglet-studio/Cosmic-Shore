@@ -15,6 +15,9 @@ namespace CosmicShore.Core
         Cheating = 0,
         OffensiveName = 1,
         Trolling = 2,
+        // A faction message in the Port (Docs/MENU_REDESIGN_B.md section 90). With Vivox in the project, the report also
+        // carries the faction channel both players were in.
+        OffensiveMessage = 3,
     }
 
     /// <summary>
@@ -61,6 +64,7 @@ namespace CosmicShore.Core
             PlayerReportReason.Cheating => ReportReason.Hacking,
             PlayerReportReason.OffensiveName => ReportReason.InappropriatePlayerName,
             PlayerReportReason.Trolling => ReportReason.Sabotage,
+            PlayerReportReason.OffensiveMessage => ReportReason.VerbalAbuse,
             _ => ReportReason.Hacking,
         };
     }

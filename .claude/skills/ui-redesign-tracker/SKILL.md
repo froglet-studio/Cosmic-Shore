@@ -107,6 +107,13 @@ stranded the old lock view in the scene. It now removes `Ids.everything()` and a
 check. Any generator whose output depends on a set (locked tabs, shown seats, offered modes) needs the same: remove
 everything it can ever mint, then write what it mints now.
 
+**T12 — two generators that insert under the same parent must not both take "first"** (claude/affectionate-bardeen-pzh99d,
+2026-10-27, the Port). `author_menu_codex.py` puts its CodexView first under `Screens` and writes its documents right after
+Screens'. A second screen generator doing the same makes each one's re-run move the other, so the other's `--check`
+drifts. Take a place relative to something only you own: the Port takes the old Port panel's place among the children
+and anchors its documents after that panel's transform. Run the whole `author_menu_*.py --check` sweep (T9) after adding
+a screen.
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:
