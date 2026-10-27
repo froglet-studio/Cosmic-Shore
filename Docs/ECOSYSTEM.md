@@ -12371,24 +12371,35 @@ With size Mass's, Space's fauna identity is three things, one number - the plant
   reach). Felt more than seen.
 - **ASPECT** - the body itself, by the LATTICE FLORA'S PROPORTIONAL RULES (Garrett, 2026-10-27: "exaggerate space
   more while maintaining fidelity ... elongating its prisms and modifying the spindles to better contain them ... it
-  should use the proportional rules used in the lattice flora"). Three of them, the same three a lattice plant obeys:
-  - **the leaf law**: every body prism takes `FloraElementalForm.ShapeLeaf` for its element - Space x 0.4097 volume,
-    anisotropy 2.11, so each becomes a long thin needle along the axis that was already its longest (the shark's dorsal
-    1.7 x 1.8 x 7.9 → 0.7 x 0.8 x 18.4 u, its bellies 3.8 → 6.1 u long and 0.25 thick, its wings 5.0 → 9.4 u). It is
-    solved in WORLD space: each prism's authored size measured through the bones down from the root, the law applied,
-    the local target solved back through the stretch axis by axis (`Fauna.ShapeBodyPrisms`);
-  - **the reach is FITTED, not authored**: the spine (the spindle body, stretched at the root along the creature's
-    forward axis, girth unchanged) grows by the least that contains every needle - the lattice's "the size is FITTED
-    to the largest that clears" turned round, the body fitted to the prisms - measured at **x 1.962** for the shark and
-    shipped at **x 2.06** (`FaunaVariantTuning.BodyAspect`, 56 → 116 u long);
-  - **no prism interpenetrates another**: none does (a separating-axis test over every pair), none enters the Space
-    crystal (3.54 u), and none leaves the body.
+  should use the proportional rules used in the lattice flora"; then, seen in the editor: "it should be more
+  exaggerated so it is significantly longer than the mass shark"):
+  - **the length is the lattice's own Space:Mass reach.** In a plant Space reaches x 1.35 and Mass draws in to x 0.82,
+    a ratio of (Mass leaf volume / Space leaf volume)^(1/3) = **1.647** (`FaunaElementalForm.SpaceLengthOverMass`). A
+    Space creature is that much LONGER than the same species' Mass creature: the spine (stretched at the root along the
+    forward axis, the girth kept so the heart's cavity keeps its size) is 1.647 x the Mass body scale over the prefab's
+    - for the shark **x 5.956** (`FaunaVariantTuning.BodyAspect`): **335 u**, against the Mass shark's 203 and the
+    Charge and Time sharks' 56;
+  - **an element authors the SHAPE, the size is FITTED to the largest that clears, less 3%** (the lattice's §49.10
+    rule): every body prism spans its own SOCKET - the authored prism box, stretched with the body - less 3%; the leaf
+    law (`FloraElementalForm.ShapeLeaf`, anisotropy 2.11) says how thin it is against that length; it is never thicker
+    than its socket (`Fauna.ShapeBodyPrisms`, solved in world space through the bones and the stretch, axis by axis).
+    At this length the stretched sockets are already thinner than the law asks on most axes, so the law's visible work
+    is the wings (0.84 → 0.65 thick); the dorsal is 44 u long, the bellies 21, the wings 28 - each seated in its cavity;
+  - **no prism interpenetrates another** (a separating-axis test over every pair), none leaves the body, none enters
+    the Space crystal. The teeth keep their world shape at their stretched seats; one sits in the crystal, as on every
+    shark - its heart is in its jaws.
 
-  The girth is kept so the heart's cavity is the size it was. Danger prisms (the teeth) keep their WORLD shape, counter-
-  scaled at their stretched seats: the needle law on an already needle-like tooth (1 x 1 x 15) runs to 82 long. It is
-  **authored on the Space SHARK only** until it is seen swimming in the game
-  (`Docs/Ecology/FaunaScale/sharks_four_elements.png`: Charge and Time 56 u, Space 116 u and needled, Mass 203 u). Only
-  the bind pose has been measured; the swim animation under a stretched root is the editor check.
+  **The rig is rebound at the new size.** The editor showed the first pass clipping everywhere, on the Mass shark too:
+  the shark's armature bones are driven by Animation Rigging (DampedTransform chains down the spine, tail and wings;
+  aim constraints on the jaws), which records every constraint's offset in WORLD units when the RigBuilder builds the
+  rig at spawn - before the variant resizes the body. So a grown or stretched body was pulled back to the prefab's bone
+  spacing: the skin bunched up round prisms the bones still carried at their own scale. `Fauna.ApplyVariantTuning` now
+  rebinds the Animator to its default pose and rebuilds every RigBuilder whenever it changes the root scale
+  (`Fauna.RebuildRig`), for every rigged creature (the shark, the QuadFish, the Clawfish). Measured headless in the bind
+  pose only; **a 6x spine stretch under a swimming rig is the editor's to judge** (a bone turning under a non-uniform
+  root reads flatter and can skew).
+
+  Authored on the Space SHARK only (`Docs/Ecology/FaunaScale/sharks_four_elements.png`).
 
 Spread and reach are a code law keyed on the creature's ELEMENT (set at `AssignLineage` from the rolled variant), so
 every Space LightFauna and Boid has them with no config changed; both multiply where a radius is READ, so a pooled

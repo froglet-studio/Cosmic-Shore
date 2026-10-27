@@ -16628,9 +16628,11 @@ crystals, boids and lifeforms pass (14). `Docs/ECOSYSTEM.md` §64.9; `Docs/Ecolo
 
 1. Let Unity compile. **Pass:** no errors from `FaunaElementalForm.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
    `LifeFormCrystal.cs`, `FaunaConfigurationSO.cs`.
-2. Spawn Matrix: release a shark of each element. **Pass:** Charge and Time are the size they were; Mass is about 3.6x;
-   Space is about twice as long at the same girth, its body prisms long thin needles inside its body, its teeth the
-   size of the others'; all four hearts are the same round size. Watch the Space shark swim and turn: **Pass:** its body
-   bends without skewing or tearing and no needle pokes out of it (only the bind pose was measured headless).
+2. Spawn Matrix: release a shark of each element. **Pass:** Charge and Time are the size they were; Mass is about 3.6x
+   and every body prism sits in its socket as it swims (the rig is rebound at the new size - the 2026-10-27 clipping);
+   Space is about 1.65x the Mass shark's LENGTH at the prefab's girth (~335 u), each body prism a needle filling its
+   stretched socket, its teeth the size of the others'; all four hearts are the same round size. Watch the Mass and the
+   Space shark swim and turn: **Pass:** no prism clips its spindle; the Space body bends without skewing or tearing
+   (only the bind pose was measured headless).
 3. A Blob or Wildlife cell with tadpoles: **Pass:** the Space school spreads wider than the others and still feeds.
 4. Any crystal elsewhere (a mode's arena scatter, a race ring, a toy): **Pass:** the same size and shape as before.

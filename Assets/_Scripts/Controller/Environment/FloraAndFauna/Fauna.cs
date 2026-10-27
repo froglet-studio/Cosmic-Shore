@@ -760,6 +760,7 @@ namespace CosmicShore.Gameplay
             if (tuning == null) return;
 
             if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
+            var scaleBefore = transform.localScale;
             transform.localScale = tuning.BaseBodyScale > 0f ? Vector3.one * tuning.BaseBodyScale : _authoredRootScale;
             // Space's body: stretched along its spine, its girth unchanged (scaled at the ROOT, so the posed body is
             // stretched whole and nothing below it shears; the heart divides it out per axis).
@@ -769,6 +770,11 @@ namespace CosmicShore.Gameplay
                 var s = transform.localScale;
                 transform.localScale = new Vector3(s.x, s.y, s.z * tuning.BodyAspect);
             }
+            // A resized body REBINDS its rig: Animation Rigging records every constraint's offset (the spine's
+            // DampedTransforms, the jaws' aims) in WORLD units when the rig is built at spawn, so a body grown or
+            // stretched after it would be pulled back to the prefab's bone spacing - the skin bunched up round the
+            // prisms the bones still carry at their own scale (the Mass shark's clipping, 2026-10-27).
+            if (transform.localScale != scaleBefore) RebuildRig();
 
             if (tuning.StarvationSeconds >= 0f)
             {
@@ -948,14 +954,28 @@ namespace CosmicShore.Gameplay
         /// Call from Initialize, after the body hierarchy exists.
         /// Returns the cached array so subclasses can reuse it for body setup.
         /// </summary>
+        /// <summary>The body's rig, re-bound at its current scale: the Animator back to its default pose, then every
+        /// RigBuilder rebuilt so its constraints record their offsets at this size.</summary>
+        void RebuildRig()
+        {
+            foreach (var animator in GetComponentsInChildren<Animator>(true))
+                if (animator && animator.isActiveAndEnabled) animator.Rebind();
+            foreach (var rig in GetComponentsInChildren<UnityEngine.Animations.Rigging.RigBuilder>(true))
+                if (rig && rig.isActiveAndEnabled) rig.Build();
+        }
+
         /// <summary>
-        /// THE LATTICE FLORA'S LEAF LAW ON A CREATURE (Docs/ECOSYSTEM.md 64.9): every body prism takes
-        /// <see cref="FloraElementalForm.ShapeLeaf"/> for this element in WORLD space - its authored size measured
-        /// through the bones down from the root, the law applied, and the local target solved back through the root's
-        /// spine stretch, axis by axis. So a Space body's prisms are the lattice's long thin needles however its bones
-        /// turn them, and the stretch (fitted per species) is what contains them. Danger prisms keep their WORLD shape
-        /// (counter-scaled against the stretch, at their stretched seats): a needle law on an already needle-like tooth
-        /// runs away with it.
+        /// THE LATTICE FLORA'S PROPORTIONAL RULES ON A CREATURE'S PRISMS (Docs/ECOSYSTEM.md 64.9): "an element authors
+        /// the SHAPE of its plate, and the size is FITTED to the largest that clears". The SHAPE is the element's leaf
+        /// law (<see cref="FloraElementalForm.ShapeLeaf"/> - Space's anisotropy 2.11, a needle along the axis that was
+        /// already the prism's longest); the SIZE is FITTED to the prism's own SOCKET - the authored prism box,
+        /// stretched with the body: it spans the socket's length less the lattice's 3%
+        /// (<see cref="FaunaElementalForm.FitClearance"/>), is as thin against that length as the law says, and is never
+        /// thicker than the socket. So a prism stays seated in its cavity at any stretch.
+        /// Measured in WORLD space through the bones down from the root and solved back through the spine stretch,
+        /// axis by axis, so it holds however the bones turn the prism. Danger prisms keep their WORLD shape
+        /// (counter-scaled against the stretch, at their stretched seats): a needle law on an already needle-like
+        /// tooth runs away with it.
         /// </summary>
         void ShapeBodyPrisms(float stretch, Element element)
         {
@@ -977,8 +997,23 @@ namespace CosmicShore.Gameplay
                     size[i] = authored[i] * axis.magnitude;                   // root units, before the stretch
                     perLocal[i] = Vector3.Scale(axis, spine).magnitude;       // root units per local unit, after it
                 }
-                var shaped = tooth ? size : FloraElementalForm.ShapeLeaf(size, element);
                 if (perLocal.x <= 1e-6f || perLocal.y <= 1e-6f || perLocal.z <= 1e-6f) continue;
+                Vector3 shaped = size;
+                if (!tooth)
+                {
+                    var shape = FloraElementalForm.ShapeLeaf(size, element);                 // the element's shape
+                    var socket = Vector3.Scale(authored, perLocal);                          // its seat, stretched
+                    if (shape.x > 0f && shape.y > 0f && shape.z > 0f)
+                    {
+                        // it spans its socket's LENGTH (less the lattice's 3%), the law sets how THIN it is
+                        // against that length, and it is never thicker than the socket
+                        int lng = shape.x >= shape.y && shape.x >= shape.z ? 0 : shape.y >= shape.z ? 1 : 2;
+                        float length = socket[lng] * FaunaElementalForm.FitClearance;
+                        for (int i = 0; i < 3; i++)
+                            shaped[i] = i == lng ? length
+                                : Mathf.Min(length * shape[i] / shape[lng], socket[i] * FaunaElementalForm.FitClearance);
+                    }
+                }
                 var local = new Vector3(shaped.x / perLocal.x, shaped.y / perLocal.y, shaped.z / perLocal.z);
                 hp.AdmitTargetScale(local);   // a needle may be longer than the animator's default window
                 hp.TargetScale = local;

@@ -193,11 +193,11 @@ namespace CosmicShore.Utility
                  "spindle default). Zero = keep the prefab's authored prism scale.")]
         public Vector3 BodyPrismScale = Vector3.zero;
         [Tooltip("SPACE's body: stretch the creature along its spine (its forward axis) by this, its girth unchanged so " +
-                 "its heart's cavity keeps its size. A stretched body spends its element's LEAF LAW on its body prisms - " +
-                 "the lattice flora's FloraElementalForm.ShapeLeaf, solved in world space through the stretch (Space: " +
-                 "x0.41 volume, anisotropy 2.11 - long thin needles) - and the stretch is FITTED per species to the " +
-                 "least that contains them (Docs/ECOSYSTEM.md 64.9). Danger prisms keep their shape. 0 or 1 = the " +
-                 "prefab's body and prisms.")]
+                 "its heart's cavity keeps its size. Space's is FaunaElementalForm.SpaceLengthOverMass (1.647) x the " +
+                 "species' Mass body scale over its prefab's, so Space is the longest. A stretched body's prisms take " +
+                 "the lattice rule - the element's SHAPE (FloraElementalForm.ShapeLeaf: Space's long thin needle), " +
+                 "the largest that fits the prism's stretched socket, less 3% (Docs/ECOSYSTEM.md 64.9); danger prisms " +
+                 "keep their shape. 0 or 1 = the prefab's body and prisms.")]
         [Min(0f)] public float BodyAspect = 0f;
         [Tooltip("Material applied to the body's Spindle renderers (the per-element body look). " +
                  "None = keep the prefab's authored material.")]
