@@ -17,6 +17,9 @@
  *   body       Eel        a segmented body that IS your trail; coil to turn, whip to cut, shed to speed up (snake)
  *   pulse      Octopus    inhale to charge, release to jet; pulses on your own tempo multiply (charge-release + rhythm)
  *   surface    Gecko      stick to any mass and run along it faster, hop between surfaces (wall-run)
+ *   breath     Moon Jelly breathe in (hold), pulse out; slow steady breaths glide further and glow wider; a long breath is a Moonrise (the calm three)
+ *   tide       Sea Turtle the course line is a current: tuck in to ride it fast, spread to turn; thread the Rapids clean for a burst (the calm three)
+ *   tend       Seahorse   curl the tail round a plant: it grows and calls your crystal in; let go to dart, puff to fend off a rival (the calm three)
  *
  * No THREE at the top level: the hub loads this file for the previews without three.js. ASCII only (served without a
  * charset). Functions receive `ctx` from the engine: THREE, V, Q, lerp, clamp, DEG, axes, steer, move, moveVel, near,
@@ -963,6 +966,210 @@
     mount(ctx, scene, P) { const l = line(ctx, P.domain.color, 2); scene.add(l); return { l, dispose() { scene.remove(l); } }; },
     draw(W, P, o) { P.K._t = W.t; o.l.visible = !!P.K.stuck; if (P.K.stuck) setLine(o.l, [P.pos, P.K.stuck.pos]); },
     preview(g, w, h, t, accent) { bg(g, w, h); const rowA = [], rowB = []; for (let i = 0; i < 14; i++) { rowA.push([w * 0.08 + i * 16, h * 0.7 + Math.sin(i * 0.5) * 6]); rowB.push([w * 0.45 + i * 16, h * 0.3 - Math.sin(i * 0.5) * 6]); } blocks(g, '#3a4380', rowA.concat(rowB), 10); const u = (t * 0.45) % 1; let x, y; if (u < 0.45) { const i = u / 0.45 * 13; x = w * 0.08 + i * 16; y = h * 0.7 + Math.sin(i * 0.5) * 6 - 11; } else if (u < 0.6) { const f = (u - 0.45) / 0.15; x = lerp(w * 0.08 + 13 * 16, w * 0.45 + 2 * 16, f); y = lerp(h * 0.7 - 11, h * 0.3 + 11, f) - Math.sin(f * Math.PI) * 30; } else { const i = 2 + (u - 0.6) / 0.4 * 11; x = w * 0.45 + i * 16; y = h * 0.3 - Math.sin(i * 0.5) * 6 + 11; } g.fillStyle = accent; g.fillRect(x - 9, y - 3, 18, 6); g.fillRect(x - 11, y - 5, 4, 2); g.fillRect(x + 7, y - 5, 4, 2); g.fillRect(x - 11, y + 3, 4, 2); g.fillRect(x + 7, y + 3, 4, 2); },
+  };
+
+  // ================= the calm three (Level 1: one stick, one button; a calm loop with one intense moment) =================
+  // Yash, 2026-10-27: vessels for relaxed players, about 20 minutes a day, a balance of focus and rest. Each kind marks its
+  // intense moment as K.active, so the scorecard's mechanic share is the share of time spent intense; the rest is calm.
+
+  // ================= breath: the Moon Jelly =================
+  K.breath = {
+    mechanicName: 'Moonrise',
+    aiRule: 'It breathes slowly on a fixed tempo: in (LT held) for the inhale time of every breath, then out, so every breath is a calm one. With the moon full and its crystal beyond its glow but within a Moonrise, it holds one long breath and lets go into the Moonrise.',
+    defaults: { drift: 20, drag: 0.3, inhaleTime: 2.5, inhaleDrag: 1.2, pulseMin: 50, pulseMax: 150, calmMin: 3, beatWindow: 0.25, calmStep: 0.06, calmCap: 6, glow: 1.6, glowStep: 0.1, moonPerBreath: 0.25, moonHold: 3.2, moonReach: 4, moonSeconds: 3, moonPull: 60, topSpeed: 220, aiTempo: 4.5 },
+    spec: [['drift', 5, 60, 1, 'Drift', 'Speed it sinks to between breaths (u/s)'], ['drag', 0.05, 1.5, 0.05, 'Glide fade', 'How fast a pulse fades (per second); lower glides longer'],
+      ['inhaleTime', 0.5, 5, 0.1, 'Breath in', 'Seconds of LT for a full breath'], ['inhaleDrag', 0.2, 4, 0.1, 'Breath-in brake', 'How fast it slows while breathing in'],
+      ['pulseMin', 10, 120, 5, 'Small pulse', 'Pulse speed from a short breath (u/s)'], ['pulseMax', 60, 300, 5, 'Full pulse', 'Pulse speed from a full breath (u/s)'],
+      ['calmMin', 1, 8, 0.25, 'Calm pace', 'Seconds a breath must last, at least, to count as calm; faster is rushing and breaks the calm'],
+      ['beatWindow', 0.05, 0.6, 0.01, 'Steady', 'A breath within this fraction of the last one is steady'], ['calmStep', 0, 0.2, 0.01, 'Calm pulse', 'Extra pulse per calm breath in the chain'],
+      ['calmCap', 1, 12, 1, 'Calm cap', 'The longest calm chain'], ['glow', 1, 4, 0.05, 'Glow', 'Its reach for a crystal, times the fleet\'s capture reach (25.5 u)'], ['glowStep', 0, 0.3, 0.01, 'Calm glow', 'Extra glow per calm breath in the chain'],
+      ['moonPerBreath', 0.05, 1, 0.05, 'Moon per breath', 'How much each calm breath fills the moon'], ['moonHold', 1, 10, 0.25, 'Long breath', 'Seconds of one breath, with the moon full, for a Moonrise'],
+      ['moonReach', 1, 8, 0.25, 'Moonrise', 'A Moonrise multiplies the glow by this'], ['moonSeconds', 0.5, 5, 0.1, 'Moonrise time', 'How long a Moonrise shines (s)'], ['moonPull', 0, 200, 5, 'Moonlight pull', 'During a Moonrise its crystal, woken, swims toward the light at this (u/s)'],
+      ['topSpeed', 80, 400, 10, 'Top speed', 'Speed cap (u/s)'], ['aiTempo', 2, 10, 0.25, 'AI tempo', 'AI: seconds per breath']],
+    init(P) { P.K = { charge: 0, inhaling: false, holdT: 0, lastPulseT: null, interval: 0, calm: 0, moon: 0, moonT: 0, breaths: 0, calmBreaths: 0, moonrises: 0, active: false, aiT: null, aiLong: false }; },
+    step(W, P, inp, dt, ctx) {
+      const m = P.m, Kk = P.K, { fwd } = ctx.axes(P);
+      Kk.inhaling = inp.lt > 0.3;
+      ctx.steer(P, inp, dt, Kk.inhaling ? 0.8 : 1);
+      if (Kk.inhaling) { Kk.charge = Math.min(1, Kk.charge + dt / m.inhaleTime); Kk.holdT += dt; }
+      if (fall(P, 'ltWas', Kk.inhaling)) {   // the breath out: a pulse; a slow, steady breath is a calm one
+        const since = Kk.lastPulseT == null ? 0 : W.t - Kk.lastPulseT;
+        const steady = Kk.lastPulseT != null && since >= m.calmMin && Kk.interval > 0 && Math.abs(since - Kk.interval) <= m.beatWindow * Kk.interval;
+        if (Kk.lastPulseT != null && since < m.calmMin) Kk.calm = 0;
+        else if (steady) { Kk.calm = Math.min(m.calmCap, Kk.calm + 1); Kk.moon = Math.min(1, Kk.moon + m.moonPerBreath); Kk.calmBreaths++; }
+        else Kk.calm = Math.max(0, Kk.calm - 1);
+        if (Kk.moon >= 1 && Kk.holdT >= m.moonHold) { Kk.moonT = m.moonSeconds; Kk.moon = 0; Kk.moonrises++; P.stats.uses++; ctx.event(W, P, 'Moonrise!'); }
+        P.speed = Math.min(m.topSpeed, Math.max(P.speed, lerp(m.pulseMin, m.pulseMax, Kk.charge) * (1 + m.calmStep * Kk.calm))); P.course.lerp(fwd, 0.7).normalize();
+        Kk.interval = since; Kk.lastPulseT = W.t; Kk.charge = 0; Kk.holdT = 0; Kk.breaths++;
+        ctx.event(W, P, (steady ? 'Calm breath ' + Kk.calm : 'Breath') + ' \u00b7 ' + Math.round(P.speed) + ' u/s');
+      }
+      if (Kk.moonT > 0) { Kk.moonT -= dt; const c = P.crystal; if (c) { const d = P.pos.clone().sub(c.pos), L = d.length(); if (L > 1) c.pos.addScaledVector(d, Math.min(1, m.moonPull * dt / L)); } }   // the woken crystal swims to the light
+      ctx.move(P, dt, m.drift * P.boost, P.F.grip, Kk.inhaling ? m.inhaleDrag : m.drag * (1 - 0.06 * Kk.calm));
+      m.captureMult = m.glow * (1 + m.glowStep * Kk.calm) * (Kk.moonT > 0 ? m.moonReach : 1);   // the glow IS its reach for a crystal
+      Kk.active = Kk.moonT > 0;
+    },
+    ai(W, P, aim, base, ctx) {
+      const m = P.m, Kk = P.K, out = {}; if (Kk.aiT == null) Kk.aiT = W.t;
+      const reach = ctx.BASE.captureReach * m.glow * (1 + m.glowStep * Kk.calm), c = P.crystal, d = c ? c.pos.distanceTo(P.pos) : Infinity;
+      if (Kk.aiLong) { out.lt = Kk.holdT < m.moonHold ? 1 : 0; if (!out.lt) { Kk.aiLong = false; Kk.aiT = W.t - m.inhaleTime; } return out; }   // after the long breath, breathe out first: the next breath in at the tempo, or it is rushed and the calm breaks
+      out.lt = (W.t - Kk.aiT) % m.aiTempo < m.inhaleTime ? 1 : 0;
+      if (out.lt && !Kk.inhaling && Kk.moon >= 1 && d > reach + 40 && d < reach * m.moonReach + 120) Kk.aiLong = true;
+      return out;
+    },
+    hud(P) { const m = P.m, Kk = P.K; return [['Breath', Kk.inhaling ? 'in ' + Math.round(Kk.charge * 100) + '%' + (Kk.moon >= 1 ? ' \u00b7 hold ' + Math.max(0, m.moonHold - Kk.holdT).toFixed(1) + ' s more for a Moonrise' : '') : 'calm ' + Kk.calm + ' / ' + m.calmCap + ' \u00b7 hold LT to breathe in', Kk.inhaling ? Kk.charge : Kk.calm / m.calmCap, Kk.calm >= m.calmCap ? '#9dff5a' : ''], ['Moon', Kk.moonT > 0 ? 'MOONRISE' : Kk.moon >= 1 ? 'full: one long breath' : Math.round(Kk.moon * 100) + '%', Kk.moonT > 0 ? 1 : Kk.moon, Kk.moon >= 1 ? '#fff3b0' : '']]; },
+    abilityStates(P) { const m = P.m; return { charge: 'Moonrise x' + m.moonReach.toFixed(1), mass: Math.round(m.pulseMax) + ' u/s pulse', space: 'glow x' + m.glow.toFixed(2), time: 'glide fade ' + m.drag.toFixed(2) }; },
+    hull(ctx, color) {
+      const T = ctx.THREE, g = new T.Group();
+      const bell = new T.Mesh(new T.SphereGeometry(3.6, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), new T.MeshStandardMaterial({ color, emissive: new T.Color(color).multiplyScalar(0.35), transparent: true, opacity: 0.7, side: T.DoubleSide, roughness: 0.3, flatShading: true }));
+      bell.rotation.x = -Math.PI / 2; bell.name = 'bell'; g.add(bell);
+      const core = new T.Mesh(new T.SphereGeometry(1.4, 10, 8), new T.MeshBasicMaterial({ color: 0xeaf6ff, transparent: true, opacity: 0.9 })); core.name = 'core'; core.position.z = 0.6; g.add(core);
+      const tm = new T.MeshStandardMaterial({ color, emissive: new T.Color(color).multiplyScalar(0.25), transparent: true, opacity: 0.6, flatShading: true });
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, c = new T.Mesh(new T.CylinderGeometry(0.12, 0.04, 9, 4), tm); c.name = 't' + i; c.rotation.x = Math.PI / 2; c.position.set(Math.cos(a) * 2.4, Math.sin(a) * 2.4, 5); g.add(c); }
+      return g;
+    },
+    poseHull(h, P, t) {
+      const Kk = P.K, b = h.getObjectByName('bell'), core = h.getObjectByName('core'), k = Kk.inhaling ? Kk.charge : 0;
+      if (b) b.scale.set(1 + 0.35 * k, 1 + 0.35 * k, 1 - 0.25 * k);   // the bell swells as it breathes in
+      if (core) { core.scale.setScalar(0.8 + 0.1 * Kk.calm + (Kk.moonT > 0 ? 1.2 : 0)); core.material.color.set(Kk.moonT > 0 ? 0xfff3b0 : 0xeaf6ff); }
+      for (let i = 0; i < 8; i++) { const c = h.getObjectByName('t' + i); if (c) { const a = i / 8 * Math.PI * 2, r = 2.4 - 1.2 * k + 0.25 * Math.sin(t * 1.5 + i); c.position.set(Math.cos(a) * r, Math.sin(a) * r, 5 + 0.6 * Math.sin(t * 1.2 + i * 0.7)); } }
+    },
+    mount(ctx, scene, P) { const s = new ctx.THREE.Mesh(new ctx.THREE.SphereGeometry(1, 20, 14), new ctx.THREE.MeshStandardMaterial({ color: 0xcfe8ff, emissive: 0x3a5a7a, transparent: true, opacity: 0.06, side: ctx.THREE.BackSide, depthWrite: false })); scene.add(s); return { s, dispose() { scene.remove(s); } }; },
+    draw(W, P, o, t, ctx) { const r = ctx.BASE.captureReach * (P.m.captureMult || 1); o.s.position.copy(P.pos); o.s.scale.setScalar(r); o.s.material.opacity = P.K.moonT > 0 ? 0.16 : 0.05 + 0.01 * P.K.calm; o.s.visible = P.finishT == null; },   // the glow, drawn at its true reach
+    preview(g, w, h, t, accent) {
+      bg(g, w, h); const cyc = (t % 4.5) / 4.5, inh = cyc < 0.55, k = inh ? cyc / 0.55 : 0, x = w * 0.15 + ((t * 32) % (w * 0.7)), y = h * 0.5 + Math.sin(t * 0.7) * 10, glow = 46 + 6 * Math.sin(t);
+      g.fillStyle = 'rgba(207,232,255,0.08)'; g.beginPath(); g.arc(x, y, glow, 0, Math.PI * 2); g.fill();
+      for (let i = 0; i < 6; i++) { const cx = (i * 97 + 40) % w, cy = h * (0.25 + 0.5 * ((i * 37) % 10) / 10), lit = Math.hypot(cx - x, cy - y) < glow; g.fillStyle = lit ? '#ffffff' : '#2b3550'; g.beginPath(); g.moveTo(cx, cy - 6); g.lineTo(cx + 5, cy); g.lineTo(cx, cy + 6); g.lineTo(cx - 5, cy); g.fill(); }
+      const r = 13 * (1 + 0.35 * k); g.fillStyle = accent; g.globalAlpha = 0.85; g.beginPath(); g.ellipse(x, y, r * 0.8, r, 0, Math.PI * 0.5, Math.PI * 1.5); g.fill(); g.globalAlpha = 1;
+      g.strokeStyle = accent + '99'; g.lineWidth = 1.5; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(x, y - 8 + i * 4); g.quadraticCurveTo(x - 20, y - 8 + i * 4 + Math.sin(t * 2 + i) * 5, x - 34 - (inh ? 0 : 6), y - 10 + i * 5); g.stroke(); }
+      g.fillStyle = '#eaf6ff'; g.beginPath(); g.arc(x - 2, y, 3.5, 0, Math.PI * 2); g.fill();
+    },
+  };
+
+  // ================= tide: the Sea Turtle =================
+  K.tide = {
+    mechanicName: 'the Rapids',
+    aiRule: 'It follows the tide (the course line) and leans out for its crystal. It tucks (LT held) when its nose is within 15 deg of the line and its crystal is more than 150 u away, and spreads to turn or to reach the crystal. It keeps tucked through the Rapids while aligned.',
+    defaults: { tideR: 60, tideLift: 16, tideSpeed: 60, crawl: 25, tuck: 1.5, spread: 0.75, tuckTurn: 0.5, spreadTurn: 1.25, push: 0.25, rapidsR: 38, rapidsPull: 30, rapidsBoost: 1.35, rapidsLen: 30, burst: 1.4, shell: 0.9, topSpeed: 240 },
+    spec: [['tideR', 20, 160, 5, 'Tide width', 'How far from the course line the tide still carries you (u)'], ['tideSpeed', 30, 200, 5, 'Tide', 'The tide\'s speed on the line (u/s)'],
+      ['tideLift', 0, 40, 1, 'Tide height', 'The tide flows this far above the course ribbon, so riding it does not scrape the blocks (u)'], ['crawl', 5, 80, 1, 'Crawl', 'Its own speed with no tide (u/s)'], ['tuck', 1, 2.5, 0.05, 'Tuck', 'Tucked in (LT held), the tide carries it this much faster'], ['spread', 0.3, 1, 0.05, 'Spread', 'Flippers out, the tide carries it this much'],
+      ['tuckTurn', 0.2, 1, 0.05, 'Tucked turn', 'Turn rate tucked in'], ['spreadTurn', 0.8, 2, 0.05, 'Spread turn', 'Turn rate with flippers out'], ['push', 0, 1, 0.05, 'Current push', 'How much of the tide pushes it along the line whatever its nose does'],
+      ['rapidsR', 8, 80, 1, 'Rapids', 'Mass within this of it, in the tide, makes the Rapids (u)'], ['rapidsPull', 0, 80, 1, 'Undertow', 'In the Rapids the water pulls it toward the nearest block at up to this (u/s): steer away to stay clean'], ['rapidsBoost', 1, 2, 0.05, 'Rapids speed', 'The tide is this much faster in the Rapids'],
+      ['rapidsLen', 5, 120, 1, 'Clean run', 'Distance through the Rapids without touching a rock for the burst (u)'], ['burst', 1, 2, 0.05, 'Burst', 'Boost after a clean run through the Rapids'],
+      ['shell', 0.5, 1, 0.01, 'Shell', 'A hull contact slows it only to this (the shell takes the knock)'], ['topSpeed', 80, 400, 10, 'Top speed', 'Speed cap (u/s)']],
+    init(P) { P.K = { tucked: false, f: 0, rapids: false, rapT: 0, clean: true, bursts: 0, active: false }; },
+    tideAt(W, P) { const i = P.hint || 0, L = W.track.line[i].clone(), tan = W.track.tan[i]; L.y += P.m.tideLift; return { f: clamp(1 - L.distanceTo(P.pos) / P.m.tideR, 0, 1), tan }; },
+    step(W, P, inp, dt, ctx) {
+      const m = P.m, Kk = P.K, { fwd } = ctx.axes(P);
+      Kk.tucked = inp.lt > 0.3;
+      ctx.steer(P, inp, dt, Kk.tucked ? m.tuckTurn : m.spreadTurn);
+      const td = K.tide.tideAt(W, P); Kk.f = td.f;
+      let rapids = false, rock = null, rd = m.rapidsR; if (td.f > 0.2) for (const p of ctx.near(W, P.pos, m.rapidsR)) { if (p.kind !== 'mass' || p.dead) continue; const d = p.pos.distanceTo(P.pos); if (d < rd) { rd = d; rock = p; rapids = true; } }
+      Kk.rock = rock;
+      if (rapids && !Kk.rapids) { Kk.rapT = 0; Kk.rapD = 0; Kk.clean = true; ctx.event(W, P, 'The Rapids'); }
+      if (!rapids && Kk.rapids && Kk.clean && Kk.rapD >= m.rapidsLen) { P.boost = Math.max(P.boost, m.burst); Kk.bursts++; P.stats.uses++; ctx.event(W, P, 'Clean through the Rapids: burst x' + m.burst.toFixed(2)); }
+      Kk.rapids = rapids; if (rapids) { Kk.rapT += dt; Kk.rapD = (Kk.rapD || 0) + P.speed * dt; }
+      const along = Math.max(0, fwd.dot(td.tan)), carry = m.tideSpeed * td.f * (Kk.tucked ? m.tuck : m.spread) * (rapids ? m.rapidsBoost : 1);
+      ctx.move(P, dt, Math.min(m.topSpeed, (m.crawl + carry * along) * P.boost), P.F.grip, 1.2);
+      P.pos.addScaledVector(td.tan, m.tideSpeed * td.f * m.push * dt);   // the current carries it along the line whatever its nose does
+      if (rock) { const pull = rock.pos.clone().sub(P.pos); pull.addScaledVector(td.tan, -pull.dot(td.tan)); const L = pull.length(); if (L > 1) P.pos.addScaledVector(pull, m.rapidsPull * (1 - rd / m.rapidsR) * dt / L); }   // the undertow: the Rapids pull it toward the rocks
+      Kk.active = rapids;
+    },
+    onContact(W, P, p, ctx) { P.boost = Math.max(1, P.boost * 0.8); P.slow = Math.min(P.slow, P.m.shell); if (p.kind === 'mass') P.K.clean = false; P.resets++; ctx.event(W, P, 'Bump (the shell takes it)'); return true; },
+    aiAim(W, P, aim, why, ctx) { const lift = aim.clone(); if (why === 'line') lift.y += P.m.tideLift - 11; const r = P.K.rock; if (!W.mech || !r || r.dead) return why === 'line' ? { aim: lift, why: 'riding the tide' } : null; const away = P.pos.clone().sub(r.pos); away.y *= 0.5; return { aim: lift.addScaledVector(away.normalize(), 30), why: 'the Rapids: away from the rocks' }; },   // the tide runs above the ribbon: ride it there
+    ai(W, P, aim, base, ctx) { const c = P.crystal, d = c ? c.pos.distanceTo(P.pos) : Infinity, r = P.K.rock, close = r && !r.dead && r.pos.distanceTo(P.pos) < P.m.rapidsR * 0.6; return { lt: base.err < 15 && d > 150 && !close ? 1 : 0 }; },   // tucked is fast but stiff: flippers out near a rock, to steer clear
+    hud(P) { const m = P.m, Kk = P.K; return [['Tide', Kk.f > 0 ? (Kk.tucked ? 'tucked in' : 'flippers out') + ' \u00b7 current ' + Math.round(m.tideSpeed * Kk.f) + ' u/s' : 'out of the tide \u00b7 crawling', Kk.f, Kk.tucked && Kk.f > 0 ? '#9dff5a' : ''], ['Rapids', Kk.rapids ? 'RAPIDS ' + Kk.rapT.toFixed(1) + ' s' + (Kk.clean ? '' : ' (bumped)') : P.boost > 1.05 ? 'burst x' + P.boost.toFixed(2) : 'calm water', Kk.rapids ? clamp((Kk.rapD || 0) / m.rapidsLen, 0, 1) : clamp((P.boost - 1) / (m.burst - 1 || 1), 0, 1), Kk.rapids ? (Kk.clean ? '#9dff5a' : '#ff8a5c') : '']]; },
+    abilityStates(P) { const m = P.m; return { charge: 'burst x' + m.burst.toFixed(2), mass: 'shell ' + Math.round(m.shell * 100) + '%', space: Math.round(m.tideR) + ' u tide', time: 'tuck x' + m.tuck.toFixed(2) }; },
+    hull(ctx, color) {
+      const T = ctx.THREE, g = new T.Group(), m = mat(ctx, color), dark = mat(ctx, 0x5b6b4a);
+      const shell = new T.Mesh(new T.SphereGeometry(3.4, 12, 8), m); shell.scale.set(1, 0.45, 1.3); shell.name = 'shell'; g.add(shell);
+      const plate = new T.Mesh(new T.SphereGeometry(3.1, 6, 4), dark); plate.scale.set(0.95, 0.42, 1.2); plate.position.y = 0.15; g.add(plate);
+      const head = new T.Mesh(new T.SphereGeometry(1.1, 8, 6), dark); head.position.set(0, 0.2, -4.6); head.name = 'head'; g.add(head);
+      for (const [nm, x, z, l] of [['fl', -1, -1.6, 4], ['fr', 1, -1.6, 4], ['bl', -1, 2.6, 2.4], ['br', 1, 2.6, 2.4]]) { const f = new T.Mesh(new T.BoxGeometry(l, 0.25, 1.2), dark); f.geometry.translate(x * l / 2, 0, 0); f.position.set(x * 2.6, -0.2, z); f.name = nm; g.add(f); }
+      return g;
+    },
+    poseHull(h, P, t) { const Kk = P.K; for (const [nm, x, back] of [['fl', -1, 0], ['fr', 1, 0], ['bl', -1, 1], ['br', 1, 1]]) { const f = h.getObjectByName(nm); if (!f) continue; const tuck = Kk.tucked ? 1 : 0; f.rotation.y = x * (back ? 0.3 : (tuck ? 1.1 : 0.15)); f.rotation.z = x * (tuck ? 0 : 0.35 * Math.sin(t * 2.2 + back)); } const hd = h.getObjectByName('head'); if (hd) hd.position.z = Kk.tucked ? -4.1 : -4.6; },
+    mount(ctx, scene, P) { const T = ctx.THREE, cones = []; for (let i = 0; i < 10; i++) { const c = new T.Mesh(new T.ConeGeometry(0.8, 3, 5), new T.MeshStandardMaterial({ color: 0x8fe3ff, emissive: 0x2a6f8a, transparent: true, opacity: 0.45, flatShading: true })); scene.add(c); cones.push(c); } return { cones, dispose() { for (const c of cones) scene.remove(c); } }; },
+    draw(W, P, o, t, ctx) {   // the tide, shown in the world: lit darts flowing along the line ahead of the turtle at the tide's speed
+      const L = W.track.line, n = L.length, i0 = P.hint || 0, sp = P.m.tideSpeed, show = P.finishT == null && (!P.spec.ai || P.i === W.watch);
+      o.cones.forEach((c, k) => { c.visible = show; if (!show) return; const ph = (t * sp / 12 + k * 1.7) % 18, i = (i0 + Math.floor(ph) + n) % n, j = (i + 1) % n, f = ph % 1; c.position.copy(L[i]).lerp(L[j], f).add(new ctx.V(Math.sin(k * 2.3) * 14, Math.cos(k * 1.7) * 10 + 4, 0)); c.quaternion.setFromUnitVectors(new ctx.V(0, 1, 0), W.track.tan[i]); c.material.opacity = 0.15 + 0.35 * Math.sin(Math.PI * ph / 18); });
+    },
+    preview(g, w, h, t, accent) {
+      bg(g, w, h); g.strokeStyle = 'rgba(143,227,255,0.25)'; g.lineWidth = 26; g.beginPath(); for (let i = 0; i <= 20; i++) { const x = i / 20 * w, y = h * 0.55 + Math.sin(i * 0.5) * 22; if (i) g.lineTo(x, y); else g.moveTo(x, y); } g.stroke();
+      g.fillStyle = '#8fe3ff'; for (let k = 0; k < 9; k++) { const x = ((t * 60 + k * 70) % (w + 40)) - 20, y = h * 0.55 + Math.sin(x / w * 10) * 22 + Math.sin(k) * 8; g.globalAlpha = 0.5; g.beginPath(); g.moveTo(x + 6, y); g.lineTo(x - 4, y - 3); g.lineTo(x - 4, y + 3); g.fill(); } g.globalAlpha = 1;
+      blocks(g, '#3a4380', [[w * 0.62, h * 0.32], [w * 0.66, h * 0.36], [w * 0.64, h * 0.78], [w * 0.69, h * 0.74]], 9);
+      const x = w * 0.2 + ((t * 40) % (w * 0.6)), y = h * 0.55 + Math.sin(x / w * 10) * 22; g.fillStyle = accent; g.beginPath(); g.ellipse(x, y, 15, 9, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = '#5b6b4a'; g.beginPath(); g.arc(x + 17, y, 4, 0, Math.PI * 2); g.fill();
+    },
+  };
+
+  // ================= tend: the Seahorse =================
+  K.tend = {
+    mechanicName: 'dart and puff',
+    aiRule: 'It looks for a plant (a mass prism) within 120 u ahead whose crystal call reaches its crystal, flies to it and holds on (LT) while the plant calls the crystal in; it lets go (a dart) once the crystal is in or out of the call. It puffs (RT) when a rival comes within its puff while it holds a plant.',
+    defaults: { cruise: 48, anchorReach: 30, callRange: 220, callSpeed: 80, growEvery: 1.2, gardenCap: 40, gardenWorth: 2, dart: 2.2, dartTime: 1, puffR: 45, puffTime: 2, puffCool: 10, puffSlow: 0.6, topSpeed: 160 },
+    spec: [['cruise', 10, 120, 1, 'Swim', 'Its own speed (u/s)'], ['anchorReach', 5, 60, 1, 'Tail reach', 'How close to a plant LT can curl the tail round it (u)'],
+      ['callRange', 40, 500, 10, 'Garden reach', 'Holding a plant, a crystal within this of the plant is called in (u)'], ['callSpeed', 5, 120, 1, 'Growth', 'How fast a held plant calls the crystal in (u/s)'],
+      ['growEvery', 0.2, 5, 0.1, 'Garden', 'Seconds between new garden prisms round a held plant'], ['gardenWorth', 1, 3, 1, 'Garden crystal', 'A crystal a held plant calls in has grown in the garden: it counts this many'], ['gardenCap', 0, 200, 5, 'Garden size', 'Garden prisms it keeps; the oldest goes first'],
+      ['dart', 1, 4, 0.05, 'Dart', 'Letting go of a plant darts it at its swim times this'], ['dartTime', 0.2, 3, 0.1, 'Dart time', 'How long a dart lasts (s)'],
+      ['puffR', 10, 120, 1, 'Puff', 'RT puffs it up: a rival within this is slowed and the garden near it is shielded (u)'], ['puffTime', 0.5, 5, 0.1, 'Puff time', 'How long a puff lasts (s)'],
+      ['puffCool', 1, 20, 0.5, 'Puff rest', 'Seconds before it can puff again'], ['puffSlow', 0.2, 1, 0.05, 'Puff slow', 'A rival in the puff flies at this share of its speed'], ['topSpeed', 60, 300, 10, 'Top speed', 'Speed cap (u/s)']],
+    init(P) { P.K = { anchor: null, holdT: 0, growT: 0, garden: [], dartT: 0, puffT: 0, puffCool: 0, called: 0, darts: 0, puffs: 0, converted: 0, active: false, plant: null }; },
+    step(W, P, inp, dt, ctx) {
+      const m = P.m, Kk = P.K, lt = inp.lt > 0.3;
+      Kk.puffCool = Math.max(0, Kk.puffCool - dt); if (Kk.dartT > 0) Kk.dartT -= dt; if (Kk.puffT > 0) Kk.puffT -= dt;
+      if (lt && !Kk.anchor) { const a = ctx.nearest(W, P.pos, m.anchorReach, (p) => p.kind === 'mass' || (p.kind === 'laid' && p.owner === P.i)); if (a && edge(P, 'ltWas', true)) { Kk.anchor = a; Kk.holdT = 0; ctx.event(W, P, 'Holding on'); } }
+      if (!lt) edge(P, 'ltWas', false);
+      if (Kk.anchor && (!lt || Kk.anchor.dead)) {   // letting go: a dart along the nose
+        Kk.anchor = null; Kk.dartT = m.dartTime; Kk.darts++; P.stats.uses++; P.speed = Math.max(P.speed, m.cruise * m.dart); P.course.copy(ctx.axes(P).fwd); ctx.event(W, P, 'Dart');
+      }
+      if (Kk.anchor) {   // holding on: still, the plant grows, a crystal within its reach is called in
+        const a = Kk.anchor; ctx.steer(P, inp, dt, 0.4); Kk.holdT += dt; P.speed *= Math.exp(-6 * dt); P.pos.lerp(a.pos.clone().add(P.pos.clone().sub(a.pos).normalize().multiplyScalar(6)), 1 - Math.exp(-3 * dt));
+        const c = P.crystal; if (c && c.pos.distanceTo(a.pos) < m.callRange) { const d = P.pos.clone().sub(c.pos), L = d.length(); if (L > 1) c.pos.addScaledVector(d, Math.min(1, m.callSpeed * dt / L)); Kk.called += m.callSpeed * dt; c.called = true; }
+        Kk.growT += dt; if (Kk.growT >= m.growEvery && m.gardenCap > 0) { Kk.growT = 0; const r = W.rand, at = a.pos.clone().add(new ctx.V(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1).multiplyScalar(10)); Kk.garden.push(ctx.layPrism(W, P, at, a.quat, [2, 2, 4], { kind: 'laid' })); if (Kk.garden.length > m.gardenCap) ctx.removePrism(W, Kk.garden.shift()); }
+        for (const p of ctx.near(W, a.pos, 14)) { if (p.kind === 'mass' && p.domain === 'mass' && !p.dead) { p.domain = P.domain.key; p.owner = P.i; p.flash = 1; W.dirty = true; Kk.converted++; } }   // a gentle steal: neutral mass by a held plant becomes the garden's
+        P.vel.copy(P.course).multiplyScalar(P.speed);
+      } else { ctx.steer(P, inp, dt, 1); ctx.move(P, dt, Math.min(m.topSpeed, m.cruise * P.boost), P.F.grip, Kk.dartT > 0 ? 0.4 : 1.5); }
+      if (edge(P, 'rtWas', inp.rt > 0.5) && Kk.puffCool <= 0) {   // the puff: rivals near are slowed, the garden near is shielded
+        Kk.puffT = m.puffTime; Kk.puffCool = m.puffCool; Kk.puffs++; Kk.puffAt = W.t; P.stats.uses++; ctx.event(W, P, 'Puff!');
+        for (const p of Kk.garden) if (!p.dead && p.pos.distanceTo(P.pos) < m.puffR) { p.shield = true; p.flash = 1; } W.dirty = true;
+      }
+      if (Kk.puffT > 0) for (const R of ctx.rivals(W, P)) if (R.pos.distanceTo(P.pos) < m.puffR) R.slow = Math.min(R.slow, m.puffSlow);
+      Kk.active = Kk.puffT > 0 || (Kk.dartT > 0 && W.t - (Kk.puffAt == null ? -99 : Kk.puffAt) < 3);   // the tense moment: a rival came, a puff, a dart away
+    },
+    onCrystal(W, P, ctx) { const Kk = P.K; if (Kk.anchor && P.crystal && P.crystal.called) { const extra = Math.max(0, Math.round(P.m.gardenWorth) - 1); P.crystals += extra; Kk.grown = (Kk.grown || 0) + 1; ctx.event(W, P, 'A garden crystal: worth ' + (1 + extra)); } },   // grown in the garden, it counts double
+    plantFor(W, P, ctx) {   // a plant worth holding: ahead, within 120 u, its call reaching the crystal, the crystal not already close
+      const c = P.crystal; if (!c || c.pos.distanceTo(P.pos) < 140) return null; const { fwd } = ctx.axes(P); let best = null, bs = -Infinity;
+      const toC = c.pos.clone().sub(P.pos).normalize();
+      for (const p of ctx.near(W, P.pos, 120)) { if (p.kind !== 'mass' || p.dead) continue; const d = p.pos.clone().sub(P.pos), L = d.length(); if (L < 1 || d.dot(fwd) < 0.3 * L) continue; const cd = p.pos.distanceTo(c.pos); if (cd > P.m.callRange * 0.9) continue; const off = Math.sqrt(Math.max(0, L * L - Math.pow(d.dot(toC), 2))); const s = -cd * 0.3 - L * 0.5 - off * 2; if (s > bs) { bs = s; best = p; } }   // a plant near the way to the crystal
+      return best;
+    },
+    aiAim(W, P, aim, why, ctx) { const Kk = P.K; if (!W.mech) return null; if (Kk.anchor) return { aim: Kk.anchor.pos, why: 'holding a plant' }; if (!Kk.plant || Kk.plant.dead || (P.crystal && P.crystal.pos.distanceTo(P.pos) < 140)) Kk.plant = K.tend.plantFor(W, P, ctx); return Kk.plant ? { aim: Kk.plant.pos, why: 'to a plant' } : null; },
+    ai(W, P, aim, base, ctx) {
+      const m = P.m, Kk = P.K, out = {}, c = P.crystal;
+      if (Kk.anchor) { const reach = c && c.pos.distanceTo(Kk.anchor.pos) < m.callRange; out.lt = reach && Kk.holdT < 30 ? 1 : 0; if (!out.lt) Kk.plant = null; }
+      else if (Kk.plant && c && c.pos.distanceTo(P.pos) > 140) { const near = ctx.nearest(W, P.pos, m.anchorReach * 0.9, (p) => p.kind === 'mass'); if (near && near.pos.distanceTo(c.pos) < m.callRange * 0.9) out.lt = 1; }   // any block of the clump within the tail's reach will do
+      if (Kk.anchor) for (const R of ctx.rivals(W, P)) if (R.pos.distanceTo(P.pos) < m.puffR * 0.9 && Kk.puffCool <= 0) { out.rt = 1; break; }   // it puffs to defend the plant it holds
+      return out;
+    },
+    hud(P) { const m = P.m, Kk = P.K; return [['Garden', Kk.anchor ? 'holding on \u00b7 the plant calls your crystal' : Kk.dartT > 0 ? 'DART' : 'swim to a plant, hold LT', Kk.anchor ? clamp(Kk.holdT / 10, 0, 1) : Kk.dartT > 0 ? Kk.dartT / m.dartTime : 0, Kk.anchor ? '#9dff5a' : ''], ['Puff', Kk.puffT > 0 ? 'PUFFED' : Kk.puffCool > 0 ? 'rest ' + Kk.puffCool.toFixed(1) + ' s' : 'ready (RT)', Kk.puffT > 0 ? 1 : 1 - Kk.puffCool / m.puffCool, Kk.puffT > 0 ? '#fff3b0' : '']]; },
+    abilityStates(P) { const m = P.m; return { charge: Math.round(m.puffR) + ' u puff', mass: Math.round(m.callSpeed) + ' u/s growth', space: Math.round(m.callRange) + ' u garden', time: 'dart x' + m.dart.toFixed(2) }; },
+    hull(ctx, color) {
+      const T = ctx.THREE, g = new T.Group(), m = mat(ctx, color);
+      for (let i = 0; i < 6; i++) { const s = new T.Mesh(new T.SphereGeometry(1.25 - i * 0.12, 8, 6), m); s.position.set(0, 3 - i * 1.25, Math.sin(i * 0.7) * 1.1); g.add(s); }
+      const head = new T.Mesh(new T.SphereGeometry(1.3, 8, 6), m); head.position.set(0, 4.3, -0.3); g.add(head);
+      const snout = new T.Mesh(new T.CylinderGeometry(0.3, 0.45, 2.6, 6), m); snout.rotation.x = Math.PI / 2; snout.position.set(0, 4.2, -2); g.add(snout);
+      const fin = new T.Mesh(new T.ConeGeometry(0.9, 2, 4), mat(ctx, 0xfff3b0)); fin.rotation.x = Math.PI / 2; fin.position.set(0, 1.2, 1.6); fin.name = 'fin'; g.add(fin);
+      const tail = new T.Mesh(new T.TorusGeometry(1.4, 0.35, 6, 14, Math.PI * 1.4), m); tail.position.set(0, -4.6, 0.6); tail.rotation.y = Math.PI / 2; tail.name = 'tail'; g.add(tail);
+      return g;
+    },
+    poseHull(h, P, t) { const Kk = P.K, tail = h.getObjectByName('tail'), fin = h.getObjectByName('fin'); if (tail) tail.scale.setScalar(Kk.anchor ? 0.75 : 1); if (fin) fin.rotation.z = Math.sin(t * 12) * 0.5; h.scale.setScalar(Kk.puffT > 0 ? 1.35 : 1); },
+    mount(ctx, scene, P) { const T = ctx.THREE, l = line(ctx, 0xa3ff8f, 2); scene.add(l); const s = new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshStandardMaterial({ color: 0xfff3b0, emissive: 0x6a5a20, transparent: true, opacity: 0.12, side: T.BackSide, depthWrite: false, flatShading: true })); scene.add(s); return { l, s, dispose() { scene.remove(l); scene.remove(s); } }; },
+    draw(W, P, o, t, ctx) { const Kk = P.K; o.l.visible = !!Kk.anchor; if (Kk.anchor) setLine(o.l, [P.pos, Kk.anchor.pos]); o.s.visible = Kk.puffT > 0; if (o.s.visible) { o.s.position.copy(P.pos); o.s.scale.setScalar(P.m.puffR); } },
+    preview(g, w, h, t, accent) {
+      bg(g, w, h); const px = w * 0.42, py = h * 0.62; g.strokeStyle = '#3f8f4a'; g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(px - 30 + i * 18, h); g.quadraticCurveTo(px - 30 + i * 18 + Math.sin(t + i) * 10, py, px - 26 + i * 18, py - 40 - i * 6); g.stroke(); }
+      const k = (t * 0.25) % 1, cx = lerp(w * 0.9, px + 26, k), cy = lerp(h * 0.25, py - 30, k); g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(cx, cy - 6); g.lineTo(cx + 5, cy); g.lineTo(cx, cy + 6); g.lineTo(cx - 5, cy); g.fill();
+      g.strokeStyle = accent; g.lineWidth = 5; g.beginPath(); g.moveTo(px + 20, py - 50); g.quadraticCurveTo(px + 34, py - 30, px + 22, py - 14); g.quadraticCurveTo(px + 12, py - 2, px + 2, py - 18); g.stroke();
+      g.fillStyle = accent; g.beginPath(); g.arc(px + 20, py - 54, 6, 0, Math.PI * 2); g.fill(); g.fillRect(px + 22, py - 57, 10, 4);
+    },
   };
 
   window.VesselStudioKinds = K;

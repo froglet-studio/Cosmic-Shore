@@ -68,6 +68,7 @@ minigames (Charge: pilots, Mass: making, Space: destroying) come after, and the 
 | Grizzly | Grizzly Time | race | report only: `grizzly-v3` (jtgjones) is reworking the bombs |
 | Thresher | Thresher Time | gate race, the sling | 3 races; the sling drive is in (2026-10-26) |
 | Wrasse | Wrasse Run | crew race | report only: the crew's kite spends the boost (`KiteNavigator`) |
+| Meerkat | **Burrow Run** | gate race, the wormhole | new (2026-10-27): the studio's AI (`aiGatePlan`) ported line for line; no hand-flown races yet, and no learner reads its flights (the sweep reports them) |
 | Serpent | **none** | - | no Time minigame of its own yet: one has to be made or chosen |
 
 ## 3. Switchback first (Dolphin)
