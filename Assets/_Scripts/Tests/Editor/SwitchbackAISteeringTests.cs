@@ -56,7 +56,20 @@ namespace CosmicShore.Tests
             try
             {
                 Assert.IsTrue(CommitsFromApproachPoint(go.AddComponent<WarplineController>()),
-                    "the AI Stoats would circle the rings again (0 of 22 finished in Yash's races, 2026-10-25/26)");
+                    "the AI Meerkats would circle the rings as the AI Stoats did (0 of 22 finished in Yash's races, 2026-10-25/26)");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Slingshot_FliesTheRegattaSteering_WhateverTheSceneSays()
+        {
+            // The Stoat's Time race since 2026-10-27: its scene carries Warpline's 180 u lead against a 160 u commit.
+            var go = new GameObject("SwitchbackAISteeringTests_Slingshot");
+            try
+            {
+                Assert.IsTrue(CommitsFromApproachPoint(go.AddComponent<SlingshotController>()),
+                    "the AI Stoats would circle Slingshot's rings the way they circled Warpline's");
             }
             finally { Object.DestroyImmediate(go); }
         }
@@ -70,6 +83,17 @@ namespace CosmicShore.Tests
             var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Warpline");
             Assert.IsNotNull(tuned, "Warpline's Stoat autopilot variant is missing");
             Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
+        }
+
+        [Test]
+        public void Slingshot_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing()
+        {
+            // Slingshot's variants start from Warpline's (2026-10-27): the same hull, the same warp, the same turn.
+            var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Slingshot");
+            Assert.IsNotNull(tuned, "Slingshot's Stoat autopilot variant is missing");
+            Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
+            Assert.IsNotNull(Resources.Load<StoatSlingConfigSO>("AIBoostPolicies/StoatSlingConfig_Slingshot"),
+                "Slingshot's Stoat sling variant is missing");
         }
 
         [Test]

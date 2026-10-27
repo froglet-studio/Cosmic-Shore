@@ -65,6 +65,13 @@ namespace CosmicShore.Gameplay
             public void Frame(float s, out Vector3 normal, out Vector3 binormal) =>
                 MeerkatWormholeMath.Frame(T0, Side, S, R, Theta, s, out normal, out binormal);
             public float BendAngle(float s) => MeerkatWormholeMath.BendAngle(S, R, Theta, s);
+            /// <summary>The page's <c>whAtX</c>: the centreline at s, carried on straight before the way in and after the way out.</summary>
+            public Vector3 AtExtended(float s)
+            {
+                if (s <= 0f) return A + T0 * s;
+                var p = At(Mathf.Min(s, L), out var tangent);
+                return s > L ? p + tangent * (s - L) : p;
+            }
             public float Radius(float s) => MeerkatWormholeMath.Radius(B, M, L, W.S0, W.S1, s);
             public float Fade => MeerkatWormholeMath.Fade(Dying, DieT);
             public MeerkatWormholeConfigSO Config => Maker ? Maker.config : null;
@@ -120,6 +127,7 @@ namespace CosmicShore.Gameplay
         // the ride
         Tunnel _mine;
         Tunnel _ride;
+        CustomCameraController _rideCam;   // the camera this hull's ride is holding on the centreline (round 8)
         float _rideS, _rideSIn, _vIn;
         Quaternion _q0;
         int _seq;
@@ -214,6 +222,7 @@ namespace CosmicShore.Gameplay
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
             StepSpeedTunnelScale();
+            StepRideCamera();
             if (_ltHeld) _ltHeldFor += dt;
             if (_status.AutoPilotEnabled) Autopilot(dt);
             else _aiShaping = false;
@@ -439,6 +448,42 @@ namespace CosmicShore.Gameplay
             _tunnelScaleKey = null;
         }
 
+        /// <summary>
+        /// Round 8 (Yash, 2026-10-28: "I don't want any camera Y offset. I want the camera to go inside the tunnel ... my view
+        /// stays inside the tunnel while passing through the tunnel"), the page's ride camera (<c>cameraStep</c>): while a
+        /// tunnel flies this hull, its pilot's camera sits ON the tube's centreline <c>rideCameraBack</c> u behind the hull
+        /// and looks <c>rideCameraLookAhead</c> u ahead along it, through <see cref="CustomCameraController.Spectate"/>, which
+        /// eases in and out over <c>rideCameraBlendSeconds</c>. Once eased in it is exactly on the centreline: no height
+        /// offset and no lag, so it never leaves the tube, round the bend included. Only the local human pilot's camera,
+        /// and only while it follows this hull.
+        /// </summary>
+        void StepRideCamera()
+        {
+            var t = _ride;
+            bool mine = t != null && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
+            var cam = mine && CameraManager.Instance != null
+                ? CameraManager.Instance.GetActiveController() as CustomCameraController
+                : null;
+            var hull = _status.Transform;
+            if (cam && (cam.PlacementAnchor.HasValue || !cam.FollowTarget ||
+                        (cam.FollowTarget != hull && !cam.FollowTarget.IsChildOf(hull))))
+                cam = null;   // a cinematic or end-of-match camera pointed elsewhere is not ours to move
+            if (cam != _rideCam) ReleaseRideCamera();
+            if (!cam) return;
+            _rideCam = cam;
+            cam.SpectateBlendSeconds = Mathf.Max(0.02f, config.RideCameraBlendSeconds);
+            var eye = t.AtExtended(_rideS - Mathf.Max(0f, config.RideCameraBack));
+            var look = t.AtExtended(_rideS + Mathf.Max(1f, config.RideCameraLookAhead));
+            cam.Spectate = new CustomCameraController.SpectateView { Position = eye, LookAt = look, Up = hull.up };
+        }
+
+        void ReleaseRideCamera()
+        {
+            if (!_rideCam) { _rideCam = null; return; }
+            _rideCam.Spectate = null;   // eases back to the follow camera over the same blend
+            _rideCam = null;
+        }
+
         // ------------------------------------------------------------------ the AI (input only)
 
         /// <summary>
@@ -568,6 +613,7 @@ namespace CosmicShore.Gameplay
                 if (s_tunnels[i].Maker == this) s_tunnels.RemoveAt(i);
             s_executors.Remove(this);
             ReleaseSpeedTunnelScale();
+            ReleaseRideCamera();
             _ride = null;
             _mine = null;
             _retLive = false;

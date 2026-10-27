@@ -99,9 +99,9 @@
       "field": "reticleIdleAlpha"
     },
     {
-      "key": "reticleGlass",
+      "key": "reticleWhite",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleGlass"
+      "field": "reticleWhite"
     },
     {
       "key": "bridgeVisibility",
@@ -137,6 +137,11 @@
       "key": "bridgeShimmer",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "bridgeShimmer"
+    },
+    {
+      "key": "bridgeWhite",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeWhite"
     },
     {
       "key": "aiWormhole",
@@ -184,34 +189,24 @@
       "field": "reticleSmoothSeconds"
     },
     {
-      "key": "reticleRings",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleRings"
-    },
-    {
-      "key": "reticleSpindlesPerRing",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleSpindlesPerRing"
-    },
-    {
-      "key": "reticleRibs",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleRibs"
-    },
-    {
-      "key": "reticleSpindleThickness",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleSpindleThickness"
-    },
-    {
-      "key": "reticlePath",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticlePath"
-    },
-    {
       "key": "rideSpeedTunnelScale",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rideSpeedTunnelScale"
+    },
+    {
+      "key": "rideCameraBack",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideCameraBack"
+    },
+    {
+      "key": "rideCameraLookAhead",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideCameraLookAhead"
+    },
+    {
+      "key": "rideCameraBlendSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideCameraBlendSeconds"
     },
     {
       "key": "rideEntryMultiplier",

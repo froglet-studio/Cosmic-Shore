@@ -50,6 +50,9 @@ namespace CosmicShore.UI
             // Rev 25 (section 79): every pilot stands on the hull they fly, and where the card's hulls are picked a
             // press on a seat points the shared vessel strip at it - the seat rows' hull taps, drawn on the lineup.
             bool picker = AllyHullPickerAvailable && _activePanel is ArenaLaunchPanel;
+            // Wherever the AI row is offered, the host's press on an AI's pedestal also selects that AI for its own
+            // difficulty - Arcade cards, whose hull is pinned, included. The host's own pedestal takes it back.
+            bool levels = SeatDifficultyAvailable && !IsClientMode;
             var humanDomains = HumanDomains();
 
             foreach (var ip in gameData.Players)
@@ -67,7 +70,7 @@ namespace CosmicShore.UI
                     AiOrdinal = -1,
                     CanChangeTeam = isLocal && editable,
                     Hull = HullIcon(isLocal ? LocalSeatVessel() : CardVessel(PilotHull(p))),
-                    CanPickVessel = isLocal && picker,
+                    CanPickVessel = isLocal && (picker || levels),
                     EditingVessel = isLocal && picker && _vesselSeat == OwnVesselSeat,
                 });
             }
@@ -77,7 +80,7 @@ namespace CosmicShore.UI
                 bool placed = config.AIDomains != null && i < config.AIDomains.Count && config.AIDomains[i] != Domains.Blue;
                 bool host = !IsClientMode && placed;
                 var pick = AllyHullPickerAvailable ? config.AIVesselAt(i) : VesselClassType.Random;
-                bool pickable = picker && MayEditAiSeat(i);
+                bool pickable = (picker || levels) && MaySelectAiSeat(i);
                 _lineupSeats.Add(new ConfigureSeatLineup.Seat
                 {
                     Kind = ConfigureSeatLineup.SeatKind.Ai,
@@ -88,6 +91,7 @@ namespace CosmicShore.UI
                     Hull = HullIcon(CardVessel(AIHullSeating.SeatHull(OpponentHull, _aiSeatDomains[i], humanDomains, pick))),
                     CanPickVessel = pickable,
                     EditingVessel = pickable && _vesselSeat == i,
+                    Difficulty = SeatDifficultyAvailable && i < config.AIDifficulties.Count ? config.AIDifficulties[i] : 0,
                 });
             }
 

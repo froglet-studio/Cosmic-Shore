@@ -139,6 +139,15 @@
   .row input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: var(--accent); }
   .row output { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
   .row output.changed { color: var(--accent); }
+  .row.toggle input[type=checkbox] { flex: 0 0 auto; width: 16px; height: 16px; margin: 0 auto 0 0; accent-color: var(--accent); }
+  .abnote { margin: 4px 0 2px; font-size: 0.82rem; color: var(--dim); }
+  .abnote b.l5on { color: var(--accent); }
+  /* phone: the three ability buttons (Y, LB, B) in a column under the RT handle */
+  .tabil { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: calc(46% + 12px); display: flex; flex-direction: column; gap: 6px; z-index: 5; }
+  .tabil .tbtn { width: 64px; padding: 6px 4px; background: rgba(232,236,255,0.16); color: #e8ecff; border: 1px solid rgba(232,236,255,0.35); font-size: 12px; }
+  .tabil .tbtn small { display: block; font: 600 9px/1.1 var(--font-display); letter-spacing: 0.04em; opacity: 0.8; margin-top: 2px; }
+  .tabil .tbtn.cool { opacity: 0.45; }
+  .tabil .tbtn.armed { background: rgba(255,179,71,0.85); color: #1a1200; }
   .row output.styled { color: var(--accent-2); text-decoration: underline dotted; text-underline-offset: 3px; }
   .aistats { margin: 6px 0; padding: 6px 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; font: 12px/1.45 var(--font-display); white-space: pre-wrap; color: var(--fg); font-variant-numeric: tabular-nums; }
   table.batch { width: 100%; font-size: 0.78rem; border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
@@ -268,9 +277,9 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Meerkat Flight Studio</h1>
-    <span class="round">Round 2 · the spindle bridge</span>
+    <span class="round">Round 8 · the four-ability kit (proposals)</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
-    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, coming out with the speed you went in with. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre with a subtle ripple at the screen's edges. Every parameter shows the game's name for it under its slider (<code>MeerkatWormholeConfig</code>); save any section as a profile. Every setting has an ⓘ.</p>
+    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, coming out with the speed you went in with. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre with a subtle ripple at the screen's edges. Every parameter shows the game's name for it under its slider (<code>MeerkatWormholeConfig</code>); save any section as a profile. Every setting has an ⓘ. <b>Round 8 (proposals for Yash to judge, not approved for Unity):</b> the full four-ability kit, one per element, in <b>Vessel Config</b> (its Section dropdown): <b>Charge · Lookout</b> (<kbd>Y</kbd>: marks crystals, shows every rival's reticle and next ring; L5 Alarm Call draws the crystals to you), <b>Mass · Hardened Bridge</b> (<kbd>LB</kbd> arms the next tunnel: its bridge becomes a lasting prism tube others cannot cross; L5 Shielded Bridge), <b>Space · Cave-in</b> (<kbd>B</kbd>: your standing tunnel collapses now, destroying every prism near it; L5 Burial costs a rival inside it a petal and silences it, never pushes it) and <b>Time · the wormhole</b> (L5 Chain Dig: <kbd>RT</kbd> late in a ride digs the next tunnel from the far mouth). Their numbers are lab-only. The race is now <b>Warpline</b>, the Meerkat's Time race: 5 rings a lap, 2 laps.</p>
   </header>
 
   <div class="stage">
@@ -286,6 +295,7 @@
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
+        <div class="tabil" id="tAbil" aria-label="Abilities"><button type="button" class="tbtn" id="tY" data-btn="Y">Y<small>Lookout</small></button><button type="button" class="tbtn" id="tLB" data-btn="LB">LB<small>Harden</small></button><button type="button" class="tbtn" id="tB" data-btn="B">B<small>Cave-in</small></button></div>
         <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
@@ -299,7 +309,10 @@
           <tr><td>Left thumb</td><td>Fly: yaw and pitch, banking into turns, full throttle</td></tr>
           <tr><td>Right thumb</td><td>Bend the tunnel (the grid on your nose), any way; further = shorter and fatter</td></tr>
           <tr><td><b>LT</b> handle: drag down</td><td>Shorten the tunnel</td></tr>
-          <tr><td><b>RT</b> handle: tap</td><td>Form the tunnel and ride it</td></tr>
+          <tr><td><b>RT</b> handle: tap</td><td>Form the tunnel and ride it; tapped late in a ride (Time L5), Chain Dig: the next tunnel from the far mouth</td></tr>
+          <tr><td><b>Y</b> button (right edge)</td><td>Lookout (Charge): mark crystals, see every rival's reticle and next ring</td></tr>
+          <tr><td><b>LB</b> button</td><td>Hardened Bridge (Mass): arm the next tunnel to set as a prism tube (tap again to disarm)</td></tr>
+          <tr><td><b>B</b> button</td><td>Cave-in (Space): collapse your standing tunnel now, destroying the prisms near it</td></tr>
           <tr><td>Start · Stop · Back · ✕ (top bar)</td><td>Start or go again · stop and watch · back to the start line · back to the settings</td></tr>
         </tbody></table></div>
       </div>
@@ -312,6 +325,10 @@
           <tr><td>Right stick</td><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Bend the tunnel any way: further over = more bend, shorter and fatter</td></tr>
           <tr><td><b>LT</b></td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Shorten the tunnel (a key ramps to full)</td></tr>
           <tr><td><b>RT</b>: press</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>Form the tunnel (once the reticle is 60% grown) and ride it; out with the speed you went in with</td></tr>
+          <tr><td><b>RT</b> late in a ride</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td><b>Chain Dig</b> (Time L5): from <i>chainShare</i> of the way through, the next tunnel forms from the far mouth and you go straight in at throat speed</td></tr>
+          <tr><td><b>Y</b></td><td><kbd>E</kbd></td><td><b>Lookout</b> (Charge): for a few seconds, mark every crystal in reach and see every rival's reticle and next ring through anything; L5 Alarm Call draws the crystals to you</td></tr>
+          <tr><td><b>LB</b></td><td><kbd>Q</kbd></td><td><b>Hardened Bridge</b> (Mass): arm the next tunnel (press again to disarm); its bridge sets as a prism tube others cannot cross. L5: shielded</td></tr>
+          <tr><td><b>B</b></td><td><kbd>F</kbd></td><td><b>Cave-in</b> (Space): your standing tunnel collapses now and destroys every prism near it; L5 Burial: a rival inside it loses a petal and is silenced (never pushed)</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running)</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
           <tr><td><b>❚❚ Pause</b> on the stage</td><td><kbd>P</kbd></td><td>Pause: the Meerkat halts and the clock pauses while the world carries on; press again to resume</td></tr>
@@ -331,7 +348,7 @@
       <form id="logForm" autocomplete="off">
         <label>Topic
           <select id="logTopic">
-            <option>Reticle</option><option>Wormhole shape</option><option>Wormhole ride</option><option>Wormhole look</option><option>Space look</option><option>AI</option><option>Flight</option><option>Course</option><option>Controls</option><option>Race result</option><option>Profile</option><option>Other</option>
+            <option>Reticle</option><option>Wormhole shape</option><option>Wormhole ride</option><option>Wormhole look</option><option>Space look</option><option>AI</option><option>Flight</option><option>Course</option><option>Controls</option><option>Abilities</option><option>Race result</option><option>Profile</option><option>Other</option>
           </select></label>
         <label>Decision <input type="text" id="logChoice" maxlength="400" required></label>
         <label class="full">Why (optional) <textarea id="logNote" rows="2" maxlength="1500"></textarea></label>
@@ -350,8 +367,10 @@
         <div class="btns" style="margin-top:6px"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course. Add rivals with + in Players to see theirs too.">Watch the AI fly the wormhole</button></div>
       </div>
 
-      <details class="card" id="grp-intensity" open><summary>Intensity <small>the course ladder, I1 to I4</small></summary>
-        <div id="intensityPanel"></div></details>
+      <details class="card" id="grp-intensity" open><summary>Intensity <small>the course and its ladder, I1 to I4</small></summary>
+        <div class="rowsel" style="margin-top:0"><label>Course <select id="courseKind"><option value="warpline">Warpline (the Time race)</option><option value="circuit">Circuit (8 rings)</option><option value="hairpin">Hairpins (8 rings)</option></select></label></div>
+        <div id="intensityPanel"></div>
+        <p class="src" id="courseNote"></p></details>
       <details class="card" id="grp-game" open><summary>Players <small>+ / &minus; to add or remove; open one to set it up</small></summary>
         <div id="playersPanel"></div>
         <p class="src">Player 1 is your hull: you fly it, or tick <b>Is AI</b> and the AI does. Every other player is an AI rival with its own domain and difficulty. <b>View</b> puts the camera on that player (or press C).</p></details>
@@ -386,10 +405,10 @@
         <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> is your speed before the tunnel times three multipliers: <i>rideEntryMultiplier</i> going in (1 = no change), rising to <i>rideMidMultiplier</i> at the throat and easing to <i>rideExitMultiplier</i> at the way out - a little boost you come out with, on the tunnel's last heading, before you ease back to cruise. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
         <div class="btns"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course (any setting you change shows on its next wormhole).">Watch the AI fly it</button><button class="pick" type="button" data-reset="ride">Reset</button></div></details>
       <details class="card" id="grp-reticle" open><summary>Reticle · feel &amp; look <small>MeerkatWormholeConfig · yours alone</small></summary><div class="rows"></div>
-        <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is a <b>see-through frame of thin spindles</b>: <i>reticleRings</i> rings of <i>reticleSpindlesPerRing</i> spindles round its throat and <i>reticleRibs</i> ribs along it, <i>reticleSpindleThickness</i> thick, cyan at the way in to white at the way out, over a faint glass (<i>reticleGlass</i>). Fully grown, the lime line you will fly runs through it (<i>reticlePath</i>). Faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
+        <p class="src"><b>Only you see your reticle</b>: the tunnel RT would form now. It <b>eases</b> toward what the right stick and LT ask for over <i>reticleSmoothSeconds</i> (0 snaps), and it is <b>the wormhole's own wireframe</b>: the bridge's rings, spindles, ribs and thickness (Wormhole · look), in the same places, with no glass. Its colour is your domain colour toward white (<i>reticleWhite</i>); faint at rest (<i>reticleIdleAlpha</i>), bright while you shape it.</p>
         <div class="btns"><button class="pick" type="button" data-reset="reticle">Reset</button></div></details>
       <details class="card" id="grp-look" open><summary>Wormhole · look <small>MeerkatWormholeConfig · the bridge, everyone's</small></summary><div class="rows"></div>
-        <p class="src"><b>A formed tunnel shows everyone its bridge</b>: rings and ribs of spindles over a glass surface, in its maker's domain colour (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
+        <p class="src"><b>One geometry for the wormhole and your reticle</b>: your reticle is this frame, bare. <b>A formed tunnel shows everyone its bridge</b>: rings and ribs of spindles over a glass surface, in its maker's domain colour toward white (<i>bridgeWhite</i>) (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
         <div class="btns"><button class="pick" type="button" data-reset="look">Reset</button></div></details>
       <details class="card" id="grp-space" open><summary>Space · look <small>MeerkatWormholeConfig · the bent space, everyone's</small></summary><div class="rows"></div>
         <p class="src"><b>Off by default</b> (round 4: all lensing off; the bridge is the tunnel's look). Raised, <b>everyone sees</b> a tunnel bend space-time: the space round its tube bent away from it (<i>warpStrength</i>), its centre line clear, and each mouth a dent as wide as the mouth (<i>dentStrength</i>). Its collapse sends a <b>subtle circular ripple across the screen's edges only</b> (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>), never the centre where you aim, weaker the further away it is.</p>
@@ -406,7 +425,6 @@
         <div class="rowsel">
           <label hidden>Intensity <select id="intensity"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select></label>
           <label>Laps <select id="laps"><option value="1">1</option><option value="2" selected>2</option></select></label>
-          <label>Course <select id="courseKind"><option value="circuit">Circuit</option><option value="hairpin">Hairpins</option></select></label>
           <label><input type="checkbox" id="invertY"> Invert Y</label>
         </div>
         <div class="rowsel">
@@ -414,8 +432,24 @@
           <button class="pick" type="button" id="newCourse">New course</button>
           <label>Domain <select id="domain"><option value="jade">Jade</option><option value="ruby">Ruby</option><option value="blue">Blue</option><option value="gold">Gold</option></select></label>
         </div>
-        <p class="src">Stand-in courses (the Stoat studio's): <b>Circuit</b>, 8 rings on a circle, harder with each intensity (above); <b>Hairpins</b>, 8 rings that alternate direction, 120–190 u apart, then a long straight home. The Meerkat has no game mode of its own yet.</p>
+        <p class="src">The course is picked in <b>Game Config</b> (Intensity): <b>Warpline</b> (the default), the Meerkat's Time race, 5 rings a lap; or the Stoat studio's stand-ins, <b>Circuit</b> (8 rings on a circle) and <b>Hairpins</b> (8 rings that alternate direction, then a long straight home).</p>
         <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
+      <details class="card" id="grp-abCharge" open><summary>Ability · Charge · Lookout <small>Y · lab</small></summary>
+        <p class="abnote" id="abNote-abCharge"></p><div class="rows"></div>
+        <p class="src"><b>Y</b> sends a pulse: for <i>lookoutSeconds</i> every crystal within <i>lookoutReach</i> is marked, and you see every rival's reticle and its next ring, through anything. <b>L5 Alarm Call</b>: the crystals inside the reach are drawn to you (<i>alarmPullSpeed</i>), and your team-mates see the marks too. Then <i>lookoutCooldownSeconds</i>. A proposal: no number here is in the game.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abCharge">Reset</button></div></details>
+      <details class="card" id="grp-abMass" open><summary>Ability · Mass · Hardened Bridge <small>LB · lab</small></summary>
+        <p class="abnote" id="abNote-abMass"></p><div class="rows"></div>
+        <p class="src"><b>LB arms the next tunnel</b> (press again to disarm; the Mass icon shows ARMED). That tunnel's spindle bridge sets as real prisms: a tube lasting <i>wallSeconds</i> (after the tunnel itself has collapsed) that no other team can cross through its wall; they go round, and you and your team are never stopped by it. <i>wallPrismDensity</i> sets how many prisms make it. <b>L5 Shielded Bridge</b>: its prisms are shielded, immune to Cave-in and drawn shielded (pale). Why a toggle and not LB held with RT: RT is pulled while the right thumb is bending the reticle, so a chord asks both index fingers to land in the same instant (and on touch RT is a drag handle); a toggle is one press any time before, and the HUD says what the next RT will make.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abMass">Reset</button></div></details>
+      <details class="card" id="grp-abSpace" open><summary>Ability · Space · Cave-in <small>B · lab</small></summary>
+        <p class="abnote" id="abNote-abSpace"></p><div class="rows"></div>
+        <p class="src"><b>B</b> collapses your standing tunnel now (not while you ride it): the bridge implodes to its centre line, and the collapse destroys every prism within <i>caveInReach</i> of the tube along its whole length, the field's and any unshielded hardened wall's (yours too). <b>L5 Burial</b>: a rival inside or touching the tunnel takes a scored hit: a petal lost and its abilities silenced (harmless) for <i>burialSilenceSeconds</i>. Nobody is ever pushed (PvP is petals only). Then <i>caveInCooldownSeconds</i>.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abSpace">Reset</button></div></details>
+      <details class="card" id="grp-abTime" open><summary>Ability · Time · the wormhole <small>RT · lab upgrade</small></summary>
+        <p class="abnote" id="abNote-abTime"></p><div class="rows"></div>
+        <p class="src">The wormhole (rounds 1-5, in the game) is the Time ability; its numbers are in Play Style Config. <b>L5 Chain Dig</b> (proposal): from <i>chainShare</i> of the way through a tunnel you ride, <b>RT</b> forms the next tunnel from its far mouth, bent by the right stick and LT as the reticle would be, and you go straight into it at throat speed (the ride stays at its throat speed through the join, then eases back to your entry speed). The tunnel behind you collapses as you leave it.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abTime">Reset</button></div></details>
       <details class="card" id="grp-lope"><summary>Lope <small>the stand-in hull</small></summary><div class="rows"></div>
         <p class="src">The Meerkat flies the Stoat's model and its bound until it has its own hull (<code>/vessel-model</code>). Body-only: the hull's path and trail stay straight.</p>
         <div class="btns"><button class="pick" type="button" data-reset="lope">Reset to shipped</button></div></details>
@@ -456,22 +490,29 @@
     // after you are out, then collapses back to its centre over collapseSeconds
     // round 5: riding, the game's speed tunnel (its dolly zoom) is rideSpeedTunnelScale x its normal strength
     rideSpeedTunnelScale: 5,
+    // round 8 (Yash, 2026-10-28: "I don't want any camera Y offset. I want the camera to go inside the tunnel ... my view stays
+    // inside the tunnel while passing through the tunnel. It should not go up the tunnel"): riding, the camera sits ON the
+    // tube's centreline rideCameraBack u behind you, looks rideCameraLookAhead u along it, and eases in and out over
+    // rideCameraBlendSeconds
+    rideCameraBack: 18, rideCameraLookAhead: 40, rideCameraBlendSeconds: 0.25,
     rideEntryMultiplier: 1, rideMidMultiplier: 2.5, rideExitMultiplier: 1.2, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
     // round 4 (Yash, 2026-10-27: "Turn off all lensing"): the warp, the dents and the ripple ship at 0 - the bridge and your
     // reticle are the wormhole's whole look; the sliders stay, to bring any of them back
-    warpStrength: 0, dentStrength: 0, rippleStrength: 0, rippleEdge: 0.45, rippleSeconds: 1.2,
-    // the reticle (round 3, Yash: "a little smoothy ... pretty transparent, just maybe wireframe looking with just spindles. Tiny
-    // thinning spindles"): it eases toward the sticks over reticleSmoothSeconds, and it is built of thin spindles - rings round
-    // its throat and ribs along it - over a faint glass, with the lime line you will fly at reticlePath
-    reticleSmoothSeconds: 0.15, reticleIdleAlpha: 0.4, reticleGlass: 0.15, reticleRings: 10, reticleSpindlesPerRing: 16, reticleRibs: 8,
-    reticleSpindleThickness: 0.35, reticlePath: 0.5,
+    warpStrength: 0, dentStrength: 0, rippleStrength: 0, rippleEdge: 0.154, rippleSeconds: 1.2,
+    // the reticle (round 3, Yash: "a little smoothy"): it eases toward the sticks over reticleSmoothSeconds. Round 9 (Yash,
+    // 2026-10-28: "the reticle is the silhouette of the geometry"): it is the wormhole's own wireframe - the bridge's rings,
+    // spindles, ribs and thickness, in the same places, condensing the same way - with no glass and no path, at its own
+    // brightness (reticleIdleAlpha at rest) and its own colour (your domain colour toward white by reticleWhite)
+    reticleSmoothSeconds: 0.123, reticleIdleAlpha: 0.053, reticleWhite: 0.45,
     // the bridge (Yash, 2026-10-27): a formed tunnel's geometry, shown to everyone - rings of spindles round the throat and
     // ribs of spindles along it (the game will build it from its Spindle prefabs), and a glass surface under them; the
     // spindles condense out of the tunnel's centre as it forms, evaporate back as it collapses, and a shimmer runs through
     // them from the way in to the way out. bridgeVisibility 0 hides it all (only the bent space is left).
-    bridgeVisibility: 1, bridgeGlass: 0.6, bridgeRings: 16, bridgeSpindlesPerRing: 12, bridgeRibs: 6, bridgeSpindleThickness: 1.6, bridgeShimmer: 0.5,
+    // round 9: this geometry is the reticle's too; the spindles are the maker's domain colour toward white by bridgeWhite
+    bridgeVisibility: 0.163, bridgeGlass: 0.15, bridgeRings: 36, bridgeSpindlesPerRing: 21, bridgeRibs: 5, bridgeSpindleThickness: 0.25, bridgeShimmer: 0.5,
+    bridgeWhite: 0.45,
     // the AI's wormhole
     aiWormhole: 1, aiStraightMinDistance: 300, aiBentMinDistance: 120, aiShapeSeconds: 0.3, aiTau: 0.3, aiNoise: 0,
     // flight: one thumb (the left stick flies at full throttle, banking bankShare x the roll rate into a turn); the Stoat's
@@ -479,6 +520,28 @@
     cruise: 60, pitchYaw: 120, roll: 130, bankShare: 0.12,
     // the stand-in hull's lope (the Stoat's model and StoatLopeMath until the Meerkat has its own)
     lopeAmp: 1.6, lopeRate: 0.66, lopeArch: 0.45, lopeSquash: 0.2,
+    // ---- round 8 (Yash, 2026-10-27: "all four abilities ... test first in artifact rather than inside game directly"):
+    // the PROPOSED four-ability kit. LAB-ONLY, every one of these: none is a field on MeerkatWormholeConfig, none is in
+    // Tools/Build/studio_to_unity/meerkat.json, and none is approved for Unity (/vessel section 3's design gate). They are
+    // the studio's starting values for Yash to judge. Each ability has an on/off switch (1/0) and its element's level
+    // (L0-L10; L5 and up unlocks its upgrade).
+    // Charge - Lookout (Y): a pulse that, for lookoutSeconds, marks every crystal within lookoutReach and shows you every
+    // rival's reticle and its next ring, through anything. L5 Alarm Call: crystals inside the reach are drawn to you at
+    // alarmPullSpeed, and team-mates see the marks too.
+    chargeOn: 1, chargeLevel: 5, lookoutSeconds: 6, lookoutReach: 700, lookoutCooldownSeconds: 12, alarmPullSpeed: 90,
+    // Mass - Hardened Bridge (LB arms the next tunnel): the formed tunnel's bridge becomes real prisms, a tube lasting
+    // wallSeconds that others cannot cross through its wall (its maker and team are never stopped by it). L5 Shielded
+    // Bridge: its prisms are shielded (immune to Cave-in, drawn shielded).
+    massOn: 1, massLevel: 5, wallSeconds: 20, wallPrismDensity: 1, hardenCooldownSeconds: 8,
+    // Space - Cave-in (B): collapse your standing tunnel now; its collapse destroys every prism within caveInReach of the
+    // tube along its whole length (unshielded walls included). L5 Burial: a rival inside or touching it takes a scored
+    // hit (a petal, and its abilities silenced for burialSilenceSeconds); it is never pushed.
+    spaceOn: 1, spaceLevel: 5, caveInReach: 30, caveInCooldownSeconds: 8, burialSilenceSeconds: 4,
+    // Time - the wormhole (RT; rounds 1-5). L5 Chain Dig: from chainShare of the way through a ridden tunnel, RT forms
+    // the next tunnel from its far mouth and you go straight into it at throat speed.
+    timeOn: 1, timeLevel: 5, chainShare: 0.7,
+    // the AI's use of the four (input-only: it presses Y, LB, B and RT like a player)
+    aiNewAbilities: 1,
   };
   const SPEC = [
     ['shape', 'reticleAhead', 'The reticle rides this far ahead of the nose (u)', 0, 100, 1],
@@ -493,6 +556,9 @@
     ['ride', 'rideMidMultiplier', 'Ride: fastest, at the throat (× your speed before the tunnel)', 0.5, 8, 0.1],
     ['ride', 'rideExitMultiplier', 'Ride: coming out (× your speed before the tunnel)', 0.5, 3, 0.05],
     ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
+    ['ride', 'rideCameraBack', 'Riding: the camera on the tube\'s centreline, this far behind you (u)', 0, 60, 1],
+    ['ride', 'rideCameraLookAhead', '...looking this far ahead along it (u)', 5, 120, 1],
+    ['ride', 'rideCameraBlendSeconds', '...easing in and out over (s)', 0.02, 1, 0.01],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
     ['ride', 'reticleGrowSeconds', '...rippling into shape over (s)', 0.05, 3, 0.05],
     ['ride', 'formSeconds', 'RT: the tunnel ripples out of its centre over (s)', 0.05, 2, 0.05],
@@ -505,12 +571,7 @@
     ['space', 'rippleSeconds', '...for (s)', 0.2, 4, 0.1],
     ['reticle', 'reticleSmoothSeconds', 'Your reticle follows the sticks over (s, 0 = at once)', 0, 1, 0.01],
     ['reticle', 'reticleIdleAlpha', 'Your reticle, right stick centred (brightness)', 0, 1, 0.05],
-    ['reticle', 'reticleGlass', 'Your reticle\'s glass: a faint lit surface under it', 0, 2, 0.05],
-    ['reticle', 'reticleRings', '...rings of spindles round it', 2, 30, 1],
-    ['reticle', 'reticleSpindlesPerRing', '...spindles round each ring', 3, 32, 1],
-    ['reticle', 'reticleRibs', '...ribs of spindles along it (0 = none)', 0, 16, 1],
-    ['reticle', 'reticleSpindleThickness', '...spindle thickness (u)', 0.05, 3, 0.05],
-    ['reticle', 'reticlePath', '...the lime line you will fly (brightness, 0 = none)', 0, 1, 0.05],
+    ['reticle', 'reticleWhite', 'Your reticle\'s colour: your domain colour toward white', 0, 1, 0.05],
     ['look', 'bridgeVisibility', 'The formed tunnel\'s bridge, for everyone (0 = hidden)', 0, 1, 0.05],
     ['look', 'bridgeGlass', '...its glass surface (brightness)', 0, 2, 0.05],
     ['look', 'bridgeRings', '...rings of spindles along it', 2, 40, 1],
@@ -518,6 +579,7 @@
     ['look', 'bridgeRibs', '...ribs of spindles along it (0 = none)', 0, 16, 1],
     ['look', 'bridgeSpindleThickness', '...spindle thickness (u)', 0.1, 6, 0.05],
     ['look', 'bridgeShimmer', '...a shimmer running way in to way out', 0, 1, 0.05],
+    ['look', 'bridgeWhite', '...its spindles\' colour: the domain colour toward white', 0, 1, 0.05],
     ['ai', 'aiWormhole', 'AI uses the wormhole (0 = no, 1 = yes)', 0, 1, 1],
     ['ai', 'aiStraightMinDistance', 'AI: a straight tunnel with its ring at least (u) away', 50, 2000, 10],
     ['ai', 'aiBentMinDistance', 'AI: a bending one from (u) away', 50, 2000, 10],
@@ -532,6 +594,27 @@
     ['lope', 'lopeRate', 'Rate (bounds/s)', 0, 2, 0.01],
     ['lope', 'lopeArch', 'Arch', 0, 1, 0.01],
     ['lope', 'lopeSquash', 'Stretch', 0, 1, 0.01],
+    // round 8, the proposed kit (lab-only). A 7th field 'toggle' draws the row as an on/off switch.
+    ['abCharge', 'chargeOn', 'Lookout (Y) on', 0, 1, 1, 'toggle'],
+    ['abCharge', 'chargeLevel', 'Charge level (L5+: Alarm Call)', 0, 10, 1],
+    ['abCharge', 'lookoutSeconds', 'The marks last (s)', 1, 20, 0.5],
+    ['abCharge', 'lookoutReach', 'Reach: crystals marked within (u)', 100, 2000, 50],
+    ['abCharge', 'lookoutCooldownSeconds', 'Cooldown (s)', 1, 40, 0.5],
+    ['abCharge', 'alarmPullSpeed', 'L5 Alarm Call: crystals drawn to you at (u/s)', 10, 300, 5],
+    ['abMass', 'massOn', 'Hardened Bridge (LB) on', 0, 1, 1, 'toggle'],
+    ['abMass', 'massLevel', 'Mass level (L5+: Shielded Bridge)', 0, 10, 1],
+    ['abMass', 'wallSeconds', 'The prism tube lasts (s)', 2, 60, 1],
+    ['abMass', 'wallPrismDensity', 'Prism density (× one per 10 u round, 20 u along)', 0.3, 3, 0.1],
+    ['abMass', 'hardenCooldownSeconds', 'Cooldown after a hardened tunnel (s)', 0, 40, 0.5],
+    ['abSpace', 'spaceOn', 'Cave-in (B) on', 0, 1, 1, 'toggle'],
+    ['abSpace', 'spaceLevel', 'Space level (L5+: Burial)', 0, 10, 1],
+    ['abSpace', 'caveInReach', 'Destroys prisms within (u of the tube)', 0, 150, 1],
+    ['abSpace', 'caveInCooldownSeconds', 'Cooldown (s)', 1, 40, 0.5],
+    ['abSpace', 'burialSilenceSeconds', 'L5 Burial: the victim is silenced for (s)', 0.5, 15, 0.5],
+    ['abTime', 'timeOn', 'The wormhole (RT) on', 0, 1, 1, 'toggle'],
+    ['abTime', 'timeLevel', 'Time level (L5+: Chain Dig)', 0, 10, 1],
+    ['abTime', 'chainShare', 'L5 Chain Dig: RT digs on from this share of the ride', 0.3, 0.95, 0.05],
+    ['ai', 'aiNewAbilities', 'AI uses the new abilities (Y, LB, B, Chain Dig)', 0, 1, 1, 'toggle'],
   ];
 
   // ================= P and BP =================
@@ -550,11 +633,12 @@
   const P = Object.assign({}, BP);
   recomputeP();
   let mode = 'fly';
+  const COURSE_KINDS = ['warpline', 'circuit', 'hairpin'];   // round 8: Warpline (the Time race, 5 rings a lap) is the default
   let invertY = !!saved.invertY;
   let idleTakeover = saved.idleTakeover !== false;   // D31: on unless switched off
-  let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.courseKind || 'circuit';
+  let intensity = saved.intensity || 2, laps = saved.laps || 2, seed = saved.seed || 7, domainKey = saved.domain || 'jade', courseKind = saved.v >= 6 && COURSE_KINDS.includes(saved.courseKind) ? saved.courseKind : 'warpline';
   let runs = saved.runs || [];
-  function persist() { lsSet(LS_KEY, { P: BP, invertY, idleTakeover, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
+  function persist() { lsSet(LS_KEY, { v: 6, P: BP, invertY, idleTakeover, intensity, laps, seed, domain: domainKey, courseKind, runs: runs.slice(-40),
     rivals: typeof seatLv !== 'undefined' ? { v: 2, lv: seatLv, dm: seatDomain } : saved.rivals, youLevel: typeof youLevel !== 'undefined' ? youLevel : saved.youLevel }); }
 
   // ================= renderer =================
@@ -677,18 +761,13 @@
   fieldMesh.frustumCulled = false; trailMesh.frustumCulled = false;
   scene.add(fieldMesh, trailMesh);
   const dum = new THREE.Object3D(), tq = new THREE.Quaternion(), tv = new V3(), tv2 = new V3(), tv3 = new V3(), ZAX = new V3(0, 0, 1);
-  {
-    // seeded (round 15): the scorecard's "prisms pulled per sling" reads these homes, and Math.random made it differ per load
-    const c = new THREE.Color(), rnd = mulberry32(20261009);
-    for (let i = 0; i < NF; i++) {
-      const a = rnd() * Math.PI * 2, r = 330 + rnd() * 600, y = (rnd() - 0.5) * 520;
-      const j = i * 3; bp[j] = bh[j] = Math.cos(a) * r; bp[j + 1] = bh[j + 1] = y; bp[j + 2] = bh[j + 2] = Math.sin(a) * r;
-      tq.setFromEuler(new THREE.Euler(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28)); tq.toArray(bq, i * 4);
-      c.setHSL(0.6 + rnd() * 0.12, 0.65, 0.35 + rnd() * 0.2); fieldMesh.setColorAt(i, c);
-      act[i] = 1;
-    }
-    for (let k = 0; k < NT; k++) { dum.position.set(0, -1e5, 0); dum.scale.setScalar(0); dum.updateMatrix(); trailMesh.setMatrixAt(k, dum.matrix); }
-  }
+  // The field's homes are seeded (round 15: Math.random made a scorecard differ per load) and placed per course
+  // (placeField, from buildCourse). Round 8: a Cave-in destroys field prisms (dead > 0: the seconds since; they shrink
+  // away over PRISM_DIE_S), and every race starts with the whole field again (reviveField, from spawn).
+  const dead = new Float32Array(NF), PRISM_DIE_S = 0.35;
+  const dyingPrisms = [];   // the caved prisms still shrinking (simStep ages them)
+  function reviveField() { for (let i = 0; i < NF; i++) if (dead[i]) { dead[i] = 0; act[i] = 1; } }
+  { for (let k = 0; k < NT; k++) { dum.position.set(0, -1e5, 0); dum.scale.setScalar(0); dum.updateMatrix(); trailMesh.setMatrixAt(k, dum.matrix); } }
 
   // ================= the course =================
   const MOUTHS = [48, 40, 32, 26];
@@ -698,14 +777,17 @@
     { name: 'Climbs & sharp tilts', d: 'A tighter, rolling circle; rings tilt about 65° and every third one is pitched, so you climb and dive through them.', r: 470, jitA: 0.22, jitR: 110, y: 130, yaw: 65, pitch: 30 },
     { name: 'Side-on & dive rings', d: 'Rings turned nearly side-on and dive rings facing up or down: turn hard in the black hole\'s grip or go round again.', r: 400, jitA: 0.3, jitR: 140, y: 190, yaw: 82, pitch: 65 },
   ];
-  let gates = [];
+  let gates = [], NG = 8;   // NG: rings a lap (Warpline 5, the stand-in circuits 8)
   const courseGroup = new THREE.Group(); scene.add(courseGroup);
   function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function buildCourse() {
     while (courseGroup.children.length) { const c = courseGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); }
     const rng = mulberry32(seed * 7919 + intensity), I = intensity - 1, mouth = MOUTHS[I];
     const pts = [], norms = [];
-    if (courseKind === 'hairpin') {
+    if (courseKind === 'warpline') {
+      const w = warplineCourse(mulberry32(seed * 104729 + intensity * 31), intensity);
+      for (const g of w) { pts.push(g.p); norms.push(g.n); }
+    } else if (courseKind === 'hairpin') {
       // Hairpins: a slalom of U-turns — each ring faces the opposite way to the last, a short hop to the side — then
       // a long straight home. Speed alone overshoots every one of them; a tight sling turn does not.
       const gap = [190, 160, 140, 120][I], lift = [0, 15, 30, 45][I];
@@ -744,7 +826,136 @@
     });
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(400)), new THREE.LineBasicMaterial({ color: 0x35448a, transparent: true, opacity: 0.55 }));
     courseGroup.add(line);
+    NG = gates.length;
+    placeField(curve);
+    placeCrystals(curve);
     $('seedOut').textContent = seed;
+  }
+  // ---- Warpline (round 8: the Meerkat's Time race): SlingshotCourse.ForIntensity's circuit with WarplineCourseSource's
+  // ring count (EndConditionOverrides warplineGateTarget 10 / 2 laps = 5 rings a lap). HeadlongCircuit.Generate's recipe,
+  // ported: the corner profile (its first five turn angles, sorted and dealt alternately, rotated and flipped by the
+  // seed), the radial-swing / angular-spread solve per vertex, the out-of-plane offsets, the legality relaxation (the
+  // race shell 480-1080 u, the Stoat's corner floor, one ring diameter between mouths), ring 0 rotated onto the pole, and
+  // each ring facing its corner's bisector deflected by the axis jitter left after half the turn. The studio's seeded
+  // mulberry32 stands in for RaceCourseGeometry.Rng, so a seed's layout is the studio's own, not the game's.
+  const WARPLINE = {
+    n: 5, base: 600, inner: 480, outer: 1080, swing: 0.42,
+    profile: [[90, 72, 58, 48, 38, 28, 16, 10], [110, 90, 60, 40, 25, 18, 12, 5], [150, 135, 60, 6, 4, 3, 2, 1], [140, 135, 70, 6, 4, 3, 2, 1]],
+    spread: [1.2, 3.0, 2.0, 4.0], lateral: [80, 120, 160, 200], jitter: [20, 28, 36, 44], present: [50, 60, 76, 76],
+    // CornerFloorRadius = max(2 x the cruise pivot, [2, 1.6, 1.3, 1.2] x the slung circle): 60 and 150 u/s at 48 deg/s
+    floor: [2, 1.6, 1.3, 1.2].map((f) => Math.max(2 * 60 / (48 * Math.PI / 180), f * 150 / (48 * Math.PI / 180))),
+  };
+  function warplineCourse(rng, intensity) {
+    const W5 = WARPLINE, n = W5.n, I = Math.max(1, Math.min(4, intensity)) - 1, ringR = MOUTHS[I];
+    const range = (a, b) => a + (b - a) * rng();
+    const ang3 = (a, b) => { const d = a.length() * b.length(); return d < 1e-9 ? 0 : Math.acos(Math.max(-1, Math.min(1, a.dot(b) / d))) * 180 / Math.PI; };
+    const perp = (v) => { const a = Math.abs(v.x) < 0.9 ? new V3(1, 0, 0) : new V3(0, 1, 0); return a.cross(v).normalize(); };
+    const normal = new V3(range(-1, 1), range(-1, 1), range(-1, 1)); if (normal.lengthSq() < 1e-6) normal.set(0, 1, 0); normal.normalize();
+    const u = perp(normal), w = new V3().crossVectors(normal, u), phase = range(0, 2 * Math.PI);
+    // the turn targets: the profile cycled to n, sorted, dealt into even then odd slots, rotated and maybe flipped
+    const prof = W5.profile[I], t0 = []; for (let i = 0; i < n; i++) t0.push(prof[i % prof.length]);
+    t0.sort((a, b) => b - a); const placed = new Array(n); let slot = 0; for (let k = 0; k < n; k++) { placed[slot] = t0[k]; slot += 2; if (slot >= n) slot = 1; }
+    const rot = Math.max(0, Math.min(n - 1, Math.floor(range(0, n)))), flip = range(0, 1) < 0.5, targets = [];
+    for (let i = 0; i < n; i++) targets.push(placed[(flip ? (n - i) % n : i + rot) % n]);
+    const lateral = []; for (let i = 0; i < n; i++) lateral.push(range(-W5.lateral[I], W5.lateral[I]));
+    const flat = (sharp, scale) => {
+      const gap = [], pts = []; let total = 0, mean = 0;
+      for (let i = 0; i < n; i++) { const sq = Math.max(sharp[i], sharp[(i + 1) % n]); gap.push(1 + W5.spread[I] * scale * (1 - sq)); total += gap[i]; mean += sharp[i]; }
+      mean /= n; let a = 0;
+      const lo = W5.inner + 24, hi = W5.outer - 24;
+      for (let i = 0; i < n; i++) { const r = Math.max(lo, Math.min(hi, W5.base * (1 + 2 * W5.swing * scale * (sharp[i] - mean)))); pts.push([r * Math.cos(a), r * Math.sin(a)]); a += 2 * Math.PI * gap[i] / total; }
+      return pts;
+    };
+    const turnAt = (sharp, i) => { const p = flat(sharp, 1), a = p[(i - 1 + n) % n], b = p[i], c = p[(i + 1) % n]; return ang3(new V3(b[0] - a[0], b[1] - a[1], 0), new V3(c[0] - b[0], c[1] - b[1], 0)); };
+    const sharp = new Array(n).fill(0.5);
+    for (let sweep = 0; sweep < 6; sweep++) for (let i = 0; i < n; i++) {
+      let lo = 0, hi = 1; for (let st = 0; st < 24; st++) { const mid = 0.5 * (lo + hi); sharp[i] = mid; if (turnAt(sharp, i) < targets[i]) lo = mid; else hi = mid; }
+      sharp[i] = 0.5 * (lo + hi);
+    }
+    const build = (scale) => { const f = flat(sharp, scale), cp = Math.cos(phase), sp = Math.sin(phase); return f.map(([x0, y0], i) => { const x = x0 * cp - y0 * sp, y = x0 * sp + y0 * cp; return u.clone().multiplyScalar(x).addScaledVector(w, y).addScaledVector(normal, lateral[i] * scale); }); };
+    const cornerR = (a, b, c) => { const ib = new V3().subVectors(b, a), ob = new V3().subVectors(c, b), t = ang3(ib, ob); if (t < 1e-4) return Infinity; return Math.min(ib.length(), ob.length()) * 0.5 / Math.tan(t * 0.5 * Math.PI / 180); };
+    const legal = (pts) => { for (let i = 0; i < n; i++) { const r = pts[i].length(); if (r < W5.inner || r > W5.outer) return false; if (cornerR(pts[(i - 1 + n) % n], pts[i], pts[(i + 1) % n]) < W5.floor[I]) return false; for (let j = i + 1; j < n; j++) if (pts[i].distanceTo(pts[j]) < 2 * ringR) return false; } return true; };
+    let scale = 1, pts = null;
+    for (let st = 0; st <= 48; st++) { pts = build(scale); if (legal(pts)) break; scale *= 0.88; if (st === 48) pts = build(0); }
+    const q = new THREE.Quaternion().setFromUnitVectors(pts[0].clone().normalize(), new V3(0, 1, 0)); for (const p of pts) p.applyQuaternion(q);   // ring 0 on the pole
+    return pts.map((p, i) => {
+      const inb = new V3().subVectors(p, pts[(i - 1 + n) % n]).normalize(), outb = new V3().subVectors(pts[(i + 1) % n], p).normalize();
+      const axis = new V3().addVectors(inb, outb); if (axis.lengthSq() < 1e-8) axis.copy(inb); axis.normalize();
+      const jit = Math.max(0, Math.min(W5.jitter[I], W5.present[I] - ang3(inb, outb) * 0.5));
+      if (jit > 0) {   // RaceCourseGeometry.Deflect: a random spin axis round the bisector, sqrt-distributed angle
+        const pu = perp(axis), pw = new V3().crossVectors(axis, pu), phi = range(0, 2 * Math.PI), spin = pu.multiplyScalar(Math.cos(phi)).addScaledVector(pw, Math.sin(phi)).normalize();
+        axis.applyAxisAngle(spin, jit * Math.PI / 180 * Math.sqrt(rng())).normalize();
+      }
+      return { p, n: axis };
+    });
+  }
+  // ---- crystals (round 8: what Lookout marks and Alarm Call draws in). Seeded along the course line, six a leg, up to
+  // 70 u off it, the same on every load (/vessel-studio D3). Any hull within CRYSTAL_PICK u collects one; a collected
+  // crystal only counts (a pilot's tally): it changes nothing about flight, so a race without the abilities is the race
+  // it was before them. Every race starts with them all back where they were. Drawn as the studio crystal (D19's
+  // faceted core and wireframe shell), instanced.
+  const CR_MAX = 64, CRYSTAL_PICK = 14, CR_COL = new THREE.Color(0xbff6ff);
+  const crys = { n: 0, home: [], pos: [], alive: new Uint8Array(CR_MAX), marked: new Uint8Array(CR_MAX) };
+  for (let i = 0; i < CR_MAX; i++) { crys.home.push(new V3()); crys.pos.push(new V3()); }
+  const crCore = new THREE.InstancedMesh(new THREE.OctahedronGeometry(3.2, 0), new THREE.MeshStandardMaterial({ color: CR_COL, emissive: CR_COL.clone().multiplyScalar(0.55), roughness: 0.2, metalness: 0.1, flatShading: true }), CR_MAX);
+  const crShell = new THREE.InstancedMesh(new THREE.OctahedronGeometry(4.4, 0), new THREE.MeshBasicMaterial({ color: CR_COL, wireframe: true, transparent: true, opacity: 0.35, depthWrite: false }), CR_MAX);
+  for (const m of [crCore, crShell]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; scene.add(m); }
+  function placeCrystals(curve) {
+    const rnd = mulberry32(seed * 131 + intensity * 7 + COURSE_KINDS.indexOf(courseKind) * 1009), per = 6, n = Math.min(CR_MAX, NG * per);
+    const pt = new V3(), tg = new V3(), a1 = new V3(), a2 = new V3();
+    for (let i = 0; i < n; i++) {
+      const u = (Math.floor(i / per) + (i % per + 0.5 + (rnd() - 0.5) * 0.6) / per) / NG;
+      curve.getPointAt(u % 1, pt); curve.getTangentAt(u % 1, tg);
+      a1.set(0, 1, 0); if (Math.abs(tg.y) > 0.9) a1.set(1, 0, 0); a1.cross(tg).normalize(); a2.crossVectors(tg, a1).normalize();
+      const ang = rnd() * Math.PI * 2, off = 20 + rnd() * 50;
+      crys.home[i].copy(pt).addScaledVector(a1, Math.cos(ang) * off).addScaledVector(a2, Math.sin(ang) * off);
+    }
+    crys.n = n; resetCrystals();
+  }
+  function resetCrystals() { for (let i = 0; i < crys.n; i++) { crys.pos[i].copy(crys.home[i]); crys.alive[i] = 1; crys.marked[i] = 0; } }
+  // Every step, for the pilot flying now: Alarm Call's pull (its lookout's crystals drawn in), then any crystal it touches.
+  function stepCrystals(dt) {
+    const ab = ftLive.ab, pull = ab && simT < ab.lookUntil && ab.alarm && !silenced(curPilot);
+    for (let i = 0; i < crys.n; i++) {
+      if (!crys.alive[i]) continue;
+      const c = crys.pos[i], d = c.distanceTo(hull.position);
+      if (pull && d < Math.max(0, P.lookoutReach)) c.lerp(hull.position, Math.min(1, Math.max(0, P.alarmPullSpeed) * dt / Math.max(1e-3, d)));
+      if (c.distanceTo(hull.position) < CRYSTAL_PICK) { crys.alive[i] = 0; pil(curPilot).crystals++; if (raceStats) raceStats.crystals = (raceStats.crystals || 0) + 1; }
+    }
+  }
+  function drawCrystals() {
+    let k = 0;
+    for (let i = 0; i < crys.n; i++) {
+      if (!crys.alive[i]) continue;
+      dum.position.copy(crys.pos[i]); dum.rotation.set(0, simT * 1.3 + i, 0); dum.scale.set(1, 1.35, 1); dum.updateMatrix();
+      crCore.setMatrixAt(k, dum.matrix); dum.rotation.set(0, -simT * 0.7 - i, 0); dum.updateMatrix(); crShell.setMatrixAt(k, dum.matrix); k++;
+    }
+    crCore.count = crShell.count = mode === 'fly' ? k : 0; crCore.instanceMatrix.needsUpdate = crShell.instanceMatrix.needsUpdate = true;
+    dum.rotation.set(0, 0, 0); dum.scale.setScalar(1);
+  }
+  // ---- the prism field: rings the course. The stand-in circuits keep the Stoat studio's band round the y axis, bit
+  // for bit; Warpline's tilted loop gets a sleeve along its own line, 30-250 u out (same seed: every load is the same
+  // field for the same course), so a Cave-in has prisms to take wherever the race goes.
+  let fieldKind = '';
+  const pfP = new V3(), pfT = new V3(), pfA = new V3(), pfB = new V3();
+  function placeField(curve) {
+    const kind = courseKind === 'warpline' ? 'sleeve:' + seed + ':' + intensity : 'band'; if (kind === fieldKind) return; fieldKind = kind;
+    const c = new THREE.Color(), rnd = mulberry32(20261009);
+    for (let i = 0; i < NF; i++) {
+      const a = rnd() * Math.PI * 2, r = 330 + rnd() * 600, y = (rnd() - 0.5) * 520, j = i * 3;
+      if (kind === 'band') { bp[j] = bh[j] = Math.cos(a) * r; bp[j + 1] = bh[j + 1] = y; bp[j + 2] = bh[j + 2] = Math.sin(a) * r; }
+      else {   // the same three draws, read as the way along the line, the distance out from it and the angle round it
+        const u = a / (Math.PI * 2), off = 30 + (r - 330) / 600 * 220, phi = (y / 520 + 0.5) * Math.PI * 2;
+        curve.getPointAt(u, pfP); curve.getTangentAt(u, pfT);
+        pfA.set(0, 1, 0); if (Math.abs(pfT.y) > 0.9) pfA.set(1, 0, 0); pfA.cross(pfT).normalize(); pfB.crossVectors(pfT, pfA);
+        pfP.addScaledVector(pfA, Math.cos(phi) * off).addScaledVector(pfB, Math.sin(phi) * off);
+        bp[j] = bh[j] = pfP.x; bp[j + 1] = bh[j + 1] = pfP.y; bp[j + 2] = bh[j + 2] = pfP.z;
+      }
+      tq.setFromEuler(new THREE.Euler(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28)); tq.toArray(bq, i * 4);
+      c.setHSL(0.6 + rnd() * 0.12, 0.65, 0.35 + rnd() * 0.2); fieldMesh.setColorAt(i, c);
+      act[i] = 1;
+    }
+    if (fieldMesh.instanceColor) fieldMesh.instanceColor.needsUpdate = true;
   }
 
   // ================= tunnels =================
@@ -785,6 +996,7 @@
       if (trail && tAge[k] < 0) continue;
       let sc = 1;
       if (trail) { const a = tAge[k]; sc = Math.min(1, a / 0.25) * (a > TRAIL_LIFE - 1.5 ? Math.max(0, (TRAIL_LIFE - a) / 1.5) : 1); if (!act[i] && a > 0.25 && a < TRAIL_LIFE - 1.5) continue; }
+      else if (dead[i] > 0) { if (dead[i] > PRISM_DIE_S + 0.1 && !act[i]) continue; sc = Math.max(0, 1 - dead[i] / PRISM_DIE_S); act[i] = dead[i] <= PRISM_DIE_S ? 2 : 1; }   // a caved prism shrinks away
       else if (!act[i]) continue;
       const j = i * 3; dum.position.set(bp[j], bp[j + 1], bp[j + 2]);
       const vm = Math.hypot(bv[j], bv[j + 1], bv[j + 2]);
@@ -841,6 +1053,7 @@
     for (const pr of pairs) if (pr.owned) pr.alive = false;
     myPair = null; snapCam = true; ai.tracking = -1; ai.misjudged = false; ai.unnoticed = false; ai.mistakes = 0; ai.gHold = 0; ai.gShaping = false;
     resetRivals();
+    PIL = {}; walls = []; pulses = []; lastCave = null; reviveField(); dyingPrisms.length = 0; resetCrystals();   // round 8: every race starts from the same world
     if (!batching) showOverlay(); showStopBtn();
   }
   // Stop (/vessel-studio D18): end the run and go back to the start, and STAY there until Play. spawn() alone only
@@ -883,6 +1096,7 @@
     const rad = Math.PI / 180;
     gateHold(dt);
     if (ftLive.ret) { ftLive.ret.sx = TX; ftLive.ret.sy = TY; }   // the right stick bends the reticle (from the next frame)
+    if (ftLive.ab.chainReq) { ftLive.ab.chainReq = false; chainDig(TX, TY, holds.L.on ? holds.L.live : 0); }   // round 8: Chain Dig, from this step's sticks
     const gTube = !!(ftLive.gate && ftLive.gate.state === 'tube');   // in the throat the tunnel flies you
     const turn = gTube ? 0 : P.pitchYaw;
     if (race !== 'ready' && !gTube) {
@@ -899,17 +1113,19 @@
     if (gTube) gateTransit(dt);
     else {
       tv2.copy(fwd).multiplyScalar(speed); hull.position.addScaledVector(tv2, dt); velNow.copy(tv2);
+      if (walls.length) wallBlock(p0);   // round 8: another team's hardened bridge is a wall
       if (raceStats && race === 'running') { const v = speed; raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
     }
     if (race === 'running') {
       raceT += dt;
-      if (raceStats && threaded % 8 !== 0 && threaded > 0) raceStats.turnT += dt;   // the hairpins: from ring 1 to ring 8, the straight home left out
-      const g = gates[threaded % 8], s0 = tv.subVectors(p0, g.p).dot(g.n), s1 = tv3.subVectors(hull.position, g.p).dot(g.n);
+      if (crys.n) stepCrystals(dt);   // round 8: crystals (a tally; Alarm Call draws them in)
+      if (raceStats && threaded % NG !== 0 && threaded > 0) raceStats.turnT += dt;   // the hairpins: from ring 1 to ring 8, the straight home left out
+      const g = gates[threaded % NG], s0 = tv.subVectors(p0, g.p).dot(g.n), s1 = tv3.subVectors(hull.position, g.p).dot(g.n);
       if (s0 * s1 <= 0 && s0 !== s1) {
         const t = s0 / (s0 - s1); tv.copy(p0).lerp(hull.position, t);
         const err = tv.distanceTo(g.p);
         if (raceStats) { if (err <= g.mouth) { raceStats.errSum += err; raceStats.errN++; } else if (err <= 4 * g.mouth) raceStats.misses++; }
-        if (err <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= 8 * laps) { if (curRival) { if (curRival.finishT == null) curRival.finishT = raceT - dt; } else finishRace(); } }
+        if (err <= g.mouth) { threaded++; gateFlash = 1; if (threaded >= NG * laps) { if (curRival) { if (curRival.finishT == null) curRival.finishT = raceT - dt; } else finishRace(); } }
       }
     }
     dropTrail(dt);
@@ -928,7 +1144,8 @@
   // Everyone sees the tube's warp (updateTubeWarp) and its mouths' dents (setLensUniforms).
   // Per pilot: ftLive.ret (the reticle) and ftLive.gate = { pair, state: tube | done, s (along it) }; a made tunnel's
   // shape lives on its pair (pr.wh), so every pilot's tunnel warps the view.
-  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0 }; }
+  // ab (round 8): this pilot's abilities - when each is ready again (simT), Mass armed, the lookout's end, a Chain Dig asked for
+  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false } }; }
   const whA = new V3(), whB = new V3(), whC = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
   // The shape the right stick and LT ask for (round 7): a straight SHAFT, shaftMin with LT released to shaftMax squeezed,
   // then a BEND round bendRadius, as far as the right stick is pushed up to bendMaxDegrees, the way it is pushed. Its size
@@ -965,7 +1182,7 @@
   function whRadius(wh, s) {
     const span = Math.max(1e-3, wh.s1 - wh.s0), u = (s - wh.s0) / span, k = Math.min(1, span / wh.L);
     const b = wh.b * k, M = Math.max(b, wh.M * k);
-    return Math.sqrt(b * b + (M * M - b * b) * (2 * u - 1) ** 2);
+    return Math.sqrt(b * b + (M * M - b * b) * (2 * u - 1) ** 2) * (wh.cave != null ? Math.max(0.02, wh.cave) : 1);
   }
   // The pair's holes sit on the live mouths.
   function whSync(pr) {
@@ -991,6 +1208,9 @@
       if (wh.grow >= 1) { wh.s0 = 0; wh.s1 = wh.L; wh.phase = wh.out ? 'stay' : 'open'; }
     } else if (wh.phase === 'stay') {
       wh.stay += dt; if (wh.stay >= Math.max(0, P.staySeconds)) wh.phase = 'collapse';
+    } else if (wh.phase === 'cavein') {   // round 8, Cave-in: the whole bridge implodes to its centre line, then fades
+      wh.cave = Math.max(0, wh.cave - dt / CAVE_S);
+      if (wh.cave <= 0) { whSync(pr); gateFade(pr); return; }
     } else if (wh.phase === 'collapse') {
       const rate = wh.L / Math.max(0.05, P.collapseSeconds);
       wh.s0 += 0.5 * rate * dt; wh.s1 -= 0.5 * rate * dt;
@@ -1010,7 +1230,7 @@
     // shortens it. Riding, it is gone; it comes back gateReticleDelay s after you are out (and at the start), rippling
     // out of its centre into the tube over gateReticleGrow s (ret.emerge 0..1) - reshapeable all the while.
     const riding = !!(ftLive.gate && ftLive.gate.state === 'tube');
-    const live = mode === 'fly' && race === 'running' && !stopped && !riding;
+    const live = mode === 'fly' && race === 'running' && !stopped && !riding && P.timeOn > 0.5;   // round 8: Time off = no wormhole
     if (live) {
       basis();
       ftLive.retAge = (ftLive.retAge || 0) + dt;
@@ -1044,7 +1264,7 @@
   // only the carrier of its two mouths' warp (setLensUniforms) and the tube's (updateTubeWarp).
   function gateFade(pr) { if (pr.dying) return; pr.dying = true; pr.dieT = 0; }   // fades out over FADE_S
   function gateCommit(r) {
-    const old = ftLive.gate; if (old && old.pair.alive && !old.pair.dying && old.pair.wh.phase !== 'collapse') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }   // the last one goes back to its centre now
+    const old = ftLive.gate; if (old && old.pair.alive && !old.pair.dying && old.pair.wh.phase !== 'collapse' && old.pair.wh.phase !== 'cavein') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }   // the last one goes back to its centre now
     basis();
     const vIn = Math.max(1, speed), dive = hull.position.distanceTo(r.A) / vIn;
     const wh = { A: r.A.clone(), t0: r.t0.clone(), side: r.side.clone(), L: r.L, S: r.S, R: r.R, b: r.b, M: r.M, theta: r.theta, fat: r.fat, m: r.m, s0: 0.5 * r.L, s1: 0.5 * r.L, t: 0,
@@ -1053,6 +1273,7 @@
     myPair = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true);
     myPair.wh = wh; whSync(myPair);
     pairs.push(myPair);
+    if (ftLive.ab.armed) makeWall(myPair);   // round 8, Mass: LB armed it, so its bridge sets as prisms
     whQ.setFromUnitVectors(fwd, wh.t0);
     // the ride starts at the hull: it dives straight down to the mouth the reticle showed (s < 0), then into the throat
     // vIn: the speed you go in with (round 25: you come out with it too)
@@ -1069,7 +1290,10 @@
     const u = clamp01(g.s / Math.max(1e-3, wh.L));   // 0 on the dive in (the ride runs the whole tube, mouth 0 to mouth L, however much of it has formed)
     // round 6: your speed before the tunnel x rideMultiplier - the entry multiplier on the dive in and at the way in, the
     // middle one at the throat, the exit one at the way out
-    const v = g.vIn * rideMultiplier(P, g.s < 0 ? 0 : u);
+    // round 8, Chain Dig: the throat's multiplier held through the join (out of the throat of the first tunnel, into the
+    // throat of the next)
+    const high = (g.startHigh && u <= 0.5) || (g.next && u >= 0.5);
+    const v = g.vIn * (high ? Math.max(0.05, P.rideMidMultiplier) : rideMultiplier(P, g.s < 0 ? 0 : u));
     g.s = Math.min(wh.L, g.s + v * dt);
     if (g.s < 0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }   // still diving to the mouth
     else {
@@ -1079,7 +1303,7 @@
     }
     velNow.copy(whB).multiplyScalar(v);
     if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
-    if (g.s >= wh.L - 1e-6) gateOut(g);
+    if (g.s >= wh.L - 1e-6) { if (g.next) chainOn(g); else gateOut(g); }
   }
   // The ride's multiplier at u (0 the way in, 1 the way out) on your speed before the tunnel (round 6): it rises from
   // rideEntryMultiplier to rideMidMultiplier at the throat and eases to rideExitMultiplier at the way out, smoothly - its
@@ -1100,6 +1324,260 @@
   let lastGate = null;
   let ftLive = newFtLive();   // per pilot
 
+  // ================= round 8: the four-ability kit (PROPOSALS, lab-only; Yash judges them here before any of it reaches Unity) =================
+  // The fleet's element language: Time = speed and racing (the wormhole, and its L5 Chain Dig), Mass = making (Hardened
+  // Bridge: a tunnel's bridge set as prisms), Space = destroying (Cave-in: a tunnel collapsed on the prisms round it),
+  // Charge = pilots and crystals (Lookout). PvP is petals only (Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): no ability ever
+  // moves an opposing vessel or damages it; Burial's hit costs a petal and silences, a wall stops, never pushes.
+  // Every press goes through abilityPress, the one path a gamepad button, a key, a touch button and the AI all use (D4).
+  // Each element's level (L0-L10) gates its upgrade at L5; scaling an ability by its level is not modelled yet.
+  const CAVE_S = 0.45;   // a Cave-in's implosion, the bridge to its centre line (fixed in the studio, not a parameter)
+  const abOn = (el) => P[el + 'On'] > 0.5, abUp = (el) => abOn(el) && P[el + 'Level'] >= 5;
+  let PIL = {};   // per pilot id: petals lost, silenced until (simT), crystals collected, the last hit (for its marker)
+  function pil(id) { return PIL[id] || (PIL[id] = { petals: 0, silenceUntil: -1, crystals: 0, hitAt: -9 }); }
+  const silenced = (id) => simT < pil(id).silenceUntil;
+  const teamOf = (id) => (id ? seatDomain[id - 1] : domainKey);
+  const pilotIds = () => [0].concat(rivals.map((r) => r.id));
+  function pilotPos(id) { return id === curPilot ? hull.position : id === 0 ? youSlot.pos : seatState[id - 1].pos; }
+  // A point's place round a tube (its frozen full shape): s along the centreline (clamped to 0..L), d from it, and the
+  // unit radial direction (n). Round 7's umbrella handle: a straight shaft S along t0 from A, then an arc of radius R in
+  // the plane of t0 and side, centred at A + t0 x S + side x R; the nearer of the two answers wins.
+  const tlC = new V3(), tlQ = new V3(), tlP = new V3(), tl = { s: 0, d: 0, n: new V3(), inside: false };
+  function tubeLocal(wh, p) {
+    let s = tlQ.subVectors(p, wh.A).dot(wh.t0);   // along the shaft (the whole tube when it does not bend)
+    if (wh.theta >= 1e-4) {
+      const sS = Math.max(0, Math.min(wh.S, s)), dS = tlP.copy(wh.A).addScaledVector(wh.t0, sS).distanceTo(p);
+      tlC.copy(wh.A).addScaledVector(wh.t0, wh.S).addScaledVector(wh.side, wh.R); tlQ.subVectors(p, tlC);
+      const a = Math.atan2(tlQ.dot(wh.t0), -tlQ.dot(wh.side)), sA = wh.S + Math.max(0, Math.min(wh.theta, a)) * wh.R;
+      const dA = whAt(wh, sA, tlP).distanceTo(p);
+      s = dS <= dA ? (s < wh.S ? s : sS) : wh.S + a * wh.R;
+    }
+    tl.inside = s > 0 && s < wh.L; s = Math.max(0, Math.min(wh.L, s));
+    whAt(wh, s, tlP); tl.n.subVectors(p, tlP); tl.d = tl.n.length(); if (tl.d > 1e-6) tl.n.divideScalar(tl.d); tl.s = s;
+    return tl;
+  }
+  function tubeR(wh, s) { const u = s / Math.max(1e-3, wh.L); return Math.sqrt(wh.b * wh.b + (wh.M * wh.M - wh.b * wh.b) * (2 * u - 1) ** 2); }
+  const frozen = (wh) => ({ A: wh.A.clone(), t0: wh.t0.clone(), side: wh.side.clone(), L: wh.L, S: wh.S, R: wh.R, b: wh.b, M: wh.M, theta: wh.theta, s0: 0, s1: wh.L });
+
+  // ---- the one press path: Y Lookout, LB Hardened Bridge, B Cave-in (RT's Chain Dig: chainPress) ----
+  function abilityPress(btn) {
+    if (mode !== 'fly' || race !== 'running' || stopped) return false;
+    const ab = ftLive.ab;
+    if (btn === 'Y') {
+      if (!abOn('charge') || simT < ab.readyY) return false;
+      // (every stored time is less a hair, 1e-6 s: a borderline step resolves the same however far simT has run)
+      ab.lookAt = simT; ab.lookUntil = simT + Math.max(0.5, P.lookoutSeconds) - 1e-6; ab.alarm = abUp('charge');
+      ab.readyY = ab.lookUntil + Math.max(0, P.lookoutCooldownSeconds);
+      pulses.push({ pos: hull.position.clone(), t0: simT, reach: Math.max(0, P.lookoutReach), pilot: curPilot });
+      if (raceStats) raceStats.lookouts = (raceStats.lookouts || 0) + 1;
+      return true;
+    }
+    if (btn === 'LB') {
+      if (!abOn('mass') || simT < ab.readyLB) return false;
+      ab.armed = !ab.armed; return true;
+    }
+    if (btn === 'B') {
+      if (!abOn('space') || simT < ab.readyB) return false;
+      const pr = standingTunnel(); if (!pr) return false;
+      ab.readyB = simT + Math.max(0, P.caveInCooldownSeconds) - 1e-6;
+      caveIn(pr); return true;
+    }
+    return false;
+  }
+  // Your standing tunnel: your newest one still up, not one you are riding, not already caving in.
+  function standingTunnel() {
+    const pr = myPair; if (!pr || !pr.alive || pr.dying || !pr.wh || pr.wh.phase === 'cavein') return null;
+    if (ftLive.gate && ftLive.gate.pair === pr && ftLive.gate.state === 'tube') return null;
+    return pr;
+  }
+  // ---- Space: Cave-in ----
+  function caveIn(pr) {
+    const wh = pr.wh, F = frozen(wh), reach = Math.max(0, P.caveInReach), harmless = silenced(curPilot);
+    wh.phase = 'cavein'; wh.cave = 1;
+    let caved = 0, buried = 0;
+    if (!harmless) {
+      // every field prism within reach of the tube, its whole length (a quick bounding sphere first)
+      const mid = whAt(F, 0.5 * F.L, new V3()), bound = 0.5 * F.L + F.M + reach + 4;
+      for (let i = 0; i < NF; i++) {
+        if (dead[i]) continue;
+        const j = i * 3; tv.set(bp[j], bp[j + 1], bp[j + 2]); if (tv.distanceTo(mid) > bound) continue;
+        const l = tubeLocal(F, tv); if (l.d <= tubeR(F, l.s) + reach) { dead[i] = 1e-4; act[i] = 2; dyingPrisms.push(i); caved++; }
+      }
+      // every unshielded hardened prism within reach (anyone's: a Cave-in on your own unshielded wall breaks it too)
+      for (const w of walls) {
+        if (w.shield) continue;
+        for (let c = 0; c < w.cells.length; c++) { const cell = w.cells[c]; if (!w.alive[c]) continue; const l = tubeLocal(F, cell.p); if (l.d <= tubeR(F, l.s) + reach) { w.alive[c] = 0; caved++; } }
+      }
+      // L5 Burial: a rival inside or touching the tunnel takes a scored hit - a petal and a silence, never a push
+      if (abUp('space')) for (const id of pilotIds()) {
+        if (id === curPilot || teamOf(id) === teamOf(curPilot)) continue;
+        const l = tubeLocal(F, pilotPos(id)); if (l.d > tubeR(F, l.s) + 4) continue;
+        const v = pil(id); v.petals++; v.silenceUntil = simT + Math.max(0, P.burialSilenceSeconds) - 1e-6; v.hitAt = simT; buried++;
+      }
+    }
+    if (raceStats) { raceStats.caved = (raceStats.caved || 0) + caved; raceStats.caveIns = (raceStats.caveIns || 0) + 1; raceStats.buried = (raceStats.buried || 0) + buried; }
+    lastCave = { t: simT, caved, buried, pilot: curPilot, harmless };
+  }
+  let lastCave = null;
+  // ---- Mass: Hardened Bridge. The armed tunnel's bridge sets as a tube of prisms: rings every 20 u / density along it,
+  // a prism every 10 u / density round each, at most WALL_CELLS a wall. It lasts wallSeconds from its forming. A pilot of
+  // another team cannot cross its wall (wallBlock) where a prism still stands; its maker's team never meets it.
+  const WALL_CELLS = 900, WALL_MAX = 6000, WALL_CAM_NEAR = 12, WALL_CAM_FULL = 60;
+  let walls = [];
+  function makeWall(pr) {
+    const ab = ftLive.ab; ab.armed = false; ab.readyLB = simT + Math.max(0, P.hardenCooldownSeconds) - 1e-6;
+    if (silenced(curPilot)) return;   // silenced: harmless, no wall
+    const F = frozen(pr.wh), dens = Math.max(0.1, P.wallPrismDensity);
+    let along = 20 / dens, round = 10 / dens;
+    const count = () => { let n = 0; const nR = Math.max(2, Math.ceil(F.L / along)); for (let i = 0; i < nR; i++) n += Math.max(3, Math.round(2 * Math.PI * tubeR(F, F.L * (i + 0.5) / nR) / round)); return n; };
+    for (let k = 0; k < 8 && count() > WALL_CELLS; k++) { along *= 1.25; round *= 1.25; }
+    const nR = Math.max(2, Math.ceil(F.L / along)), cells = [], N = new V3(), Bn = new V3(), T = new V3(), X3 = new V3(), M4 = new THREE.Matrix4();
+    for (let i = 0; i < nR; i++) {
+      const s = F.L * (i + 0.5) / nR, r = tubeR(F, s), nP = Math.max(3, Math.round(2 * Math.PI * r / round));
+      whAt(F, s, tlP, T); whFrame(F, s, N, Bn);
+      for (let k = 0; k < nP; k++) {
+        const phi = (k + 0.5) / nP * Math.PI * 2, n = N.clone().multiplyScalar(Math.cos(phi)).addScaledVector(Bn, Math.sin(phi)).normalize();
+        X3.crossVectors(n, T).normalize(); M4.makeBasis(X3, n, T);
+        cells.push({ p: tlP.clone().addScaledVector(n, r), q: new THREE.Quaternion().setFromRotationMatrix(M4), s, w: Math.min(2 * Math.PI * r / nP * 0.8, 5), l: Math.min(F.L / nR * 0.8, 11) });   // prism-sized, a lattice with gaps
+      }
+    }
+    walls.push({ F, src: pr, pilot: curPilot, team: teamOf(curPilot), born: simT - 1e-6, life: Math.max(1, P.wallSeconds), shield: abUp('mass'), cells, alive: new Uint8Array(cells.length).fill(1), color: pilotColor(curPilot).clone() });
+    pr.wh.hardened = true;
+    if (raceStats) raceStats.walls = (raceStats.walls || 0) + 1;
+  }
+  const wallUp = (w) => simT < w.born + w.life;
+  function wallGrown(w, s) {   // as its tunnel forms, a cell appears once the tunnel's window reaches it
+    const wh = w.src.wh; if (!w.src.alive || !wh || wh.phase !== 'form') return true;
+    return Math.abs(s - 0.5 * w.F.L) <= 0.5 * w.F.L * easeOutC(wh.grow) + 1;
+  }
+  function wallCellAt(w, s, n) {   // the cell nearest a crossing point (s along, n the radial direction): standing?
+    let best = -1, bd = 1e9;
+    for (let c = 0; c < w.cells.length; c++) { const cell = w.cells[c]; if (Math.abs(cell.s - s) > 30) continue; const d = Math.abs(cell.s - s) + 20 * (1 - tlQ.subVectors(cell.p, tlP).normalize().dot(n)); if (d < bd) { bd = d; best = c; } }
+    return best >= 0 && w.alive[best] && wallGrown(w, w.cells[best].s);
+  }
+  // A pilot of another team flying through a wall is held on its side of it: the move into the wall is taken away and
+  // the rest kept, so it slides along and goes round (a wall stops; it never pushes). The AI then flies round its end.
+  const wbN = new V3(), wbM = new V3();
+  function wallBlock(from) {
+    for (const w of walls) {
+      if (!wallUp(w) || w.team === teamOf(curPilot)) continue;
+      const a = tubeLocal(w.F, from), aIn = a.inside, ra = tubeR(w.F, a.s), sideA = a.d - ra; wbN.copy(a.n); const sA = a.s;
+      const b = tubeLocal(w.F, hull.position), sideB = b.d - tubeR(w.F, b.s);
+      if (!aIn || !b.inside || sideA * sideB > 0) continue;
+      tubeLocal(w.F, from); if (!wallCellAt(w, sA, wbN)) continue;
+      wbM.subVectors(hull.position, from); wbM.addScaledVector(wbN, -wbM.dot(wbN));
+      hull.position.copy(from).add(wbM);
+      const c = tubeLocal(w.F, hull.position), want = tubeR(w.F, c.s) + (sideA >= 0 ? 0.6 : -0.6);
+      if ((c.d - tubeR(w.F, c.s)) * sideA <= 0 && c.d > 1e-3) hull.position.copy(whAt(w.F, c.s, tlP)).addScaledVector(c.n, Math.max(0.2, want));
+      if (raceStats) raceStats.blocked = (raceStats.blocked || 0) + 1;
+      if (curPilot || aiOn || wasIdleAi) {   // the AI goes round: for the wall's nearer end, out past its mouth
+        const end = sA < 0.5 * w.F.L ? 0 : w.F.L, out = new V3();
+        whAt(w.F, end, ai.detourPt, out); ai.detourPt.addScaledVector(out, end ? 60 : -60).addScaledVector(wbN, sideA >= 0 ? w.F.M + 25 : 0); ai.detourUntil = simT + 1.5;
+      }
+    }
+  }
+  // ---- Time L5: Chain Dig. RT pressed from chainShare of the way through a ridden tunnel asks for the next tunnel
+  // (chainReq); stepFly makes it from this step's sticks (chainDig): from the far mouth, along its last heading, bent by
+  // the right stick, its shaft set by LT, exactly as a reticle would be. At the far mouth the ride carries straight on
+  // into it (chainOn) at throat speed, and the tunnel behind collapses.
+  function chainPress() {
+    const g = ftLive.gate; if (!g || g.state !== 'tube' || g.next || !abUp('time')) return;
+    if (g.s < Math.max(0, P.chainShare) * g.pair.wh.L) return;
+    ftLive.ab.chainReq = true;
+  }
+  const cdE = new V3(), cdT = new V3(), cdD = new V3(), cdQ = new THREE.Quaternion();
+  function chainDig(tx, ty, lq) {
+    const g = ftLive.gate; if (!g || g.state !== 'tube' || g.next) return false;
+    const w1 = g.pair.wh; basis();
+    whAt(w1, w1.L, cdE, cdT);
+    const sh = whShape(lq, tx, ty);
+    cdQ.setFromUnitVectors(fwd, cdT);
+    if (sh.m >= 0.05) cdD.copy(right).multiplyScalar(sh.dx).addScaledVector(up, sh.dy); else cdD.copy(right);
+    cdD.applyQuaternion(cdQ); cdD.addScaledVector(cdT, -cdD.dot(cdT)); if (cdD.lengthSq() < 1e-8) cdD.copy(right).applyQuaternion(cdQ); cdD.normalize();
+    const vIn = g.vIn, toMouth = Math.max(0, w1.L - g.s) / Math.max(1, vIn * Math.max(0.05, P.rideMidMultiplier));
+    const wh = { A: cdE.clone(), t0: cdT.clone(), side: cdD.clone(), L: sh.L, S: sh.S, R: sh.R, b: sh.b, M: sh.M, theta: sh.theta, fat: sh.fat, m: sh.m, s0: 0.5 * sh.L, s1: 0.5 * sh.L, t: 0,
+      phase: 'form', grow: 0, formT: Math.min(Math.max(0.05, P.formSeconds), Math.max(0.1, 0.9 * toMouth)), stay: 0, out: false, chained: true };
+    const pr = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true); pr.wh = wh; whSync(pr); pairs.push(pr);
+    if (ftLive.ab.armed) makeWall(pr);
+    g.next = pr; myPair = pr;
+    if (raceStats && race === 'running') { raceStats.slings++; raceStats.chains = (raceStats.chains || 0) + 1; }
+    slings++;
+    return true;
+  }
+  function chainOn(g) {
+    const w1 = g.pair.wh, pr = g.next, wh = pr.wh;
+    w1.out = true; if (w1.phase !== 'cavein') { w1.phase = 'collapse'; w1.grow = 1; }   // one tunnel at a time: the one behind you goes
+    basis(); whQ.setFromUnitVectors(fwd, wh.t0);
+    ftLive.gate = { pair: pr, state: 'tube', s: Math.max(0, g.s - w1.L), sIn: 0, oN: 0, oB: 0, vIn: g.vIn, startHigh: true, rIn: Math.max(1e-3, wh.M), q0: whQ.clone().multiply(hull.quaternion) };
+    if (raceStats && race === 'running') raceStats.catches++;
+  }
+  // ---- Charge: Lookout's pulse, drawn as a sphere opening out to its reach ----
+  let pulses = [];
+  const pulseMeshes = [];
+  function drawPulses() {
+    pulses = pulses.filter((q) => simT - q.t0 < 0.9);
+    let i = 0;
+    for (const q of pulses) {
+      let m = pulseMeshes[i]; if (!m) { m = pulseMeshes[i] = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 14), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); m.frustumCulled = false; scene.add(m); }
+      const u = (simT - q.t0) / 0.9; m.position.copy(q.pos); m.scale.setScalar(Math.max(1, q.reach * easeOutC(u))); m.material.color.copy(pilotColor(q.pilot)); m.material.opacity = 0.35 * (1 - u); m.visible = mode === 'fly'; i++;
+    }
+    for (; i < pulseMeshes.length; i++) pulseMeshes[i].visible = false;
+  }
+  // ---- the walls' prisms, one instanced mesh for every wall: the maker's colour, pale when shielded (L5) ----
+  const wallMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x111a33, roughness: 0.5, flatShading: true }), WALL_MAX);
+  wallMesh.setColorAt(0, new THREE.Color()); wallMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+  wallMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); wallMesh.frustumCulled = false; wallMesh.count = 0; scene.add(wallMesh);
+  const wlS = new V3(), wlM = new THREE.Matrix4(), wlC = new THREE.Color(), WL_SHIELD = new THREE.Color(0xf2f6ff);
+  function drawWalls() {
+    walls = walls.filter((w) => simT < w.born + w.life + 0.6);
+    let k = 0;
+    if (mode === 'fly') for (const w of walls) {
+      const left = w.born + w.life - simT, fade = left < 0.6 ? Math.max(0, left / 0.6) : 1;
+      wlC.copy(w.color).multiplyScalar(0.7); if (w.shield) wlC.lerp(WL_SHIELD, 0.45);
+      const cl = tubeLocal(w.F, cam.position), camIn = cl.inside && cl.d < tubeR(w.F, cl.s) + 2, n0 = camIn ? 20 : WALL_CAM_NEAR, n1 = camIn ? 160 : WALL_CAM_FULL;   // a camera riding inside a tube sees down it
+      for (let c = 0; c < w.cells.length && k < WALL_MAX; c++) {
+        if (!w.alive[c]) continue; const cell = w.cells[c]; if (!wallGrown(w, cell.s)) continue;
+        const near = smooth(n0, n1, cell.p.distanceTo(cam.position)) * fade; if (near <= 0.01) continue;   // like the bridge: none fills the camera
+        wlS.set(cell.w * near, (w.shield ? 1.2 : 0.8) * near, cell.l * near); wlM.compose(cell.p, cell.q, wlS);
+        wallMesh.setMatrixAt(k, wlM); wallMesh.setColorAt(k, wlC); k++;
+      }
+    }
+    wallMesh.count = k; wallMesh.instanceMatrix.needsUpdate = true; if (wallMesh.instanceColor) wallMesh.instanceColor.needsUpdate = true;
+  }
+  // The section notes: on or off, the level, and whether the L5 upgrade is unlocked (the card says so).
+  const AB_UPGRADE = { charge: 'Alarm Call', mass: 'Shielded Bridge', space: 'Burial', time: 'Chain Dig' };
+  function markAbilities() {
+    for (const el of ['charge', 'mass', 'space', 'time']) {
+      const n = $('abNote-ab' + el.charAt(0).toUpperCase() + el.slice(1)); if (!n) continue;
+      const lv = Math.round(BP[el + 'Level']), on = BP[el + 'On'] > 0.5;
+      n.innerHTML = (on ? 'On' : '<b>Off</b>') + ' · level ' + lv + ' · ' + (lv >= 5 ? '<b class="l5on">L5 upgrade ' + AB_UPGRADE[el] + ': unlocked</b>' : 'L5 upgrade ' + AB_UPGRADE[el] + ': locked (unlocks at level 5)');
+    }
+  }
+  // The AI's rules for the new abilities, input-only (it presses the buttons a player has), behind "AI uses the new
+  // abilities". Lookout: whenever it is ready and there is a rival or crystals in reach. Harden: arm when ready with a
+  // rival within 600 u. Cave-in: once out of a tunnel, with a rival inside it (L5) or six prisms in its reach, never on its
+  // own unshielded wall. Chain Dig: see aiInput's ride branch.
+  function crystalsNear(p, r) { let n = 0; for (let i = 0; i < crys.n; i++) if (crys.alive[i] && crys.pos[i].distanceTo(p) < r) n++; return n; }
+  function rivalWithin(r) { for (const id of pilotIds()) if (id !== curPilot && teamOf(id) !== teamOf(curPilot) && pilotPos(id).distanceTo(hull.position) < r) return true; return false; }
+  function caveWorth(pr) {
+    const wh = pr.wh, F = frozen(wh), reach = Math.max(0, P.caveInReach);
+    if (abUp('space')) for (const id of pilotIds()) { if (id === curPilot || teamOf(id) === teamOf(curPilot)) continue; const l = tubeLocal(F, pilotPos(id)); if (l.d <= tubeR(F, l.s) + 4) return true; }
+    if (wh.hardened && !abUp('mass')) return false;
+    if (wh.nearPrisms == null) {
+      let n = 0; const mid = whAt(F, 0.5 * F.L, new V3()), bound = 0.5 * F.L + F.M + reach + 4;
+      for (let i = 0; i < NF; i++) { if (dead[i]) continue; const j = i * 3; tv.set(bp[j], bp[j + 1], bp[j + 2]); if (tv.distanceTo(mid) > bound) continue; const l = tubeLocal(F, tv); if (l.d <= tubeR(F, l.s) + reach) n++; }
+      wh.nearPrisms = n;
+    }
+    return wh.nearPrisms >= 6;
+  }
+  function aiAbilities() {
+    if (P.aiNewAbilities <= 0.5) return;
+    const ab = ftLive.ab;
+    if (abOn('charge') && simT >= ab.readyY && (rivals.length || crystalsNear(hull.position, Math.max(0, P.lookoutReach)) >= 3)) abilityPress('Y');
+    if (abOn('mass') && !ab.armed && simT >= ab.readyLB && rivalWithin(600)) abilityPress('LB');
+    if (abOn('space') && simT >= ab.readyB) { const pr = standingTunnel(); if (pr && pr.wh.out && caveWorth(pr)) abilityPress('B'); }
+  }
+
   // The reticle's wireframe (yours alone): rings round the throat (a hyperboloid - wide at the mouths, narrowest mid-way)
   // and lines along it, cyan at the way in shading to white at the way out, and in lime the line you will fly - into the
   // mouth, through the throat, and on along its last heading. A formed tunnel draws no grid (Yash, 2026-10-27).
@@ -1110,29 +1588,19 @@
   whGeo.setAttribute('position', new THREE.BufferAttribute(whPos, 3)); whGeo.setAttribute('color', new THREE.BufferAttribute(whCol, 3));
   const whLines = new THREE.LineSegments(whGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false }));
   whLines.frustumCulled = false; whLines.renderOrder = 5; scene.add(whLines);
-  const WH_LIME = new THREE.Color(0x9dff2e), whCc = new THREE.Color();
-  const wp1 = new V3(), wp2 = new V3(), wt1 = new V3(), wn1 = new V3(), wb1 = new V3(), wq1 = new V3(), wq2 = new V3();
+  const wp1 = new V3(), wp2 = new V3(), wt1 = new V3(), wn1 = new V3(), wb1 = new V3(), wq1 = new V3();
   let whNv = 0;
-  function whPut(p, c, a) {
-    if (whNv >= WH_MAXV) return;
-    const i = whNv * 3; whPos[i] = p.x; whPos[i + 1] = p.y; whPos[i + 2] = p.z; whCol[i] = c.r * a; whCol[i + 1] = c.g * a; whCol[i + 2] = c.b * a; whNv++;
-  }
   // A point on the wireframe: x along the centreline (s), at angle phi, radius r, pushed back along the heading by back.
-  const whSN = new V3(), whEye = new V3(), whTo = new V3();
+  const whSN = new V3(), whEye = new V3();
   function whSurf(wh, s, phi, r, back, out) {
     whAt(wh, s, out, wt1); whFrame(wh, s, wn1, wb1);
     whSN.copy(wn1).multiplyScalar(Math.cos(phi)).addScaledVector(wb1, Math.sin(phi));   // the wall's outward normal there
     return out.addScaledVector(wn1, r * Math.cos(phi)).addScaledVector(wb1, r * Math.sin(phi)).addScaledVector(wt1, back);
   }
-  // The grid in 3D (round 24): a wall facing the eye is bright, the far wall dim - so the tube reads as a solid, not a
-  // flat drawing. Inside the tube (riding it) every wall faces you and the grid stays bright.
-  function whFace(p) { whTo.subVectors(whEye, p); const d = whTo.length(); if (d < 1e-3) return 1; const f = whSN.dot(whTo) / d; return 0.28 + 0.72 * smooth(-0.25, 0.35, f); }
-  const WH_RET_IN = new THREE.Color(0x3fe0ff), WH_RET_OUT = new THREE.Color(0xeafcff);
-  // The reticle's glass (round 24): a faint surface under its grid, lit at its silhouette (Fresnel), so the tube has a
-  // body. Yours only, like the grid; everyone else sees the warp (updateTubeWarp).
+  // The bridge's glass (round 24): a faint surface under its spindles, lit at its silhouette (Fresnel), so the tube has a
+  // body. (Round 9: the reticle has none - it is the bare wireframe.)
   const wfMeshes = [];
   function whFill(i, wh, A, cIn, cOut, glass) {
-    if (glass == null) glass = P.reticleGlass;
     const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.01 || glass <= 0) return false;
     let m = wfMeshes[i];
     if (!m) {
@@ -1191,8 +1659,18 @@
     const wh = pr.wh, vis = clamp01(P.bridgeVisibility); if (!wh || vis <= 0.004) return nFill;
     const span = wh.s1 - wh.s0; if (span < 1) return nFill;
     const fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1, A = vis * fade; if (A <= 0.004) return nFill;
-    const base = pilotColor(pr.pilot), col = base.clone().lerp(brW, 0.45);
+    const base = pilotColor(pr.pilot), col = base.clone().lerp(brW, clamp01(P.bridgeWhite));
     if (whFill(nFill, wh, A, base, brW.clone().lerp(base, 0.4), P.bridgeGlass)) nFill++;
+    drawFrame(wh, A, col, BR_CAM_NEAR, BR_CAM_FULL);
+    return nFill;
+  }
+  // The wormhole's geometry (round 9, Yash: "the reticles and the bridges geometry need to be same, and the same position same
+  // way ... The reticle is the silhouette of the geometry"): bridgeRings rings of bridgeSpindlesPerRing spindles round the
+  // throat at fixed places along the tunnel, bridgeRibs ribs along it, bridgeSpindleThickness thick, condensing in from the
+  // window's fronts and shimmering way in to way out. The bridge draws it over its glass; your reticle IS it, bare, at its
+  // own brightness and colour. n0..n1: the camera distance its spindles fade in over.
+  function drawFrame(wh, A, col, n0, n1) {
+    const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.004) return;
     const nR = Math.max(2, Math.round(P.bridgeRings)), nS = Math.max(3, Math.round(P.bridgeSpindlesPerRing)), nRib = Math.max(0, Math.round(P.bridgeRibs));
     const th = Math.max(0.05, P.bridgeSpindleThickness), sh = clamp01(P.bridgeShimmer), edge = Math.max(4, 0.06 * wh.L);
     const ringS = (i) => wh.L * (i + 0.5) / nR;
@@ -1204,7 +1682,7 @@
       for (let j = 0; j < nS; j++) {
         whSurf(wh, s, j / nS * Math.PI * 2, r, 0, brA); whSurf(wh, s, (j + 1) / nS * Math.PI * 2, r, 0, brB);
         brM.addVectors(brA, brB).multiplyScalar(0.5); brA.lerp(brM, 1 - g); brB.lerp(brM, 1 - g);   // a spindle grows from its middle
-        spindle(brA, brB, th * g, br, col);
+        spindle(brA, brB, th * g, br, col, n0, n1);
       }
     }
     for (let k = 0; k < nRib; k++) {   // the ribs along it, ring to ring
@@ -1213,50 +1691,13 @@
         const s1 = ringS(i), s2 = ringS(i + 1), g = Math.min(grow(s1), grow(s2)); if (g <= 0) continue;
         whSurf(wh, s1, phi, whRadius(wh, s1), 0, brA); whSurf(wh, s2, phi, whRadius(wh, s2), 0, brB);
         brM.addVectors(brA, brB).multiplyScalar(0.5); brA.lerp(brM, 1 - g); brB.lerp(brM, 1 - g);
-        spindle(brA, brB, th * 0.8 * g, A * 0.8 * glow((s1 + s2) / (2 * wh.L)), col);
+        spindle(brA, brB, th * 0.8 * g, A * 0.8 * glow((s1 + s2) / (2 * wh.L)), col, n0, n1);
       }
     }
-    return nFill;
   }
-  // Your reticle as spindles (round 3, Yash: "pretty transparent, just maybe wireframe looking with just spindles. Tiny thinning
-  // spindles"): reticleRings rings of reticleSpindlesPerRing spindles round its throat, reticleRibs ribs along it, every spindle
-  // reticleSpindleThickness thick, cyan at the way in to white at the way out, a wall facing you brighter than the far one
-  // (whFace); the lime line you will fly at reticlePath from pathFrom u (null: none). The same spindles as the bridge.
+  // Your reticle (round 9): the wormhole's wireframe (drawFrame), no glass, in your domain colour toward white by reticleWhite.
   const RET_NEAR = 1, RET_FULL = 8;   // a reticle spindle fades only right at the camera (it is 30 u ahead of the nose)
-  function drawReticle(wh, A, pathFrom) {
-    const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.01) return;
-    const nR = Math.max(2, Math.round(P.reticleRings)), nS = Math.max(3, Math.round(P.reticleSpindlesPerRing)), nRib = Math.max(0, Math.round(P.reticleRibs));
-    const th = Math.max(0.02, P.reticleSpindleThickness), ringS = (i) => wh.s0 + span * i / (nR - 1), colAt = (u) => whCc.copy(WH_RET_IN).lerp(WH_RET_OUT, u);
-    for (let i = 0; i < nR; i++) {   // the rings round the throat
-      const s = ringS(i), r = whRadius(wh, s), u = i / (nR - 1), a = A * (0.35 + 0.65 * Math.abs(2 * u - 1)), c = colAt(u).clone();
-      for (let j = 0; j < nS; j++) {
-        whSurf(wh, s, j / nS * Math.PI * 2, r, 0, brA); const f = whFace(brA);
-        whSurf(wh, s, (j + 1) / nS * Math.PI * 2, r, 0, brB);
-        spindle(brA, brB, th, a * f, c, RET_NEAR, RET_FULL);
-      }
-    }
-    for (let k = 0; k < nRib; k++) {   // the ribs along it
-      const phi = (k + 0.5) / nRib * Math.PI * 2;
-      for (let i = 0; i < nR - 1; i++) {
-        const s1 = ringS(i), s2 = ringS(i + 1), c = colAt((i + 0.5) / (nR - 1)).clone();
-        whSurf(wh, s1, phi, whRadius(wh, s1), 0, brA); const f = whFace(brA);
-        whSurf(wh, s2, phi, whRadius(wh, s2), 0, brB);
-        spindle(brA, brB, th * 0.8, A * 0.8 * f, c, RET_NEAR, RET_FULL);
-      }
-    }
-    const pa = A * clamp01(P.reticlePath);   // the line you will fly: from the mouth to the way out, then on along its last heading
-    if (pathFrom == null || pa <= 0.01) return;
-    const from = Math.max(wh.s0, pathFrom);
-    for (let i = 0; i < WH_PATH; i++) {
-      const sA = from + (wh.s1 - from) * i / WH_PATH, sB = from + (wh.s1 - from) * (i + 1) / WH_PATH;
-      whPut(whAt(wh, sA, wp1), WH_LIME, pa); whPut(whAt(wh, sB, wp1), WH_LIME, pa);
-    }
-    whAt(wh, wh.s1, wq1, wq2); const on = Math.max(80, 0.5 * wh.L);
-    for (let i = 0; i < 6; i += 2) {
-      wp1.copy(wq1).addScaledVector(wq2, on * i / 6); wp2.copy(wq1).addScaledVector(wq2, on * (i + 1) / 6);
-      whPut(wp1, WH_LIME, pa * 0.8); whPut(wp2, WH_LIME, pa * 0.8);
-    }
-  }
+  function drawReticle(wh, A) { drawFrame(wh, A, pilotColor(0).lerp(brW, clamp01(P.reticleWhite)), RET_NEAR, RET_FULL); }
   // Your reticle (rounds 23, 26): faint at rest, full while the right stick or LT shapes it, rippling out of its centre as
   // it comes back; and as a tunnel forms, the reticle fading. Its grid is yours alone and only while you shape it; a
   // formed tunnel shows everyone its bridge (drawBridge) and bends space round it (updateTubeWarp, setLensUniforms).
@@ -1268,11 +1709,11 @@
       const lt = you.ret.flq || 0, rest = clamp01(P.reticleIdleAlpha), e = you.ret.emerge;
       const ra = (rest + (1 - rest) * clamp01(Math.max(you.ret.m / 0.3, lt * 2))) * (0.35 + 0.65 * e);
       const v = e >= 1 ? you.ret : Object.assign({}, you.ret, { s0: 0.5 * you.ret.L * (1 - e), s1: 0.5 * you.ret.L * (1 + e) });
-      retDraw.push([v, ra, e >= 1 ? 0 : null]); if (whFill(nFill, v, ra, WH_RET_IN, WH_RET_OUT)) nFill++;
+      retDraw.push([v, ra]);
     }
-    if (you && you.retGhost) retDraw.push([you.retGhost.view, Math.max(0, you.retGhost.a) * 0.8, null]);
+    if (you && you.retGhost) retDraw.push([you.retGhost.view, Math.max(0, you.retGhost.a) * 0.8]);
     brN = 0;
-    for (const [v, a, from] of retDraw) drawReticle(v, a, from);
+    for (const [v, a] of retDraw) drawReticle(v, a);
     retDraw.length = 0;
     if (mode === 'fly') for (const pr of pairs) if (pr.alive && pr.wh) nFill = drawBridge(pr, nFill);
     bridgeMesh.count = brN; bridgeMesh.instanceMatrix.needsUpdate = true; if (bridgeMesh.instanceColor) bridgeMesh.instanceColor.needsUpdate = true;
@@ -1340,7 +1781,7 @@
   let holds = newHolds();   // per pilot
   function trackHold(side, raw, analog, dt) {
     const h = holds[side], pressed = raw > 0.05;
-    if (pressed && !h.on) { h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : 0; if (side === 'R') gateForm(); }
+    if (pressed && !h.on) { h.on = true; h.t = 0; h.peak = 0; h.live = analog ? clamp01(raw) : 0; if (side === 'R' && !gateForm()) chainPress(); }
     if (h.on) { h.t += dt; h.live = analog ? clamp01(raw) : clamp01(h.t / Math.max(0.05, P.keyRampSeconds)); h.peak = Math.max(h.peak, h.live); }
     if (!pressed && h.on) { h.on = false; h.live = 0; }
   }
@@ -1350,7 +1791,7 @@
   let armed = false, padBlocked = false, padName = '';
   const prevBtn = [];
   function isFormTarget(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
-  const GAME_KEYS = new Set(['KeyP', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyL', 'KeyR', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  const GAME_KEYS = new Set(['KeyP', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyL', 'KeyR', 'KeyQ', 'KeyE', 'KeyF', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
   window.addEventListener('keydown', (e) => {
     if (isFormTarget(e.target) || !armed) return;
     if (GAME_KEYS.has(e.code)) e.preventDefault();
@@ -1361,6 +1802,9 @@
     if (e.code === 'KeyR') stopRace();
     if (e.code === 'KeyP') setStopped(!stopped);
     if (e.code === 'KeyC') nextCamera();
+    if (e.code === 'KeyE') abilityPress('Y');    // round 8: Lookout (Charge)
+    if (e.code === 'KeyQ') abilityPress('LB');   // Hardened Bridge (Mass): arm the next tunnel
+    if (e.code === 'KeyF') abilityPress('B');    // Cave-in (Space)
   });
   // C (/vessel-studio D16): Chase, then Follow on each pilot in turn (you, then every rival), then Free, then Chase.
   function nextCamera() {
@@ -1421,6 +1865,8 @@
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
   }
   bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R'); bindTrigger('ttL', 'L'); bindTrigger('ttR', 'R');
+  // round 8: the three ability buttons (Y, LB, B), the same press as a gamepad's
+  for (const b of document.querySelectorAll('#tAbil button')) b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touch.used = true; abilityPress(b.dataset.btn); });
   function setPlayMode(on) {
     playMode = !!on; document.body.classList.toggle('play', playMode);
     if (playMode) {
@@ -1475,6 +1921,12 @@
   $('tExit').addEventListener('click', () => setPlayMode(false));
   $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => stopRace());
+  // the phone's ability buttons: dim while cooling down, accent while Mass is armed
+  function syncAbilityButtons() {
+    if (!playMode) return; const ab = ftLive.ab;
+    $('tY').classList.toggle('cool', simT < ab.readyY || !abOn('charge')); $('tB').classList.toggle('cool', simT < ab.readyB || !abOn('space'));
+    $('tLB').classList.toggle('cool', simT < ab.readyLB || !abOn('mass')); $('tLB').classList.toggle('armed', ab.armed);
+  }
   function syncTouchBar() {
     if (!playMode) return;
     $('tStart').textContent = race === 'running' && !stopped ? '❚❚ Pause' : '▶ Play';   // the studio transport (/vessel-studio D18)
@@ -1496,6 +1948,7 @@
       if (e[0] || e[9]) startRace();
       if (e[8] && mode === 'fly') stopRace();
       if (e[2]) stance = !stance && race === 'running';
+      if (mode === 'fly') { if (e[3]) abilityPress('Y'); if (e[4]) abilityPress('LB'); if (e[1]) abilityPress('B'); }   // round 8: Y Lookout, LB Harden, B Cave-in
     }
     const k = (c) => keys.has(c) ? 1 : 0;
     if (!g || (inp.L.x === 0 && inp.L.y === 0 && inp.R.x === 0 && inp.R.y === 0 && inp.lt === 0 && inp.rt === 0 && keys.size)) {
@@ -1518,7 +1971,8 @@
   // The AI's state. level = Easy | Medium | Hard (AI_LEVELS); tracking .. off = its BELIEF about the next ring (aiBelief)
   function newAi(seed, level) {
     return { seed: seed || 1, aimPt: new THREE.Vector3(), aimSet: false, gHold: 0, gL: 0, gM: 0,
-      level: level || 'Hard', tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new THREE.Vector3(), unnoticed: false, mistakes: 0, think: 'ring' };
+      level: level || 'Hard', tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new THREE.Vector3(), unnoticed: false, mistakes: 0, think: 'ring',
+      detourPt: new THREE.Vector3(), detourUntil: -1 };   // round 8: going round a wall it was stopped by
   }
   let ai = newAi(1);   // per pilot
   // Show AI thinking (the universal race panel): a line from the hull to the point the AI is steering for.
@@ -1545,14 +1999,14 @@
   let raceStats = null;
   function newStats() { return { top: 0, dist: 0, slings: 0, catches: 0, errSum: 0, errN: 0, misses: 0, turnT: 0 }; }
   const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
-  const qInv = new THREE.Quaternion(), aiLoc = new V3();
+  const qInv = new THREE.Quaternion(), aiLoc = new V3(), aiLoc2 = new V3();
   // The AI's wormhole (input only, the triggers and the sticks a person has): try every bend and LT squeeze (round 7: LT
   // sets the shaft before the bend), keep the one whose way out heads within 15 deg of the ring with 60 u to spare
   // and reaches it soonest, then bend the reticle toward the ring as far as the plan asks and squeeze LT as it says. A
   // rookie bends it off the mark. null: no tunnel fits this leg. turnOnly: a ring nearer than aiStraightMinDistance gets
   // only a tunnel that bends at least 20 deg (a straight one is for long legs).
-  function aiGatePlan(loc, n, turnOnly) {
-    const ahead = Math.max(0, P.reticleAhead) + speed * Math.max(0, P.aiShapeSeconds);   // where the tunnel will start when it pulls RT
+  function aiGatePlan(loc, n, turnOnly, aheadAt) {   // aheadAt: where the tunnel starts (Chain Dig: 0, the far mouth)
+    const ahead = aheadAt != null ? aheadAt : Math.max(0, P.reticleAhead) + speed * Math.max(0, P.aiShapeSeconds);   // where the tunnel will start when it pulls RT
     const tx = -loc.z, ty = Math.hypot(loc.x, loc.y), v = Math.max(1, speed), turnRate = Math.max(0.2, P.pitchYaw * Math.PI / 180);
     const ends = 0.5 * (rideMultiplier(P, 0) + rideMultiplier(P, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, P.rideMidMultiplier) - ends);
     let best = null;
@@ -1580,13 +2034,15 @@
     if (!curPilot && mode === 'fly' && race === 'finished' && aiRepeat && !batching) { aiRestartT += dt; if (aiRestartT > 1.5) { aiRestartT = 0; spawn(); startRace(); } }
     if (race !== 'running' || stopped) { lastInput = inp; trackHold('L', 0, true, dt); trackHold('R', 0, true, dt); return inp; }
     basis();
-    const g = gates[threaded % 8];
+    const g = gates[threaded % NG];
     // What the AI BELIEVES about the ring (its level's mistakes, aiBelief): null = it has not noticed the new ring yet,
     // so it flies straight on and forms nothing. The flight below only ever sees the belief (/vessel-studio D4).
     const bel = aiBelief(g), blind = !bel;
     const gp = blind ? aiBlind.copy(hull.position).addScaledVector(fwd, 200) : bel;
     const d = hull.position.distanceTo(gp);
     const tgt = blind ? tv3.copy(gp) : tv3.copy(gp).addScaledVector(g.n, -Math.min(70, d * 0.35));
+    const detour = simT < ai.detourUntil && hull.position.distanceTo(ai.detourPt) > 30;   // round 8: round the end of a wall that stopped it
+    if (detour) tgt.copy(ai.detourPt);
     ai.aimPt.copy(tgt); ai.aimSet = true;
     const loc = localOf(tgt), yawErr = Math.atan2(loc.x, -loc.z), pitchErr = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
     const rate = Math.max(0.2, P.pitchYaw * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
@@ -1594,7 +2050,23 @@
     // The one-thumb mix: the LEFT stick flies (yaw, pitch; full throttle), the RIGHT stick bends the reticle, LT lengthens its shaft
     // it, an RT press forms it. The AI holds its line while it shapes (aiShapeSeconds), then presses RT.
     const gate = ftLive.gate, riding = !!(gate && gate.state === 'tube'); let lt = 0, rt = 0, bend = false;
-    if (riding) { ai.gHold = 0; ai.gShaping = false; }
+    if (riding) {
+      ai.gHold = 0; ai.gShaping = false;
+      // round 8, Chain Dig (Time L5): past chainShare of the ride, if a tunnel from the far mouth fits the next leg, bend
+      // the right stick for it and press RT. One try a tunnel.
+      if (P.aiNewAbilities > 0.5 && !blind && !gate.next && !gate.aiChainTried && abUp('time') && gate.s >= Math.max(0, P.chainShare) * gate.pair.wh.L) {
+        gate.aiChainTried = true;
+        const w1 = gate.pair.wh; whAt(w1, w1.L, cdE, cdT); cdQ.setFromUnitVectors(fwd, cdT);
+        const eR = tv.copy(right).applyQuaternion(cdQ), eU = tv2.copy(up).applyQuaternion(cdQ), dE = aiTo.subVectors(tgt, cdE), dist = dE.length();
+        const locE = aiLoc2.set(dE.dot(eR), dE.dot(eU), -dE.dot(cdT));
+        const plan = dist > Math.min(P.aiStraightMinDistance, P.aiBentMinDistance) ? aiGatePlan(locE, clamp01(P.aiNoise), dist <= P.aiStraightMinDistance, 0) : null;
+        if (plan) {
+          const lh = Math.hypot(locE.x, locE.y);
+          inp.R.x = easeInv(lh > 1e-6 ? locE.x / lh * plan.m : 0) / 2; inp.R.y = easeInv(lh > 1e-6 ? locE.y / lh * plan.m : 0) / 2;
+          lt = plan.lq; rt = 1; ai.chains = (ai.chains || 0) + 1;
+        }
+      }
+    }
     else if (ai.gShaping) {   // shaped, and its reticle caught up (round 3: the reticle eases): pull RT
       ai.gHold -= dt; lt = ai.gL; bend = true;
       if (ai.gHold <= 0 && (reticleSettled(ftLive.ret, ai.gL) || ai.gHold <= -1)) { rt = 1; ai.gShaping = false; }
@@ -1611,6 +2083,7 @@
     }
     inp.lt = lt; inp.rt = rt;
     trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
+    aiAbilities();   // round 8: Y, LB and B, by its rules (behind AI uses the new abilities)
     ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : bend ? 'pair' : 'ring';
     lastInput = inp;
     return inp;
@@ -1751,7 +2224,7 @@
   function standings() {
     const rows = [{ name: 'You', css: '#e8ecff', level: aiOn ? youLevel : 'You', threaded, pos: hull.position, finishT: youFinishT }];
     for (const r of rivals) rows.push({ name: r.seat.name, css: r.seat.css, level: r.level, threaded: r.threaded, pos: r.pos, finishT: r.finishT, mistakes: r.ai.mistakes });
-    for (const row of rows) row.togo = row.pos.distanceTo(gates[row.threaded % 8].p);
+    for (const row of rows) row.togo = row.pos.distanceTo(gates[row.threaded % NG].p);
     rows.sort((a, b) => (a.finishT != null) !== (b.finishT != null) ? (a.finishT != null ? -1 : 1) : a.finishT != null ? a.finishT - b.finishT : b.threaded - a.threaded || a.togo - b.togo);
     return rows;
   }
@@ -1761,7 +2234,8 @@
     let t = 0; const h = 1 / 60;
     while (race === 'running' && t < 400) { simStep(h, aiInput(h)); t += h; }
     const s = raceStats;
-    return { finished: race === 'finished', time: raceT, top: s.top, avg: s.dist / Math.max(1e-3, raceT), slings: s.slings, catches: s.catches, err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT };
+    return { finished: race === 'finished', time: raceT, top: s.top, avg: s.dist / Math.max(1e-3, raceT), slings: s.slings, catches: s.catches, err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT,
+      chains: s.chains || 0, caved: s.caved || 0, caveIns: s.caveIns || 0, lookouts: s.lookouts || 0, crystals: s.crystals || 0, walls: s.walls || 0 };   // round 8: what the kit did
   }
   function runLevelScorecard(seeds) {
     seeds = seeds || [11, 23, 37];
@@ -1807,7 +2281,7 @@
   function aiStatsText() {
     const s = raceStats; if (!s) return 'Not flying yet.';
     const avg = raceT > 0 ? s.dist / raceT : 0;
-    return 'Race ' + fmtTime(raceT) + ' · rings ' + threaded + '/' + 8 * laps + ' · now ' + velNow.length().toFixed(0) + ' u/s · top ' + s.top.toFixed(0) + ' · avg ' + avg.toFixed(0) + ' u/s\n' +
+    return 'Race ' + fmtTime(raceT) + ' · rings ' + threaded + '/' + NG * laps + ' · now ' + velNow.length().toFixed(0) + ' u/s · top ' + s.top.toFixed(0) + ' · avg ' + avg.toFixed(0) + ' u/s\n' +
       'tunnels formed ' + s.slings + ' · ridden through ' + s.catches + ' · ring error ' + (s.errN ? (s.errSum / s.errN).toFixed(1) : '—') + ' u · missed ' + s.misses + (lastRun ? '\nlast finished: ' + fmtTime(lastRun.time) : '');
   }
   // the free camera: drag to orbit the Meerkat, wheel to zoom
@@ -1858,12 +2332,15 @@
     }
     // Riding a tunnel (round 24): the camera runs down the tube's centreline behind you and looks along it, so the ride
     // is the tube's own smooth curve - the chase camera lerping its POSITION fell far behind a hull at 2.5x speed and
-    // swung round the bend (the "flipping" Yash saw). Eased in on entry, out on exit.
+    // swung round the bend (the "flipping" Yash saw). Round 8: rideCameraBack behind you in every camera, no height, and
+    // once eased in it sits exactly on the centreline (no lag that could cut a bend's chord and leave the tube). Eased in
+    // on entry and out on exit over rideCameraBlendSeconds (CustomCameraController's Spectate blend: smoothstep).
     const gr = ftLive.gate && ftLive.gate.state === 'tube' && camMode !== 'free' ? ftLive.gate : null;
-    camRide += ((gr ? 1 : 0) - camRide) * (1 - Math.exp(-10 * dt));
-    if (gr) { const wh = gr.pair.wh; whAtX(wh, gr.s - (camMode === 'follow' ? 45 : 18), camRideP); whAtX(wh, gr.s + 40, camRideL); }
-    if (camRide > 0.001) { want.lerp(camRideP, camRide); look.lerp(camRideL, camRide); }
-    const k = snapCam ? 1 : 1 - Math.exp(-((camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) + 40 * camRide) * dt);
+    camRide = Math.max(0, Math.min(1, camRide + (gr ? 1 : -1) * dt / Math.max(0.02, P.rideCameraBlendSeconds)));
+    if (gr) { const wh = gr.pair.wh; whAtX(wh, gr.s - Math.max(0, P.rideCameraBack), camRideP); whAtX(wh, gr.s + Math.max(1, P.rideCameraLookAhead), camRideL); }
+    const camW = camRide * camRide * (3 - 2 * camRide);
+    if (camW > 0.001) { want.lerp(camRideP, camW); look.lerp(camRideL, camW); }
+    const k = snapCam ? 1 : 1 - (1 - camW) * Math.exp(-((camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) + 40 * camW) * dt);
     cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
     if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0); else cam.up.copy(up);
     cam.lookAt(camLook);
@@ -1987,7 +2464,7 @@
     c.beginPath(); c.arc(cw / 2, ch / 2, 9 * sc, 0, Math.PI * 2); c.moveTo(cw / 2 - 18 * sc, ch / 2); c.lineTo(cw / 2 - 12 * sc, ch / 2); c.moveTo(cw / 2 + 12 * sc, ch / 2); c.lineTo(cw / 2 + 18 * sc, ch / 2); c.stroke();
     // next ring marker
     if (gates.length && race !== 'finished') {
-      const g = gates[threaded % 8]; tv.copy(g.p).applyMatrix4(cam.matrixWorldInverse); const behind = tv.z > 0;
+      const g = gates[threaded % NG]; tv.copy(g.p).applyMatrix4(cam.matrixWorldInverse); const behind = tv.z > 0;
       tv.copy(g.p).project(cam); let x = tv.x, y = tv.y; if (behind) { x = -x; y = -y; }
       const on = !behind && Math.abs(x) < 0.95 && Math.abs(y) < 0.92;
       if (!on) { const m = Math.max(Math.abs(x) / 0.92, Math.abs(y) / 0.88); x /= m; y /= m; }
@@ -1995,7 +2472,7 @@
       c.fillStyle = amber; c.strokeStyle = amber; c.lineWidth = 2; c.textAlign = 'center';
       if (on) { c.beginPath(); c.arc(px, py, 13 * sc, 0, Math.PI * 2); c.stroke(); }
       else { const a = Math.atan2(py - ch / 2, px - cw / 2); c.save(); c.translate(px, py); c.rotate(a); c.beginPath(); c.moveTo(12 * sc, 0); c.lineTo(-6 * sc, -8 * sc); c.lineTo(-6 * sc, 8 * sc); c.closePath(); c.fill(); c.restore(); }
-      c.font = font(12, 700); c.fillText('RING ' + (threaded % 8 + 1) + ' · ' + d + ' u', px, py + (on ? 28 : 24) * sc);
+      c.font = font(12, 700); c.fillText('RING ' + (threaded % NG + 1) + ' · ' + d + ' u', px, py + (on ? 28 : 24) * sc);
     }
     // top-left: the ability
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = cyan;
@@ -2010,7 +2487,7 @@
       standings().forEach((row, i) => {
         c.font = font(11, 700); c.fillStyle = row.css;
         const who = row.level === 'You' ? '' : ' · ' + row.level;
-        const prog = row.finishT != null ? fmtTime(row.finishT) : 'ring ' + Math.min(row.threaded, 8 * laps) + '/' + 8 * laps;
+        const prog = row.finishT != null ? fmtTime(row.finishT) : 'ring ' + Math.min(row.threaded, NG * laps) + '/' + NG * laps;
         c.fillText((i + 1) + '  ' + row.name + who + '  ·  ' + prog + (row.mistakes ? '  ·  ' + row.mistakes + ' misjudged' : ''), padL, y); y += 15 * sc;
       });
       c.textAlign = 'center'; c.font = font(11, 700);
@@ -2047,8 +2524,8 @@
     if (portalFlash > 0) { c.globalAlpha = Math.min(1, portalFlash); c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ffffff'; c.fillText('INTO THE WORMHOLE', cw / 2, ch * 0.38); c.globalAlpha = 1; }
     // top-right: the race
     c.textAlign = 'right'; c.font = font(14, 700); c.fillStyle = ink;
-    const lap = Math.min(laps, Math.floor(threaded / 8) + 1);
-    c.fillText('LAP ' + lap + '/' + laps + '   RINGS ' + threaded + '/' + 8 * laps, cw - padR, pad + 12 * sc);
+    const lap = Math.min(laps, Math.floor(threaded / NG) + 1);
+    c.fillText('LAP ' + lap + '/' + laps + '   RINGS ' + threaded + '/' + NG * laps, cw - padR, pad + 12 * sc);
     c.font = font(20, 700); c.fillStyle = gateFlash > 0 ? amber : ink; c.fillText(fmtTime(raceT), cw - padR, pad + 36 * sc);
     c.font = font(11, 500); c.fillStyle = dim; c.fillText(slings + (slings === 1 ? ' tunnel' : ' tunnels'), cw - padR, pad + 51 * sc);
     // bottom-left: speed
@@ -2066,14 +2543,132 @@
       c.textAlign = 'center'; c.font = font(13, 700); c.fillStyle = h.on ? ink : dim; c.fillText(side === 'L' ? 'LT' : 'RT', x, y + 5 * sc);
       c.font = font(10, 500); c.fillStyle = dim; c.fillText(side === 'L' ? 'shorten' : 'form', x, y - r - 8 * sc);
     };
-    if (!playMode) { trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc); }
+    // round 8: the four-icon ability row (LOCKED order Charge, Mass, Space, Time; Docs/claude/VESSEL_HUD_AND_ELEMENTS.md),
+    // lower right: each icon's key, its cooldown, its level and the L5 marker. Elements have no colour (UI_COLOR_RULES):
+    // white glyphs on neutral plates, the studio accent for what is live (armed, marking, a Chain Dig window).
+    // (in phone play the thumbs sit at the lower corners, so the row sits between them, bottom centre)
+    const rowW = drawAbilityRow(c, playMode ? cw / 2 + 100 * sc : cw - padR, ch - pad - 16 * sc, sc, font);
+    if (!playMode) { trig('L', cw - padR - rowW - 96 * sc); trig('R', cw - padR - rowW - 36 * sc); }
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
-    c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
+    c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - padR, ch - pad - 96 * sc);
+    drawLookout(c, cw, ch, sc, font);
+    // the tally under the race clock: crystals, petals lost; and each hull's Burial marker
+    const me = pil(0);
+    if (crys.n) { c.textAlign = 'right'; c.font = font(11, 500); c.fillStyle = dim; c.fillText('crystals ' + me.crystals + (me.petals ? '  ·  petals lost ' + me.petals : ''), cw - padR, pad + 65 * sc); }
+    for (const id of pilotIds()) {
+      const v = PIL[id]; if (!v) continue;
+      const hitA = clamp01(1.5 - (simT - v.hitAt) / 1.5), sil = simT < v.silenceUntil; if (hitA <= 0 && !sil) continue;
+      const pos = id ? seatState[id - 1].pos : hull.position;
+      tv.copy(pos).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -2) continue;
+      tv.copy(pos).project(cam); const x = (tv.x * 0.5 + 0.5) * cw, y = (-tv.y * 0.5 + 0.5) * ch;
+      c.textAlign = 'center'; c.font = font(11, 700); c.fillStyle = '#ffffff';
+      if (hitA > 0) { c.globalAlpha = hitA; c.fillText('BURIED · -1 PETAL', x, y - 34 * sc); c.globalAlpha = 1; }
+      if (sil) { c.fillStyle = dim; c.fillText('SILENCED ' + (v.silenceUntil - simT).toFixed(1) + ' s', x, y - 22 * sc); }
+    }
+    if (lastCave && simT - lastCave.t < 1.8 && lastCave.pilot === 0) {
+      c.globalAlpha = clamp01(1.8 - (simT - lastCave.t)); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = '#ffffff';
+      c.fillText(lastCave.harmless ? 'CAVE-IN · silenced: harmless' : 'CAVE-IN · ' + lastCave.caved + ' prisms' + (lastCave.buried ? ' · ' + lastCave.buried + ' buried' : ''), cw / 2, ch * 0.34); c.globalAlpha = 1;
+    }
     slingFlash = Math.max(0, slingFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
+  // ---- round 8: the four-icon ability row, for the pilot the camera is on ----
+  const viewedId = () => (mode === 'fly' && watchIdx > 0 && rivals[watchIdx - 1] ? rivals[watchIdx - 1].id : 0);
+  function drawAbilityRow(c, right, bottom, sc, font) {
+    const id = viewedId(), live = liveOf(id), ab = live && live.ab, Pv = id ? rivals[watchIdx - 1].P : P;
+    if (!ab || !Pv) return 0;
+    const S = 44 * sc, G = 8 * sc, n = 4, W = n * S + (n - 1) * G, x0 = right - W, y0 = bottom - S, sil = simT < pil(id).silenceUntil;
+    const g = live.gate, riding = !!(g && g.state === 'tube');
+    const rows = [
+      { el: 'charge', key: 'Y', name: 'Lookout', ready: ab.readyY, total: Math.max(0.5, Pv.lookoutSeconds) + Math.max(0, Pv.lookoutCooldownSeconds), act: simT < ab.lookUntil ? (ab.lookUntil - simT) / Math.max(0.5, Pv.lookoutSeconds) : 0 },
+      { el: 'mass', key: 'LB', name: ab.armed ? 'ARMED' : 'Harden', ready: ab.readyLB, total: Math.max(0.01, Pv.hardenCooldownSeconds), act: ab.armed ? 1 : 0 },
+      { el: 'space', key: 'B', name: 'Cave-in', ready: ab.readyB, total: Math.max(0.01, Pv.caveInCooldownSeconds), act: 0 },
+      { el: 'time', key: 'RT', name: riding && g.next ? 'DUG' : riding && Pv.timeLevel >= 5 && g.s >= Pv.chainShare * g.pair.wh.L && !g.next ? 'DIG!' : 'Wormhole', ready: 0, total: 1, act: riding ? 1 : 0 },
+    ];
+    rows.forEach((r, i) => {
+      const x = x0 + i * (S + G), y = y0, on = Pv[r.el + 'On'] > 0.5, lv = Math.round(Pv[r.el + 'Level']), cd = Math.max(0, r.ready - simT);
+      c.save();
+      c.globalAlpha = on ? 1 : 0.35;
+      c.fillStyle = 'rgba(8,10,20,0.72)'; c.strokeStyle = r.act > 0 && on ? '#ffb347' : 'rgba(232,236,255,0.45)'; c.lineWidth = (r.act > 0 && on ? 2 : 1.2) * sc;
+      c.beginPath(); if (c.roundRect) c.roundRect(x, y, S, S, 7 * sc); else c.rect(x, y, S, S); c.fill(); c.stroke();
+      abGlyph(c, r.el, x + S / 2, y + S / 2, S * 0.32, sc);
+      if (on && cd > 0.05) {   // the cooldown: a dark sweep and the seconds left
+        c.fillStyle = 'rgba(0,0,0,0.6)'; c.beginPath(); c.moveTo(x + S / 2, y + S / 2); c.arc(x + S / 2, y + S / 2, S * 0.7, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp01(cd / r.total)); c.closePath();
+        c.save(); c.beginPath(); if (c.roundRect) c.roundRect(x, y, S, S, 7 * sc); else c.rect(x, y, S, S); c.clip(); c.beginPath(); c.moveTo(x + S / 2, y + S / 2); c.arc(x + S / 2, y + S / 2, S * 0.75, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp01(cd / r.total)); c.closePath(); c.fill(); c.restore();
+        c.textAlign = 'center'; c.font = font(12, 700); c.fillStyle = '#ffffff'; c.fillText(cd.toFixed(cd < 10 ? 1 : 0), x + S / 2, y + S / 2 + 4 * sc);
+      }
+      if (r.el === 'charge' && r.act > 0 && on) { c.fillStyle = '#ffb347'; c.fillRect(x + 4 * sc, y + S - 5 * sc, (S - 8 * sc) * clamp01(r.act), 2.5 * sc); }
+      // the key above, the name below, the level in the corner (accent and "L5" once the upgrade is unlocked)
+      c.textAlign = 'center'; c.font = font(10, 700); c.fillStyle = '#e8ecff'; c.fillText(r.key, x + S / 2, y - 4 * sc);
+      c.font = font(8.5, 600); c.fillStyle = r.act > 0 && on ? '#ffb347' : '#9aa6d6'; c.fillText(on ? r.name : 'OFF', x + S / 2, y + S + 10 * sc);
+      c.textAlign = 'right'; c.font = font(8.5, 700); c.fillStyle = lv >= 5 ? '#ffb347' : 'rgba(232,236,255,0.55)'; c.fillText(lv >= 5 ? 'L5+' : 'L' + lv, x + S - 3 * sc, y + 10 * sc);
+      c.restore();
+    });
+    if (sil) { c.textAlign = 'center'; c.font = font(11, 700); c.fillStyle = '#ffffff'; c.fillText('SILENCED ' + (pil(id).silenceUntil - simT).toFixed(1) + ' s · abilities harmless', x0 + W / 2, y0 - 18 * sc); }
+    return W;
+  }
+  // The glyphs: an eye with a pulse (Lookout), a tube of bricks (Hardened Bridge), arrows falling in on a point
+  // (Cave-in), a bent tunnel between two mouths (the wormhole). White strokes only.
+  function abGlyph(c, el, cx, cy, r, sc) {
+    c.strokeStyle = '#ffffff'; c.fillStyle = '#ffffff'; c.lineWidth = 1.6 * sc; c.lineCap = 'round';
+    c.beginPath();
+    if (el === 'charge') {
+      c.moveTo(cx - r, cy); c.quadraticCurveTo(cx, cy - r * 0.9, cx + r, cy); c.quadraticCurveTo(cx, cy + r * 0.9, cx - r, cy); c.stroke();
+      c.beginPath(); c.arc(cx, cy, r * 0.3, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(cx, cy, r * 1.25, -0.5, 0.5); c.stroke();
+    } else if (el === 'mass') {
+      for (let k = 0; k < 3; k++) { const yy = cy - r * 0.75 + k * r * 0.55, js = k % 2 ? [-0.5, 0.5] : [-1, 0, 1]; for (const j of js) c.rect(cx + j * r * 0.7 - r * 0.31, yy, r * 0.62, r * 0.42); }
+      c.stroke();
+    } else if (el === 'space') {
+      for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, ox = Math.cos(a), oy = Math.sin(a); c.moveTo(cx + ox * r, cy + oy * r); c.lineTo(cx + ox * r * 0.38, cy + oy * r * 0.38); c.moveTo(cx + ox * r * 0.38 + oy * r * 0.22, cy + oy * r * 0.38 - ox * r * 0.22); c.lineTo(cx + ox * r * 0.38, cy + oy * r * 0.38); c.lineTo(cx + ox * r * 0.38 - oy * r * 0.22, cy + oy * r * 0.38 + ox * r * 0.22); }
+      c.stroke(); c.beginPath(); c.arc(cx, cy, r * 0.14, 0, Math.PI * 2); c.fill();
+    } else {
+      c.arc(cx - r * 0.2, cy + r * 0.9, r * 1.1, -Math.PI * 0.95, -Math.PI * 0.2); c.stroke();
+      c.beginPath(); c.arc(cx - r * 0.2, cy + r * 0.9, r * 0.55, -Math.PI * 0.95, -Math.PI * 0.2); c.stroke();
+      c.beginPath(); c.ellipse(cx - r * 1.05, cy + r * 0.8, r * 0.3, r * 0.12, 0, 0, Math.PI * 2); c.stroke();
+    }
+  }
+  // Lookout's marks, for the pilot the camera is on: its own lookout, or (L5 Alarm Call) a team-mate's. Every marked
+  // crystal (a diamond; the nearest four with their distance), and every rival's reticle and its next ring, drawn on the
+  // screen so nothing hides them.
+  function drawLookout(c, cw, ch, sc, font) {
+    if (mode !== 'fly') return;
+    const vid = viewedId(), owners = [];
+    for (const id of pilotIds()) { const lv = liveOf(id); if (!lv || !lv.ab || simT >= lv.ab.lookUntil) continue; if (id === vid || (lv.ab.alarm && teamOf(id) === teamOf(vid))) owners.push(id); }
+    if (!owners.length) return;
+    const scr = (p, out) => { tv.copy(p).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -1) return false; tv.copy(p).project(cam); out.x = (tv.x * 0.5 + 0.5) * cw; out.y = (-tv.y * 0.5 + 0.5) * ch; return out.x > -20 && out.x < cw + 20 && out.y > -20 && out.y < ch + 20; };
+    const o = { x: 0, y: 0 }, me = id0Pos(vid), list = [];
+    for (let i = 0; i < crys.n; i++) {
+      if (!crys.alive[i]) continue;
+      let near = false; for (const id of owners) if (crys.pos[i].distanceTo(id0Pos(id)) < Math.max(0, P.lookoutReach)) near = true;
+      crys.marked[i] = near ? 1 : 0; if (near) list.push([crys.pos[i].distanceTo(me), i]);
+    }
+    list.sort((a, b) => a[0] - b[0]);
+    c.lineWidth = 1.5 * sc; c.strokeStyle = '#ffffff'; c.textAlign = 'center'; c.font = font(9.5, 700);
+    list.forEach(([d, i], k) => {
+      if (!scr(crys.pos[i], o)) return; const r = 7 * sc;
+      c.beginPath(); c.moveTo(o.x, o.y - r); c.lineTo(o.x + r, o.y); c.lineTo(o.x, o.y + r); c.lineTo(o.x - r, o.y); c.closePath(); c.stroke();
+      if (k < 4) { c.fillStyle = '#ffffff'; c.fillText(Math.round(d) + ' u', o.x, o.y - r - 4 * sc); }
+    });
+    // every rival's reticle (its centreline and far mouth) and its next ring
+    const vt = teamOf(vid), p1 = new V3();
+    for (const id of pilotIds()) {
+      if (teamOf(id) === vt) continue;
+      const lv = liveOf(id), col = id ? seatFor(id - 1).css : '#' + DOMAIN[domainKey].toString(16).padStart(6, '0'), th = id ? seatState[id - 1].threaded : threaded;
+      c.strokeStyle = col; c.fillStyle = col; c.setLineDash([5 * sc, 4 * sc]);
+      if (lv && lv.ret && lv.ret.L) {
+        c.beginPath(); let started = false;
+        for (let k = 0; k <= 16; k++) { whAt(lv.ret, lv.ret.L * k / 16, p1); if (scr(p1, o)) { if (!started) { c.moveTo(o.x, o.y); started = true; } else c.lineTo(o.x, o.y); } }
+        c.stroke();
+      }
+      c.setLineDash([]);
+      const gr = gates[th % NG]; if (gr && scr(gr.p, o)) { c.beginPath(); c.arc(o.x, o.y, 15 * sc, 0, Math.PI * 2); c.stroke(); c.fillText((id ? seatFor(id - 1).name : 'You') + "'s ring " + (th % NG + 1), o.x, o.y + 28 * sc); }
+    }
+    c.setLineDash([]);
+  }
+  function id0Pos(id) { return id ? seatState[id - 1].pos : hull.position; }
   function updateRings(now) {
     gates.forEach((g, k) => {
-      const next = race !== 'finished' && k === threaded % 8;
+      const next = race !== 'finished' && k === threaded % NG;
       g.ring.material.color.setHex(next ? 0xffb347 : 0x7fd7ff);
       g.ring.material.opacity = next ? 1 : 0.45;
       g.disc.material.opacity = next ? 0.06 + 0.05 * Math.sin(now * 0.005) : 0;
@@ -2099,12 +2694,12 @@
     }
     if (race === 'ready' && layout === 'phone') {   // in the touch layout: short, and Start lives in the top bar
       box.innerHTML = '<h2>The wormhole · intensity ' + intensity + ' · ' + laps + (laps > 1 ? ' laps' : ' lap') + '</h2>' +
-        '<p>Thread the 8 rings in order (amber is next). <b>Left thumb</b>: fly. <b>Right thumb</b>: bend the tunnel on your nose. Drag <b>LT</b> down to shorten it, tap <b>RT</b> to form it and ride it.</p><p>Tap <b>Start</b> up top.</p>';
+        '<p>Thread the ' + NG + ' rings in order (amber is next). <b>Left thumb</b>: fly. <b>Right thumb</b>: bend the tunnel on your nose. Drag <b>LT</b> down to shorten it, tap <b>RT</b> to form it and ride it.</p><p>Tap <b>Start</b> up top.</p>';
       return;
     }
     if (race === 'ready') {
       box.innerHTML = '<h2>The wormhole · intensity ' + intensity + '</h2>' +
-        '<p>A <b>run</b> is one race: thread the 8 rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, and you can log it.</p>' +
+        '<p>A <b>run</b> is one race: thread the ' + NG + ' rings in order (the amber one is next), ' + laps + (laps > 1 ? ' laps' : ' lap') + ', against the clock. Your time lands under <b>Runs on this course</b>, and you can log it.</p>' +
         '<p><b>One thumb flies</b>: the <b>left stick</b> (<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>). The grid on your nose is the tunnel <kbd>RT</kbd> would form: the <b>right stick</b> bends it (the arrows) - which way and how far, up to ' + P.bendMaxDegrees + '&deg;, at the end of a straight shaft <kbd>LT</kbd> lengthens (' + P.shaftMin + ' to ' + P.shaftMax + ' u). Pull <kbd>RT</kbd> (<kbd>L</kbd>) and ride it, out with the speed you went in with.</p>' +
         (layout === 'phone'
           ? ''
@@ -2338,7 +2933,7 @@
   };
   // ---------- what the screen shows: the tube's warp, a mouth's dent, the collapse's edge ripple, your reticle ----------
   SCENES.tunnelLook = {
-    make(Pv, cfg) { return { warp: Pv.warpStrength, dent: Pv.dentStrength, rip: Pv.rippleStrength, edge: Pv.rippleEdge, ripT: Pv.rippleSeconds, idle: Pv.reticleIdleAlpha, glass: Pv.reticleGlass, rings: Math.round(Pv.reticleRings), per: Math.round(Pv.reticleSpindlesPerRing), ribs: Math.max(0, Math.round(Pv.reticleRibs)), th: Pv.reticleSpindleThickness, smooth: Math.max(0, Pv.reticleSmoothSeconds), what: cfg.what || 'warp' }; },
+    make(Pv, cfg) { return { warp: Pv.warpStrength, dent: Pv.dentStrength, rip: Pv.rippleStrength, edge: Pv.rippleEdge, ripT: Pv.rippleSeconds, idle: Pv.reticleIdleAlpha, glass: 0, rings: Math.round(Pv.bridgeRings), per: Math.round(Pv.bridgeSpindlesPerRing), ribs: Math.max(0, Math.round(Pv.bridgeRibs)), th: Pv.bridgeSpindleThickness, smooth: Math.max(0, Pv.reticleSmoothSeconds), what: cfg.what || 'warp' }; },
     period: (st) => (st.what === 'ripple' ? Math.max(1.2, st.ripT + 0.4) : 3),
     draw(c, W, H, tt, st) {
       c.fillStyle = PREV_BG; c.fillRect(0, 0, W, H);
@@ -2386,6 +2981,64 @@
       else if (st.what === 'warp') txt(c, 'the tube crosses the view: its centre clear, the space round it bent', 6, H - 6, '#9aa6d6', 9.5);
     },
   };
+  // ---------- round 8: the four proposed abilities, in plan (one scene, a mode per ability) ----------
+  SCENES.ability = {
+    make: () => ({}), period: () => 4.5,
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      previewBg(c, W, H, 41);
+      const ab = cfg.ab, lv = Pv[ab + 'Level'], on = Pv[ab + 'On'] > 0.5, up5 = on && lv >= 5;
+      let a = 97; const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const cyn = '#bff6ff', amb = '#ffb347', ink = '#e8ecff', dim = '#9aa6d6', rival = '#ff4fd8';
+      const foot = (s) => txt(c, s, 6, H - 6, dim, 9.5);
+      if (!on) { txt(c, 'off: this ability does nothing', W / 2, H / 2, dim, 12, 'center'); return; }
+      if (ab === 'charge') {   // the pulse opens to its reach; crystals inside are marked (and, L5, drawn in)
+        const cx = 40, cy = H / 2, k = (W - 60) / 2000, R = Math.max(0, Pv.lookoutReach) * k, live = tt < Math.min(4, Pv.lookoutSeconds);
+        const pulse = Math.min(1, tt / 0.9);
+        c.strokeStyle = 'rgba(255,255,255,' + (0.5 * (1 - pulse) + 0.15).toFixed(2) + ')'; c.beginPath(); c.arc(cx, cy, R * (0.2 + 0.8 * pulse), 0, TAU); c.stroke();
+        for (let i = 0; i < 18; i++) {
+          let x = 50 + rnd() * (W - 60), y = 14 + rnd() * (H - 34); const d = Math.hypot(x - cx, y - cy), inR = d < R;
+          if (inR && live && up5) { const f = Math.min(1, tt * Math.max(0, Pv.alarmPullSpeed) * k / Math.max(1, d)); x += (cx - x) * f; y += (cy - y) * f; }
+          c.fillStyle = cyn; c.fillRect(x - 2, y - 2, 4, 4);
+          if (inR && live) { c.strokeStyle = amb; c.beginPath(); c.moveTo(x, y - 6); c.lineTo(x + 6, y); c.lineTo(x, y + 6); c.lineTo(x - 6, y); c.closePath(); c.stroke(); }
+        }
+        ship(c, cx, cy, 1, 0, ink, 6);
+        txt(c, 'reach ' + Math.round(Pv.lookoutReach) + ' u · marks ' + Pv.lookoutSeconds + ' s · then ' + Pv.lookoutCooldownSeconds + ' s cooldown', 6, 13, ink, 10);
+        foot(up5 ? 'L5 Alarm Call: crystals drawn in at ' + Math.round(Pv.alarmPullSpeed) + ' u/s, team sees the marks' : 'Alarm Call unlocks at level 5 (now ' + lv + ')');
+        return;
+      }
+      if (ab === 'mass') {   // the tube's prisms, top view; a rival meets the wall and slides along it
+        const y0 = H / 2 - 16, y1 = H / 2 + 16, x0 = 30, x1 = W - 30, dens = Math.max(0.1, Pv.wallPrismDensity), step = Math.max(4, 18 / dens);
+        c.fillStyle = up5 ? '#eef2ff' : '#7fa8ff';
+        for (let x = x0; x < x1; x += step) { c.fillRect(x, y0 - 2, step * 0.8, 4); c.fillRect(x, y1 - 2, step * 0.8, 4); }
+        const rx = 60 + tt * 40, ry = tt < 1.2 ? 10 + tt * 30 : y0 - 8;
+        ship(c, rx, ry, tt < 1.2 ? 0.6 : 1, tt < 1.2 ? -0.8 : 0, rival, 5);
+        txt(c, 'lasts ' + Pv.wallSeconds + ' s · cooldown ' + Pv.hardenCooldownSeconds + ' s · ' + Math.round(2 * (x1 - x0) / step) + ' prisms in view', 6, 13, ink, 10);
+        foot(up5 ? 'L5 Shielded Bridge: shielded prisms, immune to Cave-in' : 'Shielded Bridge unlocks at level 5 (now ' + lv + ')');
+        return;
+      }
+      if (ab === 'space') {   // the tunnel implodes; prisms in its reach go; (L5) a rival inside is buried
+        const cy = H / 2, x0 = 30, x1 = W - 30, k = 0.8, reach = Math.max(0, Pv.caveInReach) * k, t1 = 1.2, imp = clamp01((tt - t1) / 0.45), r = 14 * (1 - imp);
+        c.strokeStyle = 'rgba(255,255,255,0.25)'; c.setLineDash([3, 4]); c.strokeRect(x0, cy - 14 - reach, x1 - x0, 28 + 2 * reach); c.setLineDash([]);
+        c.strokeStyle = cyn; c.beginPath(); c.moveTo(x0, cy - r); c.lineTo(x1, cy - r); c.moveTo(x0, cy + r); c.lineTo(x1, cy + r); c.stroke();
+        for (let i = 0; i < 26; i++) { const x = 20 + rnd() * (W - 40), y = 12 + rnd() * (H - 30), inR = Math.abs(y - cy) < 14 + reach && x > x0 && x < x1; if (inR && tt > t1) continue; c.fillStyle = '#7f95d6'; c.fillRect(x - 3, y - 1.5, 6, 3); }
+        if (up5) { ship(c, W * 0.6, cy, 1, 0, rival, 5); if (tt > t1) txt(c, '-1 petal · silenced ' + Pv.burialSilenceSeconds + ' s', W * 0.6, cy - 12, rival, 9.5, 'center'); }
+        txt(c, 'B at ' + t1 + ' s: prisms within ' + Pv.caveInReach + ' u go · cooldown ' + Pv.caveInCooldownSeconds + ' s', 6, 13, ink, 10);
+        foot(up5 ? 'L5 Burial: a rival inside or touching it is hit (never pushed)' : 'Burial unlocks at level 5 (now ' + lv + ')');
+        return;
+      }
+      // time: a ridden tunnel; past chainShare, RT (L5) digs the next one from the far mouth
+      const x0 = 24, xm = W * 0.55, cy = H * 0.62, share = clamp01(Pv.chainShare), u = clamp01(tt / 2.2), x = x0 + (xm - x0) * u;
+      c.strokeStyle = cyn; c.beginPath(); c.moveTo(x0, cy - 8); c.lineTo(xm, cy - 8); c.moveTo(x0, cy + 8); c.lineTo(xm, cy + 8); c.stroke();
+      c.strokeStyle = amb; c.beginPath(); c.moveTo(x0 + (xm - x0) * share, cy - 14); c.lineTo(x0 + (xm - x0) * share, cy + 14); c.stroke();
+      const dug = up5 && u >= share;
+      if (dug) { c.strokeStyle = 'rgba(191,246,255,0.8)'; c.beginPath(); c.arc(xm, cy - 70, 62, Math.PI / 2, Math.PI * 0.1, true); c.stroke(); c.beginPath(); c.arc(xm, cy - 70, 78, Math.PI / 2, Math.PI * 0.1, true); c.stroke(); }
+      if (u < 1) ship(c, x, cy, 1, 0, ink, 5);
+      else if (dug) { const b = clamp01((tt - 2.2) / 1.6) * Math.PI * 0.4; ship(c, xm + 70 * Math.sin(b), cy - 70 + 70 * Math.cos(b), Math.cos(b), Math.sin(b), '#9dff2e', 5); }
+      else ship(c, xm + (tt - 2.2) * 40, cy, 1, 0, ink, 5);
+      txt(c, 'the amber tick: ' + Math.round(share * 100) + '% of the ride', 6, 13, ink, 10);
+      foot(up5 ? 'L5 Chain Dig: RT past the tick digs on, at throat speed' : 'Chain Dig unlocks at level 5 (now ' + lv + ')');
+    },
+  };
   const TIPS = {
     reticleAhead: { scene: 'tunnel', d: 'The reticle (yours alone) rides this far ahead of your nose; pull RT and the tunnel forms there, and you dive straight into its mouth. The game: MeerkatWormholeConfig.reticleAhead.', lo: 'Right on your nose.', hi: 'Further out: a longer dive in.' },
     bendMaxDegrees: { scene: 'tunnel', d: 'The right stick pushed fully over bends the tunnel this far at the end of its shaft, any way; half over, half as far: 90, 120, 150 degrees.', lo: 'Gentle bends only.', hi: 'Turns you right round.' },
@@ -2396,6 +3049,9 @@
     mouthRadius: { scene: 'tunnel', d: 'Each mouth\'s radius - the same for every tunnel: the tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
     rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
+    rideCameraBack: { scene: 'tunnel', d: 'While a tunnel flies you, the camera leaves its usual place above and behind you and rides ON the tube\'s centreline this far behind you - no height offset, so your view stays inside the tunnel the whole way through, round the bend included.', lo: 'Right at your tail.', hi: 'Further back down the tube.' },
+    rideCameraLookAhead: { scene: 'tunnel', d: 'Riding, the camera looks at the point this far ahead of you along the centreline, so it turns with the bend before you reach it.', lo: 'Looks just ahead.', hi: 'Looks far round the bend.' },
+    rideCameraBlendSeconds: { scene: 'tunnel', d: 'The camera eases from its usual place onto the centreline when you pull RT, and back when you come out, over this long.', lo: 'A cut.', hi: 'A slow glide.' },
     rideEntryMultiplier: { scene: 'tunnel', d: 'The ride is your speed before the tunnel times a multiplier: this one going in (the dive to the mouth and the way in). 1 = you enter at exactly the speed you had. The green dot rides the sharpest tunnel.', lo: 'Slows you as you enter.', hi: 'A kick going in.' },
     rideMidMultiplier: { scene: 'tunnel', d: 'The ride rises from the entry multiplier to this many times your speed before the tunnel at the throat, then eases to the exit multiplier. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
     rideExitMultiplier: { scene: 'tunnel', d: 'You come out of the far mouth at this many times your speed before the tunnel, on its last heading, and ease back to cruise as you fly on. A little over 1 = a small boost for taking the tunnel.', lo: 'Out at your speed.', hi: 'A big boost out.' },
@@ -2410,19 +3066,15 @@
     rippleEdge: { scene: 'tunnelLook', cfg: { what: 'ripple' }, d: 'Where the ripple starts, as a share of the way from the screen\'s centre to its corner: inside this circle the view never moves.', lo: 'Reaches in toward the centre.', hi: 'Only the very edges.' },
     rippleSeconds: { scene: 'tunnelLook', cfg: { what: 'ripple' }, d: 'How long the ripple takes to run out past the screen\'s edges and fade.', lo: 'A quick shimmer.', hi: 'A slow, rolling ripple.' },
     reticleSmoothSeconds: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle eases toward what the right stick and LT ask for over about this long, so it glides rather than snaps. RT forms the tunnel you see. 0 = it follows the sticks at once. The AI waits for its reticle to catch up before it pulls RT.', lo: 'Snappy.', hi: 'Floaty.' },
-    reticleRings: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is a frame of thin spindles: this many rings of them stand round its throat, mouth to mouth.', lo: 'A few hoops.', hi: 'A dense cage.' },
-    reticleSpindlesPerRing: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'How many spindles make each of your reticle\'s rings (each spindle is one edge of the ring\'s polygon).', lo: 'Angular rings.', hi: 'Round rings.' },
-    reticleRibs: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'How many lines of spindles run along your reticle from ring to ring. 0 = rings only.', lo: 'Rings only.', hi: 'A lattice.' },
-    reticleSpindleThickness: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'How thick each of your reticle\'s spindles is at its middle (a spindle tapers to a point at both ends). Thin reads as a see-through wireframe.', lo: 'Hair-thin.', hi: 'Heavy beams.' },
-    reticlePath: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Once your reticle is fully grown, the lime line you will fly runs through it and on along the way out. 0 hides it.', lo: 'No line.', hi: 'A bright line.' },
     reticleIdleAlpha: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is always on your nose: the tunnel RT would form now. This is how bright its grid is with the right stick centred (bending it lights it up). Only you see it.', lo: 'Faint at rest.', hi: 'Always bright.' },
-    reticleGlass: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'A faint glassy surface under your reticle\'s grid, brighter at its silhouette, so it reads as a 3D tube. Only you see it.', lo: 'Lines only.', hi: 'A glass tube.' },
     bridgeVisibility: { scene: 'bridge', d: 'A formed tunnel shows its geometry to everyone: a bridge of spindles (rings round the throat, ribs along it) over a glass surface, in its maker\'s domain colour. The game will build it from its Spindle prefabs; the bent space round it stays the shader\'s. 0 hides the bridge and leaves only the bent space.', lo: 'A ghost of a bridge.', hi: 'The full structure.' },
     bridgeGlass: { scene: 'bridge', d: 'The glass surface under the bridge\'s spindles, brightest at its silhouette, so the tube reads as a solid body. 0 = spindles only.', lo: 'A faint skin.', hi: 'A glowing glass tube.' },
     bridgeRings: { scene: 'bridge', d: 'How many rings of spindles stand round the throat along the tunnel, evenly spaced mouth to mouth.', lo: 'A few hoops.', hi: 'A dense ribcage.' },
     bridgeSpindlesPerRing: { scene: 'bridge', d: 'How many spindles make each ring (each spindle is one edge of the ring\'s polygon).', lo: 'Angular rings.', hi: 'Round rings.' },
     bridgeRibs: { scene: 'bridge', d: 'How many lines of spindles run along the tunnel from ring to ring, mouth to mouth. 0 = rings only.', lo: 'Few ribs.', hi: 'A lattice.' },
     bridgeSpindleThickness: { scene: 'bridge', d: 'How thick each spindle is at its middle (a spindle tapers to a point at both ends).', lo: 'Fine threads.', hi: 'Heavy beams.' },
+    reticleWhite: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is the wormhole\'s wireframe (its rings, spindles and ribs are the bridge\'s, in the same places), in your domain colour mixed toward white by this much.', lo: 'Your domain colour.', hi: 'White.' },
+    bridgeWhite: { scene: 'bridge', d: 'The bridge\'s spindles are its maker\'s domain colour mixed toward white by this much (its glass keeps the domain colour).', lo: 'The domain colour.', hi: 'White spindles.' },
     bridgeShimmer: { scene: 'bridge', d: 'A shimmer of light running through the spindles from the way in to the way out, so the bridge reads as a passage. 0 = steady.', lo: 'Steady.', hi: 'A strong running pulse.' },
     aiWormhole: { scene: 'tunnel', cfg: { ai: true }, d: 'Whether the AI uses the wormhole at all. 0 flies the course on steering alone: the baseline.', lo: 'No wormhole.', hi: 'Uses it.' },
     aiStraightMinDistance: { scene: 'tunnel', cfg: { ai: true, aiFar: 600 }, d: 'The AI forms a straight tunnel only with its ring at least this far away.', lo: 'Straight hops even near a ring.', hi: 'Straight only on long legs.' },
@@ -2438,6 +3090,27 @@
     lopeRate: { scene: 'lope', d: 'How many bounds a second.', lo: 'Slower bounds.', hi: 'Quicker, scampering bounds.' },
     lopeArch: { scene: 'lope', d: 'How much the back arches and flattens with each bound.', lo: 'A stiffer, straighter back.', hi: 'A stronger arch-and-stretch.' },
     lopeSquash: { scene: 'lope', d: 'How much the body stretches long and bunches short through each bound.', lo: 'Less stretch and bunch.', hi: 'More stretch and bunch.' },
+    // round 8, the proposed kit (lab-only: none of these is in the game)
+    chargeOn: { scene: 'ability', cfg: { ab: 'charge' }, d: 'Charge, Lookout (Y), a proposal: a pulse that, for a few seconds, marks every crystal in reach and shows you every rival\'s reticle and its next ring, through anything. Off: Y does nothing.', lo: 'Off.', hi: 'On.' },
+    chargeLevel: { scene: 'ability', cfg: { ab: 'charge' }, at: [0.3, 0.6], d: 'The Charge element\'s level, L0 to L10. Level 5 and up unlocks Lookout\'s upgrade, Alarm Call: the crystals inside the reach are drawn to you, and your team-mates see the marks too. (Scaling Lookout itself with the level is not modelled yet.)', lo: 'No upgrade.', hi: 'Alarm Call.' },
+    lookoutSeconds: { scene: 'ability', cfg: { ab: 'charge' }, d: 'How long Lookout\'s marks stay up after the pulse.', lo: 'A glance.', hi: 'A long look.' },
+    lookoutReach: { scene: 'ability', cfg: { ab: 'charge' }, d: 'How far from you a crystal is marked (and, at L5, drawn in). Rivals\' reticles and rings show at any distance.', lo: 'Close by.', hi: 'Across the course.' },
+    lookoutCooldownSeconds: { scene: 'ability', cfg: { ab: 'charge' }, d: 'After the marks fade, Lookout is ready again after this long.', lo: 'Often.', hi: 'Rarely.' },
+    alarmPullSpeed: { scene: 'ability', cfg: { ab: 'charge', over: { chargeLevel: 5 } }, d: 'L5 Alarm Call: while the marks are up, the crystals inside the reach fly to you at this speed.', lo: 'They drift in.', hi: 'They rush in.' },
+    massOn: { scene: 'ability', cfg: { ab: 'mass' }, d: 'Mass, Hardened Bridge (LB), a proposal: LB arms your next tunnel; its spindle bridge sets as real prisms, a tube no other team can cross through. Off: LB does nothing.', lo: 'Off.', hi: 'On.' },
+    massLevel: { scene: 'ability', cfg: { ab: 'mass' }, at: [0.3, 0.6], d: 'The Mass element\'s level. Level 5 and up unlocks Shielded Bridge: the tube\'s prisms are shielded, immune to Cave-in, and drawn pale.', lo: 'Breakable walls.', hi: 'Shielded walls.' },
+    wallSeconds: { scene: 'ability', cfg: { ab: 'mass' }, d: 'How long a hardened tube stands, from its forming (it outlives the tunnel itself, which collapses after staySeconds).', lo: 'A brief block.', hi: 'A lasting wall.' },
+    wallPrismDensity: { scene: 'ability', cfg: { ab: 'mass' }, d: 'How many prisms make the tube: 1 = a ring every 20 u along it and a prism every 10 u round each ring. (The wall stops others wherever a prism stands.)', lo: 'Sparse.', hi: 'Dense.' },
+    hardenCooldownSeconds: { scene: 'ability', cfg: { ab: 'mass' }, d: 'After a hardened tunnel, LB can arm the next one after this long.', lo: 'Every tunnel.', hi: 'Now and then.' },
+    spaceOn: { scene: 'ability', cfg: { ab: 'space' }, d: 'Space, Cave-in (B), a proposal: your standing tunnel collapses now, imploding to its centre line, and destroys every prism near it. Off: B does nothing.', lo: 'Off.', hi: 'On.' },
+    spaceLevel: { scene: 'ability', cfg: { ab: 'space' }, at: [0.3, 0.6], d: 'The Space element\'s level. Level 5 and up unlocks Burial: a rival inside or touching the caved tunnel takes a scored hit (a petal lost, its abilities silenced); it is never pushed.', lo: 'Prisms only.', hi: 'Burial.' },
+    caveInReach: { scene: 'ability', cfg: { ab: 'space' }, d: 'How far from the tube\'s wall a Cave-in destroys prisms, all along the tunnel.', lo: 'Only the tube.', hi: 'A wide swath.' },
+    caveInCooldownSeconds: { scene: 'ability', cfg: { ab: 'space' }, d: 'After a Cave-in, B is ready again after this long.', lo: 'Often.', hi: 'Rarely.' },
+    burialSilenceSeconds: { scene: 'ability', cfg: { ab: 'space', over: { spaceLevel: 5 } }, d: 'L5 Burial: a rival caught in the caved tunnel is silenced (its abilities harmless) for this long, and loses a petal.', lo: 'A blink.', hi: 'A long silence.' },
+    timeOn: { scene: 'ability', cfg: { ab: 'time' }, d: 'Time, the wormhole (RT): the Meerkat\'s ability since round 1. Off: RT forms nothing (the vessel without its Time ability).', lo: 'Off.', hi: 'On.' },
+    timeLevel: { scene: 'ability', cfg: { ab: 'time' }, at: [0.3, 0.6], d: 'The Time element\'s level. Level 5 and up unlocks Chain Dig (a proposal): late in a ride, RT digs the next tunnel from the far mouth and you carry straight on at throat speed.', lo: 'One tunnel at a time.', hi: 'Chain Dig.' },
+    chainShare: { scene: 'ability', cfg: { ab: 'time', over: { timeLevel: 5 } }, d: 'L5 Chain Dig: from this share of the way through a tunnel you ride, RT digs the next one (the amber tick).', lo: 'Early: lots of time to aim.', hi: 'Late: right at the far mouth.' },
+    aiNewAbilities: { scene: 'ability', cfg: { ab: 'charge' }, d: 'Whether the AI pilots use the round-8 abilities: Lookout when ready (with rivals or crystals near), Hardened Bridge with a rival within 600 u, Cave-in on a tunnel it has left with a rival in it (L5) or 6 prisms in reach, and Chain Dig when a tunnel from the far mouth fits the next leg. All by pressing the buttons a player has. Off: the AI flies as it did before round 8.', lo: 'Wormhole only.', hi: 'The whole kit.' },
   };
 
   // ---------- the card ----------
@@ -2620,6 +3293,9 @@
     rideMidMultiplier: ['MeerkatWormholeConfig.rideMidMultiplier', 'linked'],
     rideExitMultiplier: ['MeerkatWormholeConfig.rideExitMultiplier', 'linked'],
     rideSpeedTunnelScale: ['MeerkatWormholeConfig.rideSpeedTunnelScale', 'linked'],
+    rideCameraBack: ['MeerkatWormholeConfig.rideCameraBack', 'linked'],
+    rideCameraLookAhead: ['MeerkatWormholeConfig.rideCameraLookAhead', 'linked'],
+    rideCameraBlendSeconds: ['MeerkatWormholeConfig.rideCameraBlendSeconds', 'linked'],
     reticleDelaySeconds: ['MeerkatWormholeConfig.reticleDelaySeconds', 'linked'],
     reticleGrowSeconds: ['MeerkatWormholeConfig.reticleGrowSeconds', 'linked'],
     formSeconds: ['MeerkatWormholeConfig.formSeconds', 'linked'],
@@ -2631,13 +3307,7 @@
     rippleEdge: ['MeerkatWormholeConfig.rippleEdge', 'linked'],
     rippleSeconds: ['MeerkatWormholeConfig.rippleSeconds', 'linked'],
     reticleIdleAlpha: ['MeerkatWormholeConfig.reticleIdleAlpha', 'linked'],
-    reticleGlass: ['MeerkatWormholeConfig.reticleGlass', 'linked'],
     reticleSmoothSeconds: ['MeerkatWormholeConfig.reticleSmoothSeconds', 'linked'],
-    reticleRings: ['MeerkatWormholeConfig.reticleRings', 'linked'],
-    reticleSpindlesPerRing: ['MeerkatWormholeConfig.reticleSpindlesPerRing', 'linked'],
-    reticleRibs: ['MeerkatWormholeConfig.reticleRibs', 'linked'],
-    reticleSpindleThickness: ['MeerkatWormholeConfig.reticleSpindleThickness', 'linked'],
-    reticlePath: ['MeerkatWormholeConfig.reticlePath', 'linked'],
     bridgeVisibility: ['MeerkatWormholeConfig.bridgeVisibility', 'linked'],
     bridgeGlass: ['MeerkatWormholeConfig.bridgeGlass', 'linked'],
     bridgeRings: ['MeerkatWormholeConfig.bridgeRings', 'linked'],
@@ -2645,6 +3315,8 @@
     bridgeRibs: ['MeerkatWormholeConfig.bridgeRibs', 'linked'],
     bridgeSpindleThickness: ['MeerkatWormholeConfig.bridgeSpindleThickness', 'linked'],
     bridgeShimmer: ['MeerkatWormholeConfig.bridgeShimmer', 'linked'],
+    bridgeWhite: ['MeerkatWormholeConfig.bridgeWhite', 'linked'],
+    reticleWhite: ['MeerkatWormholeConfig.reticleWhite', 'linked'],
     aiWormhole: ['MeerkatWormholeConfig.aiWormhole', 'linked'],
     aiStraightMinDistance: ['MeerkatWormholeConfig.aiStraightMinDistance', 'linked'],
     aiBentMinDistance: ['MeerkatWormholeConfig.aiBentMinDistance', 'linked'],
@@ -2660,27 +3332,33 @@
     lopeArch: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
     lopeSquash: ['lab: the Stoat\'s lope on the stand-in hull', 'lab'],
   };
+  // round 8: the proposed kit. Lab-only until Yash decides (no MeerkatWormholeConfig field, no studio_to_unity map row).
+  for (const [grp, key] of SPEC) if (/^ab/.test(grp) || key === 'aiNewAbilities') GAME_NAMES[key] = ['lab: round 8 proposal, not in the game (Yash judges it here first)', 'lab'];
   // ================= rail =================
   const outputs = {};
   function buildRail() {
-    for (const [grp, key, label, lo, hi, step] of SPEC) {
+    for (const [grp, key, label, lo, hi, step, kind] of SPEC) {
       const host = document.querySelector('#grp-' + grp + ' .rows');
-      const row = document.createElement('div'); row.className = 'row';
+      const row = document.createElement('div'); row.className = 'row' + (kind === 'toggle' ? ' toggle' : '');
       const id = 'p-' + key;
       const gn = GAME_NAMES[key];
-      row.innerHTML = '<label for="' + id + '">' + label + '</label><input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '"><output></output>'
+      const ctl = kind === 'toggle' ? '<input type="checkbox" id="' + id + '" role="switch">' : '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '">';
+      row.innerHTML = '<label for="' + id + '">' + label + '</label>' + ctl + '<output></output>'
         + (gn ? '<code class="gname gn-' + gn[1] + '" title="' + (gn[1] === 'linked' ? 'The game\'s field: the artifact writes it (studio_to_unity.py)' : gn[1] === 'field' ? 'The game\'s field: not linked yet (check its units when porting)' : gn[1] === 'new' ? 'The field the game will get, by this exact name' : 'The studio\'s own: never in the game') + '">' + escapeHtml(gn[0]) + (gn[1] === 'linked' || gn[1] === 'lab' ? '' : ' · ' + gn[1]) + '</code>' : '');
       host.appendChild(row);
       attachTip(row, key, label);
       const inp = row.querySelector('input'), out = row.querySelector('output');
-      inp.value = P[key]; outputs[key] = { inp, out, step };
-      inp.addEventListener('input', () => { BP[key] = parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); });
+      const tog = kind === 'toggle';
+      if (tog) inp.checked = P[key] > 0.5; else inp.value = P[key];
+      outputs[key] = { inp, out, step, tog };
+      inp.addEventListener(tog ? 'change' : 'input', () => { BP[key] = tog ? (inp.checked ? 1 : 0) : parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); });
       refreshOut(key);
     }
   }
-  function refreshAllOuts() { for (const k in outputs) refreshOut(k); }
+  function refreshAllOuts() { for (const k in outputs) refreshOut(k); markAbilities(); }
   function refreshOut(key) {
     const o = outputs[key], b = BP[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : 2;
+    if (o.tog) { o.inp.checked = b > 0.5; o.out.textContent = b > 0.5 ? 'on' : 'off'; o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + (SHIPPED[key] > 0.5 ? 'on' : 'off'); return; }
     if (document.activeElement !== o.inp && Math.abs(parseFloat(o.inp.value) - b) > 1e-9) o.inp.value = b;
     o.out.textContent = b.toFixed(dec);
     o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9);
@@ -2709,7 +3387,7 @@
   var racePanelRef = window.StudioRacePanel ? StudioRacePanel.mount($('racePanel'), {
     gameHost: $('intensityPanel'),   // the Intensity row lives in Game Config (D28)
     sceneHost: $('scenePanel'),   // Camera and Speed live in the Scene Config tab (D21)
-    courses: [['Plain circle', 48], ['Tilted rings', 40], ['Climbs & sharp tilts', 32], ['Side-on & dives', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: n + ', ' + r + ' u rings' })),
+    courses: [['gentlest', 48], ['sharper', 40], ['sharp and climbing', 32], ['hardest', 26]].map(([n, r], i) => ({ v: i + 1, label: 'I' + (i + 1), note: r + ' u rings, the ' + n + ' turns (the course: above)' })),
     seats: SEATS.map((st) => ({ name: st.name, color: st.css })),
     // Game Config (D25): the Players list. Player 1 = your hull, players 2-4 = the rival seats, in order
     players: { host: $('playersPanel'), max: 4, domains: Object.keys(DOMAIN).map((k) => ({ key: k, name: domainName(k), color: '#' + DOMAIN[k].toString(16).padStart(6, '0') })) },
@@ -2759,7 +3437,9 @@
     for (const b of document.querySelectorAll('#intensitySeg button')) b.setAttribute('aria-pressed', String(+b.dataset.i === intensity));
     if (racePanelRef) racePanelRef.set('course', intensity, true);
     const L = CIRCUIT_LADDER[intensity - 1];
-    $('intensityNote').textContent = courseKind === 'hairpin' ? 'Hairpins: the hop between rings shrinks with intensity (190 → 120 u) and the rings climb and drop more.' : 'Intensity ' + intensity + ' · ' + L.name + ': ' + L.d;
+    const note = courseKind === 'warpline' ? 'Warpline (the Meerkat\'s Time race) · intensity ' + intensity + ': 5 rings a lap, ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', ' + MOUTHS[intensity - 1] + ' u rings, on Slingshot\'s 600 u circuit: SlingshotCourse.ForIntensity\'s corner profile ' + WARPLINE.profile[intensity - 1].slice(0, 5).join(' / ') + ' deg, ' + WARPLINE.lateral[intensity - 1] + ' u out of plane. The HeadlongCircuit recipe ported; a seed\'s layout is the studio\'s own, not the game\'s.'
+      : courseKind === 'hairpin' ? 'Hairpins (a stand-in): the hop between rings shrinks with intensity (190 → 120 u) and the rings climb and drop more.' : 'Circuit (a stand-in) · intensity ' + intensity + ' · ' + L.name + ': ' + L.d;
+    $('courseNote').textContent = note; $('intensityNote').textContent = racePanelRef ? '' : note;   // the note lives beside the course picker (Game Config)
   }
   for (const b of document.querySelectorAll('#intensitySeg button')) b.addEventListener('click', () => { const e = $('intensity'); e.value = b.dataset.i; e.dispatchEvent(new Event('change')); });
   markIntensity();
@@ -2796,8 +3476,9 @@
       case 'Space look': return 'The bent space\'s look' + changedText(groupOf('space'));
       case 'AI': return 'The AI\'s wormhole' + changedText(groupOf('ai'));
       case 'Flight': return 'One-thumb flight' + typeName('flight') + changedText(groupOf('flight'));
-      case 'Course': return (courseKind === 'hairpin' ? 'Hairpins, i' : 'Circuit, i') + 'ntensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
+      case 'Course': return (courseKind === 'warpline' ? 'Warpline, i' : courseKind === 'hairpin' ? 'Hairpins, i' : 'Circuit, i') + 'ntensity ' + intensity + ', ' + laps + ' lap' + (laps > 1 ? 's' : '') + ', seed ' + seed;
       case 'Controls': return 'One thumb flies, LT sets the shaft, the right stick bends its end, RT forms' + (invertY ? ', Y inverted' : '');
+      case 'Abilities': return 'The four-ability kit (round 8 proposals)' + changedText(groupOf('abCharge').concat(groupOf('abMass'), groupOf('abSpace'), groupOf('abTime'), ['aiNewAbilities']));
       case 'Race result': return lastRun ? (lastRun.style === 'N' ? 'No wormhole (AI baseline): ' : 'The wormhole: ') + fmtTime(lastRun.time) + ', ' + lastRun.slings + ' tunnels (intensity ' + lastRun.intensity + ', seed ' + lastRun.seed + ')' : 'No finished race yet';
       default: return '';
     }
@@ -2993,6 +3674,7 @@
   // fast); the sim lab's batch runs it thousands of times without drawing at all.
   function simStep(dt, inp) {
     simT += dt; ripples = ripples.filter((r) => simT - r.t0 < Math.max(0.2, P.rippleSeconds));
+    for (let k = dyingPrisms.length - 1; k >= 0; k--) { const i = dyingPrisms[k]; dead[i] += dt; if (dead[i] > PRISM_DIE_S + 0.2) dyingPrisms.splice(k, 1); }
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
     if (!stopped) stepFly(dt, inp); else gateHold(dt);   // stopped: the hull halts, its tunnels live on
@@ -3039,6 +3721,7 @@
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
     syncRivalMeshes(); updateCamera(dt); updateWormholes(); updateAiThinking(); updateRings(now);
+    drawCrystals(); drawWalls(); drawPulses(); syncAbilityButtons();   // round 8
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================
@@ -3054,7 +3737,7 @@
     // stand-in hull in Vessel Config
     R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['mainCard', 'grp-reticle', 'grp-look', 'grp-space', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
-      ['others', 'Vessel Config', ['grp-lope']]],
+      ['others', 'Vessel Config', ['grp-abCharge', 'grp-abMass', 'grp-abSpace', 'grp-abTime', 'grp-lope']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
   const TAB = {};   // key -> { dock, title, btn, pane, win }
@@ -3159,11 +3842,11 @@
   window.__meerkatStudio = { gateForm, get cam() { return cam; }, openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; },
     tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } manualNow += dt * 1000; advance(dt, manualNow); },
     sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt)); } },
-    set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; },
+    set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, get courseKind() { return courseKind; }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; },
     get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, get idleTakeover() { return idleTakeover; }, set idleTakeover(v) { idleTakeover = !!v; idleFor = 0; },
     set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, get ai() { return ai; }, setPlayMode, touch, get playMode() { return playMode; },
     GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); },
-    nextGate: () => gates[threaded % 8].p.clone(), BP, P, recomputeP, refreshAllOuts, get ripples() { return ripples; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; },
+    nextGate: () => gates[threaded % NG].p.clone(), BP, P, recomputeP, refreshAllOuts, get ripples() { return ripples; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; },
     get speed() { return speed; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); },
     startRace, get holds() { return holds; }, hull, get pairs() { return pairs; }, get race() { return race; }, get lensRip() { return lensMat.uniforms.rip.value.clone(); },
     get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera,
@@ -3175,7 +3858,16 @@
     reset(sd) { if (sd != null) seed = sd; ai.seed = 1; buildCourse(); spawn(); },
     state() { return { t: simT, race, raceT, threaded, speed, pos: hull.position.toArray(), gate: !!ftLive.gate, riding: !!(ftLive.gate && ftLive.gate.state === 'tube'), reticle: !!ftLive.ret }; },
     score() { return { levels: lastLevels }; },
+    // round 8: the lab contract's batch (/labmaker verify_lab.cjs): the level scorecard on this course, one seed, as rows
+    // simT starts at 0 for the batch (and is put back after): the Easy and Medium levels' notice times are simT-relative,
+    // and float rounding at a different simT can move a borderline step, so a batch is only byte-identical from one clock
+    runBatch(seeds) { const keepT = simT; simT = 0; let rows; try { rows = runLevelScorecard(seeds || [11]); } finally { simT = keepT; } return rows.map((row) => { const o = { I: row.I }; for (const lv of ['Easy', 'Medium', 'Hard', 'None']) o[lv] = row[lv].map((r) => [r.finished, +r.time.toFixed(3), r.slings, r.chains, r.caved, r.crystals]); return o; }); },
     get ftLive() { return ftLive; },
+    // round 8: the kit. setAbilities(false) switches the three new abilities and the AI's use of them off (and Chain Dig
+    // with them: the Time level drops below 5); setAbilities(true) puts every one back on at level 5.
+    setAbilities(on) { for (const el of ['charge', 'mass', 'space']) BP[el + 'On'] = on ? 1 : 0; for (const el of ['charge', 'mass', 'space', 'time']) BP[el + 'Level'] = on ? 5 : 4; BP.aiNewAbilities = on ? 1 : 0; recomputeP(); refreshAllOuts(); },
+    abilityPress, chainDig, get walls() { return walls; }, get crystals() { return crys; }, get PIL() { return PIL; }, get dead() { return dead; }, get lastCave() { return lastCave; }, tubeLocal, tubeR,
+    set seatLv(v) { seatLv = v.slice(); }, set seatDomain(v) { seatDomain = v.slice(); }, spawn, get NG() { return NG; },
   }));
   window.__lab = window.__meerkatStudio;
 })();

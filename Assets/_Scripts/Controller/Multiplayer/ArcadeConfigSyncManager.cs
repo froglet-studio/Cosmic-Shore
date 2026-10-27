@@ -134,6 +134,10 @@ namespace CosmicShore.Gameplay
             /// no pick), parallel to the domain slots - so every peer's chips show the hull a
             /// teammate picked for an ally.</summary>
             public int  AiV0, AiV1, AiV2, AiV3, AiV4, AiV5;
+            /// <summary>Each placed AI's own difficulty (<c>CosmicShore.Data.AIDifficulty</c> as int; 0 = none of its
+            /// own, it flies <see cref="AIDifficulty"/>), parallel to the domain slots - so every peer's pedestals
+            /// show the level each bot will race at. Protocol version 19.</summary>
+            public int  AiD0, AiD1, AiD2, AiD3, AiD4, AiD5;
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
@@ -159,6 +163,12 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref AiV3);
                 serializer.SerializeValue(ref AiV4);
                 serializer.SerializeValue(ref AiV5);
+                serializer.SerializeValue(ref AiD0);
+                serializer.SerializeValue(ref AiD1);
+                serializer.SerializeValue(ref AiD2);
+                serializer.SerializeValue(ref AiD3);
+                serializer.SerializeValue(ref AiD4);
+                serializer.SerializeValue(ref AiD5);
             }
 
             public bool Equals(LobbySnapshot o) =>
@@ -171,7 +181,9 @@ namespace CosmicShore.Gameplay
                 AiCount == o.AiCount && Ai0 == o.Ai0 && Ai1 == o.Ai1 && Ai2 == o.Ai2 && Ai3 == o.Ai3 &&
                 Ai4 == o.Ai4 && Ai5 == o.Ai5 &&
                 AiV0 == o.AiV0 && AiV1 == o.AiV1 && AiV2 == o.AiV2 && AiV3 == o.AiV3 &&
-                AiV4 == o.AiV4 && AiV5 == o.AiV5;
+                AiV4 == o.AiV4 && AiV5 == o.AiV5 &&
+                AiD0 == o.AiD0 && AiD1 == o.AiD1 && AiD2 == o.AiD2 && AiD3 == o.AiD3 &&
+                AiD4 == o.AiD4 && AiD5 == o.AiD5;
 
             /// <summary>The placed AI domains as the modal consumes them (Domains as ints, placement order).</summary>
             public int[] PlacedAiDomains()
@@ -221,6 +233,30 @@ namespace CosmicShore.Gameplay
             }
 
             int VesselSlot(int i) => i switch { 0 => AiV0, 1 => AiV1, 2 => AiV2, 3 => AiV3, 4 => AiV4, _ => AiV5 };
+
+            /// <summary>Each placed AI's own difficulty (AIDifficulty as ints, 0 = the card's).</summary>
+            public int[] PlacedAiDifficulties()
+            {
+                int n = Mathf.Clamp(AiCount, 0, MaxAiSlots);
+                var result = new int[n];
+                for (int i = 0; i < n; i++) result[i] = DifficultySlot(i);
+                return result;
+            }
+
+            /// <summary>Write the per-AI difficulties. Entries past <c>AiCount</c> are ignored when read; a short or
+            /// null array leaves the rest at 0 (the card's difficulty).</summary>
+            public void SetPlacedAiDifficulties(int[] difficulties)
+            {
+                int n = difficulties == null ? 0 : Mathf.Min(difficulties.Length, MaxAiSlots);
+                AiD0 = n > 0 ? difficulties[0] : 0;
+                AiD1 = n > 1 ? difficulties[1] : 0;
+                AiD2 = n > 2 ? difficulties[2] : 0;
+                AiD3 = n > 3 ? difficulties[3] : 0;
+                AiD4 = n > 4 ? difficulties[4] : 0;
+                AiD5 = n > 5 ? difficulties[5] : 0;
+            }
+
+            int DifficultySlot(int i) => i switch { 0 => AiD0, 1 => AiD1, 2 => AiD2, 3 => AiD3, 4 => AiD4, _ => AiD5 };
         }
 
         /// <summary>Server-written; every peer reads. See the class summary for why this is state.</summary>
@@ -303,7 +339,7 @@ namespace CosmicShore.Gameplay
         /// in placement order), so a client's tile chips redraw in real time to exactly what
         /// the host is looking at.
         /// </summary>
-        public event System.Action<int, int, int[], int[]> OnRosterChangedOnClient;
+        public event System.Action<int, int, int[], int[], int[]> OnRosterChangedOnClient;
 
         /// <summary>
         /// Raised on the HOST when a pilot asks to step an ally AI's hull (the launch panel's
@@ -702,7 +738,8 @@ namespace CosmicShore.Gameplay
             // has to be one of the things that asks for a redraw.
             if (previous.PlayerCount != next.PlayerCount || previous.DomainCount != next.DomainCount ||
                 previous.HumanCount != next.HumanCount || !previous.SameAi(next))
-                OnRosterChangedOnClient?.Invoke(next.PlayerCount, next.DomainCount, next.PlacedAiDomains(), next.PlacedAiVessels());
+                OnRosterChangedOnClient?.Invoke(next.PlayerCount, next.DomainCount, next.PlacedAiDomains(), next.PlacedAiVessels(),
+                                                next.PlacedAiDifficulties());
         }
 
         void RaiseOpened(LobbySnapshot lobby)
@@ -717,7 +754,8 @@ namespace CosmicShore.Gameplay
             OnConfigOpenedOnClient?.Invoke(lobby.GameMode, lobby.Intensity, lobby.PlayerCount, lobby.MaxPlayers, lobby.DomainCount);
 
             if (lobby.AiCount > 0)
-                OnRosterChangedOnClient?.Invoke(lobby.PlayerCount, lobby.DomainCount, lobby.PlacedAiDomains(), lobby.PlacedAiVessels());
+                OnRosterChangedOnClient?.Invoke(lobby.PlayerCount, lobby.DomainCount, lobby.PlacedAiDomains(), lobby.PlacedAiVessels(),
+                                                lobby.PlacedAiDifficulties());
         }
 
         /// <summary>
@@ -763,7 +801,7 @@ namespace CosmicShore.Gameplay
         /// the open RPC carried.
         /// </summary>
         public void NotifyRosterChanged(int playerCount, int domainCount, int[] placedAiDomains,
-                                        int[] placedAiVessels = null)
+                                        int[] placedAiVessels = null, int[] placedAiDifficulties = null)
         {
             if (!IsServer) return;
             var snapshot = _lobby.Value;
@@ -772,6 +810,7 @@ namespace CosmicShore.Gameplay
             snapshot.DomainCount = domainCount;
             snapshot.SetPlacedAiDomains(placedAiDomains);
             snapshot.SetPlacedAiVessels(placedAiVessels);
+            snapshot.SetPlacedAiDifficulties(placedAiDifficulties);
             if (snapshot.Equals(_lobby.Value)) return;
             _lobby.Value = snapshot;
         }

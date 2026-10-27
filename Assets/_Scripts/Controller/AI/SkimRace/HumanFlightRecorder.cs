@@ -785,6 +785,7 @@ namespace CosmicShore.Gameplay
             sb.Append("\"domain\":\"").Append(_domainName).Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
             sb.Append("\"rivalDifficulty\":\"").Append(_gameData ? _gameData.RequestedAIDifficulty.ToString() : "").Append("\",");
+            AppendRivalDifficulties(sb);
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
             sb.Append("\"courseSeed\":").Append(_courseSeed).Append(",\"courseIntensity\":").Append(_courseIntensity).Append(',');
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
@@ -1032,6 +1033,26 @@ namespace CosmicShore.Gameplay
                 }
             }
             sb.Append(']');
+        }
+
+        /// <summary>
+        /// Each AI rival's own level ("rivalDifficulties": {name: level}): AI pilots can race at different levels in
+        /// one match since 2026-10-27 (picked per seat), so the match's "rivalDifficulty" alone would mislabel a race.
+        /// </summary>
+        void AppendRivalDifficulties(StringBuilder sb)
+        {
+            sb.Append("\"rivalDifficulties\":{");
+            bool first = true;
+            var players = _gameData ? _gameData.Players : null;
+            if (players != null)
+                foreach (var p in players)
+                {
+                    if (p == null || !p.IsInitializedAsAI) continue;
+                    if (!first) sb.Append(',');
+                    first = false;
+                    sb.Append('"').Append(Esc(p.Name)).Append("\":\"").Append(_gameData.AIDifficultyFor(p).ToString()).Append('"');
+                }
+            sb.Append("},");
         }
 
         static string Esc(string s) => string.IsNullOrEmpty(s) ? "" : s.Replace("\\", "\\\\").Replace("\"", "\\\"");

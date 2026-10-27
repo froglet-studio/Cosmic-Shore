@@ -62,7 +62,7 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(mode != GameModes.Random, AIDifficultyRules.IsOfferedFor(mode), mode.ToString());
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.SkimRace));
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Slingshot), "the Stoat's circuit race (GateRaceHandicap)");
-            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Warpline), "the Stoat's time race (GateRaceHandicap)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Warpline), "the Meerkat's time race (GateRaceHandicap)");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Regatta), "Squirrels: SkimRaceHandicap; every other hull: GateRaceHandicap");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.AstroLeague), "Arena, platform autopilot (AIPilotBelief)");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.BroodRush), "Arena, platform autopilot (AIPilotBelief)");

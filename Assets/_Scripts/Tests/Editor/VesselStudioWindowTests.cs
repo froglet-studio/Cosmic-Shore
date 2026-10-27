@@ -138,12 +138,8 @@ namespace CosmicShore.Tests
         [Test]
         public void MeerkatLook_NamesYashsAndGarrettsLooks()
         {
-            Assert.AreEqual("Yash's look", MeerkatWormholeConfigSOEditor.LookName(
-                CosmicShore.ScriptableObjects.MeerkatReticleLook.Spindles, CosmicShore.ScriptableObjects.MeerkatFormedLook.Bridge));
-            Assert.AreEqual("Garrett's look", MeerkatWormholeConfigSOEditor.LookName(
-                CosmicShore.ScriptableObjects.MeerkatReticleLook.Bridge, CosmicShore.ScriptableObjects.MeerkatFormedLook.ContourField));
-            Assert.IsNull(MeerkatWormholeConfigSOEditor.LookName(
-                CosmicShore.ScriptableObjects.MeerkatReticleLook.Spindles, CosmicShore.ScriptableObjects.MeerkatFormedLook.ContourField));
+            Assert.AreEqual("Yash's look", MeerkatWormholeConfigSOEditor.LookName(CosmicShore.ScriptableObjects.MeerkatFormedLook.Bridge));
+            Assert.AreEqual("Garrett's look", MeerkatWormholeConfigSOEditor.LookName(CosmicShore.ScriptableObjects.MeerkatFormedLook.ContourField));
         }
     }
 }
