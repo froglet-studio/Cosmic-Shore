@@ -8,7 +8,8 @@ without being rebuilt.
 
 **Where it is still live.** The Stoat's Mass and Time modes still use black and white holes (their pull, their look
 and their Scene Config cards). Only Gate mode dropped them. Nothing in this file is deleted code: it is the Gate-mode
-variant that was removed.
+variant that was removed. Since 2026-10-27 the wormhole is the **Meerkat**'s, not the Stoat's (`Docs/Studios/MEERKAT.md`,
+`VesselStudio/meerkat.html`): bring a hole look back there, not to the Stoat.
 
 ## What was parked
 

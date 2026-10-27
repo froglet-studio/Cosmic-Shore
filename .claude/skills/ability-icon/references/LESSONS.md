@@ -235,19 +235,34 @@ vessel silhouette."
     generator that made the old art (`ToolPortraitBuilder`) was retired and the baker stands down on Tool pages, so
     a re-bake cannot put the spheres back.
 
+41. **When the act is hard to SEE on the mesh, change the pose in the model, not the drawing (2026-10-27, the
+    Grizzly).** Dig In wanted the anchor sunk into the ground, but in the model's first `dig` take the anchor only
+    raked, and its tines reached 3-6 px below the engine pods in the side view. A ground plate low enough to catch
+    them also caught the pods, and one high enough to clear the pods caught nothing. Extending the tines in the icon
+    would have been a drawing of the hull. The fix went in the model's spec (`vessel_model/specs/grizzly.py`): the
+    `dig` take now PLUNGES the anchor 1.3 units as it rakes, and the tines reach 20 px below the pods. The icon renders
+    that take (`mesh_silhouette(..., take="rig|dig")`), the plate sits 7 px under the pods, and the plate is cut 6 px
+    round the tines so they read as sunk into it. Two more:
+    - **A rolled hull's rear edge is not its engines' rows.** Rolled nose-down, the side view's leftmost column caught
+      only the upper engine row. Measure the rows on the UNROLLED silhouette, then turn the bars with the hull about
+      the same centre: `canvas.rotate` and the silhouette's `roll` share one convention.
+    - **A hull with an embedded HUD rebinds in the vessel prefab.** The Grizzly has no `<Hull>HUDVariant`: its
+      GrizzlyHUD lives in `Grizzly.prefab`, so `REBIND` names that file. A placeholder another screen also shows
+      (`CannonIcon-PLACEHOLDER.png` in `ModeControlsLibrary.asset`) is left to that screen's owner.
+
 ## 2026-10-27 - the Sparrow's Space card: options are judged in the LOCKUP
 
 Garrett: "going forward when showing vessel icons lets show the before and the other icons of the vessel so we can
 consider how they distinguish themselves too."
 
-41. **A candidate is judged beside its siblings, never alone.** The first Space options sheet showed each candidate on
+42. **A candidate is judged beside its siblings, never alone.** The first Space options sheet showed each candidate on
     its own card; one of them (the Sparrow firing from both pods) only looks wrong next to the Mass and Time cards,
     where it is the third spiky hull in a row of four. The options sheet is now the hull's whole lockup per
     candidate, with the BEFORE row first: `CARDS` entries share a `group=`, the spec declares `LOCKUP` (its other
     cards as the HUD draws them today, parts and colours), and `author.py` writes `<hull>_<group>_options.png`
     (`states.options_sheet`). The family gate (IoU at 24 px) measures the same thing; the sheet lets the owner see it.
 
-42. **A live QUALITY is drawn as the thing doing it; its LEVELS are segments in the plate.** The Sparrow's Space card
+43. **A live QUALITY is drawn as the thing doing it; its LEVELS are segments in the plate.** The Sparrow's Space card
     (2026-10-27). Garrett: "the icon we had before the current had a way to show that there were different heat
     buckets that had different spread. if you could convey the realtime spread value and which level they are on
     that would be best." Then: "i like what option E is trying to do, but the clarity of F is good. lets try to get E

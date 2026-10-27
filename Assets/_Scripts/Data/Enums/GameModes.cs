@@ -300,16 +300,16 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
         GrizzlyTime = 63,
 
-        // Slingshot (64): the Stoat-only circuit race - Redline's shape (a lapped gate circuit on
+        // Slingshot (64): the Stoat's TIME race (since 2026-10-27) - Redline's shape (a lapped gate circuit on
         // the shared HeadlongCircuit solver) cut for a 60 u/s hull whose only speed is the
         // attractor-repulsor wormhole pair it slings on its triggers: a corner asks where to lay
         // the attractor. See _Scripts/Controller/Arcade/SLINGSHOT.md.
         Slingshot = 64,
 
-        // Warpline (65): the Stoat's TIME race - Slingshot's shape (a lapped gate circuit on the
-        // shared HeadlongCircuit solver, the Stoat's cut) with five long legs a lap, flown on the
-        // round-15 field dipole: lay the poles so the pathfinder's line is warped and the hull
-        // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
+        // Warpline (65): the Meerkat's TIME race (the Stoat's until 2026-10-27) - Slingshot's shape
+        // (a lapped gate circuit on the shared HeadlongCircuit solver) with five long legs a lap,
+        // flown on the wormhole: bend the reticle, form the tunnel, ride it. See
+        // _Scripts/Controller/Arcade/WARPLINE.md.
         Warpline = 65,
 
         // ThresherTime (66): the Thresher-only circuit race - Grizzly Time's shape (a lapped gate
@@ -341,8 +341,14 @@ namespace CosmicShore.Data
         // itself moves on without it (Garrett, 2026-10-26). See _Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md.
         TandavaSevering = 70,
 
+        // BurrowRun (71): the Meerkat's TIME race - Warpline's shape (a lapped gate circuit on the shared HeadlongCircuit
+        // solver, Slingshot's cut) with eight rings a lap, two laps: the Vessel Studio's Meerkat race. The Meerkat digs its
+        // own way - bend the reticle with the right stick, RT dives you through the tunnel it forms, out the far end with
+        // the speed you went in with. See _Scripts/Controller/Arcade/BURROWRUN.md.
+        BurrowRun = 71,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 65) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 66) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

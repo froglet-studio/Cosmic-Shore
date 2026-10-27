@@ -16,6 +16,7 @@ or write to the backend goes through Shombith first.
 | `AccessControl/project-policy.json` | Denies players any direct leaderboard write, so `weekly-score` is the only way onto a board | T2 |
 | `CloudCode/match-report.js` | Every player reports each match (`start`, `end`); also keeps the birth year (R13) and raises the two bot-farming signals (R10). Counts quits without the quitter's help (`FAIRPLAY_CONDUCT`: started, finished, left, leave rate over the last 20) and compares the players' end reports of one match, recording a `host_result_mismatch` signal against the host in `FAIRPLAY_SIGNALS` when they disagree | T4, T9 |
 | `CloudCode/match-report.test.cjs` | `node Tools/UGS/CloudCode/match-report.test.cjs` | T4, T9 |
+| (no file) | Faction messages in the Port: Unity Vivox text channels, switched on in the dashboard, below | T8 |
 | `AccessControl/moderation-policy.json` | Lets players send reports to UGS Moderation (the Report button on the profile popup) | T8 |
 | (no file) | Steam sign-in is a dashboard identity provider plus `Assets/Resources/SteamConfig.asset`, below | T1 |
 
@@ -130,3 +131,30 @@ game's old client-written copy in `PLAYER_PROFILE` is only a display cache the s
     which waits on the DLC-vs-tokens decision (`Docs/Legal/DLC_VS_TOKENS_QUESTIONNAIRE.md`).
   - **Offline changes:** if the server cannot be reached, the local change stands until the next server answer,
     which replaces it. An offline match's crystals are lost on reconnect.
+
+## Switching on faction messages (Vivox)
+
+The Port's FACTION MESSAGES tab (`Docs/MENU_REDESIGN_B.md` section 90) runs on Unity Vivox text chat
+(`com.unity.services.vivox` 16.12.1, `Assets/_Scripts/System/FactionChat/FactionChatService.cs`). Every player is in one
+faction, whose channel is `faction_all`. Until Vivox is on for the project, the tab shows "Faction messages are
+offline". Nothing else in the game uses Vivox.
+
+1. **Dashboard:** open project `3030fd69-28ab-433f-b4bd-22b9b93c5118` in the Unity Cloud dashboard, then
+   **Products > Vivox Voice and Text Chat > Get started / Enable**, development environment first. Accept the Vivox terms
+   for the organisation if asked.
+2. **Editor:** open **Edit > Project Settings > Services > Vivox**. Check that the project is linked and the credentials
+   are pulled. Leave **Test Mode OFF**: with UGS Authentication signed in, the SDK gets its tokens from Unity's backend.
+   Test Mode is less secure and must never ship. Commit what this writes under `ProjectSettings/`.
+3. **Hand test:** `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Port". Use two players, for example two editors with
+   Multiplayer Play Mode.
+4. **Moderation:** reports from the Port arrive in the dashboard's **Moderation** queue as "verbal abuse", with the
+   Vivox channel as context. They need nothing beyond `AccessControl/moderation-policy.json`, which is already applied.
+5. **Production:** enable Vivox for the production environment and ship.
+
+Limits to know:
+- A standard text channel seats about 200 players at once. The Port joins only while the tab is shown, but past that the
+  faction needs Vivox's large text channels (an enterprise feature, through Vivox support) or rooms.
+- Vivox has a free tier; check its current limits in the dashboard.
+- There is no word filter. The tools are reports and mutes, and an account whose birth year says it may be under 13
+  reads only.
+

@@ -155,6 +155,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         R_VesselElementalAbilityHandler ElementalAbilityHandler { get; }
 
+        /// <summary>The pilot in the seat and the slotted artifacts (Docs/Pilots/PILOTS_AND_ARTIFACTS.md).</summary>
+        VesselPilotLoadout PilotLoadout { get; }
+
         /// <summary>
         /// In multiplayer mode, true -> owner client, false -> other clients
         /// In singleplayer mode, always false.

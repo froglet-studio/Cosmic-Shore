@@ -45,7 +45,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -1812,7 +1812,8 @@ Boards: the canvas's Rev 3 page (`R3HangarAbilities` / `Upgrades` / `UpgradesMas
 ability's real effect: the real thing needs the vessel alive in a world, i.e. the mode-preview session
 (`ModePreviewSession` + a Barren-cell definition) - next step. Upgrades are a preview, not a purchase (no saved
 per-vessel element level exists). Pilots cannot be chosen until the Pilots system (PilotSO, branch
-`claude/modest-sagan-0ybcgo`) lands.
+`claude/modest-sagan-0ybcgo`) lands. *(2026-10-26: it has, on `claude/pensive-dijkstra-qxoxo0`: PILOTS seats a pilot per vessel
+and ARTIFACTS is three slots - `Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation.)*
 
 ## 32. Rev 3: the four windows use the room the friends panel gave back (built 2026-10-16, awaiting in-editor approval)
 
@@ -3820,3 +3821,672 @@ All 12 plants fire.
 - `gates.sh`: ALL OK, including the player and editor reference compiles.
 - Offline renders of the tile and the page, with the element flower and shape in place.
 - Not opened in the editor, and the tests have not been run.
+
+## 90. Rev 27: the Port opens, with faction messages and the weekly leaderboard (2026-10-27, awaiting in-editor approval)
+
+**Asked (Shombith):** "Use the design board and lets open up the port now. Right now the port will only contain one tab
+called faction messages. Factions will be like different clans but thats in the future currently all players are in a
+single faction. So lets make a chatting system for the port and then open up port. Create some mockup designs on the
+design board." Then: "The weekly leaderboard can also go to the port for now"; "use the sea line background like
+everywhere"; on the chat service, "should we do vivox? We can" and "Lets implement".
+
+**On the canvas:** page "Rev 27 - Port" of Menu Redesign B (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with a
+copy in `Docs/MenuRedesignB/board/R27*.dc.html`. Five boards, all over the sea lines:
+- `R27PortMessages`: interactive. Type, press Enter or SEND, and wait out the 3 s cooldown.
+- `R27PortLeaderboard`: the weekly board as the second tab.
+- `R27PortActions`: a message's actions (report, mute), the muted list and the report toast.
+- `R27PortStates`: the empty, tuning-in, offline and not-sent states.
+- `R27Notes`: notes and the open decisions.
+
+**The chat service: Unity Vivox** (decided 2026-10-27). Vivox is UGS: it signs in with the same Authentication player
+id, sits in the same dashboard project, and the Moderation package already integrates with it (a report carries the
+shared channel). Messages are pushed, Vivox keeps channel history, and it runs on PC, iOS and Android. A clan later is
+another channel, and voice can come later on the same SDK. A Cloud Code poller was built first and dropped before
+commit. It added no package, but it was not real time and cost a Cloud Code call per poll. The new package is
+`com.unity.services.vivox` 16.12.1.
+
+**What the player gets:** PORT, the top bar's last tab, opens. Its lock is lifted, so LT / RT reach it. It has two tabs,
+stepped with LB / RB.
+- **FACTION MESSAGES.**
+  - On the left: the faction card ("All Pilots"; every player is in one faction for now), the three rules, the muted
+    pilots with UNMUTE ALL, and the controls.
+  - On the right: the feed (the channel's last 50 messages from Vivox history, then every new one pushed live, newest
+    at the foot), the field with its count, SEND and the hint line.
+  - Enter, X or SEND sends. A message can hold 140 characters, and a player can send one message every 3 s.
+  - A refused message stays in the field, with the reason under it in Danger.
+  - A or Y on a message (or a click) opens REPORT MESSAGE, MUTE PILOT and CANCEL:
+    - Report goes to UGS Moderation as verbal abuse.
+    - Mute is kept on this device only.
+  - Your own messages carry a neutral bar and YOU, never the selection blue (`Docs/UI_COLOR_RULES.md`). Replaced by the
+    sea-lit cards of section 91 (Rev 32 D).
+- **WEEKLY LEADERBOARD:** the weekly challenge window's own board (World / Regional / Friends, podium, rows, your best
+  run, rewards). It has no BACK, and this week's title and countdown sit at the tab row's right. The configure card's
+  LEADERBOARD button still opens the window, unchanged.
+- **Safety defaults** (proposed; decision 2 in the notes):
+  - A player whose recorded birth year says they may be under 13 can read but not send (`FairPlayAge.BirthYear`;
+    an unknown year can send).
+  - Message text is never rich text.
+  - Control characters and line breaks are removed before sending.
+
+**Built:**
+- **C#, the chat** (`Assets/_Scripts/System/FactionChat/`):
+  - `FactionChat.cs` holds the pure rules, the feed's log (each message once, in time order), the device mutes and
+    the metadata that carries the sender's avatar and name.
+  - `FactionChatService.cs` is the Vivox transport: it initialises and logs in once, joins the text-only channel
+    `faction_<id>` while the tab is shown and leaves when it is hidden, reads the history and sends.
+  - `FactionChatTests` covers the rules and the log: 10 tests, run headless with
+    `Tools/Build/prisma_edit_mode_tests/run.sh`.
+- **C#, the screen** (`Assets/_Scripts/UI/Elements/Port/`): `PortScreen` (the `IScreen`, two tabs), `FactionMessagesPane`,
+  `FactionMessageRow` and `PortLeaderboardPane`. The leaderboard pane drives the same `WeeklyChallengeLeaderboardPanel`
+  the window does. Every word is an authored field.
+- **ScreenSwitcher:**
+  - `disabledScreens` defaults to empty.
+  - The PlayFab-era `LeaderboardMenu` field and its `LoadView` on PORT are gone.
+  - The old `PortScreen` panel stays in Menu_Main, switched off; deleting it is a cleanup of its own.
+- **PlayerReports:** gains `OffensiveMessage = 3`, mapped to UGS Moderation's `VerbalAbuse`.
+- **Generator** `Tools/Build/author_menu_port.py`:
+  - It writes `FactionMessageRow.prefab` and `PortView.prefab` (Main Menu Screens/Port), places one PortView in the
+    old panel's place under `Screens`, and points `ScreenSwitcher.screens`' PORT slot (id 3) at it.
+  - `--check` and `--self-test` run 11 plants: the slot left on the old panel, a tab dropped, SEND unwired, rich text
+    on, your own row in the selection blue, the field opening the keyboard on focus, the actions shown at rest, the
+    board's BACK header on, no sea, the old panel on, and the rules loosened.
+- **Top bar:** `author_menu_topnav.py` sets `LOCKED = set()`, which removes PORT's lock view and empties
+  `disabledScreens`. `author_elemental_converter.py`'s spent one-shot now only asks that ARK is open.
+- **Amoebius:** `Port/src/CosmicShore.Engine/Services/VivoxSdk.cs` stands in for Vivox, like `ModerationSdk.cs`
+  (its own `feat(port)` commit), so the engine still compiles the game. In Amoebius the feed reads Offline.
+
+**Two generators, one parent:** the Codex and the Port both insert under `Screens`. The Codex takes the first child and
+writes its documents right after Screens'. The Port therefore takes the old panel's place and anchors its documents
+after the old panel's transform, so neither re-run moves the other (`.claude/skills/ui-redesign-tracker` T12).
+
+**How it was checked:**
+- Every `author_menu_*.py --check` (all 22 green); the Port's and the top bar's `--self-test`.
+- `gates.sh`: ALL OK.
+- The reference compile: 0 errors in project code, with Vivox 16.12.1's real source compiled in (89 assemblies).
+- `dotnet build Port/src/CosmicShore.Live`: 0 errors.
+- `FactionChatTests`: 10/10, with a negative control (a loosened age rule fails its test).
+- `check_ui_colors.py`.
+- Not opened in the Unity editor, and no message has been sent through a live Vivox channel: Vivox must first be
+  switched on for the project (`Tools/UGS/README.md`, "Switching on faction messages (Vivox)"). The hand test is
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` "The Port".
+
+**Open decisions (R27Notes):**
+1. The faction's name: "All Pilots" is a placeholder.
+2. Under-13 accounts: read-only (built), or no Port chat at all.
+3. A standard Vivox text channel seats about 200 at once. Past that, the faction needs large text channels (an
+   enterprise feature, through Vivox) or rooms.
+4. There is no word filter: reports and mutes are the tools for now.
+
+## 91. Rev 32 D: the Port's messages and field, sea-lit (2026-10-27, awaiting in-editor approval)
+
+**Asked (Shombith):** "I dont like the chat bg per person also the input field bg, make them look brigter and better ...
+more mockups", then on the four looks, "Go with D implement".
+
+**On the canvas:** page "Rev 32 - Port: brighter messages and field" (another session had taken Rev 28-31 on the same
+day), with a copy in `Docs/MenuRedesignB/board/R32Port*.dc.html`:
+- `R32PortCompare` shows the four looks side by side: two messages, then the field at rest, typing and not sent.
+- `R32PortA` to `R32PortD` are the full screens: A lit cards, B glass bubbles, C bright ribbons, D sea-lit panels.
+
+**D, built:**
+- **Messages are cards sized to their words**, up to 860 wide (`FactionMessageRow.SizeCard`).
+  - Each card is lit from its top-left corner: a periwinkle-to-violet border fading out, a navy fill lifting toward
+    the corner, and a soft periwinkle glow there.
+  - Everyone else's messages sit on the left, avatar first.
+  - **Yours** sit on the right, avatar last, with the full periwinkle-to-violet border, a brighter fill, a white name
+    and YOU.
+  - The colours are data: `FactionMessageRow`'s two `Look`s (others, yours), authored by the generator.
+- **The field** has the same gradient border with a soft glow behind it and a lit corner.
+  - Its words are white and its placeholder is lighter.
+  - The pad's focus is the selection outline round the field (its transition target), so focus still reads as
+    focus.
+- **SEND** is lit periwinkle-to-violet with dark words. It is a plain Button whose focus is the same outline.
+- **New kit piece:** `KitTwoToneGradient`, two authored colours across a graphic along an angle, multiplied by the
+  graphic's colour so fades and tints still apply. `KitGradient` stays the PLAY button's one-colour lighten.
+- **Colour rules held:**
+  - Nothing is drawn in the selection blue but the focus outlines.
+  - No element colours.
+  - The periwinkle and violet are the sea lines' own (`#7F98FF`, `#9C8CFF`).
+  - They have no theme token: design feedback queue #18 in `Docs/UI_REDESIGN_TASKS.md`.
+
+**Generator:** `author_menu_port.py` builds the new row, field and SEND. It has 13 plants now; the new ones are your
+messages in the selection blue, your messages looking like everyone else's, and the field without its gradient.
+
+**How it was checked:**
+- `--check` and `--self-test`, and the menu sweep.
+- `check_ui_colors.py`.
+- The reference compile: 0 errors in project code.
+- `dotnet build Port/src/CosmicShore.Live`: 0 errors.
+- Not opened in the editor: the hand test is "The Port" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, step 3a.
+
+**Follow-ups the Port leaves (rows, not fixed here):**
+1. **The old Port panel is dead.**
+   - Measured: `grep -rn LeaderboardsMenu Assets/_Scripts` shows only the class itself, `OfflineMenuWirer`'s gate
+     list and two comments; ScreenSwitcher no longer holds it.
+   - Menu_Main still carries the switched-off `PortScreen` GameObject (`6196685382603104254`) with `LeaderboardsMenu`
+     and its rows.
+   - Delete the panel, `LeaderboardsMenu.cs` and the wirer's `LeaderboardsMenu` gate entry in their own cleanup.
+2. **Two drivers of one board.**
+   - `PortLeaderboardPane` repeats about 60 lines of `WeeklyChallengeLeaderboardModal`: the scope usability, the
+     KitTile tab redraw, the header and the friend-id source.
+   - Extract a non-modal board driver that both use.
+   - This is not urgent: the two agree today, and both read the same service.
+3. **An extra fetch at load, possibly.**
+   - The Port's `WeeklyChallengeLeaderboardPanel` is in the scene at load with its pane hidden by alpha.
+   - If its own OnEnable fetches before `PortLeaderboardPane.Awake` sets `DrivenExternally`, the menu makes one
+     extra leaderboard read at load.
+   - Measure it in the editor (the network log) before changing anything.
+4. **A pre-existing failure.** `author_elemental_converter.py --self-test` fails on bleeding-edge as well
+   (`Menu_Main: fileID 7700130000000000002 is already taken`); its `--check` is green. Its synthesised pre-converter
+   scene no longer strips the converter's documents.
+
+## 92. The Ark's tabs: Squads and Decor beside the converter (2026-10-27, awaiting in-editor approval)
+
+> **The Squads page below is superseded by section 95 (the deck)**: the three cards with CHANGE buttons and PLAY
+> Arcade / Arena / Mission are gone. The tab row, Decor, the data and the joining described here still stand.
+
+Shombith (2026-10-27): "Ark - add two more tabs along with the converter. 1. Squads - Users can make / join up to 4
+squads and they can use the squad to go into a mission or arena or arcade as they want. Inside the ark they will see
+the squad members with their selected vessel, element and pilot and artifact for each squad mate. 2. Decor - Its just
+a cosmetic for the ark's banner and external internal skin but lock it we do not need to open it now."
+
+Built on Shombith's pilots-and-artifacts branch (`claude/pensive-dijkstra-qxoxo0`, merged into this branch): its
+`SquadBook` / `SavedSquad` / `SquadSlot` (the saved squads, `SQUAD_DATA`) and `PilotArtifactCatalogSO`. No board was
+drawn first; the layout follows the converter's (title band left, panels on the black sea).
+
+**The tab row** (`ArkTabsView` on `ArkView`'s root): CONVERTER, SQUADS, DECOR as `KitTextTab` words centred at the top,
+one page shown at a time. The converter's overlay now sits under a `Converter` page with its node keys unchanged, so
+every fileID the scene points at is the same. `ElementalConverterView` is still the screen's one `IScreen`: it forwards
+enter and exit to the tabs (`arkTabs`, wired in the scene), and while another tab is up it hides the 3D picture and
+releases its render target, as it does when the player leaves the screen.
+
+**SQUADS** (`SquadsPage`):
+- **The list**: the player's squads, made and joined together, at most four (`SquadBook.MaxSquads`; `Add` refuses a
+  fifth, `Normalize` trims a longer record). Pressing a row makes it the active squad, the one PLAY takes. NEW SQUAD
+  makes one from the player's last hull and its Hangar pilot and first slotted artifact, with Rogue One open for a
+  friend and Rogue Two an AI. JOIN A FRIEND lists the friends' squads with a seat open.
+- **The squad**: three cards (Leader, Rogue One, Rogue Two). Each shows who flies the seat (you, the friend, an AI
+  wingmate, or "Open for a friend") and four picks with CHANGE: vessel (the Hangar's unlocked roster), element (Charge,
+  Mass, Space, Time, as a word), pilot (the vessel's default, then its roster) and artifact (none, then what fits the
+  vessel; the player's own seat offers only artifacts they have found). The player changes their own seat in any squad,
+  and the AI or open seats of a squad they made. The seat button there steps AI to open and back, or opens a friend's
+  seat again (REMOVE). DELETE SQUAD (made) or LEAVE SQUAD (joined) needs a second press within 3 s.
+- **PLAY: Arcade / Arena / Mission**: makes the squad active, sets `GameDataSO.selectedVesselClass` to the player's
+  seat (the configure window opens on it unless the card remembers its own hull), seats their pilot
+  (`PilotLoadoutStore`), sends the party invite to each online friend in the squad who is not already in the party,
+  then presses the Home hub's entry for that window (`MenuHubButton.Press`). A window Home refuses is refused here the
+  same way, before anything changes: Mission stays locked.
+- **Joining, with no server in the middle.** Each player publishes a `SquadPublicRecord` to Cloud Save PUBLIC player
+  data (`SQUADS_PUBLIC`, `SquadDirectory`): the squads they made, and a claim (`SquadClaim`: owner, squad id, seat, four
+  picks) for each squad they joined. A friend joins by writing a claim into their own record. The owner, when they next
+  open the tab, reads their friends' records and seats the first claim on each open seat (`SquadMembership.ReconcileOwned`);
+  a seated friend whose record no longer claims the seat has left, and the seat opens again. The joiner reads the
+  owner's record back (`RefreshJoined`): Pending until the owner seats them, then Seated, SeatLost or Disbanded. Each
+  player writes only their own record. Reads are throttled to one round per 20 s and at most 30 friends; a write
+  waits 2 s so a run of changes is one write.
+- Every word is a serialized field on `SquadsPage` (templates with tokens: `{count}`, `{owner}`, `{open}`, `{squad}`,
+  `{seat}`).
+
+**DECOR**: the banner, the outer hull and the inner hull as three locked tiles. Its tab carries a
+`MenuAvailabilityView` set to Locked, so a press gets the sting, the shake and "Not open yet." and the page never
+shows. Opening it later is setting that one field to Available.
+
+**Data:**
+- `SquadSeat` (Ai = 0, Open = 1, Player = 2) and `SquadSlot.Seat` / `MemberId` / `MemberName`. A slot saved before
+  these existed reads as an AI seat.
+- `SavedSquad.Id` / `OwnerId` / `OwnerName` / `MySeat`.
+- `SquadBook.MaxSquads` / `CanAdd` / `IndexOfId`.
+- `SquadPublicRecord`, `SquadClaim`, `SquadMembership` (pure, in `CosmicShore.Data`).
+- `SquadDirectory` (Cloud Save public read and write), `UGSKeys.SquadsPublic`.
+- `SquadMembershipTests` (9 tests).
+
+**Generator:** `author_menu_ark.py` authors the tab row, both pages and the wiring, and validates them: three tabs,
+each a KitTextTab over a CanvasGroup page; SQUADS driven by its page; DECOR locked; every row, card and button field
+wired; the vessel list and the pilot catalog referenced; the scene's `arkTabs` and `converterTab`. Three new negative
+controls (Decor opened, a squad mate with no pilot button, `arkTabs` unwired); all eight fire.
+
+**How it was checked:**
+- `author_menu_ark.py --check` and `--self-test` pass.
+- The real-reference compile (`unity_refcompile`, player and editor configs) reports 0 errors in project code.
+- The 21 squad tests (`SquadMembershipTests` and the existing `SquadBookTests`) were compiled with Roslyn against
+  Newtonsoft and run outside Unity: all pass.
+- `check_generated_assets.py`, `check_console_logging.py` and `check_conditional_compilation.py` pass.
+- Not opened in the Unity editor. The join flow needs two signed-in accounts that are friends.
+
+**Open:**
+- Nothing in a match reads the AI seats' picks yet. The mode's own AI backfill flies them; only the player's own
+  vessel and pilot reach the launch.
+- The element pick is drawn and saved, but no match reads a pre-match element (`Docs/PILOTS_AND_ARTIFACTS.md` §8 Q1).
+- Two friends claiming the same open seat in the same moment: the owner seats the first record read and the other
+  reads SeatLost. Closing that race needs a Cloud Code reservation (backend, Shombith).
+- `author_pilot_assets.py --check` fails on this branch because the Meerkat (on bleeding-edge since the 10-27 merge)
+  has no pilots or artifacts. That is a content gap for the pilots work, not caused by the tabs.
+
+## 93. Rev 28 mockups: the Ark's Squads and Decor tabs (2026-10-27, awaiting board approval)
+
+**Asked (Shombith):** "please show me the mockups in the board, because not sure how it will look", then: "There should
+be a make squad all vessels and pilots would show up in a podium on the right of the squads and after creating only
+there can be a take into mission or arena", "We can change the domain at runtime and it changes use some animations like
+that", "Like the nanobot transition ... we can use that to change domains for the squad vessels".
+
+**On the canvas:** page "Rev 28 - Ark tabs (Squads, Decor)" of Menu Redesign B
+(https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with a copy in `Docs/MenuRedesignB/board/R28*.dc.html`. Seven boards:
+- Make squad (interactive): the squad list on the left, the podium of three seats on the right. Press a seat, then pick
+  its vessel (all seven Hangar hulls), pilot (base kit and the hull's two), element (a word) and artifact; a rogue seat
+  is an AI wingmate or open for a friend. CREATE SQUAD adds it to the list; only then do TAKE INTO MISSION (locked, as on
+  Home) and ARENA appear.
+- Domain chips (Jade, Ruby, Gold, the game's own colours): a switch dissolves each hull into 34 prism-bots that scatter
+  and reassemble it in the new colour, seat by seat, while the podium light and the stage glow follow. No older
+  "nanobot" transition was found in the repo or on the canvas, so this one is drawn from the description.
+- Squad made, a joined squad, no squad yet, join a friend's squad, and Decor locked (the press shakes, "Not open yet.").
+- Notes and decisions.
+
+**Differs from the build (section 92):** the build has three cards with CHANGE buttons and PLAY Arcade / Arena / Mission
+always shown. Rebuilt to these boards once they are approved. Open decision: Arcade, which the first brief named and this
+one does not.
+
+**Revised the same day (Shombith, with a screenshot of the old Port squad screen as a reference, not a template): "The
+highlight looks to weird, use the sea lines in bg and also make the highlight 3D light type. the pilots should stand
+beside the vessel".**
+- The flat column of light behind each seat is gone. Each seat stands on a lit pad: a soft spotlight cone from above
+  with motes drifting up it, a pool of light on the floor, and three sea-contour rings, all in the squad's domain colour.
+  The seat being edited is lit fully and breathes; the others sit at half light.
+- The stage panel is see-through between its header and its picker, so the menu sea's lines run behind the podium.
+- The pilots are full-figure portraits, so they stand on the pad beside their vessel, each with a contact shadow. The
+  hull floats beside them. The leader stands front and centre; the two rogues stand behind on the flanks, smaller, each
+  pilot on the outer side and facing in. A base-kit seat shows the hull's first pilot as a lit silhouette; an open seat
+  shows a dashed outline.
+
+## 94. Rev 29 mockups: Squads, six ways (2026-10-27, awaiting a pick)
+
+**Asked (Shombith):** "Yes keep it out give me more variations. I do not like this style at all", then "Too much noise".
+Arcade stays out of Take into (Mission, locked as on Home, and Arena only).
+
+**On the canvas:** page "Rev 29 - Squads, six ways (quiet)" of Menu Redesign B, copies in
+`Docs/MenuRedesignB/board/R29*.dc.html`. Six layouts of the same screen, and notes:
+- A Hangar bay: three bays on a faint floor, a thin line over the picked bay.
+- B Formation: the squad flies at you in a V from the horizon; the pilots are a roster along the bottom.
+- C The deck: each mate a card, the pilot stepping out of its frame (a squad is a twelve-card deck).
+- D The Ark's bays: the squad's Ark in cutaway, a vessel and its pilot in each docking bay, the banner on its hull.
+- E Lineup: three tall slanted panels, the pilots large, the vessel above each.
+- F Dossier: one row per mate, the picked one in a preview on the right.
+
+Quiet by rule: no idle motion (the domain switch's nanobot rebuild is the only animation), no glows or scan lines, each
+mate's four picks as one line of text, the picked seat marked by one thin line in the domain colour. Rev 28's spot-lit
+podium is set aside. Make squad, join and the Unity build follow the layout picked here.
+
+**Picked (Shombith, 2026-10-27): "go with C, the deck".**
+
+## 95. The deck: Rev 31 boards and the Squads tab rebuilt to them (2026-10-27, awaiting in-editor approval)
+
+**Boards:** page "Rev 31 - Squads, the deck" of Menu Redesign B (Rev 30 was taken by a Codex page the same hour), copies
+in `Docs/MenuRedesignB/board/R31Deck*.dc.html`: Make squad (interactive), squad made, a joined squad, no squad yet, join a
+friend's squad, Decor locked, notes.
+
+**Built** (`author_menu_ark.py` authors it; `SquadsPage` drives it):
+- **List** down the left: four rows (name, domain, "Yours - 1 seat open" / "Kestrel's squad - joined"), MAKE SQUAD and
+  JOIN A FRIEND'S SQUAD under them.
+- **Header**: the kicker, the squad's name and line, and the domain chips (Jade, Ruby, Gold, each with its diamond in
+  the domain's colour).
+- **The deck**: three cards (`SquadMateCard`), the leader raised in the middle and the rogues turned 6 degrees on the
+  flanks. Each card has the seat and its number, the hull (the Hangar card render, `HangarCardArtSO`), who flies it, and
+  four rows: vessel, element, pilot, artifact. The pilot's full figure stands over the card's left edge. An open seat
+  shows an outline instead ("A friend takes this seat").
+- **Make squad**: the deck scales to 0.8 about its top centre and the picker opens under it (`SquadPickChip`):
+  - vessel tiles, seven a page, with < and > to page through the Hangar's unlocked roster;
+  - the pilots (base kit and the vessel's roster, with their portraits);
+  - the four elements, and for a rogue card who flies it (AI wingmate or open for a friend);
+  - the artifacts (none, then the vessel's and the fleet's; the player's own card offers only found ones).
+
+  A press on a card picks which one the picker edits. CREATE SQUAD adds the squad; EDIT reopens a made squad (SAVE
+  SQUAD). Nothing is saved before that press, and CANCEL drops the draft.
+- **Take into**: Mission (its padlock follows Home's Mission entry) and Arena only, shown only for a made squad. No
+  Arcade.
+- **Domain**: `SavedSquad.Domain` (a record from before reads as Jade; a joined copy takes the owner's). A press plays
+  `SquadNanobotSwap` on each card, 0.14 s apart. The hull dissolves into 34 prism-bots that scatter and rebuild it tinted
+  to the new domain (`SO_ColorSet.GetDomainSignalColor`), on unscaled time. Only the leader changes a squad's domain.
+- The first cut's three-card editor with CHANGE buttons and its PLAY ARCADE / ARENA / MISSION row are gone.
+  `author_menu_ark.py` now fails if a Take-into-Arcade field comes back.
+
+**How it was checked:**
+- `author_menu_ark.py --check` and `--self-test` pass: 10 negative controls, three of them new (a card with no hull,
+  Take into Arcade back, the nanobots with no bot).
+- `unity_refcompile` player and editor configs: 0 errors in project code.
+- 22 squad tests (one new: the domain is the owner's, and an old record reads as Jade), compiled with Roslyn and run
+  outside Unity: all pass.
+- `check_generated_assets.py`, `check_console_logging.py` and `check_conditional_compilation.py` pass.
+- Not opened in the Unity editor.
+
+**Open:**
+- ~~The squad's domain does not reach the configure window yet~~: wired, section 96.
+- The tab row is still centred over the screen; the boards draw it left-aligned with LB / RB keycaps.
+
+## 96. The squad's domain reaches the launch panel (2026-10-27)
+
+**Asked (Shombith):** "wire the squad domain into the configure window".
+
+The configure window already re-picks a remembered per-card domain once its panel opens
+(`ArcadeGameConfigureModal.RestoreRememberedDomain`, sent to the server through `HandleDomainSelected` so the tile is never
+lit without the server knowing). A squad going in now wins over that memory:
+- **The player who pressed TAKE INTO** (the launch authority): `SquadsPage.Play` sets `SquadLaunchIntent` to a copy of
+  the squad. Every card they open on that trip starts on the squad's domain. A press on a Home hub entry clears the
+  intent (`MenuHubButton.HandlePlayerClick`; the Ark's own press goes through `Press`, which keeps it). A plain Arena trip
+  from Home therefore keeps each card's own memory, even with squad mates in the party.
+- **A squad mate who joined that party** (a guest): their panel opens on their active squad's domain when the party holds
+  one of its mates (`SquadMembership.PartyIsSquad`), so the squad flies as one team.
+- Both are decided by one pure function, `SquadMembership.TryLaunchDomain`, covered by two new tests.
+
+A squad domain that the card's domain count does not reach (Gold on a two-domain card) falls back to Jade, the same
+`LaunchPreferenceRules.ResolvePilotDomain` rule a remembered pick goes through. The domain count is never widened for it:
+that is a host term, and the window keeps its own rules for it. The player can still press another tile, and the ready
+press then remembers that pick for the card, as before. The weekly challenge keeps its pinned domain.
+
+**How it was checked:**
+- `unity_refcompile` player and editor configs: 0 errors in project code.
+- 24 squad tests, run outside Unity: all pass.
+- The console-logging and conditional-compilation gates pass, and `author_menu_ark.py --check` shows no drift.
+- Not opened in the Unity editor. Needs a hand test with two friends: Take into Arena from a Ruby squad, open a card,
+  and both the host and the invited squad mate start on Ruby.
+
+## 97. The Codex rebuilt around play, the Arcade's two dropdowns, and the first Hangar fixes (2026-10-27, awaiting in-editor approval)
+
+Shombith's review of section 89 (2026-10-27), with the later asks in the same session: "the models of the crystals
+are old ... update the whole codex and everything animate ... animate in the descriptions" and "Remove the bobbing
+animation and use some cool selection animations".
+
+**The Codex: three chapters, not seven.**
+- **ELEMENTS.** Charge, Mass, Space and Time, each with its Etherion crystal as its picture and every hull's ability
+  for it. Then three authored cards: **Omni**, **Prisms** and **Spindles**. The Etherions chapter is gone, and so are
+  the crystal build notes it showed (triangle counts, heart sizes, "dropped by 22 species").
+- **ECOLOGY.** Flora and Fauna follow the Toy Box's Spawn Matrix (`Toy_SpawnMatrix.asset`), so they list every species
+  a player can release, in its order: 23 fauna (the swarm colonies, Piranha, Pack Hunter, Leviathan and the rest) and 27
+  flora. Before this the Codex listed 6 and 16. Each species' Toy Box description is its gameplay line. Where
+  `Codex.asset` has the species (matched ignoring spaces and dashes), its picture, facts, element cells and elemental
+  laws fill in the rest. A species only the Codex knows still follows the list.
+- **LEXICON.** One card each for Vessels, Pilots, Artifacts and Toys, in place of their drill-downs. The words are
+  authored on `CodexScreen.words.lexicon`.
+- **Spelling.** The player reads **Etherion** everywhere. The serialized names (`CodexSO.ethirions`,
+  `CodexKingdom.Ethirion`, the `ethirion.*` ids and discovery keys) are unchanged, because a rename would break saved
+  data and Garrett's harvester.
+
+**The page reads play first.** Kicker and title, then what it does in play, then facts, element cells and rows, then
+the lore last, under a LORE heading (`CodexPageView.gameplayText`, `loreBlock`). Each element has a short authored lore
+line.
+
+**Motion (no bobbing).** Nothing moves until an entry is picked:
+- **The tile.** A bright scan line sweeps down it once (`CodexTile.scan`, 0.42 s).
+- **The picture.** It plays its element's entrance (`CodexPortrait`, 0.55 s). Charge jolts in on a crackle. Mass drops
+  from 46 units and lands heavy with a squash. Space warps in on a 120° turn from small. Time ticks into place in four
+  clock steps. Anything else punches up 12 %.
+- **While picked.** A crystal's flipbook plays its real element effect, rendered from the crystal labs (a 4×4 sheet,
+  `elementFlipbooks`, at 8 fps). The element badge's petals light one by one.
+- **The page.** The gameplay line and the lore type themselves in at 140 characters a second. Each line of facts,
+  cells and rows grows in, 50 ms after the one above it.
+- **Lifeforms** still drift through the domain colours.
+
+**The crystal pictures.** `Assets/_Graphics/Codex/ethirion_*.png` (also read by the Ark) were baked on 2026-09-25,
+before the Omni Motion Lab round 5 crystals graduated. They are re-rendered from the labs, keeping their guids, and
+each crystal gains a 16-frame flipbook in `Assets/_Graphics/Codex/Flipbooks/`.
+
+**The Arcade: two dropdowns.**
+- **Order.** Favourites come first, then A-Z under them, always (`ArcadeGridOrder.Apply`). The SORT control is gone.
+- **Filters.** ELEMENT (All, Charge to Time) and VESSEL (All, then each hull an arcade card seats, in the Hangar's list
+  order: 13 today). The two narrow together. The locked/unlocked and solo/multiplayer filters are gone.
+- **The card** shows its genre's one petal, white (`GameCard.GenrePetal`), not the flower filled to a hull's bought
+  level.
+
+**The Hangar, first pass.**
+- **Max level 5** (`HangarUpgradeStore.MaxLevel`). A level saved above 5 reads 5, so nothing is migrated.
+- **Vibe.** Nine ticks per bar. Only the tick at the value lights, in the text white; no other colour.
+- **OmniCrystals.** The balance reads OMNICRYSTALS, beside the Omni crystal glyph. The upgrade line and the shortfall
+  line say OmniCrystals too.
+
+**Still open from the same review** (they need a word from the owner, `Docs/UI_REDESIGN_TASKS.md` R5):
+- The Hangar items: the anti-aliasing pass; silver for the domain colour on the images Garrett flagged; flipping the
+  Mass element; merging the 2D and 3D elemental displays with RAS motion on the 2D side; the rainbow gradient; the
+  notch, the dashed outline and the hard line stops; and the elemental crystals held and spent.
+- Match setup and cinematics: map and level preview switching, OmniCrystal signalling on the objective area, the
+  glyphs panel and standard heptagons.
+
+**Generators:**
+- `author_menu_codex.py`: 15 plants, all fire. They include "the pictures bobbing again", "lore above gameplay", "the
+  ecology read from no Toy Box", "a lexicon card dropped" and "the ETHIRIONS chapter back".
+- `author_menu_arcade.py`: 29 plants, all fire.
+- `author_menu_hangar.py`: 29 plants, all fire.
+- Every `author_menu_*.py` passes `--check`.
+
+**Tests:**
+- `CodexCatalogTests` is rewritten for the three chapters: 11 tests, with the Toy Box reconciliation and the
+  space-blind match.
+- `ArcadeGridOrderTests` is rewritten for the fixed order and the two dropdowns.
+- `ElementFlowerTests` gains the cap at 5.
+- The player and editor reference compiles are clean. Not opened in the editor, and the tests have not been run.
+
+### 97.1 Round 2 (2026-10-27): silver, the Mass flip, 2D + 3D elements, elemental crystals in cloud data, the Omni row
+
+Shombith's answers to section 97's open questions: "the hangars vessel preview and the icons too" (silver);
+"turn the Mass icon upside down"; "in the same info tab we have both the 2D icons and the 3D view of them"; "put them in
+cloud data and tell me what to do"; "in the controls tab the omni crystal ability of the vessel should also show".
+
+- **Silver, not gold, over the vessel preview.** The upgrade moment's ring, banner and flying crystal icons draw in
+  silver (`HangarUpgradesPage.elementTint` = NeutralLightest; it was the Purchase gold). The UPGRADE and UNLOCK buttons
+  stay gold, because they spend. The 3D hull's domain slots wear the class livery,
+  `Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat`: COLOR.md's silver plates, rim (0.86, 0.90, 1.00) and face
+  (0.50, 0.56, 0.70). It is set as `HangarVesselStage.liveryMaterial` in place of the prefab's placeholder.
+- **The Mass icon is upside down.**
+  - `mass_triangle_label.png` is flipped in place.
+  - `mass_petal.png` is flipped and set at 60 %, so the five petals keep their gaps; the flower reads as a star of five
+    triangles.
+  - Every flower and the HUD pips draw it.
+- **2D and 3D in one tab.** Each ABILITIES row shows the element's 2D flower and icon, and now its crystal in 3D: the
+  Codex flipbook, still on its first frame. Playing a row turns the 2D flower one petal and swells it (rotate and
+  scale, 0.6 s), and runs the crystal's loop once.
+- **Elemental crystals, held and spent.**
+  - `ProfileEconomy.ElementalCrystals` is a list of `{Element, Held, Earned, Spent}` on the cloud profile, beside the
+    OmniCrystal balance. It rides the same save.
+  - `PlayerDataService` adds `GetElementalCrystalsHeld` / `Spent`, `AddElementalCrystals` and
+    `TrySpendElementalCrystals`.
+  - UPGRADES shows the focused element's line: "MASS CRYSTALS 7 HELD - 5 SPENT".
+  - **Nothing earns them yet.** Steps for the owner (cloud data is Shombith's):
+    1. Decide the earn rule: per match, per elemental crystal collected, or by the end-of-match element levels.
+       Matches only count `ElementalCrystalsCollected` in total today, not per element.
+    2. Have the match end call `AddElementalCrystals(element, n, "match")`. It belongs where the OmniCrystals are paid
+       out, so it shares the save.
+    3. When the economy moves to the server, give Cloud Code an elemental earn/spend pair, as the OmniCrystal wallet
+       has (`ServerEconomy.EarnAsync`/`SpendAsync` behind `ServerEconomyGate`), and gate these two calls the same way.
+       Yash does the Cloud Code work.
+    4. Point the Ark's CONVERT at `TrySpendElementalCrystals` (one of each) plus `AddCrystals` (one OmniCrystal). The
+       converter says it is waiting on these balances.
+- **The Omni row in the controls tab.**
+  - `VesselControlsPanel` adds an "Omni crystal: …" row after the four elements, with the Omni crystal icon, no button
+    and no cooldown.
+  - Its words come from `ElementalAbilityMapSO.omniAbilityLabel`, a new field. It is authored on seven maps from their
+    docs and the Codex: Squirrel, Dolphin, Sparrow, Scarab, Thresher, Stoat and Rhino.
+  - Every other hull reads "Omni crystal: fly into it". The Jacks and Starling maps belong to their own generators, so
+    their lines are left to those.
+
+**Generators:** `author_menu_hangar.py` has 32 plants and `author_menu_configure.py` gains its Omni plant; all fire, and
+every `author_menu_*` passes `--check`. **Tests:** `PlayerProfileDataTests` gains the two ElementalCrystals tests. The
+player and editor reference compiles are clean. Not opened in the editor.
+
+### 97.2 The Hangar's open cradle without the notch or the dash (2026-10-27)
+
+Shombith: "The dashed outline is the open triangle panel we put in the hangar bg remove that dashed outline and also on
+the top right we do not like the notch design. Make the corners fade into a gradient for that triangle."
+
+The dossier's border is now `open_cradle_border` (`author_menu_hangar.py`):
+- **Lines.** The left stub, the floor, the leaning right side and the right edge up to 260 units from the top.
+- **Open ends.** Both open ends dissolve over 220 units through the kit's alpha ramp (`kit_fade_h`) into the cradle
+  fill's own clear top.
+- **Removed.** The chamfered rail and its top-right notch, and the faint dash where the rail ended.
+- **Kept.** The small corner cutout (`kit_corner_tri`).
+
+The configure card's rail (Rev 25) is unchanged. Two new plants: "the dash back on the border" and "an open end
+stopping hard"; all 34 fire.
+
+### 97.3 The build fix, the Lexicon's ways to play, and Rev 30 boards (2026-10-27)
+
+Shombith, with a screenshot of the built Codex: "cant see anything", "In lexicon teach about missions arcades voyages too
+quest oo, also hate the UI now, create some new mockups".
+
+- **Cause of "can't see anything".** A tile waits its turn (30 ms per index) before it fades in. One long frame, such as
+  the hitch as the screen opens, could carry a waiting tile past the whole fade in a single step. That tile never drew
+  its last frame and stayed at alpha 0. Only the first tile, which waits for nothing, showed. `CodexTile.Update` now
+  always lands the final step.
+- **Lexicon.** It now has Arcade, Quests, Voyages and Missions cards first, the ways to play, then Vessels, Pilots,
+  Artifacts and Toys. The art is SkimRace's card, Tandava's card, the Duel for the Cell card and the star.
+- **Rev 30 boards** (canvas page `rev30`; R29 was taken by another session's Squads round; copies in
+  `Docs/MenuRedesignB/board/`):
+  - **A Vault** (interactive): a list on the left, the crystal alive on a stage in the middle (its flipbook and its
+    element's entrance), and a solid reading panel on the right.
+  - **B Field Guide**: a two-page plate with callouts, and an entry strip under the book.
+  - **C Orbit**: the Omni crystal at the core, the four elements orbiting it, ecology and lexicon on the outer ring.
+  - **Lexicon** (interactive): image cards and a reading panel.
+  - **Every option** puts solid panels under its words; the sea behind the text is what washed the build out. Each shows
+    the real abilities from the shipped ability maps.
+  - Waiting on a pick before the build changes again.
+
+## 98. The Codex as an Orbit (Rev 30 board C, 2026-10-27, awaiting in-editor approval)
+
+Shombith picked board C: "Go with C, implement it". The grid of cards is gone. Generator: `Tools/Build/author_menu_codex.py`
+(`--check`, `--self-test`, 17 planted defects).
+
+- **The orbit (left).** A chapter's entries ride three tilted rings (`CodexOrbit`, on `Orbit/Nodes`):
+  - The rings hold 4, 8 and 12 entries, inside first. The outer ring takes any overflow. Their half-widths are 270, 440
+    and 600, at a tilt of 0.46. Each ring is a thin circle (`kit_ring_line`) stretched to its ellipse, hidden while
+    empty.
+  - Depth is how far round to the front an entry is. The front (the bottom of the ellipse) draws at 1.05x and full
+    alpha, on top. The back draws at 0.62x and half alpha, underneath.
+  - **The core** is the picked entry's picture, 240 square over a breathing selection-blue halo (`kit_ring_glow`). It
+    sits among the entries at mid depth, so an entry passing in front covers it and one passing behind is covered. It
+    is the page's `CodexPortrait`: it plays the element's entrance and the crystal flipbook (section 97).
+  - **Picking an entry** turns its ring the shortest way round until the entry is at the front (0.6 s, OutCubic). Only
+    that ring moves, and nothing moves while nothing is turning.
+- **The entries.** Each is a round node: a dark disc (`kit_ring_fill`, new), the picture on it, and an outline ring
+  that `CodexTile` paints selection blue on the open entry, over a breathing halo. The name and a quiet line sit under
+  it. The pick's scan line is gone; it was a card's effect.
+- **Pad and keys.** `CodexScreen` wires each entry's navigation explicitly: left and right step to the previous and next
+  entry (wrapping), and up goes to the open chapter's tab (FLORA or FAUNA under ECOLOGY). The navigation is explicit
+  because the entries move, and automatic navigation would follow where they happen to be drawn. LB / RB still step
+  chapters.
+- **The page (right).** A solid reading panel, 700 wide, in the selection blue's border and a soft breathing glow. Words
+  only: kicker, title, then gameplay, facts, element cells (two columns now) and rows, with lore last. The sea no
+  longer shows through the text (section 97.3).
+- **New kit sprite:** `kit_ring_fill`, a solid disc (`author_ui_kit_sprites.py`, checked as a quarter-pi of its square).
+- **Retired:** the grid's ScrollRect and GridLayoutGroup, and `CodexScreen.gridScroll` / `EnsureVisible`.
+- **Not verified in the editor.** Both reference compiles are clean, and the offline render shows the rings, core and
+  panel. The orbit's placement is runtime-only, so the offline renderer cannot show the entries on their rings.
+  `CodexOrbitTests` covers the ring fill and the picked entry's front position.
+
+### 98.1 More room in the Orbit; the Field Guide for Ecology and Lexicon (2026-10-27)
+
+Shombith, with a screenshot of the built Orbit (two entries stacked at the front, over the core): "make the spacing a
+lot bigger and keep this design only for elements section others can have design B".
+
+- **The Orbit is ELEMENTS only** (`CodexScreen.orbitChapters`). Its seven entries sit on two rings, of half-widths 330 and
+  570 at a tilt of 0.56 (before: three rings of 270 / 440 / 600 at 0.46). The core is 220 square.
+- **Only the pick sits at the front.** Picking an entry turns its ring to bring it to the front. Every other ring turns
+  until the front falls in the gap between two of its entries (`CodexOrbit.Rest`). The first frame of a chapter is
+  arranged the same way. That gap is what stacked Charge over Omni in the screenshot.
+- **ECOLOGY and LEXICON are the Field Guide** (Rev 30 board B, the `Guide` layout):
+  - **The book:** the plate on the left (44 %), with the entry's picture at 520 over a breathing halo and the caption
+    "{kicker} - {title}" (`CodexPageView.plateText` / `plateTemplate`). A thin selection-blue spine runs down the middle,
+    and the page is on the right: the same words-only `CodexPageView`, with three columns of element cells.
+  - **The strip:** every entry as a 150 square (`CodexGuideTile.prefab`: the picture over its name, outlined blue with a
+    glow when open). It sits under the book and starts right of the friends orb. It scrolls sideways when there are more
+    entries than fit and is centred when they all fit. The pad keeps the open entry in view.
+  - The board's callouts (labelled points on the picture) are not built: no entry carries callout data yet.
+- **Shared head row** (`Head`): the chapter title, FLORA / FAUNA and the count sit over both layouts. Switching layout
+  hides the other one and lets go of its pick, so its pictures stop animating unseen.
+- **`CodexScreen`** now holds two `CodexLayout`s, each with a group, content, tile prefab, an optional orbit or strip
+  scroll, and a page. Navigation is the same in both: left and right step through the entries, and up goes to the
+  chapter tab.
+- Generator: `author_menu_codex.py` writes three prefabs (`CodexTile`, `CodexGuideTile`, `CodexView`), with 21 planted
+  defects. The new ones are the Lexicon drawn as the Orbit, the strip unwired, the guide page showing the core, and the
+  guide shown over the orbit.
+
+### 98.2 The Hangar's hull in the cards' silver; the Codex's missing pictures (2026-10-27)
+
+Shombith, with a Hangar screenshot (white body, purple plates) beside an arcade card's hull: "the silver should look like
+the ones in the arcade cards", and, of the Field Guide's empty entries: "Run the codex tool again to take screenshots for
+the empty ones".
+
+- **Silver on the stage.** The cards draw the hull through `Hull_Lit.mat`: the dark render lifted toward a cool grey, with
+  a white edge. The stage now gives the 3D copy the same look (`HangarVesselStage.silverSwaps`, applied by `WearSilver`
+  after the model is built):
+  - **Body** (BlueBase and its opaque twin) becomes `SilverBodyVesselMaterial`: rim 0.92 / 0.95 / 1, face 0.45 / 0.50 / 0.64.
+  - **Window** becomes `SilverWindowVesselMaterial`: rim 0.85 / 0.92 / 1, face 0.25 / 0.42 / 0.95.
+  - **Engine** keeps its own material.
+  - **Anything else on the vessel shader** (the domain plates, or whatever a hull authored in their place) becomes the
+    class livery.
+  - **The livery's colours were swapped** (its rim was the darker colour). They are now rim white and face pale blue
+    0.62 / 0.74 / 1.
+  - Only the stage copy's renderers change. The ship's shared materials and `Docs/VesselModels/COLOR.md` are untouched.
+  - Generator: `author_menu_hangar.py` wires the four pairs, with a new planted defect, "the stage's body back in the
+    dark gunmetal" (35 in all).
+- **The Codex's missing pictures** cannot be baked in this session: the baker renders in the Unity editor
+  (`CodexImageBaker`). The empty entries are the Toy Box species that have no `Codex.asset` entry yet. They include the
+  Mandelbulb family (Mandelbulb, Coral Bloom, Watershed, Apollonia), the swarms, Physarum, Snap Trap, the topiaries and
+  Borromean. To fill them: **FrogletTools > UI > Codex**, then **Scan & Merge** (adds the entries), then **Bake Missing**
+  (renders their pictures), then save. A species the harvester cannot find (one with no flora or fauna config, such as a
+  swarm field) stays empty and is listed in the scan's report.
+
+### 98.3 Pictures for the GPU-drawn fauna, and Toy Box names in the Codex (2026-10-27)
+
+Shombith, after Scan & Merge and Bake Missing ("Baked 0 image(s)", with every swarm and substrate species reported as
+"nothing to photograph"): "None of the fauna got their images".
+
+- **Why nothing was photographed.** The substrate packs (Harrier, Leech, Leviathan, Locust, Lurker, Mobber, Pack
+  Hunter, Shoal, Siege, Stampede), the swarms (Bench, Tandava, NCA Lizard) and the builder colonies (Fortress, Thief
+  Nest, Wearer) are POPULATIONS. Each root is a heartless, bodiless anchor, and its lifeforms live in a simulation and
+  are drawn from one GPU buffer, so the prefab carries no mesh at all.
+- **The fix: `CodexImageBaker.BuildPopulation`.** After the prefab's own meshes and the colony chain, the baker finds
+  the member the GPU draws, by field name: `SubstrateSpeciesSO.agentPrefab`, `SwarmFaunaConfigSO.TadpolePrefab` or
+  `BuilderColonyConfigSO.MemberPrefab`, reached through the root's `species` or `config`. It photographs a loose school
+  of nine members on a golden-angle disc, each turned and sized a little differently. Each member wears the same body
+  prism every agent wears.
+- **Why a picture would not have reached its page anyway.** The harvester named a species after its config assets.
+  The substrate ones came out as "Substrate Harrier Fauna Config Data", because the suffix strip did not know
+  " Config Data" and only stripped the element before the kingdom. The bench swarms, four Toy Box species on one
+  prefab, came out as one entry. The Codex screen lists the Toy Box roster and finds each page by the roster's name,
+  so those pages were unreachable.
+- **The fix: `CodexHarvester.GroupSpecies`.** Every config the Toy Box's Spawn Matrix lists becomes that roster
+  species, under the roster's name ("Harrier", "Swarm Field"). A config the roster does not list joins the roster
+  species that uses its prefab (the odd `WormColonyFaunaConfig` stays with the Worm Colony). Anything else groups by
+  prefab, as before. The suffix strip now also drops " Config Data" / " Config" and takes the element and kingdom in
+  either order.
+- **Before re-running:** discard the local `Assets/Resources/Codex.asset` changes from the first scan. Those entries
+  carry the config-asset names, and the merge never renames an entry, so they would linger beside the new ones as
+  extra Field Guide entries.
+
+### 98.4 Vessel Changer pictures: the hull, not the skimmer (2026-10-27)
+
+Shombith: "fix the vessel changer pictures too". Twelve `tool_vessel-changer__<hull>.png` came out byte-identical:
+Angler, Brittlestar, Dolphin, Goby, Grizzly, Manta, Meerkat, Squirrel, Starling, Stoat, Thresher and Urchin.
+
+- **Cause.** Every ship prefab carries a skimmer: a builtin sphere scaled 15-60x. The Codex baker photographed the whole
+  prefab, so the sphere filled the frame, and after normalising every hull was the same blue ball. The Hangar stage and
+  the Toy Box never had this, because they build through `VesselModelBuilder`, whose hull filter drops builtin
+  primitives, trails, jets and VFX.
+- **Fix.** `CodexImageBaker.HarvestModel` takes an optional part filter, and `CodexVariantSubject.BuildHull` passes
+  `VesselModelBuilder.IsHull`, now public: one hull filter for every picture of a ship.
+- **To re-bake:** FrogletTools > UI > Codex, then **Bake All**. Bake Missing skips these, because a file already exists.
+
+### 98.5 The Ark's sea, a Blue-only Codex, and the Hangar's hull as the ship with silver plates (2026-10-27)
+
+Shombith, with a screenshot of the Ark's Squads tab (the game world showing straight through): "1. Ark no sea line
+2. All codex should have blue domain not anything else 3. Hangar vessels should not look like this it should look like
+normal vessel but just the domain parts should look silver".
+
+- **Ark.** The Squads and Decor pages now open on the window backdrop every style-B window draws: the near-opaque veil
+  under the top bar, then the sea lines (`Sea_Window.mat`). The pair is `author_menu_ark.page_backdrop`, first under
+  each page, so the page's CanvasGroup hides it with the page. The converter keeps its 3D picture and draws none. The
+  generator asserts the pair on both pages and has a new planted defect, "the Squads tab without its sea lines".
+- **Codex: Blue only.** Pictures are tinted from `CodexScreen.pictureDomains`, which is `{ Blue }`, instead of drifting
+  through Jade, Ruby and Gold. Blue is nobody's team, and an encyclopedia page belongs to no one. The Etherion crystals
+  keep their rendered colour: a crystal is not a domain's.
+- **Hangar: the ship, with silver plates.** §98.2's whole-hull repaint is withdrawn:
+  - `HangarVesselStage.silverSwaps` and `WearSilver` are removed.
+  - The `SilverBody` / `SilverWindow` materials are deleted.
+  - The body, windows and engines wear the ship's own materials again.
+  - Only the domain-role slots change (`VesselModelBuilder.TryBuildLive`, as before §98.2). They wear
+    `ClassLiveryVesselMaterial`, now a neutral silver: rim 0.96 / 0.97 / 1, face 0.60 / 0.63 / 0.70.

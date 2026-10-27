@@ -3254,6 +3254,12 @@ signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **The Write tool turns a `\u2028` / `\u2029` escape in the text you write into the RAW character.** A regex or a
+  string that names the Unicode line separators (`/[\u2028\u2029]/`, `'\u2028'`) lands on disk holding U+2028 itself,
+  which JavaScript and C# both read as a LINE BREAK: node fails with `Invalid regular expression: missing /`, Roslyn with
+  `CS1010: Newline in constant` (claude/affectionate-bardeen-pzh99d, 2026-10-27: `faction-chat.js`, `FactionChat.cs` and
+  its tests, all three). After writing any file that names them, re-escape on disk:
+  `t.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")` in Python, or write them as `(char)0x2028`.
 - **Unity wraps a long reference line AFTER the guid, so `"guid: X, type: 2"` is not how every reference looks.**
   `vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c…,\n    type: 2}` and the same in a nested-prefab
   `objectReference:` override. A guid swap or a presence check written as the one-line form silently matches nothing

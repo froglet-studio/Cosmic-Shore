@@ -145,8 +145,8 @@ namespace CosmicShore.Gameplay
             if (!_execs && _vessel != null && UnityLiveness.Alive(_vessel.Transform))
                 _execs = _vessel.Transform.GetComponentInChildren<ActionExecutorRegistry>(true);
             if (!_execs) return;
-            if (on) action.StartAction(_execs, _status);
-            else action.StopAction(_execs, _status);
+            if (on) VesselActionTape.Start(action, _execs, _status);
+            else VesselActionTape.Stop(action, _execs, _status);
         }
 
         // One use of an upgrade: a press, or the release of a charge (the lab's fireActive).

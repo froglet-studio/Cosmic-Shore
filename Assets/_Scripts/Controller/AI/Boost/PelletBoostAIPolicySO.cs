@@ -75,8 +75,8 @@ namespace CosmicShore.Gameplay
 
                 // One press is one pellet; the release is a no-op on this ability (a lit pellet
                 // burns out on its own clock), sent anyway so the press/release pair is honest.
-                _action.StartAction(_executors, _status);
-                _action.StopAction(_executors, _status);
+                VesselActionTape.Start(_action, _executors, _status);
+                VesselActionTape.Stop(_action, _executors, _status);
                 _nextLightAt = now + _policy.minSecondsBetweenPellets;
             }
 

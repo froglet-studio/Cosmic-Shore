@@ -224,8 +224,12 @@ moves; the view swaps hull and jets on the live boost flag. The **Sparrow's Mass
 rounds from both pods - a ghost while flying, solid in the stance, shielded octahedrons at Mass 5. The **Sparrow's
 Space card** (2026-10-27, three option rounds, Garrett picked E2): ten rounds on their rays inside the gun's LIVE
 cone over the heat gauge cut into one bar per level reached - the view generates the rounds and lays them out by the
-real half-angle; options are now shown in the hull's whole lockup. Next: the Sparrow's Charge card, then the eleven
-placeholders.
+real half-angle; options are now shown in the hull's whole lockup. Next: the Sparrow's Charge card. **The Grizzly
+(2026-10-27)**: its four placeholders (Smash, Zap, Cannon, Boost) replaced by four kit icons drawn from its new model (`specs/grizzly.py`,
+`Docs/Icons/sheets/grizzly.png`): Dig In (the real hull side-on in its `dig` take, the anchor sunk into a ground plate),
+Weapon Systems (a three-chamber drum), Charged Cannon (a shell leaving its blast), Rush (the hull leaning into two
+exhaust bars). Single white sprites: `GrizzlyHUDView` is in flight on `grizzly-v3` (jtgjones), so tinted parts wait. Next: the
+eleven placeholders.
 
 | Round | What | Why first |
 |---|---|---|

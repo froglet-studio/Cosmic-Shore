@@ -435,6 +435,9 @@ namespace CosmicShore.Gameplay
         // Course-build retry, server only. The seed is captured ONCE so a course is never a
         // function of how many frames the scene took to become answerable.
         int _pendingCourseSeed;
+
+        /// <summary>The seed this match's course was built from (0 until it is drawn), for the match replay.</summary>
+        public int CourseSeed => _pendingCourseSeed;
         bool _awaitingCourse;
         float _courseRetryDeadline;
         bool _finalResultsSent;
@@ -575,7 +578,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void BeginCourseGeneration()
         {
-            _pendingCourseSeed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            _pendingCourseSeed = CourseSeedOverride.Pick(courseSeed);
             _courseRetryDeadline = Time.time + CourseBuildTimeout;
             _awaitingCourse = true;
             TickCourseGeneration();
@@ -1099,14 +1102,13 @@ namespace CosmicShore.Gameplay
         void ArmRacers()
         {
             Vector3 centre = ResolveCellCentre();
-            var handicapLevel = RaceHandicapLevel();
 
             // Every AI seat, plus a human's hull the AI is holding when the race starts (PilotControl, the
             // Third Eye's "AI flies" toggle): that hull races on the same steering as a seat.
             foreach (var p in gameData.Players)
             {
                 if (p == null || (!p.IsInitializedAsAI && !HeldByAutopilot(p))) continue;
-                ArmRacer(p, centre, handicapLevel);
+                ArmRacer(p, centre, RaceHandicapLevel(p));
             }
         }
 
@@ -1117,15 +1119,16 @@ namespace CosmicShore.Gameplay
         public bool ArmAIPilot(IPlayer player)
         {
             if (!IsServer || player == null) return false;
-            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel());
+            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel(player));
             return true;
         }
 
         // The lobby's AI difficulty (every mode offers it, AIDifficultyRules.IsOfferedFor):
         // Easy, Medium and Hard race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
-        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
-        SkimRaceHandicapLevel RaceHandicapLevel() => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
-            ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
+        // Legendary on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO). Per PILOT: each AI races
+        // at its own seat's level (picked with its pedestal selected), else the match's.
+        SkimRaceHandicapLevel RaceHandicapLevel(IPlayer pilot) => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+            ? SkimRaceDifficultySO.Load().For(gameData.AIDifficultyFor(pilot))
             : default;
 
         // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a human's hull.
