@@ -533,6 +533,26 @@ inside of a real wormhole; no black-hole or white-hole looks; make the grid 3D; 
 spheres, the light shells and gravitational wave, the markers) is listed with its commit in
 `Docs/Studios/STOAT_PARKED_HOLE_LOOK.md`. Mass and Time keep their holes.
 
+## 1m. Round 25 (studio) — out of a tunnel with the speed you went in with (2026-10-27)
+
+**Yash:** *"you should come out ... with the same momentum and speed as you went inside the tunnel."*
+
+- **`gateKeepMomentum` 1 (the default):** the speed you go in with (`vIn` = your engine, gravity and momentum speed × the
+  warp you had) is the speed you come out with, on the tunnel's last heading. The warp you had going in is held,
+  untouched, while you ride, and carries on after; nothing is added. 0 brings back rounds 19–24's slingshot boost
+  (`gtWarpShare`, `gtFatCut`, `gtBoostSeconds`).
+- **The ride:** it starts and ends at `vIn` and rushes to `gtTubeSpeed` 2.5 × it at the throat (sin along the tube), so
+  there is no jolt at either mouth. `gtThroatRush` is folded into it and gone.
+
+**Measured** (headless, a 120° tunnel at cruise): in at 59 u/s, 149 u/s at the throat, out at 60 u/s and steady 0.25–1 s
+after; with `gateKeepMomentum` 0, out at 123 u/s (the old warp).
+
+**What it does to the race** (the AI, Hard, seed 1, s): circuits I1–I4 103.0 / 100.6 / 98.8 / 97.6 and hairpins
+85.9 / 79.5 / 75.0 / 71.7 - **Gate is now the slowest mode** (round 24: 36–40 and 38–44; Mass 49–60 and 31–39). A tunnel
+now buys a turn at full speed and the rush through its throat, no speed after it. **For Yash and Garrett:** if Gate
+should race, the levers that keep "out as you went in" are a faster ride (`gtTubeSpeed`), longer tunnels (`gtLenMax`), or
+a faster one-thumb cruise; `gateKeepMomentum` 0 is the old boost.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |

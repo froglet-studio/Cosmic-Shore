@@ -260,7 +260,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 24 · inside the wormhole</span>
+    <span class="round">Round 25 · out as you went in</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
@@ -503,7 +503,7 @@
     // bends and how much of that comes from LT's shortness, the mouths' flare, how much a fat one cuts the warp after it,
     // and the ride through (x your speed, faster at the throat). gtAimCone / gtAiCone are round 18's, kept for the game.
     gtThroatMin: 3, gtThroatMax: 40, gtTurnMax: 120, gtMouthFlare: 2, gtFatCut: 0.65,
-    gtTubeSpeed: 2.5, gtThroatRush: 1, gtAheadSeconds: 1.2, gtAiMinTurn: 120,
+    gtTubeSpeed: 2.5, gtAheadSeconds: 1.2, gtAiMinTurn: 120,
     // round 20, the reticle: how far ahead of the nose it rides, and how long the AI shapes one before letting go
     gtReticleAhead: 30, gtAiAim: 0.3,
     // round 22, the wormhole's look (keys ARE the game's StoatModeAction fields): the grid on your own ride, the space sheets
@@ -513,6 +513,8 @@
     // round 23 (Garrett): Gate mode flies on one thumb; the bank into a turn, as a share of the roll rate (130 x 0.12 = the
     // Shrike's 15 deg/s), and the warp along the whole tube everyone sees, so where your grid runs the world behind it bends
     gateBankShare: 0.12, gateTubeWarp: 0.8, gateGridRestAlpha: 0.4,
+    // round 25 (Yash): out of a tunnel with the speed and momentum you went in with (1), or round 19-24's warp boost (0)
+    gateKeepMomentum: 1,
     // round 24: the glass under your grid (its body), and how close a mouth's dent may come to the camera (x the mouth) before it fades
     gateGridGlass: 0.6, gateDentNear: 3,
     // the squeeze (StoatSlingConfig)
@@ -625,8 +627,8 @@
     ['V', 'gtThroatMin', 'Throat radius, straight (u)', 1, 40, 0.5],
     ['V', 'gtThroatMax', 'Throat radius, sharpest bend (u)', 5, 120, 1],
     ['V', 'gtMouthFlare', 'Mouth radius (× throat)', 1, 5, 0.1],
-    ['V', 'gtTubeSpeed', 'Ride through (× your speed)', 0.5, 8, 0.1],
-    ['V', 'gtThroatRush', 'Faster at the throat (+ share)', 0, 3, 0.05],
+    ['V', 'gateKeepMomentum', 'Out with the speed you went in with (1), or the warp boost (0)', 0, 1, 1],
+    ['V', 'gtTubeSpeed', 'Fastest at the throat (× your entry speed)', 1, 8, 0.1],
     ['V', 'gtWarpShare', 'Top warp after it (share of the loop boost)', 0, 3, 0.05],
     ['V', 'gtFatCut', 'A fat wormhole cuts that warp by (share)', 0, 1, 0.05],
     ['V', 'gtBoostSeconds', 'Warp after the white hole (s)', 0, 8, 0.1],
@@ -1831,18 +1833,21 @@
     pairs.push(myPair);
     whQ.setFromUnitVectors(fwd, wh.t0);
     // the ride starts at the hull: it dives straight down to the mouth the reticle showed (s < 0), then into the throat
-    ftLive.gate = { pair: myPair, state: 'tube', s: -hull.position.distanceTo(wh.A), sIn: 0, oN: 0, oB: 0, rIn: Math.max(1e-3, whRadius(wh, 0)), q0: whQ.clone().multiply(hull.quaternion) };
+    // vIn: the speed you go in with (round 25: you come out with it too, gateKeepMomentum)
+    ftLive.gate = { pair: myPair, state: 'tube', s: -hull.position.distanceTo(wh.A), sIn: 0, oN: 0, oB: 0, vIn: Math.max(1, (speed + gravSpeed + flow) * ftMul), rIn: Math.max(1e-3, whRadius(wh, 0)), q0: whQ.clone().multiply(hull.quaternion) };
     if (raceStats && race === 'running') raceStats.slings++;
     slings++; runStyles.add('A');
     if (stance) stance = false;
     if (!curPilot) portalFlash = 1;
   }
-  // In the throat: carried along the curve at gtTubeSpeed x your speed, fastest at the throat (gtThroatRush), turned
+  // In the throat: carried along the curve, from your entry speed up to gtTubeSpeed x it at the throat and back (round 25), turned
   // with it; out of the white hole, slung on its heading (gateOut).
   function gateTransit(dt) {
     const g = ftLive.gate, wh = g.pair.wh;
     const u = clamp01((g.s - wh.s0) / Math.max(1e-3, wh.s1 - wh.s0));   // 0 on the dive in
-    const v = Math.max(speed + flow, P.cruise) * Math.max(0.1, P.gtTubeSpeed) * (1 + Math.max(0, P.gtThroatRush) * Math.sin(Math.PI * u));
+    // round 25 (Yash: "come out with the same momentum and speed as you went inside"): the ride starts and ends at your
+    // entry speed and rushes to gtTubeSpeed x it at the throat - no jolt going in, none coming out
+    const v = g.vIn * (1 + (Math.max(0.1, P.gtTubeSpeed) - 1) * (g.s < wh.s0 ? 0 : Math.sin(Math.PI * u)));
     g.s = Math.min(wh.s1, g.s + v * dt);
     if (g.s < wh.s0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }   // still diving to the mouth
     else {
@@ -1855,15 +1860,19 @@
     if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
     if (g.s >= wh.s1 - 1e-6) gateOut(g);
   }
-  // Out of the white hole: the warp it earned, at once - most for a thin, long wormhole (gtFatCut), held gtBoostSeconds.
+  // Out of the far mouth. Round 25 (gateKeepMomentum 1, the default): with the speed and momentum you went in with, on
+  // the tunnel's last heading - the warp you had going in (frozen while you rode) carries on as it was, nothing added.
+  // gateKeepMomentum 0 is round 19-24's slingshot: the warp it earned, at once, most for a thin, long one (gtFatCut).
   function gateOut(g) {
     const wh = g.pair.wh;
     g.state = 'done'; g.used = true;
-    ftLive.gQ = clamp01(1 - Math.max(0, P.gtFatCut) * wh.fat); ftLive.gT = Math.max(0, P.gtBoostSeconds);
-    const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.gtWarpShare);
-    ftMul = Math.max(ftMul, 1 + (top - 1) * ftLive.gQ);
-    if (raceStats && race === 'running') { raceStats.catches++; raceStats.sweepSum += ftLive.gQ; }
-    lastGate = { q: ftLive.gQ, len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI), warp: ftMul }; slingFlash = 1.6;
+    if (P.gateKeepMomentum < 0.5) {
+      ftLive.gQ = clamp01(1 - Math.max(0, P.gtFatCut) * wh.fat); ftLive.gT = Math.max(0, P.gtBoostSeconds);
+      const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.gtWarpShare);
+      ftMul = Math.max(ftMul, 1 + (top - 1) * ftLive.gQ);
+    }
+    if (raceStats && race === 'running') { raceStats.catches++; raceStats.sweepSum += P.gateKeepMomentum < 0.5 ? ftLive.gQ : 1; }
+    lastGate = { q: ftLive.gQ, len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI), warp: ftMul, kept: P.gateKeepMomentum >= 0.5 }; slingFlash = 1.6;
   }
   let lastGate = null;
   // The warp after the white hole (StoatGateMath.StepWarp): its quality's share of the top, held gtBoostSeconds, then down
@@ -1872,6 +1881,7 @@
   function stepGateBoost(dt) {
     ftLive.nj = 0; ftLive.thru = false; ftLive.end = 'none';
     const on = race === 'running' && !stopped && !stance;
+    if (ftLive.gate && ftLive.gate.state === 'tube') { ftLive.n = 0; ftLive.lime = false; return; }   // riding: the warp you went in with is held, untouched, for the exit
     ftLive.gT = Math.max(0, (ftLive.gT || 0) - dt);
     const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.gtWarpShare);
     const target = on && ftLive.gT > 0 ? 1 + (top - 1) * clamp01(ftLive.gQ || 0) : 1;
@@ -3577,7 +3587,7 @@
     if (style === 'A' && slingMode === 'gate' && race === 'running' && !stopped) {
       const lime = '#9dff2e', g = ftLive.gate, boosting = ftLive.gT > 0;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText('SLINGSHOT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · × ' + lastGate.warp.toFixed(1), cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText('SLINGSHOT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · ' + (lastGate.kept ? 'speed kept' : '× ' + lastGate.warp.toFixed(1)), cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
       const ret = ftLive.ret;
       if (ret || (g && g.pair.alive && g.state === 'tube')) {
         const wh = ret || g.pair.wh, txt = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°';
@@ -4603,8 +4613,8 @@
     gtTurnMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 23, studio only): the sharpest bend - the right stick pushed fully over bends the tunnel this far, any way. Less bend, a longer, thinner tunnel. The game: StoatModeAction.gateTurnMaxDegrees (new).', lo: 'Wormholes run straight.', hi: 'U-turns.' },
     gtMouthFlare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): the mouth\'s radius as a multiple of the throat (+6 u): space bends in from this wide at the black hole and back out at the white hole. Where you cross the mouth is kept, scaled down to the throat and back.', lo: 'A straight tube.', hi: 'Wide funnels.' },
     gtMouth: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the smallest mouth that takes you in, whatever the throat, and the most the black hole is drawn. The game: StoatModeAction gateMouthRadius.', lo: 'Thread a thin one exactly.', hi: 'Always forgiving.' },
-    gtTubeSpeed: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how fast the throat carries you, as a multiple of your speed (at least cruise).', lo: 'A slow ride.', hi: 'Through in a blink.' },
-    gtThroatRush: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much faster the ride is at the throat than at the mouths: you fall in, rush through and climb out.', lo: 'Even speed.', hi: 'A rush at the throat.' },
+    gtTubeSpeed: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 25): the ride starts and ends at the speed you went in with and rushes to this many times it at the throat - no jolt at either mouth. The game: StoatModeAction.gateRideSpeed (new).', lo: 'An even ride.', hi: 'A rush through the middle.' },
+    gateKeepMomentum: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 25, Yash): 1 = you come out of a tunnel with the speed and momentum you went in with, on its last heading; nothing is added. 0 = round 19-24: the tunnel warps you after it (Top warp, Fat cut, Warp after). The game: StoatModeAction.gateKeepMomentum (new).', lo: 'The warp boost.', hi: 'Out as you went in.' },
     gtWarpShare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the warp out of the white hole of the thinnest wormhole, as a share of the loop boost (Time scales it). The game: StoatModeAction gateWarpShare.', lo: 'A small push.', hi: 'A sprint.' },
     gtFatCut: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much a fat wormhole cuts the warp after it. Thin and long: the full warp, for distance; fat and short: less warp, but the turn.', lo: 'Every wormhole warps the same.', hi: 'Fat ones barely warp.' },
     gtBoostSeconds: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: how long the warp out of the white hole holds before it fades. The game: StoatModeAction gateBoostSeconds.', lo: 'A burst.', hi: 'A long leg.' },
@@ -4929,6 +4939,7 @@
     gtReticleAhead: ['StoatModeAction.gateReticleAhead', 'new'],
     gateDentStrength: ['StoatModeAction.gateDentStrength', 'new'],
     gateTubeWarp: ['StoatModeAction.gateTubeWarp', 'new'],
+    gateKeepMomentum: ['StoatModeAction.gateKeepMomentum', 'new'],
     gateGridRestAlpha: ['StoatModeAction.gateGridRestAlpha', 'new'],
     gateGridGlass: ['StoatModeAction.gateGridGlass', 'new'],
     gateDentNear: ['StoatModeAction.gateDentNear', 'new'],
@@ -4943,7 +4954,6 @@
     gtThroatMax: ['StoatModeAction.gateThroatRadiusMax', 'new'],
     gtMouthFlare: ['StoatModeAction.gateMouthFlare', 'new'],
     gtTubeSpeed: ['StoatModeAction.gateRideSpeed', 'new'],
-    gtThroatRush: ['StoatModeAction.gateThroatRush', 'new'],
     gtWarpShare: ['StoatModeAction.gateWarpShare', 'linked'],
     gtFatCut: ['StoatModeAction.gateFatWarpCut', 'new'],
     gtBoostSeconds: ['StoatModeAction.gateBoostSeconds', 'linked'],
@@ -5281,7 +5291,7 @@
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
   const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'dpCatchInside', 'dpHoldAtCatch', 'dpRadiusEase', 'dpWhiteClear', 'closeSpeed', 'closeRamp'];
-  const V_KEYS = ['gateBankShare', 'gateTubeWarp', 'gtReticleAhead', 'gtTurnMax', 'gtLenMin', 'gtLenMax', 'gtThroatMin', 'gtThroatMax', 'gtMouthFlare', 'gtTubeSpeed', 'gtThroatRush', 'gtWarpShare', 'gtFatCut', 'gtBoostSeconds', 'gtCollapse', 'gtKeyRamp', 'gtAiMin', 'gtAiMinTurn', 'gtAiAim', 'gateDentStrength', 'gateDentWidth', 'gateGridRestAlpha', 'gateGridGlass', 'gateDentNear', 'gateGridOnRide', 'gateGridSheets'];
+  const V_KEYS = ['gateBankShare', 'gateTubeWarp', 'gtReticleAhead', 'gtTurnMax', 'gtLenMin', 'gtLenMax', 'gtThroatMin', 'gtThroatMax', 'gtMouthFlare', 'gtTubeSpeed', 'gateKeepMomentum', 'gtWarpShare', 'gtFatCut', 'gtBoostSeconds', 'gtCollapse', 'gtKeyRamp', 'gtAiMin', 'gtAiMinTurn', 'gtAiAim', 'gateDentStrength', 'gateDentWidth', 'gateGridRestAlpha', 'gateGridGlass', 'gateDentNear', 'gateGridOnRide', 'gateGridSheets'];
   const F_KEYS = SPEC.filter((r) => r[0] === 'F').map((r) => r[1]);
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
