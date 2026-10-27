@@ -477,6 +477,106 @@ any useful area is very fat, so the throat may need a floor and a ceiling.
 5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
    the length again. A floor and ceiling on the throat is one way to keep both.
 
+## Two kits: Garrett's and the Mix (round 15, 2026-10-27, for Yash to judge)
+
+Yash, 2026-10-27: *"Make two variants, one with his kit only, one with a mix of his kit with the ones you recommend ...
+Do this for every decision ... whatever his extra features there are, add those. And remove our extra features which he
+already made."* The studio page (`Docs/Studios/VesselStudio/meerkat.html`, round 15) now has a **Kit** dropdown at the
+top of Play Style Config. It picks what every Meerkat in the race flies, and it is kept in the page's saved state and in
+section profiles:
+
+- **Garrett's kit**: his design as written. The source is his branch, not this one: `origin/cece/lucid-brown-ykcmhu`,
+  `Docs/Studios/MEERKAT.md` § "Garrett's direction: the Meerkats and the soliton" (six messages). The section above is
+  an earlier version of it. Where his design leaves a choice open, the page takes the simplest reading, and the
+  tooltip says "open in Garrett's design".
+- **The Mix (our recommendation)**: Garrett's kit with one change per decision (the table). Everything not in the
+  table is exactly Garrett's.
+- **Round 8 (archived)**: the round-8 proposals unchanged (Lookout, Hardened Bridge on LB, Cave-in, Chain Dig). They are
+  kept to replay. **LB now conflicts with the fleet's pilot sight.**
+- **Off**: no kit, the wormhole alone. Its headless races are byte-identical to the page before round 15 with round 8's
+  abilities switched off. Round 8's races are byte-identical to that page as it shipped. Both were measured with
+  `runBatch` against the round-14 page.
+
+Round 8's Lookout and Hardened Bridge are not in Garrett's kit or the Mix: his Sentinel mode and exit portal cover them.
+**These are prototypes for Yash to fly and judge.** Every kit number is lab-only: there is no `MeerkatWormholeConfig`
+field for any of them, and none is in `Tools/Build/studio_to_unity/meerkat.json`. Nothing reaches Unity without Yash's
+say-so, and Garrett's design is his to change.
+
+| Decision | Garrett's kit | The Mix | Why the Mix differs (measured below) |
+|---|---|---|---|
+| **D1** the wormhole's element | Space: the soliton. Time: a passive faster ride through every soliton; L5 **Boost out** | The same, but Time L5 is round 8's **Chain Dig** (RT late in a ride digs the next tunnel from the far mouth) | Boost out is passive. Chain Dig keeps a racing decision at every tunnel: when, and which way, to dig on. The Mix's AI chained 6.3 times a field race |
+| **D2** Charge | **Sentinel mode** on Y: pool 3, 6 at L5; zaps in sub-petal ticks (0.1 to 0.25 of a petal by Charge); shields its own prisms; the oldest retires with its soliton; **sentinels are seats** | Sentinel mode the same, **without seats**: every sentinel is AI-guarded. It also does Lookout's job: a rival entering any of your guards is **marked for you** for 4 s | In a one-person studio a seat costs the race. A person sitting in a sentinel lost the flyer twice in one race (the element-holder rule), and finished in 86.3 s against 70.5 to 82.4 s for the AI crew. The alarm keeps round 8's "see the rival" job in a passive form: 18.5 alarms a field race |
+| **D3** Mass | **Exit portal**: six small prisms on a hexagon at 1.5 x the exit radius, once per soliton, size by Mass; danger prisms at L5 | The same. **Hardened Bridge removed** | His portal is the minimal-mass version of the same idea, and it frees LB for the pilot sight |
+| **D4** Space | **Swallow and fire**: prisms at the way in (shielded too, never super-shielded) run the tube and leave the way out as moving prisms (`Docs/PRISM_MOTION.md` 1 and 1a). L5 open | The same, **plus Cave-in on B** in the open Space L5 slot: your nearest soliton fires out everything it holds at once and collapses, and a rival riding it takes a scored hit (round 8's Burial; never pushed) | It gives Space an active verb and a reason to time the fire. 12.8 Cave-ins and 8.2 burials a field race |
+| **D5** diameter | **Surface area** A = 2 pi L b g(k), so b = A / (2 pi L g(k)); unclamped but for a 0.5 u safety floor | Surface area, with the throat's diameter held between a **floor and ceiling** (sliders: 3 u and 25 u) | At Space L5 (A = 12,000 u2), Garrett's shortest tunnel has a 33 u throat and a 107 u mouth, and the longest a 2.6 u throat. The clamp keeps a long tunnel's mouth wide enough to swallow: 64.8 prisms fired a field race against 17.1 |
+| **D6** dynamic seats | **The crew**: D-pad left / right (keys `[` `]`, phone SEAT or a two-finger swipe) steps the flyer, then each sentinel. A sentinel seat has a perched 2.5D view over its way in: click or tap a prism to shield it (any domain), or a rival to zap it (gamepad: right stick cursor, RT). **Y hops**: ride its soliton out as the flyer, while the old flyer becomes a sentinel at a new soliton its AI planner shapes. The meerkat you sit in holds the elements; any other dies of an element hit | **None** (D2). The flyer always holds the elements; sentinels still die of any element hit | See D2 |
+| **LB** | The pilot sight, **FLUME**: hold LB (Q; phone SIGHT) and every soliton is outlined through anything, with where it leads (the ring its way out heads at) and how long it is | The same | The fleet's rule (`Docs/Pilots/CALLSIGNS.md`) |
+
+**Open in Garrett's design, and the reading the page takes:**
+- the swallow zone: the guard, 1.5 x the opening;
+- the carry, fire and glide speeds (150, 120 u/s, 3 s);
+- the surface areas (6,000 to 18,000 u2 by Space);
+- a danger prism's cost (0.5 of a petal);
+- sentinels zap sentinels: a sentinel is a meerkat, so an enemy one in a guard is zapped, and it dies (it does not hold
+  the elements);
+- with no flyer, the AI hops for you after 3 s. Garrett's proposal is "the oldest sentinel's AI hops";
+- the AI's own hop rule: an AI crew hops when that saves 1.5 s to its next ring. Garrett left the hop to people.
+
+"Seated longest" is the person: the studio has one person and no teammates.
+
+**Measured** (headless, seeded, 2026-10-27, Warpline, seed 7; **Score the kits** in AI Config makes these tables).
+
+*Race times, your hull alone* (the median of 3 AI seeds, m:ss.s; no DNF in any of the 240 races, field races included):
+
+| Kit | I1 Easy / Medium / Hard | I2 | I3 | I4 | Hard fastest? | No wormhole |
+|---|---|---|---|---|---|---|
+| Off | 1:32.9 / 1:30.0 / 1:28.9 | 1:28.9 / 1:28.5 / 1:26.4 | 1:34.1 / 1:32.0 / 1:31.8 | 1:32.6 / 1:30.3 / 1:29.5 | 4 of 4 | 1:50.9 · 1:50.6 · 2:02.0 · 1:51.5 |
+| Garrett's | 1:23.1 / 1:21.0 / 1:20.4 | 1:10.9 / 1:09.3 / 1:14.6 | 1:25.0 / 1:23.0 / 1:22.4 | 1:23.6 / 1:21.8 / 1:18.7 | 3 of 4 (I2: Hard slowest) | the same |
+| Mix | 1:21.0 / 1:18.7 / 1:17.1 | 1:18.9 / 1:17.9 / 1:13.3 | 1:21.6 / 1:21.4 / 1:20.1 | 1:20.1 / 1:14.8 / 1:14.4 | 4 of 4 | the same |
+| Round 8 | 1:21.1 / 1:19.2 / 1:17.5 | 1:21.2 / 1:18.8 / 1:19.9 | 1:26.5 / 1:23.6 / 1:22.8 | 1:21.9 / 1:19.2 / 1:21.5 | 2 of 4 | the same |
+
+*In a field* (your hull at Hard against Hard, Medium and Easy rivals flying the same kit; I1 to I4 x 3 seeds = 12
+races a kit; each number is the mean a race):
+
+| | Garrett's | Mix |
+|---|---|---|
+| Your time (median by I1 / I2 / I3 / I4) | 1:13.9 / 1:10.5 / 1:22.4 / 1:20.4 | 1:25.3 / 1:16.5 / 1:27.0 / 1:15.8 |
+| Zaps (all sentinels) · of them yours · petals knocked out | 134.3 · 113.8 · 23.2 | 133.4 · 56.9 · 22.0 |
+| Own prisms zapped shielded | 0 | 9.3 |
+| Prisms fired · destroyed · bounced | 17.1 · 7.1 · 8.9 | 64.8 · 36.6 · 24.8 |
+| Rival rides through your solitons | 30.3 | 12.9 |
+| Hops (the AI's rule) | 2.75 | none (no seats) |
+| Cave-ins · burials | none (no Cave-in) | 12.8 · 8.2 |
+| Sentinels lost (killed) · of them yours · retired | 6.6 · 1.2 · 6.3 | 16.5 · 2.8 · 1.9 |
+| Solitons made · portal prisms set down | 25.1 · 150.5 | 45.2 · 271 |
+| Mass conserved (moved, never deleted, but for a destroyed plain pair) | yes, every race | yes, every race |
+
+*A person in a sentinel seat* (Garrett's kit, scripted: the AI flew 20 s, then a person took a seat and stayed in seats
+for the rest of the race): the flyer died twice (zapped while the person held the elements in the seat). Each time the
+AI hopped the person out after 3 s. The race finished in 1:26.3.
+
+**Our read (for Yash):**
+- **The Mix races better.** Its levels are in order on all four intensities (Garrett's I2 Hard is the slowest of the three).
+  Its Hard times alone beat Garrett's on all four. Its prisms do something: four times as many fired and five times as
+  many destroyed.
+- **Garrett's kit is the more original game.** Rivals ride your solitons 30 times a race, and your sentinels zap them
+  114 times. The crew and the hop are new, and only a person can judge how they feel.
+- **Garrett's weak spots:**
+  - in a one-person studio a seat costs the race, because the flyer dies;
+  - unclamped surface area makes short tunnels huge (a 107 u mouth) and long ones pinholes, so little is swallowed.
+- **The Mix's weak spots:**
+  - your own time in a field is worse (Cave-ins and zaps cut both ways);
+  - sentinels kill each other on the shared race line (16.5 a race);
+  - mass piles up: 271 portal prisms a race, and none of them ever leaves.
+- Both need a person to judge the feel. The seat view, the hop and FLUME were driven by scripts here, not played.
+
+**Not modelled:**
+- a fired prism hitting a hull;
+- teammates, so seats for another person and "seated longest" across people;
+- the hull's trail being swallowed;
+- danger prisms on the field's own prisms;
+- the game's spindle bridge and lens for a soliton made by another vessel.
+
 ## What is not decided or not built
 
 - **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in, in the studio and in the game. A real
@@ -490,6 +590,8 @@ any useful area is very fat, so the throat may need a floor and a ceiling.
   would be ~280 objects per tunnel).
 - **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
   It is unlinked from the studio now. Removing it from the Stoat is Garrett's call (the Stoat's owner).
+- **The kit** (round 15): Garrett's kit and the Mix are prototypes in the studio (§ Two kits), for Yash to judge.
+  Neither is decided, and nothing of either is in Unity.
 - **The play styles.** The Meerkat has none yet.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
 
