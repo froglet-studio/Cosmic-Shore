@@ -512,6 +512,7 @@
         <p class="abnote" id="abNote-abTime"></p><div class="rows"></div>
         <p class="src">The wormhole (rounds 1-5, in the game) is the Time ability; its numbers are in Play Style Config. <b>L5 Chain Dig</b> (proposal): from <i>chainShare</i> of the way through a tunnel you ride, <b>RT</b> forms the next tunnel from its far mouth, bent by the right stick and LT as the reticle would be, and you go straight into it at throat speed (the ride stays at its throat speed through the join, then eases back to your entry speed). The tunnel behind you collapses as you leave it.</p>
         <div class="btns"><button class="pick" type="button" data-reset="abTime">Reset</button></div></details>
+      <details class="card" id="grp-sound"><summary>Sound <small>every ability's sound, to test and confirm</small></summary><div id="soundPanel"></div></details>
       <details class="card" id="grp-lope"><summary>Lope <small>the stand-in hull</small></summary><div class="rows"></div>
         <p class="src">The Meerkat flies the Stoat's model and its bound until it has its own hull (<code>/vessel-model</code>). Body-only: the hull's path and trail stay straight.</p>
         <div class="btns"><button class="pick" type="button" data-reset="lope">Reset to shipped</button></div></details>
@@ -524,6 +525,7 @@
 <script src="studio-domains.js"></script>
 <script src="ai_race_panel.js"></script>
 <script src="studio-ide.js"></script>
+<script src="studio-audio.js"></script>   <!-- the ability sounds, synthesized (Yash, 2026-10-28: test and confirm one by one) -->
 <script>
 (function () {
   'use strict';
@@ -5795,6 +5797,59 @@
     collectWells();
   }
   let manualClock = false;   // a recorder steps the world itself, frame by frame (window.__meerkatStudio.tick)
+  // ================= ability sounds (studio-audio.js) =================
+  // Yash, 2026-10-28: "sound effects to the Meerkat's abilities ... one by one ... I will test and confirm." The sounds
+  // WATCH the sim each frame (a state that changed plays its sound) and never change it, so a race with sound on or off
+  // is the same race. The wormhole and the round-16 labyrinth are wired here; the kit's own events (sentinels, the
+  // soliton's prisms, Cave-in, the portal, FLUME) call VesselStudioAudio.play where they happen. Vessel Config > Sound
+  // lists every sound with Play, its sliders and Confirm / Redo, which lands in the decision log as "Sound: <name>".
+  // These brief the game's FMOD events (shipped empty, the FMOD rule); Unity plays none of them.
+  const SOUND_KEY = 'meerkat-studio-sound-v1';
+  const snd = { tube: false, net: false, forks: 0, omni: false, phases: new WeakMap(), nets: new WeakSet() };
+  const sndV = new V3(), sndR = new V3();
+  function sndAt(p) {   // where a sound is: left / right of the camera, and quieter with distance (gone by ~900 u)
+    if (!p) return {};
+    sndV.copy(p).sub(cam.position); const d = sndV.length(); sndR.set(1, 0, 0).applyQuaternion(cam.quaternion);
+    return { pan: d > 1e-3 ? sndV.dot(sndR) / d : 0, gain: clamp01(1 - (d - 60) / 840) };
+  }
+  function stepSounds() {
+    const A = window.VesselStudioAudio; if (!A || !A.ready) return;
+    const fl = ftLive, g = fl && fl.gate, live = mode === 'fly' && !stopped && race === 'running';
+    // the reticle: a hum while you shape it, rising with the bend
+    if (live && fl.ret) A.loop('ret', 'reticleHum', Math.min(1, Math.hypot(fl.ret.sx || 0, fl.ret.sy || 0))); else A.stop('ret');
+    // in and out of your tunnel, or the labyrinth
+    const inTube = !!(live && g && g.state === 'tube');
+    if (inTube && !snd.tube) { if (g.net) { A.play('burrowGrow'); A.play('burrowEnter'); } else A.play('form'); snd.forks = g.forks || 0; snd.net = !!g.net; }
+    if (inTube) {
+      A.loop('ride', 'rideRush', clamp01(speed / Math.max(1, P.cruise * Math.max(1, P.rideMidMultiplier))));
+      if (g.net && (g.forks || 0) > snd.forks) { A.play('forkTake', { pan: Math.max(-1, Math.min(1, fl.leanX || 0)) }); snd.forks = g.forks; }
+    } else A.stop('ride');
+    if (!inTube && snd.tube && live) A.play(snd.net ? 'burrowExit' : 'exitPop');
+    snd.tube = inTube;
+    // an omnicrystal collected: its chord, then the armed tone (the next RT digs the labyrinth)
+    const om = !!(fl && fl.ab && fl.ab.omni);
+    if (om && !snd.omni && live) { A.play('omniPickup'); setTimeout(() => A.play('trunkTeleport'), 380); }
+    snd.omni = om;
+    // anyone's tunnel forming (a rival's, by distance) and collapsing (yours too); a labyrinth falls in once
+    for (const pr of pairs) {
+      const wh = pr.wh; if (!wh) continue;
+      const ph = wh.phase, was = snd.phases.get(pr);
+      if (ph === was) continue;
+      snd.phases.set(pr, ph);
+      if (was === undefined) { if (ph === 'form' && pr.pilot !== curPilot && !pr.net) A.play('form', sndAt(pr.mid)); continue; }
+      if (ph !== 'collapse') continue;
+      if (pr.net) { if (!snd.nets.has(pr.net)) { snd.nets.add(pr.net); A.play('burrowCollapse', sndAt(pr.mid)); } }
+      else A.play('collapse', sndAt(pr.mid));
+    }
+  }
+  (function mountSound() {
+    const host = $('soundPanel'); if (!host || !window.VesselStudioAudio) return;
+    VesselStudioAudio.mountPanel(host, {
+      state: lsGet(SOUND_KEY, {}), onChange: (st) => lsSet(SOUND_KEY, st),
+      onVerdict: (name, verdict, c) => record({ topic: 'Sound: ' + c.label, choice: (verdict === 'confirmed' ? 'Confirmed: ' : 'Redo: ') + c.label,
+        note: 'volume ' + c.vol.toFixed(2) + ', pitch ' + c.pitch.toFixed(2) + ', length ' + c.len.toFixed(2) + ', brightness ' + c.tone.toFixed(2) + ' (studio-audio.js recipe ' + name + ')' }),
+    });
+  })();
   function frame(now) {
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
     if (manualClock) { requestAnimationFrame(frame); return; }
@@ -5832,6 +5887,7 @@
       const n = Math.max(1, Math.round(simSpeed)), h = dt * simSpeed / n;
       for (let i = 0; i < n; i++) simStep(h, aiInput(h));
     } else simStep(dt, pilotInput(dt));
+    stepSounds();   // the ability sounds watch the sim; they never change it
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
     syncRivalMeshes(); updateCamera(dt); updateWormholes(); updateAiThinking(); updateRings(now);
@@ -5851,7 +5907,7 @@
     // stand-in hull in Vessel Config
     R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-kWorld']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['grp-kit', 'mainCard', 'grp-omni', 'grp-soil', 'grp-reticle', 'grp-look', 'grp-tree', 'grp-space', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
-      ['others', 'Vessel Config', ['grp-kSentinel', 'grp-kSoliton', 'grp-kPortal', 'grp-kTime', 'grp-kMix', 'grp-abCharge', 'grp-abMass', 'grp-abSpace', 'grp-abTime', 'grp-lope']]],
+      ['others', 'Vessel Config', ['grp-kSentinel', 'grp-kSoliton', 'grp-kPortal', 'grp-kTime', 'grp-kMix', 'grp-abCharge', 'grp-abMass', 'grp-abSpace', 'grp-abTime', 'grp-sound', 'grp-lope']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
   const TAB = {};   // key -> { dock, title, btn, pane, win }
