@@ -650,7 +650,8 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 
 Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's direction):
 - **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
-  included, and fires them out.
+  included, and fires them out. L5 **Steal**: what passes through is stolen, the steal starting as each prism starts
+  its run.
 - **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
 - **Charge · Sentinel mode** (Y / F, an active toggle): new tunnels leave a sentinel at their entrance, from a pool of
   3; with the pool used up, the oldest retires with its soliton.

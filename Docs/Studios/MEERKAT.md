@@ -445,7 +445,7 @@ options"*):
 
 | Element | Ability | What the element's level does | L5 upgrade |
 |---|---|---|---|
-| **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton. It swallows prisms at its way in, shielded ones included, and fires them out of its way out | Sets the soliton's **surface area** (below) | open |
+| **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton. It swallows prisms at its way in, shielded ones included, and fires them out of its way out | Sets the soliton's **surface area** (below) | **Steal**: every prism that passes through is stolen into the Meerkats' domain, its steal starting the moment it starts its run, so it leaves the way out already theirs |
 | **Time** | **Passive**: the Meerkat rides **every** soliton faster, its own or anyone's | Scales the ride's rush (today `throatSpeed` 2.5 × the entry speed) | **Boost out**: the Meerkat leaves every soliton with a boost |
 | **Charge** | **Sentinel mode**, an active toggle. On, each tunnel the flyer makes leaves a sentinel perched at its entrance, an afterimage standing up like a real sentinel meerkat, drawn from a pool of **3**. With the pool used up, the **oldest sentinel retires, and its soliton with it**. Off, no new sentinels are placed and the placed ones stay where they are | **How many petals a zap knocks out** | **Six sentinels**: the pool is 6 |
 | **Mass** | **Passive**: when a soliton forms, it sets down a **small exit portal**: a few low-mass prisms in a neat geometric ring round the outside of its way out, clear of what it swallows, marking where the exit is | Their **size** | **Danger prisms**: the portal's prisms are danger prisms |
@@ -563,6 +563,17 @@ grows and shrinks with it.
 - **A teammate on another machine can take a sentinel.** Only the meerkat the Meerkat's player is in takes element
   damage; any other dies instead, unless that player has moved off every meerkat.
 
+**Space L5, Steal** (Garrett, 2026-10-27: *"the L5 space ability should steal prisms that pass through (start steal
+animation at beginning of travel)"*):
+- Every prism the soliton swallows becomes the Meerkats' domain, through the fleet's one steal (the Squirrel's
+  `SkimmerStealPrismEffectSO` path and its look, `PrismInteractionLod`'s grade or shed).
+- The steal look starts as the prism begins its run through the tube, so it plays out over the ride and the prism leaves
+  the way out in the Meerkats' colour.
+- A stolen prism is the Meerkats' own, so a sentinel can shield it, and a shielded prism the soliton fires bounces
+  (`PRISM_MOTION.md` 1a).
+- Shielded prisms are stolen too (the soliton swallows them). Super-shielded mass is never moved, so it is never
+  stolen.
+
 **Decided (Garrett, 2026-10-27, sixth message):**
 - **A dead flyer:** the next hop makes its hopper the flyer, with no sentinel left behind.
 - **Who holds the elements:** the person seated longest aboard the Meerkats. That is one rule, which covers the
@@ -576,9 +587,10 @@ grows and shrinks with it.
   - how the card and `check_crew_vessels.py` express "Meerkats" (one name for a mob of one kind, not "X and Y");
   - how `CrewStations` adds and removes a seat mid-match, and how a remote teammate holds one (`HostsRiders`,
     `ICrewRelay`, `Docs/CREW_STATIONS.md`);
-  - **handing the meter over** when its holder leaves. It lives with the longest-held seat, so it moves to that
-    person's machine, and element levels do not replicate today (`/duo-vessel` §3.3's trap). The hand-over must carry
-    the levels and the pending sub-petal pool, and nothing may be minted or lost in it.
+  - ~~handing the meter over between machines~~: **resolved for every hull**, not only the Meerkats (Garrett: *"that
+    issue is true for any vessel swapping situation ... it should be resolved"*). A hull's base levels and latched
+    unlocks now travel with it whenever it changes machines (`ElementHandover`, `Docs/ELEMENTAL_ECONOMY.md` §2.0). The
+    Meerkats' meter moving to its holder's machine is that same hand-over.
 
 **Where this meets round 8 (for Yash):**
 1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
