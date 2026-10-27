@@ -16814,6 +16814,38 @@ compile (player and editor, 0 errors), `CameraFeelTests` 31/31 on prisma_edit_mo
 3. If the return feels lazy, raise `driftSlideOut` on `CameraFeelConfig`; if the rumble is too faint, raise
    `driftHapticMax01` on the Squirrel prefab's `DriftAudioController`.
 
+## 🔴 2026-10-27 — Look-back camera moved to D-pad down (unverified: no Unity editor in the session)
+
+**Files:** `RearViewGesture.cs` (pad binding LB + RB together → D-pad down; C unchanged), `RearViewLawTests.cs`
+(`TheGestureIsCOrDpadDown`, `ThePadGestureIsARisingEdgeAndCarriesNoState`), comments in `InputController`,
+`VesselRearView`, `Pip`. Why: the shoulders now belong to the pilot (LB sight, RB payload; `Docs/Pilots/CALLSIGNS.md`
+§5). Design: `Docs/REAR_VIEW.md` §5.
+
+1. Run `RearViewLawTests`. **Pass:** green.
+2. Fly any vessel with a pad: press D-pad down. **Pass:** the camera flips to the look-back view; press again, it
+   flips back. Holding D-pad down does not flicker.
+3. Press LB + RB together. **Pass:** the camera does NOT flip (and RB alone fires nothing: the RB abilities moved to Y, next entry).
+4. Arena with AI teammates: D-pad left / right still swap hulls, and D-pad down still flips the camera after a swap.
+5. Open the theater (8), scrub with the D-pad. **Pass:** D-pad down steps the pilot and does not flip the gameplay
+   camera.
+
+## 🔴 2026-10-27 — RB abilities moved to Y (unverified: no Unity editor in the session)
+
+**Files:** `BrittleStar.prefab` / `Grizzly.prefab` / `Shrike.prefab` (`_inputEventShipActions`: InputEvent 3 → 14),
+their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike's card text now says Y),
+`author_brittlestar_assets.py` and `author_shrike_assets.py` (the binding tables; both `--check` green),
+`ControlChipBindingTests.GrizzlyMovedAbilitiesDrawAChipOnBothDevices`. Why: RB is the payload's
+(`Docs/Pilots/ARTIFACTS.md` §2). Pad Y = `Button4Action`, keyboard F.
+
+1. Run `ControlChipBindingTests`. **Pass:** green.
+2. Brittle Star: Y (keyboard F) selects Charge Mode, the five cords; press again, Cruise. RB does nothing. The Charge
+   card's chip shows Y on a pad and F on the keyboard.
+3. Grizzly: Y / F cycles the weapon; RB does nothing; the Weapon Systems chip shows Y / F.
+4. Shrike: Y / F is Charge mode (RT then paints a target); RB does nothing; the chip shows Y / F.
+5. Each of the three flown by the AI still uses that ability (the executors look the control up by event, not by
+   number).
+6. Phone: each of the three still reaches the ability through its card, as before.
+
 ## Sparrow Space card: the live spray cone over a segmented heat gauge (2026-10-27) - NOT EDITOR-VERIFIED
 
 **Files:** `SparrowHUDView.cs` (generates ten round Images under the Space card's icon and lays them out on their

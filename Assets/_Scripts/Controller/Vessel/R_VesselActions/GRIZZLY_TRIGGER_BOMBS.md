@@ -186,7 +186,7 @@ config's old `projectileTime` (the 3 s "throw") is retired.
 | LT / right mouse / L-Shift | left bomb |
 | RT / left mouse / R-Shift | right bomb |
 | X / Q / middle mouse | charged cannon / sniper / claw (`GRIZZLY_CHARGED_CANNON.md`) |
-| RB / E | cycle weapon |
+| Y / F | cycle weapon (RB / E until 2026-10-27) |
 | A / Space, B / R | Dig In, Rush |
 
 Mouse buttons and the shift keys report no analog value, so every desktop bomb is full size.
@@ -201,7 +201,7 @@ button reaches the shared bindings in the table above.
 | Button | Raises | Does |
 |---|---|---|
 | Dig In card / Rush card | `Button1Action` (A) / `Button2Action` (B) | Dig In, Rush |
-| Weapon Systems card | `FlipAction` (RB) | cycle weapon |
+| Weapon Systems card | `Button4Action` (Y) | cycle weapon |
 | Charged Cannon card (held) | `Button3Action` (X) | charged cannon / sniper / claw |
 | **Bomb** buttons, two (held, primary) | `LeftStickAction` (LT) / `RightStickAction` (RT) | the left and right bomb |
 

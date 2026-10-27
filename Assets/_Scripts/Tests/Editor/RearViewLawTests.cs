@@ -10,7 +10,7 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The look-back view (Docs/REAR_VIEW.md): the gameplay camera flips to the mirror of its own
     /// follow offset — the same distance AHEAD of the vessel that it normally sits behind — on
-    /// <c>C</c> or LB+RB, and flips back.
+    /// <c>C</c> or D-pad down, and flips back.
     ///
     /// <para>Two kinds of test, because the invariant has two halves. The GEOMETRY is real
     /// behaviour and is exercised against a live <c>CustomCameraController</c>. The rest are
@@ -187,22 +187,24 @@ namespace CosmicShore.Tests
         // One gesture, in one place
 
         [Test]
-        public void TheGestureIsCOrBothShoulders()
+        public void TheGestureIsCOrDpadDown()
         {
             string code = Code(GesturePath);
             Assert.IsTrue(code.Contains("cKey"), "C must open the look-back view.");
-            Assert.IsTrue(code.Contains("leftShoulder") && code.Contains("rightShoulder"),
-                "Both pad shoulders must be part of the chord.");
+            Assert.IsTrue(code.Contains("dpad.down"), "D-pad down must open the look-back view.");
+            Assert.IsFalse(code.Contains("leftShoulder") || code.Contains("rightShoulder"),
+                "The shoulders belong to the pilot (LB vision, RB payload); a shoulder in this " +
+                "gesture fires the camera flip together with them.");
         }
 
         [Test]
-        public void ThePadChordIsARisingEdgeAndCarriesNoState()
+        public void ThePadGestureIsARisingEdgeAndCarriesNoState()
         {
             string code = Code(GesturePath);
             Assert.IsTrue(code.Contains("wasPressedThisFrame"),
-                "The chord must fire on an EDGE, or holding LB+RB flips the camera every frame.");
+                "The gesture must fire on an EDGE, or holding D-pad down flips the camera every frame.");
             Assert.IsFalse(Regex.IsMatch(code, @"\bstatic\s+(bool|int|float)\s+\w+\s*[;=]"),
-                "RearViewGesture must stay stateless: a remembered was-both-held flag survives a " +
+                "RearViewGesture must stay stateless: a remembered was-held flag survives a " +
                 "scene load and an editor play-mode exit, and desynchronises the toggle from " +
                 "what the player is actually holding.");
         }
