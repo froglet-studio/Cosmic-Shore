@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ark tabs notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--bf);color:var(--bt);padding:0 22px;height:52px;font-size:16px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm>span{height:40px;padding:0 16px;font-size:14px}
+.btn:focus,.pick:focus,.seat:focus,.row:focus{outline:none}
+.btn:hover,.pick:hover,.row:hover{filter:brightness(1.18)}
+.pick,.seat,.row{appearance:none;border:0;padding:0;margin:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.glow{transition:background 600ms ease-out,box-shadow 600ms ease-out,opacity 400ms ease-out}
+.tint{transition:color 600ms ease-out,border-color 600ms ease-out,background 600ms ease-out}
+.hull{transition:filter 600ms ease-out}
+.m-Squirrel{-webkit-mask:url(/_blob/694ae84ec6db347c4f034c8e03b56991) center/contain no-repeat;mask:url(/_blob/694ae84ec6db347c4f034c8e03b56991) center/contain no-repeat}
+.m-Sparrow{-webkit-mask:url(/_blob/a2a4139d8e2822885778740d4f2fb92e) center/contain no-repeat;mask:url(/_blob/a2a4139d8e2822885778740d4f2fb92e) center/contain no-repeat}
+.m-Dolphin{-webkit-mask:url(/_blob/e4ebf079ba441cd7141a2c8bc092d8ea) center/contain no-repeat;mask:url(/_blob/e4ebf079ba441cd7141a2c8bc092d8ea) center/contain no-repeat}
+.m-Manta{-webkit-mask:url(/_blob/ab51cbb598b5a1e912416244829d134c) center/contain no-repeat;mask:url(/_blob/ab51cbb598b5a1e912416244829d134c) center/contain no-repeat}
+.m-Serpent{-webkit-mask:url(/_blob/215e6ad15de9f075e7a45e7640a12f09) center/contain no-repeat;mask:url(/_blob/215e6ad15de9f075e7a45e7640a12f09) center/contain no-repeat}
+.m-Rhino{-webkit-mask:url(/_blob/48e972fa9d369a737bacf39f37baf59f) center/contain no-repeat;mask:url(/_blob/48e972fa9d369a737bacf39f37baf59f) center/contain no-repeat}
+.m-Urchin{-webkit-mask:url(/_blob/82147e6be3c2f9f98b92d175d9abf08c) center/contain no-repeat;mask:url(/_blob/82147e6be3c2f9f98b92d175d9abf08c) center/contain no-repeat}
+.tintl{mix-blend-mode:color;transition:background-color 160ms linear 420ms}
+.bot{position:absolute;transform:rotate(45deg);opacity:0;pointer-events:none}
+@keyframes r28BotA{0%{opacity:0;transform:translate(0,0) rotate(45deg) scale(.4)}22%{opacity:1;transform:translate(0,0) rotate(45deg) scale(1)}55%{opacity:1;transform:translate(var(--dx),var(--dy)) rotate(225deg) scale(1.3)}85%{opacity:1;transform:translate(0,0) rotate(405deg) scale(1)}100%{opacity:0;transform:translate(0,0) rotate(405deg) scale(.4)}}
+@keyframes r28BotB{0%{opacity:0;transform:translate(0,0) rotate(45deg) scale(.4)}22%{opacity:1;transform:translate(0,0) rotate(45deg) scale(1)}55%{opacity:1;transform:translate(var(--dx),var(--dy)) rotate(225deg) scale(1.3)}85%{opacity:1;transform:translate(0,0) rotate(405deg) scale(1)}100%{opacity:0;transform:translate(0,0) rotate(405deg) scale(.4)}}
+@keyframes r28DissolveA{0%{opacity:1;filter:blur(0)}30%{opacity:0;filter:blur(6px)}62%{opacity:0;filter:blur(6px)}100%{opacity:1;filter:blur(0)}}
+@keyframes r28DissolveB{0%{opacity:1;filter:blur(0)}30%{opacity:0;filter:blur(6px)}62%{opacity:0;filter:blur(6px)}100%{opacity:1;filter:blur(0)}}
+@keyframes r28Rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes r28Breath{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes r28Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes r28WaveA{0%{transform:translateX(-50%) scale(.35);opacity:.95}100%{transform:translateX(-50%) scale(1.9);opacity:0}}
+@keyframes r28WaveB{0%{transform:translateX(-50%) scale(.35);opacity:.95}100%{transform:translateX(-50%) scale(1.9);opacity:0}}
+@keyframes r28BeamA{0%{transform:scaleY(0);opacity:0}30%{transform:scaleY(1);opacity:.9}100%{transform:scaleY(1);opacity:0}}
+@keyframes r28BeamB{0%{transform:scaleY(0);opacity:0}30%{transform:scaleY(1);opacity:.9}100%{transform:scaleY(1);opacity:0}}
+@keyframes r28SweepA{0%{left:-30%}100%{left:110%}}
+@keyframes r28SweepB{0%{left:-30%}100%{left:110%}}
+@keyframes r28Pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes r28Drop{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes r28Shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes r13Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1000px; box-sizing: border-box; padding: 48px; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div style="display:flex;flex-direction:column;gap:6px"><span class="lab">Rev 28</span><h1 style="margin:0;font-weight:400;font-size:40px">Ark: Squads and Decor beside the converter</h1></div>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:24px"><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">What you asked (Shombith, 2026-10-27)</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">Ark gets two tabs beside the converter: SQUADS and DECOR. Decor is locked for now.</li><li style="margin:0 0 10px">Make or join up to 4 squads. The Ark shows each squad mate's vessel, element, pilot and artifact.</li><li style="margin:0 0 10px">Make squad: every vessel and pilot stands on a podium to the right of the squad list.</li><li style="margin:0 0 10px">Only once a squad is made can it be taken into Mission or Arena.</li><li style="margin:0 0 10px">The squad's domain changes at runtime, with a nanobot transition on the vessels.</li></ul></div></div><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">On these boards</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">Make squad (interactive): press a podium to edit that seat, then pick its vessel, pilot, element and artifact below. Rogue seats pick AI wingmate or Open for a friend. CREATE SQUAD adds it to the list, and only then do TAKE INTO MISSION / ARENA appear.</li><li style="margin:0 0 10px">Domain (Jade, Ruby, Gold, the game's own colours): pressing one dissolves each hull into 34 prism-bots that scatter and reassemble it in the new colour, seat by seat. The podium light and the stage glow follow.</li><li style="margin:0 0 10px">Squad made / joined: the podium is the squad. A joined squad shows whose it is; only its leader edits it.</li><li style="margin:0 0 10px">Join a friend's squad: friends' squads with a seat open. You bring your own four picks into the seat.</li><li style="margin:0 0 10px">Decor: the tab carries a padlock; a press shakes it and says Not open yet.</li></ul></div></div><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">Art and data</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">Hull renders: the Hangar card art (Assets/_Graphics/Hangar/Cards). Pilot portraits: Assets/_Graphics/Pilots; Heist is the stand-in portrait.</li><li style="margin:0 0 10px">Pilots and artifacts: Docs/Pilots/pilots_and_artifacts.json (two pilots and two artifacts per hull, three fleet artifacts shown).</li><li style="margin:0 0 10px">Elements are words, never colours (LOCKED palette rule). Domains carry colour.</li></ul></div></div><div class="sl" style="background:#2B3266;padding:1px"><div class="sl" style="height:100%;box-sizing:border-box;background:rgba(8,12,40,.94);padding:26px 28px"><div class="lab" style="color:#E6E9FF;margin-bottom:14px">Decisions for you</div><ul style="margin:0;padding-left:18px;font-size:17px;line-height:1.45;color:#C9CDEA"><li style="margin:0 0 10px">Arcade: the first brief said mission, arena or arcade; this one says mission or arena. The boards show Mission and Arena. Keep Arcade out?</li><li style="margin:0 0 10px">Mission stays locked exactly as on Home (padlock, Not open yet.).</li><li style="margin:0 0 10px">The Unity build on claude/awesome-dirac-hssan7 has the earlier layout (three cards with CHANGE buttons, Arcade / Arena / Mission). It is rebuilt to these boards once you approve them.</li></ul></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

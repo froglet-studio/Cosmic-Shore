@@ -3901,3 +3901,26 @@ controls (Decor opened, a squad mate with no pilot button, `arkTabs` unwired); a
 - `author_pilot_assets.py --check` fails on this branch because the Meerkat (on bleeding-edge since the 10-27 merge)
   has no pilots or artifacts. That is a content gap for the pilots work, not caused by the tabs.
 
+## 91. Rev 28 mockups: the Ark's Squads and Decor tabs (2026-10-27, awaiting board approval)
+
+**Asked (Shombith):** "please show me the mockups in the board, because not sure how it will look", then: "There should
+be a make squad all vessels and pilots would show up in a podium on the right of the squads and after creating only
+there can be a take into mission or arena", "We can change the domain at runtime and it changes use some animations like
+that", "Like the nanobot transition ... we can use that to change domains for the squad vessels".
+
+**On the canvas:** page "Rev 28 - Ark tabs (Squads, Decor)" of Menu Redesign B
+(https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with a copy in `Docs/MenuRedesignB/board/R28*.dc.html`. Seven boards:
+- Make squad (interactive): the squad list on the left, the podium of three seats on the right. Press a seat, then pick
+  its vessel (all seven Hangar hulls), pilot (base kit and the hull's two), element (a word) and artifact; a rogue seat
+  is an AI wingmate or open for a friend. CREATE SQUAD adds it to the list; only then do TAKE INTO MISSION (locked, as on
+  Home) and ARENA appear.
+- Domain chips (Jade, Ruby, Gold, the game's own colours): a switch dissolves each hull into 34 prism-bots that scatter
+  and reassemble it in the new colour, seat by seat, while the podium light and the stage glow follow. No older
+  "nanobot" transition was found in the repo or on the canvas, so this one is drawn from the description.
+- Squad made, a joined squad, no squad yet, join a friend's squad, and Decor locked (the press shakes, "Not open yet.").
+- Notes and decisions.
+
+**Differs from the build (section 90):** the build has three cards with CHANGE buttons and PLAY Arcade / Arena / Mission
+always shown. Rebuilt to these boards once they are approved. Open decision: Arcade, which the first brief named and this
+one does not.
+
