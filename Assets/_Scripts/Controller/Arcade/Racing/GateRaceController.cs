@@ -470,6 +470,9 @@ namespace CosmicShore.Gameplay
         // Course-build retry, server only. The seed is captured ONCE so a course is never a
         // function of how many frames the scene took to become answerable.
         int _pendingCourseSeed;
+
+        /// <summary>The seed this match's course was built from (0 until it is drawn), for the match replay.</summary>
+        public int CourseSeed => _pendingCourseSeed;
         bool _awaitingCourse;
         float _courseRetryDeadline;
         bool _finalResultsSent;
@@ -611,7 +614,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void BeginCourseGeneration()
         {
-            _pendingCourseSeed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            _pendingCourseSeed = CourseSeedOverride.Pick(courseSeed);
             _courseRetryDeadline = Time.time + CourseBuildTimeout;
             _awaitingCourse = true;
             TickCourseGeneration();

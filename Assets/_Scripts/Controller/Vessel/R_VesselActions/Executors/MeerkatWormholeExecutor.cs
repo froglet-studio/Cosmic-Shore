@@ -65,6 +65,13 @@ namespace CosmicShore.Gameplay
             public void Frame(float s, out Vector3 normal, out Vector3 binormal) =>
                 MeerkatWormholeMath.Frame(T0, Side, S, R, Theta, s, out normal, out binormal);
             public float BendAngle(float s) => MeerkatWormholeMath.BendAngle(S, R, Theta, s);
+            /// <summary>The page's <c>whAtX</c>: the centreline at s, carried on straight before the way in and after the way out.</summary>
+            public Vector3 AtExtended(float s)
+            {
+                if (s <= 0f) return A + T0 * s;
+                var p = At(Mathf.Min(s, L), out var tangent);
+                return s > L ? p + tangent * (s - L) : p;
+            }
             public float Radius(float s) => MeerkatWormholeMath.Radius(B, M, L, W.S0, W.S1, s);
             public float Fade => MeerkatWormholeMath.Fade(Dying, DieT);
             public MeerkatWormholeConfigSO Config => Maker ? Maker.config : null;
@@ -120,6 +127,9 @@ namespace CosmicShore.Gameplay
         // the ride
         Tunnel _mine;
         Tunnel _ride;
+        CustomCameraController _rideCam;   // the camera this hull's ride is holding on the centreline (round 8)
+        Tunnel _camTunnel;                 // the tunnel the ride camera follows, through the ride and just past its way out
+        float _camS;                       // how far along that tunnel's line the hull is (past L after the way out)
         float _rideS, _rideSIn, _vIn;
         Quaternion _q0;
         int _seq;
@@ -214,6 +224,7 @@ namespace CosmicShore.Gameplay
             if (_ghostAlpha > 0f) _ghostAlpha -= dt / Mathf.Max(0.05f, _ghostFormT);
             if (!IsAuthority) return;
             StepSpeedTunnelScale();
+            StepRideCamera();
             if (_ltHeld) _ltHeldFor += dt;
             if (_status.AutoPilotEnabled) Autopilot(dt);
             else _aiShaping = false;
@@ -439,6 +450,52 @@ namespace CosmicShore.Gameplay
             _tunnelScaleKey = null;
         }
 
+        /// <summary>
+        /// The ride camera (rounds 8 and 10, Yash: "I want the camera to go inside the tunnel"; "the cameras, why offset should
+        /// always be zero, the vessel should be in the center of the screen and this way we don't need to lerp the camera"), the
+        /// page's <c>cameraStep</c>. The Meerkat's own camera (<c>MeerkatCameraSettingsSO</c>) sits straight behind the hull
+        /// with no offset and no lag, so the hull is always at the centre of the screen. While a tunnel flies the hull, the
+        /// camera stays that same distance behind it but ON the tube's centreline, looking at the hull, through
+        /// <see cref="CustomCameraController.Spectate"/> with no blend: on the straight run in it is exactly where the follow
+        /// camera already was, and round the bend it never cuts the chord out of the tube. Out of the far mouth it keeps to the
+        /// tunnel's line until it is past the mouth itself (a straight-behind camera would jump sideways there). Only the local
+        /// human pilot's camera, and only while it follows this hull.
+        /// </summary>
+        void StepRideCamera()
+        {
+            float dt = Time.deltaTime;
+            if (_ride != null) { _camTunnel = _ride; _camS = _rideS; }
+            else if (_camTunnel != null) _camS += Mathf.Max(0f, _status.Speed) * dt;
+            var t = _camTunnel;
+            bool mine = t != null && s_tunnels.Contains(t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
+            var cam = mine && CameraManager.Instance != null
+                ? CameraManager.Instance.GetActiveController() as CustomCameraController
+                : null;
+            var hull = _status.Transform;
+            if (cam && (cam.PlacementAnchor.HasValue || !cam.FollowTarget ||
+                        (cam.FollowTarget != hull && !cam.FollowTarget.IsChildOf(hull))))
+                cam = null;   // a cinematic or end-of-match camera pointed elsewhere is not ours to move
+            // the follow camera's own distance (its offset is (0, 0, -back)), warp field included, so the hand-over is a cut
+            float back = cam ? Mathf.Abs(cam.GetFollowOffset().z) * WarpFieldRuntime.ScaleAt(hull.position) : 0f;
+            if (cam && _ride == null && _camS - back >= t.L) cam = null;   // past the mouth: the follow camera is on the line
+            if (!cam) _camTunnel = null;
+            if (cam != _rideCam) ReleaseRideCamera();
+            if (!cam) return;
+            _rideCam = cam;
+            cam.SpectateBlendSeconds = 0f;   // a cut both ways: the two cameras coincide where they hand over
+            cam.Spectate = new CustomCameraController.SpectateView
+            {
+                Position = t.AtExtended(_camS - back), LookAt = hull.position, Up = hull.up,
+            };
+        }
+
+        void ReleaseRideCamera()
+        {
+            if (!_rideCam) { _rideCam = null; return; }
+            _rideCam.Spectate = null;   // back to the follow camera, which is on the same line by then
+            _rideCam = null;
+        }
+
         // ------------------------------------------------------------------ the AI (input only)
 
         /// <summary>
@@ -568,6 +625,8 @@ namespace CosmicShore.Gameplay
                 if (s_tunnels[i].Maker == this) s_tunnels.RemoveAt(i);
             s_executors.Remove(this);
             ReleaseSpeedTunnelScale();
+            ReleaseRideCamera();
+            _camTunnel = null;
             _ride = null;
             _mine = null;
             _retLive = false;

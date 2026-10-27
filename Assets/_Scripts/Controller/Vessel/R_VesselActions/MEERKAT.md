@@ -27,19 +27,35 @@ the prefab:
 
 - **The shape** (round 7, the umbrella handle): a straight shaft of S, then one bend of radius `bendRadius` through the
   stick's angle θ, so the tunnel is S + `bendRadius` × θ long (`MeerkatWormholeMath.ShapeFor` / `At` / `BendAngle`). The
-  throat (`throatRadius`) and mouths (`mouthRadius`) are fixed and narrow.
-- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it. Since Garrett's before/after
-  (2026-10-27, §2.1) it draws in the bridge's look (`reticleLook` Bridge). Round 3's frame, below, is `reticleLook`
-  Spindles:
+  throat (`throatDiameter`, 8 u) and the entry and exit (`mouthDiameter`, 26 u since round 10) are fixed: set on the
+  config at edit time, never by the sticks.
+- **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it.
   - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
-  - It is a see-through frame of thin spindles: `reticleRings` × `reticleSpindlesPerRing` round its throat and
-    `reticleRibs` along it, `reticleSpindleThickness` thick, cyan to white, over a faint glass (`reticleGlass`).
-  - The lime line you will fly runs through it (`reticlePath`).
+  - It is the wormhole's own wireframe (round 9, Yash: *"the reticle is the silhouette of the geometry"*): the bridge's
+    `bridgeRings` × `bridgeSpindlesPerRing`, `bridgeRibs` and `bridgeSpindleThickness`, in the same places, condensing
+    the same way (`MeerkatWormholeView.BridgeFrame`), with no glass and no path.
+  - It is dim at its way in, by your nose, and brightest at its far end, so the bend stands out
+    (`reticleNearLight` 0.25, round 11).
+  - Its own controls are its brightness (`reticleIdleAlpha` at rest, full while you shape it) and its colour: your
+    domain colour toward white by `reticleWhite`. The bridge's spindles take `bridgeWhite` the same way.
 - **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
   then runs the shaft and the bend mouth to mouth, turning only on the bend. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
   to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
   on the tunnel's last heading, a little boosted, and eases back to cruise.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
+- **The camera** (round 10, Yash: "the cameras, why offset should always be zero, the vessel should be in the center of
+  the screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow"):
+  - `MeerkatCameraSettingsSO` (forked from the Stoat's, which is unchanged): offset (0, 0, -21), no look lift,
+    `chaseEaseRate` 0 with mode 0, so `CustomCameraController` hard-attaches it. The hull is always at the centre of the
+    screen. `author_meerkat_assets.py --check` fails if the asset gains a height offset or a lag.
+  - Riding (`MeerkatWormholeExecutor.StepRideCamera`): the camera stays the follow camera's own distance behind the hull,
+    but ON the tube's centreline, looking at the hull, through `CustomCameraController.Spectate` with no blend. On the
+    straight run in it is where the follow camera already was, so the hand-over is a cut nobody sees. Round the bend it
+    never cuts the chord out of the tube.
+  - Out of the far mouth it keeps to the tunnel's line until it is past the mouth itself, so it does not jump sideways.
+  - The page measured: the hull exactly at screen centre, flying and riding; the camera within 0.29 u of the line, in
+    the tube and past the exit; its step at RT and at the exit no larger than a normal frame's.
+  - Round 8's `rideCameraBack`, `rideCameraLookAhead` and `rideCameraBlendSeconds` are retired.
 - **The dolly zoom.** While a tunnel flies the hull, the game's speed tunnel (`VesselSpeedTunnel`: the narrower field of
   view and relaxed Panini every vessel gets with speed) is `rideSpeedTunnelScale` (5) × its normal strength
   (`Docs/SPEED_TUNNEL.md` § The ride scale). The push-in peaks at the throat, where the ride is fastest.
@@ -70,18 +86,18 @@ the prefab:
 
 ### 2.1 Before and after RT (Garrett, 2026-10-27, from the Tube Lens Lab)
 
-**One-click swap** (Yash, 2026-10-27): the config's Inspector has **YASH'S LOOK** (`reticleLook` Spindles, `formedLook`
-Bridge: round 3's reticle, then the spindle bridge) and **GARRETT'S LOOK** (Bridge, ContourField), from
-`Editor/Studios/MeerkatWormholeConfigSOEditor.cs`. They set those two switches and nothing else. The contour field
+**One-click swap** (Yash, 2026-10-27): the config's Inspector has **YASH'S LOOK** (`formedLook` Bridge: the spindle
+bridge after RT) and **GARRETT'S LOOK** (ContourField), from `Editor/Studios/MeerkatWormholeConfigSOEditor.cs`. They set
+that one switch. Round 9 retired `reticleLook`: the reticle is always the wormhole's wireframe. The contour field
 measures round 7's tunnel: a straight shaft, then the bend (`MeerkatWormholeLens.shader` `MWTube`).
 
 Garrett flew the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF, source
 `Docs/Studios/StoatTubeLensLab.html`) and picked a look: *"this looks so good it doesn't need the grid or anything else,
 lets the lensing alone sell the effect."* Two switches on the config hold it, and both old looks are one setting away:
-- **Before RT, `reticleLook` = Bridge:** the reticle draws exactly as the formed tunnel's bridge did: its spindles
-  (`bridge*` counts and thickness), glass (`bridgeGlass`) and shimmer, in its pilot's domain colour. It condenses out of its
-  centre as it emerges, at the reticle's own brightness (`reticleIdleAlpha`, eased). No lime path. `Spindles` brings back
-  round 3's cyan frame.
+- **Before RT** (his `reticleLook` Bridge; since round 9 the only reticle): the reticle draws as the formed tunnel's
+  bridge: its spindles (`bridge*` counts and thickness) and shimmer, in its pilot's domain colour. It condenses out of its
+  centre as it emerges, at the reticle's own brightness. No lime path. Round 9 also took its glass away (a bare
+  wireframe).
 - **After RT, `formedLook` = ContourField:** a formed tunnel draws nothing: no bridge, no glass. It is only bent space.
   `MeerkatWormholeLensPass` ray-marches each pixel through a thin shell on the wall, from `fieldInner` × r inside to
   `fieldOuter` × r outside, graded to zero at its edge (`fieldProfile`). Inside the shell the ray is turned by a field
@@ -94,8 +110,18 @@ lets the lensing alone sell the effect."* Two switches on the config hold it, an
   - The tube is measured over its LIVE window, so the field ripples in from the centre and collapses with the tunnel.
   - The four tunnels nearest the camera take part. A vessel in front of the first shell a ray meets is not bent.
   `Bridge` brings back round 3's bridge and glass.
-- **Numbers:** the lab's export, Garrett's pick: strength 18, pitch 90, drag 1, twist 0, glass 0.4 at Δn 0.04,
-  grazing 0.6, flow In then out, inner 0.1, outer 0.12, profile Smooth, ribs 0.9, sharpness 8, travel 1.5.
+- **Numbers, round 11** (Yash, 2026-10-28: "a pleasant water ride experience through a water pipe. Transparent pipe
+  ... I should not feel too much of warping ... performant"): a clear pipe of gentle glass, rendered against round 10
+  in the Tube Lens Lab before choosing (`Docs/Studios/MEERKAT.md` Round 11).
+  - strength 6, pitch 0 (along the flow, not round it), drag 0.5, twist 0;
+  - glass 1 at Δn 0.05, grazing 0.9 (a ray skimming the wall from inside bends little, so the ride does not swirl);
+  - flow Even (no sign flip mid-ride);
+  - inner 0.1, outer 0.15, profile Smoother;
+  - ribs 0.25 at sharpness 3 (soft ripples that travel toward the exit at 1.2 rings/s, 16 × 12): softer ribs also
+    let the march take larger steps.
+  - Garrett's pick was strength 18, pitch 90, drag 1, glass 0.4 at Δn 0.04, grazing 0.6, flow In then out, outer 0.12,
+    ribs 0.9 at sharpness 8. Yash's round-8 tune was glass 1.579 at Δn 0.078, grazing 0.883, ribs 0.155 at 11.12,
+    9 rings.
 - **Not in the studio yet.** These 18 fields are not on the Meerkat page and not in `studio_to_unity/meerkat.json`, so
   `--check` neither maps nor drifts them. Bringing them onto the page (a Before/After panel) and mapping them is Yash's
   next step; the lab's GLSL (`tube`, `prof`, `ribF`, `fieldDir`, `trace`) is what `MeerkatWormholeLens.shader` ports.

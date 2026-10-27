@@ -73,16 +73,17 @@ ones.
   every black hole — pulls them (`BLACK_HOLE.md`, `STOAT_DIPOLE.md`). It extends **Prisms** rather
   than sitting beside them: mass that was static is now mass with a path. **The expectations**
   (`PrismMotion`, `Docs/PRISM_MOTION.md`): (1) **a moving prism that runs into another prism
-  destroys BOTH** — scored to the force behind the motion, devastating (an ordinary shield is no
-  answer); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
+  destroys BOTH** — scored to the force behind the motion, devastating; (1a) **shielded prisms bounce**
+  (Garrett, 2026-10-27): a collision a SHIELDED prism is part of, mover or struck, destroys neither, and the
+  movers rebound off the contact (`PrismBounce`); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
   their exact oriented BOXES when few prisms move (a plough throw, a sparse field), as the SPHERES of
   their volumes when many do — a three-level LADDER by moving count (`PrismMotionConfig`: level 1 ≤ 64
   boxes + the high-res destruction detail level (the silver gnomon cut, `PRISM_ANIMATION.md` §4.12); level 2 ≤ 256 boxes + the explosion;
   level 3 spheres + the explosion; down at three quarters of each line). The count changes the
   precision and the look, never the rule. Neighbours already touching when the step begins — a trail falling
   together — are at rest, not a collision; (3) **super-shielded mass is
-  the one survivor**: it is indestructible, so it deflects and only the mover goes, and no force
-  moves it in the first place; (4) **the move is final the frame it is made** — collider, spatial
+  never destroyed**: it deflects, an unshielded mover goes against it and a shielded one bounces, and no
+  force moves it in the first place; (4) **the move is final the frame it is made** — collider, spatial
   index and shell agree with the transform (the movers contract, `PRISM_ANIMATION.md` §3.6) — so a
   moving prism is always tested where it actually is. **What is NOT a moving prism**: one POSED by
   its owner every frame — a creature's body, a builder setting a stone, a growing plant, a
@@ -336,6 +337,35 @@ ones.
   abilities); it imposes no decay and no timer on anything else. Code: `Ark`
   (`_Scripts/Controller/Environment/`), first vehicle the Arkway — the **Wander** toy's With Ark choice (`WanderToy`/`ArkwayRun`/`CellConveyor`).
   Record: `Docs/ECOSYSTEM.md §41`, `Docs/ToySystem/ARCHITECTURE.md` § "Arkway".
+- **Soliton** — *a standing tunnel through space that keeps its shape, carries whatever enters one mouth out of the
+  other, and is seen only by the way it bends the world.* Added at the prompter's explicit request (Garrett,
+  2026-10-27: "the meerkat should be producing a new fundamental (solitons)"). **DESIGN: nothing is built yet**; the
+  Meerkat's wormhole (`R_VesselActions/MEERKAT.md`) is the first maker, and the design is `Docs/Studios/MEERKAT.md`
+  § Garrett's direction. The curation checks:
+  1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
+  2. **Reach.**
+     - The Meerkat's Space ability makes one.
+     - Any vessel rides one.
+     - Prisms are carried through one.
+     - The Meerkat's Time passive is defined over every soliton, whoever made it.
+     - The FLUME pilot sight lights them.
+     - AI routing can take one as a shortcut.
+  3. **Composition.**
+     - **Mass**: it moves prisms and never deletes them, so conservation holds.
+     - **Prism movement**: a prism it fires is a moving prism under the one rule.
+     - **Domain**: anyone may ride it, and what it fires is scored to its maker.
+     - **Elementals**: its maker's levels set its size (Space) and the ride (Time).
+     - **Vessels**: riders.
+     - **Flora & Fauna**: whether creatures ride one is open.
+     - **Switch**: a soliton aimed through a ring threads it.
+     - **Cells**: a soliton can join two places in one.
+  4. **Extension over addition.** It is not made of prisms, so it is not a prismscape. Toys come closest, since you fly
+     into one, but a toy is a station placed in the world while a soliton is made by a vessel, mid-flight, wherever it
+     points.
+  5. **Weight.** Agreed by the prompter, who asked for it.
+
+  Its look is the contour-field lens (`MeerkatWormholeLensPass`): no grid, no surface, only bent space, and the
+  placement grid is its maker's alone. Its pilot sight is **FLUME** (`Docs/Pilots/CALLSIGNS.md`).
 
 ### Process for curating fundamentals
 

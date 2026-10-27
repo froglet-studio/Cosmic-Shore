@@ -35,7 +35,7 @@ One thumb flies, as the game's one-thumb hulls do (`SingleStickVesselTransformer
 - **The reticle** is always on your nose, `reticleAhead` ahead. It shows the tunnel RT would form now. You see it, and
   no one else does.
 - **The tunnel is an umbrella handle** (round 7): a straight shaft, then one bend of fixed radius `bendRadius`. Its
-  throat (`throatRadius`) and mouths (`mouthRadius`) are narrow and never change.
+  throat (`throatDiameter`) and its entry and exit (`mouthDiameter`) are set at edit time and never change in flight.
 - **LT** sets how far the shaft runs before the bend: `shaftMin` released, up to `shaftMax` squeezed. On keys and touch
   it ramps to full in `keyRampSeconds`.
 - **The right stick** sets the bend's direction (left, right, up, down or between) and how far it turns, up to
@@ -133,6 +133,60 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 11 (Yash, 2026-10-28: "make the wormhole look very realistic ... not super calculative ... performant and
+realistic, fun to travel without getting dizzy ... a pleasant water ride experience through a water pipe. Transparent
+pipe ... the reticle ... just pure wireframe and it should be less lit in the front side and more lit back, so I can see
+the bending of the other end"):**
+- **The reticle** is still the bare wireframe. Its brightness now runs from `reticleNearLight` (0.25) × at its way in,
+  by your nose, to full at its far end, so the bend stands out. The page and the game draw it the same way.
+- **The formed tunnel** (Garrett's contour field, Unity only: the page does not draw the field) is retuned as a clear
+  pipe of gentle glass. Three looks were rendered in the Tube Lens Lab, from outside and riding through: round 10's
+  values, a water pipe, and a glassier pipe. Round 10's tore and swirled the world seen through the wall; the water pipe
+  bent it gently, so pillars seen through it stayed whole with a slight water wave. Its numbers:
+  - strength 6, pitch 0 (along the flow), drag 0.5, twist 0;
+  - glass 1 at Δn 0.05, grazing 0.9 (the lab: low grazing makes the ride view swirl);
+  - flow Even, outer 0.15, profile Smoother;
+  - ribs 0.25 at sharpness 3, travelling 1.2 rings/s, 16 × 12.
+- **Cost:** softer ribs let the march take larger steps (the rib term caps the step by 1 / (2 × sharpness + 4): 11.12
+  to 3 is a cap about 2.6 times looser). The glass term still costs four field reads a step; `fieldGlass` 0 is the
+  cheapest pipe if a profile shows it. Not profiled in Unity.
+
+**Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
+screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow, it's always
+center. Also, I want to have options to control the diameter of the entry exit pair ... and the inner diameter ...
+configurable at edit time ... the entrance and the exit of the wormhole need to be a little bit bigger"):**
+- **The camera.** Both cameras sit straight behind the hull with no height and no lag. In the game this is
+  `MeerkatCameraSettingsSO`: offset (0, 0, -21), hard-attached. Riding, the camera is the same distance behind you on the
+  tube's centreline, looking at you. It is a cut, not a blend: on the straight run in, the two coincide. Out of the far
+  mouth it keeps to the tunnel's line until it has passed the mouth. Measured: the hull is exactly at screen centre,
+  flying and riding. The camera is within 0.29 u of the line in the tube and past the exit, and its largest step at RT
+  and at the exit is one normal frame. Retired: `rideCameraBack`, `rideCameraLookAhead`, `rideCameraBlendSeconds`.
+- **The size.** `throatDiameter` (8 u) and `mouthDiameter` (26 u, the entry and exit a little bigger than round 7's
+  20 u) replace the two radius keys. They are set at edit time; the sticks never change them.
+
+**Round 9 (Yash, 2026-10-28: "the wormhole look and the reticle look can be the same, just the reticle can be just a
+wireframe version of the actual wormhole look ... the reticles and the bridges geometry need to be same, and the same
+position same way ... The reticle is the silhouette of the geometry"):** one geometry. The bridge's rings, spindles per
+ring, ribs, thickness and shimmer (`bridge*`) draw both the formed tunnel and your reticle (the page's `drawFrame`, the
+game's `MeerkatWormholeView.BridgeFrame`): the same rings at the same places along the tunnel, condensing out of its
+centre the same way. The reticle is that frame bare, with no glass and no path. It keeps its own brightness
+(`reticleIdleAlpha`) and its own colour, your domain colour toward white by `reticleWhite`; the bridge's spindles take
+`bridgeWhite` the same way. Retired: `reticleGlass`, `reticleRings`, `reticleSpindlesPerRing`, `reticleRibs`,
+`reticleSpindleThickness`, `reticlePath`, and in the game Garrett's `reticleLook` switch (there is one reticle now).
+Measured on the page: the shaped reticle and the formed tunnel are the same 931 spindles (36 × 21 rings, 5 ribs).
+
+**Round 8 (Yash, 2026-10-28: "the updated look I want. By merging Garrett's look with my reticles ... I don't want any
+camera Y offset. I want the camera to go inside the tunnel"):** the look Yash tuned in Unity's `MeerkatWormholeConfig` is
+the studio's SHIPPED look now. Before RT the reticle draws as Garrett's bridge (`reticleLook` Bridge), with the bridge
+spindles tuned to the reticle's: 36 rings × 21 spindles, 5 ribs, 0.25 u thick, `bridgeVisibility` 0.163, glass 0.15.
+The reticle keys are 30 × 21, 5 ribs, 0.25 u, idle 0.053, glass 0.048, path 0.333, smoothing 0.123 s, and `rippleEdge`
+is 0.154. After RT it is Garrett's contour field, with glass 1.579 at Δn 0.078, grazing 0.883, profile Smoother, ribs
+0.155 at sharpness 11.12, travel 1.95 and 9 rings. Those field numbers live only in the Unity asset; the page does not
+draw the field. Riding, the camera sits ON the tube's centreline, `rideCameraBack` (18 u) behind you, looks
+`rideCameraLookAhead` (40 u) along it, and eases in and out over `rideCameraBlendSeconds` (0.25 s). There is no height
+offset. Measured on the page: once eased in, the camera stayed within 0.23 u of the centreline (throat 4 u) on every
+frame, for a straight tunnel and for 114° and 150° bends on short and long shafts.
+
 **Round 7 (Yash, 2026-10-27: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from where it can turn 90 or 120 or 150 degrees ... it can be a long umbrella stick like geometry"):** the tunnel no longer grows shorter and fatter as it bends. It
 is a straight shaft and then one bend of fixed radius `bendRadius` (60 u). LT sets the shaft (`shaftMin` 60 u released
 to `shaftMax` 600 u squeezed), the right stick the bend's direction and angle (up to `bendMaxDegrees`, now 150°), RT
@@ -177,8 +231,8 @@ just spindles. Tiny thinning spindles"):**
 | shape | `shaftMin` | 60 u | The straight shaft before the bend, LT released |
 | shape | `shaftMax` | 600 u | The shaft with LT fully squeezed |
 | shape | `bendRadius` | 60 u | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
-| shape | `throatRadius` | 4 u | The throat's radius (fixed) |
-| shape | `mouthRadius` | 10 u | Both mouths' radius (fixed) |
+| shape | `throatDiameter` | 8 u | The throat's diameter (fixed, set at edit time; round 10) |
+| shape | `mouthDiameter` | 26 u | The entry and exit diameter (fixed, set at edit time; round 10: was 20) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
@@ -196,12 +250,8 @@ just spindles. Tiny thinning spindles"):**
 | look | `rippleSeconds` | 1.2 s | ...running out and fading over this long |
 | reticle | `reticleSmoothSeconds` | 0.15 s | Your reticle eases toward the sticks over this long (0 = at once) |
 | reticle | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
-| reticle | `reticleGlass` | 0.15 | The faint lit surface under your reticle's spindles |
-| reticle | `reticleRings` | 10 | Rings of spindles round your reticle |
-| reticle | `reticleSpindlesPerRing` | 16 | ...spindles round each ring |
-| reticle | `reticleRibs` | 8 | ...ribs of spindles along it (0 = none) |
-| reticle | `reticleSpindleThickness` | 0.35 u | ...spindle thickness |
-| reticle | `reticlePath` | 0.5 | The lime line you will fly through it (0 = none) |
+| reticle | `reticleWhite` | 0.45 | Your reticle's colour: your domain colour toward white (round 9; its geometry is the bridge's) |
+| reticle | `reticleNearLight` | 0.25 | Its brightness at the way in against its far end, so the bend stands out (round 11; 1 = even) |
 | look | `bridgeVisibility` | 1 | The formed tunnel's bridge, for everyone (0 = hidden) |
 | look | `bridgeGlass` | 0.6 | ...its glass surface |
 | look | `bridgeRings` | 16 | ...rings of spindles along it |
@@ -209,6 +259,7 @@ just spindles. Tiny thinning spindles"):**
 | look | `bridgeRibs` | 6 | ...ribs of spindles along it (0 = none) |
 | look | `bridgeSpindleThickness` | 1.6 u | ...spindle thickness at the middle |
 | look | `bridgeShimmer` | 0.5 | ...a shimmer running way in to way out (0 = steady) |
+| look | `bridgeWhite` | 0.45 | ...its spindles' colour: the domain colour toward white (round 9) |
 | ai | `aiStraightMinDistance` | 300 u | The AI forms a straight tunnel only with its ring this far away |
 | ai | `aiBentMinDistance` | 120 u | ...a bending one from this far |
 | ai | `aiShapeSeconds` | 0.3 s | The AI shapes its reticle this long before RT |
@@ -260,6 +311,85 @@ Garrett picked the Meerkat's look in the Tube Lens Lab (https://claude.ai/artifa
 The game has it first (`R_VesselActions/MEERKAT.md` §2.1: `reticleLook`, `formedLook` and the 16 `field*` fields). This
 page does not yet: its Wormhole look still shows round 4's bridge. The next round brings the lab's field onto this page
 and maps the new keys in `studio_to_unity/meerkat.json`.
+
+## Garrett's direction: the soliton kit (2026-10-27, for Yash to judge)
+
+Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
+applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
+Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Nothing here is built.
+Garrett finished the Sentinel and Mass rows in a second message the same day.
+
+**The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
+can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Soliton) with its own pilot sight
+(FLUME, `Docs/Pilots/CALLSIGNS.md`).
+
+| Element | Ability | What the element's level does | L5 upgrade | Source |
+|---|---|---|---|---|
+| **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton | Sets the soliton's **surface area** (below) | open | Garrett |
+| **Time** | **Passive**: the Meerkat rides **every** soliton faster, its own or anyone's | Scales the ride's rush (today `throatSpeed` 2.5 × the entry speed) | **Boost out**: the Meerkat leaves every soliton with a boost | Garrett |
+| **Charge** | **Sentinel**: left automatically at **every tunnel entrance**, an afterimage of the Meerkat that perches up like a real sentinel meerkat, guarding the way in. It **zaps enemy vessels**, knocking out their elements, and **zaps same-domain prisms**, turning them **shielded** | Proposal: the zap's reach and how often it fires | open | Garrett |
+| **Mass** | **Passive**: the soliton **makes prisms at its far end** (the way out) | Their **size** | **Danger prisms**: at Mass L5 the prisms it makes are danger prisms | Garrett |
+
+**What everyone sees and does with a soliton:**
+- **The placement grid is the Meerkat's alone**: its reticle, already drawn only for its pilot.
+- **Everyone else sees the soliton by its lensing alone** once it is made: the contour field (§ Before and after RT).
+- **Any vessel can ride it**, not only its maker. A rider dives in at a mouth and rides it as the Meerkat does: in at its
+  entry speed, rushing through the throat, out at the far mouth on its last heading.
+- **It swallows prisms and fires them out of the other end.** Prisms near the way in are drawn in, run the tube and leave
+  the way out along its last heading.
+  - A fired prism is a MOVING prism (§ Prism movement): one that hits another prism destroys both, scored to the soliton's
+    maker. A SHIELDED one bounces instead (Garrett, 2026-10-27, `Docs/PRISM_MOTION.md` 1a: built). Mass is conserved,
+    because the prism is moved, never deleted.
+  - Super-shielded mass is never moved. Whether shielded mass is drawn in is open.
+  - A fired prism that reaches a vessel follows the shipped prism rules. PvP stays petals only.
+
+**The Sentinel (Charge)**:
+- **Enemy vessels:** a zap is a scored hit, so it stays inside PvP-is-petals-only. Knocking out elements is a ranged
+  verb, so the petals are EJECTED as free crystals (`Docs/ELEMENTAL_ECONOMY.md`), and the hit silences the victim for
+  what it is worth (`SILENCE.md`).
+- **Same-domain prisms:** zapped into shielded prisms.
+- **With the soliton:** shielded prisms now bounce instead of annihilating, so the Meerkat's own mass round its
+  entrances becomes ammunition that survives. The soliton swallows it, fires it out, and it rebounds off what it hits.
+- **Open:** its reach, how often it zaps, how many sentinels can stand at once (one per tunnel, so they collapse
+  with it or outlast it), and whether a rival can knock one down.
+
+**Mass (passive):**
+- The soliton makes prisms at its way out on its own, for as long as it stands. Mass sets their size; at L5 they are
+  danger prisms, which burn the petals of whoever touches them.
+- They are the maker's domain, so a sentinel can zap them shielded.
+- **Open:** the rate, whether they are fired along the exit heading (as moving prisms) or set down at the mouth, and
+  a cap per soliton.
+
+**Surface area (Space).** At a given Space level a soliton keeps one surface area A, so a longer tube is thinner and a
+shorter one fatter. The wall is round 7's hyperboloid with the mouth a fixed multiple k of the throat (M = k·b), and its
+area is
+
+    A = 2π · L · b · g(k),    g(k) = ½ · (k + asinh(√(k²−1)) / √(k²−1))
+
+so the throat is **b = A / (2π · L · g(k))**. LT sets the length L (shaft + bend, round 7), and the throat and mouth
+follow from A. At round 7's numbers (throat 4, mouth 10, so k = 2.5 and g = 1.592):
+
+| Length L | Today's area (throat fixed at 4) | Throat at A = 15,000 u² | Throat at A = 40,000 u² |
+|---|---|---|---|
+| 60 u (shortest shaft, no bend) | 2,401 u² | 25.0 (mouth 62.5) | 66.7 (mouth 166.6) |
+| 200 u | 8,002 u² | 7.5 (mouth 18.7) | 20.0 (mouth 50.0) |
+| 400 u | 16,004 u² | 3.7 (mouth 9.4) | 10.0 (mouth 25.0) |
+| 757 u (longest shaft, 150° bend) | 30,287 u² | 2.0 (mouth 5.0) | 5.3 (mouth 13.2) |
+
+The Space level would set A through an `ElementalFloat` (the two areas above are only examples). A shortest tube at
+any useful area is very fat, so the throat may need a floor and a ceiling.
+
+**Where this meets round 8 (for Yash):**
+1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
+   Time a passive and its L5 a boost out of every soliton.
+2. **Charge and Mass.** Garrett's Sentinel and passive mouth prisms replace round 8's Lookout and Hardened Bridge.
+3. **Space.** Round 8's Cave-in (destroy the prisms round your tunnel) has no slot in Garrett's kit. The soliton moves
+   prisms instead of destroying them.
+4. **LB.** Round 8 arms Hardened Bridge with **LB**, but LB is now the pilot's vision on every vessel
+   (`Docs/Pilots/CALLSIGNS.md` §5). In Garrett's kit Mass and Charge are passive, so the kit needs no button beyond
+   the wormhole's.
+5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
+   the length again. A floor and ceiling on the throat is one way to keep both.
 
 ## What is not decided or not built
 

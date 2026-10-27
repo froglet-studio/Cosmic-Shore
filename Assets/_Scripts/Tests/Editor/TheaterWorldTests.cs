@@ -182,6 +182,27 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Actions_SurviveTheFile_InputsAndDirectActions()
+        {
+            var recording = Recording(null);
+            recording.Actions.Add(new TheaterActionEvent { Time = 1.5f, Track = 0, Kind = TheaterActionEvent.KindInput, Down = true, Input = 7, Device = 2 });
+            recording.Actions.Add(new TheaterActionEvent { Time = 2f, Track = 0, Kind = TheaterActionEvent.KindDirect, Down = false, Action = "BoostAction" });
+
+            var read = RoundTrip(recording);
+            Assert.AreEqual(2, read.Actions.Count);
+            Assert.AreEqual(TheaterActionEvent.KindInput, read.Actions[0].Kind);
+            Assert.AreEqual(7, read.Actions[0].Input);
+            Assert.AreEqual(2, read.Actions[0].Device);
+            Assert.IsTrue(read.Actions[0].Down);
+            Assert.AreEqual(1.5f, read.Actions[0].Time, 1e-6f);
+            Assert.AreEqual("BoostAction", read.Actions[1].Action);
+            Assert.IsFalse(read.Actions[1].Down);
+            Assert.IsFalse(read.HasWorld, "no world stream was written");
+
+            Assert.AreEqual(0, RoundTrip(Recording(null)).Actions.Count, "a recording without actions reads with none");
+        }
+
+        [Test]
         public void Playback_EmptyWorld_DoesNotStart()
         {
             var playback = new TheaterWorldPlayback();

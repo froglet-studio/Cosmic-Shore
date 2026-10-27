@@ -29,14 +29,14 @@
       "field": "bendRadius"
     },
     {
-      "key": "throatRadius",
+      "key": "throatDiameter",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "throatRadius"
+      "field": "throatDiameter"
     },
     {
-      "key": "mouthRadius",
+      "key": "mouthDiameter",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "mouthRadius"
+      "field": "mouthDiameter"
     },
     {
       "key": "keyRampSeconds",
@@ -99,9 +99,14 @@
       "field": "reticleIdleAlpha"
     },
     {
-      "key": "reticleGlass",
+      "key": "reticleWhite",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleGlass"
+      "field": "reticleWhite"
+    },
+    {
+      "key": "reticleNearLight",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleNearLight"
     },
     {
       "key": "bridgeVisibility",
@@ -137,6 +142,11 @@
       "key": "bridgeShimmer",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "bridgeShimmer"
+    },
+    {
+      "key": "bridgeWhite",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeWhite"
     },
     {
       "key": "aiWormhole",
@@ -182,31 +192,6 @@
       "key": "reticleSmoothSeconds",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "reticleSmoothSeconds"
-    },
-    {
-      "key": "reticleRings",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleRings"
-    },
-    {
-      "key": "reticleSpindlesPerRing",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleSpindlesPerRing"
-    },
-    {
-      "key": "reticleRibs",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleRibs"
-    },
-    {
-      "key": "reticleSpindleThickness",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticleSpindleThickness"
-    },
-    {
-      "key": "reticlePath",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "reticlePath"
     },
     {
       "key": "rideSpeedTunnelScale",

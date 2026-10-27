@@ -177,6 +177,22 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] List<AIAbility> abilities;
 
+        /// <summary>
+        /// This pilot's ability by the name the match replay recorded it under
+        /// (<see cref="R_VesselActionHandler.ReplayActionName"/>), so a replay can re-run it on this vessel.
+        /// </summary>
+        public bool TryFindAbility(string actionName, out ShipActionSO action)
+        {
+            action = null;
+            if (abilities == null) return false;
+            foreach (var a in abilities)
+            {
+                if (a?.Ability && R_VesselActionHandler.ReplayActionName(a.Ability) == actionName) { action = a.Ability; return true; }
+                if (a?.SourceAsset && R_VesselActionHandler.ReplayActionName(a.SourceAsset) == actionName) { action = a.Ability ? a.Ability : a.SourceAsset; return true; }
+            }
+            return false;
+        }
+
         [SerializeField]
         ScriptableEventNoParam OnCellItemsUpdated;
 
@@ -818,7 +834,7 @@ namespace CosmicShore.Gameplay
             // runs is started below and restarted below, so the sweep is exactly this method's own.
             StopAllCoroutines();
             foreach (var ability in _activeAbilities)
-                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(ability.Ability, actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
             _boostDriver?.Release();
 
@@ -882,7 +898,7 @@ namespace CosmicShore.Gameplay
             // ones that had started - StopAllCoroutines alone would strand those ON.
             StopAllCoroutines();
             foreach (var ability in _activeAbilities)
-                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(ability.Ability, actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
 
             if (_commitDriftHeld)
@@ -1480,11 +1496,11 @@ namespace CosmicShore.Gameplay
                     yield return CosmicShore.Utility.WaitCache.Seconds(Mathf.Max(0.5f, action.Duration + action.Cooldown));
                     continue;
                 }
-                action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Start(action.Ability, actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);
                 _activeAbilities.Remove(action);
-                action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                VesselActionTape.Stop(action.Ability, actionExecutorRegistry, VesselStatus);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Cooldown);
             }
         }
