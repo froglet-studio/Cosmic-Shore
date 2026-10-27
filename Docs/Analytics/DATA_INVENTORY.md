@@ -27,7 +27,7 @@ string fallback on load.
 | 8 | `TRAINING_PROGRESS` | `TrainingProgressCloudData` | **WIRED** — repo loads/flushes; system still writes local file. Migration held for Unity review. | 1.5s | none yet |
 | 9 | `CAPTAIN_PROGRESS` | `CaptainProgressCloudData` | **DISABLED** — `CaptainManager` stubbed since PlayFab retirement (repo not wired) | 1.5s | none |
 | 10 | `EPISODE_PROGRESS` | `EpisodeProgressCloudData` | **SCAFFOLD** — `ReportMissionCompleted` has no callers | 1.5s | none |
-| 11 | `SQUAD_DATA` | `SquadCloudData` | **WIRED** (new) — repo loads/flushes; system still writes `squad.data`. Migration held for Unity review. | 1.5s | none yet |
+| 11 | `SQUAD_DATA` | `SquadCloudData` | **WIRED, NO WRITER YET** — schema 1 since 2026-10-13: the player's saved squads (`SquadBook`: named squads of vessel + element + pilot id + artifact id per slot, one active; `Docs/PILOTS_AND_ARTIFACTS.md` §10). The one-squad shape it replaced was never written. The squad screen that writes it is milestone-1 slice 5. | 1.5s | none yet |
 | 12 | `LOADOUT_DATA` | `LoadoutCloudData` | **WIRED** (new) — repo loads/flushes; system still writes local files. Migration held for Unity review. | 1.5s | none yet |
 | 13 | `DRILL_PROGRESS` | `DrillProgressCloudData` | **WIRED** (new, 2026-10-01) — the microgame drill's account keys (`CompletedAnyLesson`, `CompletedTwoThumbLesson`), seen Mentor tip ids, best practice laps. `DrillProgressStore` writes it beside a PlayerPrefs mirror; every field only grows, so reads merge the two. Nothing calls the store yet (Docs/ModePreview/TRAINING_PLAN.md §10.1). | 1.5s | none yet |
 
@@ -201,7 +201,7 @@ revenue funnel (VSlice in the instrumentation doc) will persist.
 
 | Store | Data | Owner |
 |---|---|---|
-| `squad.data` (file) | `Squad` — leader + 2 rogues (class + element each) | `SquadSystem` |
+| `squad.data` (file) | `Squad` — leader + 2 rogues (class + element each). Legacy: read only by the dormant `PortSquadView`; superseded by `SQUAD_DATA` schema 1 and retired with it in pilots-and-artifacts slice 5 | `SquadSystem` |
 | `game_favorites.data` (file) | `List<GameModes>` favorited minigames | `FavoriteSystem` |
 | loadout file | `Loadout` — intensity, player count, vessel, mode, isMultiplayer | `LoadoutSystem` |
 | PlayerPrefs | daily challenge state (→ §1.7), settings mirror, `Client_guid`, volumes | various |

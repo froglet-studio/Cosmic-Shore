@@ -1812,7 +1812,8 @@ Boards: the canvas's Rev 3 page (`R3HangarAbilities` / `Upgrades` / `UpgradesMas
 ability's real effect: the real thing needs the vessel alive in a world, i.e. the mode-preview session
 (`ModePreviewSession` + a Barren-cell definition) - next step. Upgrades are a preview, not a purchase (no saved
 per-vessel element level exists). Pilots cannot be chosen until the Pilots system (PilotSO, branch
-`claude/modest-sagan-0ybcgo`) lands.
+`claude/modest-sagan-0ybcgo`) lands. *(2026-10-26: it has, on `claude/pensive-dijkstra-qxoxo0`: PILOTS seats a pilot per vessel
+and ARTIFACTS is three slots - `Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation.)*
 
 ## 32. Rev 3: the four windows use the room the friends panel gave back (built 2026-10-16, awaiting in-editor approval)
 
