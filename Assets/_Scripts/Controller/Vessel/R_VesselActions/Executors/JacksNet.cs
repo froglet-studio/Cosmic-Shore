@@ -350,10 +350,18 @@ namespace CosmicShore.Gameplay
                 float3 step = _to[i] - _from[i];
                 if (math.lengthsq(step) < 1e-12f || !PrismMotion.TryGetBox(p, out var box)) continue;
                 box.Center -= step;   // the transform already stands at the end of the step
-                if (!PrismMotion.TryFirstContact(index, p, in box, step, in movers, out int slot, out _)) continue;
+                if (!PrismMotion.TryFirstContact(index, p, in box, step, in movers, out int slot, out float hit)) continue;
                 if (_moverOfSlot.ContainsKey(slot)) continue;   // another of the net's own: they travel together
                 var struck = index.ResolvePrism(slot, materialise: true);
                 if (!struck || struck == p || struck.destroyed) continue;
+                if (PrismMotion.Bounces(p, struck))
+                {
+                    // a shielded collision bounces: the net poses its prisms, so it holds this one against the other
+                    // instead of through it, and neither goes (PrismMotion.Bounces)
+                    p.transform.position = math.lerp(_from[i], _to[i], hit);
+                    p.NotifyPositionChanged();
+                    continue;
+                }
                 var closing = dt > 0f ? (Vector3)(step / dt) : Vector3.zero;
                 PrismMotion.Annihilate(p, struck, closing, status.Domain, status.PlayerName, _level);
             }

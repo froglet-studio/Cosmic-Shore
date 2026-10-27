@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's round 10: the hull at the centre of the screen, and edit-time diameters (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- `MeerkatCameraSettingsSO`: forked from the Stoat's, which is unchanged. Offset (0, 0, -21), no lift, hard-attached.
+  `Meerkat.prefab` uses it.
+- The ride camera: on the tube's centreline at the follow camera's own distance, looking at the hull. It cuts in and
+  out with no blend, and keeps to the tunnel's line past the exit until it is past the mouth.
+- `throatDiameter` 8 and `mouthDiameter` 26 replace the radius keys. Retired: `throatRadius`, `mouthRadius`,
+  `rideCameraBack`, `rideCameraLookAhead`, `rideCameraBlendSeconds`.
+- Garrett's `cece/lucid-brown-ykcmhu` merged in: the soliton kit design, and shielded prisms that bounce (his own
+  checklist entry below).
+
+**Verified without the editor:**
+- Reference compile, player and editor: 0 errors in project code.
+- The page, headless: the hull exactly at screen centre in turning flight and in three rides (straight, 150°, 114°);
+  the camera within 0.29 u of the tunnel's line; its step at RT and at the exit no larger than a normal frame's.
+- `author_meerkat_assets --check`, including the centred-camera check; `studio_to_unity` 41 mapped, 0 drift.
+
+**Verify in editor:**
+1. Lava lamp, Meerkat: the hull sits at the dead centre of the screen while you turn, like the Sparrow, with no height
+   offset and no swing.
+2. Pull RT with the stick bent: no lurch at RT. Through the shaft and the bend the view stays inside the tube with the
+   hull centred. Coming out, there is no sideways jump.
+3. The mouths are wider than the throat (26 u against 8 u). Change `mouthDiameter` or `throatDiameter` on
+   `MeerkatWormholeConfig`: the next reticle and tunnel take it.
+4. The Stoat's camera is unchanged.
+
+---
+
 ### 🔴 The Meerkat's round 9: one geometry, the reticle is its wireframe (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** the reticle draws through the bridge's own geometry (`MeerkatWormholeView.BridgeFrame`, the `bridge*`
@@ -137,6 +166,37 @@ lens compiles in glslang HLSL mode against the black-hole lens's URP mock (a pla
    and then the bend, with no seam where they meet and none at either mouth.
 5. Change any Meerkat look field in Play mode: it shows at once. After Play mode the asset keeps it, and
    `studio_to_unity.py --check` lists a mapped one as drift.
+
+---
+
+### 🔴 Prism movement: shielded prisms bounce (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "shielded prisms bounce off each other and other prisms instead of being destroyed on
+collision"; `Docs/PRISM_MOTION.md` 1a):
+- `PrismBounce` and `PrismMotion.Bounces`: a collision with a shielded prism on either side destroys neither. A
+  shielded mover bounces off super-shielded mass; an unshielded one still goes.
+- All three movers:
+  - the gravity field rebounds the body's velocity (`BouncesTotal`);
+  - the Rhino plough rebounds the rest of its throw;
+  - the Jacks net holds the prism at the contact.
+- `PrismMotionConfig.shieldBounceRestitution` 0.6.
+
+**Verified without the editor:** `PrismBounceTests` 12/12 under dotnet with Unity stubs, and a planted rule error fails
+one. Reference compile (player-dev and editor): see the commit.
+
+**Verify in editor:**
+1. EditMode `PrismBounceTests` and `PrismMotionTests` pass.
+2. **Rhino:** plough a shielded prism into a wall. It slides to the wall and rebounds part of the way; neither prism
+   breaks. A plain prism ploughed into a plain wall still destroys both.
+3. **Stoat dipole (or any black hole):**
+   - Pull a field of mixed prisms. Shielded ones bounce off each other and off plain ones, and nothing involving a
+     shield explodes.
+   - Plain-on-plain contacts still explode.
+   - `BouncesTotal` climbs and `CollisionsTotal` counts only the plain pairs.
+4. **Jacks:** net a shielded prism and drag it into another prism. It stops against it and stays in the net; neither
+   breaks.
+5. Raise `shieldBounceRestitution` on `Resources/PrismMotionConfig` to 1 and lower it to 0: the bounces get livelier,
+   then dead.
 
 ---
 

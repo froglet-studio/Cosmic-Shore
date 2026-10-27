@@ -156,6 +156,10 @@ namespace CosmicShore.Gameplay
         /// rule) since the last reset (session total).</summary>
         public static int CollisionsTotal { get; private set; }
 
+        /// <summary>Bodies that ran into a prism with a shield on either side and bounced (nothing destroyed) since the
+        /// last reset (session total).</summary>
+        public static int BouncesTotal { get; private set; }
+
         /// <summary>Prisms carried through a dipole's throat since the last reset (session total).</summary>
         public static int ThroatTransitsTotal { get; private set; }
 
@@ -340,7 +344,9 @@ namespace CosmicShore.Gameplay
         /// Every contact the pass found: both prisms destroyed, scored to the hole nearest the
         /// body (the one whose pull moved it). A pair two bodies both reported, or a prism an
         /// earlier contact this frame already destroyed, is a no-op. The destroyed bodies leave
-        /// the ledger in <see cref="ApplyVerdicts"/>.
+        /// the ledger in <see cref="ApplyVerdicts"/>. A contact a shielded prism is part of
+        /// BOUNCES instead (<see cref="PrismMotion.Bounces(Prism, Prism)"/>): nothing is destroyed and
+        /// the bodies' velocities rebound off the contact (<see cref="Bounce"/>).
         /// </summary>
         static void ApplyContacts(PrismSpatialIndex index, float dt, PrismMotionLevel level)
         {
@@ -360,6 +366,13 @@ namespace CosmicShore.Gameplay
                 if (_bodyOfSlot.TryGetValue(contact.Slot, out int j) && j < _prisms.Count)
                     velocity -= (Vector3)((_points[j] - _prevPoints[j]) / dt);
 
+                if (PrismMotion.Bounces(mover, struck))
+                {
+                    Bounce(mover, struck, contact.Slot, velocity);
+                    BouncesTotal++;
+                    continue;
+                }
+
                 var hole = NearestHole(mover.transform.position);
                 bool owned = hole != null && !string.IsNullOrEmpty(hole.CaptureOwnerName);
                 PrismMotion.Annihilate(mover, struck, velocity,
@@ -369,6 +382,26 @@ namespace CosmicShore.Gameplay
                 CollisionsTotal++;
             }
             _contacts.Clear();
+        }
+
+        /// <summary>
+        /// A shielded contact: the mover's velocity rebounds off the contact normal. When the struck prism is another
+        /// body under gravity the two share the impulse equally (equal and opposite); a prism that is not a body keeps still.
+        /// </summary>
+        static void Bounce(Prism mover, Prism struck, int slot, Vector3 relativeVelocity)
+        {
+            var normal = PrismBounce.Normal(mover.transform.position, struck.transform.position, relativeVelocity);
+            bool both = _bodyOfSlot.TryGetValue(slot, out int j) && j >= 0 && j < _prisms.Count && _prisms[j] == struck;
+            var dv = PrismBounce.Impulse(relativeVelocity, normal, PrismMotion.BounceRestitution, both ? 0.5f : 1f);
+            AddVelocity(mover, dv);
+            if (both) AddVelocity(struck, -dv);
+        }
+
+        static void AddVelocity(Prism p, Vector3 dv)
+        {
+            if (dv.sqrMagnitude < 1e-12f || !PrismRenderService.TryGetGravityBody(in p.RenderHandle, out var body)) return;
+            body.Velocity += (float3)dv;
+            PrismRenderService.SetGravityBody(in p.RenderHandle, in body, enabled: true);
         }
 
         static BlackHole NearestHole(Vector3 position)
@@ -776,6 +809,7 @@ namespace CosmicShore.Gameplay
             CapturedThisSecond = 0;
             ThroatTransitsTotal = 0;
             CollisionsTotal = 0;
+            BouncesTotal = 0;
             _level = PrismMotionLevel.Showcase;
             DisposeLedger();
             DisposeOutputs();

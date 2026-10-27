@@ -39,10 +39,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(20f, 1500f)] float shaftMax = 600f;
         [Tooltip("The bend's radius (u)")]
         [SerializeField, Range(10f, 300f)] float bendRadius = 60f;
-        [Tooltip("Throat radius, fixed (u)")]
-        [SerializeField, Range(1f, 30f)] float throatRadius = 4f;
-        [Tooltip("Mouth radius, fixed (u)")]
-        [SerializeField, Range(2f, 60f)] float mouthRadius = 10f;
+        [Tooltip("Throat diameter, fixed (u)")]
+        [SerializeField, Range(2f, 60f)] float throatDiameter = 8f;
+        [Tooltip("Entry and exit diameter, fixed (u)")]
+        [SerializeField, Range(4f, 120f)] float mouthDiameter = 26f;
         [Tooltip("LT on a key or touch: full after (s)")]
         [SerializeField, Range(0.05f, 3f)] float keyRampSeconds = 0.5f;
 
@@ -56,12 +56,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.5f, 3f)] float rideExitMultiplier = 1.2f;
         [Tooltip("Riding: the speed tunnel's dolly zoom (× its normal strength)")]
         [SerializeField, Range(0f, 5f)] float rideSpeedTunnelScale = 5f;
-        [Tooltip("Riding: the camera on the tube's centreline, this far behind you (u)")]
-        [SerializeField, Range(0f, 60f)] float rideCameraBack = 18f;
-        [Tooltip("...looking this far ahead along it (u)")]
-        [SerializeField, Range(5f, 120f)] float rideCameraLookAhead = 40f;
-        [Tooltip("...easing in and out over (s)")]
-        [SerializeField, Range(0.02f, 1f)] float rideCameraBlendSeconds = 0.25f;
         [Tooltip("The reticle comes back after you are out in (s)")]
         [SerializeField, Range(0f, 3f)] float reticleDelaySeconds = 0.5f;
         [Tooltip("...rippling into shape over (s)")]
@@ -172,9 +166,6 @@ namespace CosmicShore.ScriptableObjects
         public float RideMidMultiplier => rideMidMultiplier;
         public float RideExitMultiplier => rideExitMultiplier;
         public float RideSpeedTunnelScale => rideSpeedTunnelScale;
-        public float RideCameraBack => rideCameraBack;
-        public float RideCameraLookAhead => rideCameraLookAhead;
-        public float RideCameraBlendSeconds => rideCameraBlendSeconds;
         public float ReticleDelaySeconds => reticleDelaySeconds;
         public float ReticleGrowSeconds => reticleGrowSeconds;
         public float FormSeconds => formSeconds;
@@ -228,7 +219,7 @@ namespace CosmicShore.ScriptableObjects
         public MeerkatWormholeMath.ShapeSettings Shape() => new()
         {
             ShaftMin = shaftMin, ShaftMax = shaftMax, BendRadius = bendRadius, BendMaxDegrees = bendMaxDegrees,
-            ThroatRadius = throatRadius, MouthRadius = mouthRadius,
+            ThroatRadius = 0.5f * throatDiameter, MouthRadius = 0.5f * mouthDiameter,   // round 10: authored as diameters
         };
 
         /// <summary>The AI's plan rows; <paramref name="turnRateDegrees"/> is the hull's own turn (its transformer's YawScaler,

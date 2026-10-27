@@ -27,7 +27,8 @@ the prefab:
 
 - **The shape** (round 7, the umbrella handle): a straight shaft of S, then one bend of radius `bendRadius` through the
   stick's angle θ, so the tunnel is S + `bendRadius` × θ long (`MeerkatWormholeMath.ShapeFor` / `At` / `BendAngle`). The
-  throat (`throatRadius`) and mouths (`mouthRadius`) are fixed and narrow.
+  throat (`throatDiameter`, 8 u) and the entry and exit (`mouthDiameter`, 26 u since round 10) are fixed: set on the
+  config at edit time, never by the sticks.
 - **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it.
   - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
   - It is the wormhole's own wireframe (round 9, Yash: *"the reticle is the silhouette of the geometry"*): the bridge's
@@ -40,12 +41,19 @@ the prefab:
   to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
   on the tunnel's last heading, a little boosted, and eases back to cruise.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
-- **The ride camera** (round 8, Yash: "I don't want any camera Y offset. I want the camera to go inside the tunnel"):
-  while a tunnel flies the hull, its pilot's camera sits ON the tube's centreline `rideCameraBack` (18 u) behind the hull,
-  looks `rideCameraLookAhead` (40 u) ahead along it, and eases in and out over `rideCameraBlendSeconds` (0.25 s)
-  (`MeerkatWormholeExecutor.StepRideCamera`, through `CustomCameraController.Spectate`). Once eased in it has no height and
-  no lag, so the view stays inside the tube round the bend; the page measured it within 0.23 u of the centreline in a
-  4 u throat.
+- **The camera** (round 10, Yash: "the cameras, why offset should always be zero, the vessel should be in the center of
+  the screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow"):
+  - `MeerkatCameraSettingsSO` (forked from the Stoat's, which is unchanged): offset (0, 0, -21), no look lift,
+    `chaseEaseRate` 0 with mode 0, so `CustomCameraController` hard-attaches it. The hull is always at the centre of the
+    screen. `author_meerkat_assets.py --check` fails if the asset gains a height offset or a lag.
+  - Riding (`MeerkatWormholeExecutor.StepRideCamera`): the camera stays the follow camera's own distance behind the hull,
+    but ON the tube's centreline, looking at the hull, through `CustomCameraController.Spectate` with no blend. On the
+    straight run in it is where the follow camera already was, so the hand-over is a cut nobody sees. Round the bend it
+    never cuts the chord out of the tube.
+  - Out of the far mouth it keeps to the tunnel's line until it is past the mouth itself, so it does not jump sideways.
+  - The page measured: the hull exactly at screen centre, flying and riding; the camera within 0.29 u of the line, in
+    the tube and past the exit; its step at RT and at the exit no larger than a normal frame's.
+  - Round 8's `rideCameraBack`, `rideCameraLookAhead` and `rideCameraBlendSeconds` are retired.
 - **The dolly zoom.** While a tunnel flies the hull, the game's speed tunnel (`VesselSpeedTunnel`: the narrower field of
   view and relaxed Panini every vessel gets with speed) is `rideSpeedTunnelScale` (5) × its normal strength
   (`Docs/SPEED_TUNNEL.md` § The ride scale). The push-in peaks at the throat, where the ride is fastest.

@@ -14,7 +14,7 @@ ability → level-5 upgrade contract), `Docs/ELEMENTAL_ECONOMY.md` (petals, the 
 
 > **SUPERSEDED FOR PILOTS (Garrett, 2026-10-27).** The pilot concept is now
 > [`Docs/Pilots/CALLSIGNS.md`](Pilots/CALLSIGNS.md): **a pilot grants a vision power.** Hold the left bumper and the
-> one thing your pilot sees (one of seventeen callsigns built from the fundamentals) lights up while everything else
+> one thing your pilot sees (one of eighteen callsigns built from the fundamentals) lights up while everything else
 > is suppressed. A pilot no longer swaps any part of a vessel's kit, so §2 below (and every "pilot as kit side-grade"
 > line in §0, §4 and §6) is history, kept for the record.
 >
