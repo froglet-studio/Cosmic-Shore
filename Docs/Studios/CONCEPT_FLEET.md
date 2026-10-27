@@ -244,6 +244,14 @@ field name; (4) re-run §4.1's row and §2's reading; (5) when the owner records
 decided values into `TetherConfig.asset`, never into the C#. The AI note stands from both sides: nothing drives the
 long tether in Unity yet, and the studio's pilot swings for turns only.
 
+**A first mode for the Gibbon, if it is kept: Canopy Run.** A brachiation race (swing hand over hand along a track of
+anchors) was built for the original rigid-rope Gibbon on `claude/spider-momentum-physics-8jlit2`, the only copy:
+`CANOPYRUN.md`, `CanopyRunController`, `SpawnableCanopyTrack`, `MinigameCanopyRun.unity`,
+`author_canopy_run_assets.py`, plus that vessel's `GIBBON.md`. Read it for the race, not the code: its
+`VesselClassType` 13 and `GameModes` 45 are now the Butterfly and Switchback, and its hull is C# (the `/vessel-model`
+rule). Under the artifact-first pipeline the mode is prototyped with the vessel in the studio, then
+`/artifact-to-unity` + `/arcadegame`. (Recorded 2026-10-26 when that branch's session was archived.)
+
 ## 9. Garrett's review (2026-10-17, The Lounge; Garrett, Yash, Joseph Zhou)
 
 Garrett reviewed the ten in the artifact. His verdicts decide §6's first question and set round 2's order. **Qualitative
