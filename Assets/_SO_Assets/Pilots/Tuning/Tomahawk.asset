@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0eaeba18c5706d89f48a339da5e7a6a, type: 3}
+  m_Name: Tomahawk
+  m_EditorClassIdentifier: 
+  rightSequence: RR
+  leftSequence: LL
+  flightSeconds: 1.1
+  sideReachBlades: 2.2
+  forwardReachBlades: 1.4
+  spinTurnsPerSecond: 3
+  blendInSeconds: 0.08
+  returnBlendSeconds: 0.15
+  throwSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  toastLine: Tomahawk

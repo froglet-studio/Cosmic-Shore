@@ -45,7 +45,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -1812,7 +1812,8 @@ Boards: the canvas's Rev 3 page (`R3HangarAbilities` / `Upgrades` / `UpgradesMas
 ability's real effect: the real thing needs the vessel alive in a world, i.e. the mode-preview session
 (`ModePreviewSession` + a Barren-cell definition) - next step. Upgrades are a preview, not a purchase (no saved
 per-vessel element level exists). Pilots cannot be chosen until the Pilots system (PilotSO, branch
-`claude/modest-sagan-0ybcgo`) lands.
+`claude/modest-sagan-0ybcgo`) lands. *(2026-10-26: it has, on `claude/pensive-dijkstra-qxoxo0`: PILOTS seats a pilot per vessel
+and ARTIFACTS is three slots - `Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation.)*
 
 ## 32. Rev 3: the four windows use the room the friends panel gave back (built 2026-10-16, awaiting in-editor approval)
 
@@ -3977,4 +3978,212 @@ messages in the selection blue, your messages looking like everyone else's, and 
 4. **A pre-existing failure.** `author_elemental_converter.py --self-test` fails on bleeding-edge as well
    (`Menu_Main: fileID 7700130000000000002 is already taken`); its `--check` is green. Its synthesised pre-converter
    scene no longer strips the converter's documents.
+
+## 92. The Ark's tabs: Squads and Decor beside the converter (2026-10-27, awaiting in-editor approval)
+
+> **The Squads page below is superseded by section 95 (the deck)**: the three cards with CHANGE buttons and PLAY
+> Arcade / Arena / Mission are gone. The tab row, Decor, the data and the joining described here still stand.
+
+Shombith (2026-10-27): "Ark - add two more tabs along with the converter. 1. Squads - Users can make / join up to 4
+squads and they can use the squad to go into a mission or arena or arcade as they want. Inside the ark they will see
+the squad members with their selected vessel, element and pilot and artifact for each squad mate. 2. Decor - Its just
+a cosmetic for the ark's banner and external internal skin but lock it we do not need to open it now."
+
+Built on Shombith's pilots-and-artifacts branch (`claude/pensive-dijkstra-qxoxo0`, merged into this branch): its
+`SquadBook` / `SavedSquad` / `SquadSlot` (the saved squads, `SQUAD_DATA`) and `PilotArtifactCatalogSO`. No board was
+drawn first; the layout follows the converter's (title band left, panels on the black sea).
+
+**The tab row** (`ArkTabsView` on `ArkView`'s root): CONVERTER, SQUADS, DECOR as `KitTextTab` words centred at the top,
+one page shown at a time. The converter's overlay now sits under a `Converter` page with its node keys unchanged, so
+every fileID the scene points at is the same. `ElementalConverterView` is still the screen's one `IScreen`: it forwards
+enter and exit to the tabs (`arkTabs`, wired in the scene), and while another tab is up it hides the 3D picture and
+releases its render target, as it does when the player leaves the screen.
+
+**SQUADS** (`SquadsPage`):
+- **The list**: the player's squads, made and joined together, at most four (`SquadBook.MaxSquads`; `Add` refuses a
+  fifth, `Normalize` trims a longer record). Pressing a row makes it the active squad, the one PLAY takes. NEW SQUAD
+  makes one from the player's last hull and its Hangar pilot and first slotted artifact, with Rogue One open for a
+  friend and Rogue Two an AI. JOIN A FRIEND lists the friends' squads with a seat open.
+- **The squad**: three cards (Leader, Rogue One, Rogue Two). Each shows who flies the seat (you, the friend, an AI
+  wingmate, or "Open for a friend") and four picks with CHANGE: vessel (the Hangar's unlocked roster), element (Charge,
+  Mass, Space, Time, as a word), pilot (the vessel's default, then its roster) and artifact (none, then what fits the
+  vessel; the player's own seat offers only artifacts they have found). The player changes their own seat in any squad,
+  and the AI or open seats of a squad they made. The seat button there steps AI to open and back, or opens a friend's
+  seat again (REMOVE). DELETE SQUAD (made) or LEAVE SQUAD (joined) needs a second press within 3 s.
+- **PLAY: Arcade / Arena / Mission**: makes the squad active, sets `GameDataSO.selectedVesselClass` to the player's
+  seat (the configure window opens on it unless the card remembers its own hull), seats their pilot
+  (`PilotLoadoutStore`), sends the party invite to each online friend in the squad who is not already in the party,
+  then presses the Home hub's entry for that window (`MenuHubButton.Press`). A window Home refuses is refused here the
+  same way, before anything changes: Mission stays locked.
+- **Joining, with no server in the middle.** Each player publishes a `SquadPublicRecord` to Cloud Save PUBLIC player
+  data (`SQUADS_PUBLIC`, `SquadDirectory`): the squads they made, and a claim (`SquadClaim`: owner, squad id, seat, four
+  picks) for each squad they joined. A friend joins by writing a claim into their own record. The owner, when they next
+  open the tab, reads their friends' records and seats the first claim on each open seat (`SquadMembership.ReconcileOwned`);
+  a seated friend whose record no longer claims the seat has left, and the seat opens again. The joiner reads the
+  owner's record back (`RefreshJoined`): Pending until the owner seats them, then Seated, SeatLost or Disbanded. Each
+  player writes only their own record. Reads are throttled to one round per 20 s and at most 30 friends; a write
+  waits 2 s so a run of changes is one write.
+- Every word is a serialized field on `SquadsPage` (templates with tokens: `{count}`, `{owner}`, `{open}`, `{squad}`,
+  `{seat}`).
+
+**DECOR**: the banner, the outer hull and the inner hull as three locked tiles. Its tab carries a
+`MenuAvailabilityView` set to Locked, so a press gets the sting, the shake and "Not open yet." and the page never
+shows. Opening it later is setting that one field to Available.
+
+**Data:**
+- `SquadSeat` (Ai = 0, Open = 1, Player = 2) and `SquadSlot.Seat` / `MemberId` / `MemberName`. A slot saved before
+  these existed reads as an AI seat.
+- `SavedSquad.Id` / `OwnerId` / `OwnerName` / `MySeat`.
+- `SquadBook.MaxSquads` / `CanAdd` / `IndexOfId`.
+- `SquadPublicRecord`, `SquadClaim`, `SquadMembership` (pure, in `CosmicShore.Data`).
+- `SquadDirectory` (Cloud Save public read and write), `UGSKeys.SquadsPublic`.
+- `SquadMembershipTests` (9 tests).
+
+**Generator:** `author_menu_ark.py` authors the tab row, both pages and the wiring, and validates them: three tabs,
+each a KitTextTab over a CanvasGroup page; SQUADS driven by its page; DECOR locked; every row, card and button field
+wired; the vessel list and the pilot catalog referenced; the scene's `arkTabs` and `converterTab`. Three new negative
+controls (Decor opened, a squad mate with no pilot button, `arkTabs` unwired); all eight fire.
+
+**How it was checked:**
+- `author_menu_ark.py --check` and `--self-test` pass.
+- The real-reference compile (`unity_refcompile`, player and editor configs) reports 0 errors in project code.
+- The 21 squad tests (`SquadMembershipTests` and the existing `SquadBookTests`) were compiled with Roslyn against
+  Newtonsoft and run outside Unity: all pass.
+- `check_generated_assets.py`, `check_console_logging.py` and `check_conditional_compilation.py` pass.
+- Not opened in the Unity editor. The join flow needs two signed-in accounts that are friends.
+
+**Open:**
+- Nothing in a match reads the AI seats' picks yet. The mode's own AI backfill flies them; only the player's own
+  vessel and pilot reach the launch.
+- The element pick is drawn and saved, but no match reads a pre-match element (`Docs/PILOTS_AND_ARTIFACTS.md` §8 Q1).
+- Two friends claiming the same open seat in the same moment: the owner seats the first record read and the other
+  reads SeatLost. Closing that race needs a Cloud Code reservation (backend, Shombith).
+- `author_pilot_assets.py --check` fails on this branch because the Meerkat (on bleeding-edge since the 10-27 merge)
+  has no pilots or artifacts. That is a content gap for the pilots work, not caused by the tabs.
+
+## 93. Rev 28 mockups: the Ark's Squads and Decor tabs (2026-10-27, awaiting board approval)
+
+**Asked (Shombith):** "please show me the mockups in the board, because not sure how it will look", then: "There should
+be a make squad all vessels and pilots would show up in a podium on the right of the squads and after creating only
+there can be a take into mission or arena", "We can change the domain at runtime and it changes use some animations like
+that", "Like the nanobot transition ... we can use that to change domains for the squad vessels".
+
+**On the canvas:** page "Rev 28 - Ark tabs (Squads, Decor)" of Menu Redesign B
+(https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2), with a copy in `Docs/MenuRedesignB/board/R28*.dc.html`. Seven boards:
+- Make squad (interactive): the squad list on the left, the podium of three seats on the right. Press a seat, then pick
+  its vessel (all seven Hangar hulls), pilot (base kit and the hull's two), element (a word) and artifact; a rogue seat
+  is an AI wingmate or open for a friend. CREATE SQUAD adds it to the list; only then do TAKE INTO MISSION (locked, as on
+  Home) and ARENA appear.
+- Domain chips (Jade, Ruby, Gold, the game's own colours): a switch dissolves each hull into 34 prism-bots that scatter
+  and reassemble it in the new colour, seat by seat, while the podium light and the stage glow follow. No older
+  "nanobot" transition was found in the repo or on the canvas, so this one is drawn from the description.
+- Squad made, a joined squad, no squad yet, join a friend's squad, and Decor locked (the press shakes, "Not open yet.").
+- Notes and decisions.
+
+**Differs from the build (section 92):** the build has three cards with CHANGE buttons and PLAY Arcade / Arena / Mission
+always shown. Rebuilt to these boards once they are approved. Open decision: Arcade, which the first brief named and this
+one does not.
+
+**Revised the same day (Shombith, with a screenshot of the old Port squad screen as a reference, not a template): "The
+highlight looks to weird, use the sea lines in bg and also make the highlight 3D light type. the pilots should stand
+beside the vessel".**
+- The flat column of light behind each seat is gone. Each seat stands on a lit pad: a soft spotlight cone from above
+  with motes drifting up it, a pool of light on the floor, and three sea-contour rings, all in the squad's domain colour.
+  The seat being edited is lit fully and breathes; the others sit at half light.
+- The stage panel is see-through between its header and its picker, so the menu sea's lines run behind the podium.
+- The pilots are full-figure portraits, so they stand on the pad beside their vessel, each with a contact shadow. The
+  hull floats beside them. The leader stands front and centre; the two rogues stand behind on the flanks, smaller, each
+  pilot on the outer side and facing in. A base-kit seat shows the hull's first pilot as a lit silhouette; an open seat
+  shows a dashed outline.
+
+## 94. Rev 29 mockups: Squads, six ways (2026-10-27, awaiting a pick)
+
+**Asked (Shombith):** "Yes keep it out give me more variations. I do not like this style at all", then "Too much noise".
+Arcade stays out of Take into (Mission, locked as on Home, and Arena only).
+
+**On the canvas:** page "Rev 29 - Squads, six ways (quiet)" of Menu Redesign B, copies in
+`Docs/MenuRedesignB/board/R29*.dc.html`. Six layouts of the same screen, and notes:
+- A Hangar bay: three bays on a faint floor, a thin line over the picked bay.
+- B Formation: the squad flies at you in a V from the horizon; the pilots are a roster along the bottom.
+- C The deck: each mate a card, the pilot stepping out of its frame (a squad is a twelve-card deck).
+- D The Ark's bays: the squad's Ark in cutaway, a vessel and its pilot in each docking bay, the banner on its hull.
+- E Lineup: three tall slanted panels, the pilots large, the vessel above each.
+- F Dossier: one row per mate, the picked one in a preview on the right.
+
+Quiet by rule: no idle motion (the domain switch's nanobot rebuild is the only animation), no glows or scan lines, each
+mate's four picks as one line of text, the picked seat marked by one thin line in the domain colour. Rev 28's spot-lit
+podium is set aside. Make squad, join and the Unity build follow the layout picked here.
+
+**Picked (Shombith, 2026-10-27): "go with C, the deck".**
+
+## 95. The deck: Rev 31 boards and the Squads tab rebuilt to them (2026-10-27, awaiting in-editor approval)
+
+**Boards:** page "Rev 31 - Squads, the deck" of Menu Redesign B (Rev 30 was taken by a Codex page the same hour), copies
+in `Docs/MenuRedesignB/board/R31Deck*.dc.html`: Make squad (interactive), squad made, a joined squad, no squad yet, join a
+friend's squad, Decor locked, notes.
+
+**Built** (`author_menu_ark.py` authors it; `SquadsPage` drives it):
+- **List** down the left: four rows (name, domain, "Yours - 1 seat open" / "Kestrel's squad - joined"), MAKE SQUAD and
+  JOIN A FRIEND'S SQUAD under them.
+- **Header**: the kicker, the squad's name and line, and the domain chips (Jade, Ruby, Gold, each with its diamond in
+  the domain's colour).
+- **The deck**: three cards (`SquadMateCard`), the leader raised in the middle and the rogues turned 6 degrees on the
+  flanks. Each card has the seat and its number, the hull (the Hangar card render, `HangarCardArtSO`), who flies it, and
+  four rows: vessel, element, pilot, artifact. The pilot's full figure stands over the card's left edge. An open seat
+  shows an outline instead ("A friend takes this seat").
+- **Make squad**: the deck scales to 0.8 about its top centre and the picker opens under it (`SquadPickChip`):
+  - vessel tiles, seven a page, with < and > to page through the Hangar's unlocked roster;
+  - the pilots (base kit and the vessel's roster, with their portraits);
+  - the four elements, and for a rogue card who flies it (AI wingmate or open for a friend);
+  - the artifacts (none, then the vessel's and the fleet's; the player's own card offers only found ones).
+
+  A press on a card picks which one the picker edits. CREATE SQUAD adds the squad; EDIT reopens a made squad (SAVE
+  SQUAD). Nothing is saved before that press, and CANCEL drops the draft.
+- **Take into**: Mission (its padlock follows Home's Mission entry) and Arena only, shown only for a made squad. No
+  Arcade.
+- **Domain**: `SavedSquad.Domain` (a record from before reads as Jade; a joined copy takes the owner's). A press plays
+  `SquadNanobotSwap` on each card, 0.14 s apart. The hull dissolves into 34 prism-bots that scatter and rebuild it tinted
+  to the new domain (`SO_ColorSet.GetDomainSignalColor`), on unscaled time. Only the leader changes a squad's domain.
+- The first cut's three-card editor with CHANGE buttons and its PLAY ARCADE / ARENA / MISSION row are gone.
+  `author_menu_ark.py` now fails if a Take-into-Arcade field comes back.
+
+**How it was checked:**
+- `author_menu_ark.py --check` and `--self-test` pass: 10 negative controls, three of them new (a card with no hull,
+  Take into Arcade back, the nanobots with no bot).
+- `unity_refcompile` player and editor configs: 0 errors in project code.
+- 22 squad tests (one new: the domain is the owner's, and an old record reads as Jade), compiled with Roslyn and run
+  outside Unity: all pass.
+- `check_generated_assets.py`, `check_console_logging.py` and `check_conditional_compilation.py` pass.
+- Not opened in the Unity editor.
+
+**Open:**
+- ~~The squad's domain does not reach the configure window yet~~: wired, section 96.
+- The tab row is still centred over the screen; the boards draw it left-aligned with LB / RB keycaps.
+
+## 96. The squad's domain reaches the launch panel (2026-10-27)
+
+**Asked (Shombith):** "wire the squad domain into the configure window".
+
+The configure window already re-picks a remembered per-card domain once its panel opens
+(`ArcadeGameConfigureModal.RestoreRememberedDomain`, sent to the server through `HandleDomainSelected` so the tile is never
+lit without the server knowing). A squad going in now wins over that memory:
+- **The player who pressed TAKE INTO** (the launch authority): `SquadsPage.Play` sets `SquadLaunchIntent` to a copy of
+  the squad. Every card they open on that trip starts on the squad's domain. A press on a Home hub entry clears the
+  intent (`MenuHubButton.HandlePlayerClick`; the Ark's own press goes through `Press`, which keeps it). A plain Arena trip
+  from Home therefore keeps each card's own memory, even with squad mates in the party.
+- **A squad mate who joined that party** (a guest): their panel opens on their active squad's domain when the party holds
+  one of its mates (`SquadMembership.PartyIsSquad`), so the squad flies as one team.
+- Both are decided by one pure function, `SquadMembership.TryLaunchDomain`, covered by two new tests.
+
+A squad domain that the card's domain count does not reach (Gold on a two-domain card) falls back to Jade, the same
+`LaunchPreferenceRules.ResolvePilotDomain` rule a remembered pick goes through. The domain count is never widened for it:
+that is a host term, and the window keeps its own rules for it. The player can still press another tile, and the ready
+press then remembers that pick for the card, as before. The weekly challenge keeps its pinned domain.
+
+**How it was checked:**
+- `unity_refcompile` player and editor configs: 0 errors in project code.
+- 24 squad tests, run outside Unity: all pass.
+- The console-logging and conditional-compilation gates pass, and `author_menu_ark.py --check` shows no drift.
+- Not opened in the Unity editor. Needs a hand test with two friends: Take into Arena from a Ruby squad, open a card,
+  and both the host and the invited squad mate start on Ruby.
 

@@ -23,6 +23,13 @@ namespace CosmicShore.Core
 
             if (Squad.Equals(default(Squad)))
             {
+                // The defaults came from the captain roster, which was removed with the captain
+                // system, so on an install with no squad.data they are null and the Squad
+                // constructor throws from PortSquadView.Start on every Menu_Main load. Leave the
+                // squad unset instead: SquadMemberCard already treats no captain as normal. Saved
+                // squads now live in SquadBook (SQUAD_DATA, Docs/PILOTS_AND_ARTIFACTS.md).
+                if (!DefaultLeader || !DefaultRogueOne || !DefaultRogueTwo) return;
+
                 Squad = new Squad(DefaultLeader, DefaultRogueOne, DefaultRogueTwo);
                 DataAccessor.Save(SquadSaveFileName, Squad);
             }
