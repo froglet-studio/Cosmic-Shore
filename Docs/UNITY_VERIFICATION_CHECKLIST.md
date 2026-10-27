@@ -16972,7 +16972,7 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
    number).
 6. Phone: each of the three still reaches the ability through its card, as before.
 
-## 🔴 2026-10-27 — Each AI seat its own difficulty (Regatta and every Arena card) (unverified: no Unity editor in the session)
+## 🔴 2026-10-27 — Each AI seat its own difficulty (every Arena and Arcade card) (unverified: no Unity editor in the session)
 
 **Files:** `ArcadeGameConfigSO.AIDifficulties`, `ArcadeGameConfigureModal(.ConfigChangeHandlers/.SeatLineup)`,
 `ConfigureSeatLineup` (each AI pedestal names its own level), `ArcadeConfigSyncManager.LobbySnapshot.AiD0..5`
@@ -16986,7 +16986,10 @@ gate race and the Skim Race pilot. EditMode: `PerSeatAIDifficultyTests`, `Arcade
    Eye on each shows its own handicap. Kick AI 1: AI 2 and AI 3 keep Hard and Legendary.
 4. Two machines (both on this build - protocol 19): the guest's pedestals show each AI's level and follow the host's
    presses; the guest cannot change a level.
-5. An Arcade card (pinned hull): the row still sets every AI; nothing per seat.
+5. An Arcade card (pinned hull), as the host with three AI: press AI 2's pedestal (its podium glows, the hull strip
+   does not move), press Hard: AI 2 reads "Hard AI", the others keep theirs. Press it again (or your own pedestal)
+   and press Easy: every AI reads "Easy AI". Launch with AI 1 Easy, AI 2 Legendary: AI 2 flies visibly cleaner.
+6. Same Arcade card as a guest: the pedestals show each AI's level and cannot be pressed for it.
 
 ## 🔴 2026-10-27 — Stoat flies Slingshot, Meerkat flies Warpline; the Time Race Prototyper (unverified: no Unity editor in the session)
 

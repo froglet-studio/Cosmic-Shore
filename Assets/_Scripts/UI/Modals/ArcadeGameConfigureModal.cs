@@ -805,6 +805,7 @@ namespace CosmicShore.UI
 
             // The picks go with their seat (hull and difficulty), so the bots after it keep theirs.
             config.RemoveAISeat(aiOrdinal);
+            _vesselSeat = SeatAfterKick(_vesselSeat, aiOrdinal);
             HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
             BroadcastRosterToClients();
         }
@@ -1675,13 +1676,14 @@ namespace CosmicShore.UI
         {
             if (_activePanel is not ArenaLaunchPanel arena) return;
 
-            if (_vesselSeat != OwnVesselSeat && !MayEditAiSeat(_vesselSeat))
+            if (_vesselSeat != OwnVesselSeat && !MaySelectAiSeat(_vesselSeat))
             {
                 _vesselSeat = OwnVesselSeat;
                 MarkEditedSeat();
             }
 
-            if (_vesselSeat != OwnVesselSeat)
+            // An AI selected for its difficulty alone (no hull to pick for it here) leaves the strip on the pilot's own hull.
+            if (_vesselSeat != OwnVesselSeat && MayEditAiSeat(_vesselSeat))
             {
                 int ordinal = _vesselSeat;
                 var seatDomain = config.AIDomains[ordinal];
@@ -2373,7 +2375,7 @@ namespace CosmicShore.UI
         /// </summary>
         void SelectVesselSeat(int seat)
         {
-            if (seat != OwnVesselSeat && !MayEditAiSeat(seat)) return;
+            if (seat != OwnVesselSeat && !MaySelectAiSeat(seat)) return;
             seat = NextVesselSeat(_vesselSeat, seat);
             if (seat == _vesselSeat) return;
 
@@ -2381,7 +2383,14 @@ namespace CosmicShore.UI
             if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
             MarkEditedSeat();
             RefreshVesselPicker();
+            RefreshSeatLineup();     // the selected pedestal lights (Arcade has no vessel strip to do it)
         }
+
+        /// <summary>The selected seat after AI <paramref name="kicked"/> leaves: the selection follows its AI - back
+        /// to the pilot's own seat with the kicked one, one place down for the bots after it.</summary>
+        internal static int SeatAfterKick(int selected, int kicked) =>
+            selected == OwnVesselSeat || selected < kicked ? selected
+            : selected == kicked ? OwnVesselSeat : selected - 1;
 
         /// <summary>The seat the shared vessel panel edits after a tap on <paramref name="tapped"/>: that seat, or
         /// the pilot's own hull when the tapped AI seat was already selected (the second tap closes it).</summary>
@@ -2400,6 +2409,18 @@ namespace CosmicShore.UI
             if (!IsClientMode) return true;
             var self = LocalOwnedPlayerQuiet();
             return self && self.NetDomain.Value == domain;
+        }
+
+        /// <summary>
+        /// Whether this pilot may select AI <paramref name="ordinal"/>'s pedestal: to pick its hull
+        /// (<see cref="MayEditAiSeat"/>), or - on any card with the AI row, Arcade included - for the HOST to set
+        /// that AI's own difficulty. A guest only reads each AI's level off its pedestal.
+        /// </summary>
+        bool MaySelectAiSeat(int ordinal)
+        {
+            if (MayEditAiSeat(ordinal)) return true;
+            if (IsClientMode || !SeatDifficultyAvailable) return false;
+            return ordinal >= 0 && ordinal < config.AIDomains.Count && config.AIDomains[ordinal] != Domains.Blue;
         }
 
         /// <summary>The domains the humans in the lobby sit on (an AI there is an ally, elsewhere an opponent).</summary>
@@ -2445,7 +2466,7 @@ namespace CosmicShore.UI
                 kv.Value.SetEditing(own && picker && _vesselSeat == OwnVesselSeat);
             }
             for (int i = 0; i < _aiChips.Count; i++)
-                if (_aiChips[i]) _aiChips[i].SetEditing(picker && _vesselSeat == i && MayEditAiSeat(i));
+                if (_aiChips[i]) _aiChips[i].SetEditing((picker || SeatDifficultyAvailable) && _vesselSeat == i && MaySelectAiSeat(i));
             // The AI row follows the selection: the selected AI's own level, or every AI's (the card's).
             ShowAIDifficultyForEditedSeat();
         }
@@ -3114,7 +3135,7 @@ namespace CosmicShore.UI
             // default, so a value remembered on a card nobody could see never reaches a match.
             gameData.RequestedAIDifficulty = OffersAIDifficulty ? config.AIDifficulty : AIDifficultyRules.Default;
             // Each AI's own level (entry i for bot i, 0 = the card's), where an AI's pedestal can be selected to set it.
-            gameData.SetRequestedAIDifficulties(OffersAIDifficulty && SeatDifficultyAvailable ? config.AIDifficulties : null);
+            gameData.SetRequestedAIDifficulties(SeatDifficultyAvailable ? config.AIDifficulties : null);
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
