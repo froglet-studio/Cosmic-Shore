@@ -115,35 +115,6 @@
       "docs": "Docs/Studios/MEERKAT.md"
     },
     {
-      "id": "gopher",
-      "name": "Gopher",
-      "file": "gopher.html",
-      "kind": "design studio - round 1",
-      "chip": "design studio · round 1",
-      "summary": "The burrowing vessel. One thumb flies; the wireframe on your nose is the burrow RT would dig: a warren of channels, entrances in front, rows of forks, exits spread on the far side. LT digs it deeper, the right stick turns it, RT digs it and you slide in, faster at every fork; lean the left stick at each fork to take its left or right channel. Everyone sees it dug through soil: earth walls in layered strata, stones and roots.",
-      "spec": [
-        {
-          "k": "Ability",
-          "v": "the burrow, on one thumb"
-        },
-        {
-          "k": "Network",
-          "v": "3 in · 2 rows of forks · 4 out"
-        },
-        {
-          "k": "Ride",
-          "v": "slide, lean left or right at forks"
-        },
-        {
-          "k": "Status",
-          "v": "design only: no Gopher in the game yet"
-        }
-      ],
-      "preview": "previews/gopher.png",
-      "accent": "#c9a06a",
-      "docs": "Docs/Studios/GOPHER.md"
-    },
-    {
       "id": "brittlestar",
       "name": "Brittle Star",
       "file": "brittlestar.html",
