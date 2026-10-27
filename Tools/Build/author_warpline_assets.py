@@ -7,20 +7,22 @@ validated in memory before a byte is written, and --check diffs every file.
 
 Run from the repo root:  python3 Tools/Build/author_warpline_assets.py [--check]
 
-WHAT THIS MODE IS. Warpline is the Stoat's TIME race: a closed loop of switch rings cut through the
+WHAT THIS MODE IS. Warpline is the MEERKAT's TIME race (Yash, 2026-10-27: "Stoat will use Slingshot and
+Meerkat will use Warpline"; until then it was the Stoat's): a closed loop of switch rings cut through the
 barren race cell, flown in LAPS, and the first DOMAIN whose LEAD RUNNER threads the last gate of the
-last lap wins (golf: finish time). The Stoat flies on its round-15 FIELD DIPOLE
-(R_VesselActions/STOAT_DIPOLE.md): its triggers hold a sink-source pair open ahead of it, its
-PATHFINDER draws the path it will fly, and while the poles warp that path the hull flies down it up
-to 4x faster - Time scales the boost. Five rings a lap, so every leg is long enough to lay a pair and
-ride it. See Assets/_Scripts/Controller/Arcade/WARPLINE.md.
+last lap wins (golf: finish time). The Meerkat flies one-thumbed at cruise and its only speed past that
+is its WORMHOLE (R_VesselActions/MEERKAT.md): the right stick bends the reticle toward the next ring, LT
+shortens it, RT forms the tunnel and dives through it at up to 2.5x the entry speed. Five rings a lap,
+so every leg (~750 u) is longer than one straight tunnel and asks how to dig it. See
+Assets/_Scripts/Controller/Arcade/WARPLINE.md.
 
 THE DONOR IS SLINGSHOT (the Stoat's other circuit race, itself Redline's shape). The clone swaps:
 
   1. the controller script (WarplineController), keeping Slingshot's `laps` field (2 here).
   2. its scoring rule ASSET (another asset on the shared GateRaceScoringRuleSO script).
-  3. maxPlausibleSpeed, raised for the warp (a boosted, field-fed Stoat makes up to ~1200 u/s).
+  3. maxPlausibleSpeed, raised for the warp (kept from the Stoat days; the clamp only reads a respawn).
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh.
+  5. the arcade card's Vessels list: the Meerkat (the Stoat until 2026-10-27; its Time race is Slingshot).
 
 THE CIRCUIT GENERATOR IS SHARED, NOT CLONED: WarplineController hands SlingshotCourse.ForIntensity's
 settings to HeadlongCircuit.Generate with target/laps rings - the same base circle cut into fewer,
@@ -71,7 +73,7 @@ EXISTING = {
     # donor scene wiring to swap out - Slingshot's controller and rule, minted by ITS generator
     "SlingshotController":      guid("script/SlingshotController"),
     "SlingshotScoringRule":     guid("asset/SlingshotScoringRule"),
-    "Vessel_Stoat":             lib.VESSELS["Stoat"],
+    "Vessel_Meerkat":           lib.VESSELS["Meerkat"],
     "BarrenRaceCell":           "8d4e8398eedc76c4dadb8604f89b9e1b",
     "PreviewCell":              "52de45c2fab54ea0a35bc37a311d80e6",
     "IconActive":               lib.CARD_ART["IconActive"],
@@ -86,7 +88,7 @@ LAPS = 2
 RINGS_PER_LAP = 5                 # Slingshot's 600 u circle cut into five ~750 u legs
 GATE_TARGET = LAPS * RINGS_PER_LAP
 
-# AI approach geometry: Slingshot's, sized to the Stoat's turn.
+# AI approach geometry: Slingshot's, sized to the Stoat's turn (Burrow Run keeps the same for the Meerkat).
 AI_COMMIT_DISTANCE = 160
 AI_APPROACH_LEAD = 180
 AI_THROUGH_DISTANCE = 120
@@ -123,18 +125,17 @@ g.emit_asset(RULE, G_RULE, header(EXISTING["GateRaceScoringRuleSO"], "WarplineSc
 g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameWarpline") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Warpline
-  Description: Stoats only, and time is everything. Squeeze LT and RT to hold a black hole
-    and a white hole open ahead of you - the difference pulls them apart sideways, the sum
-    lengthways. The dots show where you will fly; bend them with your poles and they turn
-    lime and you fly them faster. Shoot through the black hole and out of the white one.
-    Five long legs a lap, two laps.
+  Description: Meerkats only, and time is everything. The reticle on your nose is the tunnel
+    you would dig - bend it toward the next ring with the right stick, shorten it with LT,
+    and pull RT to ripple it open and dive through, out the far end with the speed you went
+    in with. Five long legs a lap, two laps.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('Warpline')}, type: 3}}
   GolfScoring: 1
   SceneName: {SCENE_NAME}
   Vessels:
-  - {{fileID: 11400000, guid: {EXISTING['Vessel_Stoat']}, type: 2}}
+  - {{fileID: 11400000, guid: {EXISTING['Vessel_Meerkat']}, type: 2}}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
@@ -225,16 +226,16 @@ g.emit_scene(SCENE_NAME, G_SCENE, scene)
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
 g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Warpline") + f"""  Mode: {MODE_ID}
   Notes: 'OPEN-ENDED, shell-only: Slingshot''s circuit cut into five long legs, laid as rings at
-    match start, so a preview has no gates. It teaches the Barren cell, the LT/RT field dipole and
-    the pathfinder''s warp boost. One cell serves every intensity.'
+    match start, so a preview has no gates. It teaches the Barren cell, the Meerkat''s reticle (the
+    right stick bends it, LT shortens it) and RT''s tunnel ride. One cell serves every intensity.'
   PreviewCell: {{fileID: 11400000, guid: {EXISTING['PreviewCell']}, type: 2}}
   PreviewCellsByIntensity: []
   StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
-  Vessel: {lib.VESSEL_CLASS_ID['Stoat']}
-  ObjectiveText: Bend your path with your poles and ride the warp
+  Vessel: {lib.VESSEL_CLASS_ID['Meerkat']}
+  ObjectiveText: Bend the reticle, pull RT and ride the tunnel
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -284,9 +285,10 @@ if _laps is None or int(float(_laps)) != LAPS:
     errors.append(f"WarplineController.laps default is not {LAPS}")
 # The circuit is cut by the controller's course source since the RaceCourseSource refactor.
 _course = read_or_empty("Assets/_Scripts/Controller/Arcade/Warpline/WarplineCourseSource.cs")
-if "SlingshotCourse.ForIntensity" not in _ctrl + _course or \
-        ("WarplineCourseSource" in _ctrl and "SlingshotCourse.ForIntensity" not in _course):
-    errors.append("WarplineController no longer cuts Slingshot's circuit (SlingshotCourse.ForIntensity)")
+_cut = read_or_empty("Assets/_Scripts/Controller/Arcade/Racing/TimeRaceCourseConfigSO.cs")
+if "TimeRaceCourseConfigSO.Circuit(Mode, request.Intensity)" not in _course or \
+        "var settings = SlingshotCourse.ForIntensity(intensity);" not in _cut:
+    errors.append("WarplineCourseSource no longer cuts Slingshot's circuit (TimeRaceCourseConfigSO.Circuit over SlingshotCourse.ForIntensity)")
 
 if G_SCRIPT["WarplineController"] not in scene or EXISTING["SlingshotController"] in scene:
     errors.append("scene does not carry exactly the WarplineController script")
@@ -295,29 +297,24 @@ for h in re.findall(r"GlobalObjectIdHash: (\d+)", scene):
     if int(h) != 0 and int(h) in _taken:
         errors.append(f"scene GlobalObjectIdHash {h} is also carried by another scene or prefab")
 
-# The AI must actually be able to drive this hull AND use its verb (the arcade rule: never assume
-# an AI can use a human's input): the dipole's autopilot, through the replicated press path, bound
-# on the prefab.
-_stoat = read_or_empty("Assets/_Prefabs/Spacevessels/Stoat.prefab")
-_ai = re.search(r"  m_Enabled: (\d)\n  m_EditorHideFlags: 0\n  m_Script: \{fileID: 11500000, "
-                r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _stoat)
-if not _ai or _ai.group(1) != "1":
-    errors.append("Stoat.prefab's AIPilot is not enabled - an AI Stoat cannot race")
-_dipole = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatDipoleExecutor.cs")
-if "PerformShipControllerActionsReplicated" not in _dipole:
-    errors.append("StoatDipoleExecutor's autopilot does not go through the replicated press path")
-_cfg = read_or_empty("Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset")
-m = re.search(r"^  autopilotHold01: ([0-9.]+)$", _cfg, re.M)
-if not m or float(m.group(1)) <= 0:
-    errors.append("StoatDipoleConfig.autopilotHold01 is 0 or missing - an AI Stoat lays no pair")
-for asset in ("StoatDipoleLeftAction", "StoatDipoleRightAction"):
-    meta = read_or_empty(f"Assets/_SO_Assets/VesselActions/Stoat/{asset}.asset.meta")
-    mg = re.search(r"^guid: ([0-9a-f]{32})", meta, re.M)
-    if not mg or mg.group(1) not in _stoat:
-        errors.append(f"Stoat.prefab does not bind {asset} - run author_stoat_assets.py")
-
-if not os.path.exists(os.path.join(ROOT, "Assets/_SO_Assets/Classes/SO_Class_Stoat.asset")):
-    errors.append("SO_Class_Stoat.asset is missing - run author_stoat_assets.py")
+# The AI must actually be able to drive this hull AND use its verb (the arcade rule: never assume an AI can use a
+# human's input): the wormhole's autopilot, through the replicated press path, RT bound on the prefab.
+_meerkat = read_or_empty("Assets/_Prefabs/Spacevessels/Meerkat.prefab")
+if not re.search(r"m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: \{fileID: 11500000, "
+                 r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _meerkat):
+    errors.append("Meerkat.prefab's AIPilot is not enabled - an AI Meerkat cannot race")
+_wh = read_or_empty("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatWormholeExecutor.cs")
+if "PerformShipControllerActionsReplicated" not in _wh:
+    errors.append("MeerkatWormholeExecutor's autopilot does not go through the replicated press path")
+_cfg = read_or_empty("Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset")
+if not re.search(r"^  aiWormhole: 1$", _cfg, re.M):
+    errors.append("MeerkatWormholeConfig.aiWormhole is off or missing - an AI Meerkat forms no tunnel")
+_meta = read_or_empty("Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeFormAction.asset.meta")
+_mg = re.search(r"^guid: ([0-9a-f]{32})", _meta, re.M)
+if not _mg or _mg.group(1) not in _meerkat:
+    errors.append("Meerkat.prefab does not bind MeerkatWormholeFormAction - run author_meerkat_assets.py")
+if not os.path.exists(os.path.join(ROOT, "Assets/_SO_Assets/Classes/SO_Class_Meerkat.asset")):
+    errors.append("SO_Class_Meerkat.asset is missing - run author_meerkat_assets.py")
 
 minted = list(G_SCRIPT.values()) + [G_CARD, G_RULE, G_PREVIEW, G_SCENE,
                                     guid(f"folder/{MODE_DIR}"), guid(f"text/{DOC}")]

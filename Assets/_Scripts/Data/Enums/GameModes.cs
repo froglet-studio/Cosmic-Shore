@@ -300,16 +300,16 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
         GrizzlyTime = 63,
 
-        // Slingshot (64): the Stoat-only circuit race - Redline's shape (a lapped gate circuit on
+        // Slingshot (64): the Stoat's TIME race (since 2026-10-27) - Redline's shape (a lapped gate circuit on
         // the shared HeadlongCircuit solver) cut for a 60 u/s hull whose only speed is the
         // attractor-repulsor wormhole pair it slings on its triggers: a corner asks where to lay
         // the attractor. See _Scripts/Controller/Arcade/SLINGSHOT.md.
         Slingshot = 64,
 
-        // Warpline (65): the Stoat's TIME race - Slingshot's shape (a lapped gate circuit on the
-        // shared HeadlongCircuit solver, the Stoat's cut) with five long legs a lap, flown on the
-        // round-15 field dipole: lay the poles so the pathfinder's line is warped and the hull
-        // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
+        // Warpline (65): the Meerkat's TIME race (the Stoat's until 2026-10-27) - Slingshot's shape
+        // (a lapped gate circuit on the shared HeadlongCircuit solver) with five long legs a lap,
+        // flown on the wormhole: bend the reticle, form the tunnel, ride it. See
+        // _Scripts/Controller/Arcade/WARPLINE.md.
         Warpline = 65,
 
         // ThresherTime (66): the Thresher-only circuit race - Grizzly Time's shape (a lapped gate

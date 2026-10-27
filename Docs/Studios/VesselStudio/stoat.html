@@ -140,6 +140,14 @@
   .row output { flex: 0 0 44px; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
   .row output.changed { color: var(--accent); }
   .row output.styled { color: var(--accent-2); text-decoration: underline dotted; text-underline-offset: 3px; }
+  /* round 29: an on / off row (SPEC 'toggle') and the ability cards */
+  .row input[type=checkbox] { flex: 0 0 auto; width: 18px; height: 18px; margin: 0 auto 0 0; accent-color: var(--accent); }
+  .abcard.off > .rows > .row + .row { opacity: 0.5; }
+  .ablvl { color: var(--fg); }
+  .ablvl b.up { color: var(--accent); }
+  .tbtn.abil { position: absolute; top: calc(46% + 18px + env(safe-area-inset-top, 0px)); min-width: 86px; padding: 12px 10px; background: rgba(232,236,255,0.2); color: #e8ecff; border: 2px solid rgba(232,236,255,0.55); }
+  .tbtn.abil.l { left: calc(10px + env(safe-area-inset-left, 0px)); } .tbtn.abil.r { right: calc(10px + env(safe-area-inset-right, 0px)); }   /* under the LT / RT handles */
+  .tbtn.abil:active { background: var(--accent); color: #1a1200; }
   .aistats { margin: 6px 0; padding: 6px 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; font: 12px/1.45 var(--font-display); white-space: pre-wrap; color: var(--fg); font-variant-numeric: tabular-nums; }
   table.batch { width: 100%; font-size: 0.78rem; border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
   table.batch th, table.batch td { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
@@ -268,9 +276,9 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 28 · the wormhole is the Meerkat's</span>
+    <span class="round">Round 29 · the four-ability kit (proposals)</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
-    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
+    <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 29: the Stoat's full four-ability kit, proposals for Yash to fly and judge</b> (lab-only numbers, none approved for Unity: the /vessel §3 design gate). The ability row, lower right on the stage, in the locked order Charge, Mass, Space, Time. <b>Charge · Ripple</b> (LB, <kbd>F</kbd>): a gravity wave draws crystals to you and shows you each rival's next ring and path; level 5 <b>Siphon</b> takes a Time petal from each rival it passes. <b>Mass · Field Trajectory</b> (LT/RT in Mass mode): the warped stretch you fly lays an accretion trail of prisms; level 5 <b>Armoured Wake</b> shields them. <b>Space · Collapse</b> (Y, <kbd>G</kbd>): with a pair held, its black hole implodes every prism within the radius and the pair is spent; level 5 <b>Spaghettify</b> costs a rival inside it a Space petal. <b>Time · Catch Sling</b> (LT/RT in Time mode): level 5 <b>Whip</b>, let go just past the orbit's fastest point for an extra burst. PvP is petals only: no ability moves or slows a rival; a hit moves one petal and silences the victim for a second. Each ability has an on / off switch, a level L0-L10 and its own sliders in <b>Vessel Config</b> (Section: Ability · ...); <b>AI Config ▸ AI uses the new abilities</b> gives the rivals one input-only rule each. All four off, the page flies exactly as round 28. Round 28: the wormhole (Gate mode) became the Meerkat; the Stoat keeps Mass and Time, B switches them. <b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
 
   <div class="stage">
@@ -286,6 +294,7 @@
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
+        <button type="button" class="tbtn abil l" id="tLB" title="LB: Ripple (Charge)">LB · Ripple</button><button type="button" class="tbtn abil r" id="tY" title="Y: Collapse (Space)">Y · Collapse</button>
         <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn mode" id="tMode" title="B: the Stoat's mode (Mass, Time), as the game's Mass card">B · Mass</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
@@ -301,6 +310,7 @@
           <tr><td>Thumbs opposite, up / down</td><td>Roll</td></tr>
           <tr><td>Thumbs apart / together</td><td>Throttle</td></tr>
           <tr><td><b>LT</b> / <b>RT</b> handle: drag down, hold, lift</td><td>Lay the pair on that side (how far down = strength), stay in its grip, slingshot out</td></tr>
+          <tr><td><b>LB · Ripple</b> / <b>Y · Collapse</b> buttons, beside the trigger handles</td><td>The Charge and Space abilities (round 29 proposals), as LB and Y on a gamepad</td></tr>
           <tr><td>Start · Stop · Back · ✕ (top bar)</td><td>Start or go again · stop and watch · back to the start line · back to the settings</td></tr>
         </tbody></table></div>
       </div>
@@ -316,9 +326,11 @@
           <tr><td><b>LT</b>: press, hold, let go</td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Press: a black hole ahead-LEFT, its white hole ahead-right. Squeeze depth = strength (a key gives the keyboard squeeze on the rail). Hold = stay in its grip and go round. Let go = slingshot out. One pair at a time: no new one until this one has vanished.</td></tr>
           <tr><td><b>RT</b>: press, hold, let go</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>The mirror: black hole ahead-RIGHT. Pressing it while the other is held lets that one go first.</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
+          <tr><td><b>LB</b></td><td><kbd>F</kbd></td><td><b>Ripple</b> (Charge, round 29 proposal): a gravity wave rings out; crystals it passes are drawn to you, rivals it passes show you their next ring and path. Level 5 Siphon: each rival it passes gives you one Time petal</td></tr>
+          <tr><td><b>Y</b></td><td><kbd>G</kbd></td><td><b>Collapse</b> (Space, round 29 proposal): with a pair held, or just after letting it go, its black hole implodes every prism within the radius and the pair is spent. Level 5 Spaghettify: a rival inside the radius loses a Space petal</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
           <tr><td><b>❚❚ Pause</b> on the stage</td><td><kbd>P</kbd></td><td>Pause: the Stoat halts and the clock pauses while the world carries on; press again (<b>▶ Resume</b>) to resume</td></tr>
-          <tr><td><b>B</b></td><td><kbd>T</kbd></td><td>Switch mode, as in the game: Mass = the field trajectory, Time = the catch sling. Whatever the triggers hold is let go.</td></tr>
+          <tr><td><b>B</b></td><td><kbd>T</kbd></td><td>Switch mode, as in the game: Mass = the field trajectory (round 29: its warped stretch lays an accretion trail), Time = the catch sling (level 5 Whip: let go while the Time tile is lit for an extra burst). Whatever the triggers hold is let go.</td></tr>
           <tr><td>View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
       </table></div>
@@ -456,6 +468,22 @@
         </div>
         <p class="src">Stand-in courses on the shipped numbers, the mouth per intensity. <b>Circuit</b>: 8 rings on a circle, harder with each intensity (above). <b>Hairpins</b>: 8 rings that alternate direction, 120–190 u apart, then a long straight home (rewards tight turns). Not the shipped HeadlongCircuit solver.</p>
         <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
+      <details class="card abcard" id="grp-abC" open><summary>Ability · Charge · Ripple <small>LB · round 29 proposal</small></summary><div class="rows"></div>
+        <p class="src ablvl" id="abl-C"></p>
+        <p class="src"><b>LB</b> (<kbd>F</kbd>, the phone's LB button): a gravity wave rings out from your hull to the reach. Every crystal it passes is drawn to you (and counts as a petal of its element when it reaches you); every rival it passes shows you its next ring and the path it is flying for a few seconds. <b>Level 5, Siphon</b>: every rival it passes loses one Time petal and you gain it (a scored hit; it is silenced for a second). It never pushes anyone. <b>Lab-only</b>: the game has no such ability or fields.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abC">Reset</button></div></details>
+      <details class="card abcard" id="grp-abM" open><summary>Ability · Mass · Field Trajectory <small>LT / RT in Mass mode · round 29 proposal</small></summary><div class="rows"></div>
+        <p class="src ablvl" id="abl-M"></p>
+        <p class="src">The field trajectory as round 28 flies it, plus making: while the path you fly is <b style="color:#9dff2e">warped</b> (lime), the stretch you travel lays an <b>accretion trail</b> of prisms along the bent line, in your colour. <b>Level 5, Armoured Wake</b>: those prisms are shielded (drawn inside a cage): no Collapse destroys them. <b>Lab-only</b>: the game's field mode does not lay prisms.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abM">Reset</button></div></details>
+      <details class="card abcard" id="grp-abS" open><summary>Ability · Space · Collapse <small>Y · round 29 proposal</small></summary><div class="rows"></div>
+        <p class="src ablvl" id="abl-S"></p>
+        <p class="src"><b>Y</b> (<kbd>G</kbd>, the phone's Y button) while a pair is held, in either mode, or just after you let it go: its black hole implodes. Every prism within the radius falls into it and is destroyed (the world's prisms grow back after 30 s and at the start of every race), and the pair is spent. <b>Level 5, Spaghettify</b>: a rival hull inside the radius takes a scored hit, shown over its hull (one Space petal, a brief silence). It is not pushed. A silenced pilot's Collapse destroys no rival's prisms. <b>Lab-only</b>.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abS">Reset</button></div></details>
+      <details class="card abcard" id="grp-abT" open><summary>Ability · Time · Catch Sling <small>LT / RT in Time mode · round 29 proposal</small></summary><div class="rows"></div>
+        <p class="src ablvl" id="abl-T"></p>
+        <p class="src">The catch sling as round 28 flies it (its settings: Play Style Config ▸ Time mode). <b>Level 5, Whip</b>: once the black hole has you, your speed peaks as you swing past it (the orbit's fastest point). Let go within the window after that peak (the Time tile lights) and you leave with an extra burst of speed on top of the sling's own kick. <b>Lab-only</b>.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="abT">Reset</button></div></details>
       <details class="card" id="grp-lope"><summary>Lope <small>StoatLopeMath</small></summary><div class="rows"></div>
         <p class="src">Body-only bound (the hull's path and trail stay straight). Amplitude is in world units: 1.6 u is the viewer's 1.00.</p>
         <div class="btns"><button class="pick" type="button" data-reset="lope">Reset to shipped</button></div></details>
@@ -536,6 +564,24 @@
     cruise: 60, pitchYaw: 120, roll: 130,
     // StoatLopeMath.Defaults
     lopeAmp: 1.6, lopeRate: 0.66, lopeArch: 0.45, lopeSquash: 0.2,
+    // round 29 (Yash, 2026-10-27): the Stoat's four-ability kit, PROPOSALS to judge here before any of it reaches Unity.
+    // Every number below is LAB-ONLY (the game has none of these fields). xxOn = the ability is in the kit (0 = off: the
+    // page flies exactly as round 28), xxLevel = its element level L0-L10 (L5+ unlocks its level-5 upgrade).
+    // Charge: Ripple (LB). A gravity wave rings out to abCReach: crystals it passes are drawn to you, rivals it passes show
+    // you their next ring and path for abCReveal s; L5 Siphon: each rival it passes gives you one of its Time petals.
+    abCOn: 1, abCLevel: 5, abCReach: 260, abCCool: 6, abCReveal: 4, abCPull: 160,
+    // Mass: Field Trajectory (LT/RT in Mass mode). The warped stretch you fly lays an accretion trail, abMDensity prisms per
+    // 100 u, each living abMLife s; L5 Armoured Wake: those prisms are shielded (the Space ability cannot destroy them).
+    abMOn: 1, abMLevel: 5, abMDensity: 6, abMLife: 8,
+    // Space: Collapse (Y). With a pair held (or within abSGrace s of letting go) the black hole implodes: every prism within
+    // abSRadius of it is destroyed and the pair is spent; abSCool s to recharge. L5 Spaghettify: a rival inside the radius
+    // takes a scored hit (one Space petal, a brief silence); it is never pushed (PvP is petals only).
+    abSOn: 1, abSLevel: 5, abSRadius: 90, abSCool: 8, abSGrace: 1,
+    // Time: Catch Sling (LT/RT in Time mode, as round 28). L5 Whip: let go within abTWindow degrees after the orbit's
+    // fastest point and you leave with an extra burst of abTBurst x your speed.
+    abTOn: 1, abTLevel: 5, abTWindow: 25, abTBurst: 0.6,
+    // the AI rivals (and your hull when the AI flies it) use the new abilities by an input-only rule each
+    abAI: 1,
   };
   let GM_PER_STRENGTH = 20000, HORIZON_PER_STRENGTH = 2;   // refreshed from the Black hole group every frame
   const MIN_HORIZON = 1.5;
@@ -692,6 +738,27 @@
     ['lope', 'lopeRate', 'Rate (bounds/s)', 0, 2, 0.01],
     ['lope', 'lopeArch', 'Arch', 0, 1, 0.01],
     ['lope', 'lopeSquash', 'Stretch', 0, 1, 0.01],
+    // round 29: the four abilities (lab-only proposals). A seventh entry 'toggle' draws the row as an on / off switch.
+    ['ai', 'abAI', 'AI uses the new abilities', 0, 1, 1, 'toggle'],
+    ['abC', 'abCOn', 'Ripple in the kit', 0, 1, 1, 'toggle'],
+    ['abC', 'abCLevel', 'Charge level (L5+ = Siphon)', 0, 10, 1],
+    ['abC', 'abCReach', 'Ripple reach (u)', 50, 800, 10],
+    ['abC', 'abCCool', 'Recharge (s)', 1, 30, 0.5],
+    ['abC', 'abCReveal', 'A rival it passes shows its path for (s)', 0.5, 10, 0.5],
+    ['abC', 'abCPull', 'Crystals fly at you this much faster than you (u/s)', 20, 500, 10],
+    ['abM', 'abMOn', 'Accretion trail in the kit', 0, 1, 1, 'toggle'],
+    ['abM', 'abMLevel', 'Mass level (L5+ = Armoured Wake)', 0, 10, 1],
+    ['abM', 'abMDensity', 'Prisms per 100 u of warped path', 1, 25, 1],
+    ['abM', 'abMLife', 'Each prism lives (s)', 1, 30, 0.5],
+    ['abS', 'abSOn', 'Collapse in the kit', 0, 1, 1, 'toggle'],
+    ['abS', 'abSLevel', 'Space level (L5+ = Spaghettify)', 0, 10, 1],
+    ['abS', 'abSRadius', 'Collapse radius (u)', 20, 300, 5],
+    ['abS', 'abSCool', 'Recharge (s)', 1, 30, 0.5],
+    ['abS', 'abSGrace', 'Still works this long after letting go (s)', 0, 3, 0.1],
+    ['abT', 'abTOn', 'Whip in the kit', 0, 1, 1, 'toggle'],
+    ['abT', 'abTLevel', 'Time level (L5+ = Whip)', 0, 10, 1],
+    ['abT', 'abTWindow', 'Whip window after the fastest point (deg)', 5, 90, 1],
+    ['abT', 'abTBurst', 'Whip burst (x your speed)', 0, 2, 0.05],
   ];
 
   // ================= the five play styles =================
@@ -912,12 +979,12 @@
       const p = new V3().addVectors(a, b).multiplyScalar(0.5).add(side);
       const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(5.5, 0), new THREE.MeshStandardMaterial({ color: kind.col, emissive: kind.col, emissiveIntensity: 0.9, roughness: 0.3, metalness: 0.1, flatShading: true }));
       mesh.position.copy(p); courseGroup.add(mesh);
-      crystals.push({ mesh, p, kind, wait: 0 });
+      crystals.push({ mesh, p, kind, wait: 0, home: p.clone(), pullBy: null, pullSpeed: 0 });   // home / pullBy: a Ripple draws it (round 29)
     }
   }
   function spinCrystals(dt) {
     for (const c of crystals) {
-      c.mesh.rotation.y += dt * 1.4; c.mesh.position.y = c.p.y + Math.sin(simT * 1.6 + c.p.x) * 1.5;
+      c.mesh.rotation.y += dt * 1.4; c.mesh.position.y = c.p.y + Math.sin((anyAbility() ? abT : simT) * 1.6 + c.p.x) * 1.5;   // round 29: on the race's own clock with the kit on
       if (c.wait > 0) { c.wait -= dt; if (c.wait <= 0) c.mesh.visible = true; }
     }
   }
@@ -925,6 +992,8 @@
     for (const c of crystals) {
       if (!c.mesh.visible || hull.position.distanceTo(c.mesh.position) > 13) continue;
       c.mesh.visible = false; c.wait = 8;
+      if (c.pullBy != null) { if (c.pullBy === curPilot) ab.n.crystals++; c.pullBy = null; c.p.copy(c.home); c.mesh.position.x = c.p.x; c.mesh.position.z = c.p.z; }   // a drawn crystal grows back at home
+      if (anyAbility()) ab.petals[c.kind.el]++;   // round 29's petal ledger: a crystal is a petal of its element
       if (liveStyles) styleBump(c.kind.key, P.styleStep, c.kind.el + ' crystal');
       else { styleFlash = 1.4; styleFlashCol = '#' + c.kind.col.toString(16).padStart(6, '0'); styleFlashText = c.kind.el.toUpperCase() + ' CRYSTAL (tick Live to let it move ' + STYLE_BY_KEY[c.kind.key].name + ')'; }
     }
@@ -1121,6 +1190,7 @@
     gwOn = P.gwPrism > 0 && waves.some((w) => w.type === 'gw');
     for (let i = 0; i < NB; i++) {
       if (i >= NF && tAge[i - NF] < 0) continue;
+      if (dead[i]) continue;   // destroyed by a Collapse (round 29): it waits to grow back
       const j = i * 3;
       let px = bp[j], py = bp[j + 1], pz = bp[j + 2], ax = 0, ay = 0, az = 0, inf = false, moved = false;
       for (let k = 0; k < W.length; k++) {
@@ -1172,6 +1242,7 @@
     for (let i = 0; i < NB; i++) {
       const trail = i >= NF, k = trail ? i - NF : i;
       if (trail && tAge[k] < 0) continue;
+      if (dead[i]) continue;   // a Collapse's implosion draws it (drawAbilityFx)
       let sc = 1;
       if (trail) { const a = tAge[k]; sc = Math.min(1, a / 0.25) * (a > TRAIL_LIFE - 1.5 ? Math.max(0, (TRAIL_LIFE - a) / 1.5) : 1); if (!act[i] && a > 0.25 && a < TRAIL_LIFE - 1.5) continue; }
       else if (!act[i]) continue;
@@ -1196,7 +1267,7 @@
     const k = trailHead++ % NT, i = NF + k, j = i * 3;
     tv.set(0, 0, 5.5).applyQuaternion(hull.quaternion).add(hull.position);
     bp[j] = bh[j] = tv.x; bp[j + 1] = bh[j + 1] = tv.y; bp[j + 2] = bh[j + 2] = tv.z; bv[j] = bv[j + 1] = bv[j + 2] = 0;
-    hull.quaternion.toArray(bq, i * 4); tAge[k] = 0; act[i] = 1; bodyStretch[i] = 0;
+    hull.quaternion.toArray(bq, i * 4); tAge[k] = 0; act[i] = 1; bodyStretch[i] = 0; dead[i] = 0;
   }
 
   // ================= hole meshes (A only: B has no surface) and the squeeze preview =================
@@ -1283,7 +1354,7 @@
     speed = 0; gravSpeed = 0; flow = 0; stopped = false; waves.length = 0; showStopBtn(); vg.set(0, 0, 0); vf.set(0, 0, 0); boosts.length = 0; slingOrbit = null; slingDipole = null; lastDipole = null; fieldSling = null; ftMul = 1; ftLive.n = 0; ftLive.lime = false; ftLive.end = 'none'; stance = false; race = 'ready'; raceT = 0; threaded = 0; slings = 0;
     for (const pr of pairs) if (pr.owned) pr.alive = false;
     myPair = null; snapCam = true; ai.phase = 'cruise'; ai.tracking = -1; ai.misjudged = false; ai.unnoticed = false; ai.mistakes = 0; ai.fHold = 0; ai.wait = 0;
-    resetRivals();
+    resetRivals(); resetAbilityWorld();
     if (!batching) showOverlay(); showStopBtn();
   }
   // Stop (/vessel-studio D18): end the run and go back to the start, and STAY there until Play. spawn() alone only
@@ -1420,6 +1491,7 @@
     }
     collectCrystals();
     dropTrail(dt);
+    if (anyAbility()) stepAbilities(dt, inp);   // round 29: the four-ability kit (off: not a line of it runs)
     applyLope(dt, speed / Math.max(1, P.cruise));
   }
   let throttleNow = 0.5, gateFlash = 0; let velNow = new V3();
@@ -1560,7 +1632,15 @@
       tv.subVectors(gates[threaded % 8].p, hull.position).normalize();
       raceStats.relSum += Math.acos(Math.max(-1, Math.min(1, tv.dot(fwd)))) * 180 / Math.PI; raceStats.relN++;
     }
-    lastDipole = { turned: sd.turned, sweep: sd.sweep, captured: sd.captured, kick, S: sd.pair.S, rc: sd.rc, gain: gravSpeed - sd.gain0, auto: !!auto };
+    // round 29, Time L5 Whip: let go (yourself) while the Time tile is lit, just past the orbit's fastest point: an extra burst
+    let whip = 0;
+    if (!auto && ab.whipLit && sd.captured && abUp('T')) {
+      whip = P.abTBurst * Math.max(speed + flow, 1);
+      if (whip > 0) boosts.push({ dir: fwd.clone(), amp: whip, t: 0, dur: P.dpBoostSeconds });
+      ab.n.whips++; if (!curPilot) flashAb('WHIP · +' + Math.round(whip) + ' u/s');
+    }
+    ab.whipLit = false;
+    lastDipole = { turned: sd.turned, sweep: sd.sweep, captured: sd.captured, kick, whip, S: sd.pair.S, rc: sd.rc, gain: gravSpeed - sd.gain0, auto: !!auto };
     slingFlash = 1.6; slingDipole = null;
   }
   // The angle between the pair's axis (black → white) and the nose: 90° = square across it.
@@ -1979,6 +2059,289 @@
     return c * x / Math.sqrt(Math.sqrt(1 + x * x * x * x));
   }
 
+  // ================= round 29: the four-ability kit (lab-only proposals, Yash 2026-10-27) =================
+  // Charge: Ripple (LB). Mass: the field trajectory lays an accretion trail. Space: Collapse (Y). Time: the catch sling's
+  // L5 Whip. Every number is the studio's (SHIPPED ab*); the game has none of these fields (/vessel section 3: proposals to
+  // judge, not approved for Unity). With every ability off nothing below runs, so the page flies exactly as round 28 (the
+  // level scorecard is identical, measured). PvP is petals only (Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): no ability moves
+  // or slows a rival; a hit (Siphon, Spaghettify) moves one petal and silences the victim for a second, and a silenced
+  // pilot scores nothing and destroys no rival's prisms. The petal ledger is the studio's own (3 of each to start).
+  const ELEMENTS = ['Charge', 'Mass', 'Space', 'Time'];   // the locked order of the four-icon ability row
+  const AB_KEY = { Charge: 'C', Mass: 'M', Space: 'S', Time: 'T' };
+  const AB_PETALS = 3, AB_SILENCE_S = 1, RIPPLE_S = 0.8, PRISM_REGROW_S = 30, IMPLODE_S = 0.45;
+  const abOn = (k) => P['ab' + k + 'On'] >= 0.5;
+  const abUp = (k) => abOn(k) && P['ab' + k + 'Level'] >= 5;
+  const anyAbility = () => P.abCOn >= 0.5 || P.abMOn >= 0.5 || P.abSOn >= 0.5 || P.abTOn >= 0.5;
+  function newAb() {
+    return { cdC: 0, cdS: 0, petals: { Charge: AB_PETALS, Mass: AB_PETALS, Space: AB_PETALS, Time: AB_PETALS }, silenced: 0, heldPair: null, released: -1e9,
+      accDist: 0, whipPair: null, whipPeak: 0, whipPeakDeg: 0, whipPassed: false, whipLit: false, hitT: 0, hitText: '', aiScanT: 0,
+      n: { ripples: 0, collapses: 0, whips: 0, destroyed: 0, laid: 0, crystals: 0, hits: 0, taken: 0 } };
+  }
+  // the abilities' own clock: 0 at every race's start, so a race replays the same whatever ran before it (labmaker: a
+  // batch must be byte-identical twice); simT keeps running across races and its rounding drifts with its size
+  let abT = 0;
+  let ab = newAb();   // per pilot (swapped for rivals, like every per-pilot variable)
+  let abFlash = 0, abFlashText = '';
+  const revealUntil = [0, 0, 0, 0];   // your Ripple: until when each rival seat (1-3) shows you its next ring and path
+  const pendingAb = { lb: false, y: false };   // a press (keyboard, pad, touch), read once by the next step of your hull
+  function flashAb(text) { abFlash = 1.8; abFlashText = text; }
+  // Who is where. Inside asPilot the flying pilot's state is live and everyone else's is parked.
+  function pilotAb(id) { return id === curPilot ? ab : id === 0 ? youSlot.ab : seatState[id - 1].ab; }
+  function pilotPos(id) { return id === curPilot ? hull.position : id === 0 ? youSlot.pos : seatState[id - 1].pos; }
+  function pilotVel(id) { return id === curPilot ? velNow.length() : id === 0 ? youSlot.velNow.length() : seatState[id - 1].velNow.length(); }
+  function pilotName(id) { return id === 0 ? 'You' : seatState[id - 1].seat ? seatState[id - 1].seat.name : 'Rival'; }
+  function racers() { const out = [0]; for (const r of rivals) out.push(r.id); return out; }
+  function otherPilots() { return racers().filter((id) => id !== curPilot); }
+  // A scored hit: one petal of el leaves the victim (Siphon hands it to the attacker), and the victim is silenced.
+  function scoreHit(att, vic, el, kind) {
+    const A = pilotAb(att), V = pilotAb(vic);
+    if (A.silenced > 0) return false;
+    const had = V.petals[el] > 0;
+    if (had) { V.petals[el]--; if (kind === 'Siphon') A.petals[el]++; }
+    V.silenced = Math.max(V.silenced, AB_SILENCE_S); A.n.hits++; V.n.taken++;
+    V.hitT = 1.6; V.hitText = kind.toUpperCase() + (had ? ' · -1 ' + el + ' petal' : ' · no ' + el + ' petal') + ' · silenced';
+    if (att === 0) flashAb(kind.toUpperCase() + ' · ' + pilotName(vic) + (had ? ' loses a ' + el + ' petal' + (kind === 'Siphon' ? ', you gain it' : '') : ' had no ' + el + ' petal') + ' · silenced');
+    else if (vic === 0) flashAb(pilotName(att).toUpperCase() + '\'S ' + kind.toUpperCase() + (had ? ' · -1 ' + el + ' petal' : '') + ' · silenced');
+    return true;
+  }
+  // ---- Charge: Ripple ----
+  let ripples = [];
+  function fireRipple() {
+    if (!abOn('C')) return;
+    if (ab.cdC > 0) { if (!curPilot) flashAb('RIPPLE RECHARGING · ' + ab.cdC.toFixed(1) + ' s'); return; }
+    ab.cdC = P.abCCool; ab.n.ripples++;
+    ripples.push({ owner: curPilot, c: hull.position.clone(), t0: abT, reach: P.abCReach, pull: P.abCPull, reveal: P.abCReveal, siphon: abUp('C'), hit: new Set(), crystals: 0, seen: 0 });
+  }
+  // the wave moves out from where it was rung; whatever it passes is touched once
+  function stepRipples() {
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const w = ripples[i], r = w.reach * Math.min(1, (abT - w.t0) / RIPPLE_S);
+      for (const c of crystals) {
+        if (!c.mesh.visible || w.hit.has(c) || c.p.distanceTo(w.c) > r) continue;
+        w.hit.add(c); if (c.pullBy == null) { c.pullBy = w.owner; c.pullSpeed = w.pull; w.crystals++; }
+      }
+      for (const id of racers()) {
+        if (id === w.owner || w.hit.has(id) || pilotPos(id).distanceTo(w.c) > r) continue;
+        w.hit.add(id); w.seen++;
+        if (w.owner === 0 && id > 0) revealUntil[id] = abT + w.reveal;
+        if (w.siphon) scoreHit(w.owner, id, 'Time', 'Siphon');
+      }
+      if (abT - w.t0 >= RIPPLE_S) {
+        if (w.owner === 0 && !abFlash) flashAb('RIPPLE · ' + w.crystals + (w.crystals === 1 ? ' crystal' : ' crystals') + ' drawn in' + (w.seen ? ' · ' + w.seen + (w.seen === 1 ? ' rival' : ' rivals') + ' revealed' : ''));
+        ripples.splice(i, 1);
+      }
+    }
+  }
+  // a drawn crystal flies at you faster than you fly, so it always arrives; whoever reaches it first takes it
+  function stepCrystalPull(dt) {
+    for (const c of crystals) {
+      if (c.pullBy == null) continue;
+      if (!c.mesh.visible || (c.pullBy > 0 && !rivals.some((r) => r.id === c.pullBy))) { c.pullBy = null; continue; }
+      const to = tv.subVectors(pilotPos(c.pullBy), c.p), d = to.length();
+      if (d > 1e-6) c.p.addScaledVector(to, Math.min(d, (c.pullSpeed + pilotVel(c.pullBy)) * dt) / d);
+      c.mesh.position.x = c.p.x; c.mesh.position.z = c.p.z;   // spinCrystals bobs y about c.p.y
+    }
+  }
+  // ---- Space: Collapse ----
+  const dead = new Float64Array(NB);   // 0 = there; else the time a destroyed field prism grows back (trail prisms: until reused)
+  let deadList = [], implosions = [], collapses = [];
+  function ownPairForCollapse() {
+    const pr = myPair; if (!pr || !pr.alive || pr.dying || !pr.owned) return null;
+    return pr.held || abT - ab.released <= P.abSGrace ? pr : null;
+  }
+  function killPrism(i, c) {
+    const j = i * 3;
+    if (!batching) implosions.push({ i, x: bp[j], y: bp[j + 1], z: bp[j + 2], c, t0: abT });   // the picture only: a scorecard draws nothing
+    if (i < NF) { dead[i] = abT + PRISM_REGROW_S; deadList.push(i); } else { dead[i] = 1e12; tAge[i - NF] = -1; }
+  }
+  function fireCollapse(inp) {
+    if (!abOn('S')) return;
+    if (ab.cdS > 0) { if (!curPilot) flashAb('COLLAPSE RECHARGING · ' + ab.cdS.toFixed(1) + ' s'); return; }
+    const pr = ownPairForCollapse();
+    if (!pr) { if (!curPilot) flashAb('COLLAPSE · hold a pair first (LT or RT)'); return; }
+    const c = pr.att.clone(), R = P.abSRadius, R2 = R * R, silenced = ab.silenced > 0;
+    // where each prism is now; a scorecard (which never moves prisms) reads their homes, so a run cannot depend on the frames before it
+    // (and leaves the trail prisms alone: they carry over from the race before, so counting them would too)
+    const at = batching ? bh : bp;
+    let n = 0;
+    for (let i = 0; i < (batching ? NF : NB); i++) {
+      if (dead[i] || (i >= NF && tAge[i - NF] < 0)) continue;
+      const j = i * 3, dx = at[j] - c.x, dy = at[j + 1] - c.y, dz = at[j + 2] - c.z;
+      if (dx * dx + dy * dy + dz * dz <= R2) { killPrism(i, c); n++; }
+    }
+    for (const a of acc) {   // the accretion trails: never a shielded prism (Armoured Wake), never a rival's while silenced
+      if (!a.alive || a.implode >= 0 || a.shield || (silenced && a.owner !== curPilot) || a.p.distanceToSquared(c) > R2) continue;
+      a.implode = abT; a.c = c; n++;
+    }
+    if (abUp('S')) for (const id of otherPilots()) if (pilotPos(id).distanceTo(c) <= R) scoreHit(curPilot, id, 'Space', 'Spaghettify');
+    // the pair is spent: no sling, no kick; it annihilates where it stands
+    if (slingDipole && slingDipole.pair === pr) slingDipole = null;
+    if (fieldSling && fieldSling.pair === pr) fieldSling = null;
+    pr.held = false; pr.startDying(); ab.heldPair = null;
+    if (inp && inp.ai) { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); }   // the AI lets go of its trigger; a person lets go themselves
+    ab.cdS = P.abSCool; ab.n.collapses++; ab.n.destroyed += n;
+    if (!batching) collapses.push({ c, R, t0: abT, owner: curPilot });
+    if (!curPilot) flashAb('COLLAPSE · ' + n + (n === 1 ? ' prism' : ' prisms') + ' destroyed');
+  }
+  function regrowPrisms() {
+    for (let k = deadList.length - 1; k >= 0; k--) {
+      const i = deadList[k]; if (dead[i] > abT) continue;
+      restorePrism(i); deadList.splice(k, 1);
+    }
+  }
+  function restorePrism(i) { const j = i * 3; dead[i] = 0; bp[j] = bh[j]; bp[j + 1] = bh[j + 1]; bp[j + 2] = bh[j + 2]; bv[j] = bv[j + 1] = bv[j + 2] = 0; act[i] = 1; }
+  // ---- Mass: the accretion trail ----
+  const NA = 900;
+  const accMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.3, 0.45, 3.6), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x1c1c28, roughness: 0.45, flatShading: true }), NA);
+  const cageMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(2.4, 1.5, 5), new THREE.MeshBasicMaterial({ color: 0xe8ecff, wireframe: true, transparent: true, opacity: 0.55 }), NA);
+  accMesh.frustumCulled = false; cageMesh.frustumCulled = false; accMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); cageMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(accMesh, cageMesh);
+  { const w = new THREE.Color(0xffffff); for (let k = 0; k < NA; k++) accMesh.setColorAt(k, w); }   // the colour buffer exists before the first draw, so the shader is built with it
+  const acc = []; for (let k = 0; k < NA; k++) acc.push({ alive: false, p: new V3(), q: new THREE.Quaternion(), t0: 0, life: 0, owner: 0, shield: false, implode: -1, c: null });
+  let accHead = 0, accLive = 0, accDirty = true;
+  const accCol = new THREE.Color();
+  function layAccretion(dt) {
+    const on = abOn('M') && style === 'A' && slingMode === 'field' && race === 'running' && ftLive.lime && fieldStanding();
+    if (!on) { ab.accDist = 0; return; }
+    ab.accDist += velNow.length() * dt;
+    const gap = 100 / Math.max(1, P.abMDensity);
+    if (ab.accDist < gap) return;
+    tv3.copy(velNow); const vm = tv3.length(); if (vm > 1e-6) tv3.divideScalar(vm);
+    while (ab.accDist >= gap) {
+      ab.accDist -= gap;
+      const a = acc[accHead++ % NA];
+      a.alive = true; a.p.copy(hull.position).addScaledVector(tv3, -ab.accDist); a.q.copy(hull.quaternion); a.t0 = abT; a.life = P.abMLife;
+      a.owner = curPilot; a.shield = abUp('M'); a.implode = -1; a.c = null; ab.n.laid++;
+      accCol.setHex(curPilot ? seatState[curPilot - 1].seat.color : DOMAIN[domainKey]); accMesh.setColorAt((accHead - 1) % NA, accCol);
+      if (accMesh.instanceColor) accMesh.instanceColor.needsUpdate = true;
+      accDirty = true;
+    }
+  }
+  function ageAccretion() {
+    accLive = 0;
+    for (const a of acc) {
+      if (!a.alive) continue;
+      if (a.implode >= 0 ? abT - a.implode >= IMPLODE_S : abT - a.t0 >= a.life) { a.alive = false; accDirty = true; continue; }
+      accLive++;
+    }
+  }
+  function clearAccretion() { for (const a of acc) a.alive = false; accLive = 0; accDirty = true; }
+  // ---- Time: the Whip (the catch sling's L5) ----
+  // While the black hole holds you, your speed rises as you fall past it and then falls away: that peak is the orbit's
+  // fastest point. The Time tile lights from the moment the speed has turned over until abTWindow degrees further round.
+  function stepWhip() {
+    const sd = slingDipole;
+    if (!abUp('T') || style !== 'A' || !isCatch(slingMode) || !sd || !sd.captured) { ab.whipLit = false; if (!sd) ab.whipPair = null; return; }
+    if (ab.whipPair !== sd.pair) { ab.whipPair = sd.pair; ab.whipPeak = 0; ab.whipPeakDeg = 0; ab.whipPassed = false; }
+    const v = (speed + gravSpeed + flow) * ftMul, deg = sd.sweep * 180 / Math.PI;
+    if (v > ab.whipPeak) { ab.whipPeak = v; ab.whipPeakDeg = deg; ab.whipPassed = false; }
+    else if (v < 0.995 * ab.whipPeak) ab.whipPassed = true;
+    ab.whipLit = ab.whipPassed && deg - ab.whipPeakDeg <= P.abTWindow;
+  }
+  // ---- one step of the flying pilot's abilities (the end of stepFly) and one of the world's (simStep) ----
+  function stepAbilities(dt, inp) {
+    ab.cdC = Math.max(0, ab.cdC - dt); ab.cdS = Math.max(0, ab.cdS - dt); ab.silenced = Math.max(0, ab.silenced - dt); ab.hitT = Math.max(0, ab.hitT - dt);
+    if (myPair && myPair.alive && myPair.held && !myPair.dying) ab.heldPair = myPair;
+    else if (ab.heldPair) { ab.released = abT; ab.heldPair = null; }
+    if (race !== 'running' || stance) return;
+    if (inp && inp.lb) fireRipple();
+    if (inp && inp.y) fireCollapse(inp);
+    layAccretion(dt); stepWhip();
+  }
+  function stepAbilityWorld(dt) {
+    if (ripples.length) stepRipples();
+    stepCrystalPull(dt);
+    if (deadList.length) regrowPrisms();
+    ageAccretion();
+  }
+  // a new race: the world's prisms all back, no trails, no waves, every pilot's petals and recharges fresh
+  function resetAbilityWorld() {
+    for (const e of implosions) hideImploded(e.i);
+    implosions = []; collapses = []; ripples = [];
+    for (let i = 0; i < NB; i++) if (dead[i]) { if (i < NF) restorePrism(i); else dead[i] = 0; }
+    deadList = []; clearAccretion(); revealUntil.fill(0);
+    for (const c of crystals) if (c.home) { c.p.copy(c.home); c.pullBy = null; c.mesh.position.x = c.p.x; c.mesh.position.z = c.p.z; if (anyAbility()) { c.mesh.visible = true; c.wait = 0; } }   // with the kit on, every crystal is back for a new race (the AI's Ripple reads them)
+    Object.assign(ab, newAb()); abT = 0;
+  }
+  // The AI's rules, input-only (D4): it presses LB / Y the way a player would, never reaching into the world.
+  //   Ripple: a crystal it has not drawn yet is inside 90% of the reach (or, with Siphon, a rival is).
+  //   Collapse: just after it lets go of a pair (its triggers up, the pair still closing, inside the grace), when a prism
+  //   inside the collapse radius sits on the line to its next ring (within 20 u of it), or (Spaghettify) a rival is inside
+  //   the radius. The pair has done its work by then, so the press costs its flight nothing. It scans every 0.1 s.
+  //   Whip: in aiInputCore's release rule: let go while the Time tile is lit and the nose is near the ring.
+  function aiAbilities(inp, dt) {
+    inp.ai = true;
+    if (race !== 'running' || stopped || P.abAI < 0.5 || !anyAbility()) return;
+    if (abOn('C') && ab.cdC <= 0) {
+      const R = 0.9 * P.abCReach; let go = false;
+      for (const c of crystals) { if (!c.mesh.visible || c.pullBy != null) continue; const d = c.p.distanceTo(hull.position); if (d <= R && d > 20) { go = true; break; } }
+      if (!go && abUp('C')) for (const id of otherPilots()) if (pilotPos(id).distanceTo(hull.position) <= R) { go = true; break; }
+      if (go) inp.lb = true;
+    }
+    if (abOn('S') && ab.cdS <= 0) {
+      ab.aiScanT -= dt;
+      const pr = ownPairForCollapse();
+      // (a closing field pair still warps the path and carries the AI: it collapses one only once it no longer does - measured:
+      // a collapse inside the warp cost the Hard field AI 6-30% on I2 and I3)
+      if (pr && !holds.L.on && !holds.R.on && !ftLive.lime && ab.aiScanT <= 0 && gates.length) {
+        ab.aiScanT = 0.1;
+        const R2 = P.abSRadius * P.abSRadius, a = hull.position, b = gates[threaded % 8].p, abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z, L2 = Math.max(1e-6, abx * abx + aby * aby + abz * abz);
+        let n = 0;
+        for (let i = 0; i < NF && n < 1; i++) {
+          if (dead[i]) continue;
+          const j = i * 3, px = bh[j], py = bh[j + 1], pz = bh[j + 2];   // homes: the rule cannot depend on how the frames moved them
+          const dx = px - pr.att.x, dy = py - pr.att.y, dz = pz - pr.att.z; if (dx * dx + dy * dy + dz * dz > R2) continue;
+          const t = Math.max(0, Math.min(1, ((px - a.x) * abx + (py - a.y) * aby + (pz - a.z) * abz) / L2));
+          const ex = a.x + abx * t - px, ey = a.y + aby * t - py, ez = a.z + abz * t - pz;
+          if (ex * ex + ey * ey + ez * ez <= 400) n++;
+        }
+        if (n >= 1 || (abUp('S') && otherPilots().some((id) => pilotPos(id).distanceTo(pr.att) <= P.abSRadius))) inp.y = true;
+      }
+    }
+  }
+  // ---- what the abilities look like (the frame only; the step never reads any of it) ----
+  // a lit, faceted shell (nothing in the world is flat: Docs/claude/SHADERS_AND_PERFORMANCE.md), faint so the race reads through it
+  const fxMat = () => new THREE.MeshStandardMaterial({ color: 0xe8ecff, emissive: 0x1a2040, roughness: 0.5, flatShading: true, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false });
+  const rippleFx = [], collapseFx = [];
+  for (let k = 0; k < 6; k++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 2), fxMat()); m.visible = false; m.frustumCulled = false; scene.add(m); rippleFx.push(m); }
+  for (let k = 0; k < 4; k++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), fxMat()); m.visible = false; m.frustumCulled = false; scene.add(m); collapseFx.push(m); }
+  function hideImploded(i) {
+    dum.position.set(0, -1e5, 0); dum.scale.setScalar(0); dum.updateMatrix();
+    if (i < NF) { fieldMesh.setMatrixAt(i, dum.matrix); fieldMesh.instanceMatrix.needsUpdate = true; } else { trailMesh.setMatrixAt(i - NF, dum.matrix); trailMesh.instanceMatrix.needsUpdate = true; }
+  }
+  function drawAbilityFx() {
+    ripples.forEach((w, k) => { if (k >= rippleFx.length) return; const m = rippleFx[k], u = clamp01((abT - w.t0) / RIPPLE_S); m.visible = mode === 'fly'; m.position.copy(w.c); m.scale.setScalar(Math.max(1, w.reach * u)); m.material.opacity = 0.16 * (1 - u * u); });
+    for (let k = ripples.length; k < rippleFx.length; k++) rippleFx[k].visible = false;
+    collapses = collapses.filter((e) => abT - e.t0 < IMPLODE_S);
+    collapses.forEach((e, k) => { if (k >= collapseFx.length) return; const m = collapseFx[k], u = clamp01((abT - e.t0) / IMPLODE_S); m.visible = mode === 'fly'; m.position.copy(e.c); m.scale.setScalar(Math.max(0.5, e.R * (1 - u))); m.material.opacity = 0.3 * (1 - u); });
+    for (let k = collapses.length; k < collapseFx.length; k++) collapseFx[k].visible = false;
+    // the destroyed prisms fall into the black hole, shrinking as they go
+    let fd = false, td = false;
+    for (let k = implosions.length - 1; k >= 0; k--) {
+      const e = implosions[k], u = (abT - e.t0) / IMPLODE_S;
+      if (u >= 1 || !dead[e.i]) { if (dead[e.i]) hideImploded(e.i); implosions.splice(k, 1); continue; }
+      const f = u * u; dum.position.set(e.x + (e.c.x - e.x) * f, e.y + (e.c.y - e.y) * f, e.z + (e.c.z - e.z) * f);
+      dum.quaternion.fromArray(bq, e.i * 4); dum.scale.set(1 - u, 1 - u, (1 - u) * (1 + 2 * u)); dum.updateMatrix();
+      if (e.i < NF) { fieldMesh.setMatrixAt(e.i, dum.matrix); fd = true; } else { trailMesh.setMatrixAt(e.i - NF, dum.matrix); td = true; }
+    }
+    if (fd) fieldMesh.instanceMatrix.needsUpdate = true;
+    if (td) trailMesh.instanceMatrix.needsUpdate = true;
+    if (accLive || accDirty) {
+      let nc = 0;
+      // a prism just laid sits between a chase camera and its hull (/vessel-studio section 7): skip the viewed pilot's newest
+      const viewId = watchIdx > 0 && rivals[watchIdx - 1] ? rivals[watchIdx - 1].id : 0, chase = camMode === 'chase';
+      for (let k = 0; k < NA; k++) {
+        const a = acc[k];
+        if (!a.alive || mode !== 'fly' || (chase && a.owner === viewId && a.implode < 0 && abT - a.t0 < 0.7)) { dum.position.set(0, -1e5, 0); dum.scale.setScalar(0); }
+        else if (a.implode >= 0) { const u = clamp01((abT - a.implode) / IMPLODE_S), f = u * u; dum.position.copy(a.p).lerp(a.c, f); dum.scale.setScalar(1 - u); }
+        else { const age = abT - a.t0, s = Math.min(1, age / 0.25) * Math.min(1, (a.life - age) / 1); dum.position.copy(a.p); dum.scale.setScalar(Math.max(0, s)); }
+        dum.quaternion.copy(a.q); dum.updateMatrix(); accMesh.setMatrixAt(k, dum.matrix);
+        if (a.alive && a.shield && a.implode < 0 && mode === 'fly' && dum.scale.x > 0) cageMesh.setMatrixAt(nc++, dum.matrix);
+      }
+      cageMesh.count = nc; accMesh.instanceMatrix.needsUpdate = true; cageMesh.instanceMatrix.needsUpdate = true; accDirty = false;
+    }
+  }
+
   // ---- the sling ----
   function newHolds() { return { L: { on: false, t: 0, peak: 0, live: 0 }, R: { on: false, t: 0, peak: 0, live: 0 } }; }
   let holds = newHolds();   // per pilot
@@ -2034,7 +2397,7 @@
   let kbThrottle = 1, armed = false, padSeen = false, padBlocked = false, padName = '';
   const prevBtn = [];
   function isFormTarget(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
-  const GAME_KEYS = new Set(['KeyP', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyJ', 'KeyL', 'KeyT', 'KeyR', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  const GAME_KEYS = new Set(['KeyP', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyJ', 'KeyL', 'KeyT', 'KeyR', 'KeyF', 'KeyG', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
   window.addEventListener('keydown', (e) => {
     if (isFormTarget(e.target) || !armed) return;
     if (GAME_KEYS.has(e.code)) e.preventDefault();
@@ -2046,6 +2409,8 @@
     if (e.code === 'KeyT') toggleMechanic();   // the game's B (T on its keyboard): field trajectory -> catch sling -> field
     if (e.code === 'KeyP') setStopped(!stopped);
     if (e.code === 'KeyC') nextCamera();
+    if (e.code === 'KeyF') pendingAb.lb = true;   // LB: Ripple (round 29)
+    if (e.code === 'KeyG') pendingAb.y = true;    // Y: Collapse (round 29)
   });
   // C (/vessel-studio D16): Chase, then Follow on each pilot in turn (you, then every rival), then Free, then Chase.
   function nextCamera() {
@@ -2161,7 +2526,9 @@
   $('tExit').addEventListener('click', () => setPlayMode(false));
   $('tStart').addEventListener('click', playPause);
   $('tBack').addEventListener('click', () => stopRace());
-  $('tMode').addEventListener('click', () => toggleMechanic());   // B on a phone: the game's Mass card is this button
+  $('tMode').addEventListener('click', () => toggleMechanic());
+  $('tLB').addEventListener('pointerdown', (e) => { pendingAb.lb = true; e.preventDefault(); });   // round 29: LB Ripple, Y Collapse on a phone
+  $('tY').addEventListener('pointerdown', (e) => { pendingAb.y = true; e.preventDefault(); });   // B on a phone: the game's Mass card is this button
   function syncTouchBar() {
     if (!playMode) return;
     $('tStart').textContent = race === 'running' && !stopped ? '❚❚ Pause' : '▶ Play';   // the studio transport (/vessel-studio D18)
@@ -2172,7 +2539,7 @@
     if (!g && playMode && touch.used) {   // the touch layout drives the same dual-stick mix and analog triggers as a gamepad
       const inp = { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
       if (mode === 'fly') { trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt); }
-      lastInput = inp; return inp;
+      takeAbPresses(inp); lastInput = inp; return inp;
     }
     const inp = { pad: !!g, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: !!g, kYaw: 0, kPitch: 0, kRoll: 0 };
     if (g) {
@@ -2184,6 +2551,8 @@
       if (e[1]) toggleMechanic();   // B, as in the game: the Stoat's mode switch
       if (e[8] && mode === 'fly') stopRace();
       if (e[2]) stance = !stance && race === 'running';
+      if (e[4]) pendingAb.lb = true;   // LB: Ripple (round 29)
+      if (e[3]) pendingAb.y = true;    // Y: Collapse (round 29)
     }
     const k = (c) => keys.has(c) ? 1 : 0;
     if (!g || (inp.L.x === 0 && inp.L.y === 0 && inp.R.x === 0 && inp.R.y === 0 && inp.lt === 0 && inp.rt === 0 && keys.size)) {
@@ -2194,9 +2563,13 @@
     }
     if (mode === 'compare' && g) { orbit.yaw -= inp.R.x * 1.4 * dt; orbit.pitch = Math.max(-1.2, Math.min(1.2, orbit.pitch + inp.R.y * 1.1 * dt)); orbit.dist = Math.max(140, Math.min(1400, orbit.dist * (1 - inp.L.y * 0.9 * dt))); if (Math.abs(inp.R.x) + Math.abs(inp.R.y) > 0) orbit.auto = false; }
     if (mode === 'fly') { trackHold('L', inp.lt, inp.analog, dt); trackHold('R', inp.rt, inp.analog, dt); }
+    takeAbPresses(inp);
     lastInput = inp;
     return inp;
   }
+  function takeAbPresses(inp) { inp.lb = pendingAb.lb; inp.y = pendingAb.y; pendingAb.lb = pendingAb.y = false; }
+  // with the AI flying your hull (Is AI), a press of LB / Y (F / G, the touch buttons) still fires your ability on top of it
+  function withAbPresses(inp) { if (pendingAb.lb) inp.lb = true; if (pendingAb.y) inp.y = true; pendingAb.lb = pendingAb.y = false; return inp; }
   let lastInput = null, lastBatch = null;
   function swapStyle() { setStyle(style === 'A' ? 'B' : 'A'); swapFlash = 1.6; }
 
@@ -2239,7 +2612,9 @@
   const easeInv = (y) => { const a = Math.min(0.9999, Math.abs(y)); return Math.sign(y) * 4 / Math.PI * Math.acos(1 - a); };
   const qInv = new THREE.Quaternion(), aiLoc = new V3(), aiOff = new V3(), aiAim = new V3();
   function localOf(p) { qInv.copy(hull.quaternion).invert(); return aiLoc.subVectors(p, hull.position).applyQuaternion(qInv); }   // x right, y up, z back
-  function aiInput(dt) {
+  // the AI's whole input: the flight's (aiInputCore), then the round-29 abilities' presses (aiAbilities) on the same object
+  function aiInput(dt) { const inp = aiInputCore(dt); if (anyAbility()) aiAbilities(inp, dt); return inp; }
+  function aiInputCore(dt) {
     const inp = { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
     if (!curPilot && mode === 'fly' && race === 'ready' && !batching && !stopHeld) { aiRestartT += dt; if (aiRestartT > 0.6) { aiRestartT = 0; startRace(); } }
     if (!curPilot && mode === 'fly' && race === 'finished' && aiRepeat && !batching) { aiRestartT += dt; if (aiRestartT > 1.5) { aiRestartT = 0; spawn(); startRace(); } }
@@ -2367,7 +2742,10 @@
       // at a tight circle's swing rate a narrow cone is a frame or two wide and a miss costs a whole lap round
       const turned = gripped && ai.prevOff != null && off > ai.prevOff && ai.prevOff <= Math.max(ai.cone, 30);
       ai.prevOff = gripped ? off : null;
+      // round 29, Time L5 Whip: let go while the Time tile is lit (just past the orbit's fastest point) with the nose near the ring
+      const whipGo = P.abAI >= 0.5 && gripped && ab.whipLit && off <= 1.5 * ai.cone && abUp('T');
       if (lost && ai.t > 0.2) ai.phase = 'cruise';
+      else if (whipGo) ai.phase = 'cruise';
       else if ((gripped && (off <= ai.cone || turned || (P.dpSweetDeg > 0 && sweetSpot(sd.sweep * 180 / Math.PI) >= 0.999 && off <= 3 * ai.cone)) && (P.dpSweetDeg > 0 || !(P.dpKickSweep > 0) || sd.sweep * 180 / Math.PI >= P.dpKickSweep)) || (!gripped && ai.t > P.aiGiveUp) || (sd && sd.sweep * 180 / Math.PI > Math.max(330, P.dpKickSweep + 300))) ai.phase = 'cruise';
     }
     const trig = ai.phase === 'hold' ? Math.max(0.06, ai.q) : 0;
@@ -2468,7 +2846,7 @@
       slingOrbit: null, lastOrbit: null, slingDipole: null, lastDipole: null, gravSpeed: 0, flow: 0, dipoleFlying: false,
       fieldSling: null, ftMul: 1, ftThrottleTarget: 0, myPair: null, raceStats: null, lastInput: null,
       vg: new V3(), vf: new V3(), velNow: new V3(), boosts: [], holds: newHolds(), ftRates: { pitch: 0, yaw: 0, roll: 0 }, ftLive: newFtLive(),
-      ai: newAi(1), runStyles: new Set(), P: null, finishT: null, mesh: null, line: null, seat: null, level: 'Hard', styleName: 'Balanced' };
+      ai: newAi(1), runStyles: new Set(), P: null, finishT: null, mesh: null, line: null, seat: null, level: 'Hard', styleName: 'Balanced', ab: newAb() };
   }
   const youSlot = newPilotState(0);   // your hull's variables, parked while a rival flies
   const seatState = SEATS.map((_, k) => newPilotState(k + 1));
@@ -2477,14 +2855,14 @@
     s.speed = speed; s.stance = stance; s.threaded = threaded; s.slings = slings; s.throttleNow = throttleNow;
     s.slingOrbit = slingOrbit; s.lastOrbit = lastOrbit; s.slingDipole = slingDipole; s.lastDipole = lastDipole; s.gravSpeed = gravSpeed; s.flow = flow; s.dipoleFlying = dipoleFlying;
     s.fieldSling = fieldSling; s.ftMul = ftMul; s.ftThrottleTarget = ftThrottleTarget; s.myPair = myPair; s.raceStats = raceStats; s.lastInput = lastInput;
-    s.vg = vg; s.vf = vf; s.velNow = velNow; s.boosts = boosts; s.holds = holds; s.ftRates = ftRates; s.ftLive = ftLive; s.ai = ai; s.runStyles = runStyles;
+    s.vg = vg; s.vf = vf; s.velNow = velNow; s.boosts = boosts; s.holds = holds; s.ftRates = ftRates; s.ftLive = ftLive; s.ai = ai; s.runStyles = runStyles; s.ab = ab;
   }
   function loadCtx(s) {
     hull.position.copy(s.pos); hull.quaternion.copy(s.quat);
     speed = s.speed; stance = s.stance; threaded = s.threaded; slings = s.slings; throttleNow = s.throttleNow;
     slingOrbit = s.slingOrbit; lastOrbit = s.lastOrbit; slingDipole = s.slingDipole; lastDipole = s.lastDipole; gravSpeed = s.gravSpeed; flow = s.flow; dipoleFlying = s.dipoleFlying;
     fieldSling = s.fieldSling; ftMul = s.ftMul; ftThrottleTarget = s.ftThrottleTarget; myPair = s.myPair; raceStats = s.raceStats; lastInput = s.lastInput;
-    vg = s.vg; vf = s.vf; velNow = s.velNow; boosts = s.boosts; holds = s.holds; ftRates = s.ftRates; ftLive = s.ftLive; ai = s.ai; runStyles = s.runStyles;
+    vg = s.vg; vf = s.vf; velNow = s.velNow; boosts = s.boosts; holds = s.holds; ftRates = s.ftRates; ftLive = s.ftLive; ai = s.ai; runStyles = s.runStyles; ab = s.ab;
     curPilot = s.id; curRival = s.id ? s : null;
     for (const pr of pairs) pr.owned = pr.pilot === s.id;
   }
@@ -2527,7 +2905,7 @@
       Object.assign(s, { speed: 0, stance: false, threaded: 0, slings: 0, throttleNow: 0.5, slingOrbit: null, lastOrbit: null, slingDipole: null, lastDipole: null,
         gravSpeed: 0, flow: 0, dipoleFlying: false, fieldSling: null, ftMul: 1, ftThrottleTarget: 0, myPair: null, raceStats: newStats(), lastInput: null,
         vg: fresh.vg, vf: fresh.vf, velNow: fresh.velNow, boosts: fresh.boosts, holds: fresh.holds, ftRates: fresh.ftRates, ftLive: fresh.ftLive, runStyles: fresh.runStyles,
-        ai: newAi(seed * 97 + 13 * (k + 1), lv), finishT: null, seat, level: lv, styleName: STYLE_BRAIN[seatStyle[k]] ? seatStyle[k] : 'Balanced' });
+        ai: newAi(seed * 97 + 13 * (k + 1), lv), finishT: null, seat, level: lv, styleName: STYLE_BRAIN[seatStyle[k]] ? seatStyle[k] : 'Balanced', ab: newAb() });
       s.P = pilotP(s.styleName, lv);
       // the grid: your hull on the line 170 u out; the rivals beside and behind it
       const lat = [42, -42, 0][k], back = [20, 20, 55][k];
@@ -2565,7 +2943,7 @@
     const s = raceStats;
     return { finished: race === 'finished', time: raceT, top: s.top, gravTop: s.gravTop, prisms: s.released ? s.prisms / s.released : NaN, avg: s.dist / Math.max(1e-3, raceT), flowTop: s.flowTop, slings: s.slings, catches: s.catches, clean: s.clean,
       err: s.errN ? s.errSum / s.errN : 0, misses: s.misses, turnT: s.turnT, sweepDeg: s.sweepSum * 180 / Math.PI, swing: s.gripT > 0.05 ? s.sweepSum * 180 / Math.PI / s.gripT : NaN, rel: s.relN ? s.relSum / s.relN : NaN, reach: s.catches ? s.reachSum / s.catches : NaN, rcMin: s.rcMin,
-      lime: raceT > 0 ? s.limeT / raceT : 0, loopsPerMin: raceT > 0 ? s.limeOn * 60 / raceT : 0, mulTop: s.mulTop };
+      lime: raceT > 0 ? s.limeT / raceT : 0, loopsPerMin: raceT > 0 ? s.limeOn * 60 / raceT : 0, mulTop: s.mulTop, abil: Object.assign({}, ab.n) };
   }
   function batchPresets() { return [{ name: 'No sling', w: {}, noSling: true }, { name: 'Balanced', w: {} }].concat(STYLES.map((st) => ({ name: st.name, w: { [st.key]: 1 } }))); }
   function runBatch(qs, opts) {
@@ -3061,6 +3439,9 @@
         tv.copy(r.pos).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -2) continue;
         tv.copy(r.pos).project(cam);
         c.fillStyle = r.seat.css; c.fillText(r.seat.name + ' · ' + r.level, (tv.x * 0.5 + 0.5) * cw, (-tv.y * 0.5 + 0.5) * ch - 18 * sc);
+        if (r.ab && (r.ab.hitT > 0 || r.ab.silenced > 0)) {   // round 29: a scored hit on it (Siphon, Spaghettify), shown over its hull
+          c.fillStyle = '#ffcf5c'; c.fillText(r.ab.hitT > 0 ? r.ab.hitText : 'SILENCED', (tv.x * 0.5 + 0.5) * cw, (-tv.y * 0.5 + 0.5) * ch - 32 * sc); c.font = font(11, 700);
+        }
       }
     }
     if (swapFlash > 0) { c.globalAlpha = Math.min(1, swapFlash); c.textAlign = 'center'; c.font = font(22, 700); c.fillStyle = style === 'A' ? colA : colB; c.fillText('NOW FLYING PAIR ' + style, cw / 2, ch * 0.3); c.globalAlpha = 1; }
@@ -3153,8 +3534,12 @@
       }
     };
     if (!playMode) { trig('L', cw - pad - 90 * sc); trig('R', cw - pad - 30 * sc); }
+    const rowTop = drawAbilityRow(c, cw, ch, sc, font, pad, padR);
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
-    c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - pad, ch - pad - 80 * sc);
+    c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - padR, rowTop - 6 * sc);
+    drawReveals(c, cw, ch, sc, font);
+    if (abFlash > 0) { c.globalAlpha = Math.min(1, abFlash); c.textAlign = 'center'; c.font = font(15, 700); c.fillStyle = ink; c.fillText(abFlashText, cw / 2, ch * 0.7); c.globalAlpha = 1; }
+    abFlash = Math.max(0, abFlash - dt);
     swapFlash = Math.max(0, swapFlash - dt); slingFlash = Math.max(0, slingFlash - dt); blockFlash = Math.max(0, blockFlash - dt); styleFlash = Math.max(0, styleFlash - dt); portalFlash = Math.max(0, portalFlash - dt); gateFlash = Math.max(0, gateFlash - dt * 2);
   }
   // Where each live well is: a tick and a word on screen, an arrow at the edge when it is off it.
@@ -3177,6 +3562,83 @@
         const a = Math.atan2(py - ch / 2, px - cw / 2); c.save(); c.translate(px, py); c.rotate(a); c.beginPath(); c.moveTo(9 * sc, 0); c.lineTo(-5 * sc, -6 * sc); c.lineTo(-5 * sc, 6 * sc); c.closePath(); c.fill(); c.restore();
         c.fillText(word, Math.max(x0 + 50 * sc, Math.min(x0 + cw - 50 * sc, px)), py + (py > ch / 2 ? -12 : 20) * sc);
       }
+    }
+  }
+  // ---- round 29: the four-icon ability row (LOCKED order: Charge, Mass, Space, Time), lower right ----
+  // Elements have no colour (Docs/UI_COLOR_RULES.md): each tile is told apart by its SHAPE, in the page's neutral ink; the
+  // accent marks state only (the mode B has picked, a Collapse you can fire now, the Whip window, an unlocked level 5).
+  function abIcon(c, el, x, y, s, col) {
+    c.save(); c.translate(x + s / 2, y + s / 2); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = Math.max(1.2, s * 0.06); c.lineCap = 'round';
+    const r = s * 0.36;
+    if (el === 'Charge') {   // Ripple: a source and the rings it sends out
+      c.beginPath(); c.arc(0, 0, s * 0.07, 0, TAU); c.fill();
+      for (const k of [0.45, 0.75, 1]) { c.globalAlpha = 1.15 - k * 0.6; c.beginPath(); c.arc(0, 0, r * k, -0.9, 0.9); c.stroke(); c.beginPath(); c.arc(0, 0, r * k, Math.PI - 0.9, Math.PI + 0.9); c.stroke(); }
+    } else if (el === 'Mass') {   // the accretion trail: prisms laid along a bent line
+      c.globalAlpha = 0.6; c.beginPath(); c.moveTo(-r, r * 0.7); c.quadraticCurveTo(0, -r * 1.3, r, r * 0.7); c.stroke(); c.globalAlpha = 1;
+      for (const t of [0.18, 0.5, 0.82]) {
+        const px = -r + 2 * r * t, py = (1 - t) * (1 - t) * r * 0.7 + 2 * (1 - t) * t * (-r * 1.3) + t * t * r * 0.7, a = Math.atan2(2 * (1 - t) * (-r * 2) + 2 * t * (r * 2), 2 * r);
+        c.save(); c.translate(px, py); c.rotate(a); c.fillRect(-s * 0.09, -s * 0.045, s * 0.18, s * 0.09); c.restore();
+      }
+    } else if (el === 'Space') {   // Collapse: everything falls into one point
+      c.beginPath(); c.arc(0, 0, s * 0.06, 0, TAU); c.fill();
+      for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, ox = Math.cos(a), oy = Math.sin(a); c.beginPath(); c.moveTo(ox * r, oy * r); c.lineTo(ox * r * 0.3, oy * r * 0.3); c.stroke(); c.beginPath(); c.moveTo(ox * r * 0.3 + (oy - ox) * s * 0.07, oy * r * 0.3 + (-ox - oy) * s * 0.07); c.lineTo(ox * r * 0.3, oy * r * 0.3); c.lineTo(ox * r * 0.3 + (-oy - ox) * s * 0.07, oy * r * 0.3 + (ox - oy) * s * 0.07); c.stroke(); }
+    } else {   // Time: the catch sling, round the hole and out on the tangent
+      c.beginPath(); c.arc(-s * 0.06, s * 0.04, s * 0.05, 0, TAU); c.fill();
+      c.beginPath(); c.arc(-s * 0.06, s * 0.04, r * 0.7, Math.PI * 0.6, Math.PI * 1.9); c.stroke();
+      const ex = -s * 0.06 + Math.cos(Math.PI * 1.9) * r * 0.7, ey = s * 0.04 + Math.sin(Math.PI * 1.9) * r * 0.7;
+      c.beginPath(); c.moveTo(ex, ey); c.lineTo(ex + r * 0.75, ey - r * 0.3); c.stroke();
+      c.beginPath(); c.moveTo(ex + r * 0.75, ey - r * 0.3); c.lineTo(ex + r * 0.45, ey - r * 0.42); c.moveTo(ex + r * 0.75, ey - r * 0.3); c.lineTo(ex + r * 0.55, ey - r * 0.02); c.stroke();
+    }
+    c.restore();
+  }
+  function drawAbilityRow(c, cw, ch, sc, font, pad, padR) {
+    // lower right on a PC; on a phone in touch play the lower corners are the thumbs', so the row sits under the race clock
+    const s = 36 * sc, gap = 6 * sc, total = 4 * s + 3 * gap, x0 = cw - padR - total, y0 = playMode ? pad + 94 * sc : ch - pad - 100 * sc - s;
+    const ink = '#e8ecff', dim = '#9aa6d6', accent = '#ffb347';
+    const KEY = { Charge: 'LB', Mass: 'LT·RT', Space: 'Y', Time: 'LT·RT' };
+    const mass = style === 'A' && slingMode === 'field', time = style === 'A' && isCatch(slingMode);
+    ELEMENTS.forEach((el, i) => {
+      const k = AB_KEY[el], on = abOn(k), lv = Math.round(P['ab' + k + 'Level']), up = abUp(k), x = x0 + i * (s + gap), y = y0;
+      const cd = k === 'C' ? ab.cdC / Math.max(0.1, P.abCCool) : k === 'S' ? ab.cdS / Math.max(0.1, P.abSCool) : 0;
+      const ready = k === 'S' ? on && !cd && !!ownPairForCollapse() : k === 'T' ? up && ab.whipLit : k === 'M' ? on && mass : k === 'C' ? on && !cd : false;
+      const modeOn = k === 'M' ? mass : k === 'T' ? time : true;
+      c.globalAlpha = on ? 1 : 0.35;
+      c.fillStyle = k === 'T' && ab.whipLit ? 'rgba(255,179,71,0.35)' : 'rgba(8,10,20,0.72)';
+      c.beginPath(); if (c.roundRect) c.roundRect(x, y, s, s, 6 * sc); else c.rect(x, y, s, s); c.fill();
+      c.lineWidth = ready || (modeOn && (k === 'M' || k === 'T')) ? 2 : 1; c.strokeStyle = ready ? accent : modeOn ? 'rgba(232,236,255,0.7)' : 'rgba(232,236,255,0.25)'; c.stroke();
+      abIcon(c, el, x, y, s, modeOn ? ink : dim);
+      if (cd > 0) {   // the recharge: a shade that unwinds, and the seconds left
+        c.save(); c.beginPath(); c.moveTo(x + s / 2, y + s / 2); c.arc(x + s / 2, y + s / 2, s * 0.72, -Math.PI / 2, -Math.PI / 2 + TAU * cd); c.closePath(); c.clip();
+        c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(x, y, s, s); c.restore();
+        c.textAlign = 'center'; c.font = font(11, 700); c.fillStyle = ink; c.fillText((k === 'C' ? ab.cdC : ab.cdS).toFixed(1), x + s / 2, y + s / 2 + 4 * sc);
+      }
+      if (!on) { c.strokeStyle = dim; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x + 4 * sc, y + s - 4 * sc); c.lineTo(x + s - 4 * sc, y + 4 * sc); c.stroke(); }
+      // the level badge: filled once level 5 unlocks the upgrade
+      const bx = x + s - 7 * sc, by = y + 7 * sc, br = 6 * sc;
+      c.beginPath(); c.arc(bx, by, br, 0, TAU); c.fillStyle = up ? accent : 'rgba(8,10,20,0.9)'; c.fill(); c.lineWidth = 1; c.strokeStyle = up ? accent : dim; c.stroke();
+      c.textAlign = 'center'; c.font = font(8.5, 700); c.fillStyle = up ? '#1a1200' : dim; c.fillText(String(lv), bx, by + 3 * sc);
+      // the key under it, the petals of its element over it
+      c.font = font(9.5, 700); c.fillStyle = modeOn ? ink : dim; c.fillText(KEY[el], x + s / 2, y + s + 11 * sc);
+      c.font = font(9.5, 600); c.fillStyle = dim; c.fillText(el.toUpperCase().slice(0, 3) + ' ' + ab.petals[el], x + s / 2, y - 6 * sc);
+      c.globalAlpha = 1;
+    });
+    let top = y0 - 18 * sc;
+    if (ab.silenced > 0) { c.textAlign = 'right'; c.font = font(11, 700); c.fillStyle = '#ffcf5c'; c.fillText('SILENCED · ' + ab.silenced.toFixed(1) + ' s', x0 + total, top); top -= 14 * sc; }
+    return top;
+  }
+  // your Ripple passed a rival: for a few seconds you see its next ring and the path it is flying, in its colour
+  function drawReveals(c, cw, ch, sc, font) {
+    if (mode !== 'fly' || !rivals.length) return;
+    const pj = (x, y, z) => { tv.set(x, y, z).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -1) return null; tv.set(x, y, z).project(cam); return { x: (tv.x * 0.5 + 0.5) * cw, y: (-tv.y * 0.5 + 0.5) * ch }; };
+    for (const r of rivals) {
+      const left = revealUntil[r.id] - abT; if (left <= 0) continue;
+      c.globalAlpha = Math.min(1, left); c.fillStyle = r.seat.css; c.strokeStyle = r.seat.css;
+      const L = r.ftLive;
+      if (L && L.n > 1) { for (let k = 0; k < L.n; k += 6) { const q = pj(L.pts[k * 3], L.pts[k * 3 + 1], L.pts[k * 3 + 2]); if (q) { c.beginPath(); c.arc(q.x, q.y, 2.2 * sc, 0, TAU); c.fill(); } } }
+      else { tv2.set(0, 0, -1).applyQuaternion(r.quat); for (let k = 1; k <= 12; k++) { const d = k * 25, q = pj(r.pos.x + tv2.x * d, r.pos.y + tv2.y * d, r.pos.z + tv2.z * d); if (q) { c.beginPath(); c.arc(q.x, q.y, 2.2 * sc, 0, TAU); c.fill(); } } }
+      const g = gates[r.threaded % 8], q = g && pj(g.p.x, g.p.y, g.p.z);
+      if (q) { c.lineWidth = 2; c.setLineDash([5, 4]); c.beginPath(); c.arc(q.x, q.y, 16 * sc, 0, TAU); c.stroke(); c.setLineDash([]); c.textAlign = 'center'; c.font = font(11, 700); c.fillText(r.seat.name.toUpperCase() + '\'S NEXT RING · ' + left.toFixed(1) + ' s', q.x, q.y - 22 * sc); }
+      c.globalAlpha = 1;
     }
   }
   function updateRings(now) {
@@ -3220,6 +3682,7 @@
           : style === 'A'
           ? '<p>Pair <b style="color:#b9a4ff">A</b>: <b>press</b> <kbd>LT</kbd> or <kbd>RT</kbd> and the attractor appears on that side; <b>hold</b> and you orbit it (squeeze harder, tighter circle); <b>let go</b> to slingshot out along your nose.</p>'
           : '<p>Pair <b style="color:#6fe3d0">B</b>: squeeze <kbd>LT</kbd> or <kbd>RT</kbd> and let go to lay the crystal pair across your nose, the attractor on that side.</p>') +
+        (anyAbility() ? '<p><b>Round 29, the four abilities</b> (lower right): <kbd>LB</kbd> / <kbd>F</kbd> Ripple, <kbd>Y</kbd> / <kbd>G</kbd> Collapse a held pair; Mass lays an accretion trail as you warp, Time\'s level-5 Whip pays a release just past the fastest point. Vessel Config ▸ Ability sections.</p>' : '') +
         (layout === 'phone'
           ? ''
           : '<p>Click the stage, then press <kbd>A</kbd> on the gamepad or <kbd>Enter</kbd>.</p>' + deviceLine()) +
@@ -3988,8 +4451,100 @@
     },
   };
 
+  // ---------- round 29: the four abilities, top down (lab-only proposals) ----------
+  // One scene, four kinds. Both previews of a card share one scale, so a reach or a radius compares honestly.
+  const AB_PREV = (() => { const r = mulberry32(2910), pts = []; for (let i = 0; i < 70; i++) { const a = r() * TAU, d = 30 + r() * 260; pts.push([Math.cos(a) * d, Math.sin(a) * d]); } return pts; })();
+  SCENES.abil = {
+    make: () => ({}), period: (st, cfg) => cfg.kind === 'whip' ? 4.5 : 4,
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      previewBg(c, W, H, 61);
+      const ink = '#e8ecff', dim = '#9aa6d6', accent = '#ffb347', k = cfg.kind, key = k === 'ripple' ? 'C' : k === 'accrete' ? 'M' : k === 'collapse' ? 'S' : 'T';
+      const on = Pv['ab' + key + 'On'] >= 0.5, up = on && Pv['ab' + key + 'Level'] >= 5;
+      if (k === 'ai') {
+        const lines = [['Ripple', 'a crystal it has not drawn is within 90% of the reach'], ['Collapse', 'just after it lets go, a prism in the radius sits on its line'], ['Whip', 'the Time tile lights with its nose near the ring']];
+        txt(c, Pv.abAI >= 0.5 ? 'The AI presses, like a player:' : 'Off: the AI never presses LB or Y, and never whips', 8, 16, Pv.abAI >= 0.5 ? ink : dim, 10.5, 'left', 700);
+        lines.forEach(([n, w], i) => { txt(c, n, 12, 38 + i * 30, Pv.abAI >= 0.5 ? accent : dim, 10.5, 'left', 700); txt(c, w, 12, 52 + i * 30, Pv.abAI >= 0.5 ? ink : dim, 9.5); });
+        return;
+      }
+      if (k === 'whip') {   // speed through the swing: the peak, the window after it, the release and its burst
+        const x0 = 28, x1 = W - 10, y0 = H - 22, y1 = 26, deg = 140, sx = (d) => x0 + (x1 - x0) * d / deg, vAt = (d) => 1 - 0.35 * Math.pow((d - 28) / 70, 2) + 0.1 * Math.exp(-((d - 28) * (d - 28)) / 200), sy = (v) => y0 - (y0 - y1) * (v - 0.6) / 0.6;
+        c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+        if (up) { c.fillStyle = 'rgba(255,179,71,0.22)'; c.fillRect(sx(28), y1, sx(28 + Pv.abTWindow) - sx(28), y0 - y1); }
+        c.strokeStyle = ink; c.lineWidth = 2; c.beginPath(); for (let d = 0; d <= deg; d += 2) { const y = sy(vAt(d)); if (d) c.lineTo(sx(d), y); else c.moveTo(sx(d), y); } c.stroke();
+        const rel = 28 + 0.6 * Math.max(5, Pv.abTWindow), u = tt / 4.5, d = Math.min(deg, u * deg * 1.2), lit = up && d >= 28 && d <= 28 + Pv.abTWindow;
+        c.fillStyle = lit ? accent : dim; c.beginPath(); c.arc(sx(Math.min(d, rel)), sy(vAt(Math.min(d, rel))), 4, 0, TAU); c.fill();
+        if (d >= rel && up) { const b = Pv.abTBurst; c.fillStyle = accent; c.fillRect(sx(rel) - 3, sy(vAt(rel)) - 40 * b, 6, 40 * b); txt(c, 'WHIP +' + Math.round(b * 100) + '% speed', sx(rel) + 8, sy(vAt(rel)) - 20 * b, accent, 10, 'left', 700); }
+        txt(c, up ? 'window: ' + Math.round(Pv.abTWindow) + '° after the fastest point' : on ? 'level ' + Math.round(Pv.abTLevel) + ': no Whip below level 5' : 'off: the catch sling only', 6, 13, up ? ink : dim, 10);
+        txt(c, 'degrees round the black hole →', x1, y0 + 14, dim, 9, 'right');
+        return;
+      }
+      const reachMax = k === 'ripple' ? 820 : k === 'collapse' ? 320 : 300, s = k === 'accrete' ? Math.min((W - 30) / 300, (H - 44) / 230) : Math.min(W, H) * 0.46 / reachMax, cx = k === 'accrete' ? 14 : W / 2, cy = k === 'accrete' ? H - 18 : H / 2 + 6;
+      const X = (x) => cx + x * s, Yy = (y) => cy - y * s;
+      if (k === 'ripple') {
+        const R = Pv.abCReach, u = clamp01((tt % 4) / 1.2), r = R * u;
+        c.strokeStyle = 'rgba(232,236,255,' + (on ? 0.7 * (1 - u * 0.6) : 0.15) + ')'; c.lineWidth = 2; c.beginPath(); c.arc(X(0), Yy(0), Math.max(1, r * s), 0, TAU); c.stroke();
+        let n = 0;
+        AB_PREV.slice(0, 10).forEach(([px, py], i) => { const sc2 = 2.9, x = px * sc2, y = py * sc2, d = Math.hypot(x, y), hit = on && d <= r, pull = on && d <= R ? clamp01(((tt % 4) - 1.2 * d / R) * Pv.abCPull / Math.max(1, d)) : 0; if (on && d <= R) n++;
+          c.fillStyle = hit ? accent : dim; c.beginPath(); c.arc(X(x * (1 - pull)), Yy(y * (1 - pull)), 3, 0, TAU); c.fill(); });
+        const rx = 330, ry = 120, seen = on && Math.hypot(rx, ry) <= r;
+        ship(c, X(rx), Yy(ry), -1, 0, seen ? '#ff00f9' : 'rgba(255,0,249,0.45)', 5);
+        if (seen) { c.setLineDash([3, 4]); c.strokeStyle = '#ff00f9'; c.beginPath(); c.moveTo(X(rx), Yy(ry)); c.lineTo(X(rx - 260), Yy(ry + 90)); c.stroke(); c.setLineDash([]); txt(c, 'rival seen: its path shown ' + Pv.abCReveal.toFixed(1) + ' s' + (up ? ' · SIPHON: -1 Time petal' : ''), 6, H - 8, '#ff00f9', 9.5); }
+        ship(c, X(0), Yy(0), 1, 0, '#ffd27a', 6);
+        txt(c, on ? 'reach ' + Math.round(R) + ' u · ' + n + ' of 10 crystals drawn · every ' + Pv.abCCool.toFixed(1) + ' s' : 'off: no ripple', 6, 13, on ? ink : dim, 10);
+        return;
+      }
+      if (k === 'collapse') {
+        const R = Pv.abSRadius, u = (tt % 4) - 1.4, f = clamp01(u / 0.5);
+        c.strokeStyle = 'rgba(232,236,255,' + (on ? 0.5 : 0.15) + ')'; c.setLineDash([4, 4]); c.beginPath(); c.arc(X(0), Yy(0), R * s * (u > 0 ? 1 - f : 1), 0, TAU); c.stroke(); c.setLineDash([]);
+        let n = 0;
+        for (const [px, py] of AB_PREV) { const inside = on && Math.hypot(px, py) <= R; if (inside) n++; if (inside && f >= 1) continue; const g = inside && u > 0 ? f * f : 0; c.fillStyle = inside ? ink : 'rgba(127,160,255,0.7)'; c.fillRect(X(px * (1 - g)) - 2, Yy(py * (1 - g)) - 1.2, 4 * (1 - g * 0.7), 2.4); }
+        drawBlackHole(c, X(0), Yy(0), 6, Pv);
+        const rv = [Math.min(R * 0.7, 250), -40];
+        ship(c, X(rv[0]), Yy(rv[1]), 0, 1, '#ffa700', 5);
+        if (up && u > 0 && Math.hypot(rv[0], rv[1]) <= R) txt(c, 'SPAGHETTIFY: -1 Space petal', X(rv[0]), Yy(rv[1]) - 10, '#ffcf5c', 9.5, 'center', 700);
+        txt(c, on ? 'Y: ' + n + ' prisms within ' + Math.round(R) + ' u destroyed · recharge ' + Pv.abSCool.toFixed(1) + ' s · ' + Pv.abSGrace.toFixed(1) + ' s grace' : 'off: Y does nothing', 6, 13, on ? ink : dim, 10);
+        return;
+      }
+      // accrete: a bent stretch of path, prisms every 100 / density u, each fading after its life (the preview's 4 s = 20 s)
+      const len = 520, gap = 100 / Math.max(1, Pv.abMDensity), now = (tt % 4) / 4 * 20, flown = Math.min(len, now / 20 * len * 2);
+      const at = (d) => { const t = d / len; return [t * 300, 220 * Math.sin(t * Math.PI * 0.9)]; };
+      c.strokeStyle = 'rgba(157,255,46,0.55)'; c.lineWidth = 1.5; c.beginPath(); for (let d = 0; d <= len; d += 8) { const [x, y] = at(d); if (d) c.lineTo(X(x), Yy(y)); else c.moveTo(X(x), Yy(y)); } c.stroke();
+      let n = 0;
+      if (on) for (let d = gap; d <= flown; d += gap) {
+        const age = now - d / (len * 2) * 20; if (age > Pv.abMLife) continue; n++;
+        const [x, y] = at(d), a = Math.max(0, Math.min(1, (Pv.abMLife - age) / 1));
+        c.globalAlpha = a; c.fillStyle = '#13fff2'; c.fillRect(X(x) - 3, Yy(y) - 1.5, 6, 3);
+        if (up) { c.strokeStyle = ink; c.lineWidth = 1; c.strokeRect(X(x) - 5, Yy(y) - 3.5, 10, 7); }
+        c.globalAlpha = 1;
+      }
+      const [hx, hy] = at(flown); ship(c, X(hx), Yy(hy), 1, 0, '#ffd27a', 6);
+      txt(c, on ? Math.round(Pv.abMDensity) + ' per 100 u · each lives ' + Pv.abMLife.toFixed(1) + ' s · ' + n + ' standing' + (up ? ' · shielded' : '') : 'off: the field lays nothing', 6, 13, on ? ink : dim, 10);
+    },
+  };
+
   // ---------- what each number means, in plain words ----------
   const TIPS = {
+    // round 29: the four abilities (lab-only proposals; the game has none of these fields)
+    abAI: { scene: 'abil', cfg: { kind: 'ai' }, d: 'Whether the AI pilots (every rival, and your hull when the AI flies it) use the new abilities. Each has one input-only rule: it presses LB or Y, or lets go of its trigger, the way a player would. Off: the AI flies exactly as round 28.', lo: 'Off: no presses.', hi: 'On: the three rules.' },
+    abCOn: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'Ripple, the Charge ability, on LB. Off, LB does nothing and nothing about the Stoat changes.', lo: 'Off.', hi: 'On.' },
+    abCLevel: { scene: 'abil', cfg: { kind: 'ripple' }, at: [0.3, 0.5], d: 'The Charge element level, L0-L10. Level 5 unlocks Siphon: every rival the ripple passes loses one Time petal to you (a scored hit, a second of silence). The level does nothing else here.', lo: 'Level 3: no Siphon.', hi: 'Level 5: Siphon.' },
+    abCReach: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'How far the gravity wave rings out from your hull. Crystals inside it are drawn to you; rivals inside it show you their path.', lo: 'A short ring: only nearby crystals.', hi: 'A wide ring: most of a lap\'s crystals.' },
+    abCCool: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'Seconds before LB rings again. The LB tile shades while it recharges.', lo: 'Often.', hi: 'Rarely.' },
+    abCReveal: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'How long a rival the wave passed keeps showing you its next ring and the path it is flying, in its colour.', lo: 'A glimpse.', hi: 'A long look.' },
+    abCPull: { scene: 'abil', cfg: { kind: 'ripple' }, d: 'How much faster than you a drawn crystal flies at you, so it always arrives. Whoever reaches a crystal first still takes it.', lo: 'Crystals drift in.', hi: 'Crystals snap to you.' },
+    abMOn: { scene: 'abil', cfg: { kind: 'accrete' }, d: 'The accretion trail on the Mass ability (the field trajectory). On, the warped stretch you fly lays prisms; off, the field lays nothing, as round 28.', lo: 'Off.', hi: 'On.' },
+    abMLevel: { scene: 'abil', cfg: { kind: 'accrete' }, at: [0.3, 0.5], d: 'The Mass element level. Level 5 unlocks Armoured Wake: the trail\'s prisms are shielded (drawn in a cage) and no Collapse can destroy them.', lo: 'Level 3: plain prisms.', hi: 'Level 5: shielded.' },
+    abMDensity: { scene: 'abil', cfg: { kind: 'accrete' }, d: 'How many prisms each 100 u of warped path lays.', lo: 'A sparse dotted trail.', hi: 'A dense wall of prisms.' },
+    abMLife: { scene: 'abil', cfg: { kind: 'accrete' }, d: 'How long each accretion prism stands before it fades.', lo: 'Short trails.', hi: 'Long trails that build up.' },
+    abSOn: { scene: 'abil', cfg: { kind: 'collapse' }, d: 'Collapse, the Space ability, on Y. Off, Y does nothing.', lo: 'Off.', hi: 'On.' },
+    abSLevel: { scene: 'abil', cfg: { kind: 'collapse' }, at: [0.3, 0.5], d: 'The Space element level. Level 5 unlocks Spaghettify: a rival inside the collapse radius takes a scored hit (one Space petal, a second of silence). It is never pushed.', lo: 'Level 3: prisms only.', hi: 'Level 5: rivals too.' },
+    abSRadius: { scene: 'abil', cfg: { kind: 'collapse' }, d: 'How far from the black hole the implosion reaches. Every prism inside is destroyed (shielded ones excepted).', lo: 'A tight pocket.', hi: 'A wide crater.' },
+    abSCool: { scene: 'abil', cfg: { kind: 'collapse' }, d: 'Seconds before Y can collapse a pair again. The Y tile shades while it recharges.', lo: 'Often.', hi: 'Rarely.' },
+    abSGrace: { scene: 'abil', cfg: { kind: 'collapse' }, d: 'How long after letting go of a pair Y still collapses it (while it closes). 0 = only while you hold it.', lo: 'Only while held.', hi: 'A forgiving late press.' },
+    abTOn: { scene: 'abil', cfg: { kind: 'whip' }, d: 'The Whip on the Time ability (the catch sling). Off, the catch sling flies exactly as round 28.', lo: 'Off.', hi: 'On.' },
+    abTLevel: { scene: 'abil', cfg: { kind: 'whip' }, at: [0.3, 0.5], d: 'The Time element level. Level 5 unlocks the Whip: let go just past the orbit\'s fastest point and you leave with an extra burst.', lo: 'Level 3: no Whip.', hi: 'Level 5: the Whip.' },
+    abTWindow: { scene: 'abil', cfg: { kind: 'whip' }, d: 'How many degrees round the black hole after your speed has peaked the Whip window stays open. The Time tile lights while it is.', lo: 'A tight window: a skill shot.', hi: 'A wide window: easy to hit.' },
+    abTBurst: { scene: 'abil', cfg: { kind: 'whip' }, d: 'The Whip\'s extra burst, as a share of your speed, on top of the sling\'s own kick; it fades like the kick.', lo: 'A nudge.', hi: 'A big throw.' },
     ftStrength: { scene: 'field', cfg: { D: 300 }, d: 'How strong each pole is (GM = 20,000 × strength, the game\'s unit). Fixed: the trigger no longer sets it, it only pulls the poles apart. A stronger pair bends paths from further away, so more headings boost.', lo: 'A weak pair: only close passes bend.', hi: 'A strong pair: paths bend from far out.' },
     ftHorizon: { scene: 'field', cfg: { D: 300, q: 1 }, d: 'The black hole\'s horizon, fixed (the white hole is this × its size). A path that crosses it goes through the wormhole. The preview pulls the poles fully apart.', lo: 'A small mouth: few paths go through.', hi: 'A wide mouth: many paths go through.' },
     ftWhite: { scene: 'field', cfg: { D: 300 }, d: 'How hard the white hole pushes, as a share of the black hole\'s pull. At 1 the two are equal and opposite: a true dipole, whose field fades as the poles come together and grows with how far apart they are (the dipole moment).', lo: 'Mostly a black hole: it pulls even when the poles are together.', hi: 'A strong push: paths are shoved off the white side.' },
@@ -4328,6 +4883,27 @@
   // new: the field the game will get, by this exact name; lab: the studio's own (never in the game). The archived slings
   // (orbit, crystal) have none. Shown under every slider.
   const GAME_NAMES = {
+    // round 29: the four-ability kit, every row a proposal for Yash to judge (no game field yet, /vessel section 3)
+    abAI: ['lab: round 29 proposal, not in the game', 'lab'],
+    abCOn: ['lab: round 29 proposal, not in the game', 'lab'],
+    abCLevel: ['lab: round 29 proposal, not in the game', 'lab'],
+    abCReach: ['lab: round 29 proposal, not in the game', 'lab'],
+    abCCool: ['lab: round 29 proposal, not in the game', 'lab'],
+    abCReveal: ['lab: round 29 proposal, not in the game', 'lab'],
+    abCPull: ['lab: round 29 proposal, not in the game', 'lab'],
+    abMOn: ['lab: round 29 proposal, not in the game', 'lab'],
+    abMLevel: ['lab: round 29 proposal, not in the game', 'lab'],
+    abMDensity: ['lab: round 29 proposal, not in the game', 'lab'],
+    abMLife: ['lab: round 29 proposal, not in the game', 'lab'],
+    abSOn: ['lab: round 29 proposal, not in the game', 'lab'],
+    abSLevel: ['lab: round 29 proposal, not in the game', 'lab'],
+    abSRadius: ['lab: round 29 proposal, not in the game', 'lab'],
+    abSCool: ['lab: round 29 proposal, not in the game', 'lab'],
+    abSGrace: ['lab: round 29 proposal, not in the game', 'lab'],
+    abTOn: ['lab: round 29 proposal, not in the game', 'lab'],
+    abTLevel: ['lab: round 29 proposal, not in the game', 'lab'],
+    abTWindow: ['lab: round 29 proposal, not in the game', 'lab'],
+    abTBurst: ['lab: round 29 proposal, not in the game', 'lab'],
     aiSling: ['lab: the sim lab\'s switch', 'lab'],
     aiQ: ['StoatSlingConfig.autopilotHold01', 'field'],
     aiCone: ['StoatSlingConfig.aiReleaseConeDegrees', 'field'],
@@ -4460,24 +5036,43 @@
   // ================= rail =================
   const outputs = {};
   function buildRail() {
-    for (const [grp, key, label, lo, hi, step] of SPEC) {
+    for (const [grp, key, label, lo, hi, step, kind] of SPEC) {
       const host = document.querySelector('#grp-' + grp + ' .rows');
       const row = document.createElement('div'); row.className = 'row';
       const id = 'p-' + key;
       const gn = GAME_NAMES[key];
-      row.innerHTML = '<label for="' + id + '">' + label + '</label><input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '"><output></output>'
+      row.innerHTML = '<label for="' + id + '">' + label + '</label>' + (kind === 'toggle' ? '<input type="checkbox" id="' + id + '">' : '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '">') + '<output></output>'
         + (gn ? '<code class="gname gn-' + gn[1] + '" title="' + (gn[1] === 'linked' ? 'The game\'s field: the artifact writes it (studio_to_unity.py)' : gn[1] === 'field' ? 'The game\'s field: not linked yet (check its units when porting)' : gn[1] === 'new' ? 'The field the game will get, by this exact name' : 'The studio\'s own: never in the game') + '">' + escapeHtml(gn[0]) + (gn[1] === 'linked' || gn[1] === 'lab' ? '' : ' · ' + gn[1]) + '</code>' : '');
       host.appendChild(row);
       attachTip(row, key, label);
       const inp = row.querySelector('input'), out = row.querySelector('output');
-      inp.value = P[key]; outputs[key] = { inp, out, step };
-      inp.addEventListener('input', () => { BP[key] = parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
+      inp.value = P[key]; outputs[key] = { inp, out, step, toggle: kind === 'toggle' };
+      if (kind === 'toggle') inp.checked = P[key] >= 0.5;
+      inp.addEventListener(kind === 'toggle' ? 'change' : 'input', () => { BP[key] = kind === 'toggle' ? (inp.checked ? 1 : 0) : parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); if (mode === 'compare' && (grp === 'A' || grp === 'B' || key === 'maxStrength' || key === 'halfGapHorizons')) buildCompare(playLives); });
       refreshOut(key);
     }
   }
-  function refreshAllOuts() { for (const k in outputs) refreshOut(k); }
+  function refreshAllOuts() { for (const k in outputs) refreshOut(k); markAbilities(); }
+  // round 29: each ability card says whether its level-5 upgrade is unlocked, and dims its sliders while it is off
+  const AB_UPGRADE = { C: ['Siphon', 'a rival the ripple passes loses one Time petal and you gain it'], M: ['Armoured Wake', 'the accretion prisms are shielded: no Collapse destroys them'],
+    S: ['Spaghettify', 'a rival inside the radius takes a scored hit (one Space petal, a brief silence)'], T: ['Whip', 'let go just past the orbit\'s fastest point for an extra burst'] };
+  function markAbilities() {
+    for (const k of ['C', 'M', 'S', 'T']) {
+      const el = $('abl-' + k), card = $('grp-ab' + k); if (!el || !card) continue;
+      const on = BP['ab' + k + 'On'] >= 0.5, lv = Math.round(BP['ab' + k + 'Level']), [name, what] = AB_UPGRADE[k];
+      card.classList.toggle('off', !on);
+      el.innerHTML = !on ? '<b>Off</b>: the ability is not in the kit, and the Stoat flies this element exactly as round 28.'
+        : lv >= 5 ? 'Level ' + lv + ': the level-5 upgrade <b class="up">' + name + '</b> is <b class="up">unlocked</b>: ' + what + '.'
+          : 'Level ' + lv + ': <b>' + name + '</b> unlocks at level 5 (' + what + ').';
+    }
+  }
   function refreshOut(key) {
     const o = outputs[key], b = BP[key], e = P[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : 2, styled = Math.abs(e - b) > 1e-6;
+    if (o.toggle) {   // an on / off row (round 29): the switch shows BP, the value reads on / off
+      o.inp.checked = b >= 0.5; o.out.textContent = b >= 0.5 ? 'on' : 'off';
+      o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.classList.remove('styled');
+      o.out.title = 'shipped ' + (SHIPPED[key] >= 0.5 ? 'on' : 'off'); return;
+    }
     if (document.activeElement !== o.inp && Math.abs(parseFloat(o.inp.value) - b) > 1e-9) o.inp.value = b;
     o.out.textContent = (styled ? e : b).toFixed(dec);
     o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9);
@@ -4903,17 +5498,18 @@
   }
   window.addEventListener('resize', resize);
 
-  buildRail(); buildTypes(); buildProfiles(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
+  buildRail(); markAbilities(); buildTypes(); buildProfiles(); buildCourse(); setStyle(style); renderRuns(); resize(); spawn(); renderLog();
   let last = performance.now();
   // One step of the world: everything but drawing. The frame runs it once (or several times when the sim lab runs
   // fast); the sim lab's batch runs it thousands of times without drawing at all.
   function simStep(dt, inp, withBodies) {
     GM_PER_STRENGTH = P.bhGmPerStrength; HORIZON_PER_STRENGTH = P.bhHorizonPerStrength;
-    simT += dt; waves = waves.filter(waveAlive); stepStyles(dt); spinCrystals(dt);
+    simT += dt; abT += dt; waves = waves.filter(waveAlive); stepStyles(dt); spinCrystals(dt);
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
     collectWells();
     if (mode === 'fly') { if (!stopped) stepFly(dt, inp); else watchStep(dt); stepRivals(dt); } else { for (let k = 0; k < NT; k++) if (tAge[k] >= 0) tAge[k] += dt; }
+    if (anyAbility() || ripples.length || deadList.length || accLive) stepAbilityWorld(dt);   // round 29
     if (withBodies) stepBodies(dt);
   }
   let manualClock = false;   // a recorder steps the world itself, frame by frame (window.__stoatStudio.tick)
@@ -4937,7 +5533,7 @@
   }
   // Your hull's input this step: yours, or (Is AI ticked, or nobody on the controls for IDLE_TAKEOVER_S) the AI's.
   function pilotInput(dt) {
-    if (aiOn) return youAiInput(dt);
+    if (aiOn) return withAbPresses(youAiInput(dt));
     if (idleTakeover && mode === 'fly' && race !== 'ready') { if (humanOnControls()) idleFor = 0; else idleFor += dt; } else idleFor = 0;   // racing, and after the finish too
     const idleAi = idleFor >= IDLE_TAKEOVER_S;
     if (idleAi !== wasIdleAi) { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); }   // a pair is never handed over
@@ -4951,11 +5547,11 @@
     // rival) kept its last heading forever and left the course for infinity.
     if (aiOn && mode === 'fly') {
       const n = Math.max(1, Math.round(simSpeed)), h = dt * simSpeed / n;
-      for (let i = 0; i < n; i++) simStep(h, youAiInput(h), i === n - 1);
+      for (let i = 0; i < n; i++) simStep(h, i ? youAiInput(h) : withAbPresses(youAiInput(h)), i === n - 1);
     } else simStep(dt, pilotInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
-    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
+    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); drawAbilityFx(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================
@@ -4971,7 +5567,7 @@
     // mode in use and its own settings in Play Style Config, the hole physics behind them in Vessel Config
     R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-BL', 'grp-WL', 'grp-WM', 'grp-life']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
       ['style', 'Play Style Config', ['mainCard', 'grp-style', 'grp-sling', 'grp-P', 'grp-F', 'grp-D', 'grp-V', 'grp-A', 'grp-B']], ['input', 'Input', ['keysSec']],
-      ['others', 'Vessel Config', ['grp-BH', 'grp-WH', 'grp-pair', 'grp-lope', 'archive']]],
+      ['others', 'Vessel Config', ['grp-abC', 'grp-abM', 'grp-abS', 'grp-abT', 'grp-BH', 'grp-WH', 'grp-pair', 'grp-lope', 'archive']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
   const TAB = {};   // key -> { dock, title, btn, pane, win }
@@ -5086,6 +5682,9 @@
     get slingMode() { return slingMode; },
     fieldScan, fieldScanAll, fieldPath, runFieldBatch, fieldTable, fieldSummary, fieldStanding, layField, dipoleOffsets,
     get ftLive() { return ftLive; }, get ftMul() { return ftMul; }, get ftRates() { return ftRates; },
+    // round 29: the four-ability kit
+    get ab() { return ab; }, get acc() { return acc; }, get ripples() { return ripples; }, get dead() { return dead; }, revealUntil, ELEMENTS,
+    pressLB() { pendingAb.lb = true; }, pressY() { pendingAb.y = true; }, anyAbility, ownPairForCollapse,
   }));
   window.__lab = window.__stoatStudio;
 })();

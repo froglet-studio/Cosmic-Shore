@@ -18,20 +18,23 @@ namespace CosmicShore.Gameplay
 
         public override GameModes Mode => GameModes.BurrowRun;
 
-        public override int LapsPerRace(int intensity) => Mathf.Max(1, Laps);
+        /// <summary>The scene's laps, or the Time Race Prototyper's when its course for this race is on.</summary>
+        public override int LapsPerRace(int intensity) => TimeRaceCourseConfigSO.LapsFor(Mode, Laps);
 
         public override int AuthoredGateTarget(int intensity)
         {
             var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
+            int shipped = overrides != null
                 ? overrides.GetBurrowRunGateTarget()
                 : EndConditionOverridesSO.DefaultBurrowRunGateTarget;
+            return TimeRaceCourseConfigSO.GateTargetFor(Mode, shipped);
         }
 
         public override List<RaceGate> Build(in RaceCourseRequest request, out string failure)
         {
             failure = null;
-            return HeadlongCourseSource.BuildCircuit(SlingshotCourse.ForIntensity(request.Intensity), request, LapsPerRace(request.Intensity));
+            return HeadlongCourseSource.BuildCircuit(TimeRaceCourseConfigSO.Circuit(Mode, request.Intensity), request,
+                                                     LapsPerRace(request.Intensity));
         }
     }
 }

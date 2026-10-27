@@ -65,6 +65,9 @@ CONFIG = os.path.join(ACTIONS, "MeerkatWormholeConfig.asset")
 FORM = os.path.join(ACTIONS, "MeerkatWormholeFormAction.asset")
 SHORTEN = os.path.join(ACTIONS, "MeerkatWormholeShortenAction.asset")
 STUDIO = os.path.join(ROOT, "Docs", "Studios", "VesselStudio", "meerkat.html")
+CAMERAS = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera")
+DONOR_CAMERA = os.path.join(CAMERAS, "StoatCameraSettingsSO.asset")
+CAMERA = os.path.join(CAMERAS, "MeerkatCameraSettingsSO.asset")
 
 # 24 Flea (claude/flea-vessel), 25-27 Warden / Bulwark / Tempest (cece/keen-feynman-unrdda): checked across every origin
 # branch 2026-10-27, so the Meerkat is 28.
@@ -79,6 +82,8 @@ FORM_GUID = "1f2e3d4c5b6a4978a8b7c6d5e4f3a2b1"
 SHORTEN_GUID = "3c4d5e6f7a8b4c9d8e0f1a2b3c4d5e6f"
 STOAT_HOLD_GUID = "9b50ea11259b4b1aa750eea7f1d7f781"   # StoatHoldAction (X: the stance)
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"    # Runtime GameData (the domain palette)
+STOAT_CAMERA_GUID = "2fb2a0bb0eaf4bd1863fdf55490fa869"  # StoatCameraSettingsSO (the clone's, until round 10)
+CAMERA_GUID = "5e1e0cd061ab49dbbb24bf9c1080387b"        # MeerkatCameraSettingsSO
 
 ROOT_GO = "6417075533431866457"              # the Stoat's root GameObject
 ROOT_TRANSFORM_ID = "5928382658856804067"
@@ -111,12 +116,11 @@ def script_guid(name: str) -> str:
 
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
-CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "throatRadius", "mouthRadius",
+CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "throatDiameter", "mouthDiameter",
                "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
-               "reticleSmoothSeconds", "reticleIdleAlpha", "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs",
-               "reticleSpindleThickness", "reticlePath", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
-               "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "aiWormhole", "aiStraightMinDistance",
+               "reticleSmoothSeconds", "reticleIdleAlpha", "reticleWhite", "reticleNearLight", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
+               "bridgeRibs", "bridgeSpindleThickness", "bridgeShimmer", "bridgeWhite", "aiWormhole", "aiStraightMinDistance",
                "aiBentMinDistance", "aiShapeSeconds", "aiNoise"]
 
 
@@ -154,7 +158,14 @@ def config_asset(values: dict) -> str:
 RENAMED = {"throatSpeed": "rideMidMultiplier"}
 # Studio keys the page retired (round 7, the umbrella handle: a fixed narrow throat and mouth, LT sets the shaft before a
 # bend of fixed radius). Their lines leave the asset; the field is gone from MeerkatWormholeConfigSO.
-RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare"]
+RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
+           # round 9 (Yash, 2026-10-28: "the reticle is the silhouette of the geometry"): the reticle is the bridge's wireframe,
+           # so its own geometry, glass and path go, and Garrett's reticleLook switch with them (one reticle now)
+           "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs", "reticleSpindleThickness", "reticlePath",
+           "reticleLook",
+           # round 10 (Yash, 2026-10-28): diameters ("the diameter of the entry exit pair ... and the inner diameter"), and the
+           # ride camera is the follow camera's own distance with no blend (the hull always at the centre of the screen)
+           "throatRadius", "mouthRadius", "rideCameraBack", "rideCameraLookAhead", "rideCameraBlendSeconds"]
 
 
 def config_retrofit(cfg: str, values: dict) -> str:
@@ -180,6 +191,35 @@ def action_asset(name: str, trigger: int) -> str:
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
             f"  m_Script: {{fileID: 11500000, guid: {script_guid('MeerkatWormholeActionSO')}, type: 3}}\n"
             f"  m_Name: {name}\n  m_EditorClassIdentifier: \n  trigger: {trigger}\n")
+
+
+# Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
+# screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow, it's always
+# center"): the Meerkat's own camera settings, forked from the Stoat's (whose camera stays as it is): no height, no look
+# lift, and hard-attached (chaseEaseRate 0 with mode 0: CustomCameraController puts the camera exactly at its offset), so
+# the hull sits at the centre of the screen. A one-shot: after it exists, its numbers are the asset's.
+CAMERA_CENTRED = {"followOffset": "{x: 0, y: 0, z: -21}", "lookAheadLift": "0", "chaseEaseRate": "0"}
+
+
+def camera_asset(donor: str) -> str:
+    text = replace_once(donor, "  m_Name: StoatCameraSettingsSO\n", "  m_Name: MeerkatCameraSettingsSO\n", "camera m_Name")
+    for k, v in CAMERA_CENTRED.items():
+        text = re.sub(r"^  %s: .*$" % k, f"  {k}: {v}", text, count=1, flags=re.M)
+    return text
+
+
+def check_camera(text: str):
+    errs = []
+    if "  mode: 0\n" not in text:
+        errs.append("MeerkatCameraSettingsSO: mode is not 0 (a dynamic camera smooths, so the hull drifts off centre)")
+    m = re.search(r"^  followOffset: \{x: (-?[\d.]+), y: (-?[\d.]+), z: (-?[\d.]+)\}$", text, re.M)
+    if not m or float(m.group(1)) != 0 or float(m.group(2)) != 0:
+        errs.append("MeerkatCameraSettingsSO: followOffset has an x or y offset (the hull is not at the centre of the screen)")
+    for k in ("lookAheadLift", "chaseEaseRate"):
+        m = re.search(r"^  %s: (-?[\d.]+)$" % k, text, re.M)
+        if not m or float(m.group(1)) != 0:
+            errs.append(f"MeerkatCameraSettingsSO: {k} is not 0 (the hull is not held at the centre)")
+    return errs
 
 
 def folder_meta(guid: str) -> str:
@@ -242,6 +282,8 @@ def retrofit(text: str) -> str:
             d = set_list(d, "_gamepadActionOverrides", "  _gamepadActionOverrides: []\n")
         out.append(d)
     text = head + "".join(out)
+    text = text.replace(f"  settings: {{fileID: 11400000, guid: {STOAT_CAMERA_GUID}, type: 2}}",
+                        f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}")
     if f"--- !u!114 &{RELAY_ID}\n" not in text:
         text = text.rstrip("\n") + "\n" + relay_block()
     m = re.search(r"(--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
@@ -389,6 +431,8 @@ def check_prefab(text: str):
     want(root and f"{{fileID: {RELAY_ID}}}" in root.group(1) and
          f"guid: {script_guid('MeerkatWormholeNetworkRelay')}, type: 3" in doc_of(text, RELAY_ID),
          "Meerkat.prefab: MeerkatWormholeNetworkRelay is not on the root (other players would not see the tunnels)")
+    want(f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}" in text and STOAT_CAMERA_GUID not in text,
+         "Meerkat.prefab: the camera is not MeerkatCameraSettingsSO (the Stoat's camera sits above and behind the hull)")
     want("  - component: {fileID: 0}\n" not in text, "Meerkat.prefab: a GameObject lists a null component")
     dangling = dangling_local_refs(text)
     want(not dangling, f"Meerkat.prefab: dangling local fileID reference(s) {dangling[:5]}")
@@ -435,12 +479,14 @@ def check_all():
         return ["Meerkat.prefab (+ .meta) is missing: run Tools/Build/author_meerkat_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Meerkat.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB))
-    for path, guid in ((CLASS_ASSET, CLASS_GUID), (MAP, MAP_GUID), (CONFIG, CONFIG_GUID), (FORM, FORM_GUID), (SHORTEN, SHORTEN_GUID)):
+    for path, guid in ((CLASS_ASSET, CLASS_GUID), (MAP, MAP_GUID), (CONFIG, CONFIG_GUID), (FORM, FORM_GUID), (SHORTEN, SHORTEN_GUID),
+                       (CAMERA, CAMERA_GUID)):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
         if guid_of(path + ".meta") != guid:
             errs.append(f"{os.path.relpath(path, ROOT)}.meta: not the guid the prefab binds")
     errs += check_config(read(CONFIG), shipped(read(STUDIO)))
+    errs += check_camera(read(CAMERA))
     if read(FORM) != action_asset("MeerkatWormholeFormAction", 0) or read(SHORTEN) != action_asset("MeerkatWormholeShortenAction", 1):
         errs.append("MeerkatWormholeFormAction / ShortenAction: not the RT Form (0) and LT Shorten (1) triggers")
     errs += check_registrations(read(CONTAINER), read(NETWORK_PREFABS), [(os.path.basename(p), read(p)) for p in CLASS_LISTS],
@@ -462,6 +508,8 @@ def author():
     for path, guid, name, k in ((FORM, FORM_GUID, "MeerkatWormholeFormAction", 0), (SHORTEN, SHORTEN_GUID, "MeerkatWormholeShortenAction", 1)):
         if not os.path.exists(path) or read(path) != action_asset(name, k):
             write(path, action_asset(name, k)); write(path + ".meta", native_meta(guid))
+    if not os.path.exists(CAMERA):   # a one-shot, like the config
+        write(CAMERA, camera_asset(read(DONOR_CAMERA))); write(CAMERA + ".meta", native_meta(CAMERA_GUID))
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR)))
         write(PREFAB + ".meta", prefab_meta())
@@ -497,6 +545,12 @@ def self_test():
     expect(check_prefab(good + "  stray: {fileID: 987654321}\n"), 1, "a dangling local reference")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {STANCE_ID}}}\n", "  - component: {fileID: 0}\n")), 1, "a null component")
     expect(check_prefab(read(DONOR).replace("  m_Name: Stoat\n", "  m_Name: Meerkat\n")), 4, "the Stoat untouched")
+    expect(check_prefab(good.replace(CAMERA_GUID, STOAT_CAMERA_GUID)), 1, "the Stoat's camera")
+    cam = camera_asset(read(DONOR_CAMERA))
+    expect(check_camera(cam), 0, "a fresh camera is centred")
+    expect(check_camera(cam.replace("  followOffset: {x: 0, y: 0, z: -21}", "  followOffset: {x: 0, y: 6.5, z: -21}")), 1, "a height offset")
+    expect(check_camera(cam.replace("  chaseEaseRate: 0\n", "  chaseEaseRate: 7\n")), 1, "an eased chase")
+    expect(check_camera(read(DONOR_CAMERA)), 2, "the Stoat's camera")
     if retrofit(good) != good:
         fails.append("the retrofit is not idempotent")
     tuned = good.replace("\n  RollScaler: 15.6\n", "\n  RollScaler: 20\n")
@@ -508,7 +562,7 @@ def self_test():
     cfg = config_asset(values)
     expect(check_config(cfg, values), 0, "a fresh config passes")
     expect(check_config(cfg.replace("  reticleAhead: 30\n", ""), values), 1, "a key missing")
-    old_cfg = cfg.replace("  reticleSmoothSeconds: 0.15\n", "").replace("  reticleRings: 10\n", "")
+    old_cfg = cfg.replace(f"  reticleSmoothSeconds: {num(values['reticleSmoothSeconds'])}\n", "").replace(f"  bridgeRings: {num(values['bridgeRings'])}\n", "")
     if config_retrofit(old_cfg, values) == old_cfg or check_config(config_retrofit(old_cfg, values), values):
         fails.append("the config retrofit does not add a key the studio added later")
     if config_retrofit(cfg, values) != cfg:
@@ -519,10 +573,10 @@ def self_test():
     retired = cfg.replace("  shaftMin: 60\n", "  lengthStraight: 600\n  shaftMin: 60\n")
     if check_config(retired, values) == [] or "lengthStraight" in config_retrofit(retired, values):
         fails.append("a retired key is neither flagged nor removed by the retrofit")
-    pre7 = re.sub(r"  (shaftMin|shaftMax|bendRadius|throatRadius|mouthRadius): .*\n", "", cfg)
+    pre7 = re.sub(r"  (shaftMin|shaftMax|bendRadius|throatDiameter|mouthDiameter): .*\n", "", cfg)
     if config_retrofit(pre7, values) != cfg:
         fails.append("the config retrofit does not bring a round-6 asset to the round-7 one, in the page's order")
-    if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
+    if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 0.25\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]

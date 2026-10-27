@@ -17,43 +17,57 @@ MonoBehaviour:
   shaftMin: 60
   shaftMax: 600
   bendRadius: 60
-  throatRadius: 4
-  mouthRadius: 10
+  throatDiameter: 8
+  mouthDiameter: 26
   keyRampSeconds: 0.5
+  rideEntryMultiplier: 1
   rideMidMultiplier: 2.5
+  rideExitMultiplier: 1.2
+  rideSpeedTunnelScale: 5
   reticleDelaySeconds: 0.5
   reticleGrowSeconds: 0.8
   formSeconds: 0.4
   staySeconds: 10
   collapseSeconds: 0.8
+  reticleSmoothSeconds: 0.123
+  reticleIdleAlpha: 0.053
+  reticleWhite: 0.45
+  reticleNearLight: 0.25
   warpStrength: 0
   dentStrength: 0
   rippleStrength: 0
-  rippleEdge: 0.45
+  rippleEdge: 0.154
   rippleSeconds: 1.2
-  reticleIdleAlpha: 0.4
-  reticleGlass: 0.15
-  bridgeVisibility: 1
-  bridgeGlass: 0.6
-  bridgeRings: 16
-  bridgeSpindlesPerRing: 12
-  bridgeRibs: 6
-  bridgeSpindleThickness: 1.6
+  bridgeVisibility: 0.163
+  bridgeGlass: 0.15
+  bridgeRings: 36
+  bridgeSpindlesPerRing: 21
+  bridgeRibs: 5
+  bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
+  bridgeWhite: 0.45
+  formedLook: 1
+  fieldStrength: 6
+  fieldPitch: 0
+  fieldDrag: 0.5
+  fieldTwist: 0
+  fieldGlass: 1
+  fieldGlassIndex: 0.05
+  fieldGrazing: 0.9
+  fieldFlow: 0
+  fieldInner: 0.1
+  fieldOuter: 0.15
+  fieldProfile: 1
+  fieldRibs: 0.25
+  fieldRibSharpness: 3
+  fieldRibTravel: 1.2
+  fieldRibRings: 16
+  fieldRibLines: 12
   aiWormhole: 1
   aiStraightMinDistance: 300
   aiBentMinDistance: 120
   aiShapeSeconds: 0.3
   aiNoise: 0
-  reticleSmoothSeconds: 0.15
-  reticleRings: 10
-  reticleSpindlesPerRing: 16
-  reticleRibs: 8
-  reticleSpindleThickness: 0.35
-  reticlePath: 0.5
-  rideSpeedTunnelScale: 5
-  rideEntryMultiplier: 1
-  rideExitMultiplier: 1.2
   formEvent:
     Guid:
       Data1: 0

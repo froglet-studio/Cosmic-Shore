@@ -137,6 +137,26 @@ namespace CosmicShore.Gameplay
             return Mathf.Sqrt(b * b + (M * M - b * b) * w * w);
         }
 
+        /// <summary>
+        /// The contour field's frame (Garrett, 2026-10-27, the Tube Lens Lab): world to the tunnel's own frame, the way in
+        /// <paramref name="a"/> at the origin, its first heading <paramref name="t0"/> along +z and the side it bends toward
+        /// along +x, so <see cref="Frame"/>'s binormal is +y and the bend (round 7) is centred on (R, 0, S).
+        /// <c>MeerkatWormholeLens.shader</c> measures the wall in this frame.
+        /// </summary>
+        public static Matrix4x4 TubeWorldToLocal(Vector3 a, Vector3 t0, Vector3 side)
+        {
+            var z = t0.normalized;
+            var x = side - z * Vector3.Dot(side, z);
+            if (x.sqrMagnitude < 1e-10f) x = Vector3.Cross(Mathf.Abs(z.y) < 0.9f ? Vector3.up : Vector3.right, z);
+            x.Normalize();
+            var y = Vector3.Cross(z, x);
+            var m = Matrix4x4.identity;
+            m.SetRow(0, new Vector4(x.x, x.y, x.z, -Vector3.Dot(x, a)));
+            m.SetRow(1, new Vector4(y.x, y.y, y.z, -Vector3.Dot(y, a)));
+            m.SetRow(2, new Vector4(z.x, z.y, z.z, -Vector3.Dot(z, a)));
+            return m;
+        }
+
         /// <summary>The page's reticle emerge (<c>gateHold</c>): 0 to 1 over <paramref name="growSeconds"/> after <paramref name="delaySeconds"/>.</summary>
         public static float ReticleEmerge(float age, float delaySeconds, float growSeconds) =>
             EaseOutCubic((age - Mathf.Max(0f, delaySeconds)) / Mathf.Max(0.05f, growSeconds));

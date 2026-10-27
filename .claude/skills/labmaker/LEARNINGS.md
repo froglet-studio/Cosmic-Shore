@@ -1061,6 +1061,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: studio-kinds.js K.tend (`gardenWorth`); CONCEPT_FLEET.md 12.2.
 - Promoted: no
 
+### L-STU-154 — Adding choices to someone else's lab: every default theirs, the baseline proven identical, and a copier for the hub
+- Lab: Crew of Four Lab round 9 (CrewOfFourLab.html, the Orca, Garrett's) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: play-style options went into a lab another collaborator owns and ported to C#. Each option is a dropdown whose first entry is the shipped behaviour (`styleBoost: 0`, `styleShield: 0`, `styleMissile: 0`), and every new branch in the step is gated on a non-zero value, so the shipped preset's 4-game batch was re-run after each change and stayed byte-identical. A self-contained lab also failed the hub's page rules (no `studio-theme.js`, no Sync tag, the header naming the host shell), so the hub page is a COPY made by `copy_orca.py` (the `copy_stoat.py` pattern) with `--check`, never a hand edit of the owner's page.
+- Do instead: for options in a collaborator's lab, gate on an opt-in key, prove the baseline unchanged, and read rows where the AI never uses the option (the breath where the helm AI never boosts) as "no data", not "no difference". To list such a lab in the hub, copy it with a checked copier.
+- Evidence: CrewOfFourLab.html `STYLES`, `styleBoostStep`, `dockStep`, `seekLock`; .claude/skills/vessel-studio/copy_orca.py; CREW_OF_FOUR_LAB.md round 9.
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it

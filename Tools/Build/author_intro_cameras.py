@@ -338,7 +338,7 @@ COURTS = [
 FAMILIES = [
     ('Crystal fields', ['SkimRace', 'Joust', 'Scurry', 'Maelstrom'], CRYSTAL_FIELDS),
     ('Gate races', ['Headlong', 'Redline', 'Switchback', 'Breakwater', 'Skein', 'Waystation', 'GrizzlyTime',
-                    'Slingshot', 'Warpline', 'ThresherTime', 'WrasseRun', 'Regatta'], GATE_RACES),
+                    'Slingshot', 'Warpline', 'BurrowRun', 'ThresherTime', 'WrasseRun', 'Regatta'], GATE_RACES),
     ('Boneyard', ['DogFight', 'Salvo', 'Dustup', 'Broadside'], BONEYARD),
     ('Forests and demolition', ['Rampage', 'Bends', 'Sirocco', 'WreckingBall', 'GrizzlyCharge', 'Cleave'], FORESTS),
     ('Cages', ['WildlifeLiberation', 'Undertow'], CAGES),
@@ -360,7 +360,8 @@ WORDS = [
     ('Waystation', 'Waystation', 'Thread the last ring on the line you want to leave on.', 'Lead runner home wins', 'Butterfly'),
     ('GrizzlyTime', 'Grizzly Time', 'Your speed is your bombs.', 'Against the clock', 'Grizzly'),
     ('Slingshot', 'Slingshot', 'You cruise slow and turn wide. Your poles do the steering.', 'Lead runner home wins', 'Stoat'),
-    ('Warpline', 'Warpline', 'Lay the poles. Warp the line. Fly it faster.', 'Time is everything', 'Stoat'),
+    ('Warpline', 'Warpline', 'Bend the tunnel. Dig the line. Ride it out.', 'Time is everything', 'Meerkat'),
+    ('BurrowRun', 'Burrow Run', 'Eight rings. Dig to every one.', 'Lead runner home wins', 'Meerkat'),
     ('ThresherTime', 'Thresher Time', 'Plant the ball. Orbit it. Let go.', 'Against the clock', 'Thresher'),
     ('WrasseRun', 'Wrasse Run', 'The Grouper flies the plane. The Wrasse takes the ring.', 'Only the Wrasse counts', 'Wrasse and Grouper'),
     ('Regatta', 'Regatta', 'Every hull. One circuit. Three laps.', 'Lead runner home wins', 'Every hull'),
