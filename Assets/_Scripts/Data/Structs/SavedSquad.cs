@@ -26,6 +26,11 @@ namespace CosmicShore.Data
         public string OwnerName;
         /// <summary>The seat the player holds: 0 (the leader) in a squad they made, 1 or 2 in one they joined.</summary>
         public int MySeat;
+        /// <summary>
+        /// The squad's domain (its team colour: Jade, Ruby or Gold). The owner sets it; a joined copy reads it from the owner.
+        /// A record saved before squads had one reads as Jade.
+        /// </summary>
+        public Domains Domain = Domains.Jade;
         public SquadSlot Leader;
         public SquadSlot RogueOne;
         public SquadSlot RogueTwo;
@@ -73,7 +78,7 @@ namespace CosmicShore.Data
         public SavedSquad Clone(string name)
         {
             static SquadSlot Unheld(SquadSlot s) => s.IsPlayer() ? s.WithSeat(SquadSeat.Open) : s;
-            return new SavedSquad(name, Leader, Unheld(RogueOne), Unheld(RogueTwo));
+            return new SavedSquad(name, Leader, Unheld(RogueOne), Unheld(RogueTwo)) { Domain = Domain };
         }
 
         /// <summary>A fresh squad id: 32 hex characters, unique enough for a player's handful of squads.</summary>

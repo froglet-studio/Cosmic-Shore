@@ -3954,3 +3954,50 @@ Quiet by rule: no idle motion (the domain switch's nanobot rebuild is the only a
 mate's four picks as one line of text, the picked seat marked by one thin line in the domain colour. Rev 28's spot-lit
 podium is set aside. Make squad, join and the Unity build follow the layout picked here.
 
+**Picked (Shombith, 2026-10-27): "go with C, the deck".**
+
+## 93. The deck: Rev 31 boards and the Squads tab rebuilt to them (2026-10-27, awaiting in-editor approval)
+
+**Boards:** page "Rev 31 - Squads, the deck" of Menu Redesign B (Rev 30 was taken by a Codex page the same hour), copies
+in `Docs/MenuRedesignB/board/R31Deck*.dc.html`: Make squad (interactive), squad made, a joined squad, no squad yet, join a
+friend's squad, Decor locked, notes.
+
+**Built** (`author_menu_ark.py` authors it; `SquadsPage` drives it):
+- **List** down the left: four rows (name, domain, "Yours - 1 seat open" / "Kestrel's squad - joined"), MAKE SQUAD and
+  JOIN A FRIEND'S SQUAD under them.
+- **Header**: the kicker, the squad's name and line, and the domain chips (Jade, Ruby, Gold, each with its diamond in
+  the domain's colour).
+- **The deck**: three cards (`SquadMateCard`), the leader raised in the middle and the rogues turned 6 degrees on the
+  flanks. Each card has the seat and its number, the hull (the Hangar card render, `HangarCardArtSO`), who flies it, and
+  four rows: vessel, element, pilot, artifact. The pilot's full figure stands over the card's left edge. An open seat
+  shows an outline instead ("A friend takes this seat").
+- **Make squad**: the deck scales to 0.8 about its top centre and the picker opens under it (`SquadPickChip`):
+  - vessel tiles, seven a page, with < and > to page through the Hangar's unlocked roster;
+  - the pilots (base kit and the vessel's roster, with their portraits);
+  - the four elements, and for a rogue card who flies it (AI wingmate or open for a friend);
+  - the artifacts (none, then the vessel's and the fleet's; the player's own card offers only found ones).
+
+  A press on a card picks which one the picker edits. CREATE SQUAD adds the squad; EDIT reopens a made squad (SAVE
+  SQUAD). Nothing is saved before that press, and CANCEL drops the draft.
+- **Take into**: Mission (its padlock follows Home's Mission entry) and Arena only, shown only for a made squad. No
+  Arcade.
+- **Domain**: `SavedSquad.Domain` (a record from before reads as Jade; a joined copy takes the owner's). A press plays
+  `SquadNanobotSwap` on each card, 0.14 s apart. The hull dissolves into 34 prism-bots that scatter and rebuild it tinted
+  to the new domain (`SO_ColorSet.GetDomainSignalColor`), on unscaled time. Only the leader changes a squad's domain.
+- The first cut's three-card editor with CHANGE buttons and its PLAY ARCADE / ARENA / MISSION row are gone.
+  `author_menu_ark.py` now fails if a Take-into-Arcade field comes back.
+
+**How it was checked:**
+- `author_menu_ark.py --check` and `--self-test` pass: 10 negative controls, three of them new (a card with no hull,
+  Take into Arcade back, the nanobots with no bot).
+- `unity_refcompile` player and editor configs: 0 errors in project code.
+- 22 squad tests (one new: the domain is the owner's, and an old record reads as Jade), compiled with Roslyn and run
+  outside Unity: all pass.
+- `check_generated_assets.py`, `check_console_logging.py` and `check_conditional_compilation.py` pass.
+- Not opened in the Unity editor.
+
+**Open:**
+- The squad's domain does not reach the configure window yet: its domain pick still comes from its own per-mode
+  preference.
+- The tab row is still centred over the screen; the boards draw it left-aligned with LB / RB keycaps.
+

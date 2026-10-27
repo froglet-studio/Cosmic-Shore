@@ -168,6 +168,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Domain_IsTheOwners_AndAnOldRecordReadsAsJade()
+        {
+            var owner = Owned("Breakers");
+            owner.Domain = Domains.Ruby;
+            var book = new SquadBook();
+            SquadMembership.TryJoin(book, Ana, "Ana", Me, "Me", owner, default, out var joined);
+            Assert.AreEqual(Domains.Ruby, joined.Domain, "a joined copy takes the owner's domain");
+
+            var ownerBook = new SquadBook();
+            ownerBook.Add(owner);
+            owner.Domain = Domains.Gold;
+            SquadMembership.RefreshJoined(joined, Ana, SquadMembership.BuildPublicRecord(ownerBook, "Me"));
+            Assert.AreEqual(Domains.Gold, joined.Domain, "the owner's change reaches the joiner");
+
+            Assert.AreEqual(Domains.Jade, JsonConvert.DeserializeObject<SavedSquad>("{\"Name\":\"Old\"}").Domain);
+        }
+
+        [Test]
         public void SquadSlot_SavedBeforeSeatsExisted_ReadsAsAnAiSeat()
         {
             var slot = JsonConvert.DeserializeObject<SquadSlot>("{\"Vessel\":1,\"Element\":2}");

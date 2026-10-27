@@ -5,86 +5,91 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One squad mate on the Ark's Squads tab: their seat (Leader, Rogue One, Rogue Two), who flies it (you, a friend,
-    /// an AI wingmate or an open seat), and their four picks - vessel, element, pilot and artifact. Each pick is a
-    /// button that steps to the next choice while the player may change it (their own seat, and the AI seats of a
-    /// squad they made); <see cref="SquadsPage"/> decides that and writes the card.
+    /// One squad mate as a card in the Ark's Squads deck (Docs/MENU_REDESIGN_B.md section 93, Rev 31 "the deck"): the seat
+    /// and its number, the hull, who flies it, and the four picks (vessel, element, pilot, artifact) as rows. The pilot stands
+    /// beside the card, stepping out of its frame; an open seat shows an outline instead. <see cref="SquadsPage"/> writes it.
     /// </summary>
     public class SquadMateCard : MonoBehaviour
     {
-        public enum Pick { Vessel = 0, Element = 1, Pilot = 2, Artifact = 3, Seat = 4 }
+        [Header("Card")]
+        [Tooltip("The whole card: in Make squad a press picks this seat to edit.")]
+        [SerializeField] private KitButton button;
+        [Tooltip("The thin line in the domain colour round the card being edited (off otherwise).")]
+        [SerializeField] private Graphic editMark;
 
-        [Header("Who")]
+        [Header("Words")]
         [SerializeField] private TMP_Text seatText;
-        [SerializeField] private TMP_Text memberText;
-        [Tooltip("Steps an AI seat to open and back, or opens a friend's seat again (squads the player made).")]
-        [SerializeField] private KitButton seatButton;
-        [SerializeField] private TMP_Text seatButtonLabel;
-
-        [Header("Vessel")]
-        [SerializeField] private KitButton vesselButton;
-        [SerializeField] private Image vesselImage;
+        [SerializeField] private TMP_Text numberText;
+        [SerializeField] private TMP_Text whoText;
         [SerializeField] private TMP_Text vesselText;
-
-        [Header("Element")]
-        [SerializeField] private KitButton elementButton;
         [SerializeField] private TMP_Text elementText;
-
-        [Header("Pilot")]
-        [SerializeField] private KitButton pilotButton;
-        [SerializeField] private Image pilotImage;
         [SerializeField] private TMP_Text pilotText;
-
-        [Header("Artifact")]
-        [SerializeField] private KitButton artifactButton;
-        [SerializeField] private Image artifactImage;
         [SerializeField] private TMP_Text artifactText;
 
-        /// <summary>Raised with the pick the player pressed.</summary>
-        public event System.Action<Pick> Pressed;
+        [Header("Art")]
+        [SerializeField] private Image hullImage;
+        [Tooltip("The pilot, full figure, stepping out of the card.")]
+        [SerializeField] private Image pilotImage;
+        [Tooltip("Shown instead of the pilot while the seat is open for a friend.")]
+        [SerializeField] private CanvasGroup openSeatGroup;
+        [SerializeField] private SquadNanobotSwap nanobots;
+
+        [Header("Colours")]
+        [SerializeField] private Color artifactColor = new(0.902f, 0.914f, 1f, 1f);
+        [Tooltip("The artifact row's word while no artifact is carried.")]
+        [SerializeField] private Color noArtifactColor = new(0.361f, 0.373f, 0.439f, 1f);
+
+        /// <summary>Raised when the card is pressed.</summary>
+        public event System.Action Pressed;
+
+        public SquadNanobotSwap Nanobots => nanobots;
 
         void Awake()
         {
-            Hook(vesselButton, Pick.Vessel);
-            Hook(elementButton, Pick.Element);
-            Hook(pilotButton, Pick.Pilot);
-            Hook(artifactButton, Pick.Artifact);
-            Hook(seatButton, Pick.Seat);
+            if (button) button.onClick.AddListener(() => Pressed?.Invoke());
         }
 
-        void Hook(KitButton b, Pick pick)
+        public void Draw(string seat, string number, string who, Sprite hull, string vessel, string element,
+            Sprite pilot, string pilotName, string artifact, bool carriesArtifact, bool openSeat)
         {
-            if (b) b.onClick.AddListener(() => Pressed?.Invoke(pick));
+            Set(seatText, seat);
+            Set(numberText, number);
+            Set(whoText, who);
+            Set(vesselText, vessel);
+            Set(elementText, element);
+            Set(pilotText, pilotName);
+            Set(artifactText, artifact);
+            if (artifactText) artifactText.color = carriesArtifact ? artifactColor : noArtifactColor;
+            if (hullImage)
+            {
+                hullImage.sprite = hull;
+                hullImage.enabled = hull;
+            }
+            if (pilotImage)
+            {
+                pilotImage.sprite = pilot;
+                pilotImage.enabled = pilot && !openSeat;
+            }
+            if (openSeatGroup) KitVisibility.SetShown(openSeatGroup, openSeat);
         }
 
-        public void DrawWho(string seat, string member, string seatAction)
+        /// <summary>Marks the card being edited in Make squad, in the domain colour; in a made squad no card is marked.</summary>
+        public void SetEditing(bool editing, Color domain)
         {
-            if (seatText) seatText.text = seat;
-            if (memberText) memberText.text = member;
-            bool canSeat = !string.IsNullOrEmpty(seatAction);
-            if (seatButton) seatButton.interactable = canSeat;
-            if (seatButtonLabel) seatButtonLabel.text = canSeat ? seatAction : string.Empty;
+            if (!editMark) return;
+            editMark.enabled = editing;
+            editMark.color = domain;
         }
 
-        public void DrawPicks(Sprite vesselSprite, string vessel, string element, Sprite pilotSprite, string pilot,
-            Sprite artifactSprite, string artifact, bool editable)
+        /// <summary>Make squad presses cards; a made squad's cards are shown, not pressed.</summary>
+        public void SetPressable(bool pressable)
         {
-            Draw(vesselImage, vesselSprite);
-            Draw(pilotImage, pilotSprite);
-            Draw(artifactImage, artifactSprite);
-            if (vesselText) vesselText.text = vessel;
-            if (elementText) elementText.text = element;
-            if (pilotText) pilotText.text = pilot;
-            if (artifactText) artifactText.text = artifact;
-            foreach (var b in new[] { vesselButton, elementButton, pilotButton, artifactButton })
-                if (b) b.interactable = editable;
+            if (button) button.interactable = pressable;
         }
 
-        static void Draw(Image image, Sprite sprite)
+        static void Set(TMP_Text t, string s)
         {
-            if (!image) return;
-            image.sprite = sprite;
-            image.enabled = sprite;
+            if (t) t.text = s;
         }
     }
 }

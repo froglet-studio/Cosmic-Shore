@@ -51,7 +51,7 @@ namespace CosmicShore.Data
         /// <summary>A deep copy (slots are values; the squad is not).</summary>
         public static SavedSquad Copy(SavedSquad s) => s == null ? null : new SavedSquad
         {
-            Id = s.Id, Name = s.Name, OwnerId = s.OwnerId, OwnerName = s.OwnerName, MySeat = s.MySeat,
+            Id = s.Id, Name = s.Name, OwnerId = s.OwnerId, OwnerName = s.OwnerName, MySeat = s.MySeat, Domain = s.Domain,
             Leader = s.Leader, RogueOne = s.RogueOne, RogueTwo = s.RogueTwo,
         };
 
@@ -134,6 +134,7 @@ namespace CosmicShore.Data
             if (source == null) return SquadJoinState.Disbanded;
 
             joined.Name = source.Name;
+            joined.Domain = source.Domain;
             if (!string.IsNullOrEmpty(ownerRecord.PlayerName)) joined.OwnerName = ownerRecord.PlayerName;
             for (int i = 0; i < SavedSquad.SlotCount; i++)
                 if (i != joined.MySeat) joined.SetSlot(i, source.GetSlot(i));

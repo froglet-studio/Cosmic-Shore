@@ -54,7 +54,8 @@ S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeR
          button=K.kit_script("KitButton"), kt=K.kit_script("KitText"), entrance=K.kit_script("KitEntrance"),
          ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), tabs=C.script("ArkTabsView"),
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
-         availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"))
+         availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"),
+         chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"))
 C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
@@ -182,14 +183,20 @@ TABS = ("Converter", "Squads", "Decor")
 LOCKED_TABS = {"Decor"}                       # MenuAvailability.Locked: refuses with the sting and "Not open yet."
 TAB_Y, TAB_H = 108, 52
 MAX_SQUADS, SEATS, JOIN_ROWS = 4, 3, 6        # SquadBook.MaxSquads, SavedSquad.SlotCount, the join list's rows
-PICKS = ("Vessel", "Element", "Pilot", "Artifact")
-PICK_IMAGE = {"Vessel", "Pilot", "Artifact"}  # the element is a word: an element has no colour (LOCKED)
+PICKS = ("Vessel", "Element", "Pilot", "Artifact")   # a card's four rows
 VESSEL_LIST = K.meta_guid("Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset")   # the Hangar's roster
 PILOT_CATALOG = K.meta_guid("Assets/Resources/Pilots/PilotArtifactCatalog.asset")
-LIST_X, LIST_Y, LIST_W, LIST_H = 40, 244, 514, 640
-DETAIL_L, DETAIL_R, DETAIL_Y, DETAIL_H = 574, 40, 180, 800
-CARD_Y, CARD_H, PICK_Y, PICK_STEP, PICK_H = 112, 540, 92, 110, 100
-PLAY_Y = 672
+CARD_ART = K.meta_guid("Assets/_SO_Assets/UI/HangarCardArt.asset")                  # the Hangar's hull renders
+COLOR_SET = K.meta_guid("Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset")  # the domains' colours
+DOMAIN_ORDER = (("Jade", 1), ("Ruby", 2), ("Gold", 4))                                 # Domains values
+# The deck (Rev 31): the list down the left, the cards in a fan to its right, the picker under them in Make squad.
+LIST_X, LIST_Y, LIST_W, LIST_H = 40, 176, 360, 864
+COL_X, COL_W = 430, 1450                       # the deck's column, right of the list
+DECK_Y, DECK_H, DECK_PIVOT_X = 270, 700, 1155  # the cards' parent; Make squad scales it about (1155, top)
+CARD_W, CARD_H = 350, 600
+CARDS = ((DECK_PIVOT_X, 12, 0), (DECK_PIVOT_X - 380, 30, 6), (DECK_PIVOT_X + 380, 30, -6))   # centre x, top, z degrees
+PICKER_Y, BAR_Y = 780, 996
+VESSEL_TILES, PILOT_CHIPS, ELEMENT_CHIPS, ARTIFACT_CHIPS = 7, 4, 4, 8
 SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 .,()!?/-]*[A-Za-z0-9.!?)]$|^[A-Za-z0-9]$")
 
 
@@ -235,17 +242,23 @@ def tab_row(root):
     assert w <= 1920 - 2 * 554, f"the Ark's tab row runs into the title band ({w})"
 
 
+def off(body):
+    """A component body authored disabled (its owner switches it on)."""
+    return lambda ctx, go: body(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1)
+
+
 def kit_row_text(parent, key, name, r, h):
-    """A selectable row (the Hangar's kit_row) with a name, a line and the active mark down its left edge."""
+    """A selectable row (the Hangar's kit_row): a name, a line, the squad's domain and the active mark down its left edge."""
     row = H.kit_row(parent, key, name, r, h, content_keys=((f"{key}/Title", "tmp"),))
     row.add("cg", 225, canvas_group(True))
-    image_node(row, f"{key}/Mark", "Mark", TL(0, 14, 4, h - 28), "ControlActive")
-    H.ellipsize(label(row.child(N(f"{key}/Title", "Title", stretch_x(20, 20, 12, 30))), "", "H3", "TextLight"))
-    H.ellipsize(label(row.child(N(f"{key}/Line", "Line", stretch_x(20, 20, 46, 22))), "", "BodySmall", "NeutralLightest"))
+    image_node(row, f"{key}/Mark", "Mark", TL(0, 14, 3, h - 28), "ControlActive")
+    H.ellipsize(label(row.child(N(f"{key}/Title", "Title", stretch_x(20, 110, 14, 30))), "", "H3", "TextLight"))
+    label(row.child(N(f"{key}/Domain", "Domain", TR(16, 18, 90, 16))), "", "Label", "NeutralLightest", align="right")
+    H.ellipsize(label(row.child(N(f"{key}/Line", "Line", stretch_x(20, 20, 52, 22))), "", "BodySmall", "NeutralLightest"))
     row.add("row", 114, lambda ctx, go: mono(go, S["squad_row"],
             f"  button: {ref(ctx.c(key, 'button'))}\n  group: {ref(ctx.c(key, 'cg'))}\n"
             f"  titleText: {ref(ctx.c(f'{key}/Title', 'tmp'))}\n  lineText: {ref(ctx.c(f'{key}/Line', 'tmp'))}\n"
-            f"  activeMark: {ref(ctx.c(f'{key}/Mark', 'img'))}\n"))
+            f"  activeMark: {ref(ctx.c(f'{key}/Mark', 'img'))}\n  domainText: {ref(ctx.c(f'{key}/Domain', 'tmp'))}\n"))
     return row
 
 
@@ -253,156 +266,274 @@ def small_button(parent, key, name, caption, r, variant="Default"):
     return H.text_button(parent, key, name, caption, r, None, None, None, None, variant=variant)
 
 
+def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=None, line_rect=None, label_rect=None,
+              label_role="ButtonSmall", align="center"):
+    """One SquadPickChip: a kit_row button, its word, an optional picture and second line, and the picked mark."""
+    chip = H.kit_row(parent, key, name, r, h, content_keys=((f"{key}/Label", "tmp"),))
+    chip.add("cg", 225, canvas_group(True))
+    chip.child(N(f"{key}/Picked", "Picked", R((0, 0), (1, 1), (0, 0), (2, 2)))).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, off(K.image(tok("Selection"), K.kit_sprite("kit_sliver10_line2"), True)))
+    if picture_rect is not None:
+        pic = chip.child(N(f"{key}/Picture", "Picture", picture_rect))
+        pic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, picture, preserve=True))
+    label(chip.child(N(f"{key}/Label", "Label", label_rect or STRETCH)), caption, label_role, "TextLight", align=align)
+    if line_rect is not None:
+        H.ellipsize(label(chip.child(N(f"{key}/Line", "Line", line_rect)), "", "Label", "NeutralLightest"))
+
+    def body(ctx, go):
+        pic = ref(ctx.c(f"{key}/Picture", "img")) if picture_rect is not None else "{fileID: 0}"
+        line = ref(ctx.c(f"{key}/Line", "tmp")) if line_rect is not None else "{fileID: 0}"
+        return mono(go, S["chip"], f"  button: {ref(ctx.c(key, 'button'))}\n  group: {ref(ctx.c(key, 'cg'))}\n"
+                    f"  label: {ref(ctx.c(f'{key}/Label', 'tmp'))}\n  line: {line}\n  image: {pic}\n"
+                    f"  selectedMark: {ref(ctx.c(f'{key}/Picked', 'img'))}\n")
+    chip.add("chip", 114, body)
+    return chip
+
+
 def squad_list(page):
     pn = page.child(N("Squads/List", "List", TL(LIST_X, LIST_Y, LIST_W, LIST_H)))
     pn.add("cg", 225, canvas_group(True))
-    C.frame(pn, "Squads/List/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    M.bracket_nodes(pn, "Squads/List/Bracket")
-    C.section_label(pn, "Squads/List/Caption", "Caption", "Squads", TL(26, 26, 200, 18))
-    label(pn.child(N("Squads/List/Count", "Count", TR(26, 26, 220, 18))), "0 of 4 squads", "Label", "NeutralLightest",
-          align="right")
+    C.section_label(pn, "Squads/List/Caption", "Caption", "Your squads", TL(0, 0, 220, 18))
+    label(pn.child(N("Squads/List/Count", "Count", TR(0, 0, 120, 18))), "0 of 4", "Label", "NeutralLightest", align="right")
     for i in range(MAX_SQUADS):
-        kit_row_text(pn, f"Squads/List/Row{i}", f"Row{i}", TL(26, 58 + i * 100, LIST_W - 52, 88), 88)
-    small_button(pn, "Squads/List/New", "New", "New squad", TL(26, 470, 222, 56), "Cta")
-    small_button(pn, "Squads/List/Join", "Join", "Join a friend", TL(266, 470, 222, 56))
-    label(pn.child(N("Squads/List/Hint", "Hint", TL(26, 546, LIST_W - 52, 70))),
-          "Make a squad, or join a friend's. You can be in four at once, and pick one before you play.",
-          "BodySmall", "NeutralLightest", valign="top", wrap=True)
+        kit_row_text(pn, f"Squads/List/Row{i}", f"Row{i}", TL(0, 32 + i * 108, LIST_W, 96), 96)
+    small_button(pn, "Squads/List/New", "New", "Make squad", TL(0, LIST_H - 120, LIST_W, 52), "Cta")
+    small_button(pn, "Squads/List/Join", "Join", "Join a friend's squad", TL(0, LIST_H - 60, LIST_W, 52))
 
 
-def mate_card(detail, i):
-    k = f"Squads/Detail/Mate{i}"
-    l, r = (28 if i == 0 else 8), (28 if i == SEATS - 1 else 8)
-    card = detail.child(N(k, f"Mate{i}", R((i / SEATS, 1), ((i + 1) / SEATS, 1), ((l - r) / 2, -CARD_Y),
-                                         (-(l + r), CARD_H), (0.5, 1))))
-    H.framed(card, k, 10, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.85)
-    label(card.child(N(f"{k}/Seat", "Seat", TL(18, 16, 200, 16))), ("Leader", "Rogue One", "Rogue Two")[i], "Label",
-          "NeutralLightest")
-    H.ellipsize(label(card.child(N(f"{k}/Member", "Member", stretch_x(18, 150, 36, 30))), "", "H3", "TextLight"))
-    small_button(card, f"{k}/SeatButton", "SeatButton", "Open seat", TR(12, 12, 132, 36))
-    image_node(card, f"{k}/Rule", "Rule", stretch_x(18, 18, 80, 1), "SurfaceDark")
+def squad_header(page):
+    hd = page.child(N("Squads/Head", "Head", TL(COL_X, 176, COL_W, 84)))
+    hd.add("cg", 225, canvas_group(False))
+    label(hd.child(N("Squads/Head/Kicker", "Kicker", TL(0, 0, 800, 16))), "Your squad", "Label", "NeutralLightest")
+    H.ellipsize(label(hd.child(N("Squads/Head/Name", "Name", TL(0, 18, 800, 44))), "", "H1", "TextLight"))
+    H.ellipsize(label(hd.child(N("Squads/Head/Line", "Line", TL(0, 64, 800, 20))), "", "BodySmall", "NeutralLightest"))
+    label(hd.child(N("Squads/Head/DomainCaption", "DomainCaption", TR(3 * 118 + 8, 48, 80, 16))), "Domain", "Label",
+          "NeutralLightest", align="right")
+    for i, (name, _) in enumerate(DOMAIN_ORDER):
+        pick_chip(hd, f"Squads/Head/Domain{name}", f"Domain{name}", TR((2 - i) * 118, 36, 110, 40), 40, name,
+                  K.chrome_sprite("chrome_diamond"), TL(12, 13, 14, 14), label_rect=TL(32, 0, 74, 40))
+
+
+def mate_card(deck, i):
+    k = f"Squads/Deck/Card{i}"
+    cx, top, rot = CARDS[i]
+    card = H.kit_row(deck, k, f"Card{i}", TL(cx - CARD_W // 2, top, CARD_W, CARD_H), CARD_H,
+                     content_keys=((f"{k}/Who", "tmp"),))
+    card.rot = rot
+    card.child(N(f"{k}/Edit", "Edit", R((0, 0), (1, 1), (0, 0), (4, 4)))).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, off(K.image(tok("Selection"), K.kit_sprite("kit_sliver14_line2"), True)))
+    label(card.child(N(f"{k}/Seat", "Seat", TL(18, 16, 200, 16))), ("Leader", "Rogue One", "Rogue Two")[i], "Label", "NeutralLightest")
+    label(card.child(N(f"{k}/Number", "Number", TR(18, 16, 100, 16))), f"0{i + 1} / 03", "Label", "NeutralLightest", align="right")
+    hull = card.child(N(f"{k}/Hull", "Hull", TL(40, 60, 290, 97)))
+    hull.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True))
+    bot = hull.child(N(f"{k}/Hull/Bot", "Bot", R((0.5, 0.5), None, (0, 0), (6, 6)), active=False))
+    bot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    hull.add("swap", 114, lambda ctx, go: mono(go, S["nanobots"],
+             f"  hull: {ref(ctx.c(f'{k}/Hull', 'img'))}\n  companion: {ref(ctx.c(f'{k}/Figure', 'img'))}\n"
+             f"  botTemplate: {ref(ctx.c(f'{k}/Hull/Bot', 'img'))}\n  botCount: 34\n  seconds: 1.1\n  scatter: 130\n"
+             "  sparkShare: 0.25\n  sparkColor: {r: 1, g: 1, b: 1, a: 1}\n  tintStrength: 0.45\n"))
+    H.ellipsize(label(card.child(N(f"{k}/Who", "Who", TL(18, 318, CARD_W - 36, 30))), "", "H3", "TextLight"))
     for j, pick in enumerate(PICKS):
-        pk = f"{k}/{pick}"
-        row = card.child(N(pk, pick, stretch_x(14, 14, PICK_Y + j * PICK_STEP, PICK_H)))
-        x = 14
-        if pick in PICK_IMAGE:
-            row.child(N(f"{pk}/Image", "Image", TL(6, 14, 72, 72))).add("cr", 222, K.canvas_renderer()) \
-                .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True))
-            x = 92
-        label(row.child(N(f"{pk}/Kicker", "Kicker", TL(x, 12, 160, 16))), pick, "Label", "NeutralLightest")
-        H.ellipsize(label(row.child(N(f"{pk}/Value", "Value", stretch_x(x, 14, 30, 26))), "", "Body", "TextLight"))
-        small_button(row, f"{pk}/Change", "Change", "Change", TR(6, 60, 116, 34))
+        y = 360 + j * 52
+        image_node(card, f"{k}/{pick}Rule", f"{pick}Rule", TL(18, y, CARD_W - 36, 1), "SurfaceDark")
+        label(card.child(N(f"{k}/{pick}Kicker", f"{pick}Kicker", TL(18, y + 14, 110, 16))), pick, "Label", "NeutralLightest")
+        H.ellipsize(label(card.child(N(f"{k}/{pick}", pick, TR(18, y + 10, 200, 24))), "", "Body", "TextLight", align="right"))
+    # The pilot steps out of the card: over its left edge, above the frame.
+    pilot = card.child(N(f"{k}/Figure", "Figure", TL(-40, 70, 180, 290)))
+    pilot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True))
+    open_ = card.child(N(f"{k}/OpenSeat", "OpenSeat", TL(-10, 110, 120, 240)))
+    open_.add("cg", 225, canvas_group(False))
+    open_.child(N(f"{k}/OpenSeat/Line", "Line", STRETCH)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceLight", 0.6), K.kit_sprite("kit_sliver10_line1"), True))
+    label(open_.child(N(f"{k}/OpenSeat/Words", "Words", R((0, 0), (1, 1), (0, 0), (-16, 0)))), "A friend takes this seat",
+          "BodySmall", "NeutralLightest", align="center", wrap=True)
 
     def body(ctx, go):
-        out = (f"  seatText: {ref(ctx.c(f'{k}/Seat', 'tmp'))}\n  memberText: {ref(ctx.c(f'{k}/Member', 'tmp'))}\n"
-               f"  seatButton: {ref(ctx.c(f'{k}/SeatButton', 'button'))}\n"
-               f"  seatButtonLabel: {ref(ctx.c(f'{k}/SeatButton/Label', 'tmp'))}\n")
+        out = (f"  button: {ref(ctx.c(k, 'button'))}\n  editMark: {ref(ctx.c(f'{k}/Edit', 'img'))}\n"
+               f"  seatText: {ref(ctx.c(f'{k}/Seat', 'tmp'))}\n  numberText: {ref(ctx.c(f'{k}/Number', 'tmp'))}\n"
+               f"  whoText: {ref(ctx.c(f'{k}/Who', 'tmp'))}\n")
         for pick in PICKS:
-            low = pick.lower()
-            out += f"  {low}Button: {ref(ctx.c(f'{k}/{pick}/Change', 'button'))}\n"
-            if pick in PICK_IMAGE:
-                out += f"  {low}Image: {ref(ctx.c(f'{k}/{pick}/Image', 'img'))}\n"
-            out += f"  {low}Text: {ref(ctx.c(f'{k}/{pick}/Value', 'tmp'))}\n"
+            out += f"  {pick.lower()}Text: {ref(ctx.c(f'{k}/{pick}', 'tmp'))}\n"
+        out += (f"  hullImage: {ref(ctx.c(f'{k}/Hull', 'img'))}\n  pilotImage: {ref(ctx.c(f'{k}/Figure', 'img'))}\n"
+                f"  openSeatGroup: {ref(ctx.c(f'{k}/OpenSeat', 'cg'))}\n  nanobots: {ref(ctx.c(f'{k}/Hull', 'swap'))}\n"
+                "  artifactColor: {r: 0.902, g: 0.914, b: 1, a: 1}\n  noArtifactColor: {r: 0.361, g: 0.373, b: 0.439, a: 1}\n")
         return mono(go, S["mate"], out)
     card.add("mate", 114, body)
 
 
-def squad_detail(page):
-    d = page.child(N("Squads/Detail", "Detail", stretch_x(DETAIL_L, DETAIL_R, DETAIL_Y, DETAIL_H)))
-    d.add("cg", 225, canvas_group(False))
-    C.frame(d, "Squads/Detail/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    M.bracket_nodes(d, "Squads/Detail/Bracket")
-    H.ellipsize(label(d.child(N("Squads/Detail/Name", "Name", stretch_x(28, 260, 24, 44))), "", "H1", "TextLight"))
-    H.ellipsize(label(d.child(N("Squads/Detail/Line", "Line", stretch_x(28, 260, 74, 22))), "", "BodySmall",
-                      "NeutralLightest"))
-    small_button(d, "Squads/Detail/Remove", "Remove", "Delete squad", TR(28, 24, 210, 48), "Danger")
-    for i in range(SEATS):
-        mate_card(d, i)
-    label(d.child(N("Squads/Detail/PlayCaption", "PlayCaption", TL(28, PLAY_Y, 400, 18))), "Take this squad into",
-          "Label", "NeutralLightest")
-    for j, (name, caption, variant) in enumerate((("Arcade", "Arcade", "Play"), ("Arena", "Arena", "Default"),
-                                                  ("Mission", "Mission", "Default"))):
-        small_button(d, f"Squads/Detail/Play{name}", f"Play{name}", caption, TL(28 + j * 216, PLAY_Y + 28, 200, 60), variant)
+def squad_deck(page):
+    deck = page.child(N("Squads/Deck", "Deck", R((0, 1), (1, 1), (0, -DECK_Y), (0, DECK_H), (DECK_PIVOT_X / 1920, 1))))
+    # The rogues first, so the leader's card draws over them.
+    for i in (1, 2, 0):
+        mate_card(deck, i)
+
+
+def squad_picker(page):
+    pk = page.child(N("Squads/Picker", "Picker", TL(COL_X, PICKER_Y, COL_W, 210)))
+    pk.add("cg", 225, canvas_group(False))
+    label(pk.child(N("Squads/Picker/VesselCaption", "VesselCaption", TL(0, 21, 78, 16))), "Vessel", "Label", "NeutralLightest")
+    small_button(pk, "Squads/Picker/Prev", "Prev", "<", TL(84, 4, 40, 50))
+    for i in range(VESSEL_TILES):
+        pick_chip(pk, f"Squads/Picker/Vessel{i}", f"Vessel{i}", TL(130 + i * 158, 0, 150, 58), 58, "",
+                  None, TL(6, 2, 138, 38), label_rect=R((0, 0), (1, 0), (0, 4), (0, 16), (0.5, 0)), label_role="Label")
+    small_button(pk, "Squads/Picker/Next", "Next", ">", TL(130 + VESSEL_TILES * 158, 4, 40, 50))
+    label(pk.child(N("Squads/Picker/PilotCaption", "PilotCaption", TL(0, 82, 78, 16))), "Pilot", "Label", "NeutralLightest")
+    for i in range(PILOT_CHIPS):
+        pick_chip(pk, f"Squads/Picker/Pilot{i}", f"Pilot{i}", TL(84 + i * 298, 66, 290, 50), 50, "",
+                  None, TL(4, 2, 34, 46), line_rect=TL(46, 28, 236, 16), label_rect=TL(46, 6, 236, 20), label_role="Body",
+                  align="left")
+    label(pk.child(N("Squads/Picker/ElementCaption", "ElementCaption", TL(0, 134, 78, 16))), "Element", "Label", "NeutralLightest")
+    for i, name in enumerate(("Charge", "Mass", "Space", "Time")):
+        pick_chip(pk, f"Squads/Picker/Element{i}", f"Element{i}", TL(84 + i * 118, 124, 110, 36), 36, name)
+    seat = pk.child(N("Squads/Picker/SeatMode", "SeatMode", TL(600, 124, 600, 36)))
+    seat.add("cg", 225, canvas_group(False))
+    label(seat.child(N("Squads/Picker/SeatMode/Caption", "Caption", TL(0, 10, 110, 16))), "Who flies it", "Label", "NeutralLightest")
+    for i, name in enumerate(("AI wingmate", "Open for a friend")):
+        pick_chip(seat, f"Squads/Picker/SeatMode/Chip{i}", f"Chip{i}", TL(120 + i * 200, 0, 190, 36), 36, name)
+    label(pk.child(N("Squads/Picker/ArtifactCaption", "ArtifactCaption", TL(0, 178, 78, 16))), "Artifact", "Label", "NeutralLightest")
+    for i in range(ARTIFACT_CHIPS):
+        pick_chip(pk, f"Squads/Picker/Artifact{i}", f"Artifact{i}", TL(84 + i * 150, 168, 142, 36), 36, "None" if i == 0 else "")
+
+
+def squad_bars(page):
+    mk = page.child(N("Squads/MakeBar", "MakeBar", TL(COL_X, BAR_Y, COL_W, 52)))
+    mk.add("cg", 225, canvas_group(False))
+    small_button(mk, "Squads/MakeBar/Cancel", "Cancel", "Cancel", TL(0, 0, 160, 52))
+    label(mk.child(N("Squads/MakeBar/Hint", "Hint", TL(184, 16, 900, 20))),
+          "Pick a card, then its vessel, pilot, element and artifact. Take into appears once the squad is made.",
+          "BodySmall", "NeutralLightest")
+    small_button(mk, "Squads/MakeBar/Create", "Create", "Create squad", TR(0, 0, 240, 52), "Cta")
+    vw = page.child(N("Squads/ViewBar", "ViewBar", TL(COL_X, BAR_Y, COL_W, 52)))
+    vw.add("cg", 225, canvas_group(False))
+    small_button(vw, "Squads/ViewBar/Remove", "Remove", "Delete", TL(0, 6, 140, 40), "Danger")
+    small_button(vw, "Squads/ViewBar/Edit", "Edit", "Edit", TL(152, 6, 120, 40))
+    label(vw.child(N("Squads/ViewBar/Hint", "Hint", TL(292, 16, 520, 20))),
+          "Three mates, four cards each: a squad is a twelve-card deck.", "BodySmall", "NeutralLightest")
+    label(vw.child(N("Squads/ViewBar/Caption", "Caption", TR(470, 18, 220, 16))), "Take this squad into", "Label",
+          "NeutralLightest", align="right")
+    small_button(vw, "Squads/ViewBar/Mission", "Mission", "Mission", TR(236, 0, 220, 52))
+    lock = vw.child(N("Squads/ViewBar/Mission/Lock", "Lock", TL(16, 16, 16, 20)))
+    lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_lock"), preserve=True))
+    small_button(vw, "Squads/ViewBar/Arena", "Arena", "Arena", TR(0, 0, 220, 52), "Play")
 
 
 def squad_empty(page):
-    e = page.child(N("Squads/Empty", "Empty", stretch_x(DETAIL_L, DETAIL_R, DETAIL_Y, DETAIL_H)))
+    e = page.child(N("Squads/Empty", "Empty", TL(COL_X, 250, COL_W, 760)))
     e.add("cg", 225, canvas_group(True))
-    C.frame(e, "Squads/Empty/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    label(e.child(N("Squads/Empty/Heading", "Heading", stretch_x(28, 28, 300, 40))), "No squad yet", "H2", "TextLight",
-          align="center")
-    label(e.child(N("Squads/Empty/Line", "Line", stretch_x(28, 28, 350, 60))),
-          "A squad is you and two squad mates - friends, AI wingmates, or both. Make one, or join a friend's.",
-          "Body", "NeutralLightest", align="center", valign="top", wrap=True)
+    for i, (x, rot) in enumerate(((550, 0), (170, 6), (930, -6))):
+        g = image_node(e, f"Squads/Empty/Ghost{i}", f"Ghost{i}", TL(x, 40, CARD_W, CARD_H), "SurfaceLight",
+                       K.kit_sprite("kit_sliver14_line1"), sliced=True, alpha=0.35)
+        g.rot = rot
+    label(e.child(N("Squads/Empty/Heading", "Heading", stretch_x(0, 0, 250, 40))), "No squad yet", "H2", "TextLight", align="center")
+    label(e.child(N("Squads/Empty/Line", "Line", stretch_x(400, 400, 300, 60))),
+          "A squad is you and two squad mates, friends or AI wingmates: three cards. Make one, then take it into a mission "
+          "or the arena.", "Body", "NeutralLightest", align="center", valign="top", wrap=True)
+    small_button(e, "Squads/Empty/Make", "Make", "Make squad", TL(COL_W // 2 - 110, 380, 220, 52), "Cta")
 
 
 def squad_join(page):
-    j = page.child(N("Squads/Joining", "Joining", stretch_x(DETAIL_L, DETAIL_R, DETAIL_Y, DETAIL_H)))
+    j = page.child(N("Squads/Joining", "Joining", TL(COL_X, 176, COL_W, 864)))
     j.add("cg", 225, canvas_group(False))
-    C.frame(j, "Squads/Joining/Frame", 14, "SurfaceBlack", "SurfaceDark", fill_alpha=0.98)
-    M.bracket_nodes(j, "Squads/Joining/Bracket")
+    C.frame(j, "Squads/Joining/Frame", 14, "SurfaceBlack", "SurfaceDark", fill_alpha=0.96)
     label(j.child(N("Squads/Joining/Heading", "Heading", TL(28, 24, 600, 40))), "Join a friend's squad", "H2", "TextLight")
-    small_button(j, "Squads/Joining/Close", "Close", "Close", TR(28, 24, 160, 48))
+    small_button(j, "Squads/Joining/Close", "Close", "Close", TR(28, 24, 140, 44))
     label(j.child(N("Squads/Joining/Status", "Status", stretch_x(28, 28, 80, 22))), "", "BodySmall", "NeutralLightest")
     for i in range(JOIN_ROWS):
-        kit_row_text(j, f"Squads/Joining/Row{i}", f"Row{i}", stretch_x(28, 28, 120 + i * 96, 84), 84)
+        kit_row_text(j, f"Squads/Joining/Row{i}", f"Row{i}", stretch_x(28, 28, 120 + i * 100, 88), 88)
 
 
 SQUAD_WORDS = (
-    yfield("countLine", "{count} of {max} squads") + yfield("madeLine", "Yours")
-    + yfield("joinedLine", "{owner}'s squad") + yfield("activeSuffix", " - active")
-    + yfield("madeDetailLine", "You lead this squad. {open} open for friends.")
-    + yfield("seatedLine", "You fly in {owner}'s squad.")
+    yfield("countLine", "{count} of {max}") + yfield("madeLine", "Yours")
+    + yfield("madeOpenLine", "Yours - {open} seat open") + yfield("madeFullLine", "Yours - every seat filled")
+    + yfield("joinedLine", "{owner}'s squad - joined") + yfield("makingLine", "Making...")
+    + yfield("ownKicker", "Your squad - you lead") + yfield("joinedKicker", "{owner}'s squad - you fly {seat}")
+    + yfield("makeKicker", "Make squad") + yfield("editKicker", "Edit squad")
+    + yfield("ownOpenDetail", "{open} seat open for a friend.") + yfield("ownFullDetail", "Every seat is filled.")
+    + yfield("makeDetail", "Pick a card to edit it.")
+    + yfield("seatedLine", "Only {owner} changes the squad.")
     + yfield("pendingLine", "Joined. {owner} seats you when they next open the Ark.")
     + yfield("seatLostLine", "{owner} gave your seat to someone else. Leave the squad, or ask them to open it again.")
     + yfield("disbandedLine", "{owner} deleted this squad.")
     + yfield("offlineLine", "Offline - showing the last copy of {owner}'s squad.")
-    + ylist("seatNames", ("Leader", "Rogue One", "Rogue Two"))
-    + yfield("youLine", "You") + yfield("aiLine", "AI wingmate") + yfield("openLine", "Open for a friend")
-    + yfield("unknownFriendLine", "A friend") + yfield("openSeatAction", "Open seat") + yfield("aiSeatAction", "Use AI")
-    + yfield("removeFriendAction", "Remove")
+    + ylist("seatNames", ("Leader", "Rogue One", "Rogue Two")) + yfield("numberLine", "0{n} / 03")
+    + yfield("youLine", "You") + yfield("aiLine", "AI wingmate") + yfield("openLine", "Open seat")
+    + yfield("unknownFriendLine", "A friend") + yfield("aiModeLabel", "AI wingmate") + yfield("openModeLabel", "Open for a friend")
     + ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
-    + yfield("noPilotLine", "Base kit") + yfield("noArtifactLine", "No artifact")
-    + yfield("deleteLabel", "Delete squad") + yfield("leaveLabel", "Leave squad") + yfield("confirmLabel", "Press again")
+    + ylist("domainNames", ("", "Jade", "Ruby", "Blue", "Gold"))
+    + yfield("basePilotLine", "Base kit") + yfield("basePilotDetail", "The vessel's own kit")
+    + yfield("pilotDetail", "Rewrites {ability}") + yfield("noArtifactLine", "No artifact") + yfield("noArtifactChip", "None")
+    + yfield("createWord", "Create squad") + yfield("saveWord", "Save squad")
+    + yfield("deleteLabel", "Delete") + yfield("leaveLabel", "Leave") + yfield("confirmLabel", "Press again")
     + yfield("newSquadName", "") + yfield("fullLine", "You are in 4 squads. Leave or delete one first.")
-    + yfield("noSquadLine", "Make or join a squad first.")
+    + yfield("createdToast", "{squad} made. Take it into a mission or the arena.")
+    + yfield("notLeaderLine", "Only {owner} changes the squad.")
     + yfield("joinLookingLine", "Looking at your friends' squads...")
     + yfield("joinNoneLine", "No friend has a seat open right now.")
     + yfield("joinOfflineLine", "Sign in to join a friend's squad.")
-    + yfield("joinRowTitle", "{squad}") + yfield("joinRowLine", "{owner} - {seat} open")
-    + yfield("joinedToast", "You joined {owner}'s {squad}.")
+    + yfield("joinRowTitle", "{owner}'s {squad}") + yfield("joinRowLine", "{seat} open")
+    + yfield("joinedToast", "Joined. {owner} seats you when they next open the Ark.")
     + yfield("alreadyInLine", "You are already in that squad.") + yfield("seatGoneLine", "That seat was just taken."))
+
+
+def refs_of(ctx, keys, comp):
+    return "".join(f"  - {ref(ctx.c(k, comp))}\n" for k in keys)
 
 
 def squads_page(root):
     page = page_node(root, "Squads", False)
-    title_band(page, "Squads/Title", "Squads", "You and two squad mates: pick their vessel, element, pilot and artifact.")
     squad_list(page)
+    squad_header(page)
     squad_empty(page)
-    squad_detail(page)
+    squad_deck(page)
+    squad_picker(page)
+    squad_bars(page)
     squad_join(page)
 
     def body(ctx, go):
-        rows = "".join(f"  - {ref(ctx.c(f'Squads/List/Row{i}', 'row'))}\n" for i in range(MAX_SQUADS))
-        mates = "".join(f"  - {ref(ctx.c(f'Squads/Detail/Mate{i}', 'mate'))}\n" for i in range(SEATS))
-        joins = "".join(f"  - {ref(ctx.c(f'Squads/Joining/Row{i}', 'row'))}\n" for i in range(JOIN_ROWS))
+        lists = lambda name, keys, comp: f"  {name}:\n" + refs_of(ctx, keys, comp)
         return mono(go, S["squads"],
                     f"  vessels: {K.ref(11400000, VESSEL_LIST, 2)}\n  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n"
-                    f"  squadRows:\n{rows}  countText: {ref(ctx.c('Squads/List/Count', 'kt'))}\n"
+                    f"  cardArt: {K.ref(11400000, CARD_ART, 2)}\n  colors: {K.ref(11400000, COLOR_SET, 2)}\n"
+                    + lists("squadRows", [f"Squads/List/Row{i}" for i in range(MAX_SQUADS)], "row")
+                    + f"  countText: {ref(ctx.c('Squads/List/Count', 'kt'))}\n"
                     f"  newButton: {ref(ctx.c('Squads/List/New', 'button'))}\n"
                     f"  joinButton: {ref(ctx.c('Squads/List/Join', 'button'))}\n"
-                    f"  detailGroup: {ref(ctx.c('Squads/Detail', 'cg'))}\n  emptyGroup: {ref(ctx.c('Squads/Empty', 'cg'))}\n"
-                    f"  squadNameText: {ref(ctx.c('Squads/Detail/Name', 'tmp'))}\n"
-                    f"  squadLineText: {ref(ctx.c('Squads/Detail/Line', 'tmp'))}\n  mateCards:\n{mates}"
-                    f"  removeButton: {ref(ctx.c('Squads/Detail/Remove', 'button'))}\n"
-                    f"  removeLabel: {ref(ctx.c('Squads/Detail/Remove/Label', 'tmp'))}\n"
-                    f"  playArcadeButton: {ref(ctx.c('Squads/Detail/PlayArcade', 'button'))}\n"
-                    f"  playArenaButton: {ref(ctx.c('Squads/Detail/PlayArena', 'button'))}\n"
-                    f"  playMissionButton: {ref(ctx.c('Squads/Detail/PlayMission', 'button'))}\n"
-                    f"  joinGroup: {ref(ctx.c('Squads/Joining', 'cg'))}\n  joinRows:\n{joins}"
-                    f"  joinStatusText: {ref(ctx.c('Squads/Joining/Status', 'kt'))}\n"
+                    f"  headerGroup: {ref(ctx.c('Squads/Head', 'cg'))}\n"
+                    f"  kickerText: {ref(ctx.c('Squads/Head/Kicker', 'tmp'))}\n"
+                    f"  squadNameText: {ref(ctx.c('Squads/Head/Name', 'tmp'))}\n"
+                    f"  squadLineText: {ref(ctx.c('Squads/Head/Line', 'tmp'))}\n"
+                    + lists("domainChips", [f"Squads/Head/Domain{n}" for n, _ in DOMAIN_ORDER], "chip")
+                    + "  domainOrder:\n" + "".join(f"  - {v}\n" for _, v in DOMAIN_ORDER)
+                    + f"  deckRoot: {ref(ctx.rt('Squads/Deck'))}\n  makeScale: 0.8\n"
+                    + lists("mateCards", [f"Squads/Deck/Card{i}" for i in range(SEATS)], "mate")
+                    + f"  emptyGroup: {ref(ctx.c('Squads/Empty', 'cg'))}\n"
+                    f"  emptyMakeButton: {ref(ctx.c('Squads/Empty/Make', 'button'))}\n  swapStagger: 0.14\n"
+                    f"  pickerGroup: {ref(ctx.c('Squads/Picker', 'cg'))}\n"
+                    + lists("vesselTiles", [f"Squads/Picker/Vessel{i}" for i in range(VESSEL_TILES)], "chip")
+                    + f"  vesselPrevButton: {ref(ctx.c('Squads/Picker/Prev', 'button'))}\n"
+                    f"  vesselNextButton: {ref(ctx.c('Squads/Picker/Next', 'button'))}\n"
+                    + lists("pilotChips", [f"Squads/Picker/Pilot{i}" for i in range(PILOT_CHIPS)], "chip")
+                    + f"  seatModeGroup: {ref(ctx.c('Squads/Picker/SeatMode', 'cg'))}\n"
+                    + lists("seatModeChips", [f"Squads/Picker/SeatMode/Chip{i}" for i in range(2)], "chip")
+                    + lists("elementChips", [f"Squads/Picker/Element{i}" for i in range(ELEMENT_CHIPS)], "chip")
+                    + lists("artifactChips", [f"Squads/Picker/Artifact{i}" for i in range(ARTIFACT_CHIPS)], "chip")
+                    + f"  makeBarGroup: {ref(ctx.c('Squads/MakeBar', 'cg'))}\n"
+                    f"  cancelButton: {ref(ctx.c('Squads/MakeBar/Cancel', 'button'))}\n"
+                    f"  createButton: {ref(ctx.c('Squads/MakeBar/Create', 'button'))}\n"
+                    f"  createLabel: {ref(ctx.c('Squads/MakeBar/Create/Label', 'tmp'))}\n"
+                    f"  viewBarGroup: {ref(ctx.c('Squads/ViewBar', 'cg'))}\n"
+                    f"  removeButton: {ref(ctx.c('Squads/ViewBar/Remove', 'button'))}\n"
+                    f"  removeLabel: {ref(ctx.c('Squads/ViewBar/Remove/Label', 'tmp'))}\n"
+                    f"  editButton: {ref(ctx.c('Squads/ViewBar/Edit', 'button'))}\n"
+                    f"  missionButton: {ref(ctx.c('Squads/ViewBar/Mission', 'button'))}\n"
+                    f"  missionLock: {ref(ctx.c('Squads/ViewBar/Mission/Lock', 'img'))}\n"
+                    f"  arenaButton: {ref(ctx.c('Squads/ViewBar/Arena', 'button'))}\n"
+                    f"  joinGroup: {ref(ctx.c('Squads/Joining', 'cg'))}\n"
+                    + lists("joinRows", [f"Squads/Joining/Row{i}" for i in range(JOIN_ROWS)], "row")
+                    + f"  joinStatusText: {ref(ctx.c('Squads/Joining/Status', 'kt'))}\n"
                     f"  joinCloseButton: {ref(ctx.c('Squads/Joining/Close', 'button'))}\n"
                     "  refreshSeconds: 20\n  publishDelaySeconds: 2\n  confirmSeconds: 3\n  maxFriendsRead: 30\n"
+                    "  newSquadDomain: 4\n"
                     + SQUAD_WORDS)
     page.add("logic", 114, body)
     return page
@@ -413,7 +544,7 @@ def decor_page(root):
     the one change (MenuAvailability.Available on the tab); nothing behind it yet."""
     page = page_node(root, "Decor", False)
     title_band(page, "Decor/Title", "Decor", "The Ark's banner and its hull, outside and in.")
-    pn = page.child(N("Decor/Slots", "Slots", stretch_x(DETAIL_L, DETAIL_R, DETAIL_Y, 320)))
+    pn = page.child(N("Decor/Slots", "Slots", stretch_x(COL_X, 40, 180, 320)))
     C.frame(pn, "Decor/Slots/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
     for i, name in enumerate(("Banner", "Outer hull", "Inner hull")):
         k = f"Decor/Slots/{name.replace(' ', '')}"
@@ -639,15 +770,26 @@ def validate(files):
     assert re.search(r"^  converterTab: 0$", doc, re.M), "ElementalConverterView.converterTab is not the Converter tab"
 
 
-MATE_FIELDS = dict(seatText=TMP, memberText=TMP, seatButton=S["button"], seatButtonLabel=TMP,
-                   vesselButton=S["button"], vesselImage=IMG, vesselText=TMP, elementButton=S["button"], elementText=TMP,
-                   pilotButton=S["button"], pilotImage=IMG, pilotText=TMP, artifactButton=S["button"], artifactImage=IMG,
-                   artifactText=TMP)
-SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["button"], detailGroup=225, emptyGroup=225,
-                     squadNameText=TMP, squadLineText=TMP, removeButton=S["button"], removeLabel=TMP,
-                     playArcadeButton=S["button"], playArenaButton=S["button"], playMissionButton=S["button"],
+MATE_FIELDS = dict(button=S["button"], editMark=IMG, seatText=TMP, numberText=TMP, whoText=TMP, vesselText=TMP,
+                   elementText=TMP, pilotText=TMP, artifactText=TMP, hullImage=IMG, pilotImage=IMG, openSeatGroup=225,
+                   nanobots=S["nanobots"])
+SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["button"], headerGroup=225, kickerText=TMP,
+                     squadNameText=TMP, squadLineText=TMP, deckRoot=224, emptyGroup=225, emptyMakeButton=S["button"],
+                     pickerGroup=225, vesselPrevButton=S["button"], vesselNextButton=S["button"], seatModeGroup=225,
+                     makeBarGroup=225, cancelButton=S["button"], createButton=S["button"], createLabel=TMP,
+                     viewBarGroup=225, removeButton=S["button"], removeLabel=TMP, editButton=S["button"],
+                     missionButton=S["button"], missionLock=IMG, arenaButton=S["button"],
                      joinGroup=225, joinStatusText=S["kt"], joinCloseButton=S["button"])
-ROW_VIEW_FIELDS = dict(button=S["button"], group=225, titleText=TMP, lineText=TMP, activeMark=IMG)
+ROW_VIEW_FIELDS = dict(button=S["button"], group=225, titleText=TMP, lineText=TMP, activeMark=IMG, domainText=TMP)
+CHIP_FIELDS = dict(button=S["button"], group=225, label=TMP, selectedMark=IMG)
+NANOBOT_FIELDS = dict(hull=IMG, companion=IMG, botTemplate=IMG)
+# Rev 31: Take into is Mission and Arena only (Shombith, 2026-10-27: "Yes keep it out"); the first cut's fields are gone.
+RETIRED_SQUAD_FIELDS = ("playArcadeButton", "playArenaButton", "playMissionButton", "detailGroup")
+SQUAD_LISTS = (("squadRows", MAX_SQUADS, "squad_row", ROW_VIEW_FIELDS), ("mateCards", SEATS, "mate", MATE_FIELDS),
+               ("joinRows", JOIN_ROWS, "squad_row", ROW_VIEW_FIELDS), ("domainChips", len(DOMAIN_ORDER), "chip", CHIP_FIELDS),
+               ("vesselTiles", VESSEL_TILES, "chip", CHIP_FIELDS), ("pilotChips", PILOT_CHIPS, "chip", CHIP_FIELDS),
+               ("seatModeChips", 2, "chip", CHIP_FIELDS), ("elementChips", ELEMENT_CHIPS, "chip", CHIP_FIELDS),
+               ("artifactChips", ARTIFACT_CHIPS, "chip", CHIP_FIELDS))
 
 
 def listed(body, field):
@@ -677,15 +819,22 @@ def validate_tabs(view, V):
     _, page = A.doc_of(view, V("Squads#logic"))
     for field, want in SQUADS_FIELDS.items():
         C.wired(view, page, field, want, "SquadsPage")
-    for field, n, kind in (("squadRows", MAX_SQUADS, S["squad_row"]), ("mateCards", SEATS, S["mate"]),
-                           ("joinRows", JOIN_ROWS, S["squad_row"])):
+    for field in RETIRED_SQUAD_FIELDS:
+        assert not re.search(r"^  " + field + ":", page, re.M), f"SquadsPage.{field} is back (Take into is Mission and Arena)"
+    for field, n, kind, fields in SQUAD_LISTS:
         ids = listed(page, field)
-        assert len(ids) == n and all(i != "0" and A.kind_of(view, i)[1] == kind for i in ids), f"SquadsPage.{field} is not {n} wired"
+        assert len(ids) == n and all(i != "0" and A.kind_of(view, i)[1] == S[kind] for i in ids), f"SquadsPage.{field} is not {n} wired"
         for i in ids:
             _, body = A.doc_of(view, i)
-            for f, want in (MATE_FIELDS if field == "mateCards" else ROW_VIEW_FIELDS).items():
+            for f, want in fields.items():
                 C.wired(view, body, f, want, field)
-    for guid, what in ((VESSEL_LIST, "the vessel list"), (PILOT_CATALOG, "the pilot catalog")):
+            if field == "mateCards":
+                swap = re.search(r"^  nanobots: \{fileID: (-?\d+)\}", body, re.M).group(1)
+                for f, want in NANOBOT_FIELDS.items():
+                    C.wired(view, A.doc_of(view, swap)[1], f, want, "the card's nanobots")
+    assert re.search(r"^  domainOrder:\n  - 1\n  - 2\n  - 4\n", page, re.M), "SquadsPage.domainOrder is not Jade, Ruby, Gold"
+    for guid, what in ((VESSEL_LIST, "the vessel list"), (PILOT_CATALOG, "the pilot catalog"), (CARD_ART, "the hull renders"),
+                       (COLOR_SET, "the domain colours")):
         assert f"guid: {guid}" in page, f"SquadsPage reads no {what}"
 
 
@@ -724,8 +873,12 @@ def self_test(files):
             f[SCENE], count=1))),
         ("the wrong crystal on a row", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1))),
         ("Decor opened", lambda f: f.__setitem__(view, f[view].replace("  availability: 1\n", "  availability: 0\n", 1))),
-        ("a squad mate with no pilot button", lambda f: f.__setitem__(view, re.sub(
-            r"(  pilotButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("a card with no hull", lambda f: f.__setitem__(view, re.sub(
+            r"(  hullImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("Take into Arcade back", lambda f: f.__setitem__(view, f[view].replace(
+            "  missionButton: ", "  playArcadeButton: {fileID: 0}\n  missionButton: ", 1))),
+        ("the nanobots with no bot", lambda f: f.__setitem__(view, re.sub(
+            r"(  botTemplate: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("the Ark's arkTabs unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  arkTabs: {{fileID: {mount.stub_fid('root#tabs')}}}", "  arkTabs: {fileID: 0}"))),
     ]
