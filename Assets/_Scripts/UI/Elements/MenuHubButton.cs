@@ -90,6 +90,12 @@ namespace CosmicShore.UI
             _availability.SetAvailability(value);
         }
 
+        /// <summary>
+        /// Presses this entry as if the player had: the same refusal while it is not Available, the same modal when it
+        /// is. The Ark's Squads tab launches through the hub this way, so a squad reaches a mode only where Home does.
+        /// </summary>
+        public void Press() => HandleClick();
+
         void HandleClick()
         {
             // The view answers Locked and Unavailable itself - the sting, the wording and the

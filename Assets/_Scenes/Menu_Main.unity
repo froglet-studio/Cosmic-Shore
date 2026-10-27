@@ -45339,6 +45339,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &415689352332947796 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 857652007582106246, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
+  m_PrefabInstance: {fileID: 1018427831440552914}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50795810ee6941c9b9641e72797386c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1073556819406577540 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 55209273790032982, guid: 5905a2422fa2f771c5f1066b12193446, type: 3}
@@ -45484,6 +45495,8 @@ MonoBehaviour:
   mergedText: {fileID: 832938073698839489}
   omniGroup: {fileID: 282849012356716930}
   omniPop: {fileID: 593141516344654457}
+  arkTabs: {fileID: 415689352332947796}
+  converterTab: 0
 --- !u!222 &4102067197520110292
 CanvasRenderer:
   m_ObjectHideFlags: 0

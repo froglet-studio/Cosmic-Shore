@@ -45,7 +45,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 90) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -3821,3 +3821,83 @@ All 12 plants fire.
 - `gates.sh`: ALL OK, including the player and editor reference compiles.
 - Offline renders of the tile and the page, with the element flower and shape in place.
 - Not opened in the editor, and the tests have not been run.
+
+## 90. The Ark's tabs: Squads and Decor beside the converter (2026-10-27, awaiting in-editor approval)
+
+Shombith (2026-10-27): "Ark - add two more tabs along with the converter. 1. Squads - Users can make / join up to 4
+squads and they can use the squad to go into a mission or arena or arcade as they want. Inside the ark they will see
+the squad members with their selected vessel, element and pilot and artifact for each squad mate. 2. Decor - Its just
+a cosmetic for the ark's banner and external internal skin but lock it we do not need to open it now."
+
+Built on Shombith's pilots-and-artifacts branch (`claude/pensive-dijkstra-qxoxo0`, merged into this branch): its
+`SquadBook` / `SavedSquad` / `SquadSlot` (the saved squads, `SQUAD_DATA`) and `PilotArtifactCatalogSO`. No board was
+drawn first; the layout follows the converter's (title band left, panels on the black sea).
+
+**The tab row** (`ArkTabsView` on `ArkView`'s root): CONVERTER, SQUADS, DECOR as `KitTextTab` words centred at the top,
+one page shown at a time. The converter's overlay now sits under a `Converter` page with its node keys unchanged, so
+every fileID the scene points at is the same. `ElementalConverterView` is still the screen's one `IScreen`: it forwards
+enter and exit to the tabs (`arkTabs`, wired in the scene), and while another tab is up it hides the 3D picture and
+releases its render target, as it does when the player leaves the screen.
+
+**SQUADS** (`SquadsPage`):
+- **The list**: the player's squads, made and joined together, at most four (`SquadBook.MaxSquads`; `Add` refuses a
+  fifth, `Normalize` trims a longer record). Pressing a row makes it the active squad, the one PLAY takes. NEW SQUAD
+  makes one from the player's last hull and its Hangar pilot and first slotted artifact, with Rogue One open for a
+  friend and Rogue Two an AI. JOIN A FRIEND lists the friends' squads with a seat open.
+- **The squad**: three cards (Leader, Rogue One, Rogue Two). Each shows who flies the seat (you, the friend, an AI
+  wingmate, or "Open for a friend") and four picks with CHANGE: vessel (the Hangar's unlocked roster), element (Charge,
+  Mass, Space, Time, as a word), pilot (the vessel's default, then its roster) and artifact (none, then what fits the
+  vessel; the player's own seat offers only artifacts they have found). The player changes their own seat in any squad,
+  and the AI or open seats of a squad they made. The seat button there steps AI to open and back, or opens a friend's
+  seat again (REMOVE). DELETE SQUAD (made) or LEAVE SQUAD (joined) needs a second press within 3 s.
+- **PLAY: Arcade / Arena / Mission**: makes the squad active, sets `GameDataSO.selectedVesselClass` to the player's
+  seat (the configure window opens on it unless the card remembers its own hull), seats their pilot
+  (`PilotLoadoutStore`), sends the party invite to each online friend in the squad who is not already in the party,
+  then presses the Home hub's entry for that window (`MenuHubButton.Press`). A window Home refuses is refused here the
+  same way, before anything changes: Mission stays locked.
+- **Joining, with no server in the middle.** Each player publishes a `SquadPublicRecord` to Cloud Save PUBLIC player
+  data (`SQUADS_PUBLIC`, `SquadDirectory`): the squads they made, and a claim (`SquadClaim`: owner, squad id, seat, four
+  picks) for each squad they joined. A friend joins by writing a claim into their own record. The owner, when they next
+  open the tab, reads their friends' records and seats the first claim on each open seat (`SquadMembership.ReconcileOwned`);
+  a seated friend whose record no longer claims the seat has left, and the seat opens again. The joiner reads the
+  owner's record back (`RefreshJoined`): Pending until the owner seats them, then Seated, SeatLost or Disbanded. Each
+  player writes only their own record. Reads are throttled to one round per 20 s and at most 30 friends; a write
+  waits 2 s so a run of changes is one write.
+- Every word is a serialized field on `SquadsPage` (templates with tokens: `{count}`, `{owner}`, `{open}`, `{squad}`,
+  `{seat}`).
+
+**DECOR**: the banner, the outer hull and the inner hull as three locked tiles. Its tab carries a
+`MenuAvailabilityView` set to Locked, so a press gets the sting, the shake and "Not open yet." and the page never
+shows. Opening it later is setting that one field to Available.
+
+**Data:**
+- `SquadSeat` (Ai = 0, Open = 1, Player = 2) and `SquadSlot.Seat` / `MemberId` / `MemberName`. A slot saved before
+  these existed reads as an AI seat.
+- `SavedSquad.Id` / `OwnerId` / `OwnerName` / `MySeat`.
+- `SquadBook.MaxSquads` / `CanAdd` / `IndexOfId`.
+- `SquadPublicRecord`, `SquadClaim`, `SquadMembership` (pure, in `CosmicShore.Data`).
+- `SquadDirectory` (Cloud Save public read and write), `UGSKeys.SquadsPublic`.
+- `SquadMembershipTests` (9 tests).
+
+**Generator:** `author_menu_ark.py` authors the tab row, both pages and the wiring, and validates them: three tabs,
+each a KitTextTab over a CanvasGroup page; SQUADS driven by its page; DECOR locked; every row, card and button field
+wired; the vessel list and the pilot catalog referenced; the scene's `arkTabs` and `converterTab`. Three new negative
+controls (Decor opened, a squad mate with no pilot button, `arkTabs` unwired); all eight fire.
+
+**How it was checked:**
+- `author_menu_ark.py --check` and `--self-test` pass.
+- The real-reference compile (`unity_refcompile`, player and editor configs) reports 0 errors in project code.
+- The 21 squad tests (`SquadMembershipTests` and the existing `SquadBookTests`) were compiled with Roslyn against
+  Newtonsoft and run outside Unity: all pass.
+- `check_generated_assets.py`, `check_console_logging.py` and `check_conditional_compilation.py` pass.
+- Not opened in the Unity editor. The join flow needs two signed-in accounts that are friends.
+
+**Open:**
+- Nothing in a match reads the AI seats' picks yet. The mode's own AI backfill flies them; only the player's own
+  vessel and pilot reach the launch.
+- The element pick is drawn and saved, but no match reads a pre-match element (`Docs/PILOTS_AND_ARTIFACTS.md` §8 Q1).
+- Two friends claiming the same open seat in the same moment: the owner seats the first record read and the other
+  reads SeatLost. Closing that race needs a Cloud Code reservation (backend, Shombith).
+- `author_pilot_assets.py --check` fails on this branch because the Meerkat (on bleeding-edge since the 10-27 merge)
+  has no pilots or artifacts. That is a content gap for the pilots work, not caused by the tabs.
+

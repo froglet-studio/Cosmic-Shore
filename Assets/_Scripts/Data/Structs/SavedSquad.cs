@@ -6,13 +6,26 @@ namespace CosmicShore.Data
     /// A named squad of three: the player plus two friends, two AI, or a mix. Saving one is saving a
     /// deck; before a game the player picks which to play (Docs/PILOTS_AND_ARTIFACTS.md §1).
     /// Held in a <see cref="SquadBook"/>.
+    ///
+    /// <para>A squad is either one the player MADE (<see cref="OwnerId"/> empty; they are its leader) or one they JOINED
+    /// (<see cref="OwnerId"/> names the friend who made it, and <see cref="MySeat"/> is the rogue seat they hold). A
+    /// joined squad is a copy of the owner's, refreshed from the owner's public squad record (<c>SquadDirectory</c>)
+    /// whenever the Ark's Squads tab opens; <see cref="SquadMembership"/> holds the rules.</para>
     /// </summary>
     [Serializable]
     public class SavedSquad
     {
         public const int SlotCount = 3;
 
+        /// <summary>Stable id the owner mints; a joined copy carries the owner's. Empty is repaired on load.</summary>
+        public string Id;
         public string Name;
+        /// <summary>The UGS player id of the friend who made this squad; empty for a squad the player made.</summary>
+        public string OwnerId;
+        /// <summary>The owner's display name when the squad was last read.</summary>
+        public string OwnerName;
+        /// <summary>The seat the player holds: 0 (the leader) in a squad they made, 1 or 2 in one they joined.</summary>
+        public int MySeat;
         public SquadSlot Leader;
         public SquadSlot RogueOne;
         public SquadSlot RogueTwo;
@@ -21,6 +34,7 @@ namespace CosmicShore.Data
 
         public SavedSquad(string name, SquadSlot leader, SquadSlot rogueOne, SquadSlot rogueTwo)
         {
+            Id = NewId();
             Name = name;
             Leader = leader;
             RogueOne = rogueOne;
@@ -49,7 +63,20 @@ namespace CosmicShore.Data
             }
         }
 
-        /// <summary>A copy under a new name, for "save as" and for starting a new squad from this one.</summary>
-        public SavedSquad Clone(string name) => new SavedSquad(name, Leader, RogueOne, RogueTwo);
+        /// <summary>True when a friend made this squad and the player joined it.</summary>
+        public bool IsJoined() => !string.IsNullOrEmpty(OwnerId);
+
+        /// <summary>
+        /// A copy under a new name and a new id, for "save as" and for starting a new squad from this one. The copy is
+        /// the player's own: whoever held its rogue seats is not carried over (an open seat stays open).
+        /// </summary>
+        public SavedSquad Clone(string name)
+        {
+            static SquadSlot Unheld(SquadSlot s) => s.IsPlayer() ? s.WithSeat(SquadSeat.Open) : s;
+            return new SavedSquad(name, Leader, Unheld(RogueOne), Unheld(RogueTwo));
+        }
+
+        /// <summary>A fresh squad id: 32 hex characters, unique enough for a player's handful of squads.</summary>
+        public static string NewId() => Guid.NewGuid().ToString("N");
     }
 }

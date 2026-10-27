@@ -19,6 +19,12 @@ namespace CosmicShore.Data
         /// <summary>Longest squad name kept. Longer names are cut, not refused.</summary>
         public const int MaxNameLength = 24;
 
+        /// <summary>
+        /// The most squads a player is in at once, made and joined together (Shombith, 2026-10-27: "Users can make /
+        /// join up to 4 squads").
+        /// </summary>
+        public const int MaxSquads = 4;
+
         public List<SavedSquad> Squads = new();
         public int ActiveIndex;
 
@@ -34,14 +40,29 @@ namespace CosmicShore.Data
             return true;
         }
 
+        /// <summary>True while the player is in fewer than <see cref="MaxSquads"/> squads.</summary>
+        public bool CanAdd() => Squads == null || Squads.Count < MaxSquads;
+
+        /// <summary>The index of the squad with this id, or -1.</summary>
+        public int IndexOfId(string id)
+        {
+            if (Squads == null || string.IsNullOrEmpty(id)) return -1;
+            for (int i = 0; i < Squads.Count; i++)
+                if (Squads[i] != null && Squads[i].Id == id) return i;
+            return -1;
+        }
+
         /// <summary>
         /// Appends <paramref name="squad"/> with its name made drawable (blank names become
-        /// "Squad N"). The first squad added becomes the active one; later ones do not.
+        /// "Squad N"). The first squad added becomes the active one; later ones do not. Throws when the book already
+        /// holds <see cref="MaxSquads"/>: ask <see cref="CanAdd"/> first.
         /// </summary>
         public SavedSquad Add(SavedSquad squad)
         {
             if (squad == null) throw new ArgumentNullException(nameof(squad));
             Squads ??= new List<SavedSquad>();
+            if (Squads.Count >= MaxSquads)
+                throw new InvalidOperationException($"A player is in at most {MaxSquads} squads.");
 
             squad.Name = SanitizeName(squad.Name, Squads.Count);
             Squads.Add(squad);
@@ -72,16 +93,31 @@ namespace CosmicShore.Data
         }
 
         /// <summary>
-        /// Repairs the book after a load: a missing list, null entries, unusable names and an active
-        /// index that points at nothing. Idempotent.
+        /// Repairs the book after a load: a missing list, null entries, more than <see cref="MaxSquads"/> squads (the
+        /// first ones are kept), a missing or repeated id, unusable names and an active index that points at nothing.
+        /// Idempotent.
         /// </summary>
         public void Normalize()
         {
             Squads ??= new List<SavedSquad>();
             Squads.RemoveAll(s => s == null);
+            if (Squads.Count > MaxSquads) Squads.RemoveRange(MaxSquads, Squads.Count - MaxSquads);
 
+            var ids = new HashSet<string>();
             for (int i = 0; i < Squads.Count; i++)
-                Squads[i].Name = SanitizeName(Squads[i].Name, i);
+            {
+                var squad = Squads[i];
+                squad.Name = SanitizeName(squad.Name, i);
+                // A joined copy keeps the owner's id even if it repeats (the owner is the authority on it); only a
+                // squad the player made is re-minted.
+                if (string.IsNullOrEmpty(squad.Id) || (!squad.IsJoined() && !ids.Add(squad.Id)))
+                {
+                    squad.Id = SavedSquad.NewId();
+                    ids.Add(squad.Id);
+                }
+                if (!squad.IsJoined()) squad.MySeat = 0;
+                else if (squad.MySeat < 1 || squad.MySeat >= SavedSquad.SlotCount) squad.MySeat = 1;
+            }
 
             if (ActiveIndex < 0 || ActiveIndex >= Squads.Count) ActiveIndex = 0;
         }
