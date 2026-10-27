@@ -1,0 +1,117 @@
+# Serpent Time: the Serpent's dirty race
+
+The Serpent's **Time** game, prototyped in the Vessel Studio before the game changes (artifact → Unity, `/vessel-studio`
+D37). Studio page: `Docs/Studios/VesselStudio/serpent.html`, in the one Vessel Studio artifact
+(https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Started 2026-10-27 by Shombith; he will explain more as it goes, so
+this file grows a round at a time.
+
+## 1. The brief (Shombith, 2026-10-27, his words)
+
+> "we are gonna make the serpent and its time game the best game. This needs to be an dirty time game. I think there can
+> be multiple rings in one place and they see it but serpents can spawn walls infront of them so others have to shoot it
+> down or find another way to complete the race, this is a dirty game the ai needs to learn to play dirty as well in this
+> game mode. The game mode I think is already there we will reshape it thats all. Also in order to collect sniper bullets
+> they have to wonder to collect more crystsals as well. The cloak option make it cool as well."
+
+Read as five requirements:
+
+| # | Requirement | How round 1 reads it |
+|---|---|---|
+| R1 | A **Time** game: a race | Thread one ring of every gate, in order, two laps; first home wins (a `<Hull><Element>` mode, like Grizzly Time and Thresher Time) |
+| R2 | **Several rings in one place**, all visible | Every gate is a cluster of 3 rings (I1, I2) or 2 (I3, I4); any one of them counts |
+| R3 | **Serpents spawn walls** in front of the others; the others **shoot them down or find another way** | The shipped Seed Wall: cloak just past a ring (or stop in it) and a wall grows from the loose mass round the gate. The others shoot it with the Sniper Shot, ram it, or take another ring of the gate |
+| R4 | **Sniper rounds cost crystals**, and the crystals make you wander | A round per crystal (1 at the start, 3 at most); crystals sit 150 to 350 u off the racing line |
+| R5 | The **AI plays dirty** too, and **learns** to | Four AI play styles that wall, stop, shoot and snipe (hand-written brains, round 1). Learning comes with the Unity port: the race is recorded and learnt from automatically (CLAUDE.md, "AI learning is automatic") |
+| R6 | The **cloak** stays and is part of it | RT unscoped: you vanish for 15 s and leave a super-shielded seed (and a decoy of your hull) behind you |
+
+## 2. What round 1 models
+
+**The Serpent is the shipped one** (every number cites its asset; `python3 Tools/Build/element_ability_table.py Serpent`):
+
+| Element | Ability | Pad | Keys | Phone | Scales with the element | L5 |
+|---|---|---|---|---|---|---|
+| Space | Scope (the eyepiece) | LT, depth = zoom | Left Shift | SCOPE latch, full zoom | 22° → 11° at full zoom (floor 8°) | Deep Focus (× 1.6 zoom) |
+| Charge | Sniper Shot | RT while scoped | Right Shift / F | RT while the scope is on | 12 s → 5.4 s recovery | Pierce (breaks super-shielded mass) |
+| Mass | Seed Wall | B (stop) or RT unscoped (cloak) | T / Right Shift | B / RT | bricks × 1 → × 2 | Lockdown (a crystal refills your walls' holes) |
+| Time | Solid Fuel Pellets | A | Space | A | burn 3 s → 4.8 s | none |
+
+The round goes the full 3,000 u through every hostile prism in its 1.5° cone (radius floored at 6 u), never your own,
+and skips super-shielded mass until Pierce: `SniperShotActionExecutor.IsValidTarget`, which is the record where the docs
+disagree (the scope doc and the ability map describe Pierce differently).
+
+**The race is a design (lab-only, every number a proposal on the page's Game Config tab):**
+
+- **Courses.** I1 flat loop, 8 gates of 3 rings; I2 tilted loop, 10 of 3; I3 saddle, 12 of 2; I4 knot, 12 of 2 (smaller
+  rings). Two laps. The mode has no scene yet, so these are not game data.
+- **Wall fuel.** 48 loose debris prisms round each gate (they grow back) plus the trail every hull lays (a prism every 8 u,
+  gone after 30 s). A wall steals from both, so a gate everybody flies through builds the wall that plugs it.
+- **What a wall does.** A bare brick costs half your speed; a shielded brick or a seed bounces you to 10 u/s. Your own
+  walls let you through. A wall lives 45 s and holds 160 bricks at most.
+- **Snipes.** A rival in the cone loses one level of every element (`vesselStripPerElement` 0.1); no stun by default.
+- **The AI.** Input-only (sticks, triggers, A, B). It picks the ring of each gate it can get through cheapest, threads a gap
+  in a part-built wall, routes round a wall across its path, backs off to get range for a shot, and rams through bricks
+  (never at a seed) when it has no round. Dirty: just past a ring a rival still needs it cloaks to leave a seed there; a
+  Bricklayer that leads stops in the gate it just threaded. Play styles: **Dirty** (5/5/5/5, every L5), **Racer** (Time 10),
+  **Bricklayer** (Mass 10, Space 8), **Marksman** (Charge 10), **Shipped** (all 0).
+- **Levels.** Hard is the skilled pilot; Medium and Easy add the Skim Race levels' two mistakes on every gate (notice it
+  0.25 / 0.5 s late; misjudge 4.5% / 9.9% of gates, believing the ring two radii to one side) and on every wall (notice it
+  late; believe a walled ring is open), plus an aim error (Easy 2.0°, Medium 1.2°, Hard 0.5°).
+
+## 3. Round 1 scorecard (2026-10-27, measured headless in the page; times in seconds)
+
+| Course | Hard · Medium · Easy (one Dirty pilot vs three Hard, 8 seeds, median) | Dirty field (all four, median finish) | No walls (control) | Walls / race | Wall shots | Crashes | Snipes | Style wins Dirty / Racer / Bricklayer / Marksman |
+|---|---|---|---|---|---|---|---|---|
+| I1 | 87.3 · 90.1 · 101.5 | 87.5 | 82.6 | 7.3 | 1.3 | 10.7 | 0.7 | 4 / 0 / 0 / 0 |
+| I2 | 96.1 · 102.3 · 112.8 | 97.9 | 95.6 | 13.0 | 0.7 | 7.0 | 3.3 | 0 / 4 / 0 / 0 |
+| I3 | 124.5 · 127.1 · 131.5 | 121.4 | 104.3 | 10.7 | 3.3 | 10.7 | 3.7 | 4 / 0 / 0 / 0 |
+| I4 | 175.9 · 175.3 · 184.8 | 196.3 | 176.6 | 13.3 | 3.3 | 27.7 | 1.0 | 1 / 3 / 0 / 0 |
+
+What it says:
+
+1. **Walls matter, and more on the hard courses.** The dirty field finishes 5 s slower than the no-walls control on I1, 17 s on
+   I3 and 20 s on I4. The leader lays the walls, so the field pays for them, not the winner.
+2. **The level ladder holds on I1 to I3** (Hard < Medium < Easy). On I4, Hard and Medium tie. The gaps are smaller than the
+   game's Skim Race (Medium +2 to 6%, Easy +6 to 17% here, against 14 to 19% and 23 to 54% there). Four seeds were not
+   enough to order Hard and Medium, so the column uses eight.
+3. **Only Dirty and Racer ever win.** Racer wins the two longer courses on its 4.8 s pellet burns; the Bricklayer's stance
+   costs more time than its walls take from others, and the Marksman's detours for rounds cost more than its snipes. For the
+   designer to call: is that the balance we want, or should walling or sniping pay more?
+4. **Sniping pilots is rare** (1 to 4 a race) and only strips levels. If the dirty game should hurt more, the stun row
+   (Game Config, "Stun on a sniped pilot") is the lever to try.
+
+## 4. Open decisions (Shombith's to make, with the vessel's owner where it touches the Serpent)
+
+- **D-ST1 Ring rule.** Any ring of a gate counts (round 1), or each ring is worth something different (a far ring pays
+  more)?
+- **D-ST2 Round economy.** A crystal is one round (round 1). Should crystals also raise Charge (a faster rifle), as Serpent
+  Charge's waves do?
+- **D-ST3 What a wall does to a hull.** Bounce or half speed (round 1), or something else (a stun, a trail cut)?
+- **D-ST4 Own walls.** Let their owner through (round 1), or block everyone (riskier dirty play)?
+- **D-ST5 Snipe on a pilot.** Strip only (the game's rule), or add a stun in this mode?
+- **D-ST6 The arena.** The page's four loops are placeholders. In Unity, a real scene: reuse a gate race's course
+  (`GateRaceController` modes) or the cell the Serpent Charge branch cloned?
+
+## 5. Bringing it to Unity (not started)
+
+"The game mode I think is already there": the Serpent's own mode is **Serpent Charge** (`GameModes.SerpentCharge = 67`,
+reserved on bleeding-edge), a sniper duel on **`origin/cece/vibrant-archimedes-n3xn3x`**, not merged, last commit
+2026-10-16, about 1,000 commits behind bleeding-edge. It is Garrett's branch (Affects: Garrett's Serpent Charge). It
+already carries what this race reuses: the marksman AI (`SerpentMarksmanAI`: latches the scope, scores lines with the
+rifle's own cone, cloaks through the replicated input), Charge-crystal waves laid per peer, AI cloaks that reach every
+player, `CloakSeedWallActionExecutor.IsCloaked`, and `SniperShotActionExecutor.MinPathRadius`.
+
+Before the port, decide with Garrett:
+
+- **Reshape Serpent Charge into Serpent Time** (one Serpent mode, id 67, renamed), or **add Serpent Time beside it** (the
+  `<Hull><Element>` family has Grizzly Charge and Grizzly Time side by side; a new `GameModes` id would be claimed only after
+  checking bleeding-edge and every in-flight branch).
+- Merge bleeding-edge into that branch first either way: it is far behind.
+
+Then `/artifact-to-unity` with `/arcadegame`: the mode's scene and controller, the gate clusters as a course generator, the
+round-per-crystal rule, the AI styles on the platform AI (input-only), its card and `/cardart`.
+
+## 6. Round log
+
+| Round | Date | What changed | What it taught |
+|---|---|---|---|
+| 1 | 2026-10-27 | The page: the shipped Serpent, the race (R1 to R6), four AI styles, three levels, the scorecard above | (a) A cloak seed laid on top of a rival traps it bouncing in place: the seed is the Serpent's latest trail prism, behind it, and the AI routes round any wall across its path. (b) An AI that only aims for the ring circles it: the game's stick mix pins the hull at 25 u/s at full yaw (an 18 u turn), so the approach must line up on the ring's axis from far enough out, scaled by how far off the axis it is. (c) A sniper that starts lining up 280 u out and wants a 0.35° aim never fires: fire when the believed aim sits in the inner half of the cone at that distance, ease off the throttle while lining up, and back off for range. (d) Belief mistakes only on walls do not separate the levels, because few rings are walled; the Skim Race mistakes belong on every gate. (e) An InstancedMesh's colour attribute must exist before its first render, or the walls draw white (three r128). |
