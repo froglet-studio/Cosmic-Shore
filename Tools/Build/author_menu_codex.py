@@ -379,6 +379,10 @@ ART = {n: K.meta_guid(CODEX_ART.format(n)) for n in
 ART["prism"] = K.meta_guid("Assets/_Graphics/ObjectiveIcons/objective_prism.png")
 ART["pilot"] = K.meta_guid("Assets/_Graphics/Pilots/PilotPortrait_01.png")
 ART["codex"] = K.meta_guid("Assets/_Graphics/UI/NavGlyphs/nav_codex.png")
+ART["arcade"] = K.meta_guid("Assets/_Graphics/ARCADE/CardBackgrounds/SkimRace.png")
+ART["voyage"] = K.meta_guid("Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png")
+ART["mission"] = "78575ccdc916fca45960791606e128c9"   # SO_Mission_Protect's CardBackground
+ART["quest"] = K.meta_guid("Assets/_Graphics/UI/Chrome/chrome_star.png")
 
 
 def flipbook_guid(name):
@@ -401,6 +405,20 @@ ELEMENT_CARDS = (
      "is the shape of its spindles.", "", "flora_branching", None),
 )
 LEXICON = (
+    # Section 90.3 (Shombith 2026-10-27: "In lexicon teach about missions arcades voyages too quest"): the ways to play
+    # first, then the things you fly and find.
+    ("Arcade", "Quick games", "Lexicon",
+     "Short games for one to four pilots: races, hunts, duels and building. Pick a game, set its intensity and seats, "
+     "and launch. Favourites sit at the top; filter by element or vessel.", "", "arcade", None),
+    ("Quests", "One goal at a time", "Lexicon",
+     "An episode is a line of quests. Each names a game and what to do in it; claim it and the next one opens. "
+     "Episode 1 is The Hypersea. Follow them from the Voyage window.", "", "quest", None),
+    ("Voyages", "Journeys beyond the cell", "Lexicon",
+     "Long journeys out of the cell, through a corridor of new ones. Open the Voyage window from Home and set sail. "
+     "Tandava is the first.", "", "voyage", None),
+    ("Missions", "Games with a story", "Lexicon",
+     "Their own games, apart from the Arcade: a goal to protect or reach against the HyperSea. Not open yet.",
+     "", "mission", None),
     ("Vessels", "The hulls you fly", "Lexicon",
      "Each vessel is a hull with four abilities, one for each element. Raise an element to level 5 to wake its "
      "ability and the hull's level-5 upgrade. Choose and upgrade vessels in the Hangar.", "", "tool_vessel-changer", None),

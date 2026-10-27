@@ -74,9 +74,14 @@ namespace CosmicShore.UI
         {
             float dt = Time.unscaledDeltaTime;
             if (_scan >= 0f) Scan(_scan += dt);
-            if (_appear < 0f || _appear > appearSeconds) { if (_appear < 0f) _appear += dt; return; }
+            // Finish exactly: a long frame (the hitch as the screen opens) can carry a waiting tile past the whole
+            // appear in one step, and a tile that skipped its last step stayed invisible (Shombith 2026-10-27: "cant
+            // see anything" - only the first tile, which waits for nothing, drew).
+            if (_appear > appearSeconds) return;
             _appear += dt;
+            if (_appear < 0f) return;
             Appear(Mathf.Clamp01(_appear / appearSeconds));
+            if (_appear >= appearSeconds) _appear = appearSeconds + 1f;
         }
 
         void Scan(float elapsed)

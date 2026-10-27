@@ -117,6 +117,34 @@ MonoBehaviour:
     lawsHeading: Elemental laws
     loreHeading: Lore
     lexicon:
+    - title: Arcade
+      sub: Quick games
+      kicker: Lexicon
+      gameplay: 'Short games for one to four pilots: races, hunts, duels and building. Pick a game, set its intensity and seats, and launch. Favourites sit at the top; filter by element or vessel.'
+      lore: 
+      image: {fileID: 21300000, guid: 66bebfc371fe47409acb7f4939ab58b0, type: 3}
+      flipbook: {fileID: 0}
+    - title: Quests
+      sub: One goal at a time
+      kicker: Lexicon
+      gameplay: An episode is a line of quests. Each names a game and what to do in it; claim it and the next one opens. Episode 1 is The Hypersea. Follow them from the Voyage window.
+      lore: 
+      image: {fileID: 21300000, guid: dc75ad1ec5baa7cee48c2bdae6c2422f, type: 3}
+      flipbook: {fileID: 0}
+    - title: Voyages
+      sub: Journeys beyond the cell
+      kicker: Lexicon
+      gameplay: Long journeys out of the cell, through a corridor of new ones. Open the Voyage window from Home and set sail. Tandava is the first.
+      lore: 
+      image: {fileID: 21300000, guid: a797820482af42d4a6eb9a4b7426539b, type: 3}
+      flipbook: {fileID: 0}
+    - title: Missions
+      sub: Games with a story
+      kicker: Lexicon
+      gameplay: 'Their own games, apart from the Arcade: a goal to protect or reach against the HyperSea. Not open yet.'
+      lore: 
+      image: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
+      flipbook: {fileID: 0}
     - title: Vessels
       sub: The hulls you fly
       kicker: Lexicon
