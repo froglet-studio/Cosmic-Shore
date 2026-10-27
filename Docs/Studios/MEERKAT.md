@@ -69,6 +69,10 @@ space-time bend stays the shader's.
 **The panels:** all the wormhole cards are in **Play Style Config**, in this order: Reticle (feel and look, yours
 alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple), Shape, Ride.
 
+**Round 4 (Yash, 2026-10-27: "Turn off all lensing"):** the tube's warp, the mouths' dents and the collapse's ripple ship
+at 0. The wormhole's look is the bridge and your reticle. The Space look sliders stay, to bring any of them back; at 0
+the game's lens pass does not run at all.
+
 **Round 3 (Yash, 2026-10-27: "I want it to be a little smoothy ... pretty transparent, just maybe wireframe looking with
 just spindles. Tiny thinning spindles"):**
 - **The reticle eases** toward what the right stick and LT ask for over `reticleSmoothSeconds` (0.15 s: 63% of the way
@@ -98,9 +102,9 @@ just spindles. Tiny thinning spindles"):**
 | ride | `formSeconds` | 0.4 s | RT: the tunnel forms over this long |
 | ride | `staySeconds` | 10 s | It stays this long after you are out |
 | ride | `collapseSeconds` | 0.8 s | ...then collapses to its centre over this long |
-| look | `warpStrength` | 0.8 | Space bent along the tube (everyone sees it) |
-| look | `dentStrength` | 0.6 | Space bent in at each mouth (everyone sees it) |
-| look | `rippleStrength` | 0.3 | The collapse's ripple at the screen's edges (0 = none) |
+| space | `warpStrength` | 0 (off, round 4) | Space bent along the tube (everyone sees it) |
+| space | `dentStrength` | 0 (off, round 4) | Space bent in at each mouth (everyone sees it) |
+| space | `rippleStrength` | 0 (off, round 4) | The collapse's ripple at the screen's edges (0 = none) |
 | look | `rippleEdge` | 0.45 | ...from this share of the way from the centre to a corner |
 | look | `rippleSeconds` | 1.2 s | ...running out and fading over this long |
 | reticle | `reticleSmoothSeconds` | 0.15 s | Your reticle eases toward the sticks over this long (0 = at once) |

@@ -47,7 +47,8 @@ the prefab:
   - `bridgeVisibility` 0 hides it.
   - A spindle is a six-sided bipyramid drawn additively. The studio's note that the game would build it from `Spindle`
     prefabs is not done: a prefab per spindle is ~280 objects per tunnel.
-- **The bent space** (`MeerkatWormholeLensPass`, `MeerkatWormholeLens.shader`, `MeerkatWormholeWarp.shader`):
+- **The bent space** (off since round 4: `warpStrength`, `dentStrength` and `rippleStrength` ship at 0, and the pass
+  then never runs; `MeerkatWormholeLensPass`, `MeerkatWormholeLens.shader`, `MeerkatWormholeWarp.shader`):
   - Each tube's wall bends the world behind it (`warpStrength`).
   - Each mouth dents space as wide as the mouth (`dentStrength`), fading within 3 mouth radii of the camera.
   - A collapse ripples the screen's EDGES only (`rippleStrength`, from `rippleEdge` out past the corners, over

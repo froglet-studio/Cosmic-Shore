@@ -70,11 +70,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Wormhole look (the artifact's Play Style Config > Wormhole look, Space look)")]
         [Tooltip("Space bent along the tube (strength)")]
-        [SerializeField, Range(0f, 2f)] float warpStrength = 0.8f;
+        [SerializeField, Range(0f, 2f)] float warpStrength;
         [Tooltip("Space bent in at each mouth (strength)")]
-        [SerializeField, Range(0f, 0.95f)] float dentStrength = 0.6f;
+        [SerializeField, Range(0f, 0.95f)] float dentStrength;
         [Tooltip("Its collapse ripples the screen's edges (strength)")]
-        [SerializeField, Range(0f, 1f)] float rippleStrength = 0.3f;
+        [SerializeField, Range(0f, 1f)] float rippleStrength;
         [Tooltip("...from this far out (share of the screen, 0 = centre)")]
         [SerializeField, Range(0f, 0.9f)] float rippleEdge = 0.45f;
         [Tooltip("...for (s)")]

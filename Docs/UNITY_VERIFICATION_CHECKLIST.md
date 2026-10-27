@@ -105,8 +105,9 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
    - A tunnel ripples out of its centre with a spindle bridge in your domain colour, and you dive in.
    - The ride speeds up mid-tunnel and comes out at the speed you went in with, on the tunnel's last heading.
    - The reticle comes back about 0.5 s later, growing out of its centre.
-   - The tunnel stays 10 s, collapses to its centre, and the screen's EDGES ripple briefly. The centre does not move.
-4. Space round a formed tube looks bent, and each mouth dents. A vessel in front of a mouth is not bent.
+   - The tunnel stays 10 s and collapses to its centre (no screen ripple: lensing is off by default).
+4. Lensing ships OFF (round 4): no bent space, no mouth dents, no edge ripple. Raise `warpStrength` / `dentStrength` /
+   `rippleStrength` on the config in play mode to see each; a vessel in front of a mouth is not bent.
 5. Open `Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset` in play mode. Moving `bridgeVisibility`
    to 0 hides the bridge, and the other looks change live.
 6. **AI:** put the Meerkat on autopilot (or race Burrow Run against AI Meerkats). It forms tunnels toward its rings:

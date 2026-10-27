@@ -26,9 +26,9 @@ MonoBehaviour:
   formSeconds: 0.4
   staySeconds: 10
   collapseSeconds: 0.8
-  warpStrength: 0.8
-  dentStrength: 0.6
-  rippleStrength: 0.3
+  warpStrength: 0
+  dentStrength: 0
+  rippleStrength: 0
   rippleEdge: 0.45
   rippleSeconds: 1.2
   reticleIdleAlpha: 0.4

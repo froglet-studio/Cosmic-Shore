@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
             {
                 var t = live[i];
                 var cfg = t.Config;
-                if (!cfg) continue;
+                if (!cfg || cfg.DentStrength <= 0f) continue;   // no dent: the pass skips the mouth (lensing off ships at 0)
                 for (int end = 0; end < 2 && n < MaxWells; end++)
                 {
                     float s = end == 0 ? t.W.S0 : t.W.S1;

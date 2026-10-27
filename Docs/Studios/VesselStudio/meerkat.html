@@ -392,7 +392,7 @@
         <p class="src"><b>A formed tunnel shows everyone its bridge</b>: rings and ribs of spindles over a glass surface, in its maker's domain colour (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
         <div class="btns"><button class="pick" type="button" data-reset="look">Reset</button></div></details>
       <details class="card" id="grp-space" open><summary>Space · look <small>MeerkatWormholeConfig · the bent space, everyone's</small></summary><div class="rows"></div>
-        <p class="src"><b>Everyone sees</b> a tunnel bend space-time: the space round its tube bent away from it (<i>warpStrength</i>), its centre line clear, and each mouth a dent as wide as the mouth (<i>dentStrength</i>). Its collapse sends a <b>subtle circular ripple across the screen's edges only</b> (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>), never the centre where you aim, weaker the further away it is.</p>
+        <p class="src"><b>Off by default</b> (round 4: all lensing off; the bridge is the tunnel's look). Raised, <b>everyone sees</b> a tunnel bend space-time: the space round its tube bent away from it (<i>warpStrength</i>), its centre line clear, and each mouth a dent as wide as the mouth (<i>dentStrength</i>). Its collapse sends a <b>subtle circular ripple across the screen's edges only</b> (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>), never the centre where you aim, weaker the further away it is.</p>
         <div class="btns"><button class="pick" type="button" data-reset="space">Reset</button></div></details>
       <details class="card" id="grp-flight"><summary>Flight & course</summary>
         <div class="intensity" role="group" aria-label="Course intensity" id="intensitySeg">
@@ -452,7 +452,9 @@
     throatSpeed: 2.5, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
-    warpStrength: 0.8, dentStrength: 0.6, rippleStrength: 0.3, rippleEdge: 0.45, rippleSeconds: 1.2,
+    // round 4 (Yash, 2026-10-27: "Turn off all lensing"): the warp, the dents and the ripple ship at 0 - the bridge and your
+    // reticle are the wormhole's whole look; the sliders stay, to bring any of them back
+    warpStrength: 0, dentStrength: 0, rippleStrength: 0, rippleEdge: 0.45, rippleSeconds: 1.2,
     // the reticle (round 3, Yash: "a little smoothy ... pretty transparent, just maybe wireframe looking with just spindles. Tiny
     // thinning spindles"): it eases toward the sticks over reticleSmoothSeconds, and it is built of thin spindles - rings round
     // its throat and ribs along it - over a faint glass, with the lime line you will fly at reticlePath
