@@ -634,7 +634,7 @@ with the Tide Run (`/arcadegame`) and the four abilities.
 Read from the 21 shipped element maps (`Assets/Resources/ElementalAbilityMaps/*.asset`) and the ten concept prototypes
 (Gibbon, Flea, Albatross, Remora, Dragonfly, Mole, Marlin, Eel, Octopus, Gecko). **Each zooid owns one element**, so
 the vessel still has the fleet's four: the Bell Space, the Sting Charge, the Bract Mass, the colony Time. Each zooid has
-a passive and two triggers; B calls the colony from any zooid (proposal; today LT calls it). The page carries the same
+a passive and two triggers; B calls the colony from any zooid (round 2; LT called it in round 1). The page carries the same
 table as data (`KIT` in `siphonophore-studio.js`, Vessel Config > Ability kit), each row marked **in the sim**, **in
 part** or **proposal**.
 
@@ -653,7 +653,7 @@ part** or **proposal**.
 | | passive | Anchor | Stopped on mass it digs in: net reach x2, the others dock in half the time; the colony forms where it sits | Grizzly Dig In, Shrike Nest, Gecko | in part (gather at the Bract) |
 | | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in the sim (round 2) |
 | Colony (Time) | passive | Digest | One held crystal into the score every 4 s; Time x1 to x0.5 | its own | in the sim |
-| | Helm RT | Ram Spool | Hold to wind up; at full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit | Rhino Ramp Spool and Breaker, Thresher | in part (tap pulse) |
+| | Helm RT | Ram Spool | Hold to wind up: up to x1.6 speed, down to half the turn; at full spool it runs red and one ram opens a wall (three otherwise) | Rhino Ramp Spool and Breaker, Thresher | in the sim (round 2) |
 | | Helm LT | Scatter | Hold to split; let go and the three are flung x1.4 along the stick, each to its own next crystal | Remora sling, Gecko hop, Butterfly Fold | in part (hold to split) |
 | | Lance RT | Siphon Lance | Aimed hitscan to 140 u, cuts mass and wall cells | Shrike Void Lance, Serpent Sniper | in the sim |
 | | Ward LT | Colony Shell | The hull ploughs the mass it meets | Grizzly Rush, Brittle Star Speed | in the sim |
@@ -667,9 +667,8 @@ Shell's danger drop covers the docking; the Bell's pulse chain carries into the 
 on the window's three crystals.
 
 **Rules it keeps:** PvP is petals only (the lash takes petals, and every scored hit silences per `SILENCE.md`); one
-scaled parameter per element; the AI writes inputs only. **Decision needed (designer):** which proposals to fly next
-(suggested order: Slipstream, Tentacle Lash with Trawl, Pulse Jet's beat, Ram Spool), and whether B as the shared
-fuse call frees LT well enough on a phone.
+scaled parameter per element; the AI writes inputs only. **Flown in round 2** (11.5): Slipstream, Tentacle Lash with Trawl, Pulse Jet and Ram Spool, in that order. Still
+proposals: Reel, Contagion, Bract Shell's danger drop, Anchor, Scatter, Chain Wake.
 
 ### 11.5 Round 2: the kit flown, one ability at a time (2026-10-27, Yash: "do all recommended 1 by 1")
 
@@ -759,3 +758,42 @@ jet changed nothing; allowed, it jets about 115 times and the whole line rides i
 Found: the jet is worth about 10 s on I1 and I2 for Hard and is level with the tap pulse below that; its value is the
 skill it asks (the beat), not raw speed. The beat separates the levels as designed (Hard 42%, Easy 24% on the beat).
 I2 Easy sits on the 540 s limit with or without it.
+
+**4. Ram Spool (the colony's Helm RT).** The Rhino's ramp spool on the colony: Helm RT held winds it up over 2 s, its
+speed rising to x1.6 and its turn falling to half (a wound colony is stiff); let go and it unwinds at 1.5 a second. At
+full spool the float glows red, and the next ram opens the wall in one hit instead of three, spending the spool. The
+old ram pulse (x1.6 for 1 s every 2 s) is gone. The AI winds up whenever it is lined up within 10 degrees, and lets go
+to turn. A rule that wound up only on the run-in to a wall, and one lined up within 25 degrees, were tried; neither
+was better.
+
+Checked by hand (a scripted Helm flying straight at a wall from 200 u): RT held, the ram lands at full spool and the
+wall goes from 3 hits to open; RT off (the control), the ram leaves it at 2.
+
+| 8 seeds | Ram pulse (step 3) | Ram Spool (shipped) |
+|---|---|---|
+| I1 Hard | 333 (sd 19) | 338 (21) |
+| I1 Medium | 397 (11) | 405 (25) |
+| I1 Easy | 428 (16) | 423 (18) |
+| I2 Hard | 430 (31) | 423 (28) |
+| I2 Medium | 479 (38), 1 over | 494 (20), 1 over |
+| I2 Easy | 533, 6 over | 522 (10), 4 over |
+
+Found: the Ram Spool changes nothing measurable, and the AI never lands a red ram. The colony rams a wall about once a
+run, because the Lance opens a wall from 140 u in under a second (3 hits at 0.3 s), so the colony seldom touches one.
+**Decision needed (designer):** whether the ram should be the colony's way through a wall (a slower Lance, or walls the
+Lance cannot cut), or the Lance stays and the spool is only speed against steering.
+
+**Round 2 in one table** (8 seeds, the old AI with none of the four against the shipped build with all four):
+
+| | Old AI, none of the four | All four (shipped) |
+|---|---|---|
+| I1 Hard | 419 (sd 15) | 338 (21) |
+| I1 Medium | 423 (17) | 405 (25) |
+| I1 Easy | 458 (16) | 423 (18) |
+| I2 Hard | 481 (7) | 423 (28) |
+| I2 Medium | 492 (11) | 494 (20), 1 over the limit |
+| I2 Easy | 521 (15) | 522 (10), 4 over the limit |
+
+Most of the gain is Slipstream and the AI's wall detour (Hard on I1 is about 80 s faster). The levels now separate in
+order on I1 (Hard 338, Medium 405, Easy 423), which the old AI did not do. Never fusing and always fused still digest
+nothing on every course.

@@ -1026,6 +1026,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-STU-149 — An AI that holds a tap button down after a miss never presses again
+- Lab: Siphonophore Studio (siphonophore.html) · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Bract's net casts on a fresh RT press. Its AI held RT while "want" stayed true, so after one cast that caught nothing (a misjudged crystal) it never cast again: a run stalled at 6 of 24 crystals for 450 s, the Bract circling its freed crystal 10 u away with RT held.
+- Do instead: for any edge-triggered ability, the AI's "want" includes the cooldown (or releases for a frame after each press), so a miss is followed by a new press. Look for "rt held, cool 0, never fires" when a run stalls.
+- Evidence: siphonophore-studio.js zooidAI ("a cast is a tap"); the stall probe in the round 2 commit 1039d5ecdc.
+- Promoted: no
+
+### L-STU-150 — Count how often the AI USES an ability, not only the finish time; a rule from another ability can starve it
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: the Pulse Jet changed nothing in the scorecard. Its use count showed why: the AI Bell jetted 8 times a run, because Slipstream (built one step earlier) blocked the pulse while leading and the Bell led most of its travel. Allowing the jet while leading took it to ~115 jets a run and I1 Hard from 343 to 332 s. The Ram Spool's count (about one ram a run, no red ram) showed the Lance makes the ram redundant.
+- Do instead: every ability added to a lab reports its own use count (and hits, chains, steals) in the headless result next to the finish time; a flat finish time with a near-zero count is an unused ability, not a neutral one.
+- Evidence: runHeadless extra { jets, onBeat, chainTop, lashes, hits, stolen, rams, redRams }; CONCEPT_FLEET.md 11.5 steps 3 and 4.
+- Promoted: no
+
+### L-STU-151 — A crew loop is chaotic: two or three seeds mislead; use eight and quote mean and spread
+- Lab: Siphonophore Studio · Branch: Ys-bleeding-edge · By: session_01JZzEha3L2L4aMuJYzunPm3 · Date: 2026-10-27
+- What happened: with three seeds, Mass level 5 plus the lash read 60 s faster than Mass 5 alone (392/356/354 against 433/421/415); with eight seeds and the coiled-steering fix the two were 344 and 350, inside one standard deviation. Three AIs, a fuse policy and a wall rhythm make tiny changes move whole runs by 30-60 s.
+- Do instead: compare variants in the same build behind a run option, on eight seeds, and quote mean and standard deviation; a difference smaller than the spread is a plateau. Remove the option once decided.
+- Evidence: scratch siph_mean.cjs; CONCEPT_FLEET.md 11.5 step 2.
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it
