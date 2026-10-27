@@ -89,9 +89,9 @@
       "id": "meerkat",
       "name": "Meerkat",
       "file": "meerkat.html",
-      "kind": "design studio - round 1",
-      "chip": "design studio · round 1",
-      "summary": "The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the tube as bent space-time, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatWormholeConfig); AI rivals at Easy, Medium or Hard and a level scorecard.",
+      "kind": "design studio - round 2",
+      "chip": "design studio · round 2",
+      "summary": "The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the formed tunnel as a bridge of spindles over glass and the space round it bent, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatWormholeConfig); AI rivals at Easy, Medium or Hard and a level scorecard.",
       "spec": [
         {
           "k": "Ability",

@@ -341,8 +341,14 @@ namespace CosmicShore.Data
         // itself moves on without it (Garrett, 2026-10-26). See _Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md.
         TandavaSevering = 70,
 
+        // BurrowRun (71): the Meerkat's TIME race - Warpline's shape (a lapped gate circuit on the shared HeadlongCircuit
+        // solver, Slingshot's cut) with eight rings a lap, two laps: the Vessel Studio's Meerkat race. The Meerkat digs its
+        // own way - bend the reticle with the right stick, RT dives you through the tunnel it forms, out the far end with
+        // the speed you went in with. See _Scripts/Controller/Arcade/BURROWRUN.md.
+        BurrowRun = 71,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 65) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 66) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

@@ -65,6 +65,63 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat: the wormhole vessel, its AI and Burrow Run (`claude/adoring-cerf-m94x1o`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselClassType.Meerkat = 28` and `GameModes.BurrowRun = 71`, cloned from the Vessel Studio's
+Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
+- `Meerkat.prefab`, from `Stoat.prefab` by `author_meerkat_assets.py`, offered in the Toybox Vessel Changer;
+- the wormhole executor, the one-thumb transformer that lets the tunnel fly the hull, the network relay (protocol 17);
+- the reticle, bridge and glass meshes, and the lens pass (tube warp, mouth dents, edge-only ripple), with four new
+  shaders and their `Resources/` materials;
+- the input-only AI;
+- Burrow Run: its scene, card, preview and end condition (16), by `author_burrowrun_assets.py`.
+
+**Verified without the editor:**
+- Reference compile: player and editor configs, 0 errors in project code.
+- `MeerkatWormholeMathTests` (27 cases), run with dotnet against Unity-equivalent stubs: all pass. Their numbers come
+  from running the page's own functions in node.
+- Generators: `author_meerkat_assets.py --self-test` and `--check` OK; `author_burrowrun_assets.py --check` OK.
+- `studio_to_unity.py --vessel meerkat --check`: 36 mapped, 0 drift.
+- Gates: network-prefab hashes, switch labels, conditional compilation, console logging, using directives and
+  abstract members all OK.
+
+**NOT run:**
+- The game in the Editor.
+- `MeerkatWormholeMathTests` in Unity's runner.
+- `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`.
+
+**Verify in editor:**
+1. Run EditMode tests `MeerkatWormholeMathTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests` and
+   `CrystalHullFusionConfigTests`: all pass. Then open `Meerkat.prefab` and `MinigameBurrowRun.unity`: no missing
+   scripts.
+2. **Lava lamp:**
+   - Open the menu's freestyle, then the Toybox **Vessel Changer**, and pick **Meerkat**.
+   - It flies on the left stick alone, at about 60 u/s.
+   - A see-through frame of thin cyan-to-white spindles sits 30 u ahead of the nose. The right stick bends it, shorter
+     and fatter as it bends, and LT shortens it.
+   - It glides into each new shape over about 0.15 s instead of snapping (`reticleSmoothSeconds`; round 3).
+3. Pull **RT**:
+   - The reticle fades.
+   - A tunnel ripples out of its centre with a spindle bridge in your domain colour, and you dive in.
+   - The ride speeds up mid-tunnel and comes out at the speed you went in with, on the tunnel's last heading.
+   - The reticle comes back about 0.5 s later, growing out of its centre.
+   - The tunnel stays 10 s and collapses to its centre (no screen ripple: lensing is off by default).
+4. Lensing ships OFF (round 4): no bent space, no mouth dents, no edge ripple. Raise `warpStrength` / `dentStrength` /
+   `rippleStrength` on the config in play mode to see each; a vessel in front of a mouth is not bent.
+5. Open `Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset` in play mode. Moving `bridgeVisibility`
+   to 0 hides the bridge, and the other looks change live.
+6. **AI:** put the Meerkat on autopilot (or race Burrow Run against AI Meerkats). It forms tunnels toward its rings:
+   it holds its line for 0.3 s, then dives.
+7. **Burrow Run:**
+   - Open the Arcade, pick **Burrow Run** (Meerkat only), at I1 and at I4, against 1-3 AI Meerkats.
+   - Eight rings a lap, two laps.
+   - It finishes and scores by time.
+   - Easy, Medium and Hard are offered.
+8. **Two players (MPPM):** the second player sees the first one's tunnels, bridge and bent space.
+9. The Console shows nothing new.
+
+---
+
 ### 🔴 Toy Box portraits: seven glyphs that teach each toy; the codex baker stands down on Tool pages (`cece/sharp-pascal-3frg3w`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "update the images on the toybox so they are production ready. they should communicate
