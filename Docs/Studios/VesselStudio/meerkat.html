@@ -268,7 +268,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Meerkat Flight Studio</h1>
-    <span class="round">Round 1 · the wormhole vessel</span>
+    <span class="round">Round 2 · the spindle bridge</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, coming out with the speed you went in with. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre with a subtle ripple at the screen's edges. Every parameter shows the game's name for it under its slider (<code>MeerkatWormholeConfig</code>); save any section as a profile. Every setting has an ⓘ.</p>
   </header>
@@ -346,7 +346,7 @@
     <aside class="rail" aria-label="Studio controls">
       <div class="card" id="mainCard">
         <h3 id="mainH">The wormhole</h3>
-        <p class="src" style="margin-top:4px" id="mainP">The Meerkat's one ability. The left stick flies; the grid on your nose is the tunnel RT would form now: the right stick bends it, LT shortens it, RT forms it and you ride it, out with the speed you went in with. No black hole, no white hole: only bent space-time. Its settings: <b>Wormhole · shape</b> and <b>Wormhole · ride</b> below, its look in Scene Config.</p>
+        <p class="src" style="margin-top:4px" id="mainP">The Meerkat's one ability. The left stick flies; the grid on your nose is the tunnel RT would form now: the right stick bends it, LT shortens it, RT forms it and you ride it, out with the speed you went in with. No black hole, no white hole: only bent space-time. Its settings: <b>Wormhole · look</b>, <b>Wormhole · shape</b> and <b>Wormhole · ride</b> below.</p>
         <div class="btns" style="margin-top:6px"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course. Add rivals with + in Players to see theirs too.">Watch the AI fly the wormhole</button></div>
       </div>
 
@@ -386,7 +386,7 @@
         <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> starts and ends at the speed you went in with and rushes to <i>throatSpeed</i> × it at the throat: you come out with your own momentum, on the tunnel's last heading. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
         <div class="btns"><button class="pick watchGateAi" type="button" title="The AI on your hull, the Follow camera: watch it shape and ride wormholes round the course (any setting you change shows on its next wormhole).">Watch the AI fly it</button><button class="pick" type="button" data-reset="ride">Reset</button></div></details>
       <details class="card" id="grp-look" open><summary>Wormhole · look <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>Everyone sees</b> a tunnel only as bent space-time: the space round its tube bent away from it (<i>warpStrength</i>), its centre line clear, and each mouth a dent as wide as the mouth (<i>dentStrength</i>). Its collapse sends a <b>subtle circular ripple across the screen's edges only</b> (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>), never the centre where you aim, weaker the further away it is. <b>Only you see</b> your reticle's grid, and only while you shape it: a formed tunnel has no grid.</p>
+        <p class="src"><b>Everyone sees</b> a tunnel only as bent space-time: the space round its tube bent away from it (<i>warpStrength</i>), its centre line clear, and each mouth a dent as wide as the mouth (<i>dentStrength</i>). Its collapse sends a <b>subtle circular ripple across the screen's edges only</b> (<i>rippleStrength</i>, from <i>rippleEdge</i> out, over <i>rippleSeconds</i>), never the centre where you aim, weaker the further away it is. <b>Only you see</b> your reticle's grid, and only while you shape it. <b>A formed tunnel shows everyone its bridge</b>: rings and ribs of spindles over a glass surface, in its maker's domain colour (the game will build it from its Spindle prefabs), condensing out of its centre as it forms and evaporating as it collapses. <i>bridgeVisibility</i> 0 leaves only the bent space.</p>
         <div class="btns"><button class="pick" type="button" data-reset="look">Reset</button></div></details>
       <details class="card" id="grp-flight"><summary>Flight & course</summary>
         <div class="intensity" role="group" aria-label="Course intensity" id="intensitySeg">
@@ -447,6 +447,11 @@
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
     warpStrength: 0.8, dentStrength: 0.6, rippleStrength: 0.3, rippleEdge: 0.45, rippleSeconds: 1.2, reticleIdleAlpha: 0.4, reticleGlass: 0.6,
+    // the bridge (Yash, 2026-10-27): a formed tunnel's geometry, shown to everyone - rings of spindles round the throat and
+    // ribs of spindles along it (the game will build it from its Spindle prefabs), and a glass surface under them; the
+    // spindles condense out of the tunnel's centre as it forms, evaporate back as it collapses, and a shimmer runs through
+    // them from the way in to the way out. bridgeVisibility 0 hides it all (only the bent space is left).
+    bridgeVisibility: 1, bridgeGlass: 0.6, bridgeRings: 16, bridgeSpindlesPerRing: 12, bridgeRibs: 6, bridgeSpindleThickness: 1.6, bridgeShimmer: 0.5,
     // the AI's wormhole
     aiWormhole: 1, aiStraightMinDistance: 300, aiBentMinDistance: 120, aiShapeSeconds: 0.3, aiTau: 0.3, aiNoise: 0,
     // flight: one thumb (the left stick flies at full throttle, banking bankShare x the roll rate into a turn); the Stoat's
@@ -477,6 +482,13 @@
     ['look', 'rippleSeconds', '...for (s)', 0.2, 4, 0.1],
     ['look', 'reticleIdleAlpha', 'Your reticle, right stick centred (brightness)', 0, 1, 0.05],
     ['look', 'reticleGlass', 'Your reticle\'s glass: a faint lit surface under it', 0, 2, 0.05],
+    ['look', 'bridgeVisibility', 'The formed tunnel\'s bridge, for everyone (0 = hidden)', 0, 1, 0.05],
+    ['look', 'bridgeGlass', '...its glass surface (brightness)', 0, 2, 0.05],
+    ['look', 'bridgeRings', '...rings of spindles along it', 2, 40, 1],
+    ['look', 'bridgeSpindlesPerRing', '...spindles round each ring', 3, 32, 1],
+    ['look', 'bridgeRibs', '...ribs of spindles along it (0 = none)', 0, 16, 1],
+    ['look', 'bridgeSpindleThickness', '...spindle thickness (u)', 0.1, 6, 0.05],
+    ['look', 'bridgeShimmer', '...a shimmer running way in to way out', 0, 1, 0.05],
     ['ai', 'aiWormhole', 'AI uses the wormhole (0 = no, 1 = yes)', 0, 1, 1],
     ['ai', 'aiStraightMinDistance', 'AI: a straight tunnel with its ring at least (u) away', 50, 2000, 10],
     ['ai', 'aiBentMinDistance', 'AI: a bending one from (u) away', 50, 2000, 10],
@@ -1107,8 +1119,9 @@
   // The reticle's glass (round 24): a faint surface under its grid, lit at its silhouette (Fresnel), so the tube has a
   // body. Yours only, like the grid; everyone else sees the warp (updateTubeWarp).
   const wfMeshes = [];
-  function whFill(i, wh, A, cIn, cOut) {
-    const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.01 || P.reticleGlass <= 0) return;
+  function whFill(i, wh, A, cIn, cOut, glass) {
+    if (glass == null) glass = P.reticleGlass;
+    const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.01 || glass <= 0) return false;
     let m = wfMeshes[i];
     if (!m) {
       const g = new THREE.BufferGeometry(), idx = [];
@@ -1134,12 +1147,68 @@
       }
     }
     pos.needsUpdate = nor.needsUpdate = au.needsUpdate = true;
-    m.material.uniforms.cIn.value.copy(cIn); m.material.uniforms.cOut.value.copy(cOut); m.material.uniforms.alpha.value = A * Math.max(0, P.reticleGlass); m.visible = true;
+    m.material.uniforms.cIn.value.copy(cIn); m.material.uniforms.cOut.value.copy(cOut); m.material.uniforms.alpha.value = A * Math.max(0, glass); m.visible = true;
+    return true;
   }
   function liveOf(id) { if (id === curPilot) return ftLive; const r = rivals.find((x) => x.id === id); return r ? r.ftLive : null; }
+  // The bridge (Yash, 2026-10-27: "show the geometry of the wormhole ... I will create this wormhole bridge with the spindles
+  // in our game"): every formed tunnel, everyone's, as rings of spindles round its throat and ribs of spindles along it,
+  // over a glass surface, in its maker's domain colour. The rings sit at fixed places along the tunnel, so as the tunnel
+  // ripples out of its centre (its window [s0, s1]) they CONDENSE in one by one, growing from nothing at the window's
+  // front, and EVAPORATE the same way as it collapses - the game's Spindle condense / evaporate fades. A shimmer runs
+  // through them from the way in to the way out. Spindles near the camera fade out, so riding through never fills the view.
+  const BR_MAX = 12000, BR_CAM_NEAR = 4, BR_CAM_FULL = 30;
+  const brGeo = new THREE.LatheGeometry([[0, -0.5], [0.3, -0.36], [0.48, -0.14], [0.5, 0], [0.48, 0.14], [0.3, 0.36], [0, 0.5]].map(([x, y]) => new THREE.Vector2(x, y)), 6);
+  const bridgeMesh = new THREE.InstancedMesh(brGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }), BR_MAX);
+  bridgeMesh.setColorAt(0, new THREE.Color());   // sizes the colour buffer to BR_MAX: before count goes to 0, or it is empty and every spindle is black
+  bridgeMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+  bridgeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); bridgeMesh.frustumCulled = false; bridgeMesh.renderOrder = 5; bridgeMesh.count = 0; scene.add(bridgeMesh);
+  const brA = new V3(), brB = new V3(), brM = new V3(), brD = new V3(), brQ = new THREE.Quaternion(), brS = new V3(), brMat = new THREE.Matrix4(), brC = new THREE.Color(), brW = new THREE.Color(0xffffff), Y_UP = new V3(0, 1, 0);
+  let brN = 0;
+  function pilotColor(id) { const hex = id ? seatFor(id - 1).color : DOMAIN[domainKey]; return brC.setHex(hex != null ? hex : 0x4fd8ff).clone(); }
+  function spindle(a, b, th, bright, col) {
+    if (brN >= BR_MAX || bright <= 0.004) return;
+    brD.subVectors(b, a); const len = brD.length(); if (len < 0.05) return;
+    brM.addVectors(a, b).multiplyScalar(0.5);
+    const near = smooth(BR_CAM_NEAR, BR_CAM_FULL, brM.distanceTo(cam.position)); if (near <= 0.004) return;
+    brQ.setFromUnitVectors(Y_UP, brD.divideScalar(len)); brS.set(th, len, th);
+    brMat.compose(brM, brQ, brS); bridgeMesh.setMatrixAt(brN, brMat);
+    bridgeMesh.setColorAt(brN, brC.copy(col).multiplyScalar(bright * near)); brN++;
+  }
+  function drawBridge(pr, nFill) {
+    const wh = pr.wh, vis = clamp01(P.bridgeVisibility); if (!wh || vis <= 0.004) return nFill;
+    const span = wh.s1 - wh.s0; if (span < 1) return nFill;
+    const fade = pr.dying ? Math.max(0, 1 - pr.dieT / FADE_S) : 1, A = vis * fade; if (A <= 0.004) return nFill;
+    const base = pilotColor(pr.pilot), col = base.clone().lerp(brW, 0.45);
+    if (whFill(nFill, wh, A, base, brW.clone().lerp(base, 0.4), P.bridgeGlass)) nFill++;
+    const nR = Math.max(2, Math.round(P.bridgeRings)), nS = Math.max(3, Math.round(P.bridgeSpindlesPerRing)), nRib = Math.max(0, Math.round(P.bridgeRibs));
+    const th = Math.max(0.05, P.bridgeSpindleThickness), sh = clamp01(P.bridgeShimmer), edge = Math.max(4, 0.06 * wh.L);
+    const ringS = (i) => wh.L * (i + 0.5) / nR;
+    const grow = (s) => smooth(0, edge, Math.min(s - wh.s0, wh.s1 - s));   // condense at the window's fronts
+    const glow = (u) => 0.85 * (1 + sh * 1.4 * Math.pow(Math.max(0, Math.sin(2 * Math.PI * (u * 1.5 - simT * 0.5))), 4));
+    for (let i = 0; i < nR; i++) {   // the rings round the throat
+      const s = ringS(i), g = grow(s); if (g <= 0) continue;
+      const r = whRadius(wh, s), u = s / wh.L, br = A * glow(u);
+      for (let j = 0; j < nS; j++) {
+        whSurf(wh, s, j / nS * Math.PI * 2, r, 0, brA); whSurf(wh, s, (j + 1) / nS * Math.PI * 2, r, 0, brB);
+        brM.addVectors(brA, brB).multiplyScalar(0.5); brA.lerp(brM, 1 - g); brB.lerp(brM, 1 - g);   // a spindle grows from its middle
+        spindle(brA, brB, th * g, br, col);
+      }
+    }
+    for (let k = 0; k < nRib; k++) {   // the ribs along it, ring to ring
+      const phi = (k + 0.5) / nRib * Math.PI * 2;
+      for (let i = 0; i < nR - 1; i++) {
+        const s1 = ringS(i), s2 = ringS(i + 1), g = Math.min(grow(s1), grow(s2)); if (g <= 0) continue;
+        whSurf(wh, s1, phi, whRadius(wh, s1), 0, brA); whSurf(wh, s2, phi, whRadius(wh, s2), 0, brB);
+        brM.addVectors(brA, brB).multiplyScalar(0.5); brA.lerp(brM, 1 - g); brB.lerp(brM, 1 - g);
+        spindle(brA, brB, th * 0.8 * g, A * 0.8 * glow((s1 + s2) / (2 * wh.L)), col);
+      }
+    }
+    return nFill;
+  }
   // Your reticle (rounds 23, 26): faint at rest, full while the right stick or LT shapes it, rippling out of its centre as
-  // it comes back; and as a tunnel forms, the reticle fading. Rivals' reticles and every formed tunnel draw no grid:
-  // everyone sees a tunnel only as bent space-time (updateTubeWarp, setLensUniforms).
+  // it comes back; and as a tunnel forms, the reticle fading. Its grid is yours alone and only while you shape it; a
+  // formed tunnel shows everyone its bridge (drawBridge) and bends space round it (updateTubeWarp, setLensUniforms).
   function updateWormholes() {
     whNv = 0; whEye.copy(cam.position); let nFill = 0;
     const you = mode === 'fly' ? liveOf(0) : null;
@@ -1150,6 +1219,9 @@
       whDraw(v, ra, WH_RET_IN, WH_RET_OUT, e >= 1 ? 0 : null); whFill(nFill++, v, ra, WH_RET_IN, WH_RET_OUT);
     }
     if (you && you.retGhost) whDraw(you.retGhost.view, Math.max(0, you.retGhost.a) * 0.8, WH_RET_IN, WH_RET_OUT, null);
+    brN = 0;
+    if (mode === 'fly') for (const pr of pairs) if (pr.alive && pr.wh) nFill = drawBridge(pr, nFill);
+    bridgeMesh.count = brN; bridgeMesh.instanceMatrix.needsUpdate = true; if (bridgeMesh.instanceColor) bridgeMesh.instanceColor.needsUpdate = true;
     for (let i = nFill; i < wfMeshes.length; i++) wfMeshes[i].visible = false;
     whGeo.setDrawRange(0, whNv); whLines.visible = whNv > 0;
     whGeo.attributes.position.needsUpdate = true; whGeo.attributes.color.needsUpdate = true;
@@ -2125,6 +2197,43 @@
       txt(c, 'the right stick ' + (st.tubes.length > 2 ? 'centred, half and fully over' : st.tubes[0].sh.m < 0.05 ? 'centred and fully over' : 'half and fully over') + (cfg.lt ? ' · LT ' + cfg.lt : ''), 6, H - 6, '#9aa6d6', 9.5);
     },
   };
+  // ---------- the bridge, in plan: rings of spindles across the tube, ribs along it, the glass under them ----------
+  SCENES.bridge = {
+    make(Pv) { return { tb: tunnelPlan(Pv, 0, 0.55), vis: clamp01(Pv.bridgeVisibility), glass: Pv.bridgeGlass, nR: Math.max(2, Math.round(Pv.bridgeRings)), nS: Math.max(3, Math.round(Pv.bridgeSpindlesPerRing)), nRib: Math.max(0, Math.round(Pv.bridgeRibs)), th: Pv.bridgeSpindleThickness, sh: clamp01(Pv.bridgeShimmer) }; },
+    bounds(st) { let b = { x0: -20, x1: 20, y0: -10, y1: 40 }; for (const q of st.tb.L2.concat(st.tb.R2)) b = bUnion(b, { x0: q[0], x1: q[0], y0: q[1], y1: q[1] }); return b; },
+    period: () => 4,
+    draw(c, W, H, tt, st, view) {
+      previewBg(c, W, H, 29);
+      const V = view || makeView(SCENES.bridge.bounds(st), W, H, 12), tb = st.tb, n = tb.pts.length - 1, at = (arr, u) => { const f = u * n, i = Math.min(n - 1, Math.floor(f)), k = f - i; return [arr[i][0] + (arr[i + 1][0] - arr[i][0]) * k, arr[i][1] + (arr[i + 1][1] - arr[i][1]) * k]; };
+      const P2 = (q) => [V.X(q[0]), V.Y(q[1])], glow = (u) => 0.55 * (1 + st.sh * 1.6 * Math.pow(Math.max(0, Math.sin(2 * Math.PI * (u * 1.5 - tt * 0.5))), 4));
+      if (st.vis > 0.01 && st.glass > 0) {   // the glass
+        c.fillStyle = 'rgba(79,216,255,' + Math.min(0.35, 0.12 * st.glass * st.vis).toFixed(3) + ')'; c.beginPath();
+        tb.L2.forEach((q, i) => { const p = P2(q); if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+        for (let i = tb.R2.length - 1; i >= 0; i--) { const p = P2(tb.R2[i]); c.lineTo(p[0], p[1]); } c.closePath(); c.fill();
+      }
+      const lw = Math.max(0.6, st.th * V.s * 0.9), col = (a) => 'rgba(150,235,255,' + Math.min(1, a).toFixed(3) + ')';
+      for (let i = 0; i < st.nR && st.vis > 0.01; i++) {   // a ring, seen from above: its spindles foreshortened across the tube
+        const u = (i + 0.5) / st.nR, a = at(tb.L2, u), b = at(tb.R2, u), A = st.vis * glow(u);
+        c.strokeStyle = col(A); c.lineWidth = lw;
+        for (let j = 0; j < st.nS; j++) {
+          const f0 = 0.5 - 0.5 * Math.cos(j / st.nS * Math.PI * 2), f1 = 0.5 - 0.5 * Math.cos((j + 1) / st.nS * Math.PI * 2);
+          if (Math.abs(f1 - f0) < 1e-3) continue;
+          c.beginPath(); c.moveTo(V.X(a[0] + (b[0] - a[0]) * f0), V.Y(a[1] + (b[1] - a[1]) * f0)); c.lineTo(V.X(a[0] + (b[0] - a[0]) * f1), V.Y(a[1] + (b[1] - a[1]) * f1)); c.stroke();
+        }
+      }
+      for (let k = 0; k < st.nRib && st.vis > 0.01; k++) {   // a rib, from above: a line along the tube
+        const f = 0.5 - 0.5 * Math.cos((k + 0.5) / st.nRib * Math.PI * 2); c.lineWidth = lw * 0.8;
+        for (let i = 0; i < st.nR - 1; i++) {
+          const u0 = (i + 0.5) / st.nR, u1 = (i + 1.5) / st.nR, a0 = at(tb.L2, u0), b0 = at(tb.R2, u0), a1 = at(tb.L2, u1), b1 = at(tb.R2, u1);
+          c.strokeStyle = col(st.vis * 0.8 * glow((u0 + u1) / 2)); c.beginPath();
+          c.moveTo(V.X(a0[0] + (b0[0] - a0[0]) * f), V.Y(a0[1] + (b0[1] - a0[1]) * f)); c.lineTo(V.X(a1[0] + (b1[0] - a1[0]) * f), V.Y(a1[1] + (b1[1] - a1[1]) * f)); c.stroke();
+        }
+      }
+      ship(c, V.X(0), V.Y(0), 0, 1, '#ffd27a', 6);
+      txt(c, st.nR + ' rings × ' + st.nS + ' spindles · ' + st.nRib + ' ribs', 6, 13, '#e8ecff', 10);
+      txt(c, st.vis > 0.01 ? 'seen from above · everyone sees it' : 'hidden: only the bent space shows', 6, H - 6, '#9aa6d6', 9.5);
+    },
+  };
   // ---------- a tunnel's life on a clock: the reticle, RT, the ride, the stay, the collapse ----------
   SCENES.tunnelLife = {
     make(Pv, cfg) {
@@ -2207,6 +2316,13 @@
     rippleSeconds: { scene: 'tunnelLook', cfg: { what: 'ripple' }, d: 'How long the ripple takes to run out past the screen\'s edges and fade.', lo: 'A quick shimmer.', hi: 'A slow, rolling ripple.' },
     reticleIdleAlpha: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'Your reticle is always on your nose: the tunnel RT would form now. This is how bright its grid is with the right stick centred (bending it lights it up). Only you see it.', lo: 'Faint at rest.', hi: 'Always bright.' },
     reticleGlass: { scene: 'tunnelLook', cfg: { what: 'reticle' }, d: 'A faint glassy surface under your reticle\'s grid, brighter at its silhouette, so it reads as a 3D tube. Only you see it.', lo: 'Lines only.', hi: 'A glass tube.' },
+    bridgeVisibility: { scene: 'bridge', d: 'A formed tunnel shows its geometry to everyone: a bridge of spindles (rings round the throat, ribs along it) over a glass surface, in its maker\'s domain colour. The game will build it from its Spindle prefabs; the bent space round it stays the shader\'s. 0 hides the bridge and leaves only the bent space.', lo: 'A ghost of a bridge.', hi: 'The full structure.' },
+    bridgeGlass: { scene: 'bridge', d: 'The glass surface under the bridge\'s spindles, brightest at its silhouette, so the tube reads as a solid body. 0 = spindles only.', lo: 'A faint skin.', hi: 'A glowing glass tube.' },
+    bridgeRings: { scene: 'bridge', d: 'How many rings of spindles stand round the throat along the tunnel, evenly spaced mouth to mouth.', lo: 'A few hoops.', hi: 'A dense ribcage.' },
+    bridgeSpindlesPerRing: { scene: 'bridge', d: 'How many spindles make each ring (each spindle is one edge of the ring\'s polygon).', lo: 'Angular rings.', hi: 'Round rings.' },
+    bridgeRibs: { scene: 'bridge', d: 'How many lines of spindles run along the tunnel from ring to ring, mouth to mouth. 0 = rings only.', lo: 'Few ribs.', hi: 'A lattice.' },
+    bridgeSpindleThickness: { scene: 'bridge', d: 'How thick each spindle is at its middle (a spindle tapers to a point at both ends).', lo: 'Fine threads.', hi: 'Heavy beams.' },
+    bridgeShimmer: { scene: 'bridge', d: 'A shimmer of light running through the spindles from the way in to the way out, so the bridge reads as a passage. 0 = steady.', lo: 'Steady.', hi: 'A strong running pulse.' },
     aiWormhole: { scene: 'tunnel', cfg: { ai: true }, d: 'Whether the AI uses the wormhole at all. 0 flies the course on steering alone: the baseline.', lo: 'No wormhole.', hi: 'Uses it.' },
     aiStraightMinDistance: { scene: 'tunnel', cfg: { ai: true, aiFar: 600 }, d: 'The AI forms a straight tunnel only with its ring at least this far away.', lo: 'Straight hops even near a ring.', hi: 'Straight only on long legs.' },
     aiBentMinDistance: { scene: 'tunnel', cfg: { ai: true, aiFar: 600 }, d: 'The AI forms a bending tunnel (its turning tool) only with its ring at least this far away.', lo: 'Bends even close in.', hi: 'Bends only from far out.' },
@@ -2412,6 +2528,13 @@
     rippleSeconds: ['MeerkatWormholeConfig.rippleSeconds', 'new'],
     reticleIdleAlpha: ['MeerkatWormholeConfig.reticleIdleAlpha', 'new'],
     reticleGlass: ['MeerkatWormholeConfig.reticleGlass', 'new'],
+    bridgeVisibility: ['MeerkatWormholeConfig.bridgeVisibility', 'new'],
+    bridgeGlass: ['MeerkatWormholeConfig.bridgeGlass', 'new'],
+    bridgeRings: ['MeerkatWormholeConfig.bridgeRings', 'new'],
+    bridgeSpindlesPerRing: ['MeerkatWormholeConfig.bridgeSpindlesPerRing', 'new'],
+    bridgeRibs: ['MeerkatWormholeConfig.bridgeRibs', 'new'],
+    bridgeSpindleThickness: ['MeerkatWormholeConfig.bridgeSpindleThickness', 'new'],
+    bridgeShimmer: ['MeerkatWormholeConfig.bridgeShimmer', 'new'],
     aiWormhole: ['lab: the sim lab\'s switch', 'lab'],
     aiStraightMinDistance: ['MeerkatWormholeConfig.aiStraightMinDistance', 'new'],
     aiBentMinDistance: ['MeerkatWormholeConfig.aiBentMinDistance', 'new'],
@@ -2814,10 +2937,11 @@
   const ide = Object.assign({ R: 'scene', B: 'runs', railW: 400, dockH: 240, wins: {} }, lsGet(IDE_KEY, {}));
   const saveIde = () => lsSet(IDE_KEY, ide);
   const DOCK_TABS = {
-    // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D25, D27): the world and the
-    // wormhole's look in Scene Config, the ability and its settings in Play Style Config, the stand-in hull in Vessel Config
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-look', 'grp-flight']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
-      ['style', 'Play Style Config', ['mainCard', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
+    // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D25, D27): the world in Scene
+    // Config; the ability and all three of its cards (look, shape, ride; Yash, 2026-10-27) in Play Style Config; the
+    // stand-in hull in Vessel Config
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
+      ['style', 'Play Style Config', ['mainCard', 'grp-look', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
       ['others', 'Vessel Config', ['grp-lope']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
@@ -2931,7 +3055,7 @@
     get speed() { return speed; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); },
     startRace, get holds() { return holds; }, hull, get pairs() { return pairs; }, get race() { return race; }, get lensRip() { return lensMat.uniforms.rip.value.clone(); },
     get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera,
-    get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef, get whLinesVisible() { return whLines.visible; }, get whNv() { return whNv; } };
+    get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef, get whLinesVisible() { return whLines.visible; }, get whNv() { return whNv; }, get bridgeCount() { return bridgeMesh.count; }, freeCam };
   // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
   // defineProperties, not assign: assign copies a getter's value once, so ftLive reads stale forever.
   Object.defineProperties(window.__meerkatStudio, Object.getOwnPropertyDescriptors({

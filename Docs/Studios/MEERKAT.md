@@ -1,4 +1,4 @@
-# The Meerkat: the wormhole vessel (design studio, round 1, 2026-10-27)
+# The Meerkat: the wormhole vessel (design studio, round 2, 2026-10-27)
 
 **Studio:** `Docs/Studios/VesselStudio/meerkat.html` (its own source of truth; no copy script), a page of the one Vessel
 Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
@@ -21,7 +21,8 @@ The same request changed three things on the way over:
   distorting the player's eyesight. The Meerkat's ripple is a screen-space ring instead. It runs from `rippleEdge` out
   past the corners, and nothing inside that circle moves.
 - **No grid on a formed tunnel.** The grid is only the reticle you shape. Once RT forms the tunnel, the reticle fades
-  over the forming time and the tunnel has no grid. Everyone, you included, sees it only as bent space-time.
+  over the forming time and the tunnel has no grid. Round 2 gave the formed tunnel a geometry of its own, which
+  everyone sees: the spindle bridge (below).
 - **Simpler parameters, named as the game will name them.** Every key is its future field on
   `MeerkatWormholeConfig` (below). The round-18 gate keys, the warp-boost option, the dent width, the dent's camera fade,
   the grid sheets and the grid-on-ride switch are gone.
@@ -45,8 +46,27 @@ One thumb flies, as the game's one-thumb hulls do (`SingleStickVesselTransformer
 - **The tunnel's end:** it stays `staySeconds`, then collapses to its centre over `collapseSeconds`, and its collapse
   ripples the screen's edges. Forming a new tunnel collapses the last one at once.
 
-What everyone sees: the space round the tube is bent away from it (`warpStrength`), with its centre line kept clear, and
-each mouth is a dent as wide as the mouth (`dentStrength`, fading as the camera nears it).
+What everyone sees:
+- the space round the tube, bent away from it (`warpStrength`), with its centre line kept clear;
+- each mouth as a dent as wide as the mouth (`dentStrength`, fading as the camera nears it);
+- **the bridge** (round 2): the formed tunnel's geometry.
+
+The bridge (Yash, 2026-10-27: *"show the geometry of the wormhole ... I will create this wormhole bridge with the
+spindles in our game ... the spindles will show the wireframe structure of the wormhole, while the actual curvature of
+space-time will be the shader"*):
+- **What it is made of:** rings of spindles round the throat (`bridgeRings` x `bridgeSpindlesPerRing`) and ribs of
+  spindles along it (`bridgeRibs`), over a glass surface (`bridgeGlass`).
+- **Colour:** its maker's domain colour.
+- **Life:** the rings sit at fixed places along the tunnel. As it forms they condense in one by one from its centre, and
+  as it collapses they evaporate the same way, like the game's Spindle condense / evaporate fades.
+- **Motion:** a shimmer runs through them from the way in to the way out (`bridgeShimmer`).
+- **Near the camera:** spindles fade out between 30 u and 4 u.
+- `bridgeVisibility` 0 hides the bridge and leaves only the bent space.
+
+In the studio a spindle is a tapered rod. In the game, the bridge is built from the `Spindle` prefabs, and the
+space-time bend stays the shader's.
+
+**The panels:** all three wormhole cards are in **Play Style Config**, in this order: Look, Shape, Ride.
 
 ## The parameters (the artifact's keys ARE the game's fields)
 
@@ -73,6 +93,13 @@ each mouth is a dent as wide as the mouth (`dentStrength`, fading as the camera 
 | look | `rippleSeconds` | 1.2 s | ...running out and fading over this long |
 | look | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
 | look | `reticleGlass` | 0.6 | The faint lit surface under your reticle's grid |
+| look | `bridgeVisibility` | 1 | The formed tunnel's bridge, for everyone (0 = hidden) |
+| look | `bridgeGlass` | 0.6 | ...its glass surface |
+| look | `bridgeRings` | 16 | ...rings of spindles along it |
+| look | `bridgeSpindlesPerRing` | 12 | ...spindles round each ring |
+| look | `bridgeRibs` | 6 | ...ribs of spindles along it (0 = none) |
+| look | `bridgeSpindleThickness` | 1.6 u | ...spindle thickness at the middle |
+| look | `bridgeShimmer` | 0.5 | ...a shimmer running way in to way out (0 = steady) |
 | ai | `aiStraightMinDistance` | 300 u | The AI forms a straight tunnel only with its ring this far away |
 | ai | `aiBentMinDistance` | 120 u | ...a bending one from this far |
 | ai | `aiShapeSeconds` | 0.3 s | The AI shapes its reticle this long before RT |
