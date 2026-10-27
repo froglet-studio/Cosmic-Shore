@@ -16905,3 +16905,19 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 5. Each of the three flown by the AI still uses that ability (the executors look the control up by event, not by
    number).
 6. Phone: each of the three still reaches the ability through its card, as before.
+
+## 🔴 2026-10-27 — Each AI seat its own difficulty (Regatta and every Arena card) (unverified: no Unity editor in the session)
+
+**Files:** `ArcadeGameConfigSO.AIDifficulties`, `ArcadeGameConfigureModal(.ConfigChangeHandlers/.SeatLineup)`,
+`ConfigureSeatLineup` (each AI pedestal names its own level), `ArcadeConfigSyncManager.LobbySnapshot.AiD0..5`
+(protocol 19), `GameDataSO` (`RequestedAIDifficulties`, `SetAIPilotDifficulty` / `AIDifficultyFor`), the spawner, the
+gate race and the Skim Race pilot. EditMode: `PerSeatAIDifficultyTests`, `ArcadeLobbySnapshotTests`.
+
+1. Arena > Regatta, add three AI. Press AI 1's pedestal (its podium glows): the AI row now lights AI 1's level; press
+   Easy - AI 1's pedestal reads "Easy AI", the others keep theirs. Press AI 2's pedestal, press Hard - "Hard AI".
+2. Press your own pedestal and press Medium: every AI reads "Medium AI" (their own levels are cleared).
+3. Set AI 1 Easy, AI 2 Hard, AI 3 Legendary and race: AI 1 notices rings late and overshoots; AI 3 is clean. The Third
+   Eye on each shows its own handicap. Kick AI 1: AI 2 and AI 3 keep Hard and Legendary.
+4. Two machines (both on this build - protocol 19): the guest's pedestals show each AI's level and follow the host's
+   presses; the guest cannot change a level.
+5. An Arcade card (pinned hull): the row still sets every AI; nothing per seat.

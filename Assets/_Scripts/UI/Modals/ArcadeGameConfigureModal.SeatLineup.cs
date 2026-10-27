@@ -88,6 +88,7 @@ namespace CosmicShore.UI
                     Hull = HullIcon(CardVessel(AIHullSeating.SeatHull(OpponentHull, _aiSeatDomains[i], humanDomains, pick))),
                     CanPickVessel = pickable,
                     EditingVessel = pickable && _vesselSeat == i,
+                    Difficulty = SeatDifficultyAvailable && i < config.AIDifficulties.Count ? config.AIDifficulties[i] : 0,
                 });
             }
 
