@@ -13,7 +13,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Ark's SQUADS tab as THE DECK (Docs/MENU_REDESIGN_B.md section 93; the Rev 31 boards, Shombith 2026-10-27: "go
+    /// The Ark's SQUADS tab as THE DECK (Docs/MENU_REDESIGN_B.md section 95; the Rev 31 boards, Shombith 2026-10-27: "go
     /// with C, the deck"). A squad is three squad mates, each a card: the seat, who flies it, the hull, and the four picks -
     /// vessel, element, pilot and artifact - with the pilot stepping out of the card.
     ///

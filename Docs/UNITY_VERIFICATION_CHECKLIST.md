@@ -65,6 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Grizzly's new model: a bear-clade hull in place of the generic wedge (`cece/fervent-turing-kt23ax`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "make a new much more awesome model for the Grizzly"): `Grizzly.prefab` draws
+`Assets/_Models/Vessel Models/Grizzly.fbx` (new, `specs/grizzly.py`, dossier `Docs/VesselModels/Grizzly.md`) at
+`Ship_Wedge_Body/GrizzlyHull/Grizzly`. The model is a skinned hovering assembly: 15 bones, 4 real element morphs,
+13.9k tris. The wedge's eight MeshFilter/MeshRenderer pairs are gone; the part transforms keep their colliders, jets and
+guns. `BufoAnimation` makes the four pod bones follow the thrusters rigidly and the hump and keel follow the fins at
+0.35, and it finds the SkinnedMeshRenderer for the flares. `VesselCustomization` repaints the Domain slot by identity.
+The four Grizzly crystal-fusion bakes were dropped (stale for the new mesh), and the class card images were
+re-rendered from the model. The C# compiled clean headless (`unity_refcompile`: 0 errors in project code; a planted
+error in `BufoAnimation.cs` failed it). No Unity Editor was open.
+
+**Verify in editor:**
+1. Let `Grizzly.fbx` import. Open `Grizzly.prefab`: `Ship_Wedge_Body/GrizzlyHull/Grizzly` shows the bear (nose +Z,
+   the four pods' mouths on the four VesselJets, no wedge mesh anywhere), with no missing-script or missing-mesh
+   warnings.
+2. FrogletTools > Vessels > Audits > **Audit Vessel Elemental Morphs**: the Grizzly lists Charge / Mass / Space /
+   Time as real shapes. Then **Audit Vessel Construction** and **Audit Vessel Tails and Jets**.
+3. FrogletTools > Vessels > Wiring > **Bake Crystal Hull Fusions**; `CrystalHullFusionBakeTests` green.
+4. Fly it from the Toybox Vessel Changer:
+   - the domain colour lands on the hump saddle, pod collars, pauldron caps, knuckles and blaze;
+   - boost flares the ember mouths;
+   - the pods swing with the stick and stay on their exhausts;
+   - the hump rolls a little (it must not slide off the shoulders);
+   - the claws, Rush, Dig In, bombs and the sniper still work;
+   - collecting each element's crystal visibly morphs the hull.
+5. Menu: the Grizzly's card, hangar preview and silhouette show the new hull.
+6. The ability row: the four cards show Dig In (the bear planted, anchor in the ground), Weapon Systems (the drum),
+   Charged Cannon (the shell and blast) and Rush (the bear lunging), white, in Charge / Mass / Space / Time order,
+   with no placeholder left (`icon_kit/specs/grizzly.py`, `Docs/Icons/sheets/grizzly.png`).
+7. FrogletTools > UI > Codex: re-bake the Vessel Changer's Grizzly variant image from the new model.
+
 ### 🔴 The Meerkat: the wormhole vessel, its AI and Burrow Run (`claude/adoring-cerf-m94x1o`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed:** `VesselClassType.Meerkat = 28` and `GameModes.BurrowRun = 71`, cloned from the Vessel Studio's
@@ -16982,3 +17014,34 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 5. Each of the three flown by the AI still uses that ability (the executors look the control up by event, not by
    number).
 6. Phone: each of the three still reaches the ability through its card, as before.
+
+## 🔴 2026-10-27 — The Port: faction messages (Vivox) and the weekly leaderboard (unverified: no Unity editor in the session)
+
+`Docs/MENU_REDESIGN_B.md` section 90; the Rev 27 boards. **First:** switch Vivox on for the project (`Tools/UGS/README.md`,
+"Switching on faction messages (Vivox)"). Let Unity resolve the new package (`com.unity.services.vivox` 16.12.1) and
+compile. Run `FactionChatTests` (edit mode).
+
+1. Main menu: PORT has no lock. Press it, or LT / RT along the bar. **Pass:** the Port slides in over the sea lines, on
+   FACTION MESSAGES.
+2. First open, signed in. **Pass:** "Tuning in to the faction...", then either the recent messages or "No messages yet".
+   Signed out or Vivox off: "Faction messages are offline", with TRY AGAIN, retrying every 15 s.
+3. Type a message and press Enter, X or SEND. **Pass:** it appears at the foot with YOU and a neutral bar (not the blue);
+   the field clears; the hint counts down 3 s.
+3a. The Rev 32 D look (`Docs/MENU_REDESIGN_B.md` §91). **Pass:** every message is a card lit from its top-left
+   corner (periwinkle border fading out, a soft glow), only as wide as its words; yours sit on the right with the avatar
+   after the card, a full periwinkle-to-violet border and a brighter fill. The field has the gradient border and a glow
+   behind it; with the pad on it, the selection-blue outline shows round it. SEND is lit periwinkle with dark words.
+4. Send again within 3 s. **Pass:** not sent; the words stay; "Not sent: too fast..." in red.
+5. Type `<size=300>hi` and send. **Pass:** shown as typed, not as large text.
+6. A second player (MPPM or a second editor) sends. **Pass:** it arrives within a second or two, with their avatar and
+   name.
+7. Pad: walk the feed (up / down); Y or A on the second player's message. **Pass:** REPORT MESSAGE / MUTE PILOT / CANCEL
+   beside it; B closes. MUTE: their messages vanish, "Muted pilots: 1" with UNMUTE ALL appears; UNMUTE ALL brings them
+   back. REPORT: "Report sent. Thank you."; the report is in the dashboard's Moderation queue.
+8. Set the age screen's year to a 10-year-old (PlayerPrefs `FairPlayBirthYear`). **Pass:** the feed reads, but the
+   field and SEND are dimmed, and the hint says this account can read but not send.
+9. RB. **Pass:** WEEKLY LEADERBOARD: the weekly window's board (World / Regional / Friends tiles, podium, rows, best
+   run, rewards) with no BACK, and this week's name and countdown at the tab row's right. LB returns.
+10. Leave the Port (LT / RT). **Pass:** in Vivox's dashboard the player leaves `faction_all` (it is held only while the
+    tab is shown).
+11. The configure card's LEADERBOARD still opens the weekly window as before.

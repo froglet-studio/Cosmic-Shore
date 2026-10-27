@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The nanobot swap on a squad card (Docs/MENU_REDESIGN_B.md section 93; Shombith, 2026-10-27: "the nanobot transition
+    /// The nanobot swap on a squad card (Docs/MENU_REDESIGN_B.md section 95; Shombith, 2026-10-27: "the nanobot transition
     /// ... we can use that to change domains for the squad vessels"). When the squad's domain changes, the hull dissolves into
     /// a swarm of small prism-bots that scatter, swirl and rebuild it in the new domain's colour.
     ///

@@ -577,7 +577,7 @@ namespace CosmicShore.UI
         /// the round trip is the "UI claims a domain the server never got" case that method
         /// exists to refuse. Jade is skipped because the commit already put everyone there.
         ///
-        /// <para>A squad going in wins over that memory (Docs/MENU_REDESIGN_B.md section 94): the squad the player took in
+        /// <para>A squad going in wins over that memory (Docs/MENU_REDESIGN_B.md section 96): the squad the player took in
         /// from the Ark (<see cref="SquadLaunchIntent"/>), or, for a guest, their active squad when the party holds one of
         /// its mates. A squad domain the card's domain count does not reach falls back to Jade, as a remembered one does.
         /// The player can still press another tile.</para>

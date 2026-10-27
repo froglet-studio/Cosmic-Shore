@@ -194,7 +194,7 @@ namespace CosmicShore.Data
         }
 
         /// <summary>
-        /// The domain a launch panel opens the player on when a squad is going in (Docs/MENU_REDESIGN_B.md section 94): the
+        /// The domain a launch panel opens the player on when a squad is going in (Docs/MENU_REDESIGN_B.md section 96): the
         /// squad the player took in with Take into (<paramref name="taken"/>, on the launch authority's machine), or, for a
         /// guest, their active squad when the party holds one of its mates. False when no squad is going in, and the panel
         /// keeps its own memory.

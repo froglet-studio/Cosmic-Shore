@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One squad mate as a card in the Ark's Squads deck (Docs/MENU_REDESIGN_B.md section 93, Rev 31 "the deck"): the seat
+    /// One squad mate as a card in the Ark's Squads deck (Docs/MENU_REDESIGN_B.md section 95, Rev 31 "the deck"): the seat
     /// and its number, the hull, who flies it, and the four picks (vessel, element, pilot, artifact) as rows. The pilot stands
     /// beside the card, stepping out of its frame; an open seat shows an outline instead. <see cref="SquadsPage"/> writes it.
     /// </summary>
