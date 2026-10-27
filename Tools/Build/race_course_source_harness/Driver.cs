@@ -167,7 +167,8 @@ public static class Driver
                 src.ResolveShell(nucleus, out float i1, out float o1);
                 int target = src.AuthoredGateTarget(intensity);
                 int laps = src.LapsPerRace(intensity);
-                Check(laps == 3 && src.LeadInGates == 0, $"{mode} shape");
+                int defaultLaps = mode == GameModes.Headlong ? HeadlongCourseSource.DefaultLaps : RedlineCourseSource.DefaultLaps;
+                Check(laps == defaultLaps && src.LeadInGates == 0, $"{mode} shape");
                 var settings = mode == GameModes.Headlong
                     ? HeadlongCircuitSettings.ForIntensity(intensity)
                     : RedlineCourse.ForIntensity(intensity);
