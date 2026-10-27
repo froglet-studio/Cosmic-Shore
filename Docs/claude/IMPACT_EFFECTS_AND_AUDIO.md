@@ -244,3 +244,10 @@ onto the emitter at spawn (`FaunaConfigurationSO.OverrideAudio` + `AudioLoopEven
   (music, plus stragglers like `IconEmitter` and `AudioSystem.PlaySFXClip`) and is being retired;
   new SFX is FMOD
 - Adding an if-null-guard *fallback to another event*. Guard for silence, never for substitution
+- A one-shot fired by a bare `StudioEventEmitter` play trigger (`TriggerEnter`, `ObjectDestroy`,
+  `ObjectStart`). The emitter owns the instance and never applies `ResolveSfxInstanceVolume`, so
+  while `AudioSystem.driveFmodVcas` is off the sound ignores the SFX slider and mute.
+  `CrystalTime.prefab` shipped two on a borrowed "Creature colide" event, one on `TriggerEnter`
+  (anything entering the pickup trigger sounded), removed 2026-10-26. `TeamCrystal.prefab` and
+  `BigCrystalVariant.prefab` still start `event:/SFX/Loops/Goal` on `ObjectStart` the same way
+  (handoff T-20261018-fde3)
