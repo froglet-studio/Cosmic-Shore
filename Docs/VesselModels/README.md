@@ -40,6 +40,8 @@ How every vessel is coloured (the colour language, the shared materials' scheme,
 | Jack | [Jack.md](Jack.md) | `Jack.fbx` (new, 2026-10-21), the two herders, drawn where the jacks run (`JacksBodies`) | the same | `specs/jack.py` |
 | Pistol | [Pistol.md](Pistol.md) | `Pistol.fbx` (new, 2026-10-25), the Goby and Pistol's second seat, a hovering assembly (19 / 19 parts float 1.07-2.05 %); not wired yet: `GobyPistolDuo` still draws a capsule | the same | `specs/pistol.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
+| Ark (concept A) | [Ark.md](Ark.md) | `Ark.fbx` (new, 2026-10-27), the mothership: the clam valve opening FORWARD (hinge and bridge aft), 54 prism sockets, omni reactor over the engines, payload lance; no prefab draws it yet | the same | `specs/ark.py` (builders shared in `specs/_ark_kit.py`) |
+| Ark (concept B) | [ArkReverse.md](ArkReverse.md) | `ArkReverse.fbx` (new, 2026-10-27), the mothership's alternative: the valve opening AFT (bridge at the prow, eight jets on the trailing lip), 47 prism sockets; no prefab draws it yet | the same | `specs/ark_reverse.py` (`specs/_ark_kit.py`) |
 
 **2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not
 change in the game (its prefab draws the placeholder file), and the Squirrel, Dolphin and Sparrow read as cheap

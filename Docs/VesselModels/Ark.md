@@ -1,7 +1,7 @@
 # Ark (mothership): model dossier
 
 Built 2026-10-27 by `/vessel-model` from `Tools/Build/vessel_model/specs/ark.py`, at Garrett's request.
-Round 2 (the same day) rebuilt it at true scale and added detail. It's a new hull with no artist file, and no prefab draws it yet.
+Round 2 (the same day) rebuilt it at true scale and added detail. This is **concept A**: the clam valve opening forward. **Concept B**, the valve facing aft, is [ArkReverse.md](ArkReverse.md). The two share their cradle, lance, nacelle and reactor builders (`specs/_ark_kit.py`). It's a new hull with no artist file, and no prefab draws it yet.
 
 - `Ark_sheet.png`: the contact sheet (whole-ship views, the four element shapes, the poses).
 - `Ark_closeups.jpg`: close-ups as a passing vessel sees them (bridge, lip, aft, underside, flank). The coloured prisms in these renders are *previews* placed at the socket bones. They are not part of the model: gold is supershielded, white shielded, blue plain, red danger.
@@ -18,7 +18,7 @@ Round 2 (the same day) rebuilt it at true scale and added detail. It's a new hul
 | Core | `hull` | A lens hull under the plates. Its rim wall carries a domain band, a row of portholes and an observation gallery at the prow. Underneath are ventral panels, a domain ring, running lights and two sensor domes. |
 | Keel | `keel` | A ventral fin floating under the core, with a domain stripe and running lights. |
 | Engines | `engine.L/C/R` | Three floating nacelles: intake lips, domain bands, six cooling fins, and glowing bells with inner cones. |
-| Omni reactor | `omni.ring`, `omni` | The dormant omni crystal (Window = inactive glass) floating in a gimballed cage over the engines. The cage has two rings, four containment pylons and a glowing collar. Swap the crystal's material to activate it. |
+| Omni reactor | `omni.ring`, `omni` | The dormant omni crystal (Window = inactive glass) floating in a gimballed cage over the engines. The cage has two rings, four containment pylons rising round the crystal with glowing tips, and a glowing collar. Swap the crystal's material to activate it. (Until 2026-10-27 the pylons hung below the crystal; the fix is in `_ark_kit.Kit.reactor`.) |
 | Payload | `payload`, `payload.dock` | A lance lying in the centre groove, hovering 1.4 units over three cradles that have regen pads. Its glowing head reaches the nose. |
 
 It is a hovering assembly: `assembly_report.py --floating shell.0..7,umbo,auricle.L,auricle.R,omni.ring,omni,payload,engine.L,engine.C,engine.R,keel` passes.

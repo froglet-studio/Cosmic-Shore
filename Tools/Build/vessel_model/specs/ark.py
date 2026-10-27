@@ -72,7 +72,6 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW body):
 """
 
 import math
-from _common import box_uv
 
 NAME = "Ark"
 OUTPUT = "Assets/_Models/Vessel Models/Ark.fbx"
@@ -201,153 +200,20 @@ def umbo_rmax(phi):
 
 
 def build(ctx):
-    import bpy
-    import bmesh
-    from mathutils import Vector, Matrix
+    from mathutils import Vector
+    from _ark_kit import Kit
     f, rig, morphs, takes = ctx.forms, ctx.rig, ctx.morphs, ctx.takes
-    parts = []
-
-    def tag(obj, pid):
-        me = obj.data
-        a = me.attributes.get("pid") or me.attributes.new("pid", "FLOAT", "POINT")
-        a.data.foreach_set("value", [float(pid)] * len(me.vertices))
-        return obj
-
-    def piece(obj, slot, pid, bevel=0.0, angle=30):
-        f.ensure_slots(obj, SLOTS)
-        if slot is not None:
-            f.paint(obj, slot)
-        if bevel > 0:
-            f.bevel(obj, width=bevel, segments=1, angle_deg=angle)
-            f.apply_modifiers(obj)
-        tag(obj, pid)
-        return obj
-
-    def bone_part(objs, name):
-        o = objs[0] if len(objs) == 1 else f.join(objs, name, SLOTS)
-        o.name = name
-        for vg in list(o.vertex_groups):
-            o.vertex_groups.remove(vg)
-        f.tag_group(o, name)
-        parts.append(o)
-        return o
-
-    # ------------------------------------------------------------ mesh builders that keep a face grid for detailing
-    def loft_bm(rings, slot=H, zipper=None):
-        """Rings (lists of Vectors, same count) -> a capped solid. Returns (bm, grid, caps): grid[t][i] is the face
-        between ring t and t+1 at ring point i; caps are the two end caps' faces. A cap is a fan about the ring's centre,
-        or with `zipper=(ntop, nbot)` (a ring that is a top chain of ntop points across, then a bottom chain of nbot
-        points back) a strip stitched between the two chains, which stays flat-shaded on a crowned section."""
-        bm = bmesh.new()
-        vs = [[bm.verts.new(p) for p in rg] for rg in rings]
-        n = len(rings[0])
-        grid = []
-        for a, b in zip(vs, vs[1:]):
-            row = []
-            for i in range(n):
-                j = (i + 1) % n
-                fc = bm.faces.new((a[i], a[j], b[j], b[i]))
-                fc.material_index = slot
-                row.append(fc)
-            grid.append(row)
-        caps = []
-        for rg, rev in ((vs[0], True), (vs[-1], False)):
-            if zipper:
-                nt_, nb_ = zipper
-                T, Bc = rg[:nt_], list(reversed(rg[nt_:]))
-                ti, bi, cap = 0, 0, []
-                while ti < nt_ - 1 or bi < nb_ - 1:
-                    if bi == nb_ - 1 or (ti < nt_ - 1 and (ti + 1) / (nt_ - 1) <= (bi + 1) / (nb_ - 1)):
-                        tri = (T[ti], T[ti + 1], Bc[bi])
-                        ti += 1
-                    else:
-                        tri = (T[ti], Bc[bi + 1], Bc[bi])
-                        bi += 1
-                    fc = bm.faces.new(tri)
-                    fc.material_index = slot
-                    cap.append(fc)
-                caps.append(cap)
-                continue
-            c = sum((v.co for v in rg), Vector()) / n
-            cv = bm.verts.new(c)
-            cap = []
-            for i in range(n):
-                j = (i + 1) % n
-                fc = bm.faces.new((cv, rg[j], rg[i]) if rev else (cv, rg[i], rg[j]))
-                fc.material_index = slot
-                cap.append(fc)
-            caps.append(cap)
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-        bm.normal_update()
-        return bm, grid, caps
+    kit = Kit(ctx, SLOTS)
+    piece, bone_part, loft_bm, inset, finish_bm = kit.piece, kit.bone_part, kit.loft_bm, kit.inset, kit.finish_bm
 
     def polar_bm(phis, ts, rmax, ztop, zbot, wall, slot=H):
-        """A solid over the polar region rho <= rmax(phi) about the hinge: a top surface on rings at fractions `ts`
-        (ascending, < 1), a rim wall at rmax with loops at z fractions `wall` between the top rim and the bottom rim,
-        and a bottom surface on the same rings. Returns (bm, bands): bands[k][j] is the face between loop k and k+1 at
-        column j (loops: top rings outward, wall, bottom rings inward)."""
-        bm = bmesh.new()
-        loops = []
-
-        def P(phi, rho, z):
-            x, y = at(phi, rho)
-            return Vector((x, y, z))
-        for t in ts:
-            loops.append([P(p, t * rmax(p), ztop(*at(p, t * rmax(p)))) for p in phis])
-        for fz in wall:
-            row = []
-            for p in phis:
-                x, y = at(p, rmax(p))
-                row.append(Vector((x, y, ztop(x, y) + (zbot(x, y) - ztop(x, y)) * fz)))
-            loops.append(row)
-        for t in reversed(ts):
-            loops.append([P(p, t * rmax(p), zbot(*at(p, t * rmax(p)))) for p in phis])
-        vl = [[bm.verts.new(p) for p in lp] for lp in loops]
-        n = len(phis)
-        bands = []
-        for a, b in zip(vl, vl[1:]):
-            row = []
-            for j in range(n):
-                k = (j + 1) % n
-                fc = bm.faces.new((a[j], a[k], b[k], b[j]))
-                fc.material_index = slot
-                row.append(fc)
-            bands.append(row)
-        for lp, z in ((vl[0], ztop(0.0, HY)), (vl[-1], zbot(0.0, HY))):
-            cv = bm.verts.new(Vector((0.0, HY, z)))
-            for j in range(n):
-                fc = bm.faces.new((cv, lp[j], lp[(j + 1) % n]))
-                fc.material_index = slot
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-        bm.normal_update()
-        return bm, bands
-
-    def inset(bm, faces, thickness, depth, slot=None):
-        if faces:
-            f._inset_region(bm, faces, thickness, depth, slot)
-            bm.normal_update()
-
-    def finish_bm(name, bm):
-        return f.new_mesh_object(name, bm)
+        return kit.polar_bm(phis, ts, rmax, ztop, zbot, wall, at, (0.0, HY), slot)
 
     def surf_normal(x, y):
         e = 0.25
         gx = (dome(x + e, y) - dome(x - e, y)) / (2 * e)
         gy = (dome(x, y + e) - dome(x, y - e)) / (2 * e)
         return Vector((-gx, -gy, 1.0)).normalized()
-
-    def frame_matrix(centre, along, up):
-        al = along.normalized()
-        upn = (up - al * up.dot(al)).normalized()
-        ac = al.cross(upn).normalized()
-        M = Matrix((ac, al, upn)).transposed().to_4x4()
-        M.translation = centre
-        return M, ac, al, upn
-
-    def boxm(nm, size, off, M, slot, pid, bevel=0.0):
-        b = f.box(nm, size, center=off)
-        f.transform_mesh(b, M)
-        return piece(b, slot, pid, bevel=bevel)
 
     # ================================================================== SHELL PLATES (shell.0 .. shell.7)
     NS, NB, NRT = 28, 4, 12
@@ -536,27 +402,8 @@ def build(ctx):
         hull_parts.append(piece(f.sphere("blight", 0.75, center=(x, y, core_bot(x, y) - 0.2), segments=10, rings=6), J, 3))
 
     # ================================================================== SOCKETS: cradles cut to the prism
-    socket_bones = []      # (name, head, tail, up)
-
     def cradle(name, centre, along, up, pid):
-        """A U channel under a prism of PRISM_W x PRISM_H x PRISM_L centred at `centre`: a floor, domain side rails,
-        end stops, two Engine-slot regen pads, and a pedestal down to the core."""
-        M, ac, al, upn = frame_matrix(centre, along, up)
-        fz = -PRISM_H / 2 - 0.3
-        out = [boxm("floor", (PRISM_W + 1.0, PRISM_L + 0.8, 0.6), (0, 0, fz), M, H, pid, bevel=0.12)]
-        for sy in (-1, 1):
-            out.append(boxm("pad", (PRISM_W * 0.6, PRISM_L * 0.36, 0.14), (0, sy * PRISM_L * 0.22, fz + 0.36), M, J, pid))
-            out.append(boxm("stop", (PRISM_W + 1.0, 0.45, PRISM_H * 0.5), (0, sy * (PRISM_L / 2 + 0.2), fz + 0.25 + PRISM_H * 0.22), M, H, pid, bevel=0.08))
-        for sx in (1, -1):
-            out.append(boxm("rail", (0.5, PRISM_L + 0.4, PRISM_H * 0.7), (sx * (PRISM_W / 2 + 0.4), 0, -PRISM_H * 0.15 - 0.1), M, D, pid, bevel=0.08))
-        floor_bottom = centre + upn * (fz - 0.3)
-        ped_h = max(0.6, floor_bottom.z - core_top(floor_bottom.x, floor_bottom.y) + 0.3)
-        ped = f.box("pedestal", (PRISM_W * 0.55, PRISM_L * 0.55, ped_h), center=(0, 0, 0))
-        f.transform_mesh(ped, Matrix.Translation(Vector((floor_bottom.x, floor_bottom.y, floor_bottom.z - ped_h / 2 + 0.1))) @
-                         Matrix.Rotation(math.atan2(-al.x, al.y), 4, "Z"))
-        out.append(piece(ped, H, pid, bevel=0.1))
-        bone_part(out, name)
-        socket_bones.append((name, centre, centre + al * (PRISM_L / 2), upn))
+        kit.cradle(name, centre, along, up, pid, (PRISM_W, PRISM_H, PRISM_L), core_top)
 
     count = {"supershielded": 0, "shielded": 0, "prism": 0, "danger": 0}
     pid_s = 100
@@ -594,105 +441,18 @@ def build(ctx):
     p_lip = gpt(R - 6.0)
     pax = (p_lip - p_rear).normalized()
     plen = PAY_RHO1 - PAY_RHO0
-    p_tip = p_rear + pax * plen
-    head_s = plen - 14.0
-    shaft = f.lathe("shaft", [(0.0, 0.0), (0.9, 0.0), (1.3, 0.6), (PAY_R, 2.0), (PAY_R, 6.0), (2.05, 6.3), (2.05, 8.5), (PAY_R, 8.8),
-                              (PAY_R, 20.0), (2.1, 20.4), (2.1, 24.0), (PAY_R, 24.4), (1.75, 34.0), (1.5, 36.0), (2.2, 36.8),
-                              (2.2, 39.5), (1.6, 40.5), (1.2, head_s + 0.2), (0.0, head_s + 0.2)], segments=16,
-                    axis=tuple(pax), origin=tuple(p_rear))
-    f.ensure_slots(shaft, SLOTS)
-    f.paint(shaft, H)
-    f.paint(shaft, D, lambda c, n, i: 6.22 < (c - p_rear).dot(pax) < 8.58 or 20.3 < (c - p_rear).dot(pax) < 24.1)
-    f.paint(shaft, J, lambda c, n, i: (c - p_rear).dot(pax) < 0.2)
-    lance = [piece(shaft, None, 40, bevel=0.05)]
-    head = f.lathe("head", [(0.0, -0.4), (1.3, 0.0), (2.6, 4.0), (1.6, 10.0), (0.0, 14.0)], segments=4,
-                   axis=tuple(pax), origin=tuple(p_rear + pax * head_s), up=(0, 0, 1))
-    f.set_smooth(head, False)
-    lance.append(piece(head, J, 41))
-    for a in (45.0, 135.0, 225.0, 315.0):
-        ac0 = pax.cross(Vector((0, 0, 1))).normalized()
-        up0 = ac0.cross(pax).normalized()
-        rd = ac0 * math.cos(math.radians(a)) + up0 * math.sin(math.radians(a))
-        fin = f.plate("fin", [(0.6, PAY_R - 0.2), (6.4, PAY_R - 0.2), (5.4, PAY_R + 1.5), (1.4, PAY_R + 1.7)], 0.32,
-                      normal=tuple(pax.cross(rd)), origin=tuple(p_rear), right=tuple(pax))
-        f.ensure_slots(fin, SLOTS)
-        f.paint(fin, H)
-        f.paint(fin, D, lambda c, n, i, rd=rd: (c - p_rear).dot(rd) > PAY_R + 1.0 and abs(n.dot(pax.cross(rd))) < 0.5)
-        lance.append(piece(fin, None, 42, bevel=0.04))
-    bone_part(lance, "payload")
-    dock = []
-    for frac in (0.14, 0.40, 0.66):
-        c = p_rear + pax * (plen * frac)
-        M, ac, al, upn = frame_matrix(c, pax, Vector((0, 0, 1)))
-        # the lance floats over the cradle (a hovering assembly): the prongs' tops sit LANCE_GAP under its widest collar
-        ptop = -2.2 - LANCE_GAP
-        for sx in (1, -1):
-            dock.append(boxm("prong", (0.6, 2.4, 2.0), (sx * 2.0, 0, ptop - 1.0), M, D, 43, bevel=0.08))
-        dock.append(boxm("fbase", (5.2, 2.8, 0.7), (0, 0, ptop - 2.35), M, H, 43, bevel=0.1))
-        dock.append(boxm("fpad", (2.6, 2.0, 0.14), (0, 0, ptop - 1.93), M, J, 43))
-        bottom = c + upn * (ptop - 2.7)
-        ped_h = max(0.8, bottom.z - core_top(bottom.x, bottom.y) + 0.3)
-        ped = f.lathe("fped", [(0.0, 0.0), (1.0, 0.0), (1.0, ped_h - 0.6), (1.4, ped_h - 0.3), (1.4, ped_h), (0.0, ped_h)],
-                      segments=12, axis=(0, 0, 1), origin=tuple(bottom - Vector((0, 0, ped_h - 0.15))))
-        dock.append(piece(ped, H, 43))
-    bone_part(dock, "payload.dock")
-    pay_mid = p_rear + pax * (plen * 0.5)
+    pay_mid, p_tip, dock_head = kit.lance(p_rear, pax, plen, core_top, PAY_R, LANCE_GAP)
 
     # ================================================================== ENGINE BANK (behind the hinge)
     eng = {}
     for nm, ex, ez, rr in ENGINES:
-        ln = ENG_LEN
         o = Vector((ex, ENG_Y0, ez))
-        k_ = ln / 37.5                                 # the profile was drawn for a 37.5-long nacelle
-        prof = [(0.0, 0.6), (rr * 0.45, 0.6), (rr * 0.84, 0.2), (rr * 0.96, 0.9), (rr * 0.93, 2.6), (rr * 0.88, 3.0),
-                (rr, 5.5 * k_), (rr, 12.5 * k_), (rr * 1.06, 12.9 * k_), (rr * 1.06, 16.0 * k_), (rr, 16.4 * k_), (rr, 27.0 * k_),
-                (rr * 0.86, 30.5 * k_), (rr * 0.94, 34.5 * k_), (rr * 1.03, ln), (rr * 0.93, ln), (rr * 0.80, ln - 3.0),
-                (rr * 0.50, ln - 3.8), (rr * 0.32, ln - 1.6), (0.0, ln - 0.6)]
-        nac = f.lathe("nacelle", prof, segments=24, axis=(0, 1, 0), origin=tuple(o))
-        f.ensure_slots(nac, SLOTS)
-        f.paint(nac, H)
-        f.paint(nac, D, lambda c, n, i, o=o, k_=k_: o.y + 12.75 * k_ < c.y < o.y + 16.15 * k_)
-        f.paint(nac, J, lambda c, n, i, o=o, rr=rr: c.y > o.y + ln - 4.2 and math.hypot(c.x - o.x, c.z - o.z) < rr * 0.87)
-        f.paint(nac, J, lambda c, n, i, o=o, rr=rr: c.y < o.y + 0.65 and math.hypot(c.x - o.x, c.z - o.z) < rr * 0.42)
-        ep = [piece(nac, None, 50, bevel=0.08)]
-        for a in range(6):
-            ang = 2 * math.pi * (a + 0.5) / 6
-            rd = Vector((math.cos(ang), 0, math.sin(ang)))
-            fin = f.plate("efin", [(27.5 * k_, rr * 0.92), (34.0 * k_, rr * 0.98), (33.0 * k_, rr + 2.2), (28.5 * k_, rr + 2.0)], 0.45,
-                          normal=tuple(Vector((0, 1, 0)).cross(rd)), origin=tuple(o), right=(0, 1, 0))
-            ep.append(piece(fin, H, 51, bevel=0.05))
-        eng[nm] = (o, ln, rr)
-        bone_part(ep, nm)
+        kit.nacelle(nm, o, (0, 1, 0), ENG_LEN, rr)
+        eng[nm] = (o, ENG_LEN, rr)
 
     # ================================================================== OMNI REACTOR over the engines
     collar_o = Vector((0.0, REACTOR_Y, COLLAR_Z))
-    collar = f.lathe("collar", [(0.0, 0.0), (5.5, 0.0), (7.0, 0.8), (7.0, 1.8), (5.8, 3.0), (3.0, 3.2), (0.0, 3.2)], segments=28,
-                     axis=(0, 0, 1), origin=tuple(collar_o))
-    f.ensure_slots(collar, SLOTS)
-    f.paint(collar, H)
-    f.paint(collar, J, lambda c, n, i: n.z > 0.8 and c.z > COLLAR_Z + 3.0)
-    f.paint(collar, D, lambda c, n, i: COLLAR_Z + 0.85 < c.z < COLLAR_Z + 1.75)
-    OMNI = collar_o + Vector((0, 0, 3.2 + 1.8 + 10.0))
-    rpts = [OMNI + Vector((12.0 * math.cos(2 * math.pi * i / 64), 12.0 * math.sin(2 * math.pi * i / 64), 0)) for i in range(65)]
-    ring1 = f.tube_along("ring1", [tuple(p) for p in rpts], [1.0] * 65, segments=12, cap=False)
-    vpts = [OMNI + Vector((0, 13.2 * math.cos(2 * math.pi * i / 64), 13.2 * math.sin(2 * math.pi * i / 64))) for i in range(65)]
-    ring2 = f.tube_along("ring2", [tuple(p) for p in vpts], [0.6] * 65, segments=10, cap=False)
-    cage = [piece(collar, None, 60, bevel=0.06), piece(ring1, D, 61), piece(ring2, H, 61)]
-    for a in range(4):
-        ang = 2 * math.pi * (a + 0.5) / 4
-        rd = Vector((math.cos(ang), math.sin(ang), 0))
-        tang = Vector((0, 0, 1)).cross(rd)
-        pyl = f.plate("pylon", [(-1.2, 0.0), (1.2, 0.0), (0.9, 18.0), (0.0, 20.5), (-0.9, 18.0)], 0.9,
-                      normal=tuple(tang), origin=tuple(OMNI + rd * 16.5 - Vector((0, 0, 10.5))), right=tuple(rd))
-        f.ensure_slots(pyl, SLOTS)
-        f.paint(pyl, H)
-        f.paint(pyl, J, lambda c, n, i: c.z > OMNI.z + 8.5)
-        cage.append(piece(pyl, None, 62, bevel=0.06))
-    bone_part(cage, "omni.ring")
-    crys = f.lathe("omni", [(0.0, -10.0), (5.2, -1.6), (6.0, 0.0), (5.2, 1.6), (0.0, 10.0)], segments=6,
-                   axis=(0, 0, 1), origin=tuple(OMNI))
-    f.set_smooth(crys, False)
-    bone_part([piece(crys, W, 63)], "omni")
+    OMNI = kit.reactor(collar_o)
 
     # ================================================================== KEEL FIN under the core
     krings = []
@@ -725,18 +485,7 @@ def build(ctx):
     bone_part(hull_parts, "hull")
 
     # ================================================================== JOIN, n-gons out
-    mesh = f.join(parts, MESH_NODE, SLOTS)
-    mesh.data.name = MESH_NODE
-    bm = bmesh.new()
-    bm.from_mesh(mesh.data)
-    big = [fc for fc in bm.faces if len(fc.verts) > 4]
-    if big:
-        bmesh.ops.triangulate(bm, faces=big, quad_method="BEAUTY", ngon_method="BEAUTY")
-    bm.to_mesh(mesh.data)
-    bm.free()
-    f.set_smooth(mesh, True)
-    f.sharpen_by_angle(mesh, 40)
-    box_uv(mesh)
+    mesh = kit.join(MESH_NODE)
     ctx.log("ark joined: %d verts, %d tris" % (len(mesh.data.vertices), f.tri_count(mesh)))
 
     # ================================================================== RIG
@@ -753,20 +502,14 @@ def build(ctx):
         bones.append(B("auricle." + s, tuple(root), tuple(root + Vector((sx * 42.0, 0, 0))), parent="hull"))
     bones.append(B("omni.ring", tuple(collar_o), tuple(OMNI), parent="hull"))
     bones.append(B("omni", tuple(OMNI), tuple(OMNI + Vector((0, 0, 10.0))), parent="omni.ring"))
-    dock_head = pay_mid - Vector((0, 0, 2.2 + LANCE_GAP + 2.0))
     bones.append(B("payload.dock", tuple(dock_head), tuple(dock_head + pax * 6.0), parent="hull"))
     bones.append(B("payload", tuple(pay_mid), tuple(p_tip), parent="payload.dock"))
     for nm, (o, ln, rr) in eng.items():
         bones.append(B(nm, tuple(o), tuple(o + Vector((0, ln, 0))), parent="hull"))
     bones.append(B("keel", (0, KY0, core_bot(0, KY0) - 2.0), (0, KY1, core_bot(0, KY1) - 2.0), parent="hull"))
-    for nm, head_, tail_, upn in socket_bones:
-        bones.append(B(nm, tuple(head_), tuple(tail_), parent="hull"))
+    bones += kit.socket_bone_specs(B)
     arm = rig.build_armature(ARMATURE, bones)
-    bpy.context.view_layer.objects.active = arm
-    bpy.ops.object.mode_set(mode="EDIT")
-    for nm, head_, tail_, upn in socket_bones:
-        arm.data.edit_bones[nm].align_roll(upn)        # the socket's Z = the prism's up
-    bpy.ops.object.mode_set(mode="OBJECT")
+    kit.roll_sockets(arm)                              # the socket's Z = the prism's up
     rig.skin_rigid(mesh, arm, default_bone="hull")
     bone_names = [b.name for b in arm.data.bones]
 
