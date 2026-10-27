@@ -32,6 +32,15 @@ from home) keeps the parcel on the hull and shows its authored line. The track l
 device for now (`PilotLoadoutStore`, the stand-in for the profile, §10). Numbers: `Docs/Pilots/pilots_and_artifacts.json`.
 Hand tests: "Javelin and Aegis" in the checklist.
 
+**Upgrades (§9 step 4), built 2026-10-27, unverified in the editor.** The Ark has an ARTIFACTS tab beside the
+Converter and Squads (`ArkArtifactsPage`, written by `author_menu_ark.py`): the player's artifacts, the picked one's four
+tracks (value now and next, the twist, dim until level 5), RAISE in the track's own crystals and OMNI to pay in omni
+crystals instead (always the player's pick). The crystals are the profile's own balances (`PlayerDataService`'s
+elemental crystals and the omni balance, Shombith's section 97), so nothing new goes to the backend; **the track
+levels are still on the device** (`PilotLoadoutStore`, PlayerPrefs) until the profile carries them, which is
+Shombith's call. Dev: FrogletTools > Pilots > Grant 20 Crystals / Reset Every Artifact Track. Hand tests: "The Ark's
+ARTIFACTS tab" in the checklist.
+
 **Shombith's branch merged (Garrett, 2026-10-27: "it should merge and build but throw anything out that conflicts
 with what we have decided here").** Kept: the saved squads, `SquadSlot`, the cloud repository, `VesselKeyword` /
 `VesselRequirement`, the Hangar PILOTS and ARTIFACTS tabs, `NetPilot` / `NetArtifacts`. Thrown out: the 45 numeric
@@ -269,6 +278,6 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 | Decision | Who decides |
 |---|---|
 | Singularity moving super-shielded mass, an exception to *Prism movement* | Garrett, through the fundamentals-curation process |
-| Per-element crystal balances and artifacts on the player profile (built on the device until then: `PilotLoadoutStore`) | Shombith (backend) |
+| Artifact track levels on the player profile (on the device until then: `PilotLoadoutStore`; the crystals already are) | Shombith (backend) |
 | Thieves hoarding artifacts | the ecology owner (ecology is LOCKED: `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`) |
 | An artifact sight among the pilot callsigns | Garrett, through the fundamentals-curation process |

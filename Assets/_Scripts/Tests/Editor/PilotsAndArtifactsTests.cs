@@ -142,6 +142,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TryRaise_WithNoProfileLoaded_RefusesAndLeavesTheLevel()
+        {
+            Assume.That(!CosmicShore.UI.PlayerDataService.Instance, "a profile is loaded in this editor session");
+            var javelin = Artifact("artifact.javelin");
+            int before = PilotLoadoutStore.TrackLevel(javelin.Id, Element.Space);
+            Assert.AreEqual(0, PilotLoadoutStore.Crystals(Element.Space), "no profile, no crystals");
+            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NotEnoughCrystals, PilotLoadoutStore.TryRaise(javelin, Element.Space));
+            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NotEnoughCrystals, PilotLoadoutStore.TryRaise(javelin, Element.Space, payWithOmni: true));
+            Assert.AreEqual(before, PilotLoadoutStore.TrackLevel(javelin.Id, Element.Space));
+            Assert.AreEqual(PilotLoadoutStore.RaiseResult.NoSuchTrack, PilotLoadoutStore.TryRaise(null, Element.Space));
+        }
+
+        [Test]
         public void Toggle_SlotsUpToTheCountAndTakesOut()
         {
             var slotted = new List<string>();

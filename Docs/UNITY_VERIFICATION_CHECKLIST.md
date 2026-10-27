@@ -17601,3 +17601,24 @@ above.
 3. **Hangar.** Step through every vessel. **Pass:**
    - each looks like the ship in play (its own dark body, windows and engines);
    - only its team-colour plates are silver.
+
+## 🔴 2026-10-27 — The Ark's ARTIFACTS tab: crystals raise an artifact's tracks (unverified: no Unity editor in the session)
+
+**Files:** `ArkArtifactsPage.cs` (`Assets/_Scripts/UI/Elements/Ark/`), `ArkTabsView.cs` (a fourth tab),
+`PilotLoadoutStore.cs` (crystals read and spent on the profile through `PlayerDataService`; `ResetTracks`),
+`PilotDevTools.cs` (Grant 20 Crystals, Reset Every Artifact Track), `ArkView.prefab` from `author_menu_ark.py`.
+Design: `Docs/Pilots/ARTIFACTS.md` §4. The reference compile has no errors in the changed files.
+
+1. Run `PilotsAndArtifactsTests` (`TryRaise_WithNoProfileLoaded_RefusesAndLeavesTheLevel`). **Pass:** green.
+2. Play Menu_Main, open the Ark. **Pass:** the tab row reads CONVERTER, SQUADS, ARTIFACTS, DECOR; DECOR still refuses.
+3. ARTIFACTS. **Pass:** the sea behind it; Javelin and Aegis on the left reading "Mass 0  Space 0  Time 0  Charge 0";
+   Javelin's four tracks on the right (line width 4 -> 5.2, range 150 -> 185, linger seconds 0 -> 0.4, cracks before
+   it stops 1 -> 1.5), each twist dim and reading "At 5: ...", RAISE reading "Raise - 2 Mass" and so on.
+4. With no crystals, press RAISE on Mass. **Pass:** "Not enough Mass crystals."; nothing changes.
+5. FrogletTools > Pilots > Grant 20 Crystals Of Every Element. **Pass:** the five balances top right read 20 at once.
+6. RAISE Space five times (2+3+4+5+6 = 20 Space). **Pass:** each press says "Javelin: Space is now N."; the fifth says
+   "Javelin twists: It pierces..." and the twist line lights; the Space balance reads 0; the Hangar's crystal counts
+   agree. Press OMNI on Space. **Pass:** it costs 7 Omni, not Space.
+7. Quit and re-enter Play. **Pass:** the levels are kept (device) and the crystals are what the profile saved.
+8. Reset Every Artifact Track. **Pass:** every level reads 0 again.
+

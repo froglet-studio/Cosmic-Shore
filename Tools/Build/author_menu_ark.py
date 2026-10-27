@@ -5,7 +5,8 @@ and mount it in Menu_Main.unity (Docs/MENU_REDESIGN_B.md section 16; the approve
 boards, revision 2, on the "Menu Redesign B" canvas).
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/
-        ArkView.prefab   the Ark's three tabs (ArkTabsView: CONVERTER, SQUADS, DECOR - Shombith, 2026-10-27) and
+        ArkView.prefab   the Ark's four tabs (ArkTabsView: CONVERTER, SQUADS, DECOR - Shombith, 2026-10-27; ARTIFACTS -
+                         Garrett, 2026-10-27) and
                          their pages:
                          CONVERTER, the overlay over the converter's 3D picture: the title band, the recipe panel
                          (four ConverterRecipeRows in fly-in order, the Omni block), and the converter bar
@@ -13,6 +14,8 @@ boards, revision 2, on the "Menu Redesign B" canvas).
                          SQUADS (SquadsPage): the player's squads (up to four, made and joined), the selected
                          squad's three squad mates with their vessel, element, pilot and artifact, NEW / JOIN /
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
+                         ARTIFACTS (ArkArtifactsPage): the player's artifacts, the picked one's four element tracks
+                         with RAISE (its own crystals) and OMNI, and the profile's five crystal balances;
                          DECOR: the banner and hull skins, LOCKED (MenuAvailabilityView) - not open yet
 
     Menu_Main.unity, `ArkScreen/ElementalConverter` (author_elemental_converter.py made it):
@@ -55,7 +58,7 @@ S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeR
          ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), tabs=C.script("ArkTabsView"),
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
          availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"),
-         chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"))
+         chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"))
 C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
@@ -179,7 +182,9 @@ def converter_bar(root):
 # The Ark's tabs (Shombith, 2026-10-27: "add two more tabs along with the converter. 1. Squads ... 2. Decor - lock it")
 # --------------------------------------------------------------------------------------------
 
-TABS = ("Converter", "Squads", "Decor")
+# ARTIFACTS (Garrett, 2026-10-27, Docs/Pilots/ARTIFACTS.md §4 and §8.3: "the Ark screen gets an artifact panel beside the
+# Converter"): spend elemental crystals on an artifact's four tracks.
+TABS = ("Converter", "Squads", "Artifacts", "Decor")
 LOCKED_TABS = {"Decor"}                       # MenuAvailability.Locked: refuses with the sting and "Not open yet."
 TAB_Y, TAB_H = 108, 52
 MAX_SQUADS, SEATS, JOIN_ROWS = 4, 3, 6        # SquadBook.MaxSquads, SavedSquad.SlotCount, the join list's rows
@@ -566,6 +571,89 @@ def squads_page(root):
     return page
 
 
+ART_ROWS = 4                                   # Javelin and Aegis, and room for two more
+TRACK_ELEMENTS = ("Mass", "Space", "Time", "Charge")   # ArkArtifactsPage.TrackOrder
+TRACK_Y, TRACK_H, TRACK_STEP = 120, 156, 170
+ARTIFACT_WORDS = (
+    ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
+    + yfield("crystalTemplate", "{element} {count}")
+    + yfield("levelsTemplate", "Mass {mass}  Space {space}  Time {time}  Charge {charge}")
+    + yfield("levelTemplate", "{level} / {max}") + yfield("valueTemplate", "{now} -> {next}")
+    + yfield("valueTopTemplate", "{now}") + yfield("twistLockedTemplate", "At {at}: {twist}")
+    + yfield("twistOpenTemplate", "{twist}") + yfield("raiseTemplate", "Raise - {cost} {element}")
+    + yfield("omniTemplate", "{cost} Omni instead") + yfield("topWord", "At the top")
+    + yfield("notEnoughTemplate", "Not enough {element} crystals.")
+    + yfield("raisedTemplate", "{artifact}: {element} is now {level}.")
+    + yfield("twistedTemplate", "{artifact} twists: {twist}"))
+
+
+def artifacts_page(root):
+    """ARTIFACTS: the player's artifacts down the left (SquadRowView rows: the name, the four levels), and the picked
+    one's four element tracks to the right, each with RAISE (its own crystals) and OMNI (omni crystals instead), above
+    the profile's five crystal balances. ArkArtifactsPage draws it; every word is on that component."""
+    page = page_node(root, "Artifacts", False)
+    page_backdrop(page, "Artifacts")
+    pn = page.child(N("Artifacts/List", "List", TL(LIST_X, LIST_Y, LIST_W, LIST_H)))
+    pn.add("cg", 225, canvas_group(True))
+    C.section_label(pn, "Artifacts/List/Caption", "Caption", "Your artifacts", TL(0, 0, 220, 18))
+    for i in range(ART_ROWS):
+        kit_row_text(pn, f"Artifacts/List/Row{i}", f"Row{i}", TL(0, 32 + i * 108, LIST_W, 96), 96)
+    e = page.child(N("Artifacts/Empty", "Empty", TL(COL_X, 250, COL_W, 200)))
+    e.add("cg", 225, canvas_group(False))
+    label(e.child(N("Artifacts/Empty/Heading", "Heading", stretch_x(0, 0, 40, 40))), "No artifacts yet", "H2", "TextLight",
+          align="center")
+    label(e.child(N("Artifacts/Empty/Line", "Line", stretch_x(300, 300, 90, 60))),
+          "Find them on voyages and bring them home to your Ark.", "Body", "NeutralLightest", align="center", wrap=True)
+    d = page.child(N("Artifacts/Detail", "Detail", TL(COL_X, LIST_Y, COL_W, LIST_H)))
+    d.add("cg", 225, canvas_group(True))
+    label(d.child(N("Artifacts/Detail/Kicker", "Kicker", TL(0, 0, 600, 16))), "Artifact", "Label", "NeutralLightest")
+    H.ellipsize(label(d.child(N("Artifacts/Detail/Name", "Name", TL(0, 18, 700, 44))), "", "H1", "TextLight"))
+    label(d.child(N("Artifacts/Detail/Description", "Description", TL(0, 64, 760, 44))), "", "BodySmall", "NeutralLightest",
+          valign="top", wrap=True)
+    label(d.child(N("Artifacts/Detail/CrystalCaption", "CrystalCaption", TR(0, 0, 640, 16))), "Crystals", "Label",
+          "NeutralLightest", align="right")
+    for i in range(5):
+        label(d.child(N(f"Artifacts/Detail/Crystal{i}", f"Crystal{i}", TR((4 - i) * 128, 24, 120, 24))), "", "Body",
+              "TextLight", align="right")
+    for i, name in enumerate(TRACK_ELEMENTS):
+        k = f"Artifacts/Detail/Track{name}"
+        t = d.child(N(k, f"Track{name}", TL(0, TRACK_Y + i * TRACK_STEP, COL_W, TRACK_H)))
+        H.framed(t, k, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.9)
+        label(t.child(N(f"{k}/Element", "Element", TL(24, 18, 200, 16))), name, "Label", "NeutralLightest")
+        H.ellipsize(label(t.child(N(f"{k}/Label", "Label", TL(24, 38, 520, 30))), "", "H3", "TextLight"))
+        label(t.child(N(f"{k}/Level", "Level", TL(560, 38, 160, 30))), "", "H3", "TextLight")
+        label(t.child(N(f"{k}/Value", "Value", TL(740, 42, 300, 24))), "", "Body", "NeutralLightest")
+        tw = t.child(N(f"{k}/Twist", "Twist", TL(24, 84, 1000, 56)))
+        tw.add("cg", 225, canvas_group(True))
+        label(tw.child(N(f"{k}/Twist/Words", "Words", STRETCH)), "", "BodySmall", "TextLight", valign="top", wrap=True)
+        small_button(t, f"{k}/Raise", "Raise", "Raise", TR(24, 24, 260, 52), "Cta")
+        small_button(t, f"{k}/Omni", "Omni", "Omni", TR(24, 88, 260, 44))
+    label(d.child(N("Artifacts/Detail/Status", "Status", TL(0, TRACK_Y + 4 * TRACK_STEP, COL_W, 24))), "", "Body", "TextLight")
+
+    def body(ctx, go):
+        tracks = ""
+        for name in TRACK_ELEMENTS:
+            k = f"Artifacts/Detail/Track{name}"
+            tracks += (f"  - elementText: {ref(ctx.c(f'{k}/Element', 'tmp'))}\n    labelText: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n"
+                       f"    levelText: {ref(ctx.c(f'{k}/Level', 'tmp'))}\n    valueText: {ref(ctx.c(f'{k}/Value', 'tmp'))}\n"
+                       f"    twistText: {ref(ctx.c(f'{k}/Twist/Words', 'tmp'))}\n    twistGroup: {ref(ctx.c(f'{k}/Twist', 'cg'))}\n"
+                       f"    raiseButton: {ref(ctx.c(f'{k}/Raise', 'button'))}\n    raiseLabel: {ref(ctx.c(f'{k}/Raise/Label', 'tmp'))}\n"
+                       f"    omniButton: {ref(ctx.c(f'{k}/Omni', 'button'))}\n    omniLabel: {ref(ctx.c(f'{k}/Omni/Label', 'tmp'))}\n")
+        return mono(go, S["artifacts"],
+                    f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n"
+                    "  rows:\n" + refs_of(ctx, [f"Artifacts/List/Row{i}" for i in range(ART_ROWS)], "row")
+                    + f"  emptyGroup: {ref(ctx.c('Artifacts/Empty', 'cg'))}\n"
+                    f"  detailGroup: {ref(ctx.c('Artifacts/Detail', 'cg'))}\n"
+                    f"  nameText: {ref(ctx.c('Artifacts/Detail/Name', 'tmp'))}\n"
+                    f"  descriptionText: {ref(ctx.c('Artifacts/Detail/Description', 'tmp'))}\n"
+                    "  tracks:\n" + tracks
+                    + f"  statusText: {ref(ctx.c('Artifacts/Detail/Status', 'tmp'))}\n"
+                    "  crystalTexts:\n" + refs_of(ctx, [f"Artifacts/Detail/Crystal{i}" for i in range(5)], "tmp")
+                    + ARTIFACT_WORDS)
+    page.add("logic", 114, body)
+    return page
+
+
 def decor_page(root):
     """DECOR, locked (its tab refuses): the banner and the Ark's hull, outside and in. Drawn so that opening the tab is
     the one change (MenuAvailability.Available on the tab); nothing behind it yet."""
@@ -593,13 +681,14 @@ def build_view():
     recipe_panel(conv)
     converter_bar(conv)
     squads_page(root)
+    artifacts_page(root)
     decor_page(root)
     tab_row(root)
 
     def body(ctx, go):
         entries = ""
         for t in TABS:
-            logic = {"Squads": ref(ctx.c("Squads", "logic"))}.get(t, "{fileID: 0}")
+            logic = {"Squads": ref(ctx.c("Squads", "logic")), "Artifacts": ref(ctx.c("Artifacts", "logic"))}.get(t, "{fileID: 0}")
             gate = ref(ctx.c(f"Tabs/{t}", "gate")) if t in LOCKED_TABS else "{fileID: 0}"
             entries += (f"  - button: {ref(ctx.c(f'Tabs/{t}', 'tab'))}\n    page: {ref(ctx.c(t, 'cg'))}\n"
                         f"    pageLogic: {logic}\n    availability: {gate}\n")
@@ -809,6 +898,9 @@ SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["but
                      viewBarGroup=225, removeButton=S["button"], removeLabel=TMP, editButton=S["button"],
                      missionButton=S["button"], missionLock=IMG, arenaButton=S["button"],
                      joinGroup=225, joinStatusText=S["kt"], joinCloseButton=S["button"])
+ART_FIELDS = dict(emptyGroup=225, detailGroup=225, nameText=TMP, descriptionText=TMP, statusText=TMP)
+TRACK_FIELDS = dict(elementText=TMP, labelText=TMP, levelText=TMP, valueText=TMP, twistText=TMP, twistGroup=225,
+                    raiseButton=S["button"], raiseLabel=TMP, omniButton=S["button"], omniLabel=TMP)
 ROW_VIEW_FIELDS = dict(button=S["button"], group=225, titleText=TMP, lineText=TMP, activeMark=IMG, domainText=TMP)
 CHIP_FIELDS = dict(button=S["button"], group=225, label=TMP, selectedMark=IMG)
 NANOBOT_FIELDS = dict(hull=IMG, companion=IMG, botTemplate=IMG)
@@ -835,7 +927,7 @@ def validate_tabs(view, V):
                          r"    pageLogic: \{fileID: (-?\d+)\}\n    availability: \{fileID: (-?\d+)\}\n", tabs)
     assert len(entries) == len(TABS), f"the Ark has {len(entries)} tabs, not {len(TABS)} ({', '.join(TABS)})"
     # The pages with no 3D picture draw the window backdrop: the veil, then the sea lines, under everything else.
-    for t in ("Squads", "Decor"):
+    for t in ("Squads", "Artifacts", "Decor"):
         kids = re.findall(r"fileID: (-?\d+)", re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V(f"{t}#rt"))[1], re.M).group(1))
         assert kids[:2] == [str(V(f"{t}/Backdrop#rt")), str(V(f"{t}/Sea#rt"))], \
             f"the {t} tab must open on the veil and the sea lines (\"Ark no sea line\")"
@@ -845,12 +937,29 @@ def validate_tabs(view, V):
         assert A.kind_of(view, page)[0] == 225, f"the {t} tab's page is not a CanvasGroup"
         if t == "Squads":
             assert logic != "0" and A.kind_of(view, logic)[1] == S["squads"], "the Squads tab is not driven by its SquadsPage"
+        if t == "Artifacts":
+            assert logic != "0" and A.kind_of(view, logic)[1] == S["artifacts"], "the Artifacts tab is not driven by its ArkArtifactsPage"
         if t in LOCKED_TABS:
             assert gate != "0", f"the {t} tab has no MenuAvailabilityView: it would open"
             _, g = A.doc_of(view, gate)
             assert S["availability"] in g and "  availability: 1\n" in g, f"the {t} tab is not Locked"
         else:
             assert gate == "0", f"the {t} tab is gated"
+    _, art = A.doc_of(view, V("Artifacts#logic"))
+    for field, want in ART_FIELDS.items():
+        C.wired(view, art, field, want, "ArkArtifactsPage")
+    rows_ = listed(art, "rows")
+    assert len(rows_) == ART_ROWS and all(A.kind_of(view, i)[1] == S["squad_row"] for i in rows_), \
+        f"ArkArtifactsPage.rows is not {ART_ROWS} SquadRowViews"
+    assert len(listed(art, "crystalTexts")) == 5, "ArkArtifactsPage.crystalTexts is not the five crystals"
+    for field, want in TRACK_FIELDS.items():
+        found = re.findall(r"^  [- ] " + field + r": \{fileID: (-?\d+)\}", art, re.M)
+        assert len(found) == len(TRACK_ELEMENTS), f"ArkArtifactsPage has {len(found)} track {field}s, not {len(TRACK_ELEMENTS)}"
+        for fid in found:
+            assert fid != "0", f"an ArkArtifactsPage track's {field} is not wired"
+            cls, scr = A.kind_of(view, fid)
+            assert (cls == want if isinstance(want, int) else scr == want), f"an ArkArtifactsPage track's {field} is the wrong kind"
+    assert f"guid: {PILOT_CATALOG}" in art, "ArkArtifactsPage reads no pilot catalog"
     _, page = A.doc_of(view, V("Squads#logic"))
     for field, want in SQUADS_FIELDS.items():
         C.wired(view, page, field, want, "SquadsPage")
@@ -885,6 +994,16 @@ def plain_segment(view):
     return view[:m.start()] + m.group(0).replace("  m_Type: 3\n", "  m_Type: 0\n") + view[m.end():]
 
 
+def unlogic_tab(view, index):
+    """The view with tab `index`'s pageLogic cut (a negative control)."""
+    n = [0]
+
+    def cut(m):
+        n[0] += 1
+        return m.group(1) + ("{fileID: 0}" if n[0] - 1 == index else m.group(2))
+    return re.sub(r"(  - button: \{fileID: -?\d+\}\n    page: \{fileID: -?\d+\}\n    pageLogic: )(\{fileID: -?\d+\})", cut, view)
+
+
 def self_test(files):
     def expect(label_, mutate):
         bad = dict(files)
@@ -916,6 +1035,9 @@ def self_test(files):
             "  missionButton: ", "  playArcadeButton: {fileID: 0}\n  missionButton: ", 1))),
         ("the nanobots with no bot", lambda f: f.__setitem__(view, re.sub(
             r"(  botTemplate: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("an artifact track's RAISE unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(    raiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("the Artifacts tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Artifacts")))),
         ("the Ark's arkTabs unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  arkTabs: {{fileID: {mount.stub_fid('root#tabs')}}}", "  arkTabs: {fileID: 0}"))),
     ]

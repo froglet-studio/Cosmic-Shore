@@ -12,10 +12,12 @@ namespace CosmicShore.Core
     /// levels on each artifact, and the elemental crystals they spend to raise them. Ids are the <c>PilotSO.Id</c> /
     /// <c>ArtifactSO.Id</c> strings, which players save and nobody renames.
     ///
-    /// <para><b>A device-local stand-in.</b> Saved in PlayerPrefs for now. Per-element crystal balances and track levels
-    /// belong on the player's profile, beside the Hangar's element levels, and that is the backend: it goes through
-    /// Shombith (Docs/Pilots/ARTIFACTS.md §10). Everything that reads or spends goes through this class, so the move is
-    /// one class. Crystals are earned on the device too until then (<see cref="AddCrystals"/>).</para>
+    /// <para><b>Crystals are the profile's.</b> The four elemental balances and the Omni balance are the player's
+    /// cloud profile (<see cref="CosmicShore.UI.PlayerDataService"/>, Shombith's section 97), so a raise spends the same
+    /// crystals the Hangar and the Converter show. <b>Track levels are a device-local stand-in</b> (PlayerPrefs): they
+    /// belong on the profile beside the Hangar's levels, and that is the backend, so it goes through Shombith
+    /// (Docs/Pilots/ARTIFACTS.md §10). Everything that reads or raises goes through this class, so the move is one
+    /// class.</para>
     ///
     /// <para><b>2026-10-27 (Garrett):</b> built on Shombith's store; the found RANKS of the numeric artifacts are gone
     /// with them. Every artifact is still free to hold (Shombith, 2026-10-26).</para>
@@ -42,7 +44,6 @@ namespace CosmicShore.Core
         static string SlotsKey(VesselClassType vessel) => $"artifacts.slots.{(int)vessel}";
         static string HeldKey(string artifactId) => $"artifacts.found.{artifactId}";
         static string TrackKey(string artifactId, Element element) => $"artifacts.track.{artifactId}.{(int)element}";
-        static string CrystalKey(Element element) => $"crystals.{(int)element}";
 
         // ---- the seat ----
 
@@ -139,16 +140,41 @@ namespace CosmicShore.Core
             TrackLevel(artifactId, Element.Mass), TrackLevel(artifactId, Element.Space),
             TrackLevel(artifactId, Element.Time), TrackLevel(artifactId, Element.Charge));
 
-        /// <summary>The player's crystals of <paramref name="element"/> (Mass, Space, Time, Charge or Omni).</summary>
-        public static int Crystals(Element element) => Mathf.Max(0, PlayerPrefs.GetInt(CrystalKey(element), 0));
-
-        /// <summary>Add (or, negative, remove) crystals. Never below zero.</summary>
-        public static void AddCrystals(Element element, int amount)
+        /// <summary>The player's crystals of <paramref name="element"/> on their profile (Mass, Space, Time and Charge
+        /// are the elemental balances, Omni the omni-crystal balance). 0 before the profile is loaded.</summary>
+        public static int Crystals(Element element)
         {
-            if (element is Element.None || amount == 0) return;
-            PlayerPrefs.SetInt(CrystalKey(element), Mathf.Max(0, Crystals(element) + amount));
+            var data = CosmicShore.UI.PlayerDataService.Instance;
+            if (!data) return 0;
+            return element == Element.Omni ? data.GetCrystalBalance() : data.GetElementalCrystalsHeld(element);
+        }
+
+        /// <summary>Credit crystals to the profile (dev tooling; a match pays them out by the owner's rule).</summary>
+        public static void AddCrystals(Element element, int amount, string source)
+        {
+            var data = CosmicShore.UI.PlayerDataService.Instance;
+            if (!data || amount <= 0) return;
+            if (element == Element.Omni) data.AddCrystals(amount, source);
+            else data.AddElementalCrystals(element, amount, source);
+            UpgradesChanged?.Invoke();
+        }
+
+        /// <summary>Sets an artifact's four track levels back to 0 (dev tooling).</summary>
+        public static void ResetTracks(string artifactId)
+        {
+            if (string.IsNullOrEmpty(artifactId)) return;
+            foreach (var e in new[] { Element.Mass, Element.Space, Element.Time, Element.Charge })
+                PlayerPrefs.DeleteKey(TrackKey(artifactId, e));
             PlayerPrefs.Save();
             UpgradesChanged?.Invoke();
+        }
+
+        static bool Spend(Element element, int amount)
+        {
+            var data = CosmicShore.UI.PlayerDataService.Instance;
+            if (!data) return false;
+            const string source = "artifact track";
+            return element == Element.Omni ? data.TrySpendCrystals(amount, source) : data.TrySpendElementalCrystals(element, amount, source);
         }
 
         /// <summary>Why a raise was refused, or <see cref="Raised"/>.</summary>
@@ -183,7 +209,7 @@ namespace CosmicShore.Core
             int level = TrackLevel(artifact.Id, element);
             var result = Price(artifact.Track(element), level, Crystals(payer), out int cost);
             if (result != RaiseResult.Raised) return result;
-            PlayerPrefs.SetInt(CrystalKey(payer), Crystals(payer) - cost);
+            if (!Spend(payer, cost)) return RaiseResult.NotEnoughCrystals;
             PlayerPrefs.SetInt(TrackKey(artifact.Id, element), level + 1);
             PlayerPrefs.Save();
             UpgradesChanged?.Invoke();
