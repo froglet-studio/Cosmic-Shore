@@ -1,0 +1,6 @@
+{
+  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. The game has no Meerkat yet, so nothing is linked: --unmapped lists every key, and /artifact-to-unity adds a row here as each field is made. Edit this file, never the assets by hand.",
+  "vessel": "Meerkat",
+  "page": "Docs/Studios/VesselStudio/meerkat.html",
+  "rows": []
+}

@@ -585,6 +585,27 @@ profile the card matches. Profiles live in the studio's shared db (`profiles`, r
 everyone's) or, where the viewer has no db, in that browser. Nothing in the game changes: a profile is a set of studio
 values; the one the team picks reaches Unity through `/artifact-to-unity` as usual.
 
+## 1p. Round 28 (studio) — the wormhole becomes the Meerkat (2026-10-27)
+
+Yash: *"a big change is this new wormhole ability ... This will be Meerkat, a new vessel. The Stoat will have that field
+and orbit for now untouched. Just take away all this wormhole kind of ability of the Stoat and create a Meerkat ... keep
+only one ability of the wormhole."* The studio's Gate mode (§1g-§1n) left the Stoat page and is now the Meerkat studio,
+`Docs/Studios/VesselStudio/meerkat.html` (design: `Docs/Studios/MEERKAT.md`).
+
+| What | Where it is now |
+|---|---|
+| Gate mode: the reticle, the tunnel, its ride and life, the tube's warp, the mouths' dents, the gate AI | The Meerkat studio only, with its parameters renamed to their future `MeerkatWormholeConfig` fields |
+| B / T on the Stoat | Mass -> Time -> Mass (round 18-27 stepped through Gate too) |
+| The Stoat's `gt*` / `gate*` keys, their sliders, tips and game names | Removed from the Stoat page |
+| `studio_to_unity/stoat.json`'s 14 round-18 gate rows (`StoatModeAction` gate* fields) | Removed: the page no longer has those keys. The game's Stoat still has round 18's straight warp gate on B, unlinked from the studio until `/artifact-to-unity` ports the Meerkat and takes the gate off the Stoat |
+
+Mass and Time are untouched: on seed 7, the AI at Hard raced them in 59.6 s (18 slings) and 53.8 s (17), the same as
+before the split. Two small fixes came with it:
+- `setStyle` had a `grp-P` visibility statement swallowed by a round-23 comment. It is a statement again, so Pull &
+  momentum shows in Mass and Time only.
+- The decision log tags new entries `studio: 'stoat'` and shows only the Stoat's, the older untagged ones included,
+  because the Meerkat writes to the same shared collection.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |

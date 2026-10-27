@@ -58,9 +58,9 @@
       "id": "stoat",
       "name": "Stoat",
       "file": "stoat.html",
-      "kind": "design studio - round 27",
-      "chip": "design studio · round 27",
-      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and three modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it), Time (the catch sling, timed at 90°) and Gate (a one-thumb wormhole slingshot: the left stick flies, the grid on your nose is the tunnel the right trigger would form, the right stick bends it and LT shortens it; pull RT and ride it - up to 120° round - and come out with the speed you went in with; no black or white hole, and everyone else sees the tube only as warped space). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
+      "kind": "design studio - round 28",
+      "chip": "design studio · round 28",
+      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and two modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it) and Time (the catch sling, timed at 90°). Its wormhole mode became the Meerkat (2026-10-27). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
       "spec": [
         {
           "k": "Sling",
@@ -76,7 +76,7 @@
         },
         {
           "k": "Status",
-          "v": "all three modes in the game on B (Ys-bleeding-edge)"
+          "v": "Mass and Time in the game on B; the game still has the Gate too (Ys-bleeding-edge)"
         }
       ],
       "preview": "previews/stoat.png",
@@ -84,6 +84,35 @@
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
+    },
+    {
+      "id": "meerkat",
+      "name": "Meerkat",
+      "file": "meerkat.html",
+      "kind": "design studio - round 1",
+      "chip": "design studio · round 1",
+      "summary": "The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the tube as bent space-time, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatWormholeConfig); AI rivals at Easy, Medium or Hard and a level scorecard.",
+      "spec": [
+        {
+          "k": "Ability",
+          "v": "the wormhole, on one thumb"
+        },
+        {
+          "k": "Tunnel",
+          "v": "bends to 120° · 120–600 u"
+        },
+        {
+          "k": "Ride",
+          "v": "out at your entry speed"
+        },
+        {
+          "k": "Status",
+          "v": "design only: no Meerkat in the game yet"
+        }
+      ],
+      "preview": "previews/meerkat.png",
+      "accent": "#4fd8ff",
+      "docs": "Docs/Studios/MEERKAT.md"
     },
     {
       "id": "brittlestar",
