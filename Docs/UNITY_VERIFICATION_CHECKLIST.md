@@ -97,8 +97,10 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
 2. **Lava lamp:**
    - Open the menu's freestyle, then the Toybox **Vessel Changer**, and pick **Meerkat**.
    - It flies on the left stick alone, at about 60 u/s.
-   - A see-through frame of thin cyan-to-white spindles sits 30 u ahead of the nose. The right stick bends it, shorter
-     and fatter as it bends, and LT shortens it.
+   - A see-through frame of thin cyan-to-white spindles sits 30 u ahead of the nose (round 7: an umbrella handle). LT
+     sets how far its straight shaft runs (60 u released, 600 u squeezed) before one bend of fixed radius; the right
+     stick sets the bend's direction and angle (150° fully over). The throat and mouths stay narrow (4 u, 10 u) at
+     every shape.
    - It glides into each new shape over about 0.15 s instead of snapping (`reticleSmoothSeconds`; round 3).
 3. Pull **RT**:
    - The reticle fades.
@@ -117,7 +119,8 @@ Meerkat page (`R_VesselActions/MEERKAT.md`, `Arcade/BURROWRUN.md`):
    - Eight rings a lap, two laps.
    - It finishes and scores by time.
    - Easy, Medium and Hard are offered.
-8. **Two players (MPPM):** the second player sees the first one's tunnels, bridge and bent space.
+8. **Two players (MPPM):** the second player sees the first one's tunnels, bridge and bent space, with the same shaft
+   and bend (protocol version 18).
 9. The Console shows nothing new.
 
 ---

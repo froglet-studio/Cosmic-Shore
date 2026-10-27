@@ -20,18 +20,21 @@ the prefab:
 
 | Input | What it does |
 |---|---|
-| Right stick | Bends the reticle any way, as far as it is pushed, up to `bendMaxDegrees`. The further it bends, the shorter (`lengthStraight` to `lengthBent`) and fatter (`throatStraight` to `throatBent`) it gets |
-| LT (`LeftStickAction`) | Shortens a straighter reticle. A pad's analog trigger is read live; a key or touch ramps to full in `keyRampSeconds` |
+| Right stick | The bend's direction (any way) and angle, as far as it is pushed, up to `bendMaxDegrees` (150°) |
+| LT (`LeftStickAction`) | The straight shaft before the bend: `shaftMin` released to `shaftMax` squeezed. A pad's analog trigger is read live; a key or touch ramps to full in `keyRampSeconds` |
 | RT (`RightStickAction`) | Forms the tunnel once the reticle is 60% grown, and dives in. The last tunnel collapses at once |
 | X (`Button1Action`) | The stance (`StoatHoldAction`), kept from the Stoat; forming a tunnel ends it |
 
+- **The shape** (round 7, the umbrella handle): a straight shaft of S, then one bend of radius `bendRadius` through the
+  stick's angle θ, so the tunnel is S + `bendRadius` × θ long (`MeerkatWormholeMath.ShapeFor` / `At` / `BendAngle`). The
+  throat (`throatRadius`) and mouths (`mouthRadius`) are fixed and narrow.
 - **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it (round 3):
   - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
   - It is a see-through frame of thin spindles: `reticleRings` × `reticleSpindlesPerRing` round its throat and
     `reticleRibs` along it, `reticleSpindleThickness` thick, cyan to white, over a faint glass (`reticleGlass`).
   - The lime line you will fly runs through it (`reticlePath`).
 - **The ride.** `MeerkatVesselTransformer` lets the tunnel fly the hull (`StepRide`). It dives straight to the mouth,
-  then runs the arc mouth to mouth. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
+  then runs the shaft and the bend mouth to mouth, turning only on the bend. Its speed is the speed before the tunnel × `rideEntryMultiplier` going in (1), rising
   to `rideMidMultiplier` at the throat (2.5) and easing to `rideExitMultiplier` at the way out (1.2, round 6). It comes out
   on the tunnel's last heading, a little boosted, and eases back to cruise.
 - **Out.** The reticle comes back after `reticleDelaySeconds`, growing out of its centre over `reticleGrowSeconds`.
@@ -60,7 +63,7 @@ the prefab:
   - The pass is injected from script while a tunnel or ripple is live, the `BlackHoleLensPass` route, and draws nothing
     otherwise.
 - **The network.** The owner publishes each tunnel it forms, and its rider's way out, through
-  `MeerkatWormholeNetworkRelay` (one `NetworkVariable`, protocol version 17). Every peer runs the same life from
+  `MeerkatWormholeNetworkRelay` (one `NetworkVariable`, protocol version 18: round 7 added the shaft and the bend radius). Every peer runs the same life from
   there.
 
 ## 3. The AI (input only, `/vessel-ai`)
@@ -69,8 +72,9 @@ The platform `AIPilot` flies the line. `MeerkatWormholeExecutor.Autopilot` adds 
 line for line:
 1. It waits until its reticle is back and its ring is more than `aiBentMinDistance` away. Only a bent tunnel is planned
    inside `aiStraightMinDistance`.
-2. It tries 21 bends × 9 LT squeezes, and keeps the one whose way out heads within 0.26 rad of the ring with 60 u to
-   spare, straighter preferred.
+2. It tries 21 bends × 9 shafts (LT), and among those whose way out heads within 0.26 rad of the ring with 60 u to
+   spare keeps the one that reaches the ring soonest: the ride at its mean speed, the flight on, and the turn left at
+   the hull's `YawScaler` (round 7).
 3. It holds its line (no left stick) while the right stick bends the reticle and LT squeezes for `aiShapeSeconds`.
 4. It waits for its eased reticle to catch up (within 0.03, 1 s at most).
 5. It presses RT through the REPLICATED press path.

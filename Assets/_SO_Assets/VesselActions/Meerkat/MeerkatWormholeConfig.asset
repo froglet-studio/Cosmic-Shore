@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: MeerkatWormholeConfig
   m_EditorClassIdentifier: 
   reticleAhead: 30
-  bendMaxDegrees: 120
-  lengthStraight: 600
-  lengthBent: 120
-  throatStraight: 3
-  throatBent: 40
-  mouthFlare: 2
+  bendMaxDegrees: 150
+  shaftMin: 60
+  shaftMax: 600
+  bendRadius: 60
+  throatRadius: 4
+  mouthRadius: 10
   keyRampSeconds: 0.5
   rideMidMultiplier: 2.5
   reticleDelaySeconds: 0.5

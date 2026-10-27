@@ -126,8 +126,8 @@ namespace CosmicShore.Gameplay
                 float a = A * (0.35f + 0.65f * Mathf.Abs(2f * u - 1f));
                 for (int j = 0; j < nS; j++)
                 {
-                    var p1 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s, j / (float)nS * Mathf.PI * 2f, rad, out var n1);
-                    var p2 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s, (j + 1) / (float)nS * Mathf.PI * 2f, rad, out _);
+                    var p1 = Surf(r.A, r.T0, r.Side, sh.S, sh.R, sh.Theta, s, j / (float)nS * Mathf.PI * 2f, rad, out var n1);
+                    var p2 = Surf(r.A, r.T0, r.Side, sh.S, sh.R, sh.Theta, s, (j + 1) / (float)nS * Mathf.PI * 2f, rad, out _);
                     Spindle(p1, p2, th, a * Face(p1, n1, eye), c, eye, ReticleNear, ReticleFull);
                 }
             }
@@ -137,8 +137,8 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < nR - 1; i++)
                 {
                     float s1 = r.S0 + span * i / (nR - 1), s2 = r.S0 + span * (i + 1) / (nR - 1);
-                    var p1 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s1, phi, RetRadius(r, s1), out var n1);
-                    var p2 = Surf(r.A, r.T0, r.Side, sh.L, sh.Theta, s2, phi, RetRadius(r, s2), out _);
+                    var p1 = Surf(r.A, r.T0, r.Side, sh.S, sh.R, sh.Theta, s1, phi, RetRadius(r, s1), out var n1);
+                    var p2 = Surf(r.A, r.T0, r.Side, sh.S, sh.R, sh.Theta, s2, phi, RetRadius(r, s2), out _);
                     Spindle(p1, p2, th * 0.8f, A * 0.8f * Face(p1, n1, eye), Color.Lerp(RetIn, RetOut, (i + 0.5f) / (nR - 1)), eye,
                             ReticleNear, ReticleFull);
                 }
@@ -149,17 +149,17 @@ namespace CosmicShore.Gameplay
                 // the line you will fly: from the mouth to the way out, then on along its last heading
                 for (int i = 0; i < PathSteps; i++)
                 {
-                    var a = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.L, sh.Theta, r.S0 + span * i / PathSteps, out _);
-                    var b = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.L, sh.Theta, r.S0 + span * (i + 1) / PathSteps, out _);
+                    var a = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.S, sh.R, sh.Theta, r.S0 + span * i / PathSteps, out _);
+                    var b = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.S, sh.R, sh.Theta, r.S0 + span * (i + 1) / PathSteps, out _);
                     Line(a, Lime * pa, b, Lime * pa);
                 }
-                var end = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.L, sh.Theta, r.S1, out var dir);
+                var end = MeerkatWormholeMath.At(r.A, r.T0, r.Side, sh.S, sh.R, sh.Theta, r.S1, out var dir);
                 float on = Mathf.Max(80f, 0.5f * sh.L);
                 for (int i = 0; i < 6; i += 2)
                     Line(end + dir * (on * i / 6f), Lime * (pa * 0.8f), end + dir * (on * (i + 1) / 6f), Lime * (pa * 0.8f));
             }
             if (!r.Ghost)
-                Fill(r.A, r.T0, r.Side, sh.L, sh.Theta, sh.B, sh.M, r.S0, r.S1, A * Mathf.Max(0f, cfg.ReticleGlass), RetIn, RetOut);
+                Fill(r.A, r.T0, r.Side, sh.L, sh.S, sh.R, sh.Theta, sh.B, sh.M, r.S0, r.S1, A * Mathf.Max(0f, cfg.ReticleGlass), RetIn, RetOut);
         }
 
         static float RetRadius(in MeerkatWormholeExecutor.Reticle r, float s) =>
@@ -177,7 +177,7 @@ namespace CosmicShore.Gameplay
             if (A <= 0.004f) return;
             var white = Color.white;
             Color baseCol = t.Colour, col = Color.Lerp(baseCol, white, 0.45f);
-            Fill(t.A, t.T0, t.Side, t.L, t.Theta, t.B, t.M, t.W.S0, t.W.S1, A * Mathf.Max(0f, cfg.BridgeGlass), baseCol,
+            Fill(t.A, t.T0, t.Side, t.L, t.S, t.R, t.Theta, t.B, t.M, t.W.S0, t.W.S1, A * Mathf.Max(0f, cfg.BridgeGlass), baseCol,
                  Color.Lerp(white, baseCol, 0.4f));
             int nR = Mathf.Max(2, cfg.BridgeRings), nS = Mathf.Max(3, cfg.BridgeSpindlesPerRing), nRib = Mathf.Max(0, cfg.BridgeRibs);
             float th = Mathf.Max(0.05f, cfg.BridgeSpindleThickness), sh = cfg.BridgeShimmer, now = Time.time;
@@ -188,8 +188,8 @@ namespace CosmicShore.Gameplay
                 float rad = t.Radius(s), br = A * MeerkatWormholeMath.BridgeGlow(s / t.L, sh, now);
                 for (int j = 0; j < nS; j++)
                 {
-                    var a = Surf(t.A, t.T0, t.Side, t.L, t.Theta, s, j / (float)nS * Mathf.PI * 2f, rad, out _);
-                    var b = Surf(t.A, t.T0, t.Side, t.L, t.Theta, s, (j + 1) / (float)nS * Mathf.PI * 2f, rad, out _);
+                    var a = Surf(t.A, t.T0, t.Side, t.S, t.R, t.Theta, s, j / (float)nS * Mathf.PI * 2f, rad, out _);
+                    var b = Surf(t.A, t.T0, t.Side, t.S, t.R, t.Theta, s, (j + 1) / (float)nS * Mathf.PI * 2f, rad, out _);
                     Grow(ref a, ref b, g);
                     Spindle(a, b, th * g, br, col, eye);
                 }
@@ -203,8 +203,8 @@ namespace CosmicShore.Gameplay
                     float g = Mathf.Min(MeerkatWormholeMath.BridgeGrow(t.L, t.W.S0, t.W.S1, s1),
                                         MeerkatWormholeMath.BridgeGrow(t.L, t.W.S0, t.W.S1, s2));
                     if (g <= 0f) continue;
-                    var a = Surf(t.A, t.T0, t.Side, t.L, t.Theta, s1, phi, t.Radius(s1), out _);
-                    var b = Surf(t.A, t.T0, t.Side, t.L, t.Theta, s2, phi, t.Radius(s2), out _);
+                    var a = Surf(t.A, t.T0, t.Side, t.S, t.R, t.Theta, s1, phi, t.Radius(s1), out _);
+                    var b = Surf(t.A, t.T0, t.Side, t.S, t.R, t.Theta, s2, phi, t.Radius(s2), out _);
                     Grow(ref a, ref b, g);
                     Spindle(a, b, th * 0.8f * g, A * 0.8f * MeerkatWormholeMath.BridgeGlow((s1 + s2) / (2f * t.L), sh, now), col, eye);
                 }
@@ -254,7 +254,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the glass (whFill) and the warp (updateTubeWarp)
 
-        static void Fill(Vector3 a0, Vector3 t0, Vector3 side, float L, float theta, float b, float m, float s0, float s1,
+        static void Fill(Vector3 a0, Vector3 t0, Vector3 side, float L, float S, float R, float theta, float b, float m, float s0, float s1,
             float alpha, Color cIn, Color cOut)
         {
             float span = s1 - s0;
@@ -267,7 +267,7 @@ namespace CosmicShore.Gameplay
                 c.a = alpha;
                 for (int j = 0; j <= Seg; j++)
                 {
-                    s_gv.Add(Surf(a0, t0, side, L, theta, s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
+                    s_gv.Add(Surf(a0, t0, side, S, R, theta, s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
                     s_gn.Add(n);
                     s_gc.Add(c);
                 }
@@ -286,7 +286,7 @@ namespace CosmicShore.Gameplay
                 float u = r / (float)(Rings - 1), s = t.W.S0 + span * u, rad = t.Radius(s), sign = Mathf.Cos(Mathf.PI * u) * fade;
                 for (int j = 0; j <= Seg; j++)
                 {
-                    s_wv.Add(Surf(t.A, t.T0, t.Side, t.L, t.Theta, s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
+                    s_wv.Add(Surf(t.A, t.T0, t.Side, t.S, t.R, t.Theta, s, j / (float)Seg * Mathf.PI * 2f, rad, out var n));
                     s_wn.Add(n);
                     s_wuv.Add(new Vector2(sign, 0.05f * Mathf.Max(0f, t.Config.WarpStrength)));
                 }
@@ -308,10 +308,10 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ helpers
 
         /// <summary>The page's <c>whSurf</c>: a point on the wall at angle phi, radius r; <paramref name="normal"/> is the wall's outward normal there.</summary>
-        static Vector3 Surf(Vector3 a0, Vector3 t0, Vector3 side, float L, float theta, float s, float phi, float r, out Vector3 normal)
+        static Vector3 Surf(Vector3 a0, Vector3 t0, Vector3 side, float S, float R, float theta, float s, float phi, float r, out Vector3 normal)
         {
-            var p = MeerkatWormholeMath.At(a0, t0, side, L, theta, s, out _);
-            MeerkatWormholeMath.Frame(t0, side, L, theta, s, out var n, out var bn);
+            var p = MeerkatWormholeMath.At(a0, t0, side, S, R, theta, s, out _);
+            MeerkatWormholeMath.Frame(t0, side, S, R, theta, s, out var n, out var bn);
             float c = Mathf.Cos(phi), sn = Mathf.Sin(phi);
             normal = n * c + bn * sn;
             return p + n * (r * c) + bn * (r * sn);

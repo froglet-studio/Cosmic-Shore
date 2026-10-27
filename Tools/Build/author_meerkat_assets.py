@@ -111,7 +111,7 @@ def script_guid(name: str) -> str:
 
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
-CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare",
+CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "throatRadius", "mouthRadius",
                "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs",
@@ -152,6 +152,9 @@ def config_asset(values: dict) -> str:
 
 # Studio keys renamed after the config was first written: old -> new (round 6: the ride's three multipliers).
 RENAMED = {"throatSpeed": "rideMidMultiplier"}
+# Studio keys the page retired (round 7, the umbrella handle: a fixed narrow throat and mouth, LT sets the shaft before a
+# bend of fixed radius). Their lines leave the asset; the field is gone from MeerkatWormholeConfigSO.
+RETIRED = ["lengthStraight", "lengthBent", "throatStraight", "throatBent", "mouthFlare"]
 
 
 def config_retrofit(cfg: str, values: dict) -> str:
@@ -160,11 +163,15 @@ def config_retrofit(cfg: str, values: dict) -> str:
     for old, new in RENAMED.items():   # a key the studio renamed keeps its number under the new name (FormerlySerializedAs)
         if not re.search(r"^  %s: " % new, cfg, re.M):
             cfg = re.sub(r"^  %s: " % old, f"  {new}: ", cfg, count=1, flags=re.M)
-    missing = [k for k in CONFIG_KEYS if not re.search(r"^  %s: " % k, cfg, re.M)]
-    if not missing:
-        return cfg
-    at = cfg.index("  formEvent:\n")
-    return cfg[:at] + "".join(f"  {k}: {num(values[k])}\n" for k in missing) + cfg[at:]
+    for k in RETIRED:
+        cfg = re.sub(r"^  %s: .*\n" % k, "", cfg, flags=re.M)
+    for i, k in enumerate(CONFIG_KEYS):   # a new key goes in after the key before it, so the asset reads in the page's order
+        if re.search(r"^  %s: " % k, cfg, re.M):
+            continue
+        prev = next((m for m in (re.search(r"^  %s: .*\n" % q, cfg, re.M) for q in reversed(CONFIG_KEYS[:i])) if m), None)
+        at = prev.end() if prev else cfg.index("  formEvent:\n")
+        cfg = cfg[:at] + f"  {k}: {num(values[k])}\n" + cfg[at:]
+    return cfg
 
 
 def action_asset(name: str, trigger: int) -> str:
@@ -392,6 +399,9 @@ def check_config(cfg: str, values: dict):
     for k in CONFIG_KEYS:
         if not re.search(r"^  %s: -?[\d.]+\n" % k, cfg, re.M):
             errs.append(f"MeerkatWormholeConfig.asset: no `{k}` (every studio key is a field, by the same name)")
+    for k in RETIRED:
+        if re.search(r"^  %s: " % k, cfg, re.M):
+            errs.append(f"MeerkatWormholeConfig.asset: `{k}` is retired (round 7) and still in the asset")
     if f"guid: {script_guid('MeerkatWormholeConfigSO')}, type: 3" not in cfg:
         errs.append("MeerkatWormholeConfig.asset: does not name MeerkatWormholeConfigSO")
     return errs
@@ -503,7 +513,13 @@ def self_test():
     renamed = cfg.replace("  rideMidMultiplier: ", "  throatSpeed: ")
     if "  rideMidMultiplier: 2.5\n" not in config_retrofit(renamed, values) or "  throatSpeed:" in config_retrofit(renamed, values):
         fails.append("the config retrofit does not carry a renamed key's number to its new name")
-    if "  lengthStraight: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
+    retired = cfg.replace("  shaftMin: 60\n", "  lengthStraight: 600\n  shaftMin: 60\n")
+    if check_config(retired, values) == [] or "lengthStraight" in config_retrofit(retired, values):
+        fails.append("a retired key is neither flagged nor removed by the retrofit")
+    pre7 = re.sub(r"  (shaftMin|shaftMax|bendRadius|throatRadius|mouthRadius): .*\n", "", cfg)
+    if config_retrofit(pre7, values) != cfg:
+        fails.append("the config retrofit does not bring a round-6 asset to the round-7 one, in the page's order")
+    if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]

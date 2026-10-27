@@ -23,17 +23,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The reticle rides this far ahead of the nose (u)")]
         [SerializeField, Range(0f, 100f)] float reticleAhead = 30f;
         [Tooltip("Sharpest bend, the right stick fully over (°)")]
-        [SerializeField, Range(0f, 180f)] float bendMaxDegrees = 120f;
-        [Tooltip("A straight tunnel is this long (u)")]
-        [SerializeField, Range(60f, 1500f)] float lengthStraight = 600f;
-        [Tooltip("The sharpest bend's tunnel is this long (u)")]
-        [SerializeField, Range(20f, 600f)] float lengthBent = 120f;
-        [Tooltip("Throat radius, straight (u)")]
-        [SerializeField, Range(1f, 40f)] float throatStraight = 3f;
-        [Tooltip("Throat radius, sharpest bend (u)")]
-        [SerializeField, Range(5f, 120f)] float throatBent = 40f;
-        [Tooltip("Mouth radius (× throat)")]
-        [SerializeField, Range(1f, 5f)] float mouthFlare = 2f;
+        [SerializeField, Range(0f, 180f)] float bendMaxDegrees = 150f;
+        [Tooltip("The straight shaft before the bend, LT released (u)")]
+        [SerializeField, Range(0f, 600f)] float shaftMin = 60f;
+        [Tooltip("...LT fully squeezed (u)")]
+        [SerializeField, Range(20f, 1500f)] float shaftMax = 600f;
+        [Tooltip("The bend's radius (u)")]
+        [SerializeField, Range(10f, 300f)] float bendRadius = 60f;
+        [Tooltip("Throat radius, fixed (u)")]
+        [SerializeField, Range(1f, 30f)] float throatRadius = 4f;
+        [Tooltip("Mouth radius, fixed (u)")]
+        [SerializeField, Range(2f, 60f)] float mouthRadius = 10f;
         [Tooltip("LT on a key or touch: full after (s)")]
         [SerializeField, Range(0.05f, 3f)] float keyRampSeconds = 0.5f;
 
@@ -161,14 +161,17 @@ namespace CosmicShore.ScriptableObjects
 
         public MeerkatWormholeMath.ShapeSettings Shape() => new()
         {
-            LengthStraight = lengthStraight, LengthBent = lengthBent, BendMaxDegrees = bendMaxDegrees,
-            ThroatStraight = throatStraight, ThroatBent = throatBent, MouthFlare = mouthFlare,
+            ShaftMin = shaftMin, ShaftMax = shaftMax, BendRadius = bendRadius, BendMaxDegrees = bendMaxDegrees,
+            ThroatRadius = throatRadius, MouthRadius = mouthRadius,
         };
 
-        public MeerkatWormholeMath.PlanSettings Plan() => new()
+        /// <summary>The AI's plan rows; <paramref name="turnRateDegrees"/> is the hull's own turn (its transformer's YawScaler,
+        /// the studio's pitchYaw).</summary>
+        public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees) => new()
         {
-            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, BendMaxDegrees = bendMaxDegrees,
-            LengthStraight = lengthStraight, LengthBent = lengthBent,
+            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(),
+            MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(rideEntryMultiplier, rideMidMultiplier, rideExitMultiplier),
+            TurnRateRadians = turnRateDegrees * Mathf.Deg2Rad,
         };
     }
 }

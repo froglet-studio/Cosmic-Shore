@@ -32,10 +32,10 @@
     "retired": "2026-10-22: Garrett redesigned the Goby's kit straight in Unity (\"we already have the pair in the game ... go straight to unity\"): the Goby darts and perches, the Pistol rides a flat plane perch to perch, builds dens, pulls mass into its plane and fires homing rings. goby.json (the lab-to-asset map) was removed with the old config's fields; the lab (goby.html) is behind the game until a lab round ports this kit. See .claude/skills/duo-vessel/references/designs/goby-and-pistol.md section 11."
   },
   "Meerkat": {
-    "artifactVersion": "v60 (round 2, the spindle bridge)",
-    "pageSha": "8b262b4740",
+    "artifactVersion": "round 7 (the umbrella handle)",
+    "pageSha": "(this commit)",
     "decisionsThrough": null,
     "clonedAt": "2026-10-27",
-    "result": "First clone: the whole vessel. MeerkatWormholeMath ports shapeFor / whAt / whFrame / whRadius / stepTunnel / gateTransit / aiGatePlan / the ripple line for line (27 golden cases from the page's own JS); the executor, the one-thumb transformer that lets the tunnel fly the hull, the network relay, the view (reticle, bridge, glass) and the lens pass (tube warp, mouth dents, edge-only ripple). Meerkat.prefab from Stoat.prefab (author_meerkat_assets.py), VesselClassType 28, the Toybox roster, Burrow Run (GameModes 71, author_burrowrun_assets.py). 36 mapped, 0 drift. Lab-only: aiTau, roll (the bank is bankShare x roll = RollScaler), lope*. The decision log held no Meerkat decision."
+    "result": "Rounds 3-7 on top of the first clone. Round 3: the reticle eases (reticleSmoothSeconds) and is a see-through spindle frame. Round 4: lensing ships off. Round 5: the speed tunnel x rideSpeedTunnelScale while riding. Round 6: the ride is entry / mid / exit multipliers on the speed before the tunnel. Round 7: the tunnel is a straight shaft (LT: shaftMin..shaftMax) then one bend of fixed bendRadius up to bendMaxDegrees 150, with a fixed narrow throat and mouth (throatRadius, mouthRadius); lengthStraight / lengthBent / throatStraight / throatBent / mouthFlare retired; the AI plans the soonest arrival. 29 golden cases from the page's own JS. 45 mapped, 0 drift. Protocol 18."
   }
 }
