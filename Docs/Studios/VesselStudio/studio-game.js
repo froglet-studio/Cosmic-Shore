@@ -216,7 +216,7 @@
      "name": "Orca",
      "value": 20,
      "hasClass": true,
-     "studio": null,
+     "studio": "orca",
      "games": []
     },
     {
