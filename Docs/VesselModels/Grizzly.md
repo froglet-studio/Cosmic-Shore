@@ -107,6 +107,17 @@ elements now show on the hull for the first time.
 | Hangar list card art | waits on the roster: the Grizzly is not in `SO_Classlist_Classes` (the Hangar list), so `author_hangar_card_art.py` (which has its sheet) makes no card until it is added there | `author_hangar_card_art.py` |
 | crystal hull fusion bakes, the codex's Vessels variant image | Editor-only bakers | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 
+## Follow-ups (rows, measured 2026-10-27; nothing changed for them on this branch)
+
+| row | kind | evidence |
+|---|---|---|
+| The wedge's part transforms (`Ship_Wedge_Body`, four `Ship_Wedge_Jet_*`, two fins, `Ship_Wedge_Projectile`) now hold only colliders, jets and guns, under wedge names; an empty `Ship_Wedge_Scene (4)` GameObject sits at the prefab root | inconsistency (names describe a mesh that is gone) | `grep -c Ship_Wedge Assets/_Prefabs/Spacevessels/Grizzly.prefab` = 23; renaming touches `BufoAnimation`'s serialized fields and jtgjones's in-flight prefab work, so ask jtgjones first |
+| `BufoAnimation` is the Grizzly's animation under an old class name (Bufo) | naming debt | one class, one prefab (`grep -rn BufoAnimation Assets --include=*.prefab`); a rename needs the script's guid kept (`git mv` + class rename) |
+| The colliders are the wedge's boxes: the fins' boxes reach Unity y +-5.5 while the hump tops out at 3.0 and the anchor at -3.0; the claws reach x +-3.8, wider than every box | tuning call, not a defect | the box sizes in the prefab's `BoxCollider` blocks against `assembly_report` bounds; a re-fit changes what the Grizzly hits |
+| The Grizzly is playable but not on the Hangar list (`SO_Classlist_Classes`), so it has no Hangar card | product decision (roster) | `author_hangar_card_art.py` already maps its sheet; adding it to the list and re-running makes the card |
+| The GrizzlyHUD is embedded in `Grizzly.prefab`, not a `<Hull>HUDVariant` like the rest of the fleet's ability rows | inconsistency (an older HUD shape) | `ls "Assets/_Prefabs/UI Elements/VesselHUD/"` has no Grizzly variant; `GrizzlyHUDView` is jtgjones's, in flight on `grizzly-v3` |
+| `CannonIcon-PLACEHOLDER.png` is still the cannon glyph in `ModeControlsLibrary.asset` (another screen) | incompleteness | `grep -c 9414cd56ce4e0404fb8693afb41a9729 Assets/Resources/ModeControlsLibrary.asset` = 1 |
+
 ## Gates
 
 ```
