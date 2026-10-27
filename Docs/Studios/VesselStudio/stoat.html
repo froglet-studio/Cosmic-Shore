@@ -260,7 +260,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Stoat Flight Studio</h1>
-    <span class="round">Round 23 · one thumb, all wormhole</span>
+    <span class="round">Round 25 · out as you went in</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways, thumbs on the two sticks, index fingers drag the LT / RT handles at the top down (how far = the squeeze, lift to let go); ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Controls, below the stage); a phone opening this page gets touch sticks instead. </span><b>Round 15: the field trajectory</b> (Sling tab ▸ Field trajectory; settings in <b>Field</b>). The pair has no catch and no hold circle: it is only a field. A line from your nose shows where your inputs take you through it; when it <b style="color:#9dff2e">loops back onto itself</b> it turns lime and you travel down it 3× faster. Round 10: <b>Black hole</b>, <b>White hole</b>, <b>Birth &amp; annihilation</b>, <b>Flight &amp; course</b> and <b>Lope</b> each have five one-click types (hover one to compare it with shipped; <b>Shipped</b> goes back). Round 9: <b>five play styles</b> for the dipole sling. <b style="color:#9e6bf0">Comet</b> (velocity), <b>Needle</b> (precision), <b style="color:#3d99f2">Anchor</b> (forgiving control), <b style="color:#ed4561">Maelstrom</b> (gravity) and <b style="color:#fabf2e">Flare</b> (surge). Each leans the same sling and holes a different way; pick one with its preset in <b>Play styles</b>, or blend them with the weights. Tick <b>Live</b> and a race moves them as the game would: Time, Space, Mass and Charge crystals along the course feed Comet, Anchor, Maelstrom and Flare; a clean release earns Needle; unfed weights drift back to 0.5. A pair's birth and annihilation, one pair at a time, and <b>■ Stop</b> to watch are unchanged. Every setting has an ⓘ.</p>
   </header>
@@ -503,7 +503,7 @@
     // bends and how much of that comes from LT's shortness, the mouths' flare, how much a fat one cuts the warp after it,
     // and the ride through (x your speed, faster at the throat). gtAimCone / gtAiCone are round 18's, kept for the game.
     gtThroatMin: 3, gtThroatMax: 40, gtTurnMax: 120, gtMouthFlare: 2, gtFatCut: 0.65,
-    gtTubeSpeed: 2.5, gtThroatRush: 1, gtAheadSeconds: 1.2, gtAiMinTurn: 120,
+    gtTubeSpeed: 2.5, gtAheadSeconds: 1.2, gtAiMinTurn: 120,
     // round 20, the reticle: how far ahead of the nose it rides, and how long the AI shapes one before letting go
     gtReticleAhead: 30, gtAiAim: 0.3,
     // round 22, the wormhole's look (keys ARE the game's StoatModeAction fields): the grid on your own ride, the space sheets
@@ -513,6 +513,10 @@
     // round 23 (Garrett): Gate mode flies on one thumb; the bank into a turn, as a share of the roll rate (130 x 0.12 = the
     // Shrike's 15 deg/s), and the warp along the whole tube everyone sees, so where your grid runs the world behind it bends
     gateBankShare: 0.12, gateTubeWarp: 0.8, gateGridRestAlpha: 0.4,
+    // round 25 (Yash): out of a tunnel with the speed and momentum you went in with (1), or round 19-24's warp boost (0)
+    gateKeepMomentum: 1,
+    // round 24: the glass under your grid (its body), and how close a mouth's dent may come to the camera (x the mouth) before it fades
+    gateGridGlass: 0.6, gateDentNear: 3,
     // the squeeze (StoatSlingConfig)
     holdExponent: 1.5, holdRamp: 3,
     // A: the orbit sling and the drift pair (StoatSlingConfig + BlackHoleConfig)
@@ -612,6 +616,8 @@
     ['WM', 'gateTubeWarp', 'Warp along the whole tube (strength)', 0, 2, 0.05],
     ['WM', 'gateDentWidth', 'Dent width (× the grid\'s mouth)', 0.3, 3, 0.05],
     ['WM', 'gateGridRestAlpha', 'Your reticle with the right stick centred (brightness)', 0, 1, 0.05],
+    ['WM', 'gateGridGlass', 'Your grid\'s glass: a faint lit surface under it (strength)', 0, 2, 0.05],
+    ['WM', 'gateDentNear', 'A mouth\'s dent fades as the camera nears it (× the mouth)', 0.5, 8, 0.1],
     ['WM', 'gateGridOnRide', 'Grid on your own tunnel while you ride it (0/1)', 0, 1, 1],
     ['WM', 'gateGridSheets', 'Grid sheets beyond the mouths (0 = the tunnel only)', 0, 1, 0.05],
     ['V', 'gateBankShare', 'One-thumb flight: bank into a turn (× roll rate)', 0, 1, 0.01],
@@ -621,8 +627,8 @@
     ['V', 'gtThroatMin', 'Throat radius, straight (u)', 1, 40, 0.5],
     ['V', 'gtThroatMax', 'Throat radius, sharpest bend (u)', 5, 120, 1],
     ['V', 'gtMouthFlare', 'Mouth radius (× throat)', 1, 5, 0.1],
-    ['V', 'gtTubeSpeed', 'Ride through (× your speed)', 0.5, 8, 0.1],
-    ['V', 'gtThroatRush', 'Faster at the throat (+ share)', 0, 3, 0.05],
+    ['V', 'gateKeepMomentum', 'Out with the speed you went in with (1), or the warp boost (0)', 0, 1, 1],
+    ['V', 'gtTubeSpeed', 'Fastest at the throat (× your entry speed)', 1, 8, 0.1],
     ['V', 'gtWarpShare', 'Top warp after it (share of the loop boost)', 0, 3, 0.05],
     ['V', 'gtFatCut', 'A fat wormhole cuts that warp by (share)', 0, 1, 0.05],
     ['V', 'gtBoostSeconds', 'Warp after the white hole (s)', 0, 8, 0.1],
@@ -1827,18 +1833,21 @@
     pairs.push(myPair);
     whQ.setFromUnitVectors(fwd, wh.t0);
     // the ride starts at the hull: it dives straight down to the mouth the reticle showed (s < 0), then into the throat
-    ftLive.gate = { pair: myPair, state: 'tube', s: -hull.position.distanceTo(wh.A), sIn: 0, oN: 0, oB: 0, rIn: Math.max(1e-3, whRadius(wh, 0)), q0: whQ.clone().multiply(hull.quaternion) };
+    // vIn: the speed you go in with (round 25: you come out with it too, gateKeepMomentum)
+    ftLive.gate = { pair: myPair, state: 'tube', s: -hull.position.distanceTo(wh.A), sIn: 0, oN: 0, oB: 0, vIn: Math.max(1, (speed + gravSpeed + flow) * ftMul), rIn: Math.max(1e-3, whRadius(wh, 0)), q0: whQ.clone().multiply(hull.quaternion) };
     if (raceStats && race === 'running') raceStats.slings++;
     slings++; runStyles.add('A');
     if (stance) stance = false;
     if (!curPilot) portalFlash = 1;
   }
-  // In the throat: carried along the curve at gtTubeSpeed x your speed, fastest at the throat (gtThroatRush), turned
+  // In the throat: carried along the curve, from your entry speed up to gtTubeSpeed x it at the throat and back (round 25), turned
   // with it; out of the white hole, slung on its heading (gateOut).
   function gateTransit(dt) {
     const g = ftLive.gate, wh = g.pair.wh;
     const u = clamp01((g.s - wh.s0) / Math.max(1e-3, wh.s1 - wh.s0));   // 0 on the dive in
-    const v = Math.max(speed + flow, P.cruise) * Math.max(0.1, P.gtTubeSpeed) * (1 + Math.max(0, P.gtThroatRush) * Math.sin(Math.PI * u));
+    // round 25 (Yash: "come out with the same momentum and speed as you went inside"): the ride starts and ends at your
+    // entry speed and rushes to gtTubeSpeed x it at the throat - no jolt going in, none coming out
+    const v = g.vIn * (1 + (Math.max(0.1, P.gtTubeSpeed) - 1) * (g.s < wh.s0 ? 0 : Math.sin(Math.PI * u)));
     g.s = Math.min(wh.s1, g.s + v * dt);
     if (g.s < wh.s0) { hull.position.copy(wh.A).addScaledVector(wh.t0, g.s); whB.copy(wh.t0); }   // still diving to the mouth
     else {
@@ -1851,15 +1860,19 @@
     if (raceStats && race === 'running') { raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
     if (g.s >= wh.s1 - 1e-6) gateOut(g);
   }
-  // Out of the white hole: the warp it earned, at once - most for a thin, long wormhole (gtFatCut), held gtBoostSeconds.
+  // Out of the far mouth. Round 25 (gateKeepMomentum 1, the default): with the speed and momentum you went in with, on
+  // the tunnel's last heading - the warp you had going in (frozen while you rode) carries on as it was, nothing added.
+  // gateKeepMomentum 0 is round 19-24's slingshot: the warp it earned, at once, most for a thin, long one (gtFatCut).
   function gateOut(g) {
     const wh = g.pair.wh;
     g.state = 'done'; g.used = true;
-    ftLive.gQ = clamp01(1 - Math.max(0, P.gtFatCut) * wh.fat); ftLive.gT = Math.max(0, P.gtBoostSeconds);
-    const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.gtWarpShare);
-    ftMul = Math.max(ftMul, 1 + (top - 1) * ftLive.gQ);
-    if (raceStats && race === 'running') { raceStats.catches++; raceStats.sweepSum += ftLive.gQ; }
-    lastGate = { q: ftLive.gQ, len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI), warp: ftMul }; slingFlash = 1.6;
+    if (P.gateKeepMomentum < 0.5) {
+      ftLive.gQ = clamp01(1 - Math.max(0, P.gtFatCut) * wh.fat); ftLive.gT = Math.max(0, P.gtBoostSeconds);
+      const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.gtWarpShare);
+      ftMul = Math.max(ftMul, 1 + (top - 1) * ftLive.gQ);
+    }
+    if (raceStats && race === 'running') { raceStats.catches++; raceStats.sweepSum += P.gateKeepMomentum < 0.5 ? ftLive.gQ : 1; }
+    lastGate = { q: ftLive.gQ, len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI), warp: ftMul, kept: P.gateKeepMomentum >= 0.5 }; slingFlash = 1.6;
   }
   let lastGate = null;
   // The warp after the white hole (StoatGateMath.StepWarp): its quality's share of the top, held gtBoostSeconds, then down
@@ -1868,6 +1881,7 @@
   function stepGateBoost(dt) {
     ftLive.nj = 0; ftLive.thru = false; ftLive.end = 'none';
     const on = race === 'running' && !stopped && !stance;
+    if (ftLive.gate && ftLive.gate.state === 'tube') { ftLive.n = 0; ftLive.lime = false; return; }   // riding: the warp you went in with is held, untouched, for the exit
     ftLive.gT = Math.max(0, (ftLive.gT || 0) - dt);
     const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.gtWarpShare);
     const target = on && ftLive.gT > 0 ? 1 + (top - 1) * clamp01(ftLive.gQ || 0) : 1;
@@ -2206,10 +2220,15 @@
     const i = whNv * 3; whPos[i] = p.x; whPos[i + 1] = p.y; whPos[i + 2] = p.z; whCol[i] = c.r * a; whCol[i + 1] = c.g * a; whCol[i + 2] = c.b * a; whNv++;
   }
   // A point on the wireframe: x along the centreline (s), at angle phi, radius r, pushed back along the heading by back.
+  const whSN = new V3(), whEye = new V3(), whTo = new V3();
   function whSurf(wh, s, phi, r, back, out) {
     whAt(wh, s, out, wt1); whFrame(wh, s, wn1, wb1);
+    whSN.copy(wn1).multiplyScalar(Math.cos(phi)).addScaledVector(wb1, Math.sin(phi));   // the wall's outward normal there
     return out.addScaledVector(wn1, r * Math.cos(phi)).addScaledVector(wb1, r * Math.sin(phi)).addScaledVector(wt1, back);
   }
+  // The grid in 3D (round 24): a wall facing the eye is bright, the far wall dim - so the tube reads as a solid, not a
+  // flat drawing. Inside the tube (riding it) every wall faces you and the grid stays bright.
+  function whFace(p) { whTo.subVectors(whEye, p); const d = whTo.length(); if (d < 1e-3) return 1; const f = whSN.dot(whTo) / d; return 0.28 + 0.72 * smooth(-0.25, 0.35, f); }
   // One tunnel's wireframe at brightness A, shading cIn (its black hole) to cOut (its white hole); the lime line from
   // pathFrom u along it (null: none).
   function whDraw(wh, A, cIn, cOut, pathFrom, inSheet) {
@@ -2218,14 +2237,16 @@
     for (let i = 0; i < WH_RINGS; i++) {   // the throat's rings
       const s = ringS(i), r = whRadius(wh, s), c = colAt(i / (WH_RINGS - 1)), a = A * (0.35 + 0.65 * Math.abs(2 * i / (WH_RINGS - 1) - 1));
       for (let j = 0; j < WH_SEG; j++) {
-        whPut(whSurf(wh, s, j / WH_SEG * Math.PI * 2, r, 0, wp1), c, a); whPut(whSurf(wh, s, (j + 1) / WH_SEG * Math.PI * 2, r, 0, wp1), c, a);
+        whSurf(wh, s, j / WH_SEG * Math.PI * 2, r, 0, wp1); whPut(wp1, c, a * whFace(wp1));
+        whSurf(wh, s, (j + 1) / WH_SEG * Math.PI * 2, r, 0, wp1); whPut(wp1, c, a * whFace(wp1));
       }
     }
     for (let j = 0; j < WH_LONG; j++) {   // lines along it
       const phi = j / WH_LONG * Math.PI * 2;
       for (let i = 0; i < WH_RINGS - 1; i++) {
         const s1 = ringS(i), s2 = ringS(i + 1);
-        whPut(whSurf(wh, s1, phi, whRadius(wh, s1), 0, wp1), colAt(i / (WH_RINGS - 1)), A * 0.8); whPut(whSurf(wh, s2, phi, whRadius(wh, s2), 0, wp1), colAt((i + 1) / (WH_RINGS - 1)), A * 0.8);
+        whSurf(wh, s1, phi, whRadius(wh, s1), 0, wp1); whPut(wp1, colAt(i / (WH_RINGS - 1)), A * 0.8 * whFace(wp1));
+        whSurf(wh, s2, phi, whRadius(wh, s2), 0, wp1); whPut(wp1, colAt((i + 1) / (WH_RINGS - 1)), A * 0.8 * whFace(wp1));
       }
     }
     // The sheet of space at each mouth: it leaves the mouth along the throat and flattens out, bending away from it - in
@@ -2261,11 +2282,43 @@
     }
   }
   const WH_RET_IN = new THREE.Color(0x3fe0ff), WH_RET_OUT = new THREE.Color(0xeafcff);
+  // The grid's glass (round 24): a faint surface under your own grid, lit at its silhouette (Fresnel), so the tube has a
+  // body. Yours only, like the grid; everyone else sees the warp (updateTubeWarp).
+  const wfMeshes = [];
+  function whFill(i, wh, A, cIn, cOut) {
+    const span = wh.s1 - wh.s0; if (span < 0.5 || A <= 0.01 || P.gateGridGlass <= 0) return;
+    let m = wfMeshes[i];
+    if (!m) {
+      const g = new THREE.BufferGeometry(), idx = [];
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TW_NV * 3), 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(TW_NV * 3), 3));
+      g.setAttribute('aU', new THREE.BufferAttribute(new Float32Array(TW_NV), 1));
+      for (let r = 0; r < WH_RINGS - 1; r++) for (let j = 0; j < WH_SEG; j++) { const a = r * (WH_SEG + 1) + j, b = a + WH_SEG + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+      g.setIndex(idx);
+      const mat = new THREE.ShaderMaterial({
+        uniforms: { cIn: { value: new THREE.Color() }, cOut: { value: new THREE.Color() }, alpha: { value: 1 } },
+        vertexShader: 'attribute float aU; varying float vU; varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal); vU = aU; gl_Position = projectionMatrix * mv; }',
+        fragmentShader: 'uniform vec3 cIn; uniform vec3 cOut; uniform float alpha; varying float vU; varying vec3 vN; varying vec3 vV; void main(){ float rim = 1.0 - abs(dot(normalize(vN), normalize(vV))); gl_FragColor = vec4(mix(cIn, cOut, vU) * alpha * (0.05 + 0.55 * rim * rim * rim), 1.0); }',
+        side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      m = wfMeshes[i] = new THREE.Mesh(g, mat); m.frustumCulled = false; m.renderOrder = 4; scene.add(m);
+    }
+    const pos = m.geometry.attributes.position, nor = m.geometry.attributes.normal, au = m.geometry.attributes.aU;
+    for (let r = 0; r < WH_RINGS; r++) {
+      const u = r / (WH_RINGS - 1), s = wh.s0 + span * u, rad = whRadius(wh, s);
+      for (let j = 0; j <= WH_SEG; j++) {
+        const v = r * (WH_SEG + 1) + j; whSurf(wh, s, j / WH_SEG * Math.PI * 2, rad, 0, wp2);
+        pos.setXYZ(v, wp2.x, wp2.y, wp2.z); nor.setXYZ(v, whSN.x, whSN.y, whSN.z); au.setX(v, u);
+      }
+    }
+    pos.needsUpdate = nor.needsUpdate = au.needsUpdate = true;
+    m.material.uniforms.cIn.value.copy(cIn); m.material.uniforms.cOut.value.copy(cOut); m.material.uniforms.alpha.value = A * Math.max(0, P.gateGridGlass); m.visible = true;
+  }
   function liveOf(id) { if (id === curPilot) return ftLive; const r = rivals.find((x) => x.id === id); return r ? r.ftLive : null; }
   // Every made tunnel (yours bright, rivals' dim; the lime line only while one is ridden) and every reticle being shaped
   // (cyan: not made yet - let go of the triggers and it is).
   function updateWormholes() {
-    whNv = 0;
+    whNv = 0; whEye.copy(cam.position); let nFill = 0;
     if (mode === 'fly') {
       // the grid is YOUR UI (round 22): your reticle, and your own tunnel while you ride it (gateGridOnRide). Rivals'
       // reticles and tunnels draw no grid: everyone sees a tunnel only as bent space-time (the dent, setLensUniforms).
@@ -2275,12 +2328,15 @@
         const g = you && you.gate && you.gate.pair === pr ? you.gate : null;
         const A = pr.dying ? Math.max(0, 1 - pr.dieT / Math.max(0.01, P.dieS)) : 1;
         whDraw(pr.wh, A, WH_IN, WH_OUT, g && g.state === 'tube' && !pr.dying ? g.s : null);
+        whFill(nFill++, pr.wh, A, WH_IN, WH_OUT);
       }
       if (you && you.ret) {   // always up in Gate mode: faint at rest, full while the right stick or LT shapes it
         const lt = you === ftLive ? (holds.L.on ? holds.L.live : 0) : 0, rest = clamp01(P.gateGridRestAlpha);
-        whDraw(you.ret, rest + (1 - rest) * clamp01(Math.max(you.ret.m / 0.3, lt * 2)), WH_RET_IN, WH_RET_OUT, 0, 0.45);
+        const ra = rest + (1 - rest) * clamp01(Math.max(you.ret.m / 0.3, lt * 2));
+        whDraw(you.ret, ra, WH_RET_IN, WH_RET_OUT, 0, 0.45); whFill(nFill++, you.ret, ra, WH_RET_IN, WH_RET_OUT);
       }
     }
+    for (let i = nFill; i < wfMeshes.length; i++) wfMeshes[i].visible = false;
     whGeo.setDrawRange(0, whNv); whLines.visible = whNv > 0;
     whGeo.attributes.position.needsUpdate = true; whGeo.attributes.color.needsUpdate = true;
   }
@@ -3174,6 +3230,13 @@
     const r = mode === 'fly' && watchIdx > 0 ? rivals[watchIdx - 1] : null;
     if (r) asPilot(r, () => cameraStep(dt)); else cameraStep(dt);
   }
+  let camRide = 0; const camRideP = new V3(), camRideL = new V3();
+  // A point s along a tunnel's centreline, the straight run in before its mouth and out after it included.
+  function whAtX(wh, s, out) {
+    if (s <= wh.s0) { whAt(wh, wh.s0, out, wt1); return out.addScaledVector(wt1, s - wh.s0); }
+    if (s >= wh.s1) { whAt(wh, wh.s1, out, wt1); return out.addScaledVector(wt1, s - wh.s1); }
+    return whAt(wh, s, out);
+  }
   function cameraStep(dt) {
     if (mode === 'fly') {
       basis();
@@ -3195,7 +3258,14 @@
         const gl = new V3().copy(hull.position).lerp(lastGripAtt, 0.45).addScaledVector(fwd, 0.25 * R);
         want.lerp(gw, camGrip); look.lerp(gl, camGrip);
       }
-      const k = snapCam ? 1 : 1 - Math.exp(-(camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) * dt);
+      // Riding a tunnel (round 24): the camera runs down the tube's centreline behind you and looks along it, so the ride
+      // is the tube's own smooth curve - the chase camera lerping its POSITION fell far behind a hull at 2.5x speed and
+      // swung round the bend (the "flipping" Yash saw). Eased in on entry, out on exit.
+      const gr = ftLive.gate && ftLive.gate.state === 'tube' && camMode !== 'free' ? ftLive.gate : null;
+      camRide += ((gr ? 1 : 0) - camRide) * (1 - Math.exp(-10 * dt));
+      if (gr) { const wh = gr.pair.wh; whAtX(wh, gr.s - (camMode === 'follow' ? 45 : 18), camRideP); whAtX(wh, gr.s + 40, camRideL); }
+      if (camRide > 0.001) { want.lerp(camRideP, camRide); look.lerp(camRideL, camRide); }
+      const k = snapCam ? 1 : 1 - Math.exp(-((camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) + 40 * camRide) * dt);
       cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
       if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0); else cam.up.copy(up);
       cam.lookAt(camLook);
@@ -3378,7 +3448,8 @@
       if (w.pr && w.pr.gate && w.pr.wh) {   // a tunnel's mouth: a graded dent as wide as the grid's mouth, in at the black hole, out at the white hole
         const wh = w.pr.wh, rM = whRadius(wh, w.sign > 0 ? wh.s0 : wh.s1) * Math.max(0.05, P.gateDentWidth);
         const fadeA = w.pr.dying ? Math.max(0, 1 - w.pr.dieT / Math.max(0.01, P.dieS)) : 1;   // no hole in a wormhole (round 23): only the dent
-        U.wP.value[i].set(w.sign > 0 ? 3 : 4, ang(rM), Math.min(0.95, Math.max(0, P.gateDentStrength)) * fadeA, 0);
+        const nearA = smooth(rM * 0.6, rM * Math.max(0.7, P.gateDentNear), D);   // round 24: a dent swelling over the whole view as you fly through it read as the camera flipping
+        U.wP.value[i].set(w.sign > 0 ? 3 : 4, ang(rM), Math.min(0.95, Math.max(0, P.gateDentStrength)) * fadeA * nearA, 0);
         U.wM.value[i].set(0, ang(rM), 0, rM);
         continue;
       }
@@ -3480,8 +3551,9 @@
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
     c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'CATCH SLING (Time mode, T)' : slingMode === 'gate' ? 'GATE (the wormhole slingshot, T)' : slingMode === 'field' ? 'FIELD TRAJECTORY (Mass mode, T)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
-    c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
-    c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
+    const gateOn = style === 'A' && slingMode === 'gate';   // Gate is all wormhole (round 23): no holes, no portal
+    c.fillText(gateOn ? 'one thumb · space-time bent into a tunnel' : style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
+    c.fillText(gateOn ? (stance ? 'HOLDING STILL' : '') : (portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
     // the race with rivals: standings under the title, and each rival's name over its hull
     if (rivals.length) {
       let y = pad + 62 * sc; c.textAlign = 'left';
@@ -3515,7 +3587,7 @@
     if (style === 'A' && slingMode === 'gate' && race === 'running' && !stopped) {
       const lime = '#9dff2e', g = ftLive.gate, boosting = ftLive.gT > 0;
       c.textAlign = 'center'; c.font = font(14, 700);
-      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText('SLINGSHOT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · × ' + lastGate.warp.toFixed(1), cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
+      if (slingFlash > 0 && lastGate) { c.globalAlpha = Math.min(1, slingFlash); c.fillStyle = lime; c.font = font(18, 700); c.fillText('SLINGSHOT · ' + lastGate.turn + '° turn · ' + lastGate.len + ' u wormhole · ' + (lastGate.kept ? 'speed kept' : '× ' + lastGate.warp.toFixed(1)), cw / 2, ch * 0.3); c.globalAlpha = 1; c.font = font(14, 700); }
       const ret = ftLive.ret;
       if (ret || (g && g.pair.alive && g.state === 'tube')) {
         const wh = ret || g.pair.wh, txt = 'TUNNEL ' + Math.round(wh.L) + ' u  ·  throat ' + Math.round(2 * wh.b) + ' u  ·  turns ' + Math.round(wh.theta * 180 / Math.PI) + '°';
@@ -4523,6 +4595,8 @@
     dpFlowCap: { scene: 'sling', cfg: { q: 1, release: 180, T: 9 }, d: 'The most momentum you can carry, as a multiple of cruise speed. It is the ceiling a perfect chain of slings climbs to.', lo: 'A low ceiling.', hi: 'A high ceiling: 60 cruise + 1.5 × 60 = 150 u/s of lasting speed.' },
     gtAhead: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the furthest ahead of your nose the black hole (the wormhole\'s way in) opens; round 19 opens it gtAheadSeconds of flight ahead, up to this. The game: StoatModeAction gateAhead.', lo: 'Right in front of you.', hi: 'Far ahead when fast.' },
     gateDentStrength: { scene: 'field', cfg: { D: 300 }, d: 'Wormhole look: how hard each mouth of a made tunnel bends space-time - the sky and everything behind it pulled in round the black hole\'s mouth and pushed out round the white hole\'s. Everyone sees this; no one else sees your grid. The game: StoatModeAction.gateDentStrength (new).', lo: 'Barely a ripple.', hi: 'A deep well and a bulge.' },
+    gateGridGlass: { scene: 'field', cfg: { D: 300 }, d: 'Wormhole look (round 24): a faint glassy surface under your own grid, bright at its silhouette, so the tunnel reads as a 3D tube. Only you see it, like the grid. The game: StoatModeAction.gateGridGlass (new).', lo: 'Lines only.', hi: 'A glass tube.' },
+    gateDentNear: { scene: 'field', cfg: { D: 300 }, d: 'Wormhole look (round 24): a mouth\'s dent fades out as the camera comes within this many mouth radii of it, so flying into a tunnel never flips the view - inside, the tube\'s own warp takes over. The game: StoatModeAction.gateDentNear (new).', lo: 'The dent stays to the last moment.', hi: 'Fades from far away.' },
     gateGridRestAlpha: { scene: 'field', cfg: { D: 300 }, d: 'Wormhole look (round 23): your reticle is always on your nose in Gate mode - the tunnel RT would form now. This is how bright it is with the right stick centred; it goes to full while you bend or shorten it. Only you see it. The game: StoatModeAction.gateGridRestAlpha (new).', lo: 'Hidden until you shape.', hi: 'Always bright.' },
     gateTubeWarp: { scene: 'field', cfg: { D: 300 }, d: 'Wormhole look (round 23): how strongly the whole tube bends what is seen through it, mouth to mouth - the warp everyone sees where your grid runs (only you see the grid). The game: StoatModeAction.gateTubeWarp (new).', lo: 'An invisible tube.', hi: 'A thick glass tube.' },
     gateBankShare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode flies on the left stick alone (the right thumb shapes the tunnel), as the game\'s one-thumb hulls do: this is how fast it banks into a turn, as a share of the roll rate. The game: StoatModeAction.gateBankShare (new; the one-thumb hulls\' RollScaler).', lo: 'Flat turns.', hi: 'Rolls hard into turns.' },
@@ -4539,8 +4613,8 @@
     gtTurnMax: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 23, studio only): the sharpest bend - the right stick pushed fully over bends the tunnel this far, any way. Less bend, a longer, thinner tunnel. The game: StoatModeAction.gateTurnMaxDegrees (new).', lo: 'Wormholes run straight.', hi: 'U-turns.' },
     gtMouthFlare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): the mouth\'s radius as a multiple of the throat (+6 u): space bends in from this wide at the black hole and back out at the white hole. Where you cross the mouth is kept, scaled down to the throat and back.', lo: 'A straight tube.', hi: 'Wide funnels.' },
     gtMouth: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the smallest mouth that takes you in, whatever the throat, and the most the black hole is drawn. The game: StoatModeAction gateMouthRadius.', lo: 'Thread a thin one exactly.', hi: 'Always forgiving.' },
-    gtTubeSpeed: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how fast the throat carries you, as a multiple of your speed (at least cruise).', lo: 'A slow ride.', hi: 'Through in a blink.' },
-    gtThroatRush: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much faster the ride is at the throat than at the mouths: you fall in, rush through and climb out.', lo: 'Even speed.', hi: 'A rush at the throat.' },
+    gtTubeSpeed: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 25): the ride starts and ends at the speed you went in with and rushes to this many times it at the throat - no jolt at either mouth. The game: StoatModeAction.gateRideSpeed (new).', lo: 'An even ride.', hi: 'A rush through the middle.' },
+    gateKeepMomentum: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 25, Yash): 1 = you come out of a tunnel with the speed and momentum you went in with, on its last heading; nothing is added. 0 = round 19-24: the tunnel warps you after it (Top warp, Fat cut, Warp after). The game: StoatModeAction.gateKeepMomentum (new).', lo: 'The warp boost.', hi: 'Out as you went in.' },
     gtWarpShare: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: the warp out of the white hole of the thinnest wormhole, as a share of the loop boost (Time scales it). The game: StoatModeAction gateWarpShare.', lo: 'A small push.', hi: 'A sprint.' },
     gtFatCut: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode (round 19, studio only): how much a fat wormhole cuts the warp after it. Thin and long: the full warp, for distance; fat and short: less warp, but the turn.', lo: 'Every wormhole warps the same.', hi: 'Fat ones barely warp.' },
     gtBoostSeconds: { scene: 'field', cfg: { D: 300 }, d: 'Gate mode: how long the warp out of the white hole holds before it fades. The game: StoatModeAction gateBoostSeconds.', lo: 'A burst.', hi: 'A long leg.' },
@@ -4865,7 +4939,10 @@
     gtReticleAhead: ['StoatModeAction.gateReticleAhead', 'new'],
     gateDentStrength: ['StoatModeAction.gateDentStrength', 'new'],
     gateTubeWarp: ['StoatModeAction.gateTubeWarp', 'new'],
+    gateKeepMomentum: ['StoatModeAction.gateKeepMomentum', 'new'],
     gateGridRestAlpha: ['StoatModeAction.gateGridRestAlpha', 'new'],
+    gateGridGlass: ['StoatModeAction.gateGridGlass', 'new'],
+    gateDentNear: ['StoatModeAction.gateDentNear', 'new'],
     gateBankShare: ['StoatModeAction.gateBankShare', 'new'],
     gateDentWidth: ['StoatModeAction.gateDentWidth', 'new'],
     gateGridOnRide: ['StoatModeAction.gateGridOnRide', 'new'],
@@ -4877,7 +4954,6 @@
     gtThroatMax: ['StoatModeAction.gateThroatRadiusMax', 'new'],
     gtMouthFlare: ['StoatModeAction.gateMouthFlare', 'new'],
     gtTubeSpeed: ['StoatModeAction.gateRideSpeed', 'new'],
-    gtThroatRush: ['StoatModeAction.gateThroatRush', 'new'],
     gtWarpShare: ['StoatModeAction.gateWarpShare', 'linked'],
     gtFatCut: ['StoatModeAction.gateFatWarpCut', 'new'],
     gtBoostSeconds: ['StoatModeAction.gateBoostSeconds', 'linked'],
@@ -5215,7 +5291,7 @@
   const WH_KEYS = ['dpWhite', 'whSizeX', 'whPushSoften', 'whExitGap', 'whCoreBrightness', 'whCoreSkyMix', 'whCoreSize', 'whLensStrength'];
   const LIFE_KEYS = ['bornS', 'whInS', 'whInFrom', 'dieS', 'whOutSpeed', 'whOutFade', 'shellBend', 'gwAmp', 'gwSpeed', 'gwPeriod', 'gwRingdown', 'gwPrism', 'gwShake', 'gwGlow'];
   const D_KEYS = ['dpAhead', 'dpSide', 'dpSMin', 'dpSMax', 'dpRsMin', 'dpRsMax', 'dpCaptureX', 'dpCatchDeg', 'dpSettle', 'dpGrip', 'dpMaxTurn', 'dpBoostMin', 'dpBoostMax', 'dpBoostSeconds', 'dpWhite', 'dpKeySqueeze', 'dpAssistFade', 'dpCarry', 'dpFlowFade', 'dpFlowCap', 'dpKickSweep', 'dpCatchInside', 'dpHoldAtCatch', 'dpRadiusEase', 'dpWhiteClear', 'closeSpeed', 'closeRamp'];
-  const V_KEYS = ['gateBankShare', 'gateTubeWarp', 'gtReticleAhead', 'gtTurnMax', 'gtLenMin', 'gtLenMax', 'gtThroatMin', 'gtThroatMax', 'gtMouthFlare', 'gtTubeSpeed', 'gtThroatRush', 'gtWarpShare', 'gtFatCut', 'gtBoostSeconds', 'gtCollapse', 'gtKeyRamp', 'gtAiMin', 'gtAiMinTurn', 'gtAiAim', 'gateDentStrength', 'gateDentWidth', 'gateGridRestAlpha', 'gateGridOnRide', 'gateGridSheets'];
+  const V_KEYS = ['gateBankShare', 'gateTubeWarp', 'gtReticleAhead', 'gtTurnMax', 'gtLenMin', 'gtLenMax', 'gtThroatMin', 'gtThroatMax', 'gtMouthFlare', 'gtTubeSpeed', 'gateKeepMomentum', 'gtWarpShare', 'gtFatCut', 'gtBoostSeconds', 'gtCollapse', 'gtKeyRamp', 'gtAiMin', 'gtAiMinTurn', 'gtAiAim', 'gateDentStrength', 'gateDentWidth', 'gateGridRestAlpha', 'gateGridGlass', 'gateDentNear', 'gateGridOnRide', 'gateGridSheets'];
   const F_KEYS = SPEC.filter((r) => r[0] === 'F').map((r) => r[1]);
   const B_KEYS = ['minStrength', 'maxStrength', 'aheadHorizons', 'halfGapHorizons', 'feltK', 'feltCap', 'feltReach', 'lensA', 'lensWidth', 'formS', 'standS', 'annihilateS', 'spiralTurns', 'beatDepth', 'beatCycles', 'softEdge'];
   function typeName(grp) { const a = activeType(grp); return a >= 0 ? ': the ' + GROUP_TYPES[grp].types[a].name + ' type' : a === -1 ? ': shipped' : ': custom'; }
@@ -5380,7 +5456,7 @@
     } else simStep(dt, pilotInput(dt), true);
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
-    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); updateWormholes(); updateCamera(dt); updateAiThinking(); updateGhosts(); updateRings(now);
+    syncRivalMeshes(); updateHoleMeshes(); updateAxisLine(); updateCamera(dt); updateWormholes(); updateAiThinking(); updateGhosts(); updateRings(now);
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================
@@ -5499,7 +5575,7 @@
   buildDocks();
   applyPlatform(true);
   requestAnimationFrame(frame);
-  window.__stoatStudio = { gateForm, openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, get idleTakeover() { return idleTakeover; }, set idleTakeover(v) { idleTakeover = !!v; idleFor = 0; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
+  window.__stoatStudio = { gateForm, get cam() { return cam; }, openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, get idleTakeover() { return idleTakeover; }, set idleTakeover(v) { idleTakeover = !!v; idleFor = 0; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
     get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, STYLE_BRAIN, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera, get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef };
   // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
   // defineProperties, not assign: assign copies a getter's value once, so slingMode / ftLive / ftMul read stale forever.

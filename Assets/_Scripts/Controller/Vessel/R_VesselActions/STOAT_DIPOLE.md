@@ -516,6 +516,43 @@ mode; Mass and Time are untouched. In the game this is also a control-scheme que
 two-stick `VesselTransformer`; a one-thumb Gate needs either a per-mode scheme or the Stoat moving to a one-thumb
 transformer.
 
+## 1l. Round 24 (studio) — inside a real wormhole: a smooth ride, a 3D grid, no false visuals (2026-10-27)
+
+**Yash, playing round 23:** riding a tunnel, the camera "flipped 180 or 360" and jerked instead of going smoothly
+through the tube; the centre of the tunnel should bend nothing and everything around it should be bent, like the
+inside of a real wormhole; no black-hole or white-hole looks; make the grid 3D; save the hole looks for later.
+
+| Problem | Cause (measured) | Fix |
+|---|---|---|
+| The view flipping on entry | a mouth's dent is a screen-space lens; as the camera reached the mouth its radius grew past the screen and the image inverted, then vanished when the mouth went behind the camera | the dent fades as the camera comes within `gateDentNear` 3 × the mouth radius of it; inside, the tube's own warp takes over |
+| The camera jerking round the bend | the chase camera lerps its POSITION (k 7/s) and fell far behind a hull riding at 2.5 × speed, then swung round the curve | while you ride, the camera runs down the tube's **centreline** 18 u behind you (45 u in Follow) and looks 40 u ahead along it (`whAtX`: the straight run in and out included), eased in and out over ~0.1 s; through a 120° tunnel the view turns at most 5° a frame, its up at most 0.34° |
+| A flat-looking grid | lines of one brightness read as a drawing | **3D grid**: a wall facing the eye is bright, the far wall 0.28 (`whFace`); a faint glass surface under your grid, lit at its silhouette (`gateGridGlass` 0.6) |
+| Hole words on screen | the HUD still said "black hole + white hole · portal ON" in Gate mode | "one thumb · space-time bent into a tunnel" |
+
+**Parked for later:** every black-hole / white-hole piece the tunnel used (the round-22 core, its shader lines, the hole
+spheres, the light shells and gravitational wave, the markers) is listed with its commit in
+`Docs/Studios/STOAT_PARKED_HOLE_LOOK.md`. Mass and Time keep their holes.
+
+## 1m. Round 25 (studio) — out of a tunnel with the speed you went in with (2026-10-27)
+
+**Yash:** *"you should come out ... with the same momentum and speed as you went inside the tunnel."*
+
+- **`gateKeepMomentum` 1 (the default):** the speed you go in with (`vIn` = your engine, gravity and momentum speed × the
+  warp you had) is the speed you come out with, on the tunnel's last heading. The warp you had going in is held,
+  untouched, while you ride, and carries on after; nothing is added. 0 brings back rounds 19–24's slingshot boost
+  (`gtWarpShare`, `gtFatCut`, `gtBoostSeconds`).
+- **The ride:** it starts and ends at `vIn` and rushes to `gtTubeSpeed` 2.5 × it at the throat (sin along the tube), so
+  there is no jolt at either mouth. `gtThroatRush` is folded into it and gone.
+
+**Measured** (headless, a 120° tunnel at cruise): in at 59 u/s, 149 u/s at the throat, out at 60 u/s and steady 0.25–1 s
+after; with `gateKeepMomentum` 0, out at 123 u/s (the old warp).
+
+**What it does to the race** (the AI, Hard, seed 1, s): circuits I1–I4 103.0 / 100.6 / 98.8 / 97.6 and hairpins
+85.9 / 79.5 / 75.0 / 71.7 - **Gate is now the slowest mode** (round 24: 36–40 and 38–44; Mass 49–60 and 31–39). A tunnel
+now buys a turn at full speed and the rush through its throat, no speed after it. **For Yash and Garrett:** if Gate
+should race, the levers that keep "out as you went in" are a faster ride (`gtTubeSpeed`), longer tunnels (`gtLenMax`), or
+a faster one-thumb cruise; `gateKeepMomentum` 0 is the old boost.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
