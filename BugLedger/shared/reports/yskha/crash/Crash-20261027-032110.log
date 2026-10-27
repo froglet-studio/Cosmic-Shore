@@ -1,0 +1,807 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-27 03:21:10 (next editor launch after the abnormal exit)
+session:        20261026-171801045  (pid 6932, Unity 6000.3.17f1)
+started:        2026-10-26T17:18:01.055Z UTC
+last heartbeat: 2026-10-26T21:49:37.150Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~66s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261026-171801045
+started: 2026-10-26T17:18:01.055Z UTC
+unity:   6000.3.17f1
+pid:     6932
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[22:48:47.398] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[22:49:44.942] ---- main thread stalled ~104s and RECOVERED — slow, not hung ----
+[22:50:20.488] ---- entering play mode ----
+[22:50:24.173] ---- play mode running ----
+[22:50:38.567] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d799bb9a0e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d799bb95c3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d799bb927b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[22:59:27.936] ---- leaving play mode ----
+[22:59:35.233] ---- edit mode restored ----
+[23:09:19.332] ---- domain reload begins (script compilation / play-mode transition) ----
+[23:09:49.366] ---- domain reload complete — session re-adopted ----
+[23:11:36.902] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[23:12:12.509] ---- domain reload begins (script compilation / play-mode transition) ----
+[23:12:21.938] ---- domain reload complete — session re-adopted ----
+[23:30:23.639] [EditMode] Error: Assets\_Scripts\System\AppManager.cs(113,18): error CS0246: The type or namespace name 'ReplayService' could not be found (are you missing a using directive or an assembly reference?)
+[23:30:23.641] [EditMode] Error: Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueGoalReplay.cs(223,32): error CS0246: The type or namespace name 'TheaterTrack' could not be found (are you missing a using directive or an assembly reference?)
+[23:30:23.642] [EditMode] Error: Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueGoalReplay.cs(252,25): error CS0246: The type or namespace name 'TheaterPose' could not be found (are you missing a using directive or an assembly reference?)
+[23:30:23.642] [EditMode] Error: Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueGoalReplay.cs(41,9): error CS0246: The type or namespace name 'TheaterPose' could not be found (are you missing a using directive or an assembly reference?)
+[23:30:46.741] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[23:31:08.338] ---- domain reload begins (script compilation / play-mode transition) ----
+[23:31:17.143] ---- domain reload complete — session re-adopted ----
+[23:37:47.463] ---- domain reload begins (script compilation / play-mode transition) ----
+[23:37:55.066] ---- domain reload complete — session re-adopted ----
+[23:42:12.159] ---- entering play mode ----
+[23:42:17.296] ---- play mode running ----
+[23:42:35.209] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943d0360e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943d03413 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943d030cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:42:56.842] ---- leaving play mode ----
+[23:43:00.584] ---- edit mode restored ----
+[23:43:04.889] ---- entering play mode ----
+[23:43:10.580] ---- play mode running ----
+[23:43:28.031] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943d0360e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943d03413 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943d030cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[23:58:48.982] ---- leaving play mode ----
+[23:58:58.901] ---- edit mode restored ----
+[23:58:59.215] ---- domain reload begins (script compilation / play-mode transition) ----
+[23:59:30.477] ---- domain reload complete — session re-adopted ----
+[00:00:16.326] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:00:36.703] ---- main thread stalled ~66s and RECOVERED — slow, not hung ----
+[00:11:17.822] ---- entering play mode ----
+[00:11:26.055] ---- play mode running ----
+[00:11:43.289] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943f7cc7d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943f7cb33 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943f7c74b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:22:06.996] ---- leaving play mode ----
+[00:22:10.753] ---- edit mode restored ----
+[00:27:26.263] ---- entering play mode ----
+[00:27:29.922] ---- play mode running ----
+[00:27:48.720] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943f7cc7d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943f7cb33 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943f7c74b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:31:29.541] ---- leaving play mode ----
+[00:31:32.603] ---- edit mode restored ----
+[00:33:03.585] ---- entering play mode ----
+[00:33:07.590] ---- play mode running ----
+[00:33:19.796] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943f7cc7d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943f7cb33 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943f7c74b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:33:23.372] ---- leaving play mode ----
+[00:33:26.693] ---- edit mode restored ----
+[00:43:49.823] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:43:57.763] ---- domain reload complete — session re-adopted ----
+[00:44:49.686] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:46:07.505] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:46:21.214] ---- domain reload complete — session re-adopted ----
+[00:47:07.102] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:47:13.737] ---- main thread stalled ~52s and RECOVERED — slow, not hung ----
+[00:49:18.736] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:49:32.358] ---- domain reload complete — session re-adopted ----
+[00:50:18.141] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:50:25.288] ---- main thread stalled ~53s and RECOVERED — slow, not hung ----
+[00:56:00.663] ---- domain reload begins (script compilation / play-mode transition) ----
+[00:56:07.668] ---- domain reload complete — session re-adopted ----
+[01:19:40.457] ---- domain reload begins (script compilation / play-mode transition) ----
+[01:19:47.154] ---- domain reload complete — session re-adopted ----
+[01:19:56.733] ---- entering play mode ----
+[01:20:06.589] ---- play mode running ----
+[01:20:29.273] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943fae5fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943fae4b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943fae0cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:27:39.843] ---- leaving play mode ----
+[01:27:42.798] ---- edit mode restored ----
+[01:31:09.171] ---- entering play mode ----
+[01:31:54.936] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:34:27.362] ---- play mode running ----
+[01:34:27.862] ---- main thread stalled ~199s and RECOVERED — slow, not hung ----
+[01:34:46.617] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943fae5fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943fae4b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943fae0cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:39:17.591] ---- leaving play mode ----
+[01:39:21.874] ---- edit mode restored ----
+[01:43:56.387] ---- entering play mode ----
+[01:44:45.747] ---- play mode running ----
+[01:44:46.247] ---- main thread stalled ~50s and RECOVERED — slow, not hung ----
+[01:44:57.139] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943fae5fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943fae4b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943fae0cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:45:01.514] ---- leaving play mode ----
+[01:45:04.029] ---- edit mode restored ----
+[01:47:45.439] ---- entering play mode ----
+[01:47:48.702] ---- play mode running ----
+[01:48:01.292] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943fae5fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943fae4b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943fae0cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:50:43.902] ---- leaving play mode ----
+[01:50:48.224] ---- edit mode restored ----
+[01:52:33.882] ---- entering play mode ----
+[01:52:41.466] ---- play mode running ----
+[01:52:58.328] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943fae5fd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943fae4b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943fae0cb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:56:01.184] ---- leaving play mode ----
+[01:56:05.678] ---- edit mode restored ----
+[02:03:46.040] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:03:54.709] ---- domain reload complete — session re-adopted ----
+[02:14:23.688] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:14:31.670] ---- domain reload complete — session re-adopted ----
+[02:17:10.174] ---- entering play mode ----
+[02:17:18.300] ---- play mode running ----
+[02:17:37.362] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d791ad165d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d791ad1513 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d791ad112b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[02:25:35.942] ---- leaving play mode ----
+[02:25:41.435] ---- edit mode restored ----
+[02:27:54.110] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:28:01.510] ---- domain reload complete — session re-adopted ----
+[02:28:47.800] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:29:31.182] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:29:45.981] ---- domain reload complete — session re-adopted ----
+[02:30:31.823] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:30:44.044] ---- main thread stalled ~58s and RECOVERED — slow, not hung ----
+[02:32:07.854] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:32:21.786] ---- domain reload complete — session re-adopted ----
+[02:33:07.668] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:33:09.704] ---- main thread stalled ~48s and RECOVERED — slow, not hung ----
+[03:10:24.024] ---- domain reload begins (script compilation / play-mode transition) ----
+[03:10:32.975] ---- domain reload complete — session re-adopted ----
+[03:14:48.777] ---- entering play mode ----
+[03:14:55.066] ---- play mode running ----
+[03:15:13.072] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-26'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943facb5d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943faca13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943fac62b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:16:35.839] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping instance never stops, so release() never frees it and one immortal voice leaks PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff85be1587f (Unity) DebugStringToFile
+        0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001d943facb5d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001d943faca13 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001d943fac62b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:19:17.126] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261026-171801045.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+##### ExitCode
+-1019002813
+##### Output
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 142 defines and 462 references
+
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+
+Unity.Entities.CodeGen.EntitiesILPostProcessors: ILPostProcessor has thrown an exception: System.OutOfMemoryException: Exception of type 'System.OutOfMemoryException' was thrown.
+
+   at System.IO.BinaryReader.ReadBytes(Int32 count)
+
+   at Mono.Cecil.PE.ImageReader.ReadHeapData(UInt32 offset, UInt32 size)
+
+   at Mono.Cecil.PE.ImageReader.ReadMetadataStream(Section section)
+
+   at Mono.Cecil.PE.ImageReader.ReadMetadata()
+
+   at Mono.Cecil.PE.ImageReader.ReadImage()
+
+   at Mono.Cecil.PE.ImageReader.ReadImage(Disposable`1 stream, String file_name)
+
+   at Mono.Cecil.ModuleDefinition.ReadModule(Stream stream, ReaderParameters parameters)
+
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.PostProcessorAssemblyResolver.Resolve(AssemblyNameReference name, ReaderParameters parameters)
+
+   at Mono.Cecil.MetadataResolver.Resolve(TypeReference type)
+
+   at Unity.Entities.CodeGen.TypeDefinitionExtensions.IsComponentSystem(TypeDefinition arg)
+
+   at System.Linq.Enumerable.WhereArrayIterator`1.ToArray()
+
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.Process(ICompiledAssembly compiledAssembly)
+
+   at Unity.ILPP.Runner.PostProcessingPipeline.PostProcessAssemblyAsync(PostProcessAssemblyRequest request, Action`2 progressSink)
+
+PostProcessing failed: System.OutOfMemoryException: Exception of type 'System.OutOfMemoryException' was thrown.
+
+   at System.IO.BinaryReader.ReadBytes(Int32 count)
+
+   at Mono.Cecil.PE.ImageReader.ReadHeapData(UInt32 offset, UInt32 size)
+
+   at Mono.Cecil.PE.ImageReader.ReadMetadataStream(Section section)
+
+   at Mono.Cecil.PE.ImageReader.ReadMetadata()
+
+   at Mono.Cecil.PE.ImageReader.ReadImage()
+
+   at Mono.Cecil.PE.ImageReader.ReadImage(Disposable`1 stream, String file_name)
+
+   at Mono.Cecil.ModuleDefinition.ReadModule(Stream stream, ReaderParameters parameters)
+
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.PostProcessorAssemblyResolver.Resolve(AssemblyNameReference name, ReaderParameters parameters)
+
+   at Mono.Cecil.MetadataResolver.Resolve(TypeReference type)
+
+   at Unity.Entities.CodeGen.TypeDefinitionExtensions.IsComponentSystem(TypeDefinition arg)
+
+   at System.Linq.Enumerable.WhereArrayIterator`1.ToArray()
+
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.Process(ICompiledAssembly compiledAssembly)
+
+   at Unity.ILPP.Runner.PostProcessingPipeline.PostProcessAssemblyAsync(PostProcessAssemblyRequest request, Action`2 progressSink)
+
+   at Unity.ILPP.Runner.PostProcessingService.PostProcessAssembly(PostProcessAssemblyRequest request, IServerStreamWriter`1 responseStream, ServerCallContext context)
+
+Unhandled Exception: System.InvalidOperationException: Post processing failed
+
+   at Unity.ILPP.Trigger.TriggerApp.<ProcessArgumentsAsync>d__2.MoveNext() + 0xf74
+
+--- End of stack trace from previous location ---
+
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+
+   at Unity.ILPP.Trigger.TriggerApp.<ProcessArgumentsAsync>d__2.MoveNext() + 0x1149
+
+--- End of stack trace from previous location ---
+
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+
+   at Unity.ILPP.Trigger.TriggerApp.<RunAsync>d__1.MoveNext() + 0xc7
+
+--- End of stack trace from previous location ---
+
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+
+   at Program.<<Main>$>d__0.MoveNext() + 0x268
+
+--- End of stack trace from previous location ---
+
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+
+   at Program.<Main>(String[]) + 0x20
+
+   at Unity.ILPP.Trigger!<BaseAddress>+0x49178b
+*** Tundra build failed (42.37 seconds), 15 items updated, 3142 evaluated
+## Script Compilation Error for: ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+## CmdLine: "C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Data\Tools\BuildPipeline\Compilation\Unity.ILPP.Trigger\Unity.ILPP.Trigger.exe" @"Library\Bee\artifacts\rsp\10678863128556690338.rsp"
+## Output:
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 142 defines and 462 references
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+Unity.Entities.CodeGen.EntitiesILPostProcessors: ILPostProcessor has thrown an exception: System.OutOfMemoryException: Exception of type 'System.OutOfMemoryException' was thrown.
+   at System.IO.BinaryReader.ReadBytes(Int32 count)
+   at Mono.Cecil.PE.ImageReader.ReadHeapData(UInt32 offset, UInt32 size)
+   at Mono.Cecil.PE.ImageReader.ReadMetadataStream(Section section)
+   at Mono.Cecil.PE.ImageReader.ReadMetadata()
+   at Mono.Cecil.PE.ImageReader.ReadImage()
+   at Mono.Cecil.PE.ImageReader.ReadImage(Disposable`1 stream, String file_name)
+   at Mono.Cecil.ModuleDefinition.ReadModule(Stream stream, ReaderParameters parameters)
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.PostProcessorAssemblyResolver.Resolve(AssemblyNameReference name, ReaderParameters parameters)
+   at Mono.Cecil.MetadataResolver.Resolve(TypeReference type)
+   at Unity.Entities.CodeGen.TypeDefinitionExtensions.IsComponentSystem(TypeDefinition arg)
+   at System.Linq.Enumerable.WhereArrayIterator`1.ToArray()
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.Process(ICompiledAssembly compiledAssembly)
+   at Unity.ILPP.Runner.PostProcessingPipeline.PostProcessAssemblyAsync(PostProcessAssemblyRequest request, Action`2 progressSink)
+PostProcessing failed: System.OutOfMemoryException: Exception of type 'System.OutOfMemoryException' was thrown.
+   at System.IO.BinaryReader.ReadBytes(Int32 count)
+   at Mono.Cecil.PE.ImageReader.ReadHeapData(UInt32 offset, UInt32 size)
+   at Mono.Cecil.PE.ImageReader.ReadMetadataStream(Section section)
+   at Mono.Cecil.PE.ImageReader.ReadMetadata()
+   at Mono.Cecil.PE.ImageReader.ReadImage()
+   at Mono.Cecil.PE.ImageReader.ReadImage(Disposable`1 stream, String file_name)
+   at Mono.Cecil.ModuleDefinition.ReadModule(Stream stream, ReaderParameters parameters)
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.PostProcessorAssemblyResolver.Resolve(AssemblyNameReference name, ReaderParameters parameters)
+   at Mono.Cecil.MetadataResolver.Resolve(TypeReference type)
+   at Unity.Entities.CodeGen.TypeDefinitionExtensions.IsComponentSystem(TypeDefinition arg)
+   at System.Linq.Enumerable.WhereArrayIterator`1.ToArray()
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.Process(ICompiledAssembly compiledAssembly)
+   at Unity.ILPP.Runner.PostProcessingPipeline.PostProcessAssemblyAsync(PostProcessAssemblyRequest request, Action`2 progressSink)
+   at Unity.ILPP.Runner.PostProcessingService.PostProcessAssembly(PostProcessAssemblyRequest request, IServerStreamWriter`1 responseStream, ServerCallContext context)
+Unhandled Exception: System.InvalidOperationException: Post processing failed
+   at Unity.ILPP.Trigger.TriggerApp.<ProcessArgumentsAsync>d__2.MoveNext() + 0xf74
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at Unity.ILPP.Trigger.TriggerApp.<ProcessArgumentsAsync>d__2.MoveNext() + 0x1149
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+   at Unity.ILPP.Trigger.TriggerApp.<RunAsync>d__1.MoveNext() + 0xc7
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+   at Program.<<Main>$>d__0.MoveNext() + 0x268
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+   at Program.<Main>(String[]) + 0x20
+   at Unity.ILPP.Trigger!<BaseAddress>+0x49178b
+
+Assets\_Scripts\Controller\Arcade\MultiplayerDomainGamesController.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(475,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(893,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(341,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\Tandava\TandavaController.cs(888,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(290,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(307,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(336,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(355,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\Racing\GateRaceController.cs(676,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\TandavaSevering\TandavaSeveringController.cs(944,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\TurnMonitors\NetworkJoustCollisionTurnMonitor.cs(154,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(129,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(153,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(231,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(268,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(386,22): warning CS0108: 'SwarmFauna.StomachVolume(int)' hides inherited member 'Fauna.StomachVolume'. Use the new keyword if hiding was intended.
+Assets\_Scripts\Controller\Environment\FloraAndFauna\Swarm\SwarmFauna.cs(401,21): warning CS0108: 'SwarmFauna.IsStarving' hides inherited member 'Fauna.IsStarving'. Use the new keyword if hiding was intended.
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(421,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(793,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(815,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(844,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(305,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(317,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(214,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(235,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(270,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(285,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(479,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(489,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\Controller\GobyPistolHUDController.cs(165,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\JacksHUDController.cs(149,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\OrcaHUDController.cs(161,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\Controller\WrasseHUDController.cs(108,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1516,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(300,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(360,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\StarlingHUDView.cs(390,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(262,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\AnglerHUDView.cs(124,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Skimmer Effects\VesselElementalDebuffBySkimmerEffectSO.cs(55,32): warning CS0414: The field 'VesselElementalDebuffBySkimmerEffectSO.debuffDuration' is assigned but its value is never used
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 142 defines and 462 references
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+Unity.Entities.CodeGen.EntitiesILPostProcessors: ILPostProcessor has thrown an exception: System.OutOfMemoryException: Exception of type 'System.OutOfMemoryException' was thrown.
+   at System.IO.BinaryReader.ReadBytes(Int32 count)
+   at Mono.Cecil.PE.ImageReader.ReadHeapData(UInt32 offset, UInt32 size)
+   at Mono.Cecil.PE.ImageReader.ReadMetadataStream(Section section)
+   at Mono.Cecil.PE.ImageReader.ReadMetadata()
+   at Mono.Cecil.PE.ImageReader.ReadImage()
+   at Mono.Cecil.PE.ImageReader.ReadImage(Disposable`1 stream, String file_name)
+   at Mono.Cecil.ModuleDefinition.ReadModule(Stream stream, ReaderParameters parameters)
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.PostProcessorAssemblyResolver.Resolve(AssemblyNameReference name, ReaderParameters parameters)
+   at Mono.Cecil.MetadataResolver.Resolve(TypeReference type)
+   at Unity.Entities.CodeGen.TypeDefinitionExtensions.IsComponentSystem(TypeDefinition arg)
+   at System.Linq.Enumerable.WhereArrayIterator`1.ToArray()
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.Process(ICompiledAssembly compiledAssembly)
+   at Unity.ILPP.Runner.PostProcessingPipeline.PostProcessAssemblyAsync(PostProcessAssemblyRequest request, Action`2 progressSink)
+PostProcessing failed: System.OutOfMemoryException: Exception of type 'System.OutOfMemoryException' was thrown.
+   at System.IO.BinaryReader.ReadBytes(Int32 count)
+   at Mono.Cecil.PE.ImageReader.ReadHeapData(UInt32 offset, UInt32 size)
+   at Mono.Cecil.PE.ImageReader.ReadMetadataStream(Section section)
+   at Mono.Cecil.PE.ImageReader.ReadMetadata()
+   at Mono.Cecil.PE.ImageReader.ReadImage()
+   at Mono.Cecil.PE.ImageReader.ReadImage(Disposable`1 stream, String file_name)
+   at Mono.Cecil.ModuleDefinition.ReadModule(Stream stream, ReaderParameters parameters)
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.PostProcessorAssemblyResolver.Resolve(AssemblyNameReference name, ReaderParameters parameters)
+   at Mono.Cecil.MetadataResolver.Resolve(TypeReference type)
+   at Unity.Entities.CodeGen.TypeDefinitionExtensions.IsComponentSystem(TypeDefinition arg)
+   at System.Linq.Enumerable.WhereArrayIterator`1.ToArray()
+   at Unity.Entities.CodeGen.EntitiesILPostProcessors.Process(ICompiledAssembly compiledAssembly)
+   at Unity.ILPP.Runner.PostProcessingPipeline.PostProcessAssemblyAsync(PostProcessAssemblyRequest request, Action`2 progressSink)
+   at Unity.ILPP.Runner.PostProcessingService.PostProcessAssembly(PostProcessAssemblyRequest request, IServerStreamWriter`1 responseStream, ServerCallContext context)
+Unhandled Exception: System.InvalidOperationException: Post processing failed
+   at Unity.ILPP.Trigger.TriggerApp.<ProcessArgumentsAsync>d__2.MoveNext() + 0xf74
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at Unity.ILPP.Trigger.TriggerApp.<ProcessArgumentsAsync>d__2.MoveNext() + 0x1149
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+   at Unity.ILPP.Trigger.TriggerApp.<RunAsync>d__1.MoveNext() + 0xc7
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+   at Program.<<Main>$>d__0.MoveNext() + 0x268
+--- End of stack trace from previous location ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task) + 0xb6
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task) + 0x42
+   at Program.<Main>(String[]) + 0x20
+   at Unity.ILPP.Trigger!<BaseAddress>+0x49178b
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: 'c670c67d77b8db546615060766b912d6') in 0.043776 seconds
+Start importing Assets/Resources/SkimRaceDifficulty.asset using Guid(96c622713320447e962bdb48e2704deb) (NativeFormatImporter) -> (artifact id: '0930af5dc3d45256d62169b8fdc62d9c') in 0.0126234 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) (PrefabImporter) -> (artifact id: '8e58671da6dcd4ebe1a7668520c24785') in 0.2859189 seconds
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: '43d4286596e5942d943fc3af3a4b0195') in 0.5580596 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) (PrefabImporter) -> (artifact id: '61a36fd396a4c3fe643f4a0c88b09d70') in 0.2230888 seconds
+Total cache size 268181360
+Total cache size after purge 268181360, took 00:00:01.7056869
+Refreshing native plugins compatible for Editor in 16.32 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=c5e4d2b95d3c08c4eb12b5979cdea346): Total: 48.176 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=10 (actual=5, local cache=5, cache server=0)
+		Asset DB Process Time: managed=106 ms, native=1274 ms
+		Asset DB Callback time: managed=653 ms, native=2476 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=43665 ms, other=0 ms
+		Project Asset Count: scripts=4584, non-scripts=12091
+		Asset File Changes: new=0, changed=25, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 1.115ms
+	ApplyChangesToAssetFolders: 0.533ms
+	Scan: 36.147ms
+	OnSourceAssetsModified: 2.334ms
+	CategorizeAssetsWithTransientArtifact: 0.277ms
+	ProcessAssetsWithTransientArtifactChanges: 14.045ms
+	CategorizeAssets: 76.821ms
+	ImportOutOfDateAssets: 1186.856ms (-43663.008ms without children)
+		ImportManagerImport: 1167.576ms (32.172ms without children)
+			ImportInProcess: 1135.230ms
+			UpdateCategorizedAssets: 0.173ms
+		CompileScripts: 43665.457ms
+		ReloadNativeAssets: 4.115ms
+		UnloadImportedAssets: 0.458ms
+		ReloadImportedAssets: 0.001ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 4.757ms
+		InitializingProgressBar: 0.004ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.003ms
+		OnDemandSchedulerStart: 7.492ms
+	PostProcessAllAssets: 3100.657ms
+	Hotreload: 26.598ms
+	GatherAllCurrentPrimaryArtifactRevisions: 1.159ms
+	UnloadStreamsBegin: 0.003ms
+	PersistCurrentRevisions: 1.537ms
+	UnloadStreamsEnd: 0.002ms
+	Untracked: 43727.767ms
+
+Start importing ProjectSettings/ProjectSettings.asset using Guid(00000000000000004000000000000000) (LibraryAssetImporter) -> (artifact id: '360d886cc3311ce4a5cc45e24ce6784b') in 0.0033778 seconds
+Start importing Assets/Resources/KiteNavigatorUnlit.mat using Guid(323de18569534686969203279163666f) (NativeFormatImporter) -> (artifact id: 'a1a68c2934d0e6435bf48350a6f1a9ad') in 0.007939 seconds
+Start importing Assets/Resources/OrcaCrewLit.mat using Guid(ca4c63633add406ba5732231ca75f4e5) (NativeFormatImporter) -> (artifact id: 'cbba6d7ac6f9c230a0f3b6eecc76fc58') in 0.0073484 seconds
+Start importing Assets/_SO_Assets/NetworkMonitor Data/Network Monitor Data.asset using Guid(c656ab83067d26846b449b637e43320a) (NativeFormatImporter) -> (artifact id: '8a8284666ee8321dc5847bb03390a104') in 0.008213 seconds
+Start importing Assets/_SO_Assets/Authentication Data/AuthenticationData.asset using Guid(875bcedfcf3335047b416297732cba15) (NativeFormatImporter) -> (artifact id: 'eb75e3607d0a06349de565c8887ea19b') in 0.0023472 seconds
+Start importing Assets/_SO_Assets/Application State/ApplicationStateData.asset using Guid(18ceced7226bbe51dd9542bc4cad3203) (NativeFormatImporter) -> (artifact id: '40b01a0bd1e34b5c07791a2f58c32c43') in 0.0068445 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: 'd66219ff6f8aa67e2d57c9fc1e4c9fd3') in 0.0080728 seconds
+Start importing Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset using Guid(9f6e2fcf98f99f3ed5ff96934bb43d6d) (NativeFormatImporter) -> (artifact id: '96fc1890d8e3b502fa3f0d21c0ee1691') in 0.020042 seconds
+Refreshing native plugins compatible for Editor in 21.84 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.09 ms.
+Asset Pipeline Refresh (id=681fa28e06e295e45a65d6027861faf7): Total: 0.229 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Asset Pipeline Refresh (id=44d9ecdde10bc34478b36d10d09f4958): Total: 0.022 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+Asset Pipeline Refresh (id=b51cd0b70793af94780e8169b5a33cbd): Total: 0.009 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[LAYOUT] About to save layout B:\FrogletGames\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+Cannot save invalid window Third Eye  (CosmicShore.Editor.AI.ThirdEyeWindow) to layout.
+0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff85be1587f (Unity) DebugStringToFile
+0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000022c8a885e0d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000022c8a885cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000022c8a88590b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000022de183a8c5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x0000022c8a885690 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000022c8a885558 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000022f9ae61c4b (Mono JIT Code) UnityEditor.WindowLayout:SaveWindowLayout (string,bool)
+0x0000022f9ae614b3 (Mono JIT Code) UnityEditor.WindowLayout:SaveWindowLayout (string)
+0x0000022f9ae613ab (Mono JIT Code) UnityEditor.WindowLayout:SaveCurrentLayoutPerMode (string)
+0x0000022f9ae6129b (Mono JIT Code) UnityEditor.WindowLayout:SaveDefaultWindowPreferences ()
+0x0000022de1f65945 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff868696c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff8685d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff8685d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff85c69fdd4 (Unity) scripting_method_invoke
+0x00007ff85c6a6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff85c6a2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff85cc92dfb (Unity) Scripting::UnityEditor::WindowLayoutProxy::SaveDefaultWindowPreferences
+0x00007ff85ced6b6c (Unity) Application::Terminate
+0x00007ff85ccf47c9 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44dac (USER32) CallWindowProcW
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ce08 (COMCTL32) DefSubclassProc
+0x00007ff8e59c33f3 (AppUINativePlugin) 
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ccaf (COMCTL32) GetWindowSubclass
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44b6c (USER32) GetFocus
+0x00007ff945b6f593 (USER32) GetWindowDpiAwarenessContext
+0x00007ff946685d94 (ntdll) KiUserCallbackDispatcher
+0x00007ff943e21384 (win32u) NtUserMessageCall
+0x00007ff945b47ddb (USER32) IsWindowEnabled
+0x00007ff945b47c74 (USER32) IsWindowEnabled
+0x00007ff93f8967bd (uxtheme) Ordinal75
+0x00007ff93f8e8376 (uxtheme) Ordinal90
+0x00007ff93f8988d6 (uxtheme) Ordinal75
+0x00007ff93f898091 (uxtheme) Ordinal75
+0x00007ff945b4792a (USER32) SendMessageW
+0x00007ff85ccf4c4d (Unity) ContainerPlatform::ContainerWndProc
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44dac (USER32) CallWindowProcW
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ce08 (COMCTL32) DefSubclassProc
+0x00007ff8e59c33f3 (AppUINativePlugin) 
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ccaf (COMCTL32) GetWindowSubclass
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44b6c (USER32) GetFocus
+0x00007ff945b6f593 (USER32) GetWindowDpiAwarenessContext
+0x00007ff946685d94 (ntdll) KiUserCallbackDispatcher
+0x00007ff943e21384 (win32u) NtUserMessageCall
+0x00007ff945b47ddb (USER32) IsWindowEnabled
+0x00007ff945b47c74 (USER32) IsWindowEnabled
+0x00007ff93f8967bd (uxtheme) Ordinal75
+0x00007ff93f8d6ad9 (uxtheme) BufferedPaintUnInit
+0x00007ff93f8988d6 (uxtheme) Ordinal75
+0x00007ff93f898091 (uxtheme) Ordinal75
+0x00007ff945b4792a (USER32) SendMessageW
+0x00007ff85ccf4c4d (Unity) ContainerPlatform::ContainerWndProc
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44dac (USER32) CallWindowProcW
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ce08 (COMCTL32) DefSubclassProc
+0x00007ff8e59c33f3 (AppUINativePlugin) 
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ccaf (COMCTL32) GetWindowSubclass
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b45dbd (USER32) IsWindowUnicode
+0x00007ff85ccb9e08 (Unity) MainMessageLoop
+0x00007ff85ccc1a12 (Unity) UnityMain
+0x00007ff74b482f2a (Unity) __scrt_common_main_seh
+0x00007ff944f0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff94659ee4c (ntdll) RtlUserThreadStart
+
+[LAYOUT] About to save layout C:/Users/yskha/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Cannot save invalid window Third Eye  (CosmicShore.Editor.AI.ThirdEyeWindow) to layout.
+0x00007ff85be64e2e (Unity) StackWalker::ShowCallstack
+0x00007ff85d69f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff85d69fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff85be1587f (Unity) DebugStringToFile
+0x00007ff85bcd1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000022c8a885e0d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000022c8a885cd3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000022c8a88590b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000022de183a8c5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x0000022c8a885690 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000022c8a885558 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000022f9ae61c4b (Mono JIT Code) UnityEditor.WindowLayout:SaveWindowLayout (string,bool)
+0x0000022f9ae614b3 (Mono JIT Code) UnityEditor.WindowLayout:SaveWindowLayout (string)
+0x0000022f9ae61413 (Mono JIT Code) UnityEditor.WindowLayout:SaveCurrentLayoutPerMode (string)
+0x0000022f9ae6129b (Mono JIT Code) UnityEditor.WindowLayout:SaveDefaultWindowPreferences ()
+0x0000022de1f65945 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff868696c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff8685d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff8685d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff85c69fdd4 (Unity) scripting_method_invoke
+0x00007ff85c6a6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff85c6a2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff85cc92dfb (Unity) Scripting::UnityEditor::WindowLayoutProxy::SaveDefaultWindowPreferences
+0x00007ff85ced6b6c (Unity) Application::Terminate
+0x00007ff85ccf47c9 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44dac (USER32) CallWindowProcW
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ce08 (COMCTL32) DefSubclassProc
+0x00007ff8e59c33f3 (AppUINativePlugin) 
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ccaf (COMCTL32) GetWindowSubclass
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44b6c (USER32) GetFocus
+0x00007ff945b6f593 (USER32) GetWindowDpiAwarenessContext
+0x00007ff946685d94 (ntdll) KiUserCallbackDispatcher
+0x00007ff943e21384 (win32u) NtUserMessageCall
+0x00007ff945b47ddb (USER32) IsWindowEnabled
+0x00007ff945b47c74 (USER32) IsWindowEnabled
+0x00007ff93f8967bd (uxtheme) Ordinal75
+0x00007ff93f8e8376 (uxtheme) Ordinal90
+0x00007ff93f8988d6 (uxtheme) Ordinal75
+0x00007ff93f898091 (uxtheme) Ordinal75
+0x00007ff945b4792a (USER32) SendMessageW
+0x00007ff85ccf4c4d (Unity) ContainerPlatform::ContainerWndProc
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44dac (USER32) CallWindowProcW
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ce08 (COMCTL32) DefSubclassProc
+0x00007ff8e59c33f3 (AppUINativePlugin) 
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ccaf (COMCTL32) GetWindowSubclass
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44b6c (USER32) GetFocus
+0x00007ff945b6f593 (USER32) GetWindowDpiAwarenessContext
+0x00007ff946685d94 (ntdll) KiUserCallbackDispatcher
+0x00007ff943e21384 (win32u) NtUserMessageCall
+0x00007ff945b47ddb (USER32) IsWindowEnabled
+0x00007ff945b47c74 (USER32) IsWindowEnabled
+0x00007ff93f8967bd (uxtheme) Ordinal75
+0x00007ff93f8d6ad9 (uxtheme) BufferedPaintUnInit
+0x00007ff93f8988d6 (uxtheme) Ordinal75
+0x00007ff93f898091 (uxtheme) Ordinal75
+0x00007ff945b4792a (USER32) SendMessageW
+0x00007ff85ccf4c4d (Unity) ContainerPlatform::ContainerWndProc
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b44dac (USER32) CallWindowProcW
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ce08 (COMCTL32) DefSubclassProc
+0x00007ff8e59c33f3 (AppUINativePlugin) 
+0x00007ff927f8ced8 (COMCTL32) DefSubclassProc
+0x00007ff927f8ccaf (COMCTL32) GetWindowSubclass
+0x00007ff945b452e6 (USER32) CallWindowProcW
+0x00007ff945b45dbd (USER32) IsWindowUnicode
+0x00007ff85ccb9e08 (Unity) MainMessageLoop
+0x00007ff85ccc1a12 (Unity) UnityMain
+0x00007ff74b482f2a (Unity) __scrt_common_main_seh
+0x00007ff944f0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff94659ee4c (ntdll) RtlUserThreadStart
+
+Pipeline Server stopped
+Unloading 19 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-2444-b42yzw
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 11260 (child process of PID 8272) has been terminated.
+SUCCESS: The process with PID 8272 (child process of PID 2444) has been terminated.
+Killing ADB server in 0.3154244 seconds.
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: '14897de0e4b55efa765a3e2fd4dca273') in 0.0503355 seconds
+[Licensing::Client] Successfully resolved entitlement details
+Refreshing native plugins compatible for Editor in 16.42 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=e5379ba9f7856d64b9e8699962657927): Total: 0.235 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureArenaView.prefab using Guid(6dce9d2b4c537f3cc986159e82e8ed41) (PrefabImporter) -> (artifact id: '1c5efd07bf1bf72777fb0e0d2372fb30') in 0.0628556 seconds
+Refreshing native plugins compatible for Editor in 16.69 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=f80fc31fb2b6a0b419659c72bff9eff3): Total: 0.244 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureView.prefab using Guid(2689c230efa4b23ef1439882fe2dbe4a) (PrefabImporter) -> (artifact id: '99c391d66fdbc4c29424b9471373c77d') in 0.0596748 seconds
+Start importing Assets/_Prefabs/ArcadeGameConfigureModal.prefab using Guid(1cc3c5b34dfd8074b9e2f436955062b3) (PrefabImporter) -> (artifact id: 'bb8d6aad1560b3d9c90690337ace1e7b') in 0.0449344 seconds
+Refreshing native plugins compatible for Editor in 14.86 ms, found 13 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=07f3626f6075a354ba3d989c6dc7950b): Total: 0.291 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 186 unused Assets / (24.6 KB). Loaded Objects now: 44982.
+Memory consumption went from 3.86 GB to 3.86 GB.
+Total: 124.516200 ms (FindLiveObjects: 2.947500 ms CreateObjectMapping: 6.832600 ms MarkObjects: 114.485600 ms  DeleteObjects: 0.249700 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-yskha-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-yskha-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 00000000000060EC, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000006084, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 00000000000060EC, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000006084, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4852
+[usbmuxd] Stop listen thread
+[usbmuxd] Listen thread exiting
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1793034906204,"processId":2444,"allocatedMemory":35661939,"memoryLabels":[{"Default":29317},{"Permanent":15236},{"NewDelete":125617},{"Thread":4242312},{"Manager":3108085},{"VertexData":8},{"Geometry":816},{"Texture":296},{"Shader":89365},{"Material":24},{"GfxDevice":57912},{"GfxThread":13056},{"Audio":3040},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":423560},{"Input":14984},{"JobScheduler":33024},{"TextLib":18520},{"Mono":32},{"MonoCode":704},{"ScriptingNativeRuntime":155060},{"BaseObject":1624832},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":21507},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":14571},{"DynamicArray":1080538},{"HashMap":234437},{"Utility":2660466},{"PoolAlloc":10456},{"AI":80},{"TypeTree":1185609},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":9360},{"WebRequest":5273},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":5248},{"Camera":17},{"Secure":3169},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":384},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":212},{"EditorUtility":443906},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19500101},{"EditorGi":328},{"UnityConnect":29472},{"Upm":1972},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2867},{"TLS":31023},{"Licensing":664},{"AssetReference":32},{"IPCStream":32}]}
+
