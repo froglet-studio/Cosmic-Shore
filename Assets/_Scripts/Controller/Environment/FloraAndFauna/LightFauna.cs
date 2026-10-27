@@ -38,6 +38,20 @@ namespace CosmicShore.Gameplay
         // husk withers in place instead of drifting, and makes the death path idempotent.
         bool _withering;
 
+        // The prefab's own root scale, and this variant's body against it. A variant that sizes its body
+        // (FaunaVariantTuning.BaseBodyScale - a Mass creature grown to hold its heart's swing, Docs/ECOSYSTEM.md 64.8)
+        // carries the data's BODY-relative dials with it: separation, consume, the feeding cluster and the attack are
+        // authored for the prefab's body. Senses, territory and speeds stay in world units.
+        float _authoredRootScale = -1f;
+        float _bodyRatio = 1f;
+
+        float SeparationRadius => Mathf.Max(0f, data.separationRadius) * _bodyRatio;
+        float ConsumeRadius => Mathf.Max(0f, data.consumeRadius) * _bodyRatio;
+        float FeedingClusterRadius => data.feedingClusterRadius * _bodyRatio;
+        float AttackRange => data.attackRange * _bodyRatio;
+        /// <summary>Food is sensed in world units, but never less far than the mouth reaches.</summary>
+        float DetectionRadius => Mathf.Max(Mathf.Max(0f, data.detectionRadius), ConsumeRadius);
+
         // --- Intentional feeding (herbivore) -------------------------------
         // The behavior tick picks the nearest edible prism; per-frame code then
         // approaches to consumeRadius, turns to FACE it before the suction starts,
@@ -97,6 +111,15 @@ namespace CosmicShore.Gameplay
         public override bool CanBeStolen => true;
 
         /// <summary>A live domain change (a steal, or a mode's recolour): every live body prism takes the new team.</summary>
+        public override void ApplyVariantTuning(FaunaVariantTuning tuning)
+        {
+            if (_authoredRootScale < 0f) _authoredRootScale = transform.localScale.x;
+            // A pooled body may come back as another element: one that keeps the prefab gets the prefab's size back.
+            if (tuning != null && tuning.BaseBodyScale <= 0f) transform.localScale = Vector3.one * _authoredRootScale;
+            base.ApplyVariantTuning(tuning);
+            _bodyRatio = _authoredRootScale > 0f ? transform.localScale.x / _authoredRootScale : 1f;
+        }
+
         protected override void OnTeamChanged()
         {
             var body = BodyPrisms;
@@ -571,9 +594,9 @@ namespace CosmicShore.Gameplay
             int neighborCount = 0;
             float averageSpeed = 0f;
 
-            float detectionRadius = Mathf.Max(0f, data.detectionRadius);
-            float separationRadius = Mathf.Max(0f, data.separationRadius);
-            float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
+            float detectionRadius = DetectionRadius;
+            float separationRadius = SeparationRadius;
+            float consumeRadius = ConsumeRadius * GetAggressionConsumeRadiusMultiplier();
 
             // Squared-distance space for the neighbor loops below: every `distance` use is a
             // radius threshold or the inverse-square weight diff.normalized/distance
@@ -889,7 +912,7 @@ namespace CosmicShore.Gameplay
 
             // UpdateBehavior normally publishes these; the puppet skips it, so set the same
             // aggression-scaled radius here rather than feeding against a stale zero.
-            _consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
+            _consumeRadius = ConsumeRadius * GetAggressionConsumeRadiusMultiplier();
             _consumeRadiusSqr = _consumeRadius * _consumeRadius;
 
             if (_feedHoldUntil > Time.time) return;
@@ -920,8 +943,8 @@ namespace CosmicShore.Gameplay
             }
 
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
-            int found = spatialIndex != null && spatialIndex.IsAvailable && data.feedingClusterRadius > 0f
-                ? spatialIndex.QuerySphere(_feedFocusPoint, data.feedingClusterRadius, FeedScratch)
+            int found = spatialIndex != null && spatialIndex.IsAvailable && FeedingClusterRadius > 0f
+                ? spatialIndex.QuerySphere(_feedFocusPoint, FeedingClusterRadius, FeedScratch)
                 : 0;
             for (int i = 0; i < found && bites < data.maxClusterBites; i++)
             {
@@ -1013,7 +1036,7 @@ namespace CosmicShore.Gameplay
 
         public override float LeashTopSpeed => data ? Mathf.Max(0f, data.maxSpeed) * GetAggressionSpeedMultiplier() : 0f;
         public override float LeashMinSpeed => data ? Mathf.Max(0f, data.minSpeed) : 0f;
-        public override float LeashMouthReach => data ? Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier() : 0f;
+        public override float LeashMouthReach => data ? ConsumeRadius * GetAggressionConsumeRadiusMultiplier() : 0f;
         public override bool LeashCanEat(Prism prism) => IsEdibleForHerbivore(prism);
 
         // --- Hunting (predator, per-frame) -----------------------------------
@@ -1059,7 +1082,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The attack: any live, non-immune herbivore whose root comes within
-        /// data.attackRange of the mouth (danger-prism centroid) is devoured — it breaks
+        /// <see cref="AttackRange"/> of the mouth (danger-prism centroid) is devoured — it breaks
         /// apart and its prisms suction into the mouth (Predated with a devour target).
         /// Pure math against the cell's small fauna registry, every frame: no physics,
         /// no contact — so the kill is deterministic ("flawless") and the danger prisms
@@ -1068,7 +1091,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void TryDevourPreyAtMouth()
         {
-            float attackRangeSqr = data.attackRange * data.attackRange;
+            float attackRangeSqr = AttackRange * AttackRange;
             if (!_mouth || attackRangeSqr <= 0f) return;
             var host = cell;
             if (host == null) return;
@@ -1093,7 +1116,7 @@ namespace CosmicShore.Gameplay
             if (VirtualFauna.Any)
             {
                 s_swarmPrey.Clear();
-                VirtualFauna.PreyInReach(mouthPos, data.attackRange, this, true, s_swarmPrey);
+                VirtualFauna.PreyInReach(mouthPos, AttackRange, this, true, s_swarmPrey);
                 for (int i = 0; i < s_swarmPrey.Count; i++)
                 {
                     var f = s_swarmPrey[i];

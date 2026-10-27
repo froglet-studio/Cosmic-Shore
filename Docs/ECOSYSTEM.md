@@ -12318,3 +12318,43 @@ divided by the pond's radius, a perception radius or a speed, and those stayed i
 spacing, catch and confusion radii, §64.4) feeds the steering spring and the catch rule, not the networks, and the
 harness's arms parity and behaviour checks (A1-A4) pass.
 
+### 64.8 A Mass creature has SIZE: its body holds its heart's swing (Garrett, 2026-10-27)
+
+*"The sharks have a mass crystal that would be fine, but with the effect on mass crystals where the triangular segments
+socket in and out of the crystal, the segments end up clipping with the shark's spindle body ... let mass have size."*
+The Mass crystal's depth prisms (`CrystalDepthPrisms`, `MassDepthPrisms.mat`: `_Reach` 2.5, `_PlateScaleStart` 0.6,
+`_FaceSplit` 0.25 x `_SplitUnit`) ride columns out from the crystal: at the one crystal size the crystal is **5.0 u** in
+radius seated and its segments reach **11.85 u** at the tops of their columns (2.37x), the far side of the crystal open
+whichever way the camera looks. A creature whose heart sits in a cavity of its own translucent spindle body (the shader
+is transparent) sees every segment that crosses the skin. So **a Mass creature is grown until the whole swing clears its
+body**: its Mass variant sets `FaunaVariantTuning.BaseBodyScale`, and `LightFauna` carries the body-relative dials
+(separation, consume, feeding cluster, attack; detection never less than consume) by the variant's body against the
+prefab's. Speeds, senses and territory stay world. Charge, Space and Time variants keep the prefab body.
+
+| Mass variant | body clears the swing at | shipped (x 1.05) | root | body length |
+|---|---|---|---|---|
+| Shark | x 3.44 | x 3.61 | 0.8385 → 3.03 | ~56 → 203 u |
+| QuadFish | x 2.50 | x 2.63 | 2.0286 → 5.33 | ~46 → 122 u |
+| Clawfish | x 4.00 | x 4.20 | 1.6412 → 6.89 | ~28 → 120 u |
+
+Measured by posing every depth prism at its column top against the body's triangles and body prisms (a ray from the
+heart to each crystal vertex that crosses one is a clip): before, 39% / 13% / 30% of the crystal crossed the body at full
+reach (14% / 3% / 16% already at rest); at the shipped scales, 0% at rest, half and full reach. The measurement ran on a
+scratch dump of the shipped prefabs through Amoebius's content library - **no gate holds these numbers yet**; the gate
+to add is `verify_fauna_heart_seat.py` measuring the swing rather than the seated sphere. Before / after:
+`Docs/Ecology/FaunaScale/mass_before_after.png`.
+
+**Where size cannot help, and what is left open:**
+- **The Brittlestar and the tadpole**: the heart sits ON the body (the Brittlestar's disc surface, the tadpole's spindle
+  runs through it), so scaling about the heart never moves the skin off it (68-76% / 16% of the swing crosses at every
+  scale). Their fix is a SEAT, not a size - seat the heart where the body is not, or give their hearts a shorter reach.
+- **The shark's teeth** (its danger prisms) sit 0.5-1.7 u from its heart - the heart is in its jaws - so they pass
+  through the crystal at any size, as they did at rest before this change.
+- **Space for fauna.** With size now Mass's, Space's fauna identity is open (flora keep §51: the lattices are unchanged).
+  The candidates: Space as SPREAD (the widest school spacing and cohesion - the group, not the body, takes the room),
+  as ASPECT (the same body volume, stretched long and thin - flora's Space law, §51.1), or as REACH (it senses and
+  strikes from furthest). Undecided.
+
+**What it costs.** No collider is added. A Mass shark's body prisms are x 47 the volume of its siblings' (about 2,000 a
+body), against cell Frenzy volumes in the millions; it is food when it dies.
+

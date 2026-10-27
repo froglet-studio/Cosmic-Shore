@@ -16603,3 +16603,20 @@ forks as drift, as it already did before this change (two generators write those
 7. Tandava Severing: cut the Great Serpent through its middle. **Pass:** the piece crawls off as the Severed; the
    Ten-Headed Serpent rolled up at a plant is never parted without a cut (`SeverLink` 32.7).
 
+
+
+## 🔴 2026-10-27 — Mass creatures grown to hold their crystal's swing (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `LightFauna.cs` compiles in Amoebius's `CosmicShore.Live`
+build (0 errors); `verify_fauna_heart_seat.py` and `check_console_logging.py` pass. The clearance was measured on the
+shipped prefabs headless, not in the editor (`Docs/ECOSYSTEM.md` §64.8; `Docs/Ecology/FaunaScale/mass_before_after.png`).
+
+1. Let Unity compile. **Pass:** no errors from `LightFauna.cs`.
+2. Spawn Matrix (or a Blob / Wildlife cell): release a Mass shark, QuadFish and Clawfish beside a Charge one of each.
+   **Pass:** each Mass creature is about 3.6x / 2.6x / 4.2x its siblings; its heart is the same size as theirs; as the
+   crystal's triangular segments rise and sink, none passes through the creature's body (the shark's teeth still cross
+   it - its heart sits in its jaws).
+3. Watch a Mass shark hunt and a Mass QuadFish graze. **Pass:** they swim at their siblings' speed, keep apart from
+   their own kind, and eat (the mouth reach grew with the body).
+4. Kill a Charge shark, then a Mass shark, reusing the pool. **Pass:** the next Charge shark is its normal size (a pooled
+   body returns to the prefab size when its variant keeps it).
