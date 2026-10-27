@@ -645,13 +645,13 @@ part** or **proposal**.
 | | LT | Slipstream | Hold to lead: the Sting and the Bract form up in its wake, one, two, three, drafting at its speed x1.3 | Remora, Jacks The Call | in the sim (round 2) |
 | | L5 | Beacon | A pulse lights the whole window | Dolphin Pilot Echo | in the sim |
 | Sting (Charge) | RT | Nematocyst Volley | Aimed venom to 160 u; breaks a lit crystal's husk (Charge x1 to x3 prisms a round), else smashes mass | Sparrow Pulsefire, Urchin Chain Spikes | in the sim |
-| | LT | Tentacle Lash | The Sting streams a tentacle of its trail; hold to coil (turn x2), let go to whip it straight, cutting mass; a rival hull struck loses petals, which spill as crystals | Eel, Thresher, Wrasse Kite Ram | proposal |
+| | LT | Tentacle Lash | The Sting streams a tentacle of its trail; hold to coil (turn x2), let go to whip it straight, cutting mass; a rival hull struck loses a petal, which spills as a crystal | Eel, Thresher, Wrasse Kite Ram | in the sim (round 2) |
 | | passive | Reel | A hit on a target over 120 u away pulls the Sting to it like a bungee: the slowest zooid catches up by hitting things | Gibbon, Shrike Void Sling | proposal |
 | | L5 | Contagion | A husk the venom opens poisons the next husk in the window | Manta Contagion, Urchin Overcharge | proposal |
 | Bract (Mass) | RT | Net Cast | Catches freed crystals in reach into the hold (3); Mass x1 to x1.6 | Jacks netting, Angler Lure | in the sim |
 | | LT | Bract Shell | Super-shielded plates, open ahead, clear the mass they meet; let go and they drop as danger prisms behind the hold | Orca Danger Shield, Rhino afterimages | in part (clears mass) |
 | | passive | Anchor | Stopped on mass it digs in: net reach x2, the others dock in half the time; the colony forms where it sits | Grizzly Dig In, Shrike Nest, Gecko | in part (gather at the Bract) |
-| | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in part (hold +1) |
+| | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in the sim (round 2) |
 | Colony (Time) | passive | Digest | One held crystal into the score every 4 s; Time x1 to x0.5 | its own | in the sim |
 | | Helm RT | Ram Spool | Hold to wind up; at full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit | Rhino Ramp Spool and Breaker, Thresher | in part (tap pulse) |
 | | Helm LT | Scatter | Hold to split; let go and the three are flung x1.4 along the stick, each to its own next crystal | Remora sling, Gecko hop, Butterfly Fold | in part (hold to split) |
@@ -697,3 +697,43 @@ the fastest level (off, Hard and Medium tie on I1). Easy and Medium lose time wi
 crystals break the line. A rule where the Bell leads only with nothing of its own to light was tried and dropped (it
 sat inside the noise on every level). Also found and fixed: the AI Bract held RT down after a cast that missed, and the
 net only casts on a fresh press, so it never cast again (it stalled one Easy run at 6 crystals).
+
+**2. Tentacle Lash (the Sting's LT) and Trawl (Mass level 5).** The lab gained **rivals**: Game Config > Rivals (0 to 3,
+default 2), stand-ins in the Ruby, Gold and Blue domains that fly the course at 85 u/s carrying 8 petals each (a ring of
+small crystals round the hull, one per petal). They take no crystals, have no abilities and never strike back. The
+Sting streams a 60 u tentacle (its own path). Holding LT coils it: the turn doubles and the tentacle bunches to half.
+Letting go after at least 30% of a 0.6 s coil whips it straight from the hull toward its tip (60% to 100% of its length
+with the coil), cutting the neutral mass within 9 u and taking one petal from a rival within 13 u. The petal spills as
+a crystal that drifts for 25 s. With Trawl the Bract's net takes it too, and the colony digests it as a point toward the
+finish. The AI coils while a rival with petals is within 96 u, and lets go when the rival is on the tentacle's line.
+
+Also fixed in this step, because Slipstream made it four times worse: the AI flew straight at a crystal behind a closed
+wall and rammed the wall (244 wall contacts in the first 90 s of I1 Hard before this round, 1008 with Slipstream). A
+zooid whose path crosses a closed wall now aims just past the wall's nearest edge; a crystal lying in a wall's own
+plane (an earlier lap's crystal at the same anchor) is reached from its side. **These numbers supersede the Slipstream
+table above**, which was measured before the detour (8 seeds, mean and standard deviation):
+
+| Course, level | Old AI, no new abilities | Detour only | Slipstream + lash + detour |
+|---|---|---|---|
+| I1 Hard | 419 (sd 15) | 404 (2) | 344 (14) |
+| I1 Medium | 423 (17) | 412 (10) | 397 (16) |
+| I1 Easy | 458 (16) | 431 (14) | 430 (16) |
+| I2 Hard | 481 (7) | 479 (8) | 442 (34) |
+| I2 Medium | 492 (11) | 496 (11) | 491 (23), 1 run over the limit |
+| I2 Easy | 521 (15) | 521 (8) | 512 (31), 4 over the limit (24 to 29 of 30) |
+
+| Lash and Trawl (8 seeds) | I1 Hard | I1 Easy | I2 Hard |
+|---|---|---|---|
+| Mass 0, lash off | 336 | 436 | 443 |
+| Mass 0, lash on | 344 (0.5 hits a run) | 430 (1.1 hits) | 442 (0 hits) |
+| Mass 5, lash off | 350 | 418 | 473 |
+| Mass 5 (Trawl), lash on | 344 (0.6 stolen a run) | 421 (0.6 stolen) | 470 (0.1 stolen) |
+
+Found: the lash works, and costs nothing once the AI halves its stick while coiled (a coiled Sting turns twice as fast,
+and the AI's steering overshot: before that it cost about 50 s). But the AI lands about one lash in eight, so the
+Lash, Trawl, digest steal adds at most one crystal a run: rivals in a race rarely pass within the tentacle's reach.
+It is a person's ability for now, and a better AI rule (hunt a rival while in transit) is the next step if the steal is
+kept. **Mass level 5 is slower on I2** (473 against 443 for Hard, every Easy run over the limit): its extra hold slot lets
+the crew work past a walled crystal and fly back for it later. Fusing at a walled crystal whenever the hold carries
+anything was tried and was slower nearly everywhere, so it was dropped. **Decision needed (designer):** whether Trawl's
++1 hold stays, since it slows the loop it belongs to.

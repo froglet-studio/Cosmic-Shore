@@ -32,7 +32,7 @@
       lore: 'The swimming bell: fast, sharp, and blind to everything but light. It carries the lantern that finds crystals in the dark. It has no weapon and no net. LT leads: the Sting and the Bract draft in its wake (Slipstream).' },
     { id: 'sting', name: 'Sting', role: 'Attack', can: 'open', cruise: 60, turn: 85, roll: 100, color: 0xff6fb0, body: 'sting',
       move: { name: 'Venom shot', info: 'breaks the husk round a LIT crystal ahead, one prism per shot; smashes mass', range: 160, rate: 0.25 },
-      lore: 'The stinging tentacle: slow to turn, and the only part that can open a husk. It cannot see a dark crystal and cannot carry one.' },
+      lore: 'The stinging tentacle: slow to turn, and the only part that can open a husk. It cannot see a dark crystal and cannot carry one. LT coils its tentacle; let go and it lashes, cutting mass and stripping a rival of a petal.' },
     { id: 'bract', name: 'Bract', role: 'Defence', can: 'catch', cruise: 66, turn: 100, roll: 110, color: 0xa3ff8f, body: 'bract',
       move: { name: 'Cast the net', info: 'catches a FREED crystal within the net radius into the hold', cool: 0.8 },
       lore: 'The shield leaf: the only part with a hold. It nets a freed crystal and carries it, unscored, until the colony digests it. LT is its ward: mass near it is shed.' },
@@ -42,7 +42,7 @@
   const SEATS = ['Helm', 'Lance', 'Ward'];   // the colony's three seats, one per zooid (Bell flies, Sting lances, Bract wards)
 
   // ---- the loop's numbers (the SPEC sliders; every one a proposal) ----
-  const DEFAULTS = { lanternRange: 90, huskPrisms: 6, huskPerShot: 1, netRadius: 24, holdCap: 3, gatherRange: 120, fuseSeconds: 1.2, digestSeconds: 4, wallHits: 3, lanceRange: 140, lanceRate: 0.3, shieldRadius: 30, splitSeconds: 0.5, surgeSeconds: 0, wakeLength: 140, wakeWidth: 26, draftMult: 1.3, slotGap: 22, transitRange: 220 };
+  const DEFAULTS = { lanternRange: 90, huskPrisms: 6, huskPerShot: 1, netRadius: 24, holdCap: 3, gatherRange: 120, fuseSeconds: 1.2, digestSeconds: 4, wallHits: 3, lanceRange: 140, lanceRate: 0.3, shieldRadius: 30, splitSeconds: 0.5, surgeSeconds: 0, wakeLength: 140, wakeWidth: 26, draftMult: 1.3, slotGap: 22, transitRange: 220, tentacleLength: 60, lashWidth: 9, coilSeconds: 0.6, lashCool: 1.5, shedLife: 25, rivalSpeed: 85, rivalPetals: 8 };
   const SPEC = [
     ['lanternRange', 30, 200, 5, 'Lantern range', 'How far the Bell lights a dark crystal (u); the pulse doubles it for its second'],
     ['huskPrisms', 3, 12, 1, 'Husk prisms', 'Shielded prisms round every crystal; the Sting must break them all before the Bract can net it'],
@@ -63,6 +63,13 @@
     ['draftMult', 1, 2, 0.05, 'Draft', 'Slipstream: a zooid in the wake behind its slot may fly at the Bell\'s speed times this (the Remora\'s x1.3)'],
     ['slotGap', 10, 50, 2, 'March gap', 'Slipstream: the gap between places in the line, one, two, three (u)'],
     ['transitRange', 80, 500, 10, 'Transit range', 'AI: a zooid whose next job is farther than this joins the Bell\'s wake; the Bell leads while one does (u)'],
+    ['tentacleLength', 20, 160, 5, 'Tentacle', 'Tentacle Lash: how long the Sting\'s tentacle is, and how far a full lash reaches (u)'],
+    ['lashWidth', 3, 24, 1, 'Lash width', 'Tentacle Lash: how close to the tentacle a rival or mass must be to be struck (u)'],
+    ['coilSeconds', 0.2, 2, 0.05, 'Coil time', 'Tentacle Lash: seconds of LT for a full coil; a lash needs at least 30% of one'],
+    ['lashCool', 0.3, 5, 0.1, 'Lash cooldown', 'Tentacle Lash: seconds before the Sting can coil again'],
+    ['shedLife', 5, 60, 1, 'Shed crystal life', 'Seconds a crystal shed by a lashed rival drifts before it fades'],
+    ['rivalSpeed', 40, 160, 5, 'Rival speed', 'How fast the stand-in rivals fly the course (u/s)'],
+    ['rivalPetals', 1, 20, 1, 'Rival petals', 'Petals each rival carries: each lash that strikes it sheds one as a crystal'],
   ];
   const ELEMENTS = {   // the colony's four, proposals (the fleet contract: one scaled parameter per element)
     charge: { name: 'Venom', param: 'huskPerShot', range: [1, 3], l5: 'Contagion', tip: 'Charge (the Sting): each venom round breaks more of a husk (x1 to x3). L5 Contagion (proposal, not flown yet): a husk the venom opens poisons the next husk in the window.' },
@@ -72,7 +79,7 @@
   };
   // ================= the ability kit (round 2 proposal, 2026-10-27): every zooid's passive and two triggers, the colony's seats; borrowed from the fleet =================
   // state: 'sim' = flown by this page today, 'part' = flown in part, 'new' = a proposal the sim does not fly yet
-  const KIT = [["Bell", "space", "passive", "Lantern", "Lights every dark crystal within its reach. Space grows the reach x1 to x1.8.", "Dolphin Echo Sight, Angler Paint", "sim"], ["Bell", "space", "RT", "Pulse Jet", "Hold to inhale, release to jet. Release on the beat of your last two pulses and the chain grows x1.1 a pulse, up to x1.8. Each pulse doubles the lantern for 1 s.", "Octopus pulse jet", "part"], ["Bell", "space", "LT", "Slipstream", "Hold to lead: the Sting and the Bract form up in the Bell's wake, one, two, three, and draft at its speed x1.3. The march is a Bell ability, not a rule.", "Remora draft, Jacks The Call", "sim"], ["Bell", "space", "L5", "Beacon", "A pulse lights every crystal of the window at once.", "Dolphin Pilot Echo", "sim"], ["Sting", "charge", "RT", "Nematocyst Volley", "Hold for aimed venom out to 160 u. A round breaks the husk of a lit crystal (Charge: x1 to x3 husk prisms a round); with no crystal on the line it smashes the mass there.", "Sparrow Pulsefire, Urchin Chain Spikes", "sim"], ["Sting", "charge", "LT", "Tentacle Lash", "The Sting streams a tentacle of its own trail. Hold to coil: the turn doubles and the tentacle bunches. Let go and it whips straight, cutting the mass it sweeps; a rival hull it strikes loses petals, which spill as crystals.", "Eel coil and whip, Thresher, Wrasse Kite Ram", "new"], ["Sting", "charge", "passive", "Reel", "When a volley or a lash lands on a target more than 120 u away, a strand pulls the Sting toward it like a bungee: the slowest zooid catches up by hitting things.", "Gibbon web, Shrike Void Sling", "new"], ["Sting", "charge", "L5", "Contagion", "A husk the venom opens poisons the next husk in the window: one volley opens two crystals.", "Manta Contagion, Urchin Overcharge", "new"], ["Bract", "mass", "RT", "Net Cast", "Catches the freed crystals within its reach into the hold (three at most). Mass grows the reach x1 to x1.6. Only the Bract can carry the catch.", "Jacks netting, Angler Lure", "sim"], ["Bract", "mass", "LT", "Bract Shell", "Hold to ring the Bract in super-shielded plates, open ahead, that clear the mass they meet. Let go and the plates drop where they are as danger prisms: a trap for a rival on the hold's tail.", "Orca Danger Shield, Rhino afterimages", "part"], ["Bract", "mass", "passive", "Anchor", "Stop on mass and the Bract digs in: its net reaches twice as far and the other two dock to it in half the time. Where the Bract sits is where the colony forms.", "Grizzly Dig In, Shrike Nest, Gecko stick", "part"], ["Bract", "mass", "L5", "Trawl", "The hold takes one more, and the net also catches the crystals a rival sheds when the Sting lashes it.", "Wrasse Crystal Steal, Squirrel Steal", "part"], ["Colony", "time", "passive", "Digest", "One held crystal into the score every 4 s. Time shortens it x1 to x0.5. The hold empty and the wall open, the colony splits on its own.", "Siphonophore (its own)", "sim"], ["Colony", "time", "Helm RT", "Ram Spool", "Hold to wind the colony up. At full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit.", "Rhino Ramp Spool and Breaker, Thresher smash speed", "part"], ["Colony", "time", "Helm LT", "Scatter", "Hold to split. Let go and the three zooids are flung x1.4 along the stick, each toward its own next crystal.", "Remora sling, Gecko hop, Butterfly Fold", "part"], ["Colony", "time", "Lance RT", "Siphon Lance", "Aim with the right stick: a hitscan line out to 140 u that cuts mass and wall cells.", "Shrike Void Lance, Serpent Sniper Shot", "sim"], ["Colony", "time", "Ward LT", "Colony Shell", "While held, the hull ploughs through the mass it meets instead of being slowed.", "Grizzly Rush, Brittle Star Speed Mode", "sim"], ["Colony", "time", "Ward RT", "Chain Wake", "The colony lays its own body behind it as a short chain of shielded prisms, a wall a chasing rival bounces off.", "Eel body, Brittle Star corner trails", "new"], ["Colony", "time", "L5", "Surge", "After a split the zooids keep the colony's speed for 3 s.", "Remora sling, Urchin Slipstream", "sim"]].map(([part, el, input, name, what, from, state]) => ({ part, el, input, name, what, from, state }));
+  const KIT = [["Bell", "space", "passive", "Lantern", "Lights every dark crystal within its reach. Space grows the reach x1 to x1.8.", "Dolphin Echo Sight, Angler Paint", "sim"], ["Bell", "space", "RT", "Pulse Jet", "Hold to inhale, release to jet. Release on the beat of your last two pulses and the chain grows x1.1 a pulse, up to x1.8. Each pulse doubles the lantern for 1 s.", "Octopus pulse jet", "part"], ["Bell", "space", "LT", "Slipstream", "Hold to lead: the Sting and the Bract form up in the Bell's wake, one, two, three, and draft at its speed x1.3. The march is a Bell ability, not a rule.", "Remora draft, Jacks The Call", "sim"], ["Bell", "space", "L5", "Beacon", "A pulse lights every crystal of the window at once.", "Dolphin Pilot Echo", "sim"], ["Sting", "charge", "RT", "Nematocyst Volley", "Hold for aimed venom out to 160 u. A round breaks the husk of a lit crystal (Charge: x1 to x3 husk prisms a round); with no crystal on the line it smashes the mass there.", "Sparrow Pulsefire, Urchin Chain Spikes", "sim"], ["Sting", "charge", "LT", "Tentacle Lash", "The Sting streams a tentacle behind it. Hold to coil: the turn doubles and the tentacle bunches. Let go and it whips straight, cutting the mass it sweeps; a rival hull it strikes loses a petal, which spills as a crystal.", "Eel coil and whip, Thresher, Wrasse Kite Ram", "sim"], ["Sting", "charge", "passive", "Reel", "When a volley or a lash lands on a target more than 120 u away, a strand pulls the Sting toward it like a bungee: the slowest zooid catches up by hitting things.", "Gibbon web, Shrike Void Sling", "new"], ["Sting", "charge", "L5", "Contagion", "A husk the venom opens poisons the next husk in the window: one volley opens two crystals.", "Manta Contagion, Urchin Overcharge", "new"], ["Bract", "mass", "RT", "Net Cast", "Catches the freed crystals within its reach into the hold (three at most). Mass grows the reach x1 to x1.6. Only the Bract can carry the catch.", "Jacks netting, Angler Lure", "sim"], ["Bract", "mass", "LT", "Bract Shell", "Hold to ring the Bract in super-shielded plates, open ahead, that clear the mass they meet. Let go and the plates drop where they are as danger prisms: a trap for a rival on the hold's tail.", "Orca Danger Shield, Rhino afterimages", "part"], ["Bract", "mass", "passive", "Anchor", "Stop on mass and the Bract digs in: its net reaches twice as far and the other two dock to it in half the time. Where the Bract sits is where the colony forms.", "Grizzly Dig In, Shrike Nest, Gecko stick", "part"], ["Bract", "mass", "L5", "Trawl", "The hold takes one more, and the net also catches the crystals a rival sheds when the Sting lashes it.", "Wrasse Crystal Steal, Squirrel Steal", "sim"], ["Colony", "time", "passive", "Digest", "One held crystal into the score every 4 s. Time shortens it x1 to x0.5. The hold empty and the wall open, the colony splits on its own.", "Siphonophore (its own)", "sim"], ["Colony", "time", "Helm RT", "Ram Spool", "Hold to wind the colony up. At full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit.", "Rhino Ramp Spool and Breaker, Thresher smash speed", "part"], ["Colony", "time", "Helm LT", "Scatter", "Hold to split. Let go and the three zooids are flung x1.4 along the stick, each toward its own next crystal.", "Remora sling, Gecko hop, Butterfly Fold", "part"], ["Colony", "time", "Lance RT", "Siphon Lance", "Aim with the right stick: a hitscan line out to 140 u that cuts mass and wall cells.", "Shrike Void Lance, Serpent Sniper Shot", "sim"], ["Colony", "time", "Ward LT", "Colony Shell", "While held, the hull ploughs through the mass it meets instead of being slowed.", "Grizzly Rush, Brittle Star Speed Mode", "sim"], ["Colony", "time", "Ward RT", "Chain Wake", "The colony lays its own body behind it as a short chain of shielded prisms, a wall a chasing rival bounces off.", "Eel body, Brittle Star corner trails", "new"], ["Colony", "time", "L5", "Surge", "After a split the zooids keep the colony's speed for 3 s.", "Remora sling, Urchin Slipstream", "sim"]].map(([part, el, input, name, what, from, state]) => ({ part, el, input, name, what, from, state }));
   const KIT_COMBOS = ["Light, venom, net, digest: each zooid's verb is the next one's condition, so none of them scores alone.", "Lash, Trawl, Digest: the Sting knocks a rival's petals loose as crystals, the Bract nets them, the colony digests them. A steal no single zooid can finish.", "Slipstream carries the slow pair: the Bell leads, and the Sting and the Bract keep its pace only in its wake.", "Anchor sets the fuse point, and the Bract Shell's danger drop covers the docking.", "The Bell's pulse chain carries into the fuse: the colony's spool starts at the chain's multiplier.", "Scatter aims the split: the three zooids land on the window's three crystals, one each."];
   const STYLES = [
     { name: 'Balanced', lv: { charge: 0, mass: 0, space: 0, time: 0 }, info: 'Every element at 0: the lab\'s numbers.' },
@@ -83,7 +90,7 @@
 
   // ================= settings =================
   const S = { course: 1, seat: 0, levels: ['Hard', 'Hard', 'Hard'], nobody: false, view: 0, cam: 'Chase', speed: 1, thinking: true,
-    idleHold: true, aiMoves: true, aiFuse: true, massDensity: 1, trigDepth: 1, style: 'Balanced', lv: { charge: 0, mass: 0, space: 0, time: 0 }, params: {} };
+    idleHold: true, aiMoves: true, aiFuse: true, massDensity: 1, rivals: 2, trigDepth: 1, style: 'Balanced', lv: { charge: 0, mass: 0, space: 0, time: 0 }, params: {} };
   const LS = 'cs.studio.siphonophore.v1';
   try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s, { lv: Object.assign({}, S.lv, s.lv || {}), params: Object.assign({}, s.params || {}), levels: (s.levels || S.levels).slice(0, 3) }); } catch (e) { /* storage blocked */ }
   function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
@@ -156,7 +163,8 @@
     const track = buildTrack(TRACKS[courseId]);
     const W = { track, course: courseId, prisms: [], grid: new Grid(24), bodies: [], t: 0, rand: rng(seed), seed, events: [], over: false, dirty: true, watch: 0, finishT: null,
       massDensity: opts.massDensity != null ? opts.massDensity : S.massDensity, walls: [], wallsBroken: 0, crystals: [], digested: 0, rings: [], shots: [], seatsAI: levels.slice(), nobody: !!opts.nobody,
-      policy: opts.policy || 'crew', slipstream: opts.slipstream !== false, leadRule: opts.leadRule || 'always', lv: Object.assign({}, opts.lv || S.lv), m: null, swaps: 0, fusedT: 0, apartT: 0,
+      policy: opts.policy || 'crew', detour: opts.detour !== false, slipstream: opts.slipstream !== false, leadRule: opts.leadRule || 'always', lv: Object.assign({}, opts.lv || S.lv), m: null, swaps: 0, fusedT: 0, apartT: 0,
+      rivals: [], stolen: 0, lashHits: 0, lash: opts.lash !== false,
       crew: { form: 'apart', hold: 0, held: [], gather: 0, split: 0, seat: opts.seat != null ? opts.seat : S.seat, shield: false, calling: false, colony: null, fuses: 0, digest: 0, lanceT: 0, ramT: 0, uses: 0, aim: { yaw: 0, pitch: 0 } } };
     W.m = mults(W.lv);
     for (let i = 0; i < track.line.length; i++) addPrism(W, { pos: track.line[i].clone(), quat: basisQuat(track.tan[i]), scale: [3.2, 3.2, 9], owner: -1, domain: 'track', shield: false, danger: false, kind: 'track' });
@@ -175,6 +183,9 @@
       for (let h = 0; h < n; h++) { const ang = h / n * Math.PI * 2; const p = addPrism(W, { pos: c.pos.clone().addScaledVector(right, Math.cos(ang) * 9).addScaledVector(up, Math.sin(ang) * 9), quat: q.clone().multiply(new Q().setFromAxisAngle(AZ, ang)), scale: [2.4, 2.4, 6], owner: -1, domain: 'husk', shield: true, danger: false, kind: 'husk', crystal: c }); c.husk++; }
       W.crystals.push(c);
     }
+    // stand-in rivals: they fly the course carrying petals; they take no crystals (a lab stand-in, so the lash has something to strike)
+    const nR = clamp(opts.rivals != null ? opts.rivals : S.rivals, 0, 3), RD = ['ruby', 'gold', 'blue'], n = track.line.length;
+    for (let r = 0; r < nR; r++) { const k = Math.floor(n * (r + 1) / (nR + 1)), pos = track.line[k].clone().add(new V(0, 8, 0)), q = basisQuat(track.tan[k]); W.rivals.push({ i: r, domain: RD[r], pos, quat: q.clone(), course: track.tan[k].clone().normalize(), speed: W.m.rivalSpeed, hint: k, petals: Math.round(W.m.rivalPetals), hitT: -9 }); }
     const t0 = track.tan[0], q0 = basisQuat(t0), side = new V(1, 0, 0).applyQuaternion(q0);
     ZOOIDS.forEach((z, i) => {
       const B = makeBody(W, z, track.line[0].clone().addScaledVector(side, (i - 1) * 26).addScaledVector(t0, -40), q0, i);
@@ -195,7 +206,7 @@
     }
   }
   // the WINDOW: the next three crystals not yet in the hold or digested (the AI works on these; the markers show them)
-  function windowOf(W) { const out = []; for (const c of W.crystals) { if (c.state === 'held' || c.state === 'digested') continue; out.push(c); if (out.length >= 3) break; } return out; }
+  function windowOf(W) { const out = []; for (const c of W.crystals) { if (c.shed || c.state === 'held' || c.state === 'digested') continue; out.push(c); if (out.length >= 3) break; } return out; }
   function nearestIndex(track, pos, hint, full) {
     const L = track.line, n = L.length; let best = hint, bd = Infinity;
     if (full) { for (let i = 0; i < n; i++) { const d = L[i].distanceToSquared(pos); if (d < bd) { bd = d; best = i; } } return best; }
@@ -244,6 +255,10 @@
       if (press && K.cool <= 0 && !K.leading) { B.boost = mv.boost; B.boostT = mv.time; K.pulseT = 1; K.cool = mv.cool; B.stats.uses++; W.events.push('Bell: pulse'); if (W.m.l5.space) for (const c of windowOf(W)) if (c.state === 'dark' && !(c.wall && !c.wall.broken)) { c.state = 'lit'; c.litAt = W.t; } }
       if (K.pulseT > 0) K.pulseT -= dt; K.active = B.boostT > 0;
     } else if (z.can === 'open') {
+      // Tentacle Lash: LT coils (the turn doubles, the tentacle bunches); letting go whips it straight
+      K.lashCool = Math.max(0, (K.lashCool || 0) - dt); if (K.whipT > 0) K.whipT -= dt;
+      if (lt && K.lashCool <= 0) { K.coil = Math.min(1, (K.coil || 0) + dt / W.m.coilSeconds); K.coiling = true; }
+      else if (K.coiling) { K.coiling = false; if (K.coil >= 0.3) lash(W, B); K.coil = 0; }
       if (rt) {
         K.active = true; K.gunT = (K.gunT || 0) - dt;
         if (K.gunT <= 0) {
@@ -263,12 +278,40 @@
     } else if (z.can === 'catch') {
       if (press && K.cool <= 0) {
         K.netT = 0.35; K.cool = mv.cool; B.stats.uses++; let got = 0;
-        for (const c of W.crystals) { if (c.state !== 'freed' || (c.wall && !c.wall.broken) || W.crew.hold >= W.m.holdCap) continue; if (c.pos.distanceTo(B.pos) < W.m.netRadius) { c.state = 'held'; W.crew.hold++; W.crew.held.push(c.i); got++; W.events.push('Bract nets crystal ' + (c.i + 1) + ' (hold ' + W.crew.hold + '/' + W.m.holdCap + ')'); if (!W.m.l5.mass || got >= 2) break; } }
+        for (const c of W.crystals) { if (!(c.state === 'freed' || (c.state === 'shed' && W.m.l5.mass)) || (c.wall && !c.wall.broken) || W.crew.hold >= W.m.holdCap) continue; if (c.pos.distanceTo(B.pos) < W.m.netRadius) { c.state = 'held'; W.crew.hold++; W.crew.held.push(c.i); got++; W.events.push('Bract nets ' + (c.shed ? 'a shed crystal' : 'crystal ' + (c.i + 1)) + ' (hold ' + W.crew.hold + '/' + W.m.holdCap + ')'); if (!W.m.l5.mass || got >= 2) break; } }
         if (!got) W.events.push('Bract: the net is empty');
       }
       if (K.netT > 0) K.netT -= dt;
       if (lt) { K.active = true; smashNear(W, B.pos, W.m.shieldRadius * 0.6, 0); }
     }
+  }
+  const segDist = (p, a, b) => { const ab = b.clone().sub(a), t = clamp(p.clone().sub(a).dot(ab) / Math.max(1e-6, ab.lengthSq()), 0, 1); return p.distanceTo(a.clone().addScaledVector(ab, t)); };
+  function tentacleLine(W, B) {   // where a lash lands: from the hull toward the tentacle's tip, as long as the coil throws it
+    const tail = B.tent && B.tent.length > 1 ? B.tent[B.tent.length - 1] : B.pos.clone().addScaledVector(B.course, -1);
+    const dir = tail.clone().sub(B.pos); if (dir.lengthSq() < 1) dir.copy(B.course).negate(); dir.normalize();
+    return { a: B.pos.clone(), b: B.pos.clone().addScaledVector(dir, W.m.tentacleLength * (0.6 + 0.4 * (B.K.coil || 0))) };
+  }
+  function lash(W, B) {
+    const K = B.K, L = tentacleLine(W, B), w = W.m.lashWidth, path = (B.tent || []).slice();
+    const near = (p) => { let d = segDist(p, L.a, L.b); for (let k = 1; k < path.length; k++) d = Math.min(d, segDist(p, path[k - 1], path[k])); return d; };
+    let cut = 0; const mid = L.a.clone().add(L.b).multiplyScalar(0.5);
+    for (const p of W.grid.near(mid, W.m.tentacleLength / 2 + w + 10, tmpArr)) { if (p.kind !== 'mass' || p.dead) continue; if (near(p.pos) < w) { removePrism(W, p); cut++; } }
+    let hits = 0;
+    for (const R of W.rivals) { if (R.petals <= 0 || near(R.pos) > w + 4) continue; R.petals--; R.hitT = W.t; hits++; W.lashHits++;
+      W.crystals.push({ i: W.crystals.length, pos: R.pos.clone(), state: 'shed', shed: true, born: W.t, husk: 0, wall: null, quat: R.quat.clone(), litAt: -1, vel: R.course.clone().multiplyScalar(R.speed * 0.25) });
+      W.events.push('Lash! the ' + R.domain + ' rival sheds a petal (' + R.petals + ' left)'); }
+    if (!hits) W.events.push('Sting: lash' + (cut ? ', ' + cut + ' mass cut' : ''));
+    K.lashCool = W.m.lashCool; K.whip = L; K.whipT = 0.3; B.stats.uses++; B.stats.lashes = (B.stats.lashes || 0) + 1;
+  }
+  function stepRivals(W, dt) {
+    const Ln = W.track.line, n = Ln.length, up = new V(0, 1, 0);
+    for (const R of W.rivals) {
+      R.hint = nearestIndex(W.track, R.pos, R.hint, false); const look = (R.hint + Math.round((30 + R.speed * 0.5) / BASE.blockSpacing)) % n;
+      const side = new V().crossVectors(W.track.tan[look], up); if (side.lengthSq() < 1e-4) side.set(1, 0, 0); side.normalize();
+      const tgt = Ln[look].clone().addScaledVector(up, 8 + 6 * Math.cos(W.t * 0.3 + R.i)).addScaledVector(side, 14 * Math.sin(W.t * 0.4 + R.i * 2.1));
+      R.course.lerp(tgt.sub(R.pos).normalize(), 1 - Math.exp(-3 * dt)).normalize(); R.quat.setFromUnitVectors(new V(0, 0, -1), R.course); R.pos.addScaledVector(R.course, R.speed * dt);
+    }
+    for (const c of W.crystals) { if (c.state !== 'shed') continue; c.pos.addScaledVector(c.vel, dt); c.vel.multiplyScalar(Math.exp(-0.6 * dt)); if (W.t - c.born > W.m.shedLife) { c.state = 'gone'; W.events.push('A shed crystal fades'); } }
   }
   // ---- the common step of a body: contacts, skims, trail ----
   function contacts(W, B, dt, plough) {
@@ -307,7 +350,7 @@
     B.lastInp = inp; B.slow += (1 - B.slow) * (1 - Math.exp(-dt));
     if (B.boostT > 0) B.boostT -= dt; else if (B.boost > 1) B.boost = Math.max(1, B.boost - BASE.boostDecay * dt);
     if (B.surgeT > 0) B.surgeT -= dt;
-    steer(B, inp, dt, B.K.leading ? 0.7 : 1);
+    steer(B, inp, dt, B.K.leading ? 0.7 : B.K.coiling ? 2 : 1);
     const draft = draftSpeed(W, B); B.drafting = draft > 0; if (B.drafting) B.stats.draftT = (B.stats.draftT || 0) + dt;
     const holding = W.crew.calling && W.crew.form === 'apart' && B.i === gatherSeat(W) && inp.ai;
     const cruise = B.surgeT > 0 ? Math.max(B.F.cruise, colonyFlight().cruise) : B.F.cruise;
@@ -315,6 +358,10 @@
     const own = cruise * B.boost * (holding ? 0.45 : working ? 0.55 : 1);
     fly(B, dt, working || holding ? own : Math.max(own, draft), 30, B.drafting ? 3 : 1.5);
     if (W.aiMoves !== false || !inp.ai) zooidMove(W, B, inp, dt);
+    if (B.z.can === 'open') {   // the tentacle: the Sting's own path, sampled every 3 u; a coil bunches it to half its length
+      if (!B.tent) B.tent = [B.pos.clone()]; if (B.tent[0].distanceTo(B.pos) > 3) B.tent.unshift(B.pos.clone());
+      const keep = Math.max(2, Math.ceil(W.m.tentacleLength * (1 - 0.5 * (B.K.coil || 0)) / 3) + 1); if (B.tent.length > keep) B.tent.length = keep;
+    }
     contacts(W, B, dt, false);
     B.stats.top = Math.max(B.stats.top, B.speed);
   }
@@ -363,7 +410,7 @@
     c.shield = ward.lt > 0.3; if (c.shield) smashNear(W, O.pos, W.m.shieldRadius, 0);
     contacts(W, O, dt, true);
     // the digest: one crystal of the hold into the score every digestSeconds; the hold empty, the colony splits itself
-    if (c.hold > 0) { c.digest += dt; if (c.digest >= W.m.digestSeconds) { c.digest = 0; c.hold--; const idx = c.held.shift(); if (idx != null) W.crystals[idx].state = 'digested'; W.digested++; W.events.push('Digested: ' + W.digested + ' / ' + W.track.target); if (W.digested >= W.track.target) { W.finishT = W.t; W.events.push('Tide Run done in ' + W.t.toFixed(1) + ' s'); } } }
+    if (c.hold > 0) { c.digest += dt; if (c.digest >= W.m.digestSeconds) { c.digest = 0; c.hold--; const idx = c.held.shift(); if (idx != null) { W.crystals[idx].state = 'digested'; if (W.crystals[idx].shed) W.stolen++; } W.digested++; W.events.push('Digested: ' + W.digested + ' / ' + W.track.target); if (W.digested >= W.track.target) { W.finishT = W.t; W.events.push('Tide Run done in ' + W.t.toFixed(1) + ' s'); } } }
     W.fusedT += dt; O.stats.top = Math.max(O.stats.top, O.speed);
     if (c.hold <= 0 && W.policy !== 'always' && W.finishT == null) { const goal = c.wallGoal && !c.wallGoal.broken ? c.wallGoal : nearestWallAhead(W, O, 200); if (!goal) splitNow(W, 'hold empty'); }
   }
@@ -381,6 +428,7 @@
       } else W.bodies.forEach((B, i) => stepZooid(W, B, inputs[i], dt));
       W.apartT += dt;
     }
+    stepRivals(W, dt);
     for (const s of W.shots) { if (s.dead) continue; s.t -= dt; if (s.t <= 0) s.dead = true; }
     if (W.shots.length > 60) W.shots = W.shots.filter((s) => !s.dead);
     let dead = 0; for (const p of W.prisms) { if (p.flash > 0) { p.flash = Math.max(0, p.flash - dt * 3); W.dirty = true; } if (p.dead) dead++; }
@@ -388,13 +436,13 @@
     if (!W.over && (W.finishT != null || W.t > BASE.limit)) W.over = true;
   }
   const bodiesNow = (W) => W.crew.form === 'colony' ? [W.crew.colony] : W.bodies;
-  Object.assign(P, { wakePlace, draftSpeed, sticks, steer, fly, edge, zooidMove, stepZooid, stepColony, stepWorld, beginGather, splitNow, slotOf, gatherPoint, gatherSeat, dockProgress, bodiesNow, nearestWallAhead, lightNear });
+  Object.assign(P, { wakePlace, draftSpeed, tentacleLine, segDist, lash, stepRivals, sticks, steer, fly, edge, zooidMove, stepZooid, stepColony, stepWorld, beginGather, splitNow, slotOf, gatherPoint, gatherSeat, dockProgress, bodiesNow, nearestWallAhead, lightNear });
 })();
 
 // ================= part C: the AI (input-only, D4): each zooid's one job, the colony's three seats, the fuse policy =================
 (function () {
   'use strict';
-  const P = window.__siphParts, { V, BASE, DEG, lerp, clamp, easeInv, tmpArr, fwdOf, upOf, rightOf, nearestIndex, slotOf, bodiesNow, windowOf, nearestWallAhead, gatherSeat, wakePlace } = P;
+  const P = window.__siphParts, { V, BASE, DEG, lerp, clamp, easeInv, tmpArr, fwdOf, upOf, rightOf, nearestIndex, slotOf, bodiesNow, windowOf, nearestWallAhead, gatherSeat, wakePlace, tentacleLine, segDist } = P;
   const NO_INPUT = () => ({ pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, a: false, b: false, ai: true });
 
   function aimSticks(B, aim) {
@@ -424,11 +472,24 @@
       const want = B.z.can === 'light' ? 'dark' : B.z.can === 'open' ? 'lit' : 'freed';
       let best = null, bd = Infinity;
       for (const c of win) { if (c.state !== want) continue; if (c.wall && !c.wall.broken) continue; const d = c.pos.distanceToSquared(B.pos); if (d < bd) { bd = d; best = c; } }
+      if (want === 'freed' && W.m.l5.mass) for (const c of W.crystals) { if (c.state !== 'shed') continue; const d = c.pos.distanceToSquared(B.pos); if (d < bd && d < W.m.transitRange * W.m.transitRange * 2) { bd = d; best = c; } }   // Trawl: a shed crystal is the Bract's too
       B.target = best ? best.i : -1; B.toWall = false;
     }
   }
   const lookAhead = (W, B, lookU) => { const n = W.track.line.length; B.hint = nearestIndex(W.track, B.pos, B.hint || 0, false); const look = clamp(Math.round((24 + B.speed * 0.5 + (lookU || 0)) / BASE.blockSpacing), 2, 16); return W.track.line[(B.hint + look) % n].clone().addScaledVector(new V(0, 1, 0), 11); };
   function massAhead(W, B, range) { const fwd = fwdOf(B); let n = 0; for (const p of W.grid.near(B.pos.clone().addScaledVector(fwd, range / 2), range / 2 + 10, tmpArr)) { if (p.kind !== 'mass' && p.kind !== 'rail') continue; const d = p.pos.clone().sub(B.pos), along = d.dot(fwd); if (along < 4 || along > range) continue; if (Math.sqrt(Math.max(0, d.lengthSq() - along * along)) < 14) n++; } return n; }
+  // a closed wall between a zooid and where it is going: aim past its nearest edge instead (only the colony opens a wall)
+  function detour(W, B, aim) {
+    if (W.detour === false) return aim;
+    for (const w of W.walls) {
+      if (w.broken) continue; const wq = { quat: w.quat }, n = fwdOf(wq), c = w.centre.clone().addScaledVector(upOf(wq), 4);
+      const da = B.pos.clone().sub(c).dot(n), db = aim.clone().sub(c).dot(n); if (da * db >= 0 || Math.abs(db) < 20) continue;   // a target in the wall's own plane (a crystal of an earlier lap at the same anchor) is reached from this side
+      const x = B.pos.clone().lerp(aim, da / (da - db)), off = x.sub(c); off.addScaledVector(n, -off.dot(n)); if (off.length() > 34) continue;
+      if (off.lengthSq() < 1) off.copy(upOf(wq)); off.normalize();
+      return c.clone().addScaledVector(off, 42).addScaledVector(n, -Math.sign(da) * 8);   // just past the plane beside the edge, so the zooid crosses
+    }
+    return aim;
+  }
   function zooidAI(W, B) {
     const c = W.crew, inp = NO_INPUT();
     if (c.form === 'gather') {
@@ -458,7 +519,8 @@
       if (job) { aim = job.pos.clone(); why = 'leading the line to crystal ' + (job.i + 1); } else { aim = lookAhead(W, B); why = 'leading along the line'; }
     }
     else { const L = W.bodies[(B.i + 2) % 3]; aim = L.pos.clone().addScaledVector(fwdOf(L), -14).addScaledVector(rightOf(L), B.i === 1 ? 18 : -18); why = 'with the ' + L.name; }   // nothing for it: shadow the zooid before it in the loop
-    const s = aimSticks(B, aim); inp.L = s.L; inp.R = s.R; B.aim = aim; B.aimWhy = why;
+    aim = detour(W, B, aim);
+    const s = aimSticks(B, aim), tm = B.K.coiling ? 0.5 : 1; inp.L = { x: s.L.x * tm, y: s.L.y * tm }; inp.R = { x: s.R.x * tm, y: s.R.y * tm }; B.aim = aim; B.aimWhy = why;   // a coiled Sting turns twice as fast: the AI halves its stick
     if (W.aiMoves !== false) {
       const h = B.hc, late = h ? h.level.press : 0; let want = false;
       if (B.z.can === 'light') inp.lt = W.slipstream !== false && (W.leadRule === 'always' || !b) && W.bodies.some((Z) => Z.i > 0 && Z.transit && Z.pos.distanceTo(B.pos) < W.m.wakeLength * 2.5) ? 1 : 0;   // its own light first; with nothing to light, lead while a zooid is in transit and near enough to reach the wake
@@ -468,6 +530,12 @@
       if (want && !B.K._wantOn && h) h.pressAt = W.t + late * lerp(0.5, 1.5, h.rng()); B.K._wantOn = want;
       if (want && (!late || W.t >= (h ? h.pressAt : 0))) inp.rt = 1;
       if (B.z.can === 'catch' && massAhead(W, B, 30) > 1) inp.lt = 1;
+      if (B.z.can === 'open' && W.lash !== false) {   // the lash: coil while a rival with petals closes from behind, let go when it is on the tentacle's line
+        const w = W.m.lashWidth, Lt = tentacleLine(W, B); let close = false, onLine = false;
+        for (const R of W.rivals) { if (R.petals <= 0) continue; const d = R.pos.distanceTo(B.pos); if (d < W.m.tentacleLength * 1.6) close = true; if (segDist(R.pos, Lt.a, Lt.b) < w * 0.8) onLine = true; }
+        if (B.K.coiling) inp.lt = (onLine && B.K.coil >= 0.5) || (!close && B.K.coil >= 1) ? 0 : 1;
+        else inp.lt = close && B.K.lashCool <= 0 ? 1 : 0;
+      }
     }
     B.aiState = h(B) ? (B.hc.unnoticed ? 'not noticed' : B.hc.misjudged ? 'misjudged' : B.K.active ? B.z.move.name : why) : why;
     return inp;
@@ -508,12 +576,12 @@
   }
   function runHeadless(course, level, seed, o) {
     o = o || {};
-    const W = P.makeWorld(course, [level, level, level], seed, { massDensity: o.massDensity, policy: o.policy || 'crew', lv: o.lv, nobody: true, slipstream: o.slipstream, leadRule: o.leadRule });
+    const W = P.makeWorld(course, [level, level, level], seed, { massDensity: o.massDensity, policy: o.policy || 'crew', lv: o.lv, nobody: true, slipstream: o.slipstream, leadRule: o.leadRule, rivals: o.rivals, lash: o.lash, detour: o.detour });
     W.aiMoves = o.aiMoves !== false; W.aiFuse = true; W.watch = -1;
     const dt = 1 / 30; let n = 0, sp = 0;
     if (W.policy === 'always') { W.crew.hold = 0; P.beginGather(W); }
     while (!W.over) { stepAll(W, dt, -1, null); n++; const bs = bodiesNow(W); sp += bs.reduce((a, B) => a + B.speed, 0) / bs.length; }
-    return { finish: W.finishT, digested: W.digested, walls: W.wallsBroken, fusedShare: +(W.fusedT / Math.max(1e-6, W.t)).toFixed(3), fuses: W.crew.fuses, avgSpeed: +(sp / n).toFixed(1), uses: W.bodies.reduce((a, B) => a + B.stats.uses, 0) + W.crew.uses, extra: { draft: +W.bodies.reduce((a, B) => a + (B.stats.draftT || 0), 0).toFixed(0) } };
+    return { finish: W.finishT, digested: W.digested, walls: W.wallsBroken, fusedShare: +(W.fusedT / Math.max(1e-6, W.t)).toFixed(3), fuses: W.crew.fuses, avgSpeed: +(sp / n).toFixed(1), uses: W.bodies.reduce((a, B) => a + B.stats.uses, 0) + W.crew.uses, extra: { draft: +W.bodies.reduce((a, B) => a + (B.stats.draftT || 0), 0).toFixed(0), lashes: W.bodies[1].stats.lashes || 0, hits: W.lashHits, stolen: W.stolen } };
   }
   function stepAll(W, dt, humanSeat, humanInput) {
     const c = W.crew; let inputs; c.humanSeat = humanSeat;
@@ -571,10 +639,11 @@
     }
     return g;
   }
-  const view = { hulls: [], crystals: [], lines: [], float: null, struts: null, aimLine: null, shots: null, lantern: null, wake: null };
+  const view = { hulls: [], crystals: [], lines: [], float: null, struts: null, aimLine: null, shots: null, lantern: null, wake: null, rivals: [], shed: [], tentacle: null, whip: null };
   function mountWorld(W) {
     { const ln = W.track.line, lo = new V(Infinity, Infinity, Infinity), hi = new V(-Infinity, -Infinity, -Infinity); for (const q of ln) { lo.min(q); hi.max(q); } const ctr = lo.clone().add(hi).multiplyScalar(0.5); let rad = 0; for (const q of ln) rad = Math.max(rad, Math.hypot(q.x - ctr.x, q.z - ctr.z)); ENV.placeField(ctr, (rad + 200) / 0.75, Math.max(160, (hi.y - lo.y) * 0.5 + 140)); }
-    for (const o of [...view.hulls, ...view.crystals, ...view.lines, view.float, view.struts, view.aimLine, view.shots, view.lantern, view.wake]) if (o) scene.remove(o);
+    for (const o of [...view.hulls, ...view.crystals, ...view.lines, view.float, view.struts, view.aimLine, view.shots, view.lantern, view.wake, view.tentacle, view.whip, ...view.rivals, ...view.shed]) if (o) scene.remove(o);
+    view.rivals = []; view.shed = [];
     view.hulls = []; view.crystals = []; view.lines = [];
     for (const B of W.bodies) {
       const hh = zooidHull(B.z); scene.add(hh); view.hulls.push(hh);
@@ -587,6 +656,15 @@
     view.aimLine = new T.Line(new T.BufferGeometry().setFromPoints([new V(), new V()]), new T.LineBasicMaterial({ color: 0xff6fb0, transparent: true, opacity: 0.6 })); view.aimLine.frustumCulled = false; view.aimLine.visible = false; scene.add(view.aimLine);
     view.shots = new T.LineSegments(new T.BufferGeometry().setFromPoints(Array.from({ length: 120 }, () => new V())), new T.LineBasicMaterial({ color: 0xffe28a, transparent: true, opacity: 0.9 })); view.shots.frustumCulled = false; scene.add(view.shots);
     { const g = new T.ConeGeometry(1, 1, 12, 1, true); g.translate(0, -0.5, 0); g.rotateX(-Math.PI / 2); view.wake = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0x9be7ff, emissive: 0x2a6f8a, transparent: true, opacity: 0.16, side: T.DoubleSide, depthWrite: false, flatShading: true })); view.wake.visible = false; scene.add(view.wake); }   // Slipstream: the Bell's wake, apex at the Bell, opening behind it
+    // the stand-in rivals: a dart in the domain colour, its petals a ring of small crystals round it (one per petal, a world fact in the world)
+    for (const R of W.rivals) {
+      const col = VesselStudioDomains.get(R.domain).hex, g = new T.Group(), hull = new T.Mesh(new T.ConeGeometry(2.2, 9, 5), mat(col)); hull.rotation.x = -Math.PI / 2; g.add(hull);
+      const ring = new T.Group(); ring.name = 'petals'; for (let k = 0; k < Math.round(W.m.rivalPetals); k++) { const pm = new T.Mesh(new T.OctahedronGeometry(0.9), new T.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.4, flatShading: true })); const a = k / W.m.rivalPetals * Math.PI * 2; pm.position.set(Math.cos(a) * 5, Math.sin(a) * 5, 1); ring.add(pm); } g.add(ring);
+      scene.add(g); view.rivals.push(g);
+    }
+    for (let k = 0; k < 16; k++) { const m = new T.Mesh(new T.OctahedronGeometry(2.2), new T.MeshStandardMaterial({ color: 0xffffff, emissive: 0x7f8fb0, flatShading: true, transparent: true, opacity: 0.9 })); m.visible = false; scene.add(m); view.shed.push(m); }
+    view.tentacle = new T.Line(new T.BufferGeometry().setFromPoints(Array.from({ length: 64 }, () => new V())), new T.LineBasicMaterial({ color: 0xff6fb0, transparent: true, opacity: 0.75 })); view.tentacle.frustumCulled = false; scene.add(view.tentacle);
+    view.whip = new T.Mesh(new T.CylinderGeometry(1, 1, 1, 6, 1, true), new T.MeshStandardMaterial({ color: 0xff6fb0, emissive: 0xff2f8f, emissiveIntensity: 0.8, transparent: true, opacity: 0.7, flatShading: true, side: T.DoubleSide })); view.whip.visible = false; scene.add(view.whip);
     view.lantern = new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: 0x9be7ff, transparent: true, opacity: 0.06, side: T.BackSide, depthWrite: false })); scene.add(view.lantern);
   }
   function drawWorld(W, t) {
@@ -605,6 +683,10 @@
     view.float.visible = !!O; view.struts.visible = !!O; if (O) { view.float.position.copy(O.pos).addScaledVector(upOf(O), 12); view.struts.position.copy(O.pos); view.struts.quaternion.copy(O.quat); }
     view.aimLine.visible = !!O && !!O.aimDir; if (O && O.aimDir) view.aimLine.geometry.setFromPoints([O.pos.clone(), O.pos.clone().addScaledVector(O.aimDir, W.m.lanceRange)]);
     { const bl = W.bodies[0]; view.wake.visible = !O && !!bl.K.leading; if (view.wake.visible) { view.wake.position.copy(bl.pos); view.wake.quaternion.setFromUnitVectors(new V(0, 0, 1), bl.course.clone().negate()); view.wake.scale.set(W.m.wakeWidth, W.m.wakeWidth, W.m.wakeLength); } }
+    W.rivals.forEach((R, k) => { const g = view.rivals[k]; if (!g) return; g.position.copy(R.pos); g.quaternion.copy(R.quat); const ring = g.getObjectByName('petals'); ring.rotation.z = t * 1.5; ring.children.forEach((pm, j) => { pm.visible = j < R.petals; }); g.scale.setScalar(W.t - R.hitT < 0.4 ? 1.4 : 1); });
+    { let k = 0; for (const cr of W.crystals) { if (cr.state !== 'shed' || k >= view.shed.length) continue; const m = view.shed[k++]; m.visible = true; m.position.copy(cr.pos); m.rotation.set(t * 2, t * 3, 0); m.material.opacity = clamp((W.m.shedLife - (W.t - cr.born)) / 5, 0.2, 0.9); } for (; k < view.shed.length; k++) view.shed[k].visible = false; }
+    { const st = W.bodies[1], tl = st.tent || [], on = !O && tl.length > 1; view.tentacle.visible = on; if (on) { const a = view.tentacle.geometry.attributes.position, m = Math.min(64, tl.length); for (let k = 0; k < 64; k++) { const q = tl[Math.min(k, m - 1)]; a.setXYZ(k, q.x, q.y, q.z); } a.needsUpdate = true; view.tentacle.material.opacity = st.K.coiling ? 1 : 0.6; }
+      view.whip.visible = !O && st.K.whipT > 0 && !!st.K.whip; if (view.whip.visible) { const L = st.K.whip, d = L.b.clone().sub(L.a); view.whip.position.copy(L.a).addScaledVector(d, 0.5); view.whip.quaternion.setFromUnitVectors(new V(0, 1, 0), d.clone().normalize()); view.whip.scale.set(W.m.lashWidth * 0.35, d.length(), W.m.lashWidth * 0.35); view.whip.material.opacity = 0.8 * st.K.whipT / 0.3; } }
     const bell = W.bodies[0]; view.lantern.visible = !O; if (!O) { view.lantern.position.copy(bell.pos); view.lantern.scale.setScalar(W.m.lanternRange * (bell.K.pulseT > 0 ? 2 : 1)); }
     const win = windowOf(W);
     win.forEach((cr, i) => { const m = view.crystals[i]; m.visible = cr.state !== 'held'; m.position.copy(cr.pos); VesselStudioLook.spinCrystal(m, t + i); const col = cr.state === 'dark' ? 0x3c4664 : cr.state === 'lit' ? 0xd8e6ff : 0xffffff; m.traverse((o) => { if (o.material && o.material.color) o.material.color.set(col); }); m.scale.setScalar(cr.state === 'dark' ? 0.55 : 1); });
@@ -768,6 +850,7 @@
   $('camSel').value = S.cam; $('camSel').addEventListener('change', (e) => { S.cam = e.target.value; save(); });
   $('speedSel').value = String(S.speed); $('speedSel').addEventListener('change', (e) => { S.speed = +e.target.value; save(); });
   $('thinking').checked = S.thinking; $('thinking').addEventListener('change', (e) => { S.thinking = e.target.checked; save(); });
+  $('rivalSel').value = String(S.rivals); $('rivalSel').addEventListener('change', (e) => { S.rivals = +e.target.value; save(); newRun(); });
   $('massDensity').value = S.massDensity; $('massOut').textContent = S.massDensity + '\u00d7';
   $('massDensity').addEventListener('input', (e) => { S.massDensity = +e.target.value; $('massOut').textContent = S.massDensity + '\u00d7'; save(); }); $('massDensity').addEventListener('change', () => newRun());
   for (const [id, key] of [['aiMoves', 'aiMoves'], ['aiFuse', 'aiFuse'], ['idleHold', 'idleHold']]) { $(id).checked = S[key]; $(id).addEventListener('change', (e) => { S[key] = e.target.checked; save(); if (W) { W.aiMoves = S.aiMoves; W.aiFuse = S.aiFuse; } }); }
@@ -775,7 +858,7 @@
     const box = $('seats'); box.textContent = ''; const form = W ? W.crew.form : 'apart';
     ZOOIDS.forEach((z, i) => {
       const row = elx('div', 'seat'), dot = elx('span', 'sd'); dot.style.background = '#' + z.color.toString(16).padStart(6, '0');
-      const who = elx('div'); who.append(elx('b', null, (form === 'colony' ? SEATS[i] + ' \u00b7 ' : '') + z.name + ' \u00b7 ' + z.role), elx('small', null, form === 'colony' ? (i === 0 ? 'flies the colony; RT ram pulse; hold LT to split' : i === 1 ? 'aims the lance (right stick); RT fires at walls' : 'LT holds the ward') : z.move.name + ' on RT' + (i === 0 ? '; LT Slipstream' : i === 2 ? '; LT ward' : '') + '; B calls the fuse'));
+      const who = elx('div'); who.append(elx('b', null, (form === 'colony' ? SEATS[i] + ' \u00b7 ' : '') + z.name + ' \u00b7 ' + z.role), elx('small', null, form === 'colony' ? (i === 0 ? 'flies the colony; RT ram pulse; hold LT to split' : i === 1 ? 'aims the lance (right stick); RT fires at walls' : 'LT holds the ward') : z.move.name + ' on RT' + (i === 0 ? '; LT Slipstream' : i === 1 ? '; LT coil, let go to lash' : '; LT ward') + '; B calls the fuse'));
       const you = elx('button', 'btn small', !S.nobody && S.seat === i ? 'You' : 'Take'); you.type = 'button'; if (!S.nobody && S.seat === i) you.classList.add('primary');
       you.addEventListener('click', () => { S.nobody = false; S.seat = i; if (W) { W.crew.seat = i; W.swaps++; } save(); syncSeats(); });
       const lv = elx('select'); ['Easy', 'Medium', 'Hard'].forEach((l) => { const o = elx('option', null, 'AI ' + l); o.value = l; lv.appendChild(o); }); lv.value = S.levels[i] || 'Hard'; lv.setAttribute('aria-label', z.name + ' AI level');
@@ -827,7 +910,7 @@
   }
   (function controls() {
     const box = $('controls'); box.textContent = '';
-    const rows = [['Gamepad', 'both sticks steer the zooid you fly \u00b7 RT: its one move (Bell pulse, Sting shot, Bract net) \u00b7 LT: Bell = Slipstream (lead; the others draft in its wake), Bract = ward \u00b7 B, held: call the FUSE from any zooid \u00b7 D-pad left / right = swap seat'],
+    const rows = [['Gamepad', 'both sticks steer the zooid you fly \u00b7 RT: its one move (Bell pulse, Sting shot, Bract net) \u00b7 LT: Bell = Slipstream (lead; the others draft in its wake), Sting = coil the tentacle (let go to lash), Bract = ward \u00b7 B, held: call the FUSE from any zooid \u00b7 D-pad left / right = swap seat'],
       ['Colony', 'Helm: sticks fly, RT ram pulse, hold LT to split \u00b7 Lance: right stick aims, RT fires at walls \u00b7 Ward: LT shield'],
       ['Keys', 'W S pitch \u00b7 A D yaw \u00b7 Q E roll \u00b7 Space = LT \u00b7 F = RT \u00b7 H = B (the fuse call) \u00b7 \u2190 \u2192 swap seat'],
       ['Free cam', 'orbits the viewed body: drag to turn \u00b7 wheel to zoom \u00b7 J L / I K turn \u00b7 U O zoom'], ['Transport', 'Enter play \u00b7 P pause / resume \u00b7 R stop \u00b7 C next camera'],
@@ -888,7 +971,7 @@
   $('decCopy').addEventListener('click', async () => { const all = localLog.slice().reverse().map((d) => '- [' + d.topic + '] ' + d.choice + (d.note ? ' \u2014 ' + d.note : '') + ' ' + JSON.stringify(d.settings)).join('\n'); try { await navigator.clipboard.writeText('Siphonophore studio decisions\n' + all); $('decState').textContent = 'Copied.'; } catch (e) { $('decState').textContent = 'Could not copy here.'; } });
   $('aboutFantasy').textContent = 'A siphonophore is one animal made of parts that are not animals on their own: a swimming bell, stinging tentacles, shield leaves. In the HyperSea the Bell lights the dark, the Sting opens husks, the Bract nets the catch; only the colony digests it into the score and opens walls. Many bodies and one body, taking turns.';
   $('aboutWhy').textContent = 'The design principle (2026-10-27): a Voltron vessel is designed from the ground up to be both many separate vessels and one big vessel at alternating parts of its own game loop, never a combine bolted onto vessels that already have a complete loop (the Omega crews lab showed such a crew has no reason to split). Here no part can score alone and the colony cannot collect, so the loop alternates by design; the scorecard\'s two controls (never fuse, always fused) must both fail.';
-  const notList = $('aboutNot'); for (const s of ['The zooids\' flight numbers and moves are lab proposals; nothing ships yet (the Unity clone comes by /artifact-to-unity once the loop is decided).', 'The bodies are stand-ins (a dome, a cone with tentacles, a leaf); the colony is the three docked under a float. Models come from /vessel-model.', 'Element scaling is a proposal: Charge venom per shot, Mass net radius, Space lantern range, Time digest speed; nothing is signed off.', 'The course is the game\'s Skim Race track; the husks, the dark, the walls and the digest are this lab\'s mini-game (the Tide Run), not a shipped mode.', 'No sound, no rivals, no lifeforms; PvP is petals only and there is no PvP here.']) notList.appendChild(elx('li', null, s));
+  const notList = $('aboutNot'); for (const s of ['The zooids\' flight numbers and moves are lab proposals; nothing ships yet (the Unity clone comes by /artifact-to-unity once the loop is decided).', 'The bodies are stand-ins (a dome, a cone with tentacles, a leaf); the colony is the three docked under a float. Models come from /vessel-model.', 'Element scaling is a proposal: Charge venom per shot, Mass net radius, Space lantern range, Time digest speed; nothing is signed off.', 'The course is the game\'s Skim Race track; the husks, the dark, the walls and the digest are this lab\'s mini-game (the Tide Run), not a shipped mode.', 'No sound, no lifeforms. The rivals are stand-ins: they fly the course on a fixed line, take no crystals, have no abilities and never strike back; a lash takes a petal only (PvP is petals only), and the silence a scored hit brings (SILENCE.md) has nothing to act on here.']) notList.appendChild(elx('li', null, s));
   const srcList = $('aboutSources'); for (const s of ['Courses: MinigameSkimRace.unity via Tools/Build/skimrace_track_fingerprint.py --emit-track (VesselStudioEngine.TRACKS); the platform baseline (skim 12 u, boost cap 1.6x, hull reach) is studio-vessel.js BASE; difficulty: SkimRaceDifficulty.asset through DIFF.', 'The loop\'s numbers: Vessel Config > Loop numbers, every one a lab proposal (DEFAULTS in siphonophore-studio.js).', 'Seats and the swap: Docs/CREW_STATIONS.md (one gesture, seats then hulls); every empty seat an AI (the Orca\'s rule, ORCA_CREW.md).']) srcList.appendChild(elx('li', null, s));
 
   // ---- HUD ----
@@ -896,13 +979,13 @@
     if (!W) return; const c = W.crew, B = S.cam === 'Chase' ? flown(W) : P.viewedBody(W), you = humanSeat();
     $('hWho').textContent = (B.colony ? 'The colony \u00b7 ' + SEATS[c.seat] + ' seat' : 'The ' + B.name + (you === B.i ? ' \u00b7 you' : ' \u00b7 AI ' + S.levels[B.i])) + ' \u00b7 speed u/s';
     $('hSpeed').textContent = Math.round(B.speed * B.slow);
-    $('hSub').textContent = B.colony ? (c.seat === 0 ? 'ram pulse on RT' + (O_cool(c) > 0 ? ' \u00b7 ' + O_cool(c).toFixed(1) + ' s' : ' \u00b7 ready') + ' \u00b7 hold LT to split' : c.seat === 1 ? 'lance: ' + W.walls.filter((w) => !w.broken).length + ' wall(s) left' : 'ward' + (c.shield ? ' UP' : '')) : (B.K.leading ? 'SLIPSTREAM \u00b7 ' : B.drafting ? 'drafting \u00b7 ' : '') + B.z.move.name + (B.K.cool > 0 ? ' \u00b7 ' + B.K.cool.toFixed(1) + ' s' : ' \u00b7 ready') + (B.z.can === 'catch' ? ' \u00b7 hold ' + c.hold + '/' + W.m.holdCap : '');
+    $('hSub').textContent = B.colony ? (c.seat === 0 ? 'ram pulse on RT' + (O_cool(c) > 0 ? ' \u00b7 ' + O_cool(c).toFixed(1) + ' s' : ' \u00b7 ready') + ' \u00b7 hold LT to split' : c.seat === 1 ? 'lance: ' + W.walls.filter((w) => !w.broken).length + ' wall(s) left' : 'ward' + (c.shield ? ' UP' : '')) : (B.K.leading ? 'SLIPSTREAM \u00b7 ' : B.drafting ? 'drafting \u00b7 ' : '') + B.z.move.name + (B.K.cool > 0 ? ' \u00b7 ' + B.K.cool.toFixed(1) + ' s' : ' \u00b7 ready') + (B.z.can === 'catch' ? ' \u00b7 hold ' + c.hold + '/' + W.m.holdCap : '') + (B.z.can === 'open' ? (B.K.coiling ? ' \u00b7 COIL ' + Math.round(B.K.coil * 100) + '%' : B.K.lashCool > 0 ? ' \u00b7 lash ' + B.K.lashCool.toFixed(1) + ' s' : ' \u00b7 lash ready') : '');
     $('hForm').textContent = c.form === 'colony' ? 'THE COLONY \u00b7 DIGESTING ' + c.hold : c.form === 'gather' ? 'FUSING \u00b7 ' + Math.round(P.dockProgress(W)) + ' u' : '';
     $('hHold').textContent = c.hold + ' / ' + W.m.holdCap; $('mHold').style.width = (c.hold / W.m.holdCap * 100) + '%';
     const gs = P.gatherSeat(W), near = c.form === 'apart' && W.bodies.every((X) => X.pos.distanceTo(W.bodies[gs].pos) < W.m.gatherRange);
     $('hM1Lbl').textContent = c.form === 'colony' ? 'Digest' : (near ? (c.hold > 0 ? 'In range: hold B to fuse' : 'In range (nothing to digest)') : 'Zooids apart'); $('hM1').textContent = c.form === 'colony' ? (c.hold > 0 ? Math.round(c.digest / W.m.digestSeconds * 100) + '%' : 'done') : Math.round(Math.max(...W.bodies.map((X) => X.pos.distanceTo(W.bodies[gs].pos)))) + ' u'; $('mM1').style.width = c.form === 'colony' ? (c.hold > 0 ? c.digest / W.m.digestSeconds * 100 : 100) + '%' : clamp(1 - Math.max(...W.bodies.map((X) => X.pos.distanceTo(W.bodies[gs].pos))) / (W.m.gatherRange * 2), 0, 1) * 100 + '%';
     $('hBoost').textContent = B.boost.toFixed(2) + '\u00d7'; $('mBoost').style.width = ((B.boost - 1) / (BASE.maxBoost - 1) * 100) + '%';
-    const b = $('board'); b.textContent = ''; const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' \u00b7 ' + W.t.toFixed(1) + ' s'), elx('span', null, W.digested + '/' + W.track.target + ' \u00b7 walls ' + W.wallsBroken + '/' + W.walls.length)); b.appendChild(hd);
+    const b = $('board'); b.textContent = ''; const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' \u00b7 ' + W.t.toFixed(1) + ' s'), elx('span', null, W.digested + '/' + W.track.target + ' \u00b7 walls ' + W.wallsBroken + '/' + W.walls.length + (W.rivals.length ? ' \u00b7 stolen ' + W.stolen : ''))); b.appendChild(hd);
     ZOOIDS.forEach((z, i) => { const row = elx('div', 'pl' + (you === i && !S.nobody ? ' you' : '')), dot = elx('span', 'dot'); dot.style.background = '#' + z.color.toString(16).padStart(6, '0'); const X = W.bodies[i]; row.append(dot, elx('span', null, (c.form === 'colony' ? SEATS[i] + ' \u00b7 ' : '') + z.name), elx('span', 'st', you === i && !S.nobody ? (aiHolding ? 'AI holding' : 'you') : 'AI ' + S.levels[i] + (c.form === 'apart' && X.aiState ? ' \u00b7 ' + X.aiState : ''))); b.appendChild(row); });
     const win = windowOf(W).map((x) => 'crystal ' + (x.i + 1) + ' ' + x.state + (x.wall && !x.wall.broken ? ' (walled)' : '')).join(', '); b.appendChild(elx('div', 'st', 'window: ' + (win || 'none')));
     const m = W.m; for (const el of ELS) { const e = ELEMENTS[el], card = abCards[el]; card.st.textContent = fmt(m[e.param]) + (el === 'time' ? ' s' : el === 'charge' ? ' / shot' : ' u'); card.c.style.borderColor = W.lv[el] >= 5 ? 'var(' + EL_COLOR[el] + ')' : ''; }
@@ -919,7 +1002,7 @@
     let target = null; if (!B.colony && B.target >= 0) target = W.crystals[B.target]; if (!target) target = windowOf(W)[0] || null;
     if (!target) { mark.hide(); return; } cam.updateMatrixWorld();
     const walled = target.wall && !target.wall.broken;
-    mark.set(cam, target.pos, 'Crystal ' + (target.i + 1) + '/' + W.track.target + ' \u00b7 ' + target.state + (walled ? ', walled' : '') + ' \u00b7 ' + Math.round(target.pos.distanceTo(B.pos)) + ' u', walled ? '#8fa6ff' : target.state === 'dark' ? '#6a7a9a' : '#ffffff', canvas.clientWidth, canvas.clientHeight);
+    mark.set(cam, target.pos, (target.shed ? 'Shed crystal' : 'Crystal ' + (target.i + 1) + '/' + W.track.target) + ' \u00b7 ' + target.state + (walled ? ', walled' : '') + ' \u00b7 ' + Math.round(target.pos.distanceTo(B.pos)) + ' u', walled ? '#8fa6ff' : target.state === 'dark' ? '#6a7a9a' : '#ffffff', canvas.clientWidth, canvas.clientHeight);
   }
   // ---- loop ----
   let last = performance.now(), hudT = 0; const LAB = { manualClock: false };
@@ -939,7 +1022,7 @@
   }
   const IDE = VesselStudioIDE.build({
     key: 'siphonophore-studio-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
-    right: [['scene', 'Scene Config', [$('grp-scene'), $('grp-world')]], ['game', 'Game Config', [$('grp-intensity'), $('grp-loop'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), document.querySelector('.afternote')]],
+    right: [['scene', 'Scene Config', [$('grp-scene'), $('grp-world')]], ['game', 'Game Config', [$('grp-intensity'), $('grp-rivals'), $('grp-loop'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), document.querySelector('.afternote')]],
       ['style', 'Play Style Config', [$('grp-style'), $('grp-elements')]], ['input', 'Input', [$('grp-controls'), $('grp-feel')]], ['others', 'Vessel Config', [$('grp-kit'), $('grp-mechanic'), $('grp-members'), $('grp-abilities'), $('grp-live')]]],
     bottom: [['score', 'Scorecard', [$('grp-score')]], ['runs', 'Runs', [$('grp-runs')]], ['decisions', 'Decisions', [$('grp-decisions')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
     railW: 390, dockH: 250, winSize: { score: [900, 400], runs: [700, 360], decisions: [520, 420] }, onLayout: () => P.forceResize(),
