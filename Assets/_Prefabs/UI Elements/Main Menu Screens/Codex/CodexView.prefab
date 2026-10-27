@@ -59,10 +59,10 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0, type: 3}
   - {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc, type: 3}
   elementFlipbooks:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 2800000, guid: 020e9c8fcbcd4e44995fa49d0712b078, type: 3}
+  - {fileID: 2800000, guid: a82c3277cc8d45d1b9bfb211acfd06e5, type: 3}
+  - {fileID: 2800000, guid: 54ce7ba5d021482a950540e57c8f4283, type: 3}
+  - {fileID: 2800000, guid: ffc77f16fb7e42d38d229aa1081a45a5, type: 3}
   colorSet: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f, type: 2}
   words:
     elementNames:
@@ -93,7 +93,7 @@ MonoBehaviour:
       gameplay: 'Free to every pilot, whatever their domain: fly into it. Modes score it, and hulls spend it: the Dolphin''s blast, the Sparrow''s missile reload, the Scarab''s ball forge. In the Ark, Charge, Mass, Space and Time combine into one.'
       lore: Where all four meet, the crystal belongs to no one.
       image: {fileID: 21300000, guid: b592d632483050e40a6cf3d3240f2a92, type: 3}
-      flipbook: {fileID: 0}
+      flipbook: {fileID: 2800000, guid: 011597876c53412eab22e8232d0d250f, type: 3}
     - title: Prisms
       sub: What the HyperSea is built from
       kicker: Matter
@@ -3122,7 +3122,12 @@ MonoBehaviour:
   massDrop: 46
   spaceTurn: 120
   timeTick: 40
-  flipbookFps: 8
+  flipbookFps:
+  - 1.92
+  - 5
+  - 2
+  - 7.27
+  - 8
   petalStep: 0.32
   petalHold: 1.4
   driftSeconds: 5

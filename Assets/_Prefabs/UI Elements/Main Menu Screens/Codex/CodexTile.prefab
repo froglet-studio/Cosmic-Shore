@@ -595,7 +595,12 @@ MonoBehaviour:
   massDrop: 46
   spaceTurn: 120
   timeTick: 40
-  flipbookFps: 8
+  flipbookFps:
+  - 1.92
+  - 5
+  - 2
+  - 7.27
+  - 8
   petalStep: 0.32
   petalHold: 1.4
   driftSeconds: 5

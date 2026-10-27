@@ -120,7 +120,9 @@ def str_list(name, values, indent="  "):
 SHAPES = {e: K.meta_guid(f"Assets/_Graphics/ElementShapes/{e.lower()}_{shape}_label.png")
           for e, shape in zip(ELEMENTS, ("pentagon", "triangle", "kite", "diamond"))}
 PORTRAIT_SCRIPT = C.script("CodexPortrait")
-FLIPBOOK_FPS = 8            # 16 frames: one loop of the crystal's effect in 2 s
+# Frames a second per sheet, Omni then Charge..Time: each sheet's 16 frames are one loop of its render (8.333 s, 3.2 s,
+# 8 s, 2.2 s, 2 s; the crystal render's report, section 90).
+FLIPBOOK_FPS = (1.92, 5, 2, 7.27, 8)
 KIT_AMBIENT = K.kit_script("KitAmbient")
 
 
@@ -154,7 +156,7 @@ def portrait_node(parent, key, r, flower):
           f"  shape: {ref(ctx.c(key + '/Motion/Element/Shape', 'img'))}\n"
           "  shapes:\n" + "".join(f"  - {K.ref(21300000, SHAPES[e], 3)}\n" for e in ELEMENTS)
           + "  introSeconds: 0.55\n  punch: 0.12\n  chargeJolt: 6\n  massDrop: 46\n  spaceTurn: 120\n  timeTick: 40\n"
-          f"  flipbookFps: {FLIPBOOK_FPS}\n  petalStep: 0.32\n  petalHold: 1.4\n  driftSeconds: 5\n  driftStrength: 0.8\n"))
+          "  flipbookFps:\n" + "".join(f"  - {v}\n" for v in FLIPBOOK_FPS) + f"  petalStep: 0.32\n  petalHold: 1.4\n  driftSeconds: 5\n  driftStrength: 0.8\n"))
     return n
 
 

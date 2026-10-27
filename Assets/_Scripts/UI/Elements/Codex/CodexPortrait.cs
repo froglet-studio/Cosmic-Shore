@@ -49,8 +49,9 @@ namespace CosmicShore.UI
         [SerializeField] private float timeTick = 40f;
 
         [Header("Life while picked")]
-        [Tooltip("Frames a second of a flipbook (16 frames make one loop).")]
-        [SerializeField, Min(1f)] private float flipbookFps = 8f;
+        [Tooltip("Frames a second of a flipbook (16 frames make one loop), per element: Omni (no element), then Charge " +
+                 "to Time. Each matches its sheet's loop (Omni 8.3 s, Charge 3.2 s, Mass 8 s, Space 2.2 s, Time 2 s).")]
+        [SerializeField] private float[] flipbookFps = { 1.92f, 5f, 2f, 7.27f, 8f };
         [Tooltip("Seconds between petals lighting.")]
         [SerializeField, Min(0.05f)] private float petalStep = 0.32f;
         [Tooltip("Seconds the full flower holds before it starts again.")]
@@ -127,7 +128,7 @@ namespace CosmicShore.UI
                 _since += dt;
                 Pose(Mathf.Clamp01(_since / introSeconds));
             }
-            if (_hasFlip) SetFrame(Mathf.FloorToInt(_since * flipbookFps) % FlipFrames);
+            if (_hasFlip) SetFrame(Mathf.FloorToInt(_since * Fps()) % FlipFrames);
             if (IsElement(_element) && flower)
             {
                 // 1..5 petals, one per step, then the full flower holds.
@@ -190,6 +191,12 @@ namespace CosmicShore.UI
             int col = frame % FlipColumns, row = frame / FlipColumns;
             float size = 1f / FlipColumns;
             flip.uvRect = new Rect(col * size, 1f - (row + 1) * size, size, size);
+        }
+
+        float Fps()
+        {
+            int i = IsElement(_element) ? (int)_element : 0;
+            return flipbookFps != null && i < flipbookFps.Length && flipbookFps[i] > 0f ? flipbookFps[i] : 8f;
         }
 
         static bool IsElement(Element e) => e is Element.Charge or Element.Mass or Element.Space or Element.Time;
