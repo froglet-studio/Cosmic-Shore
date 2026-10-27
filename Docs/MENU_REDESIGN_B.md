@@ -4470,3 +4470,23 @@ Angler, Brittlestar, Dolphin, Goby, Grizzly, Manta, Meerkat, Squirrel, Starling,
 - **Fix.** `CodexImageBaker.HarvestModel` takes an optional part filter, and `CodexVariantSubject.BuildHull` passes
   `VesselModelBuilder.IsHull`, now public: one hull filter for every picture of a ship.
 - **To re-bake:** FrogletTools > UI > Codex, then **Bake All**. Bake Missing skips these, because a file already exists.
+
+### 98.5 The Ark's sea, a Blue-only Codex, and the Hangar's hull as the ship with silver plates (2026-10-27)
+
+Shombith, with a screenshot of the Ark's Squads tab (the game world showing straight through): "1. Ark no sea line
+2. All codex should have blue domain not anything else 3. Hangar vessels should not look like this it should look like
+normal vessel but just the domain parts should look silver".
+
+- **Ark.** The Squads and Decor pages now open on the window backdrop every style-B window draws: the near-opaque veil
+  under the top bar, then the sea lines (`Sea_Window.mat`). The pair is `author_menu_ark.page_backdrop`, first under
+  each page, so the page's CanvasGroup hides it with the page. The converter keeps its 3D picture and draws none. The
+  generator asserts the pair on both pages and has a new planted defect, "the Squads tab without its sea lines".
+- **Codex: Blue only.** Pictures are tinted from `CodexScreen.pictureDomains`, which is `{ Blue }`, instead of drifting
+  through Jade, Ruby and Gold. Blue is nobody's team, and an encyclopedia page belongs to no one. The Etherion crystals
+  keep their rendered colour: a crystal is not a domain's.
+- **Hangar: the ship, with silver plates.** §98.2's whole-hull repaint is withdrawn:
+  - `HangarVesselStage.silverSwaps` and `WearSilver` are removed.
+  - The `SilverBody` / `SilverWindow` materials are deleted.
+  - The body, windows and engines wear the ship's own materials again.
+  - Only the domain-role slots change (`VesselModelBuilder.TryBuildLive`, as before §98.2). They wear
+    `ClassLiveryVesselMaterial`, now a neutral silver: rim 0.96 / 0.97 / 1, face 0.60 / 0.63 / 0.70.
