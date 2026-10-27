@@ -35,7 +35,7 @@ One thumb flies, as the game's one-thumb hulls do (`SingleStickVesselTransformer
 - **The reticle** is always on your nose, `reticleAhead` ahead. It shows the tunnel RT would form now. You see it, and
   no one else does.
 - **The tunnel is an umbrella handle** (round 7): a straight shaft, then one bend of fixed radius `bendRadius`. Its
-  throat (`throatRadius`) and mouths (`mouthRadius`) are narrow and never change.
+  throat (`throatDiameter`) and its entry and exit (`mouthDiameter`) are set at edit time and never change in flight.
 - **LT** sets how far the shaft runs before the bend: `shaftMin` released, up to `shaftMax` squeezed. On keys and touch
   it ramps to full in `keyRampSeconds`.
 - **The right stick** sets the bend's direction (left, right, up, down or between) and how far it turns, up to
@@ -133,6 +133,143 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 14 (Yash, 2026-10-28: "the moment AI or player ... press their right trigger to create the tunnel, the tunnel
+will automatically be created with the trunk, not separate from the trunk ... just extend the outer layer of the tube to
+some tree-like structure with big similar symmetrical or asymmetrical but similar branches from the top half ... the
+wormhole is actually a portion of the trunk of the dead tree ... the entire tree will be this watery glassy space-time
+warp effect, like the wall"). ARTIFACT ONLY: not in Unity until Yash imports it.**
+- **The problem:** round 13's trunk was hidden from whoever rode the tunnel. So watching an AI, its trunk appeared only
+  as it came out, and its dissolve and branches ran on their own clock after that.
+- **The tree is the tunnel's outer layer now**, made the frame RT forms the tunnel, and seen by everyone, its rider too.
+  - It shows exactly the tunnel's window: it ripples out of the centre to both mouths with the tunnel (`formSeconds`)
+    and falls back in with it as it collapses. The separate dissolve is gone.
+  - Each branch grows over `branchGrowSeconds` (0.5 s) from the moment the forming tunnel reaches its root, and shrinks
+    back as the collapse passes it.
+- **Its look is the wall's**:
+  - **Glass:** the same Fresnel glass as the tunnel, the maker's colour at the way in toward white at the way out
+    (`trunkGlass` 0.03 face-on, `trunkRim` 0.6 at the silhouette).
+  - **Bent space:** the tube's own warp, drawn into the same warp buffer, `trunkWarp` (0.25) strong, even with
+    `warpStrength` at 0.
+  - **Water:** both flow slowly from the top to the bottom. Above about 0.4 the warp melts the tree's shape into a blob.
+- **The branches are a dead tree's**:
+  - `branchCount` (6) bare branches out of the trunk's top `branchZone` (0.5, its top half), in pairs facing each other.
+    Each pair is turned about 70° round the trunk, so they make a crown, not a fence.
+  - `branchSymmetry` (0.7): 1 mirrors each pair exactly, lower moves each branch to its own place and angle.
+  - Each is `branchLength` (2.2) × the mouth's radius long and `branchThickness` (0.3) × it thick, and tapers to a point.
+  - They lean `branchUp` (40°) toward the top, curl up, are crooked, and fork `branchForks` (2) times on alternate sides.
+- **Retired:** `trunkGrowSeconds`, `trunkDissolveEdge`, `branchDelaySeconds`. **Added:** `trunkWarp`, `branchZone`,
+  `branchSymmetry`, `branchForks`.
+- **Cost:** one static mesh per tunnel (about 4,500 vertices), built once, drawn twice (glass, warp). The window and the
+  branch growth are uniforms. Suggested for Unity: the same, two passes in the field's existing warp buffer.
+
+**Round 13 (Yash, 2026-10-28: "the moment I activate the tunnel, the trunk shape should be created. Like dissolve
+shader ... slowly it will grow some random branches. Left and right ... the main tunnel's entry will be ... the cut
+portion of the trunk above, and the other end will be the trunk's below cut portion ... a Fresnel effect ... trunk-like
+... grow based on its length and will contain the wormhole inside"). ARTIFACT ONLY: not in Unity until Yash imports it.
+It replaces round 12's plate tree (the crown, bark plates and roots and their `coat*` / `crown*` / `root*` keys are
+gone).**
+- **The trunk** (`drawTrunk`, the Wormhole · trunk card). Once a tunnel forms, one hollow trunk mesh wraps it from the
+  way in to the way out, so it grows with the tunnel's length and holds the wormhole inside. The way in is the trunk's
+  upper cut and the way out its lower cut: both ends are open annuli showing tree rings (`trunkRings` 6).
+  - **Shape:** its radius is `trunkTop` (1.25) × the mouth's radius at the way in, widening to `trunkBase` (1.6) × at
+    the way out, never inside the tunnel. Bark ridges run along it (`trunkRidges` 14, depth `trunkBark` 0.18) with a
+    slow gnarl (`trunkGnarl` 0.1). Each tunnel has its own seed, so no two trunks match.
+  - **Look:** a Fresnel shell, not a volume: nearly clear face-on (`trunkGlass` 0.03), bright at the silhouette
+    (`trunkRim` 0.8, falloff `trunkFresnel` 2.5), in the maker's domain colour, drawn additively.
+  - **Dissolve:** it dissolves in from the way in to the way out over `trunkGrowSeconds` (1.4 s), with a noisy bright
+    front `trunkDissolveEdge` (0.06) wide. A collapsing tunnel dissolves its trunk back with it.
+  - **Branches:** `trunkGrowSeconds` + `branchDelaySeconds` (0.3 s) after the tunnel forms, `branchCount` (6) branches
+    grow out of it over `branchGrowSeconds` (2.5 s), one after another, alternating left and right at random points
+    along it. Each is `branchLength` (1.6) × the mouth's radius long and `branchThickness` (0.14) × it thick at its
+    base, leans `branchUp` (35°) toward the way in, curls and forks once.
+  - Whoever rides the tunnel does not see the trunk: the ride stays the clear pipe. `trunkVisibility` 0 hides it.
+- **Cost:** one mesh per tunnel (56 rings × 36 sides, about 2,300 vertices), built once when it forms and rebuilt
+  only when a shape slider moves; the dissolve runs in its shader. Branches are about 100 spindles in the bridge's
+  existing instanced mesh.
+  - Suggested for Unity: the same: build the trunk mesh once per tunnel and drive the dissolve and Fresnel in one
+    unlit additive shader, so a frame costs one draw a tunnel.
+- **Fixed with this round:** round 12's tree card was missing from the published studio (v72): the page's tab layout
+  lists its cards by id, and the new card was not on the list. The trunk card is on the Play Style Config tab.
+
+**Round 12 (Yash, 2026-10-28: "the mouth diameter should have a min and max ... the wormhole will be larger while
+traveling more distance ... an upper coating around the wormhole to be visible from a third perspective ... the pattern
+of the omnicrystal ... like a tree trunk ... we use the upper part of the tree to get inside and the root area to get out
+... Do it in artifact first"). ARTIFACT ONLY: not in Unity until Yash imports it.**
+- **Size grows with length.** `throatDiameter` and `mouthDiameter` are now the shortest tunnel's size, and
+  `throatDiameterMax` (18) and `mouthDiameterMax` (56) the longest's. A tunnel in between grows in proportion to its
+  length (`shapeFor`). Measured: an 85 u tunnel is 8.4 / 27.1 u, a 730 u one 17.6 / 54.8 u.
+- **The tree** (`drawTree`, the Wormhole · tree card). A formed tunnel is a tree to everyone watching from outside.
+  Whoever rides it does not see it: the ride stays the clear pipe.
+  - **Crown, at the way in:** `crownBranches` (7) limbs reach back `crownLength` (1.6) × the mouth's radius,
+    `crownSpread` (60°) off the axis, forking twice.
+  - **Trunk:** bark of the omni crystal's own four plate shapes (Mass triangles, Space squares, Time rhombi, Charge
+    pentagons) spiralling round it, `coatPerRing` (14) a row at `coatPlateScale` (0.9). They stand `coatLift` (0.18) ×
+    the radius off the wall, tilted `coatTilt` (22°) like scales, with a wave (`coatWave` 0.6, `coatWaveSpeed` 0.3)
+    running crown to roots, as the omni crystal's flip wave does.
+  - **Roots, at the way out:** `rootCount` (9) limbs splay `rootLength` (1.8) × the mouth's radius, curling
+    `rootSpread` (50°), forking once.
+  - Limbs are `coatLimbThickness` (0.15) × the mouth's radius at their base. `coatVisibility` 0 hides the tree.
+  - Pieces near any camera shrink away.
+- **Cost:** about 1,000 to 1,700 plates for a long tunnel (capped at 2,400 a shape), drawn as four instanced meshes,
+  plus about 170 spindles in the bridge's existing instanced mesh.
+  - Suggested for Unity: build each tunnel's bark once when it forms (it does not move) and run the wave in the plate
+    shader, so a frame costs only the four draws.
+- **Not decided:** whether the tree also shows its maker's element levels (each plate family is an element).
+
+**Round 11 (Yash, 2026-10-28: "make the wormhole look very realistic ... not super calculative ... performant and
+realistic, fun to travel without getting dizzy ... a pleasant water ride experience through a water pipe. Transparent
+pipe ... the reticle ... just pure wireframe and it should be less lit in the front side and more lit back, so I can see
+the bending of the other end"):**
+- **The reticle** is still the bare wireframe. Its brightness now runs from `reticleNearLight` (0.25) × at its way in,
+  by your nose, to full at its far end, so the bend stands out. The page and the game draw it the same way.
+- **The formed tunnel** (Garrett's contour field, Unity only: the page does not draw the field) is retuned as a clear
+  pipe of gentle glass. Three looks were rendered in the Tube Lens Lab, from outside and riding through: round 10's
+  values, a water pipe, and a glassier pipe. Round 10's tore and swirled the world seen through the wall; the water pipe
+  bent it gently, so pillars seen through it stayed whole with a slight water wave. Its numbers:
+  - strength 6, pitch 0 (along the flow), drag 0.5, twist 0;
+  - glass 1 at Δn 0.05, grazing 0.9 (the lab: low grazing makes the ride view swirl);
+  - flow Even, outer 0.15, profile Smoother;
+  - ribs 0.25 at sharpness 3, travelling 1.2 rings/s, 16 × 12.
+- **Cost:** softer ribs let the march take larger steps (the rib term caps the step by 1 / (2 × sharpness + 4): 11.12
+  to 3 is a cap about 2.6 times looser). The glass term still costs four field reads a step; `fieldGlass` 0 is the
+  cheapest pipe if a profile shows it. Not profiled in Unity.
+
+**Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
+screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow, it's always
+center. Also, I want to have options to control the diameter of the entry exit pair ... and the inner diameter ...
+configurable at edit time ... the entrance and the exit of the wormhole need to be a little bit bigger"):**
+- **The camera.** Both cameras sit straight behind the hull with no height and no lag. In the game this is
+  `MeerkatCameraSettingsSO`: offset (0, 0, -21), hard-attached. Riding, the camera is the same distance behind you on the
+  tube's centreline, looking at you. It is a cut, not a blend: on the straight run in, the two coincide. Out of the far
+  mouth it keeps to the tunnel's line until it has passed the mouth. Measured: the hull is exactly at screen centre,
+  flying and riding. The camera is within 0.29 u of the line in the tube and past the exit, and its largest step at RT
+  and at the exit is one normal frame. Retired: `rideCameraBack`, `rideCameraLookAhead`, `rideCameraBlendSeconds`.
+- **The size.** `throatDiameter` (8 u) and `mouthDiameter` (26 u, the entry and exit a little bigger than round 7's
+  20 u) replace the two radius keys. They are set at edit time; the sticks never change them.
+
+**Round 9 (Yash, 2026-10-28: "the wormhole look and the reticle look can be the same, just the reticle can be just a
+wireframe version of the actual wormhole look ... the reticles and the bridges geometry need to be same, and the same
+position same way ... The reticle is the silhouette of the geometry"):** one geometry. The bridge's rings, spindles per
+ring, ribs, thickness and shimmer (`bridge*`) draw both the formed tunnel and your reticle (the page's `drawFrame`, the
+game's `MeerkatWormholeView.BridgeFrame`): the same rings at the same places along the tunnel, condensing out of its
+centre the same way. The reticle is that frame bare, with no glass and no path. It keeps its own brightness
+(`reticleIdleAlpha`) and its own colour, your domain colour toward white by `reticleWhite`; the bridge's spindles take
+`bridgeWhite` the same way. Retired: `reticleGlass`, `reticleRings`, `reticleSpindlesPerRing`, `reticleRibs`,
+`reticleSpindleThickness`, `reticlePath`, and in the game Garrett's `reticleLook` switch (there is one reticle now).
+Measured on the page: the shaped reticle and the formed tunnel are the same 931 spindles (36 × 21 rings, 5 ribs).
+
+**Round 8 (Yash, 2026-10-28: "the updated look I want. By merging Garrett's look with my reticles ... I don't want any
+camera Y offset. I want the camera to go inside the tunnel"):** the look Yash tuned in Unity's `MeerkatWormholeConfig` is
+the studio's SHIPPED look now. Before RT the reticle draws as Garrett's bridge (`reticleLook` Bridge), with the bridge
+spindles tuned to the reticle's: 36 rings × 21 spindles, 5 ribs, 0.25 u thick, `bridgeVisibility` 0.163, glass 0.15.
+The reticle keys are 30 × 21, 5 ribs, 0.25 u, idle 0.053, glass 0.048, path 0.333, smoothing 0.123 s, and `rippleEdge`
+is 0.154. After RT it is Garrett's contour field, with glass 1.579 at Δn 0.078, grazing 0.883, profile Smoother, ribs
+0.155 at sharpness 11.12, travel 1.95 and 9 rings. Those field numbers live only in the Unity asset; the page does not
+draw the field. Riding, the camera sits ON the tube's centreline, `rideCameraBack` (18 u) behind you, looks
+`rideCameraLookAhead` (40 u) along it, and eases in and out over `rideCameraBlendSeconds` (0.25 s). There is no height
+offset. Measured on the page: once eased in, the camera stayed within 0.23 u of the centreline (throat 4 u) on every
+frame, for a straight tunnel and for 114° and 150° bends on short and long shafts.
+
 **Round 7 (Yash, 2026-10-27: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from where it can turn 90 or 120 or 150 degrees ... it can be a long umbrella stick like geometry"):** the tunnel no longer grows shorter and fatter as it bends. It
 is a straight shaft and then one bend of fixed radius `bendRadius` (60 u). LT sets the shaft (`shaftMin` 60 u released
 to `shaftMax` 600 u squeezed), the right stick the bend's direction and angle (up to `bendMaxDegrees`, now 150°), RT
@@ -177,8 +314,11 @@ just spindles. Tiny thinning spindles"):**
 | shape | `shaftMin` | 60 u | The straight shaft before the bend, LT released |
 | shape | `shaftMax` | 600 u | The shaft with LT fully squeezed |
 | shape | `bendRadius` | 60 u | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
-| shape | `throatRadius` | 4 u | The throat's radius (fixed) |
-| shape | `mouthRadius` | 10 u | Both mouths' radius (fixed) |
+| shape | `throatDiameter` | 8 u | The throat's diameter (fixed, set at edit time; round 10) |
+| shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
+| shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
+| shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
+| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
@@ -196,12 +336,8 @@ just spindles. Tiny thinning spindles"):**
 | look | `rippleSeconds` | 1.2 s | ...running out and fading over this long |
 | reticle | `reticleSmoothSeconds` | 0.15 s | Your reticle eases toward the sticks over this long (0 = at once) |
 | reticle | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
-| reticle | `reticleGlass` | 0.15 | The faint lit surface under your reticle's spindles |
-| reticle | `reticleRings` | 10 | Rings of spindles round your reticle |
-| reticle | `reticleSpindlesPerRing` | 16 | ...spindles round each ring |
-| reticle | `reticleRibs` | 8 | ...ribs of spindles along it (0 = none) |
-| reticle | `reticleSpindleThickness` | 0.35 u | ...spindle thickness |
-| reticle | `reticlePath` | 0.5 | The lime line you will fly through it (0 = none) |
+| reticle | `reticleWhite` | 0.45 | Your reticle's colour: your domain colour toward white (round 9; its geometry is the bridge's) |
+| reticle | `reticleNearLight` | 0.25 | Its brightness at the way in against its far end, so the bend stands out (round 11; 1 = even) |
 | look | `bridgeVisibility` | 1 | The formed tunnel's bridge, for everyone (0 = hidden) |
 | look | `bridgeGlass` | 0.6 | ...its glass surface |
 | look | `bridgeRings` | 16 | ...rings of spindles along it |
@@ -209,6 +345,7 @@ just spindles. Tiny thinning spindles"):**
 | look | `bridgeRibs` | 6 | ...ribs of spindles along it (0 = none) |
 | look | `bridgeSpindleThickness` | 1.6 u | ...spindle thickness at the middle |
 | look | `bridgeShimmer` | 0.5 | ...a shimmer running way in to way out (0 = steady) |
+| look | `bridgeWhite` | 0.45 | ...its spindles' colour: the domain colour toward white (round 9) |
 | ai | `aiStraightMinDistance` | 300 u | The AI forms a straight tunnel only with its ring this far away |
 | ai | `aiBentMinDistance` | 120 u | ...a bending one from this far |
 | ai | `aiShapeSeconds` | 0.3 s | The AI shapes its reticle this long before RT |

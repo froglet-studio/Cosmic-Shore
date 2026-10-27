@@ -245,16 +245,15 @@ namespace CosmicShore.UI
             // SO_GameList, because that list is also the roster the tournament pool and the
             // client-side mode lookup read.
             //
-            // Sort and filter (section 85): the player's choice from SORT / FILTER, applied by the one pure rule in
-            // ArcadeGridOrder. Without the options the grid keeps its old order - favourites first, then A-Z - and
-            // shows every game. A card a guided path points at always stays.
+            // Order and filters (sections 85 and 97): favourites first, A-Z under them, narrowed by the ELEMENT and
+            // VESSEL dropdowns, applied by the one pure rule in ArcadeGridOrder. Without the options the grid shows
+            // every game. A card a guided path points at always stays.
             var progressionService = GameModeProgressionService.Instance;
             var sortedGames = ArcadeGridOrder.Apply(
                 filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Maelstrom),
-                gridOptions ? gridOptions.Sort : ArcadeGridSort.FavouritesFirst,
-                gridOptions ? gridOptions.Filter : ArcadeGridFilter.All,
+                gridOptions ? gridOptions.Element : CosmicShore.Data.Element.None,
+                gridOptions ? gridOptions.Vessel : CosmicShore.Data.VesselClassType.Any,
                 g => FavoriteSystem.IsFavorited(g.Mode),
-                g => !IsLocked(g, progressionService),
                 ArcadeGridOrder.HasGenre,
                 g => MenuGuide.ExemptsMode(g.Mode));
 

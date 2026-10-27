@@ -17,8 +17,8 @@ MonoBehaviour:
   shaftMin: 60
   shaftMax: 600
   bendRadius: 60
-  throatRadius: 4
-  mouthRadius: 10
+  throatDiameter: 8
+  mouthDiameter: 26
   keyRampSeconds: 0.5
   rideEntryMultiplier: 1
   rideMidMultiplier: 2.5
@@ -31,12 +31,8 @@ MonoBehaviour:
   collapseSeconds: 0.8
   reticleSmoothSeconds: 0.123
   reticleIdleAlpha: 0.053
-  reticleGlass: 0.048
-  reticleRings: 30
-  reticleSpindlesPerRing: 21
-  reticleRibs: 5
-  reticleSpindleThickness: 0.25
-  reticlePath: 0.333
+  reticleWhite: 0.45
+  reticleNearLight: 0.25
   warpStrength: 0
   dentStrength: 0
   rippleStrength: 0
@@ -49,23 +45,23 @@ MonoBehaviour:
   bridgeRibs: 5
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
-  reticleLook: 1
+  bridgeWhite: 0.45
   formedLook: 1
-  fieldStrength: 18
-  fieldPitch: 90
-  fieldDrag: 1
+  fieldStrength: 6
+  fieldPitch: 0
+  fieldDrag: 0.5
   fieldTwist: 0
-  fieldGlass: 1.579
-  fieldGlassIndex: 0.078
-  fieldGrazing: 0.883
-  fieldFlow: 1
+  fieldGlass: 1
+  fieldGlassIndex: 0.05
+  fieldGrazing: 0.9
+  fieldFlow: 0
   fieldInner: 0.1
-  fieldOuter: 0.12
+  fieldOuter: 0.15
   fieldProfile: 1
-  fieldRibs: 0.155
-  fieldRibSharpness: 11.12
-  fieldRibTravel: 1.95
-  fieldRibRings: 9
+  fieldRibs: 0.25
+  fieldRibSharpness: 3
+  fieldRibTravel: 1.2
+  fieldRibRings: 16
   fieldRibLines: 12
   aiWormhole: 1
   aiStraightMinDistance: 300

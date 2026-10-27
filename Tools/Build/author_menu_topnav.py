@@ -23,11 +23,10 @@ WHAT `Safe Area/NavBar` BECOMES
     InactiveImage, so UpdateNavBar and ResolveNavLinkObject (whose answer is the image's PARENT,
     i.e. the instance root) behave exactly as before. NavBarLine / NavBarLineSprites are emptied:
     the per-tab line art retires with the line.
-    PORT carries an AUTHORED MenuAvailabilityView - the one ScreenSwitcher.MarkDisabledNavLinks
+    A LOCKED tab carries an AUTHORED MenuAvailabilityView - the one ScreenSwitcher.MarkDisabledNavLinks
     would otherwise add at runtime - wired to the tab's Lock glyph (lockedOverlay) and its word
     (label, dimmed to InactiveLight while Locked). Its availability is authored Available: the lock
-    comes from disabledScreens at runtime, so emptying that list opens the tab with nothing else to
-    change.
+    comes from disabledScreens at runtime. No tab is locked since section 90 (PORT opened, 2026-10-27).
 
 STANDING DOWN. The migration - deleting the old links, indicators, gradient and line - runs only
 while those objects are present. After the first write the script owns the documents it
@@ -83,8 +82,9 @@ TABS = [("CODEX", "CodexLink", "OnClickCodexNav"), ("HANGAR", "HangarLink", "OnC
 SCREEN_IDS = {"CODEX": 6, "HANGAR": 4, "HOME": 2, "ARK": 1, "PORT": 3}   # ScreenSwitcher.MenuScreens
 PROFILE_ID = 5                 # the screen with no tab (Rev 13): last in the strip, never slid to
 # disabledScreens: a locked tab wears the lock and its MenuAvailabilityView. Section 88 (Shombith 2026-10-26: "Go ahead
-# implement the codex"): CODEX has its screen (author_menu_codex.py) and its lock is lifted; PORT stays locked.
-LOCKED = {"PORT"}
+# implement the codex"): CODEX has its screen (author_menu_codex.py) and its lock is lifted. Section 90 (Shombith
+# 2026-10-27: "lets open up the port now"): PORT has its screen (author_menu_port.py) and its lock is lifted too.
+LOCKED = set()
 # Rev 13 (Shombith, 2026-10-25): "we do not need a separate profile screen ... keep the top bar count at 4". The
 # PROFILE tab (index 4) is retired: the profile opens from the Home pilot card (ScreenSwitcher.navHiddenScreens).
 # Its minted documents are removed on every run, so a scene still carrying the fifth tab loses it.
@@ -430,8 +430,8 @@ def screens_block(sw):
 
 
 def disabled_hex():
-    """disabledScreens as Unity writes an int list (little-endian int32s): the locked tabs' screens, PORT."""
-    return "".join(SCREEN_IDS[n].to_bytes(4, "little").hex() for n in ("PORT",) if n in LOCKED)
+    """disabledScreens as Unity writes an int list (little-endian int32s): the locked tabs' screens, in bar order."""
+    return "".join(SCREEN_IDS[t[0]].to_bytes(4, "little").hex() for t in TABS if t[0] in LOCKED)
 
 
 def set_block(doc, name, block):
@@ -651,7 +651,7 @@ def validate(before_text, after_text, guids):
     assert ids_in_strip == [SCREEN_IDS[t[0]] for t in TABS] + [PROFILE_ID], f"the strip's order is not the tabs' ({ids_in_strip})"
     roots = screen_roots(sw)
     assert all(roots[SCREEN_IDS[n]] != "0" for n in ("CODEX", "HANGAR", "HOME", "ARK", "PORT")), "a screen lost its panel"
-    assert f"disabledScreens: {disabled_hex()}\n" in sw, "PORT, and only PORT, must be locked (disabledScreens)"
+    assert f"disabledScreens: {disabled_hex()}\n" in sw, "disabledScreens must be exactly the LOCKED tabs (none since section 90)"
     assert "m_SizeDelta: {x: 0, y: 84}" in sc.docs[NAVBAR["rt"]]
     assert "NavBarLineSprites: []" in sw and "NavBarLine: {fileID: 0}" in sw
 
@@ -690,7 +690,7 @@ def self_test(current, guids):
         "swapped NavActiveImages": lambda s: s.replace(f"  - {{fileID: {t[0]['stub_active']}}}\n  - {{fileID: {t[1]['stub_active']}}}\n",
                                                        f"  - {{fileID: {t[1]['stub_active']}}}\n  - {{fileID: {t[0]['stub_active']}}}\n"),
         "HOME lost its EventTrigger": lambda s: s.replace(f"      addedObject: {{fileID: {t[HOME]['trigger']}}}\n", ""),
-        "PORT authored Locked": lambda s: in_doc(s, t[PORT]["availability"], "  availability: 0\n", "  availability: 1\n"),
+        "PORT locked again": lambda s: in_doc(s, SWITCHER, f"disabledScreens: {disabled_hex()}", f"disabledScreens: {disabled_hex()}03000000"),
         "dangling reference": lambda s: s.replace(f"m_TargetGraphic: {{fileID: {ARROWS[0]['img']}}}", "m_TargetGraphic: {fileID: 42}"),
         "override targets a missing prefab object": lambda s: s.replace(
             f"target: {{fileID: {kit_src(TAB_PREFAB, 'InactiveImage#tmp')}, guid:", "target: {fileID: 4242, guid:", 1),
@@ -700,7 +700,6 @@ def self_test(current, guids):
         "ARK lost its glyph": lambda s: s.replace(f"guid: {glyph_guid(3)}, type: 3}}", "guid: 0, type: 3}", 1),
         "the strip in the old order": lambda s: in_doc(s, SWITCHER, "  - id: 6\n", "  - id: 9\n"),
         "CODEX locked again": lambda s: in_doc(s, SWITCHER, f"disabledScreens: {disabled_hex()}", f"disabledScreens: {disabled_hex()}06000000"),
-        "PORT without its lock view": lambda s: s.replace(f"      addedObject: {{fileID: {t[PORT]['availability']}}}\n", "", 1),
     }
     failed = []
     for name, plant in plants.items():

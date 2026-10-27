@@ -87,7 +87,8 @@ namespace CosmicShore.Editor.Codex
 
             // HarvestModel flags its own root and children HideAndDontSave, so there is nothing
             // to mark here - it never leaves a live object in the open scene.
-            return CodexImageBaker.HarvestModel(prefab, flat: true, temporaries, out bounds);
+            // The hull alone: the skimmer sphere every ship carries would fill the frame (VesselModelBuilder.IsHull).
+            return CodexImageBaker.HarvestModel(prefab, flat: true, temporaries, out bounds, VesselModelBuilder.IsHull);
         }
 
         // ── A painting ───────────────────────────────────────────────────────────
