@@ -29,7 +29,7 @@
   const ZOOIDS = [
     { id: 'bell', name: 'Bell', role: 'Mobility', can: 'light', cruise: 78, turn: 130, roll: 150, color: 0x9be7ff, body: 'bell',
       move: { name: 'Pulse', info: 'a burst of speed, and the lantern flashes at twice its range', boost: 1.8, time: 1.0, cool: 3 },
-      lore: 'The swimming bell: fast, sharp, and blind to everything but light. It carries the lantern that finds crystals in the dark. It has no weapon and no net.' },
+      lore: 'The swimming bell: fast, sharp, and blind to everything but light. It carries the lantern that finds crystals in the dark. It has no weapon and no net. LT leads: the Sting and the Bract draft in its wake (Slipstream).' },
     { id: 'sting', name: 'Sting', role: 'Attack', can: 'open', cruise: 60, turn: 85, roll: 100, color: 0xff6fb0, body: 'sting',
       move: { name: 'Venom shot', info: 'breaks the husk round a LIT crystal ahead, one prism per shot; smashes mass', range: 160, rate: 0.25 },
       lore: 'The stinging tentacle: slow to turn, and the only part that can open a husk. It cannot see a dark crystal and cannot carry one.' },
@@ -42,7 +42,7 @@
   const SEATS = ['Helm', 'Lance', 'Ward'];   // the colony's three seats, one per zooid (Bell flies, Sting lances, Bract wards)
 
   // ---- the loop's numbers (the SPEC sliders; every one a proposal) ----
-  const DEFAULTS = { lanternRange: 90, huskPrisms: 6, huskPerShot: 1, netRadius: 24, holdCap: 3, gatherRange: 120, fuseSeconds: 1.2, digestSeconds: 4, wallHits: 3, lanceRange: 140, lanceRate: 0.3, shieldRadius: 30, splitSeconds: 0.5, surgeSeconds: 0 };
+  const DEFAULTS = { lanternRange: 90, huskPrisms: 6, huskPerShot: 1, netRadius: 24, holdCap: 3, gatherRange: 120, fuseSeconds: 1.2, digestSeconds: 4, wallHits: 3, lanceRange: 140, lanceRate: 0.3, shieldRadius: 30, splitSeconds: 0.5, surgeSeconds: 0, wakeLength: 140, wakeWidth: 26, draftMult: 1.3, slotGap: 22, transitRange: 220 };
   const SPEC = [
     ['lanternRange', 30, 200, 5, 'Lantern range', 'How far the Bell lights a dark crystal (u); the pulse doubles it for its second'],
     ['huskPrisms', 3, 12, 1, 'Husk prisms', 'Shielded prisms round every crystal; the Sting must break them all before the Bract can net it'],
@@ -58,6 +58,11 @@
     ['shieldRadius', 10, 80, 2, 'Ward radius', 'The Ward seat\'s shield, and the Bract\'s ward apart: mass within this of it is shed (u)'],
     ['splitSeconds', 0.2, 2, 0.1, 'Split time', 'Seconds Helm holds LT to split with crystals still in the hold'],
     ['surgeSeconds', 0, 6, 0.5, 'Surge', 'Seconds the zooids keep the colony\'s speed after a split (Time L5 proposes 3)'],
+    ['wakeLength', 40, 300, 10, 'Wake length', 'Slipstream: how far behind the leading Bell its wake reaches (u)'],
+    ['wakeWidth', 8, 60, 2, 'Wake width', 'Slipstream: how far off the Bell\'s line a zooid can be and still draft (u)'],
+    ['draftMult', 1, 2, 0.05, 'Draft', 'Slipstream: a zooid in the wake behind its slot may fly at the Bell\'s speed times this (the Remora\'s x1.3)'],
+    ['slotGap', 10, 50, 2, 'March gap', 'Slipstream: the gap between places in the line, one, two, three (u)'],
+    ['transitRange', 80, 500, 10, 'Transit range', 'AI: a zooid whose next job is farther than this joins the Bell\'s wake; the Bell leads while one does (u)'],
   ];
   const ELEMENTS = {   // the colony's four, proposals (the fleet contract: one scaled parameter per element)
     charge: { name: 'Venom', param: 'huskPerShot', range: [1, 3], l5: 'Contagion', tip: 'Charge (the Sting): each venom round breaks more of a husk (x1 to x3). L5 Contagion (proposal, not flown yet): a husk the venom opens poisons the next husk in the window.' },
@@ -67,7 +72,7 @@
   };
   // ================= the ability kit (round 2 proposal, 2026-10-27): every zooid's passive and two triggers, the colony's seats; borrowed from the fleet =================
   // state: 'sim' = flown by this page today, 'part' = flown in part, 'new' = a proposal the sim does not fly yet
-  const KIT = [["Bell", "space", "passive", "Lantern", "Lights every dark crystal within its reach. Space grows the reach x1 to x1.8.", "Dolphin Echo Sight, Angler Paint", "sim"], ["Bell", "space", "RT", "Pulse Jet", "Hold to inhale, release to jet. Release on the beat of your last two pulses and the chain grows x1.1 a pulse, up to x1.8. Each pulse doubles the lantern for 1 s.", "Octopus pulse jet", "part"], ["Bell", "space", "LT", "Slipstream", "Hold to lead: the Sting and the Bract form up in the Bell's wake, one, two, three, and draft at its speed x1.3. The march is a Bell ability, not a rule.", "Remora draft, Jacks The Call", "new"], ["Bell", "space", "L5", "Beacon", "A pulse lights every crystal of the window at once.", "Dolphin Pilot Echo", "sim"], ["Sting", "charge", "RT", "Nematocyst Volley", "Hold for aimed venom out to 160 u. A round breaks the husk of a lit crystal (Charge: x1 to x3 husk prisms a round); with no crystal on the line it smashes the mass there.", "Sparrow Pulsefire, Urchin Chain Spikes", "sim"], ["Sting", "charge", "LT", "Tentacle Lash", "The Sting streams a tentacle of its own trail. Hold to coil: the turn doubles and the tentacle bunches. Let go and it whips straight, cutting the mass it sweeps; a rival hull it strikes loses petals, which spill as crystals.", "Eel coil and whip, Thresher, Wrasse Kite Ram", "new"], ["Sting", "charge", "passive", "Reel", "When a volley or a lash lands on a target more than 120 u away, a strand pulls the Sting toward it like a bungee: the slowest zooid catches up by hitting things.", "Gibbon web, Shrike Void Sling", "new"], ["Sting", "charge", "L5", "Contagion", "A husk the venom opens poisons the next husk in the window: one volley opens two crystals.", "Manta Contagion, Urchin Overcharge", "new"], ["Bract", "mass", "RT", "Net Cast", "Catches the freed crystals within its reach into the hold (three at most). Mass grows the reach x1 to x1.6. Only the Bract can carry the catch.", "Jacks netting, Angler Lure", "sim"], ["Bract", "mass", "LT", "Bract Shell", "Hold to ring the Bract in super-shielded plates, open ahead, that clear the mass they meet. Let go and the plates drop where they are as danger prisms: a trap for a rival on the hold's tail.", "Orca Danger Shield, Rhino afterimages", "part"], ["Bract", "mass", "passive", "Anchor", "Stop on mass and the Bract digs in: its net reaches twice as far and the other two dock to it in half the time. Where the Bract sits is where the colony forms.", "Grizzly Dig In, Shrike Nest, Gecko stick", "part"], ["Bract", "mass", "L5", "Trawl", "The hold takes one more, and the net also catches the crystals a rival sheds when the Sting lashes it.", "Wrasse Crystal Steal, Squirrel Steal", "part"], ["Colony", "time", "passive", "Digest", "One held crystal into the score every 2 s. Time shortens it x1 to x0.5. The hold empty and the wall open, the colony splits on its own.", "Siphonophore (its own)", "sim"], ["Colony", "time", "Helm RT", "Ram Spool", "Hold to wind the colony up. At full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit.", "Rhino Ramp Spool and Breaker, Thresher smash speed", "part"], ["Colony", "time", "Helm LT", "Scatter", "Hold to split. Let go and the three zooids are flung x1.4 along the stick, each toward its own next crystal.", "Remora sling, Gecko hop, Butterfly Fold", "part"], ["Colony", "time", "Lance RT", "Siphon Lance", "Aim with the right stick: a hitscan line out to 400 u that cuts mass and wall cells.", "Shrike Void Lance, Serpent Sniper Shot", "sim"], ["Colony", "time", "Ward LT", "Colony Shell", "While held, the hull ploughs through the mass it meets instead of being slowed.", "Grizzly Rush, Brittle Star Speed Mode", "sim"], ["Colony", "time", "Ward RT", "Chain Wake", "The colony lays its own body behind it as a short chain of shielded prisms, a wall a chasing rival bounces off.", "Eel body, Brittle Star corner trails", "new"], ["Colony", "time", "L5", "Surge", "After a split the zooids keep the colony's speed for 3 s.", "Remora sling, Urchin Slipstream", "sim"]].map(([part, el, input, name, what, from, state]) => ({ part, el, input, name, what, from, state }));
+  const KIT = [["Bell", "space", "passive", "Lantern", "Lights every dark crystal within its reach. Space grows the reach x1 to x1.8.", "Dolphin Echo Sight, Angler Paint", "sim"], ["Bell", "space", "RT", "Pulse Jet", "Hold to inhale, release to jet. Release on the beat of your last two pulses and the chain grows x1.1 a pulse, up to x1.8. Each pulse doubles the lantern for 1 s.", "Octopus pulse jet", "part"], ["Bell", "space", "LT", "Slipstream", "Hold to lead: the Sting and the Bract form up in the Bell's wake, one, two, three, and draft at its speed x1.3. The march is a Bell ability, not a rule.", "Remora draft, Jacks The Call", "sim"], ["Bell", "space", "L5", "Beacon", "A pulse lights every crystal of the window at once.", "Dolphin Pilot Echo", "sim"], ["Sting", "charge", "RT", "Nematocyst Volley", "Hold for aimed venom out to 160 u. A round breaks the husk of a lit crystal (Charge: x1 to x3 husk prisms a round); with no crystal on the line it smashes the mass there.", "Sparrow Pulsefire, Urchin Chain Spikes", "sim"], ["Sting", "charge", "LT", "Tentacle Lash", "The Sting streams a tentacle of its own trail. Hold to coil: the turn doubles and the tentacle bunches. Let go and it whips straight, cutting the mass it sweeps; a rival hull it strikes loses petals, which spill as crystals.", "Eel coil and whip, Thresher, Wrasse Kite Ram", "new"], ["Sting", "charge", "passive", "Reel", "When a volley or a lash lands on a target more than 120 u away, a strand pulls the Sting toward it like a bungee: the slowest zooid catches up by hitting things.", "Gibbon web, Shrike Void Sling", "new"], ["Sting", "charge", "L5", "Contagion", "A husk the venom opens poisons the next husk in the window: one volley opens two crystals.", "Manta Contagion, Urchin Overcharge", "new"], ["Bract", "mass", "RT", "Net Cast", "Catches the freed crystals within its reach into the hold (three at most). Mass grows the reach x1 to x1.6. Only the Bract can carry the catch.", "Jacks netting, Angler Lure", "sim"], ["Bract", "mass", "LT", "Bract Shell", "Hold to ring the Bract in super-shielded plates, open ahead, that clear the mass they meet. Let go and the plates drop where they are as danger prisms: a trap for a rival on the hold's tail.", "Orca Danger Shield, Rhino afterimages", "part"], ["Bract", "mass", "passive", "Anchor", "Stop on mass and the Bract digs in: its net reaches twice as far and the other two dock to it in half the time. Where the Bract sits is where the colony forms.", "Grizzly Dig In, Shrike Nest, Gecko stick", "part"], ["Bract", "mass", "L5", "Trawl", "The hold takes one more, and the net also catches the crystals a rival sheds when the Sting lashes it.", "Wrasse Crystal Steal, Squirrel Steal", "part"], ["Colony", "time", "passive", "Digest", "One held crystal into the score every 4 s. Time shortens it x1 to x0.5. The hold empty and the wall open, the colony splits on its own.", "Siphonophore (its own)", "sim"], ["Colony", "time", "Helm RT", "Ram Spool", "Hold to wind the colony up. At full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit.", "Rhino Ramp Spool and Breaker, Thresher smash speed", "part"], ["Colony", "time", "Helm LT", "Scatter", "Hold to split. Let go and the three zooids are flung x1.4 along the stick, each toward its own next crystal.", "Remora sling, Gecko hop, Butterfly Fold", "part"], ["Colony", "time", "Lance RT", "Siphon Lance", "Aim with the right stick: a hitscan line out to 140 u that cuts mass and wall cells.", "Shrike Void Lance, Serpent Sniper Shot", "sim"], ["Colony", "time", "Ward LT", "Colony Shell", "While held, the hull ploughs through the mass it meets instead of being slowed.", "Grizzly Rush, Brittle Star Speed Mode", "sim"], ["Colony", "time", "Ward RT", "Chain Wake", "The colony lays its own body behind it as a short chain of shielded prisms, a wall a chasing rival bounces off.", "Eel body, Brittle Star corner trails", "new"], ["Colony", "time", "L5", "Surge", "After a split the zooids keep the colony's speed for 3 s.", "Remora sling, Urchin Slipstream", "sim"]].map(([part, el, input, name, what, from, state]) => ({ part, el, input, name, what, from, state }));
   const KIT_COMBOS = ["Light, venom, net, digest: each zooid's verb is the next one's condition, so none of them scores alone.", "Lash, Trawl, Digest: the Sting knocks a rival's petals loose as crystals, the Bract nets them, the colony digests them. A steal no single zooid can finish.", "Slipstream carries the slow pair: the Bell leads, and the Sting and the Bract keep its pace only in its wake.", "Anchor sets the fuse point, and the Bract Shell's danger drop covers the docking.", "The Bell's pulse chain carries into the fuse: the colony's spool starts at the chain's multiplier.", "Scatter aims the split: the three zooids land on the window's three crystals, one each."];
   const STYLES = [
     { name: 'Balanced', lv: { charge: 0, mass: 0, space: 0, time: 0 }, info: 'Every element at 0: the lab\'s numbers.' },
@@ -151,7 +156,7 @@
     const track = buildTrack(TRACKS[courseId]);
     const W = { track, course: courseId, prisms: [], grid: new Grid(24), bodies: [], t: 0, rand: rng(seed), seed, events: [], over: false, dirty: true, watch: 0, finishT: null,
       massDensity: opts.massDensity != null ? opts.massDensity : S.massDensity, walls: [], wallsBroken: 0, crystals: [], digested: 0, rings: [], shots: [], seatsAI: levels.slice(), nobody: !!opts.nobody,
-      policy: opts.policy || 'crew', lv: Object.assign({}, opts.lv || S.lv), m: null, swaps: 0, fusedT: 0, apartT: 0,
+      policy: opts.policy || 'crew', slipstream: opts.slipstream !== false, leadRule: opts.leadRule || 'always', lv: Object.assign({}, opts.lv || S.lv), m: null, swaps: 0, fusedT: 0, apartT: 0,
       crew: { form: 'apart', hold: 0, held: [], gather: 0, split: 0, seat: opts.seat != null ? opts.seat : S.seat, shield: false, calling: false, colony: null, fuses: 0, digest: 0, lanceT: 0, ramT: 0, uses: 0, aim: { yaw: 0, pitch: 0 } } };
     W.m = mults(W.lv);
     for (let i = 0; i < track.line.length; i++) addPrism(W, { pos: track.line[i].clone(), quat: basisQuat(track.tan[i]), scale: [3.2, 3.2, 9], owner: -1, domain: 'track', shield: false, danger: false, kind: 'track' });
@@ -234,8 +239,9 @@
     const z = B.z, mv = z.move, K = B.K; K.cool = Math.max(0, K.cool - dt); K.active = false;
     const rt = inp.rt > 0.5, press = edge(B, 'rtWas', rt), lt = inp.lt > 0.3;
     if (z.can === 'light') {
+      if (lt && !K.leading) W.events.push('Bell: Slipstream, the others form up behind'); K.leading = lt;   // Slipstream: LT held, the Bell leads and lays its wake
       lightNear(W, B, W.m.lanternRange * (K.pulseT > 0 ? 2 : 1));
-      if (press && K.cool <= 0) { B.boost = mv.boost; B.boostT = mv.time; K.pulseT = 1; K.cool = mv.cool; B.stats.uses++; W.events.push('Bell: pulse'); if (W.m.l5.space) for (const c of windowOf(W)) if (c.state === 'dark' && !(c.wall && !c.wall.broken)) { c.state = 'lit'; c.litAt = W.t; } }
+      if (press && K.cool <= 0 && !K.leading) { B.boost = mv.boost; B.boostT = mv.time; K.pulseT = 1; K.cool = mv.cool; B.stats.uses++; W.events.push('Bell: pulse'); if (W.m.l5.space) for (const c of windowOf(W)) if (c.state === 'dark' && !(c.wall && !c.wall.broken)) { c.state = 'lit'; c.litAt = W.t; } }
       if (K.pulseT > 0) K.pulseT -= dt; K.active = B.boostT > 0;
     } else if (z.can === 'open') {
       if (rt) {
@@ -288,15 +294,26 @@
     }
     if (!B.colony && W.t > BASE.rail.startDelay) { B.railAcc += B.speed * dt; while (B.railAcc >= BASE.rail.spacing) { B.railAcc -= BASE.rail.spacing; const right = rightOf(B); for (const s of [-1, 1]) addPrism(W, { pos: B.pos.clone().addScaledVector(right, s * BASE.rail.offset), quat: B.quat.clone(), scale: [0.83, 0.83, 6.1], owner: B.i, domain: 'rail', shield: false, danger: false, kind: 'rail', born: W.t }); B.rails += 2; if (B.rails > 120) { let rm = 0; for (const p of W.prisms) if (!p.dead && p.kind === 'rail' && p.owner === B.i) { removePrism(W, p); B.rails--; if (++rm >= 2) break; } } } }
   }
+  // Slipstream (the Remora's draft, on the Bell): while the Bell leads, a zooid in its wake, behind its place in the line, may fly at the
+  // Bell's speed x draftMult; at its place it holds the Bell's speed. Its place: slotGap x its number behind the Bell (one, two, three).
+  function wakePlace(W, B) { const bell = W.bodies[0]; return bell.pos.clone().addScaledVector(bell.course, -W.m.slotGap * B.i); }
+  function draftSpeed(W, B) {
+    const bell = W.bodies[0]; if (B.i === 0 || !bell.K.leading || W.crew.form !== 'apart') return 0;
+    const rel = B.pos.clone().sub(bell.pos), back = -rel.dot(bell.course), lat = Math.sqrt(Math.max(0, rel.lengthSq() - back * back));
+    if (back < 3 || back > W.m.wakeLength || lat > W.m.wakeWidth) return 0;
+    return back > W.m.slotGap * B.i + 4 ? bell.speed * W.m.draftMult : bell.speed;
+  }
   function stepZooid(W, B, inp, dt) {
     B.lastInp = inp; B.slow += (1 - B.slow) * (1 - Math.exp(-dt));
     if (B.boostT > 0) B.boostT -= dt; else if (B.boost > 1) B.boost = Math.max(1, B.boost - BASE.boostDecay * dt);
     if (B.surgeT > 0) B.surgeT -= dt;
-    steer(B, inp, dt, 1);
+    steer(B, inp, dt, B.K.leading ? 0.7 : 1);
+    const draft = draftSpeed(W, B); B.drafting = draft > 0; if (B.drafting) B.stats.draftT = (B.stats.draftT || 0) + dt;
     const holding = W.crew.calling && W.crew.form === 'apart' && B.i === gatherSeat(W) && inp.ai;
     const cruise = B.surgeT > 0 ? Math.max(B.F.cruise, colonyFlight().cruise) : B.F.cruise;
     const working = inp.ai && B.aim && (B.aimWhy === 'to a lit crystal' || B.aimWhy === 'to a freed crystal') && B.aim.distanceTo(B.pos) < 90;   // the Sting and the Bract slow over their crystal so a shot or a cast lands
-    fly(B, dt, cruise * B.boost * (holding ? 0.45 : working ? 0.55 : 1), 30, 1.5);
+    const own = cruise * B.boost * (holding ? 0.45 : working ? 0.55 : 1);
+    fly(B, dt, working || holding ? own : Math.max(own, draft), 30, B.drafting ? 3 : 1.5);
     if (W.aiMoves !== false || !inp.ai) zooidMove(W, B, inp, dt);
     contacts(W, B, dt, false);
     B.stats.top = Math.max(B.stats.top, B.speed);
@@ -371,13 +388,13 @@
     if (!W.over && (W.finishT != null || W.t > BASE.limit)) W.over = true;
   }
   const bodiesNow = (W) => W.crew.form === 'colony' ? [W.crew.colony] : W.bodies;
-  Object.assign(P, { sticks, steer, fly, edge, zooidMove, stepZooid, stepColony, stepWorld, beginGather, splitNow, slotOf, gatherPoint, gatherSeat, dockProgress, bodiesNow, nearestWallAhead, lightNear });
+  Object.assign(P, { wakePlace, draftSpeed, sticks, steer, fly, edge, zooidMove, stepZooid, stepColony, stepWorld, beginGather, splitNow, slotOf, gatherPoint, gatherSeat, dockProgress, bodiesNow, nearestWallAhead, lightNear });
 })();
 
 // ================= part C: the AI (input-only, D4): each zooid's one job, the colony's three seats, the fuse policy =================
 (function () {
   'use strict';
-  const P = window.__siphParts, { V, BASE, DEG, lerp, clamp, easeInv, tmpArr, fwdOf, upOf, rightOf, nearestIndex, slotOf, bodiesNow, windowOf, nearestWallAhead, gatherSeat } = P;
+  const P = window.__siphParts, { V, BASE, DEG, lerp, clamp, easeInv, tmpArr, fwdOf, upOf, rightOf, nearestIndex, slotOf, bodiesNow, windowOf, nearestWallAhead, gatherSeat, wakePlace } = P;
   const NO_INPUT = () => ({ pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, a: false, b: false, ai: true });
 
   function aimSticks(B, aim) {
@@ -424,7 +441,11 @@
     const target = B.target >= 0 ? W.crystals[B.target] : null; let b = believe(W, B, target); B.believed = b;
     if (b && B.toWall && target && target.wall) { const ap = target.wall.centre.clone().addScaledVector(fwdOf({ quat: target.wall.quat }), -90); b = B.pos.distanceTo(ap) < 40 ? ap.clone().addScaledVector(rightOf(B), 80) : ap; }
     let aim, why;
-    if (b) {
+    const inTransit = (Z) => { const t = Z.target >= 0 ? W.crystals[Z.target] : null; return !t || t.pos.distanceTo(Z.pos) > W.m.transitRange; };
+    B.transit = inTransit(B);
+    if (B.i > 0 && W.bodies[0].K.leading && W.slipstream !== false && B.transit) {   // Slipstream: nothing near to do, take your place in the Bell's line
+      aim = wakePlace(W, B).addScaledVector(W.bodies[0].course, 30); why = 'in the Bell\'s wake';
+    } else if (b) {
       aim = b.clone(); why = B.z.can === 'light' ? 'to a dark crystal' : B.z.can === 'open' ? 'to a lit crystal' : 'to a freed crystal';
       if (B.z.can === 'open') {   // the Sting shoots down a straight line: too close and off the line, it stands off to 95 u and comes back straight
         const d = b.distanceTo(B.pos), errTo = Math.acos(clamp(b.clone().sub(B.pos).normalize().dot(fwdOf(B)), -1, 1)) / DEG;
@@ -432,13 +453,18 @@
         else if (d < 45 && errTo > 12) B.K.standoff = true;
       }
     }
+    else if (B.i === 0 && B.K.leading) {   // leading with nothing to light: carry the line to the work (the Sting's lit crystal, else the Bract's freed one, else the window)
+      const job = [1, 2].map((i) => W.bodies[i]).map((Z) => Z.target >= 0 ? W.crystals[Z.target] : null).find(Boolean) || windowOf(W)[0];
+      if (job) { aim = job.pos.clone(); why = 'leading the line to crystal ' + (job.i + 1); } else { aim = lookAhead(W, B); why = 'leading along the line'; }
+    }
     else { const L = W.bodies[(B.i + 2) % 3]; aim = L.pos.clone().addScaledVector(fwdOf(L), -14).addScaledVector(rightOf(L), B.i === 1 ? 18 : -18); why = 'with the ' + L.name; }   // nothing for it: shadow the zooid before it in the loop
     const s = aimSticks(B, aim); inp.L = s.L; inp.R = s.R; B.aim = aim; B.aimWhy = why;
     if (W.aiMoves !== false) {
       const h = B.hc, late = h ? h.level.press : 0; let want = false;
+      if (B.z.can === 'light') inp.lt = W.slipstream !== false && (W.leadRule === 'always' || !b) && W.bodies.some((Z) => Z.i > 0 && Z.transit && Z.pos.distanceTo(B.pos) < W.m.wakeLength * 2.5) ? 1 : 0;   // its own light first; with nothing to light, lead while a zooid is in transit and near enough to reach the wake
       if (B.z.can === 'light') want = s.err < 15 && B.K.cool <= 0 && !!b && b.distanceTo(B.pos) > W.m.lanternRange * 1.2 && b.distanceTo(B.pos) < W.m.lanternRange * 3;
       else if (B.z.can === 'open') want = !!b && !B.K.standoff && b.distanceTo(B.pos) < B.z.move.range * 0.9 && s.err < 12;
-      else if (B.z.can === 'catch') want = !!b && b.distanceTo(B.pos) < W.m.netRadius * 0.9;
+      else if (B.z.can === 'catch') want = !!b && b.distanceTo(B.pos) < W.m.netRadius * 0.9 && B.K.cool <= 0;   // a cast is a tap: let go while the net cools, or a missed cast holds RT down and never casts again
       if (want && !B.K._wantOn && h) h.pressAt = W.t + late * lerp(0.5, 1.5, h.rng()); B.K._wantOn = want;
       if (want && (!late || W.t >= (h ? h.pressAt : 0))) inp.rt = 1;
       if (B.z.can === 'catch' && massAhead(W, B, 30) > 1) inp.lt = 1;
@@ -482,21 +508,20 @@
   }
   function runHeadless(course, level, seed, o) {
     o = o || {};
-    const W = P.makeWorld(course, [level, level, level], seed, { massDensity: o.massDensity, policy: o.policy || 'crew', lv: o.lv, nobody: true });
+    const W = P.makeWorld(course, [level, level, level], seed, { massDensity: o.massDensity, policy: o.policy || 'crew', lv: o.lv, nobody: true, slipstream: o.slipstream, leadRule: o.leadRule });
     W.aiMoves = o.aiMoves !== false; W.aiFuse = true; W.watch = -1;
     const dt = 1 / 30; let n = 0, sp = 0;
     if (W.policy === 'always') { W.crew.hold = 0; P.beginGather(W); }
     while (!W.over) { stepAll(W, dt, -1, null); n++; const bs = bodiesNow(W); sp += bs.reduce((a, B) => a + B.speed, 0) / bs.length; }
-    return { finish: W.finishT, digested: W.digested, walls: W.wallsBroken, fusedShare: +(W.fusedT / Math.max(1e-6, W.t)).toFixed(3), fuses: W.crew.fuses, avgSpeed: +(sp / n).toFixed(1), uses: W.bodies.reduce((a, B) => a + B.stats.uses, 0) + W.crew.uses };
+    return { finish: W.finishT, digested: W.digested, walls: W.wallsBroken, fusedShare: +(W.fusedT / Math.max(1e-6, W.t)).toFixed(3), fuses: W.crew.fuses, avgSpeed: +(sp / n).toFixed(1), uses: W.bodies.reduce((a, B) => a + B.stats.uses, 0) + W.crew.uses, extra: { draft: +W.bodies.reduce((a, B) => a + (B.stats.draftT || 0), 0).toFixed(0) } };
   }
   function stepAll(W, dt, humanSeat, humanInput) {
     const c = W.crew; let inputs; c.humanSeat = humanSeat;
     if (c.form === 'colony') inputs = [0, 1, 2].map((s) => s === humanSeat && humanInput ? humanInput : colonyAI(W, s));
     else {
       assignTargets(W);
-      const humanCalls = humanSeat >= 0 && humanInput && humanInput.lt > 0.3 && humanSeat !== 2;   // the Bract's LT is its ward; it calls with the swap button... no: the Bract calls too when its hold is full
-      const bractCalls = humanSeat === 2 && humanInput && humanInput.lt > 0.3 && c.hold > 0;
-      c.calling = c.form === 'apart' && (humanCalls || bractCalls || wantFuse(W, humanSeat));
+      const humanCalls = humanSeat >= 0 && humanInput && !!humanInput.b;   // B, held, calls the colony from any zooid (LT is each zooid's own ability)
+      c.calling = c.form === 'apart' && (humanCalls || wantFuse(W, humanSeat));
       inputs = [0, 1, 2].map((i) => i === humanSeat && humanInput ? humanInput : zooidAI(W, W.bodies[i]));
       crewPolicy(W, humanSeat);
       if (c.form === 'gather') for (let i = 0; i < 3; i++) if (i !== humanSeat) inputs[i] = zooidAI(W, W.bodies[i]);
@@ -546,10 +571,10 @@
     }
     return g;
   }
-  const view = { hulls: [], crystals: [], lines: [], float: null, struts: null, aimLine: null, shots: null, lantern: null };
+  const view = { hulls: [], crystals: [], lines: [], float: null, struts: null, aimLine: null, shots: null, lantern: null, wake: null };
   function mountWorld(W) {
     { const ln = W.track.line, lo = new V(Infinity, Infinity, Infinity), hi = new V(-Infinity, -Infinity, -Infinity); for (const q of ln) { lo.min(q); hi.max(q); } const ctr = lo.clone().add(hi).multiplyScalar(0.5); let rad = 0; for (const q of ln) rad = Math.max(rad, Math.hypot(q.x - ctr.x, q.z - ctr.z)); ENV.placeField(ctr, (rad + 200) / 0.75, Math.max(160, (hi.y - lo.y) * 0.5 + 140)); }
-    for (const o of [...view.hulls, ...view.crystals, ...view.lines, view.float, view.struts, view.aimLine, view.shots, view.lantern]) if (o) scene.remove(o);
+    for (const o of [...view.hulls, ...view.crystals, ...view.lines, view.float, view.struts, view.aimLine, view.shots, view.lantern, view.wake]) if (o) scene.remove(o);
     view.hulls = []; view.crystals = []; view.lines = [];
     for (const B of W.bodies) {
       const hh = zooidHull(B.z); scene.add(hh); view.hulls.push(hh);
@@ -561,6 +586,7 @@
     view.struts = new T.Group(); const sm = mat(0xffffff); view.struts.add(box(sm, 0.8, 14, 0.8, 0, 0, 0)); view.struts.add(box(sm, 0.8, 0.8, 12, 0, -2, -1)); view.struts.visible = false; scene.add(view.struts);
     view.aimLine = new T.Line(new T.BufferGeometry().setFromPoints([new V(), new V()]), new T.LineBasicMaterial({ color: 0xff6fb0, transparent: true, opacity: 0.6 })); view.aimLine.frustumCulled = false; view.aimLine.visible = false; scene.add(view.aimLine);
     view.shots = new T.LineSegments(new T.BufferGeometry().setFromPoints(Array.from({ length: 120 }, () => new V())), new T.LineBasicMaterial({ color: 0xffe28a, transparent: true, opacity: 0.9 })); view.shots.frustumCulled = false; scene.add(view.shots);
+    { const g = new T.ConeGeometry(1, 1, 12, 1, true); g.translate(0, -0.5, 0); g.rotateX(-Math.PI / 2); view.wake = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0x9be7ff, emissive: 0x2a6f8a, transparent: true, opacity: 0.16, side: T.DoubleSide, depthWrite: false, flatShading: true })); view.wake.visible = false; scene.add(view.wake); }   // Slipstream: the Bell's wake, apex at the Bell, opening behind it
     view.lantern = new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: 0x9be7ff, transparent: true, opacity: 0.06, side: T.BackSide, depthWrite: false })); scene.add(view.lantern);
   }
   function drawWorld(W, t) {
@@ -578,6 +604,7 @@
     });
     view.float.visible = !!O; view.struts.visible = !!O; if (O) { view.float.position.copy(O.pos).addScaledVector(upOf(O), 12); view.struts.position.copy(O.pos); view.struts.quaternion.copy(O.quat); }
     view.aimLine.visible = !!O && !!O.aimDir; if (O && O.aimDir) view.aimLine.geometry.setFromPoints([O.pos.clone(), O.pos.clone().addScaledVector(O.aimDir, W.m.lanceRange)]);
+    { const bl = W.bodies[0]; view.wake.visible = !O && !!bl.K.leading; if (view.wake.visible) { view.wake.position.copy(bl.pos); view.wake.quaternion.setFromUnitVectors(new V(0, 0, 1), bl.course.clone().negate()); view.wake.scale.set(W.m.wakeWidth, W.m.wakeWidth, W.m.wakeLength); } }
     const bell = W.bodies[0]; view.lantern.visible = !O; if (!O) { view.lantern.position.copy(bell.pos); view.lantern.scale.setScalar(W.m.lanternRange * (bell.K.pulseT > 0 ? 2 : 1)); }
     const win = windowOf(W);
     win.forEach((cr, i) => { const m = view.crystals[i]; m.visible = cr.state !== 'held'; m.position.copy(cr.pos); VesselStudioLook.spinCrystal(m, t + i); const col = cr.state === 'dark' ? 0x3c4664 : cr.state === 'lit' ? 0xd8e6ff : 0xffffff; m.traverse((o) => { if (o.material && o.material.color) o.material.color.set(col); }); m.scale.setScalar(cr.state === 'dark' ? 0.55 : 1); });
@@ -748,7 +775,7 @@
     const box = $('seats'); box.textContent = ''; const form = W ? W.crew.form : 'apart';
     ZOOIDS.forEach((z, i) => {
       const row = elx('div', 'seat'), dot = elx('span', 'sd'); dot.style.background = '#' + z.color.toString(16).padStart(6, '0');
-      const who = elx('div'); who.append(elx('b', null, (form === 'colony' ? SEATS[i] + ' \u00b7 ' : '') + z.name + ' \u00b7 ' + z.role), elx('small', null, form === 'colony' ? (i === 0 ? 'flies the colony; RT ram pulse; hold LT to split' : i === 1 ? 'aims the lance (right stick); RT fires at walls' : 'LT holds the ward') : z.move.name + ' on RT' + (i === 2 ? '; LT ward' : '; LT calls the fuse')));
+      const who = elx('div'); who.append(elx('b', null, (form === 'colony' ? SEATS[i] + ' \u00b7 ' : '') + z.name + ' \u00b7 ' + z.role), elx('small', null, form === 'colony' ? (i === 0 ? 'flies the colony; RT ram pulse; hold LT to split' : i === 1 ? 'aims the lance (right stick); RT fires at walls' : 'LT holds the ward') : z.move.name + ' on RT' + (i === 0 ? '; LT Slipstream' : i === 2 ? '; LT ward' : '') + '; B calls the fuse'));
       const you = elx('button', 'btn small', !S.nobody && S.seat === i ? 'You' : 'Take'); you.type = 'button'; if (!S.nobody && S.seat === i) you.classList.add('primary');
       you.addEventListener('click', () => { S.nobody = false; S.seat = i; if (W) { W.crew.seat = i; W.swaps++; } save(); syncSeats(); });
       const lv = elx('select'); ['Easy', 'Medium', 'Hard'].forEach((l) => { const o = elx('option', null, 'AI ' + l); o.value = l; lv.appendChild(o); }); lv.value = S.levels[i] || 'Hard'; lv.setAttribute('aria-label', z.name + ' AI level');
@@ -800,11 +827,11 @@
   }
   (function controls() {
     const box = $('controls'); box.textContent = '';
-    const rows = [['Gamepad', 'both sticks steer the zooid you fly \u00b7 RT: its one move (Bell pulse, Sting shot, Bract net) \u00b7 LT: Bell / Sting = hold to call the FUSE; Bract = ward (and the call, with a hold) \u00b7 D-pad left / right = swap seat'],
+    const rows = [['Gamepad', 'both sticks steer the zooid you fly \u00b7 RT: its one move (Bell pulse, Sting shot, Bract net) \u00b7 LT: Bell = Slipstream (lead; the others draft in its wake), Bract = ward \u00b7 B, held: call the FUSE from any zooid \u00b7 D-pad left / right = swap seat'],
       ['Colony', 'Helm: sticks fly, RT ram pulse, hold LT to split \u00b7 Lance: right stick aims, RT fires at walls \u00b7 Ward: LT shield'],
-      ['Keys', 'W S pitch \u00b7 A D yaw \u00b7 Q E roll \u00b7 Space = LT \u00b7 F = RT \u00b7 \u2190 \u2192 swap seat'],
+      ['Keys', 'W S pitch \u00b7 A D yaw \u00b7 Q E roll \u00b7 Space = LT \u00b7 F = RT \u00b7 H = B (the fuse call) \u00b7 \u2190 \u2192 swap seat'],
       ['Free cam', 'orbits the viewed body: drag to turn \u00b7 wheel to zoom \u00b7 J L / I K turn \u00b7 U O zoom'], ['Transport', 'Enter play \u00b7 P pause / resume \u00b7 R stop \u00b7 C next camera'],
-      ['Phone', 'opens by itself on a phone: two thumb sticks, LT / RT handles, a two-finger swipe (or the swap button) swaps seats']];
+      ['Phone', 'opens by itself on a phone: two thumb sticks, LT / RT handles, B (the fuse call), a two-finger swipe (or the swap button) swaps seats']];
     for (const [k, v] of rows) box.append(elx('span', null, k), elx('span', null, v));
   })();
   $('trigDepth').value = String(S.trigDepth); $('trigDepth').addEventListener('change', (e) => { S.trigDepth = +e.target.value; save(); });
@@ -869,11 +896,11 @@
     if (!W) return; const c = W.crew, B = S.cam === 'Chase' ? flown(W) : P.viewedBody(W), you = humanSeat();
     $('hWho').textContent = (B.colony ? 'The colony \u00b7 ' + SEATS[c.seat] + ' seat' : 'The ' + B.name + (you === B.i ? ' \u00b7 you' : ' \u00b7 AI ' + S.levels[B.i])) + ' \u00b7 speed u/s';
     $('hSpeed').textContent = Math.round(B.speed * B.slow);
-    $('hSub').textContent = B.colony ? (c.seat === 0 ? 'ram pulse on RT' + (O_cool(c) > 0 ? ' \u00b7 ' + O_cool(c).toFixed(1) + ' s' : ' \u00b7 ready') + ' \u00b7 hold LT to split' : c.seat === 1 ? 'lance: ' + W.walls.filter((w) => !w.broken).length + ' wall(s) left' : 'ward' + (c.shield ? ' UP' : '')) : B.z.move.name + (B.K.cool > 0 ? ' \u00b7 ' + B.K.cool.toFixed(1) + ' s' : ' \u00b7 ready') + (B.z.can === 'catch' ? ' \u00b7 hold ' + c.hold + '/' + W.m.holdCap : '');
+    $('hSub').textContent = B.colony ? (c.seat === 0 ? 'ram pulse on RT' + (O_cool(c) > 0 ? ' \u00b7 ' + O_cool(c).toFixed(1) + ' s' : ' \u00b7 ready') + ' \u00b7 hold LT to split' : c.seat === 1 ? 'lance: ' + W.walls.filter((w) => !w.broken).length + ' wall(s) left' : 'ward' + (c.shield ? ' UP' : '')) : (B.K.leading ? 'SLIPSTREAM \u00b7 ' : B.drafting ? 'drafting \u00b7 ' : '') + B.z.move.name + (B.K.cool > 0 ? ' \u00b7 ' + B.K.cool.toFixed(1) + ' s' : ' \u00b7 ready') + (B.z.can === 'catch' ? ' \u00b7 hold ' + c.hold + '/' + W.m.holdCap : '');
     $('hForm').textContent = c.form === 'colony' ? 'THE COLONY \u00b7 DIGESTING ' + c.hold : c.form === 'gather' ? 'FUSING \u00b7 ' + Math.round(P.dockProgress(W)) + ' u' : '';
     $('hHold').textContent = c.hold + ' / ' + W.m.holdCap; $('mHold').style.width = (c.hold / W.m.holdCap * 100) + '%';
     const gs = P.gatherSeat(W), near = c.form === 'apart' && W.bodies.every((X) => X.pos.distanceTo(W.bodies[gs].pos) < W.m.gatherRange);
-    $('hM1Lbl').textContent = c.form === 'colony' ? 'Digest' : (near ? (c.hold > 0 ? 'In range: hold LT to fuse' : 'In range (nothing to digest)') : 'Zooids apart'); $('hM1').textContent = c.form === 'colony' ? (c.hold > 0 ? Math.round(c.digest / W.m.digestSeconds * 100) + '%' : 'done') : Math.round(Math.max(...W.bodies.map((X) => X.pos.distanceTo(W.bodies[gs].pos)))) + ' u'; $('mM1').style.width = c.form === 'colony' ? (c.hold > 0 ? c.digest / W.m.digestSeconds * 100 : 100) + '%' : clamp(1 - Math.max(...W.bodies.map((X) => X.pos.distanceTo(W.bodies[gs].pos))) / (W.m.gatherRange * 2), 0, 1) * 100 + '%';
+    $('hM1Lbl').textContent = c.form === 'colony' ? 'Digest' : (near ? (c.hold > 0 ? 'In range: hold B to fuse' : 'In range (nothing to digest)') : 'Zooids apart'); $('hM1').textContent = c.form === 'colony' ? (c.hold > 0 ? Math.round(c.digest / W.m.digestSeconds * 100) + '%' : 'done') : Math.round(Math.max(...W.bodies.map((X) => X.pos.distanceTo(W.bodies[gs].pos)))) + ' u'; $('mM1').style.width = c.form === 'colony' ? (c.hold > 0 ? c.digest / W.m.digestSeconds * 100 : 100) + '%' : clamp(1 - Math.max(...W.bodies.map((X) => X.pos.distanceTo(W.bodies[gs].pos))) / (W.m.gatherRange * 2), 0, 1) * 100 + '%';
     $('hBoost').textContent = B.boost.toFixed(2) + '\u00d7'; $('mBoost').style.width = ((B.boost - 1) / (BASE.maxBoost - 1) * 100) + '%';
     const b = $('board'); b.textContent = ''; const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' \u00b7 ' + W.t.toFixed(1) + ' s'), elx('span', null, W.digested + '/' + W.track.target + ' \u00b7 walls ' + W.wallsBroken + '/' + W.walls.length)); b.appendChild(hd);
     ZOOIDS.forEach((z, i) => { const row = elx('div', 'pl' + (you === i && !S.nobody ? ' you' : '')), dot = elx('span', 'dot'); dot.style.background = '#' + z.color.toString(16).padStart(6, '0'); const X = W.bodies[i]; row.append(dot, elx('span', null, (c.form === 'colony' ? SEATS[i] + ' \u00b7 ' : '') + z.name), elx('span', 'st', you === i && !S.nobody ? (aiHolding ? 'AI holding' : 'you') : 'AI ' + S.levels[i] + (c.form === 'apart' && X.aiState ? ' \u00b7 ' + X.aiState : ''))); b.appendChild(row); });

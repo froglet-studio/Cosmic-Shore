@@ -642,7 +642,7 @@ part** or **proposal**.
 |---|---|---|---|---|---|
 | Bell (Space) | passive | Lantern | Lights every dark crystal in reach; Space x1 to x1.8 | Dolphin Echo Sight, Angler Paint | in the sim |
 | | RT | Pulse Jet | Hold to inhale, release to jet; on the beat of the last two pulses the chain grows x1.1 a pulse to x1.8; a pulse doubles the lantern for 1 s | Octopus | in part (tap pulse) |
-| | LT | Slipstream | Hold to lead: the Sting and the Bract form up in its wake, one, two, three, drafting at its speed x1.3 | Remora, Jacks The Call | proposal |
+| | LT | Slipstream | Hold to lead: the Sting and the Bract form up in its wake, one, two, three, drafting at its speed x1.3 | Remora, Jacks The Call | in the sim (round 2) |
 | | L5 | Beacon | A pulse lights the whole window | Dolphin Pilot Echo | in the sim |
 | Sting (Charge) | RT | Nematocyst Volley | Aimed venom to 160 u; breaks a lit crystal's husk (Charge x1 to x3 prisms a round), else smashes mass | Sparrow Pulsefire, Urchin Chain Spikes | in the sim |
 | | LT | Tentacle Lash | The Sting streams a tentacle of its trail; hold to coil (turn x2), let go to whip it straight, cutting mass; a rival hull struck loses petals, which spill as crystals | Eel, Thresher, Wrasse Kite Ram | proposal |
@@ -652,10 +652,10 @@ part** or **proposal**.
 | | LT | Bract Shell | Super-shielded plates, open ahead, clear the mass they meet; let go and they drop as danger prisms behind the hold | Orca Danger Shield, Rhino afterimages | in part (clears mass) |
 | | passive | Anchor | Stopped on mass it digs in: net reach x2, the others dock in half the time; the colony forms where it sits | Grizzly Dig In, Shrike Nest, Gecko | in part (gather at the Bract) |
 | | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in part (hold +1) |
-| Colony (Time) | passive | Digest | One held crystal into the score every 2 s; Time x1 to x0.5 | its own | in the sim |
+| Colony (Time) | passive | Digest | One held crystal into the score every 4 s; Time x1 to x0.5 | its own | in the sim |
 | | Helm RT | Ram Spool | Hold to wind up; at full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit | Rhino Ramp Spool and Breaker, Thresher | in part (tap pulse) |
 | | Helm LT | Scatter | Hold to split; let go and the three are flung x1.4 along the stick, each to its own next crystal | Remora sling, Gecko hop, Butterfly Fold | in part (hold to split) |
-| | Lance RT | Siphon Lance | Aimed hitscan to 400 u, cuts mass and wall cells | Shrike Void Lance, Serpent Sniper | in the sim |
+| | Lance RT | Siphon Lance | Aimed hitscan to 140 u, cuts mass and wall cells | Shrike Void Lance, Serpent Sniper | in the sim |
 | | Ward LT | Colony Shell | The hull ploughs the mass it meets | Grizzly Rush, Brittle Star Speed | in the sim |
 | | Ward RT | Chain Wake | The colony lays its body behind it as a short chain of shielded prisms | Eel body, Brittle Star corner trails | proposal |
 | | L5 | Surge | After a split the zooids keep the colony's speed for 3 s | Remora sling, Urchin Slipstream | in the sim |
@@ -670,3 +670,30 @@ on the window's three crystals.
 scaled parameter per element; the AI writes inputs only. **Decision needed (designer):** which proposals to fly next
 (suggested order: Slipstream, Tentacle Lash with Trawl, Pulse Jet's beat, Ram Spool), and whether B as the shared
 fuse call frees LT well enough on a phone.
+
+### 11.5 Round 2: the kit flown, one ability at a time (2026-10-27, Yash: "do all recommended 1 by 1")
+
+Measured with the page's own `runHeadless` on seeds 11 / 22 / 33 (seconds to digest every crystal; DNF(n) = n digested
+when the 600 s limit hit). Every row's "off" column is the same build with that one ability switched off, so the
+difference is the ability. Both controls (never fuse, always fused) still digest nothing on every course and level.
+
+**1. Slipstream (the Bell's LT).** While the Bell holds LT it leads: a zooid in its wake (140 u long, 26 u wide), behind
+its place in the line (22 u x its number), may fly at the Bell's speed x1.3; at its place it holds the Bell's speed. A
+leading Bell turns at x0.7 and cannot pulse. The AI: a zooid whose next job is over 220 u away takes its place in the
+line; the Bell leads while one does, and with nothing of its own to light it carries the line to the Sting's lit
+crystal (else the Bract's freed one). The fuse call moved from LT to **B** (keys H) for every zooid.
+
+| Course, level | Slipstream off | Slipstream on |
+|---|---|---|
+| I1 Hard | 398 / 433 / 430 | 389 / 378 / 385 |
+| I1 Medium | 405 / 440 / 415 | 450 / 469 / 438 |
+| I1 Easy | 445 / 448 / 443 | 499 / 455 / 492 |
+| I2 Hard | 484 / 485 / 481 | 484 / 402 / 476 |
+| I2 Medium | 498 / 470 / 485 | 448 / DNF(29) / 501 |
+| I2 Easy | 519 / 525 / 512 | 525 / DNF(27) / 505 |
+
+Found: Slipstream is a skill ability. It takes Hard about 35 s off I1, and it is the first thing that makes Hard clearly
+the fastest level (off, Hard and Medium tie on I1). Easy and Medium lose time with it: their late notice and misjudged
+crystals break the line. A rule where the Bell leads only with nothing of its own to light was tried and dropped (it
+sat inside the noise on every level). Also found and fixed: the AI Bract held RT down after a cast that missed, and the
+net only casts on a fresh press, so it never cast again (it stalled one Easy run at 6 crystals).
