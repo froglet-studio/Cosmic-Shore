@@ -71,12 +71,12 @@ namespace CosmicShore.UI
                 _availability.SetAvailability(MenuAvailability.Locked);
             }
 
-            _button.onClick.AddListener(HandleClick);
+            _button.onClick.AddListener(HandlePlayerClick);
         }
 
         void OnDestroy()
         {
-            if (_button) _button.onClick.RemoveListener(HandleClick);
+            if (_button) _button.onClick.RemoveListener(HandlePlayerClick);
         }
 
         /// <summary>
@@ -95,6 +95,14 @@ namespace CosmicShore.UI
         /// is. The Ark's Squads tab launches through the hub this way, so a squad reaches a mode only where Home does.
         /// </summary>
         public void Press() => HandleClick();
+
+        // A press on Home itself: the player is going in on their own, not with the squad Take into carried
+        // (SquadLaunchIntent), so the windows it opens keep each card's own memory.
+        void HandlePlayerClick()
+        {
+            SquadLaunchIntent.Clear();
+            HandleClick();
+        }
 
         void HandleClick()
         {

@@ -3997,7 +3997,33 @@ friend's squad, Decor locked, notes.
 - Not opened in the Unity editor.
 
 **Open:**
-- The squad's domain does not reach the configure window yet: its domain pick still comes from its own per-mode
-  preference.
+- ~~The squad's domain does not reach the configure window yet~~: wired, section 94.
 - The tab row is still centred over the screen; the boards draw it left-aligned with LB / RB keycaps.
+
+## 94. The squad's domain reaches the launch panel (2026-10-27)
+
+**Asked (Shombith):** "wire the squad domain into the configure window".
+
+The configure window already re-picks a remembered per-card domain once its panel opens
+(`ArcadeGameConfigureModal.RestoreRememberedDomain`, sent to the server through `HandleDomainSelected` so the tile is never
+lit without the server knowing). A squad going in now wins over that memory:
+- **The player who pressed TAKE INTO** (the launch authority): `SquadsPage.Play` sets `SquadLaunchIntent` to a copy of
+  the squad. Every card they open on that trip starts on the squad's domain. A press on a Home hub entry clears the
+  intent (`MenuHubButton.HandlePlayerClick`; the Ark's own press goes through `Press`, which keeps it). A plain Arena trip
+  from Home therefore keeps each card's own memory, even with squad mates in the party.
+- **A squad mate who joined that party** (a guest): their panel opens on their active squad's domain when the party holds
+  one of its mates (`SquadMembership.PartyIsSquad`), so the squad flies as one team.
+- Both are decided by one pure function, `SquadMembership.TryLaunchDomain`, covered by two new tests.
+
+A squad domain that the card's domain count does not reach (Gold on a two-domain card) falls back to Jade, the same
+`LaunchPreferenceRules.ResolvePilotDomain` rule a remembered pick goes through. The domain count is never widened for it:
+that is a host term, and the window keeps its own rules for it. The player can still press another tile, and the ready
+press then remembers that pick for the card, as before. The weekly challenge keeps its pinned domain.
+
+**How it was checked:**
+- `unity_refcompile` player and editor configs: 0 errors in project code.
+- 24 squad tests, run outside Unity: all pass.
+- The console-logging and conditional-compilation gates pass, and `author_menu_ark.py --check` shows no drift.
+- Not opened in the Unity editor. Needs a hand test with two friends: Take into Arena from a Ruby squad, open a card,
+  and both the host and the invited squad mate start on Ruby.
 

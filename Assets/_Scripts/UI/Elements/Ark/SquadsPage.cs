@@ -27,7 +27,8 @@ namespace CosmicShore.UI
     /// card's vessel and pilot, invites the online squad mates to the party and presses the Home hub's entry for that window
     /// (<see cref="MenuHubButton.Press"/>), so Mission refuses exactly as it does on Home. No Arcade (2026-10-27).</item>
     /// <item><b>Domain</b>: Jade, Ruby or Gold, the squad's team colour. A change plays the nanobot swap on each card
-    /// (<see cref="SquadNanobotSwap"/>). Only the squad's leader changes it.</item>
+    /// (<see cref="SquadNanobotSwap"/>). Only the squad's leader changes it. Take into carries it to the launch panel
+    /// (<see cref="SquadLaunchIntent"/>, <c>ArcadeGameConfigureModal.RestoreRememberedDomain</c>).</item>
     /// <item><b>Join a friend's squad</b> lists the friends' squads with a seat open.</item>
     /// </list>
     ///
@@ -613,6 +614,8 @@ namespace CosmicShore.UI
             if (_gameData && _gameData.selectedVesselClass) _gameData.selectedVesselClass.Value = mine.Vessel;
             if (!mine.UsesDefaultPilot()) PilotLoadoutStore.SetPilot(mine.Vessel, mine.PilotId);
             InviteSquadMates(squad);
+            // The launch panel opens the player on the squad's domain while this trip lasts (SquadLaunchIntent).
+            SquadLaunchIntent.Set(squad);
             hub.Press();
         }
 

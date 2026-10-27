@@ -31,6 +31,7 @@ namespace CosmicShore.UI
 
         [Header("Host / Party Data")]
         [Inject] private HostConnectionDataSO hostConnectionData;
+        [Inject] private UGSDataService ugsData;
 
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
@@ -575,10 +576,21 @@ namespace CosmicShore.UI
         /// <see cref="HandleDomainSelected"/> so it is a real server request: a tile lit without
         /// the round trip is the "UI claims a domain the server never got" case that method
         /// exists to refuse. Jade is skipped because the commit already put everyone there.
+        ///
+        /// <para>A squad going in wins over that memory (Docs/MENU_REDESIGN_B.md section 94): the squad the player took in
+        /// from the Ark (<see cref="SquadLaunchIntent"/>), or, for a guest, their active squad when the party holds one of
+        /// its mates. A squad domain the card's domain count does not reach falls back to Jade, as a remembered one does.
+        /// The player can still press another tile.</para>
         /// </summary>
         void RestoreRememberedDomain()
         {
             if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (TryGetSquadDomain(out var squadDomain))
+            {
+                var squad = LaunchPreferenceRules.ResolvePilotDomain(squadDomain, config.DomainCount);
+                if (squad != Domains.Jade) HandleDomainSelected(squad);
+                return;
+            }
             if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
             if (!remembered.HasPilotChoice) return;
 
@@ -586,6 +598,16 @@ namespace CosmicShore.UI
             if (domain == Domains.Jade) return;
 
             HandleDomainSelected(domain);
+        }
+
+        bool TryGetSquadDomain(out Domains domain)
+        {
+            var active = ugsData != null ? ugsData.SquadRepo?.Data?.Book?.GetActive() : null;
+            var party = new List<string>();
+            if (hostConnectionData && hostConnectionData.PartyMembers != null)
+                foreach (var member in hostConnectionData.PartyMembers) party.Add(member.PlayerId);
+            string me = hostConnectionData ? hostConnectionData.LocalPlayerId : null;
+            return SquadMembership.TryLaunchDomain(SquadLaunchIntent.Squad, IsClientMode, active, me, party, out domain);
         }
 
         /// <summary>

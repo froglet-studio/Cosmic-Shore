@@ -173,6 +173,49 @@ namespace CosmicShore.Data
             return SquadJoinRefusal.None;
         }
 
+        /// <summary>
+        /// True when <paramref name="partyIds"/> holds a squad mate of <paramref name="squad"/> other than the player: its
+        /// owner (a squad the player joined) or a player seated in it. Then the party is that squad going in together.
+        /// </summary>
+        public static bool PartyIsSquad(SavedSquad squad, string myId, IEnumerable<string> partyIds)
+        {
+            if (squad == null || partyIds == null) return false;
+            foreach (var id in partyIds)
+            {
+                if (string.IsNullOrEmpty(id) || id == myId) continue;
+                if (squad.IsJoined() && squad.OwnerId == id) return true;
+                for (int i = 0; i < SavedSquad.SlotCount; i++)
+                {
+                    var slot = squad.GetSlot(i);
+                    if (slot.IsPlayer() && slot.MemberId == id) return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The domain a launch panel opens the player on when a squad is going in (Docs/MENU_REDESIGN_B.md section 94): the
+        /// squad the player took in with Take into (<paramref name="taken"/>, on the launch authority's machine), or, for a
+        /// guest, their active squad when the party holds one of its mates. False when no squad is going in, and the panel
+        /// keeps its own memory.
+        /// </summary>
+        public static bool TryLaunchDomain(SavedSquad taken, bool guest, SavedSquad active, string myId,
+            IEnumerable<string> partyIds, out Domains domain)
+        {
+            domain = Domains.Jade;
+            if (!guest && taken != null)
+            {
+                domain = taken.Domain;
+                return true;
+            }
+            if (guest && PartyIsSquad(active, myId, partyIds))
+            {
+                domain = active.Domain;
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>True when the player is in <paramref name="ownerId"/>'s squad <paramref name="squadId"/>.</summary>
         public static bool Contains(SquadBook book, string ownerId, string squadId)
         {

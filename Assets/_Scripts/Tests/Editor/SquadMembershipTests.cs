@@ -186,6 +186,37 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void LaunchDomain_IsTheTakenSquads_ForTheOneWhoTookItIn()
+        {
+            var taken = Owned("Breakers");
+            taken.Domain = Domains.Gold;
+            Assert.IsTrue(SquadMembership.TryLaunchDomain(taken, false, null, Me, new List<string>(), out var d));
+            Assert.AreEqual(Domains.Gold, d);
+            Assert.IsFalse(SquadMembership.TryLaunchDomain(null, false, taken, Me, new List<string> { Ana }, out _),
+                "a host who opened the window from Home keeps the card's memory, even with squad mates in the party");
+        }
+
+        [Test]
+        public void LaunchDomain_ForAGuest_IsTheActiveSquads_OnlyWhenThePartyHoldsAMate()
+        {
+            // Ana joined Me's squad; Me (the owner) is the party host, Ana a guest.
+            var owner = Owned("Breakers");
+            owner.Domain = Domains.Ruby;
+            var book = new SquadBook();
+            SquadMembership.TryJoin(book, Ana, "Ana", Me, "Me", owner, default, out var joined);
+
+            Assert.IsTrue(SquadMembership.TryLaunchDomain(null, true, joined, Ana, new List<string> { Me, Ana }, out var d));
+            Assert.AreEqual(Domains.Ruby, d, "the guest flies in the squad's domain");
+            Assert.IsFalse(SquadMembership.TryLaunchDomain(null, true, joined, Ana, new List<string> { Bo, Ana }, out _),
+                "a party of strangers is not the squad");
+            Assert.IsFalse(SquadMembership.TryLaunchDomain(null, true, null, Ana, new List<string> { Me }, out _));
+
+            owner.RogueOne = owner.RogueOne.WithMember(Ana, "Ana");
+            Assert.IsTrue(SquadMembership.PartyIsSquad(owner, Me, new List<string> { Me, Ana }), "a seated friend makes the party the squad");
+            Assert.IsFalse(SquadMembership.PartyIsSquad(owner, Me, new List<string> { Me }), "the player alone is not a party");
+        }
+
+        [Test]
         public void SquadSlot_SavedBeforeSeatsExisted_ReadsAsAnAiSeat()
         {
             var slot = JsonConvert.DeserializeObject<SquadSlot>("{\"Vessel\":1,\"Element\":2}");
