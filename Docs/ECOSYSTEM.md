@@ -12369,17 +12369,33 @@ With size Mass's, Space's fauna identity is three things, one number - the plant
   seen only in a population of two or more.
 - **REACH** - a Space creature senses and strikes from x 1.35 further (`LightFauna` detection and attack; `Boid`'s feeding
   reach). Felt more than seen.
-- **ASPECT** - the body itself: x 1.346 along its length and x 0.862 across, the same volume
-  (`FaunaVariantTuning.BodyAspect`). The one of the three a lone creature shows, and the riskiest, so it is **authored
-  on the Space SHARK only** until it is seen in the game (`Docs/Ecology/FaunaScale/sharks_four_elements.png`: the four
-  sharks at one scale - Charge and Time 56 u, Space 76 u and thinner, Mass 203 u).
+- **ASPECT** - the body itself, by the LATTICE FLORA'S PROPORTIONAL RULES (Garrett, 2026-10-27: "exaggerate space
+  more while maintaining fidelity ... elongating its prisms and modifying the spindles to better contain them ... it
+  should use the proportional rules used in the lattice flora"). Three of them, the same three a lattice plant obeys:
+  - **the leaf law**: every body prism takes `FloraElementalForm.ShapeLeaf` for its element - Space x 0.4097 volume,
+    anisotropy 2.11, so each becomes a long thin needle along the axis that was already its longest (the shark's dorsal
+    1.7 x 1.8 x 7.9 → 0.7 x 0.8 x 18.4 u, its bellies 3.8 → 6.1 u long and 0.25 thick, its wings 5.0 → 9.4 u). It is
+    solved in WORLD space: each prism's authored size measured through the bones down from the root, the law applied,
+    the local target solved back through the stretch axis by axis (`Fauna.ShapeBodyPrisms`);
+  - **the reach is FITTED, not authored**: the spine (the spindle body, stretched at the root along the creature's
+    forward axis, girth unchanged) grows by the least that contains every needle - the lattice's "the size is FITTED
+    to the largest that clears" turned round, the body fitted to the prisms - measured at **x 1.962** for the shark and
+    shipped at **x 2.06** (`FaunaVariantTuning.BodyAspect`, 56 → 116 u long);
+  - **no prism interpenetrates another**: none does (a separating-axis test over every pair), none enters the Space
+    crystal (3.54 u), and none leaves the body.
+
+  The girth is kept so the heart's cavity is the size it was. Danger prisms (the teeth) keep their WORLD shape, counter-
+  scaled at their stretched seats: the needle law on an already needle-like tooth (1 x 1 x 15) runs to 82 long. It is
+  **authored on the Space SHARK only** until it is seen swimming in the game
+  (`Docs/Ecology/FaunaScale/sharks_four_elements.png`: Charge and Time 56 u, Space 116 u and needled, Mass 203 u). Only
+  the bind pose has been measured; the swim animation under a stretched root is the editor check.
 
 Spread and reach are a code law keyed on the creature's ELEMENT (set at `AssignLineage` from the rolled variant), so
 every Space LightFauna and Boid has them with no config changed; both multiply where a radius is READ, so a pooled
 body that comes back as another element cannot compound them. The aspect is applied at the ROOT, so the posed,
 skinned body is stretched whole and nothing under it shears; the heart now divides its world size out of its parent
 PER AXIS (`LifeFormCrystal.SetWorldScale`; identical to before for a uniform parent), so a stretched creature's heart
-is still the one round size. `Fauna` remembers the prefab's root scale, and a variant that keeps the prefab gets it
-back (a pooled Mass or Space body no longer keeps its last size). `LightFauna`'s body ratio is taken by volume, so the
-aspect does not move its body-relative dials. The thinner Space body shows a little more of its crystal at rest.
+is still the one round size. `Fauna` remembers the prefab's root scale and its body prisms' authored targets, and a
+variant that keeps the prefab gets both back (a pooled Mass or Space body no longer keeps its last size or needles).
+`LightFauna`'s body ratio is taken by GIRTH, so the spine stretch does not move its body-relative dials.
 

@@ -38,7 +38,7 @@ namespace CosmicShore.Gameplay
         // husk withers in place instead of drifting, and makes the death path idempotent.
         bool _withering;
 
-        // This variant's body against the prefab's (by volume, so Space's stretch at equal volume is 1). A variant that
+        // This variant's body against the prefab's (by its GIRTH, so Space's spine stretch is 1). A variant that
         // sizes its body (FaunaVariantTuning.BaseBodyScale - a Mass creature grown to hold its heart's swing,
         // Docs/ECOSYSTEM.md 64.8) carries the data's BODY-relative dials with it: separation, consume, the feeding
         // cluster and the attack are authored for the prefab's body. Speeds stay in world units; Space spreads its
@@ -52,7 +52,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Food is sensed in world units (further for Space), but never less far than the mouth reaches.</summary>
         float DetectionRadius => Mathf.Max(Mathf.Max(0f, data.detectionRadius) * ElementReach, ConsumeRadius);
 
-        static float Volume(Vector3 s) => Mathf.Abs(s.x * s.y * s.z);
+        static float Girth(Vector3 s) => Mathf.Sqrt(Mathf.Abs(s.x * s.y));
 
         // --- Intentional feeding (herbivore) -------------------------------
         // The behavior tick picks the nearest edible prism; per-frame code then
@@ -116,8 +116,8 @@ namespace CosmicShore.Gameplay
         public override void ApplyVariantTuning(FaunaVariantTuning tuning)
         {
             base.ApplyVariantTuning(tuning);
-            float authored = Volume(AuthoredRootScale);
-            _bodyRatio = authored > 1e-9f ? Mathf.Pow(Volume(transform.localScale) / authored, 1f / 3f) : 1f;
+            float authored = Girth(AuthoredRootScale);
+            _bodyRatio = authored > 1e-9f ? Girth(transform.localScale) / authored : 1f;
         }
 
         protected override void OnTeamChanged()

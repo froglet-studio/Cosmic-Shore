@@ -463,6 +463,13 @@ namespace CosmicShore.Gameplay
         /// Multiplied where a spacing or a reach is READ.</summary>
         protected float ElementSpread { get; private set; } = 1f;
         protected float ElementReach { get; private set; } = 1f;
+
+        /// <summary>The element this individual rolled (None before <see cref="AssignLineage"/>).</summary>
+        protected Element RolledElement { get; private set; } = Element.None;
+
+        // The body prisms' authored targets, read before the first variant reshaped them, so a pooled body that comes
+        // back as a variant that keeps the prefab's prisms gets them back.
+        Dictionary<HealthPrism, Vector3> _authoredPrismTargets;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -532,6 +539,7 @@ namespace CosmicShore.Gameplay
 
                 var pick = config.RollVariant(inherit);
                 _variantPick = pick;
+                RolledElement = pick.Element;
                 ElementSpread = FaunaElementalForm.Spread(pick.Element);
                 ElementReach = FaunaElementalForm.Reach(pick.Element);
 
@@ -753,13 +761,13 @@ namespace CosmicShore.Gameplay
 
             if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
             transform.localScale = tuning.BaseBodyScale > 0f ? Vector3.one * tuning.BaseBodyScale : _authoredRootScale;
-            // Space's body: the same volume, longer and thinner (scaled at the ROOT, so the posed body is stretched
-            // whole and nothing below it shears; the heart divides it out per axis).
-            if (tuning.BodyAspect > 0f && !Mathf.Approximately(tuning.BodyAspect, 1f))
+            // Space's body: stretched along its spine, its girth unchanged (scaled at the ROOT, so the posed body is
+            // stretched whole and nothing below it shears; the heart divides it out per axis).
+            bool stretched = tuning.BodyAspect > 0f && !Mathf.Approximately(tuning.BodyAspect, 1f);
+            if (stretched)
             {
-                float a = tuning.BodyAspect, c = 1f / Mathf.Sqrt(a);
                 var s = transform.localScale;
-                transform.localScale = new Vector3(s.x * c, s.y * c, s.z * a);
+                transform.localScale = new Vector3(s.x, s.y, s.z * tuning.BodyAspect);
             }
 
             if (tuning.StarvationSeconds >= 0f)
@@ -781,6 +789,12 @@ namespace CosmicShore.Gameplay
                 foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
                     if (hp) hp.TargetScale = tuning.BodyPrismScale;
             }
+
+            // ...and a stretched body spends its element's leaf law on those prisms (or a pooled one gets them back).
+            if (stretched) ShapeBodyPrisms(tuning.BodyAspect, RolledElement);
+            else if (_authoredPrismTargets != null && tuning.BodyPrismScale == Vector3.zero)
+                foreach (var kv in _authoredPrismTargets)
+                    if (kv.Key) kv.Key.TargetScale = kv.Value;
 
             // Per-element body look: swap the spindle renderers' shared material (never
             // renderer.material - that clones). Crystal models keep their own materials.
@@ -934,6 +948,43 @@ namespace CosmicShore.Gameplay
         /// Call from Initialize, after the body hierarchy exists.
         /// Returns the cached array so subclasses can reuse it for body setup.
         /// </summary>
+        /// <summary>
+        /// THE LATTICE FLORA'S LEAF LAW ON A CREATURE (Docs/ECOSYSTEM.md 64.9): every body prism takes
+        /// <see cref="FloraElementalForm.ShapeLeaf"/> for this element in WORLD space - its authored size measured
+        /// through the bones down from the root, the law applied, and the local target solved back through the root's
+        /// spine stretch, axis by axis. So a Space body's prisms are the lattice's long thin needles however its bones
+        /// turn them, and the stretch (fitted per species) is what contains them. Danger prisms keep their WORLD shape
+        /// (counter-scaled against the stretch, at their stretched seats): a needle law on an already needle-like tooth
+        /// runs away with it.
+        /// </summary>
+        void ShapeBodyPrisms(float stretch, Element element)
+        {
+            _authoredPrismTargets ??= new Dictionary<HealthPrism, Vector3>();
+            var toRoot = transform.worldToLocalMatrix;
+            var spine = new Vector3(1f, 1f, stretch);
+            foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
+            {
+                if (!hp || !hp.transform.parent) continue;
+                bool tooth = hp.prismProperties is { IsDangerous: true };
+                if (!_authoredPrismTargets.TryGetValue(hp, out var authored))
+                    _authoredPrismTargets[hp] = authored = hp.TargetScale;
+
+                var chain = toRoot * hp.transform.parent.localToWorldMatrix;
+                Vector3 size = default, perLocal = default;
+                for (int i = 0; i < 3; i++)
+                {
+                    var axis = chain.MultiplyVector(hp.transform.localRotation * (i == 0 ? Vector3.right : i == 1 ? Vector3.up : Vector3.forward));
+                    size[i] = authored[i] * axis.magnitude;                   // root units, before the stretch
+                    perLocal[i] = Vector3.Scale(axis, spine).magnitude;       // root units per local unit, after it
+                }
+                var shaped = tooth ? size : FloraElementalForm.ShapeLeaf(size, element);
+                if (perLocal.x <= 1e-6f || perLocal.y <= 1e-6f || perLocal.z <= 1e-6f) continue;
+                var local = new Vector3(shaped.x / perLocal.x, shaped.y / perLocal.y, shaped.z / perLocal.z);
+                hp.AdmitTargetScale(local);   // a needle may be longer than the animator's default window
+                hp.TargetScale = local;
+            }
+        }
+
         protected HealthPrism[] CacheBodyPrisms()
         {
             _bodyPrisms = GetComponentsInChildren<HealthPrism>(true);

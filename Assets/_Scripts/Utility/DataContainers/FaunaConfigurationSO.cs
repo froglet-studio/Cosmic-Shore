@@ -192,9 +192,12 @@ namespace CosmicShore.Utility
                  "Mass/Time tadpoles author 0.8 x 0.8 x 7 long tail prisms; Space keeps the " +
                  "spindle default). Zero = keep the prefab's authored prism scale.")]
         public Vector3 BodyPrismScale = Vector3.zero;
-        [Tooltip("SPACE's body: stretch the whole creature along its forward axis by this, and its two cross axes by " +
-                 "1/sqrt of it, so its volume is unchanged and only its proportions move (Docs/ECOSYSTEM.md 64.9). " +
-                 "0 or 1 = keep the prefab's proportions.")]
+        [Tooltip("SPACE's body: stretch the creature along its spine (its forward axis) by this, its girth unchanged so " +
+                 "its heart's cavity keeps its size. A stretched body spends its element's LEAF LAW on its body prisms - " +
+                 "the lattice flora's FloraElementalForm.ShapeLeaf, solved in world space through the stretch (Space: " +
+                 "x0.41 volume, anisotropy 2.11 - long thin needles) - and the stretch is FITTED per species to the " +
+                 "least that contains them (Docs/ECOSYSTEM.md 64.9). Danger prisms keep their shape. 0 or 1 = the " +
+                 "prefab's body and prisms.")]
         [Min(0f)] public float BodyAspect = 0f;
         [Tooltip("Material applied to the body's Spindle renderers (the per-element body look). " +
                  "None = keep the prefab's authored material.")]
