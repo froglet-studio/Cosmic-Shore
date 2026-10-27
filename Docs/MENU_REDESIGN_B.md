@@ -3941,3 +3941,18 @@ cloud data and tell me what to do"; "in the controls tab the omni crystal abilit
 **Generators:** `author_menu_hangar.py` has 32 plants and `author_menu_configure.py` gains its Omni plant; all fire, and
 every `author_menu_*` passes `--check`. **Tests:** `PlayerProfileDataTests` gains the two ElementalCrystals tests. The
 player and editor reference compiles are clean. Not opened in the editor.
+
+### 90.2 The Hangar's open cradle without the notch or the dash (2026-10-27)
+
+Shombith: "The dashed outline is the open triangle panel we put in the hangar bg remove that dashed outline and also on
+the top right we do not like the notch design. Make the corners fade into a gradient for that triangle."
+
+The dossier's border is now `open_cradle_border` (`author_menu_hangar.py`):
+- **Lines.** The left stub, the floor, the leaning right side and the right edge up to 260 units from the top.
+- **Open ends.** Both open ends dissolve over 220 units through the kit's alpha ramp (`kit_fade_h`) into the cradle
+  fill's own clear top.
+- **Removed.** The chamfered rail and its top-right notch, and the faint dash where the rail ended.
+- **Kept.** The small corner cutout (`kit_corner_tri`).
+
+The configure card's rail (Rev 25) is unchanged. Two new plants: "the dash back on the border" and "an open end
+stopping hard"; all 34 fire.

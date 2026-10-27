@@ -903,15 +903,36 @@ def build_tabs(panel):
     return pages
 
 
-def line_node(parent, key, a, b, token, alpha, width=LINE_W):
+def line_node(parent, key, a, b, token, alpha, width=LINE_W, fade=False):
     """A straight line from a to b (dossier units, y down): a thin Image, rotated, a half width longer at each end so the
-    corners close."""
+    corners close. `fade`: drawn with the kit's horizontal alpha ramp, solid at a and clear at b - an open end that
+    dissolves instead of stopping hard."""
     (x0, y0), (x1, y1) = a, b
     length = math.hypot(x1 - x0, y1 - y0) + width
     n = parent.child(N(key, key.rsplit("/", 1)[-1], R((0, 1), None, ((x0 + x1) / 2, -(y0 + y1) / 2), (length, width))))
     n.rot = round(-math.degrees(math.atan2(y1 - y0, x1 - x0)), 4)
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(token, alpha)))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(token, alpha), K.kit_sprite("kit_fade_h") if fade else None))
     return n
+
+
+# Section 90.2 (Shombith 2026-10-27: "remove that dashed outline ... on the top right we do not like the notch design.
+# Make the corners fade into a gradient for that triangle"): the Hangar's open cradle without the rail, its chamfered
+# notch or the dash. Both sides rise solid and then dissolve over FADE_LEN into the fill's own clear top; the corner
+# mark (the small cutout) stays.
+FADE_LEN, OPEN_RIGHT_TOP = 220, 260
+
+
+def open_cradle_border(panel, w, h, prefix="Abilities/Panel/Border"):
+    border = panel.child(N(prefix, "Border", STRETCH))
+    stub, knee = h * RAIL_STUB, h * RAIL_KNEE
+    solid = ((0, stub), (0, h), (w - RAIL_LEAN, h), (w, knee), (w, OPEN_RIGHT_TOP))
+    for i, (a, b) in enumerate(zip(solid, solid[1:])):
+        line_node(border, f"{prefix}/Line{i}", a, b, "NeutralLightest", 1.0)
+    line_node(border, f"{prefix}/FadeLeft", (0, stub), (0, stub - FADE_LEN), "NeutralLightest", 1.0, fade=True)
+    line_node(border, f"{prefix}/FadeRight", (w, OPEN_RIGHT_TOP), (w, OPEN_RIGHT_TOP - FADE_LEN), "NeutralLightest", 1.0, fade=True)
+    border.child(N(f"{prefix}/Corner", "Corner", TLr(0, h - 22, 22, 22))).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("TextLight", 0.8), K.kit_sprite("kit_corner_tri")))
+    return border
 
 
 def rail_points(w, h, lean=RAIL_LEAN, knee=RAIL_KNEE, rail_y=RAIL_Y, chamfer=RAIL_CHAMFER, start=RAIL_START):
@@ -1156,7 +1177,7 @@ def build_view(row_guid):
     panel = rz.child(N("Abilities/Panel", "Panel", STRETCH))
     panel.child(N("Abilities/Panel/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_cradle_fill")))
-    rail_border(panel, DOSSIER_W, DOSSIER_H)
+    open_cradle_border(panel, DOSSIER_W, DOSSIER_H)
     build_tabs(panel)
 
     # ---- the spend-crystals popup ----
@@ -1477,7 +1498,11 @@ def validate_prefabs(files, guids):
     # The open angled border: the cradle fill and the rail's lines, ending on the corner mark.
     assert f"guid: {K.kit_sprite('kit_cradle_fill')}" in view and f"guid: {K.kit_sprite('kit_corner_tri')}" in view, \
         "the dossier lost its open cradle (fill or corner mark)"
-    assert all(f"m_Name: Line{i}\n" in view for i in range(len(rail_points(1, 1)) - 1)), "the dossier's rail is missing a line"
+    assert all(f"m_Name: Line{i}\n" in view for i in range(4)), "the dossier's border is missing a line"
+    assert "m_Name: FadeLeft\n" in view and "m_Name: FadeRight\n" in view and view.count(f"guid: {K.kit_sprite('kit_fade_h')}") >= 2, \
+        "the dossier's open ends must fade into the gradient, not stop hard (section 90.2)"
+    assert "m_Name: Dash\n" not in view and "m_Name: Line4\n" not in view, \
+        "the dash and the top-right notch are gone from the Hangar's border (section 90.2)"
     _, stage = doc_of(view, hv("Hero/Clip/Stage#stage"))
     assert stage and f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}" in stage, "the stage has no vessel prefab table - it would build nothing"
     assert f"liveryMaterial: {{fileID: 2100000, guid: {LIVERY}" in stage, "the stage's hull must wear the silver class livery, not gold"
@@ -1699,6 +1724,8 @@ def self_test(current, files, guids):
             f"liveryMaterial: {{fileID: 2100000, guid: {LIVERY}, type: 2}}", "liveryMaterial: {fileID: 0}", 1)),
         "a vibe segment unwired": view_plant(lambda t: re.sub(r"(\n    segments:\n    - )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the rail missing a line": view_plant(lambda t: t.replace("m_Name: Line3\n", "m_Name: Lime3\n", 1)),
+        "the dash back on the border": view_plant(lambda t: t.replace("m_Name: FadeLeft\n", "m_Name: Dash\n", 1)),
+        "an open end stopping hard": view_plant(lambda t: t.replace("m_Name: FadeRight\n", "m_Name: Line4\n", 1)),
         "the list's tile without its card art": tile_plant(lambda t: re.sub(
             r"(\n  cardArt: )\{[^}]*\}", r"\1{fileID: 0}", t, count=1)),
         "the card art drawn through Hull_Lit": tile_plant(lambda t: t.replace(
