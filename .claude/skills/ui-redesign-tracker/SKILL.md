@@ -114,6 +114,12 @@ drifts. Take a place relative to something only you own: the Port takes the old 
 and anchors its documents after that panel's transform. Run the whole `author_menu_*.py --check` sweep (T9) after adding
 a screen.
 
+**T13 — the Menu Redesign B canvas is shared, so a round's number is claimed when you publish, not when you plan it**
+(claude/affectionate-bardeen-pzh99d, 2026-10-27). Rev 28 was free at noon; by the time the Port's looks were drawn,
+another session had published Rev 28 to 31 (Ark tabs, Squads, the Codex rethought). Re-read `project/canvas.json`
+right before the publish, take the first free `rev<N>` page id AND board prefix (`R<N>*.dc.html`), and keep every
+page and board the other session added (send the index with only your keys changed).
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:

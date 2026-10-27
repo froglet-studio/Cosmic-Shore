@@ -3957,3 +3957,24 @@ messages in the selection blue, your messages looking like everyone else's, and 
 - `dotnet build Port/src/CosmicShore.Live`: 0 errors.
 - Not opened in the editor: the hand test is "The Port" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, step 3a.
 
+**Follow-ups the Port leaves (rows, not fixed here):**
+1. **The old Port panel is dead.**
+   - Measured: `grep -rn LeaderboardsMenu Assets/_Scripts` shows only the class itself, `OfflineMenuWirer`'s gate
+     list and two comments; ScreenSwitcher no longer holds it.
+   - Menu_Main still carries the switched-off `PortScreen` GameObject (`6196685382603104254`) with `LeaderboardsMenu`
+     and its rows.
+   - Delete the panel, `LeaderboardsMenu.cs` and the wirer's `LeaderboardsMenu` gate entry in their own cleanup.
+2. **Two drivers of one board.**
+   - `PortLeaderboardPane` repeats about 60 lines of `WeeklyChallengeLeaderboardModal`: the scope usability, the
+     KitTile tab redraw, the header and the friend-id source.
+   - Extract a non-modal board driver that both use.
+   - This is not urgent: the two agree today, and both read the same service.
+3. **An extra fetch at load, possibly.**
+   - The Port's `WeeklyChallengeLeaderboardPanel` is in the scene at load with its pane hidden by alpha.
+   - If its own OnEnable fetches before `PortLeaderboardPane.Awake` sets `DrivenExternally`, the menu makes one
+     extra leaderboard read at load.
+   - Measure it in the editor (the network log) before changing anything.
+4. **A pre-existing failure.** `author_elemental_converter.py --self-test` fails on bleeding-edge as well
+   (`Menu_Main: fileID 7700130000000000002 is already taken`); its `--check` is green. Its synthesised pre-converter
+   scene no longer strips the converter's documents.
+
