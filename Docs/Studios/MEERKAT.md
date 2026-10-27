@@ -133,6 +133,35 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 13 (Yash, 2026-10-28: "the moment I activate the tunnel, the trunk shape should be created. Like dissolve
+shader ... slowly it will grow some random branches. Left and right ... the main tunnel's entry will be ... the cut
+portion of the trunk above, and the other end will be the trunk's below cut portion ... a Fresnel effect ... trunk-like
+... grow based on its length and will contain the wormhole inside"). ARTIFACT ONLY: not in Unity until Yash imports it.
+It replaces round 12's plate tree (the crown, bark plates and roots and their `coat*` / `crown*` / `root*` keys are
+gone).**
+- **The trunk** (`drawTrunk`, the Wormhole · trunk card). Once a tunnel forms, one hollow trunk mesh wraps it from the
+  way in to the way out, so it grows with the tunnel's length and holds the wormhole inside. The way in is the trunk's
+  upper cut and the way out its lower cut: both ends are open annuli showing tree rings (`trunkRings` 6).
+  - **Shape:** its radius is `trunkTop` (1.25) × the mouth's radius at the way in, widening to `trunkBase` (1.6) × at
+    the way out, never inside the tunnel. Bark ridges run along it (`trunkRidges` 14, depth `trunkBark` 0.18) with a
+    slow gnarl (`trunkGnarl` 0.1). Each tunnel has its own seed, so no two trunks match.
+  - **Look:** a Fresnel shell, not a volume: nearly clear face-on (`trunkGlass` 0.03), bright at the silhouette
+    (`trunkRim` 0.8, falloff `trunkFresnel` 2.5), in the maker's domain colour, drawn additively.
+  - **Dissolve:** it dissolves in from the way in to the way out over `trunkGrowSeconds` (1.4 s), with a noisy bright
+    front `trunkDissolveEdge` (0.06) wide. A collapsing tunnel dissolves its trunk back with it.
+  - **Branches:** `trunkGrowSeconds` + `branchDelaySeconds` (0.3 s) after the tunnel forms, `branchCount` (6) branches
+    grow out of it over `branchGrowSeconds` (2.5 s), one after another, alternating left and right at random points
+    along it. Each is `branchLength` (1.6) × the mouth's radius long and `branchThickness` (0.14) × it thick at its
+    base, leans `branchUp` (35°) toward the way in, curls and forks once.
+  - Whoever rides the tunnel does not see the trunk: the ride stays the clear pipe. `trunkVisibility` 0 hides it.
+- **Cost:** one mesh per tunnel (56 rings × 36 sides, about 2,300 vertices), built once when it forms and rebuilt
+  only when a shape slider moves; the dissolve runs in its shader. Branches are about 100 spindles in the bridge's
+  existing instanced mesh.
+  - Suggested for Unity: the same: build the trunk mesh once per tunnel and drive the dissolve and Fresnel in one
+    unlit additive shader, so a frame costs one draw a tunnel.
+- **Fixed with this round:** round 12's tree card was missing from the published studio (v72): the page's tab layout
+  lists its cards by id, and the new card was not on the list. The trunk card is on the Play Style Config tab.
+
 **Round 12 (Yash, 2026-10-28: "the mouth diameter should have a min and max ... the wormhole will be larger while
 traveling more distance ... an upper coating around the wormhole to be visible from a third perspective ... the pattern
 of the omnicrystal ... like a tree trunk ... we use the upper part of the tree to get inside and the root area to get out
@@ -260,7 +289,7 @@ just spindles. Tiny thinning spindles"):**
 | shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
 | shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
 | shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
-| tree | `coatVisibility` … `coatLimbThickness` | see the page | The tree round a formed tunnel (round 12, artifact only so far): bark, crown, roots |
+| tree | `trunkVisibility` … `branchDelaySeconds` | see the page | The trunk round a formed tunnel, dissolving in and growing branches (round 13, artifact only so far; replaced round 12's plate tree) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
