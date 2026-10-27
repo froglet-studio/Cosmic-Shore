@@ -212,22 +212,40 @@ def _len(kept):
     return GUN_LEN * max(0.5, kept)      # the collapse keeps a quarter; the card floors it so the rounds stay legible
 
 
-# Option E - THE SPRAY: four rounds from one muzzle, each on its own ray inside the live cone, alternating sides.
-# Cold, every ray is the centre line and the card is ONE stream; heat swings the rounds out to the live angle (the
-# view places the four round Images on their rays) and the range shortens with the cone.
-SPRAY_SIDES = (0.85, -0.85, 1.0, -1.0)    # where each round sits across the cone, nearest first
+# Option E - THE SPRAY (round 3, Garrett 2026-10-27: "i like what option E is trying to do, but the clarity of F is good.
+# lets try to get E using more shots and the whole space to define the angle"): ten rounds in five ranks from a
+# muzzle at the card's left edge, each round on its own ray inside the live cone. Cold, every ray is the centre line
+# and the card is ONE stream; heat fans the rounds out until the collapse fills the card's whole height. Every rank
+# puts one round on a cone EDGE (alternating sides, both on the last rank) so the angle is drawn, not guessed.
+SPRAY_MUZZLE = (8.0, 64.0)
+SPRAY_RANKS = [(20, (1.0, -0.4)), (42, (-1.0, 0.3)), (64, (1.0, -0.55)), (86, (-1.0, 0.6)), (110, (1.0, -1.0))]
+SPRAY_HALF = [0.0, 8.0, 19.0, 30.0]    # the card's half-angle per phase: cold, 1.5 deg, 7.5 deg, 37.5 deg (real)
 
 
-def fan(half, kept):
-    L = _len(kept)
-    x0, y0 = GUN_MUZZLE
+def spray_round(cx, cy, a):
+    return fill(rotate([(cx - 7.5, cy - 4.5), (cx + 2.5, cy - 4.5), (cx + 7.5, cy), (cx + 2.5, cy + 4.5), (cx - 7.5, cy + 4.5)], -a, cx, cy))
+
+
+def spray(half):
+    x0, y0 = SPRAY_MUZZLE
     m = empty()
-    for i, k in enumerate(SPRAY_SIDES):
-        d = 18 + (L - 28) * i / (len(SPRAY_SIDES) - 1)
-        a = half * k
+    for d, ks in SPRAY_RANKS:
+        for k in ks:
+            a = half * k
+            r = math.radians(a)
+            m |= spray_round(x0 + d * math.cos(r) - 6, y0 - d * math.sin(r), a)
+    return m
+
+
+def spray_cone(half):
+    """The cone's two edges as ghost lines (F's hard edges), for option G - behind the rounds."""
+    if half <= 0:
+        return empty()
+    x0, y0 = SPRAY_MUZZLE
+    m = empty()
+    for a in (half, -half):
         r = math.radians(a)
-        cx, cy = x0 + d * math.cos(r), y0 - d * math.sin(r)
-        m |= fill(rotate([(cx - 10, cy - 5.5), (cx + 4, cy - 5.5), (cx + 10, cy), (cx + 4, cy + 5.5), (cx - 10, cy + 5.5)], -a, cx, cy))
+        m |= stroke([(x0 + 6 * math.cos(r), y0 - 6 * math.sin(r)), (x0 + 118 * math.cos(r), y0 - 118 * math.sin(r))], 6)
     return m
 
 
@@ -262,7 +280,7 @@ def cone_centre(kept):
 
 
 # The L5 state (Piercing Bullets): a hostile prism on the centre line, the rounds through it and out the far side.
-PIERCE_PRISM = dict(cx=62, cy=70, w=12, h=40, dp=6)
+PIERCE_PRISM = dict(cx=58, cy=70, w=10, h=36, dp=6)
 
 
 def pierce_prism():
@@ -353,22 +371,29 @@ CARDS = [
                  ("in the stance", [("rounds", "domain"), ("hull", "domain")]),
                  ("in the stance at Mass 5", [("rounds_shielded", "shielded"), ("hull", "domain")])]),
 
-    # ---- Pulsefire Cannons OPTIONS round 2 (2026-10-27): the live cone + the heat phase; the old card first
-    dict(name="cannons_option_e", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons", before_gauge_value=0.42,
-         gauge_marks=GUN_MARKS,
-         title="Option E - THE SPRAY: four rounds, each on its own ray inside the live cone - a line when cold, a scatter when hot; the plate is the heat, a mark per phase",
-         parts={**{f"s{i}": (lambda h=h, k=k: fan(h, k)) for i, (_n, _g, _r, h, k) in enumerate(HEAT_STATES)},
-                "prism": pierce_prism, "pierce": lambda: fan(0, 1.0)},
-         states=[(n, [(f"s{i}", "domain")]) for i, (n, _g, _r, _h, _k) in enumerate(HEAT_STATES)]
+    # ---- Pulsefire Cannons OPTIONS round 3 (2026-10-27): the spray with more shots across the whole card, and the
+    # heat phases marked without lines across the whole plate ("i like the ease of reading the lines as the boundaries
+    # between levels but i don't like how it visually dominates the whole space")
+    dict(name="cannons_option_e_ticks", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons", before_gauge_value=0.42,
+         gauge_marks=GUN_MARKS, gauge_marks_style="ticks",
+         title="E1 - the spray; phase joins as short ticks in from the plate's edges (bright passed, dim ahead)",
+         parts={**{f"s{i}": (lambda h=h: spray(h)) for i, h in enumerate(SPRAY_HALF)}, "prism": pierce_prism, "pierce": lambda: spray(0)},
+         states=[(n, [(f"s{i}", "domain")]) for i, (n, *_r) in enumerate(HEAT_STATES)]
                 + [("Space 5: rounds pierce prisms", [("prism", "danger", 0.6), ("pierce", "domain")])],
-         gauge={**{n: (g, None) for n, g, _r, _h, _k in HEAT_STATES}, "Space 5: rounds pierce prisms": (0.10, None)}),
-    dict(name="cannons_option_f", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons", before_gauge_value=0.42,
-         gauge_marks=GUN_MARKS,
-         title="Option F - THE CONE: the centre stream over the live cone (a ghost sector with hard edges); the plate is the heat, a mark per phase",
-         parts={**{f"c{i}": (lambda h=h, k=k: [(cone_centre(k) | cone_edges(h, k), 1.0), (cone_sector(h, k) & ~cone_centre(k), 0.35)])
-                   for i, (_n, _g, _r, h, k) in enumerate(HEAT_STATES)},
-                "prism": pierce_prism, "pierce": lambda: cone_centre(1.0)},
-         states=[(n, [(f"c{i}", "domain")]) for i, (n, _g, _r, _h, _k) in enumerate(HEAT_STATES)]
+         gauge={**{n: (g, None) for n, g, *_r in HEAT_STATES}, "Space 5: rounds pierce prisms": (0.10, None)}),
+    dict(name="cannons_option_e_segments", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons", before_gauge_value=0.42,
+         gauge_marks=GUN_MARKS, gauge_marks_style="segments",
+         title="E2 - the spray; the heat fill is cut into bars at each phase join, the joins ahead are dim edge ticks",
+         parts={**{f"s{i}": (lambda h=h: spray(h)) for i, h in enumerate(SPRAY_HALF)}, "prism": pierce_prism, "pierce": lambda: spray(0)},
+         states=[(n, [(f"s{i}", "domain")]) for i, (n, *_r) in enumerate(HEAT_STATES)]
                 + [("Space 5: rounds pierce prisms", [("prism", "danger", 0.6), ("pierce", "domain")])],
-         gauge={**{n: (g, None) for n, g, _r, _h, _k in HEAT_STATES}, "Space 5: rounds pierce prisms": (0.10, None)}),
+         gauge={**{n: (g, None) for n, g, *_r in HEAT_STATES}, "Space 5: rounds pierce prisms": (0.10, None)}),
+    dict(name="cannons_option_g", group="cannons", lockup_state=1, element="Space", before="Sparrow_Cannons", before_gauge_value=0.42,
+         gauge_marks=GUN_MARKS, gauge_marks_style="segments",
+         title="G - the spray between F's two cone edges (faint lines) for F's clarity; the segmented heat fill",
+         parts={**{f"g{i}": (lambda h=h: [(spray(h), 1.0), (spray_cone(h) & ~spray(h), 0.45)]) for i, h in enumerate(SPRAY_HALF)},
+                "prism": pierce_prism, "pierce": lambda: spray(0)},
+         states=[(n, [(f"g{i}", "domain")]) for i, (n, *_r) in enumerate(HEAT_STATES)]
+                + [("Space 5: rounds pierce prisms", [("prism", "danger", 0.6), ("pierce", "domain")])],
+         gauge={**{n: (g, None) for n, g, *_r in HEAT_STATES}, "Space 5: rounds pierce prisms": (0.10, None)}),
 ]

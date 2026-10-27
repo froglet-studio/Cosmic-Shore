@@ -124,7 +124,7 @@ def sheet(spec, c, out):
         x, yy = 10, y + 26
         for (name, icon) in imgs:
             g = gauges.get(name) if with_gauge else None
-            cd = card.card(icon, element, gauge=g[0] if g else None, gauge_color=g[1] if g else None, gauge_marks=c.get("gauge_marks"))
+            cd = card.card(icon, element, gauge=g[0] if g else None, gauge_color=g[1] if g else None, gauge_marks=c.get("gauge_marks"), gauge_marks_style=c.get("gauge_marks_style", "lines"))
             im.alpha_composite(cd, (x, yy))
             d.text((x, yy + cd.height + 2), name[:30], fill=(170, 170, 190, 255), font=font)
             x += cd.width + 8
@@ -146,13 +146,13 @@ def sheet(spec, c, out):
 ORDER = ("Charge", "Mass", "Space", "Time")   # the lockup, left to right (VesselHUDView.AbilityDisplayOrder)
 
 
-def _lockup(spec, slot_element, slot_icon, slot_gauge, domain_key, domains, slot_marks=None):
+def _lockup(spec, slot_element, slot_icon, slot_gauge, domain_key, domains, slot_marks=None, slot_style="lines"):
     """The hull's whole ability row as the HUD draws it, with `slot_icon` in `slot_element`'s card and every other card
     as the spec's LOCKUP has it today - so a candidate is judged next to its siblings, not alone."""
     cards = []
     for el in ORDER:
         if el == slot_element:
-            cards.append(card.card(slot_icon, el, gauge=slot_gauge, gauge_marks=slot_marks))
+            cards.append(card.card(slot_icon, el, gauge=slot_gauge, gauge_marks=slot_marks, gauge_marks_style=slot_style))
             continue
         sib = spec.LOCKUP.get(el)
         if sib is None:
@@ -192,8 +192,8 @@ def options_sheet(spec, group, entries, out, domain_key="jade"):
         for name, parts in states:
             gg = gauges.get(name)
             others.append((name, card.card(compose(parts, c["parts"], domain_key, domains), element, gauge=gg[0] if gg else None,
-                                           gauge_color=gg[1] if gg else None, gauge_marks=c.get("gauge_marks"))))
-        rows.append((c.get("title", c["name"]), _lockup(spec, element, icon, g[0] if g else None, domain_key, domains, c.get("gauge_marks")), others))
+                                           gauge_color=gg[1] if gg else None, gauge_marks=c.get("gauge_marks"), gauge_marks_style=c.get("gauge_marks_style", "lines"))))
+        rows.append((c.get("title", c["name"]), _lockup(spec, element, icon, g[0] if g else None, domain_key, domains, c.get("gauge_marks"), c.get("gauge_marks_style", "lines")), others))
     lock_w = max(r[1].width for r in rows)
     cw = card.card(None, element).width
     width = 20 + lock_w + 40 + max(len(r[2]) for r in rows) * (cw + 8) + 20
