@@ -66,7 +66,8 @@ def author(spec: dict):
     """spec keys:
     member, display, hull, class_id, scripts {name: path}, doc, donor_scene, donor_controller_guid,
     donor_rule_guid, donor_fields, new_fields, target, laps, target_key, target_after,
-    comeback, description, preview_objective, preview_notes, build_after, max_speed, card_extra_checks
+    comeback, description, preview_objective, preview_notes, build_after, max_speed, card_extra_checks,
+    extra_toasts (optional: [(situation, template[, lib.toast kwargs])], the mode's own toasts after the race beats)
     """
     member = spec["member"]
     mid = mode_id(member)
@@ -173,7 +174,9 @@ def author(spec: dict):
                  lib.toast(130, "{0} takes the lead - gate {1}/{2}", tint_domain=1, domain_names=0) +
                  lib.toast(131, "{0} is on the home stretch - gate {1}/{2}", tint_domain=1, domain_names=0) +
                  lib.toast(132, "{0} is on the final lap", tint_domain=1, domain_names=0) +
-                 lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
+                 lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9) +
+                 # A mode's own beats, which its controller posts (Serpent Time's rounds and walls).
+                 "".join(lib.toast(*t[:2], **(t[2] if len(t) > 2 else {})) for t in spec.get("extra_toasts", [])))
     g.register_toast_config(g_toasts)
 
     # 6. registries

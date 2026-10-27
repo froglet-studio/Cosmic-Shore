@@ -98,27 +98,31 @@ What it says:
 - **D-ST6 The arena.** The page's four loops are placeholders. In Unity, a real scene: reuse a gate race's course
   (`GateRaceController` modes) or the cell the Serpent Charge branch cloned?
 
-## 5. Bringing it to Unity (not started)
+## 5. Bringing it to Unity (round 1 built, 2026-10-27, not yet flown in the editor)
 
-"The game mode I think is already there": the Serpent's own mode is **Serpent Charge** (`GameModes.SerpentCharge = 67`,
-reserved on bleeding-edge), a sniper duel on **`origin/cece/vibrant-archimedes-n3xn3x`**, not merged, last commit
-2026-10-16, about 1,000 commits behind bleeding-edge. It is Garrett's branch (Affects: Garrett's Serpent Charge). It
-already carries what this race reuses: the marksman AI (`SerpentMarksmanAI`: latches the scope, scores lines with the
-rifle's own cone, cloaks through the replicated input), Charge-crystal waves laid per peer, AI cloaks that reach every
-player, `CloakSeedWallActionExecutor.IsCloaked`, and `SniperShotActionExecutor.MinPathRadius`.
+"The game mode I think is already there": it was. **Serpent Time** (`GameModes.SerpentTime = 73`, the Serpent's Time
+card, a lapped circuit on Headlong's solver) was authored the same day on `cece/confident-goodall-6cpxan` (Affects:
+Garrett, who merges that branch). This branch merges it and reshapes it; no new mode id was claimed. Serpent Charge
+(67, Garrett's sniper duel on `cece/vibrant-archimedes-n3xn3x`) is untouched.
 
-Before the port, decide with Garrett:
+What the game now does (details: `Assets/_Scripts/Controller/Arcade/SERPENTTIME.md`, "The dirty race"):
 
-- **Reshape Serpent Charge into Serpent Time** (one Serpent mode, id 67, renamed), or **add Serpent Time beside it** (the
-  `<Hull><Element>` family has Grizzly Charge and Grizzly Time side by side; a new `GameModes` id would be claimed only after
-  checking bleeding-edge and every in-flight branch).
-- Merge bleeding-edge into that branch first either way: it is far behind.
+| Requirement | In the game |
+|---|---|
+| R1 a Time race | Serpent Time's circuit: 8 gates, 2 laps, golf |
+| R2 several rings at a gate | Ring clusters, 3 at I1/I2, 2 at I3/I4, any one counts (`SerpentTimeCluster`) |
+| R3 walls, shoot or go round | The shipped cloak lays a Seed Wall; a rival's brick costs half your speed (a shielded one most of it); the rifle clears it; another ring of the gate is open |
+| R4 rounds cost crystals | 1 at the start, +1 per crystal, 3 at most, 1 per shot; a scoped shot with none is dropped |
+| R5 a dirty AI | Picks the open ring, shoots walls when it holds a round, detours for crystals when short, cloaks just past a ring a rival still needs |
+| R6 the cloak | Unchanged (the shipped `CloakSeedWallActionSO`) |
 
-Then `/artifact-to-unity` with `/arcadegame`: the mode's scene and controller, the gate clusters as a course generator, the
-round-per-crystal rule, the AI styles on the platform AI (input-only), its card and `/cardart`.
+What the studio models and the game does not yet: the 48 regrowing debris prisms per gate (wall fuel in the game is
+trails and the arena's prisms), the snipe's level strip on a pilot as a mode rule (the rifle's own hit rules apply),
+and the four AI play styles (the game's AI is one dirty pilot at the lobby's difficulty).
 
 ## 6. Round log
 
 | Round | Date | What changed | What it taught |
 |---|---|---|---|
 | 1 | 2026-10-27 | The page: the shipped Serpent, the race (R1 to R6), four AI styles, three levels, the scorecard above | (a) A cloak seed laid on top of a rival traps it bouncing in place: the seed is the Serpent's latest trail prism, behind it, and the AI routes round any wall across its path. (b) An AI that only aims for the ring circles it: the game's stick mix pins the hull at 25 u/s at full yaw (an 18 u turn), so the approach must line up on the ring's axis from far enough out, scaled by how far off the axis it is. (c) A sniper that starts lining up 280 u out and wants a 0.35° aim never fires: fire when the believed aim sits in the inner half of the cone at that distance, ease off the throttle while lining up, and back off for range. (d) Belief mistakes only on walls do not separate the levels, because few rings are walled; the Skim Race mistakes belong on every gate. (e) An InstancedMesh's colour attribute must exist before its first render, or the walls draw white (three r128). |
+| 2 | 2026-10-27 | Unity: Serpent Time (73) reshaped into the dirty race (§5) | The gate race needed four hooks to stand several rings at a gate (detection, the AI's ring, the lit ring, a per-pilot crystal budget); the course's own ring is kept, hidden, because the objective arrow, the race toasts and the AI's commit all read it |

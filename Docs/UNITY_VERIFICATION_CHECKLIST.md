@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Time, the dirty race: ring clusters, Seed Walls that cost speed, rounds from crystals, a dirty AI (`claude/dazzling-ride-dpyvkx`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Shombith: "make the serpent and its time game the best game ... an dirty time game"; brief and studio
+round: `Docs/Studios/SERPENT_TIME.md`, rules: `Assets/_Scripts/Controller/Arcade/SERPENTTIME.md` "The dirty race"):
+- Serpent Time (`GameModes.SerpentTime = 73`, from `cece/confident-goodall-6cpxan`, merged here) reshaped, no new id.
+- Every gate is 3 rings (I1, I2) or 2 (I3, I4) side by side; any one threads it. The next cluster lights lime.
+- A rival's Seed Wall brick costs a hull half its throttle (a shielded one 85%), recovering over 1.2 s.
+- 1 sniper round at the start, +1 per crystal, 3 at most, 1 per shot; a scoped RT with no round is dropped (toast).
+- The AI takes the open ring, scopes and shoots a wall out of its ring when it holds a round, detours for crystals when
+  short, and cloaks just past a ring a rival still needs.
+- Opt-in hooks other code can ignore: `GateRaceController.ThreadsGate / ChooseAIGate / AICrystalDetourSlackFor /
+  OnLocalNextGateChanged`, `R_VesselActionHandler.PressGate`, `SniperShotActionExecutor.Fired`,
+  `SerpentWallAssembler.IsWallBrick`, `AIPilot.SetCycledAbilityFilter`, `RaceGateRing.SetVisualHidden`.
+
+**Verified without the editor:** reference compile, player and editor, 0 errors in project code. `SerpentTimeClusterTests` 4/4 under dotnet against the race-course harness's Unity math
+(the real circuits, 120 seeds x 4 intensities: no ring of one gate reaches another gate's ring); a mutated layout fails
+it. `author_serpent_time_assets.py --check` OK (and fails on a hand-edited toast); Scarab Rally and Brittle Star Time
+still match their generators after the shared `hull_time_race.py` change. Gates: using directives, console logging,
+switch labels, enum references, conditional compilation, self-referential locals, game-list scenes, preview spawns.
+`/verify-unity` was NOT run: no Unity editor in this cloud session.
+
+**Verify in editor:**
+1. Open `MinigameSerpentTime` once and save it (the controller's new fields take their defaults). EditMode
+   `SerpentTimeClusterTests` and `SerpentTimeCourseTests` pass; the console is clean on entering Play.
+2. Arcade ▸ Serpent Time, I1, you + 3 AI. Every gate shows THREE rings, the next cluster lime; flying through any one
+   counts the gate (I3/I4: two rings, smaller). No plain big ring is drawn at a gate.
+3. Toasts at the start: the hint, then "Sniper rounds 1/3". Take a crystal: 2/3. Scope (LT) and fire (RT): 1/3 and the
+   shot goes off. Fire until 0: the next scoped RT does nothing and says "No sniper round". Unscoped RT still cloaks.
+4. Cloak just past a ring with an AI behind you: a Seed Wall grows round the seed. Fly into a RIVAL's wall: you slow and
+   see "Seed Wall - speed lost"; your own walls let you through.
+5. Watch an AI (Follow camera on it): it threads a ring that is not walled when one is; with a round it raises its scope
+   and shoots a wall out of its ring; with none it swings off for crystals; past a ring you still need, it cloaks
+   sometimes (not every 4 s as before).
+6. Two machines (host + client): the client's rounds and wall slow work on the client's hull; the host sees the client's
+   shots and walls; nobody's rounds are shared.
+
+**First-pass tuning** (controller fields, starting points): coverage to call a ring walled 0.4; walled-ring cost +120 /
++600; shot range 90-1100 u; crystal detour 900 / 250 u; cloak chance 0.8, 15.5 s apart; brick throttle 0.5 / 0.15 over
+1.2 s. Known gap: the studio's regrowing debris round each gate is not built, so walls grow from trails and the arena.
+
+---
+
 ### 🔴 The Meerkat's look swap and every vessel's CONFIGS in the Inspector (`claude/adoring-cerf-m94x1o`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed** (Yash: "two options so that I can swap between my look versus his look"; "if I choose my vessel, I will

@@ -177,7 +177,16 @@ namespace CosmicShore.Gameplay
             _cooldownEndTime = Time.time + ResolveAppliedCooldown(so);
 
             ResolveShot(so);
+
+            // Once per shot, on the one machine whose cooldown is authoritative (see the class summary).
+            if (IsAuthoritativeMachine) Fired?.Invoke(_status);
         }
+
+        /// <summary>
+        /// A shot left the barrel, raised on the AUTHORITATIVE machine only (the owner, or the only machine there is),
+        /// so a listener counts each shot once however many peers replay the press. Serpent Time spends a round on it.
+        /// </summary>
+        public static event System.Action<IVesselStatus> Fired;
 
         /// <summary>
         /// The cooldown THIS machine enforces. The owner (and the non-networked single-player

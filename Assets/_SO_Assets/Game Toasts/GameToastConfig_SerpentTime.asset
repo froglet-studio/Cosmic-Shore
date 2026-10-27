@@ -64,3 +64,43 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
+  - situation: 153
+    messageTemplate: 'Sniper rounds {0}/{1}'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 154
+    messageTemplate: 'No sniper round - take a crystal'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 155
+    messageTemplate: 'Seed Wall - speed lost'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.9
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 156
+    messageTemplate: 'Any ring counts. Cloak past a ring to wall it. Crystals are sniper rounds.'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

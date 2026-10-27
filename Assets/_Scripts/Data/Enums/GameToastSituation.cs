@@ -209,6 +209,13 @@ namespace CosmicShore.Data
         TandavaLearned = 151,           // a wound taught it something (once per wound): {0} = that wound's Learned line
         TandavaChimera = 152,           // on its way up it became the whale-jelly chimera: {0} = ChimeraLine
 
+        // Serpent Time, the dirty race (Docs/Studios/SERPENT_TIME.md): sniper rounds come from crystals, Seed Walls cost
+        // a hull its speed. Posted to the LOCAL pilot only.
+        SerpentTimeRounds = 153,        // a round gained or spent: {0} = rounds held, {1} = the most a pilot can hold
+        SerpentTimeNoRounds = 154,      // a scoped rifle press with no round: go and take a crystal
+        SerpentTimeWallHit = 155,       // flew into a rival's Seed Wall and lost speed
+        SerpentTimeWallHint = 156,      // once, at the start: how the dirty race is played
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

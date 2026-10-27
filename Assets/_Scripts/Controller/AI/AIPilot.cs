@@ -322,6 +322,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetThrottleFloor(float floor) => _throttleFloor = Mathf.Clamp01(floor);
 
+        Func<ShipActionSO, bool> _cycledAbilityFilter;
+
+        /// <summary>
+        /// Which of the vessel's timed abilities (<c>abilities</c>, pressed on their own clock) may still fire on that
+        /// clock: false for an authored asset keeps the cycler off it. For a mode whose AI presses that ability itself
+        /// at a moment that matters (Serpent Time cloaks just past a ring a rival still needs, not every 4 s). Null lets
+        /// all of them cycle, the default; the mode that sets it clears it.
+        /// </summary>
+        public void SetCycledAbilityFilter(Func<ShipActionSO, bool> allow) => _cycledAbilityFilter = allow;
+
         float SteeringThrottle => Mathf.Clamp(Mathf.Max(throttle, _throttleFloor), 0f, 1f);
 
         /// <summary>What a mode's steering hook is doing for a pilot (<see cref="ObjectiveReport"/>).</summary>
@@ -1464,6 +1474,12 @@ namespace CosmicShore.Gameplay
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
+                // A mode that presses this ability itself, at moments it chooses, keeps the cycler off it.
+                if (_cycledAbilityFilter != null && !_cycledAbilityFilter(action.SourceAsset ? action.SourceAsset : action.Ability))
+                {
+                    yield return CosmicShore.Utility.WaitCache.Seconds(Mathf.Max(0.5f, action.Duration + action.Cooldown));
+                    continue;
+                }
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);
