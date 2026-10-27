@@ -28,12 +28,12 @@ kept, a 60 s video), not estimated.
 |---|---|---|
 | Install the .NET 10 SDK into the scratchpad (once per session) | ~1 min | ~1k |
 | Build the Amoebius player (`dotnet build Port/src/CosmicShore.Player`) | ~1.3 min | ~1k |
-| Boot, first-run prompts, Arcade, launch the mode (Skim Race) | ~35-60 s | ~1k |
-| Record: one rendered frame every 4 game frames (15 fps of game time) | ~0.2-0.3 s a frame: **~3-4.5 min for 60 s of game** | ~0 (the driver runs alone; progress lines only) |
+| Boot, first-run prompts, Arcade, launch the mode (Skim Race) | 60 s on a new profile, 35 s on a known one | ~1k |
+| Record: one rendered frame every 4 game frames (15 fps of game time) | 0.24 s a frame: **900 frames (60 s of game) in 3.6 min** | ~0 (the driver runs alone; progress lines only) |
 | Let the match finish unrendered so the replay carries results | seconds to a few minutes | ~0 |
 | Encode with ffmpeg | seconds | ~0.5k |
 | The session checking 3-4 frames | - | **~1.5k a 1280x720 frame, ~6k** |
-| **Total, once the recipe is known** | **~8-10 min** | **~10-15k** |
+| **Total, once the recipe is known** | **~8-10 min** (the 2026-10-27 clip: 5 min from launch to a sent file) | **~10-15k** |
 | First run, discovering the recipe (this file now replaces it) | ~45 min | tens of thousands |
 
 Against that: the person opening Unity, playing to the point and looking costs no tokens and a few minutes of their
@@ -65,16 +65,24 @@ renderer, so it plays the real modes, AIs, HUD and replay system with no Unity. 
    `do arcade players N` (AI fill the rest), `do arcade start`, wait for the mode scene, wait for `ReadyButton` (the
    connecting screen comes first), `do key F7` (the development build's diagnostics overlay off), `do arcade ready`.
 4. **Record**: repeat `wait 4` + `screenshot <dir>/fNNNNN.png`. Then
-   `ffmpeg -framerate 15 -i fNNNNN.png -c:v libx264 -crf 28 -pix_fmt yuv420p out.mp4`.
+   `ffmpeg -framerate 15 -i f%05d.png -c:v libx264 -crf 28 -pix_fmt yuv420p out.mp4`.
+   **Trim at the results screen.** A match can end inside the clip (the 2026-10-27 Skim Race, I2, four Squirrels,
+   ended at 28 s), and everything after is a still. The results screen is bright and the race is dark, so the cut is
+   the first frame whose mean brightness jumps (`ffmpeg ... -vf signalstats` `YAVG`, 31 -> 235 there); keep about 3 s
+   after it. Finding it this way costs no frames read.
 5. **The replay** the match records lands in `~/.local/share/CosmicShore-<profile>/Recordings/` (`.cstheater` +
-   `.replay.json`, the same format the editor reads from `<repo>/Recordings/`). Let the match reach its end screen so
-   the replay has results; quitting early saves it as "app closed".
+   `.replay.json`, the same format the editor reads from `<repo>/Recordings/`). It is written the moment the end
+   screen shows, with results (winner, pilots, the race rings); quitting before that saves it as "app closed",
+   without results. The person drops both files into `<repo>/Recordings/` and the match is the first row in My
+   Replays. Measured: 43 s of Skim Race with four pilots and the world recorded was 0.8 MB.
 
 **All-AI matches need one engine verb that is not in the engine yet**: `do arcade autopilot`, which hands the local
 seat to the AI through the game's own `PilotControl.TrySetAIFlies` (the Third Eye's You / AI toggle). The 2026-10-27
 run used it as an uncommitted local patch to `Port/src/CosmicShore.Player/Inspector.cs`; adding it (and a committed
 `Port/tools/amoebius_video.py` for steps 2-5) is engine tooling and goes through Shombith. Without it the local seat
-idles and the camera watches an idle hull.
+idles and the camera watches an idle hull. With it, the 2026-10-27 run's handed-over seat finished with 0 crystals
+while the three AI seats took 13, 9 and 8: the handed-over Squirrel flies, but whether it races like an AI seat is
+`PilotControl`'s question (the Third Eye's toggle), not the video's.
 
 ## 4. What an Amoebius video does not show
 
