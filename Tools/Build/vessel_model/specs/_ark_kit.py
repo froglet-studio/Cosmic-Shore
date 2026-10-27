@@ -12,6 +12,12 @@ SLOTS = ("Domain", "Body", "Window", "Engine")
 D, H, W, J = 0, 1, 2, 3
 
 
+def _canon_name(name):
+    """A material's slot name without Blender's .001 suffix."""
+    import re
+    return re.sub(r"\.\d+$", "", name)
+
+
 class Kit:
     def __init__(self, ctx, slots=SLOTS):
         import bmesh
@@ -143,9 +149,12 @@ class Kit:
         return bm, bands
 
     def inset(self, bm, faces, thickness, depth, slot=None):
-        if faces:
-            self.f._inset_region(bm, faces, thickness, depth, slot)
-            bm.normal_update()
+        """Inset a face region (kept deterministic by forms._inset_region); returns the region's new inner faces."""
+        if not faces:
+            return []
+        inner = self.f._inset_region(bm, faces, thickness, depth, slot)
+        bm.normal_update()
+        return inner
 
     def finish_bm(self, name, bm):
         return self.f.new_mesh_object(name, bm)
@@ -164,10 +173,12 @@ class Kit:
         return self.piece(b, slot, pid, bevel=bevel)
 
     # ------------------------------------------------------------------ the parts every Ark shares
-    def cradle(self, name, centre, along, up, pid, prism, core_top):
+    def cradle(self, name, centre, along, up, pid, prism, core_top, column=False, ped_len=None):
         """A socket: a U channel under a prism of `prism` = (across, up, along) centred at `centre`, with a floor,
-        domain side rails, end stops, two Engine-slot regen pads, and a pedestal down to the core (`core_top(x, y)`).
-        Its own bone `name` is recorded with head at the prism's centre, tail along it, Z = the prism's up."""
+        domain side rails, end stops, two Engine-slot regen pads, and a pedestal down to the core (`core_top(x, y)`):
+        a box, or with `column=True` a round column with a flared foot and head and a domain band (a tall support in
+        open space). With `ped_len` the pedestal runs that far straight back along the socket's -up instead (a socket on
+        a wall). Its own bone `name` is recorded with head at the prism's centre, tail along it, Z = the prism's up."""
         Vector, Matrix, f = self.Vector, self.Matrix, self.f
         pw, ph, pl = prism
         M, ac, al, upn = self.frame_matrix(centre, along, up)
@@ -179,11 +190,16 @@ class Kit:
         for sx in (1, -1):
             out.append(self.boxm("rail", (0.5, pl + 0.4, ph * 0.7), (sx * (pw / 2 + 0.4), 0, -ph * 0.15 - 0.1), M, D, pid, bevel=0.08))
         floor_bottom = centre + upn * (fz - 0.3)
-        ped_h = max(0.6, floor_bottom.z - core_top(floor_bottom.x, floor_bottom.y) + 0.3)
-        ped = f.box("pedestal", (pw * 0.55, pl * 0.55, ped_h), center=(0, 0, 0))
-        f.transform_mesh(ped, Matrix.Translation(Vector((floor_bottom.x, floor_bottom.y, floor_bottom.z - ped_h / 2 + 0.1))) @
-                         Matrix.Rotation(math.atan2(-al.x, al.y), 4, "Z"))
-        out.append(self.piece(ped, H, pid, bevel=0.1))
+        if ped_len is not None:
+            out.append(self.boxm("pedestal", (pw * 0.55, pl * 0.55, ped_len), (0, 0, fz - 0.3 - ped_len / 2 + 0.1), M, H, pid, bevel=0.1))
+        elif column:
+            out += self.column(floor_bottom, core_top(floor_bottom.x, floor_bottom.y) - 0.3, 1.1, pid)
+        else:
+            ped_h = max(0.6, floor_bottom.z - core_top(floor_bottom.x, floor_bottom.y) + 0.3)
+            ped = f.box("pedestal", (pw * 0.55, pl * 0.55, ped_h), center=(0, 0, 0))
+            f.transform_mesh(ped, Matrix.Translation(Vector((floor_bottom.x, floor_bottom.y, floor_bottom.z - ped_h / 2 + 0.1))) @
+                             Matrix.Rotation(math.atan2(-al.x, al.y), 4, "Z"))
+            out.append(self.piece(ped, H, pid, bevel=0.1))
         self.bone_part(out, name)
         self.socket_bones.append((name, centre, centre + al * (pl / 2), upn))
 
@@ -194,13 +210,15 @@ class Kit:
         Vector, f = self.Vector, self.f
         p_tip = p_rear + pax * plen
         head_s = plen - 14.0
-        shaft = f.lathe("shaft", [(0.0, 0.0), (0.9, 0.0), (1.3, 0.6), (pay_r, 2.0), (pay_r, 6.0), (2.05, 6.3), (2.05, 8.5), (pay_r, 8.8),
-                                  (pay_r, 20.0), (2.1, 20.4), (2.1, 24.0), (pay_r, 24.4), (1.75, 34.0), (1.5, 36.0), (2.2, 36.8),
-                                  (2.2, 39.5), (1.6, 40.5), (1.2, head_s + 0.2), (0.0, head_s + 0.2)], segments=16,
+        k = head_s / 42.0                              # the shaft was drawn for a 42-long shaft (a 56-long lance)
+        shaft = f.lathe("shaft", [(0.0, 0.0), (0.9, 0.0), (1.3, 0.6), (pay_r, 2.0 * k), (pay_r, 6.0 * k), (2.05, 6.3 * k), (2.05, 8.5 * k),
+                                  (pay_r, 8.8 * k), (pay_r, 20.0 * k), (2.1, 20.4 * k), (2.1, 24.0 * k), (pay_r, 24.4 * k),
+                                  (1.75, 34.0 * k), (1.5, 36.0 * k), (2.2, 36.8 * k), (2.2, 39.5 * k), (1.6, 40.5 * k),
+                                  (1.2, head_s + 0.2), (0.0, head_s + 0.2)], segments=16,
                         axis=tuple(pax), origin=tuple(p_rear))
         f.ensure_slots(shaft, self.slots)
         f.paint(shaft, H)
-        f.paint(shaft, D, lambda c, n, i: 6.22 < (c - p_rear).dot(pax) < 8.58 or 20.3 < (c - p_rear).dot(pax) < 24.1)
+        f.paint(shaft, D, lambda c, n, i: 6.22 * k < (c - p_rear).dot(pax) < 8.58 * k or 20.3 * k < (c - p_rear).dot(pax) < 24.1 * k)
         f.paint(shaft, J, lambda c, n, i: (c - p_rear).dot(pax) < 0.2)
         parts = [self.piece(shaft, None, 40, bevel=0.05)]
         head = f.lathe("head", [(0.0, -0.4), (1.3, 0.0), (2.6, 4.0), (1.6, 10.0), (0.0, 14.0)], segments=4,
@@ -237,7 +255,7 @@ class Kit:
         pay_mid = p_rear + pax * (plen * 0.5)
         return pay_mid, p_tip, pay_mid - Vector((0, 0, 2.2 + gap + 2.0))
 
-    def nacelle(self, name, o, axis, ln, rr):
+    def nacelle(self, name, o, axis, ln, rr, segments=24):
         """An engine as bone part `name`: from `o` along `axis`, `ln` long, radius `rr` - an intake lip with an Engine
         core, a domain band, six cooling fins round a flared bell, and a glowing bell with an inner cone."""
         Vector, f = self.Vector, self.f
@@ -247,7 +265,9 @@ class Kit:
                 (rr, 5.5 * k_), (rr, 12.5 * k_), (rr * 1.06, 12.9 * k_), (rr * 1.06, 16.0 * k_), (rr, 16.4 * k_), (rr, 27.0 * k_),
                 (rr * 0.86, 30.5 * k_), (rr * 0.94, 34.5 * k_), (rr * 1.03, ln), (rr * 0.93, ln), (rr * 0.80, ln - 3.0),
                 (rr * 0.50, ln - 3.8), (rr * 0.32, ln - 1.6), (0.0, ln - 0.6)]
-        nac = f.lathe("nacelle", prof, segments=24, axis=tuple(axis), origin=tuple(o))
+        nac = f.lathe("nacelle", prof, segments=segments, axis=tuple(axis), origin=tuple(o))
+        if segments <= 12:
+            f.set_smooth(nac, False)                   # a faceted nacelle reads hard, not soft
         f.ensure_slots(nac, self.slots)
         f.paint(nac, H)
 
@@ -271,7 +291,7 @@ class Kit:
             ep.append(self.piece(fin, H, 51, bevel=0.05))
         self.bone_part(ep, name)
 
-    def reactor(self, collar_o, pylon_r=16.5, pylon_drop=10.5, pylon_len=20.5):
+    def reactor(self, collar_o, pylon_r=16.5, pylon_drop=10.5, pylon_len=20.5, ring_segments=64):
         """The omni reactor: a glowing collar at `collar_o`, the dormant omni crystal (Window glass, 20 tall) hovering
         over it in a gimballed cage - a domain ring, a vertical ring and four containment pylons at `pylon_r`, from
         `pylon_drop` below the crystal's centre, `pylon_len` tall. Bone parts `omni.ring` and `omni`; returns the
@@ -285,10 +305,11 @@ class Kit:
         f.paint(collar, J, lambda c, n, i: n.z > 0.8 and c.z > cz + 3.0)
         f.paint(collar, D, lambda c, n, i: cz + 0.85 < c.z < cz + 1.75)
         omni = collar_o + Vector((0, 0, 3.2 + 1.8 + 10.0))
-        rpts = [omni + Vector((12.0 * math.cos(2 * math.pi * i / 64), 12.0 * math.sin(2 * math.pi * i / 64), 0)) for i in range(65)]
-        ring1 = f.tube_along("ring1", [tuple(p) for p in rpts], [1.0] * 65, segments=12, cap=False)
-        vpts = [omni + Vector((0, 13.2 * math.cos(2 * math.pi * i / 64), 13.2 * math.sin(2 * math.pi * i / 64))) for i in range(65)]
-        ring2 = f.tube_along("ring2", [tuple(p) for p in vpts], [0.6] * 65, segments=10, cap=False)
+        n = ring_segments
+        rpts = [omni + Vector((12.0 * math.cos(2 * math.pi * i / n), 12.0 * math.sin(2 * math.pi * i / n), 0)) for i in range(n + 1)]
+        ring1 = f.tube_along("ring1", [tuple(p) for p in rpts], [1.0] * (n + 1), segments=12 if n > 16 else 4, cap=False)
+        vpts = [omni + Vector((0, 13.2 * math.cos(2 * math.pi * i / n), 13.2 * math.sin(2 * math.pi * i / n))) for i in range(n + 1)]
+        ring2 = f.tube_along("ring2", [tuple(p) for p in vpts], [0.6] * (n + 1), segments=10 if n > 16 else 4, cap=False)
         cage = [self.piece(collar, None, 60, bevel=0.06), self.piece(ring1, D, 61), self.piece(ring2, H, 61)]
         for a in range(4):
             ang = 2 * math.pi * (a + 0.5) / 4
@@ -308,6 +329,174 @@ class Kit:
         f.set_smooth(crys, False)
         self.bone_part([self.piece(crys, W, 63)], "omni")
         return omni
+
+    def column(self, top, bottom_z, r, pid, band=True):
+        """A round support from `top` (a point) straight down to `bottom_z`: a flared foot, a flared head and a domain
+        band, so a tall support in open space reads as built, not as a stick. Returns its pieces."""
+        Vector, f = self.Vector, self.f
+        h = max(top.z - bottom_z, 0.8)
+        o = Vector((top.x, top.y, bottom_z))
+        prof = [(0.0, 0.0), (r * 1.7, 0.0), (r * 1.7, 0.35), (r, min(1.4, h * 0.3)), (r, h - min(1.4, h * 0.3)),
+                (r * 1.5, h - 0.35), (r * 1.5, h), (0.0, h)]
+        col = f.lathe("column", prof, segments=14, axis=(0, 0, 1), origin=tuple(o))
+        f.ensure_slots(col, self.slots)
+        f.paint(col, H)
+        if band and h > 4.0:
+            mid = bottom_z + h * 0.5
+            f.paint(col, D, lambda c, n, i: mid - 0.61 < c.z < mid + 0.59 and abs(n.z) < 0.5)
+        return [self.piece(col, None, pid)]
+
+    def octa_mesh(self, name, centre, frame, s):
+        """The game's SHIELDED prism as it settles (OctahedronMeshGenerator): an octahedron with its six vertices at
+        +-s along the socket frame's axes (s = 3 x the prism's half-extent, CIRCUMSCRIBING_SCALE). `frame` = (across,
+        along, up) unit vectors. One closed shell, flat-shaded."""
+        bmesh, Vector = self.bmesh, self.Vector
+        ac, al, up = frame
+        bm = bmesh.new()
+        P = {}
+        for key, d in (("+x", ac), ("-x", -ac), ("+y", al), ("-y", -al), ("+z", up), ("-z", -up)):
+            P[key] = bm.verts.new(centre + d * s)
+        for sx in ("+x", "-x"):
+            for sy in ("+y", "-y"):
+                for sz in ("+z", "-z"):
+                    bm.faces.new((P[sx], P[sy], P[sz]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        return self.f.new_mesh_object(name, bm, smooth=False)
+
+    def stella_mesh(self, name, centre, frame, s):
+        """The game's SUPERSHIELDED prism as it settles (StellatedOctahedronMeshGenerator): the stella octangula, two
+        interpenetrating tetrahedra; its inscribed octahedron has vertices at +-s on the frame's axes and its eight
+        spike tips sit at the cube corners (+-s, +-s, +-s). With a cubic prism it is the REGULAR stellated octahedron.
+        The visible surface (24 triangles, three per spike) as one closed shell, flat-shaded."""
+        bmesh, Vector = self.bmesh, self.Vector
+        ac, al, up = frame
+        bm = bmesh.new()
+        V = {}
+        for i, d in enumerate((ac, al, up)):
+            V[(i, 1)] = bm.verts.new(centre + d * s)
+            V[(i, -1)] = bm.verts.new(centre - d * s)
+        for sx in (1, -1):
+            for sy in (1, -1):
+                for sz in (1, -1):
+                    T = bm.verts.new(centre + (ac * sx + al * sy + up * sz) * s)
+                    vx, vy, vz = V[(0, sx)], V[(1, sy)], V[(2, sz)]
+                    for a_, b_ in ((vx, vy), (vy, vz), (vz, vx)):
+                        bm.faces.new((T, a_, b_))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        return self.f.new_mesh_object(name, bm, smooth=False)
+
+    def shield_cutter(self, kind, centre, frame, s, clearance, slot=D):
+        """The negative of a shield solid grown by `clearance` all round: subtracted from a hull part it cuts a socket
+        that is the prism's own shape, its walls painted `slot` (the boolean transfers the cutter's material)."""
+        make = self.stella_mesh if kind == "stella" else self.octa_mesh
+        # growing the solid's scale by g moves every face out by g * s * (face distance / s): for both solids the
+        # nearest face plane sits s / sqrt(3) from the centre, so g = 1 + clearance * sqrt(3) / s
+        cut = make("cut_" + kind, centre, frame, s * (1.0 + clearance * math.sqrt(3.0) / s))
+        self.f.ensure_slots(cut, self.slots)
+        self.f.paint(cut, slot)
+        return cut
+
+    def subtract(self, obj, cutters):
+        """Boolean-subtract every cutter from `obj` (EXACT solver, the cutters' materials transferred onto the cut
+        walls), then delete the cutters. Returns obj."""
+        import bpy
+        f = self.f
+        if not cutters:
+            return obj
+        cut = cutters[0] if len(cutters) == 1 else f.join(cutters, "cutters", self.slots)
+        f.ensure_slots(obj, self.slots)
+        self.canon(obj)
+        self.canon(cut)
+        m = obj.modifiers.new("Boolean", "BOOLEAN")
+        m.operation = "DIFFERENCE"
+        m.object = cut
+        m.solver = "EXACT"
+        if hasattr(m, "material_mode"):
+            m.material_mode = "TRANSFER"
+        f.apply_modifiers(obj)
+        # TRANSFER appends any cutter material the object lacks; fold the slots back to the canonical four by name
+        me = obj.data
+        idx = {mat.name: i for i, mat in enumerate(me.materials) if mat is not None}
+        canon = {n: i for i, n in enumerate(self.slots)}
+        remap = [canon.get(_canon_name(n), H) for n, i in sorted(idx.items(), key=lambda kv: kv[1])]
+        if len(me.materials) > len(self.slots):
+            mi = [0] * len(me.polygons)
+            me.polygons.foreach_get("material_index", mi)
+            me.polygons.foreach_set("material_index", [remap[i] if i < len(remap) else H for i in mi])
+            while len(me.materials) > len(self.slots):
+                me.materials.pop()
+        bpy.data.objects.remove(cut, do_unlink=True)
+        bpy.context.view_layer.update()                # drop the removed cutter from the view layer's object list
+        return obj
+
+    def canon(self, obj):
+        """Rewrite a mesh in a CANONICAL order - vertices by position, each face starting at its lowest vertex, faces
+        sorted - keeping slots and smooth flags. The EXACT boolean's result (its vertex and face counts too) depends on
+        its inputs' order, and that order drifts between processes (bmesh ops walk pointer-keyed hashes), so without
+        this two builds of one spec cut different meshes and `build.py --check` reports drift that is not in the spec.
+        Drops vertex groups and point attributes: call it before a part is tagged."""
+        import bpy
+        me = obj.data
+        co = [tuple(v.co) for v in me.vertices]
+        order = sorted(range(len(co)), key=lambda i: (round(co[i][0], 4), round(co[i][1], 4), round(co[i][2], 4)))
+        new_of = {old: new for new, old in enumerate(order)}
+        faces = []
+        for p in me.polygons:
+            vs = [new_of[v] for v in p.vertices]
+            k = vs.index(min(vs))
+            faces.append((tuple(vs[k:] + vs[:k]), p.material_index, bool(p.use_smooth)))
+        faces.sort()
+        new = bpy.data.meshes.new(me.name)
+        new.from_pydata([co[i] for i in order], [], [fc[0] for fc in faces])
+        new.polygons.foreach_set("material_index", [fc[1] for fc in faces])
+        new.polygons.foreach_set("use_smooth", [fc[2] for fc in faces])
+        for mat in me.materials:
+            new.materials.append(mat)
+        new.update()
+        for vg in list(obj.vertex_groups):
+            obj.vertex_groups.remove(vg)
+        obj.data = new
+        bpy.data.meshes.remove(me)
+        return obj
+
+    def shield_socket(self, name, kind, centre, frame, s, pid, support_z, clearance=1.3):
+        """The cradle a shield solid regenerates into, as bone part `name`: under the solid a key block - an X of two
+        bars under a stellation (its bottom is the X of two tetrahedron edges), a square block under an octahedron (its
+        bottom is a vertex) - with the solid's own shape grown by `clearance` cut out of it, so the cradle is the exact
+        negative of the prism's underside and its glowing (Engine) walls hold it without touching; then a column down
+        to `support_z` (pass None for a cradle that hangs in space). The octahedron's cup is round. Records the socket bone (head at the solid's centre,
+        tail along it, Z = its up) and returns the pieces' object."""
+        Vector, Matrix, f = self.Vector, self.Matrix, self.f
+        ac, al, up = frame
+        M = Matrix((ac, al, up)).transposed().to_4x4()
+        M.translation = centre
+        if kind == "stella":
+            ln, w, hgt = 2.0 * s, 2.2, s * 0.55
+            top = -s + hgt * 0.62
+            blocks = []
+            for (bx, by) in ((ln, w), (w, ln)):
+                b = f.box("xbar", (bx, by, hgt), center=(0, 0, top - hgt / 2))
+                f.transform_mesh(b, M @ Matrix.Rotation(math.radians(45.0), 4, "Z"))
+                blocks.append(b)
+            key = f.join(blocks, "key", self.slots)
+        else:
+            # a ROUND cup: a square block minus the octahedron leaves four corner posts reaching up past the cut, toward
+            # whatever plate the octahedron is set through
+            hgt = s * 0.5
+            top = -s + hgt * 0.3
+            key = f.lathe("cup", [(0.0, 0.0), (s * 0.5, 0.0), (s * 0.5, hgt), (0.0, hgt)], segments=16, axis=(0, 0, 1),
+                          origin=(0.0, 0.0, top - hgt))
+            f.transform_mesh(key, M)
+        f.ensure_slots(key, self.slots)
+        f.paint(key, H)
+        self.subtract(key, [self.shield_cutter(kind, centre, frame, s, clearance, slot=J)])
+        parts = [self.piece(key, None, pid)]
+        if support_z is not None:
+            foot = centre + up * (top - hgt)
+            parts += self.column(foot, support_z, 1.4 if kind == "stella" else 1.1, pid)
+        self.bone_part(parts, name)
+        self.socket_bones.append((name, centre, centre + al * s, up))
+        return parts
 
     # ------------------------------------------------------------------ join and rig helpers
     def join(self, mesh_node):
