@@ -3924,3 +3924,15 @@ that", "Like the nanobot transition ... we can use that to change domains for th
 always shown. Rebuilt to these boards once they are approved. Open decision: Arcade, which the first brief named and this
 one does not.
 
+**Revised the same day (Shombith, with a screenshot of the old Port squad screen as a reference, not a template): "The
+highlight looks to weird, use the sea lines in bg and also make the highlight 3D light type. the pilots should stand
+beside the vessel".**
+- The flat column of light behind each seat is gone. Each seat stands on a lit pad: a soft spotlight cone from above
+  with motes drifting up it, a pool of light on the floor, and three sea-contour rings, all in the squad's domain colour.
+  The seat being edited is lit fully and breathes; the others sit at half light.
+- The stage panel is see-through between its header and its picker, so the menu sea's lines run behind the podium.
+- The pilots are full-figure portraits, so they stand on the pad beside their vessel, each with a contact shadow. The
+  hull floats beside them. The leader stands front and centre; the two rogues stand behind on the flanks, smaller, each
+  pilot on the outer side and facing in. A base-kit seat shows the hull's first pilot as a lit silhouette; an open seat
+  shows a dashed outline.
+

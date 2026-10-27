@@ -41,6 +41,7 @@ body{margin:0;background:#00010A}
 @keyframes r28BotB{0%{opacity:0;transform:translate(0,0) rotate(45deg) scale(.4)}22%{opacity:1;transform:translate(0,0) rotate(45deg) scale(1)}55%{opacity:1;transform:translate(var(--dx),var(--dy)) rotate(225deg) scale(1.3)}85%{opacity:1;transform:translate(0,0) rotate(405deg) scale(1)}100%{opacity:0;transform:translate(0,0) rotate(405deg) scale(.4)}}
 @keyframes r28DissolveA{0%{opacity:1;filter:blur(0)}30%{opacity:0;filter:blur(6px)}62%{opacity:0;filter:blur(6px)}100%{opacity:1;filter:blur(0)}}
 @keyframes r28DissolveB{0%{opacity:1;filter:blur(0)}30%{opacity:0;filter:blur(6px)}62%{opacity:0;filter:blur(6px)}100%{opacity:1;filter:blur(0)}}
+@keyframes r28Mote{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translateY(-420px);opacity:0}}
 @keyframes r28Rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes r28Breath{0%,100%{opacity:.55}50%{opacity:1}}
 @keyframes r28Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -108,8 +109,8 @@ body{margin:0;background:#00010A}
 </div></div></div></aside>
 
 <section aria-label="Squad" style="position:absolute;left:500px;top:176px;width:1380px;height:864px;animation:r28Rise 320ms cubic-bezier(.22,1,.36,1) 80ms both">
-<div class="sl" style="position:absolute;inset:0;background:#2B3266;padding:1px"><div class="sl" style="position:relative;height:100%;box-sizing:border-box;background:rgba(8,12,40,.82);overflow:hidden">
-<span class="glow" style="position:absolute;left:0;right:0;bottom:0;height:520px;background:radial-gradient(ellipse 60% 70% at 50% 100%,{{stageGlow}},transparent 70%)"></span>
+<div class="sl" style="position:absolute;inset:0;background:#2B3266;padding:1px"><div class="sl" style="position:relative;height:100%;box-sizing:border-box;background:linear-gradient(180deg,rgba(8,12,40,.55) 0%,rgba(8,12,40,.12) 22%,rgba(8,12,40,.12) 64%,rgba(8,12,40,.7) 74%);overflow:hidden">
+<span class="glow" style="position:absolute;left:0;right:0;top:300px;height:330px;background:radial-gradient(ellipse 55% 45% at 50% 70%,{{stageGlow}},transparent 72%)"></span>
 <span style="position:absolute;top:0;bottom:0;width:30%;background:linear-gradient(90deg,transparent,{{sweep}},transparent);animation:{{sweepAnim}}"></span>
 <sc-if value="{{hasSquad}}" hint-placeholder-val="{{ true }}">
 <div style="position:absolute;left:28px;right:28px;top:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px">
@@ -120,38 +121,37 @@ body{margin:0;background:#00010A}
 </div>
 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px"><span class="lab">Domain</span><div style="display:flex;gap:8px"><sc-for list="{{domains}}" as="d" hint-placeholder-count="3"><button class="pick tint" type="button" onClick="{{d.pick}}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid {{d.border}};background:{{d.fill}}"><span class="tint" style="width:10px;height:10px;background:{{d.color}};box-shadow:0 0 10px {{d.glow}}"></span><span class="cap" style="font-size:13px;color:{{d.text}}">{{d.name}}</span></button></sc-for></div></div>
 </div>
-<div style="position:absolute;left:0;right:0;top:118px;display:flex;justify-content:center;align-items:flex-end;gap:36px">
+<div style="position:absolute;left:0;right:0;top:0;height:600px">
 <sc-for list="{{seats}}" as="s" hint-placeholder-count="3">
-<button class="seat" type="button" onClick="{{s.pick}}" aria-label="{{s.aria}}" style="position:relative;width:{{s.w}}px;height:470px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end">
-<span style="position:absolute;left:50%;bottom:118px;width:{{s.beamW}}px;height:330px;transform-origin:bottom;margin-left:{{s.beamX}}px;background:linear-gradient(0deg,{{s.beam}},transparent);clip-path:polygon(22% 100%,78% 100%,100% 0,0 0);opacity:{{s.beamAlpha}}" class="glow"></span>
-<span style="position:absolute;left:50%;bottom:118px;width:{{s.beamW}}px;height:330px;margin-left:{{s.beamX}}px;transform-origin:bottom;background:linear-gradient(0deg,{{s.flash}},transparent);clip-path:polygon(22% 100%,78% 100%,100% 0,0 0);animation:{{s.beamAnim}}"></span>
-<span style="position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:6px;animation:{{s.pop}}">
-<sc-if value="{{s.hasPilot}}" hint-placeholder-val="{{ true }}">
-<span class="sls tint" style="display:block;padding:2px;background:{{s.frame}}"><img src="{{s.portrait}}" alt="" class="sls" style="display:block;width:{{s.pw}}px;height:{{s.ph}}px;object-fit:cover;background:#0A0F33"></span>
-</sc-if>
-<sc-if value="{{s.noPilot}}" hint-placeholder-val="{{ false }}">
-<span class="sls" style="display:grid;place-items:center;width:{{s.pw}}px;height:{{s.ph}}px;outline:1px dashed #434C89;outline-offset:-1px;color:#747BAD;font-size:14px;text-align:center;padding:0 10px;box-sizing:border-box">{{s.emptyLine}}</span>
-</sc-if>
+<button class="seat" type="button" onClick="{{s.pick}}" aria-label="{{s.aria}}" style="position:absolute;left:{{s.left}}px;top:0;width:{{s.w}}px;height:{{s.h}}px;z-index:{{s.z}}">
+<span aria-hidden="true" class="glow" style="position:absolute;left:{{s.coneL}}px;top:0;width:{{s.coneW}}px;height:{{s.floorY}}px;clip-path:polygon(41% 0,59% 0,100% 100%,0 100%);background:linear-gradient(180deg,{{s.coneTop}} 0%,{{s.coneMid}} 55%,{{s.coneLow}} 100%);filter:blur(5px);mix-blend-mode:screen;opacity:{{s.coneAlpha}}"></span>
+<span aria-hidden="true" style="position:absolute;left:{{s.coneL}}px;top:0;width:{{s.coneW}}px;height:{{s.floorY}}px;clip-path:polygon(41% 0,59% 0,100% 100%,0 100%);overflow:hidden;mix-blend-mode:screen">
+<sc-for list="{{s.motes}}" as="m" hint-placeholder-count="0"><span style="position:absolute;left:{{m.x}}%;bottom:0;width:{{m.s}}px;height:{{m.s}}px;border-radius:50%;background:{{m.c}};animation:r28Mote {{m.t}}s linear {{m.d}}s infinite"></span></sc-for>
 </span>
-<span style="position:relative;width:{{s.w}}px;height:120px;display:block">
-<span class="glow" style="position:absolute;left:8%;right:8%;bottom:12px;height:46px;border-radius:50%;background:radial-gradient(ellipse,{{s.pool}},transparent 70%);opacity:{{s.poolAlpha}};animation:{{s.breath}}"></span>
-<span class="glow" style="position:absolute;left:14%;right:14%;bottom:24px;height:20px;border-radius:50%;border:2px solid {{s.rim}};box-shadow:0 0 18px {{s.rim}}"></span>
-<span style="position:absolute;left:0;right:0;bottom:30px;height:{{s.hh}}px;display:block;animation:r28Float 4.2s ease-in-out {{s.phase}}s infinite">
+<span aria-hidden="true" class="glow" style="position:absolute;left:{{s.poolL}}px;top:{{s.poolT}}px;width:{{s.poolW}}px;height:{{s.poolH}}px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,{{s.poolCore}} 0%,{{s.pool}} 30%,transparent 68%);mix-blend-mode:screen;animation:{{s.breath}}"></span>
+<sc-for list="{{s.rings}}" as="r" hint-placeholder-count="3"><span aria-hidden="true" class="glow" style="position:absolute;left:{{r.l}}px;top:{{r.t}}px;width:{{r.w}}px;height:{{r.h}}px;border-radius:50%;border:{{r.bw}}px solid {{r.c}};box-shadow:{{r.glow}}"></span></sc-for>
+<span aria-hidden="true" style="position:absolute;left:{{s.hullShL}}px;top:{{s.hullShT}}px;width:{{s.hullShW}}px;height:{{s.hullShH}}px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 70%)"></span>
+<span aria-hidden="true" style="position:absolute;left:{{s.pilShL}}px;top:{{s.pilShT}}px;width:{{s.pilShW}}px;height:{{s.pilShH}}px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.7),transparent 70%)"></span>
+<span style="position:absolute;left:{{s.hullL}}px;top:{{s.hullT}}px;width:{{s.hullW}}px;height:{{s.hullH}}px;display:block;animation:r28Float 4.2s ease-in-out {{s.phase}}s infinite">
 <span style="position:absolute;inset:0;display:block;animation:{{s.dissolve}}">
-<img src="{{s.hull}}" alt="" class="hull" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 14px {{s.hullGlow}}) drop-shadow(0 8px 8px rgba(0,0,0,.6))">
+<img src="{{s.hull}}" alt="" class="hull" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 18px {{s.hullGlow}}) drop-shadow({{s.keyX}}px -6px 10px {{s.keyLight}})">
 <span class="m-{{s.vessel}} tintl" style="position:absolute;inset:0;background-color:{{s.tint}};opacity:.8"></span>
 </span>
 <sc-for list="{{s.bots}}" as="b" hint-placeholder-count="0"><span class="bot" style="left:{{b.x}}%;top:{{b.y}}%;width:{{b.size}}px;height:{{b.size}}px;background:{{b.c}};box-shadow:0 0 6px {{b.c}};--dx:{{b.dx}}px;--dy:{{b.dy}}px;animation:{{b.anim}}"></span></sc-for>
 </span>
+<span style="position:absolute;left:{{s.pilL}}px;top:{{s.pilT}}px;width:{{s.pilW}}px;height:{{s.pilH}}px;display:block;animation:{{s.dissolve}}">
+<sc-if value="{{s.hasPilot}}" hint-placeholder-val="{{ true }}"><img src="{{s.portrait}}" alt="{{s.pilot}}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:{{s.pilotFilter}};transform:{{s.flip}}"></sc-if>
+<sc-if value="{{s.noPilot}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:18%;right:18%;bottom:0;height:92%;display:grid;place-items:center;border:1px dashed {{s.dash}};border-radius:48% 48% 12% 12%;color:#9AA0CC;font-size:13px;text-align:center;padding:0 8px;box-sizing:border-box">{{s.emptyLine}}</span></sc-if>
 </span>
+<span style="position:absolute;left:0;right:0;top:{{s.labT}}px;display:flex;flex-direction:column;align-items:center;gap:4px">
+<span class="lab" style="color:{{s.seatColor}}">{{s.seat}}</span>
+<span style="font-size:{{s.nameSize}}px;white-space:nowrap">{{s.member}}</span>
+<span style="margin-top:4px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px">
+<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.7);color:#E6E9FF">{{s.vessel}}</span>
+<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.7);color:#E6E9FF">{{s.element}}</span>
+<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.7);color:#E6E9FF">{{s.pilot}}</span>
+<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.7);color:{{s.artColor}}">{{s.artifact}}</span>
 </span>
-<span class="lab" style="margin-top:4px;color:{{s.seatColor}}">{{s.seat}}</span>
-<span style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:19px;white-space:nowrap">{{s.member}}</span>
-<span style="margin-top:8px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:{{s.w}}px">
-<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.6);color:#E6E9FF">{{s.vessel}}</span>
-<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.6);color:#E6E9FF">{{s.element}}</span>
-<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.6);color:#E6E9FF">{{s.pilot}}</span>
-<span class="cap" style="font-size:12px;padding:4px 8px;border:1px solid #2B3466;background:rgba(3,7,32,.6);color:{{s.artColor}}">{{s.artifact}}</span>
 </span>
 </button></sc-for>
 </div>
@@ -189,8 +189,8 @@ body{margin:0;background:#00010A}
 </div>
 </sc-if>
 <sc-if value="{{noSquad}}" hint-placeholder-val="{{ false }}">
-<div style="position:absolute;left:0;right:0;top:118px;display:flex;justify-content:center;align-items:flex-end;gap:36px;opacity:.55">
-<sc-for list="{{ghosts}}" as="g" hint-placeholder-count="3"><div style="width:{{g.w}}px;height:470px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px"><span class="sls" style="width:{{g.pw}}px;height:{{g.ph}}px;outline:1px dashed #434C89;outline-offset:-1px"></span><span style="width:{{g.w}}px;height:100px;display:block;position:relative"><span style="position:absolute;left:14%;right:14%;bottom:24px;height:20px;border-radius:50%;border:2px dashed #434C89"></span></span><span class="lab">{{g.seat}}</span></div></sc-for>
+<div style="position:absolute;left:0;right:0;top:0;height:600px;opacity:.6">
+<sc-for list="{{ghosts}}" as="g" hint-placeholder-count="3"><div style="position:absolute;left:{{g.l}}px;top:{{g.t}}px;width:{{g.w}}px;height:{{g.h}}px;border-radius:50%;border:2px dashed #434C89"></div><div class="lab" style="position:absolute;left:{{g.l}}px;width:{{g.w}}px;top:{{g.lt}}px;text-align:center">{{g.seat}}</div></sc-for>
 </div>
 <div style="position:absolute;left:0;right:0;top:640px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
 <span style="font-size:28px">No squad yet</span>
@@ -288,24 +288,40 @@ class Component extends DCLogic {
     open: () => this.setState({ sel:i, mode:'view', seat:0, joining:false }) };
   });
   if (making) rows[st.list.length] = { used:true, empty:false, name:st.draft.name, domain:st.draft.domain, domainColor:d.ui, h0:HULL[st.draft.slots[0].v], h1:HULL[st.draft.slots[1].v], h2:HULL[st.draft.slots[2].v], line:'Making...', fill:'rgba(18,34,43,.95)', border:'#99FF80', mark:d.color, open:() => {} };
+  // The podium: the leader front and centre, the rogues behind on the flanks. Each seat stands on a lit pad: a
+  // spotlight cone from above, a pool of light on the floor and sea-contour rings, all in the squad's domain colour.
+  const POS = [[690, 470, 1, 'left'], [250, 392, .78, 'left'], [1130, 392, .78, 'right']];
   const seats = sq ? sq.slots.map((x, i) => {
-   const lead = i === 0, w = lead ? 330 : 290, pl = x.p ? PILOTS[x.v][x.p - 1] : null;
-   const editing = making && i === st.seat, mineSeat = x.who === 'you';
+   const [cx, fy, k, side] = POS[i], pl = x.p ? PILOTS[x.v][x.p - 1] : null;
+   const editing = making && i === st.seat, lit = making ? (editing ? 1 : .45) : .8;
    const member = x.who === 'you' ? 'You' : x.who === 'friend' ? x.name : x.who === 'open' ? 'Open for a friend' : 'AI wingmate';
-   const lit = editing ? 1 : 0.55, pulse = st.pulse === i || st.pulse === 9;
-   const delay = st.pulse === 9 ? i * 140 : 0;
+   const pulse = st.pulse === i || st.pulse === 9, delay = st.pulse === 9 ? i * 140 : 0;
+   const w = Math.round(520 * k), left = Math.round(cx - w / 2);
+   const padW = 400 * k, padH = 96 * k, padL = (w - padW) / 2;
+   const hullW = 330 * k, hullH = 110 * k, pilH = 250 * k, pilW = 150 * k;
+   const pilL = side === 'left' ? padL + 6 * k : padL + padW - pilW - 6 * k;
+   const hullL = side === 'left' ? pilL + pilW * .55 : pilL - hullW + pilW * .45;
    const bots = pulse ? BOTS.map((b) => ({ x: b[0], y: b[1], size: b[2], dx: b[3], dy: b[4], c: b[5] ? d.color : '#E6E9FF',
      anim: 'r28Bot' + ab + ' 1100ms cubic-bezier(.45,0,.2,1) ' + (delay + b[6]) + 'ms both' })) : [];
-   return { bots, dissolve: pulse ? 'r28Dissolve' + ab + ' 1100ms ease-in-out ' + delay + 'ms both' : 'none', tint: rgba(d.color, 1),
-    w, pw: lead ? 132 : 112, ph: lead ? 164 : 140, hh: lead ? 104 : 92, phase: (i * 0.7).toFixed(1),
-    beamW: lead ? 170 : 150, beamX: lead ? -85 : -75, beam: rgba(d.color, 0.22 * lit + 0.05), beamAlpha: 1, flash: rgba(d.color, .9),
-    beamAnim: pulse ? 'r28Beam' + ab + ' 900ms ease-out ' + (st.pulse === 9 ? i * 120 : 0) + 'ms both' : 'none',
-    wave: pulse ? 'r28Wave' + ab + ' 900ms ease-out ' + (st.pulse === 9 ? i * 120 : 0) + 'ms both' : 'none',
-    pop: pulse && st.pulse !== 9 ? 'r28Pop 420ms cubic-bezier(.34,1.56,.64,1) both' : 'none',
-    pool: rgba(d.color, editing ? .75 : .45), poolAlpha: 1, rim: rgba(d.color, editing ? 1 : .55), hullGlow: rgba(d.color, editing ? .55 : .3),
-    breath: editing ? 'r28Breath 1.6s ease-in-out infinite' : 'none', frame: editing ? d.color : rgba(d.color, .45),
-    hull: HULL[x.v], hasPilot: !!pl || x.who !== 'open', noPilot: !pl && x.who === 'open', emptyLine: 'A friend takes this seat',
-    portrait: pl ? pl[2] : '/_blob/c8db28a10c00f319012797de8e3d3568',
+   const rings = [[1, .95, 1, .5], [.74, .7, 1.5, .8], [.48, .45, 2, 1]].map(([f, a, bw, gl]) => ({
+     l: (w - padW * f) / 2, t: fy - padH * f / 2, w: padW * f, h: padH * f, bw,
+     c: rgba(d.color, a * lit), glow: '0 0 ' + Math.round(22 * gl * lit) + 'px ' + rgba(d.color, .55 * lit) + ', inset 0 0 ' + Math.round(14 * gl) + 'px ' + rgba(d.color, .35 * lit) }));
+   const motes = [12, 30, 47, 63, 81].map((x, n) => ({ x, s: 2 + (n % 3), c: rgba(d.color, .9), t: (3.4 + n * .5).toFixed(1), d: (n * .7).toFixed(1) }));
+   return { left, w, h: fy + 120, z: i === 0 ? 3 : 2, floorY: fy,
+    coneL: padL - 20 * k, coneW: padW + 40 * k, coneTop: rgba(d.color, 0), coneMid: rgba(d.color, .07 * lit), coneLow: rgba(d.color, .3 * lit), coneAlpha: 1,
+    motes: lit > .5 ? motes : [],
+    poolL: padL - 40 * k, poolT: fy - padH * .9, poolW: padW + 80 * k, poolH: padH * 1.8, poolCore: rgba('#ffffff', .35 * lit), pool: rgba(d.color, .5 * lit),
+    breath: editing ? 'r28Breath 1.6s ease-in-out infinite' : 'none', rings,
+    hullL, hullT: fy - hullH - 34 * k, hullW, hullH, hullGlow: rgba(d.color, .45 * lit), keyX: side === 'left' ? 6 : -6, keyLight: rgba(d.color, .5 * lit),
+    hullShL: hullL + hullW * .15, hullShT: fy - 12 * k, hullShW: hullW * .7, hullShH: 24 * k,
+    pilL, pilT: fy - pilH + 6 * k, pilW, pilH, pilShL: pilL + pilW * .2, pilShT: fy - 8 * k, pilShW: pilW * .6, pilShH: 16 * k,
+    flip: side === 'right' ? 'scaleX(-1)' : 'none',
+    pilotFilter: pl ? 'drop-shadow(0 0 10px ' + rgba(d.color, .35 * lit) + ')' : 'brightness(0) drop-shadow(0 0 1px ' + rgba(d.color, .9) + ') drop-shadow(0 0 8px ' + rgba(d.color, .5) + ')',
+    dash: rgba(d.color, .6), phase: (i * 0.7).toFixed(1), bots,
+    dissolve: pulse ? 'r28Dissolve' + ab + ' 1100ms ease-in-out ' + delay + 'ms both' : 'none', tint: rgba(d.color, 1),
+    hull: HULL[x.v], hasPilot: x.who !== 'open', noPilot: x.who === 'open', emptyLine: 'A friend takes this seat',
+    portrait: pl ? pl[2] : PILOTS[x.v][0][2],
+    labT: fy + padH * .55 + 6, nameSize: i === 0 ? 22 : 18,
     seat: SEATS[i] + (editing ? ' - editing' : ''), seatColor: editing ? '#E6E9FF' : '#747BAD', member,
     vessel: x.v, element: x.e, pilot: pl ? pl[0] : 'Base kit', artifact: x.a || 'No artifact', artColor: x.a ? '#E6E9FF' : '#5C5F70',
     aria: SEATS[i] + ': ' + member, pick: () => { if (making) this.setState({ seat: i }); } };
@@ -333,10 +349,10 @@ class Component extends DCLogic {
    count: String(st.list.length), rows,
    make: () => { if (st.list.length >= 4) { this.say('You are in 4 squads. Leave or delete one first.'); return; } this.setState({ mode: 'make', draft: fresh(), seat: 0, flip: st.flip + 1, pulse: 9, joining: false }); },
    join: () => this.setState({ joining: true }), closeJoin: () => this.setState({ joining: false }), joining: !!st.joining, offers,
-   hasSquad: !!sq, noSquad: !sq, making, created: !making && !!sq, ghosts: [0, 1, 2].map((i) => ({ w: i === 0 ? 330 : 290, pw: i === 0 ? 132 : 112, ph: i === 0 ? 164 : 140, seat: SEATS[i] })),
+   hasSquad: !!sq, noSquad: !sq, making, created: !making && !!sq, ghosts: [[690, 470, 1], [250, 392, .78], [1130, 392, .78]].map(([cx, fy, k], i) => ({ l: cx - 200 * k, t: fy - 48 * k, w: 400 * k, h: 96 * k, lt: fy + 60 * k, seat: SEATS[i] })),
    kicker: making ? 'Make squad' : sq && !sq.mine ? 'Joined - ' + sq.owner + "'s squad" : 'Your squad',
    squadName: sq ? sq.name : '', squadLine: making ? 'Pick a seat on the podium, then its vessel, pilot, element and artifact.' : sq && sq.mine ? 'You lead. ' + (open ? open + ' seat open for a friend.' : 'Every seat is filled.') : 'You fly Rogue One. ' + (sq ? sq.owner : '') + ' leads.',
-   domains, stageGlow: rgba(d.color, .16), sweep: rgba(d.color, st.pulse === 9 ? .18 : 0), sweepAnim: st.pulse === 9 ? 'r28Sweep' + ab + ' 900ms ease-out both' : 'none',
+   domains, stageGlow: rgba(d.color, .12), sweep: rgba(d.color, st.pulse === 9 ? .18 : 0), sweepAnim: st.pulse === 9 ? 'r28Sweep' + ab + ' 900ms ease-out both' : 'none',
    seats, vessels, pilots, elements, artifacts, seatModes, showSeatMode: seatModes.length > 0, seatModeLabel: 'Who flies it',
    makeHint: 'Take into Mission or Arena appears once the squad is made.',
    cancel: () => this.setState({ mode: st.list.length ? 'view' : 'none', draft: null }),
