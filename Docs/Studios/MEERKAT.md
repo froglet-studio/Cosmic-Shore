@@ -574,3 +574,25 @@ any useful area is very fat, so the throat may need a floor and a ceiling.
 - **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
 
 The parked black/white-hole look for tunnels is in `Docs/Studios/STOAT_PARKED_HOLE_LOOK.md`.
+
+## Sound (2026-10-28, artifact only)
+
+Yash: *"sound effects to the Meerkat's abilities, all that we are creating ... add sound effects one by one ... I will
+test and confirm."* **Vessel Config > Sound** lists every ability's sound (the shared `studio-audio.js`, synthesized in
+the browser, no files): **Play**, On, Volume, Pitch, Length, Brightness, then **Confirm** or **Redo**, which records
+"Sound: <name>" in the decision log with the four numbers. Settings stay in this browser.
+
+| Group | Sounds | Wired in the page |
+|---|---|---|
+| Wormhole | reticle hum (loop, rises with the bend), tunnel forms, ride rush (loop, follows the ride speed), out of the tunnel, tunnel collapses | yes (rivals' tunnels by distance and side) |
+| Omnicrystal: labyrinth | collected, armed, digs, slide in, take a fork (panned to the side), out of an opening, falls in | yes |
+| Space: soliton | swallow, fire, annihilate, shielded bounce, surface area, Cave-in | by the kit round, at its own events |
+| Time | Boost out, Chain Dig | by the kit round |
+| Charge: sentinel | stands up, zap (rate-limited for ~5 a second), shields a prism, lost, alarm call, hop, seat swap | by the kit round |
+| Mass | exit portal, danger portal | by the kit round |
+| Pilot | FLUME sight (loop while LB is held) | by the kit round |
+
+The sounds watch the sim and never change it. They are the brief for the game's FMOD events, which ship empty until
+sound design makes them (`MeerkatWormholeConfigSO.formEvent` / `collapseEvent` today); Unity plays none of these.
+Measured headless: every recipe renders (none silent, none clipping), and an AI race with an omnicrystal fires every
+wired sound with no page error.
