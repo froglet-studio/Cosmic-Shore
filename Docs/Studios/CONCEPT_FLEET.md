@@ -641,7 +641,7 @@ part** or **proposal**.
 | Part | Input | Ability | What it does | From | State |
 |---|---|---|---|---|---|
 | Bell (Space) | passive | Lantern | Lights every dark crystal in reach; Space x1 to x1.8 | Dolphin Echo Sight, Angler Paint | in the sim |
-| | RT | Pulse Jet | Hold to inhale, release to jet; on the beat of the last two pulses the chain grows x1.1 a pulse to x1.8; a pulse doubles the lantern for 1 s | Octopus | in part (tap pulse) |
+| | RT | Pulse Jet | Hold to inhale, release to jet; on the beat of the last two pulses the chain grows x1.1 a pulse to x1.8; a pulse doubles the lantern for 1 s | Octopus | in the sim (round 2) |
 | | LT | Slipstream | Hold to lead: the Sting and the Bract form up in its wake, one, two, three, drafting at its speed x1.3 | Remora, Jacks The Call | in the sim (round 2) |
 | | L5 | Beacon | A pulse lights the whole window | Dolphin Pilot Echo | in the sim |
 | Sting (Charge) | RT | Nematocyst Volley | Aimed venom to 160 u; breaks a lit crystal's husk (Charge x1 to x3 prisms a round), else smashes mass | Sparrow Pulsefire, Urchin Chain Spikes | in the sim |
@@ -679,7 +679,7 @@ difference is the ability. Both controls (never fuse, always fused) still digest
 
 **1. Slipstream (the Bell's LT).** While the Bell holds LT it leads: a zooid in its wake (140 u long, 26 u wide), behind
 its place in the line (22 u x its number), may fly at the Bell's speed x1.3; at its place it holds the Bell's speed. A
-leading Bell turns at x0.7 and cannot pulse. The AI: a zooid whose next job is over 220 u away takes its place in the
+leading Bell turns at x0.7 (step 3 lets it jet while it leads). The AI: a zooid whose next job is over 220 u away takes its place in the
 line; the Bell leads while one does, and with nothing of its own to light it carries the line to the Sting's lit
 crystal (else the Bract's freed one). The fuse call moved from LT to **B** (keys H) for every zooid.
 
@@ -737,3 +737,25 @@ kept. **Mass level 5 is slower on I2** (473 against 443 for Hard, every Easy run
 the crew work past a walled crystal and fly back for it later. Fusing at a walled crystal whenever the hold carries
 anything was tried and was slower nearly everywhere, so it was dropped. **Decision needed (designer):** whether Trawl's
 +1 hold stays, since it slows the loop it belongs to.
+
+**3. Pulse Jet (the Bell's RT).** The Octopus's breath on a zooid that has a cruise: RT held inhales (the Bell slows to
+x0.6 and charges over 0.7 s, the bell visibly swelling), letting go jets (boost 1 + 0.8 x charge x chain, held 1 s,
+then fading as every boost does) and flashes the lantern at twice its range for 1 s. A release within 15% of the last
+interval is on the beat: the chain grows x0.1 a pulse, to x1.8. The old tap pulse (x1.8 for 1 s every 3 s) is gone. The
+AI breathes while it travels (no crystal within 1.2 lantern ranges) on a 1.6 s tempo, inhaling for 72% of it; Easy and
+Medium let go up to their lab-only late press early or late (0.2 s and 0.1 s), which breaks the beat. **A leading Bell
+jets too**, so the line drafts on its beat: with the jet blocked while leading the AI Bell jetted 8 times a run and the
+jet changed nothing; allowed, it jets about 115 times and the whole line rides it.
+
+| 8 seeds | Tap pulse (step 2) | Pulse Jet, not while leading | Pulse Jet, leading too (shipped) |
+|---|---|---|---|
+| I1 Hard | 344 (sd 14) | 343 (11) | 333 (19); 42% of jets on the beat, chain up to 6 |
+| I1 Medium | 397 (16) | 408 (14) | 397 (11); 38% on the beat |
+| I1 Easy | 430 (16) | 441 (12) | 428 (16); 24% on the beat |
+| I2 Hard | 442 (34) | 445 (37) | 430 (31) |
+| I2 Medium | 491 (23), 1 over | 492 (19), 4 over | 479 (38), 1 over |
+| I2 Easy | 512 (31), 4 over | 488 (3), 6 over | 533, 6 over the limit |
+
+Found: the jet is worth about 10 s on I1 and I2 for Hard and is level with the tap pulse below that; its value is the
+skill it asks (the beat), not raw speed. The beat separates the levels as designed (Hard 42%, Easy 24% on the beat).
+I2 Easy sits on the 540 s limit with or without it.
