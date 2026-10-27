@@ -171,6 +171,83 @@ def prism_rounds():
     return _diagonal(lambda x, y, s: prism(x, y, 20 * s))
 
 
+# ---- Pulsefire Cannons (Space) OPTIONS, 2026-10-27: the card teaches REACH (Space extends the guns' range: short at
+# rest, long at full overcharge) and, at Space 5, PIERCE (rounds go through prisms). The plate keeps the gun-heat
+# gauge the view already writes. Measured on the HUD first: the card today is the weapon-mode SWAP (bullets / prism
+# rounds, SparrowHUDView.SetWeaponMode) over the generated gun-heat gauge (SetGunHeat + phase marks).
+# One CARDS entry per candidate; the losers are deleted once Garrett picks.
+GUN_POD_Y = (46, 82)                 # the two streams, at the pods' spacing scaled to the card
+GUN_X = (18, 108)                    # a stream's first and last round, full reach
+GUN_REACH_REST = 0.45                # Space at rest: the stream stops short (the live value is the real range fraction)
+
+
+def round_slug(cx, cy, L=20, H=11):
+    """One cannon round flying right: a slug with a chamfered nose (angular, no round caps)."""
+    return fill([(cx - L / 2, cy - H / 2), (cx + L / 2 - 6, cy - H / 2), (cx + L / 2, cy),
+                 (cx + L / 2 - 6, cy + H / 2), (cx - L / 2, cy + H / 2)])
+
+
+def stream(x0, x1, n, ys=GUN_POD_Y, shape=round_slug):
+    m = empty()
+    for y in ys:
+        for i in range(n):
+            m |= shape(x0 + (x1 - x0) * i / max(1, n - 1), y)
+    return m
+
+
+def prism_round(cx, cy):
+    return block(cx - 3, cy + 3, w=16, h=11, dp=5)
+
+
+def reach(mask, frac, x0=GUN_X[0] - 8, x1=GUN_X[1] + 8):
+    """The stream cut at `frac` of full reach - what a horizontal Filled Image does with fillAmount."""
+    import canvas as C
+    return mask & (C.GX < x0 + (x1 - x0) * frac)
+
+
+# Option B - REACH: two streams of rounds across the whole card; the view fills them by the live range fraction.
+def cannons_b(frac=1.0):
+    return reach(stream(GUN_X[0], GUN_X[1], 4), frac)
+
+
+def cannons_b_stance(frac=1.0):
+    return reach(stream(GUN_X[0], GUN_X[1], 4, shape=prism_round), frac)
+
+
+# Option C - PIERCE: the streams meet a prism wall (danger); at Space 5 they go through it and on.
+PIERCE_WALL = dict(cx=70, cy=68, w=14, h=58, dp=7)
+
+
+def cannons_c_wall():
+    return block(**PIERCE_WALL)
+
+
+def cannons_c_stop():
+    return stream(GUN_X[0], 50, 2)
+
+
+def cannons_c_through():
+    return stream(GUN_X[0], 50, 2) | stream(96, GUN_X[1], 2)
+
+
+def cannons_c_stance():
+    return stream(GUN_X[0], 50, 2, shape=prism_round)
+
+
+# Option D - WHO + REACH: the Sparrow (fans spread, flying) on the left, its two pods firing right; the streams
+# fill by the live range fraction.
+D_HULL = dict(box=52, cx=30.0, cy=64.0)
+D_POD_Y = (50, 78)
+
+
+def cannons_d_hull():
+    return sparrow(None, **D_HULL)
+
+
+def cannons_d_rounds(frac=1.0, shape=round_slug):
+    return reach(stream(78, GUN_X[1], 2, ys=D_POD_Y, shape=shape), frac, x0=58)
+
+
 ICONS = [
     dict(name="Sparrow_TurretStance", element="Mass", act="Turret Stance: the stopped Sparrow firing swelling rounds from both pods (composite)", draw=turret_stance,
          exempt={"gap": "Garrett 2026-10-26 - the real mesh", "components": "a hull and four rounds", "specks": "the blocks' seam slivers"}),
@@ -246,4 +323,31 @@ CARDS = [
          states=[("flying: stance off (ghost)", [("rounds", "domain", 0.6), ("hull", "domain")]),
                  ("in the stance", [("rounds", "domain"), ("hull", "domain")]),
                  ("in the stance at Mass 5", [("rounds_shielded", "shielded"), ("hull", "domain")])]),
+
+    # ---- Pulsefire Cannons OPTIONS (2026-10-27): one entry per candidate, the old first in each sheet
+    dict(name="cannons_option_b", element="Space", before="Sparrow_Cannons",
+         title="Option B - REACH: two streams from the pods; the view fills them by the live range (Space); stance swaps the rounds to prisms",
+         parts=dict(rest=lambda: cannons_b(GUN_REACH_REST), full=cannons_b, stance=cannons_b_stance),
+         states=[("Space low: short reach", [("rest", "domain")]),
+                 ("Space full: full reach, guns hot", [("full", "domain")]),
+                 ("turret stance: prism rounds", [("stance", "domain")])],
+         gauge={"Space low: short reach": (0.15, None), "Space full: full reach, guns hot": (0.7, None),
+                "turret stance: prism rounds": (0.3, None)}),
+    dict(name="cannons_option_c", element="Space", before="Sparrow_Cannons",
+         title="Option C - PIERCE: the streams meet a hostile prism; at Space 5 they go through it",
+         parts=dict(wall=cannons_c_wall, stop=cannons_c_stop, through=cannons_c_through, stance=cannons_c_stance),
+         states=[("base: rounds stop at the prism", [("wall", "danger"), ("stop", "domain")]),
+                 ("Space 5: rounds pierce", [("wall", "danger", 0.6), ("through", "domain")]),
+                 ("turret stance: prism rounds", [("wall", "danger"), ("stance", "domain")])],
+         gauge={"base: rounds stop at the prism": (0.15, None), "Space 5: rounds pierce": (0.7, None),
+                "turret stance: prism rounds": (0.3, None)}),
+    dict(name="cannons_option_d", element="Space", before="Sparrow_Cannons",
+         title="Option D - WHO + REACH: the Sparrow firing from both pods; the streams fill by the live range",
+         parts=dict(hull=cannons_d_hull, rest=lambda: cannons_d_rounds(GUN_REACH_REST), full=cannons_d_rounds,
+                    stance=lambda: cannons_d_rounds(1.0, prism_round)),
+         states=[("Space low: short reach", [("rest", "domain"), ("hull", "domain")]),
+                 ("Space full: full reach, guns hot", [("full", "domain"), ("hull", "domain")]),
+                 ("turret stance: prism rounds", [("stance", "domain"), ("hull", "domain")])],
+         gauge={"Space low: short reach": (0.15, None), "Space full: full reach, guns hot": (0.7, None),
+                "turret stance: prism rounds": (0.3, None)}),
 ]
