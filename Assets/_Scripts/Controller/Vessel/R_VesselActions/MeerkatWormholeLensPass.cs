@@ -22,6 +22,12 @@ namespace CosmicShore.Gameplay
     /// the camera nears it) and by the collapse's ripple, a ring at the screen's EDGES only (nothing inside
     /// <c>rippleEdge</c> moves).</item>
     /// </list>
+    /// <b>The contour field</b> (Garrett, 2026-10-27, from the Tube Lens Lab, <c>Docs/Studios/StoatTubeLensLab.html</c>): with
+    /// <c>formedLook</c> ContourField a formed tunnel draws nothing and is ONLY bent space. The same lens draw ray-marches each
+    /// pixel's ray through a thin shell on the tunnel's wall (<c>fieldInner</c> × r inside to <c>fieldOuter</c> × r outside,
+    /// graded to zero at its edge). Inside the shell the ray is turned by a field whose lines on the wall are the tube's own
+    /// contours (<c>fieldPitch</c> 0° along it, 90° round its rings), then it carries on; where it lands on screen is what
+    /// that pixel shows. The four tunnels nearest the camera take part (<see cref="MaxTubes"/>).
     /// Injected from script on every base game camera while a tunnel or a ripple is live (URP's "inject a pass via
     /// scripting" route); a scene with none pays nothing. The camera depth texture (a vessel in front of a mouth is not
     /// bent) is held on through <see cref="BlackHoleLens.CameraSupport"/> while anything is live.
@@ -32,6 +38,8 @@ namespace CosmicShore.Gameplay
         public const string WarpMaterialPath = "MeerkatWormholeWarp";
         /// <summary>The most mouths one pass dents (two per tunnel).</summary>
         public const int MaxWells = 8;
+        /// <summary>The most tunnels one pass marches the contour field through (the nearest to the camera).</summary>
+        public const int MaxTubes = 4;
 
         static readonly int SceneColorId = Shader.PropertyToID("_MeerkatSceneColor");
         static readonly int WarpTexId = Shader.PropertyToID("_MeerkatWarpTex");
@@ -39,6 +47,18 @@ namespace CosmicShore.Gameplay
         static readonly int WellPId = Shader.PropertyToID("_MWWellP");
         static readonly int RippleId = Shader.PropertyToID("_MWRipple");
         static readonly int ViewId = Shader.PropertyToID("_MWView");
+        static readonly int TubeW2LId = Shader.PropertyToID("_MWTubeW2L");
+        static readonly int TubeShapeId = Shader.PropertyToID("_MWTubeShape");
+        static readonly int TubeWinId = Shader.PropertyToID("_MWTubeWin");
+        static readonly int TubeBoundId = Shader.PropertyToID("_MWTubeBound");
+        static readonly int Field0Id = Shader.PropertyToID("_MWField0");
+        static readonly int Field1Id = Shader.PropertyToID("_MWField1");
+        static readonly int Field2Id = Shader.PropertyToID("_MWField2");
+        static readonly int Field3Id = Shader.PropertyToID("_MWField3");
+        static readonly int CamPosId = Shader.PropertyToID("_MWCamPos");
+        static readonly int CamRId = Shader.PropertyToID("_MWCamR");
+        static readonly int CamUId = Shader.PropertyToID("_MWCamU");
+        static readonly int CamFId = Shader.PropertyToID("_MWCamF");
 
         static MeerkatWormholeLensPass s_pass;
         static Material s_lens, s_warp;
@@ -47,6 +67,31 @@ namespace CosmicShore.Gameplay
 
         static readonly Vector4[] s_c = new Vector4[MaxWells];
         static readonly Vector4[] s_p = new Vector4[MaxWells];
+        static readonly ContourTubes s_tubes = new();
+        static readonly List<MeerkatWormholeExecutor.Tunnel> s_near = new();
+        static readonly List<float> s_nearD = new();
+
+        /// <summary>The contour field's bank for one camera: up to <see cref="MaxTubes"/> tunnels, the field's numbers, the eye.</summary>
+        public sealed class ContourTubes
+        {
+            public readonly Matrix4x4[] W2L = new Matrix4x4[MaxTubes];
+            public readonly Vector4[] Shape = new Vector4[MaxTubes];   // shaft S, bend radius R, theta, throat (round 7)
+            public readonly Vector4[] Win = new Vector4[MaxTubes];     // s0, s1, fade, mouth
+            public readonly Vector4[] Bound = new Vector4[MaxTubes];   // world centre, radius
+            public Vector4 F0, F1, F2, F3, CamPos, CamR, CamU, CamF;
+            public int Count;
+
+            public void CopyTo(ContourTubes o)
+            {
+                System.Array.Copy(W2L, o.W2L, MaxTubes);
+                System.Array.Copy(Shape, o.Shape, MaxTubes);
+                System.Array.Copy(Win, o.Win, MaxTubes);
+                System.Array.Copy(Bound, o.Bound, MaxTubes);
+                o.F0 = F0; o.F1 = F1; o.F2 = F2; o.F3 = F3;
+                o.CamPos = CamPos; o.CamR = CamR; o.CamU = CamU; o.CamF = CamF;
+                o.Count = Count;
+            }
+        }
 
         class CopyData { public TextureHandle source; }
 
@@ -63,6 +108,7 @@ namespace CosmicShore.Gameplay
             public readonly Vector4[] c = new Vector4[MaxWells];
             public readonly Vector4[] p = new Vector4[MaxWells];
             public Vector4 ripple, view;
+            public readonly ContourTubes tubes = new();
         }
 
         MeerkatWormholeLensPass()
@@ -104,7 +150,8 @@ namespace CosmicShore.Gameplay
             var ripple = RippleFor(cam);
             var warpMesh = MeerkatWormholeView.WarpMesh;
             bool warp = warpMesh != null && warpMesh.vertexCount > 0;
-            if (wells == 0 && ripple.x <= 0f && !warp) return;
+            int tubes = ContourTubesFor(cam, s_tubes);
+            if (wells == 0 && ripple.x <= 0f && !warp && tubes == 0) return;
             TextureHandle colour = resources.activeColorTexture;
 
             var desc = renderGraph.GetTextureDesc(colour);
@@ -164,7 +211,8 @@ namespace CosmicShore.Gameplay
                 System.Array.Copy(s_c, data.c, MaxWells);
                 System.Array.Copy(s_p, data.p, MaxWells);
                 data.ripple = ripple;
-                data.view = new Vector4(cam.aspect, warp ? 1f : 0f, wells, 0f);
+                data.view = new Vector4(cam.aspect, warp ? 1f : 0f, wells, tubes);
+                s_tubes.CopyTo(data.tubes);
                 builder.UseTexture(copy, AccessFlags.Read);
                 builder.UseTexture(warpTex, AccessFlags.Read);
                 if (resources.cameraDepthTexture.IsValid())
@@ -179,6 +227,19 @@ namespace CosmicShore.Gameplay
                     d.block.SetVectorArray(WellPId, d.p);
                     d.block.SetVector(RippleId, d.ripple);
                     d.block.SetVector(ViewId, d.view);
+                    var t = d.tubes;
+                    d.block.SetMatrixArray(TubeW2LId, t.W2L);
+                    d.block.SetVectorArray(TubeShapeId, t.Shape);
+                    d.block.SetVectorArray(TubeWinId, t.Win);
+                    d.block.SetVectorArray(TubeBoundId, t.Bound);
+                    d.block.SetVector(Field0Id, t.F0);
+                    d.block.SetVector(Field1Id, t.F1);
+                    d.block.SetVector(Field2Id, t.F2);
+                    d.block.SetVector(Field3Id, t.F3);
+                    d.block.SetVector(CamPosId, t.CamPos);
+                    d.block.SetVector(CamRId, t.CamR);
+                    d.block.SetVector(CamUId, t.CamU);
+                    d.block.SetVector(CamFId, t.CamF);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, 0, MeshTopology.Triangles, 3, 1, d.block);
                 });
             }
@@ -218,6 +279,54 @@ namespace CosmicShore.Gameplay
                 }
             }
             for (int i = n; i < MaxWells; i++) c[i] = p[i] = Vector4.zero;
+            return n;
+        }
+
+        /// <summary>
+        /// The contour field's bank for this camera: the <see cref="MaxTubes"/> formed tunnels nearest it whose config shows
+        /// the contour field, each as its world-to-own-frame matrix (<see cref="MeerkatWormholeMath.TubeWorldToLocal"/>), its
+        /// shape, its live window (so the field forms out of the centre and collapses with the tunnel) and fade, and a bounding
+        /// sphere the shader's rays skip to. The field's numbers come from the nearest tunnel's config. Returns how many.
+        /// </summary>
+        public static int ContourTubesFor(Camera cam, ContourTubes bank)
+        {
+            var eye = cam.transform.position;
+            s_near.Clear(); s_nearD.Clear();
+            var live = MeerkatWormholeExecutor.Live;
+            for (int i = 0; i < live.Count; i++)
+            {
+                var t = live[i];
+                var cfg = t.Config;
+                if (!cfg || !cfg.ContourFieldOn || t.W.S1 - t.W.S0 < 1f || t.Fade <= 0.004f) continue;
+                float d = Vector3.Distance(eye, t.At(0.5f * (t.W.S0 + t.W.S1), out _));
+                int at = s_nearD.Count;
+                while (at > 0 && s_nearD[at - 1] > d) at--;
+                if (at >= MaxTubes) continue;
+                s_near.Insert(at, t); s_nearD.Insert(at, d);
+                if (s_near.Count > MaxTubes) { s_near.RemoveAt(MaxTubes); s_nearD.RemoveAt(MaxTubes); }
+            }
+            int n = s_near.Count;
+            bank.Count = n;
+            for (int i = 0; i < MaxTubes; i++)
+            {
+                if (i >= n) { bank.W2L[i] = Matrix4x4.identity; bank.Shape[i] = bank.Win[i] = bank.Bound[i] = Vector4.zero; continue; }
+                var t = s_near[i];
+                float outer = Mathf.Max(0f, t.Config.FieldOuter);
+                var mid = t.At(0.5f * (t.W.S0 + t.W.S1), out _);
+                bank.W2L[i] = MeerkatWormholeMath.TubeWorldToLocal(t.A, t.T0, t.Side);
+                bank.Shape[i] = new Vector4(t.S, t.R, t.Theta, t.B);
+                bank.Win[i] = new Vector4(t.W.S0, t.W.S1, t.Fade, t.M);
+                bank.Bound[i] = new Vector4(mid.x, mid.y, mid.z, 0.5f * (t.W.S1 - t.W.S0) + Mathf.Max(t.B, t.M) * (1f + outer) + 4f);
+            }
+            if (n == 0) return 0;
+            var c = s_near[0].Config;
+            bank.F0 = new Vector4(c.FieldStrength * Mathf.Deg2Rad, c.FieldPitch * Mathf.Deg2Rad, c.FieldDrag, c.FieldTwist);
+            bank.F1 = new Vector4(c.FieldGlass, c.FieldGlassIndex, c.FieldGrazing, (float)c.FieldFlow);
+            bank.F2 = new Vector4(c.FieldInner, c.FieldOuter, (float)c.FieldProfile, c.FieldRibs);
+            bank.F3 = new Vector4(c.FieldRibSharpness, Time.time * c.FieldRibTravel, Mathf.Max(2, c.FieldRibRings), Mathf.Max(1, c.FieldRibLines));
+            var ct = cam.transform;
+            bank.CamPos = new Vector4(eye.x, eye.y, eye.z, Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f));
+            bank.CamR = ct.right; bank.CamU = ct.up; bank.CamF = ct.forward;
             return n;
         }
 

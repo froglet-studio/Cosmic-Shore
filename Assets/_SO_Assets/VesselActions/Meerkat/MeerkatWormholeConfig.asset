@@ -54,6 +54,24 @@ MonoBehaviour:
   rideSpeedTunnelScale: 5
   rideEntryMultiplier: 1
   rideExitMultiplier: 1.2
+  reticleLook: 1
+  formedLook: 1
+  fieldStrength: 18
+  fieldPitch: 90
+  fieldDrag: 1
+  fieldTwist: 0
+  fieldGlass: 0.4
+  fieldGlassIndex: 0.04
+  fieldGrazing: 0.6
+  fieldFlow: 1
+  fieldInner: 0.1
+  fieldOuter: 0.12
+  fieldProfile: 0
+  fieldRibs: 0.9
+  fieldRibSharpness: 8
+  fieldRibTravel: 1.5
+  fieldRibRings: 22
+  fieldRibLines: 12
   formEvent:
     Guid:
       Data1: 0
