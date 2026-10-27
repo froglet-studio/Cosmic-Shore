@@ -97,6 +97,24 @@ namespace CosmicShore.UI
         /// level go up in the same save, so a reinstall or a second device keeps both.
         /// </summary>
         public List<HangarUpgradeLevel> HangarUpgrades = new();
+
+        /// <summary>
+        /// The player's ELEMENTAL crystals, one entry per element that has ever had any (Docs/MENU_REDESIGN_B.md
+        /// section 90; Shombith 2026-10-27: "put them in cloud data"). Held is what the player has now; Earned and
+        /// Spent are lifetime totals, so the Hangar can show held and spent and the Ark can convert them. Here beside
+        /// the OmniCrystal balance because they are the same kind of money and ride the same save.
+        /// </summary>
+        public List<ElementalCrystalBalance> ElementalCrystals = new();
+    }
+
+    /// <summary>One element's crystals. Element is the enum's stored value (Charge 1 .. Time 4).</summary>
+    [Serializable]
+    public class ElementalCrystalBalance
+    {
+        public int Element;
+        public int Held;
+        public long Earned;
+        public long Spent;
     }
 
     /// <summary>One bought Hangar level. Vessel and Element are the enums' stored values.</summary>

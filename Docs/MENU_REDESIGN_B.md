@@ -3894,3 +3894,50 @@ each crystal gains a 16-frame flipbook in `Assets/_Graphics/Codex/Flipbooks/`.
 - `ArcadeGridOrderTests` is rewritten for the fixed order and the two dropdowns.
 - `ElementFlowerTests` gains the cap at 5.
 - The player and editor reference compiles are clean. Not opened in the editor, and the tests have not been run.
+
+### 90.1 Round 2 (2026-10-27): silver, the Mass flip, 2D + 3D elements, elemental crystals in cloud data, the Omni row
+
+Shombith's answers to section 90's open questions: "the hangars vessel preview and the icons too" (silver);
+"turn the Mass icon upside down"; "in the same info tab we have both the 2D icons and the 3D view of them"; "put them in
+cloud data and tell me what to do"; "in the controls tab the omni crystal ability of the vessel should also show".
+
+- **Silver, not gold, over the vessel preview.** The upgrade moment's ring, banner and flying crystal icons draw in
+  silver (`HangarUpgradesPage.elementTint` = NeutralLightest; it was the Purchase gold). The UPGRADE and UNLOCK buttons
+  stay gold, because they spend. The 3D hull's domain slots wear the class livery,
+  `Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat`: COLOR.md's silver plates, rim (0.86, 0.90, 1.00) and face
+  (0.50, 0.56, 0.70). It is set as `HangarVesselStage.liveryMaterial` in place of the prefab's placeholder.
+- **The Mass icon is upside down.**
+  - `mass_triangle_label.png` is flipped in place.
+  - `mass_petal.png` is flipped and set at 60 %, so the five petals keep their gaps; the flower reads as a star of five
+    triangles.
+  - Every flower and the HUD pips draw it.
+- **2D and 3D in one tab.** Each ABILITIES row shows the element's 2D flower and icon, and now its crystal in 3D: the
+  Codex flipbook, still on its first frame. Playing a row turns the 2D flower one petal and swells it (rotate and
+  scale, 0.6 s), and runs the crystal's loop once.
+- **Elemental crystals, held and spent.**
+  - `ProfileEconomy.ElementalCrystals` is a list of `{Element, Held, Earned, Spent}` on the cloud profile, beside the
+    OmniCrystal balance. It rides the same save.
+  - `PlayerDataService` adds `GetElementalCrystalsHeld` / `Spent`, `AddElementalCrystals` and
+    `TrySpendElementalCrystals`.
+  - UPGRADES shows the focused element's line: "MASS CRYSTALS 7 HELD - 5 SPENT".
+  - **Nothing earns them yet.** Steps for the owner (cloud data is Shombith's):
+    1. Decide the earn rule: per match, per elemental crystal collected, or by the end-of-match element levels.
+       Matches only count `ElementalCrystalsCollected` in total today, not per element.
+    2. Have the match end call `AddElementalCrystals(element, n, "match")`. It belongs where the OmniCrystals are paid
+       out, so it shares the save.
+    3. When the economy moves to the server, give Cloud Code an elemental earn/spend pair, as the OmniCrystal wallet
+       has (`ServerEconomy.EarnAsync`/`SpendAsync` behind `ServerEconomyGate`), and gate these two calls the same way.
+       Yash does the Cloud Code work.
+    4. Point the Ark's CONVERT at `TrySpendElementalCrystals` (one of each) plus `AddCrystals` (one OmniCrystal). The
+       converter says it is waiting on these balances.
+- **The Omni row in the controls tab.**
+  - `VesselControlsPanel` adds an "Omni crystal: …" row after the four elements, with the Omni crystal icon, no button
+    and no cooldown.
+  - Its words come from `ElementalAbilityMapSO.omniAbilityLabel`, a new field. It is authored on seven maps from their
+    docs and the Codex: Squirrel, Dolphin, Sparrow, Scarab, Thresher, Stoat and Rhino.
+  - Every other hull reads "Omni crystal: fly into it". The Jacks and Starling maps belong to their own generators, so
+    their lines are left to those.
+
+**Generators:** `author_menu_hangar.py` has 32 plants and `author_menu_configure.py` gains its Omni plant; all fire, and
+every `author_menu_*` passes `--check`. **Tests:** `PlayerProfileDataTests` gains the two ElementalCrystals tests. The
+player and editor reference compiles are clean. Not opened in the editor.

@@ -517,6 +517,21 @@ def page_header(page, key, title, line):
 
 
 ABILITY_ROW_H, ABILITY_TEXT_X = 100, 172
+# Section 90 ("in the same info tab we have both the 2D icons and the 3D view of them"): each row's crystal in 3D, the
+# flipbook the Codex plays (Assets/_Graphics/Codex/Flipbooks, rendered from the crystal labs), at its own loop rate.
+CRYSTAL_FLIP = {n: K.meta_guid(f"Assets/_Graphics/Codex/Flipbooks/ethirion_{n.lower()}_flip.png") for n in ("Charge", "Mass", "Space", "Time")}
+CRYSTAL_FPS = {"Charge": 5, "Mass": 2, "Space": 7.27, "Time": 8}
+CRYSTAL_W = 64
+
+
+def crystal_raw(guid):
+    """A RawImage on a flipbook sheet, showing its first frame (the top-left quarter)."""
+    return lambda ctx, go: K.mono(go, RAW_IMAGE,
+        "  m_Material: {fileID: 0}\n  m_Color: {r: 1, g: 1, b: 1, a: 1}\n  m_RaycastTarget: 0\n"
+        "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
+        "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"
+        f"  m_Texture: {K.ref(2800000, guid, 3)}\n  m_UVRect:\n    serializedVersion: 2\n"
+        "    x: 0\n    y: 0.75\n    width: 0.25\n    height: 0.25\n")
 
 
 def abilities_page(panel):
@@ -536,9 +551,12 @@ def abilities_page(panel):
         row.child(N(f"{k}/Icon", "Icon", TLr(110, 34, 32, 32))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True))
         tx = ABILITY_TEXT_X
-        ellipsize(label(row.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (tx, -14), (-(tx + 90), 26), (0, 1)))), name, "H3", "TextLight"))
+        # The 3D crystal, just left of the keycap.
+        row.child(N(f"{k}/Crystal", "Crystal", TRr(84, (ABILITY_ROW_H - CRYSTAL_W) / 2, CRYSTAL_W, CRYSTAL_W))) \
+            .add("cr", 222, K.canvas_renderer()).add("raw", 114, crystal_raw(CRYSTAL_FLIP[name]))
+        ellipsize(label(row.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (tx, -14), (-(tx + 160), 26), (0, 1)))), name, "H3", "TextLight"))
         label(row.child(N(f"{k}/Element", "Element", TLr(tx, 42, 200, 18))), name, "Label", "NeutralLightest")
-        ellipsize(label(row.child(N(f"{k}/Desc", "Desc", R((0, 1), (1, 1), (tx, -64), (-(tx + 90), 20), (0, 1)))), "", "BodySmall", "NeutralLightest"))
+        ellipsize(label(row.child(N(f"{k}/Desc", "Desc", R((0, 1), (1, 1), (tx, -64), (-(tx + 160), 20), (0, 1)))), "", "BodySmall", "NeutralLightest"))
         cap = row.child(N(f"{k}/Keycap", "Keycap", TRr(18, 33, 56, 34)))
         cap.add("cg", 225, canvas_group(True))
         cap.child(N(f"{k}/Keycap/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
@@ -559,13 +577,15 @@ def abilities_page(panel):
                      f"    flower: {ref(ctx.c(f'{k}/Flower', 'flower'))}\n"
                      f"    keycapGroup: {ref(ctx.c(f'{k}/Keycap', 'cg'))}\n    keycapText: {ref(ctx.c(f'{k}/Keycap/Label', 'tmp'))}\n"
                      f"    keycapBorder: {ref(ctx.c(f'{k}/Keycap/Border', 'img'))}\n    glow: {ref(ctx.c(f'{k}/Glow', 'img'))}\n"
-                     f"    hex: {ref(ctx.c(f'{k}/Hex', 'img'))}\n    halo: {ref(ctx.c(f'{k}/Halo', 'halo'))}\n")
+                     f"    hex: {ref(ctx.c(f'{k}/Hex', 'img'))}\n    halo: {ref(ctx.c(f'{k}/Halo', 'halo'))}\n"
+                     f"    crystal: {ref(ctx.c(f'{k}/Crystal', 'raw'))}\n    crystalFps: {CRYSTAL_FPS[name]}\n")
         return K.mono(go, ABILITIES_SCRIPT,
                       "  rows:\n" + rows
                       + f"  prefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n  glyphSet: {K.ref(11400000, GLYPH_SET, 2)}\n"
                       f"  elementTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
                       "  openSlotName: Open slot\n  openSlotLine: Not designed yet.\n  passiveWord: Passive\n  glowSeconds: 0.9\n"
+                      "  spinSeconds: 0.6\n  spinScale: 0.18\n"
                       "  kindOverrides: []\n"
                       "  keyPressSeconds: 0.35\n  keyPressScale: 0.84\n")
     page.add("logic", 114, body)
@@ -636,6 +656,9 @@ def upgrades_page(panel):
         label(tile.child(N(f"{k}/Level", "Level", R((0, 0), (1, 0), (0, 12), (0, 26), (0.5, 0)))), "1", "Data", "TextLight", align="center")
     label(page.child(N(f"{U}/Element", "Element", TLr(0, 34, 96, 18))), "CHARGE", "Label", "TextLight")
     label(page.child(N(f"{U}/Step", "Step", TLr(96, 34, 300, 18))), "LEVEL 1 TO 2", "Label", "NeutralLightest")
+    # Section 90: the focused element's crystals, held and spent (the cloud profile's ElementalCrystals).
+    label(page.child(N(f"{U}/Crystals", "Crystals", main_r(34, 18))), "CHARGE CRYSTALS  0 HELD - 0 SPENT", "Label",
+          "NeutralLightest", align="right")
     ellipsize(label(page.child(N(f"{U}/Ability", "Ability", main_r(60, 40))), "", "H2", "TextLight"))
     ellipsize(label(page.child(N(f"{U}/Desc", "Desc", main_r(106, 64))), "", "BodySmall", "NeutralLightest", valign="top", wrap=True))
     element_flower(page, f"{U}/Now", "NowFlower", TLr(0, 182, 112, 112))
@@ -668,6 +691,7 @@ def upgrades_page(panel):
         return K.mono(go, UPGRADES_SCRIPT,
                       "  rows:\n" + rows
                       + f"  elementText: {ref(c(f'{U}/Element', 'tmp'))}\n  stepText: {ref(c(f'{U}/Step', 'tmp'))}\n"
+                      f"  crystalsText: {ref(c(f'{U}/Crystals', 'tmp'))}\n"
                       f"  abilityText: {ref(c(f'{U}/Ability', 'tmp'))}\n  descriptionText: {ref(c(f'{U}/Desc', 'tmp'))}\n"
                       f"  nowFlower: {ref(c(f'{U}/Now', 'flower'))}\n  nowText: {ref(c(f'{U}/NowLabel', 'tmp'))}\n"
                       f"  nextGroup: {ref(c(f'{U}/Next', 'cg'))}\n  nextFlower: {ref(c(f'{U}/Next/Flower', 'flower'))}\n"
@@ -682,6 +706,7 @@ def upgrades_page(panel):
                       "  defaultLine: Spend OmniCrystals to raise an element. The hull changes as it grows.\n"
                       "  noMorphLine: This hull keeps its shape at every level.\n"
                       "  stepTemplate: LEVEL {level} TO {next}\n  maxedStepTemplate: LEVEL {level} - MAX\n"
+                      f"  crystalsTemplate: {K.yaml_scalar('{element} CRYSTALS  {held} HELD - {spent} SPENT')}\n"
                       "  nowTemplate: NOW {level}\n  nextTemplate: NEXT {level}\n"
                       "  upgradeAheadTemplate: AT LEVEL {level}\n  upgradeReachedTemplate: UNLOCKED AT LEVEL {level}\n"
                       "  upgradeLevel: 5\n  openSlotTitle: Open slot\n  openSlotLine: Not designed yet.\n"
@@ -1482,6 +1507,9 @@ def validate_prefabs(files, guids):
     for field in ("nowFlower", "nextFlower"):
         m = re.search(r"^  " + field + r": \{fileID: (-?\d+)\}", upg, re.M)
         assert m and target_kind(view, m.group(1), files)[1] == FLOWER_SCRIPT, f"HangarUpgradesPage.{field} is not a flower"
+    _, upg = doc_of(view, hv("Tabs/Upgrades#logic"))
+    assert upg and re.search(r"^  crystalsText: \{fileID: -?[1-9]\d*\}", upg, re.M) and "{held}" in upg and "{spent}" in upg, \
+        "UPGRADES shows the focused element's crystals held and spent (section 90)"
     _, abil = doc_of(view, hv("Tabs/Abilities#logic"))
     assert abil and [int(x) for x in re.findall(r"  - element: (\d+)", abil)] == [i for _, i in ELEMENTS], \
         "the Abilities rows must be Charge, Mass, Space, Time"
@@ -1513,6 +1541,11 @@ def validate_prefabs(files, guids):
         if ("m_AnchorMin: {x: 0," in d and "m_AnchorMax: {x: 1," in d and "m_Pivot: {x: 0," in d):
             x = float(re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+)", d).group(1))
             assert x >= 0, f"RectTransform {m.group(1)} is stretched with a left pivot and starts {x:g} px left of its parent"
+    _, abil = doc_of(view, hv("Tabs/Abilities#logic"))
+    assert abil and abil.count("    crystal: {fileID: ") == 4 and "    crystal: {fileID: 0}" not in abil, \
+        "every ability row shows its element's 3D crystal beside its 2D icons (section 90)"
+    for n, g in CRYSTAL_FLIP.items():
+        assert f"m_Texture: {{fileID: 2800000, guid: {g}, type: 3}}" in view, f"the {n} row's crystal shows the wrong flipbook"
     _, vibe = doc_of(view, hv("Vibe#vibe"))
     assert vibe and vibe.count("  - leftText: ") == 3 and vibe.count("    - {fileID: ") == 3 * VIBE_SEGMENTS, \
         f"the vibe view needs its three bars of {VIBE_SEGMENTS} segments"
@@ -1660,6 +1693,8 @@ def self_test(current, files, guids):
         "Y stepping the tabs again": view_plant(lambda t: t.replace("  northInput: 0\n", "  northInput: 1\n", 1)),
         "the header not following the tab": view_plant(lambda t: re.sub(
             r"(\n  headerTitleText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "UPGRADES without its held / spent line": view_plant(lambda t: re.sub(r"(\n  crystalsText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "an ability row without its 3D crystal": view_plant(lambda t: re.sub(r"(\n    crystal: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the stage's hull back in the authored placeholder": view_plant(lambda t: t.replace(
             f"liveryMaterial: {{fileID: 2100000, guid: {LIVERY}, type: 2}}", "liveryMaterial: {fileID: 0}", 1)),
         "a vibe segment unwired": view_plant(lambda t: re.sub(r"(\n    segments:\n    - )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),

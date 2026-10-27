@@ -45,6 +45,9 @@ namespace CosmicShore.UI
         [Header("The focused element")]
         [SerializeField] private TMP_Text elementText;
         [SerializeField] private TMP_Text stepText;
+        [Tooltip("Section 90: the focused element's crystals, held now and spent ever (the cloud profile's " +
+                 "ElementalCrystals). Hidden when the template is empty.")]
+        [SerializeField] private TMP_Text crystalsText;
         [SerializeField] private TMP_Text abilityText;
         [SerializeField] private TMP_Text descriptionText;
         [SerializeField] private KitElementFlower nowFlower;
@@ -94,6 +97,8 @@ namespace CosmicShore.UI
         [SerializeField] private string stepTemplate = "LEVEL {level} TO {next}";
         [Tooltip("The step at the last level; {level} is filled in.")]
         [SerializeField] private string maxedStepTemplate = "LEVEL {level} - MAX";
+        [Tooltip("The focused element's crystals; {held} and {spent} are filled in, {element} names it.")]
+        [SerializeField] private string crystalsTemplate = "{element} CRYSTALS  {held} HELD - {spent} SPENT";
         [Tooltip("Under the NOW flower; {level} is filled in.")]
         [SerializeField] private string nowTemplate = "NOW {level}";
         [Tooltip("Under the NEXT flower; {level} is filled in.")]
@@ -288,6 +293,14 @@ namespace CosmicShore.UI
             if (elementText) elementText.text = ElementName(row).ToUpperInvariant();
             if (stepText) stepText.text = maxed ? TemplateText.Fill(maxedStepTemplate, "level", level)
                                                 : TemplateText.Fill(stepTemplate, "level", level, "next", next);
+            if (crystalsText)
+            {
+                var wallet = PlayerDataService.Instance;
+                long held = wallet ? wallet.GetElementalCrystalsHeld(row.element) : 0;
+                long spent = wallet ? wallet.GetElementalCrystalsSpent(row.element) : 0;
+                crystalsText.text = TemplateText.Fill(crystalsTemplate, "element", ElementName(row).ToUpperInvariant(),
+                                                      "held", held.ToString(), "spent", spent.ToString());
+            }
             if (abilityText) abilityText.text = row.open ? openSlotTitle : entry.AbilityLabel;
             if (descriptionText) descriptionText.text = row.open ? openSlotLine : entry.AbilityDescription;
             if (nowFlower) nowFlower.Set(row.element, row.level);

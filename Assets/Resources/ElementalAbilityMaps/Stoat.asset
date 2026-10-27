@@ -102,3 +102,4 @@ MonoBehaviour:
     UpgradeDescription: 'Every prism laid in MASS MODE arrives SHIELDED. Gated on IsUpgradeActive(Mass),
       replicated, per lay - so every peer lays the same tier
       (StoatModeActionSO.massUpgradeShieldsInMassMode).'
+  omniAbilityLabel: Overclock

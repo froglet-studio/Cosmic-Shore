@@ -16948,3 +16948,24 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 12. **Hangar vibe.** **Pass:** each bar shows nine ticks with one lit.
 13. **Profiler.** With the Codex shown and nothing picked, look in the profiler. **Pass:** no Canvas rebuilds come
     from the Codex grid.
+
+## 🔴 2026-10-27 — Hangar silver + Mass flip + 2D/3D elements + elemental crystals + Omni controls row (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §90.1.
+
+1. **Tests.** Run `PlayerProfileDataTests` and `ElementFlowerTests`. **Pass:** green.
+2. **Silver preview.** Hangar: UPGRADE an element. **Pass:**
+   - the ring, the banner and the flying crystals are silver, not gold;
+   - the button itself is still gold.
+3. **Silver hull.** The 3D vessel's team-colour plates are silver-blue, not gold or jade.
+4. **Mass flip.** **Pass:**
+   - the Mass flower everywhere (Hangar, Codex badge, HUD pips) points the other way from before;
+   - its five petals keep their gaps.
+5. **ABILITIES tab.** **Pass:**
+   - each row shows its crystal (still), left of the keycap;
+   - pressing a row turns its flower one petal with a swell, and the crystal plays once and stops.
+6. **UPGRADES tab.** **Pass:** the line reads "CHARGE CRYSTALS 0 HELD - 0 SPENT" and follows the focused element.
+7. **Cloud data.** Call `PlayerDataService.Instance.AddElementalCrystals(Element.Mass, 3)` from the console or a test,
+   then reopen the Hangar. **Pass:** "3 HELD". Reload the profile from the cloud. **Pass:** still 3.
+8. **Omni row.** Configure any Sparrow card. **Pass:** the controls list ends with "Omni crystal: reloads its missiles"
+   with the Omni icon. A hull with no line reads "Omni crystal: fly into it".
