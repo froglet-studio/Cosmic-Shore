@@ -159,7 +159,7 @@ namespace CosmicShore.Player
                 _window.Close();
                 return;
             }
-            _skybox = new SkyboxPass(_gl);
+            _skybox = new SkyboxPass(_gl, _textures);
             _environment = new EnvironmentLighting(_gl);
             _sceneRenderer.EnvironmentLight = _environment;
             _post = new PostPass(_gl);

@@ -84,6 +84,8 @@ the score said, what the person said, what changed in the mapping.
 | "the camera is inside the wall" | that archetype's camera distance (orbit) or intensity; see LEARNINGS (Joust I3 orbit) |
 | "nothing happens on the hits" | the archetype's `events` (boosts, blasts, converges, herds on `bar` / `strong` / `onset`); never a camera accent |
 | "it jitters / it is not smooth" | the camera is a `mount` or a slow `orbit` (≤ 8 deg/s); `render.accum` 4 at `step_hz` 240 for motion blur; never pulses or shakes |
+| "there is no skybox / it is too austere" | the game's quality preset: `render.prefs` keeps `gfx.Preset` 5 and `gfx.Adaptive` 0 (presets 0-2 bake the sky and cut cytoplasm, the membrane and HDR; adaptive performance lowers the preset on a slow renderer); check `eval RenderSettings.skybox` reads `HyperSeaSkybox` |
+| "the small FX smear into streaks" | `render.accum` 2 (a 90-degree shutter) instead of 4 |
 | "it looks cheap / like a prototype" | `render`: 1080p+, `msaa` 8, `render_scale` 2, `aniso` 16; compare a still with Unity before touching the engine |
 | "too dark / too bright for the music" | `fov` range, or the archetype's `target.brightness` |
 | "I want to see X (a kaiju, a crack drift, a ring joust)" | a new archetype: mode, players, intensity, camera, target; shoot a still of it first with the control port (`mv orbit name:Worm ...`) |

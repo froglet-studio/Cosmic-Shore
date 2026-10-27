@@ -8,7 +8,7 @@ person said, and what changed in `Tools/Build/music_video/mapping.json` (or the 
 
 | Milestone | State | Where |
 |---|---|---|
-| M1: three ~5 s beats over ~15 s of one song | **cuts 1-2 judged by Garrett (prototype look, jitter, camera dances - see below); cut 3 delivered the same day: orchestrated gameplay, 1080p / 60 fps / motion-blurred frames, steady mounts - waiting on Garrett.** Cuts 1-2 (2026-10-27) (SKY FIRE 41.0-56.0 s: build → the drop at 46.37 → drop). Cut 1: Skim Race flyby → Joust chase → Wildlife chase. Cut 2 (closer cameras, bright bars in brighter arenas, the alive-subject rule): Wildlife chase → Joust chase → Skim Race chase. The scorecard prefers cut 2 on five of seven criteria (no dead frames, luminance now follows brightness, less stuck time); motion-vs-energy and motion-vs-onsets are still under their floors in both. | `milestones/M1-sky-fire-41-56/cut1`, `cut2` |
+| M1: three ~5 s beats over ~15 s of one song | **cuts 1-2 judged by Garrett (prototype look, jitter, camera dances - see below); cut 3 judged by Garrett (sky missing, too austere, the Sparrow rounds smeared); cut 4 on the Ultra preset with the procedural sky, Lush ecosystem and a 90-degree shutter is the current cut.** Cuts 1-2 (2026-10-27) (SKY FIRE 41.0-56.0 s: build → the drop at 46.37 → drop). Cut 1: Skim Race flyby → Joust chase → Wildlife chase. Cut 2 (closer cameras, bright bars in brighter arenas, the alive-subject rule): Wildlife chase → Joust chase → Skim Race chase. The scorecard prefers cut 2 on five of seven criteria (no dead frames, luminance now follows brightness, less stuck time); motion-vs-energy and motion-vs-onsets are still under their floors in both. | `milestones/M1-sky-fire-41-56/cut1`, `cut2` |
 | M2: a whole song | not started (same pipeline, `--start 0 --end <duration> --beats <sections>`) | |
 | M3: every song in `Assets/_Audio/Music` | not started | |
 | M4: the skill and tools a cheaper model repeats for a new song | the skill exists (`/music-video`) and ran this cut end to end; it is proven when a session that is not this one makes M2 from it | |
@@ -161,6 +161,51 @@ What cut 3 does instead (all in the mapping's `render` block and the archetypes'
   every shot at frame ~124 / 74 of 322 / 230 after exactly 15:00. `shoot.py` now waits in chunks of
   32 sim frames and reports the frame count; a 5 s shot at 1080p / 2x / 8x MSAA with two players sharing
   four cores takes 20-25 minutes.
+
+### Garrett's feedback on cut 3 and what changed for cut 4 (2026-10-27)
+
+Garrett: *"this is much better but the sparrow's guns have FX that look better than the white stream.
+these shots are too austere. look at what we are capable of with swarms and other cells in the cell
+selector. there is no skybox. these scenes should have all the subtle details of our game and more."*
+
+What was wrong, measured:
+- **"No skybox" was the game's own quality cut, not the engine's sky.** Every scene authors the
+  procedural `HyperSeaSkybox` (stars, galactic band, core, nebulae, the cell overlay), but at runtime
+  `RenderSettings.skybox` read `StaticHyperSeaSkybox`: quality presets Very Low to Medium replace it with
+  a baked panorama (`QualityPresetCuts.asset`, `bakedSky: 1`), and the shoot profile's `prefs.json` was
+  on **`gfx.Preset: 1` (Low)** because adaptive performance (`gfx.Adaptive: 1`, "Balanced" on the F7
+  panel) had lowered it at the software renderer's frame rate. Those presets also cut cytoplasm to a
+  quarter (`cytoplasmDensity 0.25`), cap the membrane's subdivisions at 3 and turn HDR off: the
+  austerity. The Desktop platform profile itself cuts nothing.
+- **The engine could not draw the baked sky** (`SkyboxPass.CanDraw` knew only the procedural shader),
+  so on those presets Amoebius shows the camera's flat navy. Fixed in the engine: `SkyboxPass` now
+  samples `CosmicShore/StaticSkyPanorama` with the shader's own equirectangular mapping (an engine
+  gap every Amoebius player below High was seeing).
+- **The "white stream" is a Sparrow round under a 180-degree shutter.** The round is a bright
+  Fresnel sphere (`SparrowProjectileMaterial`, 0.5/0.7/1.2 HDR blue) with its charge-field arcs (both
+  hand-translated in the engine); four averaged sub-frames at racing speed smear it into a white dash
+  and bloom blows the core out. Cut 4 uses a 90-degree shutter (`accum` 2 of 4) so a round stays a
+  glowing sphere; the material itself was not changed.
+- **Wildlife Liberation at I4 is the richest cell**: 99 brittlestars, sharks and clawfish on one band
+  (I3 had 40). The kaiju still has not spawned in any run (`find Worm` finds only the WormholeView).
+
+What cut 4 does (mapping `render.prefs`, applied by shoot.py to the profile's prefs.json before each
+player starts): **Ultra preset, adaptive performance off, Lush ecosystem, 8x MSAA, full VFX** - the
+settings a player on a strong PC has, which keep the procedural sky, full cytoplasm, the full membrane
+and HDR. `accum` 2. Wildlife at I4.
+
+- **Two players sharing one profile must never have its prefs.json written while they boot.** The first
+  cut-4 shoot wrote the cinematic prefs per shot, while the other shot's player was reading the file;
+  that player booted as a first-time user (no birth year, no consent) and then saved its empty answers
+  over the shared file, so every later player sat at the "Before you fly" prompt forever (the runner's
+  first-run clicks were measured at 1600x900 and missed at 1920x1080). shoot.py now writes prefs ONCE,
+  atomically, before any player starts, and scales the first-run clicks with the window.
+- **The engine's panorama sky is verified**: with `gfx.Preset` 1 the menu renders the baked HyperSea
+  panorama (galactic band, core, stars) behind the lava-lamp cell
+  (`milestones/M1-sky-fire-41-56/engine-panorama-sky-on-low-preset.png`).
+- **`pkill`/`kill` by a pattern that appears in your own command line kills your own shell** (exit 144
+  here, mid-command, with nothing after it run). Stop players with their control port's `quit`, and
+  match a pattern only the player's command line carries (`[c]ontrol-port 478`, bracketed).
 
 ## Log
 

@@ -36,6 +36,12 @@ fixed step (1/240 s for a cut), a beat computed from the song lands on an exact 
 renderer's speed. Nothing is rendered in real time: every sub-frame is drawn at full quality (`--step-hz`,
 `--msaa`, `--render-scale`, `--aniso`, `--size`).
 
+The `render` block also carries the game's own **graphics prefs** for the shoot's profile (`prefs`: Ultra
+preset, adaptive performance off, Lush ecosystem, 8x MSAA, full VFX). Presets below High replace the
+procedural HyperSea skybox with a baked panorama and cut cytoplasm, the membrane and HDR; adaptive
+performance lowers the preset at the software renderer's frame rate. The runner writes them into the
+profile's `prefs.json` before every player starts, so a cut is always shot at the game's best.
+
 ## Why it is shaped this way
 
 - **The real game, not a mock-up.** Every frame is the shipped game's own mode, arena, vessels, AI pilots

@@ -104,21 +104,51 @@ class Player:
         self.log.close()
 
 
+def write_prefs(profile, prefs, log):
+    """Merge the plan's graphics prefs into the profile's prefs.json (what the game's Settings screen writes)."""
+    if not prefs:
+        return
+    base = os.environ.get("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
+    d = os.path.join(base, f"CosmicShore-{profile}")
+    os.makedirs(d, exist_ok=True)
+    path = os.path.join(d, "prefs.json")
+    try:
+        cur = json.load(open(path)) if os.path.exists(path) else {}
+    except Exception:
+        cur = {}
+    changed = {k: v for k, v in prefs.items() if cur.get(k) != v}
+    cur.update(prefs)
+    # Atomic, and only ever BEFORE the players start: a player that reads a half-written prefs.json
+    # boots as a first-time user and then saves its empty answers over everyone's (cut 4's first shoot).
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(cur, f)
+    os.replace(tmp, path)
+    log(f"prefs {path}: set {changed}" if changed else f"prefs {path}: already cinematic")
+
+
 def answer_first_run(p, log):
-    """A fresh profile boots through three prompts; answer them (consent DECLINED)."""
+    """A fresh profile boots through three prompts; answer them (consent DECLINED). The click points
+    were measured at 1600x900 and scale with the window (the canvases scale with it)."""
+    s = p.state()
+    sx, sy = s.get("width", 1600) / 1600.0, s.get("height", 900) / 900.0
+
+    def click(x, y):
+        p.do(f"click {int(x * sx)},{int(y * sy)}")
+
     for _ in range(40):
         s = p.state()
         if s.get("scene") == MENU:
             return
         if "born" in p.find("What year were you born"):
             log("first run: birth year")
-            p.do("click 700,455"); p.wait(5); p.do("type 1990"); p.wait(5); p.do("click 695,526"); p.wait(40)
+            click(700, 455); p.wait(5); p.do("type 1990"); p.wait(5); click(695, 526); p.wait(40)
         elif "improve" in p.find("Help us improve"):
             log("first run: declining data collection")
-            p.do("click 730,579"); p.wait(40)
+            click(730, 579); p.wait(40)
         elif "call you" in p.find("What should we call you"):
             log("first run: pilot name")
-            p.do("click 800,357"); p.wait(5); p.do("type Director"); p.wait(5); p.do("click 652,556"); p.wait(60)
+            click(800, 357); p.wait(5); p.do("type Director"); p.wait(5); click(652, 556); p.wait(60)
         else:
             p.wait(30)
 
@@ -229,6 +259,7 @@ def main(argv=None):
     out = a.out or os.path.join(os.path.dirname(os.path.abspath(a.plan)), "frames")
     os.makedirs(out, exist_ok=True)
     shots = [s for s in plan["shots"] if not a.only or s["name"] in a.only]
+    write_prefs(a.profile, plan.get("render", {}).get("prefs"), lambda m: print(m, flush=True))
     results = []
     with ThreadPoolExecutor(max_workers=a.jobs) as ex:
         futures = [ex.submit(shoot_one, s, plan, out, a.port + i, a.profile, a.player) for i, s in enumerate(shots)]
