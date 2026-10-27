@@ -1015,6 +1015,7 @@ namespace CosmicShore.Gameplay
             // resetting here is what stops it resetting THIS life's culling envelope.
             _lastSuperShieldJiggleTime = float.NegativeInfinity;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
+            _carried = false;   // (and no parcel holds a pooled prism)
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
             IsLargest = false;
@@ -1460,12 +1461,40 @@ namespace CosmicShore.Gameplay
                 _colliderBeforeLodCull = blockCollider.enabled;
                 blockCollider.enabled = false;
             }
-            else if (!destroyed && _colliderBeforeLodCull)
+            else if (!destroyed && !_carried && _colliderBeforeLodCull)
             {
                 blockCollider.enabled = true;
             }
             _lodCulled = culled;
         }
+
+        bool _carried;
+        bool _colliderBeforeCarry;
+
+        /// <summary>
+        /// A payload parcel is riding a vessel (<see cref="PayloadCarrier"/>,
+        /// Docs/Pilots/ARTIFACTS.md §2): the prism keeps its mass, its domain and its place in the
+        /// spatial index, but its collider is held off so the hull carrying it never strikes its own
+        /// cargo. The LOD manager's restore respects the hold. Clear it before the prism goes back to
+        /// a pool.
+        /// </summary>
+        public void SetCarried(bool carried)
+        {
+            if (_carried == carried || !blockCollider) { _carried = carried; return; }
+            if (carried)
+            {
+                _colliderBeforeCarry = blockCollider.enabled;
+                blockCollider.enabled = false;
+            }
+            else if (!destroyed && !_lodCulled && _colliderBeforeCarry)
+            {
+                blockCollider.enabled = true;
+            }
+            _carried = carried;
+        }
+
+        /// <summary>True while a payload parcel holds this prism (<see cref="SetCarried"/>).</summary>
+        public bool IsCarried => _carried;
 
         /// <summary>True while this prism's collider is enabled (LOD telemetry).</summary>
         public bool ColliderEnabled => blockCollider && blockCollider.enabled;

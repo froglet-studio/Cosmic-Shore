@@ -1,7 +1,17 @@
 # Artifacts and the payload: what a squad fights over
 
-**Status: THE ARTIFACT CONCEPT** (Garrett, 2026-10-27, rev 2). Design only: no payload or artifact code exists on
-`bleeding-edge`. It is the partner of the pilot concept, [`CALLSIGNS.md`](CALLSIGNS.md).
+**Status: THE ARTIFACT CONCEPT** (Garrett, 2026-10-27, rev 2). It is the partner of the pilot concept,
+[`CALLSIGNS.md`](CALLSIGNS.md).
+
+**Built so far (`claude/squad-payload-pilots-artifacts`, 2026-10-27, unverified in the editor):** the plain payload
+(§9 step 1) in the Wander toy's "With Ark". `ArkHold` (`Assets/_Scripts/Controller/Payload/`) hands out six real hull
+prisms per payload (`Ark.TakeHullPrisms`, never the last dozen); `PayloadCarrier`, ensured on every vessel by
+`VesselController.Initialize`, takes and releases it on `InputEvents.PayloadAction` (RB / E); the burst runs
+`PayloadPrismEffectSO`s from `Resources/PayloadConfig` (written by `Tools/Build/author_payload_assets.py`), and the
+plain one, `PayloadCrackPrismEffectSO`, shares `SuperShieldCrack` with the Grizzly sniper. Hand tests:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The plain payload on RB". **Squad = domain** for now: a vessel takes payloads
+only from its own domain's Ark. The Ark is the local toy's, so the hold arbitrates on the machine that holds it; a
+networked Ark (the voyage, §8.5) makes the hold a server object.
 
 **Decided since (Garrett, 2026-10-27):** one Ark per squad of three vessels; an Ark felled by fauna spills its
 artifacts for anyone, and uncollected ones are lost when the instance expires; the RB abilities moved to Y, so RB is
