@@ -1,0 +1,334 @@
+{
+ "song": "/home/user/Cosmic-Shore/Assets/_Audio/Music/SKY FIRE.ogg",
+ "song_name": "SKY FIRE.ogg",
+ "tempo": 123.05,
+ "segment": {
+  "start": 41.0,
+  "end": 56.0
+ },
+ "fps": 60,
+ "render": {
+  "fps": 60,
+  "step_hz": 240,
+  "accum": 2,
+  "size": "1920x1080",
+  "msaa": 8,
+  "render_scale": 2.0,
+  "aniso": 16,
+  "_why": "Nothing is real time: every sub-frame is drawn at 2x supersampling with 8x MSAA, and four 240 Hz sub-frames are averaged in linear light into each 60 fps output frame (a 180-degree shutter), so motion is smooth and blurred the way a camera sees it.",
+  "_shutter": "accum 2 of every 4 sub-frames = a 90-degree shutter: smooth, but a Sparrow round stays a glowing sphere instead of smearing into a white dash (Garrett, cut 3).",
+  "prefs": {
+   "gfx.Preset": 5,
+   "gfx.BasePreset": 5,
+   "gfx.Adaptive": 0,
+   "gfx.Ecosystem": 2,
+   "gfx.AA": 5,
+   "gfx.Vfx": 100,
+   "gfx.Physics": 1,
+   "gfx.RenderScale": 100,
+   "gfx.Upscale": 0,
+   "gfx.Texture": 0,
+   "gfx.Initialized": 1
+  },
+  "_prefs_why": "The game's own graphics settings for the shoot's profile (prefs.json): Ultra preset (presets 0-2 replace the HyperSea skybox with a baked panorama the engine cannot draw, cut cytoplasm to a quarter and cap the membrane), adaptive performance OFF (it had dropped the preset to Low at the software renderer's frame rate), Lush ecosystem, 8x MSAA, full VFX."
+ },
+ "mapping": "Tools/Build/music_video/mapping.json",
+ "shots": [
+  {
+   "name": "01-wildlife-cage-mount",
+   "t0": 41.0,
+   "t1": 46.37,
+   "frames": 1289,
+   "every": 4,
+   "accum": 2,
+   "mode": "WildlifeLiberation",
+   "players": 4,
+   "intensity": 4,
+   "settle_frames": 2400,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 65",
+    "mv mount local 30 10 9 45 1.5"
+   ],
+   "events": [
+    {
+     "t": 41.0,
+     "cmd": "herd 0,1,0 140",
+     "why": "start"
+    },
+    {
+     "t": 42.516,
+     "cmd": "herd 0,1,0 140",
+     "why": "bar"
+    },
+    {
+     "t": 44.466,
+     "cmd": "herd 1,0,0 140",
+     "why": "bar"
+    }
+   ],
+   "features": {
+    "energy": 0.36,
+    "peak": 0.995,
+    "brightness": 0.772,
+    "flatness": 0.616,
+    "bass": 0.493,
+    "onset_density": 0.552,
+    "trend": -0.372,
+    "section": "build",
+    "position": 0.146
+   },
+   "archetype": "wildlife-cage-mount",
+   "what": "Inside the Wildlife Liberation cage, mounted beside the pilot's Sparrow: the 99-strong brittlestar swarm (I4: the richest cage, with sharks and clawfish) herded across the frame in a new direction every bar, cage prisms bursting on the downbeats.",
+   "why": "closest target (distance 0.26); led by energy=0.36, bass=0.493, onset_density=0.552"
+  },
+  {
+   "name": "02-joust-melee",
+   "t0": 46.37,
+   "t1": 50.202,
+   "frames": 920,
+   "every": 4,
+   "accum": 2,
+   "mode": "Joust",
+   "players": 12,
+   "intensity": 3,
+   "settle_frames": 1680,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 64",
+    "mv mount local 28 10 10 50 2"
+   ],
+   "events": [
+    {
+     "t": 46.37,
+     "cmd": "converge ai0 ai1",
+     "why": "start"
+    },
+    {
+     "t": 46.37,
+     "cmd": "aim ai2 local",
+     "why": "start"
+    },
+    {
+     "t": 46.37,
+     "cmd": "aim ai3 local",
+     "why": "start"
+    },
+    {
+     "t": 46.37,
+     "cmd": "blast local 8 40",
+     "why": "bar"
+    },
+    {
+     "t": 47.81,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 48.274,
+     "cmd": "blast local 8 40",
+     "why": "bar"
+    },
+    {
+     "t": 48.274,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 48.286,
+     "cmd": "converge ai2 ai3",
+     "why": "half"
+    },
+    {
+     "t": 48.286,
+     "cmd": "aim ai0 local",
+     "why": "half"
+    },
+    {
+     "t": 48.762,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 49.249,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 50.202,
+     "cmd": "blast local 8 40",
+     "why": "bar"
+    },
+    {
+     "t": 50.202,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "strong"
+    }
+   ],
+   "features": {
+    "energy": 0.643,
+    "peak": 1.0,
+    "brightness": 0.705,
+    "flatness": 0.284,
+    "bass": 0.919,
+    "onset_density": 0.829,
+    "trend": 0.003,
+    "section": "drop",
+    "position": 0.161
+   },
+   "archetype": "joust-melee",
+   "what": "The Joust cavern from a mount beside the pilot: the AI jousters sent at the pilot and at each other so passes cross the frame on the bars, crystal bursting around the pilot on every downbeat, boosts on the strong beats. The drop.",
+   "why": "closest target (distance 0.27); led by energy=0.643, bass=0.919, brightness=0.705"
+  },
+  {
+   "name": "03-skim-race-mount",
+   "t0": 50.202,
+   "t1": 56.0,
+   "frames": 1392,
+   "every": 4,
+   "accum": 2,
+   "mode": "SkimRace",
+   "players": 4,
+   "intensity": 3,
+   "settle_frames": 1200,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 63",
+    "mv mount local 26 9 10 45 2"
+   ],
+   "events": [
+    {
+     "t": 50.689,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 50.689,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 50.805,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 51.038,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 51.641,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 51.641,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 52.106,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 52.129,
+     "cmd": "action local FullSpeedStraightAction 40",
+     "why": "bar"
+    },
+    {
+     "t": 52.129,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 52.616,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 54.033,
+     "cmd": "action local FullSpeedStraightAction 40",
+     "why": "bar"
+    },
+    {
+     "t": 54.033,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 54.52,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 54.52,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 55.124,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 55.24,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 55.472,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 55.844,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    },
+    {
+     "t": 55.96,
+     "cmd": "action local FullSpeedStraightAction 40",
+     "why": "bar"
+    },
+    {
+     "t": 55.96,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 55.96,
+     "cmd": "blast local 4 25",
+     "why": "onset"
+    }
+   ],
+   "features": {
+    "energy": 0.639,
+    "peak": 1.0,
+    "brightness": 0.589,
+    "flatness": 0.303,
+    "bass": 0.824,
+    "onset_density": 0.877,
+    "trend": 0.271,
+    "section": "drop",
+    "position": 0.177
+   },
+   "archetype": "skim-race-mount",
+   "what": "The pilot's own Squirrel on the Skim Race rails from a steady mount behind and beside it: the rail flashing under, rings ahead, the pack's wakes around. Boosts land on the downbeats; the prisms around it burst on hard hits.",
+   "why": "closest target (distance 0.29); led by onset_density=0.877, bass=0.824, brightness=0.589"
+  }
+ ]
+}
