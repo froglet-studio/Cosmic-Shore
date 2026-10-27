@@ -1,24 +1,48 @@
-# Ark (mothership) - model dossier
+# Ark (mothership): model dossier
 
-Built 2026-10-27 by `/vessel-model` from `Tools/Build/vessel_model/specs/ark.py` (Garrett asked for it the same day). It's a new hull with no artist file. No prefab draws it yet.
-Contact sheet: `Ark_sheet.png`.
+Built 2026-10-27 by `/vessel-model` from `Tools/Build/vessel_model/specs/ark.py`, at Garrett's request.
+Round 2 (the same day) rebuilt it at true scale and added detail. It's a new hull with no artist file, and no prefab draws it yet.
 
-**Superstructure:** one valve of a scallop shell. Eight crowned rib plates (`shell.0`-`shell.7`) fan out from a hinge hub (`hub`), with a constant 5.4-unit groove between neighbours. Under them sits a lens core (`hull`), which has a domain waist band and a bridge window at the prow. Behind the hinge are three floating engine nacelles (`engine.L/C/R`). It is a hovering assembly: `assembly_report.py --floating shell.*,hub,omni.ring,omni,payload,engine.*` passes.
+- `Ark_sheet.png`: the contact sheet (whole-ship views, the four element shapes, the poses).
+- `Ark_closeups.jpg`: close-ups as a passing vessel sees them (bridge, lip, aft, underside, flank). The coloured prisms in these renders are *previews* placed at the socket bones. They are not part of the model: gold is supershielded, white shielded, blue plain, red danger.
 
-**Prism sockets (the ark's health):** each socket has one bone, named `socket.<tier>.<nn>`. The bone's head is at the socketed prism's centre, its tail runs along the prism's length, and its Z (roll) is the surface's up. Spawn a prism at the bone, scaled to 3 x 1.5 x 7 (across x up x along). Its top then lies flush with the rib edges. Each cradle is a U channel with an Engine-slot regen emitter in its floor. The cradle is skinned to its own socket bone, so Unity keeps the bone.
+## Scale
+**196 units from nose to jets**: half a standard nucleus radius (392; `Nucleus.prefab` at scale 400). The nose is the core's rim, just past the shell's lip, and the lance's head reaches the same line. Overall it is 232 wide and 81 tall, about 18 Squirrels long. 97k tris.
 
-| tier | where | count |
+## What it is
+| Part | Bone | What it is |
 |---|---|---|
-| supershielded | innermost groove sockets, nearest the omni crystal | 7 |
-| shielded | middle groove sockets | 6 |
-| prism | outer groove sockets | 6 |
-| danger | along the lip, one per plate | 8 |
+| Shell | `shell.0`-`shell.7` | One scallop valve. Eight crowned rib plates with three riblets each, split into three shingled armour tiles (the scallop's growth rings). Each tile carries sunken panels. Domain colour runs along the lip band and down the crown of the outer tiles, with running lights at the lip corners. The plates float with a constant 8.4-unit groove between neighbours. |
+| Bridge dome | `umbo` | The smooth dome where every rib converges, carrying the **cockpit windshield**: seven panes with mullions, a domain brow and sill. It also has hull panels on its crown, portholes round its flanks, a domain rim, and a sensor mast with a beacon and a dish. |
+| Hangar wings | `auricle.L` / `.R` | The scallop's ears: ribbed flanges with a lit hangar mouth (Window) on each outer end, a manoeuvring thruster aft and a comm mast. |
+| Core | `hull` | A lens hull under the plates. Its rim wall carries a domain band, a row of portholes and an observation gallery at the prow. Underneath are ventral panels, a domain ring, running lights and two sensor domes. |
+| Keel | `keel` | A ventral fin floating under the core, with a domain stripe and running lights. |
+| Engines | `engine.L/C/R` | Three floating nacelles: intake lips, domain bands, six cooling fins, and glowing bells with inner cones. |
+| Omni reactor | `omni.ring`, `omni` | The dormant omni crystal (Window = inactive glass) floating in a gimballed cage over the engines. The cage has two rings, four containment pylons and a glowing collar. Swap the crystal's material to activate it. |
+| Payload | `payload`, `payload.dock` | A lance lying in the centre groove, hovering 1.4 units over three cradles that have regen pads. Its glowing head reaches the nose. |
 
-**Omni crystal:** a faceted bipyramid (`omni`) in the Window slot, which reads as dormant glass. It floats inside a gimballed ring (`omni.ring`) above the hub. To activate it, swap its material.
+It is a hovering assembly: `assembly_report.py --floating shell.0..7,umbo,auricle.L,auricle.R,omni.ring,omni,payload,engine.L,engine.C,engine.R,keel` passes.
 
-**Payload:** a spear (`payload`) lying in the centre groove on two forked clamps (`payload.dock`, with regen emitters). The spear's head reaches past the lip. When the spear is taken, regrow it at `payload` relative to `payload.dock`.
+## Prism sockets (the ark's health)
+Each socket has one bone, named `socket.<tier>.<nn>`. The bone's head is at the socketed prism's centre, its tail runs along the prism's length, and its Z (roll) is the surface's up. To regenerate a prism, spawn it at the bone scaled to **4 x 1.6 x 9** (across x up x along). Its top then lies flush with the rib edges.
 
-**Shapes:** Charge stretches the spear and swells the crystal. Mass bulks out the core and plates. Space fans the shell wider. Time stretches the engines. The shapes do not move the socket bones.
-**Takes:** `rest`, `clap` (the lip lifts about the hinge), `release` (the spear slides forward 14 units).
+Each cradle is a U channel: a floor, domain side rails, end stops, two Engine-slot regen pads and a pedestal. The cradle is skinned to its socket bone, so Unity keeps the bone.
 
-Size: 127 x 100 x 38 (Blender metres). 27k tris.
+| Tier | Where | Count |
+|---|---|---|
+| supershielded | the two innermost groove rows, nearest the bridge | 14 |
+| shielded | the two middle rows | 12 |
+| prism | the two outer rows | 12 |
+| danger | on the core's margin below the lip, two per plate | 16 |
+
+The payload regrows at the `payload` bone's rest position relative to `payload.dock`.
+
+## Shapes and takes
+- **Charge:** the lance lengthens and the crystal swells.
+- **Mass:** the belly deepens (the keel rides it) and the nacelles fatten.
+- **Space:** the hangar wings slide outward and the masts telescope.
+- **Time:** the nacelles stretch back.
+
+No shape moves a plate, a cradle or a socket bone, so a prism spawned on a socket always sits in its cradle.
+
+**Takes:** `rest`, `clap` (the shell lifts its lip 10 degrees about the hinge), `release` (the lance slides 20 units forward out of its cradles).
