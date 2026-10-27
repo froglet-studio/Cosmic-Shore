@@ -16799,3 +16799,17 @@ configs, 0 errors, negative control fired), `author_intro_cameras.py --check` an
 4. Play Tandava. **Pass:** the old orbit, no bars, no captions.
 5. If intros fly too close or too far in most arenas, change `scaleMultiplier` on the library asset (through the
    generator) and note the value here.
+
+## Squirrel drift: subtle slip-angle rumble, a slide that glides home (2026-10-27)
+
+**Files:** `DriftAudioController.cs` (rumble strength = slip angle, same mapping as the loop volume, 0 to
+`driftHapticMax01` 0.3), `CameraFeel.cs` + `CameraFeelConfigSO.cs` + `Resources/CameraFeelConfig.asset`
+(`driftSlideIn` 3/s, `driftSlideOut` 1.2/s; camera `driftRumble` 0.5 -> 0.15). Verified offline: reference
+compile (player and editor, 0 errors), `CameraFeelTests` 31/31 on prisma_edit_mode_tests. No Unity CLI in session.
+
+1. Fly the Squirrel with a pad and chain drifts. **Pass:** the rumble is faint on a shallow drift and grows with
+   the slip angle, never louder than a light texture; the press/let-go kicks still land.
+2. Let go of a deep drift. **Pass:** the hull glides back to centre over about a second, no snap, no swing past
+   centre; a fresh drift started mid-return blends in without a jolt.
+3. If the return feels lazy, raise `driftSlideOut` on `CameraFeelConfig`; if the rumble is too faint, raise
+   `driftHapticMax01` on the Squirrel prefab's `DriftAudioController`.
