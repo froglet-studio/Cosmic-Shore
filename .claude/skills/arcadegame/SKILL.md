@@ -192,6 +192,25 @@ flying still heads for its next target (the studio's idle takeover, `/vessel-stu
 human seat with no input simply flies straight, so a mode that can leave a seat unattended needs an AI
 backfill, not a drifting hull).
 
+Serpent Time (2026-10-27, `claude/dazzling-ride-dpyvkx`, `SERPENTTIME.md`) taught three more:
+- **Mode-laid prism mass is laid on EVERY peer from a seed the course gives.** A Seed Wall assembles from each
+  peer's own prisms, so debris laid on the server alone would not exist where the wall is built. Seed each gate
+  from its index and broadcast position (`SerpentTimeController.DebrisSeed`). Lay the first cohort with
+  `PrismTrailBuilder.LayOne(..., watchForReveal: true)` behind the connecting panel. Anything regrown mid-race takes
+  `watchForReveal: false` and `CompletesAsLiveRibbon = true`, or the arena-ready gate can never all-clear. Then
+  MEASURE the shell against the other gates on the real circuits: uncapped, a 120 u debris band reached into a
+  neighbour's rings on I2 and I3.
+- **A field of the mode's OWN controller enters a committed scene through the generator**, not by hand:
+  `hull_time_race.author(new_field_lines=...)` appends it to the authored controller block with a one-shot migration
+  that stands down once applied. Watch `--check` name the scene before the write.
+- **Standing several rings at one gate keeps the course's ring**, hidden (`RaceGateRing.SetVisualHidden`): the
+  objective arrow, the race toasts and the AI's commit all read it. The mode answers `ThreadsGate` and
+  `ChooseAIGate` (`GateRaceController`), and the cluster's centre lies OUTSIDE every ring of a 3-ring cluster, so an
+  AI left on the course's ring never threads.
+- `check_generated_assets.py` reports the Input System's default UI actions (guid `ca9f5fa9…`) on every arena scene
+  cloned this session: a package ASSET, which its "not judged" rule (package SCRIPTS only) does not cover. The shipped
+  Thresher Time and Headlong scenes carry the same 11 references.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

@@ -1068,6 +1068,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: CrewOfFourLab.html `STYLES`, `styleBoostStep`, `dockStep`, `seekLock`; .claude/skills/vessel-studio/copy_orca.py; CREW_OF_FOUR_LAB.md round 9.
 - Promoted: no
 
+### L-STU-155 — An AI's dirty object laid ON a rival traps the rival bouncing in place; lay it behind you and route the AI round walls
+- Lab: Serpent Studio (`Docs/Studios/VesselStudio/serpent.html`) · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: round 1's first AI cloaked with the seed at its own hull. A rival right behind flew into the super-shielded seed and bounced against it for seconds, and the first scorecard read that as walls being wildly strong.
+- Do instead: put the dropped object where the vessel really leaves it (the seed is the latest trail prism, behind the hull) and give every AI a wall-avoidance route before scoring what walls are worth.
+- Evidence: `serpent.html` round 1, `SERPENT_TIME.md` §6 (a).
+- Promoted: no
+
+### L-STU-156 — A sniper AI that waits for a perfect aim never fires; fire inside half the cone, ease the throttle, back off for range
+- Lab: Serpent Studio · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: lining up from 280 u for a 0.35° aim, the sniper AI never fired; the stick mix never settles that fine.
+- Do instead: fire when the believed target sits inside half the cone at that distance, lift the throttle while lining up, and back away when too close. The game's port fires when the wall's centre is inside the rifle's own cone (radius floored at 6 u), after the scope has settled.
+- Evidence: `serpent.html` `aiInput`; `SerpentTimeController.OnTarget`.
+- Promoted: no
+
+### L-STU-157 — An InstancedMesh needs its instance colour attribute before its first render, or it draws white forever (three r128)
+- Lab: Serpent Studio · Branch: `claude/dazzling-ride-dpyvkx` · By: session_01SKKUAZrhM8TgJTtAjpUV9v · Date: 2026-10-27
+- What happened: every wall brick drew white. The colour buffer was created by the first `setColorAt` call, after the mesh had already rendered once, and r128 never rebinds it.
+- Do instead: call `setColorAt(0, …)` (and set `count`) when the mesh is created, before the first frame.
+- Evidence: `serpent.html` (`prismMesh.setColorAt(0, DEBRIS)` at creation).
+- Promoted: no
+
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
 
 ### L-ECO-1 — A viewer "too austere to judge" stalls a lab; a shared viewer standard fixed it
