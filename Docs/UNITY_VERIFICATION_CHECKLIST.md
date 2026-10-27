@@ -21504,6 +21504,15 @@ No Unity editor in the session. Verified offline only: reference compile (player
 4. 3v1. **Pass:** versus, the lone pilot's column shows one row.
 5. PLAY AGAIN / MAIN MENU, the rematch faces and the reward strip count-up all still work and nothing overlaps the columns.
 
+- [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
+- [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
+
+## 🔴 2026-10-26 — Time crystal: no sound through a muted SFX setting (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/sparrow-crystal-sound-bug-bnocj6`) (unverified: no Unity CLI in the session)
+
+`CrystalTime.prefab` lost its two bare `StudioEventEmitter`s ("Creature colide" on TriggerEnter and ObjectDestroy).
+
+- [ ] Open the prefab: no missing-script or broken component on its root.
+- [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
 ## Rev 24 Hangar, element flowers on the arcade cards, the AI difficulty row on every card, the now-playing card gone (2026-10-26, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 No Unity editor in the session. Verified offline only: reference compile (player and editor), Amoebius builds,
