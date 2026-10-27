@@ -1,0 +1,233 @@
+{
+ "song": "/home/user/Cosmic-Shore/Assets/_Audio/Music/SKY FIRE.ogg",
+ "song_name": "SKY FIRE.ogg",
+ "tempo": 123.05,
+ "segment": {
+  "start": 41.0,
+  "end": 56.0
+ },
+ "fps": 30,
+ "mapping": "Tools/Build/music_video/mapping.json",
+ "shots": [
+  {
+   "name": "01-skim-race-flyby",
+   "t0": 41.0,
+   "t1": 46.37,
+   "frames": 322,
+   "mode": "SkimRace",
+   "players": 4,
+   "intensity": 2,
+   "settle_frames": 300,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 69",
+    "mv flyby ai1 22 160 10 322"
+   ],
+   "accents": [
+    {
+     "t": 42.516,
+     "cmd": "pulse 4.1 8",
+     "why": "downbeat"
+    },
+    {
+     "t": 44.466,
+     "cmd": "pulse 1.9 8",
+     "why": "downbeat"
+    }
+   ],
+   "features": {
+    "energy": 0.36,
+    "peak": 0.995,
+    "brightness": 0.772,
+    "flatness": 0.616,
+    "bass": 0.493,
+    "onset_density": 0.552,
+    "trend": -0.372,
+    "section": "build",
+    "position": 0.146
+   },
+   "archetype": "skim-race-flyby",
+   "what": "The pack of racers passing the camera on the rails with their wakes: a fixed vantage the race sweeps through. For a bar that lifts.",
+   "why": "closest target (distance 0.23); led by energy=0.36, flatness=0.616, brightness=0.772"
+  },
+  {
+   "name": "02-joust-melee",
+   "t0": 46.37,
+   "t1": 50.202,
+   "frames": 230,
+   "mode": "Joust",
+   "players": 12,
+   "intensity": 3,
+   "settle_frames": 420,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 68",
+    "mv chase ai0 34 9 40 6"
+   ],
+   "accents": [
+    {
+     "t": 46.37,
+     "cmd": "pulse 1.1 8",
+     "why": "downbeat"
+    },
+    {
+     "t": 46.858,
+     "cmd": "pulse 0.5 5",
+     "why": "beat"
+    },
+    {
+     "t": 47.322,
+     "cmd": "pulse 0.5 5",
+     "why": "beat"
+    },
+    {
+     "t": 47.81,
+     "cmd": "pulse 0.7 5",
+     "why": "beat"
+    },
+    {
+     "t": 48.274,
+     "cmd": "pulse 3.5 8",
+     "why": "downbeat"
+    },
+    {
+     "t": 48.762,
+     "cmd": "pulse 1.1 5",
+     "why": "beat"
+    },
+    {
+     "t": 49.249,
+     "cmd": "pulse 0.9 5",
+     "why": "beat"
+    },
+    {
+     "t": 49.737,
+     "cmd": "pulse 0.6 5",
+     "why": "beat"
+    },
+    {
+     "t": 50.202,
+     "cmd": "pulse 3.5 8",
+     "why": "downbeat"
+    }
+   ],
+   "features": {
+    "energy": 0.643,
+    "peak": 1.0,
+    "brightness": 0.705,
+    "flatness": 0.284,
+    "bass": 0.919,
+    "onset_density": 0.829,
+    "trend": 0.003,
+    "section": "drop",
+    "position": 0.161
+   },
+   "archetype": "joust-melee",
+   "what": "Twelve vessels jousting in one arena of crystal: ride one jouster through the melee, magenta and cyan wakes crossing the cavern. The drop. (An orbit wider than ~40 u sits inside the prism mass at I3+, so the drop rides a hull.)",
+   "why": "closest target (distance 0.26); led by energy=0.643, bass=0.919, brightness=0.705"
+  },
+  {
+   "name": "03-wildlife-cage-chase",
+   "t0": 50.202,
+   "t1": 56.0,
+   "frames": 348,
+   "mode": "WildlifeLiberation",
+   "players": 4,
+   "intensity": 3,
+   "settle_frames": 600,
+   "setup": [
+    "mv hud off",
+    "mv autopilot on"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 65",
+    "mv chase local 30 8 35 5"
+   ],
+   "accents": [
+    {
+     "t": 50.689,
+     "cmd": "pulse 1.0 5",
+     "why": "beat"
+    },
+    {
+     "t": 51.177,
+     "cmd": "pulse 0.4 5",
+     "why": "beat"
+    },
+    {
+     "t": 51.641,
+     "cmd": "pulse 1.0 5",
+     "why": "beat"
+    },
+    {
+     "t": 52.129,
+     "cmd": "pulse 2.8 8",
+     "why": "downbeat"
+    },
+    {
+     "t": 52.616,
+     "cmd": "pulse 0.8 5",
+     "why": "beat"
+    },
+    {
+     "t": 53.081,
+     "cmd": "pulse 0.6 5",
+     "why": "beat"
+    },
+    {
+     "t": 53.568,
+     "cmd": "pulse 0.7 5",
+     "why": "beat"
+    },
+    {
+     "t": 54.033,
+     "cmd": "pulse 3.3 8",
+     "why": "downbeat"
+    },
+    {
+     "t": 54.52,
+     "cmd": "pulse 1.0 5",
+     "why": "beat"
+    },
+    {
+     "t": 55.008,
+     "cmd": "pulse 0.6 5",
+     "why": "beat"
+    },
+    {
+     "t": 55.472,
+     "cmd": "pulse 0.9 5",
+     "why": "beat"
+    },
+    {
+     "t": 55.96,
+     "cmd": "pulse 3.5 8",
+     "why": "downbeat"
+    }
+   ],
+   "features": {
+    "energy": 0.639,
+    "peak": 1.0,
+    "brightness": 0.589,
+    "flatness": 0.303,
+    "bass": 0.824,
+    "onset_density": 0.877,
+    "trend": 0.271,
+    "section": "drop",
+    "position": 0.177
+   },
+   "archetype": "wildlife-cage-chase",
+   "what": "Chasing a vessel through the cage's shells, prisms whipping past on every side. Dense, claustrophobic drive.",
+   "why": "closest target (distance 0.34); led by onset_density=0.877, brightness=0.589, energy=0.639"
+  }
+ ]
+}

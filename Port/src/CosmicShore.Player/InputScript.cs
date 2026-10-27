@@ -176,6 +176,7 @@ namespace CosmicShore.Player
                     case "netfault": Console.WriteLine(CosmicShore.Engine.Networking.NetFaults.Apply(arg)); break;
                     case "domain": Inspector.Domain(arg.Trim()); break;
                     case "arcade": Inspector.Arcade(arg.Trim()); break;
+                    case "mv": MusicVideoDirector.Command(arg.Trim()); break;
                     case "score": Inspector.Score(arg.Trim()); break;
                     case "stage": Inspector.Stage(float.Parse(arg.Trim(), CultureInfo.InvariantCulture)); break;
                     case "animators":

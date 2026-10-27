@@ -1,0 +1,154 @@
+{
+ "_about": "The music -> gameplay mapping the composer reads. Every number here is a decision somebody can change after watching a cut; LEARNINGS.md says why each one is what it is. Features are normalised against the SONG (0..1), not the segment, so a quiet song's loudest bar still reads as its drop.",
+ "feature_weights": {
+  "energy": 1.0,
+  "onset_density": 0.8,
+  "bass": 0.6,
+  "brightness": 0.5,
+  "flatness": 0.3
+ },
+ "diversity_penalty": 0.6,
+ "same_mode_penalty": 0.9,
+ "intensity_by_energy": [
+  0.3,
+  0.55,
+  0.8
+ ],
+ "fov": {
+  "min": 52,
+  "max": 74
+ },
+ "accents": {
+  "downbeat_pulse": {
+   "min_energy": 0.35,
+   "amount_per_strength": 5.0,
+   "frames": 8
+  },
+  "beat_pulse": {
+   "min_energy": 0.6,
+   "amount_per_strength": 2.0,
+   "frames": 5
+  },
+  "onset_shake": {
+   "min_energy": 0.7,
+   "min_onset": 0.75,
+   "amount": 1.2,
+   "frames": 6
+  }
+ },
+ "archetypes": [
+  {
+   "name": "skim-race-chase",
+   "what": "A Squirrel on the Skim Race rails from just behind: speed, the rail flashing past, rings ahead. The driving, forward-motion beat.",
+   "mode": "SkimRace",
+   "players": 4,
+   "target": {
+    "energy": 0.6,
+    "onset_density": 0.7,
+    "bass": 0.6,
+    "brightness": 0.6,
+    "flatness": 0.3
+   },
+   "camera": [
+    "mv camera main",
+    "mv chase ai0 38 10 40 5"
+   ],
+   "settle_frames": 300,
+   "tempo_scales": []
+  },
+  {
+   "name": "skim-race-flyby",
+   "what": "The pack of racers passing the camera on the rails with their wakes: a fixed vantage the race sweeps through. For a bar that lifts.",
+   "mode": "SkimRace",
+   "players": 4,
+   "target": {
+    "energy": 0.5,
+    "onset_density": 0.55,
+    "bass": 0.5,
+    "brightness": 0.7,
+    "flatness": 0.3
+   },
+   "camera": [
+    "mv camera main",
+    "mv flyby ai1 22 160 10 {shot_frames}"
+   ],
+   "settle_frames": 300
+  },
+  {
+   "name": "wildlife-cage-wide",
+   "what": "The Wildlife Liberation cage from inside, the fleet threading its lattice with brittlestar swarms around it: texture and breath. For a breakdown or a held bar.",
+   "mode": "WildlifeLiberation",
+   "players": 4,
+   "intensity": 3,
+   "target": {
+    "energy": 0.3,
+    "onset_density": 0.25,
+    "bass": 0.35,
+    "brightness": 0.4,
+    "flatness": 0.6
+   },
+   "camera": [
+    "mv camera main",
+    "mv orbit local 110 35 {slow_degps}"
+   ],
+   "settle_frames": 600
+  },
+  {
+   "name": "wildlife-cage-chase",
+   "what": "Chasing a vessel through the cage's shells, prisms whipping past on every side. Dense, claustrophobic drive.",
+   "mode": "WildlifeLiberation",
+   "players": 4,
+   "intensity": 3,
+   "target": {
+    "energy": 0.55,
+    "onset_density": 0.6,
+    "bass": 0.7,
+    "brightness": 0.35,
+    "flatness": 0.5
+   },
+   "camera": [
+    "mv camera main",
+    "mv chase local 30 8 35 5"
+   ],
+   "settle_frames": 600
+  },
+  {
+   "name": "joust-melee",
+   "what": "Twelve vessels jousting in one arena of crystal: ride one jouster through the melee, magenta and cyan wakes crossing the cavern. The drop. (An orbit wider than ~40 u sits inside the prism mass at I3+, so the drop rides a hull.)",
+   "mode": "Joust",
+   "players": 12,
+   "target": {
+    "energy": 0.85,
+    "onset_density": 0.8,
+    "bass": 0.75,
+    "brightness": 0.6,
+    "flatness": 0.3
+   },
+   "camera": [
+    "mv camera main",
+    "mv chase ai0 34 9 40 6"
+   ],
+   "settle_frames": 420,
+   "intensity": 3
+  },
+  {
+   "name": "joust-orbit",
+   "what": "A tight orbit on one jouster inside the crystal cavern (close enough to stay in the open air around it).",
+   "mode": "Joust",
+   "players": 12,
+   "target": {
+    "energy": 0.8,
+    "onset_density": 0.85,
+    "bass": 0.65,
+    "brightness": 0.7,
+    "flatness": 0.3
+   },
+   "camera": [
+    "mv camera main",
+    "mv orbit nearest 36 12 {fast_degps}"
+   ],
+   "settle_frames": 420,
+   "intensity": 3
+  }
+ ]
+}

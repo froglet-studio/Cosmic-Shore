@@ -16,6 +16,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
 - [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **DECIDED 2026-10-19 (§6)**: Amoebius stays (Shombith drives it), the Vessel Studio is an artifact and not part of the engine, no single unifying tool. The evidence, options and recommendation that led there. Volunteered feedback: `Docs/TOOLING_FEEDBACK.md`.
   Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
+- [`Docs/MusicVideo/README.md`](Docs/MusicVideo/README.md): **The music video generator** - any song to Cosmic Shore gameplay footage rendered in Amoebius: `Tools/Build/music_video/` (measure the song, compose a shot plan from `mapping.json`, shoot in the real game through the player's `mv` director verb, assemble on the song, score the cut), the feedback-to-mapping loop and `LEARNINGS.md`. Skill: `/music-video`.
+  Sections: The pipeline; Why it is shaped this way; What the features mean; The feedback loop; Where things are; Running it
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
 - [`Docs/claude/ABOUT_PROJECT.md`](Docs/claude/ABOUT_PROJECT.md): Vessel classes, team domains, tech stack.

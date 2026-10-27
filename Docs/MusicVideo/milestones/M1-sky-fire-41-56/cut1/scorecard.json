@@ -1,0 +1,64 @@
+{
+ "plan": "/home/user/Cosmic-Shore/Tools/Build/music_video/out/SKY-FIRE_41-56/plan.json",
+ "criteria": {
+  "motion_vs_energy": 0.1661,
+  "motion_vs_onsets": 0.0309,
+  "cut_alignment": 0.0007,
+  "luminance_vs_brightness": -1.0,
+  "dead_frames": 0.1243,
+  "stuck_frames": 0.1647,
+  "diversity": 1.0
+ },
+ "penalties": {
+  "motion_vs_energy": 0.5354,
+  "motion_vs_onsets": 0.2858,
+  "cut_alignment": -0.0149,
+  "luminance_vs_brightness": 1.6,
+  "dead_frames": 0.8347,
+  "stuck_frames": 0.2069,
+  "diversity": -0.008
+ },
+ "loss": 3.4399,
+ "below_floor": [
+  "motion_vs_energy",
+  "motion_vs_onsets",
+  "luminance_vs_brightness",
+  "dead_frames",
+  "stuck_frames"
+ ],
+ "shots": [
+  {
+   "name": "01-skim-race-flyby",
+   "frames": 161,
+   "mean_luminance": 0.0308,
+   "mean_detail": 0.0391,
+   "mean_motion": 0.006,
+   "dead_frames": 0.373,
+   "stuck_frames": 0.0,
+   "brightness": 0.772,
+   "energy": 0.36
+  },
+  {
+   "name": "02-joust-melee",
+   "frames": 115,
+   "mean_luminance": 0.1074,
+   "mean_detail": 0.0601,
+   "mean_motion": 0.0159,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.43,
+   "brightness": 0.705,
+   "energy": 0.643
+  },
+  {
+   "name": "03-wildlife-cage-chase",
+   "frames": 174,
+   "mean_luminance": 0.1938,
+   "mean_detail": 0.1031,
+   "mean_motion": 0.0148,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.064,
+   "brightness": 0.589,
+   "energy": 0.639
+  }
+ ]
+}

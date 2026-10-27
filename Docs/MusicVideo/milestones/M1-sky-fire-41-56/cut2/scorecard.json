@@ -1,0 +1,61 @@
+{
+ "plan": "/home/user/Cosmic-Shore/Tools/Build/music_video/out/SKY-FIRE_41-56-cut2/plan.json",
+ "criteria": {
+  "motion_vs_energy": 0.1863,
+  "motion_vs_onsets": 0.0292,
+  "cut_alignment": 0.0007,
+  "luminance_vs_brightness": 0.5,
+  "dead_frames": 0.0,
+  "stuck_frames": 0.0957,
+  "diversity": 1.0
+ },
+ "penalties": {
+  "motion_vs_energy": 0.4548,
+  "motion_vs_onsets": 0.2899,
+  "cut_alignment": -0.0149,
+  "luminance_vs_brightness": -0.02,
+  "dead_frames": -0.004,
+  "stuck_frames": -0.0003,
+  "diversity": -0.008
+ },
+ "loss": 0.6975,
+ "below_floor": [
+  "motion_vs_energy",
+  "motion_vs_onsets"
+ ],
+ "shots": [
+  {
+   "name": "01-wildlife-cage-chase",
+   "frames": 161,
+   "mean_luminance": 0.1939,
+   "mean_detail": 0.098,
+   "mean_motion": 0.0139,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.772,
+   "energy": 0.36
+  },
+  {
+   "name": "02-joust-melee",
+   "frames": 115,
+   "mean_luminance": 0.2138,
+   "mean_detail": 0.0736,
+   "mean_motion": 0.038,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.096,
+   "brightness": 0.705,
+   "energy": 0.643
+  },
+  {
+   "name": "03-skim-race-chase",
+   "frames": 174,
+   "mean_luminance": 0.118,
+   "mean_detail": 0.1108,
+   "mean_motion": 0.0484,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.191,
+   "brightness": 0.589,
+   "energy": 0.639
+  }
+ ]
+}

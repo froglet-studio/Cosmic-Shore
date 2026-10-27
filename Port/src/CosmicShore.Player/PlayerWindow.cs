@@ -210,6 +210,7 @@ namespace CosmicShore.Player
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
             ArcadeAutoStart.Tick(_frameIndex);
+            MusicVideoDirector.Tick(_frameIndex, step);
             if (GalleryFrame > 0 && _frameIndex == GalleryFrame) ShaderGallery.Build(GalleryLegend);
             if (ModelViewer.Path != null)
             {

@@ -307,6 +307,7 @@ namespace CosmicShore.Player
                 frameNow = f;
                 script.BeforeTick(f);
                 ArcadeAutoStart.Tick(f);
+                MusicVideoDirector.Tick(f, 1f / 60f);
                 control?.BeforeTick(f);
                 long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);

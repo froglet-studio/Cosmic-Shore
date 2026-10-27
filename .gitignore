@@ -140,3 +140,6 @@ items.jsonl
 .env.*
 Tools/Build/vessel_model/.artist_cache/
 Tools/Build/vessel_model/.sheets/
+
+# Music video generator outputs (frames, analyses, cuts): Tools/Build/music_video/out/ is regenerated
+Tools/Build/music_video/out/
