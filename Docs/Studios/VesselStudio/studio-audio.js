@@ -233,36 +233,36 @@
       return { set: function () {}, stop: function () { a.stop(); b.stop(); lfo.stop(); } };
     } });
 
-  // The omni crystal: the trunk, then the burrow network (both kits).
-  def('omniPickup', { label: 'Omni crystal collected', group: 'Omni: burrow', len: 0.6,
+  // The omnicrystal: collecting one arms the next RT as a 3D labyrinth through soil (round 16; both kits).
+  def('omniPickup', { label: 'Omni crystal collected', group: 'Omnicrystal: labyrinth', len: 0.6,
     what: 'Picking up an omni crystal: the four elements at once.',
     how: 'a four-note sparkle chord (one note per element), rising',
     fn: function (t, out, P) { [659, 831, 988, 1319].forEach(function (f, i) { osc('triangle', f * P.pitch, f * P.pitch * 1.01, t + i * 0.04, P.len, out, 0.1, 0.005); }); } });
-  def('trunkTeleport', { label: 'Trunk teleport', group: 'Omni: burrow', len: 0.55,
-    what: 'The subtle trunk: in at the crown, out at the roots, near-instant.',
+  def('trunkTeleport', { label: 'Labyrinth armed (next RT)', group: 'Omnicrystal: labyrinth', len: 0.55,
+    what: 'The next RT will dig the labyrinth: a low armed tone.',
     how: 'a deep FM vwoom, down then up',
     fn: function (t, out, P) { fm(220 * P.pitch, 70 * P.pitch, 0.5, 2, t, P.len * 0.5, out, 0.35, 0.02); fm(70 * P.pitch, 260 * P.pitch, 0.5, 2, t + P.len * 0.5, P.len * 0.5, out, 0.3, 0.01); } });
-  def('burrowGrow', { label: 'Burrow network grows', group: 'Omni: burrow', len: 1.3,
-    what: 'The network digs itself out round you from the trunk\'s roots.',
+  def('burrowGrow', { label: 'Labyrinth digs', group: 'Omnicrystal: labyrinth', len: 1.3,
+    what: 'RT: the labyrinth digs itself out from its source through the soil.',
     how: 'a crackle of short dirt-dig bursts over a low rumble',
     fn: function (t, out, P) {
       noise(t, P.len, out, 0.55, 'lowpass', 220, 120, 0.7, 0.1);
       for (var i = 0; i < 9; i++) noise(t + (i / 9) * P.len * 0.9, 0.05, out, 0.7, 'bandpass', (900 + 250 * (i % 4)) * P.pitch, 600 * P.pitch, 2);
     } });
-  def('burrowEnter', { label: 'Slide into the burrow', group: 'Omni: burrow', len: 0.3,
-    what: 'Entering a burrow mouth from any heading.',
+  def('burrowEnter', { label: 'Slide into the labyrinth', group: 'Omnicrystal: labyrinth', len: 0.3,
+    what: 'Diving into the labyrinth at its source.',
     how: 'a soft downward slide: filtered noise 3000 to 600 Hz',
     fn: function (t, out, P) { noise(t, P.len, out, 0.35, 'bandpass', 3000 * P.pitch, 600 * P.pitch, 1.5, 0.02); } });
-  def('forkTake', { label: 'Take a fork', group: 'Omni: burrow', len: 0.1,
-    what: 'Leaning left or right through a fork (panned to the side taken).',
+  def('forkTake', { label: 'Take a fork', group: 'Omnicrystal: labyrinth', len: 0.1,
+    what: 'Leaning left, right, up or down through a fork (panned to the side taken).',
     how: 'a soft tick and a short rising tone',
     fn: function (t, out, P) { noise(t, 0.02, out, 0.25, 'highpass', 2000, 2000, 0.7); osc('sine', 700 * P.pitch, 900 * P.pitch, t, P.len, out, 0.12, 0.003); } });
-  def('burrowExit', { label: 'Out of the burrow', group: 'Omni: burrow', len: 0.3,
-    what: 'Leaving any exit of the network.',
+  def('burrowExit', { label: 'Out of an opening', group: 'Omnicrystal: labyrinth', len: 0.3,
+    what: 'Leaving the labyrinth by any of its openings.',
     how: 'a pop: sine 160 to 60 Hz and a puff of soil',
     fn: function (t, out, P) { osc('sine', 160 * P.pitch, 60 * P.pitch, t, P.len, out, 0.5, 0.004); noise(t, P.len * 0.6, out, 0.25, 'lowpass', 1500, 300, 0.7); } });
-  def('burrowCollapse', { label: 'Burrow falls in', group: 'Omni: burrow', len: 1.0,
-    what: 'The network falls in when its time is up.',
+  def('burrowCollapse', { label: 'Labyrinth falls in', group: 'Omnicrystal: labyrinth', len: 1.0,
+    what: 'The labyrinth falls in when its time is up.',
     how: 'a soft crumble: low noise with falling grit',
     fn: function (t, out, P) { noise(t, P.len, out, 0.6, 'lowpass', 600, 90, 0.6, 0.05); for (var i = 0; i < 6; i++) noise(t + i * P.len / 7, 0.04, out, 0.35, 'bandpass', 1200 - i * 120, 800, 2); } });
 
