@@ -180,3 +180,55 @@ rule has to be lifted for the Stoat first.
   field's boost (`dpWarp`, `dpWarpHeld`). Unity's 90° timing is back in the artifact (`dpSweetDeg` …), so the artifact is
   the source again. Numbers are in `STOAT_DIPOLE.md` §1b. The catch now takes 56.1 s on the circuit against the field's
   59.6 s; hairpins are still the field's (71 s against 33 s). This covers §4 P2's timing port and part of P3.
+
+## 8. Round 29, 2026-10-27: the full four-ability kit, as proposals for Yash to judge
+
+Yash (voice, 2026-10-27): *"Stoat and Meerkat are the two vessels I really wanna complete myself ... let's think of the
+other abilities of these two characters, all four abilities ... the abilities I wanna test first in artifact rather than
+inside game directly ... then we will see whether to add them or not in Unity."* The Stoat Flight Studio (round 29,
+`Docs/Studios/StoatFlightStudio.html`, hub copy `VesselStudio/stoat.html`) now flies all four. **These are proposals, not
+approved for Unity**: every number is lab-only (`SHIPPED ab*`, `GAME_NAMES` status `lab`), the shipped element map is
+unchanged (`python3 Tools/Build/element_ability_table.py Stoat`: Charge Ripple passive / L5 Siphon, Mass "Mass / Time Mode"
+on B / L5 Armoured Wake, Space Field Dipole on LT / L5 Accretion, Time Pathfinder passive / L5 Foresight), and nothing
+reaches the game until Yash decides and the `/vessel` §3 design gate signs the map off. The kit follows the fleet's element
+language (Time = speed, Mass = making, Space = destroying, Charge = pilots and crystals) and PvP is petals only: no ability
+moves or slows a rival; a hit moves one petal and silences the victim for 1 s, and a silenced pilot scores nothing and
+destroys no rival's prisms.
+
+| Element | Ability | Input | What it does | Level-5 upgrade | Its sliders (lab-only) |
+|---|---|---|---|---|---|
+| Charge | **Ripple** (new, active) | LB, keyboard F, phone LB button | A gravity wave rings out to the reach in 0.8 s: crystals it passes fly at you (a petal of their element when they arrive), rivals it passes show you their next ring and path | **Siphon**: each rival it passes loses one Time petal to you | reach 260 u, recharge 6 s, reveal 4 s, crystal pull 160 u/s faster than you |
+| Mass | **Field Trajectory** (round 28) + accretion trail | LT / RT in Mass mode | The warped (lime) stretch you fly lays prisms in your colour | **Armoured Wake**: those prisms are shielded (a cage); no Collapse destroys them | 6 prisms per 100 u, 8 s life |
+| Space | **Collapse** (new) | Y, keyboard G, phone Y button | With a pair held (either mode), or within the grace after letting go, the black hole implodes every prism within the radius (they fall in; the world's grow back after 30 s and every race) and the pair is spent | **Spaghettify**: a rival inside the radius takes a scored hit (one Space petal, silenced) | radius 90 u, recharge 8 s, grace 1 s |
+| Time | **Catch Sling** (round 28) | LT / RT in Time mode | As round 28 | **Whip**: let go within the window after the orbit's fastest point (the speed peak of the swing; the Time tile lights) for an extra burst | window 25 deg, burst 0.6 x speed |
+
+Each ability has an on / off switch and a level L0-L10 in **Vessel Config ▸ Section ▸ Ability · ...** (save any of them as a
+named profile, round 27). The stage carries the four-icon ability row in the locked order Charge, Mass, Space, Time (shape,
+not colour; the accent marks the mode B picked, a Collapse you can fire, the Whip window, an unlocked level 5; recharge
+shades; the petals of each element over its tile; lower right on a PC, under the race clock in phone touch play, where the
+lower corners are the thumbs').
+
+**The AI** (AI Config ▸ *AI uses the new abilities*, on): input-only rules. Ripple when a crystal it has not drawn is within
+90% of the reach (or, with Siphon, a rival is); Collapse just after it lets go of a pair, when a prism inside the radius sits
+within 20 u of its line to the next ring (or, with Spaghettify, a rival is inside it), and never while a field pair still
+warps its path (measured: a collapse inside the warp cost the Hard field AI 6-30% on I2 and I3); Whip when the Time tile is
+lit and its nose is within 1.5 x its release cone of the ring.
+
+**Measured** (the level scorecard, Balanced, 2 laps, median of seeds 11/23/37, seconds; every race finished). With all four
+off the 72 races are byte-identical to round 28. On:
+
+| Course | Mass (field) Easy / Medium / Hard, off -> on | Time (catch) Easy / Medium / Hard, off -> on |
+|---|---|---|
+| I1 | 77.5 -> 80.3 · 79.6 -> 79.6 · 54.0 -> 54.0 | 66.6 -> 66.6 · 71.6 -> 72.5 · 60.5 -> 59.2 |
+| I2 | 86.2 -> 86.2 · 78.5 -> 78.5 · 59.6 -> 59.6 | 66.9 -> 65.7 · 66.5 -> 68.5 · 53.8 -> 57.6 |
+| I3 | 80.7 -> 80.7 · 69.2 -> 69.2 · 51.5 -> 51.5 | 60.0 -> 60.0 · 69.2 -> 68.4 · 77.2 -> 77.2 |
+| I4 | 65.2 -> 65.2 · 65.9 -> 65.5 · 49.2 -> 49.2 | 64.9 -> 64.9 · 73.6 -> 72.7 · 79.5 -> 73.1 |
+
+Over the 36 races of each mode the AI rang 431 / 406 ripples and drew 546 / 510 crystals; in Mass mode it laid 12,617
+accretion prisms and collapsed only 5 times (the warp is almost never over before the pair dies); in Time mode it collapsed
+119 times (920 prisms) and whipped 12 times. None of the four makes the Stoat faster on its own: Ripple and the accretion
+trail never touch the flight, and Collapse and the Whip move the Hard catch-sling AI by -8% to +7% (chaotic, not a trend).
+**For Yash to decide**: whether each ability belongs in the kit, its input, its level-5 upgrade, and its numbers. What is not
+modelled: prisms do not collide with hulls in this studio (so a Collapse clears no real obstacle and the accretion trail
+blocks nobody), element levels only gate the upgrade (no scaling), the petal ledger (3 of each to start) is the studio's,
+and silence is 1 s flat.

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -45,6 +47,14 @@ namespace CosmicShore.Gameplay
     /// face gets its own corners. (Until 2026-10-13 the Charge crystal and the omni's pentagons also went through the
     /// edge-crawl bake; the Charge light is now drawn on the CPU, and Charge wears the omni's body material.)</para>
     ///
+    /// <para><b>Each crystal flies in its own shade of lime and lands in the omni's</b> (Garrett, 2026-10-27). The free
+    /// elemental crystals wear the Wrasse's four lasso shades in play (<c>EnvironmentColors.ElementalCrystalColors</c>,
+    /// Docs/PALETTE.md §2.11), so the converter shows them too: each crystal's bright colour starts as its shade at the
+    /// omni body's brightness (<see cref="EnvironmentColorSetExtensions.WithHueOf"/>, the rule the crystals' own
+    /// materials are authored by) and eases to the omni's as its plates morph (<see cref="FlightBright"/>). A landed
+    /// plate is the omni's colour, so the omni still dithers in over plates that already match it. Written through
+    /// the property block, read-modify-write, beside the opacity and depth writes.</para>
+    ///
     /// <para><b>Stepped by its owner, on unscaled time.</b> Every menu screen but HOME runs at
     /// <c>Time.timeScale = 0</c> (<c>ScreenSwitcher.NavigateTo</c>), so <see cref="Tick"/> takes its
     /// delta from the caller.</para>
@@ -60,6 +70,9 @@ namespace CosmicShore.Gameplay
         static readonly int ReachID = Shader.PropertyToID("_Reach");
         static readonly int FaceSplitID = Shader.PropertyToID("_FaceSplit");
         static readonly int SizeStartID = Shader.PropertyToID("_PlateScaleStart");
+        static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");   // every crystal material here
+        /// <summary>The element of each crystal slot, in <see cref="OmniCombineCore.Order"/>'s order.</summary>
+        internal static readonly Element[] SlotElements = { Element.Space, Element.Charge, Element.Mass, Element.Time };
         const float CoplanarDegrees = 20f;   // CrystalEdgeArcMeshBaker.CoplanarAngleDegrees
 
         OmniCombineConfigSO _config;
@@ -90,6 +103,8 @@ namespace CosmicShore.Gameplay
         int[] _massCount;
         int[][] _massSites;
         MaterialPropertyBlock _block;
+        readonly Color[] _flyBright = new Color[4];   // each crystal's bright colour before it morphs
+        Color _omniBright;                            // ... and once it has: the omni body's
         double _t;
         bool _playing;
         System.Random _rng;
@@ -158,6 +173,12 @@ namespace CosmicShore.Gameplay
             _rng = new System.Random();
             _params = OmniCombineParams.LabDefault;
             _block = new MaterialPropertyBlock();
+            _omniBright = config.OmniMaterial.GetColor(BrightColorID);
+            var palette = config.Palette ? config.Palette.EnvironmentColors : null;
+            for (int k = 0; k < 4; k++)
+                _flyBright[k] = palette != null && palette.TryGetElementalCrystalColor(SlotElements[k], out var shade)
+                    ? _omniBright.WithHueOf(shade)
+                    : _omniBright;
             float scale = config.OmniWorldRadius / (float)_core.OmniRadius;
             transform.localScale = Vector3.one * scale;
             FramingRadius = config.OmniWorldRadius * config.MaxStartRadii;
@@ -172,8 +193,9 @@ namespace CosmicShore.Gameplay
                 int plates = 0;
                 foreach (int q in d.plate) plates = Mathf.Max(plates, q + 1);
                 _morph[k] = new float[plates];
-                // Charge, Space and Time wear the omni's own body material, so the plates they land as are the omni's hue
-                // from the start: the hand-off changes nothing at base, and Charge's only contrast is its lit state.
+                // Charge, Space and Time wear the omni's own body material, so the plates they land as are the omni's look;
+                // each flies in its own shade and eases to the omni's lime as it morphs (FlightBright), so the hand-off still
+                // changes nothing at base. Mass wears the game's Mass prisms, the same way.
                 var material = k == OmniCombineCore.Mass ? config.MassMaterial : config.ShellMaterial;
                 _crystals[k] = Piece.Build(transform, OmniCombineCore.Order[k], d.basis, d.tris, d.plate, material,
                                            k == OmniCombineCore.Mass, bounds);
@@ -429,6 +451,7 @@ namespace CosmicShore.Gameplay
                     if (k == OmniCombineCore.Mass) continue;
                     _crystals[k].Write(_poses[k], Vector3.zero, null);
                     SetOpacity(_crystals[k].Renderer, fadeIn);
+                    SetBright(_crystals[k].Renderer, FlightBright(_flyBright[k], _omniBright, Mean(_morph[k])));
                 }
                 reach = Mathf.Max(reach, WriteMass(dt, cameraWorld, fadeIn));
                 WriteSeamWalk(cameraWorld, fadeIn);
@@ -503,6 +526,7 @@ namespace CosmicShore.Gameplay
             }
             morph /= Mathf.Max(1, _massPlates.Length);
             piece.Write(pose, centre, _massPlates);
+            SetBright(piece.Renderer, FlightBright(_flyBright[k], _omniBright, morph));
             // The columns as CrystalDepthPrisms steps them in play: each plate's centre and top, and the plates' radius,
             // which the horizon seal and the hidden-rise test measure with.
             var shape = DepthShape.Morph(_massShape, _triThinShape, morph);
@@ -683,6 +707,30 @@ namespace CosmicShore.Gameplay
             r.GetPropertyBlock(_block);
             _block.SetFloat(OpacityUpper, opacity);
             r.SetPropertyBlock(_block);
+        }
+
+        /// <summary>Read-modify-write, as <see cref="SetOpacity"/>.</summary>
+        void SetBright(Renderer r, Color bright)
+        {
+            r.GetPropertyBlock(_block);
+            _block.SetColor(BrightColorID, bright);
+            r.SetPropertyBlock(_block);
+        }
+
+        /// <summary>
+        /// A crystal's bright colour <paramref name="morph"/> of the way (0..1, the mean of its plates' morph) from its own
+        /// shade to the omni's: its shade while it waits and flies, the omni's once every plate has landed, eased so the
+        /// change rides the morph rather than the departure.
+        /// </summary>
+        internal static Color FlightBright(Color own, Color omni, float morph) =>
+            Color.Lerp(own, omni, (float)OmniCombineCore.Smooth(Mathf.Clamp01(morph)));
+
+        static float Mean(float[] values)
+        {
+            if (values == null || values.Length == 0) return 0f;
+            float sum = 0f;
+            foreach (float v in values) sum += v;
+            return sum / values.Length;
         }
 
         void OnDestroy()

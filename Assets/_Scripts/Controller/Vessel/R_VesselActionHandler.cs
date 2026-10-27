@@ -106,6 +106,29 @@ namespace CosmicShore.Gameplay
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The pilot in this vessel's seat (Docs/Pilots/PILOTS_AND_ARTIFACTS.md): the pilot's index in the
+        /// <c>PilotArtifactCatalogSO</c> plus one, 0 for the base kit. Owner-write - the owning machine reads the
+        /// pilot's Hangar choice (<c>PilotLoadoutStore</c>) and every peer must run the same pilot, because a pilot
+        /// changes outcomes (a thrown sword cuts prisms on every machine). Read through
+        /// <see cref="VesselPilotLoadout"/>, never directly. Protocol version 16.
+        /// </summary>
+        public NetworkVariable<ushort> NetPilot = new(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
+        /// <summary>
+        /// The artifacts slotted on this vessel: up to four slots of 16 bits, slot 0 lowest, each
+        /// <c>(statId &lt;&lt; 4) | rank</c> (rank 1..3, 0 = empty). Owner-write, for the same reason as
+        /// <see cref="NetPilot"/>: an artifact moves a number other machines simulate too. Read through
+        /// <see cref="VesselPilotLoadout"/>. Protocol version 16.
+        /// </summary>
+        public NetworkVariable<ulong> NetArtifacts = new(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;
 
@@ -347,7 +370,50 @@ namespace CosmicShore.Gameplay
 
             foreach (var t in actions)
                 t.StartAction(_executors, vesselStatus);
+            VesselActionTape.Observer?.OnInputAction(vesselStatus, controlType, device, true);
         }
+
+        /// <summary>
+        /// Run a press or release the match replay recorded (<see cref="VesselActionTape"/>), resolved against the
+        /// device it was recorded with. A recorded press already passed every gate it met in the match (mute,
+        /// silence), so the replay runs it as it ran then.
+        /// </summary>
+        public void ReplayInput(InputEvents controlType, byte device, bool down)
+        {
+            if (!down)
+            {
+                StopPressedActions(controlType, device);
+                return;
+            }
+            if (!TryResolveActions(controlType, device, out var actions)) return;
+            _inputAbilityStartTimes[controlType] = Time.time;
+            _heldInputs[controlType] = device;
+            foreach (var t in actions)
+                t.StartAction(_executors, vesselStatus);
+        }
+
+        /// <summary>Every action this vessel can run, by asset name: its input maps (all devices), for the replay to find one by name.</summary>
+        public bool TryFindAction(string actionName, out ShipActionSO action)
+        {
+            action = Find(_shipControlActions) ?? Find(_touchOverrideActions) ?? Find(_gamepadOverrideActions);
+            return action;
+
+            ShipActionSO Find(Dictionary<InputEvents, List<ShipActionSO>> map)
+            {
+                if (map == null) return null;
+                foreach (var list in map.Values)
+                    for (int i = 0; i < list.Count; i++)
+                        if (list[i] && ReplayActionName(list[i]) == actionName) return list[i];
+                return null;
+            }
+        }
+
+        /// <summary>An action's name as the replay records it: the asset's name, without Unity's "(Clone)".</summary>
+        public static string ReplayActionName(ShipActionSO action) =>
+            action ? action.name.Replace("(Clone)", string.Empty).Trim() : string.Empty;
+
+        /// <summary>The executors this vessel's actions run against, for a replayed autopilot action.</summary>
+        public ActionExecutorRegistry Executors => _executors;
 
         /// <summary>Release counterpart of <see cref="PerformShipControllerActions(InputEvents)"/>.</summary>
         public void StopShipControllerActions(InputEvents controlType) =>
@@ -378,6 +444,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < actions.Count; i++)
                 actions[i].StopAction(_executors, vesselStatus);
+            VesselActionTape.Observer?.OnInputAction(vesselStatus, controlType, device, false);
         }
 
         bool TryResolveActions(InputEvents controlType, byte device, out List<ShipActionSO> actions) =>

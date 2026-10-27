@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -39,7 +40,17 @@ namespace CosmicShore.Utility
             public bool Gone;       // destroyed, waiting for restore or unregister
             public float LastTime;
             public Vector3 LastPosition;
+            public Quaternion LastRotation;
+            public Vector3 Scale;
+            public byte Domain;
+            public byte Flags;
         }
+
+        /// <summary>A virtual member's box edge from its bounding radius (a cube's half-diagonal is edge * sqrt(3) / 2).</summary>
+        const float RadiusToEdge = 1.1547f;
+
+        /// <summary>A virtual member with no reach recorded is drawn as a box this big.</summary>
+        const float VirtualDefaultEdge = 1f;
 
         readonly TheaterWorld _world = new();
         SlotLife[] _slots = new SlotLife[1024];
@@ -113,13 +124,49 @@ namespace CosmicShore.Utility
 
         public void OnPrismRestored(int slot, Prism prism)
         {
-            if (!prism || slot < 0 || slot >= _slots.Length) return;
+            if (slot < 0 || slot >= _slots.Length) return;
             ref var life = ref _slots[slot];
             if (life.Id == 0 || !life.Gone) return;
             if (!Room()) return;
             life.Gone = false;
-            _prisms[slot] = prism;
-            AddPose(TheaterWorldEventKind.Restored, slot, life.Id - 1, prism);
+            if (prism)
+            {
+                _prisms[slot] = prism;
+                AddPose(TheaterWorldEventKind.Restored, slot, life.Id - 1, prism);
+                return;
+            }
+
+            // A virtual member: back where it was last recorded, the next move puts it right.
+            life.LastTime = Time.time;
+            Add(new TheaterWorldEvent
+            {
+                Kind = TheaterWorldEventKind.Restored, Time = Time.time, Id = life.Id - 1,
+                Position = life.LastPosition, Rotation = life.LastRotation, Scale = life.Scale,
+                Domain = life.Domain, Flags = life.Flags
+            });
+        }
+
+        public void OnVirtualBorn(int slot, Vector3 position, Domains domain, float radius, bool shielded)
+        {
+            if (slot < 0 || !Room()) return;
+            Ensure(slot);
+            if (_slots[slot].Id != 0 && !_slots[slot].Gone) Add(new TheaterWorldEvent { Kind = TheaterWorldEventKind.Gone, Time = Time.time, Id = _slots[slot].Id - 1 });
+
+            int id = _nextId++;
+            float edge = radius > 0f ? radius * RadiusToEdge : VirtualDefaultEdge;
+            var e = new TheaterWorldEvent
+            {
+                Kind = TheaterWorldEventKind.Born, Time = Time.time, Id = id,
+                Position = position, Rotation = Quaternion.identity, Scale = new Vector3(edge, edge, edge),
+                Domain = (byte)domain, Flags = shielded ? TheaterWorld.FlagShielded : (byte)0
+            };
+            _slots[slot] = new SlotLife
+            {
+                Id = id + 1, LastTime = e.Time, LastPosition = position, LastRotation = e.Rotation,
+                Scale = e.Scale, Domain = e.Domain, Flags = e.Flags
+            };
+            _prisms[slot] = null;
+            Add(e);
         }
 
         public void OnPrismMoved(int slot, Vector3 position)
@@ -138,27 +185,31 @@ namespace CosmicShore.Utility
             var prism = _prisms[slot];
             life.LastTime = now;
             life.LastPosition = position;
+            if (prism) life.LastRotation = prism.transform.rotation;
             Add(new TheaterWorldEvent
             {
                 Kind = TheaterWorldEventKind.Moved, Time = now, Id = life.Id - 1,
-                Position = position, Rotation = prism ? prism.transform.rotation : Quaternion.identity
+                Position = position, Rotation = life.LastRotation
             });
         }
 
         void AddPose(TheaterWorldEventKind kind, int slot, int id, Prism prism)
         {
             var t = prism.transform;
-            Vector3 position = t.position;
-            ref var life = ref _slots[slot];
-            life.LastTime = Time.time;
-            life.LastPosition = position;
-
-            Add(new TheaterWorldEvent
+            var e = new TheaterWorldEvent
             {
                 Kind = kind, Time = Time.time, Id = id,
-                Position = position, Rotation = t.rotation, Scale = Size(prism),
+                Position = t.position, Rotation = t.rotation, Scale = Size(prism),
                 Domain = (byte)prism.Domain, Flags = FlagsOf(prism)
-            });
+            };
+            ref var life = ref _slots[slot];
+            life.LastTime = e.Time;
+            life.LastPosition = e.Position;
+            life.LastRotation = e.Rotation;
+            life.Scale = e.Scale;
+            life.Domain = e.Domain;
+            life.Flags = e.Flags;
+            Add(e);
         }
 
         /// <summary>The prism's world-space box: its scale times its mesh's size, so playback draws a unit cube.</summary>

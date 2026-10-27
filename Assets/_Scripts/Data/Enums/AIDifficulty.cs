@@ -37,9 +37,17 @@ namespace CosmicShore.Data
         /// Used on every value that arrives from outside this build's own code - a save file, the
         /// replicated lobby - because both can carry a 0 or a number a future build added.
         /// </summary>
-        public static AIDifficulty Resolve(AIDifficulty value) =>
-            value is AIDifficulty.Easy or AIDifficulty.Medium or AIDifficulty.Hard or AIDifficulty.Legendary
-                ? value : Default;
+        public static AIDifficulty Resolve(AIDifficulty value) => IsSet(value) ? value : Default;
+
+        /// <summary>Whether <paramref name="value"/> is a real difficulty - false for 0, an AI seat with no
+        /// level of its own (it then flies the card's), and for anything a later build added.</summary>
+        public static bool IsSet(AIDifficulty value) =>
+            value is AIDifficulty.Easy or AIDifficulty.Medium or AIDifficulty.Hard or AIDifficulty.Legendary;
+
+        /// <summary>A seat's own level when it has one, otherwise the card's
+        /// (<paramref name="cardDifficulty"/>, resolved).</summary>
+        public static AIDifficulty ForSeat(AIDifficulty seatDifficulty, AIDifficulty cardDifficulty) =>
+            IsSet(seatDifficulty) ? seatDifficulty : Resolve(cardDifficulty);
 
         /// <summary>The same rule for the int the lobby replicates.</summary>
         public static AIDifficulty Resolve(int value) => Resolve((AIDifficulty)value);
@@ -70,7 +78,7 @@ namespace CosmicShore.Data
         /// Regatta's gate races). Every other <c>GateRaceController</c> mode drops the belief at arm time.</summary>
         public static bool HasOwnHandicap(GameModes mode) =>
             mode == GameModes.SkimRace || mode == GameModes.Slingshot || mode == GameModes.Warpline
-            || mode == GameModes.Regatta;
+            || mode == GameModes.Regatta || mode == GameModes.BurrowRun;
 
         /// <summary>The easiest and the hardest difficulty, in the order the row draws them.</summary>
         public const AIDifficulty Easiest = AIDifficulty.Easy;

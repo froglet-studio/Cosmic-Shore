@@ -13,7 +13,12 @@ A `/labmaker` browser studio for a **four-seat multiplayer vessel** that capture
 - **Live page:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb (private to the owner until shared from its Share
   menu; decisions recorded there land in the shared log, collection `decisions`, that Claude reads at the start of each
   round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 7).
+- **In the Vessel Studio** (round 9): the Orca bay of https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa opens the hub
+  copy `Docs/Studios/VesselStudio/orca.html`, made from this page by `python3 .claude/skills/vessel-studio/copy_orca.py`
+  (`--check` fails when the copy is stale). Its decisions carry `vessel: 'orca'`, so they stay apart from the other
+  studios' in that artifact's shared log.
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 9; the hub copy
+  passes too).
 - **Nearest lab:** the Crew Vessel Lab (`Docs/Studios/CrewVesselLab.html`, `CREW_VESSEL_LAB.md`), the two-seat
   "Maverick and Goose" lab that graduated as the Wrasse (`VesselClassType` 19). This lab does not replace it or touch
   it: the Wrasse is a pilot plus a 2D navigator; this lab asks what a crew of **four** on one hull should be. Round 1 of
@@ -89,6 +94,63 @@ Rival crews fly the same concept (a mirror match) unless **Match ▸ Rivals alwa
 Rivals: Easy / Medium / Hard AI crews (aim error 9° / 5° / 2.5°, lead 0 / ½ / full, re-plan 1.8× / 1.25× / 1×,
 ward tolerance 3 / 1.5 / 0.5 threats). Your own crew's AI has the same three levels. Every AI writes the same input
 objects a person does (`/labmaker` §2.4).
+
+## Round 9 (2026-10-27): play styles to choose between
+
+**Input this round** (Yash, 2026-10-27): "In the orca artifact, I will choose between the play styles, while testing
+them, so make them in the artifact for me to test, and show to garrett, We going with Orca only, just we can have
+multiple choice for abilities and features."
+
+**What changed.** A **Play styles** tab (second, after Presets) with one dropdown per ability and the numbers of every
+option. **Every default is round 7's**, so the page, the scorecard and the C# port (`OrcaCrewConfig`) are unchanged
+until someone picks another option. The options come from the calm vessels (`Docs/Studios/CONCEPT_FLEET.md` §12):
+
+| Ability (seat, element) | Options (first = shipped) | What the new option does |
+|---|---|---|
+| Boost (Helm, Time, RT) | **Tank** / Breath / Tide | **Breath** (the Moon Jelly): hold to breathe in (the hull slows to ×0.6 and swells), let go to surge (0.6–2.4 s by how full the breath was); breaths 2 s or longer, each within 25% of the last, chain a calm (+15% surge each, up to 4). **Tide** (the Sea Turtle): three currents loop through the arena (in the Ring Race the first follows the rings); in one the hull is carried along its heading at up to 70 u/s, and holding boost tucks in (×2 carry, ×0.5 turn). |
+| Shield (Helm, Mass, LT / B / E) | **Shield** / Dock | **Dock** (the Seahorse): press to anchor to the nearest block within 45 u: the hull holds still, each gunner seat reloads a missile every 4 s, the sniper cools ×3 faster, and a garden of trail prisms grows round you; press again (or after 8 s) to dart off with 1 s of boost. 3 s between docks. No shield while it is picked. |
+| Missiles (each gunner, A / F / right mouse) | **Fly-by-wire** / Seeker | **Seeker**: the missile flies itself to what the turret aimed at (a hull inside 25° of the aim, else the aim point), so the gunner keeps the turret and the gun; a second press bursts it early. One missile in flight per seat. |
+
+Presets: **Calm crew** (all three new options), **Breathing helm**, **Tide helm**, **Docking helm**, **Seeker missiles**,
+all on the Presets tab and in **Score every preset**. The scorecard gains breaths/min, calm %, docks/min, docked %,
+missiles from docking, garden prisms, seeker locks, time in a current and time tucked. The Decisions tab gains a
+**Play styles** topic pre-filled with the current pick.
+
+**Measured** (12 seeds, I2, Hard rivals, AI in every seat; points, ± SE; the lab's own `runBatch`):
+
+| Preset | Ring Race | Breach | Anchorage | Broadside |
+|---|---|---|---|---|
+| Round 7 (shipped) | 218.88 ± 2.69 | 182.75 ± 11.39 | 71.92 ± 14.55 | 50.13 ± 1.51 |
+| Calm crew | 220.54 ± 2.54 | 171.08 ± 8.59 | 84.00 ± 11.77 | 50.89 ± 0.91 |
+| Breathing helm | 219.20 ± 1.89 | = round 7 | = round 7 | 50.09 ± 1.34 |
+| Tide helm | 203.65 ± 1.84 | 183.25 ± 10.39 | 80.00 ± 15.00 | 47.45 ± 0.99 |
+| Docking helm | 222.73 ± 2.36 | 187.50 ± 10.34 | 60.50 ± 13.68 | 50.54 ± 1.14 |
+| Seeker missiles | 220.22 ± 2.19 | 179.83 ± 11.32 | 83.08 ± 11.67 | 51.52 ± 0.81 |
+
+**Checked.**
+- The shipped preset scores exactly as before on all four games (the round 7 row equals the page's baked table,
+  Ring Race 218.88 ± 2.69), so the options are opt-in.
+- `verify_lab.cjs` PASS on the page and on the hub copy; `parity_gate.py` ok (`--self-test` ok).
+- Screenshots read: the Tide helm in a current in the Ring Race, a docked hull with its tether in Anchorage, the Play
+  styles tab, the phone layout.
+- **Not run here:** the C# parity gate (`Tools/Build/orca_crew_lab/parity.cjs`) needs .NET 8, which this container
+  lacks. Round 9 does not touch the pure functions it compares or any asset key it reads.
+
+**Found.**
+- Most choices sit inside the noise band against round 7: they change how the Orca **feels**, not how strongly it
+  plays. That is what was asked for (choices to test), and the human decides between them by flying.
+- **Tide helm is slower in the Ring Race** (finish 46 s against 31): it rides a current 66% of the time but tucks
+  only 27%, and the loop does not pass through every ring. Its Broadside dips too (47.45).
+- **Breathing helm is not used by the AI in Breach and Anchorage**, because the shipped helm AI does not boost there;
+  those rows equal round 7 and say nothing about the breath.
+- **Docking helm** costs Anchorage (60.50 against 71.92): a docked hull cannot hold the anchor point. In the Ring Race
+  the AI never docks (no shield either), which is why it finishes faster.
+- **Seeker missiles** hit less (about 25% against 64% in Broadside) and fuse out about half the time, but the gunner
+  keeps firing the gun meanwhile; the points come out level.
+- **None of the options is in the game yet**: `OrcaCrewConfig` has none of them, so a pick needs a port first.
+
+**Decisions needed (Yash with Garrett):** which option each ability keeps (one, or a choice for the player), and
+whether a picked option replaces the round 7 one in the game.
 
 ## 4. Round 8 (2026-10-21): rockets with a lit plume, and a bomb that lights what it will break
 

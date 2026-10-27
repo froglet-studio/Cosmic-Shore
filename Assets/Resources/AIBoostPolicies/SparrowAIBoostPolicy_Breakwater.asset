@@ -25,7 +25,7 @@ MonoBehaviour:
   minHoldSeconds: 0.6
   minRestSeconds: 0.4
   clearWayRocket: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
-  rocketMaxRange: 686.893
-  rocketMinRange: 35.455
-  rocketAimDegrees: 17.936
+  rocketMaxRange: 679.072
+  rocketMinRange: 36.234
+  rocketAimDegrees: 17.786
   rocketCooldownSeconds: 1

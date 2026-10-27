@@ -553,6 +553,59 @@ now buys a turn at full speed and the rush through its throat, no speed after it
 should race, the levers that keep "out as you went in" are a faster ride (`gtTubeSpeed`), longer tunnels (`gtLenMax`), or
 a faster one-thumb cruise; `gateKeepMomentum` 0 is the old boost.
 
+## 1n. Round 26 (studio) — a tunnel's life: rippling in, staying, rippling out (2026-10-27)
+
+**Yash:** the reticle should come back about 0.5 s after the exit and fade in like a wave emerging into the tunnel's
+shape, reshapeable; on RT the tunnel forms the same way out of the centre of its geometry while the reticle fades; it
+stays 10 s, then collapses the reverse way back to its centre, a ripple spreading out to infinity; every step smooth,
+no camera jitter, real space-time warp visuals.
+
+| Step | Built (`stepTunnel`, `gateHold`, `gateCommit`) |
+|---|---|
+| The reticle comes back | `gateReticleDelay` 0.5 s after you are out (and at the start of a race), then ripples out of its centre into the full tube over `gateReticleGrow` 0.8 s (ease-out; the window grows from the tube's middle to both mouths, its radius with it). You can reshape it as it grows; RT works once it is 60% there |
+| RT: the tunnel forms | the warp - its mouths' dents, the tube's warp, your grid - ripples out of the same centre to both mouths over `gateFormSeconds` 0.4 s (never longer than 90% of your dive to its mouth, so the mouth is there when you are); the reticle fades out over the same time |
+| The ride | unchanged (round 25): in and out at your entry speed, the camera on the centreline |
+| It stays | `gateStaySeconds` 10 s after you are out (making another tunnel sends the last one back at once) |
+| It collapses | back to its centre over `gtCollapse` 0.8 s, then fades, and a space-time ripple (the gravitational wave, `gateCollapseRipple` 0.4) spreads from its centre out to infinity |
+
+**Measured** (headless): the reticle at 0 / 0.68 / 1 of its shape at 0.25 / 0.75 / 1.25 s; a 460 u tunnel growing
+106 → 297 → 403 → 449 → 460 u over 0.4 s; the reticle absent for 0.5 s after the exit, then back over ~0.5 s; the tunnel
+stayed 10.0 s, collapsed in 0.8 s, sent one ripple; the camera through the ride turned at most 2.4° a frame. The AI waits
+for its reticle too: circuits 98.2-100.8 s, hairpins 72.5-88.2 s (round 25: 97.6-103.0, 71.7-85.9).
+
+## 1o. Round 27 (studio) — save a section as a profile (2026-10-27)
+
+Yash: *"I didnt find a way to save them in artifact to a new Wormhole Look settings, ... save my tweak settings to new
+profiles of those areas like Wormhole Look, etc, for future re-play and design decisions."* Every settings card with a
+Reset button (18 of them: Wormhole · look, Gate mode, Pull & momentum, the AI, the play styles, ...) now has a
+**Profiles** row under its sliders: name the card's current values and **Save as profile**; pick one and **Load** it
+(only that card's keys change; a key the profile lacks goes to its shipped value); **Record** writes it to the decision
+log (topic *Profile*, with what it changes from shipped); **Delete** removes your own. "Now: <name>" shows which
+profile the card matches. Profiles live in the studio's shared db (`profiles`, readable by Claude, everyone sees
+everyone's) or, where the viewer has no db, in that browser. Nothing in the game changes: a profile is a set of studio
+values; the one the team picks reaches Unity through `/artifact-to-unity` as usual.
+
+## 1p. Round 28 (studio) — the wormhole becomes the Meerkat (2026-10-27)
+
+Yash: *"a big change is this new wormhole ability ... This will be Meerkat, a new vessel. The Stoat will have that field
+and orbit for now untouched. Just take away all this wormhole kind of ability of the Stoat and create a Meerkat ... keep
+only one ability of the wormhole."* The studio's Gate mode (§1g-§1n) left the Stoat page and is now the Meerkat studio,
+`Docs/Studios/VesselStudio/meerkat.html` (design: `Docs/Studios/MEERKAT.md`).
+
+| What | Where it is now |
+|---|---|
+| Gate mode: the reticle, the tunnel, its ride and life, the tube's warp, the mouths' dents, the gate AI | The Meerkat studio only, with its parameters renamed to their future `MeerkatWormholeConfig` fields |
+| B / T on the Stoat | Mass -> Time -> Mass (round 18-27 stepped through Gate too) |
+| The Stoat's `gt*` / `gate*` keys, their sliders, tips and game names | Removed from the Stoat page |
+| `studio_to_unity/stoat.json`'s 14 round-18 gate rows (`StoatModeAction` gate* fields) | Removed: the page no longer has those keys. The game's Stoat still has round 18's straight warp gate on B, unlinked from the studio until `/artifact-to-unity` ports the Meerkat and takes the gate off the Stoat |
+
+Mass and Time are untouched: on seed 7, the AI at Hard raced them in 59.6 s (18 slings) and 53.8 s (17), the same as
+before the split. Two small fixes came with it:
+- `setStyle` had a `grp-P` visibility statement swallowed by a round-23 comment. It is a statement again, so Pull &
+  momentum shows in Mass and Time only.
+- The decision log tags new entries `studio: 'stoat'` and shows only the Stoat's, the older untagged ones included,
+  because the Meerkat writes to the same shared collection.
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |

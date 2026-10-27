@@ -8,6 +8,10 @@ use the ultra high res prism used by slicing. these should look spectacular when
 undistinguished from the normal explosion when squinting. when we can afford it use those for level one
 and turn it off on level 2. your setting at 256 (192) can define the transition to level three."*
 
+Garrett, 2026-10-27: *"change the fundamental movement interaction of prisms (effecting all shielded prism
+movement), so shielded prisms bounce off each other and other prisms instead of being destroyed on collision."*
+That is expectation 1a below.
+
 The fundamental's entry (canonical term **Prism movement**) is in
 `Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § "The fundamentals". This file is the design and the
 verification record. The code is one static class, `PrismMotion`
@@ -36,6 +40,30 @@ displaced, so they do not run the rule. They are valid TARGETS of it.
    closing velocity (restitution 1/3, ceiling 200 u/s — the ram's numbers, so a prism thrown into a
    prism comes apart like one a hull hit at that speed), and both deaths go through the ordinary
    destruction path (stats, cell sums, the index).
+1a. **Shielded prisms bounce** (Garrett, 2026-10-27; `PrismBounce`, `PrismMotion.Bounces`). A collision a
+   SHIELDED prism is part of, as the mover or as the prism it runs into, destroys neither: the movers rebound
+   off the contact, keeping `shieldBounceRestitution` (0.6, `Resources/PrismMotionConfig`) of the closing speed.
+   A shielded mover bounces off super-shielded mass too; an unshielded one still goes against it (4).
+
+   | Mover | Prism it runs into | Outcome |
+   |---|---|---|
+   | plain | plain | both destroyed (1) |
+   | shielded | plain | bounce |
+   | plain | shielded | bounce |
+   | shielded | shielded | bounce |
+   | plain | super-shielded | the mover is destroyed (4) |
+   | shielded | super-shielded | bounce |
+
+   Each mover rebounds its own way, since it owns the prism's motion:
+   - **The gravity field:** the body's velocity rebounds off the contact normal (from the struck prism's centre to
+     the mover's). Against another body the impulse is shared equally, equal and opposite, so momentum is kept;
+     against a prism that is not a body, the mover takes all of it and the other keeps still
+     (`BlackHoleGravityField.Bounce`, `BouncesTotal`).
+   - **The Rhino plough:** the thrown prism stops at the contact and the rest of the throw rebounds off it, mirrored
+     and shortened by the restitution (`PrismBounce.Rebound`). A second prism in the way of the rebound stops it
+     there: a bounce again, or both go if neither of that pair is shielded.
+   - **The Jacks net:** the net poses its prisms, so a shielded collision holds the dragged prism against the other
+     at the contact instead of through it. Neither goes, and the net keeps it.
 2. **"Runs into" = the contact shapes go from apart to touching over the step**
    (`PrismMotion.EntersContact`, a box overload and a sphere overload). Both prisms are taken as
    translating linearly over the step (a static target is a zero step; no mover turns a prism), so two
@@ -65,8 +93,8 @@ displaced, so they do not run the rule. They are valid TARGETS of it.
    - **Sphere** (cheap): the sphere of the prism's own volume (`PrismMotion.ContactRadius`), the
      quantity the cells already weigh, capped at `MaxContactRadius` (6 u, ~900 u³) to bound the broad
      phase. Thousands of bodies at once, in Burst.
-4. **Super-shielded mass is the one survivor.** It is indestructible: `Prism.Damage`'s own gate makes
-   it deflect, and only the mover is destroyed. No force moves it in the first place (the plough
+4. **Super-shielded mass is never destroyed.** It is indestructible: `Prism.Damage`'s own gate makes
+   it deflect, and an unshielded mover is destroyed against it (a shielded one bounces, 1a). No force moves it in the first place (the plough
    jiggles it, the gravity field never admits it).
 5. **Scored to the force behind the motion**: the Rhino's pilot for a plough throw; the hole's owner
    (`BlackHole.CaptureOwnerName` / `CaptureDomain`) for a body, read off the hole nearest the body,
@@ -179,7 +207,8 @@ steps down, and past every level the ordinary effect.
 
 | File | Role |
 |---|---|
-| `_Scripts/Controller/Prisms/PrismMotion.cs` | The rule: `Annihilate`; boxes — `Box`, `TryGetBox`, `EntersContact(Box…)`, `TryFirstContact`, `MoverSteps`, `TrySweep`; spheres — `ContactRadius`, `EntersContact(float3…)`, `ContactJob`, `MapSlotsJob` |
+| `_Scripts/Controller/Prisms/PrismBounce.cs`, `_Scripts/Tests/Editor/PrismBounceTests.cs` | Shielded prisms bounce (1a): who bounces, the contact normal, the shared impulse, the plough's rebound |
+| `_Scripts/Controller/Prisms/PrismMotion.cs` | The rule: `Annihilate`, `Bounces`, `BounceRestitution`; boxes — `Box`, `TryGetBox`, `EntersContact(Box…)`, `TryFirstContact`, `MoverSteps`, `TrySweep`; spheres — `ContactRadius`, `EntersContact(float3…)`, `ContactJob`, `MapSlotsJob` |
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | `StoredPosition`, `ContactVolume`, `TryGetMotionView` (region "Prism motion") |
 | `_Scripts/Controller/Environment/BlackHole/BlackHoleGravityField.cs` | `PrevPoints` out of the integration, `NextLevel` (the ladder), `BoxContacts`, `ScheduleContacts`, `ApplyContacts`, `CollisionsTotal` |
 | `_Scripts/ScriptableObjects/PrismMotionConfigSO.cs`, `Resources/PrismMotionConfig.asset` | The ladder (`showcaseMaxMovers` 64, `boxMaxMovers` 256) |

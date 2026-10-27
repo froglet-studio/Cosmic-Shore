@@ -28,6 +28,11 @@ Correct them in [`TEAM.json`](TEAM.json), which also maps each person's git name
 `claude/*` and `cece/*` branches are Claude Code sessions. The person behind one is whoever merges or pushes
 it; `who_works_where.py` reports a session nobody has merged as unattributed.
 
+**Attribution audit (2026-10-27): Yash's work took no credit from anyone.** Across all 553 branches and the
+full history, no commit, line, area owner or role moved credit from another collaborator to Yash
+([`Reports/ATTRIBUTION_AUDIT.md`](Reports/ATTRIBUTION_AUDIT.md)). Anyone can audit anyone:
+`python3 Tools/Build/attribution_audit.py --person <name>`.
+
 ## The rules for every session
 
 1. **Look before you touch.** Run `git fetch origin`, then

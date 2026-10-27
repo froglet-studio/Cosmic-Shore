@@ -34,11 +34,11 @@ which this reuses.
 
 - **Seeing one thing costs you everything else.** While LB is held you fly half-blind to the rest of the world. That
   is the price, and it is the only one.
-- **A squad is a set of eyes.** Its three pilot cards cover three of the seventeen sights. Building the deck means
+- **A squad is a set of eyes.** Its three pilot cards cover three of the eighteen sights. Building the deck means
   choosing what the squad can find and what it will never see coming. With the D-pad hull swap
   (`PilotSwap`), changing hulls also changes whose eyes you look through.
 
-## 2. The seventeen callsigns
+## 2. The eighteen callsigns
 
 Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movement and Cells have no callsign**
 (Garrett, 2026-10-27). The splits:
@@ -66,15 +66,19 @@ Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movem
 | 15 | Vessels: opponents | **BANDIT** | every opposing vessel, through mass | the vessel list, by domain |
 | 16 | Switch | **NEEDLE** | every ring that activates something: gates, Scarab switches, goals | `ScarabSwitch`, `RingThreadProbe`, `AstroLeagueGoal` |
 | 17 | Ark | **GALLEON** | the Arks, and the payload aboard | `Ark` |
+| 18 | Soliton | **FLUME** | every soliton, whoever made it: where it is, where it leads and how long it is (otherwise only seen by its lensing) | none yet: the Meerkat's tunnels (`MeerkatWormholeExecutor.Live`) are the first (Garrett, 2026-10-27; `Docs/Studios/MEERKAT.md`) |
 
 A crystal sight includes **every crystal of that element**: field crystals, ejected crystals (`EjectedCrystal`), and
 the hearts lifeforms carry (`LifeFormCrystal`). So VOLT also shows which creatures and plants are carrying Charge.
+
+**FLUME** (added 2026-10-27 with the Soliton fundamental): a flume is a channel of water you ride through, and
+neither "flume" nor "soliton" means anything else in the game.
 
 **How the words were picked.**
 - **Each one evokes what it sees.** A manger is where the animals go to eat, a citadel is the fortress that does not
   fall, a hornet stings whoever touches it, and bandit and wingman are what pilots call hostiles and friendlies on the
   radio.
-- **Seventeen different first letters** (A B C D E G H I M N O R S T V W Z), so a glyph or a call is never mistaken for
+- **Eighteen different first letters** (A B C D E F G H I M N O R S T V W Z), so a glyph or a call is never mistaken for
   another.
 - **No word that already means something in the game:** no element, vessel, pilot or mode name, and none of the
   ecology's own words. These were rejected for that reason:
@@ -196,7 +200,7 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 | Decision | Who decides |
 |---|---|
 | What becomes of the 40 ability-rewrite pilots, their portraits, the Hangar PILOTS / ARTIFACTS tabs and the Tomahawk throw on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
-| Which pilot carries which of the seventeen sights | the pilot roster's author |
+| Which pilot carries which of the eighteen sights, including the new pilot Garrett asked for to carry FLUME | the pilot roster's author |
 | ENSIGN shows your own mass, or the rivals' | Garrett |
 | Whether artifacts get a sight once they are a fundamental | Garrett, through the fundamentals-curation process |
 | BANDIT on the Dolphin: its Charge level-5 upgrade already marks vessels inside the Echo Sight cone. BANDIT shows them all, everywhere, which may make that upgrade redundant on that hull | whoever owns the Dolphin's element map |

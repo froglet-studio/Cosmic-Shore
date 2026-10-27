@@ -206,6 +206,16 @@ namespace CosmicShore.UI
         {
             if (_hud || !playbackHudPrefab) return;
 
+            // The match itself: its real scene, its real vessels on their recorded paths, their recorded
+            // actions (Docs/REPLAYS.md §6.3). The in-menu picture below is only for a replay that cannot
+            // be launched (a mode with no card).
+            if (replayService.TryWatchMatch(summary, gameList ? gameList.Games : null, out string matchError))
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Replay] watching {summary.RecordingFile} as the match");
+                return;
+            }
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Replay] {summary.RecordingFile} plays in the menu: {matchError}");
+
             if (!replayService.TryLoad(summary, out var recording, out string error))
             {
                 CSDebug.LogWarning($"[Replay] Cannot watch '{summary.RecordingFile}': {error}");

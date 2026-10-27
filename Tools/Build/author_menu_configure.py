@@ -114,6 +114,7 @@ PACKAGE = A.PACKAGE | {RAW_IMAGE, M.RECT_MASK_2D, GRID_LAYOUT}
 INTENSITY_VAR = "490485287c38a2f4e9178566394efd69"       # the IntVariable every intensity button writes
 COLOR_SET = "8d1c1bdcb636a424d9c54fbd1afc952f"           # ThemeManagerDataContainer.ColorSet
 VESSEL_PREFABS = "05f8f1205bd90e14b8e59cf78da1a6f2"      # VesselControlsPanel.vesselPrefabs
+OMNI_ICON = K.meta_guid("Assets/_Graphics/ElementIcons/OmniCrystal_Active.png")   # VesselControlsPanel.omniIcon
 TOURNAMENT = "f1738a31735a43a196f1b3a711c91947"          # MaelstromData.asset
 ARENA_ROSTER = "45f4a55e49b44cc7ac47e0bf96411234"        # ArenaGames.asset
 STAR_ON, STAR_OFF = "09f81e9c4fc304748819eca2110c75c0", "2f19932d871d57543a48ef3270061ffb"
@@ -926,7 +927,12 @@ def controls(parent, r, cols, inner_w):
            "  controlsLibrary: {fileID: 0}\n  glyphSet: {fileID: 0}\n  barsConfig: {fileID: 0}\n"
            f"  vesselPrefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n"
            "  deviceSwitcher: {fileID: 0}\n  vesselNameText: {fileID: 0}\n  vesselIcon: {fileID: 0}\n"
-           "  flightSectionTitle: \n  abilitySectionTitle: \n"
+           "  flightSectionTitle: \n"
+           # Section 90 ("in the controls tab the omni crystal ability of the vessel should also show"): an Omni row
+           # after the four elements, its words from the hull's ability map (OmniAbilityLabel).
+           f"  omniIcon: {K.ref(21300000, OMNI_ICON, 3)}\n"
+           "  omniRowTemplate: 'Omni crystal: {ability}'\n  omniDefaultLabel: 'Omni crystal: fly into it'\n"
+           "  abilitySectionTitle: \n"
            "  rowDwellSeconds: 2.2\n  sweepRampFraction: 0.25\n  cooldownFraction: 0.6\n"))
     return cb
 
@@ -2682,6 +2688,11 @@ def validate_g(text, body, V, kind, view):
     _, start = comp_doc(text, V("Start/Button#button"))
     assert f"  variant: {K.VARIANTS['Play']}\n  fill: 1\n" in start, f"{view}: START is not the solid lime Play slab"
     assert "START GAME" not in words.upper(), f"{view}: the old START GAME button is back"
+    # Section 90: the controls tab shows the hull's Omni crystal ability after its four elements.
+    ctrl = re.search(r"--- !u!114 &-?\d+\nMonoBehaviour:\n(?:(?!^--- ).*\n)*?  m_Script: \{fileID: 11500000, guid: %s, type: 3\}\n(?:(?!^--- ).*\n)*"
+                     % S["controls"], text, re.M)
+    assert ctrl and f"  omniIcon: {{fileID: 21300000, guid: {OMNI_ICON}, type: 3}}\n" in ctrl.group(0) \
+        and "omniRowTemplate: 'Omni crystal: {ability}'" in ctrl.group(0), f"{view}: the controls show no Omni crystal row"
     for gone in ("Chips", "Ready", "VesselNode", "Sweep", "ClassInfo", "Numeral"):
         assert f"  m_Name: {gone}\n" not in text, f"{view}: {gone} is back (Rev 20 G / Rev 25 removed it)"
     _, stepper = comp_doc(text, V("Stepper#stepper"))
@@ -2801,11 +2812,14 @@ def self_test(files):
         return False
 
     view, node, modal = prefab_path("ConfigureView"), prefab_path("ConfigureIntensityNode"), MODAL_PREFAB
+    omni_plant = ("the controls without their Omni row", lambda f: f.__setitem__(view, f[view].replace(
+        f"  omniIcon: {{fileID: 21300000, guid: {OMNI_ICON}, type: 3}}\n", "  omniIcon: {fileID: 0}\n", 1)))
     V = K.FileIds("ConfigureView")
     AV = K.FileIds("ConfigureArenaView")
     arena, mael, ped = prefab_path("ConfigureArenaView"), prefab_path("ConfigureMaelstromView"), prefab_path("ConfigureSeatPedestal")
     lb_row = prefab_path("LeaderboardRow")
     cases = [
+        omni_plant + (validate_prefabs,),
         ("the leaderboard row's entrance stripped", lambda f: f.__setitem__(lb_row, M.strip_entrances(f[lb_row])),
          validate_prefabs),
         ("the AI difficulty row unwired", lambda f: f.__setitem__(view, re.sub(

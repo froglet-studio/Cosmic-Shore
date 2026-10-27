@@ -61,20 +61,6 @@
     {"key": "dpMissShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "missKickShare"},
     {"key": "dpHoldAtCatch", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "holdAtCatch"},
     {"key": "dpRadiusEase", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "orbitEaseRate"},
-    {"key": "dpWhiteClear", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "whiteClear"},
-    {"key": "gtAhead", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateAhead"},
-    {"key": "gtLenMin", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateLengthMin"},
-    {"key": "gtLenMax", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateLengthMax"},
-    {"key": "gtMouth", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateMouthRadius"},
-    {"key": "gtHoldMax", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateHoldMaxSeconds"},
-    {"key": "gtCollapse", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateCollapseSeconds"},
-    {"key": "gtAimCone", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateAimConeDegrees"},
-    {"key": "gtWarpShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateWarpShare"},
-    {"key": "gtBoostSeconds", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateBoostSeconds"},
-    {"key": "gtKeyRamp", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateKeyRampSeconds"},
-    {"key": "gtFunnel", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateFunnelRadius"},
-    {"key": "gtFunnelRate", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "gateFunnelRate"},
-    {"key": "gtAiMin", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "autopilotGateMinDistance"},
-    {"key": "gtAiCone", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatModeAction.asset", "field": "autopilotGateConeDegrees"}
+    {"key": "dpWhiteClear", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "whiteClear"}
   ]
 }

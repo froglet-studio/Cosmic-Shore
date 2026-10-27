@@ -1,0 +1,217 @@
+{
+  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Edit this file, never the assets by hand.",
+  "vessel": "Meerkat",
+  "page": "Docs/Studios/VesselStudio/meerkat.html",
+  "rows": [
+    {
+      "key": "reticleAhead",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleAhead"
+    },
+    {
+      "key": "bendMaxDegrees",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bendMaxDegrees"
+    },
+    {
+      "key": "shaftMin",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "shaftMin"
+    },
+    {
+      "key": "shaftMax",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "shaftMax"
+    },
+    {
+      "key": "bendRadius",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bendRadius"
+    },
+    {
+      "key": "throatDiameter",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "throatDiameter"
+    },
+    {
+      "key": "mouthDiameter",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "mouthDiameter"
+    },
+    {
+      "key": "keyRampSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "keyRampSeconds"
+    },
+    {
+      "key": "reticleDelaySeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleDelaySeconds"
+    },
+    {
+      "key": "reticleGrowSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleGrowSeconds"
+    },
+    {
+      "key": "formSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "formSeconds"
+    },
+    {
+      "key": "staySeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "staySeconds"
+    },
+    {
+      "key": "collapseSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "collapseSeconds"
+    },
+    {
+      "key": "warpStrength",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "warpStrength"
+    },
+    {
+      "key": "dentStrength",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "dentStrength"
+    },
+    {
+      "key": "rippleStrength",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rippleStrength"
+    },
+    {
+      "key": "rippleEdge",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rippleEdge"
+    },
+    {
+      "key": "rippleSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rippleSeconds"
+    },
+    {
+      "key": "reticleIdleAlpha",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleIdleAlpha"
+    },
+    {
+      "key": "reticleWhite",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleWhite"
+    },
+    {
+      "key": "reticleNearLight",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleNearLight"
+    },
+    {
+      "key": "bridgeVisibility",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeVisibility"
+    },
+    {
+      "key": "bridgeGlass",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeGlass"
+    },
+    {
+      "key": "bridgeRings",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeRings"
+    },
+    {
+      "key": "bridgeSpindlesPerRing",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeSpindlesPerRing"
+    },
+    {
+      "key": "bridgeRibs",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeRibs"
+    },
+    {
+      "key": "bridgeSpindleThickness",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeSpindleThickness"
+    },
+    {
+      "key": "bridgeShimmer",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeShimmer"
+    },
+    {
+      "key": "bridgeWhite",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "bridgeWhite"
+    },
+    {
+      "key": "aiWormhole",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "aiWormhole"
+    },
+    {
+      "key": "aiStraightMinDistance",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "aiStraightMinDistance"
+    },
+    {
+      "key": "aiBentMinDistance",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "aiBentMinDistance"
+    },
+    {
+      "key": "aiShapeSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "aiShapeSeconds"
+    },
+    {
+      "key": "aiNoise",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "aiNoise"
+    },
+    {
+      "key": "cruise",
+      "asset": "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+      "field": "DefaultThrottleScaler"
+    },
+    {
+      "key": "pitchYaw",
+      "asset": "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+      "field": "YawScaler"
+    },
+    {
+      "key": "pitchYaw",
+      "asset": "Assets/_Prefabs/Spacevessels/Meerkat.prefab",
+      "field": "PitchScaler"
+    },
+    {
+      "key": "reticleSmoothSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "reticleSmoothSeconds"
+    },
+    {
+      "key": "rideSpeedTunnelScale",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideSpeedTunnelScale"
+    },
+    {
+      "key": "rideEntryMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideEntryMultiplier"
+    },
+    {
+      "key": "rideMidMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideMidMultiplier"
+    },
+    {
+      "key": "rideExitMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "rideExitMultiplier"
+    }
+  ]
+}

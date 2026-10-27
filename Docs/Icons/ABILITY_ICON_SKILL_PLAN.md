@@ -228,7 +228,12 @@ real half-angle; options are now shown in the hull's whole lockup. The **Sparrow
 option rounds, Garrett picked N): the bay - four rockets in the real profile of `Sparrow Missile.fbx`, never touching,
 a held rocket solid, an empty one a ghost, the one charging FILLING tail to nose ("when a resource is filling up a use
 of something i do like it when it fills up one use at a time on the sub icon it is filling"); the plate's charge gauge
-is unbound - the rockets are the meter. The Sparrow is done. Next: the eleven placeholders.
+is unbound - the rockets are the meter. The Sparrow is done. **The Grizzly
+(2026-10-27)**: its four placeholders (Smash, Zap, Cannon, Boost) replaced by four kit icons drawn from its new model (`specs/grizzly.py`,
+`Docs/Icons/sheets/grizzly.png`): Dig In (the real hull side-on in its `dig` take, the anchor sunk into a ground plate),
+Weapon Systems (a three-chamber drum), Charged Cannon (a shell leaving its blast), Rush (the hull leaning into two
+exhaust bars). Single white sprites: `GrizzlyHUDView` is in flight on `grizzly-v3` (jtgjones), so tinted parts wait. Next: the
+eleven placeholders.
 
 | Round | What | Why first |
 |---|---|---|

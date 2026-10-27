@@ -185,6 +185,40 @@ namespace CosmicShore.Utility
         /// </summary>
         [NonSerialized] public List<VesselClassType> RequestedAIVessels = new();
 
+        /// <summary>
+        /// Each AI seat's OWN difficulty, picked on the launch panel with that AI's pedestal selected, parallel to
+        /// <see cref="RequestedAIDomains"/> (entry i is bot i). 0 - and anything past the end - means none of its own:
+        /// the seat flies <see cref="RequestedAIDifficulty"/>. Host-side, [NonSerialized], same lifetime as the
+        /// domain list.
+        /// </summary>
+        [NonSerialized] public List<AIDifficulty> RequestedAIDifficulties = new();
+
+        /// <summary>Replace the per-seat difficulties (cleared when <paramref name="difficulties"/> is null).</summary>
+        public void SetRequestedAIDifficulties(IReadOnlyList<AIDifficulty> difficulties)
+        {
+            RequestedAIDifficulties.Clear();
+            if (difficulties != null) RequestedAIDifficulties.AddRange(difficulties);
+        }
+
+        /// <summary>The difficulty AI seat <paramref name="seat"/> flies: its own pick, else the match's.</summary>
+        public AIDifficulty RequestedAIDifficultyAt(int seat) => AIDifficultyRules.ForSeat(
+            seat >= 0 && seat < RequestedAIDifficulties.Count ? RequestedAIDifficulties[seat] : 0, RequestedAIDifficulty);
+
+        // The level each spawned AI PILOT flies, by its Player's network id: stamped by the server when it seats
+        // the bot, read by every AI that installs a handicap later (a gate race arming its racers, the Skim Race
+        // pilot), so per-seat difficulty reaches them without each re-deriving the seat order. Server-side.
+        [NonSerialized] readonly Dictionary<ulong, AIDifficulty> _aiPilotDifficulty = new();
+
+        /// <summary>Record the level AI pilot <paramref name="playerNetId"/> flies (server, when it is seated).</summary>
+        public void SetAIPilotDifficulty(ulong playerNetId, AIDifficulty difficulty) =>
+            _aiPilotDifficulty[playerNetId] = AIDifficultyRules.Resolve(difficulty);
+
+        /// <summary>The level <paramref name="player"/> flies: the one stamped when it was seated, else the
+        /// match's (a human's hull handed to the AI, a seat nobody stamped).</summary>
+        public AIDifficulty AIDifficultyFor(IPlayer player) =>
+            player != null && _aiPilotDifficulty.TryGetValue(player.PlayerNetId, out var d)
+                ? d : AIDifficultyRules.Resolve(RequestedAIDifficulty);
+
         /// <summary>Replace the ally-hull picks (cleared when <paramref name="vessels"/> is null).</summary>
         public void SetRequestedAIVessels(IReadOnlyList<VesselClassType> vessels)
         {
@@ -1015,6 +1049,8 @@ namespace CosmicShore.Utility
             RequestedAIDomains.Clear();
             RequestedAIDifficulty = AIDifficultyRules.Default;
             RequestedAIVessels.Clear();
+            RequestedAIDifficulties.Clear();
+            _aiPilotDifficulty.Clear();
             RequestedDomainCount = 3;
             IsMaelstromMode = false;
 
