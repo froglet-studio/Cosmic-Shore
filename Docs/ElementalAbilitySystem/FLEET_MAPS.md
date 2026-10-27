@@ -651,8 +651,9 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's direction):
 - **Space · Soliton**: the wormhole makes a soliton, and the level sets its surface area.
 - **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
-- **Charge · Sentinel**: an afterimage left behind at each tunnel that zaps (the sentence was cut off).
-- **Mass**: the sentence was cut off.
+- **Charge · Sentinel**: an afterimage perched at every tunnel entrance. It zaps enemy vessels (their elements knocked
+  out) and turns same-domain prisms shielded.
+- **Mass · passive**: the soliton makes prisms at its far end, sized by Mass. L5: they are danger prisms.
 
 Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are in the same doc. The two are to be judged
 in the artifact.

@@ -265,9 +265,8 @@ and maps the new keys in `studio_to_unity/meerkat.json`.
 
 Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
 applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
-Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Nothing here is built. Two
-of Garrett's sentences arrived cut off: the Mass line ("Mass can be t...") and the Sentinel's ("it zaps..."). Those two
-rows are marked as this write-up's guesses until he finishes them.
+Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Nothing here is built.
+Garrett finished the Sentinel and Mass rows in a second message the same day.
 
 **The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
 can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Soliton) with its own pilot sight
@@ -277,8 +276,8 @@ can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` �
 |---|---|---|---|---|
 | **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton | Sets the soliton's **surface area** (below) | open | Garrett |
 | **Time** | **Passive**: the Meerkat rides **every** soliton faster, its own or anyone's | Scales the ride's rush (today `throatSpeed` 2.5 × the entry speed) | **Boost out**: the Meerkat leaves every soliton with a boost | Garrett |
-| **Charge** | **Sentinel**: an afterimage is left behind automatically at each tunnel, and it zaps | Guess: the zap's reach and how often it fires | Guess: a sentinel at both mouths | Garrett (the zap's target and effect were cut off) |
-| **Mass** | Cut off ("Mass can be t...") | Guess A: the soliton's **throughput**, how many prisms a second it swallows and how far its intake reaches. Guess B: its walls stay as prisms when it collapses (close to round 8's Hardened Bridge) | Guess A: the fired prisms leave shielded | Garrett (unfinished) |
+| **Charge** | **Sentinel**: left automatically at **every tunnel entrance**, an afterimage of the Meerkat that perches up like a real sentinel meerkat, guarding the way in. It **zaps enemy vessels**, knocking out their elements, and **zaps same-domain prisms**, turning them **shielded** | Proposal: the zap's reach and how often it fires | open | Garrett |
+| **Mass** | **Passive**: the soliton **makes prisms at its far end** (the way out) | Their **size** | **Danger prisms**: at Mass L5 the prisms it makes are danger prisms | Garrett |
 
 **What everyone sees and does with a soliton:**
 - **The placement grid is the Meerkat's alone**: its reticle, already drawn only for its pilot.
@@ -288,9 +287,27 @@ can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` �
 - **It swallows prisms and fires them out of the other end.** Prisms near the way in are drawn in, run the tube and leave
   the way out along its last heading.
   - A fired prism is a MOVING prism (§ Prism movement): one that hits another prism destroys both, scored to the soliton's
-    maker. Mass is conserved, because the prism is moved, never deleted.
+    maker. A SHIELDED one bounces instead (Garrett, 2026-10-27, `Docs/PRISM_MOTION.md` 1a: built). Mass is conserved,
+    because the prism is moved, never deleted.
   - Super-shielded mass is never moved. Whether shielded mass is drawn in is open.
   - A fired prism that reaches a vessel follows the shipped prism rules. PvP stays petals only.
+
+**The Sentinel (Charge)**:
+- **Enemy vessels:** a zap is a scored hit, so it stays inside PvP-is-petals-only. Knocking out elements is a ranged
+  verb, so the petals are EJECTED as free crystals (`Docs/ELEMENTAL_ECONOMY.md`), and the hit silences the victim for
+  what it is worth (`SILENCE.md`).
+- **Same-domain prisms:** zapped into shielded prisms.
+- **With the soliton:** shielded prisms now bounce instead of annihilating, so the Meerkat's own mass round its
+  entrances becomes ammunition that survives. The soliton swallows it, fires it out, and it rebounds off what it hits.
+- **Open:** its reach, how often it zaps, how many sentinels can stand at once (one per tunnel, so they collapse
+  with it or outlast it), and whether a rival can knock one down.
+
+**Mass (passive):**
+- The soliton makes prisms at its way out on its own, for as long as it stands. Mass sets their size; at L5 they are
+  danger prisms, which burn the petals of whoever touches them.
+- They are the maker's domain, so a sentinel can zap them shielded.
+- **Open:** the rate, whether they are fired along the exit heading (as moving prisms) or set down at the mouth, and
+  a cap per soliton.
 
 **Surface area (Space).** At a given Space level a soliton keeps one surface area A, so a longer tube is thinner and a
 shorter one fatter. The wall is round 7's hyperboloid with the mouth a fixed multiple k of the throat (M = k·b), and its
@@ -314,11 +331,12 @@ any useful area is very fat, so the throat may need a floor and a ceiling.
 **Where this meets round 8 (for Yash):**
 1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
    Time a passive and its L5 a boost out of every soliton.
-2. **Space.** Round 8's Cave-in (destroy the prisms round your tunnel) has no slot in Garrett's kit. The soliton moves
+2. **Charge and Mass.** Garrett's Sentinel and passive mouth prisms replace round 8's Lookout and Hardened Bridge.
+3. **Space.** Round 8's Cave-in (destroy the prisms round your tunnel) has no slot in Garrett's kit. The soliton moves
    prisms instead of destroying them.
-3. **Charge.** Round 8's Lookout gives way to Garrett's Sentinel.
 4. **LB.** Round 8 arms Hardened Bridge with **LB**, but LB is now the pilot's vision on every vessel
-   (`Docs/Pilots/CALLSIGNS.md` §5). Whatever Mass becomes needs another control.
+   (`Docs/Pilots/CALLSIGNS.md` §5). In Garrett's kit Mass and Charge are passive, so the kit needs no button beyond
+   the wormhole's.
 5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
    the length again. A floor and ceiling on the throat is one way to keep both.
 

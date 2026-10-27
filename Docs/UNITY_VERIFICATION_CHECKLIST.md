@@ -100,6 +100,37 @@ lens compiles in glslang HLSL mode against the black-hole lens's URP mock (a pla
 
 ---
 
+### 🔴 Prism movement: shielded prisms bounce (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "shielded prisms bounce off each other and other prisms instead of being destroyed on
+collision"; `Docs/PRISM_MOTION.md` 1a):
+- `PrismBounce` and `PrismMotion.Bounces`: a collision with a shielded prism on either side destroys neither. A
+  shielded mover bounces off super-shielded mass; an unshielded one still goes.
+- All three movers:
+  - the gravity field rebounds the body's velocity (`BouncesTotal`);
+  - the Rhino plough rebounds the rest of its throw;
+  - the Jacks net holds the prism at the contact.
+- `PrismMotionConfig.shieldBounceRestitution` 0.6.
+
+**Verified without the editor:** `PrismBounceTests` 12/12 under dotnet with Unity stubs, and a planted rule error fails
+one. Reference compile (player-dev and editor): see the commit.
+
+**Verify in editor:**
+1. EditMode `PrismBounceTests` and `PrismMotionTests` pass.
+2. **Rhino:** plough a shielded prism into a wall. It slides to the wall and rebounds part of the way; neither prism
+   breaks. A plain prism ploughed into a plain wall still destroys both.
+3. **Stoat dipole (or any black hole):**
+   - Pull a field of mixed prisms. Shielded ones bounce off each other and off plain ones, and nothing involving a
+     shield explodes.
+   - Plain-on-plain contacts still explode.
+   - `BouncesTotal` climbs and `CollisionsTotal` counts only the plain pairs.
+4. **Jacks:** net a shielded prism and drag it into another prism. It stops against it and stays in the net; neither
+   breaks.
+5. Raise `shieldBounceRestitution` on `Resources/PrismMotionConfig` to 1 and lower it to 0: the bounces get livelier,
+   then dead.
+
+---
+
 ### 🔴 The Meerkat's before and after: the bridge reticle and the contour-field tunnel (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett's pick from the Tube Lens Lab, `R_VesselActions/MEERKAT.md` §2.1):
