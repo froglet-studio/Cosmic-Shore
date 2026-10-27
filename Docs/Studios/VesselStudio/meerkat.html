@@ -522,9 +522,11 @@
     // on the cut faces; branchCount bare branches out of its top branchZone, in pairs (branchSymmetry), forking branchForks
     // times. It forms WITH the tunnel (its window), each branch growing over branchGrowSeconds once the front passes its
     // root; it is the wall's glass and bent space (trunkWarp), flowing like water
-    trunkVisibility: 1, trunkTop: 1.25, trunkBase: 1.6, trunkBark: 0.18, trunkRidges: 14, trunkGnarl: 0.1,
-    trunkGlass: 0.03, trunkRim: 0.6, trunkFresnel: 2.5, trunkRings: 6, trunkWarp: 0.25,
-    branchCount: 6, branchLength: 2.2, branchThickness: 0.3, branchUp: 40, branchZone: 0.5, branchSymmetry: 0.7, branchForks: 2, branchGrowSeconds: 0.5,
+    // round 15 (Yash: "make it look more like a big branch through which this meerkat is traveling"): a thicker, gnarled
+    // limb with bark grain (trunkGrain, trunkGrainLines fissures round it) and its side branches all along it
+    trunkVisibility: 1, trunkTop: 1.5, trunkBase: 1.9, trunkBark: 0.22, trunkRidges: 16, trunkGnarl: 0.14,
+    trunkGlass: 0.04, trunkRim: 0.55, trunkFresnel: 2.5, trunkRings: 7, trunkWarp: 0.25, trunkGrain: 0.5, trunkGrainLines: 22,
+    branchCount: 8, branchLength: 2.4, branchThickness: 0.28, branchUp: 28, branchZone: 0.85, branchSymmetry: 0.45, branchForks: 2, branchGrowSeconds: 0.5,
     // the AI's wormhole
     aiWormhole: 1, aiStraightMinDistance: 300, aiBentMinDistance: 120, aiShapeSeconds: 0.3, aiTau: 0.3, aiNoise: 0,
     // flight: one thumb (the left stick flies at full throttle, banking bankShare x the roll rate into a turn); the Stoat's
@@ -603,6 +605,8 @@
     ['tree', 'trunkFresnel', '...how tight to the silhouette (power)', 0.5, 8, 0.1],
     ['tree', 'trunkRings', 'Tree rings on the cut ends', 1, 20, 1],
     ['tree', 'trunkWarp', 'Space bent by the tree (strength)', 0, 2, 0.05],
+    ['tree', 'trunkGrain', 'Bark grain: its fissures\' brightness', 0, 2, 0.05],
+    ['tree', 'trunkGrainLines', '...fissures round the wood', 4, 60, 1],
     ['tree', 'branchCount', 'Branches, in pairs', 0, 16, 1],
     ['tree', 'branchLength', '...their length (× the mouth\'s radius)', 0, 4, 0.05],
     ['tree', 'branchThickness', '...thickness at the base (× the mouth\'s radius)', 0.02, 0.8, 0.01],
@@ -1753,19 +1757,19 @@
   // tube's warp, into rtWarp, trunkWarp strong), both flowing slowly top to bottom like water. Everyone sees it, its rider too.
   const TRUNK_RINGS = 56, TRUNK_SEG = 36, BR_SIDES = 8, BR_MAXN = 16;
   const treeVS = [
-    'attribute float aS; attribute float aBi; attribute float aCap; attribute float aR; attribute float aB; attribute vec3 aBase;',
+    'attribute float aS; attribute float aBi; attribute float aCap; attribute float aR; attribute float aB; attribute float aPhi; attribute vec3 aBase;',
     'uniform float bg[16];',
-    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying vec3 vN; varying vec3 vV;',
+    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV;',
     'void main(){',
     '  float g = 1.0; vec3 p = position;',
     '  if (aBi > -0.5) { g = bg[int(aBi + 0.5)]; p = aBase + (position - aBase) * g; }',   // a branch grows out of its root
     '  vec4 mv = modelViewMatrix * vec4(p, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal);',
-    '  vS = aS; vCap = aCap; vR = aR; vB = aB; vG = g; gl_Position = projectionMatrix * mv; }',
+    '  vS = aS; vCap = aCap; vR = aR; vB = aB; vPhi = aPhi; vG = g; gl_Position = projectionMatrix * mv; }',
   ].join('\n');
   // shared by both passes: outside the tunnel's window (f0..f1, way in 0 -> way out 1) nothing; condensing at its fronts
   const treeWin = [
     'uniform float f0; uniform float f1; uniform float edge; uniform float t;',
-    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying vec3 vN; varying vec3 vV;',
+    'varying float vS; varying float vCap; varying float vR; varying float vB; varying float vG; varying float vPhi; varying vec3 vN; varying vec3 vV;',
     'float win(){ if (vG < 0.01 || vS < f0 || vS > f1) discard; return smoothstep(0.0, edge, min(vS - f0, f1 - vS)); }',
     'float flow(){ return 0.75 + 0.25 * sin((vS + vB) * 23.0 - t * 2.4); }',   // water running top to bottom
   ].join('\n');
@@ -1773,14 +1777,19 @@
     const U = { bg: { value: new Array(BR_MAXN).fill(0) }, f0: { value: 0 }, f1: { value: 1 }, edge: { value: 0.06 }, t: { value: 0 } };
     const glass = new THREE.ShaderMaterial({
       uniforms: Object.assign({ cIn: { value: new THREE.Color() }, cOut: { value: new THREE.Color() }, alpha: { value: 1 }, glass: { value: 0.03 },
-        rim: { value: 0.6 }, power: { value: 2.5 }, rings: { value: 6 } }, U),
+        rim: { value: 0.6 }, power: { value: 2.5 }, rings: { value: 6 }, grain: { value: 0.5 }, grainN: { value: 22 } }, U),
       vertexShader: treeVS,
       fragmentShader: [treeWin,
         'uniform vec3 cIn; uniform vec3 cOut; uniform float alpha; uniform float glass; uniform float rim; uniform float power; uniform float rings;',
+        'uniform float grain; uniform float grainN;',
         'void main(){',
         '  float w = win();',
         '  float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), power);',   // the wall's glass: Fresnel at the silhouette
         '  float a = glass + rim * fr;',
+        // round 15: the bark's grain - fissures running along the wood, broken into lengths, lit from inside as from out
+        '  float along = vS * 9.0 + vB * 5.0, wob = 0.18 * sin(along * 1.7 + vPhi * 11.0);',
+        '  float line = pow(abs(sin((vPhi * grainN + wob) * 3.14159)), 18.0) * smoothstep(0.25, 0.6, fract(along + vPhi * 3.7));',
+        '  if (vCap < 0.5) a += grain * line * (0.35 + 0.65 * fr);',
         '  if (vCap > 0.5) a = glass + rim * (0.6 * pow(0.5 + 0.5 * cos(vR * rings * 6.2831853), 8.0) + 0.4 * smoothstep(0.85, 1.0, vR));',
         '  gl_FragColor = vec4(mix(cIn, cOut, vS) * a * alpha * w * flow(), 1.0);',
         '}'].join('\n'),
@@ -1814,13 +1823,13 @@
   const treeKey = (wh) => [wh.L, wh.M, wh.b, P.trunkTop, P.trunkBase, P.trunkBark, P.trunkRidges, P.trunkGnarl, P.branchCount, P.branchLength,
     P.branchThickness, P.branchUp, P.branchZone, P.branchSymmetry, P.branchForks].join();
   function buildTree(wh, seed) {
-    const pos = [], aS = [], aBi = [], aCap = [], aR = [], aB = [], base = [], idx = [], q = new V3();
-    const push = (v, s, bi, cap, r, b, root) => { pos.push(v.x, v.y, v.z); aS.push(s); aBi.push(bi); aCap.push(cap); aR.push(r); aB.push(b); base.push(root.x, root.y, root.z); };
+    const pos = [], aS = [], aBi = [], aCap = [], aR = [], aB = [], aPh = [], base = [], idx = [], q = new V3();
+    const push = (v, s, bi, cap, r, b, root, ph) => { pos.push(v.x, v.y, v.z); aS.push(s); aBi.push(bi); aCap.push(cap); aR.push(r); aB.push(b); aPh.push(ph || 0); base.push(root.x, root.y, root.z); };
     const grid = (start, rows, cols) => { for (let r = 0; r < rows; r++) for (let j = 0; j < cols; j++) { const a = start + r * (cols + 1) + j, b = a + cols + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); } };
     // the trunk's bark
     for (let r = 0; r <= TRUNK_RINGS; r++) for (let j = 0; j <= TRUNK_SEG; j++) {
       const u = r / TRUNK_RINGS, s = u * wh.L, phi = j / TRUNK_SEG * Math.PI * 2;
-      whSurf(wh, s, phi, trunkR(wh, s, phi, seed), 0, q); push(q, u, -1, 0, 1, 0, q);
+      whSurf(wh, s, phi, trunkR(wh, s, phi, seed), 0, q); push(q, u, -1, 0, 1, 0, q, j / TRUNK_SEG);
     }
     grid(0, TRUNK_RINGS, TRUNK_SEG);
     // the cut faces: the annulus from the mouth's rim out to the bark, its tree rings by aR
@@ -1846,7 +1855,7 @@
         for (let j = 0; j <= BR_SIDES; j++) {
           const a = j / BR_SIDES * Math.PI * 2;
           v.copy(pts[i]).addScaledVector(N, rad * Math.cos(a)).addScaledVector(Bv, rad * Math.sin(a));
-          push(v, u, bi, 0, 1, b0 + dist / rootLen, root);
+          push(v, u, bi, 0, 1, b0 + dist / rootLen, root, j / BR_SIDES * 0.5);
         }
       }
       grid(start, n - 1, BR_SIDES);
@@ -1889,7 +1898,7 @@
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    for (const [nm, arr] of [['aS', aS], ['aBi', aBi], ['aCap', aCap], ['aR', aR], ['aB', aB]]) g.setAttribute(nm, new THREE.Float32BufferAttribute(arr, 1));
+    for (const [nm, arr] of [['aS', aS], ['aBi', aBi], ['aCap', aCap], ['aR', aR], ['aB', aB], ['aPhi', aPh]]) g.setAttribute(nm, new THREE.Float32BufferAttribute(arr, 1));
     g.setAttribute('aBase', new THREE.Float32BufferAttribute(base, 3));
     g.setIndex(idx); g.computeVertexNormals();
     return { g, roots };
@@ -1922,6 +1931,7 @@
     const G = tr.mats.glass.uniforms, base = pilotColor(pr.pilot);
     G.cIn.value.copy(base); G.cOut.value.copy(brW).lerp(base, 0.4); G.alpha.value = A; G.glass.value = Math.max(0, P.trunkGlass);
     G.rim.value = Math.max(0, P.trunkRim); G.power.value = Math.max(0.5, P.trunkFresnel); G.rings.value = Math.max(1, P.trunkRings);
+    G.grain.value = Math.max(0, P.trunkGrain); G.grainN.value = Math.max(2, Math.round(P.trunkGrainLines));
     tr.mats.warp.uniforms.k.value = 0.05 * Math.max(0, P.trunkWarp) * A;
     tr.glass.visible = A > 0.004;
     tr.warp.visible = A > 0.004 && P.trunkWarp > 0;
@@ -3331,6 +3341,8 @@
     trunkFresnel: { scene: 'bridge', d: 'How tight the rim hugs the silhouette.', lo: 'A broad glow.', hi: 'A thin edge.' },
     trunkRings: { scene: 'bridge', d: 'How many tree rings show on each cut end, round the mouth.', lo: 'One ring.', hi: 'Many rings.' },
     trunkWarp: { scene: 'bridge', d: 'How strongly the tree bends the space seen through it, as the tunnel\'s wall does (the same warp), flowing slowly from top to bottom like water.', lo: 'Clear glass.', hi: 'Strongly bent, watery.' },
+    trunkGrain: { scene: 'bridge', d: 'The bark\'s grain: thin fissures running along the wood (the trunk and every branch), broken into lengths, brightest toward the silhouette. Riding through, they stream past along the walls.', lo: 'Smooth glass.', hi: 'Deeply grained wood.' },
+    trunkGrainLines: { scene: 'bridge', d: 'How many grain fissures run round the wood.', lo: 'A few deep cracks.', hi: 'Fine grain.' },
     branchCount: { scene: 'bridge', d: 'How many bare branches the tree has, in pairs facing each other, each pair turned round the trunk.', lo: 'A bare trunk.', hi: 'A full crown.' },
     branchLength: { scene: 'bridge', d: 'How long the branches are, as a multiple of the mouth\'s radius (all much alike).', lo: 'Stubs.', hi: 'Long boughs.' },
     branchThickness: { scene: 'bridge', d: 'How thick a branch is where it leaves the trunk, as a share of the mouth\'s radius. It tapers to a point.', lo: 'Thin twigs.', hi: 'Heavy limbs.' },
@@ -3590,6 +3602,8 @@
     trunkFresnel: ['MeerkatWormholeConfig.trunkFresnel', 'new'],
     trunkRings: ['MeerkatWormholeConfig.trunkRings', 'new'],
     trunkWarp: ['MeerkatWormholeConfig.trunkWarp', 'new'],
+    trunkGrain: ['MeerkatWormholeConfig.trunkGrain', 'new'],
+    trunkGrainLines: ['MeerkatWormholeConfig.trunkGrainLines', 'new'],
     branchCount: ['MeerkatWormholeConfig.branchCount', 'new'],
     branchLength: ['MeerkatWormholeConfig.branchLength', 'new'],
     branchThickness: ['MeerkatWormholeConfig.branchThickness', 'new'],

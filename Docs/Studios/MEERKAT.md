@@ -133,6 +133,23 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 15 (Yash, 2026-10-28: "I have added some config settings in the artifact ... It's named tree1. Can you check
+those and then repolish the configurations to make it look more like a big branch through which this meerkat is
+traveling"). ARTIFACT ONLY.**
+- **`tree1` could not be read.** The shared `profiles` collection is empty, and so are `decisions` (nothing newer than
+  2026-10-17) and `requests`. The profile was most likely kept in the browser that saved it: a section profile falls
+  back to that browser when the viewer does not serve the shared db. These defaults are therefore a polish by look, not
+  `tree1`'s numbers. To send them: Load `tree1`, then press **Record**, or Save it again while signed in to claude.ai.
+- **A big branch:**
+  - The limb is thicker (`trunkTop` 1.5, `trunkBase` 1.9 × the mouth) and more gnarled (`trunkBark` 0.22,
+    `trunkRidges` 16, `trunkGnarl` 0.14).
+  - **New: bark grain.** Thin fissures run along the wood, broken into lengths, on the trunk and every branch
+    (`trunkGrain` 0.5, `trunkGrainLines` 22 round it). Riding through, they stream past along the walls.
+  - The side branches now grow all along the limb (`branchZone` 0.85, `branchCount` 8, `branchLength` 2.4,
+    `branchThickness` 0.28, `branchUp` 28°, `branchSymmetry` 0.45).
+- **The burrowing version became its own vessel, the Gopher** (`GOPHER.md`, `gopher.html`). Its single tunnel is a
+  network of channels dug through soil, with a choice at every fork. The Meerkat stays the one-way tree.
+
 **Round 14 (Yash, 2026-10-28: "the moment AI or player ... press their right trigger to create the tunnel, the tunnel
 will automatically be created with the trunk, not separate from the trunk ... just extend the outer layer of the tube to
 some tree-like structure with big similar symmetrical or asymmetrical but similar branches from the top half ... the
