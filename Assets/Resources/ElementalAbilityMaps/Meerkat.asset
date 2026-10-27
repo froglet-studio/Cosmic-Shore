@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 3
     AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat's one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
+    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -25,7 +25,7 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 4
     AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat's one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
+    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 2
     AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat's one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
+    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -43,7 +43,7 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 1
     AbilityLabel: '(open design slot)'
-    AbilityDescription: '(open design slot) The wormhole is the Meerkat's one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
+    AbilityDescription: '(open design slot) The wormhole is the Meerkat''s one ability so far (Docs/Studios/MEERKAT.md): which element it is, the other three abilities and the level-5 upgrades are not designed yet.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
