@@ -7,7 +7,8 @@ pattern). The copy differs in exactly four ways, and nothing else may differ:
   2. a "<- Vessel Studio" back link opens the page header;
   3. it loads studio-theme.js in <head> (the one look and host helper every hub page loads, parity_gate.py);
   4. it carries the Sync panel tag (sync.js) once, before </body>;
-  5. its header names only the device (PC / Phone), never the host shell: every surface looks the same (D34).
+  5. its header names only the device (PC / Phone), never the host shell: every surface looks the same (D34);
+  6. it drops the lab's own Google Fonts link (studio-theme.js loads the studio fonts; build_artifact.py --check).
 
     python3 .claude/skills/vessel-studio/copy_orca.py            # write the copy
     python3 .claude/skills/vessel-studio/copy_orca.py --check    # exit 1 if the copy is stale
@@ -28,17 +29,19 @@ THEME = '</style>\n<script src="studio-theme.js"></script>\n</head>\n'
 BODY_END = '</body>'
 SYNC = '<script src="sync.js"></script>\n</body>'
 SHELL_OLD = "$('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');"
+FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">\n')
 SHELL_NEW = "$('platform').textContent = PLATFORM.device === 'phone' ? 'Phone' : 'PC';"
 
 
 def make(src):
-    for k in (HEAD_OLD, ANCHOR, HEAD_END, BODY_END, SHELL_OLD):
+    for k in (HEAD_OLD, ANCHOR, HEAD_END, BODY_END, SHELL_OLD, FONTS):
         if src.count(k) != 1:
             raise SystemExit('copy_orca: the source no longer has exactly one ' + repr(k[:40]) + ' to anchor on')
     if 'studio-theme.js' in src or 'sync.js' in src:
         raise SystemExit('copy_orca: the source already loads a hub script; update this copier')
     return (src.replace(HEAD_OLD, HEAD_NEW, 1).replace(ANCHOR, ANCHOR + BACK, 1)
-            .replace(HEAD_END, THEME, 1).replace(BODY_END, SYNC, 1).replace(SHELL_OLD, SHELL_NEW, 1))
+            .replace(HEAD_END, THEME, 1).replace(BODY_END, SYNC, 1).replace(SHELL_OLD, SHELL_NEW, 1).replace(FONTS, '', 1))
 
 
 if __name__ == '__main__':
