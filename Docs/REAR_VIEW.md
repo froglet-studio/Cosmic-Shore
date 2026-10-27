@@ -3,7 +3,7 @@
 **One line:** the gameplay camera flips to the mirror of its own follow offset — the same
 distance *ahead* of the vessel that it normally sits behind it — and keeps looking at the ship,
 so the pilot sees their own nose against whatever is chasing them. Toggled by **C** on the
-keyboard or **LB + RB together** on a pad. It replaces the picture-in-picture rear view.
+keyboard or **D-pad down** on a pad (LB + RB together until 2026-10-27, §5). It replaces the picture-in-picture rear view.
 
 ---
 
@@ -236,14 +236,22 @@ must be exactly one thing to read when asking what it is bound to.
 
 ```
 keyboard : C
-gamepad  : both shoulders down, and at least one of them going down THIS frame
+gamepad  : D-pad down, the frame it goes down
 ```
 
-**The pad chord is deliberately stateless.** That predicate is an exact rising edge whichever
-button the player presses first, it cannot re-fire while the chord is held, and — unlike a
-remembered `wasBothHeldLastFrame` flag — it carries nothing that could survive a scene load, a
-device swap or an editor play-mode exit and desynchronise the toggle from what the player is
-holding.
+**It fires on the press edge and carries no state.** `wasPressedThisFrame` cannot re-fire while the
+button is held, and — unlike a remembered `wasHeldLastFrame` flag — it carries nothing that could
+survive a scene load, a device swap or an editor play-mode exit and desynchronise the toggle from
+what the player is holding.
+
+**Why D-pad down (Garrett, 2026-10-27).** The pad binding was LB + RB together. The shoulders now
+belong to the pilot: LB opens the pilot's sight and RB is proposed for the payload
+(`Docs/Pilots/CALLSIGNS.md` §5), so a shoulder chord would have opened the sight, grabbed the
+payload and flipped the camera in one press. D-pad down was free in flight: left and right are
+`PilotSwapGesture`'s, and the theater's D-pad transport (`TheaterGesture.ReadPadTransport`) is read
+only while the local pilot's input is paused, which is exactly when this gesture is not polled.
+It also retires the old overlap below, where completing the chord boosted and flipped on any hull
+that reads RB as `Throttle`.
 
 **It is polled by `InputController`, and only by `InputController`.** That is the one per-frame
 pump already gated on exactly the conditions this needs: local *human* pilot only (an AI hull and
@@ -256,15 +264,12 @@ It is deliberately **not** an `InputEvents` member and not in any `ElementalAbil
 drives a camera, not a vessel, and routing it through the ability map would make it something a
 hull could fail to author.
 
-### Known overlap, stated rather than papered over
+### Retired overlap (history)
 
-The right shoulder is **not a free button**. `GamepadInputStrategy` reads it as `Throttle` and
-raises `FlipAction` from it, so completing the chord also boosts and flips on any vessel bound to
-those. The left shoulder genuinely is free — its press/release handlers in that strategy are
-commented out — which is what makes LB the half carrying the intent. This is the binding that was
-asked for; if the overlap reads badly in play, the cheapest fixes in order are (a) move the chord
-to LB + a face button, (b) make it LB + RB *held* for ~0.15 s so a boost tap cannot complete it,
-or (c) give the rear view a shoulder of its own.
+Until 2026-10-27 the chord was LB + RB, and the right shoulder is not a free button:
+`GamepadInputStrategy` reads it as `Throttle` and raises `FlipAction` from it, so completing the
+chord also boosted and flipped on any vessel bound to those. Moving the gesture to D-pad down ended
+that overlap. RB is still `Throttle`, which matters to the payload proposal, not to this camera.
 
 ---
 

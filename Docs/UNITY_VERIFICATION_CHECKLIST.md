@@ -16767,3 +16767,18 @@ configs, 0 errors, negative control fired), `author_intro_cameras.py --check` an
 4. Play Tandava. **Pass:** the old orbit, no bars, no captions.
 5. If intros fly too close or too far in most arenas, change `scaleMultiplier` on the library asset (through the
    generator) and note the value here.
+
+## 🔴 2026-10-27 — Look-back camera moved to D-pad down (unverified: no Unity editor in the session)
+
+**Files:** `RearViewGesture.cs` (pad binding LB + RB together → D-pad down; C unchanged), `RearViewLawTests.cs`
+(`TheGestureIsCOrDpadDown`, `ThePadGestureIsARisingEdgeAndCarriesNoState`), comments in `InputController`,
+`VesselRearView`, `Pip`. Why: the shoulders now belong to the pilot (LB sight, RB payload; `Docs/Pilots/CALLSIGNS.md`
+§5). Design: `Docs/REAR_VIEW.md` §5.
+
+1. Run `RearViewLawTests`. **Pass:** green.
+2. Fly any vessel with a pad: press D-pad down. **Pass:** the camera flips to the look-back view; press again, it
+   flips back. Holding D-pad down does not flicker.
+3. Press LB + RB together. **Pass:** the camera does NOT flip (RB still boosts / flips on hulls bound to it).
+4. Arena with AI teammates: D-pad left / right still swap hulls, and D-pad down still flips the camera after a swap.
+5. Open the theater (8), scrub with the D-pad. **Pass:** D-pad down steps the pilot and does not flip the gameplay
+   camera.
