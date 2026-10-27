@@ -10,13 +10,27 @@ python3 Tools/Build/element_ability_table.py                  # whole fleet (~1s
 python3 Tools/Build/element_ability_table.py Dolphin Sparrow  # named vessels
 python3 Tools/Build/element_ability_table.py -e Space         # one element, fleet-wide
 python3 Tools/Build/element_ability_table.py --gaps           # only rows that disagree
-python3 Tools/Build/element_ability_table.py -v Dolphin       # + the authored prose
+python3 Tools/Build/element_ability_table.py -b Dolphin       # brief: no prose, no action names
 python3 Tools/Build/element_ability_table.py --json           # machine-readable
 ```
 
 Run it **before** answering any question about what an element does, and before editing a map
 asset. It is a READER — it writes nothing, needs no ship contract (`Docs/TOOLING.md`), and never
 opens Unity.
+
+**Answering "show me a vessel's abilities":** run it on the vessel and present ALL of it, not just
+the four element rows: each ability's description, its control on every platform (pad / keyboard /
+mouse / phone), the **CORE** controls no element owns (drift and the like), and the **OMNI** crystal
+pickup effects. The output prints all of these by default. Garrett asked for this shape (2026-10-27).
+
+How the controls are read: the prefab's `R_VesselActionHandler` lists (`_inputEventShipActions`,
+plus `_gamepadActionOverrides` for pad/keyboard/mouse and `_touchActionOverrides` for the phone,
+per `OverridesFor`), grouped by trigger SLOT because the pad raises `RightStickAction` where a phone
+raises `OnlyRightStickAction`; the phone wording comes from the hull's row in
+`Resources/TouchControlProfiles.asset` (glyphs, TotemButtons cards). A binding whose actions an
+element ability already runs is that ability, never a core row. The omni effects are the impact
+container's `vesselCrystalEffects` and `omniCrystalRetirement`; a guid no `.meta` carries prints as
+`MISSING ASSET` (Grizzly, 2026-10-27).
 
 ## What it is joining, and why that is the whole point
 
