@@ -261,6 +261,67 @@ The game has it first (`R_VesselActions/MEERKAT.md` §2.1: `reticleLook`, `forme
 page does not yet: its Wormhole look still shows round 4's bridge. The next round brings the lab's field onto this page
 and maps the new keys in `studio_to_unity/meerkat.json`.
 
+## Garrett's direction: the soliton kit (2026-10-27, for Yash to judge)
+
+Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
+applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
+Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Nothing here is built. Two
+of Garrett's sentences arrived cut off: the Mass line ("Mass can be t...") and the Sentinel's ("it zaps..."). Those two
+rows are marked as this write-up's guesses until he finishes them.
+
+**The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
+can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Soliton) with its own pilot sight
+(FLUME, `Docs/Pilots/CALLSIGNS.md`).
+
+| Element | Ability | What the element's level does | L5 upgrade | Source |
+|---|---|---|---|---|
+| **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton | Sets the soliton's **surface area** (below) | open | Garrett |
+| **Time** | **Passive**: the Meerkat rides **every** soliton faster, its own or anyone's | Scales the ride's rush (today `throatSpeed` 2.5 × the entry speed) | **Boost out**: the Meerkat leaves every soliton with a boost | Garrett |
+| **Charge** | **Sentinel**: an afterimage is left behind automatically at each tunnel, and it zaps | Guess: the zap's reach and how often it fires | Guess: a sentinel at both mouths | Garrett (the zap's target and effect were cut off) |
+| **Mass** | Cut off ("Mass can be t...") | Guess A: the soliton's **throughput**, how many prisms a second it swallows and how far its intake reaches. Guess B: its walls stay as prisms when it collapses (close to round 8's Hardened Bridge) | Guess A: the fired prisms leave shielded | Garrett (unfinished) |
+
+**What everyone sees and does with a soliton:**
+- **The placement grid is the Meerkat's alone**: its reticle, already drawn only for its pilot.
+- **Everyone else sees the soliton by its lensing alone** once it is made: the contour field (§ Before and after RT).
+- **Any vessel can ride it**, not only its maker. A rider dives in at a mouth and rides it as the Meerkat does: in at its
+  entry speed, rushing through the throat, out at the far mouth on its last heading.
+- **It swallows prisms and fires them out of the other end.** Prisms near the way in are drawn in, run the tube and leave
+  the way out along its last heading.
+  - A fired prism is a MOVING prism (§ Prism movement): one that hits another prism destroys both, scored to the soliton's
+    maker. Mass is conserved, because the prism is moved, never deleted.
+  - Super-shielded mass is never moved. Whether shielded mass is drawn in is open.
+  - A fired prism that reaches a vessel follows the shipped prism rules. PvP stays petals only.
+
+**Surface area (Space).** At a given Space level a soliton keeps one surface area A, so a longer tube is thinner and a
+shorter one fatter. The wall is round 7's hyperboloid with the mouth a fixed multiple k of the throat (M = k·b), and its
+area is
+
+    A = 2π · L · b · g(k),    g(k) = ½ · (k + asinh(√(k²−1)) / √(k²−1))
+
+so the throat is **b = A / (2π · L · g(k))**. LT sets the length L (shaft + bend, round 7), and the throat and mouth
+follow from A. At round 7's numbers (throat 4, mouth 10, so k = 2.5 and g = 1.592):
+
+| Length L | Today's area (throat fixed at 4) | Throat at A = 15,000 u² | Throat at A = 40,000 u² |
+|---|---|---|---|
+| 60 u (shortest shaft, no bend) | 2,401 u² | 25.0 (mouth 62.5) | 66.7 (mouth 166.6) |
+| 200 u | 8,002 u² | 7.5 (mouth 18.7) | 20.0 (mouth 50.0) |
+| 400 u | 16,004 u² | 3.7 (mouth 9.4) | 10.0 (mouth 25.0) |
+| 757 u (longest shaft, 150° bend) | 30,287 u² | 2.0 (mouth 5.0) | 5.3 (mouth 13.2) |
+
+The Space level would set A through an `ElementalFloat` (the two areas above are only examples). A shortest tube at
+any useful area is very fat, so the throat may need a floor and a ceiling.
+
+**Where this meets round 8 (for Yash):**
+1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
+   Time a passive and its L5 a boost out of every soliton.
+2. **Space.** Round 8's Cave-in (destroy the prisms round your tunnel) has no slot in Garrett's kit. The soliton moves
+   prisms instead of destroying them.
+3. **Charge.** Round 8's Lookout gives way to Garrett's Sentinel.
+4. **LB.** Round 8 arms Hardened Bridge with **LB**, but LB is now the pilot's vision on every vessel
+   (`Docs/Pilots/CALLSIGNS.md` §5). Whatever Mass becomes needs another control.
+5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
+   the length again. A floor and ceiling on the throat is one way to keep both.
+
 ## What is not decided or not built
 
 - **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in, in the studio and in the game. A real

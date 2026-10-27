@@ -646,6 +646,17 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
 
+### Meerkat — the soliton maker — DIRECTION (Garrett, 2026-10-27), design gate Yash's
+
+Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's direction):
+- **Space · Soliton**: the wormhole makes a soliton, and the level sets its surface area.
+- **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
+- **Charge · Sentinel**: an afterimage left behind at each tunnel that zaps (the sentence was cut off).
+- **Mass**: the sentence was cut off.
+
+Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are in the same doc. The two are to be judged
+in the artifact.
+
 ## 3. Implementation notes for approved rows
 
 - Executor-side gate on `IsUpgradeActive(element)` at use time; per-use snapshot; AI gets it

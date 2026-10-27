@@ -336,6 +336,35 @@ ones.
   abilities); it imposes no decay and no timer on anything else. Code: `Ark`
   (`_Scripts/Controller/Environment/`), first vehicle the Arkway — the **Wander** toy's With Ark choice (`WanderToy`/`ArkwayRun`/`CellConveyor`).
   Record: `Docs/ECOSYSTEM.md §41`, `Docs/ToySystem/ARCHITECTURE.md` § "Arkway".
+- **Soliton** — *a standing tunnel through space that keeps its shape, carries whatever enters one mouth out of the
+  other, and is seen only by the way it bends the world.* Added at the prompter's explicit request (Garrett,
+  2026-10-27: "the meerkat should be producing a new fundamental (solitons)"). **DESIGN: nothing is built yet**; the
+  Meerkat's wormhole (`R_VesselActions/MEERKAT.md`) is the first maker, and the design is `Docs/Studios/MEERKAT.md`
+  § Garrett's direction. The curation checks:
+  1. **Name.** *Soliton*: a solitary wave that holds its shape as it travels. No other system uses the word.
+  2. **Reach.**
+     - The Meerkat's Space ability makes one.
+     - Any vessel rides one.
+     - Prisms are carried through one.
+     - The Meerkat's Time passive is defined over every soliton, whoever made it.
+     - The FLUME pilot sight lights them.
+     - AI routing can take one as a shortcut.
+  3. **Composition.**
+     - **Mass**: it moves prisms and never deletes them, so conservation holds.
+     - **Prism movement**: a prism it fires is a moving prism under the one rule.
+     - **Domain**: anyone may ride it, and what it fires is scored to its maker.
+     - **Elementals**: its maker's levels set its size (Space) and the ride (Time).
+     - **Vessels**: riders.
+     - **Flora & Fauna**: whether creatures ride one is open.
+     - **Switch**: a soliton aimed through a ring threads it.
+     - **Cells**: a soliton can join two places in one.
+  4. **Extension over addition.** It is not made of prisms, so it is not a prismscape. Toys come closest, since you fly
+     into one, but a toy is a station placed in the world while a soliton is made by a vessel, mid-flight, wherever it
+     points.
+  5. **Weight.** Agreed by the prompter, who asked for it.
+
+  Its look is the contour-field lens (`MeerkatWormholeLensPass`): no grid, no surface, only bent space, and the
+  placement grid is its maker's alone. Its pilot sight is **FLUME** (`Docs/Pilots/CALLSIGNS.md`).
 
 ### Process for curating fundamentals
 
