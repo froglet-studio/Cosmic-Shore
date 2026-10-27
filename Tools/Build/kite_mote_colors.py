@@ -44,8 +44,13 @@ surface), from seeded restarts, then each corner climbed continuously to 1/1536.
 THE ASSIGNMENT reads each corner's character: the lowest value is Mass (weight), the highest is Charge (the bright
 spark), and of the other two the cooler hue (toward Jade) is Space and the warmer is Time.
 
-It writes KiteNavigatorConfig.asset's `elementColors` (sRGB, Charge, Mass, Space, Time - index = Element - 1) and the
-Wrasse Lasso Lab's LIME_E line. The tail, the saved-boost dots and every other CTA lime stay the palette's lime.
+It writes KiteNavigatorConfig.asset's `elementColors` (sRGB, Charge, Mass, Space, Time - index = Element - 1), the
+Wrasse Lasso Lab's LIME_E line, and the palette's `EnvironmentColors.ElementalCrystalColors` (OriginalColorSetSO.asset):
+the four elemental CRYSTALS wear the same four shades (Garrett, 2026-10-27: "the mass crystals and omnicrystals are the
+hardest to distinguish. shift the colors on each element to match the color shifts we used for the wrasse's 2d
+elements"). The omni keeps the palette's lime; the Mass shade is the darkest corner, so the two now differ in value as
+well as hue. Tools/Build/author_elemental_crystal_colors.py carries them onto the crystals' own materials. The tail,
+the saved-boost dots and every other CTA lime stay the palette's lime.
 """
 import math
 import os
@@ -331,6 +336,32 @@ def write_asset(text, colors):
     return text[:m.end()] + block + text[m.end():]
 
 
+PALETTE_RE = re.compile(r"    ElementalCrystalColors:\n(?:    - \{r: [^\n]*\}\n){4}")
+
+
+def palette_block(colors):
+    return "    ElementalCrystalColors:\n" + "".join(
+        "    - {r: %s, g: %s, b: %s, a: 1}\n" % tuple(fmt(v) for v in c) for c in colors)
+
+
+def write_palette(text, colors):
+    block = palette_block(colors)
+    if PALETTE_RE.search(text):
+        return PALETTE_RE.sub(lambda _: block, text, count=1)
+    m = re.search(r"^    ElementalCrystalDimming: .*\n", text, re.M)
+    if not m:
+        raise SystemExit("kite_mote_colors: OriginalColorSetSO.asset has no ElementalCrystalDimming line to follow")
+    return text[:m.end()] + block + text[m.end():]
+
+
+def palette_colors(text):
+    """The four crystal colours the palette holds, or None when it holds none."""
+    m = PALETTE_RE.search(text)
+    if not m:
+        return None
+    return [tuple(float(x) for x in c) for c in re.findall(r"\{r: %s, g: %s, b: %s" % (NUM, NUM, NUM), m.group(0))]
+
+
 LAB_RE = re.compile(r"  const LIME_E = \[[^\]]*\];[^\n]*\n")
 
 
@@ -349,8 +380,16 @@ def write_lab(text, colors):
     return text[:m.end()] + line + text[m.end():]
 
 
-def check(asset_text, lab_text, colors, fam):
+def check(asset_text, lab_text, colors, fam, palette_text=None):
     errs = []
+    if palette_text is not None:
+        have = palette_colors(palette_text)
+        if have is None:
+            errs.append("OriginalColorSetSO.asset has no ElementalCrystalColors (run Tools/Build/kite_mote_colors.py)")
+        else:
+            for e, h, w in zip(ELEMENTS, have, colors):
+                if max(abs(a - b) for a, b in zip(h, w)) > 0.002:
+                    errs.append("OriginalColorSetSO.asset crystal %s is %s, the derivation says %s" % (e, hexof(h), hexof(w)))
     m = ASSET_RE.search(asset_text)
     if not m:
         errs.append("KiteNavigatorConfig.asset has no elementColors (run Tools/Build/kite_mote_colors.py)")
@@ -404,10 +443,16 @@ def self_test():
             bad.append("%s %s is inside the lime boundary" % (name, hexof(c)))
     _, colors, _, _ = derive()
     asset, lab = write_asset(read(ASSET), colors), write_lab(read(LAB), colors)
-    if check(asset, lab, colors, fam):
-        bad.append("a freshly written asset and lab fail the check: %s" % check(asset, lab, colors, fam))
-    if write_asset(asset, colors) != asset or write_lab(lab, colors) != lab:
+    palette = write_palette(read(PALETTE), colors)
+    if check(asset, lab, colors, fam, palette):
+        bad.append("a freshly written asset, lab and palette fail the check: %s" % check(asset, lab, colors, fam, palette))
+    if write_asset(asset, colors) != asset or write_lab(lab, colors) != lab or write_palette(palette, colors) != palette:
         bad.append("writing is not idempotent")
+    if not check(asset, lab, colors, fam, PALETTE_RE.sub(lambda _: palette_block([(0.4862745, 0.9882354, 0.0)] + colors[1:]),
+                                                         palette, count=1)):
+        bad.append("a palette crystal colour set to the omni's lime passes")
+    if not check(asset, lab, colors, fam, PALETTE_RE.sub("", palette, count=1)):
+        bad.append("a palette with no crystal colours passes")
     tampered = ASSET_RE.sub(lambda _: asset_block([(0.6, 0.2, 0.2)] + colors[1:]), asset, count=1)
     if not check(tampered, lab, colors, fam):
         bad.append("a tampered asset colour passes")
@@ -433,12 +478,12 @@ def main(argv):
     fam, colors, n_in, n_surface = derive()
     report(fam, colors, n_in, n_surface)
     if "--check" in argv:
-        errs = check(read(ASSET), read(LAB), colors, fam)
+        errs = check(read(ASSET), read(LAB), colors, fam, read(PALETTE))
         for e in errs:
             print("FAIL:", e)
         print("kite_mote_colors --check:", "ok" if not errs else "%d problem(s)" % len(errs))
         return 1 if errs else 0
-    for path, fn in ((ASSET, write_asset), (LAB, write_lab)):
+    for path, fn in ((ASSET, write_asset), (LAB, write_lab), (PALETTE, write_palette)):
         old = read(path)
         new = fn(old, colors)
         if new != old:

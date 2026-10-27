@@ -58,6 +58,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hashlib  # noqa: E402
 
 import author_omni_crystal_triangles as OMNI  # noqa: E402
+import author_elemental_crystal_colors as ELEMENT_COLORS  # noqa: E402  (the Mass shade on the free material)
 from author_omni_crystal_triangles import MAT_DIR, ROOT  # noqa: E402
 
 CRYSTAL_MASS_GUID = "cccc6ba7985893f43841fccfbb53dc71"     # CrystalMass.prefab
@@ -135,10 +136,12 @@ def depth_material_texts():
     body = omni[f"{MAT_DIR}/OmniCrystalBody.mat"]
     body_inactive = omni[f"{MAT_DIR}/OmniCrystalBodyInactive.mat"]
     top_h, split = OMNI.prism_shape(mass_prism_mesh()[0])
+    # The free (lime) Mass crystal wears the Mass shade, not the omni's lime (Garrett, 2026-10-27: the two were "the
+    # hardest to distinguish"); the embedded one keeps the blue-white neutral. author_elemental_crystal_colors.py.
     return {
-        mat_rel(MASS_DEPTH_NAME): OMNI.depth_material(MASS_DEPTH_NAME, "OmniCrystalBody", body,
-                                                      OMNI.MATERIAL_THICKNESS, top_h, split,
-                                                      MASS_DEPTH_REACH, MASS_DEPTH_FACE_SPLIT),
+        mat_rel(MASS_DEPTH_NAME): ELEMENT_COLORS.recolor(
+            OMNI.depth_material(MASS_DEPTH_NAME, "OmniCrystalBody", body, OMNI.MATERIAL_THICKNESS, top_h, split,
+                                MASS_DEPTH_REACH, MASS_DEPTH_FACE_SPLIT), "Mass"),
         mat_rel(MASS_DEPTH_NAME + "Inactive"): OMNI.depth_material(MASS_DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive",
                                                                    body_inactive, OMNI.MATERIAL_THICKNESS, top_h, split,
                                                                    MASS_DEPTH_REACH, MASS_DEPTH_FACE_SPLIT),

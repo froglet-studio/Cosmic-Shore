@@ -85,8 +85,9 @@ blast impulse"). Set it to 1 for palette-only behaviour.
 
 ### 2.2 The CTA lime — the crystal tier, and why bloom is bought with AREA (2026-08-15)
 
-Crystal COLOUR signals **who may collect it**, never which element it is (element is shape):
-domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
+Crystal COLOUR signals **who may collect it** (element is shape; since 2026-10-27 the free
+elementals also wear one SHADE of the lime each, §2.11, so the colour FAMILY says who collects and
+the shade says which element): domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
 neutral, and a **free pickup wears the lime CTA** (`EnvironmentColorSet.BrightCTA` / `DarkCTA`).
 `Crystal.ApplyColorSetTint` drives it per-renderer through a `MaterialPropertyBlock`, and
 `Crystal.FindColorPropertyNames` accepts either naming pair, so it reaches all five crystals
@@ -154,10 +155,13 @@ Two consequences, both load-bearing:
    unchanged at `(0.59, 0.92, 0.16)`: at max 0.92 it was already saturating the clamp, so raising
    it would have bought exactly nothing.
 
-**The omni is the hero; the four elementals are the same lime, dimmed.**
+**The omni is the hero; the four elementals are the lime, dimmed** (each in its own shade since
+2026-10-27, §2.11: the tint moves the CTA pair to the element's hue at the same brightest channel,
+then applies this scalar, so the table below still holds for the shades whose brightest channel is 1).
 `EnvironmentColorSet.ElementalCrystalDimming` (**0.45**) scales the CTA pair for anything
-`CrystalProperties.IsElemental`, leaving the omni at full strength. Note the omni and the Mass
-crystal wear the *same four materials*, so this scalar is the only thing that distinguishes them.
+`CrystalProperties.IsElemental`, leaving the omni at full strength. That note once said the omni and the Mass
+crystal wear the same materials so this scalar was all that told them apart; by 2026-10 neither was
+reached by the tint at all and they wore one identical lime, which §2.11 resolves.
 
 The scalar is far more sensitive than it looks, because the bloom **threshold (0.2) sits inside
 the elemental body's range** — so tune it against the measured curve, not by eye:
@@ -754,6 +758,49 @@ nearly "cleaned up". Zeroing it takes assimp from **3 animations to 9**, because
 hold translation curves that ARE that offset and were being dropped as no-ops against it. It stays.
 It never reaches the shells anyway — they reference the MESH, whose vertices Unity keeps in node
 space. *Before removing a transform that looks like an export artifact, check what reads it.*
+
+### 2.11 Each free elemental crystal wears its own shade of lime (Garrett, 2026-10-27)
+
+"Right now mass crystals and omnicrystals are the hardest to distinguish. Shift the colors on each
+element to match the color shifts we used for the wrasse's 2d elements." Measured before the change:
+the omni body (`OmniCrystalBody`), its triangles (`OmniDepthPrisms`) and the free Mass crystal
+(`MassDepthPrisms`) all wore `_BrightColor` `#7cfc00` over the same near-black, on shaders the
+runtime tint does not reach, and Space and Time shared `LimeCrystalFresnelMaterial` with that same
+lime. So only shape told the omni from the Mass crystal.
+
+**The shades** are the Wrasse's four lasso colours (`Tools/Build/kite_mote_colors.py`: the corners
+of the largest tetrahedron inside lime's boundary against Jade, Ruby, Gold, Blue and Fire, every
+pair apart in hue, saturation and value). The script now also writes them into the palette,
+`EnvironmentColors.ElementalCrystalColors` (index = `Element` − 1), and `--check` holds all three
+copies (Kite config, Wrasse Lasso Lab, palette) to the one derivation.
+
+| element | shade | vs the omni's `#7cfc00` (OKLab) |
+|---|---|---|
+| Charge | `#a0ff00` | 0.034, warmer and brighter |
+| Mass | `#5ec600` | **0.153**, the darkest corner |
+| Space | `#40ff00` | 0.034, cooler (toward Jade) |
+| Time | `#9bcf00` | 0.119, the warmest |
+
+**How each crystal takes it** (one rule: the element's shade at the donor colour's brightest
+channel, `Color.WithHueOf`):
+- **Charge** (and `ActiveCrystalSpace`'s `CrystalGraph` material): the runtime tint,
+  `Crystal.TryResolveTintColors`: CTA pair → the shade → `ElementalCrystalDimming`. An unauthored
+  shade (alpha 0) falls back to the plain CTA.
+- **Mass**: `MassDepthPrisms.mat`'s bright colour, authored by `author_mass_crystal_look.py`.
+- **Space / Time**: their own clones of `LimeCrystalFresnelMaterial`, `SpaceCrystalFresnelMaterial`
+  and `TimeCrystalFresnelMaterial`, as each prefab's free (default) material. Authored by
+  `Tools/Build/author_elemental_crystal_colors.py` (`--check`, `--self-test`), which reads the
+  shades from the palette and also fails if the Mass crystal wears the omni's colour again.
+- The Fresnel materials move only their bright colour: their dark end is near-black.
+
+**Unchanged:** the omni keeps the palette's lime, embedded hearts keep the blue-white neutral, and
+team crystals keep their domain pair. Lime still means anyone collects. **Known consequence:** the
+omni converter (`OmniCombinePlayer`) draws Mass in `MassDepthPrisms`, so its Mass plates now fly in
+their own shade and dither into the omni's lime at the hand-off. Charge, Space and Time still fly in
+the omni body's material there. **To retune a shade**, rerun `kite_mote_colors.py`, then
+`author_elemental_crystal_colors.py` and `author_mass_crystal_look.py`. The Fresnel family still sits
+outside the live tint (§2.10, "Not reached by §2.2's tint"), so those three are generated from the
+palette rather than painted by it.
 
 ## 3. The colour-space rule (this is the trap)
 
