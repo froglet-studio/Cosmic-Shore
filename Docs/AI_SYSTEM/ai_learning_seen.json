@@ -1,6 +1,6 @@
 {
  "note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: when a learner changes, every flight is learned from again. Delete a line to relearn it. 'waiting' holds the flights no learner read yet (mode on hold, hull with no learner) and why: each is learned from once its reason goes away. A flight whose learner failed is in neither, so the next sweep tries it again.",
- "learners": "9185a99e3206a0b9",
+ "learners": "95f1a149094b5356",
  "flights": [
   "BugLedger/shared/reports/belac/flights/flight_SkimRace_Squirrel_20261019_102720.json",
   "BugLedger/shared/reports/belac/flights/flight_Switchback_Dolphin_20261019_102537.json",

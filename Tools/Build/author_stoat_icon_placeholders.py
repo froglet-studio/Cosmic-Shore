@@ -14,7 +14,7 @@ pass), multiply-tinted at runtime and replaced 1:1 by the art pass. Each names t
 The Mass card's icon follows the MODE B is in (StoatHUDView, 2026-10-26), one icon per mode:
   Mass mode    a thick slab of trail and the path it flies (the field trajectory)
   Time mode    an orbit round a solid attractor, arrowed (the catch sling)
-  Drive mode   the warp pair: a black hole ahead, a white hole behind, the hull between them on its axis
+  Gate mode    the warp gate: the hull's arrow into a black hole, out of a white hole far along the line
 
 Pure-python PNG raster (no PIL), donor-cloned sprite .meta, deterministic guids, idempotent,
 --check. The folder .meta is emitted too.
@@ -152,14 +152,19 @@ def mode_time(px, py):
     return False
 
 
-def mode_drive(px, py):
-    """Drive mode: the warp pair riding with the hull - the black hole ahead, the white hole behind, the hull between."""
-    if circle(px, py, 96, 96, 19):
-        return True                                    # the black hole, ahead
-    if ring(px, py, 32, 32, 15.0, 6.0):
-        return True                                    # the white hole, behind
-    if tri(px, py, 76, 76, 42, 62, 62, 42):
-        return True                                    # the hull, nose toward the black hole
+def mode_gate(px, py):
+    """Gate mode: the warp gate - an arrow into the black hole, the white hole far along the same line."""
+    if circle(px, py, 54, 54, 15):
+        return True                                    # the black hole, the mouth
+    if ring(px, py, 104, 104, 13.0, 5.0):
+        return True                                    # the white hole, far along the line
+    if capsule(px, py, 12, 12, 34, 34, 5.0):
+        return True                                    # the line in
+    if tri(px, py, 40, 40, 22, 38, 38, 22):
+        return True                                    # the arrowhead, into the mouth
+    for cx, cy in ((76, 76), (88, 88)):
+        if circle(px, py, cx, cy, 3.5):
+            return True                                # the jump's line between them
     return False
 
 
@@ -170,7 +175,7 @@ ICONS = {
     "Stoat_Pathfinder.png": pathfinder,
     "Stoat_ModeMass.png": mode_mass,
     "Stoat_ModeTime.png": mode_time,
-    "Stoat_ModeDrive.png": mode_drive,
+    "Stoat_ModeGate.png": mode_gate,
 }
 
 SIZE, SS = 128, 3  # canvas, supersample factor

@@ -6,7 +6,7 @@
 // b0adfa7284 and 4022675284 on Ys-rescue-2026-08-24):
 //   The presence lobby is an ISession, and the SDK raises its roster events after it has patched the
 //   local copy. Nothing subscribed to them, so every arrival, departure and status change anywhere
-//   was discovered only by the next poll (1.5 s in the menu, 10 s in a match), and a lobby the
+//   was discovered only by the next poll (then 1.5 s in the menu, 10 s in a match), and a lobby the
 //   service had dropped us from was noticed only after three failed reads.
 //
 //   Two flags, because the recoveries differ: a roster change means "re-read what we already hold"

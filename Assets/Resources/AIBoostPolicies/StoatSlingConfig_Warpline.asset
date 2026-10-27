@@ -68,11 +68,11 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 1.5
-  aiSlingMinTurnDegrees: 7.925
-  aiReleaseConeDegrees: 16.592
+  aiSlingMinTurnDegrees: 7.84
+  aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4
-  aiSlingIntervalSeconds: 0.95
-  aiSlingMinDistance: 125.377
+  aiSlingIntervalSeconds: 0.941
+  aiSlingMinDistance: 123.282
   holdStartEvent:
     Guid:
       Data1: 0

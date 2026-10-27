@@ -15,14 +15,14 @@ MonoBehaviour:
   vesselClass: 3
   entries:
   - Element: 1
-    AbilityLabel: 'Sword Steal'
-    AbilityDescription: 'Charge raises how many petals a sword hit steals from a rival vessel - x1 at rest (the price Broadside puts on a Strike), x2.5 at level 10, floored at x1 (RhinoSwordStealBySkimmerEffect.stealScale, read at the thief''s replicated level; the same verb and numbers as the Squirrel''s joust). The card is also the energize: hold both triggers to light the blade, which pops super-shielded prisms. The Rhino has no energy meter (2026-10-26): the energize costs nothing and the cooldown is its only limit.'
+    AbilityLabel: 'Energize'
+    AbilityDescription: 'Hold both triggers to light the blade: it costs nothing and its cooldown is its only limit (the Rhino has no energy meter since 2026-10-26). A lit blade lays the afterimages (Mass) and, with the Space level-5 upgrade, pops super-shielded prisms. Charge also scales how many petals a sword hit takes from a rival vessel - x1 at rest (the price Broadside puts on a Strike), x2.5 at level 10, floored at x1 (RhinoSwordStealBySkimmerEffect.stealScale, read at the thief''s replicated level). Below Charge 5 those petals are knocked loose as crystals at the strike; the level-5 upgrade makes the sword pocket them.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Live Wire'
-    UpgradeDescription: 'Once an energized blade''s stance is let go its 5 s tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it, so a blade kept coming back to the chop stays energized. ShieldSkimmerScaleConfigSO.liveWireUpgradeElement, gated on IsUpgradeActive(Charge) in ShieldSkimmerScaleDriver.'
+    UpgradeLabel: 'Sword Steal'
+    UpgradeDescription: 'A sword hit on a rival vessel STEALS its petals - they land on the Rhino instead of being knocked loose as crystals at the strike (the same verb and numbers as the Squirrel''s joust). RhinoSwordStealBySkimmerEffect.stealUpgradeElement, gated on IsUpgradeActive(Charge) in VesselOvertakeBySkimmerEffectSO.TakeFrom (Garrett, 2026-10-26).'
   - Element: 2
     AbilityLabel: 'Afterimage'
     AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge (8 s, a ring of eight trigger-driven swords round the hull) lays them for its whole length, from the pilot's blade. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Rhino''s own blade: past the 1 s self-trail grace it cuts them like any prism.'
@@ -39,8 +39,8 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Breaker'
-    UpgradeDescription: 'The sword cuts a SHIELDED prism in one slice instead of two - the shield sheds and the core is cut in the same hit. Super-shielded prisms still need an energized blade. RhinoSkimmerDamagePrismEffectSO.breakerElement, gated on IsUpgradeActive(Space).'
+    UpgradeLabel: 'Shield Breaker'
+    UpgradeDescription: 'The sword can destroy SUPER-SHIELDED prisms: an energized blade pops them. Without the upgrade the blade binds in hardened mass, energized or not. ShieldSkimmerScaleConfigSO.superShieldUpgradeElement, gated on IsUpgradeActive(Space) (Garrett, 2026-10-26).'
   - Element: 4
     AbilityLabel: 'Ramp Spool'
     AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its top speed: 220 u/s per second at rest, 550 at level 10, 110 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live). It does not raise the ceiling - cruise 50 x maxBoostMultiplier 16.8 = 840 u/s - only how long the run-up takes. The Rhino is a bulldozer: its hull carries no prism slow, so ramming mass costs it no speed - the plough shoves what it hits aside (RhinoPloughPrismEffectSO) and the ramp keeps climbing through it.'

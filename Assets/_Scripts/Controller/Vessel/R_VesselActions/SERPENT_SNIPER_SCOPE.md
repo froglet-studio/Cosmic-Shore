@@ -1619,7 +1619,7 @@ constant) both firing.
 35. **Both are stood down when the scope is (round 9).** Fly unscoped around the arena: no ring
     anywhere on screen. Then open the overview / pause while scoped, and swap hulls while scoped —
     the flight reticle must go with the eyepiece in both cases, not linger.
-36. **The rear view (round 9).** While scoped, flip to the look-back camera (**C**, or **LB+RB**).
+36. **The rear view (round 9).** While scoped, flip to the look-back camera (**C**, or **D-pad down**; LB+RB until 2026-10-27).
     The flight reticle must **disappear** rather than appear mirrored somewhere plausible — the aim
     point is behind the camera there. The eyepiece must keep working throughout.
 37. **MPPM (round 9).** Scope on client A; client B must get **neither** reticle. This is step 12's

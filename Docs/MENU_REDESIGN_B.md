@@ -3723,3 +3723,106 @@ chapters. CODEX is the top bar's first tab (section 84).
   move") is proposed wording, read off the fleet's ability table.
 
 Nothing is built in Unity until a board is approved.
+
+## 88. The CODEX screen, built (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith):** "Go ahead implement the codex I like the design" (the Rev 26 boards, section 87).
+
+**What the player gets:** CODEX, the top bar's first tab, now opens its screen. Its lock is lifted, so LT / RT reach it.
+- **Chapters** along the top: ETHIRIONS, ELEMENTS, ECOLOGY, PILOTS, VESSELS, ARTIFACTS, TOOLS. LB / RB step through
+  them. ECOLOGY has two stops, Flora and Fauna, with FLORA / FAUNA tabs beside the grid's title while it is open.
+- **The grid** on the left: one tile per entry (picture, name, a quiet line). The pad landing on a tile opens it. The
+  open tile's outline is the selection blue, with a glow.
+- **The page** on the right: picture, kicker and title, then a scroll of the entry's own words, its facts, its element
+  cells and its rows.
+- The layout is the Hangar's: the same backdrop and sea, drawn at its 0.88 scale. The grid stops above the friends orb.
+
+**What each chapter shows, all from the game's own data:**
+- **Ethirions, Flora, Fauna, Tools:** `Codex.asset` (`CodexSO.Load()`, Garrett's, `Docs/CODEX.md`).
+  - A lifeform's page has its facts and one cell per element (its heart is that element's ethirion), and its
+    elemental laws as rows.
+  - A tool's page has its category, facts, and its choices as rows (the paintings, the hulls, the domains).
+- **Elements:** each element's petal and authored line, and a row for every vessel naming that element's ability and
+  level-5 upgrade (`ElementalAbilityMapSO.LoadFor`). An element with no ability designed reads "Open slot".
+- **Pilots:** the Hangar's `ElementalCaptains` list, in the vessel list's order, then Charge to Time. The page shows the
+  flavour line, signature, how they fly as a wingmate, the ability their element answers to, and its upgrade.
+- **Vessels:** the Hangar's vessel list (`SO_Classlist_Classes`), each with its four abilities and upgrades and its
+  pilots. The art is the vessel's own `IconActive`, not the colourful Hangar card art (that stays Hangar-only).
+- **Artifacts:** the game has no artifact data, so this stop shows its authored empty line.
+
+Discovery is not built (`Docs/CODEX.md` section 5: nothing reads it yet), so every entry is listed. The counts,
+silhouettes, NEW badges and discovery toast from the boards wait for it.
+
+**Built:**
+- **C#** (`Assets/_Scripts/UI/Elements/Codex/`):
+  - `CodexCatalog` is the pure builder that turns the data into chapters and pages; `CodexCatalogTests` covers it.
+  - `CodexScreen` is the `IScreen` on the view's root.
+  - `CodexTile`, `CodexPageView` and `CodexLine` draw the tiles and the page; `CodexLine` is one line view for facts,
+    cells and rows, copied from hidden templates.
+  - Every word around the data is an authored field: `CodexWords`, the stop titles, the count and the empty lines.
+- **Generator** `Tools/Build/author_menu_codex.py`:
+  - It writes `CodexTile.prefab` and `CodexView.prefab`, places one CodexView instance as the first child of
+    `Screens`, and points `ScreenSwitcher.screens`' CODEX slot (id 6, root 0 since section 84) at it.
+  - `--check` and `--self-test` run eight plants: the slot left empty, a chapter tab dropped, the page unwired, a
+    template left visible, the outline repainted by a theme, no pilots list, FLORA / FAUNA always shown, and the
+    focus order changed.
+- **Top bar** `author_menu_topnav.py`:
+  - `LOCKED` is now PORT only, and `disabledScreens` is PORT.
+  - A re-run removes every document the script can mint, so CODEX's old lock view is deleted rather than stranded.
+  - Plants: "CODEX locked again" and "PORT without its lock view".
+- **Shared emitter:** `author_menu_arcade.emit_node` now writes a node's `scale`, as the kit emitter does. Every
+  existing node has scale 1, so its output is unchanged: every menu generator still reports no drift.
+
+**How it was checked:**
+- `author_menu_codex.py --check` and `--self-test`, and `author_menu_topnav.py --check` and `--self-test`.
+- Every `author_menu_*` generator's `--check` reports no drift.
+- `gates.sh`: ALL OK, including the player and editor reference compiles.
+- Offline renders of the view and the tile. The renderer does not lay out GridLayoutGroups or nested layout groups,
+  so the grid and the page's blocks were checked by their layout settings, not by the picture.
+- Not opened in the editor, and `CodexCatalogTests` has not been run.
+
+## 89. The Codex: Toys, live element icons, colour, and subtle motion (2026-10-26, awaiting in-editor approval)
+
+**Asked (Shombith):** "Name tools to toys. Elements use the actual element icons and animated. ecology need colors.
+Vessel need colors. Make everything subtly animated."
+
+**Built:**
+- **Toys.** The chapter, its stop title and its kicker ("Toy - Creation") now say Toys. `CodexChapter.Tools` is now
+  `Toys`. `Codex.asset` keeps its `Tool` kingdom; only the player-facing words changed (the naming note in
+  `Docs/CODEX.md` says so).
+- **Elements** draw the HUD's own icons: `KitElementFlower`'s five petals over the element's shape (pentagon, triangle,
+  kite, diamond, from `Assets/_Graphics/ElementShapes`).
+  - The petals light one at a time (0.32 s apart), hold the full flower for 1.4 s and start again, and the shape
+    breathes 5 %.
+  - The vessels' ability rows use the shapes as their icons.
+  - The petals keep the HUD's white tick colours, so elements still carry no colour.
+- **Ecology colour.** A creature or plant drifts slowly through Jade, Ruby and Gold (`SO_ColorSet`'s domain signal
+  colours, 5 s per blend, 80 % strength). Those are the colours a lifeform wears in the world, where it takes its
+  owner's domain. The element colours stay out of the UI under the palette rule.
+- **Vessel colour.** A vessel's tile and page show the Hangar's colourful hull render (`HangarCardArtSO`), falling
+  back to its icon.
+- **Motion,** all subtle and all stopping when the Codex is not the shown screen:
+  - Every picture floats 4 units on a 4.5 s sine, each tile from its own phase.
+  - Tiles fade and rise in, 30 ms apart, each time a stop fills.
+  - The open tile's glow breathes.
+  - The page's picture and words fade and rise in each time a page opens.
+- **Cost.** Each picture has its own nested Canvas (it takes no clicks, so it needs no raycaster), so its per-frame
+  motion rebuilds only itself, not the menu canvas.
+
+**C#:**
+- `CodexPortrait` is new: it does the float, the colour drift, and the petal cycle and shape breath.
+- `CodexTile` uses a `portrait` and a `body`, and appears on each fill.
+- `CodexPageView` uses a `portrait` and a `reveal` group.
+- `CodexScreen` gains `elementShapes`, `cardArt` and `colorSet`, and sets `CodexPortrait.Animating` while shown.
+- `CodexCatalog.Build` takes the card art and the life palette. Items and pages carry their `Element` and `Palette`.
+- Three new tests: elements carry their element, only lifeforms take the palette, and vessels show their card art.
+
+**Generator:** `author_menu_codex.py` builds the portraits, the breathing glow, the tile body and the page reveal.
+Four new plants: card art unwired, glow standing still, page picture not alive, and the chapter called TOOLS again.
+All 12 plants fire.
+
+**How it was checked:**
+- `--check` and `--self-test` pass. The Codex, top-bar, Hangar and Arcade generators all show no drift.
+- `gates.sh`: ALL OK, including the player and editor reference compiles.
+- Offline renders of the tile and the page, with the element flower and shape in place.
+- Not opened in the editor, and the tests have not been run.

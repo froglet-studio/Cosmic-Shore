@@ -102,6 +102,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void PostJoin_TheFirstSafetyPollComesInTwoSeconds()
+        {
+            // Block 5 step 8: the join raises no push for the players already there, and the poll is now 20 s.
+            var hcs = NewService(NewData(), new StubPartySession(), new StubPresenceLobby { Active = FakeSession.Create(out _) });
+
+            Call(hcs, "ApplyPostLobbyJoinState");
+
+            var scheduler = GetField<LobbyRefreshScheduler>(hcs, "_scheduler");
+            Assert.IsFalse(scheduler.ShouldFireNow(LobbyRefreshScheduler.FIRST_POLL_AFTER_JOIN_SECONDS - 0.1f));
+            Assert.IsTrue(scheduler.ShouldFireNow(0.2f), "the online list fills two seconds after the join");
+        }
+
+        [Test]
         public void PostJoin_WithNoParty_StillStartsFromJustTheLocalPlayer()
         {
             var data = NewData();
@@ -201,7 +214,7 @@ namespace CosmicShore.Tests
             SetField(hcs, "_propertyWriter", writer);
             SetField(hcs, "_partySessionService", party);
             SetField(hcs, "_lobbyService", lobby);
-            SetField(hcs, "_scheduler", new LobbyRefreshScheduler(1.5f));
+            SetField(hcs, "_scheduler", new LobbyRefreshScheduler(LobbyRefreshScheduler.SAFETY_POLL_SECONDS));
             SetField(hcs, "_memberService", new PartyMemberService(data, new SoapPartyEventBus(data)));
             SetField(hcs, "_eventBus", new SoapPartyEventBus(data));
             SetField(hcs, "connectionData", data);

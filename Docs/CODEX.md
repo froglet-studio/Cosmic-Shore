@@ -5,6 +5,9 @@ The in-game encyclopedia's data layer and the tool that authors it.
 - **Ethirion** is the player-facing name for a **crystal**. Charge / Mass / Space / Time / Omni.
 - **Ecology** is every **lifeform** — flora and fauna.
 - **Tool** is the player-facing name for a **Toy** — the freestyle stations you fly into.
+  *(2026-10-26: the menu's CODEX screen calls them **Toys**, at Shombith's request: "Name tools to toys".
+  `Codex.asset` still files them under the `Tool` kingdom; only the screen's words changed,
+  `Docs/MENU_REDESIGN_B.md` section 89.)*
 
 One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds all three. The runtime UI reads it with
 `CodexSO.Load()`; there is no second data path and nothing to wire per scene, which matters because
@@ -262,6 +265,11 @@ added later without a schema change or a UI rewrite — the same way `ToyboxSO` 
 state. **Nothing reads them yet**; do not write code that assumes otherwise.
 
 ## 6. Reading it from the UI
+
+**The menu's CODEX screen is the UI that reads it** (`CodexScreen` and `CodexCatalog`, `Assets/_Scripts/UI/Elements/Codex/`;
+`Docs/MENU_REDESIGN_B.md` section 88). It lists every entry of `Ethirions`, the Flora and Fauna of `Ecology` and
+`Tools`, with their stats, element variants (their ethirion through `VariantImage`), elemental laws and tool
+choices, alongside pilots, vessels and elements from their own assets. A field this page adds shows up there.
 
 ```csharp
 var codex = CodexSO.Load();

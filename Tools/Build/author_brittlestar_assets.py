@@ -103,10 +103,11 @@ DOC_GUID = guid_for("BRITTLE_STAR.md")
 AI_POLICY_GUID = guid_for("BrittleStarAIBoostPolicy.asset")
 
 # (control name, enum value, InputEvents it is bound to). The InputEvents numbers: RightStickAction=1 (RT / LMB /
-# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), FlipAction=3 (RB / E - the only free face control the input
-# layer raises), Button1=6 (A / Space), Button2=7 (B / R), Button3=8 (X / Q).
+# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), Button1=6 (A / Space), Button2=7 (B / T), Button3=8 (X / Q),
+# Button4=14 (Y / F). Charge Mode was FlipAction=3 (RB / E) until 2026-10-27, when Garrett moved every RB ability to Y:
+# the shoulders belong to the pilot (LB sight, RB payload; Docs/Pilots/CALLSIGNS.md section 5).
 CONTROLS = (("BrittleStarSpeedMode", 0, 6), ("BrittleStarCreationMode", 1, 7), ("BrittleStarDestructionMode", 2, 8),
-            ("BrittleStarFire", 3, 1), ("BrittleStarRingDetonation", 4, 2), ("BrittleStarChargeMode", 5, 3))
+            ("BrittleStarFire", 3, 1), ("BrittleStarRingDetonation", 4, 2), ("BrittleStarChargeMode", 5, 14))
 CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
@@ -667,8 +668,8 @@ def quote(text: str) -> str:
 
 
 MAP_ENTRIES = (
-    (1, "Charge Mode", 3,
-     "RB. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) "
+    (1, "Charge Mode", 14,
+     "Y. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) "
      "and striking rival hulls for petals. Released, RT leaves them WHIPS at 150% length: heavy, inextensible, slow - a "
      "turn, a ring flick or a sweep of the right stick sends a wave travelling down them that rings on for seconds. "
      "Pulled, RT shortens them to 100% and stiffens them into five SABERS that keep 60% of the whip's give (analog: "

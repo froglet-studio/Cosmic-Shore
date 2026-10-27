@@ -202,6 +202,11 @@ editor config gates only files changed since bleeding-edge (its standing 3 error
 `AuthenticationServiceFacade.cs` come from a package that cannot be fetched). Fix anything red on `$BRANCH`
 before the PR - the root cause, never a skipped check. Read exit codes as §0.05 says (bare, not through a pipe).
 
+**A clean merge can still break a reference.** One side deletes an asset while the other adds a reference to it, and git
+sees no conflict (2026-10-27: Ys-bleeding-edge removed the Omega crews; bleeding-edge's new Hangar card art listed the
+Warden). The `generated_assets` gate names the dangling guid. Re-run the generator that owns the referencing asset on the
+merged tree; hand-delete only files that generator no longer emits, once a guid search shows nothing references them.
+
 **Amoebius builds only where you build it.** The `amoebius` CI job runs daily and on demand, not on PRs, so a promote
 that brings new game code can break the engine build with nothing red on the PR. When a .NET 10 SDK is already present
 (`~/.dotnet`), also run `dotnet build Port/src/CosmicShore.Player -nologo -v q` (and `dotnet test

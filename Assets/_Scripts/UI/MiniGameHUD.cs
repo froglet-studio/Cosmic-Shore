@@ -704,7 +704,14 @@ namespace CosmicShore.UI
                     {
                         bool cinematicDone = false;
                         preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
-                        preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
+                        // The mode's own intro (a random one from its arena family); the orbit
+                        // when the mode has none. Docs/IntroCameras/README.md.
+                        var localDomain = gameData.LocalPlayer.Domain;
+                        Color accent = gameData.ThemeManagerData != null
+                            ? gameData.ThemeManagerData.GetDomainUIAccentColor(localDomain)
+                            : Color.white;
+                        preGameCinematic.Play(cinematicLookAtCenter, playerTarget, gameData.GameMode,
+                                              gameData.Vessels, accent);
 
                         while (!cinematicDone)
                             await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);

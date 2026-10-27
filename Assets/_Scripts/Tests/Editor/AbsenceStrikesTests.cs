@@ -198,33 +198,33 @@ namespace CosmicShore.Tests
             var party = new RosterParty { Active = RosterSession.Create(out var roster) };
             roster.Players.Add(Player("p2"));
             var hcs = NewService(data, party, new RosterLobby { Active = RosterSession.Create(out _) });
-            CallAsync(hcs, "RefreshPartyMembersAsync", true);
+            CallAsync(hcs, "RefreshPartyMembersAsync", true, true);
             Assert.AreEqual(1, data.PartyMembers.Count);
 
             roster.Players.Clear();
             party.Departed.Add("p2");
-            CallAsync(hcs, "RefreshPartyMembersAsync", true);
+            CallAsync(hcs, "RefreshPartyMembersAsync", true, true);
 
             Assert.AreEqual(0, data.PartyMembers.Count, "PlayerLeaving drives ReconcilePartyMembersNow: one read is enough");
         }
 
         [Test]
-        public void PartyPoll_OneShortRead_ThenATickBetweenGets_KeepsTheMember()
+        public void PartyPoll_OneShortRead_ThenAPushSync_KeepsTheMember()
         {
             var data = NewData();
             var party = new RosterParty { Active = RosterSession.Create(out var roster) };
             roster.Players.Add(Player("p2"));
             var hcs = NewService(data, party, new RosterLobby { Active = RosterSession.Create(out _) });
-            CallAsync(hcs, "RefreshPartyMembersAsync", false);                  // takes the poll: a GET
+            CallAsync(hcs, "RefreshPartyMembersAsync", true, false);            // safety poll: a GET
             Assert.AreEqual(1, party.Refreshes);
 
             roster.Players.Clear();
-            CallAsync(hcs, "RefreshPartyMembersAsync", true);                   // second GET: strike 1
-            CallAsync(hcs, "RefreshPartyMembersAsync", false);                  // poll not due: local copy
-            Assert.AreEqual(2, party.Refreshes, "the third tick did no GET");
+            CallAsync(hcs, "RefreshPartyMembersAsync", true, false);            // second GET: strike 1
+            CallAsync(hcs, "RefreshPartyMembersAsync", false, false);           // a push sync: the SDK's copy
+            Assert.AreEqual(2, party.Refreshes, "a push sync does no GET (Block 5 step 8)");
             Assert.AreEqual(1, data.PartyMembers.Count, "a GET and a re-read of its copy are one read, not two");
 
-            CallAsync(hcs, "RefreshPartyMembersAsync", true);
+            CallAsync(hcs, "RefreshPartyMembersAsync", true, false);
             Assert.AreEqual(0, data.PartyMembers.Count);
         }
 
@@ -311,7 +311,7 @@ namespace CosmicShore.Tests
             });
             SetField(hcs, "_partySessionService", party);
             SetField(hcs, "_lobbyService", lobby);
-            SetField(hcs, "_scheduler", new LobbyRefreshScheduler(1.5f));
+            SetField(hcs, "_scheduler", new LobbyRefreshScheduler(LobbyRefreshScheduler.SAFETY_POLL_SECONDS));
             SetField(hcs, "_memberService", new PartyMemberService(data, new SoapPartyEventBus(data)));
             SetField(hcs, "_eventBus", new SoapPartyEventBus(data));
             SetField(hcs, "_inviteService", new InviteService());

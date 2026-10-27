@@ -91,12 +91,48 @@ namespace CosmicShore.ScriptableObjects
                  "invisible drain and a lighter frame in the menu the player went back to.")]
         [SerializeField, Range(25, 2000)] int arenaDrainPrismsPerFrame = 150;
 
+        [Header("The world")]
+        [Tooltip("Record every prism's birth, death and movement beside the vessels, so a replay shows the trails, " +
+                 "walls and creatures as they were in the match rather than a freshly built arena.")]
+        [SerializeField] bool recordWorld = true;
+
+        [Tooltip("Also record prisms that move (swarm creatures, drifting walls). Off keeps only births and deaths.")]
+        [SerializeField] bool recordMovingPrisms = true;
+
+        [Tooltip("A moving prism is recorded again after at least this many seconds and Move Min Distance units.")]
+        [SerializeField, Range(0.05f, 2f)] float moveMinSeconds = 0.2f;
+
+        [Tooltip("A moving prism is recorded again after at least Move Min Seconds and this many units.")]
+        [SerializeField, Range(0.1f, 20f)] float moveMinDistance = 1f;
+
+        [Tooltip("A prism that jumps this far is recorded at once.")]
+        [SerializeField, Range(1f, 100f)] float moveJumpDistance = 8f;
+
+        [Tooltip("Most prism events one replay keeps (about 50 bytes each). Past it, new prisms stop being recorded.")]
+        [SerializeField, Range(10000, 2000000)] int maxWorldEvents = 250000;
+
+        [Tooltip("Material the recorded prisms are drawn with, tinted per domain. Must have GPU instancing on. " +
+                 "Empty uses a lit material built at runtime.")]
+        [SerializeField] Material worldPrismMaterial;
+
         [Header("Watching: the camera")]
         [Tooltip("The camera a replay opens on. Free is the Theater's free-flying camera (sticks / WASD, the Third " +
                  "Eye's way of watching), seeded from the orbit framing so the race is in shot.")]
         [SerializeField] TheaterShot startShot = TheaterShot.Free;
 
         public TheaterShot StartShot => startShot;
+        public bool RecordWorld => recordWorld;
+        public Material WorldPrismMaterial => worldPrismMaterial;
+
+        /// <summary>A world recorder set up from these settings.</summary>
+        public TheaterWorldRecorder NewWorldRecorder() => new()
+        {
+            RecordMoves = recordMovingPrisms,
+            MoveMinSeconds = moveMinSeconds,
+            MoveMinDistance = moveMinDistance,
+            MoveJumpDistance = moveJumpDistance,
+            MaxEvents = maxWorldEvents,
+        };
         public float ResultsWaitSeconds => resultsWaitSeconds;
         public float StageDistance => stageDistance;
         public int ArenaPrismStride => arenaPrismStride;

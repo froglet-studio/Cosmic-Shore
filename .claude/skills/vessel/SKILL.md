@@ -381,6 +381,15 @@ applies to new abilities, new resources on the meter list, and anything that add
     CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
     (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
     them; reading either alone gives a confident wrong answer about which gate you are moving.
+    **When an L5 gates an outcome, find EVERY system that re-derives that outcome, and give them one
+    gate on the per-vessel state they all read.** Making the Rhino's super-shield pop the Space L5
+    (2026-10-26) first put the gate on the damage effect alone, and the review found
+    `ShieldSkimmerScaleDriver.UpdateBind` deciding "this blade can pop, so it is not bound" from
+    `IsEnergized` by itself, so an energized blade without the upgrade was refused the pop and then slid
+    through the prism with no drag. The ignition re-dispatch and the AI's "energize for hardened mass"
+    trigger had the same old condition. The fix was one bit on the sword
+    (`IRhinoSwordState.SuperShieldUpgradeActive`, authored on the sword's config) that all four read.
+    Grep the old CONDITION (`IsEnergized`), not just the effect you are gating.
 
 27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
     containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
@@ -947,6 +956,21 @@ applies to new abilities, new resources on the meter list, and anything that add
     `SetFollowTarget`, both are written only for the LOCAL HUMAN pilot (an AI, a remote copy or the lava lamp's
     autopilot must never move this machine's camera), and the owner releases them on disable (`RhinoSwordCamera`). Keep
     the hull where it sat on screen by scaling the LOOK POINT with the offset. FOV stays the player's (rule 21).
+63. **To move an ability to another button, change the BINDING's owner, then measure who reads the old button.**
+    `cece/sweet-mendel-yoq3vo` (2026-10-27) moved the three RB abilities to Y. What it learned:
+    - **RB is `FlipAction` (InputEvents 3), and the name is legacy**: it fires whatever a hull binds there. RB also
+      writes `InputStatus.Throttle`, but a hull reads that only with `toggleManualThrottle`, which no shipped prefab
+      sets. Reading `GamepadInputStrategy` alone said "RB is boost and flip". The prefabs said "RB is three
+      abilities". Ask the consumers (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`, the maps'
+      `Input:`), never the producer.
+    - **A binding lives in two places**: the prefab's `_inputEventShipActions` and the `ElementalAbilityMapSO`'s
+      `Input` (which the HUD chip reads). A generator that authors the vessel owns both. Change its table, or the
+      next run puts the old button back. The Shrike's generator re-applies bindings on every run. The Brittle Star's
+      applies them only inside its one-shot clone, so after editing its table you also edit the prefab line, and its
+      `--check` confirms the two agree.
+    - **The executors find their controls by event** (`Enum.GetValues(typeof(InputEvents))`), so the AI follows a
+      rebind with no change. The control-chip tests name events, so update those.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
