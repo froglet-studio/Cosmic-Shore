@@ -179,8 +179,10 @@ namespace CosmicShore.Tests
             // 64 -> 65 on 2026-10-26: TandavaSevering (70), Voyage 2 - Tandava's fork with the severing work. When
             // SerpentCharge (67) lands this becomes 66.
             // 65 -> 66 on 2026-10-27: BurrowRun (71), the Meerkat's time race (67 is still SerpentCharge's, in flight).
+            // 66 -> 69 on 2026-10-27: ScarabRally (72), SerpentTime (73), BrittleStarTime (74) - Time races for
+            // three hulls that had none (merged with BurrowRun from Ys-bleeding-edge).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(66, values.Length,
+            Assert.AreEqual(69, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -223,6 +225,9 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.ThresherTime, 66)]
         [TestCase(GameModes.WrasseRun, 68)]
         [TestCase(GameModes.BurrowRun, 71)]
+        [TestCase(GameModes.ScarabRally, 72)]
+        [TestCase(GameModes.SerpentTime, 73)]
+        [TestCase(GameModes.BrittleStarTime, 74)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

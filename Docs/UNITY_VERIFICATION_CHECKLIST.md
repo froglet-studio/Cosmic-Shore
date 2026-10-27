@@ -17012,3 +17012,33 @@ gate race and the Skim Race pilot. EditMode: `PerSeatAIDifficultyTests`, `Arcade
 7. Freestyle (lava lamp): Vessel Changer > Stoat, then > Meerkat. **Pass:** each flies; the Stoat's LT/RT pair and B
    mode switch work, the Meerkat's right-stick reticle and RT tunnel work.
 
+## 🔴 Gate races: per-gate and finish sound slots — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-27)
+
+`GateRaceController` gained `gateThreadedEvent` and `courseFinishedEvent`. Both are FMOD slots, shipped empty. They play
+for the local pilot only and come from `LightLocalNextGate`'s progress. No Unity CLI was available in the session, so
+this has not been compiled in the Editor.
+
+1. Open any gate-race scene (Switchback, for example). The controller's inspector should show an **Audio** header with
+   two empty slots.
+2. Assign any event to the gate slot and race. It should play once per ring threaded, and never on the first frame of
+   the race.
+3. Assign an event to the finish slot. It should play on the last ring instead of the gate sound.
+
+## 🔴 Scarab Rally, Serpent Time, Brittle Star Time + the Scarab switch on elemental crystals — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-27)
+
+Authored headless. The C# was compiled against real Unity references (`unity_refcompile`), and the course tests
+were compiled and run offline over 400 seeds. Nothing has been opened in Unity.
+
+1. Open `MinigameScarabRally`, `MinigameSerpentTime` and `MinigameBrittleStarTime` once each and save them, so the
+   Editor mints their own ids. Then run each `Tools/Build/author_*_assets.py --check`.
+2. Arcade grid → each card → race at I1 and I4 with AI rivals. Pass if:
+   - every ring is reachable;
+   - the AI threads rings and finishes;
+   - the arrow names your next ring.
+3. Scarab Rally I2: the hairpins need a drift to keep speed. Scarab Rally I3/I4: walls and danger prisms appear.
+4. Scarab, any mode (Freestyle, Tollway, Scramble):
+   - Press Switch with no elemental crystal ahead: refused, and no charge spent.
+   - Fly at a free elemental crystal, a flora heart, or a fauna carrying its heart: the ring forms around it.
+   - Fly at an omni crystal: refused.
+5. Run the edit-mode tests `ScarabRallyCourseTests`, `SerpentTimeCourseTests`, `BrittleStarTimeCourseTests`,
+   `ModeGenreTests` and `EnumIntegrityTests`.
