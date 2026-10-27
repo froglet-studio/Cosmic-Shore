@@ -14,15 +14,15 @@
   "reporter": "belac",
   "machine": "DESKTOP-LQTG35E",
   "createdUtc": "2026-10-23T23:00:05.231Z",
-  "lastSeenUtc": "2026-10-23T23:03:16.957Z",
+  "lastSeenUtc": "2026-10-23T23:00:05.231Z",
   "fixedBy": "claude",
   "fixedUtc": "2026-10-25T12:24:42.467Z",
   "fixCommit": "8694975c6f",
   "resolvedUtc": "",
   "resolution": "",
-  "timesSeen": 3,
+  "timesSeen": 1,
   "regressions": 0,
-  "cleanSessions": 0,
+  "cleanSessions": 1,
   "cleanSessionsRequired": 2,
   "validationPaused": false
 }
