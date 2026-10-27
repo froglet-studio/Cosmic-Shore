@@ -15909,3 +15909,10 @@ grow-in. It now calls `PrismKinds.Retheme` once, after `Initialize`.
 
 - [ ] Toybox freestyle, open the Wander toy and let the conveyor recycle an arrangement that has shielded prisms: they bloom in with no shatter debris and no shield-off sound.
 - [ ] A slot that was shielded in the last arrangement and plain in the next comes back plain (no shield, edible).
+
+## 🔴 2026-10-26 — Time crystal: no sound through a muted SFX setting (`cece/exciting-thompson-wdi3wm`, salvaged from `claude/sparrow-crystal-sound-bug-bnocj6`) (unverified: no Unity CLI in the session)
+
+`CrystalTime.prefab` lost its two bare `StudioEventEmitter`s ("Creature colide" on TriggerEnter and ObjectDestroy).
+
+- [ ] Open the prefab: no missing-script or broken component on its root.
+- [ ] Sparrow in Freestyle with SFX muted: shoot through and collect a Time crystal, no sound. With SFX on, collecting plays the normal crystal-collect sound once.
