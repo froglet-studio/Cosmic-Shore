@@ -173,6 +173,6 @@ from the real declarations in the tree.
   saves, Unity writes them at their then-current values and the asset becomes authoritative.
 - The AI's rail-grind speedup (item 8) is untested behaviour, not a measurement.
 - A reversing Urchin's **camera** is unchanged — it still sits behind the hull, so reversing flies
-  the ship toward the viewer. The rear-view gesture (`C` / `LB+RB`) already covers wanting to look
+  the ship toward the viewer. The rear-view gesture (`C` / D-pad down) already covers wanting to look
   the other way, and pointing the camera at the direction of travel would compose with it badly.
   Worth a playtest read before anything is done about it.

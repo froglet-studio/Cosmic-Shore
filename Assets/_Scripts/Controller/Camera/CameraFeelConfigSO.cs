@@ -280,6 +280,15 @@ namespace CosmicShore.Gameplay
         [Range(0f, 0.3f)]
         [SerializeField] float driftSlide = 0.08f;
 
+        [Tooltip("How fast the slide builds as a drift deepens, per second. The G spring still shapes it on top.")]
+        [Min(0.1f)]
+        [SerializeField] float driftSlideIn = 3f;
+
+        [Tooltip("How fast the slide eases home as a drift shallows or ends, per second. Slower than the build so " +
+                 "the hull glides back instead of snapping (a snap breaks the flow of a drift chain).")]
+        [Min(0.1f)]
+        [SerializeField] float driftSlideOut = 1.2f;
+
         [Tooltip("The speed at which a drift slides in full, in follow distances per second; a slower slide slides " +
                  "less, so a drift at a crawl stays gentle.")]
         [Min(0.01f)]
@@ -287,7 +296,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Rumble level at a full drift (0..1).")]
         [Range(0f, 1f)]
-        [SerializeField] float driftRumble = 0.5f;
+        [SerializeField] float driftRumble = 0.15f;
 
         [Header("Breathing: always on, very slow")]
         [Tooltip("Slow drift of the view, degrees. 0 turns it off.")]
@@ -384,6 +393,8 @@ namespace CosmicShore.Gameplay
 
         public float DriftFullSlipDegrees => Mathf.Clamp(driftFullSlipDegrees, 1f, 90f);
         public float DriftSlide => Mathf.Max(0f, driftSlide);
+        public float DriftSlideIn => Mathf.Max(0.1f, driftSlideIn);
+        public float DriftSlideOut => Mathf.Max(0.1f, driftSlideOut);
         public float DriftFullSpeed => Mathf.Max(0.01f, driftFullSpeed);
         public float DriftRumble => Mathf.Clamp01(driftRumble);
 
