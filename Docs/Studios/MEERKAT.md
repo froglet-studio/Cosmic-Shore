@@ -133,6 +133,71 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 17 (Yash, 2026-10-28: "our trunk size will be determined by ... our mass ... it is more mass we have, we create
+bigger trunks, we move farther distance. But the trunks look need to be pretty subtle ... the bigger the trunk the bigger
+the network of the branches will be ... the last trunk size will determine how big of a network you can get by getting
+that omnicrystal. The max trunk size will give you a very large amount of network of roots ... Three-dimensional roots.
+Spread out any direction from the omnicrystal's position"). ARTIFACT ONLY; no Unity-mapped value changed.**
+- **Mass sizes the trunk.**
+  - Your Mass is the Mass level (`massLevel`, Vessel Config) plus `massPerCrystal` (0.5) for every crystal you take
+    this race, up to 10. It resets each race, and the HUD shows it while you shape a tunnel.
+  - At Mass 0, LT reaches only `massLengthAtZero` (0.3) of its range and the trunk is `massDiameterAtZero` (0.6) as
+    wide. At Mass 10 you get the whole range at full width; in between, in proportion.
+  - Measured with LT squeezed and the tunnel straight:
+
+    | Mass | Tunnel length |
+    |---|---|
+    | 5 | 409 u |
+    | 10 | 598 u |
+
+- **Subtle trunks**, because many will be on screen at once:
+  - `trunkGlass` 0.04 → 0.012, `trunkRim` 0.55 → 0.28, `trunkGrain` 0.5 → 0.22, `trunkWarp` 0.25 → 0.1.
+  - `trunkFresnel` 2.5 → 3 (a thinner outline).
+  - `branchCount` 8 → 6.
+- **The last trunk sizes the roots.**
+  - Each trunk's size is its shaft against the longest a full Mass digs (0 to 1), and the last one is kept (`lastTrunk`).
+  - The omnicrystal's network scales with it: forks `labyrinthBranchPointsMin`..`Max` (3..12), tips
+    `labyrinthOpeningsMin`..`Max` (5..30), reach `labyrinthRadiusMin`..`Max` (90..420 u).
+  - The round-16 keys were renamed to their `...Max`; the `...Min` keys are new.
+  - Measured:
+
+    | Last trunk | Roots |
+    |---|---|
+    | Smallest (60 u) | 8 channels, 5 tips |
+    | Half (Mass 5, LT squeezed) | 26 channels, 18 tips |
+    | Biggest (Mass 10, LT squeezed) | 42 channels, 30 tips |
+
+- **The omnicrystal grows the roots at once**, from where you take it (`omniAtOnce` 1; 0 brings back round 16's "arms
+  your next RT").
+  - They spread every way (`labyrinthSpread` now 360). The first fork is close, and the centre sits just ahead of you.
+  - You slide straight in and lean at the forks as before.
+  - Taken while riding a tunnel, it arms your next RT instead.
+  - **Give me an omnicrystal** grows them where you are.
+- **They look like roots:**
+  - They taper from the source to the tips (`rootTip` 0.35) and wander as they go (`rootGnarl` 0.3).
+  - Every root wears the trunk's own bark shader, faint and root-brown (`rootGlass`, `rootRim`, `rootGrain`).
+  - Their spindle wireframe is at `labyrinthFrame` (0.3) of the bridge's brightness, so a big network stays quiet.
+  - The soil is kept but quieter (`soilVisibility` 1 → 0.45).
+- **Measured** (the level scorecard, seed 11, Hard):
+
+  | Course | Omnicrystals off | Omnicrystals on |
+  |---|---|---|
+  | 1 | 77.6 s | 77.6 s |
+  | 2 | 79.3 s | 83.5 s |
+  | 3 | 82.2 s | 89.9 s |
+  | 4 | 80.9 s | 79.6 s |
+
+  - Every level finishes every course.
+  - With omnicrystals off, the race barely moved from round 16 (77.5-82.8 s). At the default Mass 5 a pilot digs
+    shorter trunks, but the crystals it takes grow its Mass during the race.
+  - Roots grown at once take the AI where they lead: on course 3 it is about 8 s slower. A finding for Yash.
+  - Every pilot who flies through an omnicrystal gets roots, even with the AI's wormhole off. So the no-wormhole
+    baseline moves too (110.9 s → 114.8 s on course 1).
+- **Not decided:**
+  - Whether the roots should also cost Mass (spend it to grow them).
+  - Whether a rival's crystals should grow its own Mass in the game the same way. In the studio every pilot follows the
+    same rule.
+
 **Round 16 (Yash, 2026-10-28: "we are not going to make it into Gopher. So remove everything from Gopher and add them to
 this Meerkat's Omnicrystal ability. So once it collects the Omnicrystal, it's going to rise up to a three-dimensional
 branching from a single source ... 5 to 10 branch points with multiple openings, lots of openings ... openings all around
