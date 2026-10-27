@@ -16857,3 +16857,22 @@ this has not been compiled in the Editor.
 2. Assign any event to the gate slot and race. It should play once per ring threaded, and never on the first frame of
    the race.
 3. Assign an event to the finish slot. It should play on the last ring instead of the gate sound.
+
+## 🔴 Scarab Rally, Serpent Time, Brittle Star Time + the Scarab switch on elemental crystals — NOT EDITOR-VERIFIED (`cece/confident-goodall-6cpxan`, 2026-10-27)
+
+Authored headless. The C# was compiled against real Unity references (`unity_refcompile`), and the course tests
+were compiled and run offline over 400 seeds. Nothing has been opened in Unity.
+
+1. Open `MinigameScarabRally`, `MinigameSerpentTime` and `MinigameBrittleStarTime` once each and save them, so the
+   Editor mints their own ids. Then run each `Tools/Build/author_*_assets.py --check`.
+2. Arcade grid → each card → race at I1 and I4 with AI rivals. Pass if:
+   - every ring is reachable;
+   - the AI threads rings and finishes;
+   - the arrow names your next ring.
+3. Scarab Rally I2: the hairpins need a drift to keep speed. Scarab Rally I3/I4: walls and danger prisms appear.
+4. Scarab, any mode (Freestyle, Tollway, Scramble):
+   - Press Switch with no elemental crystal ahead: refused, and no charge spent.
+   - Fly at a free elemental crystal, a flora heart, or a fauna carrying its heart: the ring forms around it.
+   - Fly at an omni crystal: refused.
+5. Run the edit-mode tests `ScarabRallyCourseTests`, `SerpentTimeCourseTests`, `BrittleStarTimeCourseTests`,
+   `ModeGenreTests` and `EnumIntegrityTests`.

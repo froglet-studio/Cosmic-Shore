@@ -177,8 +177,10 @@ namespace CosmicShore.Tests
             // the merge (the seventh collision).
             // 64 -> 65 on 2026-10-26: TandavaSevering (70), Voyage 2 - Tandava's fork with the severing work. When
             // SerpentCharge (67) lands this becomes 66.
+            // 65 -> 68 on 2026-10-27: ScarabRally (72), SerpentTime (73), BrittleStarTime (74) - Time races for
+            // three hulls that had none (71 is BurrowRun's on Ys-bleeding-edge; merging it makes this 69).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(65, values.Length,
+            Assert.AreEqual(68, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -220,6 +222,9 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Warpline, 65)]
         [TestCase(GameModes.ThresherTime, 66)]
         [TestCase(GameModes.WrasseRun, 68)]
+        [TestCase(GameModes.ScarabRally, 72)]
+        [TestCase(GameModes.SerpentTime, 73)]
+        [TestCase(GameModes.BrittleStarTime, 74)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

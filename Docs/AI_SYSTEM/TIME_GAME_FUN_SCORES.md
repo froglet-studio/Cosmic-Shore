@@ -28,8 +28,10 @@ against a mode, not for it.
 | Urchin | Skein | 8 | 5 | 5 | 4 | 3 | 3 | **4.7** | 3 Ladder cliff |
 | Wrasse | Wrasse Run | 7 | 6 | 6 | 5 | 2 | 2 | **4.7** | 2 Rivals |
 | Squirrel | Skim Race | 5 | 7 | 6 | 5 | 2 | 2 | **4.5** | 2 Fairness |
-| Scarab | Scarab Scramble | 2 | 6 | 5 | 7 | 3 | 3 | **4.3** | 2 Verb |
-| Serpent | none | - | - | - | - | - | - | **0** | no game |
+| Scarab | Scarab Scramble (now its Mass card) | 2 | 6 | 5 | 7 | 3 | 3 | **4.3** | 2 Verb |
+| Scarab | **Scarab Rally** (new) | 8 | 6 | 7 | 4 | 2 | 3 | **5.0** est. | 2 Rivals (unplayed) |
+| Serpent | **Serpent Time** (new) | 7 | 7 | 6 | 4 | 2 | 3 | **4.8** est. | 2 Rivals (unplayed) |
+| Brittle Star | **Brittle Star Time** (new) | 7 | 7 | 7 | 4 | 2 | 3 | **5.0** est. | 2 Rivals (unplayed) |
 
 ## What the floors say
 
@@ -66,3 +68,26 @@ against a mode, not for it.
    holds 67 on an in-flight branch.
 
 Re-score a game after people have raced it. The chart's §3 rows are what move Rivals and Fairness.
+
+## 2026-10-27, round 2: the missing Time games
+
+Garrett asked for a ball-free Scarab ring race, a Serpent Time game, and either the other missing Time games or a
+note on what blocks each one.
+- **Built:** Scarab Rally (72), Serpent Time (73), Brittle Star Time (74). Their mode docs are under
+  `Assets/_Scripts/Controller/Arcade/`. All three are authored headless and nobody has flown them yet, which is why
+  their Rivals and Fairness scores are low.
+- **The Scarab's switch:** it is now always placed around an elemental crystal, in every game (`SCARAB.md` §5).
+
+**Still without a Time game, and what blocks each:**
+
+| Vessel | What blocks it | Cheapest shape |
+|---|---|---|
+| Shrike | Its Time verb is a tether that anchors on blocks, so a course needs block pillars to anchor on; its autopilot is untested there | Warpline-style circuit plus pillars |
+| Honeyguide (+ Ratel) | The second seat needs an AI or an empty-seat rule | Breakwater clone (it flies the Sparrow airframe) |
+| Orca | It is not confirmed that the helm (not only the gunners) has an autopilot | Redline clone |
+| Angler | Its speed comes from the school it tames, so a course needs fauna on it; it has no AI | Needs a design decision |
+| Goby (+ Pistol) | The Time verb belongs to the Pistol seat, but the Goby flies the race | Needs a design decision: which seat races |
+| Jacks | Racing gates conflicts with herding | Needs a decision: hull flight or herding |
+| Starling | The pilot does not steer (a passive swarm), so a gate race contradicts the vessel | Needs a different kind of Time goal |
+| Meerkat | Already has one, Burrow Run (71), on `Ys-bleeding-edge` | - |
+| Termite, Falcon | Not live vessels (no ability map, not in the Vessel Changer) | - |

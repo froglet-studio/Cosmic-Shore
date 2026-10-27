@@ -341,8 +341,25 @@ namespace CosmicShore.Data
         // itself moves on without it (Garrett, 2026-10-26). See _Scripts/Controller/Arcade/TandavaSevering/TANDAVA_SEVERING.md.
         TandavaSevering = 70,
 
+        // ScarabRally (72): the Scarab's TIME race - Switchback's walk (an open chain of rings flown in order,
+        // hairpins only a drift makes, I3 walls and I4 danger prisms beside the line) cut for the Scarab: hold
+        // the throttle, drift the hairpins, juke into the mouths. No ball. Scarab Scramble is the Scarab's Mass
+        // card. 71 is BurrowRun's on Ys-bleeding-edge, 67 SerpentCharge's in flight. See
+        // _Scripts/Controller/Arcade/SCARABRALLY.md.
+        ScarabRally = 72,
+
+        // SerpentTime (73): the Serpent's TIME race - Thresher Time's shape (a lapped circuit on the shared
+        // HeadlongCircuit solver) where the speed is the fuel pellets: four in the tank, each a 3 s burn that
+        // stacks, one back every ~3.6 s. See _Scripts/Controller/Arcade/SERPENTTIME.md.
+        SerpentTime = 73,
+
+        // BrittleStarTime (74): the Brittle Star's TIME race - the same lapped circuit, where Speed Mode (x6
+        // cruise) is the race and the mouths ask when to drop back to Cruise to thread. See
+        // _Scripts/Controller/Arcade/BRITTLESTARTIME.md.
+        BrittleStarTime = 74,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 65) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 68) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
