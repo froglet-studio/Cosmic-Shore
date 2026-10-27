@@ -499,6 +499,7 @@ Start a game with it shown: `--diag`, `COSMIC_SHORE_DIAG=1`, or the launcher's S
 | `--do "F:click X,Y"` · `type TEXT` · `key NAME` · `hold NAME N` · `pad BUTTON` · `scroll X,Y N` (wheel notches) · `drag X,Y X,Y F` (press, move over F frames, release) | Scripted input (how these screenshots were made) |
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
+| `--render-from N` | Draw nothing before frame N except the frames a screenshot asks for. `tools/amoebius_video.py` uses it to film an all-AI arcade match (`arcade autopilot`, Debug player) and keep its replay: `../Docs/claude/VIDEOS_AND_PREVIEWS.md` §3 |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |
 | `--diag` | Start with Amoebius's diagnostics overlay shown (F3 toggles it; section 11.3) |
 | `--ugs-relay-check [REGION]` | Signs two UGS players in, allocates, joins by code and times frames through UGS Relay (the launcher's UGS CHECK) |

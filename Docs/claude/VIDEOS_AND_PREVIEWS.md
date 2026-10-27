@@ -19,8 +19,8 @@ kept, a 60 s video), not estimated.
    never streams every frame into its own context.
 4. **Videos are never committed.** They live in the session's scratchpad and reach the person through `SendUserFile`.
    Replays made for the person go the same way (they are machine-local, `Docs/REPLAYS.md` §3).
-5. **A tool, not a re-discovery.** The steps below are the recipe; a session follows them instead of working them out
-   again (the first run spent most of its tokens finding them).
+5. **A tool, not a re-discovery.** `Port/tools/amoebius_video.py` (section 3) is the recipe; a session runs it instead
+   of working the steps out again (the first run spent most of its tokens finding them).
 
 ## 2. What it costs (measured 2026-10-27, cloud session, 4 cores, software rendering)
 
@@ -53,36 +53,47 @@ time, and shows the real renderer. So:
 Amoebius (`Port/`, Shombith's engine) compiles the game's own `Assets/_Scripts` and renders it with its own OpenGL
 renderer, so it plays the real modes, AIs, HUD and replay system with no Unity. Read `Port/CLAUDE.md` first.
 
-1. **SDK and build.** `bash dotnet-install.sh --channel 10.0 --install-dir <scratch>/dotnet10`, then
-   `DOTNET_ROOT=<scratch>/dotnet10 PATH=<scratch>/dotnet10:$PATH dotnet build Port/src/CosmicShore.Player`.
-2. **Run windowed under xvfb, scripted, with the control port**:
-   `xvfb-run -a -s "-screen 0 1280x720x24" .../bin/Debug/net10.0/CosmicShore --frames 2000000 --render-from 2000000000
-   --size 1280x720 --control-port 47820` with `COSMIC_SHORE_PROFILE=<throwaway> COSMIC_SHORE_NET=off
-   COSMIC_SHORE_AUDIO=off`. `--frames` makes every frame a fixed 1/60 s (the game plays at its real clock however
-   slowly it draws); `--render-from` far ahead draws ONLY the frames you screenshot, so the rest run at CPU speed.
-3. **Drive it like `Port/tools/amoebius_markers_run.py`** (its `Player` class): the first-run prompts for the throwaway
-   profile (adult birth year, consent DECLINED, a fixed name), `do arcade <Mode>`, `do arcade intensity N`,
-   `do arcade players N` (AI fill the rest), `do arcade start`, wait for the mode scene, wait for `ReadyButton` (the
-   connecting screen comes first), `do key F7` (the development build's diagnostics overlay off), `do arcade ready`.
-4. **Record**: repeat `wait 4` + `screenshot <dir>/fNNNNN.png`. Then
-   `ffmpeg -framerate 15 -i f%05d.png -c:v libx264 -crf 28 -pix_fmt yuv420p out.mp4`.
-   **Trim at the results screen.** A match can end inside the clip (the 2026-10-27 Skim Race, I2, four Squirrels,
-   ended at 28 s), and everything after is a still. The results screen is bright and the race is dark, so the cut is
-   the first frame whose mean brightness jumps (`ffmpeg ... -vf signalstats` `YAVG`, 31 -> 235 there); keep about 3 s
-   after it. Finding it this way costs no frames read.
-5. **The replay** the match records lands in `~/.local/share/CosmicShore-<profile>/Recordings/` (`.cstheater` +
-   `.replay.json`, the same format the editor reads from `<repo>/Recordings/`). It is written the moment the end
-   screen shows, with results (winner, pilots, the race rings); quitting before that saves it as "app closed",
-   without results. The person drops both files into `<repo>/Recordings/` and the match is the first row in My
-   Replays. Measured: 43 s of Skim Race with four pilots and the world recorded was 0.8 MB.
+1. **SDK.** `bash dotnet-install.sh --channel 10.0 --install-dir <scratch>/dotnet10`, then
+   `export DOTNET_ROOT=<scratch>/dotnet10 PATH=<scratch>/dotnet10:$PATH` (the cloud container has no .NET).
+2. **One command:**
 
-**All-AI matches need one engine verb that is not in the engine yet**: `do arcade autopilot`, which hands the local
-seat to the AI through the game's own `PilotControl.TrySetAIFlies` (the Third Eye's You / AI toggle). The 2026-10-27
-run used it as an uncommitted local patch to `Port/src/CosmicShore.Player/Inspector.cs`; adding it (and a committed
-`Port/tools/amoebius_video.py` for steps 2-5) is engine tooling and goes through Shombith. Without it the local seat
-idles and the camera watches an idle hull. With it, the 2026-10-27 run's handed-over seat finished with 0 crystals
-while the three AI seats took 13, 9 and 8: the handed-over Squirrel flies, but whether it races like an AI seat is
-`PilotControl`'s question (the Third Eye's toggle), not the video's.
+   ```bash
+   python3 Port/tools/amoebius_video.py --mode SkimRace --intensity 2 --players 4 --seconds 60 --out <scratch>/video
+   ```
+
+   It builds the Debug player, plays the match with every seat flown by the AI and writes
+   `<out>/<Mode>_I<n>.mp4` (1280x720, H.264, 15 fps of game time, so it plays at game speed) plus the match's replay
+   pair (`.cstheater` + `.replay.json`) beside it. `--every N` draws one frame per N game frames (default 4),
+   `--keep-frames` keeps the PNGs, `--no-build` skips the build, `--profile` picks the throwaway save slot. Run it in
+   the background; it prints a progress line every 5 s of game.
+3. **Check 3-4 frames** (`--keep-frames`, or `ffmpeg -ss <t> -i <mp4> -frames:v 1 f.png`) and send the mp4 with
+   `SendUserFile`. The person drops the replay pair into `<repo>/Recordings/` and the match is the first row in My
+   Replays.
+
+What the tool does, so a session never re-derives it:
+
+- **Windowed under xvfb, scripted, with the control port**: `--frames 2000000 --render-from 2000000000 --size 1280x720
+  --control-port N`, with `COSMIC_SHORE_PROFILE=<throwaway> COSMIC_SHORE_NET=off COSMIC_SHORE_AUDIO=off`. `--frames`
+  makes every frame a fixed 1/60 s (the game plays at its real clock however slowly it draws); `--render-from` far
+  ahead draws ONLY the frames it screenshots, so the rest run at CPU speed.
+- **Drives it like `Port/tools/amoebius_markers_run.py`** (whose `Player` class it reuses): the first-run prompts for
+  the throwaway profile (adult birth year, consent DECLINED, a fixed name), `do arcade <Mode>`, `do arcade intensity
+  N`, `do arcade players N` (AI fill the rest), `do arcade start`, the mode scene, then the `ReadyButton` (the
+  connecting screen comes first), `do key F7` (the development build's diagnostics overlay off), `do arcade ready`,
+  and **`do arcade autopilot`**: the engine verb that hands every local human seat to the AI through the game's own
+  `PilotControl.TrySetAIFlies` (the Third Eye's You / AI toggle; `Port/src/CosmicShore.Player/Inspector.cs`).
+  `PilotControl` compiles into development builds only, so the verb works in the Debug player and says so in Release.
+  The handed-over seat flies, but whether it races like an AI seat is `PilotControl`'s question, not the video's (the
+  2026-10-27 run's handed-over Squirrel took 0 crystals while the three AI seats took 13, 9 and 8).
+- **Trims at the results screen.** A match can end inside the clip (the 2026-10-27 Skim Race, I2, four Squirrels,
+  ended at 28 s), and everything after is a still. The race is dark and the results bright (mean luma 31 -> 235
+  there), so the cut is the first frame whose brightness jumps (`--jump`, default 60 over the race's median), plus
+  `--tail` seconds (default 3). No frame is read into the session to find it.
+- **The replay** lands in `~/.local/share/CosmicShore-<profile>/Recordings/` (the same format the editor reads from
+  `<repo>/Recordings/`). It is written the moment the end screen shows, with results (winner, pilots, the race rings);
+  quitting before that saves it as "app closed", without results. So a match that outlasts `--seconds` is left to
+  finish undrawn (up to `--finish-timeout`) before the player quits. Measured: 43 s of Skim Race with four pilots and
+  the world recorded was 0.8 MB.
 
 ## 4. What an Amoebius video does not show
 

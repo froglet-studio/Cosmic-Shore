@@ -428,6 +428,26 @@ namespace CosmicShore.Player
                 }
                 return;
             }
+            if (arg == "autopilot")
+            {
+                // The Third Eye's You / AI toggle on every local human seat, so a scripted run (amoebius_video.py)
+                // races like a player. PilotControl compiles into development builds only: the Debug player.
+#if DEBUG
+                var controller = CosmicShore.Engine.Object.FindFirstObjectByType<CosmicShore.Gameplay.MiniGameControllerBase>();
+                var data = controller == null ? null : typeof(CosmicShore.Gameplay.MiniGameControllerBase)
+                    .GetField("gameData", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+                    .GetValue(controller) as CosmicShore.Utility.GameDataSO;
+                foreach (var p in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Player>(FindObjectsSortMode.None))
+                {
+                    if (!p.IsLocalUser) continue;
+                    bool ok = CosmicShore.Gameplay.PilotControl.TrySetAIFlies(p, true, data, out string refusal);
+                    Console.WriteLine($"[arcade] autopilot {p.name}: {(ok ? "AI flies" : refusal)}");
+                }
+#else
+                Console.WriteLine("[arcade] autopilot needs the Debug player (PilotControl is a development-build tool)");
+#endif
+                return;
+            }
             // "arcade players N" / "arcade intensity N": the configure modal's own stepper and intensity
             // handlers, so a scripted run sets up the match a player would (AI seats fill the surplus).
             var words = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
