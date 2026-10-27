@@ -490,22 +490,27 @@
     // after you are out, then collapses back to its centre over collapseSeconds
     // round 5: riding, the game's speed tunnel (its dolly zoom) is rideSpeedTunnelScale x its normal strength
     rideSpeedTunnelScale: 5,
+    // round 8 (Yash, 2026-10-28: "I don't want any camera Y offset. I want the camera to go inside the tunnel ... my view stays
+    // inside the tunnel while passing through the tunnel. It should not go up the tunnel"): riding, the camera sits ON the
+    // tube's centreline rideCameraBack u behind you, looks rideCameraLookAhead u along it, and eases in and out over
+    // rideCameraBlendSeconds
+    rideCameraBack: 18, rideCameraLookAhead: 40, rideCameraBlendSeconds: 0.25,
     rideEntryMultiplier: 1, rideMidMultiplier: 2.5, rideExitMultiplier: 1.2, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
     // round 4 (Yash, 2026-10-27: "Turn off all lensing"): the warp, the dents and the ripple ship at 0 - the bridge and your
     // reticle are the wormhole's whole look; the sliders stay, to bring any of them back
-    warpStrength: 0, dentStrength: 0, rippleStrength: 0, rippleEdge: 0.45, rippleSeconds: 1.2,
+    warpStrength: 0, dentStrength: 0, rippleStrength: 0, rippleEdge: 0.154, rippleSeconds: 1.2,
     // the reticle (round 3, Yash: "a little smoothy ... pretty transparent, just maybe wireframe looking with just spindles. Tiny
     // thinning spindles"): it eases toward the sticks over reticleSmoothSeconds, and it is built of thin spindles - rings round
     // its throat and ribs along it - over a faint glass, with the lime line you will fly at reticlePath
-    reticleSmoothSeconds: 0.15, reticleIdleAlpha: 0.4, reticleGlass: 0.15, reticleRings: 10, reticleSpindlesPerRing: 16, reticleRibs: 8,
-    reticleSpindleThickness: 0.35, reticlePath: 0.5,
+    reticleSmoothSeconds: 0.123, reticleIdleAlpha: 0.053, reticleGlass: 0.048, reticleRings: 30, reticleSpindlesPerRing: 21, reticleRibs: 5,
+    reticleSpindleThickness: 0.25, reticlePath: 0.333,
     // the bridge (Yash, 2026-10-27): a formed tunnel's geometry, shown to everyone - rings of spindles round the throat and
     // ribs of spindles along it (the game will build it from its Spindle prefabs), and a glass surface under them; the
     // spindles condense out of the tunnel's centre as it forms, evaporate back as it collapses, and a shimmer runs through
     // them from the way in to the way out. bridgeVisibility 0 hides it all (only the bent space is left).
-    bridgeVisibility: 1, bridgeGlass: 0.6, bridgeRings: 16, bridgeSpindlesPerRing: 12, bridgeRibs: 6, bridgeSpindleThickness: 1.6, bridgeShimmer: 0.5,
+    bridgeVisibility: 0.163, bridgeGlass: 0.15, bridgeRings: 36, bridgeSpindlesPerRing: 21, bridgeRibs: 5, bridgeSpindleThickness: 0.25, bridgeShimmer: 0.5,
     // the AI's wormhole
     aiWormhole: 1, aiStraightMinDistance: 300, aiBentMinDistance: 120, aiShapeSeconds: 0.3, aiTau: 0.3, aiNoise: 0,
     // flight: one thumb (the left stick flies at full throttle, banking bankShare x the roll rate into a turn); the Stoat's
@@ -549,6 +554,9 @@
     ['ride', 'rideMidMultiplier', 'Ride: fastest, at the throat (× your speed before the tunnel)', 0.5, 8, 0.1],
     ['ride', 'rideExitMultiplier', 'Ride: coming out (× your speed before the tunnel)', 0.5, 3, 0.05],
     ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
+    ['ride', 'rideCameraBack', 'Riding: the camera on the tube\'s centreline, this far behind you (u)', 0, 60, 1],
+    ['ride', 'rideCameraLookAhead', '...looking this far ahead along it (u)', 5, 120, 1],
+    ['ride', 'rideCameraBlendSeconds', '...easing in and out over (s)', 0.02, 1, 0.01],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
     ['ride', 'reticleGrowSeconds', '...rippling into shape over (s)', 0.05, 3, 0.05],
     ['ride', 'formSeconds', 'RT: the tunnel ripples out of its centre over (s)', 0.05, 2, 0.05],
@@ -2363,12 +2371,15 @@
     }
     // Riding a tunnel (round 24): the camera runs down the tube's centreline behind you and looks along it, so the ride
     // is the tube's own smooth curve - the chase camera lerping its POSITION fell far behind a hull at 2.5x speed and
-    // swung round the bend (the "flipping" Yash saw). Eased in on entry, out on exit.
+    // swung round the bend (the "flipping" Yash saw). Round 8: rideCameraBack behind you in every camera, no height, and
+    // once eased in it sits exactly on the centreline (no lag that could cut a bend's chord and leave the tube). Eased in
+    // on entry and out on exit over rideCameraBlendSeconds (CustomCameraController's Spectate blend: smoothstep).
     const gr = ftLive.gate && ftLive.gate.state === 'tube' && camMode !== 'free' ? ftLive.gate : null;
-    camRide += ((gr ? 1 : 0) - camRide) * (1 - Math.exp(-10 * dt));
-    if (gr) { const wh = gr.pair.wh; whAtX(wh, gr.s - (camMode === 'follow' ? 45 : 18), camRideP); whAtX(wh, gr.s + 40, camRideL); }
-    if (camRide > 0.001) { want.lerp(camRideP, camRide); look.lerp(camRideL, camRide); }
-    const k = snapCam ? 1 : 1 - Math.exp(-((camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) + 40 * camRide) * dt);
+    camRide = Math.max(0, Math.min(1, camRide + (gr ? 1 : -1) * dt / Math.max(0.02, P.rideCameraBlendSeconds)));
+    if (gr) { const wh = gr.pair.wh; whAtX(wh, gr.s - Math.max(0, P.rideCameraBack), camRideP); whAtX(wh, gr.s + Math.max(1, P.rideCameraLookAhead), camRideL); }
+    const camW = camRide * camRide * (3 - 2 * camRide);
+    if (camW > 0.001) { want.lerp(camRideP, camW); look.lerp(camRideL, camW); }
+    const k = snapCam ? 1 : 1 - (1 - camW) * Math.exp(-((camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) + 40 * camW) * dt);
     cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
     if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0); else cam.up.copy(up);
     cam.lookAt(camLook);
@@ -3077,6 +3088,9 @@
     mouthRadius: { scene: 'tunnel', d: 'Each mouth\'s radius - the same for every tunnel: the tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
     rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
+    rideCameraBack: { scene: 'tunnel', d: 'While a tunnel flies you, the camera leaves its usual place above and behind you and rides ON the tube\'s centreline this far behind you - no height offset, so your view stays inside the tunnel the whole way through, round the bend included.', lo: 'Right at your tail.', hi: 'Further back down the tube.' },
+    rideCameraLookAhead: { scene: 'tunnel', d: 'Riding, the camera looks at the point this far ahead of you along the centreline, so it turns with the bend before you reach it.', lo: 'Looks just ahead.', hi: 'Looks far round the bend.' },
+    rideCameraBlendSeconds: { scene: 'tunnel', d: 'The camera eases from its usual place onto the centreline when you pull RT, and back when you come out, over this long.', lo: 'A cut.', hi: 'A slow glide.' },
     rideEntryMultiplier: { scene: 'tunnel', d: 'The ride is your speed before the tunnel times a multiplier: this one going in (the dive to the mouth and the way in). 1 = you enter at exactly the speed you had. The green dot rides the sharpest tunnel.', lo: 'Slows you as you enter.', hi: 'A kick going in.' },
     rideMidMultiplier: { scene: 'tunnel', d: 'The ride rises from the entry multiplier to this many times your speed before the tunnel at the throat, then eases to the exit multiplier. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
     rideExitMultiplier: { scene: 'tunnel', d: 'You come out of the far mouth at this many times your speed before the tunnel, on its last heading, and ease back to cruise as you fly on. A little over 1 = a small boost for taking the tunnel.', lo: 'Out at your speed.', hi: 'A big boost out.' },
@@ -3322,6 +3336,9 @@
     rideMidMultiplier: ['MeerkatWormholeConfig.rideMidMultiplier', 'linked'],
     rideExitMultiplier: ['MeerkatWormholeConfig.rideExitMultiplier', 'linked'],
     rideSpeedTunnelScale: ['MeerkatWormholeConfig.rideSpeedTunnelScale', 'linked'],
+    rideCameraBack: ['MeerkatWormholeConfig.rideCameraBack', 'linked'],
+    rideCameraLookAhead: ['MeerkatWormholeConfig.rideCameraLookAhead', 'linked'],
+    rideCameraBlendSeconds: ['MeerkatWormholeConfig.rideCameraBlendSeconds', 'linked'],
     reticleDelaySeconds: ['MeerkatWormholeConfig.reticleDelaySeconds', 'linked'],
     reticleGrowSeconds: ['MeerkatWormholeConfig.reticleGrowSeconds', 'linked'],
     formSeconds: ['MeerkatWormholeConfig.formSeconds', 'linked'],

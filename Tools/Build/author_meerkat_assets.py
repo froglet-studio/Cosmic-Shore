@@ -112,7 +112,7 @@ def script_guid(name: str) -> str:
 
 # ----------------------------------------------------------------------------- the studio's shipped numbers
 CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRadius", "throatRadius", "mouthRadius",
-               "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
+               "keyRampSeconds", "rideEntryMultiplier", "rideMidMultiplier", "rideExitMultiplier", "rideSpeedTunnelScale", "rideCameraBack", "rideCameraLookAhead", "rideCameraBlendSeconds", "reticleDelaySeconds", "reticleGrowSeconds", "formSeconds", "staySeconds",
                "collapseSeconds", "warpStrength", "dentStrength", "rippleStrength", "rippleEdge", "rippleSeconds",
                "reticleSmoothSeconds", "reticleIdleAlpha", "reticleGlass", "reticleRings", "reticleSpindlesPerRing", "reticleRibs",
                "reticleSpindleThickness", "reticlePath", "bridgeVisibility", "bridgeGlass", "bridgeRings", "bridgeSpindlesPerRing",
@@ -508,7 +508,7 @@ def self_test():
     cfg = config_asset(values)
     expect(check_config(cfg, values), 0, "a fresh config passes")
     expect(check_config(cfg.replace("  reticleAhead: 30\n", ""), values), 1, "a key missing")
-    old_cfg = cfg.replace("  reticleSmoothSeconds: 0.15\n", "").replace("  reticleRings: 10\n", "")
+    old_cfg = cfg.replace(f"  reticleSmoothSeconds: {num(values['reticleSmoothSeconds'])}\n", "").replace(f"  reticleRings: {num(values['reticleRings'])}\n", "")
     if config_retrofit(old_cfg, values) == old_cfg or check_config(config_retrofit(old_cfg, values), values):
         fails.append("the config retrofit does not add a key the studio added later")
     if config_retrofit(cfg, values) != cfg:
@@ -522,7 +522,7 @@ def self_test():
     pre7 = re.sub(r"  (shaftMin|shaftMax|bendRadius|throatRadius|mouthRadius): .*\n", "", cfg)
     if config_retrofit(pre7, values) != cfg:
         fails.append("the config retrofit does not bring a round-6 asset to the round-7 one, in the page's order")
-    if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 1.6\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
+    if "  shaftMax: 600\n" not in cfg or "  bridgeSpindleThickness: 0.25\n" not in cfg or "  aiWormhole: 1\n" not in cfg:
         fails.append(f"the config is not the studio's SHIPPED values")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]

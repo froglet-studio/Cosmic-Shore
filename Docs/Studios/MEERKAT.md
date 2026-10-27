@@ -133,6 +133,18 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 8 (Yash, 2026-10-28: "the updated look I want. By merging Garrett's look with my reticles ... I don't want any
+camera Y offset. I want the camera to go inside the tunnel"):** the look Yash tuned in Unity's `MeerkatWormholeConfig` is
+the studio's SHIPPED look now. Before RT the reticle draws as Garrett's bridge (`reticleLook` Bridge), with the bridge
+spindles tuned to the reticle's: 36 rings × 21 spindles, 5 ribs, 0.25 u thick, `bridgeVisibility` 0.163, glass 0.15.
+The reticle keys are 30 × 21, 5 ribs, 0.25 u, idle 0.053, glass 0.048, path 0.333, smoothing 0.123 s, and `rippleEdge`
+is 0.154. After RT it is Garrett's contour field, with glass 1.579 at Δn 0.078, grazing 0.883, profile Smoother, ribs
+0.155 at sharpness 11.12, travel 1.95 and 9 rings. Those field numbers live only in the Unity asset; the page does not
+draw the field. Riding, the camera sits ON the tube's centreline, `rideCameraBack` (18 u) behind you, looks
+`rideCameraLookAhead` (40 u) along it, and eases in and out over `rideCameraBlendSeconds` (0.25 s). There is no height
+offset. Measured on the page: once eased in, the camera stayed within 0.23 u of the centreline (throat 4 u) on every
+frame, for a straight tunnel and for 114° and 150° bends on short and long shafts.
+
 **Round 7 (Yash, 2026-10-27: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from where it can turn 90 or 120 or 150 degrees ... it can be a long umbrella stick like geometry"):** the tunnel no longer grows shorter and fatter as it bends. It
 is a straight shaft and then one bend of fixed radius `bendRadius` (60 u). LT sets the shaft (`shaftMin` 60 u released
 to `shaftMax` 600 u squeezed), the right stick the bend's direction and angle (up to `bendMaxDegrees`, now 150°), RT
@@ -182,6 +194,9 @@ just spindles. Tiny thinning spindles"):**
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
+| ride | `rideCameraBack` | 18 u | Riding: the camera on the tube's centreline this far behind you (round 8) |
+| ride | `rideCameraLookAhead` | 40 u | ...looking this far ahead along it |
+| ride | `rideCameraBlendSeconds` | 0.25 s | ...easing in and out over |
 | ride | `rideExitMultiplier` | 1.2 | ...coming out: a little boost, easing back to cruise |
 | ride | `rideSpeedTunnelScale` | 5 | Riding: the game's speed-tunnel dolly zoom, × its normal strength |
 | ride | `reticleDelaySeconds` | 0.5 s | The reticle comes back this long after you are out |

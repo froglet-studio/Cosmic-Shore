@@ -59,6 +59,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.5f, 3f)] float rideExitMultiplier = 1.2f;
         [Tooltip("Riding: the speed tunnel's dolly zoom (× its normal strength)")]
         [SerializeField, Range(0f, 5f)] float rideSpeedTunnelScale = 5f;
+        [Tooltip("Riding: the camera on the tube's centreline, this far behind you (u)")]
+        [SerializeField, Range(0f, 60f)] float rideCameraBack = 18f;
+        [Tooltip("...looking this far ahead along it (u)")]
+        [SerializeField, Range(5f, 120f)] float rideCameraLookAhead = 40f;
+        [Tooltip("...easing in and out over (s)")]
+        [SerializeField, Range(0.02f, 1f)] float rideCameraBlendSeconds = 0.25f;
         [Tooltip("The reticle comes back after you are out in (s)")]
         [SerializeField, Range(0f, 3f)] float reticleDelaySeconds = 0.5f;
         [Tooltip("...rippling into shape over (s)")]
@@ -180,6 +186,9 @@ namespace CosmicShore.ScriptableObjects
         public float RideMidMultiplier => rideMidMultiplier;
         public float RideExitMultiplier => rideExitMultiplier;
         public float RideSpeedTunnelScale => rideSpeedTunnelScale;
+        public float RideCameraBack => rideCameraBack;
+        public float RideCameraLookAhead => rideCameraLookAhead;
+        public float RideCameraBlendSeconds => rideCameraBlendSeconds;
         public float ReticleDelaySeconds => reticleDelaySeconds;
         public float ReticleGrowSeconds => reticleGrowSeconds;
         public float FormSeconds => formSeconds;
