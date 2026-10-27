@@ -439,6 +439,45 @@ reticle every time.
 fastest mode on every circuit, by 10+ s: **a balance question** for the team (the warp after a thin tunnel, `gtWarpShare`
 and `gtFatCut`, and the ride speed `gtTubeSpeed` are the levers).
 
+## 1j. Round 22 (studio) — the config is the game's blueprint; the wormhole's look (2026-10-27)
+
+**The team's call** (relayed by Yash): the right-side panel had duplicates (Field trajectory in Scene Config AND a "field
+trajectory" Mode card in Play Style Config; the Time mode's "Dipole sling" section showing in Mass mode). Clean it into
+one organized config whose parameters and names ARE what the game gets: *"this is just the blueprint of what's gonna be
+made in the actual game ... we won't make a parameter name here something different in the game."* And the wormhole:
+the grid is the player's own UI only; it must run exactly mouth to mouth, its mouths as wide as the holes; everyone else
+sees only bent space-time, and how much concentrated black/white hole shows must be a setting.
+
+**The six tabs now** (each section in exactly one; flight unchanged, the scorecard identical):
+
+| Tab | Sections |
+|---|---|
+| Scene Config | Scene · Flight & course · **Black hole · look** · **White hole · look** · **Wormhole · look** · Birth & annihilation |
+| Game Config | Intensity · Players |
+| AI Config | Sim lab (now with the Gate AI rows) |
+| Play Style Config | **Mode** (a dropdown: Mass / Time / Gate) · Play styles · Squeeze · **Pull & momentum** (Mass and Time) · then ONLY the mode in use: **Mass mode · the field trajectory**, **Time mode · the catch sling** or **Gate mode · the wormhole** |
+| Input | Controls |
+| Vessel Config | (one section at a time) Black hole · physics · White hole · physics · Pair life · Lope · Archive |
+
+The hole presets (Pinpoint, Cinematic, Supernova, ...) moved onto the look cards; their Shipped button resets every row
+a preset touches.
+
+**The game's names.** Every slider shows its game name under it, from the page's `GAME_NAMES` (151 rows):
+*linked* (green; `studio_to_unity.py` writes it: 73), *field* (the field exists in the game, not linked yet: check its
+units when porting, e.g. `StoatSlingConfig.catchAhead` for the studio's Laid ahead), *new* (violet; the field the game
+will get, by exactly this name, e.g. `StoatModeAction.gateTurnMaxDegrees`), *lab* (the studio's own, never in the game:
+the play-style levels, the AI's sloppiness). The round-22 wormhole-look keys ARE their game names
+(`gateDentStrength` ...). `studio_to_unity.py --check` now fails when a `linked` name disagrees with the map
+(`--self-test` plants both failures).
+
+**The wormhole's look** (`Wormhole · look`, StoatModeAction):
+
+| | |
+|---|---|
+| The grid | yours only: your reticle, and your own tunnel while you ride it (`gateGridOnRide` 1). Rivals and AIs draw no grid. It runs mouth to mouth: the space sheets beyond the mouths are off (`gateGridSheets` 0) |
+| The dent (everyone sees it) | each mouth of a made tunnel is a graded lens, `gateDentStrength` 0.6, as wide as the grid's mouth × `gateDentWidth` 1: space pulled in at the black hole's mouth, pushed out at the white hole's |
+| The concentrated hole | `gateHoleCore` 0.12 × the mouth: a black shadow with its photon ring, and a white core; **0 = a pure warp of space-time**. The 3D hole spheres are no longer drawn on tunnels (the lens draws the core) |
+
 ## 2. What the sink takes
 
 | crosses the sink | what happens | where |
