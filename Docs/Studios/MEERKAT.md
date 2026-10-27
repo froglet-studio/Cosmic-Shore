@@ -35,7 +35,7 @@ One thumb flies, as the game's one-thumb hulls do (`SingleStickVesselTransformer
 - **The reticle** is always on your nose, `reticleAhead` ahead. It shows the tunnel RT would form now. You see it, and
   no one else does.
 - **The tunnel is an umbrella handle** (round 7): a straight shaft, then one bend of fixed radius `bendRadius`. Its
-  throat (`throatRadius`) and mouths (`mouthRadius`) are narrow and never change.
+  throat (`throatDiameter`) and its entry and exit (`mouthDiameter`) are set at edit time and never change in flight.
 - **LT** sets how far the shaft runs before the bend: `shaftMin` released, up to `shaftMax` squeezed. On keys and touch
   it ramps to full in `keyRampSeconds`.
 - **The right stick** sets the bend's direction (left, right, up, down or between) and how far it turns, up to
@@ -133,6 +133,19 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
+screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow, it's always
+center. Also, I want to have options to control the diameter of the entry exit pair ... and the inner diameter ...
+configurable at edit time ... the entrance and the exit of the wormhole need to be a little bit bigger"):**
+- **The camera.** Both cameras sit straight behind the hull with no height and no lag. In the game this is
+  `MeerkatCameraSettingsSO`: offset (0, 0, -21), hard-attached. Riding, the camera is the same distance behind you on the
+  tube's centreline, looking at you. It is a cut, not a blend: on the straight run in, the two coincide. Out of the far
+  mouth it keeps to the tunnel's line until it has passed the mouth. Measured: the hull is exactly at screen centre,
+  flying and riding. The camera is within 0.29 u of the line in the tube and past the exit, and its largest step at RT
+  and at the exit is one normal frame. Retired: `rideCameraBack`, `rideCameraLookAhead`, `rideCameraBlendSeconds`.
+- **The size.** `throatDiameter` (8 u) and `mouthDiameter` (26 u, the entry and exit a little bigger than round 7's
+  20 u) replace the two radius keys. They are set at edit time; the sticks never change them.
+
 **Round 9 (Yash, 2026-10-28: "the wormhole look and the reticle look can be the same, just the reticle can be just a
 wireframe version of the actual wormhole look ... the reticles and the bridges geometry need to be same, and the same
 position same way ... The reticle is the silhouette of the geometry"):** one geometry. The bridge's rings, spindles per
@@ -200,14 +213,11 @@ just spindles. Tiny thinning spindles"):**
 | shape | `shaftMin` | 60 u | The straight shaft before the bend, LT released |
 | shape | `shaftMax` | 600 u | The shaft with LT fully squeezed |
 | shape | `bendRadius` | 60 u | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
-| shape | `throatRadius` | 4 u | The throat's radius (fixed) |
-| shape | `mouthRadius` | 10 u | Both mouths' radius (fixed) |
+| shape | `throatDiameter` | 8 u | The throat's diameter (fixed, set at edit time; round 10) |
+| shape | `mouthDiameter` | 26 u | The entry and exit diameter (fixed, set at edit time; round 10: was 20) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
-| ride | `rideCameraBack` | 18 u | Riding: the camera on the tube's centreline this far behind you (round 8) |
-| ride | `rideCameraLookAhead` | 40 u | ...looking this far ahead along it |
-| ride | `rideCameraBlendSeconds` | 0.25 s | ...easing in and out over |
 | ride | `rideExitMultiplier` | 1.2 | ...coming out: a little boost, easing back to cruise |
 | ride | `rideSpeedTunnelScale` | 5 | Riding: the game's speed-tunnel dolly zoom, × its normal strength |
 | ride | `reticleDelaySeconds` | 0.5 s | The reticle comes back this long after you are out |

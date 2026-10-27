@@ -29,14 +29,14 @@
       "field": "bendRadius"
     },
     {
-      "key": "throatRadius",
+      "key": "throatDiameter",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "throatRadius"
+      "field": "throatDiameter"
     },
     {
-      "key": "mouthRadius",
+      "key": "mouthDiameter",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "mouthRadius"
+      "field": "mouthDiameter"
     },
     {
       "key": "keyRampSeconds",
@@ -192,21 +192,6 @@
       "key": "rideSpeedTunnelScale",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "rideSpeedTunnelScale"
-    },
-    {
-      "key": "rideCameraBack",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rideCameraBack"
-    },
-    {
-      "key": "rideCameraLookAhead",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rideCameraLookAhead"
-    },
-    {
-      "key": "rideCameraBlendSeconds",
-      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
-      "field": "rideCameraBlendSeconds"
     },
     {
       "key": "rideEntryMultiplier",

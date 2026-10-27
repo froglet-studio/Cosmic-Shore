@@ -128,6 +128,8 @@ namespace CosmicShore.Gameplay
         Tunnel _mine;
         Tunnel _ride;
         CustomCameraController _rideCam;   // the camera this hull's ride is holding on the centreline (round 8)
+        Tunnel _camTunnel;                 // the tunnel the ride camera follows, through the ride and just past its way out
+        float _camS;                       // how far along that tunnel's line the hull is (past L after the way out)
         float _rideS, _rideSIn, _vIn;
         Quaternion _q0;
         int _seq;
@@ -449,18 +451,23 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Round 8 (Yash, 2026-10-28: "I don't want any camera Y offset. I want the camera to go inside the tunnel ... my view
-        /// stays inside the tunnel while passing through the tunnel"), the page's ride camera (<c>cameraStep</c>): while a
-        /// tunnel flies this hull, its pilot's camera sits ON the tube's centreline <c>rideCameraBack</c> u behind the hull
-        /// and looks <c>rideCameraLookAhead</c> u ahead along it, through <see cref="CustomCameraController.Spectate"/>, which
-        /// eases in and out over <c>rideCameraBlendSeconds</c>. Once eased in it is exactly on the centreline: no height
-        /// offset and no lag, so it never leaves the tube, round the bend included. Only the local human pilot's camera,
-        /// and only while it follows this hull.
+        /// The ride camera (rounds 8 and 10, Yash: "I want the camera to go inside the tunnel"; "the cameras, why offset should
+        /// always be zero, the vessel should be in the center of the screen and this way we don't need to lerp the camera"), the
+        /// page's <c>cameraStep</c>. The Meerkat's own camera (<c>MeerkatCameraSettingsSO</c>) sits straight behind the hull
+        /// with no offset and no lag, so the hull is always at the centre of the screen. While a tunnel flies the hull, the
+        /// camera stays that same distance behind it but ON the tube's centreline, looking at the hull, through
+        /// <see cref="CustomCameraController.Spectate"/> with no blend: on the straight run in it is exactly where the follow
+        /// camera already was, and round the bend it never cuts the chord out of the tube. Out of the far mouth it keeps to the
+        /// tunnel's line until it is past the mouth itself (a straight-behind camera would jump sideways there). Only the local
+        /// human pilot's camera, and only while it follows this hull.
         /// </summary>
         void StepRideCamera()
         {
-            var t = _ride;
-            bool mine = t != null && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
+            float dt = Time.deltaTime;
+            if (_ride != null) { _camTunnel = _ride; _camS = _rideS; }
+            else if (_camTunnel != null) _camS += Mathf.Max(0f, _status.Speed) * dt;
+            var t = _camTunnel;
+            bool mine = t != null && s_tunnels.Contains(t) && _status.Player != null && _status.IsLocalUser && !_status.IsInitializedAsAI;
             var cam = mine && CameraManager.Instance != null
                 ? CameraManager.Instance.GetActiveController() as CustomCameraController
                 : null;
@@ -468,19 +475,24 @@ namespace CosmicShore.Gameplay
             if (cam && (cam.PlacementAnchor.HasValue || !cam.FollowTarget ||
                         (cam.FollowTarget != hull && !cam.FollowTarget.IsChildOf(hull))))
                 cam = null;   // a cinematic or end-of-match camera pointed elsewhere is not ours to move
+            // the follow camera's own distance (its offset is (0, 0, -back)), warp field included, so the hand-over is a cut
+            float back = cam ? Mathf.Abs(cam.GetFollowOffset().z) * WarpFieldRuntime.ScaleAt(hull.position) : 0f;
+            if (cam && _ride == null && _camS - back >= t.L) cam = null;   // past the mouth: the follow camera is on the line
+            if (!cam) _camTunnel = null;
             if (cam != _rideCam) ReleaseRideCamera();
             if (!cam) return;
             _rideCam = cam;
-            cam.SpectateBlendSeconds = Mathf.Max(0.02f, config.RideCameraBlendSeconds);
-            var eye = t.AtExtended(_rideS - Mathf.Max(0f, config.RideCameraBack));
-            var look = t.AtExtended(_rideS + Mathf.Max(1f, config.RideCameraLookAhead));
-            cam.Spectate = new CustomCameraController.SpectateView { Position = eye, LookAt = look, Up = hull.up };
+            cam.SpectateBlendSeconds = 0f;   // a cut both ways: the two cameras coincide where they hand over
+            cam.Spectate = new CustomCameraController.SpectateView
+            {
+                Position = t.AtExtended(_camS - back), LookAt = hull.position, Up = hull.up,
+            };
         }
 
         void ReleaseRideCamera()
         {
             if (!_rideCam) { _rideCam = null; return; }
-            _rideCam.Spectate = null;   // eases back to the follow camera over the same blend
+            _rideCam.Spectate = null;   // back to the follow camera, which is on the same line by then
             _rideCam = null;
         }
 
@@ -614,6 +626,7 @@ namespace CosmicShore.Gameplay
             s_executors.Remove(this);
             ReleaseSpeedTunnelScale();
             ReleaseRideCamera();
+            _camTunnel = null;
             _ride = null;
             _mine = null;
             _retLive = false;

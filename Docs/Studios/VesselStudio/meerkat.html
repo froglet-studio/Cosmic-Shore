@@ -399,7 +399,7 @@
       </div>
 
       <details class="card" id="grp-shape" open><summary>Wormhole · shape <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
-        <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. It is a <b>straight shaft, then a bend</b> - an umbrella handle: <b>LT</b> sets how long the shaft runs before it bends (<i>shaftMin</i> released to <i>shaftMax</i> squeezed), and the <b>right stick</b> sets which way it bends and how far, up to <i>bendMaxDegrees</i>, round a bend of radius <i>bendRadius</i>. <b>RT</b> confirms. Its size is fixed: a <i>throatRadius</i> throat between <i>mouthRadius</i> mouths, however it is shaped.</p>
+        <p class="src"><b>The reticle is always on your nose</b>: the tunnel RT would form now, <i>reticleAhead</i> in front of you. It is a <b>straight shaft, then a bend</b> - an umbrella handle: <b>LT</b> sets how long the shaft runs before it bends (<i>shaftMin</i> released to <i>shaftMax</i> squeezed), and the <b>right stick</b> sets which way it bends and how far, up to <i>bendMaxDegrees</i>, round a bend of radius <i>bendRadius</i>. <b>RT</b> confirms. Its size is fixed: a <i>throatDiameter</i> throat between <i>mouthDiameter</i> mouths, however it is shaped (set here, never by the sticks).</p>
         <div class="btns"><button class="pick" type="button" data-reset="shape">Reset</button></div></details>
       <details class="card" id="grp-ride" open><summary>Wormhole · ride <small>MeerkatWormholeConfig</small></summary><div class="rows"></div>
         <p class="src"><b>Pull RT</b> and the tunnel ripples out of its centre to both mouths (<i>formSeconds</i>) while you dive into it. <b>The ride</b> is your speed before the tunnel times three multipliers: <i>rideEntryMultiplier</i> going in (1 = no change), rising to <i>rideMidMultiplier</i> at the throat and easing to <i>rideExitMultiplier</i> at the way out - a little boost you come out with, on the tunnel's last heading, before you ease back to cruise. <b>Out</b>, your reticle comes back after <i>reticleDelaySeconds</i>, growing out of its centre over <i>reticleGrowSeconds</i>; the tunnel stays <i>staySeconds</i>, then collapses back to its centre over <i>collapseSeconds</i>. One tunnel at a time: forming a new one collapses the last.</p>
@@ -480,9 +480,11 @@
     // round 7 (Yash: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from
     // where it can turn 90 or 120 or 150 degrees ... left trigger will control the length after which it will bend ... a long
     // umbrella stick like geometry"): a straight SHAFT shaftMin (LT released) to shaftMax (LT squeezed) long, then a BEND
-    // round bendRadius, as far as the right stick asks up to bendMaxDegrees, any way; a fixed throatRadius throat between
-    // fixed mouthRadius mouths; LT on a key or touch reaches a full squeeze in keyRampSeconds
-    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, throatRadius: 4, mouthRadius: 10, keyRampSeconds: 0.5,
+    // round bendRadius, as far as the right stick asks up to bendMaxDegrees, any way; a fixed throatDiameter throat between
+    // fixed mouthDiameter mouths (round 10, Yash: "options to control the diameter of the entry exit pair ... and the inner
+    // diameter ... configurable at edit time ... the entrance and the exit of the wormhole need to be a little bit bigger":
+    // diameters now, the mouths 20 -> 26); LT on a key or touch reaches a full squeeze in keyRampSeconds
+    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
     // ride and life (round 6, Yash: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
     // exiting it will exit at little bit boosted"): the ride is your speed before the tunnel x rideEntryMultiplier going in,
     // rideMidMultiplier at the throat, rideExitMultiplier coming out (rideMultiplier); the reticle comes back reticleDelaySeconds
@@ -490,11 +492,6 @@
     // after you are out, then collapses back to its centre over collapseSeconds
     // round 5: riding, the game's speed tunnel (its dolly zoom) is rideSpeedTunnelScale x its normal strength
     rideSpeedTunnelScale: 5,
-    // round 8 (Yash, 2026-10-28: "I don't want any camera Y offset. I want the camera to go inside the tunnel ... my view stays
-    // inside the tunnel while passing through the tunnel. It should not go up the tunnel"): riding, the camera sits ON the
-    // tube's centreline rideCameraBack u behind you, looks rideCameraLookAhead u along it, and eases in and out over
-    // rideCameraBlendSeconds
-    rideCameraBack: 18, rideCameraLookAhead: 40, rideCameraBlendSeconds: 0.25,
     rideEntryMultiplier: 1, rideMidMultiplier: 2.5, rideExitMultiplier: 1.2, reticleDelaySeconds: 0.5, reticleGrowSeconds: 0.8, formSeconds: 0.4, staySeconds: 10, collapseSeconds: 0.8,
     // look: what everyone sees (the tube's warp, its mouths' dents, the collapse's edge ripple) and what only you see (your
     // reticle's brightness at rest, its glass)
@@ -549,16 +546,13 @@
     ['shape', 'shaftMin', 'The straight shaft before the bend, LT released (u)', 0, 600, 10],
     ['shape', 'shaftMax', '...LT fully squeezed (u)', 20, 1500, 10],
     ['shape', 'bendRadius', 'The bend\'s radius (u)', 10, 300, 5],
-    ['shape', 'throatRadius', 'Throat radius, fixed (u)', 1, 30, 0.5],
-    ['shape', 'mouthRadius', 'Mouth radius, fixed (u)', 2, 60, 1],
+    ['shape', 'throatDiameter', 'Throat diameter, fixed (u)', 2, 60, 1],
+    ['shape', 'mouthDiameter', 'Entry and exit diameter, fixed (u)', 4, 120, 1],
     ['shape', 'keyRampSeconds', 'LT on a key or touch: full after (s)', 0.05, 3, 0.05],
     ['ride', 'rideEntryMultiplier', 'Ride: going in (× your speed before the tunnel)', 0.5, 3, 0.05],
     ['ride', 'rideMidMultiplier', 'Ride: fastest, at the throat (× your speed before the tunnel)', 0.5, 8, 0.1],
     ['ride', 'rideExitMultiplier', 'Ride: coming out (× your speed before the tunnel)', 0.5, 3, 0.05],
     ['ride', 'rideSpeedTunnelScale', 'Riding: the speed tunnel\'s dolly zoom (× its normal strength)', 0, 5, 0.1],
-    ['ride', 'rideCameraBack', 'Riding: the camera on the tube\'s centreline, this far behind you (u)', 0, 60, 1],
-    ['ride', 'rideCameraLookAhead', '...looking this far ahead along it (u)', 5, 120, 1],
-    ['ride', 'rideCameraBlendSeconds', '...easing in and out over (s)', 0.02, 1, 0.01],
     ['ride', 'reticleDelaySeconds', 'The reticle comes back after you are out in (s)', 0, 3, 0.05],
     ['ride', 'reticleGrowSeconds', '...rippling into shape over (s)', 0.05, 3, 0.05],
     ['ride', 'formSeconds', 'RT: the tunnel ripples out of its centre over (s)', 0.05, 2, 0.05],
@@ -1149,7 +1143,7 @@
   const whA = new V3(), whB = new V3(), whC = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
   // The shape the right stick and LT ask for (round 7): a straight SHAFT, shaftMin with LT released to shaftMax squeezed,
   // then a BEND round bendRadius, as far as the right stick is pushed up to bendMaxDegrees, the way it is pushed. Its size
-  // is fixed: throat throatRadius, mouths mouthRadius. Returns the length mouth to mouth (L = S + R theta), the shaft (S),
+  // is fixed: throat throatDiameter, mouths mouthDiameter (round 10: diameters; b and M are their radii). Returns the length mouth to mouth (L = S + R theta), the shaft (S),
   // the bend's radius (R), throat (b), mouth (M), turn (rad), how far the stick is pushed 0..1 (fat), and the bend's way in
   // the hull's frame (dx right, dy up).
   function shapeFor(Pv, lq, sx, sy) {
@@ -1157,7 +1151,7 @@
     const mRaw = Math.hypot(tx, ty), m = Math.min(1, mRaw), t = clamp01((m - 0.05) / 0.95);
     const S = Math.max(0, Pv.shaftMin + (Math.max(Pv.shaftMin, Pv.shaftMax) - Pv.shaftMin) * clamp01(lq));
     const theta = Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180 * t, R = Math.max(1, Pv.bendRadius);
-    const L = Math.max(10, S + R * theta), b = Math.max(0.5, Pv.throatRadius), M = Math.max(b, Pv.mouthRadius);
+    const L = Math.max(10, S + R * theta), b = Math.max(0.5, 0.5 * Pv.throatDiameter), M = Math.max(b, 0.5 * Pv.mouthDiameter);
     return { L, S, R, b, M, theta, fat: t, m, dx: mRaw > 1e-6 ? tx / mRaw : 0, dy: mRaw > 1e-6 ? ty / mRaw : 0 };
   }
   const whShape = (lq, sx, sy) => shapeFor(P, lq, sx, sy);
@@ -2315,7 +2309,8 @@
     const fov = Math.max(1, CAM_HOME_FOV - ST_FOV_DROP * stEffect);
     if (Math.abs(fov - cam.fov) > 1e-3) { cam.fov = fov; cam.updateProjectionMatrix(); }
   }
-  let camRide = 0; const camRideP = new V3(), camRideL = new V3();
+  const CAM_CHASE_BACK = 21, CAM_FOLLOW_BACK = 62;   // the chase and follow cameras, straight behind the hull
+  let camTail = null;   // after the way out: the tunnel and how far along its line you are, until the camera is past the mouth
   // A point s along a tunnel's centreline, the straight run in before its mouth and out after it included.
   function whAtX(wh, s, out) {
     if (s <= 0) { whAt(wh, 0, out, wt1); return out.addScaledVector(wt1, s); }
@@ -2324,23 +2319,30 @@
   }
   function cameraStep(dt) {
     basis();
-    const want = camMode === 'follow' ? tv.set(0, 22, 62).applyQuaternion(hull.quaternion).add(hull.position) : tv.set(0, 6.5, 21).applyQuaternion(hull.quaternion).add(hull.position);
-    const look = tv2.copy(hull.position).addScaledVector(fwd, camMode === 'follow' ? 60 : 40).addScaledVector(up, 3);
+    // Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
+    // screen ... It is like a sparrow, it's always center"): both cameras sit straight behind the hull on its own axis, with no
+    // height and no lag (the game's MeerkatCameraSettingsSO: offset (0, 0, -21), hard-attached), so the hull is always at the
+    // centre of the screen. CAM_BACK is how far behind.
+    const back = camMode === 'follow' ? CAM_FOLLOW_BACK : CAM_CHASE_BACK;
+    const want = tv.set(0, 0, back).applyQuaternion(hull.quaternion).add(hull.position);
+    const look = tv2.copy(hull.position).addScaledVector(fwd, camMode === 'follow' ? 60 : 40);
     if (camMode === 'free') {   // orbit the Meerkat: drag to turn, wheel to zoom
       want.set(Math.sin(freeCam.yaw) * Math.cos(freeCam.pitch), Math.sin(freeCam.pitch), Math.cos(freeCam.yaw) * Math.cos(freeCam.pitch)).multiplyScalar(freeCam.dist).add(hull.position);
       look.copy(hull.position);
     }
-    // Riding a tunnel (round 24): the camera runs down the tube's centreline behind you and looks along it, so the ride
-    // is the tube's own smooth curve - the chase camera lerping its POSITION fell far behind a hull at 2.5x speed and
-    // swung round the bend (the "flipping" Yash saw). Round 8: rideCameraBack behind you in every camera, no height, and
-    // once eased in it sits exactly on the centreline (no lag that could cut a bend's chord and leave the tube). Eased in
-    // on entry and out on exit over rideCameraBlendSeconds (CustomCameraController's Spectate blend: smoothstep).
+    // Riding a tunnel (rounds 24, 8, 10): the camera stays the same distance behind you but on the tube's CENTRELINE, and
+    // looks at you, so the view never leaves the tube round the bend (a camera straight behind the hull's nose cuts the
+    // bend's chord) and you stay at the centre of the screen. On the straight run in it is exactly where the chase camera
+    // already was, so the hand-over needs no blend (round 10: "we don't need to lerp the camera during entering").
+    // Out of the far mouth the camera keeps to the tunnel's line until it is past the mouth itself (camTail): straight
+    // behind the nose would cut the bend for its first `back` u, a sideways jump at the way out.
     const gr = ftLive.gate && ftLive.gate.state === 'tube' && camMode !== 'free' ? ftLive.gate : null;
-    camRide = Math.max(0, Math.min(1, camRide + (gr ? 1 : -1) * dt / Math.max(0.02, P.rideCameraBlendSeconds)));
-    if (gr) { const wh = gr.pair.wh; whAtX(wh, gr.s - Math.max(0, P.rideCameraBack), camRideP); whAtX(wh, gr.s + Math.max(1, P.rideCameraLookAhead), camRideL); }
-    const camW = camRide * camRide * (3 - 2 * camRide);
-    if (camW > 0.001) { want.lerp(camRideP, camW); look.lerp(camRideL, camW); }
-    const k = snapCam ? 1 : 1 - (1 - camW) * Math.exp(-((camMode === 'follow' ? 3 : camMode === 'free' ? 12 : 7) + 40 * camW) * dt);
+    if (gr) { camTail = { wh: gr.pair.wh, s: gr.s }; whAtX(gr.pair.wh, gr.s - back, want); look.copy(hull.position); }
+    else if (camTail && camMode !== 'free' && mode === 'fly') {
+      camTail.s += Math.max(0, speed) * dt;
+      if (camTail.s - back >= camTail.wh.L) camTail = null; else { whAtX(camTail.wh, camTail.s - back, want); look.copy(hull.position); }
+    } else camTail = null;
+    const k = snapCam || camMode !== 'free' ? 1 : 1 - Math.exp(-12 * dt);
     cam.position.lerp(want, k); camLook.lerp(look, k); snapCam = false;
     if (camMode === 'free' || camMode === 'follow') cam.up.set(0, 1, 0); else cam.up.copy(up);
     cam.lookAt(camLook);
@@ -3045,13 +3047,10 @@
     shaftMin: { scene: 'tunnel', cfg: { sticks: [0.6, 1] }, d: 'The tunnel is a straight shaft, then a bend. With LT released the shaft runs this far before it bends (the right stick centred: the whole tunnel is this straight shaft).', lo: 'Bends at once.', hi: 'A long run first.' },
     shaftMax: { scene: 'tunnel', cfg: { sticks: [0.6, 1], lt: 1 }, d: 'With LT fully squeezed the shaft runs this far before it bends: a long umbrella handle. Half squeezed, half way between.', lo: 'Short handles only.', hi: 'Very long handles.' },
     bendRadius: { scene: 'tunnel', d: 'The bend at the shaft\'s end turns round this radius: small for a tight hook, large for a sweeping one. A 150-degree bend is this x 2.6 long.', lo: 'A tight hook.', hi: 'A wide sweep.' },
-    throatRadius: { scene: 'tunnel', d: 'The tube\'s radius at its middle - the same for every tunnel, however it is shaped.', lo: 'A needle.', hi: 'A wide tube.' },
-    mouthRadius: { scene: 'tunnel', d: 'Each mouth\'s radius - the same for every tunnel: the tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
+    throatDiameter: { scene: 'tunnel', d: 'How wide the tube is at its middle - the same for every tunnel, however it is shaped. Set here; the sticks never change it.', lo: 'A needle.', hi: 'A wide tube.' },
+    mouthDiameter: { scene: 'tunnel', d: 'How wide the entry and the exit are - the same for every tunnel: the tube narrows from its mouths to its throat. Set here; the sticks never change it.', lo: 'Small mouths.', hi: 'Wide funnels.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
     rideSpeedTunnelScale: { scene: 'tunnelLife', d: 'Every vessel has the game\'s speed tunnel: the faster you fly, the narrower the camera\'s view (and the flatter its Panini projection) - a dolly zoom. While a tunnel flies you it is this many times as strong, so the push-in peaks at the throat, where the ride is fastest. 1 = the normal law; 0 = none while riding. The studio shows the field of view; the game also relaxes the Panini projection.', lo: 'No push-in.', hi: 'A deep dolly zoom.' },
-    rideCameraBack: { scene: 'tunnel', d: 'While a tunnel flies you, the camera leaves its usual place above and behind you and rides ON the tube\'s centreline this far behind you - no height offset, so your view stays inside the tunnel the whole way through, round the bend included.', lo: 'Right at your tail.', hi: 'Further back down the tube.' },
-    rideCameraLookAhead: { scene: 'tunnel', d: 'Riding, the camera looks at the point this far ahead of you along the centreline, so it turns with the bend before you reach it.', lo: 'Looks just ahead.', hi: 'Looks far round the bend.' },
-    rideCameraBlendSeconds: { scene: 'tunnel', d: 'The camera eases from its usual place onto the centreline when you pull RT, and back when you come out, over this long.', lo: 'A cut.', hi: 'A slow glide.' },
     rideEntryMultiplier: { scene: 'tunnel', d: 'The ride is your speed before the tunnel times a multiplier: this one going in (the dive to the mouth and the way in). 1 = you enter at exactly the speed you had. The green dot rides the sharpest tunnel.', lo: 'Slows you as you enter.', hi: 'A kick going in.' },
     rideMidMultiplier: { scene: 'tunnel', d: 'The ride rises from the entry multiplier to this many times your speed before the tunnel at the throat, then eases to the exit multiplier. The green dot rides the sharpest tunnel.', lo: 'A steady ride.', hi: 'A rush through the middle.' },
     rideExitMultiplier: { scene: 'tunnel', d: 'You come out of the far mouth at this many times your speed before the tunnel, on its last heading, and ease back to cruise as you fly on. A little over 1 = a small boost for taking the tunnel.', lo: 'Out at your speed.', hi: 'A big boost out.' },
@@ -3286,16 +3285,13 @@
     shaftMin: ['MeerkatWormholeConfig.shaftMin', 'linked'],
     shaftMax: ['MeerkatWormholeConfig.shaftMax', 'linked'],
     bendRadius: ['MeerkatWormholeConfig.bendRadius', 'linked'],
-    throatRadius: ['MeerkatWormholeConfig.throatRadius', 'linked'],
-    mouthRadius: ['MeerkatWormholeConfig.mouthRadius', 'linked'],
+    throatDiameter: ['MeerkatWormholeConfig.throatDiameter', 'linked'],
+    mouthDiameter: ['MeerkatWormholeConfig.mouthDiameter', 'linked'],
     keyRampSeconds: ['MeerkatWormholeConfig.keyRampSeconds', 'linked'],
     rideEntryMultiplier: ['MeerkatWormholeConfig.rideEntryMultiplier', 'linked'],
     rideMidMultiplier: ['MeerkatWormholeConfig.rideMidMultiplier', 'linked'],
     rideExitMultiplier: ['MeerkatWormholeConfig.rideExitMultiplier', 'linked'],
     rideSpeedTunnelScale: ['MeerkatWormholeConfig.rideSpeedTunnelScale', 'linked'],
-    rideCameraBack: ['MeerkatWormholeConfig.rideCameraBack', 'linked'],
-    rideCameraLookAhead: ['MeerkatWormholeConfig.rideCameraLookAhead', 'linked'],
-    rideCameraBlendSeconds: ['MeerkatWormholeConfig.rideCameraBlendSeconds', 'linked'],
     reticleDelaySeconds: ['MeerkatWormholeConfig.reticleDelaySeconds', 'linked'],
     reticleGrowSeconds: ['MeerkatWormholeConfig.reticleGrowSeconds', 'linked'],
     formSeconds: ['MeerkatWormholeConfig.formSeconds', 'linked'],
