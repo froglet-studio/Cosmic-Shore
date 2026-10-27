@@ -3,6 +3,10 @@
 The in-game encyclopedia's data layer and the tool that authors it.
 
 - **Ethirion** is the player-facing name for a **crystal**. Charge / Mass / Space / Time / Omni.
+  *(2026-10-27: the player reads it spelled **Etherion**, at Shombith's request: "Fix the spelling everywhere". The
+  serialized names here (`ethirions`, `CodexKingdom.Ethirion`, the `ethirion.*` ids and `collect.ethirion.*` discovery
+  keys) keep their spelling, because a rename would orphan saved data. The menu's CODEX screen folds the Etherions into
+  its ELEMENTS chapter and lists Flora and Fauna from the Toy Box's Spawn Matrix (`Docs/MENU_REDESIGN_B.md` section 90).)*
 - **Ecology** is every **lifeform** — flora and fauna.
 - **Tool** is the player-facing name for a **Toy** — the freestyle stations you fly into.
   *(2026-10-26: the menu's CODEX screen calls them **Toys**, at Shombith's request: "Name tools to toys".

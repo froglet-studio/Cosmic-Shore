@@ -84,7 +84,7 @@ namespace CosmicShore.UI
         [Header("Words")]
         [SerializeField] private string[] elementNames = { "Charge", "Mass", "Space", "Time" };
         [Tooltip("Header line.")]
-        [SerializeField] private string defaultLine = "Spend crystals to raise an element. The hull changes as it grows.";
+        [SerializeField] private string defaultLine = "Spend OmniCrystals to raise an element. The hull changes as it grows.";
         [Tooltip("Header line for a vessel with no element shapes.")]
         [SerializeField] private string noMorphLine = "This hull keeps its shape at every level.";
         [Tooltip("The focused element's step; {level} and {next} are filled in.")]

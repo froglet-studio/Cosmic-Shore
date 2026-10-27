@@ -7,18 +7,16 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    /// <summary>The Codex's stops, in LB / RB order (Docs/MENU_REDESIGN_B.md section 88). Flora and Fauna are the two
-    /// stops of the ECOLOGY chapter. Values index nothing serialized but the authored names, so they stay explicit.</summary>
+    /// <summary>The Codex's stops, in LB / RB order (Docs/MENU_REDESIGN_B.md sections 88 and 90). Flora and Fauna are
+    /// the two stops of the ECOLOGY chapter. Values index nothing serialized but the authored names, so they stay explicit.
+    /// Section 90 (Shombith 2026-10-27): the etherions folded into ELEMENTS, and the pilots, vessels, artifacts and toys
+    /// drill-downs became one LEXICON of cards.</summary>
     public enum CodexChapter
     {
-        Ethirions = 0,
-        Elements = 1,
-        Flora = 2,
-        Fauna = 3,
-        Pilots = 4,
-        Vessels = 5,
-        Artifacts = 6,
-        Toys = 7,       // the toybox stations (Codex.asset's Tool kingdom; the player reads "Toys", Shombith 2026-10-26)
+        Elements = 0,   // the four elements, then Omni, prisms and spindles
+        Flora = 1,
+        Fauna = 2,
+        Lexicon = 3,    // one card each: vessels, pilots, artifacts, toys
     }
 
     /// <summary>One line of facts on a page: a label and its value.</summary>
@@ -51,12 +49,17 @@ namespace CosmicShore.UI
     public sealed class CodexPage
     {
         public Sprite Image;
-        /// <summary>An element page draws the HUD's flower and shape for this element instead of a picture.</summary>
+        /// <summary>The picture's live motion: a 4x4 sheet of frames (a crystal's element effect). Null: the still.</summary>
+        public Texture2D Flipbook;
+        /// <summary>The element this page is about: its selection motion and its shape badge. None: neither.</summary>
         public Element Element = Element.None;
         /// <summary>Colours the picture drifts through, slowly (a lifeform: the domains it is seen in). Null: none.</summary>
         public Color[] Palette;
         public string Kicker = string.Empty;
         public string Title = string.Empty;
+        /// <summary>What it does in play: read first, right under the title (section 90: "gameplay info above lore").</summary>
+        public string Gameplay = string.Empty;
+        /// <summary>Its lore: read last, under every block of facts.</summary>
         public string Body = string.Empty;
         public string FactsHeading = string.Empty;
         public readonly List<CodexFact> Facts = new();
@@ -70,6 +73,7 @@ namespace CosmicShore.UI
     public sealed class CodexItem
     {
         public Sprite Image;
+        public Texture2D Flipbook;
         public Element Element = Element.None;
         public Color[] Palette;
         public string Name = string.Empty;
@@ -78,8 +82,28 @@ namespace CosmicShore.UI
     }
 
     /// <summary>
+    /// A card the Codex shows whole, from authored words alone: Omni, prisms and spindles in ELEMENTS, and each card of
+    /// the LEXICON (vessels, pilots, artifacts, toys - section 90: "keep them as higher-level lexicon cards").
+    /// </summary>
+    [Serializable]
+    public sealed class CodexCard
+    {
+        public string title = string.Empty;
+        [Tooltip("The quiet line under the name on its tile. Empty: none.")]
+        public string sub = string.Empty;
+        public string kicker = string.Empty;
+        [Tooltip("What it does in play: read first, under the title.")]
+        [TextArea(2, 6)] public string gameplay = string.Empty;
+        [Tooltip("Its lore: read last. Empty: none.")]
+        [TextArea(2, 6)] public string lore = string.Empty;
+        public Sprite image;
+        [Tooltip("The picture's live motion, a 4x4 sheet of frames. Optional.")]
+        public Texture2D flipbook;
+    }
+
+    /// <summary>
     /// Every word the Codex adds around the game's own data (CLAUDE.md: all player-facing text is authored). The data
-    /// itself - a species' stats, a pilot's line, an ability's name - is already authored on its own asset.
+    /// itself - a species' stats, an ability's name, a Toy Box species' description - is already authored on its own asset.
     /// </summary>
     [Serializable]
     public sealed class CodexWords
@@ -88,8 +112,10 @@ namespace CosmicShore.UI
         public string[] elementNames = { "Charge", "Mass", "Space", "Time" };
         [Tooltip("What each element is for, in a line, Charge to Time.")]
         public string[] elementLines = { "The strike you carry", "What you build", "How far you reach", "How fast you move" };
-        [Tooltip("The element page's body. {element} is its name.")]
-        public string elementBody = "Skim {element} ethirions or fly the Element Charger to raise it. Its ability wakes at level 5, and so does the hull's level-5 upgrade.";
+        [Tooltip("The element page's gameplay, read first. {element} is its name.")]
+        public string elementGameplay = "Skim {element} Etherions or fly the Element Charger to raise it. Its ability wakes at level 5, and so does the hull's level-5 upgrade.";
+        [Tooltip("Each element's lore, Charge to Time, read last. Empty: none.")]
+        public string[] elementLore = { "", "", "", "" };
         public string elementKicker = "Element";
         [Tooltip("The element page's list of every hull's ability.")]
         public string elementRowsHeading = "On every vessel";
@@ -99,18 +125,13 @@ namespace CosmicShore.UI
         public string elementRowNoUpgrade = "{ability}";
         [Tooltip("The ability name for an element no ability is designed for yet.")]
         public string openSlot = "Open slot";
+        [Tooltip("ELEMENTS after the four: Omni, prisms, spindles.")]
+        public List<CodexCard> elementCards = new();
 
-        public string ethirionKicker = "Ethirion";
         public string floraKicker = "Flora";
         public string faunaKicker = "Fauna";
-        [Tooltip("{group} is the toy's category (Pilot, World, Creation).")]
-        public string toolKicker = "Toy - {group}";
-        public string vesselKicker = "Vessel";
-        [Tooltip("{element} and {vessel} name the pilot's element and hull.")]
-        public string pilotKicker = "{element} pilot - {vessel}";
-
         public string factsHeading = "Facts";
-        [Tooltip("The lifeform page's four element cells: its heart is that element's ethirion.")]
+        [Tooltip("The lifeform page's four element cells: its heart is that element's Etherion.")]
         public string cellsHeading = "By element";
         [Tooltip("A line in an element cell. {label} and {value} are the variant's stat.")]
         public string cellLineTemplate = "{label}: {value}";
@@ -118,61 +139,55 @@ namespace CosmicShore.UI
         [Min(0)] public int cellLines = 3;
         [Tooltip("A lifeform's elemental laws (a variant's \"Elemental law\" stat).")]
         public string lawsHeading = "Elemental laws";
-        public string abilitiesHeading = "Abilities";
-        [Tooltip("An ability's line on a vessel page. {upgrade} is its level-5 upgrade.")]
-        public string abilityLineTemplate = "Level 5: {upgrade}";
-        public string toolVariantsHeading = "What it offers";
-        public string pilotsHeading = "Pilots";
+        [Tooltip("The heading over a page's lore. Empty: none.")]
+        public string loreHeading = "Lore";
 
-        [Tooltip("A pilot's flavour line. {quote} is SO_Captain.Flavor without its quote marks.")]
-        public string quoteTemplate = "“{quote}”";
-        public string signatureLabel = "Signature";
-        public string fliesLikeLabel = "Flies like";
-        public string answersToLabel = "Answers to";
-        [Tooltip("The Answers to value. {element} is the pilot's element, {ability} the hull's ability for it.")]
-        public string answersToTemplate = "{element} - {ability}";
-        public string upgradeLabel = "Level-5 upgrade";
+        [Tooltip("The LEXICON: one card per idea (vessels, pilots, artifacts, toys).")]
+        public List<CodexCard> lexicon = new();
     }
 
     /// <summary>
     /// Builds the Codex's chapters from the game's own data, as a pure function so the rules can be tested without a
-    /// scene: the ethirions, flora, fauna and tools from <see cref="CodexSO"/> (Docs/CODEX.md, Garrett's), the pilots from
-    /// the Hangar's <see cref="SO_CaptainList"/>, the vessels from its <see cref="SO_VesselList"/>, and every ability and
-    /// level-5 upgrade from the hull's <see cref="ElementalAbilityMapSO"/>. Every entry ships unlocked (Docs/CODEX.md
-    /// section 5: nothing reads discovery yet), so every entry is listed.
+    /// scene (Docs/MENU_REDESIGN_B.md section 90):
+    /// <list type="bullet">
+    /// <item>ELEMENTS - the four elements, each with its Etherion crystal and every hull's ability for it (from the hull's
+    /// <see cref="ElementalAbilityMapSO"/>), then the authored cards (Omni, prisms, spindles);</item>
+    /// <item>FLORA and FAUNA - every species the Toy Box's Spawn Matrix offers, in its order, each with its Toy Box
+    /// description as its gameplay line and, where <see cref="CodexSO"/> (Docs/CODEX.md, Garrett's) has the species, its
+    /// picture, facts and elemental laws; species only the Codex knows follow;</item>
+    /// <item>LEXICON - the authored cards.</item>
+    /// </list>
+    /// Every entry ships unlocked (Docs/CODEX.md section 5: nothing reads discovery yet), so every entry is listed.
     /// </summary>
     public static class CodexCatalog
     {
         static readonly Element[] Four = { Element.Charge, Element.Mass, Element.Space, Element.Time };
         /// <summary>The harvester's label for a variant's elemental law (CodexHarvester), matched, never shown from here.</summary>
         const string ElementalLawLabel = "Elemental law";
-        static readonly Regex GroupPrefix = new(@"^\s*\d+\s*·\s*", RegexOptions.Compiled);
 
         /// <summary>The element of a stop index 0..3, Charge to Time.</summary>
         public static Element ElementAt(int index) => index >= 0 && index < Four.Length ? Four[index] : Element.None;
 
-        /// <summary>A tool category without its ordering prefix ("1 · Pilot" reads "Pilot").</summary>
-        public static string GroupName(string group) => string.IsNullOrEmpty(group) ? string.Empty : GroupPrefix.Replace(group, string.Empty);
-
-        /// <param name="petals">The element icons, Charge to Time: the HUD's element shapes (pentagon, triangle, kite, diamond).</param>
-        /// <param name="cardArt">The Hangar's colourful hull renders, for the vessels. Optional: a vessel without one shows its icon.</param>
+        /// <param name="petals">The element icons, Charge to Time: the HUD's element shapes (an elemental law's icon).</param>
+        /// <param name="roster">The Toy Box's Spawn Matrix: the species list Flora and Fauna follow. Optional.</param>
+        /// <param name="elementFlipbooks">Each element's crystal in motion, Charge to Time. Optional.</param>
         /// <param name="lifePalette">The colours a lifeform's picture drifts through (the domains). Optional.</param>
-        public static List<CodexItem> Build(CodexChapter chapter, CodexSO codex, SO_CaptainList captains, SO_VesselList vessels,
-                                            Sprite[] petals, CodexWords words, Func<VesselClassType, ElementalAbilityMapSO> maps = null,
-                                            HangarCardArtSO cardArt = null, Color[] lifePalette = null)
+        public static List<CodexItem> Build(CodexChapter chapter, CodexSO codex, SO_VesselList vessels, Sprite[] petals,
+                                            CodexWords words, Func<VesselClassType, ElementalAbilityMapSO> maps = null,
+                                            SpawnMatrixToyDefinitionSO roster = null, Texture2D[] elementFlipbooks = null,
+                                            Color[] lifePalette = null)
         {
             maps ??= ElementalAbilityMapSO.LoadFor;
             words ??= new CodexWords();
             var items = chapter switch
             {
-                CodexChapter.Ethirions => Entries(codex, codex ? codex.Ethirions : null, words.ethirionKicker, words, petals, false),
-                CodexChapter.Flora => Entries(codex, codex ? codex.EntriesOf(CodexKingdom.Flora) : null, words.floraKicker, words, petals, true),
-                CodexChapter.Fauna => Entries(codex, codex ? codex.EntriesOf(CodexKingdom.Fauna) : null, words.faunaKicker, words, petals, true),
-                CodexChapter.Toys => Tools(codex, words),
-                CodexChapter.Elements => Elements(vessels, petals, words, maps),
-                CodexChapter.Pilots => Pilots(captains, vessels, petals, words, maps),
-                CodexChapter.Vessels => Vessels(captains, vessels, petals, words, maps, cardArt),
-                _ => new List<CodexItem>(),   // Artifacts: no artifact data in the game yet
+                CodexChapter.Elements => Elements(codex, vessels, words, maps, elementFlipbooks),
+                CodexChapter.Flora => Lifeforms(codex, CodexKingdom.Flora, Names(roster ? roster.Flora : null, f => f?.Name), roster,
+                                                words.floraKicker, words, petals),
+                CodexChapter.Fauna => Lifeforms(codex, CodexKingdom.Fauna, Names(roster ? roster.Fauna : null, f => f?.Name), roster,
+                                                words.faunaKicker, words, petals),
+                CodexChapter.Lexicon => Cards(words.lexicon, words),
+                _ => new List<CodexItem>(),
             };
             // A lifeform is nobody's on its page, and in the world it wears its owner's colour: the picture drifts through
             // the domains (Shombith 2026-10-26: "ecology need colors"). Elements stay colourless (the palette rule).
@@ -182,70 +197,26 @@ namespace CosmicShore.UI
             return items;
         }
 
-        // ------------------------------------------------------------------ ethirions, flora, fauna
-        static List<CodexItem> Entries(CodexSO codex, List<CodexEntry> entries, string kicker, CodexWords words, Sprite[] petals,
-                                       bool byElement)
-        {
-            var items = new List<CodexItem>();
-            if (entries == null) return items;
-            foreach (var e in entries)
-            {
-                if (e == null) continue;
-                var page = new CodexPage { Image = e.Image, Kicker = kicker, Title = e.DisplayName ?? string.Empty, Body = BodyOf(e) };
-                AddFacts(page, e.Stats, words);
-                if (byElement)
-                {
-                    page.CellsHeading = words.cellsHeading;
-                    for (int i = 0; i < Four.Length; i++)
-                    {
-                        var v = e.FindVariant(Four[i]);
-                        if (v == null) continue;
-                        page.Cells.Add(new CodexCell(codex ? codex.VariantImage(e, v) : v.Image, Name(words, Four[i]), CellLines(v, words)));
-                        string law = LawOf(v);
-                        if (string.IsNullOrEmpty(law)) continue;
-                        page.RowsHeading = words.lawsHeading;
-                        page.Rows.Add(new CodexRow(Petal(petals, i), Name(words, Four[i]), law));
-                    }
-                }
-                items.Add(new CodexItem { Image = e.Image, Name = e.DisplayName ?? string.Empty, Sub = string.Empty, Page = page });
-            }
-            return items;
-        }
-
-        static List<CodexItem> Tools(CodexSO codex, CodexWords words)
-        {
-            var items = new List<CodexItem>();
-            if (!codex) return items;
-            foreach (var e in codex.Tools)
-            {
-                if (e == null) continue;
-                string group = GroupName(e.Group);
-                var page = new CodexPage { Image = e.Image, Kicker = TemplateText.Fill(words.toolKicker, "group", group),
-                                           Title = e.DisplayName ?? string.Empty, Body = BodyOf(e) };
-                AddFacts(page, e.Stats, words);
-                if (e.Variants is { Count: > 0 })
-                {
-                    page.RowsHeading = words.toolVariantsHeading;
-                    foreach (var v in e.Variants)
-                        if (v != null)
-                            page.Rows.Add(new CodexRow(codex.VariantImage(e, v), v.Label, v.Stats is { Count: > 0 } ? v.Stats[0].Value : string.Empty));
-                }
-                items.Add(new CodexItem { Image = e.Image, Name = e.DisplayName ?? string.Empty, Sub = group, Page = page });
-            }
-            return items;
-        }
-
         // ------------------------------------------------------------------ elements
-        static List<CodexItem> Elements(SO_VesselList vessels, Sprite[] petals, CodexWords words, Func<VesselClassType, ElementalAbilityMapSO> maps)
+        static List<CodexItem> Elements(CodexSO codex, SO_VesselList vessels, CodexWords words,
+                                        Func<VesselClassType, ElementalAbilityMapSO> maps, Texture2D[] flipbooks)
         {
             var items = new List<CodexItem>();
             for (int i = 0; i < Four.Length; i++)
             {
                 var el = Four[i];
                 string name = Name(words, el);
-                var page = new CodexPage { Image = Petal(petals, i), Element = el, Kicker = words.elementKicker, Title = name,
-                                           Body = TemplateText.Fill(words.elementBody, "element", name),
-                                           RowsHeading = words.elementRowsHeading };
+                // The element and its Etherion are one entry (section 90): the crystal is its picture, and none of the
+                // harvested crystal stats (triangle counts, heart sizes) is shown - they were build notes, not play.
+                var crystal = codex ? codex.EthirionFor(el) : null;
+                var flip = flipbooks != null && i < flipbooks.Length ? flipbooks[i] : null;
+                var page = new CodexPage
+                {
+                    Image = crystal?.Image, Flipbook = flip, Element = el, Kicker = words.elementKicker, Title = name,
+                    Gameplay = TemplateText.Fill(words.elementGameplay, "element", name),
+                    Body = i < (words.elementLore?.Length ?? 0) ? words.elementLore[i] ?? string.Empty : string.Empty,
+                    RowsHeading = words.elementRowsHeading,
+                };
                 if (vessels && vessels.VesselList != null)
                     foreach (var vessel in vessels.VesselList)
                     {
@@ -258,88 +229,85 @@ namespace CosmicShore.UI
                         page.Rows.Add(new CodexRow(vessel.IconActive, vessel.Name, line));
                     }
                 string sub = i < (words.elementLines?.Length ?? 0) ? words.elementLines[i] : string.Empty;
-                items.Add(new CodexItem { Image = Petal(petals, i), Element = el, Name = name, Sub = sub, Page = page });
+                items.Add(new CodexItem { Image = page.Image, Flipbook = flip, Element = el, Name = name, Sub = sub, Page = page });
             }
+            items.AddRange(Cards(words.elementCards, words));
             return items;
         }
 
-        // ------------------------------------------------------------------ pilots
-        /// <summary>Pilots in the vessel list's order, then Charge to Time. A pilot whose hull is not on the list is left out.</summary>
-        public static List<SO_Captain> OrderedPilots(SO_CaptainList captains, SO_VesselList vessels)
+        // ------------------------------------------------------------------ flora and fauna
+        static List<string> Names<T>(T[] species, Func<T, string> name)
         {
-            var result = new List<SO_Captain>();
-            if (!captains || captains.CaptainList == null) return result;
-            var order = new Dictionary<VesselClassType, int>();
-            if (vessels && vessels.VesselList != null)
-                for (int i = 0; i < vessels.VesselList.Count; i++)
-                    if (vessels.VesselList[i] && !order.ContainsKey(vessels.VesselList[i].Class)) order[vessels.VesselList[i].Class] = i;
-            foreach (var c in captains.CaptainList)
-                if (c && c.Vessel && order.ContainsKey(c.Vessel.Class)) result.Add(c);
-            result.Sort((a, b) =>
+            var names = new List<string>();
+            if (species == null) return names;
+            foreach (var s in species)
             {
-                int byHull = order[a.Vessel.Class].CompareTo(order[b.Vessel.Class]);
-                return byHull != 0 ? byHull : ((int)a.PrimaryElement).CompareTo((int)b.PrimaryElement);
-            });
-            return result;
+                string n = name(s);
+                if (!string.IsNullOrWhiteSpace(n) && !names.Contains(n)) names.Add(n);
+            }
+            return names;
         }
 
-        static List<CodexItem> Pilots(SO_CaptainList captains, SO_VesselList vessels, Sprite[] petals, CodexWords words,
-                                      Func<VesselClassType, ElementalAbilityMapSO> maps)
+        /// <summary>"Worm Colony", "worm-colony" and "WormColony" are one species.</summary>
+        static string Key(string name) => string.IsNullOrEmpty(name) ? string.Empty
+            : Regex.Replace(name, @"[\s\-_]", string.Empty).ToLowerInvariant();
+
+        static List<CodexItem> Lifeforms(CodexSO codex, CodexKingdom kingdom, List<string> rosterNames, SpawnMatrixToyDefinitionSO roster,
+                                         string kicker, CodexWords words, Sprite[] petals)
         {
+            var known = codex ? codex.EntriesOf(kingdom) : new List<CodexEntry>();
+            var byKey = new Dictionary<string, CodexEntry>();
+            foreach (var e in known)
+                if (e != null && !byKey.ContainsKey(Key(e.DisplayName))) byKey[Key(e.DisplayName)] = e;
+
             var items = new List<CodexItem>();
-            foreach (var p in OrderedPilots(captains, vessels))
+            var used = new HashSet<CodexEntry>();
+            // The Toy Box's list first, in its order: the Codex lists every species a player can release.
+            foreach (var name in rosterNames)
             {
-                string el = Name(words, p.PrimaryElement), hull = p.Vessel.Name;
-                var page = new CodexPage
-                {
-                    Image = p.Image,
-                    Kicker = TemplateText.Fill(words.pilotKicker, "element", el, "vessel", hull),
-                    Title = p.Name ?? string.Empty,
-                    Body = string.IsNullOrEmpty(p.Flavor) ? string.Empty : TemplateText.Fill(words.quoteTemplate, "quote", p.Flavor.Trim('“', '”', '"', '\'')),
-                    FactsHeading = words.factsHeading,
-                };
-                AddFact(page, words.signatureLabel, p.Description);
-                AddFact(page, words.fliesLikeLabel, p.AIBehaviorDescription);
-                var entry = maps(p.Vessel.Class)?.GetEntry(p.PrimaryElement);
-                if (entry != null && !string.IsNullOrEmpty(entry.AbilityLabel))
-                    AddFact(page, words.answersToLabel, TemplateText.Fill(words.answersToTemplate, "element", el, "ability", entry.AbilityLabel));
-                if (entry != null) AddFact(page, words.upgradeLabel, entry.UpgradeLabel);
-                items.Add(new CodexItem { Image = p.Image, Name = p.Name ?? string.Empty, Sub = el, Page = page });
+                byKey.TryGetValue(Key(name), out var entry);
+                if (entry != null) used.Add(entry);
+                items.Add(Lifeform(codex, entry, name, roster ? roster.DescriptionOf(name) : string.Empty, kicker, words, petals));
             }
+            foreach (var e in known)
+                if (e != null && !used.Contains(e))
+                    items.Add(Lifeform(codex, e, e.DisplayName, string.Empty, kicker, words, petals));
             return items;
         }
 
-        // ------------------------------------------------------------------ vessels
-        static List<CodexItem> Vessels(SO_CaptainList captains, SO_VesselList vessels, Sprite[] petals, CodexWords words,
-                                       Func<VesselClassType, ElementalAbilityMapSO> maps, HangarCardArtSO cardArt)
+        static CodexItem Lifeform(CodexSO codex, CodexEntry e, string name, string gameplay, string kicker, CodexWords words, Sprite[] petals)
         {
-            var items = new List<CodexItem>();
-            if (!vessels || vessels.VesselList == null) return items;
-            var pilots = OrderedPilots(captains, vessels);
-            foreach (var v in vessels.VesselList)
+            var page = new CodexPage { Image = e?.Image, Kicker = kicker, Title = name ?? string.Empty,
+                                       Gameplay = gameplay?.Trim() ?? string.Empty, Body = e != null ? BodyOf(e) : string.Empty };
+            if (e != null)
             {
-                if (!v) continue;
-                // The colourful hull (Shombith 2026-10-26: "Vessel need colors"), else its icon.
-                var art = cardArt ? cardArt.For(v) : null;
-                if (!art) art = v.IconActive;
-                var page = new CodexPage { Image = art, Kicker = words.vesselKicker, Title = v.Name ?? string.Empty,
-                                           Body = v.Description ?? string.Empty, RowsHeading = words.abilitiesHeading };
-                var map = maps(v.Class);
+                AddFacts(page, e.Stats, words);
+                page.CellsHeading = words.cellsHeading;
                 for (int i = 0; i < Four.Length; i++)
                 {
-                    var entry = map ? map.GetEntry(Four[i]) : null;
-                    string ability = entry == null || string.IsNullOrEmpty(entry.AbilityLabel) ? words.openSlot : entry.AbilityLabel;
-                    string line = entry != null && !string.IsNullOrEmpty(entry.UpgradeLabel)
-                        ? TemplateText.Fill(words.abilityLineTemplate, "upgrade", entry.UpgradeLabel) : string.Empty;
-                    page.Rows.Add(new CodexRow(Petal(petals, i), ability, line));
+                    var v = e.FindVariant(Four[i]);
+                    if (v == null) continue;
+                    page.Cells.Add(new CodexCell(codex ? codex.VariantImage(e, v) : v.Image, Name(words, Four[i]), CellLines(v, words)));
+                    string law = LawOf(v);
+                    if (string.IsNullOrEmpty(law)) continue;
+                    page.RowsHeading = words.lawsHeading;
+                    page.Rows.Add(new CodexRow(Petal(petals, i), Name(words, Four[i]), law));
                 }
-                foreach (var p in pilots)
-                    if (p.Vessel.Class == v.Class)
-                    {
-                        page.CellsHeading = words.pilotsHeading;
-                        page.Cells.Add(new CodexCell(p.Image, p.Name, Name(words, p.PrimaryElement)));
-                    }
-                items.Add(new CodexItem { Image = art, Name = v.Name ?? string.Empty, Sub = string.Empty, Page = page });
+            }
+            return new CodexItem { Image = page.Image, Name = page.Title, Sub = string.Empty, Page = page };
+        }
+
+        // ------------------------------------------------------------------ authored cards
+        static List<CodexItem> Cards(List<CodexCard> cards, CodexWords words)
+        {
+            var items = new List<CodexItem>();
+            if (cards == null) return items;
+            foreach (var c in cards)
+            {
+                if (c == null || string.IsNullOrWhiteSpace(c.title)) continue;
+                var page = new CodexPage { Image = c.image, Flipbook = c.flipbook, Kicker = c.kicker ?? string.Empty, Title = c.title,
+                                           Gameplay = c.gameplay ?? string.Empty, Body = c.lore ?? string.Empty };
+                items.Add(new CodexItem { Image = c.image, Flipbook = c.flipbook, Name = c.title, Sub = c.sub ?? string.Empty, Page = page });
             }
             return items;
         }

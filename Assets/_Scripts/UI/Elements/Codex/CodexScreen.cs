@@ -10,47 +10,45 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The CODEX screen, the top bar's first tab (Docs/MENU_REDESIGN_B.md section 88; the approved Rev 26 boards,
-    /// Shombith 2026-10-26: "Go ahead implement the codex I like the design"). The chapters along the top - ETHIRIONS,
-    /// ELEMENTS, ECOLOGY (Flora / Fauna), PILOTS, VESSELS, ARTIFACTS, TOOLS - step on LB / RB; the grid on the left, the
-    /// open page on the right, the Hangar's split. Every word of data comes from the game's own assets through
-    /// <see cref="CodexCatalog"/>; every word around it is authored here or in the prefab.
+    /// The CODEX screen, the top bar's first tab (Docs/MENU_REDESIGN_B.md sections 88 and 90). The chapters along the
+    /// top - ELEMENTS (the four elements and their Etherions, Omni, prisms, spindles), ECOLOGY (Flora / Fauna, every
+    /// species the Toy Box offers) and LEXICON (one card each for vessels, pilots, artifacts and toys) - step on LB / RB;
+    /// the grid on the left, the open page on the right, the Hangar's split. Every word of data comes from the game's own
+    /// assets through <see cref="CodexCatalog"/>; every word around it is authored here or in the prefab.
     ///
     /// <para>Nothing is hidden behind discovery: the game has none yet (Docs/CODEX.md section 5), so every entry is
-    /// listed. ARTIFACTS has no data in the game and shows its authored empty line.</para>
+    /// listed.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI/Codex Screen")]
     public class CodexScreen : MonoBehaviour, IScreen
     {
-        const int StopCount = 8;
-        static readonly CodexChapter[] TabStops =
-            { CodexChapter.Ethirions, CodexChapter.Elements, CodexChapter.Flora, CodexChapter.Pilots, CodexChapter.Vessels,
-              CodexChapter.Artifacts, CodexChapter.Toys };
+        const int StopCount = 4;
+        static readonly CodexChapter[] TabStops = { CodexChapter.Elements, CodexChapter.Flora, CodexChapter.Lexicon };
 
         [Header("Data")]
-        [Tooltip("The pilots: the Hangar's PILOTS list (ElementalCaptains).")]
-        [SerializeField] private SO_CaptainList captains;
-        [Tooltip("The vessels, in order: the Hangar's list.")]
+        [Tooltip("The vessels, in order: the Hangar's list. An element page lists each one's ability for it.")]
         [SerializeField] private SO_VesselList vessels;
+        [Tooltip("The Toy Box's Spawn Matrix: Flora and Fauna list every species it offers, in its order.")]
+        [SerializeField] private SpawnMatrixToyDefinitionSO roster;
         [Tooltip("The element icons, Charge to Time: the HUD's element shapes (Assets/_Graphics/ElementShapes).")]
         [SerializeField] private Sprite[] elementShapes = new Sprite[4];
-        [Tooltip("The Hangar's colourful hull renders: a vessel's picture here.")]
-        [SerializeField] private HangarCardArtSO cardArt;
+        [Tooltip("Each element's Etherion crystal in motion, Charge to Time: a 4x4 sheet of frames.")]
+        [SerializeField] private Texture2D[] elementFlipbooks = new Texture2D[4];
         [Tooltip("The domain palette: a lifeform's picture drifts through Jade, Ruby and Gold, the colours it wears in the world.")]
         [SerializeField] private SO_ColorSet colorSet;
 
         [Header("Words")]
         [SerializeField] private CodexWords words = new();
-        [Tooltip("The grid's title per stop: Ethirions, Elements, Flora, Fauna, Pilots, Vessels, Artifacts, Toys.")]
-        [SerializeField] private string[] stopTitles = { "Ethirions", "Elements", "Flora", "Fauna", "Pilots", "Vessels", "Artifacts", "Toys" };
+        [Tooltip("The grid's title per stop: Elements, Flora, Fauna, Lexicon.")]
+        [SerializeField] private string[] stopTitles = { "Elements", "Flora", "Fauna", "Lexicon" };
         [Tooltip("The grid's count. {count} is the number of entries.")]
         [SerializeField] private string countTemplate = "{count} entries";
         [Tooltip("What an empty stop says, per stop (same order as the titles). Empty: nothing.")]
-        [SerializeField] private string[] emptyLines = { "", "", "", "", "", "", "Artifacts are found far out in the HyperSea. None found yet.", "" };
+        [SerializeField] private string[] emptyLines = { "", "", "", "" };
 
         [Header("Chapters")]
-        [Tooltip("One tab per chapter: Ethirions, Elements, Ecology, Pilots, Vessels, Artifacts, Toys.")]
-        [SerializeField] private KitTextTab[] chapterTabs = new KitTextTab[7];
+        [Tooltip("One tab per chapter: Elements, Ecology, Lexicon.")]
+        [SerializeField] private KitTextTab[] chapterTabs = new KitTextTab[3];
         [Tooltip("Flora and Fauna, shown under the chapters while ECOLOGY is open.")]
         [SerializeField] private CanvasGroup ecologyTabsGroup;
         [SerializeField] private KitTextTab floraTab;
@@ -73,7 +71,7 @@ namespace CosmicShore.UI
 
         readonly List<CodexItem>[] _items = new List<CodexItem>[StopCount];
         readonly List<CodexTile> _tiles = new();
-        CodexChapter _stop = CodexChapter.Ethirions;
+        CodexChapter _stop = CodexChapter.Elements;
         int _selected = -1;
         int _shown;
         bool _active;
@@ -173,7 +171,8 @@ namespace CosmicShore.UI
         List<CodexItem> Items(CodexChapter stop)
         {
             int s = (int)stop;
-            return _items[s] ??= CodexCatalog.Build(stop, CodexSO.Load(), captains, vessels, elementShapes, words, null, cardArt, LifePalette());
+            return _items[s] ??= CodexCatalog.Build(stop, CodexSO.Load(), vessels, elementShapes, words, null, roster, elementFlipbooks,
+                                                LifePalette());
         }
 
         Color[] _lifePalette;

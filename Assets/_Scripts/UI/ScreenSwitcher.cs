@@ -28,7 +28,7 @@ namespace CosmicShore.UI
             PORT   = 3,
             HANGAR = 4,
             PROFILE = 5,
-            // The Codex: ethirions, elements, ecology, pilots, vessels, artifacts and tools (Docs/CODEX.md's data). Its tab
+            // The Codex: elements and their Etherions, ecology, and the lexicon (Docs/CODEX.md's data). Its tab
             // is first (Docs/MENU_REDESIGN_B.md section 84); its screen is CodexView (CodexScreen, section 88).
             CODEX = 6,
         }

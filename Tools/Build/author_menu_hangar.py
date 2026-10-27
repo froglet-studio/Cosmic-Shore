@@ -325,6 +325,7 @@ TOUCH_HINT = "Drag to turn, pinch to zoom, twist to roll, two fingers to move, d
 RAW_IMAGE = "1344c3c82d62a2a41a3576d8abb8e3ea"     # UnityEngine.UI.RawImage
 STAGE_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarVesselStage.cs")
 VIBE_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarVibeView.cs")
+OMNI_GLYPH = K.meta_guid("Assets/_Graphics/ElementIcons/OmniCrystal_Active.png")
 TABS_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarTabsView.cs")
 ABILITIES_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarAbilitiesPage.cs")
 UPGRADES_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarUpgradesPage.cs")
@@ -373,7 +374,7 @@ HEADER_TOP, CENTRE_TOP, BOTTOM = 16, 164, 40
 PAD = 30                                    # the dossier's content inset
 PAD_R = 60                                  # a page's right inset: clears the right side leaning in to the floor
 PAGE_TOP_PARTS, PAGE_TOP, PAGE_BOTTOM = 84, 84, 30
-VIBE_W, VIBE_H, VIBE_SEGMENTS = 490, 112, 10
+VIBE_W, VIBE_H, VIBE_SEGMENTS = 490, 112, 9      # section 90: an odd count, so a vibe has a true middle
 # The Rail border (R24Borders "2 Rail"): Bracket_Large's open cradle, closed on the right by a chamfered rail that stops
 # short of the tabs, with a corner mark. Lines in y-down dossier units.
 RAIL_LEAN, RAIL_KNEE, RAIL_STUB = 56, 0.46, 0.62
@@ -621,7 +622,7 @@ def upgrades_page(panel):
     ability, its flower NOW and NEXT, its level-5 upgrade and the UPGRADE button on the left."""
     page = page_node(panel, "Upgrades", False, own_canvas=True)
     U = "Tabs/Upgrades"
-    label(page.child(N(f"{U}/Line", "Line", main_r(0, 18))), "Spend crystals to raise an element. The hull changes as it grows.",
+    label(page.child(N(f"{U}/Line", "Line", main_r(0, 18))), "Spend OmniCrystals to raise an element. The hull changes as it grows.",
           "BodySmall", "NeutralLightest")
     for i, (name, _) in enumerate(ELEMENTS):
         k = f"{U}/{name}"
@@ -675,7 +676,7 @@ def upgrades_page(panel):
                       f"  elementTint: {K.TOKEN_INDEX['Purchase']}\n"
                       "  crystalsPerLevel: 100\n  popScale: 0.28\n  popSeconds: 0.45\n  morphSeconds: 0.5\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
-                      "  defaultLine: Spend crystals to raise an element. The hull changes as it grows.\n"
+                      "  defaultLine: Spend OmniCrystals to raise an element. The hull changes as it grows.\n"
                       "  noMorphLine: This hull keeps its shape at every level.\n"
                       "  stepTemplate: LEVEL {level} TO {next}\n  maxedStepTemplate: LEVEL {level} - MAX\n"
                       "  nowTemplate: NOW {level}\n  nextTemplate: NEXT {level}\n"
@@ -1014,8 +1015,11 @@ def build_view(row_guid):
     # for the balance it shows (the kit pill's own padding, author_ui_kit_prefabs.build_currency_pill).
     bal = content.child(N("Header/Balance", "Balance", R((1, 1), None, (-SIDE, -16), (220, 40), (1, 1))))
     bal.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 5, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
-    label(bal.child(N("Header/Balance/Label", "Label", R(size=(K.label_width("CRYSTALS", "Label"), K.line_height("Label"))))),
-          "CRYSTALS", "Label", "NeutralLightest")
+    # Section 90 ("relabel Crystals as OmniCrystals with the symbol"): the Omni crystal's own glyph, then the word.
+    bal.child(N("Header/Balance/Glyph", "Glyph", R(size=(22, 22)))) \
+        .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), OMNI_GLYPH, preserve=True))
+    label(bal.child(N("Header/Balance/Label", "Label", R(size=(K.label_width("OMNICRYSTALS", "Label"), K.line_height("Label"))))),
+          "OMNICRYSTALS", "Label", "NeutralLightest")
     bal.children.append(pill_instance("HeaderPill", "CrystalBalance"))
 
     # ---- three zones over the whole screen, each placed on its own anchors ----
@@ -1088,17 +1092,18 @@ def build_view(row_guid):
                     POINTER_HINT, "Label", "NeutralLightest", align="center"))
 
     # Rev 24 ("for the vibe they look like sliders ... they can be like bars"): each of the vessel's three scales is a row
-    # of segments, lit from the left up to its value.
+    # of segments. Section 90 ("Vibe: single active tick, odd tick count, no extra colour"): nine ticks, and only the one
+    # at the value lights, in the text white; the rest stay the surface grey.
     vz = cz.child(N("Vibe", "Vibe", R((0, 0), None, (0, 0), (VIBE_W, VIBE_H), (0, 0))))
     label(vz.child(N("Vibe/Title", "Title", TLr(0, 0, 360, 18))), "VIBE - HOW IT PLAYS", "Label", "TextLight")
-    seg_x, seg_w, seg_gap = 100, 22, 4
+    seg_x, seg_w, seg_gap = 100, 25, 4
     for i in range(3):
         k = f"Vibe/Row{i}"
         row = vz.child(N(k, f"Row{i}", R((0, 1), (1, 1), (0, -(28 + i * 28)), (0, 22), (0.5, 1))))
         label(row.child(N(f"{k}/Left", "Left", TLr(0, 0, 90, 22))), "Casual", "BodySmall", "TextLight", align="right")
         for j in range(VIBE_SEGMENTS):
             row.child(N(f"{k}/Seg{j}", f"Seg{j}", TLr(seg_x + j * (seg_w + seg_gap), 7, seg_w, 8))) \
-                .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight" if j < 5 else "SurfaceDark")))
+                .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight" if j == VIBE_SEGMENTS // 2 else "SurfaceDark")))
         right_x = seg_x + VIBE_SEGMENTS * (seg_w + seg_gap) + 6
         assert right_x + 120 <= VIBE_W, "the vibe bars run out of their box"
         label(row.child(N(f"{k}/Right", "Right", TLr(right_x, 0, 120, 22))), "Challenging", "BodySmall", "TextLight")
@@ -1106,7 +1111,7 @@ def build_view(row_guid):
         f"  - leftText: {ref(ctx.c(f'Vibe/Row{i}/Left', 'tmp'))}\n    rightText: {ref(ctx.c(f'Vibe/Row{i}/Right', 'tmp'))}\n"
         "    segments:\n" + "".join(f"    - {ref(ctx.c(f'Vibe/Row{i}/Seg{j}', 'img'))}\n" for j in range(VIBE_SEGMENTS))
         + "    thumb: {fileID: 0}\n    fill: {fileID: 0}\n" for i in range(3))
-        + f"  litToken: {K.TOKEN_INDEX['TextLight']}\n  unlitToken: {K.TOKEN_INDEX['SurfaceDark']}\n"))
+        + f"  singleTick: 1\n  litToken: {K.TOKEN_INDEX['TextLight']}\n  unlitToken: {K.TOKEN_INDEX['SurfaceDark']}\n"))
 
     # At the stage's top right, across from the status chip (Rev 25 round 2: it sat on the floor rings). Chip and button
     # together stay inside the centre zone at 16:10 (1728 wide).
@@ -1141,7 +1146,7 @@ def build_view(row_guid):
           "BALANCE", "Label", "NeutralLightest")
     brow.children.append(pill_instance("PopupPill", "CrystalBalance"))
     label(dlg.child(N("Popup/Dialog/Shortfall", "Shortfall", R(size=(568, K.line_height("BodySmall"))))),
-          "You need 1240 more crystals.", "BodySmall", "NeutralLightest", wrap=True) \
+          "You need 1240 more OmniCrystals.", "BodySmall", "NeutralLightest", wrap=True) \
         .add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True))
     btns = dlg.child(N("Popup/Dialog/Buttons", "Buttons", R((0, 0), None, (36, 0), (440, 52), (0, 0.5))))
     btns.add("le", 114, le(ignore=True)).add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 3, (0, 0), (0, 0))) \
@@ -1180,7 +1185,7 @@ def build_view(row_guid):
                       "  lockedWord: Locked\n  ownedWord: Owned\n  kickerTemplate: \"VESSEL \\xB7 {state}\"\n"
                       "  unlockTemplate: UNLOCK - {cost}\n"
                       "  unlockFreeWord: UNLOCK - FREE\n  spendTemplate: '{cost} to unlock {vessel}'\n"
-                      "  confirmTemplate: CONFIRM - {cost}\n  shortfallTemplate: You need {amount} more crystals.\n")
+                      "  confirmTemplate: CONFIRM - {cost}\n  shortfallTemplate: You need {amount} more OmniCrystals.\n")
     root.add("detail", 114, detail_body)
     return root
 

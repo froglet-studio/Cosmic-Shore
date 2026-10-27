@@ -3820,3 +3820,77 @@ All 12 plants fire.
 - `gates.sh`: ALL OK, including the player and editor reference compiles.
 - Offline renders of the tile and the page, with the element flower and shape in place.
 - Not opened in the editor, and the tests have not been run.
+
+## 90. The Codex rebuilt around play, the Arcade's two dropdowns, and the first Hangar fixes (2026-10-27, awaiting in-editor approval)
+
+Shombith's review of section 89 (2026-10-27), with the later asks in the same session: "the models of the crystals
+are old ... update the whole codex and everything animate ... animate in the descriptions" and "Remove the bobbing
+animation and use some cool selection animations".
+
+**The Codex: three chapters, not seven.**
+- **ELEMENTS.** Charge, Mass, Space and Time, each with its Etherion crystal as its picture and every hull's ability
+  for it. Then three authored cards: **Omni**, **Prisms** and **Spindles**. The Etherions chapter is gone, and so are
+  the crystal build notes it showed (triangle counts, heart sizes, "dropped by 22 species").
+- **ECOLOGY.** Flora and Fauna follow the Toy Box's Spawn Matrix (`Toy_SpawnMatrix.asset`), so they list every species
+  a player can release, in its order: 23 fauna (the swarm colonies, Piranha, Pack Hunter, Leviathan and the rest) and 27
+  flora. Before this the Codex listed 6 and 16. Each species' Toy Box description is its gameplay line. Where
+  `Codex.asset` has the species (matched ignoring spaces and dashes), its picture, facts, element cells and elemental
+  laws fill in the rest. A species only the Codex knows still follows the list.
+- **LEXICON.** One card each for Vessels, Pilots, Artifacts and Toys, in place of their drill-downs. The words are
+  authored on `CodexScreen.words.lexicon`.
+- **Spelling.** The player reads **Etherion** everywhere. The serialized names (`CodexSO.ethirions`,
+  `CodexKingdom.Ethirion`, the `ethirion.*` ids and discovery keys) are unchanged, because a rename would break saved
+  data and Garrett's harvester.
+
+**The page reads play first.** Kicker and title, then what it does in play, then facts, element cells and rows, then
+the lore last, under a LORE heading (`CodexPageView.gameplayText`, `loreBlock`). Each element has a short authored lore
+line.
+
+**Motion (no bobbing).** Nothing moves until an entry is picked:
+- **The tile.** A bright scan line sweeps down it once (`CodexTile.scan`, 0.42 s).
+- **The picture.** It plays its element's entrance (`CodexPortrait`, 0.55 s). Charge jolts in on a crackle. Mass drops
+  from 46 units and lands heavy with a squash. Space warps in on a 120° turn from small. Time ticks into place in four
+  clock steps. Anything else punches up 12 %.
+- **While picked.** A crystal's flipbook plays its real element effect, rendered from the crystal labs (a 4×4 sheet,
+  `elementFlipbooks`, at 8 fps). The element badge's petals light one by one.
+- **The page.** The gameplay line and the lore type themselves in at 140 characters a second. Each line of facts,
+  cells and rows grows in, 50 ms after the one above it.
+- **Lifeforms** still drift through the domain colours.
+
+**The crystal pictures.** `Assets/_Graphics/Codex/ethirion_*.png` (also read by the Ark) were baked on 2026-09-25,
+before the Omni Motion Lab round 5 crystals graduated. They are re-rendered from the labs, keeping their guids, and
+each crystal gains a 16-frame flipbook in `Assets/_Graphics/Codex/Flipbooks/`.
+
+**The Arcade: two dropdowns.**
+- **Order.** Favourites come first, then A-Z under them, always (`ArcadeGridOrder.Apply`). The SORT control is gone.
+- **Filters.** ELEMENT (All, Charge to Time) and VESSEL (All, then each hull an arcade card seats, in the Hangar's list
+  order: 13 today). The two narrow together. The locked/unlocked and solo/multiplayer filters are gone.
+- **The card** shows its genre's one petal, white (`GameCard.GenrePetal`), not the flower filled to a hull's bought
+  level.
+
+**The Hangar, first pass.**
+- **Max level 5** (`HangarUpgradeStore.MaxLevel`). A level saved above 5 reads 5, so nothing is migrated.
+- **Vibe.** Nine ticks per bar. Only the tick at the value lights, in the text white; no other colour.
+- **OmniCrystals.** The balance reads OMNICRYSTALS, beside the Omni crystal glyph. The upgrade line and the shortfall
+  line say OmniCrystals too.
+
+**Still open from the same review** (they need a word from the owner, `Docs/UI_REDESIGN_TASKS.md` R5):
+- The Hangar items: the anti-aliasing pass; silver for the domain colour on the images Garrett flagged; flipping the
+  Mass element; merging the 2D and 3D elemental displays with RAS motion on the 2D side; the rainbow gradient; the
+  notch, the dashed outline and the hard line stops; and the elemental crystals held and spent.
+- Match setup and cinematics: map and level preview switching, OmniCrystal signalling on the objective area, the
+  glyphs panel and standard heptagons.
+
+**Generators:**
+- `author_menu_codex.py`: 15 plants, all fire. They include "the pictures bobbing again", "lore above gameplay", "the
+  ecology read from no Toy Box", "a lexicon card dropped" and "the ETHIRIONS chapter back".
+- `author_menu_arcade.py`: 29 plants, all fire.
+- `author_menu_hangar.py`: 29 plants, all fire.
+- Every `author_menu_*.py` passes `--check`.
+
+**Tests:**
+- `CodexCatalogTests` is rewritten for the three chapters: 11 tests, with the Toy Box reconciliation and the
+  space-blind match.
+- `ArcadeGridOrderTests` is rewritten for the fixed order and the two dropdowns.
+- `ElementFlowerTests` gains the cap at 5.
+- The player and editor reference compiles are clean. Not opened in the editor, and the tests have not been run.

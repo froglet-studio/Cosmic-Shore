@@ -6,71 +6,45 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    /// <summary>How the Arcade's ALL GAMES grid is ordered (Docs/MENU_REDESIGN_B.md section 85). Values are serialized
-    /// nowhere, but they index the authored option names, so they stay explicit.</summary>
-    public enum ArcadeGridSort
-    {
-        FavouritesFirst = 0,   // favourites, then A-Z: the grid's order before section 85
-        AToZ = 1,
-        UnlockedFirst = 2,
-    }
-
-    /// <summary>Which games the ALL GAMES grid shows (section 85). Charge..Time keep their order so the element is
-    /// <c>filter - Charge + Element.Charge</c>.</summary>
-    public enum ArcadeGridFilter
-    {
-        All = 0,
-        Favourites = 1,
-        Unlocked = 2,
-        Solo = 3,          // one player at most
-        Multiplayer = 4,   // more than one player
-        Charge = 5,        // the card's genre (ModeGenre: the element its flower shows)
-        Mass = 6,
-        Space = 7,
-        Time = 8,
-    }
-
     /// <summary>
-    /// The ALL GAMES grid's sort and filter, as a pure function of the roster and three questions about a game, so the
-    /// view owns no ordering rule of its own and the rules can be tested without a scene. A game a guided path points
-    /// at is never filtered out: the guide must always find the one door it leads to.
+    /// The ALL GAMES grid's order and filters (Docs/MENU_REDESIGN_B.md sections 85 and 90), as a pure function of the
+    /// roster and two questions about a game, so the view owns no ordering rule of its own and the rules can be tested
+    /// without a scene. The order is fixed: favourites first, then A-Z under them (Shombith 2026-10-27: "Favorites to
+    /// the top by default, A-Z under. Drop the sort controls"). The two filters are an element (the card's genre) and a
+    /// vessel (one the card seats); <see cref="Element.None"/> and <see cref="VesselClassType.Any"/> mean all. A game a
+    /// guided path points at is never filtered out: the guide must always find the one door it leads to.
     /// </summary>
     public static class ArcadeGridOrder
     {
-        public static List<SO_ArcadeGame> Apply(IEnumerable<SO_ArcadeGame> games, ArcadeGridSort sort, ArcadeGridFilter filter,
-                                                Func<SO_ArcadeGame, bool> isFavourite, Func<SO_ArcadeGame, bool> isUnlocked,
+        public static List<SO_ArcadeGame> Apply(IEnumerable<SO_ArcadeGame> games, Element element, VesselClassType vessel,
+                                                Func<SO_ArcadeGame, bool> isFavourite,
                                                 Func<SO_ArcadeGame, Element, bool> hasGenre,
                                                 Func<SO_ArcadeGame, bool> alwaysShown = null)
         {
             var list = new List<SO_ArcadeGame>();
             foreach (var g in games)
-                if (g && ((alwaysShown != null && alwaysShown(g)) || Passes(g, filter, isFavourite, isUnlocked, hasGenre)))
+                if (g && ((alwaysShown != null && alwaysShown(g)) || Passes(g, element, vessel, hasGenre)))
                     list.Add(g);
 
             list.Sort((x, y) =>
             {
-                int first = sort switch
-                {
-                    ArcadeGridSort.FavouritesFirst => isFavourite(y).CompareTo(isFavourite(x)),
-                    ArcadeGridSort.UnlockedFirst => isUnlocked(y).CompareTo(isUnlocked(x)),
-                    _ => 0,
-                };
+                int first = isFavourite(y).CompareTo(isFavourite(x));
                 return first != 0 ? first : string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal);
             });
             return list;
         }
 
-        static bool Passes(SO_ArcadeGame g, ArcadeGridFilter filter, Func<SO_ArcadeGame, bool> isFavourite,
-                           Func<SO_ArcadeGame, bool> isUnlocked, Func<SO_ArcadeGame, Element, bool> hasGenre) => filter switch
+        static bool Passes(SO_ArcadeGame g, Element element, VesselClassType vessel, Func<SO_ArcadeGame, Element, bool> hasGenre) =>
+            (element == Element.None || hasGenre(g, element)) && (vessel == VesselClassType.Any || Seats(g, vessel));
+
+        /// <summary>Whether the card seats this vessel class.</summary>
+        public static bool Seats(SO_ArcadeGame game, VesselClassType vessel)
         {
-            ArcadeGridFilter.Favourites => isFavourite(g),
-            ArcadeGridFilter.Unlocked => isUnlocked(g),
-            ArcadeGridFilter.Solo => g.MaxPlayersAllowed <= 1,
-            ArcadeGridFilter.Multiplayer => g.MaxPlayersAllowed > 1,
-            >= ArcadeGridFilter.Charge and <= ArcadeGridFilter.Time =>
-                hasGenre(g, Element.Charge + (filter - ArcadeGridFilter.Charge)),
-            _ => true,
-        };
+            if (!game || game.Vessels == null) return false;
+            foreach (var v in game.Vessels)
+                if (v && v.Class == vessel) return true;
+            return false;
+        }
 
         static ModePreviewLibrarySO s_previews;
 
