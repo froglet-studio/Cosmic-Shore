@@ -358,3 +358,6 @@
 2026-10-27T19:35:37.267Z editor load: play=False capture=True minPlay=15s issues=94
 2026-10-27T19:38:20.385Z editor load: play=False capture=True minPlay=15s issues=94
 2026-10-27T19:40:00.025Z PlayMode session ended (99s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-10-27T19:41:24.719Z EditMode session ended (6min editor session): not counted (capture=True, long enough=False)
+2026-10-27T19:44:19.070Z editor load: play=False capture=True minPlay=15s issues=94
+2026-10-27T19:48:32.653Z PlayMode session ended (161s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c8e2f49696 E-3c306eac58
