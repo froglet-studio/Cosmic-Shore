@@ -1,6 +1,12 @@
 <!doctype html>
 <!--
-  CREW OF FOUR LAB - a /labmaker browser studio (round 8: the 4-seat vessel, graduated to Unity as the Orca).
+  CREW OF FOUR LAB - a /labmaker browser studio (round 9: the 4-seat vessel, graduated to Unity as the Orca).
+  Round 9 (Yash, 2026-10-27: "we are going with Orca only, just we can have multiple choice for abilities and features"):
+  PLAY STYLES, mix and match, every default round 7's. The helm's Time ability: Tank (shipped) / Breath (hold to breathe
+  in, let go to surge; slow steady breaths build the surge) / Tide (ride the arena's currents; hold to tuck in). The
+  helm's Mass ability: Shield (shipped) / Dock (anchor to a block: the crew reloads, a garden grows; press again to dart
+  away). The missiles: Fly-by-wire (shipped) / Seeker (it flies itself to what you aimed at; you keep your turret). From
+  the calm vessels (Docs/Studios/CONCEPT_FLEET.md 12): the Moon Jelly's breath, the Sea Turtle's tide, the Seahorse's hold.
   Round 8 (Garrett, 2026-10-21): flown missiles are rockets (body, nose, fins, an igniting motor, a bank into the stick)
   with a lit, faceted plume trail, and the bomb seat shows what its live bomb will break by LIGHTING those prisms in the
   world, not with a ring that says BURST ("always go for the 3d in world solution over the 2d flat text solution").
@@ -147,7 +153,7 @@
   // ================= (1) LAB meta + the shipped numbers =================
   // A READER of the shipped numbers: every constant names the asset / class field it was copied from.
   // "lab" marks a proposal with no game field yet (the four-seat hull does not exist in the game).
-  const LAB = { name: 'Crew of Four Lab', branch: 'cece/happy-noether-m54hz6', round: 8, doc: 'Docs/Studios/CREW_OF_FOUR_LAB.md' };
+  const LAB = { name: 'Crew of Four Lab', branch: 'Ys-bleeding-edge (rounds 3-8: cece/happy-noether-m54hz6)', round: 9, doc: 'Docs/Studios/CREW_OF_FOUR_LAB.md' };
   const SHIPPED = {
     // Helm flight: VesselTransformer (Sparrow.prefab) driven by DualStickMix (Assets/_Scripts/Controller/IO/DualStickMix.cs)
     minSpeed: 10,        // VesselTransformer.DefaultMinimumSpeed
@@ -242,6 +248,31 @@
     gunCamAim: 180,      // round 6: an over-the-turret view looks at the gun's line this far out, so the crosshair is on it there
     missileCamBack: 14,  // lab: the camera behind a flown missile
     missileCamUp: 3,
+    // Play styles (round 9, Yash 2026-10-27: "multiple choice for abilities and features"). Every default is round 7's.
+    styleBoost: 0,       // lab: the helm's Time ability. 0 Tank (round 7: hold while the tank lasts) / 1 Breath (the Moon Jelly's) / 2 Tide (the Sea Turtle's)
+    styleShield: 0,      // lab: the helm's Mass ability. 0 Shield (round 7) / 1 Dock (the Seahorse's hold)
+    styleMissile: 0,     // lab: the gunners' missiles. 0 Fly-by-wire (round 7: you fly it) / 1 Seeker (it flies itself)
+    breathIn: 1.5,       // lab, Breath: seconds of boost held for a full breath in (the hull slows while it breathes in)
+    breathSlow: 0.6,     // lab, Breath: the hull's speed while breathing in, times its speed
+    surgeMin: 0.6,       // lab, Breath: seconds of boost a short breath gives when let go ...
+    surgeMax: 2.4,       // lab, Breath: ... and a full one
+    calmMin: 2,          // lab, Breath: a breath shorter than this (s, release to release) is rushed and breaks the calm
+    calmWindow: 0.25,    // lab, Breath: a breath within this share of the last is steady, and builds the calm
+    calmStep: 0.15,      // lab, Breath: each steady breath in a row lengthens the surge by this share
+    calmCap: 4,          // lab, Breath: the longest calm chain
+    tideCount: 3,        // lab, Tide: currents in the arena (loops round its centre)
+    tideR: 45,           // lab, Tide: a current's half-width (u)
+    tideSpeed: 70,       // lab, Tide: how fast a current carries the hull at its middle (u/s)
+    tideTuck: 2,         // lab, Tide: tucked in (boost held) in a current, it carries the hull this many times faster
+    tideTurn: 0.5,       // lab, Tide: a tucked hull turns at this share of its rate
+    dockReach: 45,       // lab, Dock: how close a block must be to dock to it (u)
+    dockReload: 4,       // lab, Dock: docked, every gunner seat gains a missile every this many seconds
+    dockCool: 3,         // lab, Dock: docked, the sniper's cooldown runs this many times as fast
+    dockGarden: 0.5,     // lab, Dock: docked, a garden prism (our trail) grows by the block every this many seconds
+    dockCd: 3,           // lab, Dock: seconds after undocking before it can dock again
+    dartTime: 1,         // lab, Dock: undocking darts the hull away at boost speed for this long (s)
+    seekCone: 25,        // lab, Seeker: a launch locks on the target nearest the turret's aim within this half-angle (deg)
+    seekTurn: 1,         // lab, Seeker: its turn rate, times the missile's
   };
 
   // ================= (2) SPEC: one row per dial =================
@@ -337,6 +368,27 @@
     ['Camera', 'gunCamAim', 40, 600, 10, 'Over-turret aim distance (u)', 'The view looks at the gun\'s line this far out, where the crosshair sits on it.'],
     ['Camera', 'missileCamBack', 0, 60, 1, 'Missile cam: behind (u)', '0 = from the missile\'s nose.'],
     ['Camera', 'missileCamUp', -5, 20, 0.5, 'Missile cam: above (u)', ''],
+    ['Play styles', 'breathIn', 0.3, 5, 0.1, 'Breath: breathe in (s)', 'Seconds of boost held for a full breath. The hull slows while it breathes in.'],
+    ['Play styles', 'breathSlow', 0.2, 1, 0.05, 'Breath: speed while breathing in', 'Times its speed.'],
+    ['Play styles', 'surgeMin', 0, 3, 0.1, 'Breath: short surge (s)', 'Boost from a short breath, once let go.'],
+    ['Play styles', 'surgeMax', 0.5, 6, 0.1, 'Breath: full surge (s)', 'Boost from a full breath.'],
+    ['Play styles', 'calmMin', 0.5, 6, 0.1, 'Breath: calm pace (s)', 'A breath shorter than this, release to release, is rushed: the calm breaks.'],
+    ['Play styles', 'calmWindow', 0.05, 0.6, 0.01, 'Breath: steady within', 'A breath within this share of the last one is steady and builds the calm.'],
+    ['Play styles', 'calmStep', 0, 0.5, 0.01, 'Breath: calm surge', 'Each steady breath in a row lengthens the surge by this share.'],
+    ['Play styles', 'calmCap', 1, 10, 1, 'Breath: longest calm', ''],
+    ['Play styles', 'tideCount', 1, 6, 1, 'Tide: currents', 'Loops of current round the arena\'s centre.'],
+    ['Play styles', 'tideR', 10, 120, 1, 'Tide: width (u)', 'A current\'s half-width.'],
+    ['Play styles', 'tideSpeed', 5, 150, 1, 'Tide: speed (u/s)', 'How fast a current carries the hull at its middle.'],
+    ['Play styles', 'tideTuck', 1, 4, 0.1, 'Tide: tucked in', 'Boost held in a current: carried this many times faster.'],
+    ['Play styles', 'tideTurn', 0.1, 1, 0.05, 'Tide: tucked turn', 'A tucked hull turns at this share of its rate.'],
+    ['Play styles', 'dockReach', 10, 120, 1, 'Dock: reach (u)', 'How close a block must be to dock to it.'],
+    ['Play styles', 'dockReload', 0.5, 15, 0.5, 'Dock: a missile every (s)', 'Docked, every gunner seat gains one.'],
+    ['Play styles', 'dockCool', 1, 6, 0.25, 'Dock: sniper cools x', 'Docked, the sniper\'s cooldown runs this many times as fast.'],
+    ['Play styles', 'dockGarden', 0.1, 5, 0.1, 'Dock: a garden prism every (s)', 'Docked, the hull grows our prisms by the block.'],
+    ['Play styles', 'dockCd', 0, 15, 0.5, 'Dock: rest after (s)', 'Seconds after undocking before it can dock again.'],
+    ['Play styles', 'dartTime', 0, 3, 0.1, 'Dock: dart (s)', 'Undocking darts the hull away at boost speed for this long.'],
+    ['Play styles', 'seekCone', 5, 90, 1, 'Seeker: lock cone (deg)', 'A launch locks on the target nearest the turret\'s aim within this half-angle.'],
+    ['Play styles', 'seekTurn', 0.3, 3, 0.05, 'Seeker: turn x', 'Its turn rate, times the missile\'s.'],
   ];
   const BOOLS = new Set(['shieldOn', 'shieldSuper', 'hullCollects', 'turretStab', 'mountOut', 'gunsOn', 'shotInherit']);
 
@@ -349,6 +401,20 @@
   const SEAT_NAMES = ['Helm', 'Sniper', 'Fast gun', 'Bomb'];   // round 6: seat s owns element s (EL): Time, Space, Mass, Charge
   // round 8: the flown missile's LOOK, the game's OrcaCrewConfigSO "Missiles: the look" defaults (a look only; the flight is P's)
   const MLOOK = { length: 7, bankDeg: 45, bankSmooth: 0.12, ignition: 0.15, trailSeconds: 3, trailWidth: 1.4, trailSpacing: 6, lightRange: 30 };
+  // round 9: the play styles (Yash, 2026-10-27), one choice per ability; option 0 is round 7's
+  const STYLES = [
+    { key: 'styleBoost', seat: 'Helm', ability: 'Time: boost (RT)', options: [
+      { name: 'Tank', from: 'round 7', text: 'Hold to boost while the tank lasts; it refills on its own.' },
+      { name: 'Breath', from: 'the Moon Jelly', text: 'Hold to breathe in (the hull slows), let go to surge. A full breath surges longer, and slow, steady breaths (2 s or more, each like the last) build a calm chain that lengthens every surge. Rush and the calm breaks.' },
+      { name: 'Tide', from: 'the Sea Turtle', text: 'The arena has currents you can see. Go the way one flows and it carries you; hold boost to tuck in and ride it twice as fast, but stiffer. Crossing a current costs nothing; out of one, boost does nothing.' }] },
+    { key: 'styleShield', seat: 'Helm', ability: 'Mass: shield (LT / B / E)', options: [
+      { name: 'Shield', from: 'round 7', text: 'A ring of super-shielded prisms rides with the hull, then drops as danger prisms.' },
+      { name: 'Dock', from: 'the Seahorse', text: 'Press by a block to dock: the hull holds still, every gunner gains a missile every few seconds, the sniper cools faster, and a garden of our prisms grows by the block. Press again to dart away. A rest for the crew, then the fight.' }] },
+    { key: 'styleMissile', seat: 'Gunners', ability: 'Missiles (A / F / right mouse)', options: [
+      { name: 'Fly-by-wire', from: 'round 7', text: 'You fly the missile with one thumb from its own camera; your turret waits.' },
+      { name: 'Seeker', from: 'a calm option', text: 'The missile locks on what your turret aims at and flies itself; you keep your turret and your gun. Press again to burst it early.' }] },
+  ];
+  const styleName = (k) => STYLES.find((g) => g.key === k).options[Math.round(P[k]) || 0].name;
   const GUN = [null, 'sniper', 'rapid', 'bomb'];   // round 5: each gunner seat's gun; round 6: the Space, Mass and Charge seats
   const GUN_NAMES = { sniper: 'Sniper', rapid: 'Fast gun', bomb: 'Bomb' };
   // turret mounts in the hull's frame: [right, up, forward] x hullRadius
@@ -367,6 +433,11 @@
     { key: 'noguns', name: 'No guns', control: true, pitch: 'Control: missiles only, as round 4.', v: { gunsOn: 0 } },
     { key: 'noshield', name: 'No shield', control: true, pitch: 'Control: the helm has no shield.', v: { shieldOn: 0 } },
     { key: 'onegun', name: 'One gunner', control: true, gunners: 1, pitch: 'Control: gunner seats 2 and 3 sit empty, so one turret fights alone.', v: {} },
+    { key: 'calm', name: 'Calm crew', style: true, pitch: 'Round 9, every calm play style at once: the helm breathes to surge and docks to rest and reload, and the missiles fly themselves.', v: { styleBoost: 1, styleShield: 1, styleMissile: 1 } },
+    { key: 'breath', name: 'Breathing helm', style: true, pitch: 'Round 9: the helm\'s boost is a breath. Hold to breathe in, let go to surge; slow, steady breaths surge longer.', v: { styleBoost: 1 } },
+    { key: 'tide', name: 'Tide helm', style: true, pitch: 'Round 9: the arena has currents; the helm rides them and tucks in to go faster.', v: { styleBoost: 2 } },
+    { key: 'dock', name: 'Docking helm', style: true, pitch: 'Round 9: instead of a shield, the helm docks to a block: the crew reloads and a garden grows, then it darts away.', v: { styleShield: 1 } },
+    { key: 'seeker', name: 'Seeker missiles', style: true, pitch: 'Round 9: missiles lock on what the turret aims at and fly themselves; the gunner keeps the turret and the gun.', v: { styleMissile: 1 } },
   ];
   const GAMES = [   // /labmaker 1.5: one per element, in the order Time, Space, Mass, Charge
     { key: 'race', el: 0, name: 'Ring Race', kind: 'race', unit: 's to finish', tip: 'Fly the hull through every ring in order. Some rings are walled with neutral prisms: a gunner\'s blast clears them for everyone.' },
@@ -478,6 +549,7 @@
         ai: { orbitDir: rng() < 0.5 ? 1 : -1, orbitN: randDir(rng), wp: null },
         stats: { why: {}, sway: 0, dealt: 0, taken: 0, fired: 0, hits: 0, timeouts: 0, flight: 0, omniM: 0, omniH: 0, cryM: 0, dry: 0, shields: 0, stops: 0, maxWait: 0, destroyed: 0, gunShots: 0, gunKills: 0, gunHullHits: 0, sniped: 0, penned: 0 },
       };
+      crew.breath = { charge: 0, inhaling: false, last: null, interval: 0, chain: 0, surgeT: 0 }; crew.dock = { anchor: null, hold: null, t: 0, reloadT: 0, gardenT: 0, cd: 0, dartT: 0 }; crew.tideF = 0;   // round 9: play-style state
       if (o.idleSeat >= 0 && i === 0) crew.seatOn[o.idleSeat] = false;
       for (let s = 1; s <= 3; s++) { const az = (s === 2 ? -1 : s === 3 ? 1 : 0) * 0.6, el = 0.2; crew.turrets[s] = { az, el, aimW: toWorld(crew.hull, V(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el))), upW: u, cd: rng() * 0.5, missile: null, wait: 0, noise: V(0, 0, 0), react: 0, queued: 0, mag: P.startMissiles, gunCd: rng() * 0.5, heat: 0, hot: false, fireT: 0, bomb: null, penT: 0, pen: { last: null, pend: null, seen: -1e9 }, lastTg: null }; }
       w.crews.push(crew);
@@ -486,7 +558,7 @@
     for (let k = 0; k < I.haz; k++) { const c = inBall(rng, R * 0.8, 0.05); for (let j = 0; j < 16; j++) addPrism(w, V(c.x + gauss(rng) * 16, c.y + gauss(rng) * 16, c.z + gauss(rng) * 16), randDir(rng), 3, 'haz', -1); }
     if (game.key === 'race') {   // a course of rings on a tilted, wavy loop; some walled with neutral prisms
       const tilt = randDir(rng), a0 = norm(cross(tilt, Math.abs(tilt.y) < 0.9 ? UP : V(1, 0, 0))), b0 = norm(cross(tilt, a0)), rr = R * 0.62;
-      w.rings = [];
+      w.rings = []; w.ringLoop = { n: tilt, a: a0, b: b0, rr };   // round 9: the course's own loop (the Tide helm's current follows it)
       for (let k = 0; k < I.rings; k++) {
         const t = (k + 1) / (I.rings + 1) * TAU, wav = Math.sin(t * 3 + rng() * 2) * R * 0.18;
         w.rings.push({ pos: add(add(scale(a0, Math.cos(t) * rr), scale(b0, Math.sin(t) * rr)), scale(tilt, wav)), n: V(0, 0, 1), wall: rng() < I.walls, cleared: false });
@@ -512,9 +584,29 @@
       }
       w.fort.total = w.fort.alive = w.prisms.filter((p) => p.kind === 'fort').length;
     }
+    if (P.styleBoost === 2) w.tides = makeTides(w);   // round 9, Tide: from its own random stream, so the rest of the world is the same as round 7's
     const nOmni = P.omniShare > 0 ? Math.max(1, Math.round(I.crystals * P.omniShare)) : 0;
     for (let k = 0; k < I.crystals; k++) w.crystals.push(newCrystal(w, k < nOmni));
     return w;
+  }
+  // round 9, Tide: currents are loops round the arena's centre, each in its own plane, flowing one way
+  function makeTides(w) {
+    const r = mulberry32((w.o.seed * 31 + 7) >>> 0), out = [];
+    if (w.ringLoop) out.push(Object.assign({ dir: 1 }, w.ringLoop));   // the Ring Race: the first current runs along the course, ring to ring
+    for (let k = out.length; k < Math.round(P.tideCount); k++) {
+      const n = randDir(r), a = norm(cross(n, Math.abs(n.y) < 0.9 ? UP : V(1, 0, 0))), b = norm(cross(n, a)), rr = w.R * (0.35 + 0.4 * r()), dir = r() < 0.5 ? 1 : -1;
+      out.push({ n, a, b, rr, dir });
+    }
+    return out;
+  }
+  function tideAt(w, p) {   // the nearest current within its half-width: { f: 1 at its middle, 0 at its edge, tan: its flow }
+    let best = null;
+    for (const L of w.tides || []) {
+      const ip = sub(p, scale(L.n, dot(p, L.n))), il = len(ip); if (il < 1e-3) continue;
+      const q = scale(ip, L.rr / il), d = dist(p, q); if (d >= P.tideR || (best && d >= best.d)) continue;
+      best = { d, f: 1 - d / P.tideR, tan: scale(norm(cross(L.n, q)), L.dir) };
+    }
+    return best;
   }
   function rotY(v, a) { const c = Math.cos(a), s = Math.sin(a); return V(v.x * c + v.z * s, v.y, -v.x * s + v.z * c); }
   // each crystal slot keeps its kind (omni or elemental) when it respawns, so uncollected elementals never crowd the omnis out
@@ -638,13 +730,24 @@
     // sticks to slow and turn tighter instead of orbiting it forever (L-STU-106; a Ring Race seed circled ring 2 for 150 s)
     let xDiff = 1;
     if (tgt) { const to = sub(tgt, h.pos), dd = len(to); if (dd < 150 && dot(h.f, scale(to, 1 / Math.max(dd, 1e-6))) < 0.7) { xDiff = 0.15; boost = 0; } }
-    return { mix: { xSum: st.yaw, ySum: -st.pitch, xDiff, yDiff: -st.roll }, boost: boost && h.tank > 0.5 ? 1 : 0, shieldEdge };
+    let boostOut = boost && h.tank > 0.5 ? 1 : 0, edgeOut = shieldEdge;
+    if (P.styleBoost === 1) {   // Breath: while it wants speed, a full breath in, then out for the whole surge (a steady pace builds the calm)
+      const b = c.breath; boostOut = b.inhaling ? (b.charge < 1 ? 1 : 0) : (boost && b.surgeT <= 0 ? 1 : 0);
+    } else if (P.styleBoost === 2) {   // Tide: tuck in when a current flows the way it wants to go
+      const td = tideAt(w, h.pos); boostOut = td && dot(td.tan, dir) > 0.6 ? 1 : 0;
+    }
+    if (P.styleShield === 1) {   // Dock: rest and reload when the magazines run low and no rival is near; dart away when full, threatened or bored
+      const d = c.dock; let rival = 1e9; for (const o of w.crews) if (o !== c) rival = Math.min(rival, dist(o.hull.pos, h.pos));
+      if (d.anchor) { let seats = 0; for (let s = 1; s <= 3; s++) if (c.seatOn[s]) seats++; edgeOut = magSum(c) >= 2 * seats || rival < 150 || d.t > 8 ? 1 : 0; }
+      else { edgeOut = 0; if (d.cd <= 0 && g !== 'race' && magSum(c) <= 1 && rival > 220) { let near = false; forPrismsNear(w, h.pos, P.dockReach, (p) => { if (!p.dead && p.kind !== 'danger') { near = true; return true; } }); edgeOut = near ? 1 : 0; } }
+    }
+    return { mix: { xSum: st.yaw, ySum: -st.pitch, xDiff, yDiff: -st.roll }, boost: boostOut, shieldEdge: edgeOut };
   }
   function gunRange(gk) { return gk === 'sniper' ? Math.min(P.sniperRange, 600) : gk === 'rapid' ? (P.rapidSpeed * 2 * P.rapidLife / Math.PI * 0.8) : (P.bombSpeed * P.bombLife * 0.6); }
   function gunReady(t, gk) { return gk === 'rapid' ? !t.hot : gk === 'bomb' ? !t.bomb : t.gunCd <= 0; }   // round 6: the bomb has no cooldown, only one in the air
   function gunnerAI(w, c, s) {
     const t = c.turrets[s], reach = P.missileSpeed * P.missileLife * 0.8;
-    if (t.missile) {   // fly the missile: pursue the target with lead, burst when close enough
+    if (t.missile && !P.styleMissile) {   // fly the missile: pursue the target with lead, burst when close enough
       const m = t.missile; if (!m.tgt || m.tgtT < w.t) { m.tgt = bestTarget(w, c, m.pos, reach, t.mag + 1); m.tgtT = w.t + 0.4; }
       const tg = m.tgt; if (!tg) return { stick: { yaw: 0, pitch: 0, roll: 0 }, fireEdge: 0 };
       const sp = P.missileSpeed * mul(c, 3, P.kCharge), dd = dist(m.pos, tg.p), lt = dd / sp * c.skill.lead;
@@ -883,8 +986,9 @@
       if (c.members[0].human && c.isUs) { const mx = dualStickMix(humanIn.L, humanIn.R); if (G.invertPitch) { mx.ySum *= -1; mx.yDiff *= -1; } helm = { mix: mx, boost: humanIn.boost, shieldEdge: humanIn.shieldEdge }; humanIn.shieldEdge = 0; }
       else helm = helmAI(w, c);
     }
-    if (helm) { h.mix = helm.mix; h.boosting = !!helm.boost && h.tank > 0; if (helm.shieldEdge && P.shieldOn && c.shield.cd <= 0) raiseShield(w, c); }
-    else { h.mix = { xSum: 0, ySum: 0, xDiff: 0.5, yDiff: 0 }; h.boosting = false; }
+    if (helm) { h.mix = helm.mix; if (P.styleBoost) styleBoostStep(w, c, !!helm.boost, dt); else h.boosting = !!helm.boost && h.tank > 0; if (helm.shieldEdge) { if (P.styleShield === 1) dockEdge(w, c); else if (P.shieldOn && c.shield.cd <= 0) raiseShield(w, c); } }
+    else { h.mix = { xSum: 0, ySum: 0, xDiff: 0.5, yDiff: 0 }; h.boosting = false; h.inhaling = false; h.tuck = false; }
+    if (c.dock.anchor || c.dock.cd > 0 || c.dock.dartT > 0) dockStep(w, c, dt);
     // the three gunner seats
     for (let s = 1; s <= 3; s++) {
       const t = c.turrets[s], m = c.members[s];
@@ -892,9 +996,9 @@
       if (!c.seatOn[s]) continue;
       const human = m.human && c.isUs;
       let inp;
-      if (human) { inp = t.missile ? { stick: { yaw: humanIn.L.x, pitch: humanIn.L.y * (G.invertPitch ? -1 : 1), roll: 0 }, fireEdge: humanIn.fireEdge } : { aimD: humanIn.aimD, fireEdge: humanIn.fireEdge, gunHold: humanIn.gunHold, gunEdge: humanIn.gunEdge }; humanIn.fireEdge = 0; humanIn.gunEdge = 0; humanIn.aimD = { az: 0, el: 0 }; }
+      if (human) { inp = t.missile && !P.styleMissile ? { stick: { yaw: humanIn.L.x, pitch: humanIn.L.y * (G.invertPitch ? -1 : 1), roll: 0 }, fireEdge: humanIn.fireEdge } : { aimD: humanIn.aimD, fireEdge: humanIn.fireEdge, gunHold: humanIn.gunHold, gunEdge: humanIn.gunEdge }; humanIn.fireEdge = 0; humanIn.gunEdge = 0; humanIn.aimD = { az: 0, el: 0 }; }
       else inp = gunnerAI(w, c, s);
-      if (t.missile) {
+      if (t.missile && !P.styleMissile) {
         const mi = t.missile; mi.stick = inp.stick;
         if (inp.fireEdge && mi.t > 0.25) explode(w, mi, 'manual');
       } else {
@@ -919,10 +1023,46 @@
         if (P.gunsOn) stepGun(w, c, s, t, dt, !!inp.gunHold, !!inp.gunEdge, human);
         const idle = (t.mag <= 0 && !(P.gunsOn && gunReady(t, GUN[s]))) || (!human && !inp.aimTo);
         if (idle) { t.wait += dt; if (c.isUs && t.wait > c.stats.maxWait) c.stats.maxWait = t.wait; } else t.wait = 0;
+        if (t.missile && inp.fireEdge) { if (human && t.missile.t > 0.25) explode(w, t.missile, 'manual'); inp.fireEdge = 0; }   // round 9, Seeker: a press bursts the one in flight
         if (inp.fireEdge) t.queued = human ? 0.5 : dt;   // a person's Missile press during the reload is held for half a second
-        if (t.queued > 0) { t.queued -= dt; if (t.cd <= 0 && t.mag > 0) { t.queued = 0; launch(w, c, s); } }
+        if (t.queued > 0) { t.queued -= dt; if (t.cd <= 0 && t.mag > 0 && !t.missile) { t.queued = 0; launch(w, c, s); } }
       }
     }
+  }
+  // ---- round 9: the play styles' rules ----
+  function styleBoostStep(w, c, held, dt) {   // Breath: hold to breathe in, let go to surge; Tide: hold to tuck in
+    const h = c.hull, b = c.breath;
+    if (P.styleBoost === 1) {
+      if (b.surgeT > 0) b.surgeT -= dt;
+      if (held) { b.inhaling = true; b.charge = Math.min(1, b.charge + dt / Math.max(0.05, P.breathIn)); }
+      else if (b.inhaling) {
+        b.inhaling = false;
+        const since = b.last == null ? 0 : w.t - b.last, steady = b.last != null && since >= P.calmMin && b.interval > 0 && Math.abs(since - b.interval) <= P.calmWindow * b.interval;
+        if (b.last != null && since < P.calmMin) b.chain = 0; else if (steady) b.chain = Math.min(P.calmCap, b.chain + 1); else b.chain = Math.max(0, b.chain - 1);
+        b.surgeT = (P.surgeMin + (P.surgeMax - P.surgeMin) * b.charge) * (1 + P.calmStep * b.chain);
+        b.interval = since; b.last = w.t; b.charge = 0; c.stats.breaths = (c.stats.breaths || 0) + 1; if (steady) c.stats.calm = (c.stats.calm || 0) + 1;
+        if (b.chain > 0) event(w, DOMS[c.dom].name + ' calm breath ' + b.chain, c.col);
+      }
+      h.inhaling = b.inhaling; h.boosting = b.surgeT > 0 && !b.inhaling;
+    } else { h.tuck = held; h.boosting = false; }
+  }
+  function dockEdge(w, c) {   // Dock: press by a block to dock, press again to dart away
+    const d = c.dock, h = c.hull;
+    if (d.anchor) { d.anchor = null; d.cd = P.dockCd; d.dartT = P.dartTime; event(w, DOMS[c.dom].name + ' darts away', c.col); return; }
+    if (d.cd > 0) return;
+    let best = null, bd = P.dockReach * P.dockReach;
+    forPrismsNear(w, h.pos, P.dockReach, (p) => { if (p.dead || p.kind === 'danger') return; const dd = d2(p.pos, h.pos); if (dd < bd) { bd = dd; best = p; } });
+    if (best) { d.anchor = best; d.hold = h.pos; d.t = 0; d.reloadT = 0; d.gardenT = 0; c.stats.docks = (c.stats.docks || 0) + 1; event(w, DOMS[c.dom].name + ' docks: reloading', c.col); }
+  }
+  function dockStep(w, c, dt) {
+    const d = c.dock;
+    if (d.cd > 0) d.cd -= dt; if (d.dartT > 0) d.dartT -= dt;
+    if (!d.anchor) return;
+    if (d.anchor.dead) { d.anchor = null; d.cd = P.dockCd; d.dartT = P.dartTime; event(w, DOMS[c.dom].name + ' lost its block: darts away', c.col); return; }
+    d.t += dt; c.stats.dockT = (c.stats.dockT || 0) + dt;
+    d.reloadT += dt; if (d.reloadT >= P.dockReload) { d.reloadT = 0; let got = 0; for (let s = 1; s <= 3; s++) { const t = c.turrets[s]; if (c.seatOn[s] && t.mag < P.maxMissiles) { t.mag++; got++; } } c.stats.dockMissiles = (c.stats.dockMissiles || 0) + got; }
+    if (P.gunsOn) { const t = c.turrets[1]; if (t && t.gunCd > 0) t.gunCd -= dt * Math.max(0, P.dockCool - 1); }
+    d.gardenT += dt; if (d.gardenT >= P.dockGarden) { d.gardenT = 0; const a = d.anchor.pos, j = randDir(w.rng); c.trail.push(addPrism(w, add(a, scale(j, 6 + w.rng() * 10)), j, c.dom, 'trail', c.i)); c.stats.garden = (c.stats.garden || 0) + 1; }
   }
   // a stabilized turret's view: keep its up square to the aim, hold it still, ease it toward the hull's up; returns degrees moved
   function holdHorizon(t, hullU, dt, smooth) {
@@ -944,20 +1084,37 @@
     const fu = mountFrame(c).u, u = sub(fu, scale(d, dot(fu, d)));
     const m = { pos: p, f: d, u: len(u) > 0.1 ? norm(u) : rightOf(c.hull), t: 0, crew: c.i, seat: s, dead: false, stick: { yaw: 0, pitch: 0, roll: 0 }, tgt: null, tgtT: 0 };
     t.mag--; t.missile = m; t.react = 0; c.stats.fired++; w.missiles.push(m);
+    if (P.styleMissile === 1) { m.seek = seekLock(w, c, s, d); if (m.seek) c.stats.seekLocks = (c.stats.seekLocks || 0) + 1; }
   }
+  // round 9, Seeker: lock on what the turret aims at: the rival hull, crystal or hostile block nearest its line, within seekCone
+  function seekLock(w, c, s, d) {
+    const from = mountPos(c, s), cosC = Math.cos(P.seekCone * D2R), reach = P.missileSpeed * P.missileLife; let best = null, bs = -1;
+    const offer = (ref, pos, kind) => { const to = sub(pos, from), L = len(to); if (L < 1 || L > reach) return; const cs = dot(to, d) / L; if (cs < cosC) return; const sc = cs - L / reach * 0.05; if (sc > bs) { bs = sc; best = { ref, kind }; } };
+    for (const o of w.crews) if (o !== c) offer(o, o.hull.pos, 'hull');
+    for (const cr of w.crystals) if (cr.alive) offer(cr, cr.pos, 'crystal');
+    for (const p of w.prisms) if (!p.dead && p.dom !== c.dom && p.kind !== 'danger') offer(p, p.pos, 'prism');
+    return best;
+  }
+  function seekPos(sk) { if (!sk) return null; const r = sk.ref; if (sk.kind === 'hull') return r.hull.pos; if (sk.kind === 'crystal') return r.alive ? r.pos : null; return r.dead ? null : r.pos; }
   function moveHull(w, c, dt) {
     const h = c.hull, mx = h.mix;
     const tankMax = P.boostTank * mul(c, 0, P.kTime);
-    if (h.boosting) { h.tank -= dt; if (h.tank <= 0) { h.tank = 0; h.boosting = false; } } else h.tank = Math.min(tankMax, h.tank + P.boostRefill * mul(c, 0, P.kTime) * dt);
+    if (!P.styleBoost) { if (h.boosting) { h.tank -= dt; if (h.tank <= 0) { h.tank = 0; h.boosting = false; } } else h.tank = Math.min(tankMax, h.tank + P.boostRefill * mul(c, 0, P.kTime) * dt); }
     // VesselTransformer: speed = min + scaler x XDiff x boost; turns scale with speed x RotationThrottleScaler + the axis scaler
     let speed = (P.minSpeed + P.throttleScaler * clamp(mx.xDiff, 0, 1) * (h.boosting ? P.boostMul : 1)) * P.hullSpeedMul * mul(c, 0, P.kTime);
     if (h.slowT > 0) { h.slowT -= dt; speed *= 0.5; }
+    if (h.inhaling) speed *= P.breathSlow;   // round 9, Breath: it slows while it breathes in
+    if (c.dock.dartT > 0) speed = Math.max(speed, (P.minSpeed + P.throttleScaler) * P.hullSpeedMul * P.boostMul * 0.6);   // round 9, Dock: the dart away
+    if (c.dock.anchor) speed = 0;   // round 9, Dock: docked, it holds still
     h.v += (speed - h.v) * (1 - Math.exp(-3 * dt));
     let xs = mx.xSum, ys = mx.ySum;
     if (!c.seatOn[0] && len(h.pos) > w.R - 50) { const st = steerToward(h, norm(scale(h.pos, -1))); xs = st.yaw; ys = -st.pitch; }   // an empty helm: the hull's own autopilot keeps it inside
-    const k = P.hullTurnMul * D2R * dt, rv = h.v * P.rotThrottle;
+    const td = P.styleBoost === 2 ? tideAt(w, h.pos) : null; c.tideF = td ? td.f : 0; if (td) { c.stats.tideT = (c.stats.tideT || 0) + dt; if (h.tuck) c.stats.tuckT = (c.stats.tuckT || 0) + dt; }   // round 9, Tide
+    const k = P.hullTurnMul * D2R * dt * (td && h.tuck ? P.tideTurn : 1), rv = h.v * P.rotThrottle;
     turnBody(h, xs * (rv + P.yawRate) * k, -ys * (rv + P.pitchRate) * k, -mx.yDiff * (rv + P.rollRate) * k);
     h.pos = add(h.pos, scale(h.f, h.v * dt));
+    if (td) h.pos = add(h.pos, scale(td.tan, P.tideSpeed * td.f * Math.max(0, dot(h.f, td.tan)) * (h.tuck ? P.tideTuck : 1) * mul(c, 0, P.kTime) * dt));   // the current carries it when it goes the current's way (crossing one costs nothing)
+    if (c.dock.anchor && c.dock.hold) h.pos = c.dock.hold;   // docked: held where it docked (it can still turn)
     const rr = len(h.pos); if (rr > w.R) h.pos = scale(h.pos, w.R / rr);
     // view sway: how far a gunner's view would turn this step if they held perfectly still (turret 1's line of sight and horizon)
     const prevF = c._pf || h.f, prevD = turretDir(c, 1), Lp = c._pf ? V(dot(prevD, norm(cross(prevF, c._pu))), dot(prevD, c._pu), dot(prevD, prevF)) : null;
@@ -996,6 +1153,10 @@
     for (const m of w.missiles) {
       if (m.dead) continue;
       const c = w.crews[m.crew], sp = P.missileSpeed * mul(c, 3, P.kCharge), rate = P.missileTurn * mul(c, 3, P.kCharge) * D2R * dt;
+      if (m.seek) {   // round 9, Seeker: it steers itself to its lock (a lock that is gone flies on straight)
+        const tp = seekPos(m.seek);
+        if (!tp) m.seek = null; else { m.stick = steerToward(m, norm(sub(tp, m.pos)), 0, w.rng); m.stick.yaw *= P.seekTurn; m.stick.pitch *= P.seekTurn; if (m.seek.kind === 'hull' && dist(tp, m.pos) < P.blastR * mul(c, 1, P.kSpace) * 0.6) { explode(w, m, 'hull'); continue; } }
+      }
       const prev = flyMissile(m, sp, rate, dt); c.stats.flight += dt;
       if (len(m.pos) > w.R + 40) { explode(w, m, 'timeout'); continue; }
       for (const cr of w.crystals) if (cr.alive && d2(cr.pos, m.pos) < 81) collect(w, c, cr, true);
@@ -1063,6 +1224,7 @@
       maxWait: +st.maxWait.toFixed(1), reversals: w.reversals, dealt: st.dealt, taken: st.taken, swayDegS: +(st.sway / Math.max(1e-6, w.t)).toFixed(1),
       gunShotsPerMin: +(st.gunShots / min).toFixed(2), gunKillsPerMin: +(st.gunKills / min).toFixed(2), gunHullHits: st.gunHullHits,
       pennedPerMin: +(st.penned / min).toFixed(2), pensKept: c.pens.filter((p) => !p.dead).length,
+      breathsPerMin: +((st.breaths || 0) / min).toFixed(2), calmPct: st.breaths ? +(100 * (st.calm || 0) / st.breaths).toFixed(0) : null, docksPerMin: +((st.docks || 0) / min).toFixed(2), dockedPct: +(100 * (st.dockT || 0) / Math.max(1e-6, w.t)).toFixed(1), dockMissiles: st.dockMissiles || 0, garden: st.garden || 0, seekLocks: st.seekLocks || 0, tidePct: +(100 * (st.tideT || 0) / Math.max(1e-6, w.t)).toFixed(1), tuckPct: +(100 * (st.tuckT || 0) / Math.max(1e-6, w.t)).toFixed(1),   // round 9: the play styles' own use
     };
   }
 
@@ -1091,7 +1253,7 @@
       const avg = (k) => { const v = full.map((r) => r[k]).filter((x) => x != null); return v.length ? +mean(v).toFixed(2) : null; };
       row.points = avg('points'); row.winPct = +(100 * mean(full.map((r) => (r.win ? 1 : 0)))).toFixed(0);
       row.score = avg('score'); row.finishedPct = GAMES[game].key === 'race' ? +(100 * full.filter((r) => r.score != null).length / full.length).toFixed(0) : null;
-      for (const k of ['firedPerMin', 'hitPct', 'timeoutPct', 'flight', 'omniPerMin', 'omniByMissilePct', 'dryPct', 'shieldsPerMin', 'stopsPerMin', 'maxWait', 'reversals', 'dealt', 'taken', 'swayDegS', 'gunShotsPerMin', 'gunKillsPerMin', 'gunHullHits', 'pennedPerMin', 'pensKept']) row[k] = avg(k);
+      for (const k of ['firedPerMin', 'hitPct', 'timeoutPct', 'flight', 'omniPerMin', 'omniByMissilePct', 'dryPct', 'shieldsPerMin', 'stopsPerMin', 'maxWait', 'reversals', 'dealt', 'taken', 'swayDegS', 'gunShotsPerMin', 'gunKillsPerMin', 'gunHullHits', 'pennedPerMin', 'pensKept', 'breathsPerMin', 'calmPct', 'docksPerMin', 'dockedPct', 'dockMissiles', 'garden', 'seekLocks', 'tidePct', 'tuckPct']) row[k] = avg(k);
       row.se = +Math.sqrt(mean(full.map((r) => (r.points - row.points) ** 2)) / Math.max(1, full.length - 1)).toFixed(2);
       if (opts.seats && !Pr.control) row.seatValue = [0, 1, 2, 3].map((s) => { const p = mean(seeds.map((sd) => runOne(Object.assign({ seed: sd, idleSeat: s }, base)).points)); return +(100 * (row.points - p) / Math.max(scl, Math.abs(row.points))).toFixed(0); });
       if (opts.rookie && !Pr.control) { const e = mean(seeds.map((s) => runOne(Object.assign({ seed: s }, base, { crewSkill: 0 })).points)); row.rookiePct = +(100 - 100 * (row.points - e) / Math.max(scl, Math.abs(row.points))).toFixed(0); }
@@ -1178,6 +1340,14 @@
     if (w.rings) v.rings = w.rings.map((rg) => { const m = new T.Mesh(new T.TorusGeometry(RING_R, 1.3, 6, 36), lit('#ffffff', '#ffffff', 0.3, { transparent: true, opacity: 0.5 })); m.position.copy(tv(rg.pos)); m.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), tv(rg.n)); root.add(m); return m; });
     if (w.fort) { v.core = new T.Mesh(new T.IcosahedronGeometry(7, 0), lit(HAZ, HAZ, 0.6)); root.add(v.core); }
     v.blastGeo = new T.IcosahedronGeometry(1, 2);
+    if (w.tides) for (const L of w.tides) {   // round 9, Tide: each current as a faint lit tube at its width, a bright core, and flow darts
+      const pts = []; for (let i = 0; i < 64; i++) { const a = i / 64 * TAU, q = add(scale(L.a, Math.cos(a) * L.rr), scale(L.b, Math.sin(a) * L.rr)); pts.push(tv(q)); }
+      const curve = new T.CatmullRomCurve3(pts, true);
+      root.add(new T.Mesh(new T.TubeGeometry(curve, 128, P.tideR, 10, true), lit('#7fe8ff', '#2a8fb0', 0.4, { transparent: true, opacity: 0.05, depthWrite: false, side: T.DoubleSide })));
+      root.add(new T.Mesh(new T.TubeGeometry(curve, 128, 1.2, 6, true), lit('#9ff0ff', '#7fe8ff', 1.1, { transparent: true, opacity: 0.55, depthWrite: false })));
+      L.darts = []; for (let k = 0; k < 18; k++) { const m = new T.Mesh(new T.ConeGeometry(1.6, 6, 5), lit('#c8f7ff', '#7fe8ff', 1.2, { transparent: true, opacity: 0.8 })); root.add(m); L.darts.push(m); }
+    }
+    v.tethers = w.crews.map((c) => { const g = new T.CylinderGeometry(0.5, 0.5, 1, 6); g.rotateX(Math.PI / 2); g.translate(0, 0, 0.5); const m = new T.Mesh(g, lit(c.col, c.col, 1.2)); m.visible = false; root.add(m); return m; });
     view = v; viewWorld = w;
   }
   const _m = HAS3D ? new T.Matrix4() : null, _q = HAS3D ? new T.Quaternion() : null, _s = HAS3D ? new T.Vector3(1, 1, 1) : null, _z = HAS3D ? new T.Vector3(0, 0, 1) : null, _p = HAS3D ? new T.Vector3() : null, _d = HAS3D ? new T.Vector3() : null;
@@ -1186,7 +1356,7 @@
   function camTarget() {
     const c = world.crews[0], hm = c.members.find((m) => m.human);
     if (CAM.mode === 'overview') return { kind: 'overview' };
-    if (hm && hm.seat > 0) { const t = c.turrets[hm.seat]; if (t.missile) return { kind: 'missile', m: t.missile }; return { kind: 'turret', s: hm.seat }; }
+    if (hm && hm.seat > 0) { const t = c.turrets[hm.seat]; if (t.missile && !P.styleMissile) return { kind: 'missile', m: t.missile }; return { kind: 'turret', s: hm.seat }; }
     return { kind: 'chase' };
   }
   function placeCamera(dt) {
@@ -1266,7 +1436,8 @@
     drawMissiles(w, v);
     const turretSeat = kind === 'turret' ? camTarget().s : -1;
     w.crews.forEach((c, i) => {
-      const cv = v.crews[i], h = c.hull; setOrient(cv.g, h.pos, h.f, h.u);
+      const cv = v.crews[i], h = c.hull; setOrient(cv.g, h.pos, h.f, h.u); cv.g.scale.setScalar(h.inhaling ? 1 + 0.15 * c.breath.charge : 1);   // round 9, Breath: the hull swells as it breathes in
+      if (v.tethers) { const tm = v.tethers[i], an = c.dock.anchor; tm.visible = !!an; if (an) { const L = Math.max(0.1, dist(h.pos, an.pos)); tm.position.set(h.pos.x, h.pos.y, h.pos.z); tm.lookAt(an.pos.x, an.pos.y, an.pos.z); tm.scale.set(1, 1, L); } }   // round 9, Dock: the line to the block
       for (let s = 1; s <= 3; s++) {   // outrigger struts from the hull to each turret
         const st = cv.struts[s], a = h.pos, b = mountPos(c, s), dd = sub(b, a), L = len(dd); st.visible = !!P.mountOut && L > 1;
         if (st.visible) { const f = norm(dd), up = Math.abs(dot(f, h.u)) > 0.9 ? h.f : h.u; setOrient(st, scale(add(a, b), 0.5), f, norm(sub(up, scale(f, dot(up, f))))); st.scale.set(1, 1, L); }
@@ -1274,6 +1445,7 @@
       for (let s = 1; s <= 3; s++) { const tg = cv.turrets[s], p = mountPos(c, s), d = turretDir(c, s); tg.position.set(p.x, p.y, p.z); tg.lookAt(p.x + d.x, p.y + d.y, p.z + d.z); tg.visible = !(c.isUs && s === turretSeat && !P.gunsOn); }
     });
     if (v.rings) v.rings.forEach((m, k) => { const next = k === us.ringIdx, done = k < us.ringIdx; m.material.opacity = done ? 0.15 : next ? 1 : 0.45; m.material.emissiveIntensity = next ? 1.2 : 0.25; m.material.color.set(next ? LIME : '#ffffff'); m.material.emissive.set(next ? LIME : '#ffffff'); });
+    if (w.tides) for (const L of w.tides) if (L.darts) L.darts.forEach((m, k) => { const a = L.dir * (w.t * P.tideSpeed / L.rr) + k / L.darts.length * TAU, q = add(scale(L.a, Math.cos(a) * L.rr), scale(L.b, Math.sin(a) * L.rr)), tan = scale(norm(cross(L.n, q)), L.dir); m.position.set(q.x, q.y, q.z); m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), tv(tan)); });
     if (v.core) { v.core.visible = w.fort.alive > 0; v.core.rotation.set(w.t * 0.5, w.t * 0.3, 0); }
     while (v.blasts.length < w.blasts.length) { const m = new T.Mesh(v.blastGeo, lit('#ffffff', '#ffffff', 0.9, { transparent: true, opacity: 0.35, depthWrite: false })); v.root.add(m); v.blasts.push(m); }
     v.blasts.forEach((m, i) => { const bl = w.blasts[i]; m.visible = !!bl && bl.r > 0; if (!m.visible) return; const col = DOMS[w.crews[bl.crew].dom].c; m.position.set(bl.pos.x, bl.pos.y, bl.pos.z); m.scale.setScalar(bl.r); m.material.color.set(col); m.material.emissive.set(col); m.material.opacity = 0.22 * (1 - Math.min(1, bl.t / (P.blastTime + 0.25))); });
@@ -1435,7 +1607,8 @@
     for (let s = 0; s < 4; s++) {
       const m = c.members[s], on = c.seatOn[s], who = !on ? 'empty' : m.human ? 'YOU' : 'AI';
       let state = '';
-      if (s === 0) state = c.hull.boosting ? 'boosting' : c.shield.t > 0 ? 'shield ' + c.shield.t.toFixed(1) + 's' : c.shield.cd > 0 ? 'shield in ' + c.shield.cd.toFixed(1) + 's' : (P.shieldOn ? 'shield ready' : 'no shield');
+      if (s === 0 && (P.styleBoost || P.styleShield)) state = helmStyleState(c);
+      else if (s === 0) state = c.hull.boosting ? 'boosting' : c.shield.t > 0 ? 'shield ' + c.shield.t.toFixed(1) + 's' : c.shield.cd > 0 ? 'shield in ' + c.shield.cd.toFixed(1) + 's' : (P.shieldOn ? 'shield ready' : 'no shield');
       else { const t = c.turrets[s]; state = 'M' + t.mag + ' ' + (t.missile ? 'flying ' + Math.max(0, P.missileLife - t.missile.t).toFixed(1) + 's' : P.gunsOn ? GUN_NAMES[GUN[s]].toLowerCase() + ' ' + gunState(t, GUN[s]) : t.mag <= 0 ? 'no missiles' : t.cd > 0 ? 'reloading' : 'ready'); }
       ctx.fillStyle = m.human ? '#ffffff' : on ? '#cfd9e0' : '#6c7c86'; ctx.fillText((s + 1) + ' ' + SEAT_NAMES[s].padEnd(8) + ' ' + who.padEnd(5) + ' ' + state, x0 + 10 * dpr, y); y += 14 * dpr;
     }
@@ -1514,7 +1687,19 @@
   // ---- round 6: the four-icon ability row, one icon per seat in element order (Time, Space, Mass, Charge). The person's own
   // seat's icon is lit; each icon's veil is its seat's recharge (the boost tank, the sniper, the fast gun's heat; the bomb has
   // none); each gunner icon carries its seat's missiles as a number
+  function helmStyleState(c) {   // round 9: the helm's line in the crew panel under the play styles
+    const h = c.hull, b = c.breath, d = c.dock, parts = [];
+    if (d.anchor) parts.push('DOCKED ' + d.t.toFixed(0) + 's'); else if (d.dartT > 0) parts.push('darting');
+    if (P.styleBoost === 1) parts.push(h.inhaling ? 'in ' + Math.round(b.charge * 100) + '%' : h.boosting ? 'surge' : 'calm ' + b.chain + '/' + P.calmCap);
+    else if (P.styleBoost === 2) parts.push(c.tideF > 0 ? (h.tuck ? 'tucked' : 'in a current') : 'no current');
+    else parts.push(h.boosting ? 'boosting' : 'tank ' + h.tank.toFixed(1) + 's');
+    if (!P.styleShield) parts.push(c.shield.t > 0 ? 'shield' : c.shield.cd > 0 ? 'shield ' + c.shield.cd.toFixed(0) + 's' : 'shield ready');
+    else if (!d.anchor) parts.push(d.cd > 0 ? 'dock ' + d.cd.toFixed(0) + 's' : 'dock ready');
+    return parts.join(' / ');
+  }
   function seatVeil(c, s) {
+    if (s === 0 && P.styleBoost === 1) return c.breath.inhaling ? 1 - c.breath.charge : 0;
+    if (s === 0 && P.styleBoost === 2) return 1 - c.tideF;
     if (s === 0) { const mx = P.boostTank * mul(c, 0, P.kTime); return mx > 0 ? 1 - c.hull.tank / mx : 0; }
     const t = c.turrets[s];
     if (!P.gunsOn) return 0;
@@ -1534,7 +1719,7 @@
       if (veil > 0.001) { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.moveTo(x + sz / 2, y0 + sz / 2); ctx.arc(x + sz / 2, y0 + sz / 2, sz * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * veil); ctx.closePath(); ctx.save(); ctx.beginPath(); ctx.rect(x, y0, sz, sz); ctx.clip(); ctx.fill(); ctx.restore(); ctx.fill(); }
       ctx.fillStyle = on ? '#04140f' : col; ctx.font = '700 ' + (11 * dpr) + 'px Saira Condensed, Arial Narrow, sans-serif'; ctx.fillText(EL[s].toUpperCase(), x + sz / 2, y0 + 15 * dpr);
       if (s > 0) { const t = c.turrets[s]; ctx.font = '700 ' + (17 * dpr) + 'px IBM Plex Mono, monospace'; ctx.fillStyle = on ? '#04140f' : t.mag > 0 ? '#ffffff' : '#ff4d6d'; ctx.fillText(String(t.mag), x + sz / 2, y0 + sz - 9 * dpr); if (GUN[s] === 'bomb' && t.bomb) { ctx.strokeStyle = on ? '#04140f' : '#ffa700'; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.arc(x + sz - 8 * dpr, y0 + 8 * dpr, 4 * dpr, 0, TAU); ctx.stroke(); } }
-      else { ctx.font = (10 * dpr) + 'px IBM Plex Mono, monospace'; ctx.fillStyle = on ? '#04140f' : '#cfd9e0'; ctx.fillText(c.shield.t > 0 ? 'SHLD' : c.hull.tank.toFixed(1), x + sz / 2, y0 + sz - 10 * dpr); }
+      else { ctx.font = (10 * dpr) + 'px IBM Plex Mono, monospace'; ctx.fillStyle = on ? '#04140f' : '#cfd9e0'; ctx.fillText(c.dock.anchor ? 'DOCK' : c.shield.t > 0 ? 'SHLD' : P.styleBoost === 1 ? (c.hull.inhaling ? 'IN' : 'x' + (1 + P.calmStep * c.breath.chain).toFixed(1)) : P.styleBoost === 2 ? (c.tideF > 0 ? 'TIDE' : '-') : c.hull.tank.toFixed(1), x + sz / 2, y0 + sz - 10 * dpr); }
       ctx.globalAlpha = 1; ctx.fillStyle = on ? '#ffffff' : '#9fb0ba'; ctx.font = (9 * dpr) + 'px IBM Plex Mono, monospace'; ctx.fillText(SEAT_NAMES[s], x + sz / 2, y0 + sz + 12 * dpr);
     }
     ctx.textAlign = 'left';
@@ -1589,7 +1774,7 @@
     let L = V(k('KeyD') - k('KeyA'), k('KeyW') - k('KeyS'), 0);
     let R = V(Math.max(k('Quote'), k('ArrowRight')) - Math.max(k('KeyL'), k('ArrowLeft')), Math.max(k('KeyP'), k('ArrowUp')) - Math.max(k('Semicolon'), k('ArrowDown')), 0);
     let boost = k('Space') && kind === 'helm' ? 1 : 0, gunHold = kind === 'gunner' && (k('Space') || mouseGun || holdGunBtn) ? 1 : 0;
-    const flying = kind === 'gunner' && !!world.crews[0].turrets[world.crews[0].members.find((m) => m.human).seat].missile;
+    const flying = kind === 'gunner' && !P.styleMissile && !!world.crews[0].turrets[world.crews[0].members.find((m) => m.human).seat].missile;
     for (const t of touches.values()) { const s = stickFrom(t, dpr); if (kind === 'helm') { if (t.side === 'L') L = s; else R = s; } else if (flying) L = s; }
     const aim = { az: 0, el: 0 }, sens = 0.0035;
     if (kind === 'gunner' && !flying) {   // turret aim: mouse look (pointer lock, or drag), W A S D or the arrows, a pad stick, a touch drag
@@ -1626,7 +1811,7 @@
   function updateActBtns(kind, flying) {
     const a = $('actA'), b = $('actB');
     a.hidden = !kind || (kind === 'gunner' && (flying || !P.gunsOn)); b.hidden = !kind;
-    if (kind === 'helm') { a.textContent = 'Boost'; a.classList.toggle('on', world.crews[0].hull.boosting); const sh = world.crews[0].shield; b.textContent = sh.t > 0 ? 'Shield up' : sh.cd > 0 ? 'Shield ' + Math.ceil(sh.cd) : 'Shield'; }
+    if (kind === 'helm') { const c0 = world.crews[0]; a.textContent = P.styleBoost === 1 ? 'Breathe' : P.styleBoost === 2 ? 'Tuck' : 'Boost'; a.classList.toggle('on', c0.hull.boosting || !!c0.hull.inhaling || !!c0.hull.tuck); const sh = c0.shield, dk = c0.dock; b.textContent = P.styleShield === 1 ? (dk.anchor ? 'Undock' : dk.cd > 0 ? 'Dock ' + Math.ceil(dk.cd) : 'Dock') : sh.t > 0 ? 'Shield up' : sh.cd > 0 ? 'Shield ' + Math.ceil(sh.cd) : 'Shield'; }
     else if (kind === 'gunner') { const hm = world.crews[0].members.find((m) => m.human), t = world.crews[0].turrets[hm.seat]; a.textContent = 'Fire'; a.classList.toggle('on', !!holdGunBtn); b.textContent = flying ? 'Burst' : 'Missile ' + t.mag; }
   }
   $('actA').addEventListener('pointerdown', (e) => { e.stopPropagation(); if (humanKind() === 'helm') holdBoost = 1; else { holdGunBtn = 1; humanIn.gunEdge = 1; } });
@@ -1734,6 +1919,24 @@
     SKILL.forEach((s, i) => { const b = document.createElement('button'); b.textContent = s.name; b.setAttribute('aria-pressed', String(G.crewSkill === i)); b.onclick = () => { G.crewSkill = i; saveG(); for (const x of seg.children) x.setAttribute('aria-pressed', String(x === b)); restart(); }; seg.appendChild(b); });
     return box;
   }
+  function stylesPanel() {   // round 9: one choice per ability, mixed freely; every default is round 7's
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint">Choose how each ability works, mix them freely, and fly them (round 9). The first option of each is the Orca as Garrett built it (round 7). Rival crews fly the same choices. The cards on the Presets tab are ready-made mixes; the Scorecard scores them all.</p>';
+    for (const g of STYLES) {
+      const row = document.createElement('div'); row.className = 'row'; row.style.gridTemplateColumns = '1fr'; row.style.display = 'grid'; row.style.gap = '4px'; row.style.margin = '10px 0';
+      row.innerHTML = '<label style="font-weight:600"></label><select></select><div class="tip"></div>';
+      row.querySelector('label').textContent = g.seat + ' · ' + g.ability;
+      const sel = row.querySelector('select'), tip = row.querySelector('.tip');
+      g.options.forEach((o, i) => { const op = document.createElement('option'); op.value = i; op.textContent = o.name + (i === 0 ? ' (round 7)' : ' (from ' + o.from + ')'); sel.appendChild(op); });
+      const show = () => { const o = g.options[+sel.value]; tip.textContent = o.text; };
+      sel.value = String(Math.round(P[g.key]) || 0); show();
+      sel.onchange = () => { setParam(g.key, +sel.value); show(); restart(); };
+      box.appendChild(row);
+    }
+    const h = document.createElement('h4'); h.textContent = 'Their numbers'; h.style.margin = '12px 0 4px'; box.appendChild(h);
+    box.appendChild(sliderGroup('Play styles'));
+    return box;
+  }
   function controlsPanel() {
     const box = document.createElement('div'); box.className = 'prose';
     box.innerHTML = '<h4>Seats</h4><p><kbd>1</kbd> Helm (Time), <kbd>2</kbd> Sniper (Space), <kbd>3</kbd> Fast gun (Mass), <kbd>4</kbd> Bomb (Charge), <kbd>0</kbd> / <kbd>Esc</kbd> watches. AI flies every seat you leave. <kbd>C</kbd> (pad <kbd>Y</kbd>) toggles an overview.</p>' +
@@ -1744,19 +1947,23 @@
     const inv = box.querySelector('#invPitch'); inv.checked = !!G.invertPitch; inv.onchange = () => { G.invertPitch = inv.checked; saveG(); };
     return box;
   }
-  const groups = [...new Set(SPEC.map((r) => r[0]))];
-  makeTabs('dockTabs', 'dockBody', [{ name: 'Presets', build: presetPanel }].concat(groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), [{ name: 'Controls', build: controlsPanel }]), LS + 'dock');
+  const groups = [...new Set(SPEC.map((r) => r[0]))].filter((g) => g !== 'Play styles');
+  makeTabs('dockTabs', 'dockBody', [{ name: 'Presets', build: presetPanel }, { name: 'Play styles', build: stylesPanel }].concat(groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), [{ name: 'Controls', build: controlsPanel }]), LS + 'dock');
 
   // ================= the decision log =================
   let db = null, me = '', remote = [], localLog = lsGet('log', []);
+  // The Vessel Studio artifact shares one 'decisions' log across every studio: keep the Orca's (tagged, or older
+  // untagged rows that carry this lab's snapshot shape).
+  const mine = (d) => d.vessel === 'orca' || (!d.vessel && !!d.settings && 'seat' in d.settings && 'game' in d.settings);
   function snapshot() { return { round: LAB.round, seed, preset: PRESETS[G.preset].key, game: GAMES[G.game].key, intensity: G.intensity + 1, diff: SKILL[G.diff].name, seat: G.seat, changed: diffOnly() }; }
   async function record(topic, choice, note) {
-    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    const doc = { vessel: 'orca', topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
     if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
     localLog.push(doc); lsSet('log', localLog); return 'local';
   }
-  const TOPICS = ['Helm feel', 'Shield', 'Missile feel', 'Guns', 'Turret camera', 'Seat icons and crosshairs', 'Ammo (omni crystals)', 'Games', 'General'];
+  const TOPICS = ['Play styles', 'Helm feel', 'Shield', 'Missile feel', 'Guns', 'Turret camera', 'Seat icons and crosshairs', 'Ammo (omni crystals)', 'Games', 'General'];
   function currentChoice(topic) {
+    if (topic === 'Play styles') return STYLES.map((g) => g.ability.split(' (')[0] + ': ' + styleName(g.key)).join(' / ');
     if (topic === 'Helm feel') return 'Hull speed x' + P.hullSpeedMul + ', turn x' + P.hullTurnMul + ', boost tank ' + P.boostTank + ' s';
     if (topic === 'Shield') return P.shieldOn ? (P.shieldSuper ? 'Carried super-shielded ' + P.shieldTime + ' s, then dropped as danger prisms for ' + (P.shieldLinger || 'ever') + (P.shieldLinger ? ' s' : '') : 'Round 4: carried danger prisms for ' + P.shieldTime + ' s') + ', ' + P.shieldBlocks + ' prisms at ' + P.shieldMinR + '-' + P.shieldMaxR + ' u, ' + P.shieldOpenDeg + ' deg open forward, cooldown ' + P.shieldCd + ' s' : 'No shield';
     if (topic === 'Guns') return P.gunsOn ? 'Sniper ' + P.sniperCd + ' s, ' + P.sniperCone + ' deg cone / ' + P.sniperPetals + ' petals; fast gun ' + P.rapidRate + '/s at ' + P.rapidSpeed + ' u/s, overheats in ' + P.rapidHeatTime + ' s, pen ' + P.rapidPenRate + '/s every ' + P.rapidPenSpacing + ' u; bomb ' + P.bombSpeed + ' u/s, ' + P.bombBlastR + ' u blast, one at a time; shots ' + (P.shotInherit ? 'fly down the aim' : 'carry the whole hull velocity') : 'No guns';
@@ -1793,7 +2000,7 @@
     try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
     if (!db) return;
     try {
-      db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+      db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())).filter(mine); renderLog(); }, () => { db = null; });
       for (const d of localLog.splice(0)) { try { await db.collection('decisions').add(d); } catch (e) { localLog.push(d); } }
       lsSet('log', localLog);
     } catch (e) { db = null; }
@@ -1906,7 +2113,7 @@
 
   // ================= the test surface =================
   window.__lab = {
-    LAB, SHIPPED, SPEC, P, PLATFORM, PRESETS, GAMES, G,
+    LAB, SHIPPED, SPEC, P, PLATFORM, PRESETS, GAMES, G, STYLES,
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || STEP; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
     reset, score, runBatch, runOne, setParam, record, applyPreset, takeSeat, toggleCam, get camKind() { return CAM.kind; },
