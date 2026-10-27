@@ -270,6 +270,13 @@
     body.ide .dock { max-height: 70vh; }
   }
   body.ide.play .viewport { height: auto; }   /* touch play is the whole screen: the narrow layout's 58vh must not hold it */
+  /* round 15, the kits: the Input tab's rows follow the kit (body.kit-*); in a sentinel seat the touch sticks step aside so a tap reaches the stage */
+  .kit-r8-row, .kit-gm-row, .kit-g-row, .kit-m-row { display: none; }
+  body.kit-r8 .kit-r8-row, body.kit-gm .kit-gm-row, body.kit-garrett .kit-g-row, body.kit-mix .kit-m-row { display: table-row; }
+  body.kitseat.play .tzone, body.kitseat.play .ttrig { pointer-events: none; opacity: 0.25; }
+  table.kitdec { font-size: 0.78rem; }
+  table.kitdec td:first-child { font-family: var(--font-display); white-space: nowrap; color: var(--accent); }
+  .row select.arp-seg { flex: 1 1 auto; min-width: 0; }
 </style>
 <script src="studio-theme.js"></script>   <!-- the one Vessel Studio look (D29); this page is its reference -->
 
@@ -295,7 +302,7 @@
         <div class="tzone r" id="tzR"><div class="tstick idle" id="tsR"><div class="tknob"></div></div></div>
         <div class="ttrig l" id="ttL"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">LT</div></div>
         <div class="ttrig r" id="ttR"><div class="ttrack"><div class="tfill"></div></div><div class="thandle">RT</div></div>
-        <div class="tabil" id="tAbil" aria-label="Abilities"><button type="button" class="tbtn" id="tY" data-btn="Y">Y<small>Lookout</small></button><button type="button" class="tbtn" id="tLB" data-btn="LB">LB<small>Harden</small></button><button type="button" class="tbtn" id="tB" data-btn="B">B<small>Cave-in</small></button></div>
+        <div class="tabil" id="tAbil" aria-label="Abilities"><button type="button" class="tbtn" id="tY" data-btn="Y">Y<small>Lookout</small></button><button type="button" class="tbtn" id="tLB" data-btn="LB">LB<small>Harden</small></button><button type="button" class="tbtn" id="tB" data-btn="B">B<small>Cave-in</small></button><button type="button" class="tbtn" id="tSeat" data-btn="SEAT" hidden>SEAT<small>Flyer</small></button></div>
         <div class="tbar"><button type="button" class="tbtn" id="tStart">▶ Play</button><button type="button" class="tbtn ghost" id="tBack">■ Stop</button><button type="button" class="tbtn ghost" id="tExit">✕</button></div>
         <div class="tturn"><div>Turn your phone sideways to fly.<br><small>Thumbs on the two sticks, index fingers on the LT / RT handles at the top.</small><br><button type="button" class="tbtn ghost" id="tPage">Settings instead</button></div></div>
       </div>
@@ -310,9 +317,14 @@
           <tr><td>Right thumb</td><td>Bend the tunnel (the grid on your nose), any way; further = shorter and fatter</td></tr>
           <tr><td><b>LT</b> handle: drag down</td><td>Shorten the tunnel</td></tr>
           <tr><td><b>RT</b> handle: tap</td><td>Form the tunnel and ride it; tapped late in a ride (Time L5), Chain Dig: the next tunnel from the far mouth</td></tr>
-          <tr><td><b>Y</b> button (right edge)</td><td>Lookout (Charge): mark crystals, see every rival's reticle and next ring</td></tr>
-          <tr><td><b>LB</b> button</td><td>Hardened Bridge (Mass): arm the next tunnel to set as a prism tube (tap again to disarm)</td></tr>
-          <tr><td><b>B</b> button</td><td>Cave-in (Space): collapse your standing tunnel now, destroying the prisms near it</td></tr>
+          <tr class="kit-r8-row"><td><b>Y</b> button (right edge)</td><td>Lookout (Charge): mark crystals, see every rival's reticle and next ring</td></tr>
+          <tr class="kit-r8-row"><td><b>LB</b> button</td><td>Hardened Bridge (Mass): arm the next tunnel to set as a prism tube (tap again to disarm)</td></tr>
+          <tr class="kit-r8-row"><td><b>B</b> button</td><td>Cave-in (Space): collapse your standing tunnel now, destroying the prisms near it</td></tr>
+          <tr class="kit-gm-row"><td><b>Y</b> button (right edge)</td><td>Sentinel mode (Charge): on, each new tunnel leaves a sentinel at its way in (3 at once, 6 at L5)</td></tr>
+          <tr class="kit-gm-row"><td><b>LB</b> button: hold</td><td>The pilot sight, FLUME: every soliton outlined, where it leads and how long it is</td></tr>
+          <tr class="kit-m-row"><td><b>B</b> button</td><td>Cave-in (the Mix, Space L5): your nearest soliton fires out all it holds and collapses; a rival riding it loses petals</td></tr>
+          <tr class="kit-g-row"><td><b>SEAT</b> button, or a two-finger swipe</td><td>Swap seat: the flyer, then each sentinel (its perched view; the flyer's AI flies on)</td></tr>
+          <tr class="kit-g-row"><td>Tap, in a sentinel seat</td><td>A prism in the guard: shielded (any domain). A rival: zapped. <b>Y</b> there: the hop (ride its soliton out as the flyer)</td></tr>
           <tr><td>Start · Stop · Back · ✕ (top bar)</td><td>Start or go again · stop and watch · back to the start line · back to the settings</td></tr>
         </tbody></table></div>
       </div>
@@ -325,10 +337,18 @@
           <tr><td>Right stick</td><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Bend the tunnel any way: further over = more bend, shorter and fatter</td></tr>
           <tr><td><b>LT</b></td><td><kbd>J</kbd> or <kbd>Left Shift</kbd></td><td>Shorten the tunnel (a key ramps to full)</td></tr>
           <tr><td><b>RT</b>: press</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td>Form the tunnel (once the reticle is 60% grown) and ride it; out with the speed you went in with</td></tr>
-          <tr><td><b>RT</b> late in a ride</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td><b>Chain Dig</b> (Time L5): from <i>chainShare</i> of the way through, the next tunnel forms from the far mouth and you go straight in at throat speed</td></tr>
-          <tr><td><b>Y</b></td><td><kbd>E</kbd></td><td><b>Lookout</b> (Charge): for a few seconds, mark every crystal in reach and see every rival's reticle and next ring through anything; L5 Alarm Call draws the crystals to you</td></tr>
-          <tr><td><b>LB</b></td><td><kbd>Q</kbd></td><td><b>Hardened Bridge</b> (Mass): arm the next tunnel (press again to disarm); its bridge sets as a prism tube others cannot cross. L5: shielded</td></tr>
-          <tr><td><b>B</b></td><td><kbd>F</kbd></td><td><b>Cave-in</b> (Space): your standing tunnel collapses now and destroys every prism near it; L5 Burial: a rival inside it loses a petal and is silenced (never pushed)</td></tr>
+          <tr class="kit-r8-row"><td><b>RT</b> late in a ride</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td><b>Chain Dig</b> (Time L5): from <i>chainShare</i> of the way through, the next tunnel forms from the far mouth and you go straight in at throat speed</td></tr>
+          <tr class="kit-r8-row"><td><b>Y</b></td><td><kbd>E</kbd></td><td><b>Lookout</b> (Charge): for a few seconds, mark every crystal in reach and see every rival's reticle and next ring through anything; L5 Alarm Call draws the crystals to you</td></tr>
+          <tr class="kit-r8-row"><td><b>LB</b></td><td><kbd>Q</kbd></td><td><b>Hardened Bridge</b> (Mass): arm the next tunnel (press again to disarm); its bridge sets as a prism tube others cannot cross. L5: shielded. <b>Conflicts</b>: LB is the pilot sight on every vessel now</td></tr>
+          <tr class="kit-r8-row"><td><b>B</b></td><td><kbd>F</kbd></td><td><b>Cave-in</b> (Space): your standing tunnel collapses now and destroys every prism near it; L5 Burial: a rival inside it loses a petal and is silenced (never pushed)</td></tr>
+          <tr class="kit-gm-row"><td><b>Y</b></td><td><kbd>F</kbd> (or <kbd>E</kbd>)</td><td><b>Sentinel mode</b> (Charge), on / off: each new tunnel leaves a sentinel at its way in (3 at once, 6 at L5; the oldest retires with its soliton). It zaps rivals in its guard and shields your own prisms there</td></tr>
+          <tr class="kit-gm-row"><td><b>LB</b>: hold</td><td><kbd>Q</kbd>: hold</td><td><b>The pilot sight, FLUME</b>: every soliton, whoever made it, outlined through anything: its line, its two mouths, where it leads and how long it is</td></tr>
+          <tr class="kit-gm-row"><td>Fly into a mouth</td><td></td><td><b>Ride any soliton</b>, anyone's: in at its way in, along it, out on its last heading (Time: a faster ride)</td></tr>
+          <tr class="kit-m-row"><td><b>RT</b> late in a ride</td><td><kbd>L</kbd> or <kbd>Right Shift</kbd></td><td><b>Chain Dig</b> (the Mix, Time L5): from <i>mixChainShare</i> of the way through, the next tunnel forms from the far mouth</td></tr>
+          <tr class="kit-m-row"><td><b>B</b></td><td><kbd>B</kbd></td><td><b>Cave-in</b> (the Mix, Space L5): your nearest soliton fires out everything it holds at once and collapses (its sentinel with it); a rival riding it loses petals and is silenced (never pushed)</td></tr>
+          <tr class="kit-g-row"><td><b>D-pad</b> left / right</td><td><kbd>[</kbd> <kbd>]</kbd></td><td><b>Swap seat</b> (Garrett's crew): the flyer, then each sentinel; in a sentinel the flyer's AI flies on (the arrows still bend the reticle when you fly)</td></tr>
+          <tr class="kit-g-row"><td>Right stick, <b>RT</b></td><td>Click, or <kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd> and <kbd>Shift</kbd></td><td><b>In a sentinel seat</b>: aim the cursor and act: a prism in the guard is shielded (any domain), a rival is zapped</td></tr>
+          <tr class="kit-g-row"><td><b>Y</b> in a sentinel seat</td><td><kbd>F</kbd></td><td><b>The hop</b>: ride its soliton out as the flyer; the old flyer becomes a sentinel at a new soliton its AI shapes</td></tr>
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running)</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
           <tr><td><b>❚❚ Pause</b> on the stage</td><td><kbd>P</kbd></td><td>Pause: the Meerkat halts and the clock pauses while the world carries on; press again to resume</td></tr>
@@ -437,19 +457,50 @@
         </div>
         <p class="src">The course is picked in <b>Game Config</b> (Intensity): <b>Warpline</b> (the default), the Meerkat's Time race, 5 rings a lap; or the Stoat studio's stand-ins, <b>Circuit</b> (8 rings on a circle) and <b>Hairpins</b> (8 rings that alternate direction, then a long straight home).</p>
         <div class="btns"><button class="pick" type="button" data-reset="flight">Reset to shipped</button></div></details>
-      <details class="card" id="grp-abCharge" open><summary>Ability · Charge · Lookout <small>Y · lab</small></summary>
+      <details class="card" id="grp-kit" open><summary>Kit <small>every Meerkat in the race flies it · lab</small></summary>
+        <p class="abnote" id="kitDesc"></p><div class="rows"></div>
+        <div class="tablewrap"><table class="keys kitdec"><thead><tr><th>Decision</th><th>Garrett's kit</th><th>The Mix (our recommendation)</th></tr></thead><tbody>
+          <tr><td>D1 wormhole</td><td>Space: the soliton. Time: a passive faster ride; L5 Boost out</td><td>The same, but Time L5 is round 8's Chain Dig</td></tr>
+          <tr><td>D2 Charge</td><td>Sentinel mode on Y (3, 6 at L5): zaps, shields your prisms; sentinels are seats</td><td>Sentinel mode without seats, every sentinel AI-guarded; a rival in your guard is marked for you</td></tr>
+          <tr><td>D3 Mass</td><td>The exit portal: six small prisms, danger at L5</td><td>The same (our Hardened Bridge is removed)</td></tr>
+          <tr><td>D4 Space</td><td>Swallow and fire; L5 open</td><td>The same, plus L5 Cave-in on B (fire out all it holds; Burial on a rider)</td></tr>
+          <tr><td>D5 diameter</td><td>Surface area, a 0.5 u safety floor</td><td>Surface area, the throat held 3 u to 25 u</td></tr>
+          <tr><td>D6 seats</td><td>The crew: swap, the perched seat, the hop; the meerkat you sit in holds the elements</td><td>None: the flyer holds them; sentinels die of any element hit</td></tr>
+          <tr><td>LB</td><td colspan="2">The pilot sight, FLUME, in both: hold it and every soliton is outlined, where it leads and how long it is</td></tr>
+        </tbody></table></div>
+        <p class="src">Prototypes for Yash to fly and judge; nothing here reaches Unity without his say-so, and Garrett's design is his to change (his branch, <code>origin/cece/lucid-brown-ykcmhu</code>, <code>Docs/Studios/MEERKAT.md</code>). Where his design left a choice open, the tooltip says "open in Garrett's design" and the page takes the simplest reading. Changing the kit starts a new race.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="kit">Reset</button></div></details>
+      <details class="card" id="grp-kWorld"><summary>Kits · prisms <small>plain, shielded, super-shielded · lab</small></summary><div class="rows"></div>
+        <p class="src">In Garrett's kit and the Mix the world carries seeded prisms round the race line beside the field (the same on every load for a course): <b>plain</b> (blue), <b>shielded</b> (pale) and <b>super-shielded</b> (gold, never moved). A soliton swallows them (and the field's) at its way in and fires them out of its way out as moving prisms: two plain ones that meet both go, scored to the soliton's maker; a shielded one bounces (<code>Docs/PRISM_MOTION.md</code> 1a). Mass is moved, never deleted, but for the plain pair a hit destroys.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="kWorld">Reset</button></div></details>
+      <details class="card" id="grp-kSentinel" open><summary>Kit · Charge · Sentinel mode <small>Y · Garrett's and the Mix · lab</small></summary><div class="rows"></div>
+        <p class="src"><b>Y</b> toggles Sentinel mode. On, each tunnel you make leaves a <b>sentinel</b> at its way in: an afterimage of the Meerkat standing up on watch. Its soliton stands as long as it does. With the pool used up the oldest retires, and its soliton with it. In its <b>guard</b> (<i>guardShare</i> x the opening radius) it <b>zaps</b> rival vessels, knocking out <i>zapPetalsL0</i> to <i>zapPetalsL10</i> of a petal a zap by Charge (sub-petal ticks: whole petals leave as ejected crystals, and the hit silences its victim for what it is worth), and zaps your own domain's plain prisms <b>shielded</b>. An empty sentinel's AI zaps <i>aiZapRate</i> a second; in Garrett's kit you can sit in one and tap.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="kSentinel">Reset</button></div></details>
+      <details class="card" id="grp-kSoliton" open><summary>Kit · Space · the soliton <small>RT · surface area, swallow and fire · lab</small></summary><div class="rows"></div>
+        <p class="src">The wormhole is a <b>soliton</b>: a standing tunnel <b>anyone rides</b>. Space sets its <b>surface area</b> (<i>areaL0</i> to <i>areaL10</i>), so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat (the mouth stays 3.25 x the throat). It <b>swallows</b> prisms within <i>swallowShare</i> x the opening radius of its way in (shielded too, never super-shielded), carries them at <i>carrySpeed</i>, and fires them out of its way out at <i>fireSpeed</i>, gliding to rest over <i>fireGlideSeconds</i>.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="kSoliton">Reset</button></div></details>
+      <details class="card" id="grp-kPortal" open><summary>Kit · Mass · exit portal <small>passive · lab</small></summary><div class="rows"></div>
+        <p class="src">Once per soliton, as it forms: six small prisms of its maker's domain on a regular hexagon square to the way out, <i>portalShare</i> x the exit radius out, each laid along its edge. Mass sets their size; at Mass L5 they are <b>danger prisms</b> (a rival touching one loses <i>dangerPetals</i>). Mass is conserved, so the count is kept small.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="kPortal">Reset</button></div></details>
+      <details class="card" id="grp-kTime" open><summary>Kit · Time · the rush <small>passive · lab</small></summary><div class="rows"></div>
+        <p class="src">Every Meerkat rides <b>every</b> soliton faster, its own or anyone's: the throat's multiplier x <i>rushL0</i> to <i>rushL10</i> by Time. <b>Garrett's L5, Boost out</b>: out of every soliton at <i>boostOut</i> x the exit multiplier, easing back to cruise. (The Mix's Time L5 is Chain Dig instead.)</p>
+        <div class="btns"><button class="pick" type="button" data-reset="kTime">Reset</button></div></details>
+      <details class="card" id="grp-kMix" open><summary>Kit · the Mix's own <small>floor and ceiling, Chain Dig, Cave-in, alarm · lab</small></summary><div class="rows"></div>
+        <p class="src">Only the Mix reads these. The throat is held between <i>throatFloorDiameter</i> and <i>throatCeilingDiameter</i>. <b>Time L5, Chain Dig</b> (round 8): RT from <i>mixChainShare</i> of a ride digs the next tunnel from the far mouth, at throat speed. <b>Space L5, Cave-in</b> on B (round 8): your nearest soliton fires out everything it holds at once and collapses; a rival riding it takes a scored hit (<i>mixBurialPetals</i>, never pushed). <b>The alarm</b> (round 8 Lookout's job): a rival entering any of your sentinels' guards is marked for you for <i>mixAlarmSeconds</i>.</p>
+        <div class="btns"><button class="pick" type="button" data-reset="kMix">Reset</button></div></details>
+      <details class="card" id="grp-abCharge" open><summary>Round 8 (archived) · Charge · Lookout <small>Y · flies in Round 8 only</small></summary>
         <p class="abnote" id="abNote-abCharge"></p><div class="rows"></div>
         <p class="src"><b>Y</b> sends a pulse: for <i>lookoutSeconds</i> every crystal within <i>lookoutReach</i> is marked, and you see every rival's reticle and its next ring, through anything. <b>L5 Alarm Call</b>: the crystals inside the reach are drawn to you (<i>alarmPullSpeed</i>), and your team-mates see the marks too. Then <i>lookoutCooldownSeconds</i>. A proposal: no number here is in the game.</p>
         <div class="btns"><button class="pick" type="button" data-reset="abCharge">Reset</button></div></details>
-      <details class="card" id="grp-abMass" open><summary>Ability · Mass · Hardened Bridge <small>LB · lab</small></summary>
+      <details class="card" id="grp-abMass" open><summary>Round 8 (archived) · Mass · Hardened Bridge <small>LB · flies in Round 8 only</small></summary>
         <p class="abnote" id="abNote-abMass"></p><div class="rows"></div>
         <p class="src"><b>LB arms the next tunnel</b> (press again to disarm; the Mass icon shows ARMED). That tunnel's spindle bridge sets as real prisms: a tube lasting <i>wallSeconds</i> (after the tunnel itself has collapsed) that no other team can cross through its wall; they go round, and you and your team are never stopped by it. <i>wallPrismDensity</i> sets how many prisms make it. <b>L5 Shielded Bridge</b>: its prisms are shielded, immune to Cave-in and drawn shielded (pale). Why a toggle and not LB held with RT: RT is pulled while the right thumb is bending the reticle, so a chord asks both index fingers to land in the same instant (and on touch RT is a drag handle); a toggle is one press any time before, and the HUD says what the next RT will make.</p>
         <div class="btns"><button class="pick" type="button" data-reset="abMass">Reset</button></div></details>
-      <details class="card" id="grp-abSpace" open><summary>Ability · Space · Cave-in <small>B · lab</small></summary>
+      <details class="card" id="grp-abSpace" open><summary>Round 8 (archived) · Space · Cave-in <small>B · flies in Round 8 only</small></summary>
         <p class="abnote" id="abNote-abSpace"></p><div class="rows"></div>
         <p class="src"><b>B</b> collapses your standing tunnel now (not while you ride it): the bridge implodes to its centre line, and the collapse destroys every prism within <i>caveInReach</i> of the tube along its whole length, the field's and any unshielded hardened wall's (yours too). <b>L5 Burial</b>: a rival inside or touching the tunnel takes a scored hit: a petal lost and its abilities silenced (harmless) for <i>burialSilenceSeconds</i>. Nobody is ever pushed (PvP is petals only). Then <i>caveInCooldownSeconds</i>.</p>
         <div class="btns"><button class="pick" type="button" data-reset="abSpace">Reset</button></div></details>
-      <details class="card" id="grp-abTime" open><summary>Ability · Time · the wormhole <small>RT · lab upgrade</small></summary>
+      <details class="card" id="grp-abTime" open><summary>Round 8 (archived) · Time · the wormhole <small>RT · its Chain Dig flies in Round 8</small></summary>
         <p class="abnote" id="abNote-abTime"></p><div class="rows"></div>
         <p class="src">The wormhole (rounds 1-5, in the game) is the Time ability; its numbers are in Play Style Config. <b>L5 Chain Dig</b> (proposal): from <i>chainShare</i> of the way through a tunnel you ride, <b>RT</b> forms the next tunnel from its far mouth, bent by the right stick and LT as the reticle would be, and you go straight into it at throat speed (the ride stays at its throat speed through the join, then eases back to your entry speed). The tunnel behind you collapses as you leave it.</p>
         <div class="btns"><button class="pick" type="button" data-reset="abTime">Reset</button></div></details>
@@ -554,6 +605,37 @@
     timeOn: 1, timeLevel: 5, chainShare: 0.7,
     // the AI's use of the four (input-only: it presses Y, LB, B and RT like a player)
     aiNewAbilities: 1,
+    // ---- round 15 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you
+    // recommend"): the KIT every Meerkat in the race flies - 0 Off (no kit: the wormhole alone, the page as before round
+    // 15 with round 8's abilities switched off), 1 Garrett's kit (his design, origin/cece/lucid-brown-ykcmhu,
+    // Docs/Studios/MEERKAT.md "Garrett's direction: the Meerkats and the soliton"), 2 the Mix (Garrett's with our changes,
+    // one per decision), 3 Round 8 (archived, the round-8 proposals above, unchanged). LAB-ONLY, every key below: no
+    // MeerkatWormholeConfig field, nothing in Tools/Build/studio_to_unity/meerkat.json, nothing for Unity without Yash's say-so.
+    kit: 1,
+    // the kits' element levels (L0-L10; L5 and up unlocks each element's upgrade)
+    kChargeLevel: 5, kMassLevel: 5, kSpaceLevel: 5, kTimeLevel: 5,
+    // Charge, Sentinel mode (Y): a sentinel at each new tunnel's way in, from a pool of sentinelPool (sentinelPoolL5 at L5);
+    // its guard is guardShare x the opening radius; an empty sentinel's AI zaps aiZapRate a second; a zap knocks out
+    // zapPetalsL0 -> zapPetalsL10 of a petal by the Charge level (Garrett's starting point: 0.1 -> 0.25)
+    sentinelPool: 3, sentinelPoolL5: 6, guardShare: 1.5, aiZapRate: 5, zapPetalsL0: 0.1, zapPetalsL10: 0.25,
+    // Space, the soliton: its surface area, areaL0 -> areaL10 by the Space level (b = A / (2 pi L g(k))); it swallows prisms
+    // within swallowShare x the opening radius of its way in, carries them at carrySpeed, fires them out at fireSpeed; they
+    // glide to rest over fireGlideSeconds; a shielded one bounces keeping bounceRestitution of the closing speed
+    areaL0: 6000, areaL10: 18000, swallowShare: 1.5, carrySpeed: 150, fireSpeed: 120, fireGlideSeconds: 3, bounceRestitution: 0.6,
+    // Mass, the exit portal: six prisms on a hexagon portalShare x the exit radius out, sized portalSizeL0 -> portalSizeL10;
+    // at Mass L5 they are danger prisms (a rival touching one takes dangerPetals)
+    portalShare: 1.5, portalSizeL0: 0.4, portalSizeL10: 0.9, dangerPetals: 0.5,
+    // Time, the rush: the ride's throat multiplier x rushL0 -> rushL10 by the Time level; Garrett's L5 Boost out leaves every
+    // soliton at boostOut x the exit multiplier
+    rushL0: 1, rushL10: 1.4, boostOut: 1.5,
+    // the Mix's own: the throat held between throatFloorDiameter and throatCeilingDiameter; Chain Dig from mixChainShare of a
+    // ride; Cave-in's cooldown and its Burial (petals); the alarm (a rival in your guard) lasts mixAlarmSeconds
+    throatFloorDiameter: 3, throatCeilingDiameter: 25, mixChainShare: 0.7, mixCaveCooldownSeconds: 8, mixBurialPetals: 1, mixAlarmSeconds: 4,
+    // the kits' world: worldPrisms seeded prisms within worldSpread u of the race line (worldShielded of them shielded,
+    // worldSuper super-shielded), beside the field, so a soliton has mass to swallow and fire
+    worldPrisms: 900, worldSpread: 60, worldShielded: 0.25, worldSuper: 0.1,
+    // the AI's use of the kit (input-only), and its hop rule (Garrett's kit: hop to one of its sentinels when that saves aiHopGain s)
+    aiKit: 1, aiHopGain: 1.5,
   };
   const SPEC = [
     ['shape', 'reticleAhead', 'The reticle rides this far ahead of the nose (u)', 0, 100, 1],
@@ -645,7 +727,45 @@
     ['abTime', 'timeOn', 'The wormhole (RT) on', 0, 1, 1, 'toggle'],
     ['abTime', 'timeLevel', 'Time level (L5+: Chain Dig)', 0, 10, 1],
     ['abTime', 'chainShare', 'L5 Chain Dig: RT digs on from this share of the ride', 0.3, 0.95, 0.05],
-    ['ai', 'aiNewAbilities', 'AI uses the new abilities (Y, LB, B, Chain Dig)', 0, 1, 1, 'toggle'],
+    ['ai', 'aiNewAbilities', 'Round 8: AI uses its abilities (Y, LB, B, Chain Dig)', 0, 1, 1, 'toggle'],
+    // round 15, the kits (lab-only). A 7th field 'select' draws the row as a dropdown (KIT_NAMES).
+    ['kit', 'kit', 'Kit', 0, 3, 1, 'select'],
+    ['kit', 'kChargeLevel', 'Charge level (L5+: six sentinels)', 0, 10, 1],
+    ['kit', 'kMassLevel', 'Mass level (L5+: danger portal)', 0, 10, 1],
+    ['kit', 'kSpaceLevel', 'Space level (the soliton\'s area; Mix L5+: Cave-in)', 0, 10, 1],
+    ['kit', 'kTimeLevel', 'Time level (the rush; L5+: Boost out / Mix Chain Dig)', 0, 10, 1],
+    ['kSentinel', 'sentinelPool', 'Sentinels at once', 1, 6, 1],
+    ['kSentinel', 'sentinelPoolL5', '...at Charge L5', 1, 12, 1],
+    ['kSentinel', 'guardShare', 'Guard (× the opening radius)', 0.5, 4, 0.1],
+    ['kSentinel', 'aiZapRate', 'An empty sentinel\'s AI zaps (a second)', 0, 12, 0.5],
+    ['kSentinel', 'zapPetalsL0', 'A zap knocks out, Charge L0 (petal)', 0, 1, 0.01],
+    ['kSentinel', 'zapPetalsL10', '...at Charge L10 (petal)', 0, 1, 0.01],
+    ['kSoliton', 'areaL0', 'Surface area, Space L0 (u²)', 1000, 60000, 500],
+    ['kSoliton', 'areaL10', '...at Space L10 (u²)', 1000, 60000, 500],
+    ['kSoliton', 'swallowShare', 'Swallows prisms within (× the opening radius)', 0, 4, 0.1],
+    ['kSoliton', 'carrySpeed', 'Carries them through at (u/s)', 20, 600, 10],
+    ['kSoliton', 'fireSpeed', 'Fires them out at (u/s)', 0, 400, 5],
+    ['kSoliton', 'fireGlideSeconds', '...gliding to rest over (s)', 0.2, 10, 0.1],
+    ['kSoliton', 'bounceRestitution', 'A shielded prism bounces, keeping (× its speed)', 0, 1, 0.05],
+    ['kPortal', 'portalShare', 'Exit portal: the hexagon out at (× the exit radius)', 1, 4, 0.1],
+    ['kPortal', 'portalSizeL0', 'Its prisms\' size, Mass L0 (× a prism)', 0.1, 2, 0.05],
+    ['kPortal', 'portalSizeL10', '...at Mass L10', 0.1, 2, 0.05],
+    ['kPortal', 'dangerPetals', 'Mass L5 danger prism: a rival touching one loses (petal)', 0, 2, 0.05],
+    ['kTime', 'rushL0', 'The rush: the throat\'s speed ×, Time L0', 0.5, 3, 0.05],
+    ['kTime', 'rushL10', '...at Time L10', 0.5, 3, 0.05],
+    ['kTime', 'boostOut', 'Garrett\'s L5 Boost out: out of every soliton at (× the exit)', 1, 3, 0.05],
+    ['kMix', 'throatFloorDiameter', 'Mix: the throat\'s floor (diameter, u)', 0.5, 40, 0.5],
+    ['kMix', 'throatCeilingDiameter', 'Mix: the throat\'s ceiling (diameter, u)', 1, 120, 1],
+    ['kMix', 'mixChainShare', 'Mix Time L5 Chain Dig: RT digs on from this share of a ride', 0.3, 0.95, 0.05],
+    ['kMix', 'mixCaveCooldownSeconds', 'Mix Space L5 Cave-in: cooldown (s)', 1, 40, 0.5],
+    ['kMix', 'mixBurialPetals', '...a rival riding it loses (petals)', 0, 3, 0.05],
+    ['kMix', 'mixAlarmSeconds', 'Mix alarm: a rival in your guard is marked for (s)', 0, 15, 0.5],
+    ['kWorld', 'worldPrisms', 'Prisms round the race line (kits only)', 0, 2000, 50],
+    ['kWorld', 'worldSpread', '...within (u of the line)', 10, 250, 5],
+    ['kWorld', 'worldShielded', '...shielded (share)', 0, 1, 0.05],
+    ['kWorld', 'worldSuper', '...super-shielded (share)', 0, 1, 0.05],
+    ['ai', 'aiKit', 'Kits: AI uses the kit (Y, B, rides any soliton)', 0, 1, 1, 'toggle'],
+    ['ai', 'aiHopGain', 'Garrett\'s kit: AI hops when it saves (s)', 0, 10, 0.5],
   ];
 
   // ================= P and BP =================
@@ -653,7 +773,40 @@
   // Meerkat has none yet, so P is BP.
   const RANGE = {}; for (const r of SPEC) RANGE[r[1]] = [r[3], r[4]];
   function blendInto(out, base) { return Object.assign(out, base); }
-  function recomputeP() { blendInto(P, BP); }
+  // round 15: the kit's numbers ride on top of the sliders (kitOverrides), for your hull and every rival (pilotP)
+  function recomputeP() { blendInto(P, BP); kitOverrides(P); }
+  // ---- round 15, the kits: which one flies (P.kit, the Kit dropdown in Play Style Config) and what it changes in the
+  // numbers every pilot flies. The rest of the kits is in "round 15: the KITS" below. Off (0) and Round 8 (3) leave every
+  // number as it was before round 15: their headless races are byte-identical to the page before it.
+  const KIT_NAMES = ['Off', "Garrett's kit", 'Mix (our recommendation)', 'Round 8 (archived)'];
+  const KIT_KEYS = ['off', 'garrett', 'mix', 'r8'];
+  const kitOf = (Pv) => Math.round((Pv || P).kit || 0);
+  const isR8 = (Pv) => kitOf(Pv) === 3, isG = (Pv) => kitOf(Pv) === 1, isMix = (Pv) => kitOf(Pv) === 2;
+  const isGM = (Pv) => { const k = kitOf(Pv); return k === 1 || k === 2; };
+  const lerpLv = (a, b, lv) => a + (b - a) * clamp01(lv / 10);   // an ElementalFloat: its L0 value to its L10 value
+  // Time (Garrett): a passive faster ride through EVERY soliton - the throat's multiplier x the rush's ElementalFloat; his
+  // Time L5 is Boost out (out of every soliton at boostOut x the exit multiplier). The Mix keeps the rush; its Time L5 is
+  // round 8's Chain Dig instead.
+  function kitOverrides(o) {
+    const k = Math.round(o.kit || 0); if (k !== 1 && k !== 2) return o;
+    o.rideMidMultiplier = o.rideMidMultiplier * Math.max(0.05, lerpLv(o.rushL0, o.rushL10, o.kTimeLevel));
+    if (k === 1 && o.kTimeLevel >= 5) o.rideExitMultiplier = o.rideExitMultiplier * Math.max(1, o.boostOut);
+    return o;
+  }
+  // Space (Garrett): the soliton keeps one SURFACE AREA A (areaL0 -> areaL10 by the Space level), so a long tunnel is thin
+  // and a short one fat. The wall is the hyperboloid with the mouth a fixed k x the throat (k = the shortest tunnel's
+  // mouthDiameter / throatDiameter, 26 / 8 = 3.25): A = 2 pi L b g(k), g(k) = (k + asinh(sqrt(k^2-1)) / sqrt(k^2-1)) / 2, so
+  // b = A / (2 pi L g(k)). Garrett's kit: unclamped but for a 0.5 u diameter safety floor. The Mix: the throat's diameter
+  // held between throatFloorDiameter and throatCeilingDiameter (3 u and 25 u), so a short tunnel is not huge nor a long one
+  // a pinhole. Returns radii (b, M), as shapeFor does.
+  function kitThroat(Pv, L) {
+    const k = Math.max(1.05, Pv.mouthDiameter / Math.max(0.5, Pv.throatDiameter)), q = Math.sqrt(k * k - 1);
+    const g = 0.5 * (k + Math.asinh(q) / q), A = Math.max(1, lerpLv(Pv.areaL0, Pv.areaL10, Pv.kSpaceLevel));
+    let b = A / (2 * Math.PI * Math.max(10, L) * g);
+    if (Math.round(Pv.kit) === 2) { const lo = 0.5 * Math.max(0.5, Pv.throatFloorDiameter); b = Math.max(lo, Math.min(Math.max(lo, 0.5 * Pv.throatCeilingDiameter), b)); }
+    b = Math.max(0.25, b);
+    return { b, M: k * b, A, k, g };
+  }
 
   // ================= per-viewer state (convenience only) =================
   const LS_KEY = 'meerkat-studio-v1';
@@ -860,6 +1013,7 @@
     NG = gates.length;
     placeField(curve);
     placeCrystals(curve);
+    kitPlaceWorld(curve);   // round 15: the kits' seeded prisms (a separate seed: Off and Round 8 draw nothing from it)
     $('seedOut').textContent = seed;
   }
   // ---- Warpline (round 8: the Meerkat's Time race): SlingshotCourse.ForIntensity's circuit with WarplineCourseSource's
@@ -1085,6 +1239,7 @@
     myPair = null; snapCam = true; ai.tracking = -1; ai.misjudged = false; ai.unnoticed = false; ai.mistakes = 0; ai.gHold = 0; ai.gShaping = false;
     resetRivals();
     PIL = {}; walls = []; pulses = []; lastCave = null; reviveField(); dyingPrisms.length = 0; resetCrystals();   // round 8: every race starts from the same world
+    kitReset();   // round 15: the kits' prisms, sentinels and seats, as the race starts
     if (!batching) showOverlay(); showStopBtn();
   }
   // Stop (/vessel-studio D18): end the run and go back to the start, and STAY there until Play. spawn() alone only
@@ -1145,6 +1300,7 @@
     else {
       tv2.copy(fwd).multiplyScalar(speed); hull.position.addScaledVector(tv2, dt); velNow.copy(tv2);
       if (walls.length) wallBlock(p0);   // round 8: another team's hardened bridge is a wall
+      if (isGM()) kitTryRide();          // round 15: fly into any standing soliton's way in and it carries you
       if (raceStats && race === 'running') { const v = speed; raceStats.top = Math.max(raceStats.top, v); raceStats.dist += v * dt; }
     }
     if (race === 'running') {
@@ -1176,7 +1332,8 @@
   // Per pilot: ftLive.ret (the reticle) and ftLive.gate = { pair, state: tube | done, s (along it) }; a made tunnel's
   // shape lives on its pair (pr.wh), so every pilot's tunnel warps the view.
   // ab (round 8): this pilot's abilities - when each is ready again (simT), Mass armed, the lookout's end, a Chain Dig asked for
-  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false } }; }
+  // kit (round 15): Sentinel mode on or off, Cave-in's cooldown (the Mix), the last soliton ridden (not re-entered at once)
+  function newFtLive() { return { gate: null, ret: null, retGhost: null, retAge: 0, ab: { readyY: 0, readyLB: 0, readyB: 0, armed: false, lookUntil: -1, lookAt: -1, alarm: false, chainReq: false }, kit: { sentinel: false, readyB: 0, lastRide: null, lastRideT: -9 } }; }
   const whA = new V3(), whB = new V3(), whC = new V3(), whN = new V3(), whBn = new V3(), whQ = new THREE.Quaternion();
   // The shape the right stick and LT ask for (round 7): a straight SHAFT, shaftMin with LT released to shaftMax squeezed,
   // then a BEND round bendRadius, as far as the right stick is pushed up to bendMaxDegrees, the way it is pushed. Its size
@@ -1193,7 +1350,8 @@
     // mouthDiameter at the shortest tunnel to throatDiameterMax / mouthDiameterMax at the longest the sticks can ask for
     const L = Math.max(10, S + R * theta), Lmin = Math.max(10, Pv.shaftMin), Lmax = Math.max(Lmin + 1, Math.max(Pv.shaftMin, Pv.shaftMax) + R * Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180);
     const grow = clamp01((L - Lmin) / (Lmax - Lmin)), lerpD = (a, z) => a + (Math.max(a, z) - a) * grow;
-    const b = Math.max(0.5, 0.5 * lerpD(Pv.throatDiameter, Pv.throatDiameterMax)), M = Math.max(b, 0.5 * lerpD(Pv.mouthDiameter, Pv.mouthDiameterMax));
+    let b = Math.max(0.5, 0.5 * lerpD(Pv.throatDiameter, Pv.throatDiameterMax)), M = Math.max(b, 0.5 * lerpD(Pv.mouthDiameter, Pv.mouthDiameterMax));
+    if (isGM(Pv)) { const a = kitThroat(Pv, L); b = a.b; M = a.M; }   // round 15, the kits: Space sets the surface area (Garrett)
     return { L, S, R, b, M, theta, fat: t, m, dx: mRaw > 1e-6 ? tx / mRaw : 0, dy: mRaw > 1e-6 ? ty / mRaw : 0 };
   }
   const whShape = (lq, sx, sy) => shapeFor(P, lq, sx, sy);
@@ -1243,7 +1401,7 @@
       const h = 0.5 * wh.L * easeOutC(wh.grow); wh.s0 = 0.5 * wh.L - h; wh.s1 = 0.5 * wh.L + h;
       if (wh.grow >= 1) { wh.s0 = 0; wh.s1 = wh.L; wh.phase = wh.out ? 'stay' : 'open'; }
     } else if (wh.phase === 'stay') {
-      wh.stay += dt; if (wh.stay >= Math.max(0, P.staySeconds)) wh.phase = 'collapse';
+      if (!wh.held) { wh.stay += dt; if (wh.stay >= Math.max(0, P.staySeconds)) wh.phase = 'collapse'; }   // round 15: a soliton lasts as long as its sentinel
     } else if (wh.phase === 'cavein') {   // round 8, Cave-in: the whole bridge implodes to its centre line, then fades
       wh.cave = Math.max(0, wh.cave - dt / CAVE_S);
       if (wh.cave <= 0) { whSync(pr); gateFade(pr); return; }
@@ -1266,7 +1424,7 @@
     // shortens it. Riding, it is gone; it comes back gateReticleDelay s after you are out (and at the start), rippling
     // out of its centre into the tube over gateReticleGrow s (ret.emerge 0..1) - reshapeable all the while.
     const riding = !!(ftLive.gate && ftLive.gate.state === 'tube');
-    const live = mode === 'fly' && race === 'running' && !stopped && !riding && P.timeOn > 0.5;   // round 8: Time off = no wormhole
+    const live = mode === 'fly' && race === 'running' && !stopped && !riding && P.timeOn > 0.5 && !(!curPilot && KIT.flyerDead);   // round 8: Time off = no wormhole (round 15: nor a dead flyer)
     if (live) {
       basis();
       ftLive.retAge = (ftLive.retAge || 0) + dt;
@@ -1300,7 +1458,8 @@
   // only the carrier of its two mouths' warp (setLensUniforms) and the tube's (updateTubeWarp).
   function gateFade(pr) { if (pr.dying) return; pr.dying = true; pr.dieT = 0; }   // fades out over FADE_S
   function gateCommit(r) {
-    const old = ftLive.gate; if (old && old.pair.alive && !old.pair.dying && old.pair.wh.phase !== 'collapse' && old.pair.wh.phase !== 'cavein') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }   // the last one goes back to its centre now
+    // the last one goes back to its centre now (round 15: not a soliton you only rode, nor one a sentinel holds)
+    const old = ftLive.gate; if (old && !old.kitRide && !old.pair.wh.held && old.pair.alive && !old.pair.dying && old.pair.wh.phase !== 'collapse' && old.pair.wh.phase !== 'cavein') { old.pair.wh.phase = 'collapse'; old.pair.wh.grow = 1; }
     basis();
     const vIn = Math.max(1, speed), dive = hull.position.distanceTo(r.A) / vIn;
     const wh = { A: r.A.clone(), t0: r.t0.clone(), side: r.side.clone(), L: r.L, S: r.S, R: r.R, b: r.b, M: r.M, theta: r.theta, fat: r.fat, m: r.m, s0: 0.5 * r.L, s1: 0.5 * r.L, t: 0,
@@ -1310,6 +1469,7 @@
     myPair.wh = wh; whSync(myPair);
     pairs.push(myPair);
     if (ftLive.ab.armed) makeWall(myPair);   // round 8, Mass: LB armed it, so its bridge sets as prisms
+    if (isGM()) kitSolitonMade(myPair);      // round 15: its exit portal, and a sentinel at its way in in Sentinel mode
     whQ.setFromUnitVectors(fwd, wh.t0);
     // the ride starts at the hull: it dives straight down to the mouth the reticle showed (s < 0), then into the throat
     // vIn: the speed you go in with (round 25: you come out with it too)
@@ -1352,7 +1512,9 @@
   // boost, which eases back to cruise as you fly on); the tunnel stays staySeconds, then goes back to its centre.
   function gateOut(g) {
     const wh = g.pair.wh;
-    g.state = 'done'; g.used = true; wh.out = true; if (wh.phase === 'open') wh.phase = 'stay';
+    g.state = 'done'; g.used = true;
+    if (!g.kitRide) { wh.out = true; if (wh.phase === 'open') wh.phase = 'stay'; }   // round 15: a rider leaves a standing soliton as it was
+    else kitRideOut(g);
     speed = g.vIn * Math.max(0.05, P.rideExitMultiplier);
     if (raceStats && race === 'running') raceStats.catches++;
     lastGate = { len: Math.round(wh.L), turn: Math.round(wh.theta * 180 / Math.PI) }; slingFlash = 1.6;
@@ -1368,7 +1530,9 @@
   // Every press goes through abilityPress, the one path a gamepad button, a key, a touch button and the AI all use (D4).
   // Each element's level (L0-L10) gates its upgrade at L5; scaling an ability by its level is not modelled yet.
   const CAVE_S = 0.45;   // a Cave-in's implosion, the bridge to its centre line (fixed in the studio, not a parameter)
-  const abOn = (el) => P[el + 'On'] > 0.5, abUp = (el) => abOn(el) && P[el + 'Level'] >= 5;
+  // round 15: these three abilities fly only in Round 8 (archived); Off is the kit switched off, and Garrett's kit and the
+  // Mix have their own (kitPress). The wormhole (timeOn) is every kit's.
+  const abOn = (el) => P[el + 'On'] > 0.5 && (el === 'time' || isR8()), abUp = (el) => abOn(el) && P[el + 'Level'] >= 5;
   let PIL = {};   // per pilot id: petals lost, silenced until (simT), crystals collected, the last hit (for its marker)
   function pil(id) { return PIL[id] || (PIL[id] = { petals: 0, silenceUntil: -1, crystals: 0, hitAt: -9 }); }
   const silenced = (id) => simT < pil(id).silenceUntil;
@@ -1517,8 +1681,8 @@
   // the right stick, its shaft set by LT, exactly as a reticle would be. At the far mouth the ride carries straight on
   // into it (chainOn) at throat speed, and the tunnel behind collapses.
   function chainPress() {
-    const g = ftLive.gate; if (!g || g.state !== 'tube' || g.next || !abUp('time')) return;
-    if (g.s < Math.max(0, P.chainShare) * g.pair.wh.L) return;
+    const g = ftLive.gate; if (!g || g.state !== 'tube' || g.next || !chainLive()) return;
+    if (g.s < chainShareOf(P) * g.pair.wh.L) return;
     ftLive.ab.chainReq = true;
   }
   const cdE = new V3(), cdT = new V3(), cdD = new V3(), cdQ = new THREE.Quaternion();
@@ -1535,6 +1699,7 @@
       phase: 'form', grow: 0, formT: Math.min(Math.max(0.05, P.formSeconds), Math.max(0.1, 0.9 * toMouth)), stay: 0, out: false, chained: true };
     const pr = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true); pr.wh = wh; whSync(pr); pairs.push(pr);
     if (ftLive.ab.armed) makeWall(pr);
+    if (isGM()) kitSolitonMade(pr);   // round 15 (the Mix's Chain Dig): its portal and sentinel
     g.next = pr; myPair = pr;
     if (raceStats && race === 'running') { raceStats.slings++; raceStats.chains = (raceStats.chains || 0) + 1; }
     slings++;
@@ -1542,7 +1707,8 @@
   }
   function chainOn(g) {
     const w1 = g.pair.wh, pr = g.next, wh = pr.wh;
-    w1.out = true; if (w1.phase !== 'cavein') { w1.phase = 'collapse'; w1.grow = 1; }   // one tunnel at a time: the one behind you goes
+    if (!g.kitRide) { w1.out = true; if (w1.phase !== 'cavein' && !w1.held) { w1.phase = 'collapse'; w1.grow = 1; } }   // one tunnel at a time: the one behind you goes (round 15: not one a sentinel holds, nor one you only rode)
+    else kitRideOut(g);
     basis(); whQ.setFromUnitVectors(fwd, wh.t0);
     ftLive.gate = { pair: pr, state: 'tube', s: Math.max(0, g.s - w1.L), sIn: 0, oN: 0, oB: 0, vIn: g.vIn, startHigh: true, rIn: Math.max(1e-3, wh.M), q0: whQ.clone().multiply(hull.quaternion) };
     if (raceStats && race === 'running') raceStats.catches++;
@@ -1607,11 +1773,756 @@
     return wh.nearPrisms >= 6;
   }
   function aiAbilities() {
-    if (P.aiNewAbilities <= 0.5) return;
+    if (P.aiNewAbilities <= 0.5 || !isR8()) return;   // round 15: round 8's rules fly in Round 8 (archived) only
     const ab = ftLive.ab;
     if (abOn('charge') && simT >= ab.readyY && (rivals.length || crystalsNear(hull.position, Math.max(0, P.lookoutReach)) >= 3)) abilityPress('Y');
     if (abOn('mass') && !ab.armed && simT >= ab.readyLB && rivalWithin(600)) abilityPress('LB');
     if (abOn('space') && simT >= ab.readyB) { const pr = standingTunnel(); if (pr && pr.wh.out && caveWorth(pr)) abilityPress('B'); }
+  }
+
+
+  // ================= round 15 (Yash, 2026-10-27): the KITS - Garrett's, the Mix, Round 8 (archived), Off =================
+  // Yash: "Make two variants, one with his kit only, one with a mix of his kit with the ones you recommend ... Do this for
+  // every decision ... whatever his extra features there are, add those. And remove our extra features which he already
+  // made." One KIT dropdown (Play Style Config; BP.kit: 0 Off, 1 Garrett's, 2 Mix, 3 Round 8) decides the four abilities
+  // every Meerkat in the race flies. Garrett's design is his, on his branch only: origin/cece/lucid-brown-ykcmhu,
+  // Docs/Studios/MEERKAT.md "Garrett's direction: the Meerkats and the soliton". Every key below is LAB-ONLY (no
+  // MeerkatWormholeConfig field, nothing in Tools/Build/studio_to_unity/meerkat.json): prototypes for Yash to fly and judge.
+  // Off and Round 8 run the page exactly as before round 15 (their headless races are byte-identical to it): everything
+  // here acts only while isGM() (Garrett's kit or the Mix).
+  //   Garrett's: Space = the SOLITON (the wormhole, sized by its surface area), anyone rides any soliton, it swallows
+  //   prisms at its way in and fires them out of its way out as moving prisms (Docs/PRISM_MOTION.md 1 and 1a); Charge =
+  //   SENTINEL MODE on Y (a sentinel perched at each new tunnel's way in, pool 3 / 6 at L5, zapping in sub-petal ticks,
+  //   shielding its own prisms); Mass = the passive EXIT PORTAL (six small prisms in a hexagon, danger at L5); Time = a
+  //   passive faster ride through every soliton (L5 Boost out); the dynamic-seat crew (swap seats, the sentinel seat's
+  //   perched view with click to shield / zap, the HOP); LB = the pilot sight, FLUME.
+  //   The Mix: Garrett's, with Time L5 = round 8's Chain Dig, every sentinel AI-guarded (no seats, no hop) plus round 8
+  //   Lookout's job as an alarm, Space L5 = round 8's Cave-in on B (fire out what it holds; Burial on a rider), and the
+  //   throat held between a floor and a ceiling.
+  const kitLv = (el) => Math.round(P['k' + el.charAt(0).toUpperCase() + el.slice(1) + 'Level']);
+  const SECONDS_PER_PETAL = 1;   // VesselSilenceConfig.asset secondsPerPetal: a hit silences for what it is worth (SILENCE.md)
+  const KTAU = Math.PI * 2, KP_MAX = 3000, KP_R = 2.0, GRID = 40;   // KP_R: a prism's contact sphere (the field box 1.6 x 0.55 x 4.4)
+  // Round 8's three abilities and Chain Dig answer to the kit: only Round 8 (archived) flies them; the Mix keeps Chain Dig
+  // as its Time L5. Off and Round 8 read exactly the expressions they read before round 15.
+  const chainLive = () => (isR8() ? abUp('time') : isMix() && kitLv('time') >= 5);
+  const aiChainOn = () => (isR8() ? P.aiNewAbilities > 0.5 && abUp('time') : isMix() && P.aiKit > 0.5 && kitLv('time') >= 5);
+  const chainShareOf = (Pv) => Math.max(0, isMix(Pv) ? Pv.mixChainShare : Pv.chainShare);
+  // ---- the kit's runtime: sentinels, the kit's own prisms (KIT.kp), zaps, the seat, the pilot sight ----
+  const KIT = { applied: -1, seat: null, flyerDead: false, deadT: 0, cur: { x: 0.5, y: 0.45 }, curOn: false, seatRT: false, alarm: {}, zaps: [], ejected: [], sentinels: [], sid: 0, kp: [], padLB: false, touchSight: false, miss: -9 };
+  function newKitStats() { return { zaps: 0, zapsYou: 0, harmless: 0, petalsZapped: 0, shields: 0, swallowed: 0, lifted: 0, fired: 0, destroyed: 0, kpDestroyed: 0, fieldDestroyed: 0, bounces: 0, rides: 0, rivalRides: 0, ridesOfYours: 0, hops: 0, swaps: 0, caveIns: 0, buried: 0, sentinels: 0, lost: 0, lostYours: 0, retired: 0, portals: 0, portalSkipped: 0, dangerHits: 0, alarms: 0, flyerDeaths: 0, ejected: 0, seeded: 0, solitons: 0 }; }
+  let KS = newKitStats();
+  let batchRivals = false, rivalSeedBump = 0, kitSeatPoll = false;   // a headless field race (rivals while batching); the seat's own input read
+  // the seeded prisms round the race line (Scene Config, Kits · prisms): plain, shielded and super-shielded, the same on
+  // every load for a course (/vessel-studio D3), so the soliton has mass to swallow and fire
+  let kpWorld = [];
+  function perpBasis(t, u, w) { u.set(0, 1, 0); if (Math.abs(t.y) > 0.9) u.set(1, 0, 0); u.cross(t).normalize(); w.crossVectors(t, u).normalize(); }
+  function kitPlaceWorld(curve) {
+    kpWorld = [];
+    const n = Math.round(Math.max(0, P.worldPrisms)), rnd = mulberry32(seed * 6151 + intensity * 89 + COURSE_KINDS.indexOf(courseKind) * 17 + 3);
+    const pt = new V3(), tg = new V3(), a1 = new V3(), a2 = new V3();
+    for (let i = 0; i < n; i++) {
+      const u = rnd(); curve.getPointAt(u, pt); curve.getTangentAt(u, tg); perpBasis(tg, a1, a2);
+      const ang = rnd() * KTAU, off = 6 + rnd() * Math.max(0, P.worldSpread - 6), kr = rnd();
+      const p = pt.clone().addScaledVector(a1, Math.cos(ang) * off).addScaledVector(a2, Math.sin(ang) * off);
+      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28));
+      kpWorld.push({ p, q, kind: kr < P.worldSuper ? 2 : kr < P.worldSuper + P.worldShielded ? 1 : 0 });
+    }
+  }
+  // kind: 0 plain, 1 shielded, 2 super-shielded (never moved); team: a domain key or null (neutral); by: the pilot whose
+  // soliton fired it (a hit is scored to them); tube: the soliton carrying it, ts how far along
+  function kpNew(p, q, kind, team, size, danger) { return { p: p.clone(), v: new V3(), q: q.clone(), kind, team, size, danger: !!danger, alive: true, moving: false, by: -1, tube: null, ts: 0, off: new V3(), age: 0, hit: null }; }
+  function kitReset() {
+    KIT.seat = null; KIT.flyerDead = false; KIT.deadT = 0; KIT.alarm = {}; KIT.zaps.length = 0; KIT.ejected.length = 0; KIT.sentinels.length = 0; KIT.seatRT = false; KIT.curOn = false;
+    KIT.kp = []; for (const w of kpWorld) KIT.kp.push(kpNew(w.p, w.q, w.kind, null, 1, false));
+    KS = newKitStats(); KS.seeded = KIT.kp.length; kpDirty = true; hull.visible = true; applySeatClass();
+  }
+  // ---- spatial grids: the kit's prisms (rebuilt whenever one moved) and the field (static; built once per field) ----
+  const gkey = (x, y, z) => ((Math.floor(x / GRID) + 512) * 1024 + (Math.floor(y / GRID) + 512)) * 1024 + (Math.floor(z / GRID) + 512);
+  const kpGrid = new Map(), fieldGrid = new Map(); let kpDirty = true, fieldGridKind = '';
+  function gridPut(grid, x, y, z, i) { const k = gkey(x, y, z); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(i); }
+  function gridNear(grid, p, r, fn) {
+    const x0 = Math.floor((p.x - r) / GRID), x1 = Math.floor((p.x + r) / GRID), y0 = Math.floor((p.y - r) / GRID), y1 = Math.floor((p.y + r) / GRID), z0 = Math.floor((p.z - r) / GRID), z1 = Math.floor((p.z + r) / GRID);
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) { const a = grid.get(((x + 512) * 1024 + (y + 512)) * 1024 + (z + 512)); if (a) for (let j = 0; j < a.length; j++) fn(a[j]); }
+  }
+  function kpRebuild() { kpGrid.clear(); const kp = KIT.kp; for (let i = 0; i < kp.length; i++) { const k = kp[i]; if (k.alive && !k.tube && !k.moving) gridPut(kpGrid, k.p.x, k.p.y, k.p.z, i); } kpDirty = false; }
+  // a prism come to rest (or set down) joins the grid where it is; a stale entry elsewhere is ignored by every distance test
+  function kpRest(k) { gridPut(kpGrid, k.p.x, k.p.y, k.p.z, KIT.kp.indexOf(k)); }
+  function fieldRebuild() { fieldGrid.clear(); for (let i = 0; i < NF; i++) { const j = i * 3; gridPut(fieldGrid, bp[j], bp[j + 1], bp[j + 2], i); } fieldGridKind = fieldKind; }
+  const kpNear = (p, r, fn) => { const seen = kpSeen; seen.clear(); gridNear(kpGrid, p, r, (i) => { if (seen.has(i)) return; seen.add(i); const k = KIT.kp[i]; if (k.alive && !k.tube && !k.moving && k.p.distanceTo(p) <= r) fn(k, i); }); };
+  const kpSeen = new Set();
+  // ---- the sentinels (Charge): one at each new tunnel's way in while Sentinel mode is on ----
+  const guardR = (s) => Math.max(0, P.guardShare) * s.pair.wh.M;   // Garrett: 1.5 x the opening radius
+  const zapPetals = () => Math.max(0, lerpLv(P.zapPetalsL0, P.zapPetalsL10, kitLv('charge')));   // 0.1 -> 0.25 of a petal (Garrett's start)
+  const poolOf = () => Math.max(1, Math.round(kitLv('charge') >= 5 ? P.sentinelPoolL5 : P.sentinelPool));
+  function kitAddSentinel(pr, owner, usePool) {
+    const mine = KIT.sentinels.filter((s) => s.alive && s.owner === owner);
+    if (usePool) while (mine.length >= poolOf()) {   // the pool used up: the oldest retires, and its soliton with it (never the seat you sit in)
+      const old = mine.find((s) => s !== KIT.seat); if (!old) break;
+      kitRemoveSentinel(old, 'retired'); KS.retired++; mine.splice(mine.indexOf(old), 1);
+    }
+    const wh = pr.wh, s = { id: ++KIT.sid, pair: pr, owner, team: teamOf(owner), born: simT, zt: 0, alive: true, pos: wh.A.clone().addScaledVector(wh.t0, -3) };
+    wh.held = true; pr.sentinel = s; KIT.sentinels.push(s); KS.sentinels++;
+    return s;
+  }
+  // A soliton with a sentinel stands as long as its sentinel: retired or killed, it collapses with it; a hopper leaving
+  // it rides it first, and it collapses once the hopper is out (kitRideOut).
+  function kitRemoveSentinel(s, why) {
+    if (!s.alive) return; s.alive = false;
+    const wh = s.pair.wh; wh.held = false;
+    if (why === 'hop') wh.hopRide = true; else kitCollapse(s.pair);
+    if (KIT.seat === s) { KIT.seat = null; applySeatClass(); }
+  }
+  function kitCollapse(pr) {
+    if (!pr.alive || pr.dying || !pr.wh) return; const wh = pr.wh;
+    if (wh.phase === 'collapse' || wh.phase === 'cavein') return;
+    wh.phase = 'collapse'; wh.grow = 1;
+  }
+  // A new soliton (gateCommit, chainDig): Mass sets down its exit portal; Sentinel mode leaves a sentinel at its way in.
+  function kitSolitonMade(pr) {
+    KS.solitons++; kitPortal(pr);
+    if (ftLive.kit && ftLive.kit.sentinel) kitAddSentinel(pr, curPilot, true);
+  }
+  // Mass (Garrett: "go minimal ... a worthy exit portal that signals a neat geometric signature"): once per soliton, six
+  // small prisms of its maker's domain on a regular hexagon square to the exit heading, portalShare x the exit radius out,
+  // each laid along its edge. Their size is Mass's ElementalFloat; at Mass L5 they are danger prisms (a silenced maker's
+  // come out plain, SILENCE.md).
+  const kpE = new V3(), kpT = new V3(), kpU = new V3(), kpW = new V3(), kpM4 = new THREE.Matrix4(), kpX = new V3(), kpZ = new V3();
+  function kitPortal(pr) {
+    const wh = pr.wh; whAt(wh, wh.L, kpE, kpT); perpBasis(kpT, kpU, kpW);
+    const R = Math.max(0, P.portalShare) * wh.M, ap = R * Math.cos(Math.PI / 6), size = Math.max(0.05, lerpLv(P.portalSizeL0, P.portalSizeL10, kitLv('mass')));
+    const danger = kitLv('mass') >= 5 && !silenced(curPilot), team = teamOf(curPilot);
+    for (let k = 0; k < 6; k++) {
+      if (KIT.kp.length >= KP_MAX) { KS.portalSkipped++; break; }
+      const a = (k + 0.5) / 6 * KTAU, ca = Math.cos(a), sa = Math.sin(a);
+      const p = kpE.clone().addScaledVector(kpU, ca * ap).addScaledVector(kpW, sa * ap);
+      kpX.copy(kpU).multiplyScalar(ca).addScaledVector(kpW, sa); kpZ.copy(kpU).multiplyScalar(-sa).addScaledVector(kpW, ca);   // out, and along the edge
+      kpM4.makeBasis(kpX, kpT, kpZ);
+      KIT.kp.push(kpNew(p, new THREE.Quaternion().setFromRotationMatrix(kpM4), 0, team, size, danger)); gridPut(kpGrid, p.x, p.y, p.z, KIT.kp.length - 1); KS.portals++;
+    }
+  }
+  // ---- one press path for the kits (Y, B; LB is the pilot sight, held) ----
+  function kitPress(btn) {
+    if (mode !== 'fly' || race !== 'running' || stopped) return false;
+    const k = ftLive.kit;
+    if (btn === 'Y') {
+      if (isG() && !curPilot && KIT.seat) return kitHop(KIT.seat);   // in a sentinel seat, Y is the hop
+      if (!curPilot && KIT.flyerDead) return false;
+      k.sentinel = !k.sentinel; return true;                          // Sentinel mode: on, each new tunnel leaves a sentinel
+    }
+    if (btn === 'B' && isMix()) return kitCaveIn();
+    return false;
+  }
+  function kitKeyDown(code) {
+    if (code === 'KeyE' || code === 'KeyF') kitPress('Y');   // Garrett's F (and round 8's E for Y)
+    if (code === 'KeyB') kitPress('B');
+    if (code === 'BracketLeft') kitSwap(-1);
+    if (code === 'BracketRight') kitSwap(1);
+  }
+  const kitSight = () => isGM() && (keys.has('KeyQ') || KIT.padLB || KIT.touchSight);   // LB held: the pilot sight, FLUME
+  // ---- Mix, Space L5: Cave-in (B). Your nearest standing soliton (the oldest on a tie; never the one you ride) caves in
+  // now: everything it holds is fired out of its way out at once, its sentinel goes with it, and a rival riding it takes a
+  // scored hit (round 8's Burial: petals and a silence, never a push) ----
+  function kitCaveTarget() {
+    let best = null, bd = 1e9; const g = ftLive.gate;
+    for (const pr of pairs) {
+      if (pr.pilot !== curPilot || !pr.alive || pr.dying || !pr.wh || pr.wh.phase === 'cavein' || pr.wh.phase === 'form') continue;
+      if (g && g.pair === pr && g.state === 'tube') continue;
+      const d = whAt(pr.wh, 0.5 * pr.wh.L, kpE).distanceTo(hull.position); if (d < bd - 1e-6) { bd = d; best = pr; }
+    }
+    return best;
+  }
+  function kitRidersOf(pr) { const out = []; for (const id of pilotIds()) { if (id === curPilot) continue; const lv = liveOf(id); if (lv && lv.gate && lv.gate.pair === pr && lv.gate.state === 'tube') out.push(id); } return out; }
+  function kitCaveIn() {
+    const k = ftLive.kit; if (kitLv('space') < 5 || simT < k.readyB) return false;
+    const pr = kitCaveTarget(); if (!pr) return false;
+    k.readyB = simT + Math.max(0, P.mixCaveCooldownSeconds) - 1e-6;
+    const wh = pr.wh; wh.phase = 'cavein'; wh.cave = 1; wh.held = false;
+    if (pr.sentinel && pr.sentinel.alive) { pr.sentinel.alive = false; if (KIT.seat === pr.sentinel) { KIT.seat = null; applySeatClass(); } }
+    for (const kp of KIT.kp) if (kp.alive && kp.tube === pr) kitFire(kp, pr);
+    if (!silenced(curPilot)) for (const id of kitRidersOf(pr)) { if (teamOf(id) === teamOf(curPilot)) continue; kitHitPilot(id, Math.max(0, P.mixBurialPetals), curPilot); KS.buried++; }
+    KS.caveIns++;
+    return true;
+  }
+  // ---- hits: one meerkat holds the elements; any other dies instead of losing them (Garrett) ----
+  // In the studio you are the only person: the meerkat you sit in holds them (the flyer, or the sentinel seat you took),
+  // so with you in a sentinel the flyer (its AI flying) dies of an element hit. A rival's AI sits in its flyer: it holds.
+  // A hit accrues a fraction of a petal (ResourceSystem.AccrueElementalLoss: only whole petals leave), each whole petal is
+  // EJECTED as a crystal (a ranged verb, ELEMENTAL_ECONOMY.md), and the hit silences its victim for what it is worth.
+  // by < 0: a danger prism, never silenced. The studio's element levels are sliders: lost petals are a tally, not a level.
+  function kitHitPilot(id, z, by) {
+    if (by >= 0 && silenced(by)) { KS.harmless++; return; }
+    if (id === 0 && KIT.seat) { kitFlyerDies(); return; }
+    kitAccrue(id, z, pilotPos(id));
+  }
+  function kitAccrue(id, z, pos) {
+    const v = pil(id); v.pend = (v.pend || 0) + z; v.hitAt = simT; v.lastZ = z; v.zapped = (v.zapped || 0) + z;
+    v.silenceUntil = Math.max(simT, v.silenceUntil) + z * SECONDS_PER_PETAL - 1e-6;
+    while (v.pend >= 1 - 1e-9) { v.pend -= 1; v.petals++; kitEject(pos); }
+  }
+  function kitHitSentinel(s, z, by) {
+    if (by >= 0 && silenced(by)) { KS.harmless++; return; }
+    if (s === KIT.seat) { kitAccrue(0, z, s.pos); return; }   // you sit in it: it holds the elements and loses petals
+    kitRemoveSentinel(s, 'lost'); KS.lost++; if (s.owner === 0) KS.lostYours++;
+  }
+  function kitFlyerDies() {
+    if (KIT.flyerDead) return;
+    KIT.flyerDead = true; KIT.deadT = 0; KS.flyerDeaths++;
+    if (!curPilot) { ftLive.gate = null; ftLive.ret = null; ftLive.retAge = 0; speed = 0; }
+    else { youSlot.ftLive.gate = null; youSlot.ftLive.ret = null; youSlot.speed = 0; }
+    hull.visible = curPilot ? hull.visible : false;
+  }
+  function kitEject(pos) {
+    const a = KS.ejected * 2.39996, r = 6 + (KS.ejected % 3) * 3; KS.ejected++;
+    KIT.ejected.push({ p: pos.clone().add(new V3(Math.cos(a) * r, (KS.ejected % 2 ? 1 : -1) * 3, Math.sin(a) * r)), alive: true, t: simT });
+  }
+  // ---- the zap (Charge): an empty sentinel's AI zaps aiZapRate a second (Garrett: "slightly less good than an average
+  // human can tap"); a person in the seat zaps as fast as they tap. Opposing vessels in its guard first (flyers and
+  // sentinels, the nearest), else one of its own domain's plain prisms in the guard, zapped shielded ----
+  function kitPickTarget(s, R) {
+    const A = s.pair.wh.A; let best = null, bd = R;
+    for (const id of pilotIds()) {
+      if (teamOf(id) === s.team || (id === 0 && KIT.flyerDead)) continue;
+      const d = pilotPos(id).distanceTo(A); if (d <= bd) { bd = d; best = { kind: 'pilot', id, pos: pilotPos(id) }; }
+    }
+    for (const o of KIT.sentinels) { if (!o.alive || o.team === s.team) continue; const d = o.pos.distanceTo(A); if (d <= bd) { bd = d; best = { kind: 'sentinel', s: o, pos: o.pos }; } }
+    if (best) return best;
+    bd = R; kpNear(A, R, (k) => { if (k.kind === 0 && k.team === s.team && !k.moving) { const d = k.p.distanceTo(A); if (d <= bd) { bd = d; best = { kind: 'prism', kp: k, pos: k.p }; } } });
+    return best;
+  }
+  function kitZap(s, tgt) {
+    const by = s.owner, harmless = silenced(by);
+    KIT.zaps.push({ a: s.pos.clone().add(new V3(0, 3.6, 0)), b: tgt.pos.clone(), t: simT, team: s.team });
+    if (tgt.kind === 'prism') { tgt.kp.kind = Math.max(tgt.kp.kind, 1); KS.shields++; return; }   // shielding is never a harm (silence leaves it alone)
+    KS.zaps++; if (by === 0) KS.zapsYou++;
+    if (harmless) { KS.harmless++; return; }
+    const z = zapPetals(); KS.petalsZapped += z;
+    if (tgt.kind === 'pilot') kitHitPilot(tgt.id, z, by); else kitHitSentinel(tgt.s, z, by);
+  }
+  function kitZaps(dt) {
+    const youTeam = teamOf(0);
+    for (const s of KIT.sentinels) {
+      if (!s.alive) continue;
+      const R = guardR(s);
+      if (isMix() && s.team === youTeam) for (const id of pilotIds()) {   // the Mix: round 8 Lookout's job, as an alarm for you
+        if (teamOf(id) === youTeam) continue;
+        if (pilotPos(id).distanceTo(s.pair.wh.A) <= R) { if (!(simT < (KIT.alarm[id] || -1))) KS.alarms++; KIT.alarm[id] = simT + Math.max(0, P.mixAlarmSeconds) - 1e-6; }
+      }
+      if (s === KIT.seat) continue;   // a person zaps by hand
+      s.zt = Math.min(1.999, s.zt + dt * Math.max(0, P.aiZapRate));
+      if (simT < (s.idle || -1)) continue;   // nothing was in its guard a moment ago: look again in 0.2 s (a prism scan is a grid query)
+      while (s.zt >= 1) { const tgt = kitPickTarget(s, R); if (!tgt) { s.zt = Math.min(s.zt, 1 - 1e-9); s.idle = simT + 0.2 - 1e-6; break; } s.zt -= 1; kitZap(s, tgt); if (!s.alive) break; }
+    }
+  }
+  // ---- the soliton swallows prisms at its way in (shielded too, never super-shielded) and fires them out of its way out
+  // as MOVING prisms. Its mouth: swallowShare x the opening radius round the way in (open in Garrett's design: the
+  // simplest reading is the sentinel's guard, 1.5 x the opening, which the portal at 1.5 x the exit radius stands clear
+  // of). A field prism it swallows is lifted out of the field into the kit's prisms: moved, never deleted. ----
+  const standing = (pr) => pr.alive && !pr.dying && pr.wh && (pr.wh.phase === 'open' || pr.wh.phase === 'stay') && pr.wh.s0 <= 0.5 && pr.wh.s1 >= pr.wh.L - 0.5;
+  const movers = [];   // the kit's prisms moving this step (kitMovers fills it)
+  function kitSwallow() {
+    if (fieldGridKind !== fieldKind) fieldRebuild();
+    if (kpDirty) kpRebuild();
+    for (const pr of pairs) {
+      if (!standing(pr)) continue;
+      const wh = pr.wh, rz = Math.max(0, P.swallowShare) * wh.M; if (rz <= 0) continue;
+      const take = (k) => { k.tube = pr; k.ts = 0; k.moving = false; k.v.set(0, 0, 0); k.off.subVectors(k.p, wh.A); k.off.addScaledVector(wh.t0, -k.off.dot(wh.t0)); const m = k.off.length(), lim = 0.5 * wh.b; if (m > lim) k.off.multiplyScalar(lim / m); KS.swallowed++; };
+      for (const k of movers) if (k.alive && k.moving && k.kind !== 2 && k.p.distanceTo(wh.A) <= rz) take(k);   // a moving prism flying into its mouth
+      if (simT < (pr.swT || -1)) continue; pr.swT = simT + 0.25 - 1e-6;   // the resting prisms round its mouth: four looks a second
+      kpNear(wh.A, rz, (k) => { if (k.kind !== 2) take(k); });
+      gridNear(fieldGrid, wh.A, rz, (i) => {
+        if (dead[i] || KIT.kp.length >= KP_MAX) return; const j = i * 3; tv.set(bp[j], bp[j + 1], bp[j + 2]); if (tv.distanceTo(wh.A) > rz) return;
+        dead[i] = 10; act[i] = 2; KS.lifted++;   // out of the field (hidden), into the kit's prisms: moved, never deleted
+        const k = kpNew(tv, tq.fromArray(bq, i * 4), 0, null, 1, false); KIT.kp.push(k); take(k);
+      });
+    }
+  }
+  function kitFire(k, pr) {
+    const wh = pr.wh; whAt(wh, wh.L, kpE, kpT);
+    k.p.copy(kpE).add(k.off); k.v.copy(kpT).multiplyScalar(Math.max(0, P.fireSpeed));
+    if (k.off.lengthSq() > 1e-6) k.v.addScaledVector(kpU.copy(k.off).normalize(), 0.06 * Math.max(0, P.fireSpeed));
+    k.tube = null; k.moving = k.v.lengthSq() > 9; k.by = pr.pilot; k.age = 0; KS.fired++;
+    if (!k.moving) kpRest(k);
+  }
+  function kitTube(dt) {
+    for (const k of KIT.kp) {
+      if (!k.alive || !k.tube) continue;
+      const pr = k.tube;
+      if (!pr.alive || pr.dying || !pr.wh || pr.wh.phase === 'collapse' || pr.wh.phase === 'cavein') { kitFire(k, pr); continue; }   // it collapses: all of it out at once
+      k.ts += Math.max(1, P.carrySpeed) * dt;
+      if (k.ts >= pr.wh.L) kitFire(k, pr); else whAt(pr.wh, k.ts, k.p).add(k.off);
+    }
+  }
+  // ---- moving prisms (Docs/PRISM_MOTION.md): a moving prism that RUNS INTO another (apart, then touching over the step)
+  // and neither is shielded: both are destroyed, scored to the soliton's maker; a shielded one in it: it BOUNCES (1a,
+  // shieldBounceRestitution 0.6 of the closing speed; a static prism keeps still, two movers share the impulse); a plain
+  // one into super-shielded mass: the mover goes. A silenced maker's prisms cannot destroy another domain's: they deflect.
+  // It glides to rest over fireGlideSeconds and stays there: moved, never deleted. Not modelled: a fired prism and a hull. ----
+  const mvP0 = new V3(), mvP1 = new V3(), mvN = new V3(), mvQ = new V3();
+  function kitMovers(dt) {
+    movers.length = 0; for (const k of KIT.kp) if (k.alive && k.moving) movers.push(k);
+    if (!movers.length) return;
+    if (fieldGridKind !== fieldKind) fieldRebuild();
+    if (kpDirty) kpRebuild();
+    const e = clamp01(P.bounceRestitution), glide = Math.max(0.1, P.fireGlideSeconds);
+    for (const m of movers) {
+      if (!m.alive || !m.moving) continue;
+      mvP0.copy(m.p); mvP1.copy(m.p).addScaledVector(m.v, dt);
+      const reach = KP_R * (m.size + 1.6) + m.v.length() * dt + 1;
+      let hit = null, hd = 1e9;
+      const meet = (k) => {   // apart at the step's start, touching at its end (PRISM_MOTION.md 2: "runs into")
+        const c = KP_R * (m.size + k.size), d1 = mvP1.distanceTo(k.p); if (d1 >= c || mvP0.distanceTo(k.p) < c) return;
+        if (d1 < hd) { hd = d1; hit = { k, c, kind: k.kind, team: k.team, pos: k.p }; }
+      };
+      gridNear(kpGrid, mvP1, reach, (i) => { const k = KIT.kp[i]; if (k !== m && k.alive && !k.tube && !k.moving) meet(k); });
+      for (const k of movers) if (k !== m && k.alive && k.moving && k.p.distanceTo(mvP1) < reach + k.v.length() * dt) meet(k);
+      gridNear(fieldGrid, mvP1, reach, (i) => {
+        if (dead[i]) return; const j = i * 3; mvQ.set(bp[j], bp[j + 1], bp[j + 2]);
+        const c = KP_R * (m.size + 1), d1 = mvP1.distanceTo(mvQ); if (d1 >= c || mvP0.distanceTo(mvQ) < c) return;
+        if (d1 < hd) { hd = d1; hit = { i, c, kind: 0, team: null, pos: mvQ.clone() }; }
+      });
+      if (hit) {
+        const deflect = m.by >= 0 && silenced(m.by) && hit.team !== teamOf(m.by);   // a silenced maker's prisms harm nothing: they deflect
+        if (m.kind === 1 || hit.kind === 1 || deflect) {   // 1a: a shielded one in it - both bounce
+          mvN.subVectors(mvP1, hit.pos); if (mvN.lengthSq() < 1e-9) mvN.copy(m.v).multiplyScalar(-1); mvN.normalize();
+          if (hit.k && hit.k.moving) { const J = (1 + e) * mvQ.subVectors(m.v, hit.k.v).dot(mvN) / 2; if (J < 0) { m.v.addScaledVector(mvN, -J); hit.k.v.addScaledVector(mvN, J); } }
+          else { const vn = m.v.dot(mvN); if (vn < 0) m.v.addScaledVector(mvN, -(1 + e) * vn); }
+          mvP1.copy(hit.pos).addScaledVector(mvN, hit.c + 0.01); KS.bounces++;
+        } else if (hit.kind === 2) { m.alive = false; KS.destroyed++; KS.kpDestroyed++; if (m.by >= 0) pil(m.by).prisms = (pil(m.by).prisms || 0) + 1; continue; }   // 4: plain into super-shielded mass, the mover goes
+        else {   // 1: plain into plain - both destroyed, scored to the soliton's maker
+          m.alive = false; KS.destroyed += 2; KS.kpDestroyed++;
+          if (hit.k) { hit.k.alive = false; KS.kpDestroyed++; } else { dead[hit.i] = 1e-4; act[hit.i] = 2; dyingPrisms.push(hit.i); KS.fieldDestroyed++; }
+          if (m.by >= 0) pil(m.by).prisms = (pil(m.by).prisms || 0) + 2; continue;
+        }
+      }
+      m.p.copy(mvP1); m.v.multiplyScalar(Math.exp(-dt / glide)); m.age += dt;
+      if (m.v.lengthSq() < 9 || m.age > 25) { m.moving = false; m.v.set(0, 0, 0); kpRest(m); }   // at rest where it stopped: moved, never deleted
+    }
+  }
+  // ---- danger prisms (Mass L5): a rival hull touching one takes a hit of dangerPetals, once per prism (never silenced) ----
+  function kitDanger() {
+    for (const k of KIT.kp) {
+      if (!k.alive || !k.danger || k.tube) continue;
+      const r = KP_R * k.size + 2;
+      for (const id of pilotIds()) {
+        if (teamOf(id) === k.team || (id === 0 && KIT.flyerDead) || (k.hit && k.hit[id])) continue;
+        if (pilotPos(id).distanceTo(k.p) < r) { (k.hit || (k.hit = {}))[id] = 1; KS.dangerHits++; kitHitPilot(id, Math.max(0, P.dangerPetals), -1); }
+      }
+      for (const s of KIT.sentinels) if (s.alive && s.team !== k.team && !(k.hit && k.hit['s' + s.id]) && s.pos.distanceTo(k.p) < r + 2) { (k.hit || (k.hit = {}))['s' + s.id] = 1; KS.dangerHits++; kitHitSentinel(s, Math.max(0, P.dangerPetals), -1); }   // a sentinel is a meerkat too
+    }
+  }
+  function kitPickups() {
+    for (const c of KIT.ejected) {
+      if (!c.alive) continue;
+      for (const id of pilotIds()) { if (id === 0 && KIT.flyerDead) continue; if (pilotPos(id).distanceTo(c.p) < CRYSTAL_PICK) { c.alive = false; pil(id).crystals++; break; } }
+    }
+  }
+  // the dead flyer (Garrett): the Meerkats are only their sentinels until the next hop, which makes its hopper the flyer
+  // with no sentinel left behind. You sit in a sentinel then: Y hops; the AI hops for you after 3 s (a proposal).
+  function kitDeadFlyer(dt) {
+    if (!KIT.flyerDead) return;
+    KIT.deadT += dt;
+    if (KIT.seat && KIT.seat.alive && (aiOn || batching || KIT.deadT > 3)) kitHop(KIT.seat);
+    else if (!KIT.seat || !KIT.seat.alive) {   // no seat left (never expected): the flyer comes back at its next ring's approach
+      const s = KIT.sentinels.find((o) => o.alive && o.owner === 0);
+      if (s) { KIT.seat = s; applySeatClass(); }
+      else { KIT.flyerDead = false; hull.visible = true; const g = gates[threaded % NG]; hull.position.copy(g.p).addScaledVector(g.n, -170); speed = P.cruise; }
+    }
+  }
+  function kitSentinelsSweep() {
+    for (const s of KIT.sentinels) if (s.alive && (!s.pair.alive || s.pair.dying || s.pair.wh.phase === 'collapse' || s.pair.wh.phase === 'cavein')) kitRemoveSentinel(s, 'gone');
+    if (KIT.sentinels.length > 64) KIT.sentinels = KIT.sentinels.filter((s) => s.alive);
+  }
+  // Once a world step, after every pilot flew (simStep): the sentinels, the soliton's prisms, danger and crystals.
+  function kitStep(dt) {
+    const running = race === 'running' && !stopped && mode === 'fly';
+    kitSentinelsSweep();
+    if (running) { kitZaps(dt); kitSwallow(); }
+    kitTube(dt); kitMovers(dt);
+    if (running) { kitDanger(); kitPickups(); kitDeadFlyer(dt); }
+    if (KIT.zaps.length) KIT.zaps = KIT.zaps.filter((z) => simT - z.t < 0.15);
+  }
+  // ---- anyone rides any soliton (Garrett): fly into a standing soliton's way in, along it, and it carries you, at the
+  // speed you went in with and the rush of your Time level, out on its last heading. The soliton is untouched by riders. ----
+  const krA = new V3();
+  function kitTryRide() {
+    const g = ftLive.gate; if (g && g.state === 'tube') return;
+    if (!curPilot && KIT.flyerDead) return;
+    basis();
+    for (const pr of pairs) {
+      if (!standing(pr)) continue; const wh = pr.wh;
+      if (ftLive.kit.lastRide === pr && simT - ftLive.kit.lastRideT < 1.5) continue;
+      const along = krA.subVectors(hull.position, wh.A).dot(wh.t0); if (along < -1 || along > 10) continue;
+      if (krA.addScaledVector(wh.t0, -along).length() > wh.M || fwd.dot(wh.t0) < 0.3) continue;
+      whQ.setFromUnitVectors(fwd, wh.t0);
+      ftLive.gate = { pair: pr, state: 'tube', s: Math.max(0, along), sIn: 0, oN: 0, oB: 0, vIn: Math.max(1, speed), rIn: Math.max(1e-3, wh.M), q0: whQ.clone().multiply(hull.quaternion), rider: pr.pilot !== curPilot, kitRide: true };
+      ftLive.kit.lastRide = pr; ftLive.kit.lastRideT = simT; ftLive.ret = null; ftLive.retAge = 0;
+      ai.kitSol = null; ai.gShaping = false;
+      KS.rides++; if (pr.pilot !== curPilot && teamOf(pr.pilot) !== teamOf(curPilot)) { KS.rivalRides++; if (pr.pilot === 0) KS.ridesOfYours++; }
+      return;
+    }
+  }
+  function kitRideOut(g) { if (g.hop || (g.pair.wh && g.pair.wh.hopRide)) kitCollapse(g.pair); }   // a hopped soliton collapses once its hopper is out
+  // ---- the AI (input-only, /vessel-studio D4): it presses what a player presses. Sentinel mode on once the race runs;
+  // a standing soliton whose way out heads at its ring and saves time is flown into (kitAiSoliton steers for its way
+  // in); Garrett's kit: it hops to a sentinel of its own when that saves aiHopGain s; the Mix: Cave-in when its target has
+  // a rival riding it or holds prisms. A person's own hull (you flying, or seated) is never run for them. ----
+  const kA = new V3(), kE = new V3(), kT = new V3(), kR = new V3();
+  function kitRideTimes() {
+    const v = Math.max(20, P.cruise), rate = Math.max(0.2, P.pitchYaw * Math.PI / 180);
+    const ends = 0.5 * (rideMultiplier(P, 0) + rideMultiplier(P, 1)), meanMul = ends + (2 / Math.PI) * (Math.max(0.05, P.rideMidMultiplier) - ends);
+    return { v, rate, meanMul };
+  }
+  const angTo = (a, b) => Math.acos(Math.max(-1, Math.min(1, a.dot(b) / Math.max(1e-6, a.length() * b.length()))));
+  function kitAiSoliton(blind, ringPt, dRing, tgt) {
+    if (P.aiKit <= 0.5 || blind) return null;
+    const g = ftLive.gate; if (g && g.state === 'tube') return null;
+    if (!(simT < (ai.kitSolT || 0))) {   // a fresh look four times a second
+      ai.kitSolT = simT + 0.25; ai.kitSol = null;
+      const T = kitRideTimes(), direct = dRing / T.v + angTo(fwd, kR.subVectors(ringPt, hull.position)) / T.rate;
+      let best = null, bestT = direct - 0.5;
+      for (const pr of pairs) {
+        if (!standing(pr)) continue; const wh = pr.wh;
+        if (ftLive.kit.lastRide === pr && simT - ftLive.kit.lastRideT < 4) continue;
+        const dA = kA.subVectors(wh.A, hull.position), la = dA.length(); if (la > 450 || la < 5) continue;
+        if (dA.dot(wh.t0) < 0.4 * la || fwd.dot(dA) < 0.5 * la) continue;   // its way in ahead of us and facing us
+        whAt(wh, wh.L, kE, kT); const dR = kR.subVectors(ringPt, kE), lr = dR.length();
+        if (dR.dot(kT) < Math.max(60, 0.9 * lr)) continue;                   // its way out heads at the ring, with room
+        const via = la / T.v + wh.L / (T.v * T.meanMul) + lr / T.v + angTo(kT, dR) / T.rate;
+        if (via < bestT) { bestT = via; best = pr; }
+      }
+      if (best) { ai.kitSol = best; ai.gShaping = false; }
+    }
+    const pr = ai.kitSol; if (!pr || !standing(pr)) { ai.kitSol = null; return null; }
+    tgt.copy(pr.wh.A).addScaledVector(pr.wh.t0, -Math.min(60, hull.position.distanceTo(pr.wh.A) * 0.35));
+    return pr;
+  }
+  function kitAi() {
+    if (P.aiKit <= 0.5 || race !== 'running' || stopped) return;
+    if (!curPilot && !aiOn && !batching && !wasIdleAi) return;   // a person's own hull
+    const k = ftLive.kit;
+    if (!k.sentinel) kitPress('Y');
+    if (isG()) kitAiHop();
+    if (isMix() && kitLv('space') >= 5 && simT >= k.readyB) { const pr = kitCaveTarget(); if (pr && (kitRidersOf(pr).some((id) => teamOf(id) !== teamOf(curPilot)) || KIT.kp.some((q) => q.alive && q.tube === pr))) kitPress('B'); }
+  }
+  function kitAiHop() {
+    if (simT < (ai.kitHopT || 0)) return; ai.kitHopT = simT + 0.5;
+    const g = ftLive.gate; if ((g && g.state === 'tube') || (!curPilot && KIT.flyerDead)) return;
+    const T = kitRideTimes(), ring = gates[threaded % NG].p, direct = hull.position.distanceTo(ring) / T.v + angTo(fwd, kR.subVectors(ring, hull.position)) / T.rate;
+    let best = null, bestT = direct - Math.max(0, P.aiHopGain);
+    for (const s of KIT.sentinels) {
+      if (!s.alive || s.owner !== curPilot || s === KIT.seat || !standing(s.pair)) continue;
+      const wh = s.pair.wh; whAt(wh, wh.L, kE, kT); const dR = kR.subVectors(ring, kE), lr = dR.length();
+      if (dR.dot(kT) < Math.max(60, 0.9 * lr)) continue;
+      const tHop = wh.L / (T.v * T.meanMul) + lr / T.v + angTo(kT, dR) / T.rate;
+      if (tHop < bestT) { bestT = tHop; best = s; }
+    }
+    if (best) { if (!curPilot) { KIT.seat = best; KS.swaps++; } kitHop(best); }   // the swap (D-pad) and Y, in one step
+  }
+  // ---- the HOP (Garrett): the sentinel and the flyer change places. The seat's meerkat rides through its own soliton and
+  // comes out of the far mouth as the flyer; the old flyer becomes a sentinel wherever it was, perched in front of a new
+  // soliton made there at once, which the flyer's AI planner shapes (aiGatePlan) toward its next ring. The pool does not
+  // change (one left, one made). With no flyer (killed), the hopper becomes the flyer and leaves no sentinel behind. ----
+  const kM4 = new THREE.Matrix4();
+  function kitHop(S) {
+    if (!S || !S.alive || S.owner !== curPilot || !S.pair.alive || S.pair.dying) return false;
+    const prS = S.pair, whS = prS.wh, dead0 = !curPilot && KIT.flyerDead;
+    if (!dead0) kitLeaveSentinelHere();
+    kitRemoveSentinel(S, 'hop');
+    hull.position.copy(whS.A).addScaledVector(whS.t0, -1);
+    hull.quaternion.setFromRotationMatrix(kM4.lookAt(hull.position, tv.copy(hull.position).add(whS.t0), Math.abs(whS.t0.y) > 0.95 ? X : Y));
+    trackHold('L', 0, true, 0); trackHold('R', 0, true, 0);   // nothing held is handed over
+    ftLive.gate = { pair: prS, state: 'tube', s: 0, sIn: 0, oN: 0, oB: 0, vIn: Math.max(1, P.cruise), rIn: Math.max(1e-3, whS.M), q0: hull.quaternion.clone(), rider: false, kitRide: true, hop: true };
+    ftLive.ret = null; ftLive.retAge = 0; ftLive.retGhost = null; ftLive.kit.lastRide = prS; ftLive.kit.lastRideT = simT;
+    if (!curPilot) { KIT.seat = null; KIT.flyerDead = false; hull.visible = true; snapCam = true; camTail = null; applySeatClass(); }
+    ai.kitSol = null; ai.gShaping = false; KS.hops++;
+    return true;
+  }
+  function kitLeaveSentinelHere() {
+    basis();
+    const ring = gates[threaded % NG].p, loc = localOf(ring).clone(), d = hull.position.distanceTo(ring);
+    const plan = aiGatePlan(loc.clone(), 0, d <= P.aiStraightMinDistance) || { lq: 0, m: 0 };
+    const lh = Math.hypot(loc.x, loc.y), sx = lh > 1e-6 ? loc.x / lh * plan.m : 0, sy = lh > 1e-6 ? loc.y / lh * plan.m : 0;
+    const sh = shapeFor(P, plan.lq, sx, sy), side = new V3();
+    if (sh.m >= 0.05) side.copy(right).multiplyScalar(sh.dx).addScaledVector(up, sh.dy); else side.copy(right);
+    side.addScaledVector(fwd, -side.dot(fwd)); if (side.lengthSq() < 1e-8) side.copy(right); side.normalize();
+    const wh = { A: hull.position.clone().addScaledVector(fwd, Math.max(0, P.reticleAhead)), t0: fwd.clone(), side, L: sh.L, S: sh.S, R: sh.R, b: sh.b, M: sh.M, theta: sh.theta, fat: sh.fat, m: sh.m,
+      s0: 0.5 * sh.L, s1: 0.5 * sh.L, t: 0, phase: 'form', grow: 0, formT: Math.max(0.05, P.formSeconds), stay: 0, out: true };
+    const pr = new Pair(whAt(wh, 0.5 * wh.L, new V3()), true); pr.wh = wh; whSync(pr); pairs.push(pr);
+    KS.solitons++; kitPortal(pr); kitAddSentinel(pr, curPilot, false);
+  }
+  // ---- the seats (Garrett's dynamic-seat crew): D-pad left / right, [ and ] (the arrows bend the reticle), the SEAT button
+  // or a two-finger swipe on a phone. The ring: the flyer, then each of your sentinels, oldest first. In a sentinel seat
+  // the flyer's AI flies it (you never lose the race), and you hold the elements where you sit. ----
+  function applySeatClass() { document.body.classList.toggle('kitseat', !!KIT.seat); }
+  function kitSwap(dir) {
+    if (!isG() || mode !== 'fly' || race !== 'running') return false;
+    const ring = [null].concat(KIT.sentinels.filter((s) => s.alive && s.owner === 0));
+    if (ring.length < 2) return false;
+    let i = Math.max(0, ring.indexOf(KIT.seat)), j = (i + dir + ring.length) % ring.length;
+    if (KIT.flyerDead && j === 0) j = (j + dir + ring.length) % ring.length;   // a dead flyer is no seat
+    if (ring[j] === KIT.seat) return false;
+    if (!KIT.seat) { trackHold('L', 0, true, 0); trackHold('R', 0, true, 0); }
+    KIT.seat = ring[j]; KS.swaps++; snapCam = true; applySeatClass();
+    return true;
+  }
+  // In a sentinel seat: your devices drive the seat (Y hops, the right stick or the arrows move a cursor, RT or Shift acts
+  // on what is under it, a click or a tap acts where it lands); the flyer is the AI's.
+  function kitSeatInput(dt) {
+    kitSeatPoll = true; let inp; try { inp = pollInput(dt); } finally { kitSeatPoll = false; }
+    const cx = inp.pad ? inp.R.x : inp.kTx || 0, cy = inp.pad ? inp.R.y : inp.kTy || 0;
+    if (Math.abs(cx) + Math.abs(cy) > 0.05) { KIT.cur.x = clamp01(KIT.cur.x + cx * 0.9 * dt); KIT.cur.y = clamp01(KIT.cur.y - cy * 0.9 * dt); KIT.curOn = true; }
+    const rt = inp.rt > 0.5; if (rt && !KIT.seatRT) { KIT.curOn = true; kitSeatAct(KIT.cur.x * canvas.clientWidth, KIT.cur.y * canvas.clientHeight); } KIT.seatRT = rt;
+    return aiInput(dt);
+  }
+  // A click, tap or RT in the seat (Garrett: "click or tap their screen to shield prisms (including opposing) or attack
+  // players"): the nearest thing on screen within 40 px and inside the guard. A prism (any domain): shielded. An opposing
+  // vessel or sentinel: zapped, as the AI zaps, with no cooldown. (The seat's reach is its guard: open in Garrett's design.)
+  function kitSeatAct(px, py) {
+    const S = KIT.seat; if (!S || !S.alive || race !== 'running' || stopped) return false;
+    const R = guardR(S), A = S.pair.wh.A, cw = canvas.clientWidth, ch = canvas.clientHeight; let best = null, bd = 40;
+    const consider = (pos, t) => { if (pos.distanceTo(A) > R) return; tv.copy(pos).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -1) return; tv.copy(pos).project(cam); const d = Math.hypot((tv.x * 0.5 + 0.5) * cw - px, (-tv.y * 0.5 + 0.5) * ch - py); if (d < bd) { bd = d; best = t; } };
+    for (const id of pilotIds()) if (teamOf(id) !== S.team && !(id === 0 && KIT.flyerDead)) consider(pilotPos(id), { kind: 'pilot', id, pos: pilotPos(id) });
+    for (const o of KIT.sentinels) if (o.alive && o.team !== S.team) consider(o.pos, { kind: 'sentinel', s: o, pos: o.pos });
+    if (kpDirty) kpRebuild();
+    kpNear(A, R, (k) => { if (k.kind === 0) consider(k.p, { kind: 'prism', kp: k, pos: k.p }); });
+    if (!best) { KIT.miss = simT; return false; }
+    kitZap(S, best); return true;
+  }
+  // the sentinel seat's view: perched over its way in, high and narrow (2.5D; the game's orthographic seat view would
+  // take no Panini, OrthographicLens)
+  function kitSeatCam() {
+    const S = KIT.seat; if (!S || !S.alive || mode !== 'fly' || watchIdx > 0) return false;
+    const wh = S.pair.wh, R = Math.max(25, guardR(S)), upW = Math.abs(wh.t0.y) > 0.9 ? X : Y;
+    cam.position.copy(wh.A).addScaledVector(upW, R * 1.7).addScaledVector(wh.t0, -R * 1.2);
+    cam.up.copy(upW); camLook.copy(wh.A).addScaledVector(wh.t0, R * 0.2); cam.lookAt(camLook);
+    if (Math.abs(cam.fov - 42) > 1e-3) { cam.fov = 42; cam.updateProjectionMatrix(); }
+    cam.updateMatrixWorld(); camTail = null; snapCam = true;
+    return true;
+  }
+  // ---- what the kits draw: their prisms, the sentinels (afterimages standing up at the way in), the zaps, the pilot
+  // sight FLUME (every soliton: its line, where it leads and how long it is), ejected crystals ----
+  const kpMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.6, 0.55, 4.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x0b1b4a, roughness: 0.5, flatShading: true }), KP_MAX);
+  kpMesh.setColorAt(0, new THREE.Color()); kpMesh.instanceColor.setUsage(THREE.DynamicDrawUsage); kpMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); kpMesh.frustumCulled = false; kpMesh.count = 0; scene.add(kpMesh);
+  const KC = { plain: new THREE.Color(0x4a6bd8), shield: new THREE.Color(0xeaf2ff), sup: new THREE.Color(0xffe9a8), danger: new THREE.Color(0xff3344) }, kcC = new THREE.Color();
+  const sentMeshes = [], guardMeshes = [];
+  function sentinelMesh() {
+    const g = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.95, 3.4, 8), mat); body.position.y = 1.7; g.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.75, 10, 8), mat); head.position.set(0, 3.9, -0.25); g.add(head);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.3, 0.3), mat); arm.position.y = 2.6; g.add(arm);
+    g.userData.mat = mat; g.scale.setScalar(1.4); g.visible = false; scene.add(g); return g;
+  }
+  function guardMesh() { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 14), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.06, depthWrite: false })); m.visible = false; m.frustumCulled = false; scene.add(m); return m; }
+  const ZAP_MAX = 96, zapGeo = new THREE.BufferGeometry(); zapGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ZAP_MAX * 6), 3)); zapGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(ZAP_MAX * 6), 3));
+  const zapLines = new THREE.LineSegments(zapGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending })); zapLines.frustumCulled = false; scene.add(zapLines);
+  const FL_MAX = 6000, flGeo = new THREE.BufferGeometry(); flGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(FL_MAX * 6), 3)); flGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(FL_MAX * 6), 3));
+  const flume = new THREE.LineSegments(flGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, depthTest: false, depthWrite: false })); flume.frustumCulled = false; flume.renderOrder = 10; scene.add(flume);
+  const flA = new V3(), flB = new V3(), flT = new V3(), flU = new V3(), flW = new V3(), flC = new THREE.Color();
+  function kitDraw() {
+    const on = isGM() && mode === 'fly';
+    let n = 0;
+    if (on) for (const k of KIT.kp) {
+      if (!k.alive || n >= KP_MAX) continue;
+      dum.position.copy(k.p);
+      if (k.moving && k.v.lengthSq() > 9) dum.quaternion.setFromUnitVectors(ZAX, tv.copy(k.v).normalize()); else dum.quaternion.copy(k.q);
+      dum.scale.setScalar(k.size * (k.kind === 2 ? 1.25 : 1)); dum.updateMatrix(); kpMesh.setMatrixAt(n, dum.matrix);
+      if (k.danger) kcC.copy(KC.danger); else if (k.kind === 2) kcC.copy(KC.sup); else { if (k.team && DOMAIN[k.team] != null) kcC.setHex(DOMAIN[k.team]).multiplyScalar(0.8); else kcC.copy(KC.plain); if (k.kind === 1) kcC.lerp(KC.shield, 0.7); }
+      kpMesh.setColorAt(n, kcC); n++;
+    }
+    kpMesh.count = n; kpMesh.instanceMatrix.needsUpdate = true; if (kpMesh.instanceColor) kpMesh.instanceColor.needsUpdate = true;
+    dum.rotation.set(0, 0, 0); dum.scale.setScalar(1);
+    const sight = on && kitSight();
+    let si = 0, gi = 0;
+    if (on) for (const s of KIT.sentinels) {
+      if (!s.alive) continue;
+      const m = sentMeshes[si] || (sentMeshes[si] = sentinelMesh()); si++;
+      m.position.copy(s.pos); m.userData.mat.color.setHex(DOMAIN[s.team] != null ? DOMAIN[s.team] : 0xffffff); m.userData.mat.opacity = s === KIT.seat ? 0.9 : 0.5 + 0.1 * Math.sin(simT * 3 + s.id); m.visible = true;
+      if (sight || KIT.seat) { const gm = guardMeshes[gi] || (guardMeshes[gi] = guardMesh()); gi++; gm.position.copy(s.pair.wh.A); gm.scale.setScalar(Math.max(1, guardR(s))); gm.material.color.setHex(DOMAIN[s.team] != null ? DOMAIN[s.team] : 0xffffff); gm.material.opacity = s === KIT.seat ? 0.16 : 0.07; gm.visible = true; }
+    }
+    for (; si < sentMeshes.length; si++) sentMeshes[si].visible = false;
+    for (; gi < guardMeshes.length; gi++) guardMeshes[gi].visible = false;
+    // the zaps: a bolt from the sentinel's head to what it hit, for 0.15 s
+    const zp = zapGeo.attributes.position.array, zc = zapGeo.attributes.color.array; let zi = 0;
+    if (on) for (const z of KIT.zaps) { if (zi >= ZAP_MAX) break; zp.set([z.a.x, z.a.y, z.a.z, z.b.x, z.b.y, z.b.z], zi * 6); flC.setHex(DOMAIN[z.team] != null ? DOMAIN[z.team] : 0xffffff).lerp(brW, 0.5); zc.set([1, 1, 1, flC.r, flC.g, flC.b], zi * 6); zi++; }
+    zapGeo.setDrawRange(0, zi * 2); zapGeo.attributes.position.needsUpdate = zapGeo.attributes.color.needsUpdate = true; zapLines.visible = zi > 0;
+    // FLUME (LB held): every soliton, whoever made it - its centre line, its two mouths, and where it leads (its way out's heading run on)
+    const fp = flGeo.attributes.position.array, fc = flGeo.attributes.color.array; let fi = 0;
+    const seg = (a, b, col) => { if (fi >= FL_MAX) return; fp.set([a.x, a.y, a.z, b.x, b.y, b.z], fi * 6); fc.set([col.r, col.g, col.b, col.r, col.g, col.b], fi * 6); fi++; };
+    if (sight) for (const pr of pairs) {
+      if (!pr.alive || !pr.wh || pr.dying) continue; const wh = pr.wh;
+      flC.setHex(DOMAIN[teamOf(pr.pilot)] != null ? DOMAIN[teamOf(pr.pilot)] : 0xffffff).lerp(brW, 0.35);
+      for (let i = 0; i < 32; i++) { whAt(wh, wh.L * i / 32, flA); whAt(wh, wh.L * (i + 1) / 32, flB); seg(flA, flB, flC); }
+      for (const [s, sgn] of [[0, -1], [wh.L, 1]]) { whAt(wh, s, flA, flT); perpBasis(flT, flU, flW); const r = wh.M; for (let i = 0; i < 20; i++) { const a0 = i / 20 * KTAU, a1 = (i + 1) / 20 * KTAU; flB.copy(flA).addScaledVector(flU, Math.cos(a0) * r).addScaledVector(flW, Math.sin(a0) * r); tv.copy(flA).addScaledVector(flU, Math.cos(a1) * r).addScaledVector(flW, Math.sin(a1) * r); seg(flB, tv, flC); } if (sgn > 0) for (let i = 0; i < 8; i += 2) { flB.copy(flA).addScaledVector(flT, 25 * i); tv.copy(flA).addScaledVector(flT, 25 * (i + 1)); seg(flB, tv, flC); } }
+    }
+    flGeo.setDrawRange(0, fi * 2); flGeo.attributes.position.needsUpdate = flGeo.attributes.color.needsUpdate = true; flume.visible = fi > 0;
+    // ejected crystals, after the course's in the same instanced crystal
+    if (on) { let k = crCore.count; for (const c of KIT.ejected) { if (!c.alive || k >= CR_MAX) continue; dum.position.copy(c.p); dum.rotation.set(0, simT * 1.3 + k, 0); dum.scale.set(0.8, 1.1, 0.8); dum.updateMatrix(); crCore.setMatrixAt(k, dum.matrix); crShell.setMatrixAt(k, dum.matrix); k++; } crCore.count = crShell.count = k; crCore.instanceMatrix.needsUpdate = crShell.instanceMatrix.needsUpdate = true; dum.rotation.set(0, 0, 0); dum.scale.setScalar(1); }
+  }
+  // ---- the HUD's kit parts: the four-icon row for the kit, the seat, the flyer down, FLUME's labels, the Mix's alarm ----
+  function kitGlyph(c, g, cx, cy, r, sc) {
+    c.strokeStyle = '#ffffff'; c.fillStyle = '#ffffff'; c.lineWidth = 1.6 * sc; c.lineCap = 'round';
+    if (g === 'sentinel') {   // a meerkat standing up on watch
+      c.beginPath(); c.ellipse(cx, cy + r * 0.25, r * 0.32, r * 0.62, 0, 0, KTAU); c.stroke();
+      c.beginPath(); c.arc(cx + r * 0.05, cy - r * 0.62, r * 0.24, 0, KTAU); c.fill();
+      c.beginPath(); c.moveTo(cx - r * 0.3, cy - r * 0.05); c.lineTo(cx - r * 0.6, cy + r * 0.05); c.moveTo(cx + r * 0.3, cy - r * 0.05); c.lineTo(cx + r * 0.6, cy + r * 0.05); c.stroke();
+      c.beginPath(); c.arc(cx, cy + r * 0.1, r * 1.15, -2.4, -0.7); c.stroke();
+    } else if (g === 'portal') {   // six bars on a hexagon
+      for (let k = 0; k < 6; k++) { const a = (k + 0.5) / 6 * KTAU, x = cx + Math.cos(a) * r * 0.78, y = cy + Math.sin(a) * r * 0.78, ta = a + Math.PI / 2; c.beginPath(); c.moveTo(x - Math.cos(ta) * r * 0.32, y - Math.sin(ta) * r * 0.32); c.lineTo(x + Math.cos(ta) * r * 0.32, y + Math.sin(ta) * r * 0.32); c.stroke(); }
+    } else if (g === 'soliton') abGlyph(c, 'time', cx, cy, r, sc);
+    else {   // the rush: chevrons
+      for (let k = 0; k < 3; k++) { const x = cx - r * 0.7 + k * r * 0.55; c.beginPath(); c.moveTo(x, cy - r * 0.55); c.lineTo(x + r * 0.4, cy); c.lineTo(x, cy + r * 0.55); c.stroke(); }
+    }
+  }
+  function kitAbilityRow(c, right, bottom, sc, font) {
+    const id = viewedId(), live = liveOf(id); if (!live) return 0;
+    const k = live.kit || {}, g = live.gate, riding = !!(g && g.state === 'tube'), mix = isMix(), seated = id === 0 && KIT.seat;
+    const pool = poolOf(), mine = KIT.sentinels.filter((s) => s.alive && s.owner === id).length, share = Math.max(0, P.mixChainShare);
+    const cave = mix && kitLv('space') >= 5, dig = mix && kitLv('time') >= 5 && riding;
+    const rows = [
+      { el: 'charge', key: seated ? 'Y hop' : 'Y', name: seated ? 'IN SEAT ' + mine + '/' + pool : (k.sentinel ? 'ON ' : 'Sentinel ') + mine + '/' + pool, act: k.sentinel || seated ? 1 : 0, glyph: 'sentinel' },
+      { el: 'mass', key: 'passive', name: kitLv('mass') >= 5 ? 'Portal: danger' : 'Portal', act: 0, glyph: 'portal' },
+      { el: 'space', key: cave ? 'RT · B' : 'RT', name: cave ? 'Soliton+Cave' : 'Soliton', ready: cave ? k.readyB || 0 : 0, total: Math.max(0.01, P.mixCaveCooldownSeconds), act: riding ? 1 : 0, glyph: 'soliton' },
+      { el: 'time', key: dig ? 'RT' : 'passive', name: mix ? (riding && g.next ? 'DUG' : dig && g.s >= share * g.pair.wh.L ? 'DIG!' : kitLv('time') >= 5 ? 'Rush+Dig' : 'Rush') : kitLv('time') >= 5 ? 'Rush+Boost' : 'Rush', act: riding ? 1 : 0, glyph: 'rush' },
+    ];
+    const S = 44 * sc, G = 8 * sc, W = 4 * S + 3 * G, x0 = right - W, y0 = bottom - S, sil = simT < pil(id).silenceUntil;
+    rows.forEach((r, i) => {
+      const x = x0 + i * (S + G), y = y0, lv = kitLv(r.el), cd = Math.max(0, (r.ready || 0) - simT);
+      c.save();
+      c.fillStyle = 'rgba(8,10,20,0.72)'; c.strokeStyle = r.act > 0 ? '#ffb347' : 'rgba(232,236,255,0.45)'; c.lineWidth = (r.act > 0 ? 2 : 1.2) * sc;
+      c.beginPath(); if (c.roundRect) c.roundRect(x, y, S, S, 7 * sc); else c.rect(x, y, S, S); c.fill(); c.stroke();
+      if (r.key === 'passive') { c.globalAlpha = 0.85; c.setLineDash([3 * sc, 3 * sc]); c.strokeStyle = 'rgba(232,236,255,0.35)'; c.beginPath(); if (c.roundRect) c.roundRect(x + 3 * sc, y + 3 * sc, S - 6 * sc, S - 6 * sc, 5 * sc); else c.rect(x + 3 * sc, y + 3 * sc, S - 6 * sc, S - 6 * sc); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; }
+      kitGlyph(c, r.glyph, x + S / 2, y + S / 2, S * 0.32, sc);
+      if (cd > 0.05) { c.fillStyle = 'rgba(0,0,0,0.6)'; c.save(); c.beginPath(); if (c.roundRect) c.roundRect(x, y, S, S, 7 * sc); else c.rect(x, y, S, S); c.clip(); c.beginPath(); c.moveTo(x + S / 2, y + S / 2); c.arc(x + S / 2, y + S / 2, S * 0.75, -Math.PI / 2, -Math.PI / 2 + KTAU * clamp01(cd / r.total)); c.closePath(); c.fill(); c.restore(); c.textAlign = 'center'; c.font = font(12, 700); c.fillStyle = '#ffffff'; c.fillText(cd.toFixed(cd < 10 ? 1 : 0), x + S / 2, y + S / 2 + 4 * sc); }
+      c.textAlign = 'center'; c.font = font(r.key.length > 3 ? 8.5 : 10, 700); c.fillStyle = r.key === 'passive' ? '#9aa6d6' : '#e8ecff'; c.fillText(r.key === 'passive' ? 'PASSIVE' : r.key, x + S / 2, y - 4 * sc);
+      c.font = font(8.5, 600); c.fillStyle = r.act > 0 ? '#ffb347' : '#9aa6d6'; c.fillText(r.name, x + S / 2, y + S + 10 * sc);
+      c.textAlign = 'right'; c.font = font(8.5, 700); c.fillStyle = lv >= 5 ? '#ffb347' : 'rgba(232,236,255,0.55)'; c.fillText(lv >= 5 ? 'L5+' : 'L' + lv, x + S - 3 * sc, y + 10 * sc);
+      c.restore();
+    });
+    if (sil) { c.textAlign = 'center'; c.font = font(11, 700); c.fillStyle = '#ffffff'; c.fillText('SILENCED ' + (pil(id).silenceUntil - simT).toFixed(1) + ' s · zaps and portals harmless', x0 + W / 2, y0 - 18 * sc); }
+    return W;
+  }
+  function kitHud(c, cw, ch, sc, font, padL, padR, pad, tY) {
+    if (mode !== 'fly') return;
+    const scr = (p, o) => { tv.copy(p).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -1) return false; tv.copy(p).project(cam); o.x = (tv.x * 0.5 + 0.5) * cw; o.y = (-tv.y * 0.5 + 0.5) * ch; return o.x > -30 && o.x < cw + 30 && o.y > -30 && o.y < ch + 30; };
+    const o = { x: 0, y: 0 }, mix = isMix();
+    c.textAlign = 'left'; c.font = font(11, 700); c.fillStyle = '#ffb347';
+    c.fillText('KIT · ' + KIT_NAMES[kitOf()].toUpperCase() + (kitSight() ? ' · FLUME' : ''), padL, pad + (stance ? 55 : 41) * sc);
+    // who holds the elements (Garrett: one meerkat holds them; any other dies instead of losing them)
+    const me = pil(0), mine = KIT.sentinels.filter((s) => s.alive && s.owner === 0);
+    c.textAlign = 'left'; c.font = font(10.5, 600); c.fillStyle = '#e8ecff';
+    const where = KIT.seat ? 'in sentinel ' + (mine.indexOf(KIT.seat) + 1) + ' of ' + mine.length + ' (the flyer, AI-flown, dies on any element hit)' : KIT.flyerDead ? 'nowhere: the flyer is down' : 'in the flyer' + (mine.length ? ' (your ' + mine.length + ' sentinel' + (mine.length > 1 ? 's die' : ' dies') + ' on any element hit)' : '');
+    c.fillText('ELEMENTS held by you, ' + where, pad, ch - pad - 62 * sc);
+    if (me.zapped || me.petals) { c.fillStyle = '#9aa6d6'; c.fillText('zapped ' + (me.zapped || 0).toFixed(2) + ' petals · ' + me.petals + ' whole out as crystals', pad, ch - pad - 76 * sc); }
+    if (isG() && !KIT.seat && mine.length && race === 'running') { c.fillStyle = '#9aa6d6'; c.fillText('seats: the flyer + ' + mine.length + ' sentinel' + (mine.length > 1 ? 's' : '') + ' · D-pad left / right or [ ] to take one', pad, ch - pad - (me.zapped ? 90 : 76) * sc); }
+    // the sentinel seat
+    if (KIT.seat && KIT.seat.alive) {
+      const S = KIT.seat, R = guardR(S);
+      c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = '#ffb347';
+      c.fillText('SENTINEL SEAT ' + (mine.indexOf(S) + 1) + '/' + mine.length + ' · guard ' + Math.round(R) + ' u · a zap ' + zapPetals().toFixed(2) + ' petal', cw / 2, tY + pad + 48 * sc);
+      c.font = font(11, 600); c.fillStyle = '#e8ecff';
+      c.fillText((playMode ? 'tap' : 'click') + ' a prism in the guard to shield it (any domain), a rival to zap it · Y hops you out as the flyer · ' + (playMode ? 'SEAT' : '[ ] / D-pad') + ' swaps', cw / 2, tY + pad + 64 * sc);
+      const A = S.pair.wh.A;
+      for (const id of pilotIds()) { if (teamOf(id) === S.team) continue; if (pilotPos(id).distanceTo(A) <= R && scr(pilotPos(id), o)) { c.strokeStyle = '#ff5c6c'; c.lineWidth = 2 * sc; c.strokeRect(o.x - 12 * sc, o.y - 12 * sc, 24 * sc, 24 * sc); } }
+      if (KIT.curOn) { const x = KIT.cur.x * cw, y = KIT.cur.y * ch; c.strokeStyle = '#ffffff'; c.lineWidth = 1.5 * sc; c.beginPath(); c.arc(x, y, 14 * sc, 0, KTAU); c.moveTo(x - 20 * sc, y); c.lineTo(x + 20 * sc, y); c.moveTo(x, y - 20 * sc); c.lineTo(x, y + 20 * sc); c.stroke(); }
+      if (simT - KIT.miss < 0.6) { c.font = font(11, 700); c.fillStyle = '#9aa6d6'; c.fillText('nothing there inside the guard', cw / 2, tY + pad + 80 * sc); }
+    }
+    if (KIT.flyerDead) { c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ff5c6c'; c.fillText('FLYER DOWN · Y hops you out as the flyer (the AI hops for you in ' + Math.max(0, 3 - KIT.deadT).toFixed(1) + ' s)', cw / 2, ch * 0.42); }
+    // FLUME's labels: each soliton's length and maker, at its way out
+    if (kitSight()) for (const pr of pairs) {
+      if (!pr.alive || !pr.wh || pr.dying) continue; whAt(pr.wh, pr.wh.L, flA);
+      if (!scr(flA, o)) continue; c.textAlign = 'center'; c.font = font(10.5, 700); c.fillStyle = '#ffffff';
+      c.fillText('FLUME · ' + Math.round(pr.wh.L) + ' u · ' + (pr.pilot ? seatFor(pr.pilot - 1).name : 'yours') + (pr.sentinel && pr.sentinel.alive ? ' · guarded' : ''), o.x, o.y - 10 * sc);
+    }
+    // the Mix's alarm: a rival that entered one of your sentinels' guards, marked for you
+    if (mix) for (const id of pilotIds()) {
+      if (!(simT < (KIT.alarm[id] || -1)) || teamOf(id) === teamOf(0)) continue;
+      const p = pilotPos(id); tv.copy(p).applyMatrix4(cam.matrixWorldInverse); const behind = tv.z > 0; tv.copy(p).project(cam); let x = tv.x, y = tv.y; if (behind) { x = -x; y = -y; }
+      const onS = !behind && Math.abs(x) < 0.95 && Math.abs(y) < 0.92; if (!onS) { const m = Math.max(Math.abs(x) / 0.92, Math.abs(y) / 0.88); x /= m; y /= m; }
+      const px = (x * 0.5 + 0.5) * cw, py = (-y * 0.5 + 0.5) * ch; c.strokeStyle = '#ff5c6c'; c.fillStyle = '#ff5c6c'; c.lineWidth = 2 * sc;
+      c.beginPath(); c.moveTo(px, py - 14 * sc); c.lineTo(px + 14 * sc, py); c.lineTo(px, py + 14 * sc); c.lineTo(px - 14 * sc, py); c.closePath(); c.stroke();
+      c.textAlign = 'center'; c.font = font(10.5, 700); c.fillText('ALARM · ' + (id ? seatFor(id - 1).name : 'You') + ' · ' + Math.round(p.distanceTo(hull.position)) + ' u', px, py - 20 * sc);
+    }
+  }
+  // ---- the phone's ability buttons per kit (the Input tab's tables follow the kit by CSS: body.kit-*) ----
+  function kitSyncButtons() {
+    if (!playMode) return; const k = ftLive.kit, seated = !!KIT.seat;
+    $('tY').classList.toggle('armed', !!k.sentinel && !seated); $('tY').classList.remove('cool');
+    $('tLB').classList.toggle('armed', kitSight()); $('tLB').classList.remove('cool');
+    $('tB').classList.toggle('cool', simT < (k.readyB || 0) || kitLv('space') < 5);
+    $('tY').querySelector('small').textContent = seated ? 'Hop' : 'Sentinel';
+    $('tSeat').querySelector('small').textContent = seated ? 'Seat ' + (KIT.sentinels.filter((s) => s.alive && s.owner === 0).indexOf(KIT.seat) + 1) : 'Flyer';
+  }
+  const KIT_TOUCH = { 0: null, 1: { Y: 'Sentinel', LB: 'Sight', B: null, seat: true }, 2: { Y: 'Sentinel', LB: 'Sight', B: 'Cave-in', seat: false }, 3: { Y: 'Lookout', LB: 'Harden', B: 'Cave-in', seat: false } };
+  const KIT_DESC = [
+    '<b>Off</b>: no kit. Only the wormhole (RT), exactly as before round 15: every headless race here is byte for byte the page\'s old races with round 8\'s abilities switched off.',
+    '<b>Garrett\'s kit</b> (his design, as written; origin/cece/lucid-brown-ykcmhu). <b>Space</b>: the wormhole is a <b>soliton</b> sized by its <i>surface area</i> (a long one thin, a short one fat; only a 0.5 u safety floor), <b>anyone rides any soliton</b>, and it swallows prisms at its way in and fires them out of its way out as moving prisms (two plain ones that meet both go, scored to the maker; a shielded one bounces). <b>Charge</b>: <b>Sentinel mode</b> on <kbd>Y</kbd> / <kbd>F</kbd>: each new tunnel leaves a sentinel at its way in (3 at once, 6 at L5; the oldest retires with its soliton) that zaps rivals in its guard in sub-petal ticks and shields its own prisms. <b>Mass</b>: a passive exit portal of six small prisms (danger at L5). <b>Time</b>: a passive faster ride through every soliton (L5 Boost out). <b>The crew</b>: <kbd>[</kbd> <kbd>]</kbd> / D-pad swap you into a sentinel (its perched view; click a prism to shield it, a rival to zap it), <kbd>Y</kbd> there <b>hops</b> you through its soliton to fly again while the old flyer becomes a sentinel. The meerkat you sit in holds the elements; any other dies of an element hit. <kbd>LB</kbd> / <kbd>Q</kbd> held: the pilot sight, FLUME.',
+    '<b>The Mix</b> (our recommendation): Garrett\'s kit with five changes, one per decision (table below): Time L5 is round 8\'s <b>Chain Dig</b> instead of Boost out; Sentinel mode without seats (every sentinel AI-guarded, no swap, no hop) and a rival in your guard is <b>marked for you</b> (round 8 Lookout\'s job); Space L5 is round 8\'s <b>Cave-in</b> on <kbd>B</kbd> (your nearest soliton fires out all it holds at once; a rival riding it loses petals); the throat is held between a <b>floor and a ceiling</b> (3 u and 25 u). Garrett\'s exit portal replaces our Hardened Bridge. <kbd>LB</kbd> / <kbd>Q</kbd> held: FLUME.',
+    '<b>Round 8 (archived)</b>: the round-8 proposals unchanged (Lookout on Y, Hardened Bridge on LB, Cave-in on B, Chain Dig at Time L5), kept to replay. <b>LB now conflicts</b>: it is the pilot sight on every vessel (Docs/Pilots/CALLSIGNS.md). Its sliders are the Round 8 sections of Vessel Config.',
+  ];
+  function kitSyncUi() {
+    const k = kitOf(BP), t = KIT_TOUCH[k];
+    for (let i = 0; i < 4; i++) document.body.classList.toggle('kit-' + KIT_KEYS[i], i === k);
+    document.body.classList.toggle('kit-gm', k === 1 || k === 2);
+    const d = $('kitDesc'); if (d) d.innerHTML = KIT_DESC[k] || '';
+    $('tAbil').hidden = !t;
+    if (t) for (const [id, lab] of [['tY', t.Y], ['tLB', t.LB], ['tB', t.B]]) { const b = $(id); b.hidden = !lab; if (lab) b.querySelector('small').textContent = lab; b.classList.remove('armed', 'cool'); }
+    if ($('tSeat')) $('tSeat').hidden = !(t && t.seat);
+    if (KIT.applied !== k) { const first = KIT.applied < 0; KIT.applied = k; if (!first && !batching) spawn(); }
+  }
+  // ---- the kits' scorecard (/vessel-studio D5: one column per question, the rookie's included): every kit raced alone
+  // (the level scorecard: I1-I4 x Easy / Medium / Hard / no wormhole, 3 seeds) and in a field (your hull at Hard with
+  // three rivals at Hard, Medium and Easy, the rivals flying the same kit), headless and seeded ----
+  function kitRaceOnce() {
+    simT = 0; spawn(); startRace(); hideOverlay();
+    let t = 0; const h = 1 / 60;
+    while (race === 'running' && t < 420) { simStep(h, aiInput(h)); t += h; }
+    const s = raceStats || {}, alive = KIT.kp.filter((k) => k.alive).length;
+    return { finished: race === 'finished', time: raceT, rivals: rivals.map((r) => r.finishT != null ? +r.finishT.toFixed(2) : -r.threaded), stats: Object.assign({}, KS), slings: s.slings || 0, chains: s.chains || 0, r8Caves: s.caveIns || 0,
+      conserved: KIT.kp.length === KS.seeded + KS.portals + KS.lifted && KIT.kp.length - alive === KS.kpDestroyed && KS.destroyed === KS.kpDestroyed + KS.fieldDestroyed };
+  }
+  function runKitScorecard(opts) {
+    opts = opts || {};
+    const kits = opts.kits || [0, 1, 2, 3], seeds = opts.seeds || [11, 23, 37], Is = opts.intensities || [1, 2, 3, 4], fieldIs = opts.fieldIntensities || Is;
+    const keep = { BP: Object.assign({}, BP), intensity, seatLv: seatLv.slice(), seatDomain: seatDomain.slice(), level: ai.level, simT, aiOn };
+    const out = { kits, seeds, course: courseKind, seed, solo: {}, field: {} };
+    try {
+      aiOn = false;
+      for (const k of kits) {
+        Object.assign(BP, keep.BP, { kit: k }); recomputeP();
+        simT = 0; const rows = [];
+        batching = true;
+        for (const I of Is) {
+          intensity = I; buildCourse(); const row = { I };
+          for (const lv of ['Easy', 'Medium', 'Hard', 'None']) {
+            row[lv] = [];
+            for (const sd of seeds) { Object.assign(BP, keep.BP, { kit: k, aiNoise: AI_LEVELS[lv === 'None' ? 'Hard' : lv].judge, aiWormhole: lv === 'None' ? 0 : 1 }); recomputeP(); ai.level = lv === 'None' ? 'Hard' : lv; ai.seed = sd * 131 + I; const r = kitRaceOnce(); r.mistakes = ai.mistakes; row[lv].push(r); }
+          }
+          rows.push(row);
+        }
+        out.solo[k] = rows;
+        batchRivals = true; seatLv = ['Hard', 'Medium', 'Easy']; seatDomain = ['ruby', 'gold', 'blue']; out.field[k] = [];
+        for (const I of fieldIs) { intensity = I; buildCourse(); for (const sd of seeds) { Object.assign(BP, keep.BP, { kit: k, aiNoise: 0, aiWormhole: 1 }); recomputeP(); ai.level = 'Hard'; ai.seed = sd * 131 + I; rivalSeedBump = sd; out.field[k].push(Object.assign({ I, sd }, kitRaceOnce())); } }
+        batchRivals = false; rivalSeedBump = 0;
+      }
+    } finally {
+      Object.assign(BP, keep.BP); recomputeP(); seatLv = keep.seatLv; seatDomain = keep.seatDomain; ai.level = keep.level; aiOn = keep.aiOn;
+      batching = false; batchRivals = false; rivalSeedBump = 0; intensity = keep.intensity; buildCourse(); simT = keep.simT; refreshAllOuts(); spawn();
+    }
+    return out;
+  }
+  function kitTable(out) {
+    const med = (a) => { const f = a.filter((r) => r.finished).map((r) => r.time).sort((x, y) => x - y); return f.length ? f[Math.floor((f.length - 1) / 2)] : NaN; };
+    const avg = (a, f) => a.length ? a.reduce((s, r) => s + f(r), 0) / a.length : 0, f1 = (x) => x.toFixed(1);
+    let h = '<table class="runs batch"><thead><tr><th>Kit</th><th>Finishes? (DNF)</th><th>Hard I1-I4 (s)</th><th>Rookie: Easy I1-I4 (s)</th><th>Hard faster than Medium, Medium than Easy?</th><th>Zaps / field race</th><th>Prisms fired · destroyed · bounced</th><th>Rides through your solitons</th><th>Hops · Cave-ins</th><th>Sentinels lost · retired</th><th>Mass kept?</th></tr></thead><tbody>';
+    for (const k of out.kits) {
+      const solo = out.solo[k], field = out.field[k] || [], all = solo.flatMap((r) => [].concat(r.Easy, r.Medium, r.Hard)).concat(field);
+      const dnf = all.filter((r) => !r.finished).length, order = solo.filter((r) => med(r.Hard) <= med(r.Medium) && med(r.Medium) <= med(r.Easy)).length;
+      const S = (f) => avg(field, (r) => f(r.stats));
+      h += '<tr><td>' + KIT_NAMES[k] + '</td><td>' + (dnf ? '<b>' + dnf + ' DNF</b>' : 'all ' + all.length) + '</td><td>' + solo.map((r) => fmtTime(med(r.Hard))).join(' · ') + '</td><td>' + solo.map((r) => fmtTime(med(r.Easy))).join(' · ') + '</td><td>' + order + ' of ' + solo.length + '</td>'
+        + '<td>' + f1(S((s) => s.zaps)) + '</td><td>' + f1(S((s) => s.fired)) + ' · ' + f1(S((s) => s.destroyed)) + ' · ' + f1(S((s) => s.bounces)) + '</td><td>' + f1(S((s) => s.ridesOfYours)) + '</td>'
+        + '<td>' + f1(S((s) => s.hops)) + ' · ' + f1(k === 3 ? avg(field, (r) => r.r8Caves) : S((s) => s.caveIns)) + '</td><td>' + f1(S((s) => s.lost)) + ' · ' + f1(S((s) => s.retired)) + '</td><td>' + (field.every((r) => r.conserved) ? 'yes' : '<b>no</b>') + '</td></tr>';
+    }
+    return h + '</tbody></table><p class="src">Alone: the level scorecard per kit (median of seeds ' + out.seeds.join(', ') + '). In a field: your hull at Hard against Hard, Medium and Easy rivals flying the same kit, every intensity, the same seeds; the columns after the fourth are per field race. A kit is lab-only: none of it is in the game.</p>';
   }
 
   // The reticle's wireframe (yours alone): rings round the throat (a hyperboloid - wide at the mouths, narrowest mid-way)
@@ -2028,7 +2939,7 @@
   let armed = false, padBlocked = false, padName = '';
   const prevBtn = [];
   function isFormTarget(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
-  const GAME_KEYS = new Set(['KeyP', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyL', 'KeyR', 'KeyQ', 'KeyE', 'KeyF', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  const GAME_KEYS = new Set(['KeyP', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyL', 'KeyR', 'KeyQ', 'KeyE', 'KeyF', 'ShiftLeft', 'ShiftRight', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'BracketLeft', 'BracketRight', 'KeyB']);
   window.addEventListener('keydown', (e) => {
     if (isFormTarget(e.target) || !armed) return;
     if (GAME_KEYS.has(e.code)) e.preventDefault();
@@ -2039,9 +2950,12 @@
     if (e.code === 'KeyR') stopRace();
     if (e.code === 'KeyP') setStopped(!stopped);
     if (e.code === 'KeyC') nextCamera();
-    if (e.code === 'KeyE') abilityPress('Y');    // round 8: Lookout (Charge)
-    if (e.code === 'KeyQ') abilityPress('LB');   // Hardened Bridge (Mass): arm the next tunnel
-    if (e.code === 'KeyF') abilityPress('B');    // Cave-in (Space)
+    if (isGM()) kitKeyDown(e.code);              // round 15, the kits: F / E Sentinel mode (or the hop), B Cave-in (the Mix), [ ] swap seats, Q held the pilot sight
+    else {
+      if (e.code === 'KeyE') abilityPress('Y');    // round 8: Lookout (Charge)
+      if (e.code === 'KeyQ') abilityPress('LB');   // Hardened Bridge (Mass): arm the next tunnel
+      if (e.code === 'KeyF') abilityPress('B');    // Cave-in (Space)
+    }
   });
   // C (/vessel-studio D16): Chase, then Follow on each pilot in turn (you, then every rival), then Free, then Chase.
   function nextCamera() {
@@ -2102,8 +3016,31 @@
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
   }
   bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R'); bindTrigger('ttL', 'L'); bindTrigger('ttR', 'R');
+  // round 15, Garrett's kit: in a sentinel seat a click (PC) or a tap (phone) acts where it lands; a two-finger swipe
+  // (two fingers of one hand, within 160 px of each other, 60 px sideways together) swaps seats, as the fleet's swap does
+  canvas.addEventListener('pointerdown', (e) => { if (isGM() && KIT.seat && !playMode) { const r = canvas.getBoundingClientRect(); kitSeatAct(e.clientX - r.left, e.clientY - r.top); } });
+  $('touchUI').addEventListener('pointerdown', (e) => { if (!(isGM() && KIT.seat) || e.target.closest('button')) return; const r = canvas.getBoundingClientRect(); kitSeatAct(e.clientX - r.left, e.clientY - r.top); });
+  const swipe = new Map();
+  $('touchUI').addEventListener('pointerdown', (e) => { swipe.set(e.pointerId, { x0: e.clientX, y0: e.clientY, x: e.clientX, t: performance.now() }); }, { capture: true });
+  $('touchUI').addEventListener('pointermove', (e) => {
+    const p = swipe.get(e.pointerId); if (!p) return; p.x = e.clientX;
+    if (swipe.size !== 2 || !isG()) return; const [a, b] = [...swipe.values()];
+    if (Math.hypot(a.x0 - b.x0, a.y0 - b.y0) > 160 || performance.now() - Math.min(a.t, b.t) > 600 || a.done || b.done) return;
+    const da = a.x - a.x0, db = b.x - b.x0; if (Math.abs(da) > 60 && Math.abs(db) > 60 && da * db > 0) { a.done = b.done = true; kitSwap(da > 0 ? 1 : -1); }
+  }, { capture: true });
+  for (const ev of ['pointerup', 'pointercancel']) $('touchUI').addEventListener(ev, (e) => swipe.delete(e.pointerId), { capture: true });
   // round 8: the three ability buttons (Y, LB, B), the same press as a gamepad's
-  for (const b of document.querySelectorAll('#tAbil button')) b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touch.used = true; abilityPress(b.dataset.btn); });
+  // round 15: in Garrett's kit and the Mix, Y is Sentinel mode (the hop in a seat), LB is held for the pilot sight, B is
+  // the Mix's Cave-in and SEAT steps through the seats
+  for (const b of document.querySelectorAll('#tAbil button')) {
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation(); touch.used = true;
+      if (!isGM()) { abilityPress(b.dataset.btn); return; }
+      const k = b.dataset.btn; if (k === 'LB') KIT.touchSight = true; else if (k === 'SEAT') kitSwap(1); else kitPress(k);
+    });
+    const off = () => { if (b.dataset.btn === 'LB') KIT.touchSight = false; };
+    b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off);
+  }
   function setPlayMode(on) {
     playMode = !!on; document.body.classList.toggle('play', playMode);
     if (playMode) {
@@ -2160,6 +3097,7 @@
   $('tBack').addEventListener('click', () => stopRace());
   // the phone's ability buttons: dim while cooling down, accent while Mass is armed
   function syncAbilityButtons() {
+    if (isGM()) { kitSyncButtons(); return; }
     if (!playMode) return; const ab = ftLive.ab;
     $('tY').classList.toggle('cool', simT < ab.readyY || !abOn('charge')); $('tB').classList.toggle('cool', simT < ab.readyB || !abOn('space'));
     $('tLB').classList.toggle('cool', simT < ab.readyLB || !abOn('mass')); $('tLB').classList.toggle('armed', ab.armed);
@@ -2173,7 +3111,7 @@
     const g = playMode && touch.used ? null : readPad();
     if (!g && playMode && touch.used) {   // the touch layout drives the same dual-stick mix and analog triggers as a gamepad
       const inp = { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt, analog: true, kYaw: 0, kPitch: 0, kRoll: 0 };
-      if (mode === 'fly') { trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt); }
+      if (mode === 'fly' && !kitSeatPoll) { trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt); }
       lastInput = inp; return inp;
     }
     const inp = { pad: !!g, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, analog: !!g, kYaw: 0, kPitch: 0, kRoll: 0 };
@@ -2181,11 +3119,13 @@
       inp.L = stick(g.axes[0], -g.axes[1]); inp.R = stick(g.axes[2], -g.axes[3]);   // Unity: up = +y
       inp.lt = g.buttons[6] ? g.buttons[6].value : 0; inp.rt = g.buttons[7] ? g.buttons[7].value : 0;
       const e = [];
-      for (let i = 0; i < 10; i++) { const b = !!(g.buttons[i] && g.buttons[i].pressed); e[i] = b && !prevBtn[i]; prevBtn[i] = b; }
+      for (let i = 0; i < 16; i++) { const b = !!(g.buttons[i] && g.buttons[i].pressed); e[i] = b && !prevBtn[i]; prevBtn[i] = b; }
       if (e[0] || e[9]) startRace();
       if (e[8] && mode === 'fly') stopRace();
       if (e[2]) stance = !stance && race === 'running';
-      if (mode === 'fly') { if (e[3]) abilityPress('Y'); if (e[4]) abilityPress('LB'); if (e[1]) abilityPress('B'); }   // round 8: Y Lookout, LB Harden, B Cave-in
+      if (mode === 'fly' && isGM()) {   // round 15: Y Sentinel mode (or the hop), B the Mix's Cave-in, D-pad left / right swap seats, LB held the pilot sight
+        if (e[3]) kitPress('Y'); if (e[1]) kitPress('B'); if (e[14]) kitSwap(-1); if (e[15]) kitSwap(1); KIT.padLB = !!(g.buttons[4] && g.buttons[4].pressed);
+      } else if (mode === 'fly') { if (e[3]) abilityPress('Y'); if (e[4]) abilityPress('LB'); if (e[1]) abilityPress('B'); }   // round 8: Y Lookout, LB Harden, B Cave-in
     }
     const k = (c) => keys.has(c) ? 1 : 0;
     if (!g || (inp.L.x === 0 && inp.L.y === 0 && inp.R.x === 0 && inp.R.y === 0 && inp.lt === 0 && inp.rt === 0 && keys.size)) {
@@ -2194,7 +3134,7 @@
       inp.kTx = k('ArrowRight') - k('ArrowLeft'); inp.kTy = k('ArrowUp') - k('ArrowDown');   // the arrows bend the tunnel
       if (!inp.pad) { inp.lt = Math.max(k('KeyJ'), k('ShiftLeft')); inp.rt = Math.max(k('KeyL'), k('ShiftRight')); }
     }
-    if (mode === 'fly') { trackHold('L', inp.lt, inp.analog, dt); trackHold('R', inp.rt, inp.analog, dt); }
+    if (mode === 'fly' && !kitSeatPoll) { trackHold('L', inp.lt, inp.analog, dt); trackHold('R', inp.rt, inp.analog, dt); }
     lastInput = inp;
     return inp;
   }
@@ -2280,6 +3220,7 @@
     const tgt = blind ? tv3.copy(gp) : tv3.copy(gp).addScaledVector(g.n, -Math.min(70, d * 0.35));
     const detour = simT < ai.detourUntil && hull.position.distanceTo(ai.detourPt) > 30;   // round 8: round the end of a wall that stopped it
     if (detour) tgt.copy(ai.detourPt);
+    const solK = isGM() && !detour ? kitAiSoliton(blind, gp, d, tgt) : null;   // round 15: a standing soliton that saves time: fly for its way in
     ai.aimPt.copy(tgt); ai.aimSet = true;
     const loc = localOf(tgt), yawErr = Math.atan2(loc.x, -loc.z), pitchErr = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
     const rate = Math.max(0.2, P.pitchYaw * Math.PI / 180), tau = Math.max(0.05, P.aiTau);
@@ -2291,7 +3232,7 @@
       ai.gHold = 0; ai.gShaping = false;
       // round 8, Chain Dig (Time L5): past chainShare of the ride, if a tunnel from the far mouth fits the next leg, bend
       // the right stick for it and press RT. One try a tunnel.
-      if (P.aiNewAbilities > 0.5 && !blind && !gate.next && !gate.aiChainTried && abUp('time') && gate.s >= Math.max(0, P.chainShare) * gate.pair.wh.L) {
+      if (aiChainOn() && !blind && !gate.next && !gate.aiChainTried && gate.s >= chainShareOf(P) * gate.pair.wh.L) {
         gate.aiChainTried = true;
         const w1 = gate.pair.wh; whAt(w1, w1.L, cdE, cdT); cdQ.setFromUnitVectors(fwd, cdT);
         const eR = tv.copy(right).applyQuaternion(cdQ), eU = tv2.copy(up).applyQuaternion(cdQ), dE = aiTo.subVectors(tgt, cdE), dist = dE.length();
@@ -2308,7 +3249,7 @@
       ai.gHold -= dt; lt = ai.gL; bend = true;
       if (ai.gHold <= 0 && (reticleSettled(ftLive.ret, ai.gL) || ai.gHold <= -1)) { rt = 1; ai.gShaping = false; }
     }
-    else if (!blind && P.aiWormhole > 0.5 && d > Math.min(P.aiStraightMinDistance, P.aiBentMinDistance) && ftLive.ret && ftLive.ret.emerge >= 0.6) {   // once its reticle is back
+    else if (!blind && !solK && P.aiWormhole > 0.5 && d > Math.min(P.aiStraightMinDistance, P.aiBentMinDistance) && ftLive.ret && ftLive.ret.emerge >= 0.6) {   // once its reticle is back
       const plan = aiGatePlan(loc, clamp01(P.aiNoise), d <= P.aiStraightMinDistance);
       if (plan) { ai.gL = lt = plan.lq; ai.gM = plan.m; ai.gHold = Math.max(dt, P.aiShapeSeconds); ai.gShaping = true; bend = true; }
     }
@@ -2321,7 +3262,8 @@
     inp.lt = lt; inp.rt = rt;
     trackHold('L', inp.lt, true, dt); trackHold('R', inp.rt, true, dt);
     aiAbilities();   // round 8: Y, LB and B, by its rules (behind AI uses the new abilities)
-    ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : bend ? 'pair' : 'ring';
+    if (isGM()) kitAi();   // round 15: the kit's Y and B, by its rules (behind Kits: AI uses the kit)
+    ai.think = blind ? 'unnoticed' : ai.misjudged ? 'misjudged' : bend || solK ? 'pair' : 'ring';
     lastInput = inp;
     return inp;
   }
@@ -2365,7 +3307,7 @@
     return aiBel.copy(g.p);
   }
   function pilotP(level) {   // what one rival flies with: the sliders and its level's judgement
-    return Object.assign({}, BP, { aiNoise: (AI_LEVELS[level] || AI_LEVELS.Hard).judge, aiWormhole: 1 });
+    return kitOverrides(Object.assign({}, BP, { aiNoise: (AI_LEVELS[level] || AI_LEVELS.Hard).judge, aiWormhole: 1 }));
   }
 
   // ================= AI rivals (/vessel-studio D20, D23) =================
@@ -2429,7 +3371,7 @@
   function resetRivals() {
     for (const pr of pairs) if (pr.pilot) pr.alive = false;   // rivals' tunnels go with the old race
     rivals = [];
-    if (batching || mode !== 'fly') { for (const s of seatState) if (s.mesh) s.mesh.visible = false; return; }
+    if ((batching && !batchRivals) || mode !== 'fly') { for (const s of seatState) if (s.mesh) s.mesh.visible = false; return; }
     const g = gates[0];
     const side = new V3().crossVectors(g.n, Y); if (side.lengthSq() < 1e-4) side.set(1, 0, 0); side.normalize();
     SEATS.forEach((_, k) => {
@@ -2439,7 +3381,7 @@
       if (!AI_LEVELS[lv]) { s.mesh.visible = false; s.line.visible = false; return; }
       const fresh = newPilotState(k + 1);
       Object.assign(s, { speed: 0, stance: false, threaded: 0, slings: 0, throttleNow: 1, myPair: null, raceStats: newStats(), lastInput: null,
-        velNow: fresh.velNow, holds: fresh.holds, ftLive: fresh.ftLive, ai: newAi(seed * 97 + 13 * (k + 1), lv), finishT: null, seat, level: lv });
+        velNow: fresh.velNow, holds: fresh.holds, ftLive: fresh.ftLive, ai: newAi(seed * 97 + 13 * (k + 1) + rivalSeedBump * 7919, lv), finishT: null, seat, level: lv });
       s.P = pilotP(lv);
       // the grid: your hull on the line 170 u out; the rivals beside and behind it
       const lat = [42, -42, 0][k], back = [20, 20, 55][k];
@@ -2451,7 +3393,7 @@
     if (watchIdx > rivals.length) watchIdx = 0;
   }
   function stepRivals(dt) {
-    if (batching || mode !== 'fly' || !rivals.length || race !== 'running' || stopped) return;
+    if ((batching && !batchRivals) || mode !== 'fly' || !rivals.length || race !== 'running' || stopped) return;
     for (const r of rivals) asPilot(r, () => stepFly(dt, aiInput(dt)));
   }
   function syncRivalMeshes() {
@@ -2534,6 +3476,7 @@
   // The camera watches your hull, or the rival C picked (watchIdx): it runs as that pilot, so every camera works on it.
   function updateCamera(dt) {
     const r = mode === 'fly' && watchIdx > 0 ? rivals[watchIdx - 1] : null;
+    if (!r && isGM() && kitSeatCam()) return;   // round 15: the sentinel seat's perched view
     if (r) asPilot(r, () => cameraStep(dt)); else cameraStep(dt);
     speedTunnel(dt, r);
   }
@@ -2797,6 +3740,7 @@
     c.textAlign = 'right'; c.font = font(10, 500); c.fillStyle = dim;
     c.fillText(playMode ? 'touch' : lastInput && lastInput.pad ? 'gamepad' : 'keyboard', cw - padR, ch - pad - 96 * sc);
     drawLookout(c, cw, ch, sc, font);
+    if (isGM()) kitHud(c, cw, ch, sc, font, padL, padR, pad, tY);   // round 15: the seat, the elements, FLUME's labels, the Mix's alarm
     // the tally under the race clock: crystals, petals lost; and each hull's Burial marker
     const me = pil(0);
     if (crys.n) { c.textAlign = 'right'; c.font = font(11, 500); c.fillStyle = dim; c.fillText('crystals ' + me.crystals + (me.petals ? '  ·  petals lost ' + me.petals : ''), cw - padR, pad + 65 * sc); }
@@ -2819,6 +3763,7 @@
   // ---- round 8: the four-icon ability row, for the pilot the camera is on ----
   const viewedId = () => (mode === 'fly' && watchIdx > 0 && rivals[watchIdx - 1] ? rivals[watchIdx - 1].id : 0);
   function drawAbilityRow(c, right, bottom, sc, font) {
+    if (isGM()) return kitAbilityRow(c, right, bottom, sc, font);   // round 15: the kit's four
     const id = viewedId(), live = liveOf(id), ab = live && live.ab, Pv = id ? rivals[watchIdx - 1].P : P;
     if (!ab || !Pv) return 0;
     const S = 44 * sc, G = 8 * sc, n = 4, W = n * S + (n - 1) * G, x0 = right - W, y0 = bottom - S, sil = simT < pil(id).silenceUntil;
@@ -2827,10 +3772,10 @@
       { el: 'charge', key: 'Y', name: 'Lookout', ready: ab.readyY, total: Math.max(0.5, Pv.lookoutSeconds) + Math.max(0, Pv.lookoutCooldownSeconds), act: simT < ab.lookUntil ? (ab.lookUntil - simT) / Math.max(0.5, Pv.lookoutSeconds) : 0 },
       { el: 'mass', key: 'LB', name: ab.armed ? 'ARMED' : 'Harden', ready: ab.readyLB, total: Math.max(0.01, Pv.hardenCooldownSeconds), act: ab.armed ? 1 : 0 },
       { el: 'space', key: 'B', name: 'Cave-in', ready: ab.readyB, total: Math.max(0.01, Pv.caveInCooldownSeconds), act: 0 },
-      { el: 'time', key: 'RT', name: riding && g.next ? 'DUG' : riding && Pv.timeLevel >= 5 && g.s >= Pv.chainShare * g.pair.wh.L && !g.next ? 'DIG!' : 'Wormhole', ready: 0, total: 1, act: riding ? 1 : 0 },
+      { el: 'time', key: 'RT', name: riding && g.next ? 'DUG' : riding && isR8(Pv) && Pv.timeLevel >= 5 && g.s >= Pv.chainShare * g.pair.wh.L && !g.next ? 'DIG!' : 'Wormhole', ready: 0, total: 1, act: riding ? 1 : 0 },
     ];
     rows.forEach((r, i) => {
-      const x = x0 + i * (S + G), y = y0, on = Pv[r.el + 'On'] > 0.5, lv = Math.round(Pv[r.el + 'Level']), cd = Math.max(0, r.ready - simT);
+      const x = x0 + i * (S + G), y = y0, on = Pv[r.el + 'On'] > 0.5 && (r.el === 'time' || isR8(Pv)), lv = Math.round(Pv[r.el + 'Level']), cd = Math.max(0, r.ready - simT);   // round 15: Off shows the wormhole alone
       c.save();
       c.globalAlpha = on ? 1 : 0.35;
       c.fillStyle = 'rgba(8,10,20,0.72)'; c.strokeStyle = r.act > 0 && on ? '#ffb347' : 'rgba(232,236,255,0.45)'; c.lineWidth = (r.act > 0 && on ? 2 : 1.2) * sc;
@@ -3284,6 +4229,142 @@
       foot(up5 ? 'L5 Chain Dig: RT past the tick digs on, at throat speed' : 'Chain Dig unlocks at level 5 (now ' + lv + ')');
     },
   };
+  // ---------- round 15: the kits, in plan (one scene, a mode per question; cfg.k) ----------
+  SCENES.kit = {
+    make: () => ({}), period: (st, cfg) => (cfg.k === 'area' || cfg.k === 'world' || cfg.k === 'kit' ? 6 : 4.5),
+    draw(c, W, H, tt, st, view, Pv, cfg) {
+      previewBg(c, W, H, 53);
+      const k = cfg.k, ink = '#e8ecff', dim = '#9aa6d6', amb = '#ffb347', cyn = '#bff6ff', rival = '#ff4fd8', red = '#ff5c6c';
+      const foot = (s) => txt(c, s, 6, H - 6, dim, 9.5);
+      let a = 131; const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const kitN = Math.round(Pv.kit || 0), lv = (el) => Math.round(Pv['k' + el.charAt(0).toUpperCase() + el.slice(1) + 'Level']);
+      if (k === 'kit') {   // the kit's four abilities, Charge Mass Space Time, and LB
+        const rows = kitN === 1 ? [['Charge', 'Y Sentinel mode; seats, the hop'], ['Mass', 'passive exit portal'], ['Space', 'RT the soliton: surface area, swallow and fire'], ['Time', 'passive rush; L5 Boost out'], ['LB', 'the pilot sight, FLUME']]
+          : kitN === 2 ? [['Charge', 'Y Sentinel mode (no seats) + alarm'], ['Mass', 'passive exit portal'], ['Space', 'RT the soliton; L5 B Cave-in'], ['Time', 'passive rush; L5 Chain Dig'], ['LB', 'the pilot sight, FLUME']]
+            : kitN === 3 ? [['Charge', 'Y Lookout'], ['Mass', 'LB Hardened Bridge (LB conflicts)'], ['Space', 'B Cave-in'], ['Time', 'RT the wormhole; L5 Chain Dig'], ['LB', 'taken by Hardened Bridge']]
+              : [['Charge', 'none'], ['Mass', 'none'], ['Space', 'none'], ['Time', 'RT the wormhole alone'], ['LB', 'none']];
+        txt(c, KIT_NAMES[kitN] || 'Off', 8, 16, amb, 12, 'left', 700);
+        rows.forEach(([el, d], i) => { const y = 36 + i * Math.min(22, (H - 50) / 5); txt(c, el, 10, y, ink, 10.5, 'left', 700); txt(c, d, 64, y, dim, 10); });
+        return;
+      }
+      if (k === 'area' || k === 'mix') {   // the throat's diameter against the tunnel's length, at this Space level
+        const x0 = 34, x1 = W - 10, y0 = H - 22, y1 = 16, Lmin = 60, Lmax = 760, Dmax = 70;
+        const P2 = Object.assign({}, Pv, { kit: kitN === 2 ? 2 : 1 });
+        const X = (L) => x0 + (x1 - x0) * (L - Lmin) / (Lmax - Lmin), Yd = (d) => y0 - (y0 - y1) * Math.min(1, d / Dmax);
+        c.strokeStyle = 'rgba(255,255,255,0.25)'; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+        txt(c, 'throat (u)', 4, 12, dim, 9); txt(c, 'tunnel length ' + Lmin + ' to ' + Lmax + ' u', x1, y0 + 14, dim, 9, 'right');
+        if (kitN === 2) { c.strokeStyle = 'rgba(255,179,71,0.5)'; c.setLineDash([4, 4]); for (const d of [P2.throatFloorDiameter, P2.throatCeilingDiameter]) { c.beginPath(); c.moveTo(x0, Yd(d)); c.lineTo(x1, Yd(d)); c.stroke(); } c.setLineDash([]); }
+        c.strokeStyle = cyn; c.lineWidth = 2; c.beginPath();
+        for (let i = 0; i <= 60; i++) { const L = Lmin + (Lmax - Lmin) * i / 60, d = 2 * kitThroat(P2, L).b; if (i) c.lineTo(X(L), Yd(d)); else c.moveTo(X(L), Yd(d)); }
+        c.stroke(); c.lineWidth = 1;
+        const L = Lmin + (Lmax - Lmin) * (0.5 + 0.5 * Math.sin(tt / 6 * TAU)), r = kitThroat(P2, L);
+        c.fillStyle = amb; c.beginPath(); c.arc(X(L), Yd(2 * r.b), 4, 0, TAU); c.fill();
+        txt(c, 'A ' + Math.round(r.A) + ' u2 · ' + Math.round(L) + ' u long: throat ' + (2 * r.b).toFixed(1) + ' u, mouth ' + (2 * r.M).toFixed(1) + ' u', x1, 14, ink, 10, 'right');
+        foot(kitN === 2 ? 'the Mix: held between the dashed floor and ceiling' : "Garrett's kit: unclamped but for a 0.5 u floor");
+        return;
+      }
+      if (k === 'sentinel') {   // the guard round a way in; a rival crosses it and is zapped
+        const cx = W * 0.42, cy = H * 0.52, M = 22, R = M * Math.max(0, Pv.guardShare), zp = lerpLv(Pv.zapPetalsL0, Pv.zapPetalsL10, lv('charge'));
+        c.strokeStyle = cyn; c.beginPath(); c.ellipse(cx, cy, 6, M, 0, 0, TAU); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,0.3)'; c.setLineDash([3, 4]); c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.stroke(); c.setLineDash([]);
+        c.fillStyle = '#ffffff'; c.fillRect(cx - 14, cy - M - 18, 4, 14); c.beginPath(); c.arc(cx - 12, cy - M - 21, 3, 0, TAU); c.fill();
+        const rx = 10 + (W - 20) * (tt / 4.5), ry = cy + 8, inside = Math.hypot(rx - cx, ry - cy) < R;
+        const tin = Math.max(0, Math.min(tt, 4.5) - (cx - R - 10) / ((W - 20) / 4.5)), zaps = Math.floor(Math.min(2 * R / ((W - 20) / 4.5), tin) * Math.max(0, Pv.aiZapRate));
+        ship(c, rx, ry, 1, 0, rival, 5);
+        if (inside && Math.floor(tt * Math.max(0.01, Pv.aiZapRate) * 2) % 2 === 0) { c.strokeStyle = '#ffffff'; c.beginPath(); c.moveTo(cx - 12, cy - M - 21); c.lineTo(rx, ry); c.stroke(); }
+        txt(c, 'guard ' + Math.round(R / M * 10) / 10 + ' x the opening · ' + Pv.aiZapRate + ' zaps/s · ' + zp.toFixed(3) + ' petal a zap', 6, 13, ink, 10);
+        txt(c, 'knocked out: ' + (zaps * zp).toFixed(2) + ' petal', 6, 27, amb, 10);
+        foot('pool ' + Math.round(lv('charge') >= 5 ? Pv.sentinelPoolL5 : Pv.sentinelPool) + ' (Charge L' + lv('charge') + '; ' + Math.round(Pv.sentinelPoolL5) + ' at L5) · the oldest retires with its soliton');
+        return;
+      }
+      if (k === 'swallow') {   // prisms drawn into the way in, carried, fired out; a shielded one bounces
+        const xi = 40, xo = W * 0.62, cy = H * 0.5, M = 16, rz = M * Math.max(0, Pv.swallowShare), sc = (W - 60) / 900;
+        c.strokeStyle = cyn; c.beginPath(); c.moveTo(xi, cy - M); c.quadraticCurveTo((xi + xo) / 2, cy - 5, xo, cy - M); c.moveTo(xi, cy + M); c.quadraticCurveTo((xi + xo) / 2, cy + 5, xo, cy + M); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,0.25)'; c.setLineDash([3, 4]); c.beginPath(); c.arc(xi, cy, rz, 0, TAU); c.stroke(); c.setLineDash([]);
+        const carryT = (xo - xi) / Math.max(1, Pv.carrySpeed * sc), glide = Math.max(0.1, Pv.fireGlideSeconds), vOut = Math.max(0, Pv.fireSpeed) * sc;
+        for (let i = 0; i < 5; i++) {
+          const t0 = i * 0.35, t = tt - t0; let x = xi - rz * 0.9, y = cy + (i - 2) * rz * 0.25;
+          if (t > 0 && t < carryT) { x = xi + (xo - xi) * (t / carryT); y = cy + (i - 2) * 2; }
+          else if (t >= carryT) { const u = t - carryT; x = xo + vOut * glide * (1 - Math.exp(-u / glide)); y = cy + (i - 2) * 4 * (1 + u); }
+          const shielded = i === 2; c.fillStyle = shielded ? '#eaf2ff' : '#4a6bd8'; c.fillRect(x - 4, y - 1.5, 8, 3);
+        }
+        txt(c, 'swallows within ' + Pv.swallowShare + ' x the opening · carried ' + Pv.carrySpeed + ' u/s · out ' + Pv.fireSpeed + ' u/s', 6, 13, ink, 10);
+        foot('a fired prism glides to rest over ' + Pv.fireGlideSeconds + ' s; a shielded one bounces keeping ' + Pv.bounceRestitution + ' of its speed');
+        return;
+      }
+      if (k === 'portal') {   // the hexagon round the way out
+        const cx = W / 2, cy = H / 2 + 4, M = 20, R = M * Math.max(0, Pv.portalShare), size = lerpLv(Pv.portalSizeL0, Pv.portalSizeL10, lv('mass')), danger = lv('mass') >= 5;
+        c.strokeStyle = cyn; c.beginPath(); c.arc(cx, cy, M, 0, TAU); c.stroke();
+        const grow = Math.min(1, tt / 1.2);
+        for (let i = 0; i < 6; i++) {
+          const ang = (i + 0.5) / 6 * TAU, ap = R * Math.cos(Math.PI / 6), x = cx + Math.cos(ang) * ap, y = cy + Math.sin(ang) * ap, ta = ang + Math.PI / 2, l = 11 * size * grow;
+          c.strokeStyle = danger ? '#ff3344' : '#13fff2'; c.lineWidth = 3.5 * size + 1; c.beginPath(); c.moveTo(x - Math.cos(ta) * l, y - Math.sin(ta) * l); c.lineTo(x + Math.cos(ta) * l, y + Math.sin(ta) * l); c.stroke();
+        }
+        c.lineWidth = 1;
+        txt(c, 'six prisms at ' + Pv.portalShare + ' x the exit radius · size ' + size.toFixed(2) + ' (Mass L' + lv('mass') + ')', 6, 13, ink, 10);
+        foot(danger ? 'Mass L5: danger prisms, a rival touching one loses ' + Pv.dangerPetals + ' petal' : 'danger prisms at Mass L5');
+        return;
+      }
+      if (k === 'rush') {   // the ride's speed along the tunnel, with the rush (and Garrett's Boost out)
+        const x0 = 20, x1 = W - 20, y0 = H - 26, top = 22, rush = lerpLv(Pv.rushL0, Pv.rushL10, lv('time'));
+        const mid = Pv.rideMidMultiplier * rush, ex = Pv.rideExitMultiplier * (kitN === 1 && lv('time') >= 5 ? Math.max(1, Pv.boostOut) : 1), en = Pv.rideEntryMultiplier, vmax = Math.max(mid, ex, en, 1) * 1.1;
+        const Yv = (m) => y0 - (y0 - top) * m / vmax;
+        c.strokeStyle = 'rgba(255,255,255,0.2)'; c.beginPath(); c.moveTo(x0, Yv(Pv.rideMidMultiplier)); c.lineTo(x1, Yv(Pv.rideMidMultiplier)); c.stroke();
+        c.strokeStyle = cyn; c.lineWidth = 2; c.beginPath();
+        for (let i = 0; i <= 50; i++) { const u = i / 50, w = Math.sin(Math.PI * u), m = u < 0.5 ? en + (mid - en) * w : ex + (mid - ex) * w, x = x0 + (x1 - x0) * u; if (i) c.lineTo(x, Yv(m)); else c.moveTo(x, Yv(m)); }
+        c.stroke(); c.lineWidth = 1;
+        const u = (tt / 4.5) % 1, w = Math.sin(Math.PI * u), m = u < 0.5 ? en + (mid - en) * w : ex + (mid - ex) * w;
+        ship(c, x0 + (x1 - x0) * u, Yv(m), 1, 0, '#9dff2e', 5);
+        txt(c, 'the throat ' + mid.toFixed(2) + ' x your speed (rush ' + rush.toFixed(2) + ' at Time L' + lv('time') + '), out ' + ex.toFixed(2) + ' x', 6, 13, ink, 10);
+        foot(kitN === 2 ? 'the Mix: Time L5 is Chain Dig, not Boost out' : lv('time') >= 5 ? "Garrett's L5 Boost out: out at " + Pv.boostOut + ' x the exit' : 'Boost out at Time L5');
+        return;
+      }
+      if (k === 'world') {   // the seeded prisms round the line: plain, shielded, super-shielded
+        const n = 70, cy = H / 2, sp = Math.max(4, (H / 2 - 18) * Math.min(1, Pv.worldSpread / 250));
+        c.strokeStyle = 'rgba(127,215,255,0.35)'; c.beginPath(); c.moveTo(8, cy); c.lineTo(W - 8, cy); c.stroke();
+        let nS = 0, nU = 0;
+        for (let i = 0; i < n; i++) {
+          const x = 10 + rnd() * (W - 20), y = cy + (rnd() * 2 - 1) * sp, kr = rnd(), kind = kr < Pv.worldSuper ? 2 : kr < Pv.worldSuper + Pv.worldShielded ? 1 : 0;
+          if (kind === 2) nU++; else if (kind === 1) nS++;
+          c.fillStyle = kind === 2 ? '#ffe9a8' : kind === 1 ? '#eaf2ff' : '#4a6bd8'; c.fillRect(x - 3, y - 1.5, kind === 2 ? 8 : 6, kind === 2 ? 4 : 3);
+        }
+        txt(c, Math.round(Pv.worldPrisms) + ' prisms within ' + Pv.worldSpread + ' u of the line', 6, 13, ink, 10);
+        foot('this sample: ' + (n - nS - nU) + ' plain, ' + nS + ' shielded, ' + nU + ' super-shielded');
+        return;
+      }
+      if (k === 'chain') {   // the Mix's Chain Dig tick on a ride
+        const x0 = 24, x1 = W - 24, cy = H / 2, share = clamp01(Pv.mixChainShare), u = (tt / 4.5) % 1;
+        c.strokeStyle = cyn; c.beginPath(); c.moveTo(x0, cy - 8); c.lineTo(x1, cy - 8); c.moveTo(x0, cy + 8); c.lineTo(x1, cy + 8); c.stroke();
+        c.strokeStyle = amb; c.beginPath(); c.moveTo(x0 + (x1 - x0) * share, cy - 15); c.lineTo(x0 + (x1 - x0) * share, cy + 15); c.stroke();
+        ship(c, x0 + (x1 - x0) * u, cy, 1, 0, u >= share ? '#9dff2e' : ink, 5);
+        txt(c, 'RT digs on from ' + Math.round(share * 100) + '% of the ride (the amber tick)', 6, 13, ink, 10);
+        foot(lv('time') >= 5 ? 'the Mix, Time L5: Chain Dig unlocked' : 'Chain Dig unlocks at Time L5 (now L' + lv('time') + ')');
+        return;
+      }
+      if (k === 'cave') {   // the Mix's Cave-in: everything inside fired out at once; a rider hit
+        const x0 = 30, x1 = W - 60, cy = H / 2, t1 = 1.4, imp = clamp01((tt - t1) / 0.45), r = 14 * (1 - imp);
+        c.strokeStyle = cyn; c.beginPath(); c.moveTo(x0, cy - r); c.lineTo(x1, cy - r); c.moveTo(x0, cy + r); c.lineTo(x1, cy + r); c.stroke();
+        for (let i = 0; i < 6; i++) { const x = tt < t1 ? x0 + (x1 - x0) * ((i / 6 + tt * 0.2) % 1) : x1 + (tt - t1) * 50 * (0.6 + i * 0.12), y = cy + (i - 2.5) * (tt < t1 ? 2 : 2 + (tt - t1) * 8); c.fillStyle = '#4a6bd8'; c.fillRect(x - 4, y - 1.5, 8, 3); }
+        ship(c, x0 + (x1 - x0) * 0.4, cy, 1, 0, rival, 5);
+        if (tt > t1) txt(c, '-' + Pv.mixBurialPetals + ' petal · silenced', x0 + (x1 - x0) * 0.4, cy - 14, rival, 9.5, 'center');
+        txt(c, 'B at ' + t1 + ' s: all it holds out at once · cooldown ' + Pv.mixCaveCooldownSeconds + ' s', 6, 13, ink, 10);
+        foot(lv('space') >= 5 ? 'the Mix, Space L5: Cave-in unlocked' : 'Cave-in unlocks at Space L5 (now L' + lv('space') + ')');
+        return;
+      }
+      if (k === 'alarm') {   // the Mix: a rival in your guard is marked for you
+        const cx = W * 0.3, cy = H / 2, R = 30, rx = 20 + (W - 40) * (tt / 4.5), inG = Math.abs(rx - cx) < R, marked = tt > (cx - R - 20) / ((W - 40) / 4.5) && tt < (cx - R - 20) / ((W - 40) / 4.5) + Math.max(0, Pv.mixAlarmSeconds);
+        c.strokeStyle = 'rgba(255,255,255,0.3)'; c.setLineDash([3, 4]); c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.stroke(); c.setLineDash([]);
+        ship(c, rx, cy, 1, 0, rival, 5);
+        if (marked) { c.strokeStyle = red; c.lineWidth = 2; c.beginPath(); c.moveTo(rx, cy - 12); c.lineTo(rx + 12, cy); c.lineTo(rx, cy + 12); c.lineTo(rx - 12, cy); c.closePath(); c.stroke(); c.lineWidth = 1; txt(c, 'ALARM', rx, cy - 16, red, 9.5, 'center'); }
+        txt(c, 'marked for ' + Pv.mixAlarmSeconds + ' s once it enters your guard' + (inG ? ' (in it now)' : ''), 6, 13, ink, 10);
+        foot('round 8 Lookout\'s job, done by the sentinels');
+        return;
+      }
+      // 'ai': the kit's AI rules, in words
+      txt(c, 'The AI presses what a player presses:', 8, 18, ink, 10.5, 'left', 700);
+      ['Y once the race runs: Sentinel mode on', 'flies into a standing soliton that saves time', "Garrett's kit: hops when that saves " + Pv.aiHopGain + ' s', 'the Mix: B when a rival rides its soliton or it holds prisms'].forEach((s, i) => txt(c, s, 12, 38 + i * 18, dim, 10));
+    },
+  };
   const TIPS = {
     reticleAhead: { scene: 'tunnel', d: 'The reticle (yours alone) rides this far ahead of your nose; pull RT and the tunnel forms there, and you dive straight into its mouth. The game: MeerkatWormholeConfig.reticleAhead.', lo: 'Right on your nose.', hi: 'Further out: a longer dive in.' },
     bendMaxDegrees: { scene: 'tunnel', d: 'The right stick pushed fully over bends the tunnel this far at the end of its shaft, any way; half over, half as far: 90, 120, 150 degrees.', lo: 'Gentle bends only.', hi: 'Turns you right round.' },
@@ -3375,6 +4456,44 @@
     timeLevel: { scene: 'ability', cfg: { ab: 'time' }, at: [0.3, 0.6], d: 'The Time element\'s level. Level 5 and up unlocks Chain Dig (a proposal): late in a ride, RT digs the next tunnel from the far mouth and you carry straight on at throat speed.', lo: 'One tunnel at a time.', hi: 'Chain Dig.' },
     chainShare: { scene: 'ability', cfg: { ab: 'time', over: { timeLevel: 5 } }, d: 'L5 Chain Dig: from this share of the way through a tunnel you ride, RT digs the next one (the amber tick).', lo: 'Early: lots of time to aim.', hi: 'Late: right at the far mouth.' },
     aiNewAbilities: { scene: 'ability', cfg: { ab: 'charge' }, d: 'Whether the AI pilots use the round-8 abilities: Lookout when ready (with rivals or crystals near), Hardened Bridge with a rival within 600 u, Cave-in on a tunnel it has left with a rival in it (L5) or 6 prisms in reach, and Chain Dig when a tunnel from the far mouth fits the next leg. All by pressing the buttons a player has. Off: the AI flies as it did before round 8.', lo: 'Wormhole only.', hi: 'The whole kit.' },
+    // round 15, the kits (lab-only: none of these is in the game; Yash judges them here first)
+    kit: { scene: 'kit', cfg: { k: 'kit' }, at: [0.34, 0.67], d: 'Which kit every Meerkat in the race flies. Garrett\'s kit: his design as written (Space the soliton, Charge Sentinel mode with the dynamic-seat crew, Mass the exit portal, Time the rush, LB the pilot sight). The Mix: Garrett\'s with one change per decision (Chain Dig, no seats but an alarm, Cave-in, a throat floor and ceiling). Round 8 (archived): the round-8 proposals unchanged. Off: the wormhole alone, as before round 15. Changing it starts a new race.', lo: 'Garrett\'s kit.', hi: 'The Mix.' },
+    kChargeLevel: { scene: 'kit', cfg: { k: 'sentinel' }, at: [0.3, 0.6], d: 'The Charge element\'s level, L0 to L10, in Garrett\'s kit and the Mix. It sets how much of a petal a zap knocks out (zapPetalsL0 to zapPetalsL10), and at L5 and up the pool is sentinelPoolL5 (Garrett: six sentinels).', lo: 'Three sentinels, a light zap.', hi: 'Six sentinels, a heavier zap.' },
+    kMassLevel: { scene: 'kit', cfg: { k: 'portal' }, at: [0.3, 0.6], d: 'The Mass element\'s level. It sets the exit portal\'s prism size (portalSizeL0 to portalSizeL10); at L5 and up its six prisms are danger prisms.', lo: 'Small plain prisms.', hi: 'Larger danger prisms.' },
+    kSpaceLevel: { scene: 'kit', cfg: { k: 'area' }, at: [0.3, 0.6], d: 'The Space element\'s level. It sets the soliton\'s surface area (areaL0 to areaL10): at one area a longer tunnel is thinner. In the Mix, L5 and up unlocks Cave-in on B (it fills the Space L5 slot Garrett left open).', lo: 'A smaller area: thinner tunnels.', hi: 'A larger area: fatter tunnels.' },
+    kTimeLevel: { scene: 'kit', cfg: { k: 'rush' }, at: [0.3, 0.6], d: 'The Time element\'s level. It sets the rush through every soliton (rushL0 to rushL10). L5 and up: Garrett\'s Boost out (out of every soliton faster), or in the Mix round 8\'s Chain Dig.', lo: 'A small rush.', hi: 'A big rush, and the L5 upgrade.' },
+    sentinelPool: { scene: 'kit', cfg: { k: 'sentinel' }, d: 'How many sentinels (and so standing solitons) you keep at once below Charge L5 (Garrett: 3). With the pool used up and Sentinel mode on, the oldest retires and its soliton with it.', lo: 'Few.', hi: 'Many.' },
+    sentinelPoolL5: { scene: 'kit', cfg: { k: 'sentinel', }, d: 'The pool at Charge L5 and up (Garrett: six sentinels).', lo: 'Few.', hi: 'Many.' },
+    guardShare: { scene: 'kit', cfg: { k: 'sentinel' }, d: 'A sentinel guards a sphere this many times its tunnel\'s opening radius round the way in (Garrett: 1.5). Rival vessels in it are zapped; your own plain prisms in it are zapped shielded. It grows and shrinks with the tunnel\'s surface area.', lo: 'A tight guard.', hi: 'A wide guard.' },
+    aiZapRate: { scene: 'kit', cfg: { k: 'sentinel' }, d: 'How many times a second an empty sentinel\'s AI zaps (Garrett: a little slower than an average person taps, about 5). A person in the seat zaps as fast as they tap, with no cooldown.', lo: 'Slow.', hi: 'Fast.' },
+    zapPetalsL0: { scene: 'kit', cfg: { k: 'sentinel' }, d: 'How much of a petal one zap knocks out at Charge L0 (Garrett\'s start: 0.1). The fraction accrues on the victim; each whole petal leaves as an ejected crystal, and the hit silences the victim for what it is worth (VesselSilenceConfig secondsPerPetal 1).', lo: 'A tickle.', hi: 'A bite.' },
+    zapPetalsL10: { scene: 'kit', cfg: { k: 'sentinel' }, d: 'How much of a petal a zap knocks out at Charge L10 (Garrett\'s start: 0.25); levels between are in between.', lo: 'Light at the top.', hi: 'Heavy at the top.' },
+    areaL0: { scene: 'kit', cfg: { k: 'area' }, d: 'The soliton\'s surface area at Space L0. Garrett: at a given Space level a soliton keeps one surface area, so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat. The numbers are open in Garrett\'s design (his examples: 15,000 and 40,000 u2).', lo: 'Thin tunnels.', hi: 'Fat tunnels.' },
+    areaL10: { scene: 'kit', cfg: { k: 'area' }, d: 'The surface area at Space L10; levels between are in between.', lo: 'Thin at the top.', hi: 'Fat at the top.' },
+    swallowShare: { scene: 'kit', cfg: { k: 'swallow' }, d: 'A standing soliton swallows prisms within this many times its opening radius of its way in, shielded ones included, never super-shielded. Open in Garrett\'s design: the simplest reading is the sentinel\'s guard, 1.5 x the opening.', lo: 'Only at the mouth.', hi: 'A wide intake.' },
+    carrySpeed: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How fast a swallowed prism runs the tube to the way out (open in Garrett\'s design).', lo: 'A slow pipe.', hi: 'A fast pipe.' },
+    fireSpeed: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How fast a prism leaves the way out, along its last heading: a MOVING prism. One that runs into a plain prism destroys both (scored to the soliton\'s maker); a shielded one bounces. Open in Garrett\'s design.', lo: 'Dribbled out.', hi: 'Shot out.' },
+    fireGlideSeconds: { scene: 'kit', cfg: { k: 'swallow' }, d: 'A fired prism slows over about this long and comes to rest where it stops: moved, never deleted (open in Garrett\'s design).', lo: 'Stops short.', hi: 'Flies far.' },
+    bounceRestitution: { scene: 'kit', cfg: { k: 'swallow' }, d: 'A collision a shielded prism is part of destroys neither: the mover rebounds keeping this share of the closing speed (Docs/PRISM_MOTION.md 1a: shieldBounceRestitution 0.6).', lo: 'A dead stop.', hi: 'A lively bounce.' },
+    portalShare: { scene: 'kit', cfg: { k: 'portal' }, d: 'The exit portal\'s hexagon sits this many times the exit\'s radius out (Garrett\'s proposal: 1.5, mirroring the guard at the way in), clear of what the soliton fires.', lo: 'Hugging the mouth.', hi: 'A wide frame.' },
+    portalSizeL0: { scene: 'kit', cfg: { k: 'portal' }, d: 'The portal\'s prism size at Mass L0, as a share of a field prism ("go minimal").', lo: 'Tiny.', hi: 'Big.' },
+    portalSizeL10: { scene: 'kit', cfg: { k: 'portal' }, d: 'The portal\'s prism size at Mass L10.', lo: 'Tiny.', hi: 'Big.' },
+    dangerPetals: { scene: 'kit', cfg: { k: 'portal' }, d: 'At Mass L5 the portal\'s prisms are danger prisms: a rival hull touching one takes a hit of this much of a petal (once per prism). The amount is the studio\'s reading, open in Garrett\'s design.', lo: 'A scratch.', hi: 'A real cost.' },
+    rushL0: { scene: 'kit', cfg: { k: 'rush' }, d: 'Time is a passive faster ride through every soliton, its own or anyone\'s: the throat\'s multiplier (rideMidMultiplier) times this at Time L0.', lo: 'No rush.', hi: 'A rush.' },
+    rushL10: { scene: 'kit', cfg: { k: 'rush' }, d: 'The rush at Time L10; levels between are in between.', lo: 'A small rush at the top.', hi: 'A big rush at the top.' },
+    boostOut: { scene: 'kit', cfg: { k: 'rush' }, d: 'Garrett\'s Time L5, Boost out: the Meerkat leaves every soliton at this many times the exit multiplier, easing back to cruise. (The Mix has Chain Dig at Time L5 instead.)', lo: 'Barely a boost.', hi: 'A big boost out.' },
+    throatFloorDiameter: { scene: 'kit', cfg: { k: 'mix' }, d: 'The Mix: the throat\'s diameter never goes below this, so a long tunnel is not a pinhole. (Garrett\'s kit keeps only a 0.5 u safety floor.)', lo: 'A thin floor.', hi: 'A fat floor.' },
+    throatCeilingDiameter: { scene: 'kit', cfg: { k: 'mix' }, d: 'The Mix: the throat\'s diameter never goes above this, so a short tunnel is not huge.', lo: 'A low ceiling.', hi: 'A high ceiling.' },
+    mixChainShare: { scene: 'kit', cfg: { k: 'chain' }, d: 'The Mix\'s Time L5, round 8\'s Chain Dig: from this share of the way through a ride, RT digs the next tunnel from the far mouth and you carry straight on at throat speed.', lo: 'Early: time to aim.', hi: 'Late: at the far mouth.' },
+    mixCaveCooldownSeconds: { scene: 'kit', cfg: { k: 'cave' }, d: 'The Mix\'s Space L5, Cave-in on B: your nearest standing soliton fires out everything it holds at once and collapses, its sentinel with it. B is ready again after this long.', lo: 'Often.', hi: 'Rarely.' },
+    mixBurialPetals: { scene: 'kit', cfg: { k: 'cave' }, d: 'A rival riding a soliton you cave in takes a scored hit of this many petals and is silenced for what it is worth (round 8\'s Burial). Nobody is pushed.', lo: 'A scratch.', hi: 'A heavy hit.' },
+    mixAlarmSeconds: { scene: 'kit', cfg: { k: 'alarm' }, d: 'The Mix gives round 8 Lookout\'s job to the sentinels: a rival entering any of your sentinels\' guards is marked for you, through anything, for this long.', lo: 'A blink.', hi: 'A long mark.' },
+    worldPrisms: { scene: 'kit', cfg: { k: 'world' }, d: 'In Garrett\'s kit and the Mix the world carries this many seeded prisms round the race line, beside the field, so a soliton has mass to swallow and fire. 0 leaves only the field.', lo: 'Sparse.', hi: 'Dense.' },
+    worldSpread: { scene: 'kit', cfg: { k: 'world' }, d: 'How far from the race line those prisms lie.', lo: 'Along the line.', hi: 'Spread wide.' },
+    worldShielded: { scene: 'kit', cfg: { k: 'world' }, d: 'The share of them that is shielded: a shielded prism bounces where a plain one would be destroyed.', lo: 'Mostly plain.', hi: 'Mostly shielded.' },
+    worldSuper: { scene: 'kit', cfg: { k: 'world' }, d: 'The share of them that is super-shielded: never moved, never swallowed; a plain prism fired into one is destroyed, a shielded one bounces.', lo: 'Rare.', hi: 'Common.' },
+    aiKit: { scene: 'kit', cfg: { k: 'ai' }, d: 'Whether the AI pilots use the kit: Sentinel mode on, flying into any standing soliton that saves time, and (the Mix) Cave-in. All by pressing what a player presses. Off: they fly the wormhole alone (the rush, the surface area and the portals still apply).', lo: 'Wormhole only.', hi: 'The whole kit.' },
+    aiHopGain: { scene: 'kit', cfg: { k: 'ai' }, d: 'Garrett\'s kit: an AI crew hops to one of its own sentinels (and the old flyer becomes a sentinel) when that saves at least this many seconds to its next ring. Garrett left the hop to people; the AI\'s rule is the studio\'s proposal, open in Garrett\'s design.', lo: 'Hops for a little.', hi: 'Hops only for a lot.' },
   };
 
   // ---------- the card ----------
@@ -3437,12 +4556,12 @@
   function attachTip(row, key, label) {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'tipbtn'; btn.textContent = 'i'; btn.setAttribute('aria-label', 'What does ' + label + ' do?'); btn.setAttribute('aria-expanded', 'false');
-    row.insertBefore(btn, row.querySelector('input'));
+    row.insertBefore(btn, row.querySelector('input, select'));
     row.addEventListener('mouseenter', () => { clearTimeout(tipHide); clearTimeout(tipShowT); tipShowT = setTimeout(() => showTip(key, row, false), 220); });
     row.addEventListener('mouseleave', () => { clearTimeout(tipShowT); tipHide = setTimeout(() => hideTip(false), 160); });
     btn.addEventListener('click', (e) => { e.stopPropagation(); if (tipState && tipState.key === key && tipState.pinned) hideTip(true); else { hideTip(true); showTip(key, row, true); } });
-    row.querySelector('input').addEventListener('focus', () => showTip(key, row, false));
-    row.querySelector('input').addEventListener('blur', () => hideTip(false));
+    row.querySelector('input, select').addEventListener('focus', () => showTip(key, row, false));
+    row.querySelector('input, select').addEventListener('blur', () => hideTip(false));
   }
   tipEl.addEventListener('mouseenter', () => clearTimeout(tipHide));
   tipEl.addEventListener('mouseleave', () => { tipHide = setTimeout(() => hideTip(false), 160); });
@@ -3617,6 +4736,8 @@
   };
   // round 8: the proposed kit. Lab-only until Yash decides (no MeerkatWormholeConfig field, no studio_to_unity map row).
   for (const [grp, key] of SPEC) if (/^ab/.test(grp) || key === 'aiNewAbilities') GAME_NAMES[key] = ['lab: round 8 proposal, not in the game (Yash judges it here first)', 'lab'];
+  // round 15: the kits. Lab-only prototypes (no MeerkatWormholeConfig field, no studio_to_unity map row): nothing reaches Unity without Yash's say-so.
+  for (const [grp, key] of SPEC) if (grp === 'kit' || /^k[A-Z]/.test(grp) || key === 'aiKit' || key === 'aiHopGain') GAME_NAMES[key] = ['lab: round 15 kit prototype, not in the game (Yash judges it here first)', 'lab'];
   // ================= rail =================
   const outputs = {};
   function buildRail() {
@@ -3625,22 +4746,23 @@
       const row = document.createElement('div'); row.className = 'row' + (kind === 'toggle' ? ' toggle' : '');
       const id = 'p-' + key;
       const gn = GAME_NAMES[key];
-      const ctl = kind === 'toggle' ? '<input type="checkbox" id="' + id + '" role="switch">' : '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '">';
+      const ctl = kind === 'toggle' ? '<input type="checkbox" id="' + id + '" role="switch">' : kind === 'select' ? '<select id="' + id + '" class="arp-seg">' + KIT_NAMES.map((n, i) => '<option value="' + i + '">' + escapeHtml(n) + '</option>').join('') + '</select>' : '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '">';
       row.innerHTML = '<label for="' + id + '">' + label + '</label>' + ctl + '<output></output>'
         + (gn ? '<code class="gname gn-' + gn[1] + '" title="' + (gn[1] === 'linked' ? 'The game\'s field: the artifact writes it (studio_to_unity.py)' : gn[1] === 'field' ? 'The game\'s field: not linked yet (check its units when porting)' : gn[1] === 'new' ? 'The field the game will get, by this exact name' : 'The studio\'s own: never in the game') + '">' + escapeHtml(gn[0]) + (gn[1] === 'linked' || gn[1] === 'lab' ? '' : ' · ' + gn[1]) + '</code>' : '');
       host.appendChild(row);
       attachTip(row, key, label);
-      const inp = row.querySelector('input'), out = row.querySelector('output');
-      const tog = kind === 'toggle';
-      if (tog) inp.checked = P[key] > 0.5; else inp.value = P[key];
-      outputs[key] = { inp, out, step, tog };
-      inp.addEventListener(tog ? 'change' : 'input', () => { BP[key] = tog ? (inp.checked ? 1 : 0) : parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); });
+      const inp = row.querySelector('input, select'), out = row.querySelector('output');
+      const tog = kind === 'toggle', sel = kind === 'select';
+      if (tog) inp.checked = P[key] > 0.5; else inp.value = sel ? String(Math.round(BP[key])) : P[key];
+      outputs[key] = { inp, out, step, tog, sel };
+      inp.addEventListener(tog || sel ? 'change' : 'input', () => { BP[key] = tog ? (inp.checked ? 1 : 0) : parseFloat(inp.value); recomputeP(); refreshAllOuts(); persist(); markTypes(); });
       refreshOut(key);
     }
   }
-  function refreshAllOuts() { for (const k in outputs) refreshOut(k); markAbilities(); }
+  function refreshAllOuts() { for (const k in outputs) refreshOut(k); markAbilities(); kitSyncUi(); }
   function refreshOut(key) {
     const o = outputs[key], b = BP[key], dec = o.step >= 1 ? 0 : o.step >= 0.1 ? 1 : 2;
+    if (o.sel) { o.inp.value = String(Math.round(b)); o.out.textContent = ''; o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + KIT_NAMES[SHIPPED[key]]; return; }
     if (o.tog) { o.inp.checked = b > 0.5; o.out.textContent = b > 0.5 ? 'on' : 'off'; o.out.classList.toggle('changed', Math.abs(b - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + (SHIPPED[key] > 0.5 ? 'on' : 'off'); return; }
     if (document.activeElement !== o.inp && Math.abs(parseFloat(o.inp.value) - b) > 1e-9) o.inp.value = b;
     o.out.textContent = b.toFixed(dec);
@@ -3960,8 +5082,10 @@
     for (let k = dyingPrisms.length - 1; k >= 0; k--) { const i = dyingPrisms[k]; dead[i] += dt; if (dead[i] > PRISM_DIE_S + 0.2) dyingPrisms.splice(k, 1); }
     for (const pr of pairs) pr.update(dt);
     pairs = pairs.filter((pr) => pr.alive);
-    if (!stopped) stepFly(dt, inp); else gateHold(dt);   // stopped: the hull halts, its tunnels live on
+    if (!stopped && !(KIT.flyerDead && isGM())) stepFly(dt, inp);
+    else { gateHold(dt); if (!stopped && race === 'running') raceT += dt; }   // stopped: the hull halts, its tunnels live on (round 15: a dead flyer's clock runs on)
     stepRivals(dt);
+    if (isGM()) kitStep(dt);   // round 15: sentinels, the soliton's prisms, danger and crystals
     collectWells();
   }
   let manualClock = false;   // a recorder steps the world itself, frame by frame (window.__meerkatStudio.tick)
@@ -3985,6 +5109,7 @@
   }
   // Your hull's input this step: yours, or (Is AI ticked, or nobody on the controls for IDLE_TAKEOVER_S) the AI's.
   function pilotInput(dt) {
+    if (isGM() && KIT.seat && mode === 'fly') return kitSeatInput(dt);   // round 15: you sit in a sentinel; the flyer's AI flies the hull
     if (aiOn) return aiInput(dt);
     if (idleTakeover && mode === 'fly' && race !== 'ready') { if (humanOnControls()) idleFor = 0; else idleFor += dt; } else idleFor = 0;   // racing, and after the finish too
     const idleAi = idleFor >= IDLE_TAKEOVER_S;
@@ -4004,7 +5129,7 @@
     statsClock += dt; if (statsClock > 0.25) { statsClock = 0; const el = $('aiStats'); if (el && (aiOn || raceStats)) el.textContent = aiStatsText(); }
     writeBodies();
     syncRivalMeshes(); updateCamera(dt); updateWormholes(); updateAiThinking(); updateRings(now);
-    drawCrystals(); drawWalls(); drawPulses(); syncAbilityButtons();   // round 8
+    drawCrystals(); drawWalls(); drawPulses(); kitDraw(); syncAbilityButtons();   // round 8; round 15 the kits
     renderAll(); drawHud(dt);
   }
   // ================= the editor layout: tabbed docks and mini windows =================
@@ -4018,9 +5143,9 @@
     // the universal settings tabs, same names and order in every studio (/vessel-studio D21, D25, D27): the world in Scene
     // Config; the ability and all three of its cards (look, shape, ride; Yash, 2026-10-27) in Play Style Config; the
     // stand-in hull in Vessel Config
-    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
-      ['style', 'Play Style Config', ['mainCard', 'grp-reticle', 'grp-look', 'grp-tree', 'grp-space', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
-      ['others', 'Vessel Config', ['grp-abCharge', 'grp-abMass', 'grp-abSpace', 'grp-abTime', 'grp-lope']]],
+    R: [['scene', 'Scene Config', ['grp-scene', 'grp-flight', 'grp-kWorld']], ['game', 'Game Config', ['grp-intensity', 'grp-game']], ['ai', 'AI Config', ['grp-ai']],
+      ['style', 'Play Style Config', ['grp-kit', 'mainCard', 'grp-reticle', 'grp-look', 'grp-tree', 'grp-space', 'grp-shape', 'grp-ride']], ['input', 'Input', ['keysSec']],
+      ['others', 'Vessel Config', ['grp-kSentinel', 'grp-kSoliton', 'grp-kPortal', 'grp-kTime', 'grp-kMix', 'grp-abCharge', 'grp-abMass', 'grp-abSpace', 'grp-abTime', 'grp-lope']]],
     B: [['runs', 'Runs', ['runsCard']], ['score', 'Scorecard', ['scoreWrap']], ['log', 'Decisions', ['logSec']], ['about', 'About', ['introP']]],
   };
   const TAB = {};   // key -> { dock, title, btn, pane, win }
