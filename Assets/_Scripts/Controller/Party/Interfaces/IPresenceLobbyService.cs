@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Refreshes the lobby's player list and properties from the UGS backend.
-        /// Must be called on a timer to detect new players and incoming invites.
+        /// The safety poll under the lobby's pushes (Block 5 step 8): a change normally arrives by push.
         /// </summary>
         /// <remarks>
         /// Rate-limited by UGS to approximately 1 call per second per client.

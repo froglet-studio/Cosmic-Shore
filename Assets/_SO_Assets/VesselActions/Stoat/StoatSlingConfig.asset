@@ -33,6 +33,9 @@ MonoBehaviour:
     Floor: 1
   radiusFollowRate: 3
   radialCorrectionRate: 5
+  holdAtCatch: 1
+  orbitEaseRate: 0.8
+  whiteClear: 0.8
   poleHorizon: 1.6
   poleGM: 20000
   ringDotSpacing: 5

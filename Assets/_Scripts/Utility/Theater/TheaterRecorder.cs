@@ -35,6 +35,7 @@ namespace CosmicShore.Utility
         float _accumulator;
         float _recordedSeconds;
         float _limitSeconds = float.MaxValue;
+        TheaterWorldRecorder _world;
 
         public bool IsRecording { get; private set; }
 
@@ -58,6 +59,9 @@ namespace CosmicShore.Utility
             _interval = 1f / hz;
             _limitSeconds = config != null ? Mathf.Max(1f, config.maxRecordMinutes) * 60f : 1800f;
 
+            _world?.Detach();
+            _world = null;
+            _recording.World = null;
             _recording.Tracks.Clear();
             _tracks.Clear();
             _recording.SampleHz = hz;
@@ -137,7 +141,26 @@ namespace CosmicShore.Utility
             }
         }
 
-        public void Stop() => IsRecording = false;
+        /// <summary>
+        /// Record the prism world beside the vessels (Theater P1), through <paramref name="world"/>,
+        /// until <see cref="Stop"/>. Call right after <see cref="Begin"/> so both streams start
+        /// together. False, and no world stream, when the scene has no prism index or another
+        /// recorder already watches it.
+        /// </summary>
+        public bool RecordWorld(TheaterWorldRecorder world)
+        {
+            if (!IsRecording || world == null || !world.Attach()) return false;
+            _world = world;
+            _recording.World = world.World;
+            return true;
+        }
+
+        public void Stop()
+        {
+            IsRecording = false;
+            _world?.Detach();
+            _world = null;
+        }
 
         /// <summary>
         /// Write the recording and return the path, or null with a reason. Never throws: a dev tool

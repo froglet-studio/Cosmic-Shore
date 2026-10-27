@@ -171,6 +171,36 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, UgsRequestTelemetry.Total(UgsRequestCounter.PresencePush));
         }
 
+        // ── Step 8: one safety poll ─────────────────────────────────────────────────────────────
+
+        [Test]
+        public void EverySafetyPoll_ReadsAndConverges()
+        {
+            var lobby = new CountingLobby { Active = FakeSession.Create(out _) };
+            var hcs = NewService(NewData(), lobby, out _);
+
+            Call(hcs, "RefreshAsync", true);
+            Call(hcs, "RefreshAsync", true);
+
+            Assert.AreEqual(2, lobby.Refreshes);
+            Assert.AreEqual(2, lobby.Converges, "the converge rides every safety poll; its own 4 s timer is gone");
+        }
+
+        [Test]
+        public void Update_PollsOnlyOnTheSafetyTick_InAnyScene()
+        {
+            var data = NewData();
+            var lobby = new CountingLobby { Active = FakeSession.Create(out _) };
+            var hcs = NewOnlineService(data, lobby, out _);
+
+            Call(hcs, "Update");
+            Assert.AreEqual(0, lobby.Refreshes, "no read before the safety tick, in a match as in the menu (its own 10 s tick is gone)");
+
+            GetField<LobbyRefreshScheduler>(hcs, "_scheduler").FireAfter(0f);
+            Call(hcs, "Update");
+            Assert.AreEqual(1, lobby.Refreshes, "the safety tick reads");
+        }
+
         [Test]
         public void PushedMembershipLoss_RejoinsAtOnce()
         {
@@ -232,9 +262,12 @@ namespace CosmicShore.Tests
             Assert.IsFalse(GetField<bool>(hcs, "_rosterMovedSincePublish"));
         }
 
-        HostConnectionService NewOnlineService(HostConnectionDataSO data, out int[] saves)
+        HostConnectionService NewOnlineService(HostConnectionDataSO data, out int[] saves) =>
+            NewOnlineService(data, new CountingLobby { Active = FakeSession.Create(out _) }, out saves);
+
+        HostConnectionService NewOnlineService(HostConnectionDataSO data, CountingLobby lobby, out int[] saves)
         {
-            var hcs = NewService(data, new CountingLobby { Active = FakeSession.Create(out _) }, out saves);
+            var hcs = NewService(data, lobby, out saves);
             SetField(hcs, "_inviteService", new InviteService());
             GetField<PartyStateMachine>(hcs, "_stateMachine").TryTransition(PartyState.InPresenceLobby);
             return hcs;
@@ -270,7 +303,7 @@ namespace CosmicShore.Tests
             SetField(hcs, "_propertyWriter", writer);
             SetField(hcs, "_partySessionService", new NoParty());
             SetField(hcs, "_lobbyService", lobby);
-            SetField(hcs, "_scheduler", new LobbyRefreshScheduler(1.5f));
+            SetField(hcs, "_scheduler", new LobbyRefreshScheduler(LobbyRefreshScheduler.SAFETY_POLL_SECONDS));
             SetField(hcs, "_memberService", new PartyMemberService(data, new SoapPartyEventBus(data)));
             SetField(hcs, "_eventBus", new SoapPartyEventBus(data));
             SetField(hcs, "connectionData", data);
