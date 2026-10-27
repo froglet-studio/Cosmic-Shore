@@ -8,7 +8,7 @@ person said, and what changed in `Tools/Build/music_video/mapping.json` (or the 
 
 | Milestone | State | Where |
 |---|---|---|
-| M1: three ~5 s beats over ~15 s of one song | **cuts 1-2 judged by Garrett (prototype look, jitter, camera dances - see below); cut 3 in progress with orchestrated gameplay and offline-quality frames.** Cuts 1-2 (2026-10-27) (SKY FIRE 41.0-56.0 s: build → the drop at 46.37 → drop). Cut 1: Skim Race flyby → Joust chase → Wildlife chase. Cut 2 (closer cameras, bright bars in brighter arenas, the alive-subject rule): Wildlife chase → Joust chase → Skim Race chase. The scorecard prefers cut 2 on five of seven criteria (no dead frames, luminance now follows brightness, less stuck time); motion-vs-energy and motion-vs-onsets are still under their floors in both. | `milestones/M1-sky-fire-41-56/cut1`, `cut2` |
+| M1: three ~5 s beats over ~15 s of one song | **cuts 1-2 judged by Garrett (prototype look, jitter, camera dances - see below); cut 3 delivered the same day: orchestrated gameplay, 1080p / 60 fps / motion-blurred frames, steady mounts - waiting on Garrett.** Cuts 1-2 (2026-10-27) (SKY FIRE 41.0-56.0 s: build → the drop at 46.37 → drop). Cut 1: Skim Race flyby → Joust chase → Wildlife chase. Cut 2 (closer cameras, bright bars in brighter arenas, the alive-subject rule): Wildlife chase → Joust chase → Skim Race chase. The scorecard prefers cut 2 on five of seven criteria (no dead frames, luminance now follows brightness, less stuck time); motion-vs-energy and motion-vs-onsets are still under their floors in both. | `milestones/M1-sky-fire-41-56/cut1`, `cut2` |
 | M2: a whole song | not started (same pipeline, `--start 0 --end <duration> --beats <sections>`) | |
 | M3: every song in `Assets/_Audio/Music` | not started | |
 | M4: the skill and tools a cheaper model repeats for a new song | the skill exists (`/music-video`) and ran this cut end to end; it is proven when a session that is not this one makes M2 from it | |
@@ -157,9 +157,15 @@ What cut 3 does instead (all in the mapping's `render` block and the archetypes'
   new direction every bar (`herd`, through `Fauna.Goal`, which the creatures re-resolve only every 1-5 s so
   a per-frame write wins).
 
+- **A control-port `wait` ends after 15 minutes** whatever N it was given: cut 3's first shoot stopped
+  every shot at frame ~124 / 74 of 322 / 230 after exactly 15:00. `shoot.py` now waits in chunks of
+  32 sim frames and reports the frame count; a 5 s shot at 1080p / 2x / 8x MSAA with two players sharing
+  four cores takes 20-25 minutes.
+
 ## Log
 
 | Date | Cut | Score said | Person said | Changed |
 |---|---|---|---|---|
 | 2026-10-27 | M1 cut 1: SKY FIRE 41.0-56.0, flyby (Skim Race I2) → chase (Joust I3) → chase (Wildlife I3) | loss 3.44; dead frames 12 % (the flyby's empty opening), stuck 17 % (the Joust subject died), luminance-vs-brightness -1.0 | waiting | cameras moved closer; brightness targets follow measured luminance; `fastest` subject + the alive rule; `cue` scheduling; `camera main` default |
+| 2026-10-27 | M1 cut 3 (orchestrated, 1080p/60, 8x MSAA, 2x SS, 4 sub-frames): mount in the Wildlife cage (swarm herded each bar) → mount in the Joust cavern (jousters converged on the pilot, prisms burst on the bars, boosts on strong beats) → mount on the Skim Race rail (boosts on the bars, bursts on hard onsets) | loss 0.58; dead 0 %, stuck 8 %, luminance-vs-brightness +0.5, motion-vs-energy 0.23 (up from 0.19), motion-vs-onsets 0.005 (the accumulation blurs the per-frame motion measure; the criterion needs rethinking for blurred frames) | waiting | first cut under the new rules; 63 orchestration events fired across the three shots |
 | 2026-10-27 | M1 cut 2: chase (Wildlife I3) → chase (Joust I3, `fastest`) → chase (Skim Race I3, `nearest`) | loss 0.70; dead 0 %, stuck 10 %, luminance-vs-brightness +0.5; motion-vs-energy 0.19 and motion-vs-onsets 0.03 still under floor | waiting | nothing yet: next are beat-driven camera moves and a camera-in-mass guard (above) |

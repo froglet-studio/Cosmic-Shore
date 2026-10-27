@@ -191,7 +191,18 @@ def shoot_one(shot, plan, out_dir, port, profile, dll):
                 p.do(f"mv cue {at} {a['cmd']}")
         log(f"{len(shot.get('events', []))} events cued")
         log(p.do(f"mv record {d} {frames} {every} {accum}").strip())
-        p.wait(frames + 3)
+        # wait in chunks: one control-port request must not outlive its socket timeout (a 1080p 2x
+        # sub-frame is about a second in the software renderer, so a 5 s shot is 20+ minutes)
+        want = frames // every
+        chunk = max(every * 8, 32)
+        done_frames = 0
+        while done_frames < frames + 3:
+            step_n = min(chunk, frames + 3 - done_frames)
+            p.wait(step_n)
+            done_frames += step_n
+            n_now = len([f for f in os.listdir(d) if f.endswith(".png")])
+            if n_now % 30 == 0 or n_now >= want:
+                log(f"  {n_now}/{want} frames")
         n = len([f for f in os.listdir(d) if f.endswith(".png")])
         log(f"{n} frames recorded")
         logf.close()
