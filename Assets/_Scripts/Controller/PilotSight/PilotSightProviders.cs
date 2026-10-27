@@ -54,8 +54,7 @@ namespace CosmicShore.Gameplay
         public override void Gather(in PilotSightContext ctx, ref PilotSightPrismState prisms, PilotSightMarks marks)
         {
             prisms.Sight = (float)_sight;
-            // ENSIGN shows YOUR domain's mass (CALLSIGNS.md §2; whether it should show the rivals'
-            // instead is Garrett's open decision, §7).
+            // ENSIGN shows YOUR domain's mass (CALLSIGNS.md §2; decided by Garrett 2026-10-27).
             prisms.Domain = (float)ctx.Domain;
         }
     }

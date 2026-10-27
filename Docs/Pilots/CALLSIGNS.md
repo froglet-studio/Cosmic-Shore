@@ -61,7 +61,7 @@ Built from the fundamentals list, in that list's order. **Lit, Toys, Prism movem
 
 | # | Fundamental | Callsign | Holding LB lights | Where the game already knows it |
 |---|---|---|---|---|
-| 1 | Domain | **ENSIGN** | your domain's mass: what is yours to defend, and the gaps in it (§7: or the rivals' mass instead) | each prism material's `_PrismLitDomain` float (`Docs/LIT.md`) |
+| 1 | Domain | **ENSIGN** | your domain's mass: what is yours to defend, and the gaps in it (decided: your own, Garrett 2026-10-27) | each prism material's `_PrismLitDomain` float (`Docs/LIT.md`) |
 | 2 | Mass | **MANGER** | the mass cluster the fauna are heading for | `Cell.GetDensestRegionAnyDomain`, `BlockDensityGrid` (the herbivores' goal; shielded mass is never in it) |
 | 3 | Elementals: Mass crystal | **ANVIL** | every Mass crystal | `Element.Mass` (`Assets/_Scripts/Data/Enums/Element.cs`) |
 | 4 | Elementals: Charge crystal | **VOLT** | every Charge crystal | `Element.Charge` |
@@ -209,7 +209,6 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 |---|---|
 | What becomes of the 40 ability-rewrite pilots, their portraits, the Hangar PILOTS / ARTIFACTS tabs and the Tomahawk throw on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
 | Which pilot carries which of the seventeen sights | the pilot roster's author |
-| ENSIGN shows your own mass, or the rivals' | Garrett |
 | Whether artifacts get a sight once they are a fundamental | Garrett, through the fundamentals-curation process |
 | BANDIT on the Dolphin: its Charge level-5 upgrade already marks vessels inside the Echo Sight cone. BANDIT shows them all, everywhere, which may make that upgrade redundant on that hull | whoever owns the Dolphin's element map |
 | Where the plate sits on each hull | `/vessel-model` |
