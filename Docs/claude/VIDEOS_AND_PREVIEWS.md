@@ -66,6 +66,10 @@ renderer, so it plays the real modes, AIs, HUD and replay system with no Unity. 
    connecting screen comes first), `do key F7` (the development build's diagnostics overlay off), `do arcade ready`.
 4. **Record**: repeat `wait 4` + `screenshot <dir>/fNNNNN.png`. Then
    `ffmpeg -framerate 15 -i f%05d.png -c:v libx264 -crf 28 -pix_fmt yuv420p out.mp4`.
+   **Time the clip from the game, not from the frame count.** A screenshot costs the loop extra frames, so
+   `wait 4` + `screenshot` measured about 6.9 game frames per picture on 2026-10-27, and a clip encoded at 15 fps
+   played 1.7x fast. Encode at `pictures / game seconds` fps (`-framerate 8.7 ... -r 15`) and cut with `-t`, never
+   `-frames:v` (it counts OUTPUT frames, and cut that clip at 26 of its 44 s).
    **Trim at the results screen.** A match can end inside the clip (the 2026-10-27 Skim Race, I2, four Squirrels,
    ended at 28 s), and everything after is a still. The results screen is bright and the race is dark, so the cut is
    the first frame whose mean brightness jumps (`ffmpeg ... -vf signalstats` `YAVG`, 31 -> 235 there); keep about 3 s
