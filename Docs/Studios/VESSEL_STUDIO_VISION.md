@@ -103,3 +103,11 @@ status) in every change that moves a step**, and add what a step taught to §6.
   late press); (c) a scorecard column for "the same pilot without its mechanic" was the most useful number in the room: it said NO
   to the Gibbon's straight-line swings and YES to every other kind; (d) the platform baseline carried a hidden bug for a whole studio
   generation (one cooldown for skim and hull contact) that only a vessel whose mechanic IS the contact could expose.
+- **The Stoat's four-ability kit (round 29, 2026-10-27, Yash: "the abilities I wanna test first in artifact rather than inside
+  game directly").** (a) A design studio can carry a vessel's whole kit as switchable PROPOSALS (an on / off switch, a level
+  L0-L10 that unlocks the level-5 upgrade, the ability's own sliders) beside the mechanics it already flies, so the designer
+  judges each ability alone and together before `/vessel` §3 signs any of it off; (b) the all-off position must be
+  byte-identical to the round before (measured with the level scorecard), or nobody can tell what an ability changed; (c) an
+  ability's effects must run on a clock that restarts with every race, not the page's world clock, or a batch stops
+  replaying itself (verify_lab caught a one-prism difference); (d) an AI rule for a "spend it" ability (Collapse) has to be
+  timed where spending costs nothing (just after letting go), or it reads as the ability being bad when it is the rule.

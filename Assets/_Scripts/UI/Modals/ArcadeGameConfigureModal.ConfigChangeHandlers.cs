@@ -114,17 +114,17 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Whether each AI can carry a difficulty of its own on this card: where an AI's pedestal can be selected
-        /// to pick its hull (the Arena's shared vessel panel), the same selection picks its difficulty (Shombith,
-        /// 2026-10-27: "if the UI already lets you change the AI vessel there, it should let you change the other
-        /// values tied to that AI too"). Elsewhere the row sets every AI at once, as before.
+        /// Whether each AI can carry a difficulty of its own on this card: every card that offers the AI row, Arena
+        /// and Arcade alike. Selecting an AI's pedestal points the row at that AI (Shombith, 2026-10-27: "if the UI
+        /// already lets you change the AI vessel there, it should let you change the other values tied to that AI
+        /// too"; Yash, 2026-10-27: "anywhere where there is AI ... This should also happen in arcade"). With no AI
+        /// selected the row sets every AI at once, as before.
         /// </summary>
-        bool SeatDifficultyAvailable => AllyHullPickerAvailable && _activePanel is ArenaLaunchPanel;
+        bool SeatDifficultyAvailable => OffersAIDifficulty && config != null;
 
         /// <summary>The AI seat whose difficulty the row edits now, or -1 when it edits every AI (the card's).</summary>
         int EditedAiSeatForDifficulty =>
-            SeatDifficultyAvailable && _vesselSeat != OwnVesselSeat && config != null &&
-            _vesselSeat >= 0 && _vesselSeat < config.AIDomains.Count ? _vesselSeat : -1;
+            SeatDifficultyAvailable && _vesselSeat != OwnVesselSeat && MaySelectAiSeat(_vesselSeat) ? _vesselSeat : -1;
 
         /// <summary>The level the row lights: the selected AI's own (its pick, else the card's), or the card's.</summary>
         AIDifficulty ShownAIDifficulty
