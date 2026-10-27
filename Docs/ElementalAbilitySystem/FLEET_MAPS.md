@@ -661,7 +661,8 @@ Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios
   - The button hops: the sentinel rides through its soliton and takes the flyer, and the old flyer becomes a sentinel
     at a new soliton where it was.
   - A zap is a sub-petal tick (0.1 → 0.25 of a petal by Charge, through `AccrueElementalLoss`).
-  - Only the meerkat the Meerkat's player is in takes element damage; any other dies instead.
+  - One element meter, held by the person seated longest aboard the Meerkats. Only that person's meerkat takes element
+    damage; any other dies instead. A dead flyer is replaced by the next hop's hopper.
   - A soliton lasts as long as its sentinel. The vessel enters with one seat and never adds players.
   - L5 **Six sentinels**.
 - **Mass · passive**: a minimal exit portal, a few low-mass prisms in a hexagon round the outside of the exit, once

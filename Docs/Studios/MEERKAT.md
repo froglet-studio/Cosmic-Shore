@@ -265,8 +265,8 @@ and maps the new keys in `studio_to_unity/meerkat.json`.
 
 Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
 applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
-Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Garrett gave it in five
-messages the same day; this section is all five together. **Built so far:** only the fleet-wide prism rule it leans on
+Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Garrett gave it in six
+messages the same day; this section is all six together. **Built so far:** only the fleet-wide prism rule it leans on
 (shielded prisms bounce, `Docs/PRISM_MOTION.md` 1a). Everything else here is design.
 
 **The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
@@ -291,13 +291,18 @@ options"*):
 - **One meerkat holds the elements; any other dies instead of losing them** (Garrett: *"only one meerkat takes element
   damage. the rest die if they would loose elements. so they would only loose elements instead if the meerkat player had
   moved off all meerkats and the team mate player was the only one"*):
-  - The Meerkats have one element meter, as every crew does. It lives with **the meerkat the Meerkat's own player is
-    in**: the flyer, or the sentinel they took.
+  - **One rule decides who holds them: the person seated longest aboard the Meerkats** (Garrett: *"seated longest keeps
+    it simple because it is one rule that applies to the meerkat player until it leaves as well"*; *"the meter lives in
+    one place, with the longest held meerkat seat"*).
+  - The Meerkats have one element meter, as every crew does, and it **lives in one place**: with that person's meerkat,
+    the flyer or a sentinel, and so on their machine.
+  - "Seated" counts time continuously aboard the Meerkats, in any meerkat seat. Moving between meerkat seats, a hop
+    included, keeps your time; leaving for another hull resets it.
+  - So the Meerkat's own player, aboard from the start, holds the meter until they leave. Then it passes to the teammate
+    seated longest, and the meter moves with it.
   - **Every other meerkat**, the flyer or a sentinel, is **killed by any hit that would take its elements**, whether it
-    is empty, held by its AI or held by a teammate. That widens the earlier "Charge abilities kill an empty sentinel".
-  - **If the Meerkat's player has moved off every meerkat** (the swap took them to another hull), a teammate in a
-    meerkat holds the elements instead, and loses petals rather than dying.
-  - Proposal: with several teammates in meerkats, the flyer's, else the one seated longest.
+    is empty, held by its AI or held by a teammate.
+  - The holder's meerkat never dies of a hit: it loses petals instead.
 - **A soliton lasts as long as its sentinel.** A tunnel with a sentinel stands until that sentinel is killed or leaves
   it (below); `staySeconds` applies only to a tunnel made with Sentinel mode off.
 
@@ -346,6 +351,9 @@ options"*):
     `MeerkatWormholeExecutor.Autopilot`) picks the bend and shaft, as it would for its next tunnel.
   - The soliton the hopper rode lasts as long as its sentinel, so it collapses once the hopper is out.
   - **The seat count does not change**: one sentinel left and one was made, so the pool is untouched.
+  - **With no flyer** (Garrett: *"the next hop makes the hopper the flyer with no sentinel left behind"*): when the flyer
+    has been killed, the next hop makes its hopper the flyer and leaves no new sentinel behind. Until then the Meerkats
+    are only their sentinels. Proposal: if no person sits in a sentinel, the oldest sentinel's AI hops.
 
 **Mass's exit portal** (Garrett: *"go minimal. we want some low mass prisms that make a cool looking exit. players are
   using this ability a lot so this will produce a lot of mass even if we are using very little. use enough to make a
@@ -418,18 +426,22 @@ grows and shrinks with it.
 - **A teammate on another machine can take a sentinel.** Only the meerkat the Meerkat's player is in takes element
   damage; any other dies instead, unless that player has moved off every meerkat.
 
+**Decided (Garrett, 2026-10-27, sixth message):**
+- **A dead flyer:** the next hop makes its hopper the flyer, with no sentinel left behind.
+- **Who holds the elements:** the person seated longest aboard the Meerkats. That is one rule, which covers the
+  Meerkat's own player until they leave.
+- **Where the meter lives:** in one place, with that longest-held seat.
+
 **Open:**
-- **When the flyer dies** (the Meerkat's player sat in a sentinel, so a hit kills the flyer): the hull respawns as the
-  mode's rules say, or the next hop makes its hopper the flyer with no sentinel left behind.
-- With several teammates in meerkats after the Meerkat's player has left: which one holds the elements (proposal
-  above).
+- Whether "seated longest" counts time aboard the Meerkats in any seat (this write-up's reading) or time in one seat.
+- With no flyer and no person in any sentinel: who hops (proposal: the oldest sentinel's AI).
 - **For the crew owners**, since a seat ring that changes during the match is new:
   - how the card and `check_crew_vessels.py` express "Meerkats" (one name for a mob of one kind, not "X and Y");
   - how `CrewStations` adds and removes a seat mid-match, and how a remote teammate holds one (`HostsRiders`,
     `ICrewRelay`, `Docs/CREW_STATIONS.md`);
-  - **where the one element meter lives when it moves between machines.** Element levels are simulated on the machine
-    that owns a hull and do not replicate (`/duo-vessel` §3.3's trap), and here the holder can move to a teammate's
-    machine.
+  - **handing the meter over** when its holder leaves. It lives with the longest-held seat, so it moves to that
+    person's machine, and element levels do not replicate today (`/duo-vessel` §3.3's trap). The hand-over must carry
+    the levels and the pending sub-petal pool, and nothing may be minted or lost in it.
 
 **Where this meets round 8 (for Yash):**
 1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
