@@ -487,7 +487,7 @@ namespace CosmicShore.Editor.Codex
             variant.Image = (Sprite)EditorGUILayout.ObjectField(
                 new GUIContent("Override image",
                     "Optional. Empty is NOT a gap: an element-keyed variant draws that element's " +
-                    "ethirion image, and a variant whose identity is a colour draws its accent."),
+                    "Etherion image, and a variant whose identity is a colour draws its accent."),
                 variant.Image, typeof(Sprite), false);
 
             GUILayout.Space(4f);
@@ -499,7 +499,7 @@ namespace CosmicShore.Editor.Codex
                         bakeable
                             ? "Render this variant only, at the toolbar's bake size."
                             : "This variant has no art of its own — it draws its element's " +
-                              "ethirion image, or its accent colour.",
+                              "Etherion image, or its accent colour.",
                         enabled: bakeable, outline: true))
                 {
                     var captured = variant;

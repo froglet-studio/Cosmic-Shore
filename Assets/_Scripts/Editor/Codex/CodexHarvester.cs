@@ -88,7 +88,7 @@ namespace CosmicShore.Editor.Codex
             if (!set)
             {
                 report.Warnings.Add(
-                    "No ElementalCrystalSetSO found - the four elemental ethirions were skipped. " +
+                    "No ElementalCrystalSetSO found - the four elemental Etherions were skipped. " +
                     "Expected Assets/Resources/ElementalCrystalSet.asset.");
             }
 
@@ -150,7 +150,7 @@ namespace CosmicShore.Editor.Codex
             else
             {
                 report.Warnings.Add("No omni crystal prefab found (a Crystal carrying exactly an " +
-                                    "OmniCrystalImpactor). The Omni ethirion was skipped.");
+                                    "OmniCrystalImpactor). The Omni Etherion was skipped.");
             }
 
             return entries;
