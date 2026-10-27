@@ -2555,6 +2555,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefabs: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2, type: 2}
   liveryMaterial: {fileID: 2100000, guid: bda6299e6e2046339d7a18b1a1ef8443, type: 2}
+  silverSwaps:
+  - from: {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
+    to: {fileID: 2100000, guid: bc651ba91b83455da5919af0cf9e16c5, type: 2}
+  - from: {fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}
+    to: {fileID: 2100000, guid: bc651ba91b83455da5919af0cf9e16c5, type: 2}
+  - from: {fileID: 2100000, guid: 923d366546007394ea6c8aaff6a06863, type: 2}
+    to: {fileID: 2100000, guid: e9b0a3cf0a2d42b686d4020edea9d7df, type: 2}
+  - from: {fileID: 2100000, guid: 0c127fffc48780b4d93a10811a37ae8a, type: 2}
+    to: {fileID: 2100000, guid: 0c127fffc48780b4d93a10811a37ae8a, type: 2}
   modelRadius: 4
   distanceFactor: 2.6
   fieldOfView: 34

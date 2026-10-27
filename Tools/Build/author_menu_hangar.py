@@ -327,6 +327,15 @@ STAGE_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarVesselStage
 # The class livery (Docs/VesselModels/COLOR.md: silver plates, rim (0.86, 0.90, 1.00), face (0.50, 0.56, 0.70)): the
 # stage's hull wears it in its domain slots, never a team's colour (section 90).
 LIVERY = K.meta_guid("Assets/_Graphics/Materials/ClassLiveryVesselMaterial.mat")
+# The stage's silver (Shombith 2026-10-27: "the silver should look like the ones in the arcade cards"): each of the ship's
+# shared materials and its silver twin, the 3D twin of the cards' Hull_Lit.mat. The engine keeps its own (an identity pair,
+# so it is not taken for a domain plate and painted with the livery).
+_MAT = "Assets/_Graphics/Materials/{}.mat"
+SILVER_SWAPS = tuple((K.meta_guid(_MAT.format(a)), K.meta_guid(_MAT.format(b))) for a, b in (
+    ("BlueBaseVesselMaterial", "SilverBodyVesselMaterial"),
+    ("BlueBaseOpaqueVesselMaterial", "SilverBodyVesselMaterial"),
+    ("ScreenVesselMaterial", "SilverWindowVesselMaterial"),
+    ("EngineVesselMaterial", "EngineVesselMaterial")))
 VIBE_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarVibeView.cs")
 OMNI_GLYPH = K.meta_guid("Assets/_Graphics/ElementIcons/OmniCrystal_Active.png")
 TABS_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarTabsView.cs")
@@ -1113,6 +1122,8 @@ def build_view(row_guid):
              "  m_Texture: {fileID: 0}\n  m_UVRect:\n    serializedVersion: 2\n    x: 0\n    y: 0\n    width: 1\n    height: 1\n")) \
         .add("stage", 114, lambda ctx, go: K.mono(go, STAGE_SCRIPT,
              f"  prefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n  liveryMaterial: {K.ref(2100000, LIVERY, 2)}\n"
+             "  silverSwaps:\n" + "".join(f"  - from: {K.ref(2100000, a, 2)}\n    to: {K.ref(2100000, b, 2)}\n" for a, b in SILVER_SWAPS)
+             +
              "  modelRadius: 4\n  distanceFactor: 2.6\n"
              "  fieldOfView: 34\n  pitchDegrees: 18\n  idleDegreesPerSecond: 14\n  dragDegreesPerPixel: 0.35\n"
              "  stickDegreesPerSecond: 160\n  idleResumeSeconds: 2.5\n"
@@ -1506,6 +1517,9 @@ def validate_prefabs(files, guids):
     _, stage = doc_of(view, hv("Hero/Clip/Stage#stage"))
     assert stage and f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}" in stage, "the stage has no vessel prefab table - it would build nothing"
     assert f"liveryMaterial: {{fileID: 2100000, guid: {LIVERY}" in stage, "the stage's hull must wear the silver class livery, not gold"
+    for a, b in SILVER_SWAPS:
+        assert f"  - from: {{fileID: 2100000, guid: {a}, type: 2}}\n    to: {{fileID: 2100000, guid: {b}, type: 2}}\n" in stage, \
+            "the stage's hull must wear the cards' silver (every shared vessel material swapped for its silver twin)"
     # Section 82: the player holds the model - zoom range, and the line that says how, for each device.
     assert f"  hintText: {{fileID: {hv('Hero/Turn#tmp')}}}" in stage, "the stage does not write its how-to-hold line"
     for field, line in (("pointerHint", POINTER_HINT), ("padHint", PAD_HINT), ("touchHint", TOUCH_HINT)):
@@ -1722,6 +1736,8 @@ def self_test(current, files, guids):
         "an ability row without its 3D crystal": view_plant(lambda t: re.sub(r"(\n    crystal: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the stage's hull back in the authored placeholder": view_plant(lambda t: t.replace(
             f"liveryMaterial: {{fileID: 2100000, guid: {LIVERY}, type: 2}}", "liveryMaterial: {fileID: 0}", 1)),
+        "the stage's body back in the dark gunmetal": view_plant(lambda t: t.replace(
+            f"    to: {{fileID: 2100000, guid: {SILVER_SWAPS[0][1]}, type: 2}}\n", f"    to: {{fileID: 2100000, guid: {SILVER_SWAPS[0][0]}, type: 2}}\n", 1)),
         "a vibe segment unwired": view_plant(lambda t: re.sub(r"(\n    segments:\n    - )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the rail missing a line": view_plant(lambda t: t.replace("m_Name: Line3\n", "m_Name: Lime3\n", 1)),
         "the dash back on the border": view_plant(lambda t: t.replace("m_Name: FadeLeft\n", "m_Name: Dash\n", 1)),

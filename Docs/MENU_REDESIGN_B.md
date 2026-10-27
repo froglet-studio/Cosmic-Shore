@@ -4037,3 +4037,29 @@ lot bigger and keep this design only for elements section others can have design
 - Generator: `author_menu_codex.py` writes three prefabs (`CodexTile`, `CodexGuideTile`, `CodexView`), with 21 planted
   defects. The new ones are the Lexicon drawn as the Orbit, the strip unwired, the guide page showing the core, and the
   guide shown over the orbit.
+
+### 91.2 The Hangar's hull in the cards' silver; the Codex's missing pictures (2026-10-27)
+
+Shombith, with a Hangar screenshot (white body, purple plates) beside an arcade card's hull: "the silver should look like
+the ones in the arcade cards", and, of the Field Guide's empty entries: "Run the codex tool again to take screenshots for
+the empty ones".
+
+- **Silver on the stage.** The cards draw the hull through `Hull_Lit.mat`: the dark render lifted toward a cool grey, with
+  a white edge. The stage now gives the 3D copy the same look (`HangarVesselStage.silverSwaps`, applied by `WearSilver`
+  after the model is built):
+  - **Body** (BlueBase and its opaque twin) becomes `SilverBodyVesselMaterial`: rim 0.92 / 0.95 / 1, face 0.45 / 0.50 / 0.64.
+  - **Window** becomes `SilverWindowVesselMaterial`: rim 0.85 / 0.92 / 1, face 0.25 / 0.42 / 0.95.
+  - **Engine** keeps its own material.
+  - **Anything else on the vessel shader** (the domain plates, or whatever a hull authored in their place) becomes the
+    class livery.
+  - **The livery's colours were swapped** (its rim was the darker colour). They are now rim white and face pale blue
+    0.62 / 0.74 / 1.
+  - Only the stage copy's renderers change. The ship's shared materials and `Docs/VesselModels/COLOR.md` are untouched.
+  - Generator: `author_menu_hangar.py` wires the four pairs, with a new planted defect, "the stage's body back in the
+    dark gunmetal" (35 in all).
+- **The Codex's missing pictures** cannot be baked in this session: the baker renders in the Unity editor
+  (`CodexImageBaker`). The empty entries are the Toy Box species that have no `Codex.asset` entry yet. They include the
+  Mandelbulb family (Mandelbulb, Coral Bloom, Watershed, Apollonia), the swarms, Physarum, Snap Trap, the topiaries and
+  Borromean. To fill them: **FrogletTools > UI > Codex**, then **Scan & Merge** (adds the entries), then **Bake Missing**
+  (renders their pictures), then save. A species the harvester cannot find (one with no flora or fauna config, such as a
+  swarm field) stays empty and is listed in the scan's report.

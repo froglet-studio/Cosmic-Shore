@@ -17007,3 +17007,19 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
 5. **Lexicon.** **Pass:** the same book. The eight cards fit the strip, centred.
 6. **Back to Elements.** **Pass:** the orbit returns with its pick; no Field Guide picture keeps animating (profiler:
    nothing from the hidden layout).
+
+## 🔴 2026-10-27 — Hangar hull in the cards' silver; Codex pictures to bake (unverified: no Unity editor in the session)
+
+**Spec:** `Docs/MENU_REDESIGN_B.md` §91.2.
+
+1. **Silver.** Open the Hangar and step through every vessel. **Pass:**
+   - each hull reads silver: a cool grey body with bright steel edges, pale-blue windows and pale-blue plates, like its
+     arcade card;
+   - no purple, gold or jade anywhere;
+   - the engines keep their own colour.
+2. **Ship untouched.** Fly any vessel in a match. **Pass:** it still wears its normal dark hull and its team colour (the
+   swap is the stage copy's alone).
+3. **Codex pictures.** FrogletTools > UI > Codex, then Scan & Merge, then Bake Missing, then save. Reopen CODEX > ECOLOGY.
+   **Pass:**
+   - Mandelbulb, Coral Bloom, Watershed and Apollonia show pictures in the strip and on the plate;
+   - note any species still empty, from the scan report.
