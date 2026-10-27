@@ -1837,6 +1837,7 @@
     KIT.seat = null; KIT.flyerDead = false; KIT.deadT = 0; KIT.alarm = {}; KIT.zaps.length = 0; KIT.ejected.length = 0; KIT.sentinels.length = 0; KIT.seatRT = false; KIT.curOn = false;
     KIT.kp = []; for (const w of kpWorld) KIT.kp.push(kpNew(w.p, w.q, w.kind, null, 1, false));
     KS = newKitStats(); KS.seeded = KIT.kp.length; kpDirty = true; hull.visible = true; applySeatClass();
+    ai.kitSol = null; ai.kitSolT = -1; ai.kitHopT = -1;   // the AI's kit timers are simT-relative: a new race (or a batch from simT 0) starts them fresh
   }
   // ---- spatial grids: the kit's prisms (rebuilt whenever one moved) and the field (static; built once per field) ----
   const gkey = (x, y, z) => ((Math.floor(x / GRID) + 512) * 1024 + (Math.floor(y / GRID) + 512)) * 1024 + (Math.floor(z / GRID) + 512);
@@ -2297,7 +2298,7 @@
     // over its way in, looking back down the approach the riders come in along, from high up with a narrow lens (2.5D)
     const wh = S.pair.wh, D = Math.max(70, 4 * guardR(S)), upW = Math.abs(wh.t0.y) > 0.9 ? X : Y;
     cam.position.copy(wh.A).addScaledVector(upW, D).addScaledVector(wh.t0, 0.45 * D);
-    cam.up.copy(upW); camLook.copy(wh.A).addScaledVector(wh.t0, -0.35 * D); cam.lookAt(camLook);
+    cam.up.copy(upW); camLook.copy(wh.A); cam.lookAt(camLook);   // the way in at the centre, its approach above it
     if (Math.abs(cam.fov - 34) > 1e-3) { cam.fov = 34; cam.updateProjectionMatrix(); }
     cam.updateMatrixWorld(); camTail = null; snapCam = true;
     return true;
@@ -2426,27 +2427,38 @@
       c.textAlign = 'center'; c.font = font(14, 700); c.fillStyle = '#ffb347';
       c.fillText('SENTINEL SEAT ' + (mine.indexOf(S) + 1) + '/' + mine.length + ' · guard ' + Math.round(R) + ' u · a zap ' + zapPetals().toFixed(2) + ' petal', cw / 2, tY + pad + 48 * sc);
       c.font = font(11, 600); c.fillStyle = '#e8ecff';
-      c.fillText((playMode ? 'tap' : 'click') + ' a prism in the guard to shield it (any domain), a rival to zap it · Y hops you out as the flyer · ' + (playMode ? 'SEAT' : '[ ] / D-pad') + ' swaps', cw / 2, tY + pad + 64 * sc);
+      c.fillText((playMode ? 'tap' : 'click') + ' a prism in the guard: shield it (any domain) · a rival: zap it · Y: hop · ' + (playMode ? 'SEAT' : '[ ]') + ': swap', cw / 2, tY + pad + 64 * sc);
       const A = S.pair.wh.A;
       for (const id of pilotIds()) { if (teamOf(id) === S.team) continue; if (pilotPos(id).distanceTo(A) <= R && scr(pilotPos(id), o)) { c.strokeStyle = '#ff5c6c'; c.lineWidth = 2 * sc; c.strokeRect(o.x - 12 * sc, o.y - 12 * sc, 24 * sc, 24 * sc); } }
       if (KIT.curOn) { const x = KIT.cur.x * cw, y = KIT.cur.y * ch; c.strokeStyle = '#ffffff'; c.lineWidth = 1.5 * sc; c.beginPath(); c.arc(x, y, 14 * sc, 0, KTAU); c.moveTo(x - 20 * sc, y); c.lineTo(x + 20 * sc, y); c.moveTo(x, y - 20 * sc); c.lineTo(x, y + 20 * sc); c.stroke(); }
       if (simT - KIT.miss < 0.6) { c.font = font(11, 700); c.fillStyle = '#9aa6d6'; c.fillText('nothing there inside the guard', cw / 2, tY + pad + 80 * sc); }
     }
     if (KIT.flyerDead) { c.textAlign = 'center'; c.font = font(16, 700); c.fillStyle = '#ff5c6c'; c.fillText('FLYER DOWN · Y hops you out as the flyer (the AI hops for you in ' + Math.max(0, 3 - KIT.deadT).toFixed(1) + ' s)', cw / 2, ch * 0.42); }
-    // FLUME's labels: each soliton's length and maker, at its way out
-    if (kitSight()) for (const pr of pairs) {
-      if (!pr.alive || !pr.wh || pr.dying) continue; whAt(pr.wh, pr.wh.L, flA);
-      const lab = 'FLUME · ' + Math.round(pr.wh.L) + ' u · ' + (pr.pilot ? seatFor(pr.pilot - 1).name : 'yours') + (pr.sentinel && pr.sentinel.alive ? ' · guarded' : '');
-      c.textAlign = 'center'; c.font = font(10.5, 700); c.fillStyle = '#ffffff';
-      if (scr(flA, o)) { c.fillText(lab, o.x, o.y - 10 * sc); continue; }
-      // off the screen: an edge marker pointing at its way in (where it is), like the ring marker
-      tv.copy(pr.wh.A).applyMatrix4(cam.matrixWorldInverse); const behind = tv.z > 0; tv.copy(pr.wh.A).project(cam); let x = tv.x, y = tv.y; if (behind) { x = -x; y = -y; }
-      if (!behind && Math.abs(x) < 0.95 && Math.abs(y) < 0.92) continue;   // its way in is on the screen: the line shows it
-      const m = Math.max(Math.abs(x) / 0.9, Math.abs(y) / 0.84, 1e-6); x /= m; y /= m;
-      const px = (x * 0.5 + 0.5) * cw, py = (-y * 0.5 + 0.5) * ch, ang = Math.atan2(py - ch / 2, px - cw / 2);
-      c.fillStyle = '#' + (DOMAIN[teamOf(pr.pilot)] != null ? DOMAIN[teamOf(pr.pilot)] : 0xffffff).toString(16).padStart(6, '0');
-      c.save(); c.translate(px, py); c.rotate(ang); c.beginPath(); c.moveTo(10 * sc, 0); c.lineTo(-5 * sc, -6 * sc); c.lineTo(-5 * sc, 6 * sc); c.closePath(); c.fill(); c.restore();
-      c.font = font(9.5, 700); c.fillText(lab + ' · ' + Math.round(pr.wh.A.distanceTo(hull.position)) + ' u away', Math.max(90, Math.min(cw - 90, px)), Math.max(16, Math.min(ch - 8, py + (py < ch / 2 ? 18 : -10) * sc)));
+    // FLUME (the pilot sight, LB held): every soliton - where it is (its line on the screen, or an arrow at the screen's
+    // edge toward its way in), where it leads (the ring its way out heads at) and how long it is; a list at the right
+    if (kitSight()) {
+      const list = [];
+      for (const pr of pairs) {
+        if (!pr.alive || !pr.wh || pr.dying) continue; const wh = pr.wh;
+        whAt(wh, wh.L, flA, flT); let lead = -1, best = 0.5;   // the ring its way out heads at (within 60 deg)
+        for (let i = 0; i < NG; i++) { const d = tv2.subVectors(gates[i].p, flA), l = d.length(); if (l < 1) continue; const cs = d.dot(flT) / l; if (cs > best) { best = cs; lead = i; } }
+        const who = pr.pilot ? seatFor(pr.pilot - 1).name : 'yours', col = '#' + (DOMAIN[teamOf(pr.pilot)] != null ? DOMAIN[teamOf(pr.pilot)] : 0xffffff).toString(16).padStart(6, '0');
+        const lab = Math.round(wh.L) + ' u · ' + who + (lead >= 0 ? ' · to ring ' + (lead + 1) : '') + (pr.sentinel && pr.sentinel.alive ? ' · guarded' : '');
+        c.textAlign = 'center'; c.font = font(10.5, 700); c.fillStyle = '#ffffff';
+        if (scr(flA, o)) c.fillText('FLUME · ' + lab, o.x, o.y - 10 * sc);
+        tv.copy(wh.A).applyMatrix4(cam.matrixWorldInverse); const behind = tv.z > 0; tv.copy(wh.A).project(cam); let x = tv.x, y = tv.y; if (behind) { x = -x; y = -y; }
+        if (behind || Math.abs(x) > 0.95 || Math.abs(y) > 0.92) {   // its way in is off the screen: an arrow at the edge toward it
+          const m = Math.max(Math.abs(x) / 0.9, Math.abs(y) / 0.84, 1e-6); x /= m; y /= m;
+          const px = (x * 0.5 + 0.5) * cw, py = (-y * 0.5 + 0.5) * ch, ang = Math.atan2(py - ch / 2, px - cw / 2);
+          c.fillStyle = col; c.save(); c.translate(px, py); c.rotate(ang); c.beginPath(); c.moveTo(10 * sc, 0); c.lineTo(-5 * sc, -6 * sc); c.lineTo(-5 * sc, 6 * sc); c.closePath(); c.fill(); c.restore();
+        }
+        list.push([wh.A.distanceTo(hull.position), lab, col, behind]);
+      }
+      list.sort((p, q) => p[0] - q[0]);
+      c.textAlign = 'right'; c.font = font(10, 700);
+      list.slice(0, 8).forEach(([d, lab, col, behind], i) => { c.fillStyle = col; c.fillText('FLUME ' + lab + ' · ' + Math.round(d) + ' u' + (behind ? ' behind' : ''), cw - padR, pad + (84 + 13 * i) * sc); });
+      if (list.length > 8) { c.fillStyle = '#9aa6d6'; c.fillText('+' + (list.length - 8) + ' more', cw - padR, pad + (84 + 13 * 8) * sc); }
+      if (!list.length) { c.fillStyle = '#9aa6d6'; c.fillText('FLUME · no soliton stands', cw - padR, pad + 84 * sc); }
     }
     // the Mix's alarm: a rival that entered one of your sentinels' guards, marked for you
     if (mix) for (const id of pilotIds()) {
@@ -2479,6 +2491,7 @@
     for (let i = 0; i < 4; i++) document.body.classList.toggle('kit-' + KIT_KEYS[i], i === k);
     document.body.classList.toggle('kit-gm', k === 1 || k === 2);
     const d = $('kitDesc'); if (d) d.innerHTML = KIT_DESC[k] || '';
+    for (const key of ['kChargeLevel', 'kMassLevel', 'kSpaceLevel', 'kTimeLevel']) { const r = $('p-' + key); if (r) r.closest('.row').hidden = !(k === 1 || k === 2); }   // the kits' levels: Garrett's and the Mix only
     $('tAbil').hidden = !t;
     if (t) for (const [id, lab] of [['tY', t.Y], ['tLB', t.LB], ['tB', t.B]]) { const b = $(id); b.hidden = !lab; if (lab) b.querySelector('small').textContent = lab; b.classList.remove('armed', 'cool'); }
     if ($('tSeat')) $('tSeat').hidden = !(t && t.seat);
@@ -3773,7 +3786,7 @@
       tv.copy(pos).applyMatrix4(cam.matrixWorldInverse); if (tv.z > -2) continue;
       tv.copy(pos).project(cam); const x = (tv.x * 0.5 + 0.5) * cw, y = (-tv.y * 0.5 + 0.5) * ch;
       c.textAlign = 'center'; c.font = font(11, 700); c.fillStyle = '#ffffff';
-      if (hitA > 0) { c.globalAlpha = hitA; c.fillText('BURIED · -1 PETAL', x, y - 34 * sc); c.globalAlpha = 1; }
+      if (hitA > 0) { c.globalAlpha = hitA; c.fillText(isGM() ? 'HIT · -' + (v.lastZ || 0).toFixed(2) + ' PETAL' : 'BURIED · -1 PETAL', x, y - 34 * sc); c.globalAlpha = 1; }   // round 15: a kit's hit says what it cost
       if (sil) { c.fillStyle = dim; c.fillText('SILENCED ' + (v.silenceUntil - simT).toFixed(1) + ' s', x, y - 22 * sc); }
     }
     if (lastCave && simT - lastCave.t < 1.8 && lastCave.pilot === 0) {
