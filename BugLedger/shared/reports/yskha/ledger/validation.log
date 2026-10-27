@@ -337,3 +337,6 @@
 2026-10-27T19:30:42.265Z EditMode session ended (14min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-79fe6514ac E-c8e2f49696
 2026-10-27T19:30:49.754Z editor load: play=False capture=True minPlay=15s issues=19
 2026-10-27T19:48:01.440Z PlayMode session ended (1013s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-79fe6514ac E-c8e2f49696
+2026-10-27T19:56:13.174Z EditMode session ended (25min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-79fe6514ac E-c8e2f49696
+2026-10-27T19:56:20.935Z editor load: play=False capture=True minPlay=15s issues=19
+2026-10-27T20:03:19.644Z PlayMode session ended (402s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-79fe6514ac E-c8e2f49696 E-111d87fec0
