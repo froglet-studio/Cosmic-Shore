@@ -183,6 +183,10 @@ def run(quick=False):
     trust = trust_rules()
     print("trust rules: " + ("ok" if not trust else "FAILED"))
     failures += trust
+    import console as _console
+    con = _console.self_test()
+    print("console: " + ("ok (approvals: core four only, same epoch, same best)" if not con else "FAILED"))
+    failures += con
     sched = schedule_window()
     print("schedule window: " + ("ok" if not sched else "FAILED"))
     failures += sched

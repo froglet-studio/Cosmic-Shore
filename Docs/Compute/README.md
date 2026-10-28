@@ -65,6 +65,7 @@ checkpoints and stops when the window closes. One job by hand: `run --once --job
 | `Tools/Compute/scout.py` | the opportunity lenses: `Docs/Compute/OPPORTUNITIES.md` + `opportunities.json` (generated) |
 | `Tools/Compute/install.py` | the OS registration for set-and-forget |
 | `Tools/Compute/ai_branch.py` | keeps `origin/ai`, the AI's own branch, current (section 7.1) |
+| `Tools/Compute/console.py`, `console/index.html` | the Compute Console: one static page and the `console.json` it reads (section 13) |
 | `Tools/Compute/selftest.py` | every piece, then two simulated machines against a throwaway remote |
 | `Tools/Compute/evaluators/` | the loss functions, one module each (section 6) |
 | `Docs/Compute/jobs/*.json` | the queue (section 4) |
@@ -244,6 +245,42 @@ decide, not something to start without them.
 - **Not a GPU farm.** Torch jobs use whatever torch finds (`cuda` is a capability a job can require); there is no
   multi-machine gradient sharing. Search jobs are embarrassingly parallel islands; trainings are relayed units.
 
+## 13. The Compute Console (Shombith, 2026-10-28)
+
+**https://claude.ai/artifact/54nfQFCxNBFHYQ2mCErPt1** (private until shared from its Share menu). A macOS-style window
+in Cosmic Shore's style foundation (`Docs/STYLE_FOUNDATION.md`: the deep-space neutrals, Jade for the selection, CTA
+green for the one call to action, Gold for "waits for a person", corner slivers, Aldrich and Chakra Petch).
+
+| View | What it shows |
+|---|---|
+| Queue | every job in the order a machine takes it: state, evaluations, the team's best against the shipped value, a best-so-far line; a job's sheet adds race seconds per intensity, the best values, the model's limits, and Approve / Decline |
+| Machines | every `compute/<user>/<host>` branch: working now or not, last session, cores, what it can run |
+| Recordings | every race the editor sent (`origin/bugledger/*`), learned / waiting / not seen yet by the AI learning sweep, by vessel and mode |
+| AI branch | `origin/ai` against bleeding-edge and Ys-bleeding-edge's AI work, and its recent commits |
+| Terminal (`⌘J`) | `help`, `status`, `jobs`, `job <id>`, `open`, `machines`, `recordings`, `ai`, `git log`, `git branches`, `prs`, `approve` / `decline`; `ask <question>` (Claude reads the console's data); `task <prompt>` (starts a Claude Code cloud session on the repo on the viewer's account, after a typed `yes`: GitHub, pushes, anything a session does), `sync`, `refresh`, `sessions`, `env` |
+
+**How it is built.** No server. `python3 Tools/Compute/compute.py console --out DIR [--prs FILE] [--url URL]` reads
+git (the queue, every machine's results, the bugledger recordings and the AI sweep's `ai_learning_seen.json`, the
+`ai` branch, recent commits) and writes `DIR/console.json` beside a copy of the page. The page `fetch`es
+`console.json` from its own folder. claude.ai pages cannot reach GitHub, so the git data is a snapshot as of the
+last build; the terminal's `refresh` starts a session that rebuilds it (open PRs from the GitHub tools) and
+republishes both files to the URL. A claude.ai page has no GitHub connector here, so live GitHub work goes through
+`task`.
+
+**Approvals.** On claude.ai the page keeps decisions in its own store: `approvals/<viewer id>` holds
+`decisions: {job: {decision, epoch, loss, note, at}}` (each person writes only their own; everyone reads them), and
+`processed/<job>` (owner-written) records what a session did with them. A decision names the exact result (epoch and
+best loss), so a newer best needs a new yes. A session acts on them with `compute.py console --approvals <the
+collection exported with ArtifactData> --profiles <the ids' profiles>`: only a valid approval from one of the core
+four, for the current epoch and best, is acted on (section 8). The button shows only to the core four by display
+name; the check in `console.py` is the one that counts.
+
+**Moving it off claude.ai.** `compute.py console --standalone --out DIR` writes a complete HTML document; `DIR`
+then serves as is from GitHub Pages (a private Pages site needs GitHub Enterprise Cloud), Cloudflare Pages, or
+`python3 -m http.server`. Everything but the claude.ai-only parts works there: approvals, `ask`, `task` and
+`sessions` say they need the claude.ai console. Moving approvals or tasks to such a host needs a backend of its own
+(for example a Cloudflare Worker with a GitHub App), which is a separate decision.
+
 ## 12. Verification status (2026-10-26)
 
 Run in the cloud session that built it (Linux, 4 cores, Python 3.13, numpy, no torch, no .NET):
@@ -264,3 +301,7 @@ the self-update path was dead and now runs; the trust rules in section 7 were ad
 each (no worktree added, no config extension, box2 runs through the self-updating supervisor, seven trust cases), and
 all of them fail against the previous code (the negative control). `drive-rhino-headlong` (44 evaluations) and
 `bioform-forge` (216) ran through the export path locally. Still not run: Windows, macOS, a real push, torch.
+
+**2026-10-28**: the first real push to origin worked. The cloud session published four jobs as
+`compute/shombith/cloud-session` (`drive-rhino-headlong` 154 evaluations, `drive-manta-redline` 120, `bioform-forge`
+1,512, `drive-rhino-regatta` 88), and the Compute Console reads them. Still not run: Windows, macOS, torch.

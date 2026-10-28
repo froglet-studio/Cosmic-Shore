@@ -11,6 +11,8 @@
     python3 Tools/Compute/compute.py promote <job> [--out DIR]     the converged answer, and how it reaches the game
     python3 Tools/Compute/compute.py new <id> --evaluator <module> scaffold a job file
     python3 Tools/Compute/compute.py validate             every job file in Docs/Compute/jobs
+    python3 Tools/Compute/compute.py console              build the Compute Console's console.json (README section 13)
+    python3 Tools/Compute/compute.py console              the Compute Console's console.json (README section 13)
     python3 Tools/Compute/compute.py self-test            the whole pipe, end to end, against a throwaway remote
 
 `run` never touches your working tree, branch, index or repository config: jobs run in private exports under
@@ -284,6 +286,15 @@ def main(argv=None):
     common(p)
     p.add_argument("--write", action="store_true", help="write Docs/Compute/OPPORTUNITIES.md")
     p.add_argument("--propose", action="store_true", help="write job files for the mechanical opportunities")
+    p = sub.add_parser("console")
+    p.add_argument("--out", help="folder for console.json and the page (default ~/.froglet-compute/console)")
+    p.add_argument("--local", action="store_true", help="read jobs from this checkout's Docs/Compute/jobs")
+    p.add_argument("--no-fetch", action="store_true")
+    p.add_argument("--prs", help="a JSON file of open pull requests (GitHub list_pull_requests) to include")
+    p.add_argument("--url", help="where the console is published")
+    p.add_argument("--standalone", action="store_true", help="write a full HTML document (GitHub Pages, Cloudflare, a local server)")
+    p.add_argument("--approvals", help="check approvals exported from the page's store instead of building")
+    p.add_argument("--profiles", help="with --approvals: the profiles the store's ids resolve to")
     p = sub.add_parser("eval")
     p.add_argument("job")
     p.add_argument("--params")
@@ -306,6 +317,9 @@ def main(argv=None):
         return cmd_run(args)
     if args.cmd == "doctor":
         return cmd_doctor(args)
+    if args.cmd == "console":
+        import console
+        return console.run(args)
     if args.cmd == "install":
         import install
         return install.install(args.when_idle, dry=args.dry_run, between=args.between, always=args.always)

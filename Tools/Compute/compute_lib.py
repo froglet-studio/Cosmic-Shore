@@ -594,20 +594,11 @@ def current_epoch(epochs):
     return k, epochs[k]
 
 
-def converged(job, epoch):
-    """Converged when the best across every machine has not improved by `min_improvement` (relative) over the last
-    `window_evals` evaluations, and at least `min_evals` have been spent."""
-    if not epoch or not epoch.get("best"):
-        return False
-    c = dict({"min_evals": 2000, "window_evals": 1500, "min_improvement": 0.003}, **(job.get("convergence") or {}))
-    total = epoch["evals"]
-    if total < c["min_evals"]:
-        return False
-    hist = sorted(epoch["history"], key=lambda h: h[2] if len(h) > 2 else 0)
-    if not hist:
-        return False
-    # Rebuild the global best curve in evaluation order (each history row: [evals_at, loss, unix_time] on its machine;
-    # machines run in parallel, so time orders them; evals are cumulative across machines in that order).
+def best_curve(epoch):
+    """The team's best loss as evaluations accumulate, [(evals, loss), ...]. Each history row is
+    [evals_at, loss, unix_time, machine] on its machine; machines run in parallel, so time orders them and evaluations
+    are cumulative across machines in that order."""
+    hist = sorted((epoch or {}).get("history") or [], key=lambda h: h[2] if len(h) > 2 else 0)
     best, cum, curve, last_evals = float("inf"), 0, [], {}
     for h in hist:
         if len(h) < 4:
@@ -618,6 +609,19 @@ def converged(job, epoch):
         if h[1] < best:
             best = h[1]
             curve.append((cum, best))
+    return curve
+
+
+def converged(job, epoch):
+    """Converged when the best across every machine has not improved by `min_improvement` (relative) over the last
+    `window_evals` evaluations, and at least `min_evals` have been spent."""
+    if not epoch or not epoch.get("best"):
+        return False
+    c = dict({"min_evals": 2000, "window_evals": 1500, "min_improvement": 0.003}, **(job.get("convergence") or {}))
+    total = epoch["evals"]
+    if total < c["min_evals"]:
+        return False
+    curve = best_curve(epoch)
     if not curve:
         return False
     final = curve[-1][1]

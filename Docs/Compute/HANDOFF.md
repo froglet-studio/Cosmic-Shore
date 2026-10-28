@@ -75,6 +75,17 @@ code ref, so it is now refused, and `Tools/NCA` is not on `bleeding-edge`), and 
 - Waiting on Yash: moving the hourly AI learning sweep and his AI sessions to `ai`. Until then the sync carries their
   AI work across.
 
+### The Compute Console (2026-10-28)
+
+The console (README section 13, https://claude.ai/artifact/54nfQFCxNBFHYQ2mCErPt1) is built from git by
+`Tools/Compute/console.py`, so the same two files can move to GitHub Pages or Cloudflare (`--standalone`). Its first
+data came from four jobs this cloud session ran and pushed to origin as `compute/shombith/cloud-session`, which was the
+first real push to `compute/*` (it worked). Verified here: the page renders with no console error at desktop and
+phone widths (no sideways scroll at 400 px), the terminal's offline commands, the approval check's self-test
+(core four only, same epoch, same best), and an empty read of both store collections. Not verified: `task`
+(`create_session`'s answer shape is read defensively, since creating a session only to learn its shape was not
+worth it), `sessions` and `ask` inside the claude.ai viewer, and a real approval round trip.
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).

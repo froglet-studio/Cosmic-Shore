@@ -1,0 +1,800 @@
+<title>Froglet Compute Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@600&display=swap">
+<style>
+/* Froglet Compute Console: a macOS window (title bar, traffic lights, source-list sidebar, a Terminal panel) dressed
+   in Cosmic Shore's style foundation (Docs/STYLE_FOUNDATION.md): deep-space neutrals, Jade for the active
+   selection, CTA green for the one call to action, Gold for "needs a person", corner slivers instead of radii inside
+   the window, Aldrich for headings and numbers, Chakra Petch caps on buttons. One static page + console.json beside it
+   (Tools/Compute/console.py), so it runs here and on GitHub Pages / Cloudflare unchanged. Single dark theme by
+   choice: the game's UI is dark. */
+:root {
+  --space: #00041f; --black: #00010a;
+  --window: rgba(9, 13, 44, 0.84); --titlebar: rgba(20, 25, 66, 0.92); --sidebar: rgba(3, 6, 28, 0.55);
+  --card: #10153a; --card-hi: #171d4a; --sunk: #070b29;
+  --line: rgba(116, 123, 173, 0.24); --line-hi: rgba(116, 123, 173, 0.45);
+  --text: #e6e9ff; --muted: #a9aed6; --dim: #747bad; --inactive: #5c5f70;
+  --jade: #00d4ff; --jade-l: #80eaff; --jade-d: #004d81;
+  --ruby: #a600ff; --ruby-l: #d280ff;
+  --gold: #ffae00; --gold-l: #ffd780; --gold-d: #805700;
+  --cta: #99ff80; --danger: #ff4b3a;
+  --mac-red: #ff5f57; --mac-yellow: #febc2e; --mac-green: #28c840;
+  --head: "Aldrich", "Chakra Petch", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --btn: "Chakra Petch", "Aldrich", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+  --sliver: 14px; --sliver-s: 10px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; color: var(--text); font: 13.5px/1.5 var(--ui); background: var(--space);
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(230,233,255,0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 68% 14%, rgba(230,233,255,0.5) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 84% 62%, rgba(128,234,255,0.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 32% 78%, rgba(230,233,255,0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 52% 46%, rgba(210,128,255,0.5) 50%, transparent 51%),
+    radial-gradient(900px 520px at 85% 0%, rgba(166,0,255,0.16), transparent 70%),
+    radial-gradient(800px 600px at 0% 100%, rgba(0,212,255,0.12), transparent 70%);
+  background-size: 360px 360px, 420px 420px, 520px 520px, 300px 300px, 460px 460px, 100% 100%, 100% 100%;
+  background-attachment: fixed;
+  padding: 28px max(16px, env(safe-area-inset-right, 0px)) 28px max(16px, env(safe-area-inset-left, 0px)); }
+h1, h2, h3 { font-family: var(--head); font-weight: 400; margin: 0; line-height: 1.2; text-wrap: balance; letter-spacing: 0.01em; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); font-size: 0.92em; }
+a { color: var(--jade-l); }
+
+/* ── the window ── */
+.window { max-width: 1240px; height: 100%; min-height: 640px; margin: 0 auto; display: grid; grid-template-rows: 38px minmax(0, 1fr);
+  background: var(--window); border: 1px solid rgba(230,233,255,0.14); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,1,10,0.7), 0 0 0 0.5px rgba(0,1,10,0.9), inset 0 1px 0 rgba(255,255,255,0.06);
+  -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%); }
+.window.zoomed { max-width: none; }
+.titlebar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 12px; background: var(--titlebar);
+  border-bottom: 1px solid rgba(0,1,10,0.6); box-shadow: inset 0 -1px 0 rgba(255,255,255,0.04); user-select: none; }
+.lights { display: flex; gap: 8px; }
+.lights button { width: 12px; height: 12px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; position: relative; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.25); }
+.lights .r { background: var(--mac-red); } .lights .y { background: var(--mac-yellow); } .lights .g { background: var(--mac-green); }
+.lights button::after { content: attr(data-g); position: absolute; inset: 0; display: grid; place-items: center; font: 700 9px/1 var(--ui); color: rgba(0,0,0,0.6); opacity: 0; }
+.lights:hover button::after { opacity: 1; }
+.wtitle { font: 600 13px/1 var(--ui); color: var(--muted); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.wtitle b { color: var(--text); font-weight: 600; }
+.tright { justify-self: end; display: flex; align-items: center; gap: 10px; font: 500 11.5px/1 var(--mono); color: var(--dim); }
+.led { width: 8px; height: 8px; border-radius: 50%; background: var(--inactive); flex: none; display: inline-block; }
+.led.on { background: var(--cta); box-shadow: 0 0 8px var(--cta); animation: pulse 2.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .led.on { animation: none; } }
+
+.body { display: grid; grid-template-columns: 216px minmax(0, 1fr); min-height: 0; }
+.window.nosidebar .body { grid-template-columns: 0 minmax(0, 1fr); }
+.window.nosidebar .side { visibility: hidden; }
+
+/* source list */
+.side { background: var(--sidebar); border-right: 1px solid rgba(0,1,10,0.55); padding: 14px 10px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.side .sec { font: 600 11px/1 var(--ui); color: var(--dim); padding: 12px 10px 6px; letter-spacing: 0.02em; }
+.side a { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 6px; color: var(--text); text-decoration: none; font-size: 13px; }
+.side a svg { width: 16px; height: 16px; flex: none; color: var(--jade); }
+.side a:hover { background: rgba(230,233,255,0.06); }
+.side a[aria-current="page"] { background: rgba(0,212,255,0.18); box-shadow: inset 0 0 0 1px rgba(0,212,255,0.28); }
+.side a .n { margin-left: auto; font: 500 11px/1 var(--mono); color: var(--dim); }
+.side .foot { margin-top: auto; padding: 12px 10px 4px; font-size: 11.5px; color: var(--dim); display: grid; gap: 4px; border-top: 1px solid var(--line); }
+.side .foot b { color: var(--muted); font-weight: 500; }
+
+/* content + terminal */
+.content { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; min-width: 0; }
+.scroll { overflow-y: auto; min-height: 0; }
+.pane { padding: 22px 24px 40px; display: grid; gap: 18px; max-width: 1000px; }
+.ptitle { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.ptitle h2 { font-size: 22px; }
+.ptitle .sub { color: var(--muted); font-size: 12.5px; }
+.lead { color: var(--muted); max-width: 76ch; }
+.note { font-size: 12px; color: var(--muted); }
+
+/* style-foundation surfaces: corner slivers, no radii */
+.sliver { clip-path: polygon(var(--sliver) 0, 100% 0, 100% calc(100% - var(--sliver)), calc(100% - var(--sliver)) 100%, 0 100%, 0 var(--sliver)); }
+.card { background: var(--card); padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+.card h3 { font-size: 15px; }
+.banner { background: var(--card); padding: 14px 18px; display: grid; gap: 6px; border-left: 3px solid var(--jade); }
+.banner.gold { border-left-color: var(--gold); }
+.banner.bad { border-left-color: var(--danger); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.tile { background: var(--card); padding: 12px 16px 14px; display: grid; gap: 2px; }
+.tile b { font: 400 24px/1.1 var(--head); font-variant-numeric: tabular-nums; }
+.tile span { font-size: 11.5px; color: var(--muted); }
+
+.pill { display: inline-flex; align-items: center; gap: 5px; font: 600 10.5px/1 var(--btn); letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 9px 4px;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); white-space: nowrap; }
+.pill.ready, .pill.learned, .pill.valid, .pill.promoted { color: var(--black); background: var(--cta); }
+.pill.converged, .pill.waitingyes { color: var(--black); background: var(--gold); }
+.pill.blocked, .pill.waiting { color: var(--gold-l); background: rgba(255,174,0,0.16); }
+.pill.proposed, .pill.paused, .pill.retired, .pill.idle { color: var(--muted); background: rgba(92,95,112,0.35); }
+.pill.new, .pill.notrun { color: #fff; background: var(--danger); }
+
+.btn { font: 600 12px/1 var(--btn); letter-spacing: 0.08em; text-transform: uppercase; padding: 11px 18px 10px; border: 0; cursor: pointer; color: var(--text); background: var(--inactive);
+  clip-path: polygon(var(--sliver-s) 0, 100% 0, 100% calc(100% - var(--sliver-s)), calc(100% - var(--sliver-s)) 100%, 0 100%, 0 var(--sliver-s)); }
+.btn:hover { background: #6c7084; }
+.btn.cta { background: var(--cta); color: var(--black); }
+.btn.cta:hover { background: #b2ff9f; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* queue rows */
+.group { display: grid; gap: 8px; }
+.group > h3 { font: 600 11px/1 var(--btn); letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); padding: 6px 2px 2px; }
+.job { display: grid; grid-template-columns: 3px minmax(0, 1fr) 150px 180px; gap: 6px 16px; align-items: center; background: var(--card); padding: 12px 16px 12px 0; cursor: pointer;
+  text-align: left; width: 100%; border: 0; color: inherit; transition: background 0.15s; }
+.job:hover { background: var(--card-hi); }
+.job .strip { align-self: stretch; background: transparent; }
+.job.attn .strip { background: var(--gold); }
+.job.live .strip { background: var(--jade); }
+.job .t { display: grid; gap: 3px; min-width: 0; }
+.job .title { font: 400 14.5px/1.3 var(--head); }
+.job .id { font: 11px/1.3 var(--mono); color: var(--dim); overflow-wrap: anywhere; }
+.job .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 11.5px; color: var(--muted); }
+.job .why { font-size: 11.5px; color: var(--muted); }
+.job .score { display: grid; gap: 2px; justify-items: end; text-align: right; font-variant-numeric: tabular-nums; }
+.job .score b { font: 400 19px/1.1 var(--head); }
+.job .score span { font-size: 11px; color: var(--muted); }
+.delta.good { color: var(--cta); } .delta.worse { color: var(--danger); }
+.spark { width: 180px; height: 46px; display: block; }
+
+/* drawer (a sheet from the right, inside the window) */
+.drawer { position: fixed; inset: 0; z-index: 30; display: grid; grid-template-columns: 1fr min(580px, 100%); background: rgba(0,1,10,0.55); }
+.drawer .scrim { border: 0; background: transparent; cursor: pointer; }
+.panel { background: rgba(9,13,44,0.97); border-left: 1px solid var(--line-hi); overflow-y: auto; display: grid; align-content: start; gap: 14px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) 20px;
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.panel .top { display: flex; justify-content: space-between; align-items: center; }
+.panel h2 { font-size: 22px; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 16px; font-size: 12.5px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.bars { display: grid; gap: 8px; }
+.bar-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 70px; gap: 10px; align-items: center; }
+.bar-row .lbl { font: 400 12px/1 var(--head); color: var(--muted); }
+.bar-row .tracks { display: grid; gap: 3px; }
+.bar-row .tr { height: 7px; background: var(--sunk); overflow: hidden; }
+.bar-row .tr i { display: block; height: 100%; }
+.bar-row .tr.s i { background: var(--inactive); }
+.bar-row .tr.b i { background: var(--jade); }
+.bar-row .val { text-align: right; font: 11px/1.35 var(--mono); color: var(--muted); white-space: pre; }
+.legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 7px; margin-right: 6px; }
+.approve textarea, .field { width: 100%; font: inherit; color: var(--text); background: var(--sunk); border: 1px solid var(--line); padding: 9px 11px; resize: vertical; }
+.approve textarea { min-height: 56px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.decisions { display: grid; gap: 6px; }
+.decision { display: flex; align-items: center; gap: 8px; font-size: 12.5px; flex-wrap: wrap; }
+.decision img { width: 20px; height: 20px; border-radius: 50%; }
+
+/* tables */
+.tablewrap { overflow-x: auto; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 10.5px/1.2 var(--btn); letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); white-space: nowrap; background: rgba(0,1,10,0.25); }
+tr:last-child td { border-bottom: 0; }
+td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.wide { min-width: 680px; }
+.params { max-height: 240px; overflow: auto; }
+.matrix td.cell { text-align: center; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.matrix td.cell span { display: inline-block; min-width: 2.1em; padding: 2px 5px; margin: 1px; }
+.matrix td.cell .l { background: rgba(153,255,128,0.16); color: var(--cta); }
+.matrix td.cell .w { background: rgba(255,174,0,0.16); color: var(--gold-l); }
+.matrix td.cell .n { background: rgba(255,75,58,0.2); color: #ff9b90; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.filters select { font: inherit; color: var(--text); background: var(--sunk); border: 1px solid var(--line); padding: 6px 10px; }
+.empty { background: var(--card); padding: 26px; text-align: center; color: var(--muted); display: grid; gap: 8px; justify-items: center; }
+.cmdline { display: flex; gap: 8px; align-items: center; background: var(--black); padding: 9px 12px; font-family: var(--mono); font-size: 12px; min-width: 0; color: var(--jade-l); }
+.cmdline code { overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; background: none; }
+
+/* ── Terminal (a macOS Terminal pane, Cosmic Shore colours) ── */
+.term { border-top: 1px solid rgba(0,1,10,0.7); background: rgba(0,1,10,0.94); display: grid; grid-template-rows: 30px minmax(0, 1fr); height: 300px; min-height: 0; }
+.term[hidden] { display: none !important; }
+.term.tall { height: 62vh; }
+.termbar { display: flex; align-items: center; gap: 10px; padding: 0 10px 0 14px; background: linear-gradient(#1a1f4a, #121638); border-bottom: 1px solid rgba(0,1,10,0.8); font: 600 11.5px/1 var(--ui); color: var(--muted); user-select: none; }
+.termbar .tab { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(0,212,255,0.12); color: var(--text); }
+.termbar .sp { flex: 1; }
+.termbar button { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 4px 6px; font: 500 11.5px/1 var(--ui); }
+.termbar button:hover { color: var(--text); }
+.tout { overflow-y: auto; padding: 10px 14px 4px; font: 12.5px/1.55 var(--mono); color: #cfd3f5; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 0; }
+.tout .line { min-height: 1.55em; }
+.tout .p { color: var(--cta); } .tout .p .path { color: var(--jade); }
+.tout .ok { color: var(--cta); } .tout .warn { color: var(--gold); } .tout .err { color: var(--danger); }
+.tout .dim { color: var(--dim); } .tout .hl { color: var(--jade-l); } .tout .ruby { color: var(--ruby-l); } .tout .b { color: var(--text); font-weight: 600; }
+.tout a { color: var(--jade-l); }
+.tin { display: flex; align-items: center; gap: 8px; padding: 2px 14px 10px; font: 12.5px/1.55 var(--mono); }
+.tin .p { color: var(--cta); white-space: nowrap; } .tin .p .path { color: var(--jade); }
+.tin input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--text); font: inherit; caret-color: var(--jade); padding: 0; }
+.statusbar { display: flex; gap: 14px; align-items: center; white-space: nowrap; overflow: hidden; padding: 0 14px; height: 24px; font: 11px/1 var(--mono); color: var(--dim); border-top: 1px solid rgba(0,1,10,0.6); background: rgba(3,6,28,0.7); }
+.statusbar button { background: none; border: 0; color: var(--jade-l); cursor: pointer; font: inherit; padding: 0; }
+.statusbar .sp { flex: 1; }
+.statusbar #sb-left { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+@media (max-width: 760px) {
+  body { padding: 0; }
+  .window { border-radius: 0; border: 0; min-height: 100%; }
+  .titlebar { grid-template-columns: auto 1fr; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+  .tright, #sb-right { display: none; }
+  .titlebar { gap: 14px; }
+  .body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .side { flex-direction: row; overflow-x: auto; padding: 8px max(10px, env(safe-area-inset-left, 0px)); border-right: 0; border-bottom: 1px solid var(--line); }
+  .side .sec, .side .foot { display: none; }
+  .side a { white-space: nowrap; }
+  .pane { padding: 16px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); }
+  .job { grid-template-columns: 3px minmax(0, 1fr) auto; }
+  .job .sparkcell { grid-column: 2 / -1; }
+  .spark { width: 100%; }
+  .term { height: 46vh; }
+}
+</style>
+
+<div class="window" id="win">
+  <div class="titlebar">
+    <div class="lights">
+      <button class="r" data-g="×" id="l-red" aria-label="Close the terminal" title="Close the terminal"></button>
+      <button class="y" data-g="−" id="l-yellow" aria-label="Hide the sidebar" title="Hide the sidebar"></button>
+      <button class="g" data-g="+" id="l-green" aria-label="Zoom the window" title="Zoom the window"></button>
+    </div>
+    <div class="wtitle"><span class="led" id="led"></span><b>Froglet Compute</b><span id="wsub">Console</span></div>
+    <div class="tright"><span id="fresh">loading</span></div>
+  </div>
+  <div class="body">
+    <nav class="side" id="nav" aria-label="Views">
+      <div class="sec">Compute</div>
+      <a href="#queue" data-view="queue"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 4h10M3 8h10M3 12h6"/></svg>Queue<span class="n" id="n-queue"></span></a>
+      <a href="#machines" data-view="machines"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="8"/><path d="M5.5 14h5M8 11v3"/></svg>Machines<span class="n" id="n-machines"></span></a>
+      <a href="#recordings" data-view="recordings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 8h2l1.5-4 2.5 8 2-6 1.5 2h3.5"/></svg>Recordings<span class="n" id="n-recordings"></span></a>
+      <a href="#ai" data-view="ai"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="3.5" r="1.5"/><circle cx="4" cy="12.5" r="1.5"/><circle cx="12" cy="6" r="1.5"/><path d="M4 5v6M12 7.5c0 2.5-3 3-8 3.5"/></svg>AI branch</a>
+      <div class="sec">Tools</div>
+      <a href="#terminal" data-view="terminal" id="nav-term"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="11"/><path d="M4 6l2.5 2L4 10M8 10.5h4"/></svg>Terminal<span class="n">⌘J</span></a>
+      <div class="foot" id="sidefoot"></div>
+    </nav>
+    <div class="content">
+      <div class="scroll" id="scroll"><div class="pane" id="main"><div class="empty sliver"><b>Loading console.json</b><span>The console reads one file published next to it.</span></div></div></div>
+      <div>
+        <section class="term" id="term" hidden aria-label="Terminal">
+          <div class="termbar"><span class="tab"><span class="led on" style="width:6px;height:6px"></span>compute — console</span><span class="sp"></span>
+            <button type="button" id="t-tall">Expand</button><button type="button" id="t-clear">Clear</button><button type="button" id="t-close">Close</button></div>
+          <div class="tout" id="tout" role="log" aria-live="polite"></div>
+        </section>
+        <div class="statusbar"><span id="sb-left">froglet-studio/Cosmic-Shore</span><span class="sp"></span><span id="sb-right"></span><button type="button" id="sb-term">Terminal ⌘J</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="drawer" id="drawer" hidden>
+  <button class="scrim" id="scrim" aria-label="Close"></button>
+  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var DATA = null, VIEW = "queue", OPEN = null;
+  var CAP = { db: null, user: null, me: null, sample: null, mcp: null, approvals: {}, processed: {}, canApprove: null, ready: false };
+  var CCR = "Claude Code Remote";
+
+  // ── DOM helpers: text always through textContent ──
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      var v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v;
+      else if (k === "text") el.textContent = v;
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+    (kids || []).forEach(function (c) { if (c != null && c !== false) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return el;
+  }
+  function svg(tag, attrs) { var el = document.createElementNS("http://www.w3.org/2000/svg", tag); for (var k in attrs) el.setAttribute(k, attrs[k]); return el; }
+  function ago(t) {
+    if (!t) return "never";
+    var s = Math.max(0, Date.now() / 1000 - t);
+    if (s < 90) return "just now"; if (s < 5400) return Math.round(s / 60) + " min ago";
+    if (s < 129600) return Math.round(s / 3600) + " h ago"; return Math.round(s / 86400) + " days ago";
+  }
+  function fmt(x, d) { return x == null || !isFinite(x) ? "–" : Number(x).toFixed(d == null ? 3 : d); }
+  function delta(j) {
+    if (!j.best || !j.baseline || j.best.loss == null || j.baseline.loss == null) return null;
+    var b = j.baseline.loss, v = j.best.loss; return { pct: (b - v) / Math.max(Math.abs(b), 1e-9) * 100, better: v < b };
+  }
+  function runnable(j) { return j.status === "ready" && !(j.reason || "").match(/^(invalid|not run|waits on|status)/); }
+  function stateOf(j) {
+    if (j.status === "promoted") return ["promoted", "promoted"];
+    if (j.converged) return ["converged", "converged"];
+    if ((j.reason || "").indexOf("not run:") === 0) return ["notrun", "not run"];
+    if (j.status === "ready" && (j.reason || "").indexOf("waits on") === 0) return ["blocked", "waiting"];
+    return [j.status, j.status];
+  }
+  function jobById(id) { return DATA && DATA.jobs.filter(function (j) { return j.id === id; })[0]; }
+
+  // ── sparkline: the team's best as evaluations accumulate (better draws higher); shipped dashed ──
+  function spark(j, w, hgt) {
+    w = w || 180; hgt = hgt || 46;
+    var c = j.curve || [], base = j.baseline && j.baseline.loss;
+    var box = svg("svg", { viewBox: "0 0 " + w + " " + hgt, class: "spark", role: "img", "aria-label": c.length ? "best loss from " + fmt(c[0][1]) + " to " + fmt(c[c.length - 1][1]) : "no results yet" });
+    if (!c.length) { box.appendChild(svg("line", { x1: 0, x2: w, y1: hgt / 2, y2: hgt / 2, stroke: "rgba(116,123,173,0.35)", "stroke-dasharray": "3 5", fill: "none" })); return box; }
+    var ys = c.map(function (p) { return p[1]; }); if (base != null) ys.push(base);
+    var lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys); if (hi - lo < 1e-9) { hi += 1; lo -= 1; }
+    var maxE = Math.max(c[c.length - 1][0], 1), pad = 4;
+    function X(e) { return pad + (w - 2 * pad) * e / maxE; }
+    function Y(v) { return hgt - (pad + (hgt - 2 * pad) * (hi - v) / (hi - lo)); }
+    for (var g = 1; g < 3; g++) box.appendChild(svg("line", { x1: pad, x2: w - pad, y1: g * hgt / 3, y2: g * hgt / 3, stroke: "rgba(116,123,173,0.16)", "stroke-width": 0.6, fill: "none" }));
+    if (base != null) box.appendChild(svg("line", { x1: pad, x2: w - pad, y1: Y(base), y2: Y(base), stroke: "#747bad", "stroke-dasharray": "4 3", "stroke-width": 1.1, fill: "none" }));
+    var pts = [], last = null;
+    c.forEach(function (p) { if (last != null) pts.push(X(p[0]).toFixed(1) + "," + Y(last).toFixed(1)); pts.push(X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)); last = p[1]; });
+    pts.push((w - pad).toFixed(1) + "," + Y(last).toFixed(1));
+    var x0 = pts[0].split(",")[0];
+    box.appendChild(svg("path", { d: "M" + pts.join(" L") + " L" + (w - pad) + "," + (hgt - 1) + " L" + x0 + "," + (hgt - 1) + " Z", fill: "rgba(0,212,255,0.14)", stroke: "none" }));
+    box.appendChild(svg("polyline", { points: pts.join(" "), fill: "none", stroke: "#00d4ff", "stroke-width": 1.8, "stroke-linejoin": "round" }));
+    box.appendChild(svg("circle", { cx: w - pad, cy: Y(last), r: 3, fill: "#80eaff" }));
+    return box;
+  }
+
+  // ── chrome ──
+  function renderChrome() {
+    var d = DATA, active = d.machines.filter(function (m) { return m.active; }).length;
+    var hours = d.jobs.reduce(function (s, j) { return s + (j.machine_hours || 0); }, 0);
+    var evals = d.jobs.reduce(function (s, j) { return s + (j.evals || 0); }, 0);
+    document.getElementById("led").className = "led" + (active ? " on" : "");
+    document.getElementById("fresh").textContent = "data " + ago(d.generated);
+    document.getElementById("n-queue").textContent = d.jobs.length;
+    document.getElementById("n-machines").textContent = d.machines.length;
+    document.getElementById("n-recordings").textContent = d.recordings.flights.length;
+    var f = document.getElementById("sidefoot"); f.textContent = "";
+    [[active + (active === 1 ? " machine" : " machines"), "working now"], [d.jobs.filter(runnable).length + " jobs", "ready"], [evals.toLocaleString(), "evaluations"], [hours.toFixed(1) + " h", "of machine time"]]
+      .forEach(function (p) { f.appendChild(h("span", null, [h("b", { text: p[0] }), " " + p[1]])); });
+    document.getElementById("sb-left").textContent = (d.repo || "froglet-studio/Cosmic-Shore") + (d.branch ? " · " + d.branch : "");
+    document.getElementById("sb-right").textContent = "ai " + ((d.ai || {}).needs_sync ? "needs sync" : "current");
+    document.querySelectorAll("#nav a").forEach(function (a) { if (a.dataset.view === VIEW) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  }
+  function title(t, sub) { return h("div", { class: "ptitle" }, [h("h2", { text: t }), sub ? h("span", { class: "sub", text: sub }) : null]); }
+
+  // ── queue ──
+  function jobRow(j) {
+    var s = stateOf(j), dl = delta(j), ap = approvalsFor(j.id).length;
+    var meta = h("div", { class: "meta" }, [h("span", { class: "pill " + s[0], text: s[1] }),
+      j.plan ? h("span", { text: j.plan + (j.stage != null ? " · stage " + j.stage : "") }) : null,
+      h("span", { text: (j.evals || 0).toLocaleString() + " evals" }),
+      j.machines && j.machines.length ? h("span", { text: j.machines.length + (j.machines.length === 1 ? " machine" : " machines") }) : null,
+      ap ? h("span", { text: ap + (ap === 1 ? " decision" : " decisions") }) : null]);
+    var score = h("div", { class: "score" }, j.best ? [h("b", { text: fmt(j.best.loss) }),
+      h("span", null, ["shipped " + fmt(j.baseline && j.baseline.loss) + "  ", dl ? h("span", { class: "delta " + (dl.better ? "good" : "worse"), text: (dl.better ? "−" : "+") + Math.abs(dl.pct).toFixed(1) + "%" }) : null])]
+      : [h("b", { text: "–" }), h("span", { text: "priority " + j.priority })]);
+    var cls = "job sliver" + (j.converged ? " attn" : (runnable(j) && j.evals ? " live" : ""));
+    return h("button", { class: cls, type: "button", onclick: function () { openJob(j.id); } }, [h("span", { class: "strip" }),
+      h("div", { class: "t" }, [h("span", { class: "title", text: j.title || j.id }), h("span", { class: "id", text: j.id }), meta,
+        j.reason && s[0] !== "converged" ? h("span", { class: "why", text: j.reason }) : null]),
+      score, h("div", { class: "sparkcell" }, [spark(j)])]);
+  }
+  function renderQueue(root) {
+    var d = DATA, best = d.jobs.filter(function (j) { return delta(j); });
+    root.appendChild(title("Queue", d.jobs.length + " searches, in the order a machine takes them"));
+    root.appendChild(h("p", { class: "lead", text: "Loss is lower-is-better. The dashed line is the shipped value, the Jade line the team's best so far. A Gold strip means a search has converged and waits for a yes from the core four." }));
+    if (best.length) root.appendChild(h("div", { class: "tiles" }, best.slice(0, 4).map(function (j) {
+      var dl = delta(j); return h("div", { class: "tile sliver" }, [h("b", { class: dl.better ? "delta good" : "delta worse", text: (dl.better ? "−" : "+") + Math.abs(dl.pct).toFixed(1) + "%" }), h("span", { text: j.id + " vs shipped" })]);
+    })));
+    [["Converged: waiting for a yes", function (j) { return j.converged && j.status !== "promoted"; }],
+     ["Ready", function (j) { return !j.converged && runnable(j); }],
+     ["Waiting", function (j) { return !j.converged && !runnable(j) && j.status !== "promoted" && j.status !== "retired"; }],
+     ["Done", function (j) { return j.status === "promoted" || j.status === "retired"; }]].forEach(function (g) {
+      var js = d.jobs.filter(g[1]); if (!js.length) return;
+      root.appendChild(h("section", { class: "group" }, [h("h3", { text: g[0] + " · " + js.length })].concat(js.map(jobRow))));
+    });
+  }
+
+  // ── job sheet ──
+  function bars(j) {
+    var s = (j.baseline || {}).seconds_by_intensity, b = (j.best || {}).seconds_by_intensity;
+    if (!s && !b) return null;
+    var keys = Object.keys(s || b).sort(), all = [];
+    keys.forEach(function (k) { if (s && s[k] != null) all.push(s[k]); if (b && b[k] != null) all.push(b[k]); });
+    var max = Math.max.apply(null, all.concat([1]));
+    return h("div", { class: "card sliver" }, [h("h3", { text: "Race seconds by intensity, in the model" }),
+      h("div", { class: "legend" }, [h("span", null, [h("i", { style: "background:var(--inactive)" }), "shipped"]), h("span", null, [h("i", { style: "background:var(--jade)" }), "team's best"])]),
+      h("div", { class: "bars" }, keys.map(function (k) {
+        var sv = s && s[k], bv = b && b[k];
+        return h("div", { class: "bar-row" }, [h("span", { class: "lbl", text: "I" + k }),
+          h("div", { class: "tracks" }, [h("div", { class: "tr s" }, [h("i", { style: "width:" + (sv != null ? 100 * sv / max : 0) + "%" })]), h("div", { class: "tr b" }, [h("i", { style: "width:" + (bv != null ? 100 * bv / max : 0) + "%" })])]),
+          h("span", { class: "val", text: fmt(sv, 1) + " s\n" + fmt(bv, 1) + " s" })]);
+      })),
+      (j.best && j.best.dnf) || (j.baseline && j.baseline.dnf) ? h("p", { class: "note", text: "Races not finished: shipped " + ((j.baseline || {}).dnf || 0) + " of " + ((j.baseline || {}).races || "?") + ", best " + ((j.best || {}).dnf || 0) + " of " + ((j.best || {}).races || "?") + ". An unfinished race counts as a long time." }) : null]);
+  }
+  function paramsTable(j) {
+    var p = (j.best || {}).params, s = (j.baseline || {}).params; if (!p) return null;
+    return h("div", { class: "card sliver" }, [h("h3", { text: "The best values found" }), h("div", { class: "params" }, [h("table", null, [
+      h("thead", null, [h("tr", null, [h("th", { text: "Parameter" }), h("th", { text: "Shipped" }), h("th", { text: "Best" })])]),
+      h("tbody", null, Object.keys(p).sort().map(function (k) { var a = s ? s[k] : null, v = p[k];
+        return h("tr", null, [h("td", { class: "mono", text: k }), h("td", { class: "num", text: typeof a === "number" ? fmt(a, 3) : (a == null ? "–" : String(a)) }), h("td", { class: "num", text: typeof v === "number" ? fmt(v, 3) : String(v) })]); }))])])]);
+  }
+  function openJob(id) { OPEN = id; renderDrawer(); }
+  function closeJob() { OPEN = null; document.getElementById("drawer").hidden = true; }
+  function renderDrawer() {
+    var j = jobById(OPEN), dr = document.getElementById("drawer"), p = document.getElementById("panel");
+    if (!j) { dr.hidden = true; return; }
+    p.textContent = "";
+    var s = stateOf(j), dl = delta(j), c = j.convergence || {};
+    p.appendChild(h("div", { class: "top" }, [h("span", { class: "pill " + s[0], text: s[1] }), h("button", { class: "btn", type: "button", onclick: closeJob, text: "Close" })]));
+    p.appendChild(h("div", null, [h("h2", { id: "panel-title", text: j.title || j.id }), h("div", { class: "mono note", text: j.id })]));
+    if (j.goal) p.appendChild(h("p", { class: "lead", text: j.goal }));
+    p.appendChild(h("div", { class: "card sliver" }, [h("dl", { class: "kv" }, [
+      h("dt", { text: "Best loss" }), h("dd", null, [h("b", { text: fmt(j.best && j.best.loss) }), dl ? h("span", { class: "delta " + (dl.better ? "good" : "worse"), text: "  " + (dl.better ? "−" : "+") + Math.abs(dl.pct).toFixed(1) + "% vs shipped " + fmt(j.baseline.loss) }) : null]),
+      h("dt", { text: "Found by" }), h("dd", { text: j.best ? (j.best.machine || "–") + " after " + (j.best.evals_at || "?") + " evals" : "no result yet" }),
+      h("dt", { text: "Evaluations" }), h("dd", { text: (j.evals || 0).toLocaleString() + " over " + (j.machine_hours || 0) + " machine-hours" }),
+      h("dt", { text: "Converges" }), h("dd", { text: j.converged ? "converged" : "after " + (c.min_evals || 0).toLocaleString() + " evals, once the best stops improving by " + ((c.min_improvement || 0) * 100).toFixed(1) + "% over " + (c.window_evals || 0).toLocaleString() }),
+      h("dt", { text: "Code from" }), h("dd", { class: "mono", text: j.ref }),
+      h("dt", { text: "Epoch" }), h("dd", { class: "mono", text: j.epoch || "–" }),
+      j.reason ? h("dt", { text: "Why it waits" }) : null, j.reason ? h("dd", { text: j.reason }) : null]), spark(j, 520, 90)]));
+    var b = bars(j); if (b) p.appendChild(b);
+    if (j.archive) p.appendChild(h("div", { class: "card sliver" }, [h("h3", { text: "Different good answers kept" }), h("p", { text: j.archive.filled + " of " + j.archive.cells + " shape cells filled. MAP-Elites keeps the best body in each." })]));
+    var pt = paramsTable(j); if (pt) p.appendChild(pt);
+    if (j.best && j.best.limits) p.appendChild(h("div", { class: "banner gold" }, [h("h3", { text: "What the model does not see" }), h("p", { class: "note", text: j.best.limits })]));
+    p.appendChild(approvalCard(j));
+    if (j.promote) p.appendChild(h("div", { class: "card sliver" }, [h("h3", { text: "How a yes reaches the game" }), h("p", { class: "note", text: j.promote })]));
+    dr.hidden = false;
+  }
+
+  // ── approvals (claude.ai: the page's own store) ──
+  function approvalsFor(jid) { var out = []; for (var uid in CAP.approvals) { var d = CAP.approvals[uid][jid]; if (d) out.push({ by: uid, d: d }); } return out; }
+  function staleDecision(d, j) { return d.epoch !== j.epoch || !j.best || Math.abs((d.loss || 0) - j.best.loss) > 1e-9; }
+  function approvalCard(j) {
+    var card = h("div", { class: "card sliver approve" }, [h("h3", { text: "Approve this result" })]);
+    var done = CAP.processed[j.id];
+    if (done) card.appendChild(h("div", { class: "banner" }, [h("b", { text: "Acted on: " + (done.state || "done") }), done.note ? h("p", { class: "note", text: done.note }) : null]));
+    var list = approvalsFor(j.id);
+    if (list.length) {
+      var box = h("div", { class: "decisions" }); card.appendChild(box);
+      (CAP.user ? CAP.user.profiles(list.map(function (x) { return x.by; })) : Promise.resolve({})).then(function (ps) {
+        list.forEach(function (x) { var pr = ps[x.by] || {}, st = staleDecision(x.d, j);
+          box.appendChild(h("div", { class: "decision" }, [pr.avatarUrl ? h("img", { src: pr.avatarUrl, alt: "" }) : null, h("b", { text: pr.name || "Someone" }),
+            h("span", { class: "pill " + (x.d.decision === "approve" ? (st ? "waiting" : "valid") : "idle"), text: x.d.decision === "approve" ? (st ? "approved an older best" : "approved") : "declined" }),
+            x.d.note ? h("span", { class: "note", text: "“" + x.d.note + "”" }) : null])); });
+      });
+    }
+    if (!CAP.db) { card.appendChild(h("p", { class: "note", text: window.claude ? (CAP.ready ? "This view cannot save approvals." : "Connecting to the page's store…") : "Approving works in the claude.ai console. Here: ask a Claude session to approve " + j.id + " (Docs/Compute/README.md section 8)." })); return card; }
+    if (!j.best) { card.appendChild(h("p", { class: "note", text: "Nothing to approve until a machine publishes a result." })); return card; }
+    if (CAP.canApprove === false) { card.appendChild(h("p", { class: "note", text: "Approvals are for the core four: " + DATA.core.join(", ") + "." })); return card; }
+    var note = h("textarea", { id: "note-" + j.id, placeholder: "What you checked (optional): the races you watched, why it is good enough" });
+    var msg = h("p", { class: "note", text: j.converged ? "" : "Not converged yet. You can approve the current best; it is acted on only while it is still the best." });
+    function decide(kind) { return function () {
+      var bs = card.querySelectorAll("button"); bs.forEach(function (x) { x.disabled = true; });
+      saveDecision(j, kind, note.value).then(function () { msg.textContent = kind === "approve" ? "Approved. The next session that syncs the console acts on it and writes the result on the ai branch." : "Declined."; },
+        function (e) { msg.textContent = saveError(e); bs.forEach(function (x) { x.disabled = false; }); });
+    }; }
+    card.appendChild(note);
+    card.appendChild(h("div", { class: "btns" }, [h("button", { class: "btn cta", type: "button", onclick: decide("approve"), text: "Approve best " + fmt(j.best.loss) }), h("button", { class: "btn", type: "button", onclick: decide("decline"), text: "Decline" })]));
+    card.appendChild(msg);
+    card.appendChild(h("p", { class: "note", text: "Any of the core four (" + DATA.core.join(", ") + ") can approve. The area owner" + (j.area_owner ? ", " + j.area_owner + "," : "") + " is told in the commit." }));
+    return card;
+  }
+  function saveError(e) { return e && e.code === "invalid_argument" ? "Your access to this page does not allow approving. Ask Shombith for Contributor access." : "Not saved (" + ((e && e.code) || "error") + "). Try again in a moment."; }
+  function saveDecision(j, kind, noteText) {
+    var ref = CAP.db.doc("approvals/" + CAP.me.id), patch = { decisions: {} };
+    patch.decisions[j.id] = { decision: kind, epoch: j.epoch, loss: j.best.loss, note: String(noteText || "").slice(0, 500), at: Math.floor(Date.now() / 1000) };
+    return ref.get().then(function (snap) { return snap.exists ? ref.update(patch) : ref.set(patch); });
+  }
+
+  // ── machines ──
+  function renderMachines(root) {
+    var ms = DATA.machines;
+    root.appendChild(title("Machines", ms.length + " have published"));
+    root.appendChild(h("p", { class: "lead", text: "Every computer that has published to its compute/<person>/<machine> branch. Working means its heartbeat names a job and is under three hours old." }));
+    if (!ms.length) root.appendChild(h("div", { class: "empty sliver" }, [h("b", { text: "No machine has published yet" }), h("span", { text: "Join from any computer:" })]));
+    else root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["", "Machine", "Working on", "Last seen", "Last session", "Cores", "Can run"].map(function (t) { return h("th", { text: t }); }))]),
+      h("tbody", null, ms.map(function (m) { var l = m.last || {};
+        return h("tr", null, [h("td", null, [h("span", { class: "led" + (m.active ? " on" : "") })]), h("td", null, [h("b", { text: m.user }), h("span", { class: "mono", text: " / " + m.host })]),
+          h("td", { class: "mono", text: (m.current || "–") + (m.unit ? " / " + m.unit : "") }), h("td", { text: ago(m.updated) }),
+          h("td", { class: "mono", text: l.job ? l.job + " · " + (l.evals || 0) + " evals · " + (l.stopped || "") : "–" }),
+          h("td", { class: "num", text: m.cores || "–" }), h("td", { class: "mono", text: (m.caps || []).join(" ") })]); }))])]));
+    root.appendChild(h("div", { class: "card sliver" }, [h("h3", { text: "Add a computer" }), h("div", { class: "cmdline" }, [h("code", { text: "python3 Tools/Compute/compute.py install" })]),
+      h("p", { class: "note", text: "Runs whenever you are 10 minutes away. Nights only: add --between 22:00-07:00. A VM: add --always." })]));
+  }
+
+  // ── recordings ──
+  var REC = { user: "", state: "" };
+  function renderRecordings(root) {
+    var all = DATA.recordings.flights, n = { learned: 0, waiting: 0, new: 0 }, bytes = 0;
+    all.forEach(function (f) { n[f.state] = (n[f.state] || 0) + 1; bytes += f.bytes || 0; });
+    root.appendChild(title("Recordings", all.length + " races from the Unity editor"));
+    root.appendChild(h("p", { class: "lead", text: "Every race played in the editor is recorded and sent to that person's bugledger branch. The hourly AI learning sweep learns from it. A race in a mode on hold, or of a hull no learner reads yet, waits with its reason." }));
+    root.appendChild(h("div", { class: "tiles" }, [[all.length, "races recorded"], [n.learned, "learned from"], [n.waiting, "waiting"], [n.new, "not seen yet"], [(bytes / 1048576).toFixed(0) + " MB", "in " + DATA.recordings.branches + " branches"]]
+      .map(function (t) { return h("div", { class: "tile sliver" }, [h("b", { text: String(t[0]) }), h("span", { text: t[1] })]); })));
+    var modes = {}, vessels = {}, cell = {};
+    all.forEach(function (f) { modes[f.mode] = 1; vessels[f.vessel] = 1; var k = f.vessel + "|" + f.mode; cell[k] = cell[k] || { learned: 0, waiting: 0, new: 0 }; cell[k][f.state]++; });
+    var ml = Object.keys(modes).sort(), vl = Object.keys(vessels).sort();
+    if (ml.length) root.appendChild(h("div", { class: "card sliver" }, [h("h3", { text: "Races by vessel and mode" }),
+      h("div", { class: "legend" }, [h("span", null, [h("i", { style: "background:var(--cta)" }), "learned"]), h("span", null, [h("i", { style: "background:var(--gold)" }), "waiting"]), h("span", null, [h("i", { style: "background:var(--danger)" }), "not seen yet"])]),
+      h("div", { class: "tablewrap" }, [h("table", { class: "matrix", style: "min-width:" + (130 + ml.length * 96) + "px" }, [h("thead", null, [h("tr", null, [h("th", { text: "Vessel" })].concat(ml.map(function (m) { return h("th", { text: m }); })))]),
+        h("tbody", null, vl.map(function (v) { return h("tr", null, [h("td", null, [h("b", { text: v })])].concat(ml.map(function (m) { var c = cell[v + "|" + m]; if (!c) return h("td", { class: "cell" });
+          return h("td", { class: "cell" }, [c.learned ? h("span", { class: "l", title: "learned", text: String(c.learned) }) : null, c.waiting ? h("span", { class: "w", title: "waiting", text: String(c.waiting) }) : null, c.new ? h("span", { class: "n", title: "not seen yet", text: String(c.new) }) : null]); }))); }))])])]));
+    var users = {}; all.forEach(function (f) { users[f.user] = 1; });
+    var fu = h("select", { id: "rec-user", "aria-label": "Person" }, [h("option", { value: "", text: "Everyone" })].concat(Object.keys(users).sort().map(function (u) { return h("option", { value: u, text: u }); })));
+    var fs = h("select", { id: "rec-state", "aria-label": "State" }, [["", "Any state"], ["learned", "Learned"], ["waiting", "Waiting"], ["new", "Not seen yet"]].map(function (o) { return h("option", { value: o[0], text: o[1] }); }));
+    fu.value = REC.user; fs.value = REC.state;
+    var list = h("tbody");
+    function fill() { list.textContent = "";
+      all.filter(function (f) { return (!REC.user || f.user === REC.user) && (!REC.state || f.state === REC.state); }).slice(0, 200).forEach(function (f) {
+        list.appendChild(h("tr", null, [h("td", { class: "mono", text: f.date + " " + f.time }), h("td", { text: f.user }), h("td", { text: f.vessel }), h("td", { text: f.mode }),
+          h("td", null, [h("span", { class: "pill " + f.state, text: f.state === "new" ? "not seen yet" : f.state })]), h("td", { class: "note", text: f.why || "" })])); }); }
+    fu.addEventListener("change", function () { REC.user = fu.value; fill(); }); fs.addEventListener("change", function () { REC.state = fs.value; fill(); }); fill();
+    root.appendChild(h("div", { class: "filters" }, [h("h3", { text: "Recent races" }), fu, fs]));
+    root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", { class: "wide" }, [h("thead", null, [h("tr", null, ["When", "Who", "Vessel", "Mode", "State", "Why it waits"].map(function (t) { return h("th", { text: t }); }))]), list])]));
+    root.appendChild(h("p", { class: "note", text: "Learning state read from " + (DATA.recordings.seen_ref || "nowhere") + ". The newest 200 races are listed." }));
+  }
+
+  // ── ai branch ──
+  function renderAi(root) {
+    var a = DATA.ai || {};
+    root.appendChild(title("AI branch", "origin/ai"));
+    root.appendChild(h("p", { class: "lead", text: "bleeding-edge plus AI work, owned by no person. Every AI job reads its code from it. Until the hourly learning sweep pushes there, a sync carries the AI files from Ys-bleeding-edge across." }));
+    if (a.error) { root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "Could not read the ai branch" }), h("p", { class: "note", text: a.error })])); return; }
+    root.appendChild(h("div", { class: "banner" + (a.needs_sync ? " gold" : "") }, [h("b", { text: a.needs_sync ? (a.behind_base || 0) + " bleeding-edge commits and " + (a.waiting_ai_files || 0) + " AI files from Ys-bleeding-edge are waiting" : "Current with bleeding-edge and with Ys-bleeding-edge's AI work" }),
+      a.needs_sync ? h("p", { class: "note", text: "Run `sync` in the terminal (it starts a cloud session) or: python3 Tools/Compute/ai_branch.py sync --push" }) : null]));
+    root.appendChild(h("div", { class: "card sliver" }, [h("dl", { class: "kv" }, [
+      h("dt", { text: "Branch" }), h("dd", { class: "mono", text: a.ref + " @ " + (a.sha || "").slice(0, 9) }),
+      h("dt", { text: "Behind bleeding-edge" }), h("dd", { text: (a.behind_base == null ? "–" : a.behind_base) + " commits" }),
+      h("dt", { text: "Last synced from" }), h("dd", { class: "mono", text: "Ys-bleeding-edge @ " + (a.last_synced_ys || "").slice(0, 9) }),
+      h("dt", { text: "Ys-bleeding-edge now" }), h("dd", { class: "mono", text: (a.ys || "").slice(0, 9) })])]));
+    var log = ((DATA.git || {}).branches || {}).ai || [];
+    if (log.length) root.appendChild(h("div", { class: "tablewrap sliver" }, [h("table", null, [h("thead", null, [h("tr", null, ["Commit", "Who", "When", "What"].map(function (t) { return h("th", { text: t }); }))]),
+      h("tbody", null, log.map(function (c) { return h("tr", null, [h("td", { class: "mono", text: c.sha }), h("td", { text: c.author }), h("td", { text: ago(c.time) }), h("td", { text: c.subject })]); }))])]));
+  }
+
+  // ── terminal ──
+  var T = { out: null, input: null, hist: [], hi: 0, pending: null, env: null, busy: false };
+  var who = function () { var n = CAP.me && CAP.me.name ? CAP.me.name.split(/\s+/)[0].toLowerCase() : "you"; return n.replace(/[^a-z0-9_-]/g, "") || "you"; };
+  function prompt() { return h("span", { class: "p" }, [who() + "@froglet-compute ", h("span", { class: "path", text: "~" }), " %"]); }
+  function out(parts, cls) {
+    var line = h("div", { class: "line" + (cls ? " " + cls : "") });
+    (Array.isArray(parts) ? parts : [parts]).forEach(function (p) { if (p == null) return; if (typeof p === "string") line.appendChild(document.createTextNode(p)); else if (p.nodeType) line.appendChild(p); else line.appendChild(h("span", { class: p.c || "", text: p.t })); });
+    T.out.appendChild(line); T.out.scrollTop = T.out.scrollHeight; return line;
+  }
+  function pad(s, n) { s = String(s == null ? "" : s); return s.length >= n ? s.slice(0, n - 1) + "…" : s + new Array(n - s.length + 1).join(" "); }
+  function link(href, text) { return h("a", { href: href, target: "_blank", rel: "noopener", text: text || href }); }
+  var HELP = [
+    ["status", "the console at a glance"], ["jobs [ready|waiting|all]", "the queue"], ["job <id>", "one search: best, shipped, why it waits"],
+    ["open <view|job>", "show queue, machines, recordings, ai, or a job's sheet"], ["machines", "who is working"], ["recordings [person]", "races sent from the editor"],
+    ["ai", "the ai branch"], ["git log [bleeding-edge|ai|Ys-bleeding-edge]", "recent commits"], ["git branches", "the branches the console reads"], ["prs", "open pull requests"],
+    ["approve <job> [note]", "approve the job's current best (core four)"], ["decline <job> [note]", "decline it"],
+    ["ask <question>", "ask Claude about what this console shows"], ["task <prompt>", "start a Claude Code cloud session on the repo (GitHub, pushes, anything)"],
+    ["sync", "task: bring the ai branch up to date"], ["refresh", "task: rebuild console.json and republish this page"], ["sessions", "your recent Claude Code sessions"],
+    ["env [n]", "list or pick the environment tasks run in"], ["install", "how to add a computer"], ["clear", "clear the screen"]];
+  var CMDS = {
+    help: function () { out([{ t: "Froglet Compute console", c: "b" }, "  ·  reads console.json; ask, task and sessions run on your Claude account"], "");
+      HELP.forEach(function (r) { out([{ t: "  " + pad(r[0], 42), c: "hl" }, { t: r[1], c: "dim" }]); }); out([{ t: "  ↑/↓ history · Tab completes · ⌘J or Ctrl+` toggles this panel", c: "dim" }]); },
+    status: function () { var d = DATA, a = d.ai || {}, act = d.machines.filter(function (m) { return m.active; }).length;
+      out([{ t: "data      ", c: "dim" }, "built " + ago(d.generated)]);
+      out([{ t: "machines  ", c: "dim" }, { t: String(act), c: act ? "ok" : "warn" }, " working, " + d.machines.length + " published"]);
+      out([{ t: "queue     ", c: "dim" }, d.jobs.filter(runnable).length + " ready, " + d.jobs.filter(function (j) { return j.converged; }).length + " converged, " + d.jobs.length + " total"]);
+      out([{ t: "ai        ", c: "dim" }, a.needs_sync ? { t: "needs sync (run `sync`)", c: "warn" } : { t: "current", c: "ok" }]);
+      var r = d.recordings.flights, nn = r.filter(function (f) { return f.state === "new"; }).length;
+      out([{ t: "races     ", c: "dim" }, r.length + " recorded, " + nn + " not seen by the sweep yet"]); },
+    jobs: function (args) { var which = args[0] || "all";
+      var js = DATA.jobs.filter(function (j) { return which === "all" || (which === "ready" ? runnable(j) : !runnable(j)); });
+      out([{ t: pad("JOB", 26) + pad("STATE", 11) + pad("EVALS", 8) + pad("BEST", 9) + pad("SHIPPED", 9) + "Δ", c: "dim" }]);
+      js.forEach(function (j) { var s = stateOf(j), dl = delta(j);
+        out([{ t: pad(j.id, 26), c: "hl" }, { t: pad(s[1], 11), c: s[0] === "ready" ? "ok" : (s[0] === "converged" ? "warn" : (s[0] === "notrun" ? "err" : "dim")) }, pad(j.evals || 0, 8), pad(fmt(j.best && j.best.loss), 9), pad(fmt(j.baseline && j.baseline.loss), 9),
+          dl ? { t: (dl.better ? "−" : "+") + Math.abs(dl.pct).toFixed(1) + "%", c: dl.better ? "ok" : "err" } : ""]); }); },
+    job: function (args) { var j = jobById(args[0]); if (!j) return out("no job " + (args[0] || "(name one)") + " · try `jobs`", "err");
+      var dl = delta(j); out([{ t: j.title, c: "b" }]); out([{ t: "  " + j.id + " · " + stateOf(j)[1] + " · code from " + j.ref, c: "dim" }]);
+      out(["  best ", { t: fmt(j.best && j.best.loss), c: "hl" }, "  shipped " + fmt(j.baseline && j.baseline.loss), dl ? { t: "  (" + (dl.better ? "−" : "+") + Math.abs(dl.pct).toFixed(1) + "%)", c: dl.better ? "ok" : "err" } : "", "  · " + (j.evals || 0) + " evals on " + (j.machines || []).length + " machine(s)"]);
+      var sb = (j.best || {}).seconds_by_intensity, ss = (j.baseline || {}).seconds_by_intensity;
+      if (sb || ss) Object.keys(sb || ss).sort().forEach(function (k) { out(["  I" + k + "  shipped " + pad(fmt(ss && ss[k], 1) + " s", 10) + " best ", { t: fmt(sb && sb[k], 1) + " s", c: "hl" }]); });
+      if (j.reason) out([{ t: "  waits: " + j.reason, c: "warn" }]);
+      if (j.best && j.best.limits) out([{ t: "  model limits: " + j.best.limits, c: "dim" }]);
+      out([{ t: "  `open " + j.id + "` shows the sheet · `approve " + j.id + "` approves this best", c: "dim" }]); },
+    open: function (args) { var t = args[0] || "";
+      if (["queue", "machines", "recordings", "ai"].indexOf(t) >= 0) { location.hash = t; return out("opened " + t, "dim"); }
+      if (jobById(t)) { openJob(t); return out("opened " + t, "dim"); } out("open what? queue, machines, recordings, ai, or a job id", "err"); },
+    machines: function () { if (!DATA.machines.length) return out("no machine has published yet · `install`", "warn");
+      DATA.machines.forEach(function (m) { out([{ t: m.active ? "● " : "○ ", c: m.active ? "ok" : "dim" }, { t: pad(m.machine, 30), c: "hl" }, pad(m.current || (m.last && m.last.job ? "last: " + m.last.job : "idle"), 30), { t: ago(m.updated), c: "dim" }]); }); },
+    recordings: function (args) { var u = args[0], all = DATA.recordings.flights.filter(function (f) { return !u || f.user === u; });
+      var by = {}; all.forEach(function (f) { var k = f.vessel + " " + f.mode; by[k] = by[k] || { l: 0, w: 0, n: 0 }; by[k][f.state[0]]++; });
+      out([{ t: all.length + " races" + (u ? " from " + u : "") + " · learned/waiting/new", c: "dim" }]);
+      Object.keys(by).sort().forEach(function (k) { var c = by[k]; out(["  " + pad(k, 30), { t: pad(c.l, 5), c: "ok" }, { t: pad(c.w, 5), c: "warn" }, { t: String(c.n), c: c.n ? "err" : "dim" }]); }); },
+    ai: function () { var a = DATA.ai || {}; out(["origin/ai @ ", { t: (a.sha || "").slice(0, 9), c: "hl" }, " · " + (a.behind_base || 0) + " behind bleeding-edge · last synced Ys @ " + (a.last_synced_ys || "").slice(0, 9)]);
+      out(a.needs_sync ? [{ t: (a.waiting_ai_files || 0) + " AI files waiting · run `sync`", c: "warn" }] : [{ t: "current", c: "ok" }]); },
+    git: function (args) { var g = DATA.git || {};
+      if (args[0] === "branches") { Object.keys(g.branches || {}).forEach(function (b) { var c = g.branches[b][0]; out([{ t: pad(b, 22), c: "hl" }, c ? c.sha + "  " + ago(c.time) + "  " + c.subject : ""]); });
+        (g.results || []).forEach(function (r) { out([{ t: pad(r.ref, 40), c: "ruby" }, { t: ago(r.time), c: "dim" }]); }); return; }
+      if (args[0] === "log") { var b = args[1] || "bleeding-edge", rows = (g.branches || {})[b];
+        if (!rows) return out("no snapshot of " + b + " · bleeding-edge, ai or Ys-bleeding-edge", "err");
+        rows.forEach(function (c) { out([{ t: c.sha + " ", c: "warn" }, pad(c.subject, 70), { t: " " + c.author + ", " + ago(c.time), c: "dim" }]); });
+        return out([{ t: "snapshot from " + ago(DATA.generated) + " · live git work: task \"…\"", c: "dim" }]); }
+      out("git log [branch] · git branches · anything else: task \"git …\"", "err"); },
+    prs: function () { var p = DATA.pull_requests || [];
+      if (!p.length) return out("no pull requests in this snapshot · `refresh` rebuilds it with them", "warn");
+      p.forEach(function (r) { out([{ t: "#" + pad(r.number, 6), c: "hl" }, pad((r.draft ? "[draft] " : "") + r.title, 72), { t: " " + (r.user || "") + " → " + (r.base || ""), c: "dim" }, " ", link(r.url, "↗")]); });
+      out([{ t: p.length + " open · snapshot from " + ago(DATA.generated), c: "dim" }]); },
+    approve: function (args) { decideFromTerm("approve", args); }, decline: function (args) { decideFromTerm("decline", args); },
+    ask: function (args, raw) { ask(raw.replace(/^ask\s+/, "")); },
+    task: function (args, raw) { var p = raw.replace(/^task\s+/, "").replace(/^["']|["']$/g, ""); if (!p.trim()) return out("task <what the session should do>", "err"); planTask(p); },
+    sync: function () { planTask("In froglet-studio/Cosmic-Shore, run `python3 Tools/Compute/ai_branch.py status`, then `python3 Tools/Compute/ai_branch.py sync --push` (it needs the branch " + (DATA.branch || "that carries Tools/Compute") + " checked out until Froglet Compute is on bleeding-edge). Report what came over. If it stops on a conflict, report the files and stop."); },
+    refresh: function () { if (!DATA.url) return out("this console does not know where it is published · set it with compute.py console --url", "err");
+      planTask("Refresh the Froglet Compute Console. In froglet-studio/Cosmic-Shore on branch " + (DATA.branch || "the compute branch") + ": list the open pull requests with the GitHub tools and save them as JSON to a scratch file, run `python3 Tools/Compute/compute.py console --local --out <scratch dir> --prs <that file> --url " + DATA.url + "`, then republish the artifact " + DATA.url + " from <scratch dir>/index.html with console.json beside it (Artifact publish with url, file_path and files). Also check the page's approvals: export its `approvals` collection and the profiles of their ids with ArtifactData, run `compute.py console --approvals <file> --profiles <file>`, and act on each VALID one per Docs/Compute/README.md section 8, then write `processed/<job>` in the page's store."); },
+    sessions: function () { sessions(); }, env: function (args) { envs(args[0] == null ? null : args[0], false); },
+    install: function () { out("python3 Tools/Compute/compute.py install                       # whenever you are 10 min away", "hl");
+      out("python3 Tools/Compute/compute.py install --between 22:00-07:00  # nights only", "hl"); out("python3 Tools/Compute/compute.py install --always               # a VM", "hl"); },
+    clear: function () { T.out.textContent = ""; }, history: function () { T.hist.forEach(function (c, i) { out([{ t: pad(i + 1, 5), c: "dim" }, c]); }); },
+    yes: function () { if (!T.pending) return out("nothing waiting for a yes", "dim"); var p = T.pending; T.pending = null; startTask(p); },
+    no: function () { if (T.pending) { T.pending = null; out("cancelled", "dim"); } }
+  };
+  function decideFromTerm(kind, args) {
+    var j = jobById(args[0]); if (!j) return out("no job " + (args[0] || "(name one)"), "err");
+    if (!CAP.db || !CAP.me || !CAP.me.id) return out("approving needs the claude.ai console (this view has no store)", "err");
+    if (CAP.canApprove === false) return out("approvals are for the core four: " + DATA.core.join(", "), "err");
+    if (!j.best) return out(j.id + " has no result yet", "warn");
+    saveDecision(j, kind, args.slice(1).join(" ")).then(function () { out([{ t: kind === "approve" ? "approved " : "declined ", c: kind === "approve" ? "ok" : "warn" }, j.id + " at best " + fmt(j.best.loss) + " (epoch " + j.epoch + ")"]); if (OPEN) renderDrawer(); },
+      function (e) { out(saveError(e), "err"); });
+  }
+  function ask(q) {
+    if (!q.trim()) return out("ask <question>", "err");
+    if (!CAP.sample) return out("asking Claude works in the claude.ai console", "err");
+    var brief = { built: DATA.generated, jobs: DATA.jobs.map(function (j) { return { id: j.id, title: j.title, status: stateOf(j)[1], evals: j.evals, best: j.best && j.best.loss, shipped: j.baseline && j.baseline.loss, seconds_best: j.best && j.best.seconds_by_intensity, seconds_shipped: j.baseline && j.baseline.seconds_by_intensity, waits: j.reason, limits: j.best && j.best.limits, plan: j.plan, stage: j.stage }; }),
+      machines: DATA.machines.map(function (m) { return { machine: m.machine, active: m.active, current: m.current, last: m.last, updated: m.updated }; }), ai: DATA.ai,
+      recordings: DATA.recordings.flights.slice(0, 120).map(function (f) { return [f.date, f.user, f.vessel, f.mode, f.state, f.why]; }), prs: (DATA.pull_requests || []).slice(0, 15) };
+    var line = out([{ t: "thinking…", c: "dim" }]);
+    CAP.sample("You answer questions in the Froglet Compute console, a tool for Cosmic Shore's team: idle computers search vessel AI drives and other parameters (lower loss is better; drive losses are mean log race seconds in an offline model, not the game). Be brief and specific, plain text, no markdown headings. Use only this data, and say when it cannot answer.\n\nDATA:\n" + JSON.stringify(brief).slice(0, 120000) + "\n\nQUESTION: " + q,
+      { cache: false, onText: function (u) { line.textContent = u.text; T.out.scrollTop = T.out.scrollHeight; } })
+      .then(function (r) { line.textContent = r.text; if (r.truncated) out("(cut short)", "dim"); },
+        function (e) { line.textContent = e.text || ""; out(e.code === "not_granted" ? "asking Claude was not allowed for this page" : (e.code === "rate_limited" ? "too many questions right now, try again later" : "could not ask (" + e.code + ")"), "err"); });
+  }
+  function ccrPayload(r) { var p = r && r.payload; if (p && p.ccr) p = p.ccr; return p || {}; }
+  function envs(pick, quiet) {
+    if (!CAP.mcp) return Promise.resolve(out("tasks need the claude.ai console (Claude Code Remote)", "err"));
+    return CAP.mcp.callTool(CCR, "list_environments", { limit: 20 }).then(function (r) {
+      var list = (ccrPayload(r).environments || []).filter(function (e) { return e.state === "active"; });
+      if (!list.length) { out("no active Claude Code environment on your account · create one at claude.ai/code", "err"); return null; }
+      if (pick != null) { var n = parseInt(pick, 10); if (list[n - 1]) T.env = list[n - 1]; }
+      if (!T.env) T.env = list[0];
+      if (!quiet) list.forEach(function (e, i) { out([{ t: (e.environment_id === T.env.environment_id ? "● " : "  ") + (i + 1) + "  ", c: "hl" }, pad(e.name, 28), { t: e.kind, c: "dim" }]); });
+      return T.env;
+    }, function (e) { mcpError(e); return null; });
+  }
+  function mcpError(e) {
+    var c = e && e.code;
+    out(c === "server_not_connected" ? "Claude Code Remote is not connected for your account (claude.ai Settings → Connectors)" :
+      c === "not_in_manifest" || c === "approval_required" ? "this page is not allowed to use Claude Code Remote for you; allow it when asked" :
+      c === "needs_reauth" ? "reconnect Claude Code Remote in claude.ai Settings → Connectors" : "Claude Code Remote failed (" + (c || "error") + ")" + (e && e.message ? ": " + e.message : ""), "err");
+  }
+  function planTask(p) {
+    if (!CAP.mcp) return out("tasks need the claude.ai console (Claude Code Remote)", "err");
+    T.pending = p;
+    out([{ t: "task  ", c: "ruby" }, p]);
+    out([{ t: "This starts a Claude Code cloud session on your account, on " + (DATA.repo || "the repo") + (DATA.branch ? " @ " + DATA.branch : "") + ". It can change and push code like any session. Type ", c: "dim" }, { t: "yes", c: "hl" }, { t: " to start, ", c: "dim" }, { t: "no", c: "hl" }, { t: " to cancel.", c: "dim" }]);
+  }
+  function startTask(p) {
+    out("starting…", "dim");
+    (T.env ? Promise.resolve(T.env) : envs(null, true)).then(function (env) {
+      if (!env) return;
+      var input = { prompt: p, title: "Compute console: " + p.replace(/\s+/g, " ").slice(0, 60), environment_id: env.environment_id, source_url: "https://github.com/" + (DATA.repo || "froglet-studio/Cosmic-Shore") };
+      if (DATA.branch && DATA.branch !== "HEAD") input.source_revision = DATA.branch;
+      return CAP.mcp.callTool(CCR, "create_session", input).then(function (r) {
+        var pl = ccrPayload(r), id = pl.session_id || pl.id || (pl.session && pl.session.id);
+        if (id) out([{ t: "started ", c: "ok" }, link("https://claude.ai/code/" + id, id)]); else out([{ t: "started", c: "ok" }, { t: " · " + JSON.stringify(pl).slice(0, 300), c: "dim" }]);
+        out("`sessions` shows how it is doing", "dim");
+      }, mcpError);
+    });
+  }
+  function sessions() {
+    if (!CAP.mcp) return out("sessions need the claude.ai console (Claude Code Remote)", "err");
+    out("reading…", "dim");
+    CAP.mcp.callTool(CCR, "list_sessions", { limit: 8, mine: true }).then(function (r) {
+      var rows = ccrPayload(r).data || [];
+      if (!rows.length) return out("no sessions", "dim");
+      rows.forEach(function (s) { var st = String(s.status_bucket || s.session_status || "").replace(/^SESSION_STATUS_(BUCKET_)?/, "").toLowerCase();
+        out([{ t: pad(st, 11), c: st === "working" ? "ok" : (st === "failed" ? "err" : "dim") }, link("https://claude.ai/code/" + s.id, pad(s.title || s.id, 44)), { t: "  " + (s.updated_at || "").slice(0, 16).replace("T", " "), c: "dim" }]);
+        if (s.post_turn_summary && s.post_turn_summary.recent_action) out([{ t: "           " + s.post_turn_summary.recent_action, c: "dim" }]); });
+    }, mcpError);
+  }
+  function complete(v) {
+    var parts = v.split(/\s+/), names = Object.keys(CMDS).filter(function (n) { return ["yes", "no"].indexOf(n) < 0; });
+    if (parts.length === 1) { var m = names.filter(function (n) { return n.indexOf(parts[0]) === 0; }); return m.length === 1 ? m[0] + " " : (m.length ? (out(m.join("  "), "dim"), v) : v); }
+    if (["job", "open", "approve", "decline"].indexOf(parts[0]) >= 0) {
+      var pool = DATA.jobs.map(function (j) { return j.id; }).concat(parts[0] === "open" ? ["queue", "machines", "recordings", "ai"] : []);
+      var mm = pool.filter(function (n) { return n.indexOf(parts[1] || "") === 0; });
+      if (mm.length === 1) return parts[0] + " " + mm[0] + " "; if (mm.length) out(mm.join("  "), "dim");
+    }
+    return v;
+  }
+  function run(raw) {
+    var line = raw.trim(); out([prompt(), " " + line]);
+    if (!line) return;
+    T.hist.push(line); T.hi = T.hist.length;
+    var args = line.match(/"[^"]*"|'[^']*'|\S+/g).map(function (a) { return a.replace(/^["']|["']$/g, ""); }), cmd = args.shift().toLowerCase();
+    if (T.pending && cmd !== "yes" && cmd !== "no") { T.pending = null; out("(the waiting task was cancelled)", "dim"); }
+    var fn = CMDS[cmd];
+    if (!DATA && ["help", "clear"].indexOf(cmd) < 0) return out("console.json has not loaded", "err");
+    if (fn) { try { fn(args, line); } catch (e) { out(String(e && e.message || e), "err"); } } else out("command not found: " + cmd + " · `help`", "err");
+  }
+  function buildTerm() {
+    T.out = document.getElementById("tout");
+    var row = h("div", { class: "tin" }, [prompt(), h("input", { id: "tin", type: "text", autocomplete: "off", autocapitalize: "off", spellcheck: "false", "aria-label": "Terminal input" })]);
+    document.getElementById("term").appendChild(row);
+    T.input = document.getElementById("tin");
+    T.input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { var v = T.input.value; T.input.value = ""; run(v); }
+      else if (e.key === "ArrowUp") { if (T.hi > 0) { T.hi--; T.input.value = T.hist[T.hi] || ""; } e.preventDefault(); }
+      else if (e.key === "ArrowDown") { if (T.hi < T.hist.length) { T.hi++; T.input.value = T.hist[T.hi] || ""; } e.preventDefault(); }
+      else if (e.key === "Tab") { e.preventDefault(); if (DATA) T.input.value = complete(T.input.value); }
+      else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); CMDS.clear(); }
+    });
+    T.out.addEventListener("click", function () { if (!window.getSelection().toString()) T.input.focus(); });
+    out([{ t: "Froglet Compute", c: "b" }, { t: "  ·  type ", c: "dim" }, { t: "help", c: "hl" }, { t: " for commands", c: "dim" }]);
+  }
+  function refreshPrompt() { var p = document.querySelector(".tin .p"); if (p) p.replaceWith(prompt()); }
+  function toggleTerm(force) {
+    var t = document.getElementById("term"), show = force == null ? t.hidden : force;
+    t.hidden = !show; if (show) setTimeout(function () { T.input.focus(); }, 0);
+    if (show) document.getElementById("nav-term").setAttribute("aria-current", "page"); else document.getElementById("nav-term").removeAttribute("aria-current");
+    if (!show && VIEW === "terminal") VIEW = "queue";
+  }
+
+  // ── capabilities (claude.ai only; the page works without them) ──
+  function connect() {
+    if (!window.claude || !window.claude.use) { CAP.ready = true; return; }
+    var u = window.claude.use.bind(window.claude);
+    u("sample").then(function (s) { CAP.sample = s; });
+    u("mcp").then(function (m) { CAP.mcp = m; });
+    Promise.all([u("db"), u("user")]).then(function (r) {
+      CAP.db = r[0]; CAP.user = r[1]; CAP.ready = true;
+      if (!CAP.user) { if (OPEN) renderDrawer(); return; }
+      CAP.user.me().then(function (me) {
+        CAP.me = me; refreshPrompt();
+        var first = (me.name || "").split(/\s+/)[0].toLowerCase(), core = ((DATA && DATA.core) || []).map(function (c) { return c.toLowerCase(); });
+        CAP.canApprove = !me.id ? false : (first ? core.indexOf(first) >= 0 : null);
+        if (OPEN) renderDrawer();
+      });
+      if (!CAP.db) return;
+      CAP.db.collection("approvals").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = ((d.data() || {}).decisions) || {}; }); CAP.approvals = a; if (DATA) render(); if (OPEN) renderDrawer(); }, function () {});
+      CAP.db.collection("processed").onSnapshot(function (snap) { var a = {}; snap.docs.forEach(function (d) { a[d.id] = d.data() || {}; }); CAP.processed = a; if (OPEN) renderDrawer(); }, function () {});
+    });
+  }
+
+  // ── routing ──
+  function render() {
+    var root = document.getElementById("main"); root.textContent = "";
+    renderChrome();
+    ({ queue: renderQueue, machines: renderMachines, recordings: renderRecordings, ai: renderAi })[VIEW === "terminal" ? "queue" : VIEW](root);
+    root.appendChild(h("p", { class: "note", text: "Built " + new Date(DATA.generated * 1000).toLocaleString() + " from git by Tools/Compute/console.py. Refresh with `refresh` in the terminal." }));
+  }
+  function route() {
+    var v = (location.hash || "").replace("#", "");
+    if (v === "terminal") { toggleTerm(true); return; }
+    VIEW = ["queue", "machines", "recordings", "ai"].indexOf(v) >= 0 ? v : "queue";
+    if (DATA) render();
+    document.getElementById("scroll").scrollTop = 0;
+  }
+  window.addEventListener("hashchange", route);
+  document.getElementById("nav-term").addEventListener("click", function (e) { e.preventDefault(); toggleTerm(); });
+  document.getElementById("sb-term").addEventListener("click", function () { toggleTerm(); });
+  document.getElementById("t-close").addEventListener("click", function () { toggleTerm(false); });
+  document.getElementById("t-clear").addEventListener("click", function () { CMDS.clear(); });
+  document.getElementById("t-tall").addEventListener("click", function (e) { var t = document.getElementById("term"); t.classList.toggle("tall"); e.target.textContent = t.classList.contains("tall") ? "Shrink" : "Expand"; });
+  document.getElementById("l-red").addEventListener("click", function () { if (OPEN) closeJob(); else toggleTerm(false); });
+  document.getElementById("l-yellow").addEventListener("click", function () { document.getElementById("win").classList.toggle("nosidebar"); });
+  document.getElementById("l-green").addEventListener("click", function () { document.getElementById("win").classList.toggle("zoomed"); });
+  document.getElementById("scrim").addEventListener("click", closeJob);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && OPEN) closeJob();
+    if ((e.metaKey && e.key.toLowerCase() === "j") || (e.ctrlKey && e.key === "`")) { e.preventDefault(); toggleTerm(); }
+  });
+  buildTerm();
+  route();
+  fetch("console.json", { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(function (d) {
+    DATA = d; render(); connect();
+  }).catch(function (e) {
+    var root = document.getElementById("main"); root.textContent = "";
+    root.appendChild(h("div", { class: "banner bad" }, [h("b", { text: "console.json did not load" }), h("p", { class: "note", text: "The console reads console.json from its own folder (" + e.message + "). Build it with python3 Tools/Compute/compute.py console and publish both files together." })]));
+    document.getElementById("fresh").textContent = "no data";
+  });
+})();
+</script>
