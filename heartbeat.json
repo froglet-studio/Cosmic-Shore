@@ -12,16 +12,14 @@
   "torch": false
  },
  "cores": 11,
- "current": {},
- "host": "dragonsweapon",
- "last": {
-  "best_start": null,
-  "epoch": "8b234fce62c5",
-  "evals": 1496,
-  "job": "drive-rhino-headlong",
-  "session_evals": 1496,
-  "stopped": "the person came back"
+ "current": {
+  "job": "drive-manta-redline",
+  "max_evals": null,
+  "minutes": 60.0,
+  "request": null,
+  "since": 1793195343
  },
+ "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -51,7 +49,7 @@
  "totals": {
   "sessions": 2
  },
- "updated": 1793194732,
+ "updated": 1793195343,
  "user": "shombithofficial",
  "version": "1"
 }
