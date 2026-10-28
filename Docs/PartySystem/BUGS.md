@@ -2382,6 +2382,18 @@ Not fixed yet: the freeze itself. When the report names it, the fix is in that f
 the menu over a live Relay, the other lever is to start the Relay host after the menu is up (a boot-order change for
 whoever owns the boot).
 
+**The boot freeze, measured (2026-10-28 sweep, `yskha-20261028_162901`, on `Ys-bleeding-edge` `4ed5438321`).** The
+boot-load report works and says what froze. Yash's first Play of the day: the boot's menu load took 40.2 s, and its
+worst frame, **20.1 s**, is the Single-mode scene load itself (from "Netcode scene load begins" at 20 ms to "Unity scene
+loaded" at 25.6 s). 35.9 s of the load is Unattributed (engine & other); the game's own work is 2.3 s (Cell & Environment).
+The Relay dropped and the game bounced and re-hosted, as on 26 Oct. **The same machine's next two boots that day took
+9.2 s and 8.0 s, with worst frames of 3.0 s and 2.7 s: no drop.** So the 10-20 s frame is the Editor's cold first Play
+(the log is full of Burst "Synchronous compilation was requested" and "Entering playmode with assembly reload locked"
+warnings: first-run compilation and asset loading), not every boot. A player build compiles Burst ahead of time, so
+there it is likely far shorter, but no build has been measured yet. The real fix is a boot-order decision for whoever owns
+the boot: start the Relay host after the menu is up, so no long load runs with a live Relay. Until then a cold first
+Play in the Editor costs a bounce and a re-host (about 17 s).
+
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 
 **Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same
