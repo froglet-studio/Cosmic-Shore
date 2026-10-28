@@ -18,7 +18,7 @@ The hull is the Scarab's own mesh from straight above, nose RIGHT (pitch 0, yaw 
 grid on 2026-10-28), flying across the card (LESSONS 55: the act runs across, clear of the plate's marks).
 """
 import mesh_silhouette
-from canvas import N, empty, fill, rotate
+from canvas import N, chamfered_rect, disc, empty, fill, rotate
 from motifs import prism
 
 import numpy as np
@@ -126,9 +126,48 @@ class Scale:
         return _clear_of(bar(x0, x1, CY - h, CY + h), self.hull(), px=2.5) & ~holes()
 
 
-A = Scale(k=96 / (2 * REACH), ox=62.0)                       # the whole volume, true scale, a margin outside it
-B = Scale(k=84 / (2 * PLATE_R), ox=18.0, behind=False)      # the front half, true scale (hull ~10 px)
-C = Scale(k=96 / (2 * REACH), ox=62.0, hull_boost=2.0)      # A with the hull drawn 2x so it survives on the HUD
+# Round 3 (Garrett: "a is good but ... more cohesive with the rest of our polished icons"). What the polished cards
+# share (sheets rhino.png, sparrow.png): ONE bold white mass in the middle of the card, the parts separated by
+# knock-out gaps rather than outlines, no grey fills (grey means "not ready" - the Sparrow's spent rockets), the
+# small things chunky enough to survive at 40 px. So A becomes a solid WHITE volume, still to scale, with the plate
+# its front edge behind a knock-out groove, the hull in domain colour in its own knock-out, and what the punch
+# shatters cut out as negative space. Three treatments of that mass:
+L = Scale(k=92 / (2 * REACH), ox=60.0)      # the volume 92 long (14..106), 77 across; true-scale hull ~9 px
+GROOVE = 3.0
+
+
+def _slab():
+    """A1: the swept cylinder from above, its corners chamfered like the fleet's plates."""
+    x0, x1, h = L.x(-REACH), L.x(REACH) - PLATE_W - GROOVE, L.half()
+    return chamfered_rect(x0, CY - h, x1, CY + h, 7.0)
+
+
+def _bands():
+    """A2: the slab as the plate's WAKE - horizontal strokes, the gaps the water the plate pushed through
+    (the Sparrow's jets and rounds are drawn this way); full length, the volume's true extent."""
+    x0, x1, h = L.x(-REACH), L.x(REACH) - PLATE_W - GROOVE, L.half()
+    m, n, gap = empty(), 7, 3.0
+    bh = (2 * h - (n - 1) * gap) / n
+    for i in range(n):
+        y0 = CY - h + i * (bh + gap)
+        m |= fill([(x0, y0), (x1, y0), (x1, y0 + bh), (x0, y0 + bh)])
+    return m
+
+
+def _bubble():
+    """A3: the cavitation bubble - the slab with its rear end rounded off (the mirror half fading into the wake),
+    the front square against the plate."""
+    x0, x1, h = L.x(-REACH), L.x(REACH) - PLATE_W - GROOVE, L.half()
+    r = h * 0.55
+    m = fill([(x0 + r, CY - h), (x1, CY - h), (x1, CY + h), (x0 + r, CY + h)])
+    m |= fill([(x0, CY - h + r), (x0 + r + 1, CY - h + r), (x0 + r + 1, CY + h - r), (x0, CY + h - r)])
+    m |= disc(x0 + r, CY - h + r, r) | disc(x0 + r, CY + h - r, r)
+    return m
+
+
+def plate():
+    x = L.x(REACH)
+    return bar(x - PLATE_W, x, CY - L.half(), CY + L.half())
 
 
 def whole(cx, cy, s=7.0):
@@ -136,52 +175,49 @@ def whole(cx, cy, s=7.0):
     return prism(cx, cy, s)
 
 
-def shards(cx, cy, s=10.0):
+def shards(cx, cy, s=12.0):
     """A prism the punch claimed, broken and flung the way the punch travels (+x): three slivers, each a wedge
     pointing forward, fanned in a chevron with the middle one furthest ahead - the break reads as a direction,
     where a burst of four quarters reads as an explosion in place."""
     m = empty()
-    for dx, dy in ((-3.5, -7.0), (3.5, 0.0), (-3.5, 7.0)):
+    for dx, dy in ((-4.0, -8.0), (4.0, 0.0), (-4.0, 8.0)):
         x, y = cx + dx, cy + dy
-        m |= fill([(x - s * 0.6, y - 2.8), (x + s * 0.7, y), (x - s * 0.6, y + 2.8)])
+        m |= fill([(x - s * 0.6, y - 3.2), (x + s * 0.7, y), (x - s * 0.6, y + 3.2)])
     return m
 
 
-def _parts(L, outside, inside, lone):
-    """outside: whole prisms beyond the volume (drawn); inside: the prisms it shatters and lone: the shielded one,
-    both cut out of the field as negative space."""
-    return dict(hull=L.hull, plate=L.plate, whole=lambda: _clear_of(outside(), L.plate()),
-                field=L.field,
-                field_shatter=lambda: L.field(inside),
-                field_shed=lambda: L.field(lambda: prism(*lone, 8.0)),
-                field_shear=lambda: L.field(lambda: shards(*lone)))
+INSIDE = lambda: shards(72, 42) | shards(72, 86)
+LONE = (78, 64)
+OUTSIDE = lambda: whole(120, 64) | whole(26, 13) | whole(98, 115)
+
+
+def _parts(shape):
+    def field(holes=empty):
+        return _clear_of(shape(), L.hull(), px=2.5) & ~holes()
+    return dict(hull=L.hull, plate=plate, whole=lambda: _clear_of(OUTSIDE(), plate()),
+                field=field, field_shatter=lambda: field(INSIDE),
+                field_shed=lambda: field(lambda: prism(*LONE, 10.0)),
+                field_shear=lambda: field(lambda: shards(*LONE)))
 
 
 def _card(name, title, parts):
     top = [("whole", "blue"), ("hull", "domain"), ("plate", "white")]
     states = [
-        ("ready", [("field", "white", 0.4)] + top),
-        ("punching (lit): what it holds shatters", [("field_shatter", "white", 0.4)] + top),
-        ("recharging", [("field", "white", 0.15), ("whole", "blue"), ("hull", "domain"), ("plate", "white", 0.3)]),
-        ("below Charge 5: a shielded prism only sheds", [("field_shed", "white", 0.4)] + top),
-        ("Charge 5, Cavitation Shear: it shatters", [("field_shear", "white", 0.4)] + top),
+        ("ready", [("field", "white")] + top),
+        ("punching (lit): what it holds shatters", [("field_shatter", "white")] + top),
+        ("recharging", [("field", "white", 0.3), ("whole", "blue"), ("hull", "domain"), ("plate", "white", 0.3)]),
+        ("below Charge 5: a shielded prism only sheds", [("field_shed", "white")] + top),
+        ("Charge 5, Cavitation Shear: it shatters", [("field_shear", "white")] + top),
     ]
     return dict(name=name, group="cavitation", lockup_state=1, element="Charge",
                 before=ICON_DIR + "Scarab_CavitationBlast-PLACEHOLDER.png", title=title, parts=parts, states=states)
 
 
-_OUT = lambda: whole(121, 64) | whole(30, 11) | whole(96, 117)      # beyond the plate, above and below the volume
 CARDS += [
-    _card("charge_option_a",
-          "A - TRUE SCALE, FLAT: the punch's whole volume one flat shape, the prisms it shatters cut out of it, whole "
-          "prisms outside; the Scarab true size (54 ahead, mirrored 54 behind, 90 across)",
-          _parts(A, _OUT, lambda: shards(80, 42) | shards(80, 86) | shards(28, 64), (82, 64))),
-    _card("charge_option_b",
-          "B - TRUE SCALE, FRONT HALF, FLAT: the Scarab at the left, the plate 54 ahead; shattered prisms cut out, whole "
-          "ones past the plate and outside it",
-          _parts(B, lambda: whole(110, 40) | whole(116, 88) | whole(56, 12),
-                 lambda: shards(48, 42) | shards(56, 86), (52, 64))),
-    _card("charge_option_c",
-          "C - A WITH THE HULL 2x: the volume true, the Scarab drawn twice its size so it still reads on the HUD",
-          _parts(C, _OUT, lambda: shards(80, 42) | shards(80, 86) | shards(28, 64), (84, 64))),
+    _card("charge_option_a1", "A1 - THE SLAB: A as one solid white mass with chamfered corners, the plate behind a "
+          "groove, shattered prisms cut out; recharging greys like the Sparrow's spent rockets", _parts(_slab)),
+    _card("charge_option_a2", "A2 - THE WAKE: the same volume as horizontal strokes (the plate's wake), the shards "
+          "cut through them", _parts(_bands)),
+    _card("charge_option_a3", "A3 - THE BUBBLE: the slab with its rear rounded - the cavitation bubble, square only "
+          "against the plate", _parts(_bubble)),
 ]
