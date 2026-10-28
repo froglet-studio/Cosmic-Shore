@@ -133,6 +133,36 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 23 (Yash, 2026-10-28: "When we collect the omnicrystal ... we create this omnicrystal network, burrow network. We
+can't make it a root, we need to make it smoother, like our tube, same visuals. And ... we have to turn off the tree
+visibility also. We cannot make these trees and roots. It needs to be just anomaly: tubes of wormholes, and the network of
+wormholes (navigable using the left joystick) when we collect the omnicrystal"). Artifact and Unity.**
+- **No tree, no roots, no soil.** They ship off, their code and sliders kept, so the look can come back:
+  - `trunkVisibility` 0 (the tree round a tunnel, its branches with it);
+  - `rootBarkVisibility` 0, a new key (the roots' bark round each channel);
+  - `rootOpacity` 0 (the roots' old inside wall);
+  - `soilVisibility` 0 (the soil, its stones and its hanging roots).
+  - A browser that saved its settings before this round takes those values once (save version 7).
+- **One tube for every wormhole** (`drawTube`). A formed tunnel and every channel of the network draw the same way, inside
+  and out:
+  - the bridge's glass (`bridgeGlass`), in its maker's colour;
+  - the calm inner wall (`drawBore`: round 21's bore, `tubeInner`, a smooth sheen with no lines). It is the tube's own now,
+    no longer part of the tree;
+  - the bent space round it (`warpStrength`), from inside the network as from outside;
+  - the bridge's spindles only in the bridge look. The new `formedLook` (1, the water pipe, shipped) is the game's
+    `formedLook` switch, and the game keeps it in its Inspector (YASH'S LOOK / GARRETT'S LOOK), so it is not cloned. The
+    page has no contour field, so in the water-pipe look it draws the glass and the calm wall in its place.
+  - A tube still wrapped in the old look (a tunnel in its tree, a channel in its bark) draws exactly as rounds 20-22 did.
+- **The words:** the HUD, the toasts, the Omnicrystal card and the sliders say "the wormhole network", "a wormhole" and
+  "the tube" where they said roots and labyrinth. The keys keep their names (`labyrinth*`, `root*`), because the game
+  already maps them.
+- **Kept:** left-stick flight inside the network, the forks, the openings, how it opens at once from the omnicrystal and
+  how it collapses.
+- **Measured:** the race is unchanged, because this round changes only how the tubes look. Every level finishes every
+  ladder (seed 11); Hard 70.0 / 63.0 / 71.7 / 68.2 s, the same as round 22. Screenshots inside a tunnel and inside the
+  network (headless): the network is smooth glass tubes in the domain colour with no bark, soil or stones, and the ride
+  inside is the same calm tube as a tunnel's.
+
 **Round 22 (Yash, 2026-10-28: "Make sure the reticle or the path of this trunk or simple watery effect always follows the
 circumference of a oval. With a specified epicenter. So it should always turn from center ... The longer the length of the
 tube, the more ovalish it will bend. We can make it circular but a little bit of hyperbola will be good ... It should
@@ -605,7 +635,7 @@ just spindles. Tiny thinning spindles"):**
 | shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
 | shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
 | shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
-| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree) |
+| tree | `trunkVisibility` … `branchGrowSeconds` | see the page | The tunnel's outer layer, a dead tree in the wall's glass and bent space, formed with the tunnel (rounds 13-14, artifact only so far; replaced round 12's plate tree). Off since round 23 (`trunkVisibility` 0) |
 | shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
 | ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
 | ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
