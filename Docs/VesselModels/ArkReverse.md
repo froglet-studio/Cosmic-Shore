@@ -7,6 +7,7 @@
 2. Engines with clearance to animate their manoeuvres; proper stellated octahedra the hull is designed around, distributed to protect the other prisms from explosions; shielded prisms as octahedra; danger prisms where the Ark wants to be dangerous; a hangar the escorts launch from; "it should feel big ... like its own level ... a kaiju protected by three vessels and its own regeneration"; corridors, channels, ducts, curving passageways.
 3. "Less like a darthvader panel meets a child's toy ... menacing, intimidating ... more torn like cyberpunk ... a touch of whimsy, but the current placement of the prisms looks like it has stars and buttons all over it ... more wickedness."
 4. "This is still a bubbly pokemon. Think hierarchical and heterarchical. Look at the dolphin and the details of its contours ... this ark should have 5 hierarchies that have 2 to 5 heterarchies each. It should look sophisticated like it belongs on the cover of a sci fi novel, not like megaknight turned into a toy spaceship."
+5. "Excellent. Now apply these 5 levels to more of the components. The engines alone should not read low poly. Each should have the feel of these five levels."
 
 ## Round 5: the form language
 The Dolphin's lesson is what its parts are made of:
@@ -38,8 +39,26 @@ Glow is kept to lines and slits:
 
 The vents and the shell's lip are dark.
 
+## Every component in five levels (round 6)
+The ship's hierarchy repeats inside each part, so a component seen up close is a small ship in itself, not a primitive. Round parts are lathed with 12-32 segments so they read round; the join smooths under 40 degrees and keeps every step crisp.
+
+| Component | L1 silhouette | L2 assemblies | L3 components | L4 surface | L5 micro |
+|---|---|---|---|---|---|
+| **jet** (x8) | cowled intake, a waist through the ring, core, nozzle | the cowl's lip, two collars, the nozzle's iris | 10 stator vanes round a spinner, 12 iris petals with 6 actuators, 4 strakes, 2 conduits on clamps | panel seams, side vent slots, a contour trace with a 45-degree jog ending in a ring | bolt heads on the collars, running lights, a dot row |
+| **gimbal ring** (x8) | the octagonal ring, a flat at the top | 2 trunnion bearings, the yaw pivot plates | 4 yaw jacks on the diagonal flats | panel seams on its outer face, neon chamfer lines aft | bolt circles on the bearings, a light on each cap |
+| **payload lance** | shaft and spear head | pommel, grip, 2 collars, the socket, the glowing core between 2 side blades | 4 tail vanes, a 3-turn energy coil, the cross blades | grip rings, shaft seams, chevrons on the vanes, a trace with a jog and a ring | bolt circles, the pommel's light |
+| **omni reactor** | the crystal in its cage | a stepped collar, an octagonal hoop, 4 struts | 4 emitters aimed at the crystal, the struts' knuckles | the collar's seams and neon band, the hoop's glowing inner face | the collar's bolt circle, lights on the hoop |
+| **keel fin** | the swept blade | the root fairing, the sensor pod along its deepest edge | 3 stiffener ribs | panels between the ribs, the neon band | lights fore and aft of the pod |
+| **side pod** (x4) | a faceted pod on the spine's flank | its collar, the recessed vent bay, the exhaust | the grille's fins, a sensor blister with its lens | panel seams, a trace with a jog and a ring | bolt heads on the collar, the nose light |
+| **sensor mast** (x3) | a tapering mast | its stepped base, a collar | 2 yards with end pods, an emitter dish on the tallest | the collar's band | the tip light, dots on the base |
+| **hangar door** (x2) | the leaf | its panels | 3 hinge knuckles | the glowing meeting edge | lights at the meeting edge |
+
+The ribs, the citadel, the bulwarks and the jaws already carried their levels in round 5 (tiles with shoulders and crests, the citadel's tiers, the walkway and glacis, the Dolphin-style blades with notches and ringed cut-outs).
+
+Nothing within 2.4 of a gimbal ring's plane is wider than the jet's waist, so every pitch clears the ring. The bearings were shortened to keep the grille bars beside them 1.5 clear.
+
 ## Pictures
-- `ArkReverse_closeups.jpg`: rendered in the game's colours. The hull uses `vessel_colors.SCHEME` (gunmetal hull, sapphire glass, Engine as an ember). The domain is Ruby's `ShipColor2` (violet). The prisms are PREVIEWS placed at the socket bones, in Ruby's block colours with Fire for danger. They are the game's own shapes (stellated octahedra, octahedra, slabs) at their real sizes, and they are not part of the model. The panels:
+- `ArkReverse_closeups.jpg`: rendered in the game's colours, with the round-6 component close-ups (a jet, the jet bank, the lance, the reactor, the sensor masts, a side pod). The hull uses `vessel_colors.SCHEME` (gunmetal hull, sapphire glass, Engine as an ember). The domain is Ruby's `ShipColor2` (violet). The prisms are PREVIEWS placed at the socket bones, in Ruby's block colours with Fire for danger. They are the game's own shapes (stellated octahedra, octahedra, slabs) at their real sizes, and they are not part of the model. The panels:
   - the cover three-quarter;
   - the bridge and citadel;
   - the underside;
@@ -53,7 +72,7 @@ The vents and the shell's lip are dark.
 ## Scale
 **196 from nose to jets**, half a standard nucleus radius (392). The nose is the jaws' knuckles at y −98, and the build asserts nothing reaches ahead of them. The jets end at +98.
 
-It is 216 wide, and 69 tall from the keel to the sensor masts. Around 145k tris.
+It is 216 wide, and 69 tall from the keel to the sensor masts. Around 240k tris (145k before the round-6 component pass; the eight jets and their rings are about a third of it).
 
 ## The prisms are the game's shapes, and the hull is designed around them
 A shielded prism settles into an octahedron with its vertices at 3x the prism's half-extents (`OctahedronMeshGenerator`, `CIRCUMSCRIBING_SCALE` 3). A supershielded prism settles into the stella octangula, with spike tips at the cube corners 3x out (`StellatedOctahedronMeshGenerator`). The Ark's shield sockets hold CUBIC prisms, so their shields are the regular octahedron and the regular stellated octahedron:

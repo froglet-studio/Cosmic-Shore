@@ -9,7 +9,11 @@ around, danger prisms where the Ark wants to be dangerous, a hangar the escorts 
 level. Round 4 asked for menace. Round 5 (same day): "this is still a bubbly pokemon. think hierarchical and
 heterarchical. look at the dolphin and the details of its contours. imagine that is two or three hierarchies and a
 couple heterarchies. this ark should have 5 hierarchies that have 2 to 5 heterarchies each. it should look sophisticated
-like it belongs on the cover of a sci fi novel not like megaknight turned into a toy spaceship."
+like it belongs on the cover of a sci fi novel not like megaknight turned into a toy spaceship." Round 6: "now apply
+these 5 levels to more of the components. the engines alone should not read low poly. each should have the feel of
+these five levels." So every component repeats the hierarchy inside itself (the jet, its gimbal ring, the lance, the
+reactor, the keel fin, the side pods, the sensor masts, the hangar doors): see each builder's docstring, and the
+table in Docs/VesselModels/ArkReverse.md.
 
 THE FORM LANGUAGE (round 5). The Dolphin's lesson: its masses are crisp faceted prisms (a chamfered tube in stepped
 sections, flat jaw blades, floating swept wings, a thruster cluster), each carries its own secondary forms (collars,
@@ -403,6 +407,58 @@ def build(ctx):
     def wrap(p):
         return ((p + 180.0) % 360.0) - 180.0
 
+    # ------------------------------------------------------------------ the component kit: every part in five levels
+    # A component carries the ship's hierarchy in miniature (L1 its silhouette, L2 its assemblies, L3 its components,
+    # L4 its surface, L5 its micro detail), so no part reads as a low-poly primitive. Round parts are lathed with enough
+    # segments to read round (the join smooths under 40 degrees and keeps every step crisp).
+    import bmesh as _bmesh
+
+    def lathe_ob(name, prof, axis, origin, segs, slot=H, cap=True):
+        ob = f.lathe(name, prof, segments=segs, axis=tuple(axis), origin=tuple(origin), cap=cap)
+        f.ensure_slots(ob, SLOTS)
+        f.paint(ob, slot)
+        return ob
+
+    def inset_where(ob, pred, thickness, depth, slot=None):
+        """Inset every face of `ob` whose (centre, normal) passes `pred`, one by one: panel seams, vent slots."""
+        bm = _bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.normal_update()
+        faces = sorted([fc for fc in bm.faces if pred(fc.calc_center_median(), fc.normal)],
+                       key=lambda fc: tuple(round(x, 3) for x in fc.calc_center_median()))
+        for fc in faces:
+            kit.inset(bm, [fc], thickness, depth, slot)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+    def ring_loft(name, centre, axis, u, v, R, sec, n=8, rot=math.pi / 8):
+        """A closed polygonal ring (n flats, a flat at the top) with a mitred cross-section `sec` of (radial, axial)
+        offsets. Returns (bm, faces) with faces[k * len(sec) + i] = flat k (centred at 360/n*(k+1) degrees), section
+        edge i."""
+        bm = _bmesh.new()
+        sc = 1.0 / math.cos(math.pi / n)
+        loops = []
+        for a in range(n):
+            ang = 2 * math.pi * a / n + rot
+            rd = u * math.cos(ang) + v * math.sin(ang)
+            loops.append([bm.verts.new(centre + rd * (R + x * sc) + axis * y) for (x, y) in sec])
+        faces = []
+        for a in range(n):
+            A, Bl = loops[a], loops[(a + 1) % n]
+            for i in range(len(sec)):
+                j = (i + 1) % len(sec)
+                fc = bm.faces.new((A[i], A[j], Bl[j], Bl[i]))
+                fc.material_index = H
+                faces.append(fc)
+        _bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.normal_update()
+        return bm, faces
+    # a chamfered square section, (radial, axial): edges 0 inner, 1 inner-aft chamfer, 2 aft, 3 outer-aft chamfer,
+    # 4 outer, 5 outer-front chamfer, 6 front, 7 inner-front chamfer
+    def chamfer_sec(hr, ha, c):
+        return [(-hr, -ha + c), (-hr, ha - c), (-hr + c, ha), (hr - c, ha), (hr, ha - c), (hr, -ha + c), (hr - c, -ha), (-hr + c, -ha)]
+
     # ------------------------------------------------------------------ socket placements first (the holes need them)
     stellas = []        # (name, centre, frame, parent, where)
     count = {"supershielded": 0, "shielded": 0, "prism": 0, "danger": 0}
@@ -591,12 +647,31 @@ def build(ctx):
         f.transform_mesh(bx, Matrix.Translation(Vector((px, py, 0.5 * (z_lo + z_hi)))) @ Matrix.Rotation(ang, 4, "Z"))
         umbo_parts.append(piece(bx, D, 21))
     top_z = umbo_top(0.0, HY)
-    for (dx, dy, hgt) in ((0.0, 3.0, 6.0), (3.0, -2.0, 4.5), (-3.0, -2.0, 3.5)):   # L3 the sensor array on the bridge
+    # L3 the sensor array on the bridge, each mast in five levels: L1 a tapering mast; L2 its stepped base and a collar;
+    # L3 two yards with end pods, an emitter dish on the tallest; L4 the collar's band; L5 a tip light, dots on the base
+    Zu = Vector((0, 0, 1))
+    for (dx, dy, hgt) in ((0.0, 3.0, 6.0), (3.0, -2.0, 4.5), (-3.0, -2.0, 3.5)):
         b_ = Vector((dx, HY + dy, top_z - 0.2))
-        umbo_parts.append(piece(f.tube_along("mast", [tuple(b_), tuple(b_ + Vector((0, 0, hgt)))], [0.35, 0.3], segments=4), H, 21))
-        for frac in (0.55, 0.85):
-            umbo_parts.append(piece(f.box("xbar", (2.2 * (1.2 - frac), 0.25, 0.25), center=tuple(b_ + Vector((0, 0, hgt * frac)))), H, 21))
-        umbo_parts.append(piece(f.sphere("mlight", 0.35, center=tuple(b_ + Vector((0, 0, hgt + 0.3))), segments=8, rings=6), J, 21))
+        umbo_parts.append(piece(lathe_ob("mbase", [(0.0, 0.0), (1.25, 0.0), (1.25, 0.35), (0.95, 0.55), (0.95, 0.8), (0.0, 0.8)], Zu, b_, 16), None, 21, bevel=0.03))
+        mast = lathe_ob("mast", [(0.0, 0.0), (0.42, 0.0), (0.42, hgt * 0.45), (0.55, hgt * 0.47), (0.55, hgt * 0.52), (0.32, hgt * 0.54),
+                                 (0.26, hgt), (0.0, hgt)], Zu, b_ + Zu * 0.8, 12)
+        f.paint(mast, D, lambda c, n, i, b_=b_, hgt=hgt: b_.z + 0.8 + hgt * 0.475 < c.z < b_.z + 0.8 + hgt * 0.515 and math.hypot(c.x - b_.x, c.y - b_.y) > 0.5)
+        umbo_parts.append(piece(mast, None, 21))
+        for frac, span in ((0.62, 1.6), (0.86, 1.1)):
+            zc_ = b_.z + 0.8 + hgt * frac
+            umbo_parts.append(piece(f.tube_along("yard", [(b_.x - span, b_.y, zc_), (b_.x + span, b_.y, zc_)], [0.12, 0.12], segments=8), H, 21))
+            for sx in (1, -1):
+                umbo_parts.append(piece(lathe_ob("ypod", [(0.0, 0.0), (0.22, 0.1), (0.22, 0.5), (0.0, 0.6)], Vector((sx, 0, 0)),
+                                                 Vector((b_.x + sx * span, b_.y, zc_)), 8), None, 21))
+        if hgt > 5.0:
+            dish = lathe_ob("dish", [(0.0, 0.0), (0.25, 0.05), (1.1, 0.45), (1.15, 0.6), (0.0, 0.25)], Vector((0, -1, 0)),
+                            Vector((b_.x, b_.y - 0.35, b_.z + 0.8 + hgt * 0.74)), 12)
+            f.paint(dish, W, lambda c, n, i, b_=b_: n.y < -0.3 and math.hypot(c.x - b_.x, c.z - (b_.z + 0.8 + hgt * 0.74)) < 0.5)   # its lens
+            umbo_parts.append(piece(dish, None, 21))
+        umbo_parts.append(piece(f.sphere("mlight", 0.3, center=tuple(b_ + Zu * (0.8 + hgt + 0.25)), segments=8, rings=6), J, 21))
+        for k_ in range(3):
+            a = math.radians(-60.0 + 60.0 * k_)
+            umbo_parts.append(disc("mdot", b_ + Vector((math.sin(a) * 1.1, -math.cos(a) * 1.1, 0.35)), Vector((math.sin(a), -math.cos(a), 0.6)).normalized(), 0.12, 0.06, W, 21, segments=6))
     for sx in (1, -1):                                   # L4 a contour trace round each side of the boss, a jog, a ring
         path = []
         for i in range(24):
@@ -818,17 +893,49 @@ def build(ctx):
             y = -84.0 + 3.2 * i
             hw, zb, zt = spine_at(y)
             hull_parts.append(piece(f.box("sport", (0.3, 1.6, 0.6), center=(sx * (hw + 0.05), y, zt - 4.6)), W, 4))
-    # L3 the sponsons on the spine's flanks, each with a vent grille
+    # L3 the side pods on the spine's flanks, each in five levels: L1 a faceted pod; L2 its collar, the recessed vent
+    # bay and the exhaust; L3 the grille's fins, a sensor blister with its lens; L4 panel seams, a trace with a jog and
+    # a ring; L5 bolt heads on the collar, a light at the nose
     for sx in (1, -1):
         for (y0, y1) in ((-40.0, -20.0), (-8.0, 12.0)):
             hw, zb, zt = spine_at(0.5 * (y0 + y1))
             zc = zb + 0.45 * (zt - zb)
-            sp = f.box("sponson", (4.0, y1 - y0, 5.0), center=(sx * (hw + 1.6), 0.5 * (y0 + y1), zc))
-            f.ensure_slots(sp, SLOTS)
-            f.paint(sp, H)
-            hull_parts.append(piece(sp, None, 4, bevel=0.3))
-            for i in range(6):
-                hull_parts.append(piece(f.box("slit", (0.3, 1.8, 3.0), center=(sx * (hw + 3.65), y0 + 3.0 + 2.8 * i, zc)), H, 4))
+            cx, ym = sx * (hw + 1.4), 0.5 * (y0 + y1)
+            ST = ((y0, 0.55), (y0 + 1.4, 0.9), (y0 + 3.0, 1.0), (ym - 0.7, 1.0), (ym - 0.6, 1.09), (ym + 0.6, 1.09), (ym + 0.7, 1.0),
+                  (y1 - 3.2, 1.0), (y1 - 1.4, 0.86), (y1, 0.6))
+
+            def octa(y, k, w=2.2, h=2.6):
+                w, h = w * k, h * k
+                c = 0.35 * min(w, h)
+                return [Vector((cx + sx * dx, y, zc + dz)) for (dx, dz) in
+                        ((w, h - c), (w - c, h), (-w + c, h), (-w, h - c), (-w, -h + c), (-w + c, -h), (w - c, -h), (w, -h + c))]
+            pbm, pg, pcap = loft_bm([octa(y, k) for y, k in ST])
+            for j in range(8):
+                pg[4][j].material_index = D                  # L2 the collar's band
+            for t in (2, 6):
+                for j in (1, 5):
+                    inset(pbm, [pg[t][j]], 0.3, 0.12)        # L4 panel seams top and bottom
+            inset(pbm, [pg[2][7]], 0.45, 0.35)               # L2 the vent bay in the outer flank, ahead of the collar
+            inset(pbm, [pg[6][7]], 0.5, 0.15)
+            pod = piece(finish_bm("pod", pbm), None, 4, bevel=0.05, angle=30)
+            hull_parts.append(pod)
+            xo = cx + sx * (2.2 - 0.35)
+            for i in range(6):                               # L3 the grille's fins in the bay
+                hull_parts.append(piece(f.box("fin", (0.5, 0.3, 3.0), center=(xo, y0 + 4.0 + 1.25 * i, zc)), H, 4))
+            ex = lathe_ob("exhaust", [(1.1, 0.0), (1.1, 0.5), (0.95, 0.8), (0.75, 0.8), (0.6, 0.4), (0.0, 0.3)], Vector((0, 1, 0)),
+                          Vector((cx, y1 - 0.3, zc)), 16)    # L2 the exhaust
+            f.paint(ex, J, lambda c, n, i: n.y < -0.2 or math.hypot(c.x - cx, c.z - zc) < 0.7)
+            hull_parts.append(piece(ex, None, 4))
+            bl = lathe_ob("blister", [(0.0, 0.0), (1.1, 0.0), (1.0, 0.5), (0.6, 0.95), (0.0, 1.05)], Vector((0, 0, 1)),
+                          Vector((cx - sx * 0.3, y0 + 5.0, zc + 2.6 - 0.05)), 6)
+            hull_parts.append(piece(bl, None, 4, bevel=0.03))
+            hull_parts.append(disc("lens", Vector((cx - sx * 0.3, y0 + 4.15, zc + 3.05)), Vector((0, -1, 0.35)).normalized(), 0.35, 0.08, W, 4))
+            tr = [Vector((cx - sx * 0.6, y, zc + 2.6)) for y in (y0 + 7.0, ym - 1.8)] + [Vector((cx + sx * 0.4, ym - 0.8, zc + 2.6))]
+            hull_parts.append(strip("ptrace", tr, 0.3, 0.08, D, 4))            # L4 the trace on the pod's back
+            hull_parts.append(disc("pterm", tr[-1] + Vector((0, 0.5, 0.12)), Vector((0, 0, 1)), 0.38, 0.08, D, 4, ring=True))
+            for dz in (-1.6, -0.5, 0.6, 1.7):                # L5 bolt heads on the collar's outer face
+                hull_parts.append(disc("pbolt", Vector((cx + sx * 2.4, ym, zc + dz)), Vector((sx, 0, 0)), 0.15, 0.09, H, 4, segments=6))
+            hull_parts.append(piece(f.sphere("plight", 0.3, center=(cx, y0 - 0.15, zc), segments=8, rings=6), J, 4))   # L5 the nose light
     # the lift pylons in the cavity (dark, plain: they hold the hall up, they are not ornaments)
     for pm in MIDS:
         x, y = at(pm, 66.0)
@@ -932,7 +1039,16 @@ def build(ctx):
             inset(bm, [grid[t][0]], 0.35, 0.2)
         leaf = piece(finish_bm("door", bm), None, 90, bevel=0.08, angle=30)
         f.set_smooth(leaf, False)
-        bone_part([leaf], "hangar.door." + key)
+        dparts = [leaf]
+        zh = z1 - 0.45 if key == "T" else z0 + 0.45     # L3 the hinge knuckles along the hinge edge
+        for xk in (-8.4, 0.0, 8.4):
+            kn = lathe_ob("knuckle", [(0.0, 0.0), (0.55, 0.0), (0.55, 2.4), (0.0, 2.4)], Vector((1, 0, 0)), Vector((xk - 1.2, door_y + 0.5, zh)), 16)
+            f.paint(kn, D, lambda c, n, i, xk=xk: abs(c.x - xk) > 1.15)
+            dparts.append(piece(kn, None, 91))
+        zl = z0 + 0.6 if key == "T" else z1 - 0.6       # L5 lights at the meeting edge
+        for xl in (-11.4, 11.4):
+            dparts.append(piece(f.sphere("dlight", 0.22, center=(xl, door_y - 0.02, zl), segments=8, rings=6), J, 91))
+        bone_part(dparts, "hangar.door." + key)
         door_hinge[key] = Vector((0.0, door_y, z1 if key == "T" else z0))
 
     # ================================================================== PAYLOAD: the lance in the centre groove
@@ -942,30 +1058,233 @@ def build(ctx):
     p_rear = gpt(PAY_RHO0)
     pax = (gpt(R - 2.0) - p_rear).normalized()
     plen = PAY_RHO1 - PAY_RHO0
-    pay_mid, p_tip, dock_head = kit.lance(p_rear, pax, plen, core_top, PAY_R, LANCE_GAP, fracs=(0.20, 0.30))
+
+    def lance(p_rear, pax, plen, pay_r, gap, fracs):
+        """The payload in five levels: L1 a shaft and a spear head; L2 pommel, grip, two collars, the socket, the head's
+        glowing core between two side blades; L3 four tail vanes, a three-turn energy coil, the cross blades; L4 grip
+        rings, shaft seams, a contour trace with a jog and a ring; L5 bolt circles and the pommel's light. Bone parts
+        `payload` and `payload.dock` (the hover cradles, as the kit's). Returns (pay_mid, p_tip, dock_head)."""
+        ac0 = pax.cross(Vector((0, 0, 1))).normalized()
+        up0 = ac0.cross(pax).normalized()
+
+        def S(c):
+            return (c - p_rear).dot(pax)
+        hs = plen - 12.0                                 # the head's socket
+        sr = pay_r - 0.2
+        prof = [(0.0, 0.0), (0.9, 0.0), (1.5, 0.4), (1.5, 1.4), (1.2, 1.7), (1.2, 1.9), (1.35, 2.1), (1.35, 7.0), (1.2, 7.2),
+                (2.0, 7.6), (2.1, 8.0), (2.1, 9.6), (2.0, 10.0), (sr, 10.4), (sr, 19.0), (1.95, 19.3), (1.95, 21.4), (sr, 21.7),
+                (sr, hs - 2.4), (1.5, hs - 1.9), (2.2, hs - 1.3), (2.3, hs - 0.9), (2.3, hs + 0.2), (1.4, hs + 0.6), (0.0, hs + 0.6)]
+        shaft = lathe_ob("shaft", prof, pax, p_rear, 24)
+        f.paint(shaft, J, lambda c, n, i: S(c) < 0.05)                                   # the pommel's glowing end
+        f.paint(shaft, D, lambda c, n, i: 8.05 < S(c) < 9.55 or 19.35 < S(c) < 21.35)     # the collars' bands
+        inset_where(shaft, lambda c, n: 10.5 < S(c) < 18.9, 0.06, 0.03)                  # L4 seams along the shaft
+        parts = [piece(shaft, None, 40, bevel=0.04)]
+        for i in range(6):                                                               # L4 the grip's rings
+            s0 = 2.5 + 0.8 * i
+            parts.append(piece(lathe_ob("grip", [(1.3, s0), (1.48, s0), (1.48, s0 + 0.3), (1.3, s0 + 0.3)], pax, p_rear, 24, cap=False), None, 40))
+        for i in range(3):                                                               # L3 the energy coil
+            s0 = hs - 6.2 + 1.1 * i
+            parts.append(piece(lathe_ob("coil", [(sr - 0.05, s0), (sr + 0.42, s0), (sr + 0.42, s0 + 0.45), (sr - 0.05, s0 + 0.45)], pax, p_rear, 24, slot=D, cap=False), None, 41))
+        head = f.lathe("head", [(0.0, -0.3), (1.2, 0.0), (2.2, 3.4), (1.4, 8.6), (0.0, 11.4)], segments=4,
+                       axis=tuple(pax), origin=tuple(p_rear + pax * (hs + 0.6)), up=(0, 0, 1))
+        parts.append(piece(head, J, 41))                                                 # L2 the head's glowing core
+        for sx in (1, -1):                                                               # L2/L3 the side blades, edged in domain
+            bl = f.plate("blade", [(0.4, 1.1), (3.6, 3.3), (8.4, 2.0), (10.6, 0.5), (8.2, 1.3), (3.8, 2.3), (1.2, 1.4)], 0.42,
+                         normal=tuple(up0), origin=tuple(p_rear + pax * (hs + 0.6)), right=tuple(pax))
+            if sx < 0:
+                f.transform_mesh(bl, Matrix.Translation(p_rear + pax * (hs + 0.6)) @ Matrix.Rotation(math.pi, 4, tuple(pax)) @
+                                 Matrix.Translation(-(p_rear + pax * (hs + 0.6))))
+            f.ensure_slots(bl, SLOTS)
+            f.paint(bl, H)
+            f.paint(bl, D, lambda c, n, i: abs(n.dot(up0)) < 0.5)
+            parts.append(piece(bl, None, 42, bevel=0.03))
+        for adeg in (45.0, 135.0, 225.0, 315.0):                                         # L3 the tail vanes
+            rd = ac0 * math.cos(math.radians(adeg)) + up0 * math.sin(math.radians(adeg))
+            fin = f.plate("fin", [(0.6, sr - 0.1), (6.4, sr - 0.1), (5.4, sr + 1.6), (1.4, sr + 1.8)], 0.32,
+                          normal=tuple(pax.cross(rd)), origin=tuple(p_rear), right=tuple(pax))
+            f.ensure_slots(fin, SLOTS)
+            f.paint(fin, H)
+            f.paint(fin, D, lambda c, n, i, rd=rd: (c - p_rear).dot(rd) > sr + 1.1 and abs(n.dot(pax.cross(rd))) < 0.5)
+            parts.append(piece(fin, None, 42, bevel=0.03))
+            for k in range(3):                                                           # L4 chevrons on each vane
+                c0 = p_rear + pax * (2.2 + 1.1 * k) + rd * (sr + 0.9)
+                ch = f.box("chev", (0.5, 0.18, 0.36), center=(0, 0, 0))
+                M, _, _, _ = kit.frame_matrix(c0, pax, pax.cross(rd))
+                f.transform_mesh(ch, M)
+                parts.append(piece(ch, D, 42))
+        tr = [p_rear + pax * s_ + up0 * (sr + 0.02) for s_ in (10.7, 14.0, 17.2)] + \
+             [p_rear + pax * 18.0 + (up0 * math.cos(0.5) + ac0 * math.sin(0.5)) * (sr + 0.02)]
+        parts.append(strip("ptrace", tr, 0.3, 0.08, D, 43))                              # L4 the trace, jogging off the top
+        parts.append(disc("pterm", tr[-1], (up0 * math.cos(0.5) + ac0 * math.sin(0.5)), 0.45, 0.1, D, 43, ring=True))
+        for s_, rr_ in ((8.8, 2.1), (hs - 0.35, 2.3)):                                   # L5 bolt circles
+            for i in range(10):
+                a = 2 * math.pi * (i + 0.5) / 10
+                rd = ac0 * math.cos(a) + up0 * math.sin(a)
+                parts.append(disc("pbolt", p_rear + pax * s_ + rd * rr_, rd, 0.14, 0.09, H, 43, segments=6))
+        bone_part(parts, "payload")
+        dock = []
+        for frac in fracs:
+            c = p_rear + pax * (plen * frac)
+            M, ac, al, upn = kit.frame_matrix(c, pax, Vector((0, 0, 1)))
+            ptop = -2.2 - gap                            # the lance hovers `gap` over the prongs (its widest collar)
+            for sx in (1, -1):
+                dock.append(kit.boxm("prong", (0.6, 2.4, 2.0), (sx * 2.0, 0, ptop - 1.0), M, D, 43, bevel=0.08))
+            dock.append(kit.boxm("fbase", (5.2, 2.8, 0.7), (0, 0, ptop - 2.35), M, H, 43, bevel=0.1))
+            dock.append(kit.boxm("fpad", (2.6, 2.0, 0.14), (0, 0, ptop - 1.93), M, J, 43))
+            bottom = c + upn * (ptop - 2.7)
+            ped_h = max(0.8, bottom.z - core_top(bottom.x, bottom.y) + 0.3)
+            ped = f.lathe("fped", [(0.0, 0.0), (1.0, 0.0), (1.0, ped_h - 0.6), (1.4, ped_h - 0.3), (1.4, ped_h), (0.0, ped_h)],
+                          segments=12, axis=(0, 0, 1), origin=tuple(bottom - Vector((0, 0, ped_h - 0.15))))
+            dock.append(piece(ped, H, 43))
+        bone_part(dock, "payload.dock")
+        pay_mid = p_rear + pax * (plen * 0.5)
+        return pay_mid, p_rear + pax * plen, pay_mid - Vector((0, 0, 2.2 + gap + 2.0))
+    pay_mid, p_tip, dock_head = lance(p_rear, pax, plen, PAY_R, LANCE_GAP, fracs=(0.20, 0.30))
 
     # ================================================================== L2 THE JET BANK in the stern gape, in gimbal rings
     def jet(name, o, axis, ln, rr):
-        """A faceted jet: a glowing intake, a body, a domain collar, a taper and a flared bell with a cone inside."""
-        prof = [(0.0, 0.5), (rr * 0.5, 0.5), (rr * 0.86, 0.15), (rr * 0.97, 0.8), (rr * 0.97, 3.2), (rr, 3.6), (rr, 9.0),
-                (rr * 1.08, 9.4), (rr * 1.08, 11.0), (rr, 11.4), (rr, ln * 0.62), (rr * 0.84, ln * 0.74), (rr * 0.84, ln * 0.8),
-                (rr * 0.96, ln - 1.6), (rr * 1.02, ln), (rr * 0.9, ln), (rr * 0.72, ln - 2.4), (rr * 0.4, ln - 3.0),
-                (rr * 0.25, ln - 1.2), (0.0, ln - 0.5)]
-        nac = f.lathe("jet", prof, segments=8, axis=tuple(axis), origin=tuple(o))
-        f.set_smooth(nac, False)
-        f.ensure_slots(nac, SLOTS)
-        f.paint(nac, H)
+        """A jet in five levels of its own. L1: a cowled intake, a waist through the gimbal ring, a core, a nozzle.
+        L2: the cowl's lip, two collars, the nozzle's iris. L3: ten stator vanes round a spinner, twelve iris petals with
+        six actuators, four strakes, two conduits on clamps. L4: panel seams, side vent slots, a contour trace with a
+        45-degree jog ending in a ring. L5: bolt heads on the collars, running lights, a dot row. Nothing within 2.4 of
+        the ring's plane is wider than the waist, so every pitch clears the ring."""
+        u = axis.cross(Vector((0, 0, 1))).normalized()
+        v = u.cross(axis).normalized()
 
-        def s_of(c):
+        def RD(adeg):
+            a = math.radians(adeg)
+            return u * math.cos(a) + v * math.sin(a)
+
+        def P(s_, r_, adeg):
+            return o + axis * s_ + RD(adeg) * r_
+
+        def S(c):
             return (c - o).dot(axis)
 
-        def r_of(c):
+        def RR(c):
             d = c - o
             return (d - axis * d.dot(axis)).length
-        f.paint(nac, D, lambda c, n, i: 9.1 < s_of(c) < 11.3)
-        f.paint(nac, J, lambda c, n, i: s_of(c) > ln - 3.1 and r_of(c) < rr * 0.92)
-        f.paint(nac, J, lambda c, n, i: s_of(c) < 0.65 and r_of(c) < rr * 0.55)
-        bone_part([piece(nac, None, 50, bevel=0.08)], name)
+
+        def ANG(c):
+            d = c - o
+            return math.degrees(math.atan2(d.dot(v), d.dot(u))) % 360.0
+
+        def near(adeg, angles, tol):
+            return any(abs(((adeg - b + 180.0) % 360.0) - 180.0) < tol for b in angles)
+        R1, R2, RCO = rr * 1.24, rr * 1.25, rr * 1.31          # the cowl, the core, the collars
+        STRAKES, PIPES, JACKS = (0.0, 180.0, 240.0, 300.0), (62.0, 118.0), tuple(15.0 + 60.0 * i for i in range(6))
+        prof = [(0.0, 1.8), (rr * 0.83, 1.2), (rr * 0.85, 0.6), (rr * 0.99, 0.2), (rr * 1.1, 0.0), (rr * 1.21, 0.2),
+                (R1, 0.8), (R1, 1.6), (rr, 2.2), (rr, 7.6), (rr * 1.14, 8.0), (R2, 8.4),
+                (R2, 10.6), (RCO, 10.8), (RCO, 11.8), (R2, 12.0), (R2, 14.4), (RCO, 14.6), (RCO, 15.4), (R2, 15.6),
+                (R2, 16.6), (rr * 1.14, 17.4), (rr * 1.08, 17.6), (rr * 1.08, 18.4),
+                (rr * 1.22, ln - 0.25), (rr * 1.25, ln), (rr * 1.15, ln), (rr * 0.92, ln - 3.0),
+                (rr * 0.66, ln - 3.6), (rr * 0.44, ln - 3.2), (rr * 0.38, ln - 1.7), (rr * 0.24, ln - 0.7), (0.0, ln - 0.5)]
+        body = lathe_ob("jet", prof, axis, o, 32)
+        f.paint(body, J, lambda c, n, i: S(c) < 1.75 and RR(c) < rr * 0.8)                        # L2 the intake's core
+
+        def collar_band(c):
+            return (10.75 < S(c) < 11.85 or 14.55 < S(c) < 15.45) and RR(c) > rr * 1.28
+        f.paint(body, D, lambda c, n, i: collar_band(c))                                             # L2 the collars
+
+        def liner(c, n):
+            d = c - o
+            radial = d - axis * d.dot(axis)
+            return S(c) > ln - 3.9 and (radial.length < rr * 0.7 or n.dot(radial.normalized()) < -0.05)
+        f.paint(body, J, lambda c, n, i: liner(c, n))                                                # the bell's liner, the plug
+        inset_where(body, lambda c, n: 12.1 < S(c) < 14.3 and RR(c) > rr * 1.2, 0.07, 0.04)          # L4 panel seams
+        inset_where(body, lambda c, n: 8.5 < S(c) < 10.5 and RR(c) > rr * 1.2 and near(ANG(c), (0.0, 180.0), 36.0), 0.1, 0.14)   # vents
+        parts = [piece(body, None, 50, bevel=0.04)]
+        parts.append(piece(lathe_ob("spinner", [(0.0, 0.35), (0.55, 0.45), (0.95, 0.9), (0.95, 1.7), (0.0, 1.75)], axis, o, 16), None, 51))
+        for i in range(10):                                                                          # L3 stator vanes
+            rd = RD(18.0 + 36.0 * i)
+            vane = f.plate("vane", [(0.85, 0.85), (1.55, 0.85), (1.4, rr * 0.83), (0.8, rr * 0.83)], 0.16,
+                           normal=tuple(axis.cross(rd)), origin=tuple(o), right=tuple(axis))
+            parts.append(piece(vane, H, 51))
+        sN0, sN1 = 18.5, ln - 0.3
+        for i in range(12):                                                                          # L3 the iris petals
+            rd = RD(15.0 + 30.0 * i)
+            p0 = o + axis * sN0 + rd * (rr * 1.08 + 0.2)
+            p1 = o + axis * sN1 + rd * (rr * 1.22 + 0.2)
+            rt = (p1 - p0).normalized()
+            td = axis.cross(rd).normalized()
+            L = (p1 - p0).length
+            pet = f.plate("petal", [(-L / 2, -1.0), (L / 2, -1.25), (L / 2, 1.25), (-L / 2, 1.0)], 0.26,
+                          normal=tuple(rt.cross(td)), origin=tuple(0.5 * (p0 + p1)), right=tuple(rt))
+            parts.append(piece(pet, H, 52, bevel=0.03))
+        for adeg in JACKS:                                                                           # L3 the iris actuators
+            rd = RD(adeg)
+            a0 = o + axis * 15.0 + rd * (RCO + 0.32)
+            a1 = o + axis * (0.5 * (sN0 + sN1)) + rd * (rr * 1.15 + 0.52)
+            mid = a0.lerp(a1, 0.55)
+            parts.append(piece(f.tube_along("jack", [tuple(a0), tuple(mid)], [0.28, 0.28], segments=8), H, 53))
+            parts.append(piece(f.tube_along("rod", [tuple(mid), tuple(a1)], [0.15, 0.15], segments=8), D, 53))
+        for adeg in STRAKES:                                                                         # L3 strakes, edged in domain
+            rd = RD(adeg)
+            nrm = axis.cross(rd)
+            st = f.plate("strake", [(12.1, R2 - 0.1), (16.3, R2 - 0.1), (15.7, R2 + 0.85), (12.7, R2 + 0.95)], 0.3,
+                         normal=tuple(nrm), origin=tuple(o), right=tuple(axis))
+            f.ensure_slots(st, SLOTS)
+            f.paint(st, H)
+            f.paint(st, D, lambda c, n, i, nrm=nrm: RR(c) > R2 + 0.8 and abs(n.dot(nrm)) < 0.5)
+            parts.append(piece(st, None, 54, bevel=0.03))
+        for adeg in PIPES:                                                                           # L3 conduits on clamps
+            parts.append(piece(f.tube_along("pipe", [tuple(P(8.7, R2 + 0.5, adeg)), tuple(P(16.3, R2 + 0.5, adeg))], [0.22, 0.22], segments=8), H, 55))
+            for s_ in (9.6, 13.2, 16.0):
+                M, _, _, _ = kit.frame_matrix(P(s_, R2 + 0.3, adeg), axis, RD(adeg))
+                parts.append(kit.boxm("clamp", (0.6, 0.45, 0.7), (0, 0, 0), M, H, 55))
+        top = [P(s_, r_, 90.0) for s_, r_ in ((8.7, R2 + 0.07), (10.5, R2 + 0.07), (10.75, RCO + 0.07), (11.85, RCO + 0.07),
+                                              (12.1, R2 + 0.07), (13.2, R2 + 0.07))]
+        jog = [P(13.85, R2 + 0.07, 99.0)]
+        parts.append(strip("jtrace", top + jog, 0.3, 0.08, D, 56))                                  # L4 the contour trace
+        parts.append(disc("jterm", P(14.15, R2 + 0.03, 99.0), RD(99.0), 0.32, 0.1, D, 56, ring=True))
+        for i, s_ in enumerate((12.4, 12.9, 13.4)):                                                  # L5 a dot row
+            parts.append(disc("jdot", P(s_, R2 + 0.03, 106.0), RD(106.0), 0.16, 0.08, W, 56, segments=8))
+        for s_, skip in ((11.3, STRAKES + PIPES + (90.0,)), (15.0, STRAKES + PIPES + JACKS)):        # L5 bolt heads
+            for i in range(12):
+                adeg = 30.0 * i
+                if not near(adeg, skip, 9.0):
+                    parts.append(disc("jbolt", P(s_, RCO, adeg), RD(adeg), 0.15, 0.1, H, 57, segments=6))
+        for adeg in (0.0, 180.0):                                                                    # L5 running lights
+            parts.append(piece(f.sphere("jlight", 0.22, center=tuple(P(1.2, R1 + 0.12, adeg)), segments=8, rings=6), J, 57))
+        bone_part(parts, name)
+
+    def gimbal(name, piv, axis, ring_r):
+        """The gimbal ring in five levels. L1: the octagonal ring, a flat at the top. L2: its two trunnion bearings and
+        the yaw pivot plates. L3: four yaw jacks on its diagonal flats. L4: panel seams on its outer face, neon chamfer
+        lines aft. L5: bolt circles on the bearings, a light on each cap."""
+        u = axis.cross(Vector((0, 0, 1))).normalized()
+        v = Vector((0, 0, 1))
+        flat = ring_r * math.cos(math.radians(22.5))
+        sec = chamfer_sec(0.7, 0.7, 0.28)
+        bm, fl = ring_loft("gring", piv, axis, u, v, ring_r, sec)
+        ns = len(sec)
+        for k in range(8):
+            fl[k * ns + 3].material_index = D                                                       # L4 the neon chamfer aft
+            kit.inset(bm, [fl[k * ns + 4]], 0.16, 0.07)                                              # L4 the outer face's panels
+        parts = [piece(finish_bm("gring", bm), None, 58, bevel=0.03)]
+        for s_ in (1, -1):                                                                           # L2 the trunnion bearings
+            ax_ = u * s_
+            org = piv + ax_ * (flat + 0.6)
+            br = lathe_ob("bearing", [(0.0, 0.0), (1.55, 0.0), (1.55, 0.35), (1.2, 0.55), (1.2, 1.25), (0.95, 1.4), (0.95, 1.7), (0.0, 1.7)],
+                          ax_, org, 24)                  # (short: the grille's bars stand beside it)
+            f.paint(br, D, lambda c, n, i, org=org, ax_=ax_: 1.28 < (c - org).dot(ax_) < 1.37)
+            parts.append(piece(br, None, 59, bevel=0.03))
+            w_ = ax_.cross(v).normalized()
+            for i in range(8):                                                                       # L5 its bolt circle
+                a = 2 * math.pi * (i + 0.5) / 8
+                parts.append(disc("gbolt", org + ax_ * 0.35 + (v * math.cos(a) + w_ * math.sin(a)) * 1.38, ax_, 0.13, 0.09, H, 59, segments=6))
+            parts.append(piece(f.sphere("glight", 0.22, center=tuple(org + ax_ * 1.78), segments=8, rings=6), J, 59))
+        for s_ in (1, -1):                                                                           # L2 the yaw pivot plates
+            c0 = piv + v * s_ * (flat + 0.7)
+            parts.append(disc("yplate", c0, v * s_, 1.1, 0.32, H, 60, segments=16))
+            parts.append(disc("ycap", c0 + v * s_ * 0.32, v * s_, 0.5, 0.06, D, 60, segments=16))
+        for adeg in (45.0, 135.0, 225.0, 315.0):                                                     # L3 the yaw jacks
+            rd = u * math.cos(math.radians(adeg)) + v * math.sin(math.radians(adeg))
+            t = axis.cross(rd).normalized()
+            c0 = piv + rd * (flat + 0.7 + 0.42)
+            parts.append(piece(f.tube_along("yjack", [tuple(c0 - t * 1.3), tuple(c0 + t * 0.3)], [0.42, 0.42], segments=12), H, 61))
+            parts.append(piece(f.tube_along("yrod", [tuple(c0 + t * 0.3), tuple(c0 + t * 1.5)], [0.18, 0.18], segments=8), D, 61))
+        bone_part(parts, name + ".ring")
     ln = eng_len()
     eng = {}
     ring_r = (JET_R + RING_CLEAR + 0.7) / math.cos(math.radians(22.5))
@@ -978,37 +1297,42 @@ def build(ctx):
         o = piv - axis * RING_S
         nm = "engine.%d" % k
         jet(nm, o, axis, ln, JET_R)
-        u = axis.cross(Vector((0, 0, 1))).normalized()
-        v = Vector((0, 0, 1))
-        ring = [piv + (u * math.cos(2 * math.pi * a / 8 + math.pi / 8) + v * math.sin(2 * math.pi * a / 8 + math.pi / 8)) * ring_r
-                for a in range(9)]
-        rparts = [piece(f.tube_along("gring", [tuple(p) for p in ring], [0.7] * 9, segments=4, cap=False), H, 55)]
-        for s_ in (1, -1):
-            boss = f.lathe("boss", [(0.0, 0.0), (1.4, 0.0), (1.4, 1.4), (0.9, 2.0), (0.0, 2.0)], segments=6,
-                           axis=tuple(u * s_), origin=tuple(piv + u * s_ * (ring_r * math.cos(math.radians(22.5)) - 0.3)))
-            f.set_smooth(boss, False)
-            rparts.append(piece(boss, D, 56))
-        bone_part(rparts, nm + ".ring")
+        gimbal(nm, piv, axis, ring_r)
         eng[nm] = (o, axis, ln, piv)
 
     # ================================================================== L3 THE OMNI REACTOR in the umbo's well
+    # L1 the crystal in its cage; L2 a stepped collar, an octagonal hoop, four struts; L3 four emitters aimed at the
+    # crystal, the struts' knuckles; L4 the collar's panel seams and neon band; L5 its bolt circle, the hoop's lights.
     collar_o = Vector((wx, wy, floor_z(wx, wy) + 1.5))
-    collar = f.lathe("collar", [(0.0, 0.0), (5.5, 0.0), (7.0, 0.8), (7.0, 1.8), (5.8, 3.0), (3.0, 3.2), (0.0, 3.2)], segments=8,
-                     axis=(0, 0, 1), origin=tuple(collar_o))
-    f.ensure_slots(collar, SLOTS)
-    f.paint(collar, H)
-    f.paint(collar, J, lambda c, n, i: n.z > 0.8 and c.z > collar_o.z + 3.0)
-    f.paint(collar, D, lambda c, n, i: collar_o.z + 0.85 < c.z < collar_o.z + 1.75)
-    f.set_smooth(collar, False)
+    Zv = Vector((0, 0, 1))
+    collar = lathe_ob("collar", [(0.0, 0.0), (6.2, 0.0), (7.2, 0.6), (7.2, 1.5), (6.4, 1.9), (6.4, 2.6), (5.6, 3.0), (3.4, 3.2), (0.0, 3.2)],
+                      Zv, collar_o, 32)
+    f.paint(collar, J, lambda c, n, i: n.z > 0.8 and c.z > collar_o.z + 3.15)
+    f.paint(collar, D, lambda c, n, i: collar_o.z + 1.6 < c.z < collar_o.z + 1.8 and n.z > 0.2)
+    inset_where(collar, lambda c, n: collar_o.z + 0.65 < c.z < collar_o.z + 1.45 and abs(n.z) < 0.3, 0.12, 0.08)
     OMNI = collar_o + Vector((0, 0, 15.0))
-    hoop = [OMNI + Vector((10.0 * math.cos(2 * math.pi * a / 8 + math.pi / 8), 10.0 * math.sin(2 * math.pi * a / 8 + math.pi / 8), 0))
-            for a in range(9)]
-    rparts = [piece(collar, None, 60, bevel=0.06), piece(f.tube_along("hoop", [tuple(p) for p in hoop], [0.9] * 9, segments=4, cap=False), D, 61)]
-    for a in range(4):                                   # four struts from the collar's rim up to the hoop
+    rparts = [piece(collar, None, 60, bevel=0.04)]
+    for i in range(12):
+        a = 2 * math.pi * (i + 0.5) / 12
+        rparts.append(disc("rbolt", collar_o + Vector((4.6 * math.cos(a), 4.6 * math.sin(a), 3.08)), Zv, 0.18, 0.1, H, 60, segments=6))
+    hbm, hfl = ring_loft("hoop", OMNI, Zv, Vector((1, 0, 0)), Vector((0, 1, 0)), 10.0, chamfer_sec(0.55, 0.55, 0.2))
+    for k in range(8):
+        hfl[k * 8 + 0].material_index = D                                                            # the hoop glows inward
+    rparts.append(piece(finish_bm("hoop", hbm), None, 61, bevel=0.03))
+    for a in range(4):                                   # four struts from the collar's rim up to the hoop, knuckled
         ang = 2 * math.pi * a / 4 + math.pi / 8
         rd = Vector((math.cos(ang), math.sin(ang), 0.0))
-        p0, p1 = collar_o + rd * 6.2 + Vector((0, 0, 1.8)), OMNI + rd * 9.3 - Vector((0, 0, 0.6))
-        rparts.append(piece(f.tube_along("strut", [tuple(p0), tuple(p1)], [0.45, 0.4], segments=4), H, 61))
+        p0, p1 = collar_o + rd * 6.4 + Vector((0, 0, 1.8)), OMNI + rd * 9.6 - Vector((0, 0, 0.6))
+        km = p0.lerp(p1, 0.45)
+        rparts.append(piece(f.tube_along("strut", [tuple(p0), tuple(km)], [0.55, 0.5], segments=8), H, 61))
+        rparts.append(piece(f.tube_along("strut", [tuple(km), tuple(p1)], [0.38, 0.34], segments=8), H, 61))
+        rparts.append(piece(f.sphere("knuckle", 0.7, center=tuple(km), segments=12, rings=8), D, 61))
+        ea = ang + math.pi / 4                                                                       # L3 an emitter between struts
+        er = Vector((math.cos(ea), math.sin(ea), 0.0))
+        em = lathe_ob("emitter", [(0.0, 0.0), (0.75, 0.0), (0.75, 0.7), (0.5, 1.3), (0.32, 1.75), (0.0, 1.85)], -er, OMNI + er * 9.6, 16)
+        f.paint(em, J, lambda c, n, i, er=er: (OMNI + er * 9.6 - c).dot(er) > 1.45)
+        rparts.append(piece(em, None, 62))
+        rparts.append(piece(f.sphere("hlight", 0.28, center=tuple(OMNI + er * 10.0 + Vector((0, 0, 0.75))), segments=8, rings=6), J, 62))
     bone_part(rparts, "omni.ring")
     crys = f.lathe("omni", [(0.0, -10.0), (5.2, -1.6), (6.0, 0.0), (5.2, 1.6), (0.0, 10.0)], segments=6,
                    axis=(0, 0, 1), origin=tuple(OMNI))
@@ -1016,6 +1340,8 @@ def build(ctx):
     bone_part([piece(crys, W, 63)], "omni")
 
     # ================================================================== L3 THE KEEL FIN under the spine's mid section
+    # L1 the swept blade; L2 its root fairing and the sensor pod along its deepest edge; L3 three stiffener ribs;
+    # L4 panels between the ribs and the neon band; L5 lights fore and aft.
     KY0, KY1 = -42.0, 22.0
     krings = []
     NK = 24
@@ -1031,17 +1357,39 @@ def build(ctx):
         zt = keel_top(y)
         dd = keel_depth(a)
         hw = 1.2
-        krings.append([Vector((hw, y, zt)), Vector((hw, y, zt - dd * 0.55)), Vector((hw * 0.55, y, zt - dd * 0.62)),
+        fd = min(0.8, 0.4 * dd)                          # the root fairing's flare
+        krings.append([Vector((hw * 1.3, y, zt)), Vector((hw, y, zt - fd)), Vector((hw, y, zt - dd * 0.55)), Vector((hw * 0.55, y, zt - dd * 0.62)),
                        Vector((0.0, y, zt - dd)), Vector((-hw * 0.55, y, zt - dd * 0.62)), Vector((-hw, y, zt - dd * 0.55)),
-                       Vector((-hw, y, zt))])
+                       Vector((-hw, y, zt - fd)), Vector((-hw * 1.3, y, zt))])
     kbm, kg, kc = loft_bm(krings)
+    RIBS = (7, 12, 17)
     for i, row in enumerate(kg):
         if 6 <= i <= 17:
-            row[1].material_index = D
-            row[4].material_index = D
-    keel = piece(finish_bm("keel", kbm), None, 70, bevel=0.06, angle=30)
-    f.set_smooth(keel, False)
-    bone_part([keel], "keel")
+            row[2].material_index = D
+            row[5].material_index = D
+    for i in range(3, NK - 3):                                                                       # L4 panels between the ribs
+        if i not in RIBS and i - 1 not in RIBS and i % 2 == 1:
+            for j in (1, 6):
+                inset(kbm, [kg[i][j]], 0.12, 0.08)
+    keel_parts = [piece(finish_bm("keel", kbm), None, 70, bevel=0.06, angle=30)]
+    for i in RIBS:                                                                                   # L3 the stiffener ribs
+        a = (i + 0.5) / NK
+        y = KY0 + (KY1 - KY0) * a
+        zt, dd = keel_top(y), keel_depth(a)
+        rib = f.plate("krib", [(-1.75, zt - 0.4), (1.75, zt - 0.4), (1.0, zt - dd * 0.7), (-1.0, zt - dd * 0.7)], 0.5,
+                      normal=(0, -1, 0), origin=(0.0, y, 0.0), right=(1, 0, 0))
+        keel_parts.append(piece(rib, H, 71, bevel=0.04))
+    a0, a1 = 0.36, 0.7                                                                               # L2 the sensor pod
+    yp0, yp1 = KY0 + (KY1 - KY0) * a0, KY0 + (KY1 - KY0) * a1
+    zp = min(keel_top(y) - keel_depth((y - KY0) / (KY1 - KY0)) for y in (yp0, yp1, 0.5 * (yp0 + yp1))) + 0.25
+    pod = lathe_ob("kpod", [(0.0, 0.0), (0.6, 0.6), (0.95, 2.0), (0.95, 4.0), (1.08, 4.15), (1.08, 4.55), (0.95, 4.7),
+                            (0.95, yp1 - yp0 - 3.0), (0.7, yp1 - yp0 - 1.0), (0.0, yp1 - yp0)],
+                   Vector((0, 1, 0)), Vector((0.0, yp0, zp)), 16)
+    f.paint(pod, D, lambda c, n, i: yp0 + 4.2 < c.y < yp0 + 4.5 and math.hypot(c.x, c.z - zp) > 1.0)
+    keel_parts.append(piece(pod, None, 72, bevel=0.03))
+    for y in (yp0 - 0.4, yp1 + 0.4):                                                                 # L5 lights fore and aft
+        keel_parts.append(piece(f.sphere("klight", 0.3, center=(0.0, y, zp), segments=8, rings=6), J, 72))
+    bone_part(keel_parts, "keel")
 
     bone_part(hull_parts, "hull")
 
