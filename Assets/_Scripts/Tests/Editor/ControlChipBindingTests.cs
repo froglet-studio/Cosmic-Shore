@@ -166,7 +166,7 @@ namespace CosmicShore.Tests
 
             foreach (var input in new[] { InputEvents.Button1Action, InputEvents.Button2Action,
                                           InputEvents.Button3Action, InputEvents.Button4Action, InputEvents.LeftStickAction,
-                                          InputEvents.RightStickAction, InputEvents.FlipAction })
+                                          InputEvents.RightStickAction, InputEvents.PayloadAction })
             {
                 var binding = InputHintBindingMap.BindingFor(input, keyboard: true);
                 Assert.Contains(binding, cluster,

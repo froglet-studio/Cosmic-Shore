@@ -6824,6 +6824,9 @@ pick knob for knob and pixel for pixel (`omni_shepard_lab_parity.cjs`).
 
 ### 🔴 Pilots & artifacts 2b: the 40-pilot roster, 45 artifacts and the Hangar's PILOTS / ARTIFACTS tabs (`claude/pensive-dijkstra-qxoxo0`, 2026-10-26) — NOT EDITOR-VERIFIED
 
+> **Superseded 2026-10-27** by "The callsign pilots, Javelin and Aegis" (end of this file): the roster, ranks, default
+> pilots and Tomahawk below were removed. Skip these steps.
+
 **Landed** (`Docs/Pilots/PILOTS_AND_ARTIFACTS.md` § Implementation; built on the two sections below):
 `author_pilot_assets.py` now also writes 40 roster pilots, 45 artifacts, `ArtifactStat.cs` and the catalog from
 `Docs/Pilots/pilots_and_artifacts.json`; `PilotSO` / `ArtifactSO` / the catalog gained fields; `HangarPilotsPage`
@@ -17249,6 +17252,127 @@ their `ElementalAbilityMaps` (`Input: 3` → `14`; the Brittle Star's and Shrike
    number).
 6. Phone: each of the three still reaches the ability through its card, as before.
 
+## 🔴 2026-10-27 — The plain payload on RB (unverified: no Unity editor in the session)
+
+**Files:** `ArkHold.cs`, `PayloadCarrier.cs`, `PayloadRelease.cs` (`Assets/_Scripts/Controller/Payload/`),
+`PayloadConfigSO.cs`, `PayloadPrismEffectSO.cs`, `PayloadCrackPrismEffectSO.cs`, `SuperShieldCrack.cs` (the crack
+the sniper now shares), `Ark.cs` (`Domain`, `Hold`, `TakeHullPrisms`, the retire strikes parcels), `Prism.cs`
+(`SetCarried`), `VesselController.Initialize` (ensures the carrier), `InputEvents.PayloadAction = 15` raised by RB / E
+in the pad, keyboard and mouse strategies, `InputHintBindingMap`, `ArkwayRun` (banners), assets from
+`Tools/Build/author_payload_assets.py` (`--check`, `--self-test`), `PayloadTests.cs`. Design:
+`Docs/Pilots/ARTIFACTS.md` §2. The reference compile is clean on the player and editor configs.
+
+1. Run `PayloadTests`, `ControlChipBindingTests`, `EnumIntegrityExtendedTests`. **Pass:** green.
+2. Freestyle, Wander toy, **With Ark**. Fly alongside the Ark and press RB (keyboard E). **Pass:** six plates leave
+   the nearest flank and fly to a small bundle riding above and behind your hull; the banner reads PAYLOAD ABOARD;
+   the Ark's hull visibly has a gap there.
+3. Fly with the parcel through turns and boosts. **Pass:** it stays seated, your hull never strikes it, and nothing
+   about flight changes.
+4. Find a rival domain's super-shielded or shielded mass (a crystal cage, a shielded flora), fly into it and press RB.
+   **Pass:** every rival shield within about 60 units cracks (super shields drop to a one-hit shield), your own
+   domain's shields are untouched, and the parcel bursts as debris.
+5. Press RB far from the Ark. **Pass:** the banner says to bring it alongside; nothing else happens.
+6. Take payloads until the hull is down to its last dozen plates. **Pass:** the next press says the Ark has no hull
+   to spare; the Ark never falls to its own crew.
+7. Get silenced (take a scored hit in a mode with a rival), then release a payload on rival shields. **Pass:** the
+   shields wobble (deflect) and stay up.
+8. End the voyage (disembark) while carrying. **Pass:** the parcel withers away with the Ark; no prisms are left
+   floating and the console shows no pool errors.
+9. Any arcade mode with no Ark: press RB. **Pass:** nothing happens, no banner, no error.
+10. Grizzly, Shrike, Brittle Star: Y still runs their moved ability; RB only touches the payload.
+
+## 🔴 2026-10-27 — Pilot vision on LB: ENSIGN, CITADEL, VOLT, BANDIT (unverified: no Unity editor in the session)
+
+**Files:** `PilotVision.cs` (enum, None = 0 … Galleon = 17), `CallsignSetSO.cs`, `Assets/_Scripts/Controller/PilotSight/`
+(`PilotSight`, `PilotSightProviders`, `PilotSightMarks`, `PilotSightSuppression`), `PilotSightGesture.cs` (LB / V),
+`PilotSightMark.shader`, `PrismDestructionSight.hlsl` (new globals `_PilotVision*`, applied after the existing sight
+composition), `VesselController.Initialize` (ensures the sight), assets from `Tools/Build/author_callsign_assets.py`
+(`--check`, `--self-test`), `PilotSightTests.cs`. Design: `Docs/Pilots/CALLSIGNS.md` §3, §6. The reference compile
+is clean on the player and editor configs and `verify_prism_sight_composition.py` holds; **the URP shader compile, the
+look and the cost were not seen** (no editor).
+
+Until pilots carry a sight (Shombith's pilot types), a tester picks one on `Resources/Pilots/CallsignSet` ▸
+**Unassigned Sight**. It ships as None, so LB does nothing until you set it.
+
+1. Run `PilotSightTests`, `PayloadTests`. **Pass:** green. Check the Console for shader errors on `PilotSightMark`
+   and the Block / Exploding Block graphs. **Pass:** none.
+2. Set Unassigned Sight to **ENSIGN**. Freestyle, any vessel; hold LB (keyboard V). **Pass:** over about a quarter
+   second the world greys and dims, and your domain's prisms stay lit and slightly brighter; release and it eases back
+   over about a third of a second. Nothing pops.
+3. **CITADEL**: hold LB near super-shielded mass. **Pass:** only super-shielded prisms stay lit, of every domain.
+4. **VOLT**: hold LB in a mode with crystals. **Pass:** every Charge crystal (field, ejected, carried by a lifeform)
+   wears a white halo through mass; no other element's crystal does; far halos stay readable.
+5. **BANDIT**: a mode with rival vessels. **Pass:** each rival hull wears a halo in its own domain colour, through
+   mass; your own hull and teammates do not.
+6. While holding LB: fly, boost, fire, take hits. **Pass:** nothing about flight, scoring or damage changes.
+7. An AI or a remote player holding nothing: **Pass:** only the local pilot's screen changes.
+8. Cost: Profiler with 1000+ marks (VOLT in a crystal-dense mode) and a full prism field under ENSIGN. Note the frame
+   cost against LB released; record it in `Docs/Pilots/CALLSIGNS.md` §6 before choosing instanced or shader-side marks
+   for the other target sights.
+
+## 🔴 2026-10-27 — The Ark's fall: the hold to the raiders, or spilled for anyone (unverified: no Unity editor in the session)
+
+**Files:** `ArkFall.cs`, `ArtifactPickup.cs` (`Assets/_Scripts/Controller/Payload/`), `ArkHold.cs` (artifacts aboard
+by id, `Stow`, `FindHome`, settles once on the fall), `PayloadCarrier.cs` (RB takes a loose artifact, stows it beside
+your Ark, lets it go elsewhere), `Ark.cs` (`LastFallenHullPrism`), `Prism.cs` (`DestroyerName`, `DestroyedAt`,
+`DestroyedByCreature`), `PayloadConfigSO.cs` + `ArtifactPickup.mat` from `author_payload_assets.py`, `ArkwayRun`
+(three banners), `ArkFallTests.cs`. Design: `Docs/Pilots/ARTIFACTS.md` §5, §8.4. The reference compile is clean on
+the player and editor configs.
+
+Artifacts are ids until squad slots load them (phase 3). To test, put ids aboard every Ark through
+`Resources/PayloadConfig` ▸ **Test Cargo** (for example `artifact.javelin`, `artifact.aegis`). Ship it empty again; the generator's
+`--check` fails while it is not.
+
+1. Run `ArkFallTests`, `PayloadTests`. **Pass:** green.
+2. Test Cargo = two ids. Wander toy, **With Ark**; let fauna eat the whole hull (or wait for the food web). **Pass:**
+   when the voyage ends on THE ARK HAS FALLEN, two pearl-white faceted bodies hang about 40 units from where the Ark
+   was, slowly turning, lit like the world.
+3. Fly to one and press RB (E). **Pass:** the banner reads ARTIFACT ABOARD; the body rides above and behind your hull.
+4. Press RB away from any Ark. **Pass:** ARTIFACT LET GO; it stays where you let it go and RB beside it takes it again.
+5. Start a new voyage while carrying one, fly alongside the new Ark and press RB. **Pass:** ARTIFACT STOWED IN THE
+   HOLD; the body is gone.
+6. Leave one uncollected and leave freestyle (or reload the scene). **Pass:** it is gone, with no console errors.
+7. Carry one while carrying nothing else and get destroyed. **Pass:** it floats where you died, takeable.
+8. (Needs two squads with Arks, phase 6.) A rival destroys your Ark's last hull prism. **Pass:** every artifact
+   aboard appears in the rival Ark's hold, none spill.
+
+## 🔴 2026-10-27 — The callsign pilots, Javelin and Aegis (unverified: no Unity editor in the session)
+
+**Files:** `PayloadTransformSO.cs`, `JavelinTransformSO.cs` (`JavelinFlight`), `AegisTransformSO.cs` (`AegisWard`)
+in `Assets/_Scripts/Controller/Payload/Transforms/`; `ArtifactSO.cs` (`ArtifactTrack`, `ArtifactLevels`), `PilotSO.cs`
+(`vision`), `PilotArtifactCatalogSO.cs`, `PilotLoadoutStore.cs` (seat, one slot, track levels, crystals),
+`VesselPilotLoadout.cs`, `PilotSight.cs` (the seated pilot's sight), `PayloadCarrier.cs` (loads the slotted artifact,
+releases through it), `PayloadRelease.cs` (`SpendParcel`), `Ark.cs` (`GetLiveHullPrisms`), `ArkHold.cs` (`LocalLine`),
+`ArkwayRun.cs`, `HangarPilotsPage.cs`, `HangarArtifactsPage.cs`; assets from `author_pilot_assets.py`
+(`Docs/Pilots/pilots_and_artifacts.json`) and `HangarView.prefab` from `author_menu_hangar.py`. Tests:
+`PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`. Design: `Docs/Pilots/CALLSIGNS.md`,
+`Docs/Pilots/ARTIFACTS.md` §3, §4. The reference compile has no errors in the changed files (player and editor).
+
+1. Run `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`, `PilotSightTests`,
+   `ArkFallTests`. **Pass:** green.
+2. Select `Assets/Resources/Pilots/PilotArtifactCatalog.asset`. **Pass:** 17 pilots (ENSIGN first, GALLEON last), 2
+   artifacts (Javelin, Aegis), none Missing; Slots Per Vessel 1. Each artifact shows a Payload Transform and four tracks.
+3. Menu_Main > Hangar > any vessel > PILOTS. **Pass:** a scrolling column of 17 cards, each a callsign and its line;
+   press VOLT and it reads IN THE SEAT, the header reads "PILOT · <VESSEL> / VOLT / Hold LB: ..."; press it again and
+   the seat empties. The pad scrolls the column to the focused card.
+4. ARTIFACTS on the same vessel. **Pass:** one slot, two rows (Javelin, Aegis) reading HELD and M0 S0 T0 C0; press
+   Javelin to slot it, press Aegis and it replaces Javelin; press the slotted one to empty the slot.
+5. Seat VOLT, slot Javelin, fly the Wander toy **With Ark**. Hold LB. **Pass:** VOLT's sight, no Unassigned Sight needed.
+6. Grab a payload beside your Ark (RB). **Pass:** the load sound (empty) is not an error; RB away from the Ark throws
+   it down your heading: it flies about 150 units, cracking the first rival super-shield it meets (a Grizzly-sniped
+   look), and bursts where it stops. The six parcel prisms are spent (the hull is thinner by six), and no prism is left
+   floating or orphaned under a destroyed root (Hierarchy check).
+7. Slot Aegis, grab, fly 300 units away and press RB. **Pass:** AEGIS - RELEASE IT BESIDE YOUR ARK, and the parcel stays
+   on your hull. Fly back beside the Ark and press RB. **Pass:** about a third of the hull nearest you super-shields
+   for 8 s, then lowers; plates that were already super-shielded stay so.
+8. Twists: with a script or the inspector, set PlayerPrefs `artifacts.track.artifact.javelin.3` (Space) to 5 and
+   repeat step 6. **Pass:** the Javelin no longer stops at its first crack (it pierces). Delete the key after.
+9. Ark > SQUADS > make a squad, pick the leader card. **Pass:** the Pilot row reads No pilot, then four callsign pilots
+   between < and >; > pages through all eighteen (FLUME last) and wraps; each chip's second line is its sight. Pick
+   one, save, reopen: the same page shows it picked. The Artifact row lists Javelin and Aegis.
+10. FLUME: seat FLUME, fly a Meerkat, open two tunnels and hold LB. **Pass:** white marks trace each tunnel mouth to
+   mouth and fade with it; with no tunnel, LB shows nothing new.
+
 ## Sparrow Space card: the live spray cone over a segmented heat gauge (2026-10-27) - NOT EDITOR-VERIFIED
 
 **Files:** `SparrowHUDView.cs` (generates ten round Images under the Space card's icon and lays them out on their
@@ -17499,6 +17623,47 @@ above.
 3. **Hangar.** Step through every vessel. **Pass:**
    - each looks like the ship in play (its own dark body, windows and engines);
    - only its team-colour plates are silver.
+
+## 🔴 2026-10-27 — The Ark's ARTIFACTS tab: crystals raise an artifact's tracks (unverified: no Unity editor in the session)
+
+**Files:** `ArkArtifactsPage.cs` (`Assets/_Scripts/UI/Elements/Ark/`), `ArkTabsView.cs` (a fourth tab),
+`PilotLoadoutStore.cs` (crystals read and spent on the profile through `PlayerDataService`; `ResetTracks`),
+`PilotDevTools.cs` (Grant 20 Crystals, Reset Every Artifact Track), `ArkView.prefab` from `author_menu_ark.py`.
+Design: `Docs/Pilots/ARTIFACTS.md` §4. The reference compile has no errors in the changed files.
+
+1. Run `PilotsAndArtifactsTests` (`TryRaise_WithNoProfileLoaded_RefusesAndLeavesTheLevel`). **Pass:** green.
+2. Play Menu_Main, open the Ark. **Pass:** the tab row reads CONVERTER, SQUADS, ARTIFACTS, DECOR; DECOR still refuses.
+3. ARTIFACTS. **Pass:** the sea behind it; Javelin and Aegis on the left reading "Mass 0  Space 0  Time 0  Charge 0";
+   Javelin's four tracks on the right (line width 4 -> 5.2, range 150 -> 185, linger seconds 0 -> 0.4, cracks before
+   it stops 1 -> 1.5), each twist dim and reading "At 5: ...", RAISE reading "Raise - 2 Mass" and so on.
+4. With no crystals, press RAISE on Mass. **Pass:** "Not enough Mass crystals."; nothing changes.
+5. FrogletTools > Pilots > Grant 20 Crystals Of Every Element. **Pass:** the five balances top right read 20 at once.
+6. RAISE Space five times (2+3+4+5+6 = 20 Space). **Pass:** each press says "Javelin: Space is now N."; the fifth says
+   "Javelin twists: It pierces..." and the twist line lights; the Space balance reads 0; the Hangar's crystal counts
+   agree. Press OMNI on Space. **Pass:** it costs 7 Omni, not Space.
+7. Quit and re-enter Play. **Pass:** the levels are kept (device) and the crystals are what the profile saved.
+8. Reset Every Artifact Track. **Pass:** every level reads 0 again.
+
+
+## 🔴 2026-10-27 — Each vessel its own pilot and artifact; no artifacts in arena (unverified: no Unity editor in the session)
+
+**Files:** `SavedSquad.cs` (`KeepCardsOwn`, `FillPilots`), `SquadsPage.cs` (no empty pilot chip; a picked pilot swaps,
+a picked artifact moves; launching copies the card's artifact to that vessel's slot), `PilotLoadoutStore.cs`
+(`SetSlottedArtifact`), `PilotArtifactCatalogSO.cs` (`FirstPilotFor`; `ResolvePilot` never leaves a seat empty),
+`VesselPilotLoadout.cs` (a human always has a pilot; no artifact under `IsArenaMatch`), `HangarPilotsPage.cs` (pressing
+the seated pilot keeps it), `ArkView.prefab` from `author_menu_ark.py`. Design: `Docs/Pilots/ARTIFACTS.md` §7 rules 10-11.
+Affects: Shombith's pilots. The reference compile has no errors in the changed files (player and editor).
+
+1. Run `SquadBookTests`, `PilotArtifactCatalogTests`, `PilotCatalogAssetTests`. **Pass:** green.
+2. Ark > SQUADS > make a squad. **Pass:** all three cards show a pilot, three different ones; the pilot row has five
+   pilot chips between < and > and no "No pilot" chip.
+3. On the leader pick the pilot Rogue One flies. **Pass:** Rogue One now flies the leader's old pilot.
+4. Grant the artifacts (dev), give the leader Javelin, then give Rogue Two Javelin. **Pass:** the leader's artifact
+   reads "No artifact"; empty artifacts are allowed on any card.
+5. Hangar > Pilots, press the seated pilot. **Pass:** it stays seated.
+6. Launch the squad into a non-arena mode with Javelin on your card, press RB at the Ark. **Pass:** a Javelin payload.
+7. Launch an arena game (one with `ArenaRules` on its card) with Javelin slotted. **Pass:** the payload is plain; every
+   peer agrees.
 
 ## Sparrow Charge card: the bay of real rockets, each filling on its own (2026-10-27) - NOT EDITOR-VERIFIED
 

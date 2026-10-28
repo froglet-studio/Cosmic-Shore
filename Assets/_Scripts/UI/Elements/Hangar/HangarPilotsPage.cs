@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
@@ -10,16 +11,14 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Hangar's PILOTS tab (Docs/Pilots/PILOTS_AND_ARTIFACTS.md, built on Docs/PILOTS_AND_ARTIFACTS.md §10). The rows are
-    /// the vessel's pilots from <see cref="PilotArtifactCatalogSO.GetPilotsFor(SO_Vessel, List{PilotSO})"/>: its DEFAULT pilot
-    /// (the base kit) first where one is authored, then its two pilots, each rewriting one ability. None is tied to an element
-    /// (Shombith, 2026-10-26 - the rev-3 page read the old per-element captains, <c>SO_Captain</c>, and drew each one's
-    /// element flower). Pressing a pilot seats it on the vessel (<see cref="PilotLoadoutStore"/>); pressing the default, or
-    /// the seated pilot again, empties the seat, and an empty seat flies the base kit (the catalog's ResolvePilot falls back
-    /// to the default). Moving the pad onto a row shows that pilot in the header above the vessel
-    /// (<see cref="IHangarHeader"/>): the ability it rewrites, its name, and what it does.
+    /// The Hangar's PILOTS tab (Docs/Pilots/CALLSIGNS.md, built on Shombith's 2026-10-26 tab). The rows are the vessel's
+    /// pilots from <see cref="PilotArtifactCatalogSO.GetPilotsFor(SO_Vessel, List{PilotSO})"/>, each a pair of eyes: its
+    /// line names the callsign it carries and what holding LB lights (<see cref="CallsignSetSO"/>). Pressing a pilot
+    /// seats it on the vessel (<see cref="PilotLoadoutStore"/>); pressing the seated pilot again empties the seat, and an
+    /// empty seat has no sight. Moving the pad onto a row shows that pilot in the header above the vessel
+    /// (<see cref="IHangarHeader"/>). A match reads the seat through <c>VesselPilotLoadout</c>.
     ///
-    /// <para>No match reads the seat yet: each pilot's ability is its own build step in its vessel's code.</para>
+    /// <para>2026-10-27 (Garrett): the ability each pilot used to rewrite, and the default "base kit" pilot, are gone.</para>
     /// </summary>
     public class HangarPilotsPage : MonoBehaviour, IHangarTabPage, IHangarHeader
     {
@@ -30,7 +29,7 @@ namespace CosmicShore.UI
             public KitButton button;
             public Image portrait;
             public TMP_Text nameText;
-            [Tooltip("What the pilot rewrites and how (lineTemplate).")]
+            [Tooltip("The pilot's callsign and what it lights (lineTemplate).")]
             public TMP_Text lineText;
             [Tooltip("In the seat, stand-in art, or art to come.")]
             public TMP_Text stateText;
@@ -45,22 +44,20 @@ namespace CosmicShore.UI
         [SerializeField] private Card[] cards = new Card[4];
 
         [Header("Words")]
-        [Tooltip("A row's line; {ability} and {rule} are filled in.")]
-        [SerializeField] private string lineTemplate = "{ability}: {rule}";
+        [Tooltip("A row's line; {callsign} and {sight} are filled in from the callsign set.")]
+        [SerializeField] private string lineTemplate = "";
         [Tooltip("A row's state while the pilot is in the seat.")]
-        [SerializeField] private string seatedWord = "IN THE SEAT";
+        [SerializeField] private string seatedWord = "";
         [Tooltip("A row's state while its portrait is a spare standing in.")]
-        [SerializeField] private string standInWord = "STAND-IN ART";
+        [SerializeField] private string standInWord = "";
         [Tooltip("A row's state while the pilot has no portrait yet.")]
-        [SerializeField] private string noArtWord = "ART TO COME";
-        [Tooltip("What a default pilot rewrites: nothing, it is the base kit. Shown in its row's line and the header's kicker.")]
-        [SerializeField] private string baseKitWord = "Base kit";
+        [SerializeField] private string noArtWord = "";
 
         [Header("Header")]
-        [Tooltip("The header's kicker while PILOTS is shown; {vessel} and {ability} are filled in. Upper-cased.")]
-        [SerializeField] private string headerKickerTemplate = "PILOT · {vessel} · {ability}";
-        [Tooltip("The header's line; {rule} and {ai} are filled in.")]
-        [SerializeField] private string headerLineTemplate = "{rule}";
+        [Tooltip("The header's kicker while PILOTS is shown; {vessel} and {callsign} are filled in. Upper-cased.")]
+        [SerializeField] private string headerKickerTemplate = "";
+        [Tooltip("The header's line; {sight}, {description} and {ai} are filled in.")]
+        [SerializeField] private string headerLineTemplate = "";
 
         readonly List<PilotSO> _pilots = new();
         string _vesselName;
@@ -100,7 +97,7 @@ namespace CosmicShore.UI
                 var p = _pilots[i];
                 if (card.portrait) { card.portrait.sprite = p.Portrait; card.portrait.enabled = p.Portrait; }
                 if (card.nameText) card.nameText.text = p.DisplayName;
-                if (card.lineText) card.lineText.text = TemplateText.Fill(lineTemplate, "ability", AbilityOf(p), "rule", p.Description);
+                if (card.lineText) card.lineText.text = TemplateText.Fill(lineTemplate, "callsign", CallsignOf(p), "sight", SightOf(p));
             }
             KitVisibility.SetShown(emptyGroup, _pilots.Count == 0);
             RefreshStates();
@@ -114,9 +111,9 @@ namespace CosmicShore.UI
             kicker = title = line = string.Empty;
             if (_pilots.Count == 0) return false;
             var p = _pilots[_selected];
-            kicker = TemplateText.Fill(headerKickerTemplate, "vessel", _vesselName, "ability", AbilityOf(p)).ToUpperInvariant();
+            kicker = TemplateText.Fill(headerKickerTemplate, "vessel", _vesselName, "callsign", CallsignOf(p)).ToUpperInvariant();
             title = p.DisplayName.ToUpperInvariant();
-            line = TemplateText.Fill(headerLineTemplate, "rule", p.Description, "ai", p.AIBehaviorDescription);
+            line = TemplateText.Fill(headerLineTemplate, "sight", SightOf(p), "description", p.Description, "ai", p.AIBehaviorDescription);
             return true;
         }
 
@@ -138,17 +135,16 @@ namespace CosmicShore.UI
             HeaderChanged?.Invoke();
         }
 
-        /// <summary>A press: the pilot takes the seat, or leaves it if it already sits there.</summary>
+        /// <summary>A press: the pilot takes the seat. The seat is never emptied: every vessel needs a pilot.</summary>
         void Seat(int index)
         {
             if (index < 0 || index >= _pilots.Count || _vesselClass == VesselClassType.Any) return;
             Select(index);
-            var p = _pilots[index];
-            bool seated = PilotLoadoutStore.GetPilot(_vesselClass) == p.Id;
-            PilotLoadoutStore.SetPilot(_vesselClass, seated || p.IsDefault ? string.Empty : p.Id);
+            PilotLoadoutStore.SetPilot(_vesselClass, _pilots[index].Id);
         }
 
-        string AbilityOf(PilotSO p) => string.IsNullOrEmpty(p.Ability) ? baseKitWord : p.Ability;
+        static string CallsignOf(PilotSO p) => PilotSight.Set.For(p.Vision)?.word ?? string.Empty;
+        static string SightOf(PilotSO p) => PilotSight.Set.For(p.Vision)?.meaning ?? string.Empty;
 
         void OnPilotChanged(VesselClassType vessel, string pilotId)
         {
@@ -158,21 +154,22 @@ namespace CosmicShore.UI
         void RefreshStates()
         {
             string seated = _vesselClass == VesselClassType.Any ? string.Empty : PilotLoadoutStore.GetPilot(_vesselClass);
-            // A saved id the catalog no longer offers this hull flies the base kit, as the match will (ResolvePilot).
+            // An unset seat, or a saved id the catalog no longer offers this hull, flies the hull's first pilot, as the
+            // match reads it (VesselPilotLoadout).
             bool seatOffered = false;
             foreach (var p in _pilots)
                 if (p.Id == seated) seatOffered = true;
-            if (!seatOffered) seated = string.Empty;
+            if (!seatOffered) seated = _pilots.Count > 0 ? _pilots[0].Id : string.Empty;
             var selection = UITheme.Resolve(null, UIColorToken.Selection);
             for (int i = 0; i < cards.Length && i < _pilots.Count; i++)
             {
                 var card = cards[i];
                 if (card == null) continue;
                 var p = _pilots[i];
-                bool inSeat = seated.Length == 0 ? p.IsDefault : p.Id == seated;
+                bool inSeat = seated.Length > 0 && p.Id == seated;
                 if (card.underline) card.underline.color = inSeat ? selection : Color.clear;
                 if (card.stateText)
-                    card.stateText.text = inSeat ? seatedWord : p.IsDefault ? string.Empty
+                    card.stateText.text = inSeat ? seatedWord
                         : !p.Portrait ? noArtWord : p.PortraitIsStandIn ? standInWord : string.Empty;
             }
         }
