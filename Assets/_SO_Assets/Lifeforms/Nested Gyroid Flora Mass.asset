@@ -28,9 +28,9 @@ MonoBehaviour:
   Variant:
     Enabled: 1
     HeartWorldScale: 4.6
-    LeafSize: {x: 13.578, y: 5.129, z: 2.263}
+    LeafSize: {x: 5.759, y: 2.175, z: 0.959}
     GrowPeriod: -1
-    LatticeScale: 3.166
+    LatticeScale: 2.099
     ShieldPeriod: 1
     WitherRingInterval: -1
     MaxTotalSpawnedObjects: -1

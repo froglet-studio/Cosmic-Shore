@@ -18,10 +18,10 @@ different questions:
   1. MEASURE   - re-derives the shipped SPACE constants (and the neutrality normaliser) from
                  the assets that already state the law, so `FloraElementalForm`'s numbers are
                  a measurement rather than a taste. MASS's volume is DECIDED since
-                 2026-10-28 (§65: the lattice species author their Mass leaf FROM the law,
-                 then grow it for the heart's swing), so re-deriving it would be circular:
-                 it is checked instead - every lattice species ships at least the law's
-                 Mass volume, in its Time leaf's shape. Three lattice species author four fitted leaves each; the eight
+                 2026-10-28 (§65: its plate is fitted so its shields clear inside Space's span, and its
+                 shield carries its volume), so re-deriving it would be circular: it is checked
+                 instead - every lattice species ships at least the law's Mass box, in its Time
+                 leaf's shape, and is the heaviest leaf SHIELDED. Three lattice species author four fitted leaves each; the eight
                  Hesperides phyllotactics share ONE authored cross-section ladder. Each
                  FAMILY gets one vote (eight species sharing one table is one decision, not
                  eight), and the law is the geometric mean of the two family medians.
@@ -53,6 +53,12 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 LIFEFORMS = ROOT / "Assets/_SO_Assets/Lifeforms"
 LAW = ROOT / "Assets/_Scripts/Utility/DataContainers/FloraElementalForm.cs"
+# §51's Mass leaf against the neutral one (1.8347 / 0.8778): the ratio Space and the neutrals were normalised with, kept so
+# fitting Mass under Space (§65) re-sized no other element.
+MASS_RATIO_51 = 2.0901
+# §65's Mass plate against the neutral one on every axis: fitted so its shields clear on a flush tiling spread under
+# Space's narrowest span (2 / (3 x 1.03) = 0.647, taken to 0.64).
+MASS_AXIS_65 = 0.64
 HARNESS = ROOT / "Tools/Build/flora_form_harness/run.sh"
 
 ELEMENTS = ("Charge", "Mass", "Space", "Time")
@@ -273,7 +279,7 @@ def main() -> int:
     # MASS is DECIDED (§65): its volume against the neutral form is the law's own ratio, and its shape is the species'.
     mass_ratio = consts["MassLeafVolume"] / consts["NeutralLeafVolume"]
     print(f"    Mass   volume: DECIDED - the law's x{mass_ratio:.3f} against the neutral leaf (lattice species "
-          f"author it, then grow it for the heart's swing); aspect: the species' own (A = 1)")
+          f"fit it under Space's span; its shield, 4.5x, carries its volume); aspect: the species' own (A = 1)")
     for got in lattice_vol["Mass"]:
         if got < mass_ratio * 0.98:
             failures.append(f"a lattice species' Mass leaf is x{got:.3f} its Time leaf, under the law's x{mass_ratio:.3f}")
@@ -281,12 +287,15 @@ def main() -> int:
         if abs(a - 1.0) > 0.08:
             failures.append(f"a lattice species' Mass leaf is not its Time leaf's shape (A={a:+.3f}, the law says 1)")
 
-    # Normalise volume so the four average to exactly 1 - the neutrality property.
-    raw = [1.0, mass_ratio, derived["SpaceVolume"], 1.0]
+    # Normalise volume so Space, the two neutrals and §51's Mass (x2.0901 the neutral leaf) average to exactly 1 - the
+    # neutrality property as it shipped. MASS left that average in §65 (its volume is its shield's), so its own box is
+    # checked against the law's 0.64^3 instead, never through the normaliser - or retiring the chunky Mass would
+    # silently re-size every Space, Charge and Time plant in the fleet.
+    raw = [1.0, MASS_RATIO_51, derived["SpaceVolume"], 1.0]
     norm = sum(raw) / 4.0
     expect = dict(
         NeutralLeafVolume=1.0 / norm,
-        MassLeafVolume=mass_ratio / norm,
+        MassLeafVolume=MASS_AXIS_65 ** 3 / norm,
         SpaceLeafVolume=derived["SpaceVolume"] / norm,
         MassLeafAnisotropy=1.0,
         SpaceLeafAnisotropy=derived["SpaceAnisotropy"],
@@ -333,12 +342,21 @@ def main() -> int:
     print("\n" + "=" * 78)
     print("3. THE LAW IS A REDISTRIBUTION, NOT AN INFLATION")
     print("=" * 78)
-    mean_volume = sum(table[e]["volume"] for e in ELEMENTS) / 4.0
-    print(f"    mean per-leaf volume multiplier over the four elements: {mean_volume:.6f}")
+    # §65: Charge, Time and Space keep §51's volumes (they average to 1 with §51's Mass); Mass's box is 0.64^3 of the
+    # neutral and its SHIELD (4.5x) carries its volume, so a cell's prism-volume ladder reads less of a Mass plant.
+    neutral = table["Time"]["volume"]
+    mean_volume = (table["Charge"]["volume"] + table["Time"]["volume"] + table["Space"]["volume"]
+                   + MASS_RATIO_51 * neutral) / 4.0
+    print(f"    mean per-leaf volume multiplier, Charge/Time/Space with §51's Mass: {mean_volume:.6f}")
+    print(f"    Mass box x{table['Mass']['volume'] / neutral:.4f} the neutral, shielded x"
+          f"{4.5 * table['Mass']['volume'] / neutral:.4f} - its volume is its shield's (§65)")
     if abs(mean_volume - 1.0) > 2e-4:
-        failures.append(f"the four leaf volume multipliers average {mean_volume:.6f}, not 1 - "
+        failures.append(f"Charge/Time/Space volume multipliers (with §51's Mass) average {mean_volume:.6f}, not 1 - "
                         f"every cell growing a mixed-element forest needs its volume phase "
                         f"ladder re-derived (Docs/ECOSYSTEM.md §4.6)")
+    if not 4.5 * table["Mass"]["volume"] > neutral:
+        failures.append("a shielded Mass leaf no longer out-weighs the neutral one - the shielding must increase the "
+                        "volume of Mass (§65)")
     else:
         print("    -> a mixed-element forest holds the mass it held before this law existed,")
         print("       so no cell's volume phase ladder moves.")
@@ -375,11 +393,14 @@ def main() -> int:
         vols = {e: m[e]["volume"] for e in ELEMENTS}
         asps = {e: m[e]["aspect"] for e in ELEMENTS}
         ok = []
-        if max(vols, key=vols.get) == "Mass":
-            ok.append("Mass heaviest")
+        # MASS's volume is its SHIELD's (Docs/ECOSYSTEM.md 65): the octahedron is 4.5x the box, so it is the armoured
+        # leaf that must out-weigh every other - its box is lighter than the neutral one by design.
+        seen = dict(vols, Mass=4.5 * vols["Mass"])
+        if max(seen, key=seen.get) == "Mass":
+            ok.append("Mass heaviest shielded")
         else:
-            failures.append(f"{name}: MASS is not its heaviest leaf "
-                            f"({max(vols, key=vols.get)} is) - the Mass law says it must be")
+            failures.append(f"{name}: MASS, shielded, is not its heaviest leaf "
+                            f"({max(seen, key=seen.get)} is) - the Mass law says it must be")
         if vols["Space"] < vols["Time"]:
             ok.append("Space lighter than Time")
         else:
@@ -451,7 +472,7 @@ def self_test() -> int:
     # (a) a drifted constant
     text = LAW.read_text()
     backup = text
-    mutated = text.replace("MassLeafVolume = 1.8347f", "MassLeafVolume = 1.0000f")
+    mutated = text.replace("SpaceLeafVolume = 0.4097f", "SpaceLeafVolume = 0.3000f")
     assert mutated != text, "the constant moved - update the self-test"
     LAW.write_text(mutated)
     try:

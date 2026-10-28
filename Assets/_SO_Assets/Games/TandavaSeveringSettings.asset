@@ -20,7 +20,7 @@ MonoBehaviour:
     Role: 0
     FillToEvolve: 0.9
     BankShare: 0.15
-    MealVolume: 25521
+    MealVolume: 26483
     Line: 'The {0} is hungry. Wherever it eats, its hood comes off its head to guard its mouth.'
     Variants:
     - DisplayName: Great Serpent
@@ -87,7 +87,7 @@ MonoBehaviour:
     Role: 0
     FillToEvolve: 0.9
     BankShare: 0.28
-    MealVolume: 25521
+    MealVolume: 26483
     Line: 'Its coils split: a {0}. Every head dips to the food when it eats.'
     Variants:
     - DisplayName: Five-Headed Serpent
@@ -203,7 +203,7 @@ MonoBehaviour:
     Role: 2
     FillToEvolve: 0.9
     BankShare: 0.4
-    MealVolume: 25521
+    MealVolume: 26483
     Line: 'The drum stops. The {0} drops out of the halo, jaws open. One last feast and the cycle is complete.'
     Variants:
     - DisplayName: Antlion
@@ -253,7 +253,7 @@ MonoBehaviour:
     Role: 3
     FillToEvolve: 0.9
     BankShare: 0
-    MealVolume: 12760.5
+    MealVolume: 13241.5
     Line: 
     Variants:
     - DisplayName: the Severed
@@ -351,7 +351,7 @@ MonoBehaviour:
     LearnFlee: 0.35
     LearnRejoin: 0.6
     MatchSeconds: 0
-  FoodPerPrism: 121.518
+  FoodPerPrism: 42.164
   FoodCheckSeconds: 0.5
   HaloRadius: 341.96
   HaloMouthRadius: 24

@@ -487,8 +487,10 @@ def heart_clear(frames, hearts, lattice, leaf):
 
 
 def fit_mass(name, frames, hearts, rows, shield_scale, window):
-    """The Mass fit: Time's plate x mass_axis, on a lattice grown until its shields clear, grown again for the swing."""
-    T = rows["Time"]
+    """The Mass fit (Docs/ECOSYSTEM.md 65): Time's plate x mass_axis (0.64, its SHIELD carries its volume), on a
+    lattice grown until those shields clear and, if the heart's swing needs it, further - the PLATE never grows, and
+    the lattice never reaches SPACE's ("space should always have greater span")."""
+    T, S = rows["Time"], rows["Space"]
     m = armour.mass_axis()
     need = armour.swing_need()
     target = 1.0 / (1.0 - CLEARANCE)
@@ -497,22 +499,28 @@ def fit_mass(name, frames, hearts, rows, shield_scale, window):
     k = T["lattice"] * m * target / s_T
     leaf = T["leaf"] * m
     clear = heart_clear(frames, hearts, k, leaf)
-    grow = max(1.0, need / clear)
-    k_fit, leaf_fit = k * grow, leaf * grow
+    k_fit = k
+    for _ in range(40):                      # the swing: spread the lattice (positions only) until the heart clears
+        c = heart_clear(frames, hearts, k_fit, leaf)
+        if c >= need:
+            break
+        k_fit *= min(1.25, max(1.01, need / max(c, 1e-3)))
     # round CONSERVATIVELY: the plate down, the lattice up - both only add room
-    leaf_fit = np.floor(leaf_fit * 1000.0) / 1000.0
+    leaf_fit = np.floor(leaf * 1000.0) / 1000.0
     k_fit = math.ceil(k_fit * 1000.0) / 1000.0
-
+    space_span = S["lattice"]
+    print(f"\n  {name} Mass  (armoured; its shield carries its volume; spread under Space's x{space_span:g})")
+    print(f"    anchor            Time {T['leaf'][0]:g} x {T['leaf'][1]:g} x {T['leaf'][2]:g} on lattice x{T['lattice']:g}"
+          f"; its shields touch at x{s_T:.4f}")
+    print(f"    Mass plate        x{m:.4f} on every axis (box x{m ** 3:.3f}, shielded x{4.5 * m ** 3:.3f}), lattice "
+          f"x{k:.4f} for {CLEARANCE:.0%} shield clearance")
+    print(f"    heart's swing     needs {need:.2f} u, has {clear:.2f} u at x{k:.4f}  ->  lattice x{k_fit:g}")
+    if k_fit >= space_span:
+        raise SystemExit(f"FAILED: {name} Mass spreads x{k_fit:g}, not inside Space's x{space_span:g}")
     P, Rs = frames(k_fit)
     sh_s, sh_pairs, *_ = worst_pair(P, Rs, leaf_fit / 2.0, shield_scale)
     box_s, *_ = worst_pair(P, Rs, leaf_fit / 2.0, 1.0)
     clear_fit = heart_clear(frames, hearts, k_fit, leaf_fit)
-    print(f"\n  {name} Mass  (armoured, has size)")
-    print(f"    anchor            Time {T['leaf'][0]:g} x {T['leaf'][1]:g} x {T['leaf'][2]:g} on lattice x{T['lattice']:g}"
-          f"; its shields touch at x{s_T:.4f}")
-    print(f"    Mass plate        x{m:.4f} on every axis (volume x{m ** 3:.3f}), lattice x{k:.4f} for {CLEARANCE:.0%} "
-          f"shield clearance")
-    print(f"    heart's swing     needs {need:.2f} u, has {clear:.2f} u  ->  grown whole x{grow:.4f}")
     print(f"    fitted            {leaf_fit[0]:g} x {leaf_fit[1]:g} x {leaf_fit[2]:g} on lattice x{k_fit:g}  "
           f"(volume {np.prod(leaf_fit):.2f} per prism, Time's {np.prod(T['leaf']):.2f})")
     print(f"    verified          shields s* {sh_s:.3f} ({sh_pairs} interpenetrating), plates s* {fmt_s(box_s)}, "

@@ -110,7 +110,7 @@ GRAZE_TOLERANCE_EDGE_FRACTION = 0.005
 # Charge shorter still: a short strut is what leaves its 3x shield room.
 ELEMENTS = {
     "Time":   dict(leaf=(22.0, 1.0, 1.0), lattice_scale=1.0),
-    "Mass":   dict(leaf=(28.128, 1.278, 1.278), lattice_scale=3.868, shielded=True, heart_seat=36.5),
+    "Mass":   dict(leaf=(14.08, 0.64, 0.64), lattice_scale=1.936, shielded=True, heart_seat=22.0),
     "Space":  dict(leaf=(44.0, 0.7, 0.7), lattice_scale=2.0),
     "Charge": dict(leaf=(22.0, 1.0, 1.0), lattice_scale=1.0),
 }

@@ -137,7 +137,7 @@ def self_test():
             assert exact == 0.0
             continue
         assert exact <= brute + 1e-9 and brute - exact < 0.05 * max(1.0, exact), (exact, brute)
-    assert 1.27 < mass_axis() < 1.29
+    assert abs(mass_axis() - 0.64) < 1e-3   # fitted under Space (Docs/ECOSYSTEM.md 65)
     assert shield_semi_axis() == 1.5
     swing_need()
     print("mass_armour_lib self-test: ok")

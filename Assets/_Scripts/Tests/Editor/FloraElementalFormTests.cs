@@ -10,12 +10,10 @@ namespace CosmicShore.Tests
     /// <see cref="FloraReproductionRulesTests"/>, and the in-editor half of the gate
     /// <c>Tools/Build/measure_flora_elemental_form.py</c> runs offline.
     ///
-    /// <para>The property these tests exist to defend is that the law is a
-    /// <b>REDISTRIBUTION</b> of one species' form and never an inflation of it: the four
-    /// volume multipliers average to exactly 1 and the aspect term cannot move volume, so a
-    /// mixed-element forest holds the mass it held before the law existed and <b>no cell's
-    /// volume phase ladder moves</b>. Break either and every cell that grows flora needs
-    /// re-authoring (Docs/ECOSYSTEM.md §4.6).</para>
+    /// <para>The law is a REDISTRIBUTION of one species' form for Charge, Time and Space (their volumes are §51's,
+    /// and the aspect term cannot move volume). MASS left that average in Docs/ECOSYSTEM.md §65: its volume is its
+    /// SHIELD's, its box 0.26x the neutral one, so a cell's prism-volume ladder reads less of a Mass plant than it
+    /// did - stated, not hidden.</para>
     /// </summary>
     public class FloraElementalFormTests
     {
@@ -39,13 +37,31 @@ namespace CosmicShore.Tests
         // ── the neutrality property ─────────────────────────────────────────────────────
 
         [Test]
-        public void FourLeafVolumeMultipliers_AverageToExactlyOne()
+        public void SpaceAndTheNeutrals_KeepTheVolumesTheyShippedWith()
         {
-            float sum = 0f;
-            foreach (var e in Four) sum += FloraElementalForm.LeafVolumeScale(e);
-            Assert.That(sum / 4f, Is.EqualTo(1f).Within(2e-4f),
-                "The four leaf volume multipliers must average to 1 - a mixed-element forest " +
-                "holds the same mass as before the law, so no cell's volume ladder moves.");
+            // Docs/ECOSYSTEM.md §65 took MASS out of the average (its volume is its shield's); the other three are
+            // exactly where §51 put them, so no Charge, Time or Space plant changed size.
+            Assert.That(FloraElementalForm.NeutralLeafVolume, Is.EqualTo(0.8778f));
+            Assert.That(FloraElementalForm.SpaceLeafVolume, Is.EqualTo(0.4097f));
+        }
+
+        [Test]
+        public void MassVolumeIsItsShield_AndSpaceSeesTheLeast()
+        {
+            // A shield is the octahedron circumscribing the box: (4/3) x (1.5)^3 = 4.5x its volume.
+            float shielded = FloraElementalForm.MassLeafVolume * 4.5f;
+            Assert.That(shielded, Is.GreaterThan(FloraElementalForm.NeutralLeafVolume),
+                "the shielding increases the volume of Mass - armoured it shows more than the neutral leaf");
+            Assert.That(FloraElementalForm.SpaceLeafVolume, Is.LessThan(shielded * 0.5f),
+                "Space carries significantly less volume than a Mass plant shows");
+        }
+
+        [Test]
+        public void SpaceAlwaysOutSpansMass()
+        {
+            Assert.That(FloraElementalForm.ReachScale(Element.Space), Is.GreaterThan(FloraElementalForm.ReachScale(Element.Mass)));
+            // the fit that sets the Mass plate: its shields clear on a flush tiling spread under Space's narrowest span (2x)
+            Assert.That(3f * FloraElementalForm.MassAxisScale * 1.03f, Is.LessThan(2f));
         }
 
         [Test]
@@ -64,14 +80,15 @@ namespace CosmicShore.Tests
         // ── the four identities ─────────────────────────────────────────────────────────
 
         [Test]
-        public void Mass_IsTheHeaviestLeaf_AndSpaceTheLightest()
+        public void Mass_IsTheHeaviestLeafShielded_AndSpaceTheLightest()
         {
             foreach (var e in Four)
             {
                 if (e == Element.Mass) continue;
-                Assert.That(FloraElementalForm.LeafVolumeScale(Element.Mass),
+                // §65: its volume is its SHIELD's - the octahedron is 4.5x the box
+                Assert.That(4.5f * FloraElementalForm.LeafVolumeScale(Element.Mass),
                     Is.GreaterThan(FloraElementalForm.LeafVolumeScale(e)),
-                    "MASS is the most cumulative prism volume.");
+                    "MASS, shielded, is the most cumulative volume.");
                 if (e == Element.Space) continue;
                 Assert.That(FloraElementalForm.LeafVolumeScale(Element.Space),
                     Is.LessThan(FloraElementalForm.LeafVolumeScale(e)),
@@ -142,10 +159,10 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Reach_MassIsTheNeutralPlantGrownWhole()
+        public void Reach_MassIsTheNeutralPlantScaled()
         {
-            // Mass has SIZE (Docs/ECOSYSTEM.md §65): every position AND every prism of the Time plant x the same
-            // axis scale, so the Mass plant is a similarity of the Time plant - never the old compact block.
+            // Docs/ECOSYSTEM.md §65: every position AND every prism of the Time plant x the same axis scale, so the
+            // Mass plant is a similarity of the Time plant - never the old compact block.
             float axis = FloraElementalForm.MassAxisScale;
             Assert.That(axis, Is.EqualTo(Mathf.Pow(FloraElementalForm.MassLeafVolume / FloraElementalForm.NeutralLeafVolume, 1f / 3f)).Within(1e-6f));
             Assert.That(FloraElementalForm.ReachScale(Element.Mass) / FloraElementalForm.ReachScale(Element.Time),
@@ -154,7 +171,8 @@ namespace CosmicShore.Tests
             Vector3 mass = FloraElementalForm.ShapeLeaf(leaf, Element.Mass), time = FloraElementalForm.ShapeLeaf(leaf, Element.Time);
             for (int i = 0; i < 3; i++)
                 Assert.That(mass[i] / time[i], Is.EqualTo(axis).Within(1e-4f), $"axis {i}: the leaf grows by the same scale");
-            Assert.That(FloraElementalForm.ReachScale(Element.Mass), Is.GreaterThan(1f), "Mass never draws in");
+            Assert.That(FloraElementalForm.ReachScale(Element.Mass), Is.LessThan(FloraElementalForm.ReachScale(Element.Time)),
+                "Mass is fitted UNDER the neutral plant - its shields carry its size");
         }
 
         // ── the sentinels and the elements that are not one of the four ────────────────

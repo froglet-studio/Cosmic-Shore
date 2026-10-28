@@ -34,7 +34,7 @@ MonoBehaviour:
     ShieldPeriod: 0.0
     MaxTotalSpawnedObjects: 140
     PlantRadiusCellFraction: 0.55
-    PlantScale: 1.855
+    PlantScale: 2.597
   SpreadElements: 0
   ElementPalette: []
   PlantRadiusCellFractionMaxOverride: 0.9

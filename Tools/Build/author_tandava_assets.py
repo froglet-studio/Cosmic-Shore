@@ -198,7 +198,11 @@ K = UNIT_SCALE / RESEARCH_UNIT_SCALE            # 2.044: the world's growth
 RESEARCH_EGG = [20.45, 40.31, 22.18, 12.8]      # Charge, Mass, Space, Time at the research body
 EGG = [float(x) for x in re.findall(r"[\d.]+", sort_value("EggVolume"))]   # the sort config's grown eggs
 MASS = sum(EGG) / sum(RESEARCH_EGG)             # 6.38: the stomach's growth, so the food's
-PLANT_SCALE = round(MASS ** (1.0 / 3.0), 3)     # 1.855: every reef plant grown whole by this
+# REEF_GROWTH (Garrett, 2026-10-28: "grow the reef, keep meals"): since Docs/ECOSYSTEM.md 65 a Mass plant's volume is its
+# SHIELD's and its box is light food, so the reef is grown a further x1.4 whole - its biggest plant back over a meal of
+# ~25,500 (90% of it), the volume the serpent's tested pacing was built on.
+REEF_GROWTH = 1.4
+PLANT_SCALE = round(MASS ** (1.0 / 3.0) * REEF_GROWTH, 3)     # 2.597: every reef plant grown whole by this
 # The bite reach: the forms' coils and strike poses grew xK, a reef plant only xs (its MASS grew, not its length), so a
 # member K x further out on a coil would sit past a plant it used to touch. Tandava's bite reaches the difference -
 # the research touch (the harness's 28 u plant + 10 u bite) x K, less the plant's grown radius (the sort config's 20.4
@@ -225,11 +229,7 @@ PLANT_INNER, PLANT_OUTER = world(240.0), world(720.0)    # the flora band: clear
 # the reef: (species, element as a research index, how many, prisms a plant may grow). The Mass species carry the food
 # (each plant 2,000-4,400 volume at the research body, x M now - about half a meal or most of one); the Space ones are colour and a snack. Every row is
 # the harness's TandavaArena.Flora (read back below), its leaf volume read off the canonical config
-# The Borromean's 230 holds its plant's FOOD where it was (60 x the chunky Mass plate's 72.9 -> 230 x the law-size 19.0,
-# Docs/ECOSYSTEM.md 65): a meal is most of the biggest plant, and volume - not count - is what the economy reads. The
-# phyllotactic Mass rungs lost 45% a prism the same day (the x1.35 ladder rung that doubled the law) and keep their
-# counts: each sits at its species' own budget already.
-FLORA_TABLE = [("Borromean", 1, 5, 230), ("Coral", 1, 5, 110), ("Lantern", 1, 4, 70), ("Reed", 1, 4, 130),
+FLORA_TABLE = [("Borromean", 1, 5, 60), ("Coral", 1, 5, 110), ("Lantern", 1, 4, 70), ("Reed", 1, 4, 130),
                ("Frond", 1, 3, 120), ("Tendril", 2, 3, 84), ("Coral", 2, 3, 140)]
 
 # The swarm (TandavaSwarmFaunaConfig)
@@ -263,7 +263,7 @@ MACRO_LOD = 0
 # The economy (TandavaHarness.BuildForms)
 FILL_TO_EVOLVE = 0.9
 BANK_SHARE = [0.15, 0.28, 0.0, 0.4]   # of the stomach, RISING: a carried-over stomach never skips a form; low: the forms come fast
-MEAL_VOLUME = float(round(4000.0 * MASS))   # 4,000 at the research body
+# MEAL_VOLUME: derived from the reef below, after FLORA (Docs/ECOSYSTEM.md 65).
 
 # The halo and the end conditions
 HALO_COUNT, HALO_TO_BREAK = 12, 9      # EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak (asserted)
@@ -329,6 +329,11 @@ for f in FLORA:
     EXISTING[f"Canon{f['key']}"] = lib.existing_guid(f["path"])
     G_ASSET.setdefault(f["key"], guid(f"asset/Tandava{f['key']}"))
 MASS_LEAF = leaf_volume(canon_flora("Borromean", 1))   # the food survey's fallback when a plant reports no leaf
+# A MEAL IS MOST OF THE BIGGEST PLANT (Garrett, 2026-10-28: "meals shrink to the reef"). It was 4,000 x MASS (25,521),
+# which only the chunky Mass Borromean could hold (60 x 465). Since Docs/ECOSYSTEM.md 65 a Mass plant's volume is its
+# SHIELD's and its box is light food, so the meal is stated in the reef's own terms: 90% of its biggest plant.
+PLANT_VOLUME = max(f["prisms"] * f["leaf"] for f in FLORA)    # the biggest plant: a meal is most of one
+MEAL_VOLUME = float(round(0.9 * PLANT_VOLUME))
 
 
 def variants_of(form):
@@ -378,7 +383,6 @@ HALO_RADIUS, GUARD_POST_RADIUS = _ring["radius"] * WORLD, _ring["guardOrbit"] * 
 HALO_OFFSET = max(math.sqrt(sum(x * x for x in v["halo"])) for v in FORM_ROWS[2]["variants"])
 DANCE_REACH_NEEDED = GUARD_POST_RADIUS + GUARD_RADIUS + HALO_OFFSET
 
-PLANT_VOLUME = max(f["prisms"] * f["leaf"] for f in FLORA)    # the biggest plant: a meal is most of one
 PLANTS = sum(f["count"] for f in FLORA)
 FOREST_PRISMS = sum(f["count"] * f["prisms"] for f in FLORA)
 FOREST_VOLUME = sum(f["count"] * f["prisms"] * f["leaf"] for f in FLORA)

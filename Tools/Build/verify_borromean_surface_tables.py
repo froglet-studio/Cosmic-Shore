@@ -328,20 +328,23 @@ def verify_contract(d, c):
     vol = lambda n: float(np.prod(T[n]['leaf']))
     asp = lambda n: T[n]['leaf'][0] / T[n]['leaf'][1]
     print('\n[7] each element states its own plate')
-    c.ok(vol('Mass') > 2.0 * vol('Time'), 'MASS is more VOLUME than the Time anchor',
-         f'{vol("Mass")/vol("Time"):.2f}x')
+    # MASS's volume is its SHIELD's (Docs/ECOSYSTEM.md 65: "the shielding should increase the volume of mass"): the
+    # octahedron is 4.5x the box, so the armoured plate must out-weigh the anchor while the box is lighter.
+    c.ok(4.5 * vol('Mass') > vol('Time'), 'MASS, shielded, is more VOLUME than the Time anchor',
+         f'{4.5 * vol("Mass")/vol("Time"):.2f}x shielded ({vol("Mass")/vol("Time"):.2f}x its box)')
     c.ok(asp('Space') > 2.0 * asp('Time'), 'SPACE is more ASPECT than the Time anchor',
          f'{asp("Space"):.2f}:1 vs {asp("Time"):.2f}:1')
     c.ok(abs(vol('Space') / vol('Time') - 1.0) < 0.1,
          'and SPACE spends no extra volume doing it - the element reads as shape',
          f'{vol("Space")/vol("Time"):.3f}x')
-    # MASS is ARMOURED and has SIZE (Docs/ECOSYSTEM.md 65): the anchor's plate SHAPE at the leaf law's volume (the
-    # "chunky" brick is retired), on a membrane grown until its octahedra - and its heart's full swing - clear.
+    # MASS is ARMOURED (Docs/ECOSYSTEM.md 65): the anchor's plate SHAPE at the law's 0.64 (the "chunky" brick is
+    # retired), on a membrane grown until its octahedra - and its heart's full swing - clear, and SPACE out-spans it.
     shape = lambda n: T[n]['leaf'] / T[n]['leaf'][0]
     c.ok(np.allclose(shape('Mass'), shape('Time'), rtol=1e-3), "MASS keeps the anchor plate's SHAPE",
          f'1:{shape("Mass")[1]:.3f}:{shape("Mass")[2]:.3f} vs 1:{shape("Time")[1]:.3f}:{shape("Time")[2]:.3f}')
-    c.ok(T['Mass']['radius'] > 2.0 * T['Time']['radius'], 'MASS has SIZE - its membrane is grown, not its plate alone',
-         f'{2*T["Mass"]["radius"]:.0f} across vs Time {2*T["Time"]["radius"]:.0f}')
+    c.ok(T['Time']['radius'] < T['Mass']['radius'] < T['Space']['radius'],
+         'MASS spreads past the anchor so its shields clear, and SPACE always out-spans it',
+         f'{2*T["Mass"]["radius"]:.0f} across vs Time {2*T["Time"]["radius"]:.0f}, Space {2*T["Space"]["radius"]:.0f}')
     M = T['Mass']
     MX, MY, MZ = frames(M['Q'])
     clear = min(armour.octahedron_distance(np.zeros(3), M['P'][i], np.column_stack([MX[i], MY[i], MZ[i]]),

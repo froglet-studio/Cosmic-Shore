@@ -45,13 +45,13 @@ static class TandavaArena
     /// (its canonical LeafSize x PlantScale^3, every plant grown whole - the generator reads every row back).</summary>
     public static readonly (string Species, int Element, int Count, int Prisms, float Leaf)[] Flora =
     {
-        ("Borromean", 1, 5, 230, 121.518f),
-        ("Coral", 1, 5, 110, 86.300f),
-        ("Lantern", 1, 4, 70, 153.194f),
-        ("Reed", 1, 4, 130, 58.827f),
-        ("Frond", 1, 3, 120, 80.427f),
-        ("Tendril", 2, 3, 84, 20.860f),
-        ("Coral", 2, 3, 140, 21.575f),
+        ("Borromean", 1, 5, 60, 42.164f),
+        ("Coral", 1, 5, 110, 236.806f),
+        ("Lantern", 1, 4, 70, 420.366f),
+        ("Reed", 1, 4, 130, 161.420f),
+        ("Frond", 1, 3, 120, 220.692f),
+        ("Tendril", 2, 3, 84, 57.222f),
+        ("Coral", 2, 3, 140, 59.201f),
     };
 }
 
@@ -86,11 +86,11 @@ static class TandavaHarness
     // the banks, as shares of the stomach - RISING, so what one form carries over never skips the next, and all under
     // the 0.98 fill at which a meal ends full (a bank above it could never be reached: a full stomach stops grazing)
     static readonly float[] BankShare = { 0.15f, 0.28f, 0f, 0.4f };   // Great Serpent, Many-Headed (the dance's offering), -, Antlion (the feast)
-    const float MealVolume = 25521f;      // one meal (flora volume): most of a 60-prism plant - about 13 s at it (4,000 x the eggs' mass ratio)
+    const float MealVolume = 26483f;      // one meal (flora volume): 90% of the reef's biggest plant (Docs/ECOSYSTEM.md 65 - was 4,000 x the eggs' mass ratio)
 
     // ── the food (a bite is one prism: its species' leaf)
-    const float PlantScale = 1.855f;      // every reef plant grown whole (LatticeScale / PlantScale): the eggs' mass ratio^(1/3)
-    const float PlantRadius = 28f * PlantScale, BiteRadius = 25.73f;   // author_tandava_assets.BITE_RADIUS: the coils close on a plant grown less than the body
+    const float PlantScale = 2.597f;      // every reef plant grown whole (LatticeScale / PlantScale): the eggs' mass ratio^(1/3) x the reef's growth 1.4 (Docs/ECOSYSTEM.md 65)
+    const float PlantRadius = 28f * PlantScale, BiteRadius = 4.96f;   // author_tandava_assets.BITE_RADIUS: the coils close on a plant grown less than the body
     const float RegrowPrismsPerSecond = 7.5f, RegrowPause = 2f, ReplantSeconds = 120f;
     const int DiesAtPrisms = 4;
 
@@ -769,8 +769,11 @@ static class TandavaHarness
             Check(s.LaidWhileFeeding == 0, "it never laid an egg while it ate (the hold: it cannot heal at the table)");
             float roam = MathF.Max(DirectorSettings().RoamRadius, s.Forms.Max(f => f.CoilRoamRadius));   // rolled up, it reaches further
             Check(s.MaxRadius <= roam + 40f * TandavaArena.K, $"it never left the cell (max radius {s.MaxRadius:F0} of {roam:F0})");
+            // the dance ground is where it stood, pulled in from the wall by at most DanceReach - from wherever it may roam,
+            // and rolled up it roams to its coils' reach (the cell check above): a rise from a coil at the wall is pulled
+            // in that much further, which is the director's rule, not a miss
             if (s.RiseAt >= 0f)
-                Check(Vector3.Distance(s.RiseAnchor, d.DancePoint) <= DirectorSettings().DanceReach + 20f * TandavaArena.K,
+                Check(Vector3.Distance(s.RiseAnchor, d.DancePoint) <= DirectorSettings().DanceReach + (roam - DirectorSettings().RoamRadius) + 20f * TandavaArena.K,
                       $"it rose where it stood ({Vector3.Distance(s.RiseAnchor, d.DancePoint):F0} u from the dance ground)");
             if (seed == 31) Dump(s.C, "free_run_end");
         }

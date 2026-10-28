@@ -30,12 +30,12 @@ namespace CosmicShore.Utility
         /// <summary>How much further this element senses and strikes (detection, attack and feeding reach).</summary>
         public static float Reach(Element element) => element == Element.Space ? FloraElementalForm.ReachScale(Element.Space) : 1f;
 
-        /// <summary>How much LONGER a Space body is than the same species' Mass body: the lattice law's own ratio of
-        /// their reaches, (Mass leaf volume / Space leaf volume)^(1/3) = 1.647 - in a plant, Space reaches 1.35x where
-        /// Mass draws in to 0.82x. A species' Space <see cref="FaunaVariantTuning.BodyAspect"/> is this x its Mass
-        /// body scale over its prefab's.</summary>
-        public static float SpaceLengthOverMass =>
-            Mathf.Pow(FloraElementalForm.MassLeafVolume / FloraElementalForm.SpaceLeafVolume, 1f / 3f);
+        /// <summary>How much LONGER a Space body is than the same species' Mass body: 1.647, the plants' Space:Mass reach
+        /// as Docs/ECOSYSTEM.md §51 set it ((1.8347 / 0.4097)^(1/3) - Space reached 1.35x where Mass drew in to 0.82x), the
+        /// length the Space shark was approved at (§64.9). It is a creature constant now: the plants' Mass leaf left that
+        /// ratio in §65 (its volume is its shield's, so a Mass PLANT spans less still and Space out-spans it 2.0x), while a
+        /// Mass CREATURE kept the size its heart's swing needs (§64.8), so Space still out-spans it by this.</summary>
+        public const float SpaceLengthOverMass = 1.6477f;
 
         /// <summary>The lattice flora's fitting margin: a fitted plate is the largest that clears, less 3%.</summary>
         public const float FitClearance = 0.97f;

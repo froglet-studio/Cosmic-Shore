@@ -192,7 +192,7 @@ MonoBehaviour:
   UnifiedPrismBodies: 1
   MacroLod: 0
   SeedMembers: 180
-  BiteRadius: 25.73
+  BiteRadius: 4.96
   BitersPerStep: 8
   EggVolume: {x: 75.45, y: 344.25, z: 81.84, w: 109.31}
   CrossElementCost: 2

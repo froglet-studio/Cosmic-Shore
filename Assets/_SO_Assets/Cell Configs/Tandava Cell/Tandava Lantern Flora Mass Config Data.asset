@@ -31,7 +31,7 @@ MonoBehaviour:
     LeafSize: {x: 4, y: 4, z: 1.5}
     GrowPeriod: 1.43
     LatticeScale: -1
-    PlantScale: 1.855
+    PlantScale: 2.597
     ShieldPeriod: 1
     WitherRingInterval: -1
     MaxTotalSpawnedObjects: 84
