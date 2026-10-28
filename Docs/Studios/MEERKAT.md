@@ -133,6 +133,50 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 18 (Yash, 2026-10-28: "it's non-navigable. What I want is to navigate the routes. So the speed of the vessel
+inside the roots need to be little less. So that I can at least slide ... it will follow the inner wall of the root like a
+ball flowing through the root canal. And it's friction will be very less ... with my thumbstick I can just make it a
+little bit of direction control. Very less. Most of the time I will be just sliding through the walls of the inner
+root"). ARTIFACT ONLY.**
+- **Inside the roots you are a ball on the inner wall** (`labTransit`), `rootWallRide` (0.72) × the root's radius out
+  from its centreline, at an angle round it. Your feet are on the wall (up = toward the centre).
+  - The camera sits behind you on the same side of the wall, and rolls with you gently.
+  - The speed tunnel's push-in stays at its normal strength in the roots.
+- **Along the root you slide slower** than a wormhole ride: `rootSlideSpeed` (1.1) × your speed before the roots, plus
+  `forkBoost` for every fork, easing to it. About 70-80 u/s against the wormhole's 160 or so.
+- **Round the wall you sway:**
+  - A bend throws you up its outside wall (`rootThrow` 0.3 × v² × the curvature), and `rootGravity` (45 u/s²) draws
+    you back to the bottom (the network's down).
+  - `rootFriction` (0.8 /s) slowly calms the sway. The swing is as slow as on a wall at least 10 u round (`SWING_R`),
+    so it never whirls.
+  - The curvature is read over a sample's length or more, because shorter steps read the sampled path's joints as kinks.
+- **The left stick only nudges you round the wall** (`rootSteer` 35 u/s², under gravity's 45). It pushes toward a
+  fixed side of the root (the network's up, and across), not the rolling hull's, so holding it right settles you on the
+  right wall.
+- **Where you ride on the wall chooses the root at a fork:** the one leaving on your side. The HUD and the 3D light it
+  before the fork.
+- **The first try failed, and why.** Before the fixes above, the ball whirled round the pipe at the swing-speed cap:
+  - the thin roots' bends threw it several times harder than gravity;
+  - the curvature was read over 2 u, so the sampled path's joints read as kinks;
+  - the stick pushed in the hull's own rolling frame, so it drove the ball round for ever.
+- **Measured** (`sim()` stepping, full Mass):
+  - With no stick, the ball rides the bottom with a gentle sway (under 1 rad/s).
+  - Holding right, it settles about 2.4 rad round and takes a different route.
+  - Holding up, it takes a third route.
+- **The AI** leans in the same frame toward the root that leads nearest its ring.
+- **The walls show from inside.** The roots' bark lit only where it turns edge-on, and a pipe seen from inside faces
+  you at about 56 degrees, so the walls you slide on were all but invisible: a flat haze about 13 brightness levels up.
+  - The inner wall now has a glow of its own (`rootInside` 0.6, seen only from inside, so the outside stays faint),
+    carrying the bark grain and a ring every 12 u streaming past.
+  - The roots round you (the one you are in, the one behind, the ones after the next fork) show their spindle rings
+    at `labyrinthRideFrame` (1.2 × the bridge), while the rest stay at `labyrinthFrame`.
+  - Found on the way: the tube's triangles face outward, so "inside" is the back face. The first try had it backwards
+    and lit the outside instead.
+- **The roots are wider and the camera is closer**, so there is a wall to slide on:
+  - `labyrinthDiameter` 12 → 24 u, `labyrinthMouthDiameter` 22 → 30 u.
+  - `rootTip` 0.35 → 0.5: tips are half as wide as the source.
+  - In the roots the chase camera sits 12 u behind you (`CAM_ROOT_BACK`), not 21, so it stays inside them in bends.
+
 **Round 17 (Yash, 2026-10-28: "our trunk size will be determined by ... our mass ... it is more mass we have, we create
 bigger trunks, we move farther distance. But the trunks look need to be pretty subtle ... the bigger the trunk the bigger
 the network of the branches will be ... the last trunk size will determine how big of a network you can get by getting
