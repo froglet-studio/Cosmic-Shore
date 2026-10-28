@@ -47,28 +47,28 @@ MonoBehaviour:
   bridgeSpindleThickness: 0.25
   bridgeShimmer: 0.5
   bridgeWhite: 0.45
-  trunkVisibility: 0
+  trunkVisibility: 0.5
   trunkTop: 1.5
   trunkBase: 1.9
-  trunkBark: 0.22
-  trunkRidges: 16
+  trunkBark: 0.028
+  trunkRidges: 6
   trunkGnarl: 0.14
   trunkGlass: 0.012
-  trunkRim: 0.28
+  trunkRim: 0.147
   trunkFresnel: 3
   trunkRings: 7
   trunkGrain: 0.22
   trunkGrainLines: 22
   branchCount: 6
-  branchLength: 2.4
-  branchThickness: 0.139
+  branchLength: 1.35
+  branchThickness: 0.142
   branchUp: 28
   branchZone: 0.85
   branchSymmetry: 0.45
   branchForks: 3
-  branchGrowSeconds: 0.5
+  branchGrowSeconds: 0.22
   omniOn: 1
-  menuAutopilotRoots: 0
+  menuAutopilotRoots: 1
   networkReach:
     Enabled: 1
     Value: 0.5
@@ -90,7 +90,7 @@ MonoBehaviour:
   labyrinthMouthDiameter: 13.9
   rootTip: 0.309
   rootGnarl: 0.779
-  rootBarkVisibility: 0
+  rootBarkVisibility: 0.5
   rootGlass: 0.0232
   rootRim: 1.573
   rootGrain: 1.172
