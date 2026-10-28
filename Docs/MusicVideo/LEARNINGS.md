@@ -364,6 +364,29 @@ the engine first, make the featured hull the local vessel (`mv vessel CLASS`, th
 shoot one 4-6 s clip per vessel ability, each composed from stills before it is recorded. Cuts 5-6 stay in
 `milestones/` as the record of what populated-but-aimless footage looks like.
 
+### The clip rounds (2026-10-28): what four probe rounds of four clips taught
+
+Each round is 4 clips x 5 s at 960x540 (`clips.py --render size=960x540 ...`), two players at once, about
+eight minutes; the sheet decides the next round. The clip library (`clips.json`) keeps every clip's `learned`
+list; the general lessons:
+- **The hulls are a few units long.** A mount at back 40 (cut 6's) makes a Dolphin a speck; back 14-16 shows
+  the hull, and a thing on a chain (the Thresher's ball, 25 u out) needs a 40 u orbit to keep hull, chain and
+  ball in one frame. Compose the distance from the thing's size, not from a default.
+- **Stage the target where the camera will be, do not fly to it.** The pilot flying toward "the nearest
+  flora" for five seconds showed membrane; `teleport local name:GyroidFlora -170` (the game's own SetPose)
+  starts the clip with the plant in frame. `flora` resolves the NEAREST plant, which was a quasicrystal:
+  name the species.
+- **Trails come from hulls circling the pilot** (`circle aiN R S local`): six rivals on 35-60 u circles wrap
+  the pilot's path in their prisms within a few seconds, which is what the Thresher's chain and the Dolphin's
+  cone need in front of them.
+- **An ability that builds over time starts BEFORE the recording** (`mv in {2.5s} action local
+  Button2Action 10` in the stage list, the seconds-to-frames `{Ns}` form): the Serpent's wall was a dense
+  herringbone field by frame one of the clip, where a toggle at frame one showed nothing in five seconds.
+- **Read the shader warnings.** The Serpent's turret stance cloaks the hull with `CosmicShore/CloakGhost`, a
+  hand-written additive shader the engine had no translation for: the hull was a solid white blob until it
+  was ported as a family (round 3 shows the translucent rimmed hull). The echo sight's cyan beams and the
+  Thresher's red ball and chain rendered right from the first round.
+
 ## Log
 
 | Date | Cut | Score said | Person said | Changed |
