@@ -37,6 +37,12 @@ namespace CosmicShore.Gameplay
     ///     starvation clock, no reproduction. Its only deaths are active forces: fauna
     ///     consumption and player abilities.
     ///
+    ///   • It can be DRAWN as a model (<see cref="UseModel"/>, <see cref="ArkModel"/>; every Arkway voyage's
+    ///     Ark is ArkReverse): the hull is then laid into the model's sockets - each prism its socket's shield tier
+    ///     (super-shielded, shielded, plain, danger) and size - the model wears the hull's domain, and its jets and
+    ///     wings fly its turns. The hull is still the same conserved mass in the same domain; the model only says
+    ///     where each prism sits. Without a model it is the procedural spindle below.
+    ///
     /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
     /// clock it owns is its own unhurried course.
     /// </summary>
@@ -101,6 +107,13 @@ namespace CosmicShore.Gameplay
         int _aliveCount;
         CancellationTokenSource _layCts;
 
+        // ── Model ────────────────────────────────────────────────────────────
+        // An Ark given a model (UseModel) is drawn as that model, its hull laid into the model's sockets; without one it
+        // keeps the procedural spindle.
+        CosmicShore.ScriptableObjects.ArkModelDefinitionSO _modelDefinition;
+        ThemeManagerDataContainerSO _theme;
+        ArkModel _model;
+
         /// <summary>Raised ONCE, when the last hull prism has been destroyed or devoured.</summary>
         public event Action HullDestroyed;
 
@@ -132,6 +145,23 @@ namespace CosmicShore.Gameplay
             return go.AddComponent<Ark>();
         }
 
+        // ── Model ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Draw this Ark as <paramref name="definition"/>'s model (call before <see cref="LayHullAsync"/>): the hull is
+        /// laid into the model's sockets, one prism per socket in its shield tier's kind and size, the model's Domain
+        /// slot wears the hull's domain (from <paramref name="theme"/>'s material sets), and its jets and wings fly the
+        /// Ark's turns (<see cref="ArkModel"/>). A null definition keeps the spindle.
+        /// </summary>
+        public void UseModel(CosmicShore.ScriptableObjects.ArkModelDefinitionSO definition, ThemeManagerDataContainerSO theme)
+        {
+            _modelDefinition = definition;
+            _theme = theme;
+        }
+
+        /// <summary>The model this Ark is drawn as, or null (the spindle).</summary>
+        public ArkModel Model => _model;
+
         // ── Hull ─────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -156,13 +186,46 @@ namespace CosmicShore.Gameplay
             // taken mid-lay (the voyage ended during the veiled build) must not leave the lay
             // producing pooled prisms AFTER the wither pass has swept - those would then die
             // with the Ark's GameObject, and pooled prisms destroyed outright corrupt the pool.
-            var lays = BuildHullLays(Mathf.Max(30f, hullLength), domain);
+            //
+            // With a model the hull is laid into the model's sockets (each prism its socket's shield tier and size,
+            // a jaw's blades riding the jaw) and the model wears the same domain; without one, the spindle.
+            _model = _modelDefinition ? ArkModel.Attach(this, _modelDefinition) : null;
+            List<ArkModel.LayBatch> batches;
+            if (_model)
+            {
+                _model.ApplyDomain(domain, _theme);
+                batches = _model.BuildLays(domain);
+            }
+            else
+            {
+                batches = new List<ArkModel.LayBatch>
+                {
+                    new(transform, BuildHullLays(Mathf.Max(30f, hullLength), domain), false),
+                };
+            }
             _laying = true;
             _layCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             try
             {
-                await PrismTrailBuilder.LayBudgetedAsync(prismPrefab, lays, transform, _trail,
-                    "Ark", 4f, _prisms, _layCts.Token);
+                foreach (var batch in batches)
+                {
+                    // A batch on a bone collects apart so the model can tell those prisms when the bone moves them;
+                    // whatever a cancelled batch did lay still joins the hull, so the retire's wither reaches it.
+                    var laid = batch.RidesBone ? new List<Prism>() : _prisms;
+                    try
+                    {
+                        await PrismTrailBuilder.LayBudgetedAsync(prismPrefab, batch.Lays, batch.Parent, _trail,
+                            "Ark", 4f, laid, _layCts.Token, admitAuthoredScale: _model != null);
+                    }
+                    finally
+                    {
+                        if (laid != _prisms)
+                        {
+                            _prisms.AddRange(laid);
+                            _model.AddRiders(laid);
+                        }
+                    }
+                }
             }
             catch (OperationCanceledException)
             {

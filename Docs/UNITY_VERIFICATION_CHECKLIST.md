@@ -65,6 +65,53 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Arkway's Ark is the ArkReverse model: hull prisms in its sockets, domain trim, jets and wings fly the turn (`cece/upbeat-johnson-j7izg7`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "use this, but animate it so it moves its jets and wings appropriately when turning. use
+it in arkway. use this in all voyages. be sure to get the prisms hooked up to the right domain etc."): every Ark
+given an `ArkModelDefinitionSO` is drawn as `ArkReverse.fbx`. `Wander_WithArk.asset` (the only Arkway voyage
+settings) names `ArkReverseModel.asset`. `ArkModel` reads the model's rig table (`ArkReverse.rig.json`):
+- the hull is laid as 108 prisms, one per socket: kind (plain, danger, shielded, super-shielded), pose and size from
+  the socket, in the Ark's domain;
+- the Domain slot (`GreenAccentVesselMaterial`) takes the domain's `ShipMaterial`;
+- the model's takes play from the Ark's own turn rate and acceleration, each bone held to one full take's worth
+  (`ArkRigTable.Budget`).
+
+An empty `arkModel` keeps the spindle hull. The C# compiled clean headless (`unity_refcompile`, player and
+`--config editor`: 0 errors in project code; `ArkModelTests` compiled but did not run). No Unity Editor was
+open, so `/verify-unity` did not run.
+
+**Verify in editor:**
+1. Let `ArkReverse.fbx`, `ArkReverse.rig.json` and `ArkReverseModel.asset` import. Run the edit-mode tests
+   `ArkModelTests` (8 tests): all pass.
+2. Fly the Wander toy → **With Ark**. When the veil lifts, the Ark is the scallop-backed mothership (the valve
+   opening aft, eight jets in the stern gape), not the spindle of plates. It sits level, nose forward along its
+   course, at about 196 u from nose to jets.
+3. Its trim (the Domain slot) wears YOUR domain's colour. Switch domain at home and start another voyage: the trim
+   follows.
+4. The hull prisms sit IN the model's sockets and fill in as they lay:
+   - stellations on the X-cradles where the grooves cross the seams;
+   - octahedra in the cavity under the plates;
+   - gills raked in the grooves;
+   - danger blades edge-out along the leading edges, the jaws and the stern grille.
+
+   None floats off the hull. Each shows its tier: shielded as octahedra, super-shielded as stellations, danger with the danger look.
+5. Watch the Ark turn toward the next cell:
+   - the gimbal rings swing;
+   - the jets bank, the two sides tilting opposite ways;
+   - the jaws tilt as canards;
+   - the outer plate on the inside of the turn lifts.
+
+   Leaving a cell (it speeds up) the jets draw in; entering one they fan out. At a steady course everything eases
+   back to rest within about a second. Nothing clips through a ring or a plate.
+6. Let a herbivore swarm graze the hull: prisms vanish from their sockets and the hull integrity drops (the Ark is
+   lost when its last socket prism goes, as with the spindle). The jaws' blades are grazed where they are, not where they were laid.
+7. Console: no "[Ark] The Ark model's frame does not match its rig table" warning (that would mean the FBX import
+   frame drifted from the table), and no "has no bone" warning.
+
+**First-pass tuning** (on `ArkReverseModel.asset`): yaw and pitch rate for a full take 40°/s, bank from yaw 0.8,
+acceleration for a full speed take 20 u/s², response 0.35 s, amplitude 1 (capped at 1).
+
 ### 🔴 Toy Box portraits: seven glyphs that teach each toy; the codex baker stands down on Tool pages (`cece/sharp-pascal-3frg3w`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Garrett: "update the images on the toybox so they are production ready. they should communicate

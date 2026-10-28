@@ -1,6 +1,6 @@
 # Ark, concept B (the valve facing aft): model dossier
 
-`ArkReverse.fbx` is built from `Tools/Build/vessel_model/specs/ark_reverse.py`. Its parts are shared with concept A ([Ark.md](Ark.md), `Ark.fbx`) through `specs/_ark_kit.py`. It's a new hull with no artist file, and no prefab draws it yet.
+`ArkReverse.fbx` is built from `Tools/Build/vessel_model/specs/ark_reverse.py`. Its parts are shared with concept A ([Ark.md](Ark.md), `Ark.fbx`) through `specs/_ark_kit.py`. It's a new hull with no artist file. The Arkway's Ark is drawn with it (see [In the game](#in-the-game)).
 
 ## The brief, round by round (Garrett, 2026-10-27)
 1. "Explore an alternative where the arc is facing the other way. Get re-inspired from the arc clam shell." So the hinge is the PROW and the fan opens AFT: a swept delta with the bridge at its point.
@@ -9,6 +9,7 @@
 4. "This is still a bubbly pokemon. Think hierarchical and heterarchical. Look at the dolphin and the details of its contours ... this ark should have 5 hierarchies that have 2 to 5 heterarchies each. It should look sophisticated like it belongs on the cover of a sci fi novel, not like megaknight turned into a toy spaceship."
 5. "Excellent. Now apply these 5 levels to more of the components. The engines alone should not read low poly. Each should have the feel of these five levels."
 6. "Animate it so it moves its jets and wings appropriately when turning ... definitely complete and polish the ark first." So the turn takes now move the wings with the jets (below), and the jets' glow sits deep in the nozzle bell.
+7. "Use it in Arkway. Use this in all voyages. Be sure to get the prisms hooked up to the right domain." So every Ark is this model, its hull prisms sit in its sockets in the Ark's domain, and its trim wears the domain's colour (below).
 
 ## Round 5: the form language
 The Dolphin's lesson is what its parts are made of:
@@ -113,9 +114,25 @@ The takes vector the thrust the way the manoeuvre needs, in the fleet convention
 - **The jaws** are the scallop's auricles, which anatomy also calls its wings. They pitch as canards about their roots, 7°: both tips rise for `pitchup` and drop for `pitchdown`. They work against each other for a roll: in `rollright` the left tip rises and the right one drops.
 - **The outer shell plates are spoilers.** Each twists about its own centreline so its OUTER edge lifts on the inside of the turn: 6° on the outermost plate and 4.5° on the next. `rollright` lifts the right pair (`shell.0`, `shell.1`) and `rollleft` the left pair; a yaw lifts the outermost plate on that side. A raised spoiler drops its side and drags it round. The plates only ever lift, because each one's outer edge is a 1.8 shadow seam above its bulwark.
 
-The game blends these takes by turn input, the same way it puppets every vessel, so the Ark banks its jets and wings when it turns.
+The game blends these takes by how the Ark is actually turning, so it banks its jets and wings into every turn (see [In the game](#in-the-game)).
 
 Also `release` (the lance slides 20 aft) and `hangaropen` (the doors swing out, hinged on their outer faces). All are single-frame poses, with `rest` first.
+
+## In the game
+Every Ark is this model. `Wander_WithArk.asset` (the Arkway voyage's settings) names `ArkReverseModel.asset`, an `ArkModelDefinitionSO`, and `ArkwayRun` hands it to the Ark before the hull is laid (`Ark.UseModel`). `ArkModel` (`Assets/_Scripts/Controller/Environment/ArkModel.cs`) binds it from the **rig table** (`ArkReverse.rig.json`), which the build writes beside the FBX. The game reads the numbers the model was built and gated with, never a copy typed into C#.
+
+- **The hull is the sockets.** One prism per socket, 108 in all: 67 plain gills, 18 danger blades, 16 shielded octahedra and 7 super-shielded stellations. Each one is laid at its socket's pose and size, of its socket's kind (`PrismKind`), in the Ark's domain, through the canonical lay path (`PrismTrailBuilder.LayBudgetedAsync`). It stays ordinary conserved mass that the ecology grazes. 104 ride the Ark's root. The jaws' four blades ride the jaws, and the puppetry tells them when the jaws move them (the mover contract).
+- **The domain paints the model.** Every slot wearing the Domain placeholder (`GreenAccentVesselMaterial`) takes the domain's ship material from the theme, the same identity swap every vessel makes.
+- **The jets and wings fly the turn.** Each frame the Ark's own rotation and speed change give its turn:
+  - a yaw rate of 40°/s plays the yaw take in full, and 0.8 of the yaw also plays the roll take, so the jaws and spoilers bank into the turn;
+  - a pitch rate of 40°/s plays the pitch take in full;
+  - an acceleration of 20 u/s² plays the speed takes in full;
+  - all of it eases in over 0.35 s.
+
+  The takes compose like a gimbal (`ArkRigTable.PoseLocal`): a jet pitches about its ring's yawed axis. The numbers are on the definition.
+- **No bone travels further than one full take** (`ArkRigTable.Budget`). A jet's pitch and bank takes both turn it about its own x axis. Played in full together, they brought `engine.3.ring` to 0.37% of the diagonal from a neighbour, under the 0.4% gate, although each take alone is clear. So a bone that two inputs move gets weights scaled to sum to at most 1. `pose_clearance.py --combos ... --budget` proves the whole in-game input grid under that rule (see [Gates](#gates)).
+- **Without a model**, the Ark keeps the procedural spindle hull. That happens if `arkModel` is empty or the table cannot be read, and the warning names what is missing.
+- **Not in the game yet:** the hull does not regenerate into its sockets (that needs a mass source; conservation forbids conjuring prisms). Nothing plays the hangar doors, the payload's `release` or the omni crystal. The Wander toy's emblem still shows the spindle miniature (`Ark.BuildHullLays`).
 
 ## Shapes
 - **Charge:** the lance lengthens and the crystal swells.
@@ -129,6 +146,7 @@ None of them moves a plate, a cradle, a socket bone or a hole.
 - `build.py ark_reverse` (codec + assimp + re-import) and `build.py ark_reverse --check`. The check is repeatable because the kit puts every boolean's inputs in a canonical order, so two builds cut the same mesh.
 - `assembly_report.py --floating shell.0..7,umbo,auricle.L,auricle.R,omni.ring,omni,payload,keel,hangar.door.T,hangar.door.B,engine.0..7,engine.0..7.ring`.
 - **`pose_clearance.py ArkReverse.fbx --parts "engine.*,payload,hangar.door.*,shell.*,auricle.*" --takes all`**: plays every take and fails on a part that comes within 0.4% of the diagonal of a neighbour in any pose. The shell plates and the jaws are on the list since they became wings.
+- **The same command with `--budget --combos <grid>`** plays the takes TOGETHER, as the game blends them. The grid is every pitch p and yaw y in {±1, ±0.5, 0}, with the bank at 0.8y, and every speed s in {±1, 0}, e.g. `pitchup@1+yawright@0.5+rollright@0.4+speedup@1`: 68 blends. Every blend keeps every animated part at least 0.53% clear, the rest pose's own tightest gap (`hangar.door.B`, which no turn moves). Without `--budget`, four blends of a full pitch-up with a full banked yaw fail (`engine.3.ring`/`engine.4.ring` at 0.37-0.38%). That is the reason for the budget.
 
 ## What round 5 taught (for the next spec that cuts holes)
 - **An EXACT boolean is only as good as its target.** The umbo is a polar solid with inset panels. A grid column narrower than twice an inset's thickness turns inside out, the mesh starts intersecting itself, and the solver then silently keeps a few hundred vertices of a 10k-vertex part (or leaves the cutter's cap behind). `_cols` now drops any grid column within a degree or so of a forced one, and the panel insets skip narrow columns.

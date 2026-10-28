@@ -26,6 +26,9 @@ namespace CosmicShore.Gameplay
 
         public float ArkHullLength = 110f;
 
+        /// <summary>The model the Ark is drawn as (sockets, domain, jets and wings). Null keeps the spindle hull.</summary>
+        public ArkModelDefinitionSO ArkModel;
+
         /// <summary>Units of travel between wake prisms. 0 = no wake.</summary>
         public float ArkWakeSpacing = 45f;
 
@@ -296,6 +299,9 @@ namespace CosmicShore.Gameplay
                     var arkPos = origin + course * 150f;
                     _ark = Ark.Create(transform.parent, arkPos,
                         Quaternion.LookRotation(course, Vector3.up));
+                    // Drawn as the model when the settings name one: its prisms in the model's sockets, the model in
+                    // the same domain as the hull (the theme's ship material), its jets and wings flying the turns.
+                    _ark.UseModel(_cfg.ArkModel, ToyFactory.Theme(_context));
                     await _ark.LayHullAsync(_cfg.PrismPrefab, vessel.Domain,
                         _cfg.ArkHullLength, _cfg.ArkSpeed, ct);
 

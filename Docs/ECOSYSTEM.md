@@ -7503,6 +7503,16 @@ The Ark MOVES the way fauna move: hull prisms ride one container transform and h
 mover contract per frame (`Prism.NotifyPositionChanged` — spatial index + shell + render
 entity), plus the cell re-bind on a 2.5 s cadence.
 
+**The Ark's model (Oct 2026)** lays the hull as 108 socket prisms (67 plain, 18 danger, 16
+shielded, 7 super-shielded; `ArkModel`, `Docs/VesselModels/ArkReverse.md` § In the game). They
+are the same conserved mass in the Ark's domain, through the same lay path, counted by the same
+integrity scan. The jaws' four blades are the first hull prisms that ride a moving BONE rather
+than the root. They sit in the hull list like the rest, so the Ark's own per-frame notify and
+re-bind reach them. When the puppetry moves the jaws while the Ark holds still, `ArkModel` honours
+the mover contract for those four itself, gated so a sub-0.005 change of input does not re-file
+them. No CPU animation of a prism is introduced: the riders move because their parent bone does,
+the fauna-body pattern.
+
 ### 41.3 Mass accounting, stated plainly
 
 - **The hull is conserved mass while it lives.** Fauna eating it is the food web. Its volume
