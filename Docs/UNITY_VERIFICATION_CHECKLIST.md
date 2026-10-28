@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Destroyed prisms are recycled after their death effect; trail hygiene (`perf/lavalamp-prism-recycle`, 2026-10-29) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PERFORMANCE_OPTIMIZATION.md` §2, row 10-29; Yash approved recycling DEAD prisms):
+- `PrismRecycler` (new, `Controller/Vessel/PrismRecycler.cs`): every `Prism.SetupDestruction` queues the prism; 7.5 s
+  later (`PrismExplosion.DefaultDuration`), at most 64 a frame, a still-destroyed, still-active prism on the same death
+  (`Prism.DestroyEpoch`) goes back to its pool: vessel-wake prisms (`Trail.RecycleDestroyedMembers`, set only by
+  `VesselPrismController.Initialize`) through `Trail.RemoveMembers` + `ReturnToPool`; natural-death skeletons
+  (`HealthPrism.LeaveAsSkeleton(..., recycleWhenDestroyed: true)` from `LifeForm` / `Fauna`) through
+  `EnvironmentPrismPool.TryRelease`.
+- Held entirely (entries wait) while any `GunVesselTransformer` (Urchin) exists, because it restores dead prisms it rides.
+- Not recycled: Ark hull/wake, Hijack yards, builder-laid environment trails, flora/fauna body prisms, prisms a
+  front-remover already took (Wanderway, Arkway, RaceTrailCap, Ark wake), ability-plucked skeletons (Meerkat swallow,
+  Jacks' net), every other trail.
+- `Trail.OnMembersRemoved` (TrailFollower re-indexes on it); `Trail.LookAheadShared` + a fill-your-list `LookAhead`
+  overload (Skimmer boosters, `SkimmerAlignPrismEffectSO`); `LookAhead` on an empty trail no longer throws; the vessel
+  lay uses `GetBlockIndex` instead of `TrailList.IndexOf`.
+
+**Verified without the editor:** a tree-sitter C# syntax parse of every changed file (0 errors). Nothing else: no Unity,
+no reference compile, no dotnet in the session. `/verify-unity` was not available. **Compile first.**
+
+**Verify in editor:**
+1. Menu_Main (lava lamp), leave it idle 30+ min with the F7 console / Profiler: GameObject count, `PrismSpatialIndex`
+   HighWaterMark, `EnvironmentPrismPool.IssuedCount` / `ParkedCount` and frame time plateau instead of climbing;
+   `PrismRecycler.RecycledCount` climbs, `PendingCount` stays bounded, `TrailRestorerCount` is 0 (if not, an Urchin is
+   alive and is holding vessel-trail recycling).
+2. Shoot a wake: the explosion plays in full, the hole stays ~7.5 s, then the prism is gone from the trail; the next
+   laid prisms come from the pool (no `PoolMiss` for that vessel's prism type).
+3. Skim along a wake with holes: boosters and the align effect behave as before; nudge-shard markers still clear.
+4. Urchin: ride a wake through destroyed prisms - they restore as before (nothing was recycled while it lived).
+5. Ark / Arkway: hull seats, regrowth and the wake unchanged; Wanderway and Skim Race / Joust on MobileLow
+   (RaceTrailCap) unchanged; Hijack yards unchanged.
+6. Flora/fauna dying of old age: skeletons stay ~7.5 s after they are destroyed, then return; ThreatGrove tubes,
+   Meerkat swallow and Jacks' net unaffected.
+7. `prof` a heavy fight: `PrismRecycler.Drain` stays well under 1 ms.
+
+**First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
+
+---
+
 ### 🔴 The Meerkat's network of wormholes: no tree, no roots, sized by Mass up to the whole cell (`worktree-agent-ae182c824c56a2bb9`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed** (the artifact's round 26, cloned; `R_VesselActions/MEERKAT.md` §7a):

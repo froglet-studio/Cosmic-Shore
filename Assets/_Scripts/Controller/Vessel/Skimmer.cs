@@ -200,7 +200,7 @@ namespace CosmicShore.Gameplay
             if (Time.time - _boosterTimer < cooldown) return;
             _boosterTimer = Time.time;
 
-            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance);
+            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance, shared: true);   // read here and dropped
             if (nextBlocks.Count == 0) return;
 
             // last element
@@ -215,7 +215,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        List<Prism> FindNextBlocks(Prism block, float distance = 100f)
+        /// <param name="shared">True for a caller that reads the result and drops it this frame: the trail's reused
+        /// buffer, no allocation. False (the marker path, which keeps its list for seconds) allocates.</param>
+        List<Prism> FindNextBlocks(Prism block, float distance = 100f, bool shared = false)
         {
             if (block == null || block.Trail == null)
                 return new List<Prism> { block };
@@ -225,10 +227,10 @@ namespace CosmicShore.Gameplay
             var backward = TrailFollowerDirection.Backward;
 
             // simple: prefer forward unless at start and direction negative; adjust if you track direction elsewhere
-            if (idx > 0)
-                return block.Trail.LookAhead(idx, 0, forward, distance);
-
-            return block.Trail.LookAhead(idx, 0, backward, distance);
+            var direction = idx > 0 ? forward : backward;
+            return shared
+                ? block.Trail.LookAheadShared(idx, 0, direction, distance)
+                : block.Trail.LookAhead(idx, 0, direction, distance);
         }
 
         public static float ComputeGaussian(float x, float b, float c)
