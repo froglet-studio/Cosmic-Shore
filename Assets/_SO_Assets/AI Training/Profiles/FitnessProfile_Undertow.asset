@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d62d971cd1d4a8aa1da345d70d9c3b8, type: 3}
+  m_Name: FitnessProfile_Undertow
+  m_EditorClassIdentifier: 
+  Description: "Undertow: this pilot's CombatPoints (a bend is 3 points, a kill 1)."
+  Entries:
+  - Kind: 18
+    Weight: 30
+    Label: CombatPoints
+  - Kind: 10
+    Weight: 1
+    Label: TimePenalty

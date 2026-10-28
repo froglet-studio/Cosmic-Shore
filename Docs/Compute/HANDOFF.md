@@ -124,6 +124,9 @@ worth it), `sessions` and `ask` inside the claude.ai viewer, and a real approval
   game's own AI trainer in a Unity with no window, in its own copy of the project, on PCs with Unity. 21 more pairs
   (purple on the console). Compiled against the real Unity references; self-tested with a fake Unity; **not yet run
   in a real Unity** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`). Job status `proposed` until then.
+- Then the trainer itself gained the other 22 cards (TrainingModeCatalog, `FitnessProfileSO.MetricRecipes`,
+  `TargetSensor.TargetMode.NextGate`, assets by `Tools/Build/author_training_scenarios.py`): 57 pairs in all, 4 left
+  (Maelstrom, Grizzly Charge). Affects: the trainer's owners (studyholic, Garrett, Shombith).
 
 ## 4. Decisions that are yours
 

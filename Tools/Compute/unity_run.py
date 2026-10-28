@@ -11,6 +11,9 @@ What it does, in order:
    of the person's repository (its objects are borrowed, nothing is downloaded twice), checked out at <sha>. Its
    Library/ stays between runs, so only the first run imports the whole project. The person's checkout, its config
    and their open Unity are never touched.
+   With --overlay-ref (the job passes this computer's install ref) the --overlay paths come from that ref instead, but
+   only while the code ref has not touched them since the two parted: a trainer change not merged yet runs before
+   the merge, and never replaces newer work on the code ref.
 3. Copies Tools/Compute/unity/FrogletComputeTraining.cs into that copy (Assets/Editor/FrogletCompute/), and puts back
    this unit's trainer session (SessionState.asset, kept in <out>) so training resumes where it stopped.
 4. Starts Unity: -batchmode -executeMethod ...FrogletComputeTraining.Run. Unity plays the match from Bootstrap with
@@ -116,7 +119,30 @@ def person_unity_open(repo=None):
     return os.path.exists(os.path.join(repo or L.REPO, "Temp", "UnityLockfile"))
 
 
-def prepare_project(sha, repo=None, dest=None, quiet=False):
+def overlay_plan(sha, overlay_sha, paths, cwd=None):
+    """Whether to lay `paths` from `overlay_sha` (this computer's install ref) over the job's code at `sha`: only
+    while the code ref has not touched those paths since the two parted, so newer work on the code ref is never
+    replaced. Returns (apply, why)."""
+    def tree(rev, path):
+        return L.git_ok("rev-parse", f"{rev}:{path.rstrip('/')}", cwd=cwd)
+    if not overlay_sha or overlay_sha == sha:
+        return False, "no overlay ref"
+    base = (L.git_ok("merge-base", sha, overlay_sha, cwd=cwd) or "").strip()
+    if not base:
+        return False, "the install ref shares no history with the code ref"
+    same, behind = True, True
+    for p in paths:
+        here, there, then = tree(sha, p), tree(overlay_sha, p), tree(base, p)
+        same = same and here == there
+        behind = behind and here == then
+    if same:
+        return False, "the code ref already has these files"
+    if not behind:
+        return False, "the code ref changed these files since the install ref left it: its own version is kept"
+    return True, "the install ref's version is newer"
+
+
+def prepare_project(sha, repo=None, dest=None, quiet=False, overlay_sha=None, overlay=()):
     """The copy at `sha` with the batch entry in it. Its own clone (objects shared with the person's repository through
     git's alternates), so a checkout here never touches the person's working tree or config."""
     repo, dest = repo or L.REPO, dest or project_dir()
@@ -134,6 +160,11 @@ def prepare_project(sha, repo=None, dest=None, quiet=False):
     L.git("checkout", "--quiet", "--force", "--detach", sha, cwd=dest, timeout=3600)
     clean = ["clean", "-ffdxq"] + [a for p in KEEP_ON_CLEAN for a in ("-e", p)]
     L.git(*clean, cwd=dest, timeout=1800)
+    if overlay:
+        apply, why = overlay_plan(sha, overlay_sha, overlay, cwd=repo)
+        L.log(f"unity: overlay of {', '.join(overlay)}: {'applied' if apply else 'skipped'} ({why})", quiet)
+        if apply:
+            L.git("checkout", "--quiet", overlay_sha, "--", *overlay, cwd=dest, timeout=600)
     inject = os.path.join(dest, *INJECT_DIR.split("/"))
     os.makedirs(inject, exist_ok=True)
     shutil.copy2(BATCH_CS, os.path.join(inject, os.path.basename(BATCH_CS)))
@@ -204,7 +235,8 @@ def run(args):
         return 75
     _status(out, phase="preparing the project copy", unit_episodes=args.episodes)
     try:
-        project = prepare_project(args.sha, quiet=args.quiet)
+        overlay_sha = L.rev(args.overlay_ref) if args.overlay_ref else None
+        project = prepare_project(args.sha, quiet=args.quiet, overlay_sha=overlay_sha, overlay=args.overlay or ())
     except Exception as e:
         _result(out, False, f"could not prepare the project copy: {e}", **meta)
         print(e)
@@ -289,6 +321,9 @@ def main(argv=None):
     ap.add_argument("--minutes", type=float, default=55, help="this session's time, Unity's start included")
     ap.add_argument("--time-scale", type=float, default=4.0, help="game clock multiplier (the trainer caps it at 8)")
     ap.add_argument("--unity", help="the Unity editor to use")
+    ap.add_argument("--overlay-ref", default="", help="this computer's install ref: its version of --overlay paths is "
+                    "laid over the code while the code ref has not touched them (a trainer change not merged yet)")
+    ap.add_argument("--overlay", action="append", help="a path taken from --overlay-ref (repeatable)")
     ap.add_argument("--nographics", action="store_true", help="start Unity with -nographics")
     ap.add_argument("--poll", type=float, default=float(os.environ.get("FROGLET_COMPUTE_UNITY_POLL") or 5.0))
     ap.add_argument("--quiet", action="store_true")

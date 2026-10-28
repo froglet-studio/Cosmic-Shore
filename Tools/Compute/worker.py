@@ -377,7 +377,7 @@ def command_session(job, root, sha, ident, machines, presence, minutes, cores, q
         _pull_unit_files(job, epoch, unit["id"], theirs, run_dir, machines)
         L.log(f"{job['id']}/{unit['id']}: relayed from {theirs['machine']} at {theirs.get('progress')}", quiet)
     env = {"python": sys.executable, "out": run_dir, "root": root, "tools": TOOLS, "threads": max(1, cores),
-           "sha": sha, "repo": L.REPO, "minutes": minutes, **{f"unit.{k}": v for k, v in unit.get("args", {}).items()}}
+           "sha": sha, "repo": L.REPO, "minutes": minutes, "app_ref": L.app_ref() or "", **{f"unit.{k}": v for k, v in unit.get("args", {}).items()}}
     argv = [_fmt(a, env) for a in c["argv"]]
     if c.get("resume") and any(os.path.exists(os.path.join(run_dir, f)) for f in c.get("resume_if", [])):
         argv += [_fmt(a, env) for a in c["resume"]]

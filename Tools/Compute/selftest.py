@@ -451,7 +451,38 @@ def unity_end_to_end():
         if p.returncode != 0:
             bad.append(f"unity: a manual run should go ahead while the person's Unity is open ({p.returncode})")
         shutil.rmtree(os.path.join(work, "Temp"))
-        # 6. no Unity: says so (negative control for the capability)
+        # 6. the overlay: the install ref's trainer folder is laid over the code while the code has not touched it
+        trainer = os.path.join(work, "Assets", "Trainer")
+        os.makedirs(trainer)
+        open(os.path.join(trainer, "Catalog.cs"), "w").write("old")
+        _git("add", "-A", cwd=work, env=env0)
+        _git("commit", "-qm", "trainer", cwd=work, env=env0)
+        _git("push", "-q", "origin", "bleeding-edge", cwd=work)
+        _git("checkout", "-q", "-b", "install", cwd=work)
+        open(os.path.join(trainer, "Catalog.cs"), "w").write("new rows")
+        _git("commit", "-qam", "new rows", cwd=work, env=env0)
+        _git("push", "-q", "origin", "install", cwd=work)
+        _git("checkout", "-q", "bleeding-edge", cwd=work)
+        _git("fetch", "-q", "origin", cwd=work)
+        sha = _git("rev-parse", "origin/bleeding-edge", cwd=work).strip()
+        copy_file = os.path.join(proj, "Assets", "Trainer", "Catalog.cs")
+
+        def overlaid(tag):
+            out_dir = os.path.join(tmp, tag)
+            argv = [sys.executable, runner, "--sha", sha, "--out", out_dir, "--mode", "HexRace", "--episodes", "2",
+                    "--minutes", "5", "--quiet", "--overlay-ref", "origin/install", "--overlay", "Assets/Trainer/"]
+            subprocess.run(argv, cwd=work, env=env, capture_output=True, text=True, timeout=120)
+            return open(copy_file).read() if os.path.exists(copy_file) else None
+        if overlaid("overlay-on") != "new rows":
+            bad.append("unity: the install ref's trainer was not laid over an untouched code ref")
+        open(os.path.join(trainer, "Catalog.cs"), "w").write("newer on the code ref")
+        _git("commit", "-qam", "newer", cwd=work, env=env0)
+        _git("push", "-q", "origin", "bleeding-edge", cwd=work)
+        _git("fetch", "-q", "origin", cwd=work)
+        sha = _git("rev-parse", "origin/bleeding-edge", cwd=work).strip()
+        if overlaid("overlay-off") != "newer on the code ref":
+            bad.append("unity: the overlay replaced newer work on the code ref")
+        # 7. no Unity: says so (negative control for the capability)
         p = wrap(os.path.join(tmp, "nounity"), {"FROGLET_COMPUTE_UNITY": os.path.join(tmp, "nope")})
         if p.returncode != 4:
             bad.append(f"unity: a missing Unity should exit 4 ({p.returncode})")
@@ -488,6 +519,15 @@ def run(quick=False):
         if p:
             failures.append(f"job {jid}: " + "; ".join(p))
     print(f"jobs: {len(jobs)} " + ("ok" if not any(f.startswith("job ") for f in failures) else "FAILED"))
+    try:
+        import make_unity_job
+        job = jobs.get("unity-train")
+        if job is not None:
+            clean = {k: v for k, v in job.items() if not k.startswith("_")}
+            if make_unity_job.build(clean) != clean:
+                failures.append("job unity-train: its units differ from the trainer's catalog (python3 Tools/Compute/make_unity_job.py)")
+    except FileNotFoundError:
+        pass                    # an install without the game's sources (the VM's sparse clone): nothing to compare
     win = windows_task()
     print("windows task line: " + ("ok" if not win else "FAILED"))
     failures += win
@@ -518,7 +558,7 @@ def run(quick=False):
         print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched)" if not e2e else "FAILED"))
         failures += e2e
         ue = unity_end_to_end()
-        print("unity runs: " + ("ok (a fake Unity: queued unit done and published, resume, Ctrl-C, compile error, your Unity open, no Unity)"
+        print("unity runs: " + ("ok (a fake Unity: queued unit done and published, resume, Ctrl-C, compile error, your Unity open, the trainer overlay, no Unity)"
                                 if not ue else "FAILED"))
         failures += ue
     print("\ncompute self-test: " + ("ok" if not failures else "FAILED\n  " + "\n  ".join(failures)))

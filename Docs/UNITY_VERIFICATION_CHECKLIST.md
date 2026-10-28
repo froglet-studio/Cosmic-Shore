@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI trainer covers every multiplayer card: 22 more scenarios, gate races seek the next ring (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** `TrainingModeCatalog` +22 rows (13 gate races, Broadside, Dustup, Undertow, Sirocco, Wrecking Ball,
+Bloomrush, Hijack, Tapestry, Tollway); `FitnessProfileSO.MetricRecipes` (each mode's own ScoringMetric through
+`ScoringMetrics.Read`, three new kinds `SwitchesThreaded` 20, `PrismsStolen` 21, `VolumeRemaining` 22, plus the time
+penalty); `TargetSensor.TargetMode.NextGate` (4) reads `GateRaceController.TryGetNextRing`; 22 scenario/profile pairs
+written by `Tools/Build/author_training_scenarios.py` (`--check`). The twelve existing scenarios are unchanged.
+Affects: the AI trainer's owners (studyholic, Garrett, Shombith).
+
+**Verified without the editor:** `unity_refcompile` (editor and player configs, see the commit); the generator's
+self-test (a fresh pair passes; a drifted TargetMode, a missing profile and a recipe without a row each fail);
+`author_training_scenarios.py --check` over all 34 rows.
+
+**Test in the editor:**
+1. `AITrainingCoreTests`: `Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor` (now 34 rows),
+   `MetricRecipes_OnePerMode_EachInTheCatalog_AndNoScoreRow`, `TargetSensor_NextGate_NoRace_HasNoTarget` pass.
+2. FrogletTools > AI > AI Training: the Mode list shows the new cards. Pick **Headlong · Rhino · I4**, Target
+   episodes 6, Learn: the AIs fly toward the next ring (not crystals), the gate count climbs, fitness is positive
+   after a match. Repeat with **Regatta** (arena: hull Manta) and **Broadside** (combat points move).
+3. **Wrasse Run** (a crew hull): note whether the trainer drives the pilot seat at all.
+
 ### 🔴 Froglet Compute runs the AI trainer in a Unity with no window (`claude/eager-franklin-e6g77h`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** `Tools/Compute/unity/FrogletComputeTraining.cs`, an editor batch entry that is NOT part of the game:

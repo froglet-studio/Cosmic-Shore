@@ -212,8 +212,12 @@ def catalog(jobs, cwd=None):
                           "job": t["job"] if now else (unity["id"] if inunity else None)})
         modes.append({"mode": c["mode"], "name": c.get("name") or c["mode"], "kind": "arena" if "ArenaGames" in (c.get("lists") or []) else "arcade",
                       "gate_race": c["mode"] in (chart.get("gateRaceModes") or []), "hulls": cells})
-    hulls = [{"hull": h["hull"], "verb": h.get("verb"), "template": (templates.get(h["hull"]) or {}).get("job"),
-              "modes_now": (templates.get(h["hull"]) or {}).get("modes", [])} for h in chart.get("hulls") or []]
+    listed = [h["hull"] for h in chart.get("hulls") or []]
+    verbs = {h["hull"]: h.get("verb") for h in chart.get("hulls") or []}
+    for c in chart.get("cards") or []:            # a hull a card seats but the chart's hull list leaves out (the Wrasse)
+        listed += [h for h in c.get("hulls") or [] if h not in listed]
+    hulls = [{"hull": h, "verb": verbs.get(h), "template": (templates.get(h) or {}).get("job"),
+              "modes_now": (templates.get(h) or {}).get("modes", [])} for h in listed]
     rule = (unity or {}).get("command", {}).get("request") or {}
     return {"hulls": hulls, "modes": modes,
             "unity": {"job": unity["id"], "intensities": rule.get("intensity") or [4],

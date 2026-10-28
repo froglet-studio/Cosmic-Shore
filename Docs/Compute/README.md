@@ -381,9 +381,12 @@ game already has an AI trainer (`Assets/_Scripts/Utility/AITraining`, studyholic
 matches, a population of AIs, the best kept. Froglet Compute now starts it with nobody there:
 
 - **`unity-train`** (`Docs/Compute/jobs/unity-train.json`) is a command job with one unit per vessel, mode and
-  intensity: the 21 pairs the trainer has scenarios for (Skim Race, Crystal Capture, Joust, Rampage, Cleave, Wildlife
-  Liberation, Dog Fight, The Bends, Scarab Scramble, Salvo, Brood Rush, Astro League, with every hull those cards
-  seat where the scenario lets the hull change). It needs a computer with the project's exact Unity (capability
+  intensity: 57 pairs over the trainer's 34 scenarios, every multiplayer card with a scoring rule, with every hull a
+  card seats where the scenario lets the hull change (Regatta, Broadside, Crystal Capture, Brood Rush, Astro League).
+  `Tools/Compute/make_unity_job.py` writes the units from the trainer's own catalog (`--check`; the self-test runs
+  it). The trainer gained 22 modes for this on 2026-10-28 (its README, "The other 22 cards"): 13 gate races that
+  seek the next ring, and their recipes read each mode's own ScoringMetric. Not covered: Maelstrom (chains other
+  modes) and Grizzly Charge (in development). It needs a computer with the project's exact Unity (capability
   `unity`; `compute.py unity --find` says which editor, or why not). Status `proposed`: manual runs only, until a
   first run on a real PC has been looked at.
 - **`Tools/Compute/unity_run.py`** runs one unit: keeps Froglet Compute's own copy of the project in
@@ -397,13 +400,18 @@ matches, a population of AIs, the best kept. Froglet Compute now starts it with 
 - **A manual run** for a purple pair names the pair, the intensity and the number of matches
   (`args: {mode, vessel, intensity}`, `budget.tries` = matches); `manual_runs.problems()` refuses anything else.
   The console's New run gives the line for PowerShell or Terminal, or sends it to the team's computers with Unity.
+- **Before the merge**: the project copy is built from `origin/ai`, which has the trainer's 22 new modes only once
+  this branch is merged. Until then the job lays the trainer's folders (`Assets/_Scripts/Utility/AITraining/`,
+  `Assets/_SO_Assets/AI Training/`) from this computer's install ref over that copy, and only while `ai` has not
+  touched them since the two parted (`unity_run.py --overlay-ref`): newer work on `ai` is never replaced.
 - **Trust**: a command job runs from bleeding-edge, or from the ref this computer's Froglet Compute was installed from
   (config.json "ref"): that code already runs on it, so the same ref's command job asks for nothing more. That is how
   `unity-train` runs before Froglet Compute is merged. Its code ref is `origin/ai`.
 - **Results**: the unit's `genome.json` is a proposal. Import it on the AI Training window's Archive tab for that
   vessel, mode and intensity; the trainer's owners and the AI owner (Yash) decide whether it deploys.
-- **What is left**: the 35 gold pairs need trainer scenarios (a fitness the mode can score per pilot), and gate races
-  such as Regatta have none yet: the trainer's owners' call. A dedicated Linux game build (no editor, no licence on
+- **What is left**: 4 pairs (Maelstrom x3, Grizzly Charge). The 22 new scenarios' weights and seek modes are first
+  passes, none flown yet; gate races aim at the ring's centre (Regatta's own AI aims through it, RegattaRaceLine). A
+  dedicated Linux game build (no editor, no licence on
   each machine) would let x86 Linux servers run these too; not built.
 
 ## 12. Verification status (2026-10-26)

@@ -966,7 +966,7 @@ details.step[open] > summary { margin-bottom: 4px; }
     if (st === "game" || !NR.job) {
       var mn = (modesFor(NR.vessel || "").filter(function (m) { return m.mode === NR.mode; })[0] || {}).name || NR.mode;
       sheet.appendChild(h("div", { class: "banner gold" }, [h("b", { text: (NR.vessel || "This vessel") + (mn ? " in " + mn : "") + " needs the real game" }),
-        h("p", { class: "note", text: "Nothing can run this pair yet. Blue pairs run on the offline race models (the Rhino, Manta and Dolphin on Regatta, Headlong and Redline); purple pairs run in the game itself through the Unity trainer, which has scenarios for 12 modes. This one needs a trainer scenario (a fitness for the mode) first: that is the trainer owners' call." })]));
+        h("p", { class: "note", text: "Nothing can run this pair yet. Blue pairs run on the offline race models; purple pairs play real matches through the Unity trainer, which has a scenario for every multiplayer card with a scoring rule. This one has none: Maelstrom chains other modes, and Grizzly Charge is still in development." })]));
       return;
     }
     if (NR.unity) drawUnitySteps(sheet);
