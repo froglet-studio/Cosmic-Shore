@@ -18,6 +18,12 @@ namespace CosmicShore.Gameplay
     /// (<see cref="BlackHoleLensPass.Acquire"/> / <c>Release</c>), so it draws whether or not a hole is still live.
     /// Per-ripple values go through a <see cref="MaterialPropertyBlock"/> on the shared material.</para>
     ///
+    /// <para><b>The Mobile look</b> (<see cref="ScriptableObjects.HoleLook.Mobile"/>, the default, Docs/BLACK_HOLE.md §5.4):
+    /// nothing is bent. The sphere and its lens-pass material are not used at all; each frame the ripple draws its front as
+    /// one thin soft light ring in the owner's domain colour (<see cref="BlackHoleGlow.DrawRing"/>, a small forward mesh —
+    /// no screen copy). This is also the look that actually REACHES the screen: the <c>LightMode = BlackHoleLens</c> pass
+    /// above is drawn by no renderer list (the lens pass draws procedurally), so the bending ripple has never shown.</para>
+    ///
     /// <para>Pooled (a small static stack): a ripple is born per annihilation, never per frame.</para>
     /// </summary>
     public sealed class StoatRipple : MonoBehaviour
@@ -40,6 +46,8 @@ namespace CosmicShore.Gameplay
         float _age, _radius, _expand, _fade, _band, _bend, _split, _glow;
         Color _tint;
         bool _acquired;
+        bool _mobile;
+        int _drawnFrame = -1;
 
         /// <summary>
         /// A ripple at <paramref name="at"/> growing to <paramref name="radius"/>. Null (and one warning) when the
@@ -48,8 +56,10 @@ namespace CosmicShore.Gameplay
         public static StoatRipple Spawn(Vector3 at, float radius, float expandSeconds, float fadeSeconds, float band,
             float bend, float split, Color tint, float glow)
         {
-            var material = SharedMaterial();
-            if (!material) return null;
+            // The Mobile look draws through BlackHoleGlow; the Studio lens look through the lens pass's material.
+            bool mobile = BlackHoleGlow.Active(BlackHoleRegistry.Config);
+            var material = mobile ? null : SharedMaterial();
+            if (!mobile && !material) return null;
             StoatRipple ripple = null;
             while (s_pool.Count > 0 && !ripple) ripple = s_pool.Pop();
             if (!ripple)
@@ -57,13 +67,15 @@ namespace CosmicShore.Gameplay
                 var go = new GameObject("StoatRipple");
                 go.AddComponent<MeshFilter>().sharedMesh = BlackHoleLens.LensSphere();
                 var renderer = go.AddComponent<MeshRenderer>();
-                renderer.sharedMaterial = material;
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = false;
                 ripple = go.AddComponent<StoatRipple>();
                 ripple._renderer = renderer;
                 ripple._block = new MaterialPropertyBlock();
             }
+            ripple._mobile = mobile;
+            ripple._renderer.enabled = !mobile;
+            if (!mobile) ripple._renderer.sharedMaterial = material;
             ripple.transform.SetPositionAndRotation(at, Quaternion.identity);
             ripple._age = 0f;
             ripple._radius = Mathf.Max(0.1f, radius);
@@ -94,7 +106,7 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
-            if (_acquired) return;
+            if (_acquired || _mobile) return;
             BlackHoleLensPass.Acquire();
             _acquired = true;
         }
@@ -122,6 +134,15 @@ namespace CosmicShore.Gameplay
         {
             float front = StoatRippleMath.Front(_age, _expand, _radius);
             float strength = StoatRippleMath.Strength(_age, _expand, _fade);
+            if (_mobile)
+            {
+                if (_drawnFrame == Time.frameCount) return;   // spawned and updated in one frame: draw it once
+                _drawnFrame = Time.frameCount;
+                // one thin soft light ring at the front, the owner's colour, fading with the ripple (RenderMesh draws
+                // for this frame only, so Apply runs every frame while the ripple lives)
+                BlackHoleGlow.DrawRing(transform.position, front, Mathf.Max(0.5f, 0.5f * front * _band), _tint, _glow, strength);
+                return;
+            }
             // The sphere circumscribes the front and its outer band (the mesh is unit-DIAMETER).
             float extent = Mathf.Max(0.1f, front * (1f + _band) + 0.5f);
             transform.localScale = Vector3.one * (2f * extent);

@@ -280,6 +280,18 @@ Note: a fresh press over a live pair annihilates the old pair (0.3 s collapse), 
 pair just after it appears — the old pair's annihilation, not a birth flash. Stated limit: a hole's own ring glow and
 core are still drawn before post-processing, so they still bloom.
 
+**The Mobile look — the ripple finally shows, nothing warps (2026-10-29).** Yash: *"make sure we are not warping space
+… make the shaders mobile friendly … the same [as the Meerkat] with these black / white hole pair."* The sphere above
+was never drawn: its only pass is `LightMode = BlackHoleLens`, and no renderer list draws that LightMode (the lens pass
+draws its own full-screen material, not the ripple's). With `BlackHoleConfig.look` = `Mobile` (the default,
+`Docs/BLACK_HOLE.md` §5.4) the ripple draws its front as a thin soft light ring in the owner domain's colour
+(`BlackHoleGlow.DrawRing`: brightness `rimGlow` 0.15, half width ½ · front · `bandWidth` 0.08, at least 0.5 u, faded by
+the ripple's own strength), once a frame, with no copy and no depth texture. `bend` and `chromaticSplit` are kept for
+the Studio lens look and unused by Mobile (their tooltips say so). The pair itself is a dark core with a thin photon
+ring (black) and a bright soft core (white); the annihilation throws a faint local ripple (the gravitational wave's
+own waveform, gone by `mobileWaveReach` 220 u) instead of bending the view; the hull no longer stretches near a hole,
+and `gwShake` stretches nothing. The REACH, the strip and the kill are unchanged.
+
 ## 1d. The HUD — four cards, four gauges
 
 `StoatHUDVariant.prefab` (a true variant of `VesselHUDPrefab`, copied once from the Thresher's: authored petal bars, a

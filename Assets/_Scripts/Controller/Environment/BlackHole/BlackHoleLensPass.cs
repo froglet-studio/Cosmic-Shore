@@ -131,6 +131,9 @@ namespace CosmicShore.Gameplay
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
             if ((s_users == 0 && !s_waves) || cam == null) return;
+            // The Mobile look (the default, Docs/BLACK_HOLE.md §5.4) draws no full-screen pass at all: no copy, no lens,
+            // no waves' light — BlackHoleGlow draws the holes and waves as small forward meshes instead.
+            if (!BlackHoleRegistry.Config.SpaceWarp) return;
             ScriptableRenderer renderer = null;
             if (cam.cameraType == CameraType.Game)
             {

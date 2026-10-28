@@ -14,9 +14,11 @@ namespace CosmicShore.Gameplay
     /// a ringdown (<c>gwPeriod</c>, <c>gwRingdown</c>) behind it, weaker as 1/r, strongest sideways to the line the holes met
     /// along (sin² of the angle) and silent along it.</item>
     /// </list>
-    /// The lens draws all three (<c>BlackHoleLens.shader</c>: the bend, the crests, the wash of a shell passing you, the view
-    /// stretching as the wave passes you); <c>PrismGravityWarp.hlsl</c> stretches and squeezes the prisms the wave crosses
-    /// (<c>gwPrism</c>). Photons only: nothing here moves mass. Local per peer, like every hole's visuals.
+    /// In the Studio lens look the lens draws all three (<c>BlackHoleLens.shader</c>: the bend, the crests, the wash of a
+    /// shell passing you, the view stretching as the wave passes you) and <c>PrismGravityWarp.hlsl</c> stretches and
+    /// squeezes the prisms the wave crosses (<c>gwPrism</c>). In the Mobile look (the default, §5.4) nothing is warped:
+    /// <see cref="BlackHoleGlow.DrawWaves"/> draws each as a faint LOCAL ring. Photons only: nothing here moves mass.
+    /// Local per peer, like every hole's visuals.
     /// </summary>
     public static class BlackHoleWaves
     {

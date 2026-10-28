@@ -523,6 +523,80 @@ Seen edge-on, the ring's near and far halves overlap on screen and read their me
 the two halves counts as in front. The shader is compiled here by glslang against the black hole lens's per-file URP
 mock (the script's tier C); the real URP ShaderLibrary compiles it only when Unity imports it.
 
+## 5.4 The Mobile look — no warped space, the Meerkat recipe (`BlackHoleGlow` + `BlackHoleGlow.shader`, 2026-10-29)
+
+Yash, 2026-10-29: *"make sure we are not warping space, we need to make the shaders mobile friendly, check out our
+meerkat ability shader, we have optimized it to support mobiles, I want to do the same with these black / white hole
+pair, It should be mobile frames performant and also a subtle clean refreshing user experience."*
+
+**The switch.** `BlackHoleConfig.look` (`HoleLook`): **`Mobile` (0, the default and what ships)** or `StudioLens` (1, the
+full §5–§5.2 look, kept for A/B and the studio). `BlackHoleConfigSO.SpaceWarp` is true only for `StudioLens`, and it gates
+everything that warps: the lens (`BlackHole.EnsureVisual` never creates a `BlackHoleLens`, so no hole acquires the
+depth texture), both `BlackHoleLensPass` passes (no scene copy, no full-screen lens, no wave-light pass), the prism tide
+and the GW prism squeeze (`BlackHoleWarp.Flush` publishes an empty bank), the hull tide (`BlackHoleWarp.VesselLogStretch`
+is 1 — the Stoat's and Angler's hulls no longer stretch), and `gwShake` (nothing stretches the view). **Physics is
+untouched**: the pull, the horizon, the pair's drift and annihilation, the ripple's strike are the same in both looks.
+
+**The Meerkat recipe** (`MeerkatWaterTube.shader`, `Docs/Shaders/WATERY_GLASS.md`, perf commit `69ebc5b7c`), applied
+here point for point:
+
+| Meerkat water tube | Hole glow |
+|---|---|
+| one `UniversalForward` pass, one `Graphics.RenderMesh` per mesh, a pooled `MaterialPropertyBlock` | the same: one camera-facing annulus per hole / wave / ripple (`BlackHoleGlow.Annulus`, 48 segments, 96 triangles, built once), `RenderMesh` with a pooled MPB and `ShadowCastingMode.Off` |
+| no grab pass, no opaque or depth texture, no textures at all | the same — the shader includes only `Core.hlsl` and samples nothing |
+| `ZWrite Off`, `ZTest LEqual`, alpha blend, `#pragma target 3.0`, `half` maths, ~30 ALU | `ZWrite Off`, `ZTest LEqual`, premultiplied `Blend One OneMinusSrcAlpha` (dark AND light in one pass), `target 3.0`, `half` colour out |
+| a near-camera smoothstep fade, discard | a core fades as the camera flies into it, a ring only at its centre; every disc fades to exactly 0 at its rim |
+| a static look switch gates the full-screen lens (`MeerkatTubeLook.Mode`) | `BlackHoleConfig.look` |
+| skins built once, caps cut (prism cap 256 → 48, suck radius 90 → 40, omni 7 → 3), `ProfilerMarker`s | mesh built once, waves capped at `BlackHoleWaves.MaxDrawn` 4 and faded out by `mobileWaveReach`, draws inside the registry's existing lens marker |
+
+**What you see** (`_Mode` in the shader):
+
+| Mode | Thing | Look |
+|---|---|---|
+| 0 | black hole | an opaque dark core of the shadow's size and a thin warm photon ring (`photonRingGlow`, `photonRingWidth`) at the studio's ring radius; a soft dark halo (`mobileHaloGlow` 0.06) out to 1.64 + 3·width shadows |
+| 1 | white hole | a bright soft core (`whiteCoreSize` × the shadow, `whiteCoreBrightness`), half transparent so the sky glows through it |
+| 1 | smooth well (Thresher / Angler) | a faint ring at its radius, no bend |
+| 2 | light shell (In / Out) and the Stoat's charge ripple | a thin soft light ring |
+| 3 | gravitational wave | a faint local ripple: per pixel the SAME waveform as `BlackHoleWaves.Strain` (front, ringdown, 1/r flat inside 60 u, sin² about the axis the holes met on), crests a little lighter (`mobileWaveGlow` 0.12 × `gwGlow`), troughs a little darker (`mobileWaveShade` 0.06), gone by `mobileWaveReach` 220 u |
+
+Every glow stays under the gameplay bloom's threshold (0.2; the brightest wave crest is 0.165), so nothing flashes.
+The photon ring (≈ 0.6) blooms a little, as it does in the studio.
+
+**Studio parameters the Mobile look does not use** — kept in the config, not deleted, each tooltip prefixed
+"[Studio lens only …]": `warpEnabled`, `lensStrength`, `lensRadiusMultiplier`, `lensFadeStart`, `whiteLensStrength`,
+`whiteCoreSkyMix`, `shellBend`, `gwAmp`, `gwPrism`, `gwShake`; and the Stoat ripple's `bend` and `chromaticSplit`
+(`StoatRippleConfigSO`, prefixed likewise). Everything else (sizes, ring, core, `gwSpeed`, `gwPeriod`, `gwRingdown`,
+`gwGlow`, the shells' timings) drives both looks.
+
+**The Charge ripple now renders.** In the studio look it was a sphere with a `LightMode = BlackHoleLens` pass — a pass
+no renderer list ever draws, so it never showed. In the Mobile look `StoatRipple` draws its front as a mode-2 ring
+(`BlackHoleGlow.DrawRing`, `rimGlow` 0.15, half width ½·front·`bandWidth`), once a frame, and never acquires the depth
+texture.
+
+**Cost** (DXIL static instructions over all branches, `verify_black_hole_glow.py` C):
+
+| | Per pixel | Texture reads | Pixels it runs on | Extra |
+|---|---|---|---|---|
+| Studio `BlackHoleLensFrag` | 422 (loops over ≤ 8 wells, ≤ 4 waves) | 2 | every pixel of the screen while a hole or wave lives | a full-screen scene copy each frame, the depth texture on (a depth copy / prepass — expensive on tile GPUs), prism + hull vertex warps |
+| Studio `BlackHoleWaveLightFrag` | 313 | 2 | every pixel while a wave lives | a second copy, after post |
+| **Mobile `BlackHoleGlowFrag`** | **182** | **0** | only the hole's / wave's own disc or band | none: no copy, no depth, no warp |
+
+On a 1080 × 2400 phone with a pair a few hundred units away (each disc a few % of the screen) that is roughly
+2.6 M px × (422 + 313) + two full-screen copies before, against ≈ 0.1–0.3 M px × 182 after — one to two orders of
+magnitude less fragment work and no bandwidth for copies; flying into a core, it fades out before it fills the screen.
+
+**Proof.** `python3 Tools/Shaders/verify_black_hole_glow.py --require-real`: the static recipe (one pass, no texture, the
+wiring and gates in the C#), the fragment run on the CPU (clang++): every disc 0 at its rim, the black core opaque, the
+white core lit; the ripple against `BlackHoleWaves.Strain` cut from the C# (worst 2e-6 over 200 000 samples); the bloom
+bound; two negative controls; glslang against the mock; DXC against the real URP library for D3D11, Vulkan, Metal and
+GLES3 (DXC → SPIR-V → spirv-cross ESSL 300 → glslangValidator), with a control; the cost table above.
+`BlackHoleGlowTests` (EditMode) hold the default look, the material and shader shipping together and compiling, the
+recipe, the waves' reach and bloom bound, and the studio parameters still in the asset.
+
+**Stated limits.** The disc is camera-facing, so a hole seen at a grazing angle near the screen edge is drawn round
+(as a sphere would be). Nothing bends behind a hole in the Mobile look — that is the point. Switch `look` to
+`StudioLens` to see the old look.
+
 ## 6. Tools, keys, console and the test scene — retired (2026-10-10)
 
 The DiagnosticsHUD console verbs (`blackhole …`, `bh`, `wormhole …`), the **Black Hole tool** panel

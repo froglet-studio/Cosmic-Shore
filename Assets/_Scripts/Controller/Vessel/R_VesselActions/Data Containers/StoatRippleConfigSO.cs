@@ -51,16 +51,18 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds the drawn wave lingers past full radius while it fades.")]
         [SerializeField, Range(0f, 3f)] float fadeSeconds = 0.5f;
 
-        [Tooltip("The ring's half-thickness on screen, as a share of the radius (the band the scene is bent in).")]
+        [Tooltip("The ring's half-thickness, as a share of the radius (Studio lens: the band the scene is bent in; Mobile: the " +
+                 "thin light ring is half this wide).")]
         [SerializeField, Range(0.02f, 0.5f)] float bandWidth = 0.08f;
 
-        [Tooltip("How far the wave bends the scene behind it, as a share of the screen at birth (fades to 0).")]
+        [Tooltip("[Studio lens look only — unused by the Mobile look (BlackHoleConfig.look), which bends nothing] How far the wave bends the scene behind it, as a share of the screen at birth (fades to 0).")]
         [SerializeField, Range(0f, 0.1f)] float bend = 0.008f;
 
-        [Tooltip("The red / blue split of the bend at the wavefront (0 = none): the ripple's colour fringe.")]
+        [Tooltip("[Studio lens look only — unused by the Mobile look (BlackHoleConfig.look), which bends nothing] The red / blue split of the bend at the wavefront (0 = none): the ripple's colour fringe.")]
         [SerializeField, Range(0f, 0.5f)] float chromaticSplit = 0.03f;
 
-        [Tooltip("How bright the wavefront's rim glows in the owner's domain colour (HDR, 0 = no rim).")]
+        [Tooltip("How bright the wavefront's rim glows in the owner's domain colour (HDR, 0 = no rim). Both looks; in the Mobile " +
+                 "look it is the whole ripple (keep it under the bloom threshold, 0.2, for a clean ring).")]
         [SerializeField, Range(0f, 8f)] float rimGlow = 0.15f;
 
         [Header("What it does")]
