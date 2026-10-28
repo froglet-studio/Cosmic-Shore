@@ -60,13 +60,23 @@ namespace CosmicShore.Core
 
         // ---- held artifacts ----
 
-        /// <summary>Every artifact is free (Shombith, 2026-10-26: "all of these can be unlocked for free not buy it").</summary>
+        /// <summary>Every artifact is free (Shombith, 2026-10-26: "all of these can be unlocked for free not buy it"),
+        /// except the ones found on voyages (<see cref="ArtifactSO.FoundOnVoyages"/>), which are locked until found
+        /// (Garrett, 2026-10-28).</summary>
         public const bool EverythingIsFree = true;
 
-        /// <summary>True when the player holds this artifact. Everything is free, so every artifact is held unless a
-        /// record says otherwise (a find written by <see cref="Grant"/>, a loss by <see cref="Forget"/>).</summary>
+        /// <summary>True when the player holds this artifact: a free one always, one found on voyages once a find was
+        /// recorded (<see cref="Grant"/>; <see cref="Forget"/> takes it back).</summary>
         public static bool Holds(string artifactId) =>
-            !string.IsNullOrEmpty(artifactId) && (EverythingIsFree || PlayerPrefs.GetInt(HeldKey(artifactId), 0) > 0);
+            !string.IsNullOrEmpty(artifactId)
+            && ((EverythingIsFree && !MustBeFound(artifactId)) || PlayerPrefs.GetInt(HeldKey(artifactId), 0) > 0);
+
+        /// <summary>True for an artifact that is held only once found on a voyage.</summary>
+        public static bool MustBeFound(string artifactId)
+        {
+            var catalog = PilotArtifactCatalogSO.Load();
+            return catalog && catalog.TryGetArtifact(artifactId, out var artifact) && artifact.FoundOnVoyages;
+        }
 
         /// <summary>Records a find (an artifact stowed home from a voyage).</summary>
         public static void Grant(string artifactId)

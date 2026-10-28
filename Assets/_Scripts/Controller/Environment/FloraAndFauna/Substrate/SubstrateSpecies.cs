@@ -224,6 +224,28 @@ namespace CosmicShore.Gameplay
             return c;
         }
 
+        /// <summary>
+        /// A copy whose BODY is <paramref name="k"/> times this one, in every number measured from the body
+        /// (Docs/ECOSYSTEM.md 64.4: a body keeps its proportion to the one elemental crystal size). A body IS its
+        /// stock (<c>SubstrateTickJob.BodyOf</c>: volume = stock), so the stocks go by k^3, and so does the food a
+        /// body is made of - satiation per eaten volume goes by 1/k^3, so a body still eats its own size to fill.
+        /// Contact radii, reaches and spacings go by k. SPEEDS, senses and every arena distance stay in world units.
+        /// The research numbers themselves are never changed (the harness asserts them at k = 1).
+        /// </summary>
+        public SubstrateSpeciesParams WithBodyScale(float k)
+        {
+            var c = Clone();
+            if (!(k > 0f) || k == 1f) return c;
+            float k3 = k * k * k;
+            c.Stock0 *= k3; c.BirthStock *= k3; c.HungerPerVol /= k3;
+            c.NbrR *= k; c.EatR *= k; c.BiteR *= k; c.JinkR *= k; c.BodyScale *= k; c.BodyWell *= k;
+            c.Solitary.Size *= k; c.Gregarious.Size *= k;
+            c.Siege.SepR *= k; c.Siege.ContactPad *= k;
+            c.Arms.PreyR0 *= k; c.Arms.PredR0 *= k; c.Arms.PreySize *= k; c.Arms.PredSize *= k;
+            c.Arms.CatchR *= k; c.Arms.ConfR *= k;
+            return c;
+        }
+
         /// <summary>Slots in the body plan (0 = no body).</summary>
         public int BodyK => BodySlots != null ? BodySlots.Length / 3 : 0;
 

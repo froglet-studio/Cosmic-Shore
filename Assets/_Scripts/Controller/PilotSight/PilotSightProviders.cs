@@ -142,22 +142,149 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>
+    /// MANGER: the mass cluster the fauna are heading for (Docs/Pilots/CALLSIGNS.md §2, row 2), answered in the prism
+    /// shader as a sphere around the densest region of the viewer's cell, the same point a grazer steers to
+    /// (<see cref="Cell.TryGetDensestRegionAnyDomain"/>). A cell holding no mass lights nothing.
+    /// </summary>
+    public sealed class MangerSight : PilotSightProvider
+    {
+        /// <summary>Radius of the lit cluster, world units: about one grazing swarm's reach.</summary>
+        public const float ClusterRadius = 220f;
+
+        public override void Gather(in PilotSightContext ctx, ref PilotSightPrismState prisms, PilotSightMarks marks)
+        {
+            prisms.Sight = (float)PilotVision.Manger;
+            var at = ctx.Viewer?.Transform ? ctx.Viewer.Transform.position : Vector3.zero;
+            var cell = Cell.FindCellContaining(at);
+            if (!cell || !cell.TryGetDensestRegionAnyDomain(out var region)) return;
+            prisms.Volume = new Vector4(region.x, region.y, region.z, ClusterRadius);
+        }
+    }
+
+    /// <summary>
+    /// GALLEON: the Arks, and what rides with them (CALLSIGNS.md §2, row 17): every standing Ark in its own domain
+    /// colour, and every artifact loose or carried (<see cref="ArtifactPickup"/>), white, so a wreck's spill and a
+    /// raider running home with a find both show through mass.
+    /// </summary>
+    public sealed class GalleonSight : PilotSightProvider
+    {
+        /// <summary>An Ark is far bigger than a vessel: its mark is this many vessel marks wide.</summary>
+        const float ArkMarkScale = 3f;
+
+        public override void Gather(in PilotSightContext ctx, ref PilotSightPrismState prisms, PilotSightMarks marks)
+        {
+            var set = ctx.Set;
+            float vesselRadius = set ? set.VesselMarkRadius : 12f;
+            float crystalRadius = set ? set.CrystalMarkRadius : 6f;
+            var white = set ? set.CrystalMarkColor : Color.white;
+            float intensity = (set ? set.MarkIntensity : 1f) * ctx.Strength;
+            var holds = ArkHold.All;
+            for (int i = 0; i < holds.Count; i++)
+            {
+                var ark = holds[i] ? holds[i].Ark : null;
+                if (!ark || ark.IsHullLost) continue;
+                var color = ctx.Colors ? ctx.Colors.GetDomainSignalColor(ark.Domain) : white;
+                marks.Add(ark.transform.position, vesselRadius * ArkMarkScale, color, intensity);
+            }
+            var loose = ArtifactPickup.Loose;
+            for (int i = 0; i < loose.Count; i++)
+                if (loose[i]) marks.Add(loose[i].transform.position, crystalRadius * 2f, white, intensity);
+        }
+    }
+
+    /// <summary>IVY: every plant (CALLSIGNS.md §2, row 11), marked white at its heart.</summary>
+    public sealed class FloraSight : PilotSightProvider
+    {
+        public override void Gather(in PilotSightContext ctx, ref PilotSightPrismState prisms, PilotSightMarks marks)
+        {
+            var set = ctx.Set;
+            float radius = set ? set.CrystalMarkRadius : 6f;
+            var color = set ? set.CrystalMarkColor : Color.white;
+            float intensity = (set ? set.MarkIntensity : 1f) * ctx.Strength;
+            var live = FloraHeartRegistry.Live;
+            for (int i = 0; i < live.Count; i++)
+                if (live[i]) marks.Add(live[i].transform.position, radius * 1.5f, color, intensity);
+        }
+    }
+
+    /// <summary>
+    /// TALON and DOE: every predator, or every herbivore (CALLSIGNS.md §2, rows 12 and 13), in the colour of the domain
+    /// it fights for. There is no live list of fauna, so the sight takes a census of the scene's fauna every
+    /// <see cref="CensusSeconds"/> while it is held, never per frame, and draws the census's live positions each frame.
+    /// Photons only: it reads the creatures and changes nothing.
+    /// </summary>
+    public sealed class FaunaSight : PilotSightProvider
+    {
+        const float CensusSeconds = 0.5f;
+
+        readonly FaunaDiet _diet;
+        readonly System.Collections.Generic.List<Fauna> _census = new();
+        float _nextCensusAt;
+
+        public FaunaSight(FaunaDiet diet) => _diet = diet;
+
+        public override void Gather(in PilotSightContext ctx, ref PilotSightPrismState prisms, PilotSightMarks marks)
+        {
+            if (Time.unscaledTime >= _nextCensusAt)
+            {
+                _nextCensusAt = Time.unscaledTime + CensusSeconds;
+                _census.Clear();
+                var all = Object.FindObjectsByType<Fauna>(FindObjectsSortMode.None);
+                for (int i = 0; i < all.Length; i++)
+                    if (all[i] && all[i].Diet == _diet) _census.Add(all[i]);
+            }
+            var set = ctx.Set;
+            float radius = set ? set.CrystalMarkRadius * 1.5f : 9f;
+            float intensity = (set ? set.MarkIntensity : 1f) * ctx.Strength;
+            var white = set ? set.CrystalMarkColor : Color.white;
+            for (int i = 0; i < _census.Count; i++)
+            {
+                var f = _census[i];
+                if (!f || !f.isActiveAndEnabled || !f.IsAlivePrey) continue;
+                var color = ctx.Colors ? ctx.Colors.GetDomainSignalColor(f.Domain) : white;
+                marks.Add(f.transform.position, radius, color, intensity);
+            }
+        }
+    }
+
     /// <summary>The sight behind each callsign. Null for a callsign whose sight is not built yet.</summary>
     public static class PilotSightProviders
     {
-        // The four cheapest sights first (the build prompt's order): prove the look, then add the rest.
+        // Built: fifteen of the eighteen. RAMPART and HORNET wait on the prism carrying its shielded and danger states
+        // per instance (the shader's predicate needs them); NEEDLE waits on a registry of switches.
         static readonly PilotSightProvider Ensign = new PrismPredicateSight(PilotVision.Ensign);
-        static readonly PilotSightProvider Citadel = new PrismPredicateSight(PilotVision.Citadel);
+        static readonly PilotSightProvider Manger = new MangerSight();
+        static readonly PilotSightProvider Anvil = new CrystalSight(Element.Mass);
         static readonly PilotSightProvider Volt = new CrystalSight(Element.Charge);
+        static readonly PilotSightProvider Zodiac = new CrystalSight(Element.Space);
+        static readonly PilotSightProvider Sundial = new CrystalSight(Element.Time);
+        static readonly PilotSightProvider Opal = new CrystalSight(Element.Omni);
+        static readonly PilotSightProvider Citadel = new PrismPredicateSight(PilotVision.Citadel);
+        static readonly PilotSightProvider Ivy = new FloraSight();
+        static readonly PilotSightProvider Talon = new FaunaSight(FaunaDiet.Predator);
+        static readonly PilotSightProvider Doe = new FaunaSight(FaunaDiet.Herbivore);
+        static readonly PilotSightProvider Wingman = new VesselSight(rivals: false);
         static readonly PilotSightProvider Bandit = new VesselSight(rivals: true);
+        static readonly PilotSightProvider Galleon = new GalleonSight();
         static readonly PilotSightProvider Flume = new FlumeSight();
 
         public static PilotSightProvider For(PilotVision sight) => sight switch
         {
             PilotVision.Ensign => Ensign,
-            PilotVision.Citadel => Citadel,
+            PilotVision.Manger => Manger,
+            PilotVision.Anvil => Anvil,
             PilotVision.Volt => Volt,
+            PilotVision.Zodiac => Zodiac,
+            PilotVision.Sundial => Sundial,
+            PilotVision.Opal => Opal,
+            PilotVision.Citadel => Citadel,
+            PilotVision.Ivy => Ivy,
+            PilotVision.Talon => Talon,
+            PilotVision.Doe => Doe,
+            PilotVision.Wingman => Wingman,
             PilotVision.Bandit => Bandit,
+            PilotVision.Galleon => Galleon,
             PilotVision.Flume => Flume,
             _ => null,
         };

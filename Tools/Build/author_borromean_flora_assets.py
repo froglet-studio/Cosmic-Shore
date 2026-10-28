@@ -276,11 +276,12 @@ def build_config(tbl, element, value, prefab_guid, heart='0',
                  name=None, seed=SEED_FLOOR, cap=CAP, band=None):
     # THE ELEMENT IS THE PLATE.  A lifeform is its species and its element and nothing
     # else (Docs/ECOSYSTEM.md 40), so every element states its own leaf here - Time the
-    # measured optimum, Mass more volume, Space more aspect, Charge fitted to its own
-    # shielded octahedra.  All four come out of the measurement; none is retyped.
+    # measured optimum, Mass armoured with size, Space more aspect, Charge the anchor's own
+    # (every prism danger).  All four come out of the measurement; none is retyped.
     # THE ELEMENT IS THE PLATE - and, since no prism may interpenetrate another, the
-    # TESSELLATION as well: Time the anchor, Mass more volume on a coarser tiling, Space
-    # more aspect, Charge fitted to its own shielded octahedra on the coarsest of the four.
+    # TESSELLATION as well: Time the anchor, Mass the anchor's plate at the law's volume on
+    # the anchor's tiling grown until its shielded octahedra and its heart's swing clear,
+    # Space more aspect on a grown membrane, Charge the anchor's own (Docs/ECOSYSTEM.md 65).
     # Every number here comes out of that element's own table; none is retyped.
     el = tbl['elements'][element]
     name = name or f'Borromean Flora {element}'
@@ -288,7 +289,8 @@ def build_config(tbl, element, value, prefab_guid, heart='0',
     quota = max(1, int(budget * QUOTA_FRAC + 0.5))
     # A plant is PlantRadius across, so an offspring belongs clear of its parent.
     spread = int(el['radius'] * 1.5 + 0.5)
-    shield = 1 if element == 'Charge' else -1
+    # ElementalArmour: Mass is the armoured element (Charge never shields - its prisms are danger).
+    shield = 1 if element == 'Mass' else (0 if element == 'Charge' else -1)
     return (
         '%YAML 1.1\n'
         '%TAG !u! tag:unity3d.com,2011:\n'
@@ -461,9 +463,9 @@ def main():
         L = el['leaf']
         vol = L[0] * L[1] * L[2]
         note = {'Time': 'the anchor - the finest membrane',
-                'Mass': 'more volume, on a coarser tiling',
+                'Mass': 'armoured with size - fitted to its shielded octahedra, membrane grown',
                 'Space': 'more aspect at the anchor\'s volume',
-                'Charge': 'fitted to its own shielded octahedra'}[e]
+                'Charge': 'the anchor\'s own plant, every prism danger'}[e]
         print(f'  {e:<6} {el["sites"]:3d} plates  {v3(L)}  aspect {L[0]/L[1]:4.2f}  '
               f'volume/prism {vol:6.2f}  plant {vol*el["sites"]:8,.0f}   ({note})')
     print(f'  population: floor {SEED_FLOOR}, cap {CAP} per element '

@@ -248,7 +248,8 @@ READY_POS = (0, -200)
 WAIT_W, WAIT_H = 600, 84
 WAIT_POS = (0, -222)
 CHIP_W, CHIP_H, CHIP_RING = 60, 80, 52
-BEAT_SIZE = 260
+BEAT_SIZE = 168        # Rev 33 board A: the numbers in their hex (CountdownTimer.numberSize; GO is goSize, 132)
+BEAT_HEX_R = 124       # the count's hex, centre to corner
 READY_CAPTION = "The match starts when every pilot is ready."
 WAIT_TITLE = "Waiting for pilots"
 WAIT_NOTE = "You are ready. The countdown starts with the last pilot."
@@ -385,11 +386,26 @@ def beat_node():
     n = N("Beat", "Beat", R((0.5, 0.5), (0.5, 0.5), (0, 0), (600, 400)))
 
     def body(ctx, go):
+        # No auto-size: it would cap the beat at the Display role's 48 px (it did, until Rev 33), and CountdownTimer
+        # sets the size per beat (numberSize, goSize).
         b = H.text("3", "Display", tok("TextLight"), align="center")(ctx, go)
-        return b.replace(f"  m_fontSize: {K.f32(48)}\n  m_fontSizeBase: {K.f32(48)}\n",
-                         f"  m_fontSize: {BEAT_SIZE}\n  m_fontSizeBase: {BEAT_SIZE}\n")
+        b = sub1(b, f"  m_fontSize: {K.f32(48)}\n  m_fontSizeBase: {K.f32(48)}\n",
+                 f"  m_fontSize: {BEAT_SIZE}\n  m_fontSizeBase: {BEAT_SIZE}\n")
+        return sub1(b, f"  m_enableAutoSizing: 1\n  m_fontSizeMin: {K.f32(K.fit_min(48))}\n  m_fontSizeMax: {K.f32(48)}\n",
+                    f"  m_enableAutoSizing: 0\n  m_fontSizeMin: {BEAT_SIZE}\n  m_fontSizeMax: {BEAT_SIZE}\n")
     n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, body)
     return n
+
+
+def beat_hex_nodes():
+    """The count's hex (fills through each number; bursts at GO) and the lime ring that leaves it at GO."""
+    s = round(BEAT_HEX_R / 0.4, 2)
+    hexn = N("Beat/Hex", "BeatHex", R((0.5, 0.5), (0.5, 0.5), (0, 0), (s, s)))
+    hexn.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic(
+        (1, 1, 1, 1), glass=tok("SurfaceVeryDark", 0.86), width=3, fill_alpha=1)).add("cg", 225, H.canvas_group(False))
+    ring = N("Beat/GoRing", "GoRing", R((0.5, 0.5), (0.5, 0.5), (0, 0), (s, s)))
+    ring.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic(tok("Cta"), width=4, color=(1, 1, 1, 0)))
+    return [hexn, ring]
 
 
 def countdown_instance(p):
@@ -429,11 +445,18 @@ def patch_waiting_and_countdown(p):
     assert disp, "the CountdownTimer's display is unwired"
     disp_go = p.sc.go_of(disp)
     disp_rt = p.sc.rect_of(disp_go)
-    beat_rt = p.emit(beat_node(), disp_rt, disp)
-    p.children(disp_rt, [k for k in p.kids(disp_rt) if k != beat_rt] + [beat_rt])
+    hex_ids, after = [], disp
+    for n in beat_hex_nodes():
+        hex_ids.append(p.emit(n, disp_rt, after))
+        after = HM._last_doc(p, n)
+    beat_rt = p.emit(beat_node(), disp_rt, after)
+    p.children(disp_rt, [k for k in p.kids(disp_rt) if k not in hex_ids and k != beat_rt] + hex_ids + [beat_rt])
     p.rect(disp_rt, R((0.5, 0.5), (0.5, 0.5), (0, 0), (600, 400)))
     set_instance_ref(p, pi, COUNTDOWN_COMP, "countdownText", p.ctx.c("Beat", "tmp"))
     set_instance_ref(p, pi, COUNTDOWN_COMP, "waitingPanel", p.ctx.c("Wait", "panel"))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "beatHex", p.ctx.c("Beat/Hex", "hex"))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "beatHexGroup", p.ctx.c("Beat/Hex", "cg"))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "goRing", p.ctx.c("Beat/GoRing", "hex"))
 
 
 # --------------------------------------------------------------------------------------------
@@ -579,19 +602,54 @@ def pause_text(text_):
 
 
 # --------------------------------------------------------------------------------------------
-# 12c - the connecting panel (ConnectingPanel.prefab, nested in GameCanvas)
+# 12c - the connecting panel (ConnectingPanel.prefab, nested in GameCanvas): the Rev 33 CELL GATE
+# (Docs/MENU_REDESIGN_B.md section 99, board A). The cell-change screen grown into the mode entry: it COVERS the
+# arena (no camera renders behind it, so the build runs at the cell-change screen's tempo), the Omni crystal fills
+# in its hex as the arena builds, the mode's brief sits under ENTERING, the four real build steps tick on the left,
+# the pilots and their READY state on the right, a tip and the slim bar at the bottom. At the end the crystal flashes
+# and its hex opens into the arena (ConnectingGateView.Open).
 # --------------------------------------------------------------------------------------------
 
 CONNECT = "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab"
 WHITRABT = K.meta_guid("Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/whitrabt SDF.asset")
 CN = dict(comp="6370090134550638757", root_go="470661231859203382", root_rt="5402023128368193864",
-          root_img="2388631188305556708", safe_rt="268860854097267997", status_rt="7647039353653187114",
-          status_tmp="5105126948944046106", mode_rt="7234322143272291273", mode_tmp="6280339008487199906",
-          rank_tmp="1901962995261546283", preview_rt="4036379287790713793", slider_rt="4629373923633661124",
-          track_go="5177954019794184100", track_img="8125581187658145292", fill_go="8684485316077403885",
-          fill_img="6946419630781211910")
-S.update(connect=script_guid("Assets/_Scripts/UI/ConnectingPanelController.cs"))
-COL_X = 1000           # the readout column: 1000 wide, centred, as the board draws it
+          root_img="2388631188305556708", safe_go="668988761015778786", safe_rt="268860854097267997",
+          status_go="917125772582838926", mode_go="5753793761074810139", mode_rt="7234322143272291273",
+          mode_tmp="6280339008487199906", rank_rt="6369488707559300757", rank_tmp="1901962995261546283",
+          camera_go="6872256739989315075", preview_go="6537181835104226913",
+          slider_rt="4629373923633661124", track_go="5177954019794184100", track_img="8125581187658145292",
+          fill_go="8684485316077403885", fill_img="6946419630781211910",
+          icons_go="9124959156195794125", icons_rt="3593977903660026307", roster="4166936055535670324",
+          row_go="1082109306432636569", row_rt="5898718248706178780", row_img="2786987675188890769",
+          avatar_rt="2055132934474971526", avatar_img="2038959525692544740")
+S.update(connect=script_guid("Assets/_Scripts/UI/ConnectingPanelController.cs"),
+         gate=script_guid("Assets/_Scripts/UI/Elements/ConnectingGateView.cs"),
+         aperture=script_guid("Assets/_Scripts/UI/Elements/HexApertureGraphic.cs"),
+         crystal=script_guid("Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs"),
+         roster=script_guid("Assets/_Scripts/UI/Elements/ConnectingPlayerRoster.cs"),
+         hlg=K.HLAYOUT, vlg=K.VLAYOUT)
+ARCADE_GAMES = "402ca7eefc2aeb64baaa140c43312bcd"   # ArcadeGames.asset (SO_GameList)
+INTRO_LIBRARY = K.meta_guid("Assets/Resources/IntroCameraLibrary.asset")
+VEIL_WORDS = K.meta_guid("Assets/Resources/UI/EnvironmentLoadVeilContent.asset")
+CLASS_LIST = K.meta_guid("Assets/_SO_Assets/Classes/SO_Classlist_All.asset")
+OMNI = K.meta_guid("Assets/_Graphics/Codex/ethirion_omni.png")
+# The generated nodes this section used to emit (Rev 3 readout column, section 28 backdrop), deleted on the way in.
+RETIRED_CONNECT_KEYS = ("Connect/Diamond", "Connect/Progress", "Connect/Elapsed", "Connect/Backdrop", "Connect/Dim",
+                        "Connect/BottomFade")
+# Board A's geometry (1920 x 1080, Unity centre coordinates).
+CRYSTAL_Y, CRYSTAL_R, OMNI_SIZE = 278, 166, 300
+PANEL_W, PANEL_H, PANEL_Y, SAFE_X = 430, 340, -58, 64
+STEP_ROW_H, PILOT_ROW_H = 54, 58
+FOOT_W, FOOT_H = 880, 118
+TITLE_SIZE, TITLE_MIN = 124, 48
+GATE_RING_W = 3
+HAIR = 44
+INK = "SurfaceDark"           # the panels' hairlines and the bar's track
+
+
+def crystal_size():
+    """LoadCrystalGraphic.SizeFor: the rect whose hex has the board's radius."""
+    return round(CRYSTAL_R / 0.4, 2)
 
 
 def tmp_restyle(doc, face, size, upper, spacing, align, token):
@@ -609,75 +667,421 @@ def tmp_restyle(doc, face, size, upper, spacing, align, token):
     return doc
 
 
+def sub1(s, old, new):
+    assert s.count(old) == 1, f"expected one {old.strip()!r}"
+    return s.replace(old, new)
+
+
+def ctext(t, token, size, face="Chakra", spacing=0, upper=True, align="left", alpha=1.0):
+    """A TMP at any size in one of the two kit faces, without KitText (which would force its role's size)."""
+    role = "Label" if face == "Chakra" else "Body"
+    base = H.text(t, role, tok(token, alpha), align=align)
+    _, _, rsize, rspacing, rupper, _ = K.ROLES[role]
+
+    def body(ctx, go):
+        b = base(ctx, go)
+        b = sub1(b, f"  m_fontSize: {K.f32(rsize)}\n  m_fontSizeBase: {K.f32(rsize)}\n",
+                 f"  m_fontSize: {K.f32(size)}\n  m_fontSizeBase: {K.f32(size)}\n")
+        b = sub1(b, f"  m_fontSizeMin: {K.f32(K.fit_min(rsize))}\n  m_fontSizeMax: {K.f32(rsize)}\n",
+                 f"  m_fontSizeMin: {K.f32(K.fit_min(size))}\n  m_fontSizeMax: {K.f32(size)}\n")
+        b = sub1(b, f"  m_fontStyle: {16 if rupper else 0}\n", f"  m_fontStyle: {16 if upper else 0}\n")
+        return sub1(b, f"  m_characterSpacing: {K.f32(rspacing)}\n", f"  m_characterSpacing: {K.f32(spacing)}\n")
+    return body
+
+
+def graphic_fields(color, material=None, raycast=False):
+    mat = f"{{fileID: 2100000, guid: {material}, type: 2}}" if material else "{fileID: 0}"
+    return (f"  m_Material: {mat}\n  m_Color: {K.col(color)}\n  m_RaycastTarget: {1 if raycast else 0}\n"
+            "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
+            "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n")
+
+
+def aperture(color, material=None):
+    return lambda ctx, go: K.mono(go, S["aperture"], graphic_fields(color, material))
+
+
+def crystal_graphic(outline, glass=(0, 0, 0, 0), spokes=False, spoke_alpha=0.35, fill_alpha=0.6, width=2.0, enabled=True,
+                    color=(1, 1, 1, 1)):
+    return lambda ctx, go: K.mono(go, S["crystal"], graphic_fields(color)
+                                  + f"  outline: {K.col(outline)}\n  glass: {K.col(glass)}\n  spokes: {1 if spokes else 0}\n"
+                                  f"  spokeAlpha: {K.f32(spoke_alpha)}\n  fillAlpha: {K.f32(fill_alpha)}\n"
+                                  f"  outlineWidth: {K.f32(width)}\n", enabled=enabled)
+
+
+def filled_image(color, sprite, method, origin=0, amount=0.0, preserve=False):
+    """An Image of type Filled (method 0 Horizontal, 1 Vertical; origin 0 = Left / Bottom)."""
+    base = K.image(color, sprite, preserve=preserve)
+
+    def body(ctx, go):
+        b = sub1(base(ctx, go), "  m_Type: 0\n", "  m_Type: 3\n")
+        b = sub1(b, "  m_FillMethod: 4\n", f"  m_FillMethod: {method}\n")
+        b = sub1(b, "  m_FillAmount: 1\n", f"  m_FillAmount: {K.f32(amount)}\n")
+        return sub1(b, "  m_FillOrigin: 0\n", f"  m_FillOrigin: {origin}\n")
+    return body
+
+
+def off(body):
+    """A component authored disabled."""
+    return lambda ctx, go: sub1(body(ctx, go), "  m_Enabled: 1\n", "  m_Enabled: 0\n")
+
+
+def gimg(node, key, name, r, color, sprite=None, preserve=False):
+    n = node.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(color, sprite, preserve=preserve))
+    return n
+
+
+def gtext(node, key, name, r, body):
+    n = node.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, body)
+    return n
+
+
+def arrives(node, mode="Rise", delay=0.0, distance=14):
+    node.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance(mode, delay=delay, distance=distance))
+    return node
+
+
+# --- the cover, the crystal and the ring (root children) ------------------------------------
+
+def cover_nodes():
+    base = N("Gate/Cover/Base", "CoverBase", STRETCH)
+    base.add("cr", 222, K.canvas_renderer()).add("hole", 114, aperture(tok("SurfaceBlack")))
+    sea = N("Gate/Cover/Sea", "CoverSea", STRETCH)
+    sea.add("cr", 222, K.canvas_renderer()).add("hole", 114, aperture((1, 1, 1, 1), HM.M.SEA_WINDOW_MAT))
+    return [base, sea]
+
+
+def crystal_node():
+    s = crystal_size()
+    n = N("Gate/Crystal", "Crystal", R((0.5, 0.5), (0.5, 0.5), (0, CRYSTAL_Y), (s, s)))
+    n.add("cg", 225, H.canvas_group(True))
+    hexn = n.child(N("Gate/Crystal/Hex", "Hex", STRETCH))
+    hexn.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic(
+        tok("TextLight", 0.72), glass=tok("SurfaceVeryDark", 0.94), spokes=True, spoke_alpha=0.14, width=1.6))
+    gimg(n, "Gate/Crystal/Dim", "Dim", R(size=(OMNI_SIZE, OMNI_SIZE)), (1, 1, 1, 0.13), OMNI, preserve=True)
+    built = n.child(N("Gate/Crystal/Built", "Built", R(size=(OMNI_SIZE, OMNI_SIZE))))
+    built.add("cr", 222, K.canvas_renderer()).add("img", 114, filled_image((1, 1, 1, 1), OMNI, 1, 0, 0.0, preserve=True))
+    gimg(n, "Gate/Crystal/Level", "LevelLine", R(size=(240, 2)), tok("TextLight"))
+    flash = n.child(N("Gate/Crystal/Flash", "Flash", STRETCH))
+    flash.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic((1, 1, 1, 1), width=0))
+    return n
+
+
+def ring_node():
+    s = crystal_size()
+    n = N("Gate/Ring", "GateRing", R((0.5, 0.5), (0.5, 0.5), (0, CRYSTAL_Y), (s, s)))
+    n.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic((1, 1, 1, 1), width=GATE_RING_W, enabled=False))
+    return n
+
+
+# --- the brief (Safe Area) -----------------------------------------------------------------
+
+def entering_node():
+    n = N("Gate/Entering", "Entering", R((0.5, 0.5), (0.5, 0.5), (0, 69), (900, 22)))
+    n.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 22, 4, (1, 0), (0, 0)))
+    for side in ("L", "R"):
+        if side == "R":
+            gtext(n, "Gate/Entering/Word", "Word", R(size=(160, 22)), ctext("Entering", "NeutralLightest", 14, spacing=50))
+        h = gimg(n, f"Gate/Entering/Hair{side}", f"Hair{side}", R(size=(HAIR, 1)), tok("SurfaceLight"))
+        h.add("le", 114, H.le(pw=HAIR, ph=1))
+    arrives(n, "Fade", delay=0.05)
+    return n
+
+
+def chip(parent, key, name, pad):
+    c = parent.child(N(key, name, R(size=(200, 44))))
+    H.framed(c, key, 10, "SurfaceVeryDark", INK, fill_alpha=0.97)
+    c.add("hlg", 114, K.hv_layout(False, pad, 12, 4, (1, 0), (0, 0)))
+    return c
+
+
+def chips_node():
+    n = N("Gate/Chips", "Chips", R((0.5, 0.5), (0.5, 0.5), (0, -172), (900, 44)))
+    n.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 12, 4, (1, 0), (0, 0)))
+    obj = chip(n, "Gate/Objective", "ObjectiveChip", (18, 22, 0, 0))
+    g = gimg(obj, "Gate/Objective/Glyph", "Glyph", R(size=(14, 16)), tok("TextLight"), K.kit_sprite("kit_hex_line1"), preserve=True)
+    g.add("le", 114, H.le(pw=14, ph=16))
+    gtext(obj, "Gate/Objective/Text", "Text", R(size=(300, 44)), ctext("", "TextLight", 15, spacing=14))
+    inten = chip(n, "Gate/Intensity", "IntensityChip", (20, 20, 0, 0))
+    gtext(inten, "Gate/Intensity/Label", "Label", R(size=(100, 44)), ctext("Intensity", "NeutralLightest", 13, spacing=16))
+    gtext(inten, "Gate/Intensity/Value", "Value", R(size=(20, 44)), ctext("", "TextLight", 22, face="Aldrich", upper=False))
+    pips = inten.child(N("Gate/Intensity/Pips", "Pips", R(size=(76, 6))))
+    pips.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 4, 4, (0, 0), (0, 0))).add("le", 114, H.le(pw=76, ph=6))
+    for i in range(4):
+        gimg(pips, f"Gate/Intensity/Pip{i}", f"Pip{i}", R(size=(16, 6)), tok("TextLight"))
+    arrives(n, delay=0.15, distance=12)
+    return n
+
+
+def tagline_node():
+    n = N("Gate/Tagline", "Tagline", R((0.5, 0.5), (0.5, 0.5), (0, -104), (1400, 34)))
+    n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ctext("", "TextLight", 24, spacing=2, upper=False, align="center", alpha=0.82))
+    return arrives(n, delay=0.1, distance=12)
+
+
+# --- the steps panel (left) ----------------------------------------------------------------
+
+def step_row(panel, i):
+    key = f"Gate/Step{i}"
+    row = panel.child(N(key, f"Step{i + 1}", HM.TL(26, 60 + STEP_ROW_H * i, PANEL_W - 52, STEP_ROW_H)))
+    row.add("cg", 225, H.canvas_group(True))
+    gimg(row, f"{key}/Rule", "Rule", R((0, 1), (1, 1), (0, 0), (0, 1), (0.5, 1)), tok(INK, 0.8))
+    tick = row.child(N(f"{key}/Tick", "Tick", R((0, 0.5), (0, 0.5), (11, 0), (30, 30))))
+    tick.add("cr", 222, K.canvas_renderer()).add("hex", 114, crystal_graphic(tok("TextLight"), width=1.4, fill_alpha=1))
+    chk = row.child(N(f"{key}/Check", "Check", R((0, 0.5), (0, 0.5), (11, 0), (14, 14))))
+    chk.add("cr", 222, K.canvas_renderer()).add("img", 114, off(K.image(tok("SurfaceVeryDark"), K.chrome_sprite("chrome_confirm"), preserve=True)))
+    gtext(row, f"{key}/Number", "Number", R((0, 0.5), (0, 0.5), (37, 0), (30, 24), (0, 0.5)),
+          ctext(f"0{i + 1}", "NeutralLightest", 18, face="Aldrich", upper=False))
+    gtext(row, f"{key}/Label", "Label", R((0, 0.5), (0, 0.5), (81, 0), (290, 24), (0, 0.5)), ctext("", "TextLight", 16, spacing=12))
+    under = row.child(N(f"{key}/Under", "Underline", R((0, 0), (1, 0), (0, 0), (0, 2), (0.5, 0))))
+    under.add("cr", 222, K.canvas_renderer()).add("img", 114, filled_image(tok("TextLight"), None, 0, 0, 0.0))
+    return row
+
+
+def steps_node():
+    n = N("Gate/Steps", "StepsPanel", R((0, 0.5), (0, 0.5), (SAFE_X, PANEL_Y), (PANEL_W, PANEL_H), (0, 0.5)))
+    H.framed(n, "Gate/Steps", 10, "SurfaceVeryDark", INK, fill_alpha=0.94)
+    head = n.child(N("Connect/Phase", "PhaseTitle", HM.TL(26, 22, PANEL_W - 52, 20)))
+    head.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ctext("Connecting to shore", "TextLight", 13, spacing=16, alpha=0.82)) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", distance=6))
+    for i in range(4):
+        step_row(n, i)
+    gimg(n, "Gate/Steps/Rule", "Rule", HM.TL(26, 60 + STEP_ROW_H * 4, PANEL_W - 52, 1), tok(INK, 0.8))
+    gtext(n, "Gate/Steps/Prisms", "Prisms", HM.TL(26, 76 + STEP_ROW_H * 4, PANEL_W - 52, 16),
+          ctext("", "NeutralLightest", 12, spacing=16))
+    return arrives(n, "Fade", delay=0.2)
+
+
+# --- the pilots panel (right): the roster in row mode ---------------------------------------
+
+def pilots_node():
+    n = N("Gate/Pilots", "PilotsPanel", R((1, 0.5), (1, 0.5), (-SAFE_X, PANEL_Y), (PANEL_W, PANEL_H), (1, 0.5)))
+    H.framed(n, "Gate/Pilots", 10, "SurfaceVeryDark", INK, fill_alpha=0.94)
+    head = n.child(N("Gate/Pilots/Head", "Head", HM.TL(26, 22, PANEL_W - 52, 20)))
+    head.add("le", 114, H.le(ph=20))
+    gtext(head, "Gate/Pilots/Title", "Title", HM.TL(0, 0, 200, 20), ctext("Pilots", "TextLight", 13, spacing=16, alpha=0.82))
+    gtext(head, "Gate/Pilots/Count", "Count", HM.TR(0, 0, 200, 20), ctext("", "TextLight", 13, spacing=16, align="right"))
+    # The list grows the panel past its board height when a mode seats more pilots (up to 12).
+    n.add("vlg", 114, K.hv_layout(True, (26, 26, 22, 22), 18, 0, (1, 1), (1, 0))) \
+        .add("fit", 114, K.fitter(0, 2)).add("le", 114, H.le(mh=PANEL_H))
+    return arrives(n, "Fade", delay=0.25)
+
+
+def row_nodes():
+    """Under the roster's template row (the old AvatarDomain chip, kept so GameCanvas's overrides still land)."""
+    rule = N("Gate/Row/Rule", "Rule", R((0, 1), (1, 1), (0, 0), (0, 1), (0.5, 1)))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(INK, 0.8)))
+    stripe = N("Gate/Row/Stripe", "DomainStripe", R((0, 0.5), (0, 0.5), (0, 0), (3, 36), (0, 0.5)))
+    stripe.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1, 1, 1, 1)))
+    frame = N("Gate/Row/Frame", "AvatarFrame", R((0, 0.5), (0, 0.5), (14, 0), (44, 44), (0, 0.5)))
+    frame.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_fill"), True))
+    name_row = N("Gate/Row/NameRow", "NameRow", R((0, 0.5), (0, 0.5), (72, 10), (210, 26), (0, 0.5)))
+    name_row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (1, 0), (0, 0)))
+    gtext(name_row, "Gate/Row/Name", "Name", R(size=(150, 26)), ctext("Pilot", "TextLight", 20, face="Aldrich", upper=False))
+    gtext(name_row, "Gate/Row/Badge", "Badge", R(size=(40, 18)), ctext("You", "Selection", 12, spacing=16))
+    line = N("Gate/Row/Line", "Line", R((0, 0.5), (0, 0.5), (72, -13), (210, 18), (0, 0.5)))
+    line.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ctext("", "NeutralLightest", 12, spacing=16))
+    pip = N("Gate/Row/Pip", "Pip", R((1, 0.5), (1, 0.5), (-88, 0), (10, 11)))
+    pip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.kit_sprite("kit_hex_fill"), preserve=True))
+    state = N("Gate/Row/State", "State", R((1, 0.5), (1, 0.5), (-72, 0), (72, 18), (0, 0.5)))
+    state.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ctext("Loading", "NeutralLightest", 12, spacing=16))
+    return [rule, stripe, frame], [name_row, line, pip, state]
+
+
+# --- the footer: tip, LOADING, the bar and its percentage -----------------------------------
+
+def footer_node():
+    n = N("Gate/Footer", "Footer", R((0.5, 0), (0.5, 0), (0, SAFE_X), (FOOT_W, FOOT_H), (0.5, 0)))
+    H.framed(n, "Gate/Footer", 10, "SurfaceVeryDark", INK, fill_alpha=0.94)
+    tip = n.child(N("Gate/Tip", "TipRow", HM.TL(0, 19, FOOT_W, 26)))
+    gtext(tip, "Gate/Tip/Label", "Label", HM.TL(31, 0, 60, 26), ctext("Tip", "NeutralLightest", 13, spacing=16))
+    gtext(tip, "Gate/Tip/Text", "Text", HM.TL(103, 0, FOOT_W - 134, 26), ctext("", "TextLight", 19, upper=False))
+    gimg(n, "Gate/Footer/Rule", "Rule", HM.TL(0, 61, FOOT_W, 1), tok(INK, 0.8))
+    gtext(n, "Gate/Footer/Loading", "Loading", HM.TL(31, 80, 140, 20), ctext("Loading", "NeutralLightest", 13, spacing=50))
+    gtext(n, "Gate/Footer/Percent", "Percent", HM.TR(31, 72, 96, 34),
+          ctext("", "TextLight", 26, face="Aldrich", upper=False, align="right"))
+    return arrives(n, delay=0.3, distance=16)
+
+
+FOOT_BAR = HM.TL(181, 89, FOOT_W - 181 - 127, 3)
+
+
+def gate_view(p):
+    c = p.ctx.c
+
+    def go_ref(key):
+        return f"{{fileID: {p.ctx.go(key)}}}"
+
+    def ref(key, comp):
+        return f"{{fileID: {c(key, comp)}}}"
+    steps = "".join(f"  - group: {ref(f'Gate/Step{i}', 'cg')}\n    tick: {ref(f'Gate/Step{i}/Tick', 'hex')}\n"
+                    f"    check: {ref(f'Gate/Step{i}/Check', 'img')}\n    number: {ref(f'Gate/Step{i}/Number', 'tmp')}\n"
+                    f"    label: {ref(f'Gate/Step{i}/Label', 'tmp')}\n    underline: {ref(f'Gate/Step{i}/Under', 'img')}\n"
+                    for i in range(4))
+    return lambda ctx, go: K.mono(go, S["gate"],
+        f"  veilWords: {K.ref(11400000, VEIL_WORDS, 2)}\n  intensityWord: Intensity\n"
+        "  prismsTemplate: '{done} / {total} prisms'\n  percentTemplate: '{pct}%'\n"
+        + K.refs_list("cover", [c("Gate/Cover/Base", "hole"), c("Gate/Cover/Sea", "hole")])
+        + f"  crystal: {{fileID: {p.ctx.rt('Gate/Crystal')}}}\n  crystalGroup: {ref('Gate/Crystal', 'cg')}\n"
+        f"  crystalHex: {ref('Gate/Crystal/Hex', 'hex')}\n  crystalDim: {ref('Gate/Crystal/Dim', 'img')}\n"
+        f"  crystalBuilt: {ref('Gate/Crystal/Built', 'img')}\n  levelLine: {{fileID: {p.ctx.rt('Gate/Crystal/Level')}}}\n"
+        f"  crystalFlash: {ref('Gate/Crystal/Flash', 'hex')}\n  gateRing: {ref('Gate/Ring', 'hex')}\n"
+        f"  enteringText: {ref('Gate/Entering/Word', 'tmp')}\n  taglineText: {ref('Gate/Tagline', 'tmp')}\n"
+        f"  objectiveChip: {go_ref('Gate/Objective')}\n  objectiveText: {ref('Gate/Objective/Text', 'tmp')}\n"
+        f"  intensityChip: {go_ref('Gate/Intensity')}\n  intensityLabel: {ref('Gate/Intensity/Label', 'tmp')}\n"
+        f"  intensityValue: {ref('Gate/Intensity/Value', 'tmp')}\n"
+        + K.refs_list("intensityPips", [c(f"Gate/Intensity/Pip{i}", "img") for i in range(4)])
+        + "  steps:\n" + steps
+        + f"  prismsText: {ref('Gate/Steps/Prisms', 'tmp')}\n"
+        f"  tipRow: {go_ref('Gate/Tip')}\n  tipLabel: {ref('Gate/Tip/Label', 'tmp')}\n  tipText: {ref('Gate/Tip/Text', 'tmp')}\n"
+        f"  loadingLabel: {ref('Gate/Footer/Loading', 'tmp')}\n  percentText: {ref('Gate/Footer/Percent', 'tmp')}\n"
+        f"  stepActiveToken: {K.TOKEN_INDEX['TextLight']}\n  stepIdleToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
+        f"  stepFillToken: {K.TOKEN_INDEX['TextLight']}\n  stepPendingAlpha: 0.56\n  stepDoneAlpha: 0.78\n"
+        f"  pipOnToken: {K.TOKEN_INDEX['TextLight']}\n  pipOffAlpha: 0.25\n"
+        f"  content: {{fileID: {p.ctx.fid(CN['safe_go'] + '#cg')}}}\n  gateSeconds: 1.7\n  gateSettleRadius: 452\n")
+
+
+def controller_doc(p, gate_fid):
+    old = p.doc(CN["comp"])
+    head = old[:old.index("  m_EditorClassIdentifier:")]
+    keep = {f: re.search(r"^  %s: (.*)$" % f, old, re.M).group(1)
+            for f in ("gameData", "tournamentData", "canvasGroup", "progressSlider", "playerRoster", "maelstromRankText", "rankHeader")}
+    c = p.ctx.c
+    return (head + "  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ConnectingPanelController\n"
+            f"  gameData: {keep['gameData']}\n  tournamentData: {keep['tournamentData']}\n"
+            f"  canvasGroup: {keep['canvasGroup']}\n  gate: {{fileID: {gate_fid}}}\n"
+            f"  gameModeText: {{fileID: {CN['mode_tmp']}}}\n  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n"
+            f"  introWords: {K.ref(11400000, INTRO_LIBRARY, 2)}\n"
+            f"  phaseTitle: {{fileID: {c('Connect/Phase', 'tmp')}}}\n  phaseTitleEntrance: {{fileID: {c('Connect/Phase', 'in')}}}\n"
+            "  connectingTitle: Connecting to shore\n  buildingTitle: Building the arena\n"
+            "  settlingTitle: Settling the arena\n  waitingTitle: Waiting for pilots\n"
+            f"  progressSlider: {keep['progressSlider']}\n  barSmoothing: 0.25\n"
+            "  coveredLayBudgetMs: 80\n  coveredCreationBudgetMs: 0\n  parkedBackdrop: {r: 0, g: 0, b: 0, a: 1}\n"
+            f"  playerRoster: {keep['playerRoster']}\n  peerWaitTimeoutSeconds: 45\n"
+            f"  maelstromRankText: {keep['maelstromRankText']}\n  rankHeader: {keep['rankHeader']}\n  dwellSeconds: 1\n")
+
+
+ROSTER_ROW_FIELDS = (  # ConnectingPlayerRoster's row mode, in its declaration order (after builtEntrySize)
+    "domainHalo", "showAI", "templateNameText", "templateBadgeText", "templateLineText", "templateStateText",
+    "templatePip", "vessels", "youWord", "aiWord", "waitingWord", "readyWord", "lineTemplate", "countText",
+    "countTemplate", "readyToken", "waitingToken", "youToken", "otherBadgeToken")
+
+
+def roster_doc(p):
+    c = p.ctx.c
+    vals = dict(domainHalo="0", showAI="1", templateNameText=f"{{fileID: {c('Gate/Row/Name', 'tmp')}}}",
+                templateBadgeText=f"{{fileID: {c('Gate/Row/Badge', 'tmp')}}}",
+                templateLineText=f"{{fileID: {c('Gate/Row/Line', 'tmp')}}}",
+                templateStateText=f"{{fileID: {c('Gate/Row/State', 'tmp')}}}",
+                templatePip=f"{{fileID: {c('Gate/Row/Pip', 'img')}}}", vessels=K.ref(11400000, CLASS_LIST, 2),
+                youWord="You", aiWord="AI", waitingWord="Loading", readyWord="Ready", lineTemplate="'{hull}'",
+                countText=f"{{fileID: {c('Gate/Pilots/Count', 'tmp')}}}", countTemplate="'{ready} / {total} Ready'",
+                readyToken=str(K.TOKEN_INDEX["Cta"]), waitingToken=str(K.TOKEN_INDEX["NeutralLightest"]),
+                youToken=str(K.TOKEN_INDEX["Selection"]), otherBadgeToken=str(K.TOKEN_INDEX["NeutralLightest"]))
+    d = p.doc(CN["roster"])
+    d = set_field(d, "templateDomainImage", f"{{fileID: {c('Gate/Row/Stripe', 'img')}}}")
+    after = "builtEntrySize"
+    for f in ROSTER_ROW_FIELDS:
+        d = insert_after_field(d, after, f, vals[f])
+        after = f
+    return d
+
+
+def reparent(p, rt, parent_rt):
+    old = re.search(r"^  m_Father: \{fileID: (-?\d+)\}", p.doc(rt), re.M).group(1)
+    if old != parent_rt and p.sc.has(old):
+        p.children(old, [k for k in p.kids(old) if k != rt])
+    p.field(rt, "m_Father", f"{{fileID: {parent_rt}}}")
+
+
+def emit_all(p, nodes, parent_rt, after):
+    ids = []
+    for n in nodes:
+        ids.append(p.emit(n, parent_rt, after))
+        after = HM._last_doc(p, n)
+    return ids, after
+
+
 def connect_text(text_):
     p = Patch(text_, "ConnectingPanel/Item12")
     assert p.sc.script(CN["comp"]) == S["connect"], "ConnectingPanelController moved"
-    # Status: a quiet top-left line beside a breathing diamond (the board's "Connecting to Shore").
-    p.rect(CN["status_rt"], R((0, 1), (0, 1), (64, -36), (600, 20), (0, 1)))
-    p.replace(CN["status_tmp"], tmp_restyle(p.doc(CN["status_tmp"]), "Chakra", 14, True, 14, "left", "TextLight"))
-    dia = N("Connect/Diamond", "Diamond", R((0, 1), (0, 1), (40, -40), (12, 12), (0, 1)))
-    dia.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"), K.chrome_sprite("chrome_diamond"), preserve=True)) \
-        .add("th", 114, H.themed("ControlActive")).add("breathe", 114, HM.M.ambient("Breathe", period=1.6, amplitude=0.6))
-    # The readout column, bottom centre: mode, phase headline, bar, counts and seconds.
-    p.rect(CN["mode_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -190), (COL_X, 22)))
-    p.replace(CN["mode_tmp"], tmp_restyle(p.doc(CN["mode_tmp"]), "Chakra", 15, True, 14, "left", "NeutralLightest"))
-    title = N("Connect/Phase", "PhaseTitle", R((0.5, 0.5), (0.5, 0.5), (0, -232), (COL_X, 58)))
-    H.label(title, "Connecting", "Display", "TextLight")
-    title.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", distance=10))
-    p.rect(CN["slider_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -282), (COL_X, 6)))
-    p.body(CN["track_img"], HM.img_body(tok("TextLight", 0.16)), CN["track_go"])
-    p.body(CN["fill_img"], HM.img_body(tok("ControlActive")), CN["fill_go"])
-    prog = N("Connect/Progress", "ProgressText", R((0.5, 0.5), (0.5, 0.5), (0, -308), (COL_X, 26)))
-    H.label(prog, "", "Data", "TextLight")
-    secs = N("Connect/Elapsed", "ElapsedText", R((0.5, 0.5), (0.5, 0.5), (0, -308), (COL_X, 26)))
-    H.label(secs, "", "Data", "NeutralLightest", align="right")
-    p.rect(CN["preview_rt"], R((0.5, 0.5), (0.5, 0.5), (0, 110), (960, 540)))
+    # Out with the camera window and every generated node: they are re-emitted below, so a re-run is a no-op.
+    if p.sc.has(CN["camera_go"]):           # a plain Transform (no RectTransform), with no children
+        for fid in [CN["camera_go"]] + [c for c in p.comp_ids(CN["camera_go"]) if p.sc.has(c)]:
+            p.sc.remove(fid)
+    for go in (CN["preview_go"], CN["status_go"]):
+        if p.sc.has(go):
+            p.remove_subtree(go)
+    gen = RETIRED_CONNECT_KEYS + ("Connect/Phase", "Gate/Cover/Base", "Gate/Cover/Sea", "Gate/Crystal", "Gate/Ring",
+                                  "Gate/Entering", "Gate/Tagline", "Gate/Chips", "Gate/Steps", "Gate/Pilots", "Gate/Footer",
+                                  "Gate/Row/Rule", "Gate/Row/Stripe", "Gate/Row/Frame", "Gate/Row/NameRow", "Gate/Row/Line",
+                                  "Gate/Row/Pip", "Gate/Row/State")
+    # The slider and the roster's list live inside generated panels: lift them out before those go.
+    for rt in (CN["slider_rt"], CN["icons_rt"]):
+        reparent(p, rt, CN["safe_rt"])
+    for key in gen:
+        go = str(p.ctx.go(key))
+        if p.sc.has(go):
+            parent = re.search(r"^  m_Father: \{fileID: (-?\d+)\}", p.doc(str(p.ctx.rt(key))), re.M).group(1)
+            p.remove_subtree(go)
+            if p.sc.has(parent):
+                p.children(parent, [k for k in p.kids(parent) if p.sc.has(k)])
+
+    # The root: no backdrop of its own (the cover draws it, with the hole), still blocking input while it is up.
+    p.body(CN["root_img"], HM.img_body((0, 0, 0, 0), raycast=True), CN["root_go"])
+    root_ids, _ = emit_all(p, cover_nodes() + [crystal_node(), ring_node()], CN["root_rt"], CN["comp"])
+    p.children(CN["root_rt"], root_ids + [CN["safe_rt"]])
+
+    # The brief, the panels and the footer: the Safe Area is the gate's content, faded as the gate opens.
+    p.add_comp(CN["safe_go"], "cg", 225, H.canvas_group(True))
+    p.rect(CN["mode_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -12), (920, 132)))
+    m = tmp_restyle(p.doc(CN["mode_tmp"]), "Aldrich", TITLE_SIZE, True, 5, "center", "TextLight")
+    for f, v in (("m_fontSizeMin", str(TITLE_MIN)), ("m_TextWrappingMode", "0")):
+        m = C.field_set(m, f, v)
+    p.replace(CN["mode_tmp"], m)
+    p.add_comp(CN["mode_go"], "cg", 225, H.canvas_group(True))
+    p.add_comp(CN["mode_go"], "in", 114, HM.M.entrance("Rise", delay=0.08, distance=24))
+    p.rect(CN["rank_rt"], R((0, 1), (0, 1), (SAFE_X, -48), (480, 120), (0, 1)))
     rank = p.doc(CN["rank_tmp"])
     rank = C.field_set(rank, "m_fontAsset", K.ref(11400000, K.ALDRICH[0], 2))
-    p.replace(CN["rank_tmp"], C.field_set(rank, "m_sharedMaterial", K.ref(K.ALDRICH[1], K.ALDRICH[0], 2)))
-    added = []
-    for n in (dia, title, prog, secs):
-        added.append(p.emit(n, CN["safe_rt"], CN["comp"]))
-    p.children(CN["safe_rt"], [k for k in p.kids(CN["safe_rt"]) if k not in added] + added)
-    comp = p.doc(CN["comp"])
-    comp = set_field(comp, "statusBaseText", "Connecting to Shore")
-    comp = insert_after_field(comp, "gameModeText", "phaseTitle", f"{{fileID: {p.ctx.c('Connect/Phase', 'tmp')}}}")
-    comp = insert_after_field(comp, "phaseTitle", "progressText", f"{{fileID: {p.ctx.c('Connect/Progress', 'tmp')}}}")
-    comp = insert_after_field(comp, "progressText", "elapsedText", f"{{fileID: {p.ctx.c('Connect/Elapsed', 'tmp')}}}")
-    comp = insert_after_field(comp, "elapsedText", "phaseTitleEntrance", f"{{fileID: {p.ctx.c('Connect/Phase', 'in')}}}")
-    comp = insert_after_field(comp, "gameModeText", "backdropArt", f"{{fileID: {p.ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}")
-    comp = insert_after_field(comp, "backdropArt", "games", K.ref(11400000, ARCADE_GAMES, 2))
-    p.replace(CN["comp"], comp)
-    # The backdrop (section 28): the mode's card art drifting under a dim, over a solid base, in
-    # place of the flat purple-blue sprite. It bleeds; the readout stays in the safe area.
-    p.body(CN["root_img"], HM.img_body(tok("SurfaceBlack"), raycast=True), CN["root_go"])
-    backs = backdrop_nodes()
-    added = []
-    after = CN["comp"]
-    for n in backs:
-        added.append(p.emit(n, CN["root_rt"], after))
-        after = HM._last_doc(p, n)
-    p.children(CN["root_rt"], added + [k for k in p.kids(CN["root_rt"]) if k not in added])
+    rank = C.field_set(rank, "m_sharedMaterial", K.ref(K.ALDRICH[1], K.ALDRICH[0], 2))
+    p.replace(CN["rank_tmp"], C.field_set(rank, "m_HorizontalAlignment", "1"))
+    safe_nodes = [entering_node(), tagline_node(), chips_node(), steps_node(), pilots_node(), footer_node()]
+    safe_ids, _ = emit_all(p, safe_nodes, CN["safe_rt"], CN["safe_go"])
+    rank_rt = CN["rank_rt"]
+    p.children(CN["safe_rt"], [safe_ids[0], CN["mode_rt"]] + safe_ids[1:] + [rank_rt])
+
+    # The bar, into the footer: a slim track and a light fill.
+    footer_rt = str(p.ctx.rt("Gate/Footer"))
+    reparent(p, CN["slider_rt"], footer_rt)
+    p.rect(CN["slider_rt"], FOOT_BAR)
+    p.children(footer_rt, p.kids(footer_rt) + [CN["slider_rt"]])
+    p.body(CN["track_img"], HM.img_body(tok(INK)), CN["track_go"])
+    p.body(CN["fill_img"], HM.img_body(tok("TextLight")), CN["fill_go"])
+
+    # The pilots: the roster's list, into the panel, one row each (ConnectingPlayerRoster's row mode).
+    pilots_rt = str(p.ctx.rt("Gate/Pilots"))
+    reparent(p, CN["icons_rt"], pilots_rt)
+    p.rect(CN["icons_rt"], HM.TL(26, 60, PANEL_W - 52, PILOT_ROW_H * 4))
+    p.children(pilots_rt, p.kids(pilots_rt) + [CN["icons_rt"]])
+    icons_img = next(f for f in p.comp_ids(CN["icons_go"]) if f"guid: {K.IMAGE}" in p.doc(f))
+    p.body(icons_img, HM.img_body((1, 1, 1, 0), enabled=False), CN["icons_go"])
+    layout = next(f for f in p.comp_ids(CN["icons_go"]) if f"guid: {S['hlg']}" in p.doc(f) or f"guid: {S['vlg']}" in p.doc(f))
+    p.body(layout, K.hv_layout(True, (0, 0, 0, 0), 0, 0, (1, 0), (1, 0)), CN["icons_go"])
+    p.field(CN["row_go"], "m_Name", "PilotRow")
+    p.rect(CN["row_rt"], R((0, 0), (0, 0), (0, 0), (PANEL_W - 52, PILOT_ROW_H)))
+    p.body(CN["row_img"], HM.img_body((1, 1, 1, 0), enabled=False), CN["row_go"])
+    p.rect(CN["avatar_rt"], R((0, 0.5), (0, 0.5), (14, 0), (44, 44), (0, 0.5)))
+    under, over = row_nodes()
+    under_ids, after = emit_all(p, under, CN["row_rt"], CN["roster"])
+    over_ids, _ = emit_all(p, over, CN["row_rt"], after)
+    p.children(CN["row_rt"], under_ids + [CN["avatar_rt"]] + over_ids)
+    p.replace(CN["roster"], roster_doc(p))
+
+    gate_fid = p.add_comp(CN["root_go"], "gate", 114, gate_view(p))
+    p.replace(CN["comp"], controller_doc(p, gate_fid))
     return p.text()
-
-
-ARCADE_GAMES = "402ca7eefc2aeb64baaa140c43312bcd"   # ArcadeGames.asset (SO_GameList)
-
-
-def backdrop_nodes():
-    clip = N("Connect/Backdrop", "Backdrop", STRETCH)
-    clip.add("rmask", 114, A.rect_mask())
-    drift = clip.child(N("Connect/Backdrop/Drift", "Drift", R((0, 0), (1, 1), (0, 0), (160, 90))))
-    drift.add("cover", 114, lambda ctx, go: K.mono(go, K.kit_script("KitCoverImage"),
-              f"  image: {{fileID: {ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}\n"))
-    art = drift.child(N("Connect/Backdrop/Drift/Art", "Art", STRETCH))
-    art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
-    dim = N("Connect/Dim", "Dim", STRETCH)
-    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.55))).add("th", 114, H.themed("SurfaceBlack", 0.55))
-    fade = N("Connect/BottomFade", "BottomFade", R((0, 0), (1, 0), (0, 240), (0, 480)))
-    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.92), K.kit_sprite("kit_fade_v"))) \
-        .add("th", 114, H.themed("SurfaceBlack", 0.92))
-    return [clip, dim, fade]
 
 
 # --------------------------------------------------------------------------------------------
@@ -1448,6 +1852,11 @@ def check_local_refs(path, text_):
         assert m.group(1) in anchors, f"{path}: dangling local fileID {m.group(1)}"
 
 
+def p_fid(key):
+    """A deterministic fileID connect_text gives `key` (a node#comp or a go#comp key)."""
+    return str(P.Ctx("ConnectingPanel/Item12").fid(key))
+
+
 def validate(files):
     lk = files[LOCKUP]
     for k, v in LOCKUP_FIELDS.items():
@@ -1513,12 +1922,15 @@ def validate(files):
     for f in ("ring", "avatar", "state", "group"):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, docs[chip], re.M), f"ReadyWaitingChip.{f} is not wired"
     pi = next(d for d in docs.values() if d.startswith("--- !u!1001 ") and f"guid: {COUNTDOWN_PREFAB}" in d.split("m_SourcePrefab:")[1])
-    for prop in ("countdownText", "waitingPanel", "countdownDisplay"):
+    for prop in ("countdownText", "waitingPanel", "countdownDisplay", "beatHex", "beatHexGroup", "goRing"):
         m = re.search(r"      propertyPath: %s\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}" % prop, pi)
         assert m and m.group(1) in docs, f"CountdownTimer.{prop} is not wired"
         assert pi.count(f"propertyPath: {prop}\n") == 1, f"CountdownTimer.{prop} is overridden twice"
     beat = re.search(r"      propertyPath: countdownText\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}", pi).group(1)
-    assert f"  m_fontSize: {BEAT_SIZE}\n" in docs[beat], "the countdown beat is not 260 px"
+    assert f"  m_fontSize: {BEAT_SIZE}\n" in docs[beat], f"the countdown beat is not {BEAT_SIZE} px"
+    assert "  m_enableAutoSizing: 0\n" in docs[beat], "the countdown beat auto-sizes - it would be capped at 48 px"
+    hexd = docs[re.search(r"      propertyPath: beatHex\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}", pi).group(1)]
+    assert f"guid: {S['crystal']}, type: 3}}" in hexd, "the count's hex is not a LoadCrystalGraphic (it cannot fill)"
 
     # 12c
     pz = files[PAUSE]
@@ -1552,11 +1964,58 @@ def validate(files):
     check_local_refs(CONNECT, cn)
     assert f"guid: {WHITRABT}" not in cn, "the connecting panel still draws in the off-spec whitrabt face"
     cd = docs_of(cn)
-    for f in ("phaseTitle", "progressText", "elapsedText", "statusText", "gameModeText", "progressSlider", "backdropArt"):
-        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, cd[CN["comp"]], re.M), f"ConnectingPanelController.{f} is not wired"
-    assert f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}" in cd[CN["comp"]], "the connecting backdrop has no game list to find a mode's art in"
-    for key in ("status_tmp", "mode_tmp"):
-        assert f"guid: {K.SEMIBOLD[0]}" in cd[CN[key]], f"the connecting panel's {key} is not Chakra Petch SemiBold"
+    comp = cd[CN["comp"]]
+    for f in ("gate", "phaseTitle", "gameModeText", "progressSlider", "playerRoster", "phaseTitleEntrance"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, comp, re.M), f"ConnectingPanelController.{f} is not wired"
+    for f, v in (("games", K.ref(11400000, ARCADE_GAMES, 2)), ("introWords", K.ref(11400000, INTRO_LIBRARY, 2)),
+                 ("coveredLayBudgetMs", "80"), ("dwellSeconds", "1")):
+        assert f"  {f}: {v}\n" in comp, f"ConnectingPanelController.{f} is not {v}"
+    for f in ("connectingCamera", "arenaPreview", "backdropArt", "statusText", "progressText", "elapsedText", "watchedLayBudgetMs"):
+        assert not re.search(r"^  %s:" % f, comp, re.M), f"ConnectingPanelController still carries the retired {f}"
+    # The cell gate COVERS the arena: nothing behind it renders the world (Docs/MENU_REDESIGN_B.md section 99.2).
+    assert not re.search(r"^--- !u!20 ", cn, re.M), "a camera renders behind the connecting panel again"
+    assert f"guid: {C.script('ConnectingArenaPreview')}" not in cn, "the connecting panel still renders an arena preview"
+    assert "  m_Color: {r: 0, g: 0, b: 0, a: 0}\n" in cd[CN["root_img"]], \
+        "the panel's own Image is opaque again - it would fill the gate's hole before the arena shows through it"
+    gates = [f for f, d in cd.items() if f"guid: {S['gate']}, type: 3}}" in d]
+    assert len(gates) == 1 and re.search(r"^  gate: \{fileID: %s\}" % gates[0], comp, re.M), "the cell gate view is not the controller's"
+    gv = cd[gates[0]]
+
+    def target(name, script=None):
+        m = re.search(r"^ +%s: \{fileID: (-?\d+)\}" % name, gv, re.M)
+        assert m and m.group(1) in cd, f"ConnectingGateView.{name} is not wired"
+        if script:
+            assert f"guid: {script}, type: 3}}" in cd[m.group(1)], f"ConnectingGateView.{name} is not a {script}"
+        return cd[m.group(1)]
+    cover = re.search(r"^  cover:\n((?:  - .*\n)*)", gv, re.M)
+    assert cover and len(re.findall(r"\{fileID: [1-9-]", cover.group(1))) == 2, "the gate's cover is not the base and the sea"
+    for fid in re.findall(r"\{fileID: (-?\d+)\}", cover.group(1)):
+        assert f"guid: {S['aperture']}, type: 3}}" in cd[fid], "a cover layer is not a HexApertureGraphic (no hole to open)"
+    for name in ("crystalHex", "crystalFlash", "gateRing"):
+        target(name, S["crystal"])
+    built = target("crystalBuilt", K.IMAGE)
+    assert "  m_Type: 3\n" in built and "  m_FillMethod: 1\n" in built, "the built crystal is not filled from the bottom"
+    assert f"guid: {OMNI}" in built, "the built crystal is not the Omni crystal"
+    for name in ("crystalGroup", "enteringText", "taglineText", "objectiveText", "intensityValue", "prismsText", "tipText",
+                 "percentText", "loadingLabel"):
+        target(name)
+    assert re.search(r"^  content: \{fileID: %s\}" % p_fid(CN["safe_go"] + "#cg"), gv, re.M), "the gate fades nothing as it opens"
+    assert len(re.findall(r"^    tick: \{fileID: [1-9-]", gv, re.M)) == 4, "the steps panel does not have its four ticks"
+    for fid in re.findall(r"^    tick: \{fileID: (-?\d+)\}", gv, re.M):
+        assert f"guid: {S['crystal']}, type: 3}}" in cd[fid], "a step tick is not a hex"
+    assert f"  veilWords: {K.ref(11400000, VEIL_WORDS, 2)}\n" in gv, "the gate's words are not the cell-change screen's"
+    ro = cd[CN["roster"]]
+    for f, v in (("showAI", "1"), ("domainHalo", "0"), ("vessels", K.ref(11400000, CLASS_LIST, 2))):
+        assert f"  {f}: {v}\n" in ro, f"the pilots list's {f} is not {v}"
+    for f in ("templateNameText", "templateStateText", "templatePip", "countText", "templateDomainImage"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, ro, re.M), f"the pilots list's {f} is not wired"
+    assert f"  templateDomainImage: {{fileID: {CN['row_img']}}}" not in ro, \
+        "the row's own Image is the domain plate again - it would paint the whole row in the team colour"
+    # GameCanvas overrides four objects in this prefab: they must still exist, or the overrides dangle.
+    guid = K.meta_guid(CONNECT)
+    for fid in set(re.findall(r"- target: \{fileID: (-?\d+), guid: %s" % guid, files[CANVAS])):
+        assert fid in cd, f"GameCanvas overrides {fid} in ConnectingPanel, which no longer exists"
+    assert f"guid: {K.SEMIBOLD[0]}" in cd[str(p_fid('Connect/Phase#tmp'))], "the steps header is not Chakra Petch SemiBold"
     assert "m_Sprite: {fileID: 0}" in cd[CN["fill_img"]], "the connecting bar still wears the legacy loading sprite"
 
     # 12d - reveal
@@ -1684,7 +2143,7 @@ def validate(files):
         return text_.count(f"guid: {kit_entrance}, type: 3}}")
     for path, at_least, what in ((CANVAS, 3, "Ready button, caption and the waiting panel"),
                                  (PAUSE, 5, "pause scrim, window and the three buttons"),
-                                 (CONNECT, 1, "the connecting headline"), (ENDGAME, 3, "the reveal's three lines"),
+                                 (CONNECT, 7, "the connecting headline, title, brief, chips, panels and footer"), (ENDGAME, 3, "the reveal's three lines"),
                                  (sb_path(SB_PANEL), 6, "scoreboard scrim, header, banner, rule, stats and buttons"),
                                  (PANEL["path"], 1, "the score column"),
                                  (sb_path(SB_STAT), 1, "the scoreboard stat tiles")):
@@ -1755,8 +2214,17 @@ def self_test(files):
     cases = [
         ("two stand-ins for the scoreboard panel again", second_root_stub),
         ("the scoreboard host a 0x0 point again", point_host),
-        ("the connecting backdrop unwired", lambda f: f.__setitem__(CONNECT, re.sub(
-            r"(  backdropArt: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("the cell gate unwired", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  gate: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("a camera back behind the connecting panel", lambda f: f.__setitem__(CONNECT, f[CONNECT]
+            + "--- !u!20 &7770001\nCamera:\n  m_ObjectHideFlags: 0\n")),
+        ("the connecting panel's own backdrop opaque again", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            docs_of(f[CONNECT])[CN["root_img"]], docs_of(f[CONNECT])[CN["root_img"]].replace(
+                "  m_Color: {r: 0, g: 0, b: 0, a: 0}\n", "  m_Color: {r: 0, g: 0.0039215684, b: 0.039215688, a: 1}\n")))),
+        ("a step without its tick", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(    tick: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("the pilots list hiding the AI pilots", sub(CONNECT, "  showAI: 1\n", "  showAI: 0\n")),
+        ("the connecting panel waiting out 4 seconds again", sub(CONNECT, "  dwellSeconds: 1\n", "  dwellSeconds: 4\n")),
         ("the lava lamp's element colour back on", sub(LOCKUP, "  elementColour: 0\n", "  elementColour: 1\n")),
         ("the lockup plate back to the old near-black", sub(LOCKUP, LOCKUP_FIELDS["plateColor"], "{r: 0.024, g: 0.031, b: 0.063, a: 0.86}")),
         ("the LOCKED card pitch moved", sub(LOCKUP, "  cardPitch: 128\n", "  cardPitch: 140\n")),
@@ -1766,6 +2234,8 @@ def self_test(files):
         ("the score column a full team fill", sub(PANEL["path"], "  indicatorAlpha: 0.12\n", "  indicatorAlpha: 1\n")),
         ("the Ready button left a plain Button", sub(CANVAS, f"guid: {S['kitbutton']}", f"guid: {S['button']}")),
         ("the waiting panel deaf to PlayerReady", sub(CANVAS, f"  toastChannel: {K.ref(11400000, TOAST_CHANNEL, 2)}", "  toastChannel: {fileID: 0}")),
+        ("the count without its hex", lambda f: f.__setitem__(CANVAS, re.sub(
+            r"(      propertyPath: beatHex\n      value: \n      objectReference: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
         ("the countdown still drawn in sprites", lambda f: f.__setitem__(CANVAS, re.sub(
             r"(      propertyPath: countdownText\n      value: \n      objectReference: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
         ("a pause button on A", sub(PAUSE, "  activationButton: 4\n", "  activationButton: 6\n")),

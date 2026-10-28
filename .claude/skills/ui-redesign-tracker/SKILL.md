@@ -9,6 +9,11 @@ Maintains `Docs/UI_REDESIGN_TASKS.md` for the Cosmic Shore UI overhaul. Runs **b
 
 The point of this skill is not bookkeeping. It is to catch the gap between what a task specified and what actually landed, while that gap is still cheap to close.
 
+The BOARD side is `/design-board` (`.claude/skills/design-board/`): opening the Menu Redesign B canvas in a session,
+comparing a new design against the board and the build, planning and publishing a round, refreshing the repo copy, and
+the offline board check of T16 as a tool (`design_board.py check <root> --only R<N>`). This skill verifies the BUILD
+against the board the doc names as picked.
+
 ## Core rule
 
 **Never tick a criterion you have not verified against the working tree.** A commit message, a PR description, or a previous assistant turn claiming a task is done is not evidence. Open the file, read the value, run the check. If a criterion cannot be verified without the Unity editor or a play session, mark it `[~]` and say so — do not mark it `[x]` and do not mark it `[ ]`.
@@ -141,6 +146,32 @@ anchors`. It names three fileIDs and no node. Grep the generator for the shared 
 variables against one item of their list). Then press the handlers in order (make, pick, create). On the Rev 31 boards
 this caught a `create` that read the draft after clearing it, and it gives the layout numbers (which card overlaps the
 list) without rendering, which the canvas type asks sessions not to do.
+
+**T17 - a kit TMP auto-sizes, so a runtime `fontSize` write is a no-op and the role size is a CAP** (claude/new-session-76hnyc,
+2026-10-28). `K.tmp` / `H.text` emit `m_enableAutoSizing: 1` with `m_fontSizeMax` = the ROLE's size. A generator that then
+replaces only `m_fontSize` (the countdown's "260 px" beat on the Display role) ships text auto-sized up to 48, and code
+that sets `text.fontSize` per beat changes nothing. The countdown drew at 48 px from item 12b until Rev 33. When a text's
+size is custom or set in code, also write `m_enableAutoSizing: 0` and min = max = the size, and check that line in
+`validate()`.
+
+**T18 - restructuring a prefab in place: lift the kept objects out BEFORE removing the generated parents** (same
+branch). A `Patch` transform re-runs on its own output, so a kept object you reparented under a generated node (the
+Slider into the footer, PlayerIcons into the pilots panel) is inside that node on the second run, and
+`remove_subtree(generated)` deletes it with the node. Reparent every kept object back to a stable parent first, then
+remove and re-emit the generated nodes. Also: `remove_subtree` assumes a RectTransform (`rect_of` raises
+StopIteration on a plain `Transform`, e.g. a Camera object inside a UI prefab), so remove such an object by its GO and
+component ids. Prove both by transforming the output a second time and asserting it is unchanged.
+
+**T19 - after removing objects from a prefab nested in GameCanvas, check the SCENES' overrides by the derived id**
+(same branch). A scene that overrides an object in a prefab nested in GameCanvas targets
+`source fileID XOR GameCanvas's PrefabInstance id` with GameCanvas's guid, not the inner prefab's. So grepping the
+scenes for the inner guid finds nothing either way. Compute the derived ids of every removed object (and of every
+restyled kept one) and grep the 41 files that nest GameCanvas for them; 0 hits is the evidence.
+
+**T20 - a DOTween `Sequence.Insert` before the `Append`s delays every beat** (same branch). `Append` places a tween at
+the sequence's current END, so inserting a long tween first (a hex fill at 0, d, 2d) lengthens the sequence and every
+appended beat starts after it: 3-2-1 would have started about 3 s late. Append the timeline first, then `Insert` the
+overlays at absolute times.
 
 ## Cross-cutting checks
 

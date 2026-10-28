@@ -18,7 +18,7 @@ MonoBehaviour:
     (play geometry, not a claim; the controller clears NucleusIsControlZone) and the same
     three-species cleanup crew waits outside it until the volume ladder leaves Calm - forked
     for exactly TWO reasons. (1) ANCHORS: a Scarab''s switch grafts onto a living plant''s
-    heart, so this cell grows 14 NetworkSynced Cacti plants (BranchingFlora) in a band
+    heart, so this cell grows 14 NetworkSynced Borromean plants (BorromeanFlora) in a band
     inside the court and those hearts ARE the scoring sockets. Scramble authors no flora at
     all, so its profile could not be reused, and the SPECIES is what makes each intensity a
     different-looking place - the four are a DIFFERENT KIND of plant rather than four
@@ -27,7 +27,7 @@ MonoBehaviour:
     DAIS, so a match raises three to five times the mass and Scramble''s gates (Restless
     164,000 / Frenzy 391,000) would both be crossed before the race was half run, after
     which the ladder conveys nothing. Restated in the currency this mode runs on: the trail
-    band plus the standing anchor forest (42000 volume, 560 prisms) plus 2 monuments for
+    band plus the standing anchor forest (35167 volume, 4788 prisms) plus 2 monuments for
     Restless and 5 for Frenzy, at 50,773 volume and 255 prisms each (SCARAB.md 5.1), out of
     the 7 a maximum-length 3-toll match can raise. ESTIMATE pending the in-editor baseline
     measure; see TOLLWAY.md.'
@@ -41,11 +41,11 @@ MonoBehaviour:
   SpawnProfile: {fileID: 11400000, guid: 6f84cb612e375789377d151a3cb700d6, type: 2}
   SenseRadiusOverride: 1300
   PhaseThresholds:
-    RestlessEnter: 2280
-    RestlessExit: 2180
-    FrenzyEnter: 5600
-    FrenzyExit: 5390
-    RestlessEnterVolume: 156000
-    RestlessExitVolume: 152000
-    FrenzyEnterVolume: 332000
-    FrenzyExitVolume: 326000
+    RestlessEnter: 6500
+    RestlessExit: 6400
+    FrenzyEnter: 9830
+    FrenzyExit: 9620
+    RestlessEnterVolume: 149000
+    RestlessExitVolume: 145000
+    FrenzyEnterVolume: 325000
+    FrenzyExitVolume: 319000

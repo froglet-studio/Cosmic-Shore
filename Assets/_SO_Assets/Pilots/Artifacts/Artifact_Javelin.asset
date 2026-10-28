@@ -50,6 +50,7 @@ MonoBehaviour:
     baseCost: 2
     costStep: 1
     twistLine: It cracks ordinary shields too.
+  foundOnVoyages: 0
   loadSound:
     Guid:
       Data1: 0

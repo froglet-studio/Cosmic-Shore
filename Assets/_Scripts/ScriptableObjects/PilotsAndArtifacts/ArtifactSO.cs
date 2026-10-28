@@ -56,6 +56,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("One track per element: Mass, Space, Time and Charge, each 0 to 10 with a twist at 5.")]
         [SerializeField] ArtifactTrack[] tracks = Array.Empty<ArtifactTrack>();
 
+        [Header("Getting it")]
+        [Tooltip("Locked until found: the player holds it only once one has been found on a voyage and docked home " +
+                 "(Garrett, 2026-10-28). Off: free, like every other artifact.")]
+        [SerializeField] bool foundOnVoyages;
+
         [Header("Audio (shipped empty: an unwired slot is a visible TODO)")]
         [Tooltip("Plays when a payload is taken loaded with this artifact.")]
         [SerializeField] EventReference loadSound;
@@ -70,6 +75,7 @@ namespace CosmicShore.ScriptableObjects
         public VesselRequirement Requirement => requirement;
         public PayloadTransformSO Transform => payloadTransform;
         public ArtifactTrack[] Tracks => tracks ?? Array.Empty<ArtifactTrack>();
+        public bool FoundOnVoyages => foundOnVoyages;
         public EventReference LoadSound => loadSound;
         public EventReference ReleaseSound => releaseSound;
 

@@ -20,7 +20,7 @@ MonoBehaviour:
   SpacePlan: {fileID: 4900000, guid: 337aaa14d97dd0a87399f1d0223ec939, type: 3}
   TimePlan: {fileID: 4900000, guid: db839ccf55616a4c67e38f69d7927a62, type: 3}
   TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
-  UnitScale: 2
+  UnitScale: 4.088
   TickHz: 10
   MaxStepsPerFrame: 3
   SimBudgetMsPerFrame: 3
@@ -33,9 +33,9 @@ MonoBehaviour:
   MaxProxies: 155
   ProxyLingerSeconds: 2
   SeedMembers: 48
-  BiteRadius: 10
+  BiteRadius: 20.438
   BitersPerStep: 24
-  EggVolume: {x: 20.45, y: 40.31, z: 22.18, w: 12.8}
+  EggVolume: {x: 75.45, y: 344.25, z: 81.84, w: 109.31}
   CrossElementCost: 2
   StomachEggs: 240
   ForageBelow: 0.5
@@ -49,8 +49,9 @@ MonoBehaviour:
   StarvationSeconds: 90
   ShedIntervalSeconds: 1
   ExtinctLingerSeconds: 10
-  Cruise: 0.35
+  Cruise: 0.171
   TurnPerStep: 0.03
+  SortVMaxScale: 0.489
   WanderReach: 300
   VesselRadius: 9
   SenseMargin: 400
@@ -58,7 +59,8 @@ MonoBehaviour:
   DangerExit: 0.15
   HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
   PrismScale: 1
-  HeartPrismGap: 0.6
+  ElementBodyScale: {x: 0.756, y: 1, z: 0.756, w: 1}
+  HeartPrismGap: 1.226
   BirthBloomSeconds: 0.8
   MoltHeartSeconds: 0.5
   GridSize: 8

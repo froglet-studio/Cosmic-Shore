@@ -791,7 +791,7 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
                 m.SetShape(BodyScale(job, i), BodyZ(job, i));
-                m.SetDanger(job.Instances[i].Tier == 1, species.Species.ContactWeight);
+                SetTier(m, job.Instances[i]);
             }
         }
 
@@ -817,7 +817,7 @@ namespace CosmicShore.Gameplay
             var at = job.PoseAt(i, _host.Alpha);
             var member = Instantiate(species.AgentPrefab, new Vector3(at.X, at.Y, at.Z), Face(job.FaceAt(i, _host.Alpha)));
             float age = Mathf.Max(0f, (job.Tick + _host.Alpha - job.Instances[i].BirthTick) * _host.Dt);
-            member.Bind(HostCell, this, i, e, species.HeartWorldScale(e), BodyScale(job, i), BodyZ(job, i), domain, age, _gpu);
+            member.Bind(HostCell, this, i, e, BodyScale(job, i), BodyZ(job, i), domain, age, _gpu);
             HostCell.RegisterSpawnedObject(member.gameObject);
             // The replication seam every fauna producer reaches. An agent carries no NetworkObject (agents are
             // client-local, like every swarm member), so this only neutralizes; it keeps the seam gate whole.
@@ -906,7 +906,7 @@ namespace CosmicShore.Gameplay
             var p = job.PoseAt(i, _host.Alpha);
             m.transform.SetPositionAndRotation(new Vector3(p.X, p.Y, p.Z), Face(job.FaceAt(i, _host.Alpha)));
             if (!m.MaterialiseNow()) return null;
-            m.SetDanger(job.Instances[i].Tier == 1, species.Species.ContactWeight);
+            SetTier(m, job.Instances[i]);
             m.SyncBodyToIndex();
             SuspendEntry(k);   // its real body is the agent's one entry now
             return m;
@@ -973,6 +973,16 @@ namespace CosmicShore.Gameplay
                     break;
                 }
             }
+        }
+
+        /// <summary>A proxy's body takes its agent's published tier and shield (the element law is already in the frame,
+        /// SubstrateTickJob). A Charge population's prisms are danger prisms by the law, so they burn at a danger prism's
+        /// full weight even where the species' strike is lighter or never burns (Docs/ECOSYSTEM.md §65.7).</summary>
+        void SetTier(SubstrateAgentFauna m, in SwarmInstance s)
+        {
+            float weight = species.Species.ContactWeight;
+            if (_element == 0) weight = Mathf.Max(1f, weight);
+            m.SetTier(s.Tier == 1, s.Shielded, weight);
         }
 
         /// <summary>The diet: living flora mass only, through the platform's one edibility rule and the shielded-mass rule.</summary>
