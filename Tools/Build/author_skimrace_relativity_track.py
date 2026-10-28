@@ -106,7 +106,7 @@ SNAKE = (4,    110.0,     0.5,     270.0, 60.0)
 WAYPOINT_SPACING = 70.0
 ANCHOR_SPACING = 470.0  # target arc between crystal anchors; each pass->pass span is divided evenly
 ANCHOR_LIFT = 0.0       # crystal anchors sit this far above the ribbon, along its normal (the local floor)
-LAPS = 2
+LAPS = 1   # 2 until 2026-10-26: one lap (26 crystals) lands an experienced race near 90 s, two ran ~145 s
 
 # ---------------------------------------------------------------- what the track must satisfy
 SPAWN = (700.0, 0.0, -200.0)  # the scene's PlayerOrigin stack (y = -20..20), facing +Z

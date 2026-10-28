@@ -29,6 +29,8 @@ _spec.loader.exec_module(K)
 
 REPO = K.REPO
 RECT_MASK_2D = "3312d7739989d2b4e91e6319e9a96d76"
+# What rect_mask() authors: the kit RectMask2D that sleeps while nothing under it can be seen.
+KIT_RECT_MASK_2D = K.kit_script("KitRectMask2D")
 CANVAS_GROUP = 225
 
 # Mirrors of the C# enums (Assets/_Scripts/UI/Kit/KitEntrance.cs, KitAmbient.cs, KitMotion.cs).
@@ -99,7 +101,7 @@ def canvas_group(alpha=1.0, interactable=True, blocks=True):
 
 
 def rect_mask():
-    return lambda ctx, go: K.mono(go, RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
+    return lambda ctx, go: K.mono(go, KIT_RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
 
 
 def tiled_image(color, sprite):

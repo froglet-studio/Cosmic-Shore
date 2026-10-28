@@ -120,6 +120,37 @@ def apply(rows):
     return sorted(by_path)
 
 
+def parse_game_names(html):
+    """{key: (name, status)} of a page's `const GAME_NAMES = { key: ['Asset.field', 'status'], ... };` (the Stoat, round 22:
+    the artifact names every parameter by the game's own name), or {} when the page has none."""
+    start = html.find('const GAME_NAMES = {')
+    if start < 0:
+        return {}
+    end = html.find('\n  };', start)
+    block = html[start:end if end >= 0 else len(html)]
+    q = r"'((?:[^'\\]|\\.)*)'"
+    return {m.group(1): (m.group(2).replace("\\'", "'"), m.group(3))
+            for m in re.finditer(r"\b(\w+)\s*:\s*\[\s*" + q + r"\s*,\s*" + q + r"\s*\]", block)}
+
+
+def name_errors(vmap, html):
+    """Where a page's GAME_NAMES disagrees with its map: a mapped key must be 'linked' under the map's Asset.field, and a
+    'linked' key must be in the map. No GAME_NAMES: nothing to hold."""
+    names = parse_game_names(html)
+    if not names:
+        return []
+    out = []
+    mapped = {r['key']: os.path.basename(r['asset']).replace('.asset', '') + '.' + r['field'] for r in vmap['rows']}
+    for k, want in mapped.items():
+        have = names.get(k)
+        if have is not None and have != (want, 'linked'):
+            out.append('%s: GAME_NAMES says %s (%s), the map links %s' % (k, have[0], have[1], want))
+    for k, (n, st) in names.items():
+        if st == 'linked' and k not in mapped:
+            out.append('%s: GAME_NAMES says linked to %s, but the map has no row for it' % (k, n))
+    return out
+
+
 def load_maps(only=None):
     maps = []
     for name in sorted(os.listdir(MAPS)):
@@ -159,6 +190,9 @@ def run(args):
             continue
         problems = [r for r in rows if r[4]]
         drift = [r for r in rows if not r[4] and not same(r[2], r[3])]
+        for e in name_errors(vmap, html):   # the page's game names must be the map's
+            print('ERROR names %s' % e)
+            bad += 1
         for row, path, have, want, problem in problems:
             print('ERROR %s.%s (%s): %s' % (os.path.basename(path), row['field'], row['key'], problem))
         for row, path, have, want, _ in drift:
@@ -190,6 +224,12 @@ def self_test():
     want(settings_from({'settings': {'changed': {'a': 2, 'x': True}}}) == {'a': 2.0}, 'decision settings')
     want(settings_from({'b': 4}) == {'b': 4.0}, 'flat settings')
     want(fmt(120000.0) == '120000' and fmt(0.55) == '0.55' and fmt(0.1 + 0.2) == '0.3', 'fmt')
+    named = "  const GAME_NAMES = {\n    a: ['X.alpha', 'linked'],\n    b: ['X.b\\'s', 'new'],\n  };\n"
+    want(parse_game_names(named) == {'a': ('X.alpha', 'linked'), 'b': ("X.b's", 'new')}, 'parse_game_names: %r' % parse_game_names(named))
+    m = {'rows': [{'key': 'a', 'asset': 'A/X.asset', 'field': 'alpha'}]}
+    want(not name_errors(m, named), 'names that agree pass: %r' % name_errors(m, named))
+    want(name_errors(m, named.replace('X.alpha', 'X.beta')), 'a linked name that differs from the map fails')
+    want(name_errors({'rows': []}, named), 'a linked name with no map row fails')
 
     with tempfile.TemporaryDirectory() as d:
         os.makedirs(os.path.join(d, 'A'))

@@ -316,11 +316,11 @@ pressed Main Menu, and the panel they launched from is where that press now goes
 
 Three buttons under the intensity row - **Easy, Medium, Hard** - set how well the AI flies.
 They are deliberately not intensity: intensity is the MAP (track length, crystals, laps), the
-difficulty is the OPPONENT, so a Hard AI can race intensity 1 and an Easy one intensity 4.
-`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3`) carries it, and
+difficulty is the OPPONENT, so a Legendary AI can race intensity 1 and an Easy one intensity 4.
+`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3, Legendary = 4`) carries it, and
 `AIDifficultyRules` holds the four rules every reader shares: the default is **Medium**, any
 other number (0 from an old save or a default struct, a member a later build added) resolves to
-that default, `IsOfferedFor` names the modes whose AI actually reads it, and `Step` is the pad's
+that default, `IsOfferedFor` is every mode (2026-10-26), and `Step` is the pad's
 left/right.
 
 It follows intensity's path exactly, because it is the same kind of fact:
@@ -342,9 +342,28 @@ It follows intensity's path exactly, because it is the same kind of fact:
   `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
   installed. `[NonSerialized]`, survives `ResetRuntimeData` (and so the replay reload), reset by
   `ResetAllData` - the same lifetime as `RequestedAIDomains`.
-- **It is offered only where the AI reads it.** A row that changed nothing would be a promise the
-  match breaks, so a mode is added to `AIDifficultyRules.IsOfferedFor` in the same change that
-  teaches its pilot to read the value. Today: Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
+- **Each AI seat can carry its own** (Shombith, 2026-10-27: "AI pilot 1 can be Easy while AI pilot 2 is Hard, in
+  the same Regatta match"; Yash, 2026-10-27: "anywhere where there is AI ... This should also happen in arcade").
+  On every card that offers the AI row (`SeatDifficultyAvailable`), Arena and Arcade alike, selecting an AI's pedestal
+  points the AI row at THAT AI: a press sets its level, its pedestal reads it ("Hard AI"), and pressing the row with
+  your own seat selected (or no AI selected) sets every AI and clears their own levels. On the Arena the same
+  selection also points the shared vessel panel at the AI's hull; on an Arcade card, whose hull is pinned, the HOST
+  selects an AI for its level alone (`MaySelectAiSeat`) and the strip stays on their own hull. A guest only reads
+  each AI's level off its pedestal (and, on the Arena, selects their own allies as before). A kick takes its seat's
+  selection with it and the bots after it keep theirs (`SeatAfterKick`).
+  The levels ride beside the placements exactly as the hulls do: `ArcadeGameConfigSO.AIDifficulties` (0 = none of its
+  own, the seat flies `AIDifficulty`), `LobbySnapshot.AiD0..AiD5` with the roster (protocol 19), and
+  `GameDataSO.RequestedAIDifficulties` at launch. The server stamps each AI pilot's level as it seats it
+  (`SetAIPilotDifficulty`, by player id) and every handicap reads the pilot's own (`AIDifficultyFor`): the autopilot
+  belief, the gate race's ring handicap (`GateRaceController.RaceHandicapLevel(pilot)`) and the Skim Race pilot. The
+  flight recorder writes each rival's level (`rivalDifficulties`).
+- **It is offered on every mode, and every AI reads it** (Yash, 2026-10-26: "Every game mode should have easy,
+  medium, hard AI. That's a generic rule."). A row that changed nothing would be a promise the match breaks, so
+  the rule is carried by the AI, not by a list: every AI seat is configured through
+  `ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode`, which gives the platform autopilot an
+  `AIPilotBelief` on every mode without a handicap of its own, and every `GateRaceController` race replaces that
+  belief with its ring handicap when it arms its racers (one handicap per pilot, never two). Before 2026-10-26 it
+  was offered only on Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
   races Slingshot and Warpline (`GateRaceHandicap`), Regatta (Squirrels on `SkimRaceHandicap`, every
   other hull `GateRaceHandicap`), and the Arena's Astro League, Brood
   Rush and Broadside (`AIDifficultyRules.UsesPilotBelief`: the platform autopilot flies on an
@@ -832,7 +851,7 @@ instead of splitting it across two files.
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
 | `GameBriefingView` | same | Description + rotating tips |
-| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard row (§3.3) - draws and raises, never decides |
+| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard / Legendary row (§3.3) - draws and raises, never decides |
 | `author_ai_difficulty_row.py` | `Tools/Build/` | Writes that row into `ArcadeGameConfigureModal.prefab` (`--check`) |
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
 | `ModeVideoView` | same | The Maelstrom's clip |

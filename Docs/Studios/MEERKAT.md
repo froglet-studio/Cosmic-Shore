@@ -1,0 +1,438 @@
+# The Meerkat: the wormhole vessel (design studio, round 8, 2026-10-27)
+
+**Studio:** `Docs/Studios/VesselStudio/meerkat.html` (its own source of truth; no copy script), a page of the one Vessel
+Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Test hook `window.__meerkatStudio` (and `__lab`).
+**Owner:** Yash (the Vessel Studio). **Status:** in the game since 2026-10-27 (see "In the game" below).
+
+## Where it came from
+
+Yash, 2026-10-27: *"a big change is this new wormhole ability with all these stored features ... This will be Meerkat,
+a new vessel. The Stoat will have that field and orbit for now untouched. Just take away all this wormhole kind of
+ability of the Stoat and create a Meerkat, a new vessel, with all its things similar to the Stoat. Just rename to
+Meerkat and keep only one ability of the wormhole. Do not add field trajectory or orbit into Meerkat."*
+
+The Meerkat is the Stoat studio's **Gate mode** (rounds 19-26, Garrett and Yash, `STOAT_DIPOLE.md` §1g-§1n), made its
+own vessel. The Stoat studio keeps Mass (the field trajectory) and Time (the catch sling) exactly as they were: both
+race the same times as before the split (Mass 59.6 s, Time 53.8 s on seed 7, the AI at Hard).
+
+The same request changed three things on the way over:
+- **The ripple is subtle, circular, and at the screen's edges only.** Round 26 sent a gravitational wave through space
+  when a tunnel collapsed. Passing the camera, it stretched the whole view, the centre included, and read as
+  distorting the player's eyesight. The Meerkat's ripple is a screen-space ring instead. It runs from `rippleEdge` out
+  past the corners, and nothing inside that circle moves.
+- **No grid on a formed tunnel.** The grid is only the reticle you shape. Once RT forms the tunnel, the reticle fades
+  over the forming time and the tunnel has no grid. Round 2 gave the formed tunnel a geometry of its own, which
+  everyone sees: the spindle bridge (below).
+- **Simpler parameters, named as the game will name them.** Every key is its future field on
+  `MeerkatWormholeConfig` (below). The round-18 gate keys, the warp-boost option, the dent width, the dent's camera fade,
+  the grid sheets and the grid-on-ride switch are gone.
+
+## How it flies
+
+One thumb flies, as the game's one-thumb hulls do (`SingleStickVesselTransformer`):
+- The left stick gives yaw and pitch through Ease(2 x stick), at full throttle, banking `bankShare` x the roll rate
+  into a turn. This leaves the right thumb always free.
+- **The reticle** is always on your nose, `reticleAhead` ahead. It shows the tunnel RT would form now. You see it, and
+  no one else does.
+- **The tunnel is an umbrella handle** (round 7): a straight shaft, then one bend of fixed radius `bendRadius`. Its
+  throat (`throatDiameter`) and its entry and exit (`mouthDiameter`) are set at edit time and never change in flight.
+- **LT** sets how far the shaft runs before the bend: `shaftMin` released, up to `shaftMax` squeezed. On keys and touch
+  it ramps to full in `keyRampSeconds`.
+- **The right stick** sets the bend's direction (left, right, up, down or between) and how far it turns, up to
+  `bendMaxDegrees` (150°) with the stick fully over: 90°, 120° and 150° are all there.
+- **RT** forms the tunnel and you dive into it. It ripples out of its centre to both mouths over `formSeconds`, never
+  longer than your dive to it.
+- **The ride** starts and ends at your entry speed and rushes to `rideMidMultiplier` x it at the throat. You come out with
+  the speed and momentum you went in with, on the tunnel's last heading. While you ride, the camera runs down the
+  tube's centreline.
+- **Out**, the reticle comes back after `reticleDelaySeconds` and grows out of its centre over `reticleGrowSeconds`.
+- **The tunnel's end:** it stays `staySeconds`, then collapses to its centre over `collapseSeconds`, and its collapse
+  ripples the screen's edges. Forming a new tunnel collapses the last one at once.
+
+What everyone sees:
+- the space round the tube, bent away from it (`warpStrength`), with its centre line kept clear;
+- each mouth as a dent as wide as the mouth (`dentStrength`, fading as the camera nears it);
+- **the bridge** (round 2): the formed tunnel's geometry.
+
+The bridge (Yash, 2026-10-27: *"show the geometry of the wormhole ... I will create this wormhole bridge with the
+spindles in our game ... the spindles will show the wireframe structure of the wormhole, while the actual curvature of
+space-time will be the shader"*):
+- **What it is made of:** rings of spindles round the throat (`bridgeRings` x `bridgeSpindlesPerRing`) and ribs of
+  spindles along it (`bridgeRibs`), over a glass surface (`bridgeGlass`).
+- **Colour:** its maker's domain colour.
+- **Life:** the rings sit at fixed places along the tunnel. As it forms they condense in one by one from its centre, and
+  as it collapses they evaporate the same way, like the game's Spindle condense / evaporate fades.
+- **Motion:** a shimmer runs through them from the way in to the way out (`bridgeShimmer`).
+- **Near the camera:** spindles fade out between 30 u and 4 u.
+- `bridgeVisibility` 0 hides the bridge and leaves only the bent space.
+
+In the studio a spindle is a tapered rod. In the game, the bridge is built from the `Spindle` prefabs, and the
+space-time bend stays the shader's.
+
+**The panels:** all the wormhole cards are in **Play Style Config**, in this order: Reticle (feel and look, yours
+alone), Wormhole look (the bridge), Space look (the warp, the dents, the ripple), Shape, Ride.
+
+**Round 8 (Yash, 2026-10-27: "Stoat and Meerkat are the two vessels I really wanna complete myself ... all four
+abilities ... the abilities I wanna test first in artifact rather than inside game directly ... then we will see whether
+to add them or not in Unity"): the full four-ability kit, as PROPOSALS.** Nothing in this round is approved for Unity
+(`/vessel` §3's design gate is Yash's call): every new key is lab-only, tagged "lab" under its slider, and is not in
+`MeerkatWormholeConfig` or `Tools/Build/studio_to_unity/meerkat.json`. The kit follows the fleet's element language
+(Time = speed, Mass = making, Space = destroying, Charge = pilots and crystals) and PvP-is-petals-only: no ability moves
+or damages an opposing vessel.
+
+| Element · ability (button) | What it does | Its sliders | L5 upgrade |
+|---|---|---|---|
+| Charge · **Lookout** (Y, key E) | A pulse: for `lookoutSeconds` every crystal within `lookoutReach` is marked, and you see every rival's reticle and its next ring, through anything (drawn on the HUD) | `lookoutSeconds` 6, `lookoutReach` 700, `lookoutCooldownSeconds` 12 (from the marks' end) | **Alarm Call**: crystals inside the reach are drawn to you (`alarmPullSpeed` 90 u/s); team-mates see the marks too |
+| Mass · **Hardened Bridge** (LB, key Q) | LB **arms** the next tunnel (press again to disarm). Its bridge sets as a lattice of prisms, a tube lasting `wallSeconds` that no other team can cross through its wall: the move into it is taken away and the rest kept, so they slide along and go round. Its maker's team is never stopped | `wallSeconds` 20, `wallPrismDensity` 1 (a ring every 20 u, a prism every 10 u round), `hardenCooldownSeconds` 8 | **Shielded Bridge**: shielded prisms, immune to Cave-in, drawn pale |
+| Space · **Cave-in** (B, key F) | Your standing tunnel (not one you ride) implodes to its centre line now; every prism within `caveInReach` of the tube along its whole length is destroyed (field prisms and unshielded hardened prisms, yours included) | `caveInReach` 30, `caveInCooldownSeconds` 8 | **Burial**: a rival inside or touching the tunnel takes a scored hit, a petal lost and its abilities silenced (harmless) for `burialSilenceSeconds` 4; never pushed |
+| Time · **the wormhole** (RT) | Rounds 1-7, unchanged | (Play Style Config) | **Chain Dig**: from `chainShare` (0.7) of a ride, RT digs the next tunnel from the far mouth (shaped by the sticks as a reticle would be) and the ride holds `rideMidMultiplier` through the join; the tunnel behind collapses |
+
+- **Why LB toggles rather than LB held with RT:** RT is pulled while the right thumb bends the reticle, so a chord asks
+  both index fingers to land in the same instant (and on touch RT is a drag handle). A toggle is one press any time
+  before, and the Mass icon says ARMED.
+- **The controls:** Vessel Config, its Section dropdown: one section per ability (Charge, Mass, Space, Time), each with
+  an on/off switch, its element's level L0-L10 (the card says when the L5 upgrade is unlocked; scaling an ability by its
+  level is not modelled) and its sliders, each with an ⓘ preview. They ride the page's saved state and its section
+  profiles. AI Config has **AI uses the new abilities** (on).
+- **The HUD:** the four-icon row, lower right (bottom centre in phone play), in the locked order Charge, Mass, Space,
+  Time: key glyph, cooldown sweep and seconds, the level and an L5+ marker, white glyphs on neutral plates (elements have
+  no colour), the accent for what is live (marking, ARMED, a Chain Dig window: DIG!). Phone play has Y, LB and B buttons
+  under the RT handle.
+- **The world:** seeded crystals along the course line (six a leg; any hull within 14 u collects one; a tally only, so
+  a race without the kit is the race it was), and the seeded prism field (on Warpline a sleeve 30-250 u round the
+  course line; on the stand-in circuits the Stoat studio's band, bit for bit). Every race starts with the whole field
+  and every crystal back.
+- **The AI** (input-only, it presses the buttons a player has, behind the AI Config switch): Lookout whenever ready with
+  a rival or 3 crystals in reach; Harden with a rival within 600 u; Cave-in on a tunnel it has left with a rival in it
+  (L5) or 6 prisms in reach, never on its own unshielded wall; Chain Dig when a tunnel from the far mouth fits the next
+  leg (the same planner as its reticle, from the far mouth). A pilot a wall stopped flies round its nearer end.
+- **The course: Warpline**, the Meerkat's Time race (5 rings a lap, 2 laps), now the default; the 8-ring Circuit and
+  Hairpins stay selectable (Game Config, Intensity). The page ports `HeadlongCircuit.Generate`'s recipe with
+  `SlingshotCourse.ForIntensity`'s numbers (corner profile, angular spread, radial swing, out-of-plane offsets, ring
+  radii 48/40/32/26, the legality relaxation, ring 0 on the pole, rings facing the bisector with the axis jitter); a
+  seed's layout is the studio's own (mulberry32, not the game's Rng).
+
+Measured (headless, the level scorecard: median of seeds 11, 23, 37; the AI flies your hull alone, so walls and Burial
+do not come into it; "no WH" is the Hard pilot without the wormhole). Kit off = identical, race for race, to the page
+before round 8 on Circuit and Hairpins. Every course finished at every level, kit on and off.
+
+| Course | Kit off: Easy / Medium / Hard / no WH | Kit on: Easy / Medium / Hard / no WH |
+|---|---|---|
+| Warpline I1 | 93.0 / 91.1 / 90.0 / 110.9 | 82.1 / 79.9 / 78.4 / 110.9 |
+| Warpline I2 | 90.2 / 88.5 / 86.5 / 110.5 | 82.4 / 79.3 / 80.7 / 110.5 |
+| Warpline I3 | 95.0 / 93.4 / 92.0 / 122.0 | 89.0 / 83.6 / 83.2 / 122.0 |
+| Warpline I4 | 93.2 / 91.4 / 89.0 / 111.5 | 82.4 / 79.5 / 79.6 / 111.5 |
+| Circuit I1-I4 Hard | 102.5 / 101.3 / 106.8 / 106.3 | 102.5 / 95.9 / 99.0 / 95.4 |
+| Hairpins I1-I4 Hard | 106.6 / 101.1 / 97.7 / 94.8 | 103.6 / 97.5 / 94.5 / 94.0 |
+
+- Chain Dig is the kit's only speed: 5-9 chains a Warpline race take Hard 6-10 s faster.
+- With the kit on, **Medium beats Hard on Warpline I2 and I4 and Circuit I2-I3, and Easy beats it on Circuit I3** (by 0.1-3.4 s): Chain Dig rewards
+  whoever's line happens to leave a fitting leg, and the Hard pilot's one deterministic line does not always. The level
+  order (D24) no longer holds with the kit on; a finding for Yash, not tuned away.
+- Live races against three rivals (Hard, Medium, Easy) all ran to the end (all rivals 9-10 of 10 rings when the
+  first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
+  hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
+
+**Round 12 (Yash, 2026-10-28: "the mouth diameter should have a min and max ... the wormhole will be larger while
+traveling more distance ... an upper coating around the wormhole to be visible from a third perspective ... the pattern
+of the omnicrystal ... like a tree trunk ... we use the upper part of the tree to get inside and the root area to get out
+... Do it in artifact first"). ARTIFACT ONLY: not in Unity until Yash imports it.**
+- **Size grows with length.** `throatDiameter` and `mouthDiameter` are now the shortest tunnel's size, and
+  `throatDiameterMax` (18) and `mouthDiameterMax` (56) the longest's. A tunnel in between grows in proportion to its
+  length (`shapeFor`). Measured: an 85 u tunnel is 8.4 / 27.1 u, a 730 u one 17.6 / 54.8 u.
+- **The tree** (`drawTree`, the Wormhole · tree card). A formed tunnel is a tree to everyone watching from outside.
+  Whoever rides it does not see it: the ride stays the clear pipe.
+  - **Crown, at the way in:** `crownBranches` (7) limbs reach back `crownLength` (1.6) × the mouth's radius,
+    `crownSpread` (60°) off the axis, forking twice.
+  - **Trunk:** bark of the omni crystal's own four plate shapes (Mass triangles, Space squares, Time rhombi, Charge
+    pentagons) spiralling round it, `coatPerRing` (14) a row at `coatPlateScale` (0.9). They stand `coatLift` (0.18) ×
+    the radius off the wall, tilted `coatTilt` (22°) like scales, with a wave (`coatWave` 0.6, `coatWaveSpeed` 0.3)
+    running crown to roots, as the omni crystal's flip wave does.
+  - **Roots, at the way out:** `rootCount` (9) limbs splay `rootLength` (1.8) × the mouth's radius, curling
+    `rootSpread` (50°), forking once.
+  - Limbs are `coatLimbThickness` (0.15) × the mouth's radius at their base. `coatVisibility` 0 hides the tree.
+  - Pieces near any camera shrink away.
+- **Cost:** about 1,000 to 1,700 plates for a long tunnel (capped at 2,400 a shape), drawn as four instanced meshes,
+  plus about 170 spindles in the bridge's existing instanced mesh.
+  - Suggested for Unity: build each tunnel's bark once when it forms (it does not move) and run the wave in the plate
+    shader, so a frame costs only the four draws.
+- **Not decided:** whether the tree also shows its maker's element levels (each plate family is an element).
+
+**Round 11 (Yash, 2026-10-28: "make the wormhole look very realistic ... not super calculative ... performant and
+realistic, fun to travel without getting dizzy ... a pleasant water ride experience through a water pipe. Transparent
+pipe ... the reticle ... just pure wireframe and it should be less lit in the front side and more lit back, so I can see
+the bending of the other end"):**
+- **The reticle** is still the bare wireframe. Its brightness now runs from `reticleNearLight` (0.25) × at its way in,
+  by your nose, to full at its far end, so the bend stands out. The page and the game draw it the same way.
+- **The formed tunnel** (Garrett's contour field, Unity only: the page does not draw the field) is retuned as a clear
+  pipe of gentle glass. Three looks were rendered in the Tube Lens Lab, from outside and riding through: round 10's
+  values, a water pipe, and a glassier pipe. Round 10's tore and swirled the world seen through the wall; the water pipe
+  bent it gently, so pillars seen through it stayed whole with a slight water wave. Its numbers:
+  - strength 6, pitch 0 (along the flow), drag 0.5, twist 0;
+  - glass 1 at Δn 0.05, grazing 0.9 (the lab: low grazing makes the ride view swirl);
+  - flow Even, outer 0.15, profile Smoother;
+  - ribs 0.25 at sharpness 3, travelling 1.2 rings/s, 16 × 12.
+- **Cost:** softer ribs let the march take larger steps (the rib term caps the step by 1 / (2 × sharpness + 4): 11.12
+  to 3 is a cap about 2.6 times looser). The glass term still costs four field reads a step; `fieldGlass` 0 is the
+  cheapest pipe if a profile shows it. Not profiled in Unity.
+
+**Round 10 (Yash, 2026-10-28: "the cameras, why offset should always be zero, the vessel should be in the center of the
+screen and this way we don't need to lerp the camera during entering into the tunnel. It is like a sparrow, it's always
+center. Also, I want to have options to control the diameter of the entry exit pair ... and the inner diameter ...
+configurable at edit time ... the entrance and the exit of the wormhole need to be a little bit bigger"):**
+- **The camera.** Both cameras sit straight behind the hull with no height and no lag. In the game this is
+  `MeerkatCameraSettingsSO`: offset (0, 0, -21), hard-attached. Riding, the camera is the same distance behind you on the
+  tube's centreline, looking at you. It is a cut, not a blend: on the straight run in, the two coincide. Out of the far
+  mouth it keeps to the tunnel's line until it has passed the mouth. Measured: the hull is exactly at screen centre,
+  flying and riding. The camera is within 0.29 u of the line in the tube and past the exit, and its largest step at RT
+  and at the exit is one normal frame. Retired: `rideCameraBack`, `rideCameraLookAhead`, `rideCameraBlendSeconds`.
+- **The size.** `throatDiameter` (8 u) and `mouthDiameter` (26 u, the entry and exit a little bigger than round 7's
+  20 u) replace the two radius keys. They are set at edit time; the sticks never change them.
+
+**Round 9 (Yash, 2026-10-28: "the wormhole look and the reticle look can be the same, just the reticle can be just a
+wireframe version of the actual wormhole look ... the reticles and the bridges geometry need to be same, and the same
+position same way ... The reticle is the silhouette of the geometry"):** one geometry. The bridge's rings, spindles per
+ring, ribs, thickness and shimmer (`bridge*`) draw both the formed tunnel and your reticle (the page's `drawFrame`, the
+game's `MeerkatWormholeView.BridgeFrame`): the same rings at the same places along the tunnel, condensing out of its
+centre the same way. The reticle is that frame bare, with no glass and no path. It keeps its own brightness
+(`reticleIdleAlpha`) and its own colour, your domain colour toward white by `reticleWhite`; the bridge's spindles take
+`bridgeWhite` the same way. Retired: `reticleGlass`, `reticleRings`, `reticleSpindlesPerRing`, `reticleRibs`,
+`reticleSpindleThickness`, `reticlePath`, and in the game Garrett's `reticleLook` switch (there is one reticle now).
+Measured on the page: the shaped reticle and the formed tunnel are the same 931 spindles (36 × 21 rings, 5 ribs).
+
+**Round 8 (Yash, 2026-10-28: "the updated look I want. By merging Garrett's look with my reticles ... I don't want any
+camera Y offset. I want the camera to go inside the tunnel"):** the look Yash tuned in Unity's `MeerkatWormholeConfig` is
+the studio's SHIPPED look now. Before RT the reticle draws as Garrett's bridge (`reticleLook` Bridge), with the bridge
+spindles tuned to the reticle's: 36 rings × 21 spindles, 5 ribs, 0.25 u thick, `bridgeVisibility` 0.163, glass 0.15.
+The reticle keys are 30 × 21, 5 ribs, 0.25 u, idle 0.053, glass 0.048, path 0.333, smoothing 0.123 s, and `rippleEdge`
+is 0.154. After RT it is Garrett's contour field, with glass 1.579 at Δn 0.078, grazing 0.883, profile Smoother, ribs
+0.155 at sharpness 11.12, travel 1.95 and 9 rings. Those field numbers live only in the Unity asset; the page does not
+draw the field. Riding, the camera sits ON the tube's centreline, `rideCameraBack` (18 u) behind you, looks
+`rideCameraLookAhead` (40 u) along it, and eases in and out over `rideCameraBlendSeconds` (0.25 s). There is no height
+offset. Measured on the page: once eased in, the camera stayed within 0.23 u of the centreline (throat 4 u) on every
+frame, for a straight tunnel and for 114° and 150° bends on short and long shafts.
+
+**Round 7 (Yash, 2026-10-27: "the diameter of entry can stay fixed, and we can then just use the bend to choose the distance from where it can turn 90 or 120 or 150 degrees ... it can be a long umbrella stick like geometry"):** the tunnel no longer grows shorter and fatter as it bends. It
+is a straight shaft and then one bend of fixed radius `bendRadius` (60 u). LT sets the shaft (`shaftMin` 60 u released
+to `shaftMax` 600 u squeezed), the right stick the bend's direction and angle (up to `bendMaxDegrees`, now 150°), RT
+forms it. The throat (`throatRadius` 4 u) and mouths (`mouthRadius` 10 u) are narrow and fixed. The five old shape keys
+(`lengthStraight`, `lengthBent`, `throatStraight`, `throatBent`, `mouthFlare`) are retired. The hull turns only on the
+bend. The AI now picks the shaft and bend that reach its ring soonest (the ride at its mean speed, then the flight on,
+then the turn left over at `pitchYaw`): it finishes every race, I3 104-108 s and I4 94-111 s over four seeds.
+
+**Round 6 (Yash, 2026-10-27: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
+exiting it will exit at little bit boosted"):** the ride is your speed before the tunnel times three multipliers. It is
+`rideEntryMultiplier` (1) going in, rises to `rideMidMultiplier` (2.5, was `throatSpeed`) at the throat, and eases to
+`rideExitMultiplier` (1.2) at the way out, then the hull eases back to cruise. Measured: in at 60 u/s with no slowdown,
+about 150 at the throat, out at 72, back to 60 within about 1.5 s. The AI still finishes every race (98-103 s, seeds 1-4,
+I1 and I3).
+
+**Round 5 (Yash, 2026-10-27: "use 5x the normal value when going through the wormhole"):** riding a tunnel, the game's
+speed tunnel (its dolly zoom: a narrower field of view and a relaxed Panini projection, `Docs/SPEED_TUNNEL.md`) is
+`rideSpeedTunnelScale` (5) × its normal strength. The studio previews the field of view: 68° at the mouth, 23.8° at the
+throat of a straight tunnel, then back to 68°.
+
+**Round 4 (Yash, 2026-10-27: "Turn off all lensing"):** the tube's warp, the mouths' dents and the collapse's ripple ship
+at 0. The wormhole's look is the bridge and your reticle. The Space look sliders stay, to bring any of them back; at 0
+the game's lens pass does not run at all.
+
+**Round 3 (Yash, 2026-10-27: "I want it to be a little smoothy ... pretty transparent, just maybe wireframe looking with
+just spindles. Tiny thinning spindles"):**
+- **The reticle eases** toward what the right stick and LT ask for over `reticleSmoothSeconds` (0.15 s: 63% of the way
+  in 0.15 s). RT forms the tunnel you see.
+- **The AI waits for its reticle to catch up** with its sticks (within 0.03) before it pulls RT, 1 s at most. Measured,
+  seeds 1-4 at I1 and I3: every race finished, in 101-104 s (94-104 s without the easing).
+- **The reticle is a see-through frame of thin spindles**: 10 rings of 16 spindles and 8 ribs, 0.35 u thick, cyan to
+  white, over a faint glass. These are the same spindles as the bridge, and it replaces the line grid. The lime line you
+  will fly runs through it at half brightness.
+- **The screen effects (warp, dents, ripple) have their own card**, Space look.
+
+## The parameters (the artifact's keys ARE the game's fields)
+
+| Group | Key = `MeerkatWormholeConfig` field | Shipped | What it does |
+|---|---|---|---|
+| shape | `reticleAhead` | 30 u | The reticle rides this far ahead of the nose |
+| shape | `bendMaxDegrees` | 150° | The sharpest bend (right stick fully over) |
+| shape | `shaftMin` | 60 u | The straight shaft before the bend, LT released |
+| shape | `shaftMax` | 600 u | The shaft with LT fully squeezed |
+| shape | `bendRadius` | 60 u | The bend's radius (fixed): a tunnel is shaft + `bendRadius` × its angle long |
+| shape | `throatDiameter` | 8 u | The throat's diameter (fixed, set at edit time; round 10) |
+| shape | `mouthDiameter` | 26 u | The entry and exit diameter at the shortest tunnel (round 10: was 20; round 12: the shortest's) |
+| shape | `throatDiameterMax` | 18 u | The throat at the longest tunnel (round 12, artifact only so far) |
+| shape | `mouthDiameterMax` | 56 u | The entry and exit at the longest tunnel (round 12, artifact only so far) |
+| tree | `coatVisibility` … `coatLimbThickness` | see the page | The tree round a formed tunnel (round 12, artifact only so far): bark, crown, roots |
+| shape | `keyRampSeconds` | 0.5 s | LT on keys or touch reaches full after this |
+| ride | `rideEntryMultiplier` | 1 | The ride going in, × your speed before the tunnel |
+| ride | `rideMidMultiplier` | 2.5 | ...fastest, at the throat (was `throatSpeed`) |
+| ride | `rideExitMultiplier` | 1.2 | ...coming out: a little boost, easing back to cruise |
+| ride | `rideSpeedTunnelScale` | 5 | Riding: the game's speed-tunnel dolly zoom, × its normal strength |
+| ride | `reticleDelaySeconds` | 0.5 s | The reticle comes back this long after you are out |
+| ride | `reticleGrowSeconds` | 0.8 s | ...growing out of its centre over this long |
+| ride | `formSeconds` | 0.4 s | RT: the tunnel forms over this long |
+| ride | `staySeconds` | 10 s | It stays this long after you are out |
+| ride | `collapseSeconds` | 0.8 s | ...then collapses to its centre over this long |
+| space | `warpStrength` | 0 (off, round 4) | Space bent along the tube (everyone sees it) |
+| space | `dentStrength` | 0 (off, round 4) | Space bent in at each mouth (everyone sees it) |
+| space | `rippleStrength` | 0 (off, round 4) | The collapse's ripple at the screen's edges (0 = none) |
+| look | `rippleEdge` | 0.45 | ...from this share of the way from the centre to a corner |
+| look | `rippleSeconds` | 1.2 s | ...running out and fading over this long |
+| reticle | `reticleSmoothSeconds` | 0.15 s | Your reticle eases toward the sticks over this long (0 = at once) |
+| reticle | `reticleIdleAlpha` | 0.4 | Your reticle's brightness with the right stick centred |
+| reticle | `reticleWhite` | 0.45 | Your reticle's colour: your domain colour toward white (round 9; its geometry is the bridge's) |
+| reticle | `reticleNearLight` | 0.25 | Its brightness at the way in against its far end, so the bend stands out (round 11; 1 = even) |
+| look | `bridgeVisibility` | 1 | The formed tunnel's bridge, for everyone (0 = hidden) |
+| look | `bridgeGlass` | 0.6 | ...its glass surface |
+| look | `bridgeRings` | 16 | ...rings of spindles along it |
+| look | `bridgeSpindlesPerRing` | 12 | ...spindles round each ring |
+| look | `bridgeRibs` | 6 | ...ribs of spindles along it (0 = none) |
+| look | `bridgeSpindleThickness` | 1.6 u | ...spindle thickness at the middle |
+| look | `bridgeShimmer` | 0.5 | ...a shimmer running way in to way out (0 = steady) |
+| look | `bridgeWhite` | 0.45 | ...its spindles' colour: the domain colour toward white (round 9) |
+| ai | `aiStraightMinDistance` | 300 u | The AI forms a straight tunnel only with its ring this far away |
+| ai | `aiBentMinDistance` | 120 u | ...a bending one from this far |
+| ai | `aiShapeSeconds` | 0.3 s | The AI shapes its reticle this long before RT |
+| flight | `bankShare` | 0.12 | One-thumb bank into a turn, as a share of the roll rate |
+| flight | `cruise`, `pitchYaw`, `roll` | 60, 120, 130 | `Meerkat.prefab VesselTransformer` (the Stoat's numbers for now) |
+
+These are lab-only (studio only, never in the game): `aiWormhole` (the sim lab's switch), `aiTau`, `aiNoise` (the AI
+levels' judgement), and the stand-in hull's `lope*`.
+
+**Fixed in the studio, not parameters:** the dent fades within 3 mouth radii of the camera (`DENT_NEAR`, round 24's fix
+for the view flipping as you fly in). A faded tunnel is gone after 0.7 s (`FADE_S`). The ripple is 0.012 screen units
+at strength 1, at full strength within 300 u of the collapse.
+
+`Tools/Build/studio_to_unity/meerkat.json` is its map to Unity. It is empty until the fields exist;
+`studio_to_unity.py --unmapped --vessel meerkat` lists every key.
+
+## Measured (headless, 2026-10-27)
+
+- **One tunnel, flown by hand:** the reticle was fully grown after 1.25 s. Formed at a 0.3 stick bend, the tunnel
+  showed no grid while ridden (0 wireframe vertices from the end of forming). You come out at your entry speed
+  (58.2 in, 58.2 out). It stayed 10 s and collapsed with one ripple.
+- **The ripple:** its front runs from 0.45 to 1.25 of the way to the corners. At the default strength, its peak is
+  about 2 px at the ring.
+  - Same frame, ripple on and off: the centre (r < 0.2) and the middle (0.2-0.6) are unchanged. The difference stays
+    in the outer bins (up to 0.4 of a level on average).
+  - The centre's residual differs by the same amount with the ripple untouched, so it is not the ripple.
+- **AI (Hard, seed 7):** 100 s for 15 of 16 rings, 17 tunnels formed and ridden (the Stoat's Gate AI raced 98-101 s on
+  circuits).
+
+## In the game (2026-10-27)
+
+The Meerkat is in Unity as `VesselClassType.Meerkat = 28` (`Assets/_Scripts/Controller/Vessel/R_VesselActions/MEERKAT.md`):
+- **Where:** flown from the Toybox's Vessel Changer, and raced in its Time mini-game **Burrow Run**
+  (`GameModes.BurrowRun = 71`, eight rings, two laps).
+- **Numbers:** every key in the table above is a `MeerkatWormholeConfig` field at its shipped value.
+  `studio_to_unity/meerkat.json` maps 36 keys, 0 drift.
+- **The port:** the page's arithmetic, ported line for line and held to its numbers (`MeerkatWormholeMathTests`).
+- **Lab-only:** `aiTau`, `roll` (the one-thumb hull only banks: `bankShare` × `roll` is the prefab's `RollScaler`) and
+  the `lope*` keys.
+- **Verification:** not yet verified in the Editor (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+## Before and after RT (Garrett, 2026-10-27)
+
+Garrett picked the Meerkat's look in the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF):
+- **Before RT:** the reticle looks like the bridge (spindles over glass in the pilot's domain colour).
+- **After RT:** a formed tunnel is ONLY a contour-field lens: space bent in a thin shell on the wall, along its rings,
+  graded to zero just off the surface. No bridge, no glass, no grid.
+
+The game has it first (`R_VesselActions/MEERKAT.md` §2.1: `reticleLook`, `formedLook` and the 16 `field*` fields). This
+page does not yet: its Wormhole look still shows round 4's bridge. The next round brings the lab's field onto this page
+and maps the new keys in `studio_to_unity/meerkat.json`.
+
+## Garrett's direction: the soliton kit (2026-10-27, for Yash to judge)
+
+Garrett, 2026-10-27: *"the meerkat should be producing a new fundamental (solitons) and therefore a new pilot that
+applies its vision power to them."* The design gate for the Meerkat's kit stays **Yash's** (round 8), so this section is
+Garrett's direction beside Yash's round-8 proposals, to be flown and judged in the artifact. Nothing here is built.
+Garrett finished the Sentinel and Mass rows in a second message the same day.
+
+**The soliton** is a standing tunnel in space: the wormhole the Meerkat already makes, now a thing in the world anyone
+can use. It is a new fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md` § Soliton) with its own pilot sight
+(FLUME, `Docs/Pilots/CALLSIGNS.md`).
+
+| Element | Ability | What the element's level does | L5 upgrade | Source |
+|---|---|---|---|---|
+| **Space** | **Soliton**: the wormhole (RT, the sticks shape it, rounds 1-7) makes a soliton | Sets the soliton's **surface area** (below) | open | Garrett |
+| **Time** | **Passive**: the Meerkat rides **every** soliton faster, its own or anyone's | Scales the ride's rush (today `throatSpeed` 2.5 × the entry speed) | **Boost out**: the Meerkat leaves every soliton with a boost | Garrett |
+| **Charge** | **Sentinel**: left automatically at **every tunnel entrance**, an afterimage of the Meerkat that perches up like a real sentinel meerkat, guarding the way in. It **zaps enemy vessels**, knocking out their elements, and **zaps same-domain prisms**, turning them **shielded** | Proposal: the zap's reach and how often it fires | open | Garrett |
+| **Mass** | **Passive**: the soliton **makes prisms at its far end** (the way out) | Their **size** | **Danger prisms**: at Mass L5 the prisms it makes are danger prisms | Garrett |
+
+**What everyone sees and does with a soliton:**
+- **The placement grid is the Meerkat's alone**: its reticle, already drawn only for its pilot.
+- **Everyone else sees the soliton by its lensing alone** once it is made: the contour field (§ Before and after RT).
+- **Any vessel can ride it**, not only its maker. A rider dives in at a mouth and rides it as the Meerkat does: in at its
+  entry speed, rushing through the throat, out at the far mouth on its last heading.
+- **It swallows prisms and fires them out of the other end.** Prisms near the way in are drawn in, run the tube and leave
+  the way out along its last heading.
+  - A fired prism is a MOVING prism (§ Prism movement): one that hits another prism destroys both, scored to the soliton's
+    maker. A SHIELDED one bounces instead (Garrett, 2026-10-27, `Docs/PRISM_MOTION.md` 1a: built). Mass is conserved,
+    because the prism is moved, never deleted.
+  - Super-shielded mass is never moved. Whether shielded mass is drawn in is open.
+  - A fired prism that reaches a vessel follows the shipped prism rules. PvP stays petals only.
+
+**The Sentinel (Charge)**:
+- **Enemy vessels:** a zap is a scored hit, so it stays inside PvP-is-petals-only. Knocking out elements is a ranged
+  verb, so the petals are EJECTED as free crystals (`Docs/ELEMENTAL_ECONOMY.md`), and the hit silences the victim for
+  what it is worth (`SILENCE.md`).
+- **Same-domain prisms:** zapped into shielded prisms.
+- **With the soliton:** shielded prisms now bounce instead of annihilating, so the Meerkat's own mass round its
+  entrances becomes ammunition that survives. The soliton swallows it, fires it out, and it rebounds off what it hits.
+- **Open:** its reach, how often it zaps, how many sentinels can stand at once (one per tunnel, so they collapse
+  with it or outlast it), and whether a rival can knock one down.
+
+**Mass (passive):**
+- The soliton makes prisms at its way out on its own, for as long as it stands. Mass sets their size; at L5 they are
+  danger prisms, which burn the petals of whoever touches them.
+- They are the maker's domain, so a sentinel can zap them shielded.
+- **Open:** the rate, whether they are fired along the exit heading (as moving prisms) or set down at the mouth, and
+  a cap per soliton.
+
+**Surface area (Space).** At a given Space level a soliton keeps one surface area A, so a longer tube is thinner and a
+shorter one fatter. The wall is round 7's hyperboloid with the mouth a fixed multiple k of the throat (M = k·b), and its
+area is
+
+    A = 2π · L · b · g(k),    g(k) = ½ · (k + asinh(√(k²−1)) / √(k²−1))
+
+so the throat is **b = A / (2π · L · g(k))**. LT sets the length L (shaft + bend, round 7), and the throat and mouth
+follow from A. At round 7's numbers (throat 4, mouth 10, so k = 2.5 and g = 1.592):
+
+| Length L | Today's area (throat fixed at 4) | Throat at A = 15,000 u² | Throat at A = 40,000 u² |
+|---|---|---|---|
+| 60 u (shortest shaft, no bend) | 2,401 u² | 25.0 (mouth 62.5) | 66.7 (mouth 166.6) |
+| 200 u | 8,002 u² | 7.5 (mouth 18.7) | 20.0 (mouth 50.0) |
+| 400 u | 16,004 u² | 3.7 (mouth 9.4) | 10.0 (mouth 25.0) |
+| 757 u (longest shaft, 150° bend) | 30,287 u² | 2.0 (mouth 5.0) | 5.3 (mouth 13.2) |
+
+The Space level would set A through an `ElementalFloat` (the two areas above are only examples). A shortest tube at
+any useful area is very fat, so the throat may need a floor and a ceiling.
+
+**Where this meets round 8 (for Yash):**
+1. **The wormhole's element.** Round 8 puts it on Time, with Chain Dig as its L5. Garrett puts it on **Space**, with
+   Time a passive and its L5 a boost out of every soliton.
+2. **Charge and Mass.** Garrett's Sentinel and passive mouth prisms replace round 8's Lookout and Hardened Bridge.
+3. **Space.** Round 8's Cave-in (destroy the prisms round your tunnel) has no slot in Garrett's kit. The soliton moves
+   prisms instead of destroying them.
+4. **LB.** Round 8 arms Hardened Bridge with **LB**, but LB is now the pilot's vision on every vessel
+   (`Docs/Pilots/CALLSIGNS.md` §5). In Garrett's kit Mass and Charge are passive, so the kit needs no button beyond
+   the wormhole's.
+5. **Diameter.** Round 7 fixed the throat ("the diameter of entry can stay fixed"); Garrett's surface area couples it to
+   the length again. A floor and ceiling on the throat is one way to keep both.
+
+## What is not decided or not built
+
+- **The hull.** The Meerkat flies the Stoat's model and its lope as a stand-in, in the studio and in the game. A real
+  hull is `/vessel-model` work.
+- **Its other three abilities and the element map** (`/vessel-studio` D37): proposed in round 8 (Lookout, Hardened
+  Bridge, Cave-in, Chain Dig), for Yash to judge here. Not decided, not in Unity: the game's map still has four open
+  slots and the wormhole is its one ability. Not modelled: a team-mate riding your hardened tunnel (only its maker
+  rides a tunnel), scaling each ability by its element level, Garrett's after-RT look with a hardened tube (the page
+  still draws round 4's bridge).
+- **The bridge from the game's `Spindle` prefabs.** The game draws each spindle as a tapered mesh (a prefab per spindle
+  would be ~280 objects per tunnel).
+- **The game's Stoat still has round 18's straight warp gate on B** (`StoatModeAction` gate* fields, `StoatGateMath`).
+  It is unlinked from the studio now. Removing it from the Stoat is Garrett's call (the Stoat's owner).
+- **The play styles.** The Meerkat has none yet.
+- **Learning.** The AI learning sweep records Burrow Run races; no learner reads the Meerkat's yet.
+
+The parked black/white-hole look for tunnels is in `Docs/Studios/STOAT_PARKED_HOLE_LOOK.md`.

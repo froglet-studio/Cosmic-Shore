@@ -20,6 +20,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1, (int)AIDifficulty.Easy);
             Assert.AreEqual(2, (int)AIDifficulty.Medium);
             Assert.AreEqual(3, (int)AIDifficulty.Hard);
+            Assert.AreEqual(4, (int)AIDifficulty.Legendary);
         }
 
         [Test]
@@ -34,13 +35,14 @@ namespace CosmicShore.Tests
             Assert.AreEqual(AIDifficulty.Easy, AIDifficultyRules.Resolve(AIDifficulty.Easy));
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(AIDifficulty.Medium));
             Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Resolve(AIDifficulty.Hard));
+            Assert.AreEqual(AIDifficulty.Legendary, AIDifficultyRules.Resolve(AIDifficulty.Legendary));
         }
 
         [Test]
         public void Resolve_TurnsAnUnwrittenOrUnknownValueIntoTheDefault()
         {
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(0), "unwritten");
-            Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(4), "a member a later build added");
+            Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(5), "a member a later build added");
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(-1), "garbage");
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Resolve(default(AIDifficulty)));
         }
@@ -48,22 +50,26 @@ namespace CosmicShore.Tests
         [Test]
         public void Resolve_RoundTripsTheReplicatedInt()
         {
-            foreach (var d in new[] { AIDifficulty.Easy, AIDifficulty.Medium, AIDifficulty.Hard })
+            foreach (var d in new[] { AIDifficulty.Easy, AIDifficulty.Medium, AIDifficulty.Hard, AIDifficulty.Legendary })
                 Assert.AreEqual(d, AIDifficultyRules.Resolve((int)d));
         }
 
         [Test]
-        public void IsOffered_OnlyWhereTheAIReadsIt()
+        public void IsOffered_OnEveryMode()
         {
+            // Yash, 2026-10-26: every game mode offers the difficulty - a generic rule.
+            foreach (GameModes mode in System.Enum.GetValues(typeof(GameModes)))
+                Assert.AreEqual(mode != GameModes.Random, AIDifficultyRules.IsOfferedFor(mode), mode.ToString());
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.SkimRace));
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Slingshot), "the Stoat's circuit race (GateRaceHandicap)");
-            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Warpline), "the Stoat's time race (GateRaceHandicap)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Warpline), "the Meerkat's time race (GateRaceHandicap)");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Regatta), "Squirrels: SkimRaceHandicap; every other hull: GateRaceHandicap");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.AstroLeague), "Arena, platform autopilot (AIPilotBelief)");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.BroodRush), "Arena, platform autopilot (AIPilotBelief)");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Broadside), "Arena, platform autopilot (AIPilotBelief)");
-            Assert.IsFalse(AIDifficultyRules.IsOfferedFor(GameModes.Rampage));
-            Assert.IsFalse(AIDifficultyRules.IsOfferedFor(GameModes.Joust));
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Rampage), "platform autopilot (AIPilotBelief)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Joust), "platform autopilot (AIPilotBelief)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Switchback), "gate race (GateRaceHandicap)");
             Assert.IsFalse(AIDifficultyRules.IsOfferedFor(GameModes.Random));
         }
 
@@ -76,7 +82,8 @@ namespace CosmicShore.Tests
                 Assert.IsFalse(AIDifficultyRules.UsesPilotBelief(mode), mode.ToString());
             foreach (var mode in new[] { GameModes.AstroLeague, GameModes.BroodRush, GameModes.Broadside })
                 Assert.IsTrue(AIDifficultyRules.UsesPilotBelief(mode), mode.ToString());
-            Assert.IsFalse(AIDifficultyRules.UsesPilotBelief(GameModes.Joust));
+            Assert.IsTrue(AIDifficultyRules.UsesPilotBelief(GameModes.Joust));
+            Assert.IsFalse(AIDifficultyRules.UsesPilotBelief(GameModes.Random));
         }
 
         [Test]
@@ -92,7 +99,9 @@ namespace CosmicShore.Tests
         {
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Step(AIDifficulty.Easy, +1));
             Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Step(AIDifficulty.Medium, +1));
-            Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Step(AIDifficulty.Hard, +1));
+            Assert.AreEqual(AIDifficulty.Legendary, AIDifficultyRules.Step(AIDifficulty.Hard, +1));
+            Assert.AreEqual(AIDifficulty.Legendary, AIDifficultyRules.Step(AIDifficulty.Legendary, +1));
+            Assert.AreEqual(AIDifficulty.Hard, AIDifficultyRules.Step(AIDifficulty.Legendary, -1));
             Assert.AreEqual(AIDifficulty.Easy, AIDifficultyRules.Step(AIDifficulty.Medium, -1));
             Assert.AreEqual(AIDifficulty.Easy, AIDifficultyRules.Step(AIDifficulty.Easy, -1));
             Assert.AreEqual(AIDifficulty.Medium, AIDifficultyRules.Step(AIDifficulty.Medium, 0));

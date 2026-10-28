@@ -40,8 +40,8 @@ namespace CosmicShore.Gameplay
                 if (_popTimer > 0f)
                 {
                     _popTimer -= Time.deltaTime;
-                    float t = Mathf.Clamp01(_popTimer / Mathf.Max(0.0001f, settings.strikePopSeconds));
-                    pop = 1f + settings.strikePopAmount * t * t;
+                    float t = Mathf.Clamp01(_popTimer / Mathf.Max(0.0001f, settings.StrikePopSeconds));
+                    pop = 1f + settings.StrikePopAmount * t * t;
                 }
 
                 // Birth bloom (continuity of existence): every peer's fresh instance GROWS in
@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
                 if (_bloomTimer > 0f)
                 {
                     _bloomTimer -= Time.deltaTime;
-                    float u = 1f - Mathf.Clamp01(_bloomTimer / Mathf.Max(0.0001f, settings.spawnBloomSeconds));
+                    float u = 1f - Mathf.Clamp01(_bloomTimer / Mathf.Max(0.0001f, settings.SpawnBloomSeconds));
                     bloom = u * u * (3f - 2f * u); // smoothstep 0→1, settles without a snap
                 }
 
@@ -60,14 +60,14 @@ namespace CosmicShore.Gameplay
                     _visual.localScale = targetScale;
             }
 
-            float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
+            float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.SpeedForMaxVisuals);
 
             // Impact flash decay
             if (flashTimer > 0f)
             {
                 flashTimer -= Time.deltaTime;
-                float flashRatio = Mathf.Clamp01(flashTimer / settings.impactFlashDuration);
-                currentEmissionBoost = Mathf.Lerp(1f, settings.impactFlashIntensity, flashRatio);
+                float flashRatio = Mathf.Clamp01(flashTimer / settings.ImpactFlashDuration);
+                currentEmissionBoost = Mathf.Lerp(1f, settings.ImpactFlashIntensity, flashRatio);
             }
             else
             {
@@ -94,7 +94,7 @@ namespace CosmicShore.Gameplay
             }
 
             float breath = 0.8f + 0.2f * Mathf.Sin(Time.time * 4f);
-            float emissionIntensity = Mathf.Lerp(settings.minEmissionIntensity, settings.maxEmissionIntensity, speedRatio);
+            float emissionIntensity = Mathf.Lerp(settings.MinEmissionIntensity, settings.MaxEmissionIntensity, speedRatio);
             float glow = emissionIntensity * breath * currentEmissionBoost;
 
             if (_usesFresnel)
@@ -118,7 +118,7 @@ namespace CosmicShore.Gameplay
                 ballLight.color = emissionColor;
                 float boost = currentEmissionBoost > 1f ? Mathf.Sqrt(currentEmissionBoost) : 1f;
                 ballLight.intensity = baseLightIntensity * (1f + speedRatio * 2f) * breath * boost;
-                ballLight.range = Mathf.Lerp(settings.minLightRange, settings.maxLightRange, speedRatio);
+                ballLight.range = Mathf.Lerp(settings.MinLightRange, settings.MaxLightRange, speedRatio);
             }
 
             if (trail != null)
@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
                 // The wake blooms in with the ball and swells with the strike pop (visual scale).
                 float visualScale = _visual != null ? _visual.localScale.x : 1f;
                 trail.startWidth = TrailHeadWidth(speedRatio) * visualScale;
-                trail.time = Mathf.Lerp(settings.trailTimeAtRest, settings.trailTimeAtSpeed, speedRatio);
+                trail.time = Mathf.Lerp(settings.TrailTimeAtRest, settings.TrailTimeAtSpeed, speedRatio);
                 if (_cometTrail) DriveCometTrail(emissionColor, speedRatio);
             }
 
@@ -149,12 +149,12 @@ namespace CosmicShore.Gameplay
                 // A TELEPORT (kickoff, goal reset, hand-off) is not travel: shedding by distance
                 // across it would lay a line of dust over the whole court. Skip the jump frame.
                 Vector3 here = transform.position;
-                float jump = Mathf.Max(settings.maxSpeed * Time.deltaTime * 3f, worldRadius * 4f);
+                float jump = Mathf.Max(settings.MaxSpeed * Time.deltaTime * 3f, worldRadius * 4f);
                 bool teleported = (here - _lastDustPos).sqrMagnitude > jump * jump;
                 _lastDustPos = here;
                 float shed = Mathf.InverseLerp(0.15f, 1f, speedRatio);
                 emission.rateOverDistanceMultiplier = draw && !teleported
-                    ? settings.wakeDustPerUnit * shed * shed / Mathf.Max(0.01f, k)
+                    ? settings.WakeDustPerUnit * shed * shed / Mathf.Max(0.01f, k)
                     : 0f;
             }
 
@@ -171,9 +171,9 @@ namespace CosmicShore.Gameplay
         {
             switch (d)
             {
-                case Domains.Jade: return settings.jadeGoalColor;
-                case Domains.Ruby: return settings.rubyGoalColor;
-                case Domains.Gold: return settings.goldGoalColor;
+                case Domains.Jade: return settings.JadeGoalColor;
+                case Domains.Ruby: return settings.RubyGoalColor;
+                case Domains.Gold: return settings.GoldGoalColor;
                 default: return primaryColor;
             }
         }

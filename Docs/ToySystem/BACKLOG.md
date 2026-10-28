@@ -708,3 +708,45 @@ Follow-ups, none blocking:
 - **The emblem's mini-Ark rebuild on domain change is streamer-paced** (live key = the local
   player's domain). If the rebuild ever reads as a pop, the fix is the emblem's cross-fade,
   which already exists for the core slot.
+
+## The Ark's model and its fixed-rate regrowth — follow-ups (2026-10-28, `cece/upbeat-johnson-j7izg7`)
+
+Shipped: the Arkway's Ark is `ArkReverse.fbx` (hull prisms in its 108 sockets, domain trim, jets and wings flying the
+turn, hangar and lance actions, the emblem from the sockets), and the omni crystal aboard regrows emptied hull slots at
+a fixed rate (`ArkReactorSO`, 2 s a prism). Record: `Docs/VesselModels/ArkReverse.md` § In the game.
+
+- **Measure whether dead hull prisms pile up under the Ark** (debt this branch amplified; a measurement, not yet a
+  fix). A grazed hull prism stays a hidden GameObject under the Ark: `Ark.cs`'s mover-contract note says "a devoured
+  environment prism never deactivates", and nothing in `Prism.cs` destroys one (`grep -n "Destroy(" Prism.cs` finds
+  only render-entity calls). Before regrowth an Ark held at most its ~108-150 dead plates. Now each regrowth lays a
+  new prism beside a dead one, so constant grazing could leave up to ~1,800 hidden objects an hour until the voyage
+  ends. Measure in the editor: count the Ark's children after ten minutes of grazing. If the count climbs, destroy a
+  slot's dead prism when its regrowth is laid. Do that only once the prism's consume animation has finished, because a
+  prism being suctioned into a mouth is still visible.
+- ~~Concept A (`Ark.fbx`) drawn by nothing~~: retired 2026-10-28 (Garrett: "retire concept A"), with its spec, dossier
+  and pictures, and the shared-kit builders only it used.
+- **The hangar's three launch pads (`hangar.slot.0..2`) launch nothing.** That is unfinished design, not debt: the
+  brief's "a kaiju protected by three vessels" has no escort launch yet. The doors already open for a squadmate in
+  reach.
+- **Every hull prism regrows at the same pace whatever its kind** (a super-shielded stellation as fast as a plain
+  gill). That is a design dial, if playtests ask for one.
+
+## Toy Box portraits — follow-ups (2026-10-26, `cece/sharp-pascal-3frg3w`)
+
+The seven portraits are now drawn by `Tools/Build/icon_kit/toy_portraits.py` (`Docs/CODEX.md` §4). Rows only,
+measured at ship time; nothing here was changed on that branch.
+
+- **Inconsistency (fix): the codex's hull VARIANT icons are mostly the same picture.**
+  `md5sum Assets/_Graphics/Codex/tool_vessel-changer__*.png | sort | uniq -c -w32` → four files share
+  `dfa2ef07…` (Dolphin, Manta, Squirrel, Urchin) and two share `fd425b12…` (Scarab = Sparrow, the stale bake
+  CODEX.md §4.5 already names). They show only in the codex window's variant grid, not on the Toy Box. Re-running
+  FrogletTools ▸ UI ▸ Codex ▸ Bake on the Vessel Changer's variants in the editor should fix them, now that
+  `HarvestModel` handles skinned and procedural hulls; if it does not, the class-card renders
+  (`Tools/Build/vessel_model/render_cards.py`) are a model-true source to take them from instead.
+- **Report (orphan): `Assets/_Graphics/Codex/tool_arkway.png` is referenced by nothing.** Its guid
+  (`7c982fdd…`) has no hit in `Assets/` outside its own `.meta` (`git grep`); the Arkway page folded into Wander,
+  whose portrait is `tool_conveyor.png`. Delete it, or keep it if a page is coming back.
+- **Design question (Shombith's style-B Toy Box, not a fix): the toy accent stripes reuse team hues.** The 3 px
+  accent on each `ToyCard` is the toy's `AccentColor` (Vessel Changer `1, 0.85, 0.2` ≈ Gold; Domain Changer
+  `0.85, 0.3, 0.9` ≈ Ruby). `Docs/STYLE_FOUNDATION.md` §1 and §3 make colour information, and team colour data
+  only. The new portraits are white on purpose; whether the stripes should go neutral is the owner's call.

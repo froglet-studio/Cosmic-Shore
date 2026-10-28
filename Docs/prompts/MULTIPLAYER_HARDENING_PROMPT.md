@@ -152,6 +152,13 @@ their symptoms. The Sessions SDK already opens a Wire subscription per lobby and
 `PlayerPropertiesChanged`, `PlayerJoined`, `PlayerLeft`, `SessionPropertiesChanged`, `Deleted`,
 `RemovedFromSession`, `StateChanged`. We subscribe to **two** and poll instead.
 
+**Progress:** all nine steps of the audit's port order landed 2026-10-26 (`Ys-bleeding-edge`), the presence push, the republish on a roster move and the two-strike eviction, the 20 s safety poll and the explicit leave on quit included; the MPPM retest is next.
+
+**August already built this** on the old `Ys-bleeding-edge` (saved as `Ys-rescue-2026-08-24`), with MPPM
+measurements: port its design in the order of `Docs/PartySystem/BRANCH_AUDIT_2026-10.md` §2, and read §3 first (the
+void rate, the 2 free player-data slots, the SDK event order). `PlayerLeft` is `[Obsolete]` in SDK 2.3.3: use
+`PlayerLeaving` / `PlayerHasLeft`.
+
 Do it behind a **Strategy**: `IPresenceTransport` with a polling implementation and an
 event-driven one, both testable at L1. That makes it a swap, not a rewrite, and keeps a rollback.
 

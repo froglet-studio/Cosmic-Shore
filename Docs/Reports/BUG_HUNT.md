@@ -1,26 +1,35 @@
-# Bug Hunt — where it stands (2026-10-25 sweep)
+# Bug Hunt — where it stands (2026-10-27)
 
-**Owner:** Yash. **Branch:** the tooling and every fix up to 2026-10-17 are on `bleeding-edge`; the connecting-panel
-fix `456375be0` and the 2026-10-25 sweep's two commits (`b1c8f54b28`, `f5244d6819`) are on `Ys-bleeding-edge` only.
-**Board:** [Team Bug Board](https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno) (refreshed 2026-10-25: all 309 issues, run
-log `runs/2026-10-25`). Mechanism: `Docs/DIAGNOSTICS.md` § "The Bug Ledger".
+**Owner:** Yash. **Branch:** fixes land on `Ys-bleeding-edge` first and reach `bleeding-edge` with each merge (#1541
+merged 2026-10-25). **Board:** [Team Bug Board](https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno) (issue states
+refreshed 2026-10-27 04:30Z, run log `runs/2026-10-27`). Mechanism: `Docs/DIAGNOSTICS.md` § "The Bug Ledger".
 
 ## 1. In one minute
 
-- **Six people send errors from Unity**, each to their own `bugledger/<user>` branch: Garrett (`gradi`, 158 issues),
-  Shombith (142), Andrew (`owner`, 50), jtgjones (`mrglo`, 35), Yash (`yskha`, 22), Caleb (`belac`, 21).
-- **309 distinct errors are on those branches**: 270 open, 39 being checked after a fix (was 289 / 11 on 2026-10-24).
-  Of the open ones, 157 were last seen more than 30 days ago and 184 were seen only once.
-- **The daily sweep works again.** The 2026-10-25 run had push access and moved 18 issues to validating:
-  - 11 were already fixed on `bleeding-edge` but a fix had only reached some testers' branches (Shombith x9, Andrew x2).
-    `bug_ledger.py mark-fixed --branch <user>` (`b1c8f54b28`) now hands an existing fix to the testers still open
-    without resetting the others' clean runs.
-  - 6 were fixed on `bleeding-edge` and never marked: the Urchin occlusion band and skimmer container (`f3b155dd30`),
-    three Rhino HUD coroutines (`3fa268cd7f`), the Serpent pip coroutine (`6055707211`).
-  - 1 new fix: the toy cell miniature's template cube in edit mode (`f5244d6819`, E-837357c332, Shombith).
-- **Testers on old checkouts are the rest of the pile.** Andrew's validation log says "waiting for a pull"; Garrett's
-  stacks come from an older project folder (`Star-Writer2`). Each tester pulling `bleeding-edge` (and
-  `Ys-bleeding-edge` for the two newest fixes) lets their editor adopt the fixes and close them after two clean plays.
+- **Six people send errors from Unity**, each to their own `bugledger/<user>` branch: Garrett (`gradi`), Shombith,
+  Andrew (`owner`), jtgjones (`mrglo`), Yash (`yskha`), Caleb (`belac`).
+- **On the board: 202 open, 31 being checked after a fix, 79 resolved** (was 211 open / 29 validating on 2026-10-26).
+  The sweep of 2026-10-27 added 12 new issues (most are editor or package noise: Package Manager sign-in, a
+  Blender path, a locked DLL copy) and removed 40 that no sender's branch carries any more (each machine's send
+  clears what it no longer sees, `be56c98a1b`).
+- **Checked on 2026-10-27:** Andrew's 'Border' / 'Gear' sightings came from a checkout older than `cb51edde09`; a
+  fresh scan of every scene and prefab finds no orphaned component left, so both went to validating on his branch.
+  Two more destroyed-mask errors arrived (Shombith E-4ae8006406 through `KitRectMask2D`, E-3233be5687 from a
+  `ScrollRect` rebuild; Andrew E-9d5b82005a): same family as T-20261025-0c78 (#1554), Shombith's UI.
+- **Weekly challenge board (E-c8e2f49696):** not a code bug. The UGS board `weekly_challenge` has no weekly reset, so
+  old weeks' rows sit on it and the game hides them and says so once a session. Ticket T-20261026-0928 (#1585): a
+  recurring weekly reset with archiving on, UTC Monday 00:00, set in UGS (Shombith's backend).
+- **Fixed on 2026-10-26:** the "GameObject 'Border' / 'Gear' does not reference component" errors (3 testers, 46
+  sightings): the palette pass (`60000fe9ee`) left five `KitRimMesh` / `KitAmbient` components orphaned in Menu_Main,
+  ConnectingPanel and Maelstrom, so Unity re-attached them on every load; deleted in `cb51edde09`. The generator fix
+  that stops a dropped component coming back is #1544 (Shombith's UI generators). Also `7d79733ad7` (spindle LOD
+  batch read past the array's end) and three ledger fixes (`be56c98a1b`, `1ad13a8415`, `739e150cdb`).
+- **Fixed on 2026-10-25:** 18 issues to validating (11 fixes handed on with `mark-fixed --branch`, 6 never marked, 1
+  new), the client crystal-pickup domain error (`fb2466b822`; the pairing window itself is #1545), and per-machine
+  performance baselines (`3454ba93e9`).
+- **Waiting on others:** #1544 (UI generators), #1545 (client pairing window), the weekly_challenge board's weekly reset
+  in UGS (E-c8e2f49696, #1585), a rate-limited party create (E-1a188c52a2), the destroyed-mask error
+  (T-20261025-0c78, needs a capture).
 
 ## 2. What is blocking it
 
@@ -82,65 +91,57 @@ T-20261015-56dd, -3e0b, -3972, -1551, -7edd.
 This block is refreshed by `python3 Tools/Build/team_report.py area bug-hunt --write`.
 
 <!-- team_report:begin (generated by Tools/Build/team_report.py; do not edit) -->
-_Generated 2026-10-25 from git (last 14 days), who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
+_Generated 2026-10-27 from git (last 14 days), who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area bug-hunt --days 14`._
 
 ### Recent changes (25+)
-- 2026-10-25 `b08716005` bugledger: E-837357c332 fixed in f5244d6819 — on another branch
-- 2026-10-25 `6a8c45703` bugledger: E-f1681b036f fixed in 6055707211 — on another branch
-- 2026-10-25 `2b4472397` bugledger: E-2320339269 fixed in 3fa268cd7f — on another branch
-- 2026-10-25 `adc36ede1` bugledger: E-ad12affa41 fixed in 3fa268cd7f — on another branch
-- 2026-10-25 `3da0f2660` bugledger: E-7cc3e0223c fixed in 3fa268cd7f — on another branch
-- 2026-10-25 `ed4b7357a` bugledger: E-5a15f5e924 fixed in f3b155dd30 — on another branch
-- 2026-10-25 `fdc90d049` bugledger: E-5103c76904 fixed in f3b155dd30 — on another branch
-- 2026-10-25 `ae61bbeb6` bugledger: E-edc6a81429 fixed in f8af9fb5b — on another branch
-- 2026-10-25 `2d162ce4d` bugledger: E-c703a8f80b fixed in f8af9fb5b — on another branch
-- 2026-10-25 `7a704f469` bugledger: E-1f1ff22829 fixed in 8bcdde930 — on another branch
-- 2026-10-25 `469d6d12d` bugledger: E-4e84ce7ae2 fixed in a227e1e2b — on another branch
-- 2026-10-25 `605ac33ca` bugledger: E-6020da4524 fixed in a227e1e2b — on another branch
-- 2026-10-25 `599a0a159` bugledger: E-4065bcae2a fixed in a227e1e2b — on another branch
-- 2026-10-25 `680934314` bugledger: E-5713660fbd fixed in 8df5d3359 — on another branch
-- 2026-10-25 `e8d48fb72` bugledger: E-cb11787d50 fixed in d7e361701 — on another branch
-- 2026-10-25 `d696e6517` bugledger: E-2f25b16a12 fixed in d7e361701 — on another branch
-- 2026-10-25 `641715924` bugledger: E-c523697cae fixed in 2e8d5f63b — on another branch
-- 2026-10-25 `ef095a66a` bugledger: E-be60130128 fixed in 59e83e19d — on another branch
-- 2026-10-25 `b1c8f54b2` fix(bugledger): mark-fixed can hand an existing fix to the senders still open — on Ys-bleeding-edge
-- 2026-10-25 `d6f9691a1` bugledger: 11 open error(s) from yskha's play tests, 12 report file(s) — on another branch
-- 2026-10-25 `e307e90be` bugledger: E-1f28d58e0c fixed in 1c7616624f — on another branch
-- 2026-10-25 `04100d3a1` bugledger: E-6e925c3b8b fixed in db43442b71 — on another branch
-- 2026-10-25 `99a6ed8fb` bugledger: E-775c564039 fixed in db43442b71 — on another branch
-- 2026-10-25 `daa04a0d9` bugledger: E-0de9ec6c70 fixed in c5449e28a3 — on another branch
-- 2026-10-25 `192510e90` bugledger: E-41b7610878 fixed in c5449e28a3 — on another branch
+- 2026-10-27 `f40bcc049` bugledger: E-ed5bf7a724 fixed in cb51edde09 — on another branch
+- 2026-10-27 `9c19d6909` bugledger: E-b44884c449 fixed in cb51edde09 — on another branch
+- 2026-10-27 `5d53aeb68` bugledger: 95 open error(s) from gradi's play tests, 2 report file(s) — on another branch
+- 2026-10-27 `fcd43a4b6` bugledger: 95 open error(s) from gradi's play tests, 1 report file(s) — on another branch
+- 2026-10-27 `9a75c100b` bugledger: 95 open error(s) from gradi's play tests, 7 report file(s) — on another branch
+- 2026-10-27 `0cfe93660` bugledger: 17 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-10-26 `9a01e909e` bugledger: 91 open error(s) from Shombith's play tests, 5 report file(s) — on another branch
+- 2026-10-26 `c498fe969` docs(branches): only Yash's sessions build on Ys-bleeding-edge; everyone else on bleeding-edge — on another branch
+- 2026-10-26 `3a4904b01` bugledger: 90 open error(s) from Shombith's play tests, 2 report file(s) — on another branch
+- 2026-10-26 `d9adc1d09` bugledger: 14 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-10-26 `5728919b3` bugledger: 94 open error(s) from gradi's play tests — on another branch
+- 2026-10-26 `aff153179` bugledger: E-25b4ba509d fixed in 0cca7519b5 — on another branch
+- 2026-10-26 `292ab8978` bugledger: E-a771e8a767 fixed in 0cca7519b5 — on another branch
+- 2026-10-26 `018cf00bf` bugledger: E-2fab142e42 fixed in 44a700ec90 — on another branch
+- 2026-10-26 `acdee782e` bugledger: E-7cd3d699e4 fixed in cb51edde09 — on another branch
+- 2026-10-26 `de1471a8b` bugledger: E-8b8883bb82 fixed in cb51edde09 — on another branch
+- 2026-10-26 `2446b6d81` bugledger: 92 open error(s) from Shombith's play tests, 2 report file(s) — on another branch
+- 2026-10-26 `f2e67b83f` bugledger: 97 open error(s) from gradi's play tests, 3 report file(s) — on another branch
+- 2026-10-26 `b9cb2acc4` bugledger: 100 open error(s) from gradi's play tests, 5 report file(s) — on another branch
+- 2026-10-26 `ff83dfe68` bugledger: 16 open error(s) from yskha's play tests, 12 report file(s) — on another branch
+- 2026-10-26 `63968e537` bugledger: 46 open error(s) from Owner's play tests, 12 report file(s) — on another branch
+- 2026-10-26 `9e5fc1015` bugledger: 16 open error(s) from yskha's play tests — on another branch
+- 2026-10-26 `bcfabcd5b` bugledger: E-7cbbaadd58 fixed in 7d79733ad7 — on another branch
+- 2026-10-26 `be56c98a1` fix(bug-ledger): a send removes the issues this machine no longer has — on Ys-bleeding-edge, bleeding-edge
+- 2026-10-26 `b5c2c877c` bugledger: 99 open error(s) from gradi's play tests, 9 report file(s) — on another branch
 
 ### Also in flight on other branches
-- `bugledger/shombith` (Shombith, 2026-10-25): bugledger: E-837357c332 fixed in f5244d6819
-- `bugledger/gradi` (Garrett, 2026-10-25): bugledger: E-f1681b036f fixed in 6055707211
-- `bugledger/owner` (Andrew, 2026-10-25): bugledger: E-5a15f5e924 fixed in f3b155dd30
-- `bugledger/yskha` (Yash, 2026-10-25): bugledger: 11 open error(s) from yskha's play tests, 12 report file(s)
-- `bugledger/belac` (Caleb, 2026-10-25): bugledger: E-1f28d58e0c fixed in 1c7616624f
-- `bugledger/mrglo` (jtgjones, 2026-10-24): bugledger: E-72dc400f89 fixed in f8af9fb5b
+- `bugledger/owner` (Andrew, 2026-10-27): bugledger: E-ed5bf7a724 fixed in cb51edde09
+- `bugledger/gradi` (Garrett, 2026-10-26): bugledger: 95 open error(s) from gradi's play tests, 2 report file(s)
+- `bugledger/yskha` (Yash, 2026-10-27): bugledger: 17 open error(s) from yskha's play tests, 12 report file(s)
+- `bugledger/shombith` (Shombith, 2026-10-27): bugledger: 91 open error(s) from Shombith's play tests, 5 report file(s)
+- `claude/gracious-johnson-s1lkvt` (unattributed, 2026-10-26): docs(branches): only Yash's sessions build on Ys-bleeding-edge; everyone else on bleeding-edge
+- `bugledger/mrglo` (jtgjones, 2026-10-25): bugledger: 27 open error(s) from mrglo's play tests, 9 report file(s)
+- `bugledger/belac` (Caleb, 2026-10-25): bugledger: E-96c9656884 fixed in 8694975c6f
 
 ### Open tickets (Froglet Tasks)
 - T-20261024-0212 [open] test: Re-capture Bloomrush after the prism creation queue (Ys-bleeding-edge): Release, Third Eye closed, Arcade > Bloomrush, play past the 90 s auto-capture, stop Play. Compare with the 10-20 captures (CPU busy 130-221 ms, Prism.CreateBlockCoroutine x56k/frame, CoroutinesDelayedCalls 139 ms). (who: anyone)
-- T-20261024-803f [open] test: Re-capture Menu_Main after the QuestTrackView fix (Ys-bleeding-edge): Release, Third Eye closed, play Menu_Main (freestyle or the hub) past the 4-minute auto-capture and stop Play. Compare ClipperRegistry.Cull with the 10-19..23 captures (3.1-7.7 ms/frame; 0.26 ms on 10-16). (who: anyone)
 - T-20261021-b133 [open] decision: Decide which preset an older MobileLow phone starts on: first-run auto-detect still picks Very Low with 4x MSAA (Round 8); a hand pick of Low / Very Low now writes AA Off (who: anyone)
 - T-20261021-fa97 [open] test: Measure the new Medium / Low quality presets on an older phone (Mali-G52 / Adreno 610 class): F7 diag GPU ms at High, Medium, Low in the same scene, and run the editor steps (sky stops animating on Medium; AA off, 80% render scale, softer bloom, a quarter of the cytoplasm shards on Low - still there and still pointing at the crystal) (who: anyone)
 - T-20261020-09fe [open] decision: Pick the spindle LOD style and tune it in Unity. Resources/SpindleLodProfile > style: OVERT (default; the braid fans open on the prisms' own depth ramp, as far as danger prisms' faces travel, with a wave running root to tip - tune it on Resources/IncorporealDepth: strength 1, recedeStart/End 2.25/4.9 norm (~474/700 u), flowAmplitude 0.35, flowWaves 1.5, flowSpeed 0.6, pulseGlow 0.02 (round 6; was 0.8); and on SpindleLodProfile: chargeStrength 0.01, otherStrength 0.005 (round 6: deliberately negligible), overtThreadStart 10 norm (~1,000 u), overtFadeStart/End 15.625/22.5 norm, ~1,250/1,500 units) or COVERT (the braid converges into a thread nobody notices; threadGlow 1.35, minThreadPixels 1.25, farFadeStart/End 1300/1900 girths). The style switches live in Play. Preview without Unity: python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.01]. (who: anyone)
 - T-20261020-fb02 [open] test: Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; compare CPU/GPU ms, draws, and the renderers census (the capture's spindle LOD line). (who: anyone)
-- T-20261020-86b5 [open] test: Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile_IsSaneAndMeasured checks the LOD meshes against the braid Unity imported), then Play Menu_Main > Cell Selector > Lattice and fly in and out of a plant: no pop as limbs cross ~140 / ~590 / ~2,660 units, and the HUD console 'renderers' line shows far limbs as instanced. If a graph imports magenta, untick lodEnabled on Resources/SpindleLodProfile and report it. (who: anyone)
 - T-20261018-20ac [open] test: On an Android development build: press Off on the diagnostics HUD (or hold four fingers 2 s). The HUD and Unity's red error console go away; Patch And Run a change and relaunch - they stay off; hold four fingers 2 s - the HUD returns (who: anyone)
-- T-20261017-7647 [open] test: Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt & Performance badge; play the laggy scene past the badge's auto-capture countdown and stop Play. It lands on your bugledger branch by itself (Shombith's has no capture yet) (who: anyone)
 - T-20261017-9990 [open] dev: Menu_Main with the Stoat flying: Driver.LateUpdate (BlackHoleRegistry or WormholeView) read 2.7 ms/frame average and 88 ms self in a spike frame (Yash, 2026-10-18; capture tainted by vsync + Third Eye, so rank only). The drivers now carry BlackHole.Tick/Field/Pairs/VesselPull/Waves/Warp/Lens and Wormhole.Tick/SelectAndRender markers, in diag by default: take a clean Release capture with the Stoat dropping a dipole, find the phase that spikes, fix it (who: anyone)
-- T-20261017-3d13 [open] test: Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The vessel-registry fix should keep frames flat; the diag now names each Driver.LateUpdate and the BlackHole.* rows. (who: anyone)
 - T-20261017-2215 [open] test: Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went to Claude (SENDING -> SENT) and closes by itself; Project record ▸ expands into Overview / Performance / Network / AI flights / Errors with Ys-bleeding-edge and bleeding-edge's performance status and your sends; also FrogletTools > Diagnostics > Project Record. Say what to change. (who: anyone)
 - T-20261017-19f0 [open] dev: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%) (who: anyone)
-- T-20261017-2129 [open] dev: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%) (who: anyone)
-- T-20261017-1809 [open] dev: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%) (who: anyone)
 - T-20261017-c82c [open] test: Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at the same density as before and turns towards the crystal after a collect; look for transparent shards drawing in the wrong order where two overlap (they are one instanced draw now, unsorted inside it). (2) Skim Race or Regatta as the Squirrel: ten omni collects in a row, each lays its shielded ring and the crystal still morphs onto it and dissolves. (who: anyone)
-- T-20261015-1551 [open] test: Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the Third Eye CLOSED and one with it OPEN (the editor captures each by itself, labelled MinigameRegatta; the capture records the open cameras), stop Play each time (each capture goes to Claude by itself) (who: anyone)
-- T-20261015-7edd [open] test: Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude by itself. Then fly close to an omni and a Charge crystal and check their light looks as before. (who: anyone)
 - T-20261015-4996 [open] content: Boost Activate (event:/SFX/Oneshots/Gameplay sfx/Boost Activate) has a loop region but is fired as a one-shot, so the code refuses to play it: the Manta's boost is silent and logs one error per session (Bug Ledger E-cdf0c783c1). Remove the loop region, or tell engineering it is a held boost sound (who: anyone)
 - T-20261015-0bc6 [open] test: Test the one-button bug flow in Unity: play until a red error appears (or Debug.LogError from any script), stop Play (it is sent by itself; the console says so); play and stop again with the same error (who: anyone)
-- T-20261015-7d29 [open] test: Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Release if shown, then Play Menu_Main past the badge's auto-capture countdown, stop, and check the console says it was sent to Claude by itself. (who: anyone)
 - T-20261015-f106 [open] setup: Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged into Ys-bleeding-edge) fires once a day only after it reaches bleeding-edge / the default branch. Until then run it by hand: Actions > perf-daily > Run workflow on Ys-bleeding-edge. Check the first run's two artifacts (perf-sweep, perf-amoebius) read sensibly: gates all OK, the Amoebius Skim Race run 'within baseline'. (who: anyone)
 - T-20261015-72e1 [open] dev: Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a changed mesh by array identity (SceneRenderer ReferenceEquals on RenderVertices / RenderUvWide / RenderSubmesh), so a per-frame mesh upload allocates the whole buffer each frame: CrystalChargeArcs.LateUpdate reads ~708 KB/frame in the Skim Race marker run while the game's own code is allocation-free (it reuses its writer lists). Unity's SetVertices(List) allocates nothing. Make the setters copy in place when the length matches, bump mesh.version, and have the renderer's dirty check key on version (or a per-buffer stamp) instead of array identity, so the engine's allocation numbers mean the game's. (who: anyone)
 - T-20261015-8bae [open] decision: Assets/_Models/shield1.blend makes every machine without Blender log a red 'Blender could not be found' on import (Bug Ledger E-fd64b43840). Nothing in Assets references its guid. Delete it, or export it to .fbx? (who: anyone)

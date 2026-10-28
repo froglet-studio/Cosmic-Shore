@@ -23,11 +23,10 @@ WHAT `Safe Area/NavBar` BECOMES
     InactiveImage, so UpdateNavBar and ResolveNavLinkObject (whose answer is the image's PARENT,
     i.e. the instance root) behave exactly as before. NavBarLine / NavBarLineSprites are emptied:
     the per-tab line art retires with the line.
-    PORT carries an AUTHORED MenuAvailabilityView - the one ScreenSwitcher.MarkDisabledNavLinks
+    A LOCKED tab carries an AUTHORED MenuAvailabilityView - the one ScreenSwitcher.MarkDisabledNavLinks
     would otherwise add at runtime - wired to the tab's Lock glyph (lockedOverlay) and its word
     (label, dimmed to InactiveLight while Locked). Its availability is authored Available: the lock
-    comes from disabledScreens at runtime, so emptying that list opens the tab with nothing else to
-    change.
+    comes from disabledScreens at runtime. No tab is locked since section 90 (PORT opened, 2026-10-27).
 
 STANDING DOWN. The migration - deleting the old links, indicators, gradient and line - runs only
 while those objects are present. After the first write the script owns the documents it
@@ -74,14 +73,24 @@ ARROWS = [
     dict(side="R", name="RightArrow", key="RT", method="OnClickRightArrow", go="520912455966647713",
          rt="8050805686329073856", cr="4848467573656329852", img="2786130128179163306", btn="8507622070610753978"),
 ]
-# Strip order = MenuScreens order = the NavActiveImages / NavInactiveImages order.
-TABS = [("HANGAR", "HangarLink", "OnClickHangarNav"), ("ARK", "ArkLink", "OnClickArkNav"),
-        ("HOME", "HomeLink", "OnClickHomeNav"), ("PORT", "PortLink", "OnClickPortNav")]
+# Strip order = ScreenSwitcher.screens order = the NavActiveImages / NavInactiveImages order. Section 83 (Shombith,
+# 2026-10-26: "It should be Codex (locked like port ...), Hangar, Home, Ark and then Port (Locked)"; "According to the
+# order the slide menu should work too"): the generator writes all three lists from TABS, so they cannot disagree.
+TABS = [("CODEX", "CodexLink", "OnClickCodexNav"), ("HANGAR", "HangarLink", "OnClickHangarNav"),
+        ("HOME", "HomeLink", "OnClickHomeNav"), ("ARK", "ArkLink", "OnClickArkNav"),
+        ("PORT", "PortLink", "OnClickPortNav")]
+SCREEN_IDS = {"CODEX": 6, "HANGAR": 4, "HOME": 2, "ARK": 1, "PORT": 3}   # ScreenSwitcher.MenuScreens
+PROFILE_ID = 5                 # the screen with no tab (Rev 13): last in the strip, never slid to
+# disabledScreens: a locked tab wears the lock and its MenuAvailabilityView. Section 88 (Shombith 2026-10-26: "Go ahead
+# implement the codex"): CODEX has its screen (author_menu_codex.py) and its lock is lifted. Section 90 (Shombith
+# 2026-10-27: "lets open up the port now"): PORT has its screen (author_menu_port.py) and its lock is lifted too.
+LOCKED = set()
 # Rev 13 (Shombith, 2026-10-25): "we do not need a separate profile screen ... keep the top bar count at 4". The
 # PROFILE tab (index 4) is retired: the profile opens from the Home pilot card (ScreenSwitcher.navHiddenScreens).
 # Its minted documents are removed on every run, so a scene still carrying the fifth tab loses it.
-RETIRED_TAB_INDICES = (4,)
-HOME, PORT = 2, 3          # HOME is the screen the menu opens on; PORT is disabledScreens[0]
+HOME = [t[0] for t in TABS].index("HOME")      # the screen the menu opens on
+PORT = [t[0] for t in TABS].index("PORT")
+LOCKED_I = {i for i, t in enumerate(TABS) if t[0] in LOCKED}
 
 # The old subtree the migration deletes (root GameObjects; their components and children go too).
 RETIRED_ROOTS = {
@@ -274,7 +283,7 @@ def glyph_guid(i):
 
 
 def tab_width(i):
-    return K.label_width(TABS[i][0], "Button") + NAV_SLOT + (K.LOCK_INSET if i == PORT else 0)
+    return K.label_width(TABS[i][0], "Button") + NAV_SLOT + (K.LOCK_INSET if i in LOCKED_I else 0)
 
 
 def row():
@@ -301,18 +310,31 @@ class Ids:
         f = self.ctx.fid
         self.band = {k: str(f("Band#" + k)) for k in ("go", "rt", "cr", "img", "th")}
         self.rule = {k: str(f("Rule#" + k)) for k in ("go", "rt", "cr", "img", "th")}
-        self.tabs = [{k: str(f(f"Tab{i}#{k}")) for k in
+        # Keyed by the tab's link, not its place: a reorder moves a tab, it never hands one tab's objects to another.
+        self.tabs = [{k: str(f(f"Tab{link}#{k}")) for k in
                       ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "stub_lock", "stub_label",
-                       "trigger", "availability")} for i in range(len(TABS))]
+                       "trigger", "availability")} for _, link, _ in TABS]
         self.keys = [{k: str(f(f"Key{a['side']}#{k}")) for k in ("inst", "stub", "stub_label_kt", "stub_border_th", "hover")}
                      for a in ARROWS]
-        self.retired = {str(f(f"Tab{i}#{k}")) for i in RETIRED_TAB_INDICES for k in
-                        ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "trigger")}
+        # The tabs as they were keyed before section 84 (by place, 0-4) are all retired; Tab4 was PROFILE (Rev 13).
+        self.retired = {str(f(f"Tab{i}#{k}")) for i in range(5) for k in
+                        ("inst", "stub", "stub_go", "stub_inactive", "stub_active", "stub_lock", "stub_label",
+                         "trigger", "availability")}
+
+    def everything(self):
+        """Every fileID this script can mint, locked or not: a re-run removes them all before writing, so a tab whose
+        lock is lifted (CODEX, section 88) loses its lock view instead of stranding it."""
+        out = set(self.band.values()) | set(self.rule.values())
+        for t in self.tabs:
+            out |= set(t.values())
+        for k in self.keys:
+            out |= set(k.values())
+        return out
 
     def all(self):
         out = set(self.band.values()) | set(self.rule.values())
         for i, t in enumerate(self.tabs):
-            out |= {v for k, v in t.items() if i == PORT or k not in ("stub_lock", "stub_label", "availability")}
+            out |= {v for k, v in t.items() if i in LOCKED_I or k not in ("stub_lock", "stub_label", "availability")}
         for k in self.keys:
             out |= set(k.values())
         return out
@@ -330,7 +352,7 @@ def tab_instance(ids, i, x):
     glyph = K.sprite_ref(glyph_guid(i))
     # The word's box gives up the glyph's slot (and PORT's lock inset) on its left, so the glyph +
     # word pair stays centred on the tab; the inactive glyph sits just left of the centred word.
-    inset = NAV_SLOT + (K.LOCK_INSET if i == PORT else 0)
+    inset = NAV_SLOT + (K.LOCK_INSET if i in LOCKED_I else 0)
     mods = [("InactiveImage#tmp", "m_text", text, None), ("ActiveImage/Label#tmp", "m_text", text, None),
             ("ActiveImage/Label#rt", "m_SizeDelta.x", lw, None),
             ("ActiveImage/Label#rt", "m_AnchoredPosition.x", NAV_SLOT / 2, None),
@@ -343,14 +365,14 @@ def tab_instance(ids, i, x):
             ("ActiveImage/Icon#img", "m_Sprite", None, glyph)]
     if i == HOME:     # the state the menu opens in, so the scene reads as it plays
         mods += [("InactiveImage#go", "m_IsActive", 0, None), ("ActiveImage#go", "m_IsActive", 1, None)]
-    if i == PORT:
+    if i in LOCKED_I:
         mods += [("InactiveImage#kt", "colorDrivenExternally", 1, None),   # MenuAvailabilityView owns it
                  ("root#hover", "m_Enabled", 0, None)]                      # its label is not the hover's
-    inst = K.Instance(f"Tab{i}", TAB_PREFAB, guid, link,
+    inst = K.Instance(f"Tab{link}", TAB_PREFAB, guid, link,
                       K.rect((0, 1), None, (x, -BAND_H / 2), (tab_width(i), BAND_H)), mods)
     out = []
     K.emit_instance(ids.ctx, inst, BUTTONS["rt"], out)
-    added = [t["trigger"]] + ([t["availability"]] if i == PORT else [])
+    added = [t["trigger"]] + ([t["availability"]] if i in LOCKED_I else [])
     root_go = kit_src(TAB_PREFAB, "root#go")
     entries = "".join(f"    - targetCorrespondingSourceObject: {K.ref(root_go, guid)}\n      insertIndex: -1\n"
                       f"      addedObject: {{fileID: {a}}}\n" for a in added)
@@ -360,7 +382,7 @@ def tab_instance(ids, i, x):
     out.append(stub_go(t["stub_inactive"], kit_src(TAB_PREFAB, "InactiveImage#go"), guid, pid))
     out.append(stub_go(t["stub_active"], kit_src(TAB_PREFAB, "ActiveImage#go"), guid, pid))
     out.append(event_trigger(t["trigger"], t["stub_go"], method))
-    if i == PORT:
+    if i in LOCKED_I:
         out.append(stub_go(t["stub_lock"], kit_src(TAB_PREFAB, "Lock#go"), guid, pid))
         out.append(stub_mono(t["stub_label"], kit_src(TAB_PREFAB, "InactiveImage#tmp"), guid, pid, K.TMP_UGUI))
         out.append(f"--- !u!114 &{t['availability']}\n" + K.mono(t["stub_go"], AVAILABILITY_VIEW,
@@ -390,6 +412,26 @@ def keycap_instance(ids, a_index):
                f"  theme: {K.ref(11400000, K.THEME, 2)}\n  hoverToken: {K.TOKEN_INDEX['TextLight']}\n"
                + K.refs_list("texts", [k["stub_label_kt"]]) + K.refs_list("graphics", [k["stub_border_th"]])))
     return out
+
+
+def screen_roots(sw):
+    """{MenuScreens id: root fileID} from the ScreenSwitcher's current screens list."""
+    m = re.search(r"^  screens:\n((?:  - id: \d+\n    root: \{fileID: -?\d+\}\n)*)", sw, re.M)
+    assert m, "ScreenSwitcher.screens not found"
+    return {int(a): b for a, b in re.findall(r"  - id: (\d+)\n    root: \{fileID: (-?\d+)\}", m.group(1))}
+
+
+def screens_block(sw):
+    """The strip in TABS order, then PROFILE (no tab). Each slot keeps the root the scene gives it: CODEX's is the
+    CodexView author_menu_codex.py places (section 88)."""
+    roots = screen_roots(sw)
+    order = [SCREEN_IDS[t[0]] for t in TABS] + [PROFILE_ID]
+    return "  screens:\n" + "".join(f"  - id: {sid}\n    root: {{fileID: {roots.get(sid, '0')}}}\n" for sid in order)
+
+
+def disabled_hex():
+    """disabledScreens as Unity writes an int list (little-endian int32s): the locked tabs' screens, in bar order."""
+    return "".join(SCREEN_IDS[t[0]].to_bytes(4, "little").hex() for t in TABS if t[0] in LOCKED)
 
 
 def set_block(doc, name, block):
@@ -427,7 +469,7 @@ def transform(text):
         for fid in sc.subtree(root):
             sc.remove(fid)
     for fid in list(sc.order):
-        if fid in generated or fid in ids.retired:
+        if fid in ids.everything() or fid in ids.retired:
             sc.remove(fid)
 
     items, xs, row_w = row()
@@ -475,6 +517,8 @@ def transform(text):
     sw = set_block(sw, "NavBarLineSprites", "  NavBarLineSprites: []\n")
     sw = set_block(sw, "NavActiveImages", K.refs_list("NavActiveImages", [t["stub_active"] for t in ids.tabs]))
     sw = set_block(sw, "NavInactiveImages", K.refs_list("NavInactiveImages", [t["stub_inactive"] for t in ids.tabs]))
+    sw = set_block(sw, "screens", screens_block(sw))
+    sw = set_block(sw, "disabledScreens", f"  disabledScreens: {disabled_hex()}\n")
     sc.replace(SWITCHER, sw)
     return sc.text()
 
@@ -487,7 +531,8 @@ PATCHED = {NAVBAR["rt"], BUTTONS["rt"], BUTTONS["hlg"], SWITCHER} | {a[k] for a 
 
 
 # Patched documents that are NOT regenerated whole: only these fields may differ.
-PATCHED_FIELDS = {SWITCHER: ("NavBarLine", "NavBarLineSprites", "NavActiveImages", "NavInactiveImages")}
+PATCHED_FIELDS = {SWITCHER: ("NavBarLine", "NavBarLineSprites", "NavActiveImages", "NavInactiveImages", "screens",
+                             "disabledScreens")}
 PATCHED_FIELDS.update({a["btn"]: ("m_Transition",) for a in ARROWS})
 
 
@@ -536,7 +581,7 @@ def validate(before_text, after_text, guids):
     for root in RETIRED_ROOTS:
         if before.has(root):
             retired |= set(before.subtree(root))
-    retired |= Ids().retired
+    retired |= Ids().retired | Ids().everything()     # a lifted lock's view (CODEX, section 88) is removed, not stranded
     assert removed <= retired | generated, f"unexpected removals {sorted(removed - retired - generated)[:3]}"
     changed = {f for f in set(before.order) & set(sc.order) if before.docs[f] != sc.docs[f]}
     assert changed <= PATCHED | generated, f"unexpected edits {sorted(changed - PATCHED - generated)[:3]}"
@@ -593,13 +638,20 @@ def validate(before_text, after_text, guids):
         assert f"m_MethodName: {a['method']}\n" in btn and f"m_TargetGraphic: {{fileID: {a['img']}}}" in btn
         assert ids.keys[a_index]["hover"] in sc.components(a["go"]), f"{a['name']}: hover tint not attached"
         assert f"m_Father: {{fileID: {BUTTONS['rt']}}}" in sc.docs[a["rt"]]
-    port = ids.tabs[PORT]
-    av = sc.docs[port["availability"]]
-    assert f"addedObject: {{fileID: {port['availability']}}}" in sc.docs[port["inst"]]
-    assert f"lockedOverlay: {{fileID: {port['stub_lock']}}}" in av and f"label: {{fileID: {port['stub_label']}}}" in av
-    assert "availability: 0\n" in av, "PORT must be authored Available: disabledScreens locks it at runtime"
-    assert f"{{fileID: {kit_src(TAB_PREFAB, 'Lock#go')}, guid: {tab_guid}" in sc.docs[port["stub_lock"]]
-    assert f"{{fileID: {kit_src(TAB_PREFAB, 'InactiveImage#tmp')}, guid: {tab_guid}" in sc.docs[port["stub_label"]]
+    for li in sorted(LOCKED_I):
+        port, name = ids.tabs[li], TABS[li][0]
+        av = sc.docs[port["availability"]]
+        assert f"addedObject: {{fileID: {port['availability']}}}" in sc.docs[port["inst"]], f"{name}: no lock view"
+        assert f"lockedOverlay: {{fileID: {port['stub_lock']}}}" in av and f"label: {{fileID: {port['stub_label']}}}" in av
+        assert "availability: 0\n" in av, f"{name} must be authored Available: disabledScreens locks it at runtime"
+        assert f"{{fileID: {kit_src(TAB_PREFAB, 'Lock#go')}, guid: {tab_guid}" in sc.docs[port["stub_lock"]]
+        assert f"{{fileID: {kit_src(TAB_PREFAB, 'InactiveImage#tmp')}, guid: {tab_guid}" in sc.docs[port["stub_label"]]
+    # Section 83: the strip slides in the tabs' order (LT / RT step it), and the locked tabs are the disabled screens.
+    ids_in_strip = [int(x) for x in re.findall(r"  - id: (\d+)\n", re.search(r"^  screens:\n((?:  .*\n)*?)  NavBar:", sw, re.M).group(1))]
+    assert ids_in_strip == [SCREEN_IDS[t[0]] for t in TABS] + [PROFILE_ID], f"the strip's order is not the tabs' ({ids_in_strip})"
+    roots = screen_roots(sw)
+    assert all(roots[SCREEN_IDS[n]] != "0" for n in ("CODEX", "HANGAR", "HOME", "ARK", "PORT")), "a screen lost its panel"
+    assert f"disabledScreens: {disabled_hex()}\n" in sw, "disabledScreens must be exactly the LOCKED tabs (none since section 90)"
     assert "m_SizeDelta: {x: 0, y: 84}" in sc.docs[NAVBAR["rt"]]
     assert "NavBarLineSprites: []" in sw and "NavBarLine: {fileID: 0}" in sw
 
@@ -638,14 +690,16 @@ def self_test(current, guids):
         "swapped NavActiveImages": lambda s: s.replace(f"  - {{fileID: {t[0]['stub_active']}}}\n  - {{fileID: {t[1]['stub_active']}}}\n",
                                                        f"  - {{fileID: {t[1]['stub_active']}}}\n  - {{fileID: {t[0]['stub_active']}}}\n"),
         "HOME lost its EventTrigger": lambda s: s.replace(f"      addedObject: {{fileID: {t[HOME]['trigger']}}}\n", ""),
-        "PORT authored Locked": lambda s: in_doc(s, t[PORT]["availability"], "  availability: 0\n", "  availability: 1\n"),
+        "PORT locked again": lambda s: in_doc(s, SWITCHER, f"disabledScreens: {disabled_hex()}", f"disabledScreens: {disabled_hex()}03000000"),
         "dangling reference": lambda s: s.replace(f"m_TargetGraphic: {{fileID: {ARROWS[0]['img']}}}", "m_TargetGraphic: {fileID: 42}"),
         "override targets a missing prefab object": lambda s: s.replace(
             f"target: {{fileID: {kit_src(TAB_PREFAB, 'InactiveImage#tmp')}, guid:", "target: {fileID: 4242, guid:", 1),
         "ScreenSwitcher edited outside the nav fields":
             lambda s: in_doc(s, SWITCHER, "disabledScreenMessage: Not open yet.", "disabledScreenMessage: Closed."),
         "unrelated document edited": lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1),
-        "ARK lost its glyph": lambda s: s.replace(f"guid: {glyph_guid(1)}, type: 3}}", "guid: 0, type: 3}", 1),
+        "ARK lost its glyph": lambda s: s.replace(f"guid: {glyph_guid(3)}, type: 3}}", "guid: 0, type: 3}", 1),
+        "the strip in the old order": lambda s: in_doc(s, SWITCHER, "  - id: 6\n", "  - id: 9\n"),
+        "CODEX locked again": lambda s: in_doc(s, SWITCHER, f"disabledScreens: {disabled_hex()}", f"disabledScreens: {disabled_hex()}06000000"),
     }
     failed = []
     for name, plant in plants.items():

@@ -31,6 +31,7 @@ namespace CosmicShore.UI
 
         [Header("Host / Party Data")]
         [Inject] private HostConnectionDataSO hostConnectionData;
+        [Inject] private UGSDataService ugsData;
 
         [Header("External Views")]
         [SerializeField] private ArcadeExploreView arcadeExploreView;
@@ -549,7 +550,8 @@ namespace CosmicShore.UI
 
             config.AIDomains.Clear();
             config.AIDomains.AddRange(placements);
-            config.AIVessels.Clear();   // ally hulls are picked per session, not remembered
+            config.AIVessels.Clear();       // ally hulls are picked per session, not remembered
+            config.AIDifficulties.Clear();  // nor is each AI's own difficulty
 
             // Seat count first (it bounds the domain count), then the domain count against the
             // new bound - the same order a live placement takes through AddAiToDomain.
@@ -575,10 +577,21 @@ namespace CosmicShore.UI
         /// <see cref="HandleDomainSelected"/> so it is a real server request: a tile lit without
         /// the round trip is the "UI claims a domain the server never got" case that method
         /// exists to refuse. Jade is skipped because the commit already put everyone there.
+        ///
+        /// <para>A squad going in wins over that memory (Docs/MENU_REDESIGN_B.md section 96): the squad the player took in
+        /// from the Ark (<see cref="SquadLaunchIntent"/>), or, for a guest, their active squad when the party holds one of
+        /// its mates. A squad domain the card's domain count does not reach falls back to Jade, as a remembered one does.
+        /// The player can still press another tile.</para>
         /// </summary>
         void RestoreRememberedDomain()
         {
             if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (TryGetSquadDomain(out var squadDomain))
+            {
+                var squad = LaunchPreferenceRules.ResolvePilotDomain(squadDomain, config.DomainCount);
+                if (squad != Domains.Jade) HandleDomainSelected(squad);
+                return;
+            }
             if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
             if (!remembered.HasPilotChoice) return;
 
@@ -586,6 +599,16 @@ namespace CosmicShore.UI
             if (domain == Domains.Jade) return;
 
             HandleDomainSelected(domain);
+        }
+
+        bool TryGetSquadDomain(out Domains domain)
+        {
+            var active = ugsData != null ? ugsData.SquadRepo?.Data?.Book?.GetActive() : null;
+            var party = new List<string>();
+            if (hostConnectionData && hostConnectionData.PartyMembers != null)
+                foreach (var member in hostConnectionData.PartyMembers) party.Add(member.PlayerId);
+            string me = hostConnectionData ? hostConnectionData.LocalPlayerId : null;
+            return SquadMembership.TryLaunchDomain(SquadLaunchIntent.Squad, IsClientMode, active, me, party, out domain);
         }
 
         /// <summary>
@@ -725,9 +748,11 @@ namespace CosmicShore.UI
             {
                 arena.OnVesselCycleRequested   += HandleVesselCycleRequested;
                 arena.OnVesselConfirmRequested += HandleVesselConfirmRequested;
+                arena.OnVesselChangeRequested  += HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    += HandleVesselPickRequested;
             }
 
+            WireSeatLineup(_activePanel.SeatLineup);
             _activePanelWired = true;
         }
 
@@ -769,9 +794,11 @@ namespace CosmicShore.UI
             {
                 arena.OnVesselCycleRequested   -= HandleVesselCycleRequested;
                 arena.OnVesselConfirmRequested -= HandleVesselConfirmRequested;
+                arena.OnVesselChangeRequested  -= HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    -= HandleVesselPickRequested;
             }
 
+            UnwireSeatLineup(_activePanel.SeatLineup);
             _activePanelWired = false;
         }
 
@@ -798,10 +825,9 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // The pick goes with its seat, so the bots after it keep theirs.
-            config.SyncAIVesselSlots();
-            config.AIDomains.RemoveAt(aiOrdinal);
-            config.AIVessels.RemoveAt(aiOrdinal);
+            // The picks go with their seat (hull and difficulty), so the bots after it keep theirs.
+            config.RemoveAISeat(aiOrdinal);
+            _vesselSeat = SeatAfterKick(_vesselSeat, aiOrdinal);
             HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
             BroadcastRosterToClients();
         }
@@ -951,12 +977,14 @@ namespace CosmicShore.UI
             config.SyncAIVesselSlots();
             var placed = new int[config.AIDomains.Count];
             var vessels = new int[config.AIDomains.Count];
+            var difficulties = new int[config.AIDomains.Count];
             for (int i = 0; i < placed.Length; i++)
             {
                 placed[i] = (int)config.AIDomains[i];
                 vessels[i] = (int)config.AIVessels[i];
+                difficulties[i] = (int)config.AIDifficulties[i];
             }
-            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed, vessels);
+            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed, vessels, difficulties);
         }
 
         /// <summary>
@@ -966,7 +994,7 @@ namespace CosmicShore.UI
         /// remainder recomputed over the same replicated player data the host used.
         /// </summary>
         void HandleRosterChangedOnClient(int playerCount, int domainCount, int[] placedAiDomains,
-                                         int[] placedAiVessels)
+                                         int[] placedAiVessels, int[] placedAiDifficulties)
         {
             // Same two-instance gate as HandleConfigOpenedOnClient.
             if (!UsesLaunchPanels) return;
@@ -984,10 +1012,15 @@ namespace CosmicShore.UI
             if (placedAiVessels != null)
                 foreach (var v in placedAiVessels)
                     config.AIVessels.Add((VesselClassType)v);
+            config.AIDifficulties.Clear();
+            if (placedAiDifficulties != null)
+                foreach (var d in placedAiDifficulties)
+                    config.AIDifficulties.Add((AIDifficulty)d);
             config.SyncAIVesselSlots();
 
             RefreshTileVisibility();
             RefreshRoster();
+            ShowAIDifficultyForEditedSeat();
         }
 
         /// <summary>Total seats a match holds, humans included - the house party size. The old
@@ -1054,6 +1087,7 @@ namespace CosmicShore.UI
             _activePanel.SetSeatSummary(total, ceiling, spare, !IsClientMode && !_localPlayerReady);
 
             RefreshAIPreviewChips(total - humans);
+            RefreshSeatLineup();
         }
 
         /// <summary>
@@ -1450,6 +1484,7 @@ namespace CosmicShore.UI
             // visible, kickable seat rather than an auto seat that re-balanced on every redraw.
             config.AIDomains.Clear();
             config.AIVessels.Clear();
+            config.AIDifficulties.Clear();
             _addAiArmed = false;
             if (vesselInfoPopup) vesselInfoPopup.Hide();   // it described the previous card's seat
             // The weekly challenge seats the card's MINIMUM - it is a personal objective, and every
@@ -1663,13 +1698,14 @@ namespace CosmicShore.UI
         {
             if (_activePanel is not ArenaLaunchPanel arena) return;
 
-            if (_vesselSeat != OwnVesselSeat && !MayEditAiSeat(_vesselSeat))
+            if (_vesselSeat != OwnVesselSeat && !MaySelectAiSeat(_vesselSeat))
             {
                 _vesselSeat = OwnVesselSeat;
                 MarkEditedSeat();
             }
 
-            if (_vesselSeat != OwnVesselSeat)
+            // An AI selected for its difficulty alone (no hull to pick for it here) leaves the strip on the pilot's own hull.
+            if (_vesselSeat != OwnVesselSeat && MayEditAiSeat(_vesselSeat))
             {
                 int ordinal = _vesselSeat;
                 var seatDomain = config.AIDomains[ordinal];
@@ -1679,15 +1715,17 @@ namespace CosmicShore.UI
                 var taken = TakenHullsForAiSeat(ordinal);
                 arena.ShowHullStrip(_availableShips, shown ? _availableShips.FindIndex(v => v && v.Class == shown.Class) : -1,
                                     v => taken.Contains(v.Class), confirmed: false);
+                RefreshSeatLineup();     // the seat the strip picks for is lit, and stands on its new hull
                 return;
             }
 
             var ship = _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count
                 ? _availableShips[_availableShipIndex]
                 : null;
-            arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed);
+            arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed, canChange: !_localPlayerReady);
             arena.ShowHullStrip(_availableShips, _availableShipIndex,
                                 v => IsHullHeldByOtherPilot(v.Class), _vesselConfirmed);
+            RefreshSeatLineup();
         }
 
         /// <summary>A tap on the hull strip: show that hull, unless the pick is already made, a claim
@@ -1751,6 +1789,19 @@ namespace CosmicShore.UI
             if (TryBeginArenaHullClaim(_availableShips[_availableShipIndex])) return;
 
             ConfirmVesselNow();
+        }
+
+        /// <summary>CHANGE: take the pilot's claim back so they can pick another hull. Only their own hull, and only
+        /// while they are not ready - a ready pilot's hull is part of what the others are waiting on.</summary>
+        void HandleVesselChangeRequested()
+        {
+            if (_vesselSeat != OwnVesselSeat || !_vesselConfirmed || _localPlayerReady) return;
+
+            _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            RefreshVesselPicker();
+            RefreshStartAvailability();
         }
 
         void ConfirmVesselNow()
@@ -2190,6 +2241,7 @@ namespace CosmicShore.UI
             foreach (var chip in _aiChips)
                 if (chip) Destroy(chip.gameObject);
             _aiChips.Clear();
+            _aiSeatDomains.Clear();
 
             if (aiCount <= 0)
             {
@@ -2222,6 +2274,9 @@ namespace CosmicShore.UI
                     domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
                     totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
                 }
+
+                // The seat lineup draws every AI seat, whether or not a tile is there to hold its chip.
+                _aiSeatDomains.Add(domain);
 
                 var tile = FindTileForDomain(domain);
                 if (tile == null || tile.AvatarStripTransform == null) continue;
@@ -2342,7 +2397,7 @@ namespace CosmicShore.UI
         /// </summary>
         void SelectVesselSeat(int seat)
         {
-            if (seat != OwnVesselSeat && !MayEditAiSeat(seat)) return;
+            if (seat != OwnVesselSeat && !MaySelectAiSeat(seat)) return;
             seat = NextVesselSeat(_vesselSeat, seat);
             if (seat == _vesselSeat) return;
 
@@ -2350,7 +2405,14 @@ namespace CosmicShore.UI
             if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
             MarkEditedSeat();
             RefreshVesselPicker();
+            RefreshSeatLineup();     // the selected pedestal lights (Arcade has no vessel strip to do it)
         }
+
+        /// <summary>The selected seat after AI <paramref name="kicked"/> leaves: the selection follows its AI - back
+        /// to the pilot's own seat with the kicked one, one place down for the bots after it.</summary>
+        internal static int SeatAfterKick(int selected, int kicked) =>
+            selected == OwnVesselSeat || selected < kicked ? selected
+            : selected == kicked ? OwnVesselSeat : selected - 1;
 
         /// <summary>The seat the shared vessel panel edits after a tap on <paramref name="tapped"/>: that seat, or
         /// the pilot's own hull when the tapped AI seat was already selected (the second tap closes it).</summary>
@@ -2369,6 +2431,18 @@ namespace CosmicShore.UI
             if (!IsClientMode) return true;
             var self = LocalOwnedPlayerQuiet();
             return self && self.NetDomain.Value == domain;
+        }
+
+        /// <summary>
+        /// Whether this pilot may select AI <paramref name="ordinal"/>'s pedestal: to pick its hull
+        /// (<see cref="MayEditAiSeat"/>), or - on any card with the AI row, Arcade included - for the HOST to set
+        /// that AI's own difficulty. A guest only reads each AI's level off its pedestal.
+        /// </summary>
+        bool MaySelectAiSeat(int ordinal)
+        {
+            if (MayEditAiSeat(ordinal)) return true;
+            if (IsClientMode || !SeatDifficultyAvailable) return false;
+            return ordinal >= 0 && ordinal < config.AIDomains.Count && config.AIDomains[ordinal] != Domains.Blue;
         }
 
         /// <summary>The domains the humans in the lobby sit on (an AI there is an ally, elsewhere an opponent).</summary>
@@ -2414,7 +2488,9 @@ namespace CosmicShore.UI
                 kv.Value.SetEditing(own && picker && _vesselSeat == OwnVesselSeat);
             }
             for (int i = 0; i < _aiChips.Count; i++)
-                if (_aiChips[i]) _aiChips[i].SetEditing(picker && _vesselSeat == i && MayEditAiSeat(i));
+                if (_aiChips[i]) _aiChips[i].SetEditing((picker || SeatDifficultyAvailable) && _vesselSeat == i && MaySelectAiSeat(i));
+            // The AI row follows the selection: the selected AI's own level, or every AI's (the card's).
+            ShowAIDifficultyForEditedSeat();
         }
 
         /// <summary>The < > arrows with an AI seat selected: ask the host to step its hull. The host decides
@@ -2580,6 +2656,7 @@ namespace CosmicShore.UI
             foreach (var chip in _aiChips)
                 if (chip) Destroy(chip.gameObject);
             _aiChips.Clear();
+            _aiSeatDomains.Clear();
             _aiChipSignature = null;
 
             if (_watchingPlayerSpawnEvent && gameData != null
@@ -2604,6 +2681,7 @@ namespace CosmicShore.UI
                     break;
                 }
             }
+            RefreshSeatLineup();
         }
 
         DomainInfoData FindTileForDomain(Domains d)
@@ -2806,6 +2884,7 @@ namespace CosmicShore.UI
             // Show "Waiting for others..." and hide the Start button
             _localPlayerReady = true;
             if (_activePanel) _activePanel.SetReadyUpState(true);
+            if (RequiresVesselConfirmation) RefreshVesselPicker();   // a ready pilot's CHANGE leaves
             RefreshRoster();
 
             // Tell the server this player is ready
@@ -3077,6 +3156,8 @@ namespace CosmicShore.UI
             // How well the AI flies. A card that does not offer the setting launches on the
             // default, so a value remembered on a card nobody could see never reaches a match.
             gameData.RequestedAIDifficulty = OffersAIDifficulty ? config.AIDifficulty : AIDifficultyRules.Default;
+            // Each AI's own level (entry i for bot i, 0 = the card's), where an AI's pedestal can be selected to set it.
+            gameData.SetRequestedAIDifficulties(SeatDifficultyAvailable ? config.AIDifficulties : null);
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
@@ -3356,6 +3437,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             if (_activePanel) _activePanel.SetReadyUpState(false);
+            if (RequiresVesselConfirmation) RefreshVesselPicker();   // no longer ready: CHANGE is offered again
         }
 
         #endregion

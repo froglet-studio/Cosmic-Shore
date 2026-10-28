@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Reflection;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -46,6 +47,53 @@ namespace CosmicShore.Tests
                     "the AI Butterflies would orbit the first ring again (0 of 24 in Caleb's races, 2026-10-20/21)");
             }
             finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Warpline_FliesTheRegattaSteering_WhateverTheSceneSays()
+        {
+            var go = new GameObject("SwitchbackAISteeringTests_Warpline");
+            try
+            {
+                Assert.IsTrue(CommitsFromApproachPoint(go.AddComponent<WarplineController>()),
+                    "the AI Meerkats would circle the rings as the AI Stoats did (0 of 22 finished in Yash's races, 2026-10-25/26)");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Slingshot_FliesTheRegattaSteering_WhateverTheSceneSays()
+        {
+            // The Stoat's Time race since 2026-10-27: its scene carries Warpline's 180 u lead against a 160 u commit.
+            var go = new GameObject("SwitchbackAISteeringTests_Slingshot");
+            try
+            {
+                Assert.IsTrue(CommitsFromApproachPoint(go.AddComponent<SlingshotController>()),
+                    "the AI Stoats would circle Slingshot's rings the way they circled Warpline's");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void Warpline_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing()
+        {
+            // Tools/Build/switchback_dolphin_sim.py --mode Warpline (2026-10-27): warped to 120-170 u/s at a fixed 48 deg/s
+            // the Stoat needs ~200 u to line up on a 26-48 u ring; let go at the base 60 u it missed 180-280 rings over
+            // Yash's 15 courses, at 250 u none.
+            var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Warpline");
+            Assert.IsNotNull(tuned, "Warpline's Stoat autopilot variant is missing");
+            Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
+        }
+
+        [Test]
+        public void Slingshot_TheAIStoatLetsGoOfItsWarpWellBeforeTheRing()
+        {
+            // Slingshot's variants start from Warpline's (2026-10-27): the same hull, the same warp, the same turn.
+            var tuned = Resources.Load<StoatDipoleConfigSO>("AIBoostPolicies/StoatDipoleConfig_Slingshot");
+            Assert.IsNotNull(tuned, "Slingshot's Stoat autopilot variant is missing");
+            Assert.GreaterOrEqual(tuned.AutopilotLetGoNear, 200f);
+            Assert.IsNotNull(Resources.Load<StoatSlingConfigSO>("AIBoostPolicies/StoatSlingConfig_Slingshot"),
+                "Slingshot's Stoat sling variant is missing");
         }
 
         [Test]

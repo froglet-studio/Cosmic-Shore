@@ -42,6 +42,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity
     guid: f74a3006a41c4c9a403272d8adca0a84
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameTandavaSevering.unity
+    guid: 4be368117b9b0f6e4d9749a00ae2fb84
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity
     guid: 53b3801c6e9149c08fd503711f84b79c
   - enabled: 1
@@ -92,6 +95,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameWarpline.unity
     guid: a29020d6d3b5f498a484c9f7febc178a
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBurrowRun.unity
+    guid: a205279b7be1483921a3fee19a6c54fa
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameThresherTime.unity
     guid: a5c6f059522e1f09f8b6f1caa2e68960

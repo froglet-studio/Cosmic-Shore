@@ -12,6 +12,16 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] ThemeManagerDataContainerSO _dataContainer;
 
+        /// <summary>
+        /// The live theme, for the handful of statics that cannot be injected — the same reason
+        /// <c>PrismLit.ColorSet</c> and <c>GameToastAPI.ColorSet</c> are handed off below, one
+        /// level up: those need the palette, this needs the whole container (the per-domain
+        /// MATERIAL sets are built here at Awake and exist nowhere on disk). Read-only to everyone
+        /// else; null until this manager wakes, and it is a Bootstrap DI singleton, so nothing
+        /// that can legitimately ask has woken yet.
+        /// </summary>
+        public static ThemeManagerDataContainerSO Data { get; private set; }
+
         void Awake()
         {
             var GreenTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.JadeColors, Domains.Jade, "Green");
@@ -34,6 +44,9 @@ namespace CosmicShore.Gameplay
             // tint and cannot be injected. Until this line runs a light falls back to white, and
             // this manager is a Bootstrap DI singleton, so nothing that can fire has woken yet.
             PrismLit.ColorSet = _dataContainer.ColorSet;
+
+            // Last, so Data is never observable before the material sets above are in it.
+            Data = _dataContainer;
         }
 
         static Material CloneOrNull(Material material) => material ? new Material(material) : null;
@@ -99,6 +112,9 @@ namespace CosmicShore.Gameplay
                 crystal.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
                 crystal.SetColor("_BrightColor", colorSet.BrightCrystalColor);
                 crystal.SetColor("_DarkColor", colorSet.DullCrystalColor);
+                // The free omni body wears each element's shapes in that element's shade of lime (Docs/PALETTE.md
+                // §2.12); a team omni is the whole crystal in its domain's colour, so its clone turns the shades off.
+                crystal.SetFloat("_ElementShades", 0f);
             }
             
             // The pooled debris prefab's own shared material is the one the batched debris path

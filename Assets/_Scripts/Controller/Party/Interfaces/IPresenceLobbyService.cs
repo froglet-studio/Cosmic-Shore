@@ -42,6 +42,28 @@ namespace CosmicShore.Gameplay
         Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
 
         /// <summary>
+        /// True once per burst of roster pushes from the active lobby (a player joined, left or changed
+        /// properties) since the last call (Block 5 step 5). The SDK applied the change before raising it,
+        /// so the caller re-reads <see cref="ActiveLobby"/> with no GET. Main thread only.
+        /// </summary>
+        bool ConsumeRosterDirty();
+
+        /// <summary>
+        /// True once after the service removed this player from the active lobby or deleted it - the
+        /// service stating the fact, not an inference from failed reads. The caller rejoins at once.
+        /// Our own leave never raises it. Main thread only.
+        /// </summary>
+        bool ConsumeMembershipLost();
+
+        /// <summary>
+        /// Moves the ids of the players the active lobby's push said left since the last call into
+        /// <paramref name="into"/> (cleared first). The online-list diff removes these at once instead
+        /// of waiting for a second absent read (Block 5 step 7, <see cref="AbsenceStrikes"/>). Main
+        /// thread only.
+        /// </summary>
+        void TakeDepartures(System.Collections.Generic.ISet<string> into);
+
+        /// <summary>
         /// Joins an existing presence lobby or creates one if none exists.
         /// Safe to call multiple times - returns early if already joined.
         /// </summary>
@@ -58,7 +80,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Refreshes the lobby's player list and properties from the UGS backend.
-        /// Must be called on a timer to detect new players and incoming invites.
+        /// The safety poll under the lobby's pushes (Block 5 step 8): a change normally arrives by push.
         /// </summary>
         /// <remarks>
         /// Rate-limited by UGS to approximately 1 call per second per client.

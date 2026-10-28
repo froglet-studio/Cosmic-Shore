@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Arcade</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: #00041F; border-bottom: 1px solid #222645">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #747BAD">ARK</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+  <div style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; background: rgba(0, 1, 10, 0.75)"></div>
+
+  <header style="position: absolute; left: 40px; top: 108px; width: 1840px; height: 64px; display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span class="lab">Arcade</span>
+      <h1 style="margin: 0; font-weight: 400; font-size: 36px; line-height: 1.1">Explore games</h1>
+    </div>
+    <button class="btn" type="button" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span><span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls" style="background: #00041F; padding: 1px 8px; color: #747BAD; font-size: 12px">B</span></span>Back</span></button>
+  </header>
+
+  <section aria-label="Party" class="sl" style="position: absolute; left: 40px; top: 196px; width: 420px; height: 844px; background: #222645; padding: 1px; box-sizing: border-box">
+    <div class="sl" style="height: 100%; box-sizing: border-box; background: #00041F; padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span class="lab" style="color: #E6E9FF">Party</span>
+        <span class="lab" style="font-variant-numeric: tabular-nums">{{partyCount}} / 4</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: -6px">
+        <span style="width: 8px; height: 8px; background: #99FF80; transform: rotate(45deg)"></span>
+        <span style="font-size: 15px; color: #747BAD"><span style="font-variant-numeric: tabular-nums">{{online}}</span> Players Online</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{slots}}" as="s" hint-placeholder-count="4">
+          <sc-if value="{{s.filled}}" hint-placeholder-val="{{ true }}">
+            <div class="sls" style="background: #222645; padding: 1px">
+              <div class="sls" style="display: flex; align-items: center; gap: 12px; height: 58px; box-sizing: border-box; background: #00041F; padding: 0 12px">
+                <span class="oct" style="display: grid; place-items: center; width: 46px; height: 46px; flex: none; background: {{s.domain}}"><span class="oct" style="display: block; width: 40px; height: 40px; overflow: hidden; background: #222645"><img src="{{s.avatar}}" alt="" style="width: 40px; height: 40px; object-fit: cover"></span></span>
+                <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1">
+                  <span style="font-size: 17px">{{s.name}}</span>
+                  <span class="lab" style="font-size: 12px; color: {{s.tagColor}}">{{s.tag}}</span>
+                </span>
+                <sc-if value="{{s.kickable}}" hint-placeholder-val="{{ false }}">
+                  <button class="btn" type="button" aria-label="Remove {{s.name}} from the party" onClick="{{s.kick}}" style="--bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span style="padding: 8px 9px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8"></path></svg></span></button>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{s.empty}}" hint-placeholder-val="{{ false }}">
+            <button class="tile sls" type="button" onClick="{{toFriends}}" style="display: block; width: 100%; background: #222645; padding: 1px">
+              <span class="sls" style="display: flex; align-items: center; gap: 12px; height: 58px; box-sizing: border-box; background: #00010A; padding: 0 12px; color: #747BAD">
+                <span class="oct" style="display: grid; place-items: center; width: 46px; height: 46px; background: #222645"><span class="oct" style="display: grid; place-items: center; width: 44px; height: 44px; background: #00010A"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2v12M2 8h12"></path></svg></span></span>
+                <span style="font-size: 15px">Open slot - invite a friend below</span>
+              </span>
+            </button>
+          </sc-if>
+        </sc-for>
+      </div>
+      <sc-if value="{{canLeave}}" hint-placeholder-val="{{ true }}">
+        <button class="btn" type="button" onClick="{{leave}}" style="align-self: flex-start; --bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span>Leave party</span></button>
+      </sc-if>
+
+      <div style="height: 1px; background: #222645; flex: none"></div>
+
+      <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-right: 4px">
+        <sc-if value="{{hasRequests}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Invites</span><span class="lab">{{requestCount}}</span></div>
+          <sc-for list="{{requests}}" as="r" hint-placeholder-count="1">
+            <div style="display: flex; align-items: center; gap: 12px">
+              <span class="oct" style="display: block; width: 40px; height: 40px; overflow: hidden; background: #222645"><img src="{{r.avatar}}" alt="" style="width: 40px; height: 40px; object-fit: cover"></span>
+              <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1">
+                <span style="font-size: 17px">{{r.name}}</span>
+                <span class="lab" style="font-size: 12px; color: #00D4FF">{{r.kind}}</span>
+              </span>
+              <button class="btn" type="button" aria-label="Accept" onClick="{{r.accept}}" style="--bc: #99FF80; --bf: #12222B; --bt: #99FF80"><span style="padding: 8px 9px"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 6.5l3.5 3.5 7.5-8.5"></path></svg></span></button>
+              <button class="btn" type="button" aria-label="Decline" onClick="{{r.decline}}" style="--bc: #747BAD; --bf: #0E1230; --bt: #E6E9FF"><span style="padding: 8px 9px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8"></path></svg></span></button>
+            </div>
+          </sc-for>
+          <div style="height: 1px; background: #222645; flex: none"></div>
+        </sc-if>
+
+        <div id="friends" style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Friends online</span><span class="lab">{{friendCount}}</span></div>
+        <sc-for list="{{friends}}" as="f" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span class="oct" style="display: block; width: 40px; height: 40px; overflow: hidden; background: #222645"><img src="{{f.avatar}}" alt="" style="width: 40px; height: 40px; object-fit: cover"></span>
+            <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1">
+              <span style="font-size: 17px">{{f.name}}</span>
+              <span class="lab" style="font-size: 12px; color: {{f.statusColor}}">{{f.status}}</span>
+            </span>
+            <sc-if value="{{f.canInvite}}" hint-placeholder-val="{{ true }}">
+              <button class="btn" type="button" onClick="{{f.invite}}" style="--bc: #00D4FF; --bf: #001D3A; --bt: #E6E9FF"><span>Invite</span></button>
+            </sc-if>
+            <sc-if value="{{f.canJoin}}" hint-placeholder-val="{{ false }}">
+              <button class="btn" type="button" style="--bc: #99FF80; --bf: #12222B; --bt: #99FF80"><span>Join</span></button>
+            </sc-if>
+            <sc-if value="{{f.invited}}" hint-placeholder-val="{{ false }}">
+              <button class="btn" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #0B0F29; --bt: #5C5F70; cursor: default"><span>Invited</span></button>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{noFriends}}" hint-placeholder-val="{{ false }}">
+          <span style="font-size: 15px; line-height: 1.45; color: #747BAD">No friends are online right now. Friends who come online show here, ready to invite.</span>
+        </sc-if>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Games" class="scroll" style="position: absolute; left: 484px; top: 196px; width: 1406px; height: 844px; box-sizing: border-box; padding: 0 10px 0 0">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+      <span class="{{weekly.ringCls}}" style="display: block; padding: 2px; background: {{weekly.ringOuter}}"><span class="{{weekly.ringCls}}" style="display: block; padding: 3px; background: {{weekly.ringInner}}"><button class="card sl" type="button" onFocus="{{weekly.focus}}" onBlur="{{weekly.blur}}" style="display: block; width: 100%; background: #222645; padding: 1px">
+          <span class="sl" style="position: relative; display: block; height: 230px; overflow: hidden; background: #00041F">
+            <img src="/_blob/33b45ebe5f51c2b0d213c122ea74892a" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+            <span style="position: absolute; inset: 0; background: linear-gradient(90deg, #00010A 0%, rgba(0, 1, 10, 0.55) 55%, rgba(0, 1, 10, 0) 100%)"></span>
+            <span style="position: absolute; left: 26px; top: 24px; display: flex; flex-direction: column; gap: 8px">
+              <span class="lab" style="color: #FFAE00">Weekly challenge</span>
+              <span style="font-size: 36px; line-height: 1.05">Skim Race</span>
+            </span>
+            <span style="position: absolute; left: 26px; bottom: 22px; display: flex; align-items: center; gap: 10px">
+              <span class="lab" style="color: #E6E9FF">Ends in</span><span style="font-size: 20px; font-variant-numeric: tabular-nums">6d 3h</span>
+            </span>
+          </span>
+        </button></span></span>
+      <span class="{{mael.ringCls}}" style="display: block; padding: 2px; background: {{mael.ringOuter}}"><span class="{{mael.ringCls}}" style="display: block; padding: 3px; background: {{mael.ringInner}}"><button class="card sl" type="button" onFocus="{{mael.focus}}" onBlur="{{mael.blur}}" style="display: block; width: 100%; background: #222645; padding: 1px">
+          <span class="sl" style="position: relative; display: block; height: 230px; overflow: hidden; background: #00041F">
+            <img src="/_blob/e5ff645affc0bc6995957b95d3a8c0c7" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+            <span style="position: absolute; inset: 0; background: linear-gradient(90deg, #00010A 0%, rgba(0, 1, 10, 0.55) 55%, rgba(0, 1, 10, 0) 100%)"></span>
+            <span style="position: absolute; left: 26px; top: 24px; display: flex; flex-direction: column; gap: 8px; width: 380px">
+              <span class="lab" style="color: #00D4FF">Gauntlet</span>
+              <span style="font-size: 36px; line-height: 1.05">Maelstrom</span>
+              <span style="font-size: 15px; line-height: 1.45; color: #E6E9FF">A multi-game gauntlet - compete across a lineup of games for the crown.</span>
+            </span>
+          </span>
+        </button></span></span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin: 26px 5px 10px"><span class="lab" style="color: #E6E9FF">All games</span><span class="lab">{{gameCount}}</span></div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{games}}" as="g" hint-placeholder-count="12">
+        <span class="{{g.ringCls}}" style="display: block; padding: 2px; background: {{g.ringOuter}}"><span class="{{g.ringCls}}" style="display: block; padding: 3px; background: {{g.ringInner}}"><button class="card sl" type="button" aria-label="{{g.name}}" onClick="{{g.pick}}" onFocus="{{g.focus}}" onBlur="{{g.blur}}" style="display: block; width: 100%; background: {{g.border}}; padding: {{g.pad}}">
+            <span class="sl" style="position: relative; display: block; height: {{g.innerH}}; overflow: hidden; background: #00041F">
+              <img src="{{g.art}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: {{g.artAlpha}}">
+              <span style="position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: linear-gradient(0deg, #00010A 0%, rgba(0, 1, 10, 0) 100%)"></span>
+              <sc-if value="{{g.hasIcon}}" hint-placeholder-val="{{ true }}">
+                <span class="sls" style="position: absolute; left: 12px; top: 12px; display: grid; place-items: center; width: 44px; height: 44px; background: #434C89"><span class="sls" style="display: grid; place-items: center; width: 42px; height: 42px; background: #222645"><img src="{{g.icon}}" alt="{{g.vessel}}" style="width: 38px; height: 38px; object-fit: contain; opacity: {{g.iconAlpha}}"></span></span>
+              </sc-if>
+              <span role="button" aria-label="Favourite" onClick="{{g.star}}" style="position: absolute; right: 12px; top: 12px; display: grid; place-items: center; width: 36px; height: 36px; color: {{g.starColor}}"><sc-if value="{{g.fav}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 1.8l2.5 5.3 5.8.7-4.3 4 1.1 5.8L10 14.8l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z"></path></svg></sc-if><sc-if value="{{g.notFav}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 1.8l2.5 5.3 5.8.7-4.3 4 1.1 5.8L10 14.8l-5.1 2.8 1.1-5.8-4.3-4 5.8-.7z"></path></svg></sc-if></span>
+              <sc-if value="{{g.locked}}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px"><svg width="22" height="26" viewBox="0 0 14 16" fill="none" stroke="#E6E9FF" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg><span class="lab" style="color: #E6E9FF">Locked</span></span>
+              </sc-if>
+              <span style="position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; align-items: flex-end; justify-content: space-between; gap: 8px">
+                <span style="font-size: 20px; line-height: 1.15; color: {{g.titleColor}}">{{g.name}}</span>
+                <span style="display: flex; gap: 4px">
+                  <sc-for list="{{g.picks}}" as="p" hint-placeholder-count="0"><span class="oct" style="display: block; width: 22px; height: 22px; overflow: hidden; background: #222645"><img src="{{p}}" alt="" style="width: 22px; height: 22px; object-fit: cover"></span></sc-for>
+                </span>
+              </span>
+            </span>
+          </button></span></span>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" class="sl" style="position: absolute; left: 50%; top: 112px; transform: translateX(-50%); background: #222645; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080},"start":{"editor":null}}'>
+const GAMES = [{"name": "Bloomrush", "art": "/_blob/7cf2c2a5ddc93e0a86412268c6aedee9", "desc": "Mantas only, and nobody has to learn a button. Soar through the reef to arm your bombs, graze wildlife and rival rays to plant them - silently, one bomb per target, first tag takes it - then reach a crystal before the fuses burn down and set the whole board off at once. Biggest bloomed volume in 120 seconds wins it for your domain.", "vessel": "Manta", "icon": "/_blob/8c982fb3b1311931aa946a7f5337d47b", "glyph": false}, {"name": "Breakwater", "art": "/_blob/2d2e7b89f53fc8e768e6b8fbf8c591e4", "desc": "Sparrows only, against fourteen walls. Every station is a dish of plates with its throat welded shut - a triple weave of danger bars around an eye barely wider than your hull. You arrive with two rockets and one choice - blow a door, stop dead and saw one open in turret stance, or thread the eye and take nothing with you. Prisms buy rockets, so the wall you just opened pays for the next one. First team to put a pilot through the last station takes it.", "vessel": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817", "glyph": false}, {"name": "Cleave", "art": "/_blob/ab0d070661300c1e595e23d15a9d01e3", "desc": "Four arenas, one blade. Angled panes, wide wavy roads, a cage of nested shells, and twisted ribbons that roll out from under you - every intensity is a different place to cut, not a bigger version of the last. Danger prisms ride the rims and the outside of the bends, so read the place before you commit.", "vessel": "Rhino", "icon": "/_blob/1ce285176825995d5760aa32191fb823", "glyph": false}, {"name": "Dog Fight", "art": "/_blob/f62b0e6099400e82c9478a6a857bfa05", "desc": "Sparrows only, in the wreck of a world that already lost. Guns score one, rockets score fifty, and the Boneyard is full of places to disappear into - hollow hulks, leaning spires, a reactor nobody should loiter near. First domain to the point target takes it.", "vessel": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817", "glyph": false}, {"name": "Dustup", "art": "/_blob/71398b2aa8391928c841890e05eb6ce7", "desc": "Butterflies only, loose in the Boneyard, and not a gun between them. Flip to Dust mode and your scale dust hangs below you - fly OVER a rival and every element they have takes the bite. Charge makes it bite harder. One pass is one dusting; first team to the target wins.", "vessel": "Butterfly", "icon": "/_blob/8280d6385d684da1ec7b9adbcc9138d0", "glyph": true}, {"name": "Grizzly Charge", "art": "/_blob/f8a29c745554e533692979805ed18ce5", "desc": "Grizzly proving grounds. A cell full of prisms to nuke, an opponent to shove around, and room to ride your own shockwaves. Charge the cannon, dig in, rush, snipe, and burn - a test range today, a tank game tomorrow.", "vessel": "Grizzly", "icon": "", "glyph": false}, {"name": "Grizzly Time", "art": "/_blob/c7208b630dd5b23e25db264584ea51cf", "desc": "Grizzlies only, against the clock. Your speed is your bombs - squeeze LT or RT to fire, pull again to freeze it, let go to blow it and ride the blast at three times cruise. A launch keeps going the way you were pointed, so every corner asks how much launch it is worth. Two laps. Fastest domain home wins.", "vessel": "Grizzly", "icon": "", "glyph": false}, {"name": "Headlong", "art": "/_blob/63ec3e6a3bfc3efeb3af61ad63715af4", "desc": "Rhinos only, on a circuit that never lets go. Hold full throttle dead straight and the ramp winds you up to fifteen times cruise - but the boost dies the moment you steer, and every corner is cut just wide enough to take flat out if your hands are quiet enough. Laps until somebody's nerve breaks.", "vessel": "Rhino", "icon": "/_blob/1ce285176825995d5760aa32191fb823", "glyph": false}, {"name": "Hijack", "art": "/_blob/cc3f65806871e05456e4e597466d229f", "desc": "Urchins only. Latch onto a rail and grind it - fast where it wears your colour, a stealing crawl where it does not - spike the road ahead to make it yours, then fly off the open end straight into the burr it points at and rake the whole cluster. Nothing is destroyed here; it only changes hands. First domain to steal the target wins.", "vessel": "Urchin", "icon": "/_blob/955585ad0ea3df6c91ff0328e8f7609e", "glyph": false}, {"name": "Joust", "art": "/_blob/1efac15c724589a0f77c042d666ebb18", "desc": "Joust joust joust", "vessel": "Squirrel", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e", "glyph": false}, {"name": "Rampage", "art": "/_blob/4ef2d5d3ab0e7ba0cb93ed64ea2628ce", "desc": "A cactus forest rings the membrane and there is exactly one crystal in the arena. Graze the thicket to charge your jaws, take the crystal to unleash the blast, and be the first domain to smash 2000 enemy prisms.", "vessel": "Dolphin", "icon": "/_blob/0fa7978ec882f85c851f541bb20b17bc", "glyph": false}, {"name": "Redline", "art": "/_blob/c718ef0df66a2b79c2e7aec9d34f23e9", "desc": "Mantas only, flat out. Both triggers buried is four times cruise and a turning circle you can hold through most of the lap - but the corners that will not take it are cut to the metre, and easing a trigger to make one costs you two seconds of winding the Soar back up. Laps, until somebody stops lifting.", "vessel": "Manta", "icon": "/_blob/8c982fb3b1311931aa946a7f5337d47b", "glyph": false}, {"name": "Salvo", "art": "/_blob/ebb01e7cda6fde6e17c565305c61a3c2", "desc": "Sparrows only, and this time the Boneyard is the target. Guns chip, rockets level whole hulks, and every omni crystal you grab reloads the missile bays of your WHOLE team - so somebody fly the crystal line while somebody rains the salvos. First domain to tear down the prism target wins.", "vessel": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817", "glyph": false}, {"name": "Scarab Scramble", "art": "/_blob/7a36b231c8addd59426e2ee9f0ce7eb0", "desc": "Every bright crystal you fly through becomes YOUR ball. Roll it, bat it, bank it off the walls and through any glowing ring - first team to ten. Bumping enemy balls is always safe defense, and a juke dash steals one outright. Scarab only. Easy to start, hard to stop.", "vessel": "Scarab", "icon": "/_blob/7398e80012e26922f395bd11fbaa95de", "glyph": false}, {"name": "Scurry", "art": "/_blob/a1f5c5b5b5c1074b0e6e9257d75fe653", "desc": "Capture all crystals as fast as you can", "vessel": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817", "glyph": false}, {"name": "Sirocco", "art": "/_blob/2eca166da9d055498f74928c08c3c29e", "desc": "Butterflies only, over Rampage's cactus forest. Flip to Dust mode and fly low - your scale dust shreds, shrinks or steals the other colours' plants and fortifies your own. Space lengthens the dust, so every Space crystal is a wider swath. First team to erode the target wins.", "vessel": "Butterfly", "icon": "/_blob/8280d6385d684da1ec7b9adbcc9138d0", "glyph": true}, {"name": "Skein", "art": "/_blob/72bf1d04a6f159c53239494465bf30ef", "desc": "Urchins only, on a knot of rails that never quite closes. Latch on and the cable does the driving - your colour runs fast, theirs runs at a crawl, and every rail ENDS somewhere, aimed at another. Thread the rings in order; the first team to put a pilot through the last one takes it.", "vessel": "Urchin", "icon": "/_blob/955585ad0ea3df6c91ff0328e8f7609e", "glyph": false}, {"name": "Skim Race", "art": "/_blob/33b45ebe5f51c2b0d213c122ea74892a", "desc": "Find the fastest path to the crystal by skimming trails for a speed boost.", "vessel": "Squirrel", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e", "glyph": false}, {"name": "Slingshot", "art": "/_blob/6681f464d0fd47245193accdd95609ce", "desc": "Stoats only. You cruise slow and turn wide - your poles do the steering. Squeeze LT and RT to hold a black hole and a white hole open ahead of you - the difference pulls them apart sideways, the sum lengthways - and the field bends your path round the corner. Dive into the black hole and you come out of the white one. Eight rings, two laps.", "vessel": "Stoat", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e", "glyph": false}, {"name": "Switchback", "art": "/_blob/1914c0d2f4f74641b8fb4a476d7ce8d4", "desc": "Dolphins only, through a course of rings nobody placed twice the same way. Every gate is somewhere new and facing somewhere new, and you take them in order - drift the corners, boost the straights, and go back for the one you missed. First team to put a pilot through the last gate takes it.", "vessel": "Dolphin", "icon": "/_blob/0fa7978ec882f85c851f541bb20b17bc", "glyph": false}, {"name": "Tapestry", "art": "/_blob/ce8f9b5e8aac6ec36404a3d77bbf81fd", "desc": "Butterflies only, and an empty sky to fill. Mass mode paints a wake many keys wide - Mass crystals widen your brush. Flip to Dust mode and fly over a rival's painting to shred it, shrink it or steal it for your own. When the clock runs out, the team with the most standing wins.", "vessel": "Butterfly", "icon": "/_blob/8280d6385d684da1ec7b9adbcc9138d0", "glyph": true}, {"name": "The Bends", "art": "/_blob/cab0fc9b42a05632a1364d5f8abe3dee", "desc": "Dolphins only, in the cactus forest, with no guns anywhere. Graze the thicket to charge your jaws, race a rival to the crystal, and put the cone on a PILOT instead of the trees - a hit strips every element they have and leaves them four seconds of being worse at all of it. Three bends and your domain takes it.", "vessel": "Dolphin", "icon": "/_blob/0fa7978ec882f85c851f541bb20b17bc", "glyph": false}, {"name": "Tollway", "art": "/_blob/8186acc57e331d32916da1e058201339", "desc": "Plants grow in the court, and a ring can only be grafted onto one. Fly at a plant, plant your ring at its foot, then drive a ball across the court and through the mouth - and every ball that threads it, yours or theirs or a stray off the wall, pays YOU and raises a monument on the spot, so the arena gets built out of the scoring. Rings are spent when they pay, so keep planting. Scarab only. First team to 4 tolls.", "vessel": "Scarab", "icon": "/_blob/7398e80012e26922f395bd11fbaa95de", "glyph": false}, {"name": "Undertow", "art": "/_blob/5fe6d723ea74f90135fde8cbb11be921", "desc": "Scarabs only, loose in the wildlife cages, with no guns anywhere. Dash beside a rival and the cavitation plate drags them through the undertow - every element they have stripped for four seconds. Drag the swarm through it too and the creatures die. A pilot is three points, a creature one; first team to the target wins.", "vessel": "Scarab", "icon": "/_blob/7398e80012e26922f395bd11fbaa95de", "glyph": false}, {"name": "Warpline", "art": "/_blob/30b9b2729b6d52cbe60b60fb2489fcff", "desc": "Stoats only, and time is everything. Squeeze LT and RT to hold a black hole and a white hole open ahead of you - the difference pulls them apart sideways, the sum lengthways. The dots show where you will fly; bend them with your poles and they turn lime and you fly them faster. Shoot through the black hole and out of the white one. Five long legs a lap, two laps.", "vessel": "Stoat", "icon": "/_blob/1e9d1aac634b11e0c3bbe058a246f84e", "glyph": false}, {"name": "Waystation", "art": "/_blob/43d5f155a6a58b17a1d42a8d43080fe5", "desc": "Butterflies only. The rings come in clusters - weave the coil, line up on the gate at the far end, then FOLD across the gap to the next one. The fold has one degree of freedom, the heading you leave on, so the exit gate is the aiming device: thread it on the right line and the jump is free. First team to put a pilot through the last ring takes it.", "vessel": "Butterfly", "icon": "/_blob/8280d6385d684da1ec7b9adbcc9138d0", "glyph": true}, {"name": "Wildlife Liberation", "art": "/_blob/350a7bac212d64525ba29435dded55fa", "desc": "Three cages, and wildlife everywhere - swarms, big ones and worse, scattered from the open water you spawn in all the way to the core. Shoot what swims past, break in after what does not. You never know what the next one is. First domain to the kill count takes it.", "vessel": "Sparrow", "icon": "/_blob/61381b53669b7110e41be12509cbb817", "glyph": false}, {"name": "Wrecking Ball", "art": "/_blob/6a6de08f1a31de864a8b13417ab41190", "desc": "Scarabs only, in a walled court grown full of cacti and coral. Fly through a bright crystal and it becomes your ball - bowl it into the thickest stand and every prism it plows through is yours; flick a dash beside the forest and the cavitation plate shreds the rest. Balls bounce off the wall and come back for more. First team to the wrecking target wins.", "vessel": "Scarab", "icon": "/_blob/7398e80012e26922f395bd11fbaa95de", "glyph": false}];
+const AV = ["/_blob/860a8243b9a9a2911fdcfbe053e14241", "/_blob/d7aa7de2d1a05b56f5211883f7e5f297", "/_blob/1cae1b61986f843f4fe7e2e25a30ef13", "/_blob/6ee84524bd6daeaa9e67ab3f6c657cc2", "/_blob/f0ce5926c4d430eff7e7eb4e4abc0620", "/_blob/b4b6f9f2a337cb3a010e12edc1fc0760"];
+const RING_ON = { ringOuter: '#99FF80', ringInner: '#00010A' };
+const RING_OFF = { ringOuter: 'transparent', ringInner: 'transparent', ringCls: '' };
+const JADE = '#00D4FF', RUBY = '#FF4B3A';
+const DEFAULT = {
+  party: [ { name: 'Gradies', avatar: 0, domain: JADE, you: true, host: true },
+           { name: 'NovaKite', avatar: 1, domain: JADE } ],
+  requests: [ { name: 'Halcyon', avatar: 2, kind: 'Party invite' } ],
+  friends: [ { name: 'Mothwing', avatar: 3, status: 'Online' },
+             { name: 'Brightwake', avatar: 4, status: 'In party 2/4', join: true },
+             { name: 'Kestrel', avatar: 5, status: 'In a match - Skim Race' } ],
+  favourites: [], picks: {}, locked: [], focus: null
+};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({}, DEFAULT, props.start || {});
+    this.state = { party: s.party, requests: s.requests, friends: s.friends, invited: [],
+                   favourites: s.favourites, picks: s.picks, locked: s.locked, focus: s.focus, toast: '' };
+    this.timer = null;
+  }
+  componentWillUnmount() { if (this.timer) clearTimeout(this.timer); }
+  say(text) {
+    if (this.timer) clearTimeout(this.timer);
+    this.setState({ toast: text });
+    this.timer = setTimeout(() => this.setState({ toast: '' }), 2600);
+  }
+  ringFor(key, cls) { return this.state.focus === key ? Object.assign({ ringCls: cls }, RING_ON) : RING_OFF; }
+  focusFns(key) {
+    return { focus: () => this.setState({ focus: key }),
+             blur: () => { if (this.state.focus === key) this.setState({ focus: null }); } };
+  }
+  renderVals() {
+    const st = this.state;
+    const fav = (n) => st.favourites.indexOf(n) >= 0;
+    const ordered = GAMES.filter((g) => fav(g.name)).concat(GAMES.filter((g) => !fav(g.name)));
+    const games = ordered.map((g) => {
+      const locked = st.locked.indexOf(g.name) >= 0;
+      const mine = st.picks[g.name] && st.picks[g.name].indexOf(0) >= 0;
+      return Object.assign({
+        name: g.name, art: g.art, icon: g.icon, vessel: g.vessel || '', hasIcon: !!g.icon,
+        iconAlpha: locked ? 0.35 : (g.glyph ? 0.85 : 1), artAlpha: locked ? 0.35 : 1, locked,
+        titleColor: locked ? '#747BAD' : '#E6E9FF',
+        border: mine ? JADE : '#222645', pad: mine ? '2px' : '1px', innerH: mine ? '214px' : '216px',
+        starColor: fav(g.name) ? JADE : '#747BAD', fav: fav(g.name), notFav: !fav(g.name),
+        picks: (st.picks[g.name] || []).map((i) => AV[i]),
+        star: (e) => { if (e && e.stopPropagation) e.stopPropagation();
+                       this.setState({ favourites: fav(g.name) ? st.favourites.filter((n) => n !== g.name) : [g.name].concat(st.favourites) }); },
+        pick: () => { if (!locked) this.say(g.name + ' opens its configure screen (item 4).'); }
+      }, this.focusFns('g:' + g.name), this.ringFor('g:' + g.name, 'sl'));
+    });
+    const slots = [0, 1, 2, 3].map((i) => {
+      const m = st.party[i];
+      if (!m) return { filled: false, empty: true };
+      return { filled: true, empty: false, name: m.name, avatar: AV[m.avatar], domain: m.domain,
+               tag: m.you ? (m.host ? 'You / Host' : 'You') : (m.host ? 'Host' : 'Pilot'),
+               tagColor: m.you ? '#E6E9FF' : '#747BAD',
+               kickable: !m.you && st.party[0] && st.party[0].you && st.party[0].host,
+               kick: () => this.setState({ party: st.party.filter((x) => x !== m) }) };
+    });
+    const inParty = (n) => st.party.some((m) => m.name === n);
+    const friends = st.friends.filter((f) => !inParty(f.name)).map((f) => {
+      const invited = st.invited.indexOf(f.name) >= 0;
+      const busy = /match/i.test(f.status);
+      return { name: f.name, avatar: AV[f.avatar], status: invited ? 'Pending request' : f.status,
+               statusColor: busy ? '#FFAE00' : (invited ? '#747BAD' : '#99FF80'),
+               canInvite: !invited && !f.join && st.party.length < 4, canJoin: !!f.join && !invited, invited,
+               invite: () => { this.setState({ invited: st.invited.concat([f.name]) }); this.say('Invite sent to ' + f.name + '.'); } };
+    });
+    const requests = st.requests.map((r) => ({ name: r.name, avatar: AV[r.avatar], kind: r.kind,
+      accept: () => this.setState({ requests: st.requests.filter((x) => x !== r),
+                                    party: st.party.length < 4 ? st.party.concat([{ name: r.name, avatar: r.avatar, domain: RUBY }]) : st.party }),
+      decline: () => this.setState({ requests: st.requests.filter((x) => x !== r) }) }));
+    return {
+      partyCount: st.party.length, online: 12,
+      slots, canLeave: st.party.length > 1,
+      leave: () => this.setState({ party: st.party.filter((m) => m.you) }),
+      toFriends: () => { const el = typeof document !== 'undefined' && document.getElementById('friends'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' }); },
+      hasRequests: requests.length > 0, requestCount: requests.length, requests,
+      friends, friendCount: friends.length, noFriends: friends.length === 0,
+      games, gameCount: GAMES.length,
+      weekly: Object.assign(this.focusFns('weekly'), this.ringFor('weekly', 'sl')),
+      mael: Object.assign(this.focusFns('mael'), this.ringFor('mael', 'sl')),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

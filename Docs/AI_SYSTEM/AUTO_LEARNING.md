@@ -4,6 +4,10 @@
 > record should just come here and then you evaluate what type of data the new game has ... and then relearn its AI
 > navigation in order to win the race."
 
+**Where the AIs learn (Yash, 2026-10-27):** in each vessel's OWN minigames, its Time minigame first (Warpline for the
+Stoat, Switchback for the Dolphin), never in Regatta. The arena games, Regatta among them, are rebuilt later from the
+skills learned there (`MINIGAME_TRAINING_PLAN.md`), so Regatta races are reported and never learned from (`HOLD`, §3).
+
 **No person runs a learner, a report or a test command for AI learning, and no session asks them to.** A person plays;
 everything after that happens by itself. A session that would otherwise end with "run `learn_...py`" runs it itself,
 or leaves it to the sweep below.
@@ -18,7 +22,7 @@ or leaves it to the sweep below.
 | New flights are found and learned from | the **AI learning sweep** (§2), a Claude scheduled task, every hour | `Tools/Build/ai_learn.py --run` |
 | The AI's numbers change for that mode only | the learners (`<asset>_<Mode>` variants) | `Assets/Resources/AIBoostPolicies/`, `Assets/Resources/RaceLines/`, `SkimRaceAIConfig_Regatta` |
 | What changed, and whether the AI now races like the person | the sweep | `Docs/Reports/AI_LEARNING.md` |
-| It reaches the person's editor | the person pulls `Ys-bleeding-edge` as usual | - |
+| It reaches the person's editor | `Ys-bleeding-edge` is merged into `bleeding-edge` (a pull request), and the person pulls it. Yash's editor ran `bleeding-edge` on 2026-10-26 (his load reports' `gitBranch`), so a sweep change reaches his races only after that merge | - |
 
 `ai_learn.py` remembers what it has learned from (`Docs/AI_SYSTEM/ai_learning_seen.json`), so an hour with no new
 race writes nothing. Only a race a learner actually read is remembered as learned: one in a mode on hold or of a hull
@@ -36,7 +40,14 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 1. `git fetch origin`, check out `Ys-bleeding-edge`, merge `origin/Ys-bleeding-edge` (merge, never rebase).
 2. `python3 Tools/Build/ai_learn.py`. **0 new flights: stop.** No commit, no message.
 3. `python3 Tools/Build/ai_learn.py --run`, then read `Docs/Reports/AI_LEARNING.md`.
-4. For each mode with new flights, judge whether the AI races well enough to win against the person:
+4. For each mode with new flights, judge whether the AI races well enough to win against the person. **A race counts
+   only if the editor that flew it HAD the AI's change**, not just if it came later: the play session's load report
+   (`BugLedger/shared/reports/<user>/load/load_<scene>_<time>_*.json`, the nearest one before the race) names its
+   `gitBranch` and `gitCommitHash`; `git merge-base --is-ancestor <the AI's commit> <that hash>`. A race flown on a
+   build without the change measures the OLD AI (2026-10-26: Breakwater's new boost bands were 70 minutes old on
+   `Ys-bleeding-edge` and absent from Yash's `bleeding-edge` build).
+   The rival report's circling counts only time near the ring while NOT closing on it (a slow hull on long legs spends
+   seconds inside 250 u on a straight approach), and "boosted" needs the boosting or discharging bit as well:
    - It finishes, its rings per minute are near the person's, and it barely circles or stalls: the learned numbers
      are the whole job.
    - It circles, stalls, threads few rings or is far slower: numbers alone will not fix that. Diagnose it with the
@@ -56,8 +67,10 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
   nobody's sweep runs is a learner that never runs.
 - **A new vessel or racing mode** is read by the sweep from its first recorded race (it shows under "No learner reads
   these yet" until a learner covers it).
-- **A mode another collaborator owns the AI of** goes in `ai_learn.HOLD` with the reason, so it is reported and never
-  written, until they say so. Today: Warpline (the Stoat's AI waits for Garrett's configuration, issue 1198).
+- **A mode another collaborator owns the AI of, or one not trained now,** goes in `ai_learn.HOLD` with the reason, so
+  it is reported and never written, until they say so. Today: **Regatta** (the AIs train in their own minigames; Regatta
+  is rebuilt from those skills later, Yash 2026-10-27). Warpline, held for the Stoat's configuration since 2026-10-17,
+  was lifted by Yash on 2026-10-26.
 
 ## 4. What is automatic, and what is not yet
 
@@ -86,12 +99,12 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 | Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge; in Switchback also one variant per intensity (`_I<n>`, `PER_INTENSITY_MODES`, `MINIGAME_TRAINING_PLAN.md` §3.6) |
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
-| Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |
-| Sparrow | drives (HoldBoost) | boost (state bit) | start / stop bands, shortest hold and rest |
+| Stoat | drives (AIModeTuning) | its pair | its three configs (`<config>_Warpline`; `_Regatta` from before 2026-10-27); in Warpline never `autopilotLetGoNear` (set from the model, 250 u: `WARPLINE.md` §3.2) |
+| Sparrow | drives (HoldBoost) | boost (state bit); the rocket (a SkyBurst press, 2026-10-26) | start / stop bands, shortest hold and rest; the rocket's range and aim (`rocketMinRange` / `rocketMaxRange`: p10 / p90 of the presses' distance to the ring, `rocketAimDegrees`: their median nose angle); in Breakwater never a boost release under 1.25 s (`FLOORS`, the danger weave) |
 | Serpent | drives (PelletBoost) | a ConsumeBoost press | start bands, seconds between pellets |
 | Scarab | drives (SnapDash) | throttle double-tap at TIME 5 | start bands, dash cooldown |
 | Squirrel | drives (SkimRing) outside Regatta and Skim Race; skim line in Regatta (writes) and Skim Race (report only) | a boost-ring press / the skim | ring bands / skim line |
-| Every hull in Regatta | race lines | where it crosses the rings | `race_lines_learned.json` |
+| Every hull in Regatta | race lines (**on hold since 2026-10-27**: reported only) | where it crosses the rings | nothing until Regatta is rebuilt |
 | Urchin | report only | rail ride | its riding lives in each mode's scene fields |
 | Grizzly | report only | - | its bomb autopilot does not load per mode, and `grizzly-v3` (jtgjones) is reworking the bombs |
 | Butterfly | report only | - | its Mass / Dust choice is each mode's controller code; no Dust bit is recorded |
@@ -115,3 +128,13 @@ A match left early writes `"result": null`. So a mode with no finish line (Grizz
 judged: `learn_drives_from_flights.py` learns a mode without rings from the matches the person WON once there are three,
 and `Docs/Reports/AI_LEARNING.md` shows "You won N of M" per hull and intensity.
 
+## 7. A drive per intensity: which races teach it (2026-10-26)
+
+In a `PER_INTENSITY_MODES` mode (Switchback) each intensity of a policy hull learns its own `<policy>_<mode>_I<n>`
+(`MINIGAME_TRAINING_PLAN.md` §3.6). Two rules decide which races teach what (§3.7):
+- **Only the intensity's current course.** A flight records its rings; the newest flight's mouth radius decides the
+  course, and races on a retired one are left out (`on_current_course`). A variant already written stays until the new
+  course has three finished races of its own.
+- **The mode-wide variant learns from every intensity**: the fastest race of each first (`fastest_each_intensity`),
+  because it is what the intensities without their own fly, and the three fastest overall are always the easiest
+  intensity's. Every other mode learns exactly as before.

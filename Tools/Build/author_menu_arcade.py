@@ -16,7 +16,8 @@ on the "Menu Redesign B" canvas).
                                 round it), Leave, then the INVITES and ONLINE lists in one scroll
     Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/
         ArcadeGameCard.prefab   one grid card: KitGameCard (GameCard) on a KitTile
-        ArcadeView.prefab       the whole window body: nav dim, backdrop, header with Back (B), the
+        ArcadeView.prefab       the whole window body: nav dim, backdrop, header with Replays (opens the
+                                replay browser, author_menu_replays.py) and Back (B), the
                                 party panel, and the explore scroll - weekly challenge and Maelstrom
                                 feature cards, ALL GAMES, a 7 x 4 grid of cards
 
@@ -41,6 +42,7 @@ every run, --check included.
 """
 
 import argparse
+import glob
 import hashlib
 import importlib.util
 import math
@@ -71,6 +73,7 @@ MASK63 = 0x7FFFFFFFFFFFFFFF
 
 # --- package script guids, harvested from Menu_Main (never recalled) --------------------------
 SCROLL_RECT, RECT_MASK_2D, MASK = H.SCROLL_RECT, H.RECT_MASK_2D, H.MASK
+KIT_RECT_MASK_2D = H.KIT_RECT_MASK_2D
 BUTTON = T.BUTTON
 PACKAGE = H.PACKAGE | {BUTTON}
 
@@ -94,6 +97,7 @@ S = dict(
     runner=script("Assets/FTUE/Scripts/Graph/Runtime/QuestGraphRunner.cs"),
     gate=script("Assets/_Scripts/UI/Elements/OfflineUIGate.cs"),
     close=script("Assets/_Scripts/UI/Modals/ModalWindowCloseButton.cs"),
+    open_modal=script("Assets/_Scripts/UI/Elements/OpenModalButton.cs"),
     scroll_into=K.kit_script("KitScrollIntoView"),
     counter=K.kit_script("KitListCounter"),
     keeper=K.kit_script("KitFocusKeeper"),
@@ -103,7 +107,52 @@ S = dict(
     th=K.kit_script("KitThemedGraphic"),
     button=K.kit_script("KitButton"),
     tile=K.kit_script("KitTile"),
+    grid_options=script("Assets/_Scripts/UI/Elements/ArcadeGridOptions.cs"),
+    text_tab=K.kit_script("KitTextTab"),
 )
+
+# Section 90 (Shombith, 2026-10-27: "Favorites to the top by default, A-Z under. Drop the sort controls, the
+# locked/unlocked filter and solo/multiplayer. Two dropdowns: elements and vessels"). The order is fixed in
+# ArcadeGridOrder; the ELEMENT dropdown is All then Charge..Time (the tab's index is the choice), the VESSEL dropdown is
+# All then every hull an arcade card seats, in the Hangar's vessel-list order (vessel_choices()).
+ELEMENT_NAMES = ("All", "Charge", "Mass", "Space", "Time")
+ARCADE_LIST = "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"
+VESSEL_LIST = "Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset"
+ANY_VESSEL = -1                                         # VesselClassType.Any: the "All" choice
+
+
+def vessel_choices():
+    """[(name, VesselClassType value)]: All, then each hull some arcade card seats, the Hangar's list order first."""
+    by_guid = {}
+    for meta in glob.glob(os.path.join(REPO, "Assets/_SO_Assets/**/*.asset.meta"), recursive=True):
+        g = re.search(r"^guid: (\w+)", open(meta, encoding="utf-8").read(), re.M)
+        if g:
+            by_guid[g.group(1)] = meta[:-5]
+
+    def read(guid):
+        path = by_guid.get(guid)
+        return open(path, encoding="utf-8").read() if path else ""
+
+    def vessel(text_):
+        name, cls = re.search(r"^  Name: (.*)$", text_, re.M), re.search(r"^  Class: (-?\d+)$", text_, re.M)
+        return (name.group(1).strip(), int(cls.group(1))) if name and cls else None
+
+    seated = set()
+    for g in re.findall(r"guid: (\w+)", open(os.path.join(REPO, ARCADE_LIST), encoding="utf-8").read()):
+        block = re.search(r"^  Vessels:\n((?:  - .*\n)*)", read(g), re.M)
+        for vg in re.findall(r"guid: (\w+)", block.group(1)) if block else []:
+            v = vessel(read(vg))
+            if v:
+                seated.add(v)
+    listed = [vessel(read(g)) for g in re.findall(r"guid: (\w+)", open(os.path.join(REPO, VESSEL_LIST), encoding="utf-8").read())]
+    order = [v for v in listed if v in seated] + sorted(seated - set(listed), key=lambda v: v[1])
+    assert order, "no arcade card seats a vessel (ArcadeGames.asset moved?)"
+    return [("All", ANY_VESSEL)] + order
+
+
+VESSEL_CHOICES = vessel_choices()
+VESSEL_NAMES = tuple(n for n, _ in VESSEL_CHOICES)
+ALLG_H, OPT_ROW_H = 34, 34
 
 # --- data assets (guids read off the shipped wiring they replace) -------------------------------
 CONNECTION_DATA = "69a7bf449c11416dac2d81ebd3ff61f5"     # HostConnectionDataSO
@@ -114,6 +163,8 @@ VESSEL_LIST = "49c7c10ad2901c74589c28317a4eb17b"         # SO_VesselList
 AVATAR_PLACEHOLDER = "cd2f05a67ee6cb34bb6887c9ba512f83"  # the first default profile icon
 MAELSTROM_ASSET = "Assets/_SO_Assets/Games/ArcadeGameMaelstrom.asset"
 WEEKLY_PLACEHOLDER_ASSET = "Assets/_SO_Assets/Games/ArcadeGameSkimRace.asset"
+
+REPLAYS_MODAL = 19                                        # ScreenSwitcher.ModalWindows.REPLAYS (Docs/REPLAYS.md)
 
 PARTY_PREFABS = ("PartySlot", "PartyRequestRow", "PartyOnlineRow", "PartyPanel")
 ARCADE_PREFABS = ("ArcadeGameCard", "ArcadeView")
@@ -246,13 +297,14 @@ def emit_node(ctx, node, parent_rt, out):
     kids = [ctx.fid(ch.key + "#stub") if is_instance(ch) else ctx.rt(ch.key) for ch in node.children]
     r = node.rect
     deg = getattr(node, "rot", 0)
+    sc = getattr(node, "scale", 1)    # a uniform scale (the Hangar's and the Codex's content); 1 on nearly every node
     children = ("  m_Children:\n" + "".join(f"  - {{fileID: {c}}}\n" for c in kids)) if kids else "  m_Children: []\n"
     out.append(f"--- !u!224 &{rt}\nRectTransform:\n  m_ObjectHideFlags: 0\n"
                "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
                f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {go}}}\n"
                f"  m_LocalRotation: {rot_z(deg) if deg else '{x: 0, y: 0, z: 0, w: 1}'}\n"
                "  m_LocalPosition: {x: 0, y: 0, z: 0}\n"
-               "  m_LocalScale: {x: 1, y: 1, z: 1}\n  m_ConstrainProportionsScale: 0\n" + children
+               f"  m_LocalScale: {{x: {K.f32(sc)}, y: {K.f32(sc)}, z: 1}}\n  m_ConstrainProportionsScale: 0\n" + children
                + f"  m_Father: {{fileID: {parent_rt}}}\n"
                f"  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: {K.f32(deg)}}}\n"
                f"  m_AnchorMin: {K.v2(*r['amin'])}\n  m_AnchorMax: {K.v2(*r['amax'])}\n"
@@ -327,8 +379,9 @@ def selectable(nav_mode=3):
 
 
 def tile_body(ring, fill, border, sliver, primary=(), unsel_primary="TextLight", secondary=(), art=(),
-              lock=None, lock_label=None, sel_border="Selection", on_click=()):
-    """KitTile, every reference a callable ctx -> fileID."""
+              lock=None, lock_label=None, sel_border="Selection", on_click=(), border_at_rest=True):
+    """KitTile, every reference a callable ctx -> fileID. border_at_rest False outlines only the pick and the pointed-at
+    tile (KitTile.borderAtRest; omitted when on, its C# default, so every other tile is unchanged)."""
     def body(ctx, go):
         f = lambda x: x(ctx)
         return mono(go, S["tile"],
@@ -339,6 +392,7 @@ def tile_body(ring, fill, border, sliver, primary=(), unsel_primary="TextLight",
                     f"  borderSelectedSprite: {K.sprite_ref(K.kit_sprite(f'kit_sliver{sliver}_line2'))}\n"
                     f"  borderUnselectedSprite: {K.sprite_ref(K.kit_sprite(f'kit_sliver{sliver}_line1'))}\n"
                     f"  selectedBorderToken: {K.TOKEN_INDEX[sel_border]}\n"
+                    + ("" if border_at_rest else "  borderAtRest: 0\n")
                     + refs("primaryGraphics", [f(x) for x in primary])
                     + f"  unselectedPrimaryToken: {K.TOKEN_INDEX[unsel_primary]}\n"
                     + refs("secondaryGraphics", [f(x) for x in secondary])
@@ -390,7 +444,7 @@ def mask(show):
 
 
 def rect_mask():
-    return lambda ctx, go: mono(go, RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
+    return lambda ctx, go: mono(go, KIT_RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n")
 
 
 def scroll_rect(content_key, viewport_key, sensitivity=30):
@@ -484,10 +538,14 @@ def small_button(key, name, variant, caption, r_anchor=(0, 0.5), pivot=(0, 0.5),
 
 
 def wrap_slot(parent, key, name, shown=True):
-    """A CanvasGroup + LayoutElement wrapper sized by its one child: a part that hides and closes up."""
+    """A CanvasGroup + LayoutElement wrapper sized by its one child: a part that hides and closes up.
+
+    The slot CONTROLS its child's width, so it reads the button's preferred width (its label) in the same layout pass.
+    Left uncontrolled, a layout group takes a child's current rect as its size, which the button's own fitter only sets
+    later in the pass: a JOIN that turned into SPECTATE kept JOIN's slot and ran past the drawer's edge (2026-10-26)."""
     n = parent.child(N(key, name, R((0, 0.5), None, (0, 0), (60, 32), (0, 0.5))))
     n.add("cg", 225, canvas_group(shown)).add("le", 114, le(ignore=not shown)) \
-        .add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 0, 4, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
+        .add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 0, 4, (1, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
     return n
 
 
@@ -853,7 +911,7 @@ PORTRAIT_BOB_MAT = M._lattice_guid("card_portrait_bob_mat")
 ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay inside the overscan margin
 HULL_ICON = 60                         # the hull, lit (Hull_Lit.mat) - no plate behind it (section 73)
 HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
-PETAL = 46                             # the petal sprite carries a wide transparent margin: the shape reads about 18
+FLOWER = 34                            # the petals reach 0.42 of the sprite from its centre: the flower reads about 29 across
 
 
 def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
@@ -914,14 +972,23 @@ def build_card(placeholder_art):
     # The body: the hull, the name, the petals.
     hull_icon(root, "VesselChip", R((0, 0), None, (12, BODY_H / 2), (HULL_ICON, HULL_ICON), (0, 0.5)), "VesselIcon", HULL_ICON)
     text_x = 12 + HULL_ICON + 12
-    title = root.child(N("Title", "Title", R((0, 0), (1, 0), (text_x / 2 - 8, BODY_H / 2 + 14), (-text_x - 16, 30), (0.5, 0.5))))
+    flowers_w = 12 + FLOWER + 8
+    title = root.child(N("Title", "Title", R((0, 0), (1, 0), ((text_x - flowers_w) / 2, BODY_H / 2), (-(text_x + flowers_w), 30),
+                                             (0.5, 0.5))))
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
-    for i, key in enumerate(("Petal", "PetalSecondary")):
-        n = root.child(N(key, "GenrePetal" if i == 0 else "GenrePetalSecondary",
-                         R((0, 0), None, (text_x - 12 + i * 26, BODY_H / 2 - 18), (PETAL, PETAL), (0, 0.5))))
-        n.add("cr", 222, K.canvas_renderer()).add("img", 114, lambda ctx, go: K.image(
-            (1.0, 1.0, 1.0, 1.0), None, preserve=True)(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
+    # Section 90 (Shombith 2026-10-27: "Arcade shows a single petal, not per-vessel upgrade numbers"): the genre's ONE
+    # petal (GameCard.GenrePetal, the fleet's petal sprite in white), not the flower filled to a hull's bought level. On
+    # the body's right edge, small: a column centred in the body, so one petal sits in the middle and a two-genre mode's
+    # second stacks under it (GameCard hides an empty petal by disabling its image).
+    col = root.child(N("Flowers", "Flowers", R((1, 0), None, (-12, BODY_H / 2), (FLOWER, BODY_H - 8), (1, 0.5))))
+    col.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 4, (0, 0), (0, 0)))
+    for key in ("Petal", "PetalSecondary"):
+        slot = col.child(N(key, key, R(size=(FLOWER, FLOWER))))
+        slot.add("le", 114, le(mw=FLOWER, mh=FLOWER, pw=FLOWER, ph=FLOWER))
+        # The petal sprite reaches up from its centre (a flower's petal), so it is drawn 1.5x and lowered to centre it.
+        image_node(slot, f"{key}/Image", "Image", R(size=(FLOWER * 1.5, FLOWER * 1.5), pos=(0, -FLOWER * 0.32)),
+                   "TextLight", None, preserve=True)
 
     # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
     picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
@@ -967,8 +1034,10 @@ def build_card(placeholder_art):
              "  Index: 0\n"
              f"  VesselIcon: {ref(ctx.c('VesselIcon', 'img'))}\n"
              f"  VesselList: {K.ref(11400000, VESSEL_LIST, 2)}\n"
-             f"  GenrePetal: {ref(ctx.c('Petal', 'img'))}\n"
-             f"  GenrePetalSecondary: {ref(ctx.c('PetalSecondary', 'img'))}\n"
+             f"  GenrePetal: {ref(ctx.c('Petal/Image', 'img'))}\n"
+             f"  GenrePetalSecondary: {ref(ctx.c('PetalSecondary/Image', 'img'))}\n"
+             "  GenreFlower: {fileID: 0}\n"
+             "  GenreFlowerSecondary: {fileID: 0}\n"
              f"  AvatarSpace: {ref(ctx.rt('Picks'))}\n"
              f"  ProfileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
              "  LocalPickBorder: {fileID: 0}\n"
@@ -1019,10 +1088,14 @@ def feature_card(parent, key, name, art, eyebrow, eyebrow_token, title, extra=No
     return n
 
 
+def back_width():
+    return 16 + (K.label_width("B", "Label") + 24) + 10 + K.label_width("BACK", "ButtonSmall") + 16
+
+
 def back_button(parent):
     w_label = K.label_width("BACK", "ButtonSmall")
     keycap_w = K.label_width("B", "Label") + 24
-    w = 16 + keycap_w + 10 + w_label + 16
+    w = back_width()
     b = parent.child(N("Back", "Back", R((1, 0), None, (0, 0), (w, 40), (1, 0))))
     ring_node(b, "Back/FocusRing", 10)
     border, fillc, content = K.button_palette("Default", False)
@@ -1046,6 +1119,81 @@ def back_button(parent):
     b.add("close", 114, lambda ctx, go: mono(go, S["close"], ""))
     b.add("hlg", 114, K.hv_layout(False, (16, 16, 9, 9), 10, 4, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
     return b
+
+
+def replays_button(parent):
+    """Replays, left of Back: opens the replay browser (ModalWindows.REPLAYS) through OpenModalButton, which
+    names the window by TYPE and lets the ScreenSwitcher find it (Docs/REPLAYS.md, author_menu_replays.py)."""
+    w_label = K.label_width("REPLAYS", "ButtonSmall")
+    b = parent.child(N("Replays", "Replays", R((1, 0), None, (-(back_width() + 12), 0), (16 + w_label + 16, 40), (1, 0))))
+    ring_node(b, "Replays/FocusRing", 10)
+    border, fillc, content = K.button_palette("Default", False)
+    f = b.child(N("Replays/Fill", "Fill", STRETCH))
+    f.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)).add("le", 114, le(ignore=True))
+    bd = b.child(N("Replays/Border", "Border", STRETCH))
+    bd.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)).add("le", 114, le(ignore=True))
+    lab = b.child(N("Replays/Label", "Label", R(size=(w_label, K.line_height("ButtonSmall")))))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp("REPLAYS", "ButtonSmall", content)) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("button", 114, lambda ctx, go: mono(go, S["button"],
+          K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c('Replays/Fill', 'img'))}\n" + calls([])
+          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c('Replays/FocusRing', 'img'))}\n"
+          "  variant: 0\n  fill: 0\n"
+          f"  fillGraphic: {ref(ctx.c('Replays/Fill', 'img'))}\n  borderGraphic: {ref(ctx.c('Replays/Border', 'img'))}\n"
+          + refs("contentGraphics", [ctx.c("Replays/Label", "tmp")]) + "  playGradient: {fileID: 0}\n"))
+    b.add("open", 114, lambda ctx, go: mono(go, S["open_modal"], f"  target: {REPLAYS_MODAL}\n  screenSwitcher: {{fileID: 0}}\n"))
+    b.add("hlg", 114, K.hv_layout(False, (16, 16, 9, 9), 10, 4, (0, 0), (0, 0))).add("csf", 114, K.fitter(2, 2))
+    return b
+
+
+def all_games_header(content):
+    """ALL GAMES and its count on the left; the ELEMENT and VESSEL dropdowns on the right (sections 85, 97). Each button
+    names its choice ("Vessel: Sparrow") and opens its list under this line; ArcadeGridOptions owns the lists and the
+    choice."""
+    allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (CONTENT_W, ALLG_H), (0, 1))))
+    allg.add("le", 114, le(ph=ALLG_H))
+    lw = K.label_width("ALL GAMES", "Label")
+    label(allg.child(N("AllGames/Label", "Label", R((0, 0.5), None, (0, 0), (lw + 4, 18), (0, 0.5)))), "ALL GAMES", "Label",
+          "TextLight")
+    label(allg.child(N("AllGames/Count", "Count", R((0, 0.5), None, (lw + 16, 0), (60, 18), (0, 0.5)))), "28", "Label",
+          "NeutralLightest")
+    opts = allg.child(N("AllGames/Options", "Options", R((1, 0.5), None, (-10, 0), (520, ALLG_H), (1, 0.5))))
+    opts.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 5, (1, 0), (0, 0)))
+    for key, caption in (("Element", f"Element: {ELEMENT_NAMES[0]}"), ("Vessel", f"Vessel: {VESSEL_NAMES[0]}")):
+        slot = wrap_slot(opts, f"AllGames/Options/{key}Slot", f"{key}Slot")
+        slot.children.append(small_button(f"{key}Button", f"{key}Button", "Default", caption))
+    longest = max(K.button_size(f"Element: {n}", small=True)[0] for n in ELEMENT_NAMES) + 10 \
+        + max(K.button_size(f"Vessel: {n}", small=True)[0] for n in VESSEL_NAMES)
+    assert longest <= 520 and lw + 16 + 60 + 520 + 10 <= CONTENT_W, "ELEMENT and VESSEL do not fit beside ALL GAMES"
+    allg.add("options", 114, lambda ctx, go: mono(go, S["grid_options"],
+             f"  elementButton: {ref(ctx.iref('ElementButton', 'root#button'))}\n"
+             f"  elementLabel: {ref(ctx.iref('ElementButton', 'Label#tmp'))}\n"
+             "  elementCaption: 'Element: {choice}'\n"
+             "  elementNames:\n" + "".join(f"  - {n}\n" for n in ELEMENT_NAMES)
+             + f"  elementRow: {ref(ctx.c('ElementRow', 'cg'))}\n"
+             + refs("elementTabs", [ctx.c(f"ElementRow/Tab{i}", "tab") for i in range(len(ELEMENT_NAMES))])
+             + f"  vesselButton: {ref(ctx.iref('VesselButton', 'root#button'))}\n"
+             f"  vesselLabel: {ref(ctx.iref('VesselButton', 'Label#tmp'))}\n"
+             "  vesselCaption: 'Vessel: {choice}'\n"
+             "  vesselNames:\n" + "".join(f"  - {n}\n" for n in VESSEL_NAMES)
+             + "  vesselChoices:\n"
+             + "".join(f"  - {c}\n" for _, c in VESSEL_CHOICES)
+             + f"  vesselRow: {ref(ctx.c('VesselRow', 'cg'))}\n"
+             + refs("vesselTabs", [ctx.c(f"VesselRow/Tab{i}", "tab") for i in range(len(VESSEL_NAMES))])))
+
+
+def option_row(content, key, names):
+    """A row of option tabs under ALL GAMES, hidden (out of the layout) until its button opens it; the chosen one is
+    underlined in the selection blue (KitTextTab)."""
+    row = content.child(N(key, key, R((0, 1), None, (0, 0), (CONTENT_W, OPT_ROW_H), (0, 1))))
+    row.add("cg", 225, canvas_group(False)).add("le", 114, le(ph=OPT_ROW_H, ignore=True)) \
+        .add("hlg", 114, K.hv_layout(False, (0, 0, 2, 2), 14, 3, (0, 0), (0, 0)))
+    for i, n in enumerate(names):
+        H.text_tab(row, f"{key}/Tab{i}", f"Tab{i}", n.upper(), "Label", K.label_width(n.upper(), "Label") + 16, 30)
+    width = sum(K.label_width(n.upper(), "Label") + 16 for n in names) + 14 * (len(names) - 1)
+    assert width <= CONTENT_W, f"{key}: the options run past the grid's width ({width})"
 
 
 def build_view(maelstrom_art, maelstrom_desc, weekly_art):
@@ -1097,13 +1245,14 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
            "  ObjectiveText: {fileID: 0}\n  StatusText: {fileID: 0}\n  CompletedBadge: {fileID: 0}\n"))
     feature_card(feats, "Maelstrom", "Maelstrom", maelstrom_art, "GAUNTLET", "ControlActive", "Maelstrom", mael_extra)
 
-    content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 26), (0, 1)))).add("le", 114, le(ph=26))
-    allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (CONTENT_W, 18), (0, 1))))
-    allg.add("le", 114, le(ph=18))
-    label(allg.child(N("AllGames/Label", "Label", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "ALL GAMES", "Label", "TextLight")
-    label(allg.child(N("AllGames/Count", "Count", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "28", "Label", "NeutralLightest",
-          align="right")
+    content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 18), (0, 1)))).add("le", 114, le(ph=18))
+    all_games_header(content)
+    for key, names in (("ElementRow", ELEMENT_NAMES), ("VesselRow", VESSEL_NAMES)):
+        option_row(content, key, names)
     content.child(N("Gap2", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 10), (0, 1)))).add("le", 114, le(ph=10))
+    empty = content.child(N("EmptyFilter", "EmptyFilter", R((0, 1), None, (0, 0), (CONTENT_W, 24), (0, 1)), active=False))
+    empty.add("le", 114, le(ph=24))
+    label(empty.child(N("EmptyFilter/Line", "Line", STRETCH)), "No games match this filter.", "BodySmall", "NeutralLightest")
 
     grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (CONTENT_W, GRID_ROWS * (CARD_H + 10) - 10), (0, 1))))
     grid.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 0, (1, 1), (1, 0)))
@@ -1123,6 +1272,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
           "NeutralLightest")
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore games", "H1",
           "TextLight")
+    replays_button(header)
     back_button(header)
     return root
 
@@ -1171,7 +1321,8 @@ RETIRED_ROOTS = {"7767652896660694874": "Header", "3184225246935049006": "GameSe
                  "2496229280682334806": "ArcadeLobbyList", "7399798317413155242": "CloseButton",
                  "688672352": "FriendListPanel"}
 
-VIEW_OWNED = ("GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard", "maelstromCard", "gameCountText")
+VIEW_OWNED = ("GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard", "maelstromCard", "gameCountText",
+              "gridOptions", "emptyFilterLine")
 # Fields the view no longer declares; a migration may drop them (ArcadeDPadNav: retired, see
 # Tools/Build/retire_arcade_dpad_nav.py).
 VIEW_RETIRED = ("ArcadeDPadNav",)
@@ -1192,6 +1343,8 @@ class Ids:
             "WeeklyChallengeCard": (V("Weekly#weekly"), 114, S["weekly"]),
             "maelstromCard": (V("Maelstrom#tile"), 114, S["tile"]),
             "gameCountText": (V("AllGames/Count#kt"), 114, S["kt"]),
+            "gridOptions": (V("AllGames#options"), 114, S["grid_options"]),
+            "emptyFilterLine": (V("EmptyFilter#go"), 1, None),
         }
         # Objects of NESTED instances inside ArcadeView: their id in ArcadeView is derived once.
         self.cards = []
@@ -1232,7 +1385,8 @@ def view_doc(old, ids):
     values = {k: v for k, v in fields if k not in VIEW_RETIRED}
     new = {k: f" {ref(ids.stubs[k])}" for k in VIEW_OWNED}
     order = ["rosterOverride", "GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard",
-             "maelstromCard", "gameCountText", "ArcadeGameConfigureModal", "selectedVesselClassType",
+             "maelstromCard", "gameCountText", "gridOptions", "emptyFilterLine", "ArcadeGameConfigureModal",
+             "selectedVesselClassType",
              "cardRevealSettings"]
     assert set(values) <= set(order), f"ArcadeExploreView carries fields this script does not know: {set(values) - set(order)}"
     return head + "".join(f"  {k}:{new.get(k, values.get(k))}\n" for k in order)
@@ -1470,7 +1624,7 @@ def check_card_a(card, name, band_key, card_w, band_h):
     assert (fit_w - card_w) / 2 > ART_DRIFT_REACH[0] and (fit_h - band_h) / 2 > ART_DRIFT_REACH[1], \
         f"{name}: overscan {ov} leaves less margin than the drift's reach {ART_DRIFT_REACH} - an edge would show"
     _, mk = doc_of(card, F(f"{band_key}#mask"))
-    assert mk and RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
+    assert mk and KIT_RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
     assert f"guid: {HULL_LIT_MAT}" in card, f"{name}: the hull is not lit (Hull_Lit.mat) - it vanishes on the navy body"
     assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
 
@@ -1498,6 +1652,13 @@ def validate_prefabs(files, guids):
         want = f"{field}: {{fileID: {K.FileIds(name)('root#row')}, guid: {asset_guid(name)}"
         assert want in friends, f"FriendsListPanel.{field} does not name the {name} row component"
     assert "  embedded: 1\n" in friends and "  listPartyMembers: 0\n" in friends, "the panel's lists must be embedded"
+    # A button slot must size its button from the label, or a JOIN that becomes SPECTATE runs out of the row.
+    row = files[prefab_path("PartyOnlineRow")]
+    for slot in ("InviteSlot", "JoinSlot", "CancelSlot"):
+        _, hlg = doc_of(row, K.FileIds("PartyOnlineRow")(f"{slot}#hlg"))
+        assert "  m_ChildControlWidth: 1\n" in hlg, f"PartyOnlineRow {slot} must control its button's width"
+    inv, join = (K.button_size(w, small=True)[0] for w in ("INVITE", "SPECTATE"))
+    assert inv + 8 + join <= 202, f"INVITE + SPECTATE ({inv + 8 + join:.0f}) do not fit the row's button strip"
     check_profile_hovers(files)
 
     check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
@@ -1505,6 +1666,25 @@ def validate_prefabs(files, guids):
 
     view = files[prefab_path("ArcadeView")]
     V = K.FileIds("ArcadeView")
+    # Sections 85 and 90: ELEMENT and VESSEL reach their buttons, labels and lists, with one tab per choice in order;
+    # no sort control is left.
+    _, opts = doc_of(view, V("AllGames#options"))
+    assert opts, "ArcadeView has no ArcadeGridOptions on ALL GAMES"
+    assert "sortButton" not in opts and "m_Name: SortRow" not in view and "m_text: 'Sort:" not in view, \
+        "the sort control is retired: favourites first, A-Z under (section 97)"
+    for field in ("elementButton", "elementLabel", "elementRow", "vesselButton", "vesselLabel", "vesselRow"):
+        assert re.search(r"^  " + field + r": \{fileID: -?[1-9]\d*\}", opts, re.M), f"ArcadeGridOptions.{field} is unwired"
+    assert "  vesselChoices:\n" + "".join(f"  - {c}\n" for _, c in VESSEL_CHOICES) in opts, \
+        "ArcadeGridOptions.vesselChoices must match the vessel tabs, All (-1) first"
+    for field, names, row in (("elementTabs", ELEMENT_NAMES, "ElementRow"), ("vesselTabs", VESSEL_NAMES, "VesselRow")):
+        block = re.search(r"^  " + field + r":\n((?:  - \{fileID: -?\d+\}\n)*)", opts, re.M)
+        tabs = re.findall(r"fileID: (-?\d+)", block.group(1)) if block else []
+        assert tabs == [str(V(f"{row}/Tab{i}#tab")) for i in range(len(names))], \
+            f"ArcadeGridOptions.{field} must list the {row} tabs in enum order"
+        assert f"  {field[:-4]}Names:\n" + "".join(f"  - {n}\n" for n in names) in opts, f"ArcadeGridOptions.{field[:-4]}Names drifted"
+    for row in ("ElementRow", "VesselRow"):
+        assert "  m_Alpha: 0\n" in doc_of(view, V(f"{row}#cg"))[1] and "  m_IgnoreLayout: 1\n" in doc_of(view, V(f"{row}#le"))[1], \
+            f"{row} must start closed and out of the layout"
     for r in range(GRID_ROWS):
         _, row = doc_of(view, V(f"Row{r + 1}#rt"))
         assert len(re.findall(r"^  - \{fileID:", row, re.M)) == GRID_COLS, f"grid row {r + 1} does not hold {GRID_COLS} cards"
@@ -1520,6 +1700,10 @@ def validate_prefabs(files, guids):
     _, back = doc_of(view, V("Back#button"))
     assert back and doc_of(view, V("Back#close"))[0] == 114, "Back has no ModalWindowCloseButton"
     assert "m_Calls: []" in back, "Back must close through ModalWindowCloseButton, not a persistent call"
+    cls, opener = doc_of(view, V("Replays#open"))
+    assert cls == 114 and S["open_modal"] in opener, "Replays has no OpenModalButton"
+    assert f"  target: {REPLAYS_MODAL}\n" in opener, "Replays must open ModalWindows.REPLAYS (19)"
+    assert "m_Calls: []" in doc_of(view, V("Replays#button"))[1], "Replays must open through OpenModalButton, not a persistent call"
 
 
 def validate_scene(before_text, after_text, files):
@@ -1678,6 +1862,8 @@ def self_test(current, files, guids):
             s, RUNNER, f"  - {{fileID: {ids.stubs[ids.cards[-1]]}}}\n", "")),
         "the party panel back in the window": lambda: validate_scene(current, expected, dict(files, **{
             prefab_path("ArcadeView"): files[prefab_path("ArcadeView")] + f"# guid: {asset_guid('PartyPanel')}\n"})),
+        "Replays opens the wrong window": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Replays#open"), f"  target: {REPLAYS_MODAL}\n", "  target: 18\n")),
         "Back first in focus order": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("root#rt"),
             f"  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n",
@@ -1696,6 +1882,19 @@ def self_test(current, files, guids):
             prefab_path("PartyOnlineRow"), lambda t: re.sub(
                 r"(?m)^--- !u!114 &-?\d+\n(?:(?!^--- ).*\n)*?.*guid: " + S["profile"] + r", type: 3\}\n(?:(?!^--- ).*\n)*",
                 "", t, count=1)),
+        "the Join slot reading its button's rect (SPECTATE overflows)": prefab_plant(
+            prefab_path("PartyOnlineRow"), lambda t: in_one(
+                t, K.FileIds("PartyOnlineRow")("JoinSlot#hlg"), "  m_ChildControlWidth: 1\n", "  m_ChildControlWidth: 0\n")),
+        "ELEMENT without its button": prefab_plant(prefab_path("ArcadeView"), lambda t: re.sub(
+            r"(\n  elementButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "an element tab dropped": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
+            f"  - {{fileID: {K.FileIds('ArcadeView')('ElementRow/Tab4#tab')}}}\n", "", 1)),
+        "a vessel choice out of step with its tab": prefab_plant(prefab_path("ArcadeView"), lambda t: t.replace(
+            f"  vesselChoices:\n  - -1\n  - {VESSEL_CHOICES[1][1]}\n", f"  vesselChoices:\n  - -1\n  - 0\n", 1)),
+        "the vessel list open on arrival": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("VesselRow#cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n")),
+        "a legacy ArcadeExploreView without its dropdowns": scene_plant(lambda s: s.replace(
+            f"gridOptions: {{fileID: {ids.stubs['gridOptions']}}}", "gridOptions: {fileID: 0}")),
         "a seat's relay opens the card on the wrong avatar": prefab_plant(prefab_path("PartySlot"), lambda t: t.replace(
             f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Avatar/Icon#rt')}}}\n",
             f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Name#rt')}}}\n", 1)),

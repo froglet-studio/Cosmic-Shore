@@ -192,7 +192,8 @@ once, exactly as the swarm and the builders do. Nothing per prism is managed exc
 the verdicts.
 
 **A body is a MOVING prism (2026-10-14, `Docs/PRISM_MOTION.md`).** Prism movement is a fundamental,
-and its rule holds here: a body that runs into another prism destroys both. Every body's step is
+and its rule holds here: a body that runs into another prism destroys both, unless either is shielded, when they
+bounce (2026-10-27, `PRISM_MOTION.md` 1a: the body's velocity rebounds, `BlackHoleGravityField.Bounce`). Every body's step is
 swept for its earliest contact BEFORE the bulk index write (the index's stored positions are the
 pre-step ones) — static prisms where they stand, other bodies along their own step (`IntegrateJob` now
 also emits each body's pre-step point). **The body count puts the field on a rung of prism movement's

@@ -251,7 +251,7 @@ verification gate per commit.
 | UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` (tests: `Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`) |
 | Join pre-flight (zero-request, before teardown) | `Assets/_Scripts/Controller/Party/Services/JoinTargetValidator.cs` (tests: `Assets/_Scripts/Tests/Editor/JoinTargetValidatorTests.cs`) |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
-| Refresh cadence (boost + base) | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
+| Refresh cadence (the 20 s safety poll, Block 5 step 8) | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | SOAP event bus | `Assets/_Scripts/Controller/Party/Services/SoapPartyEventBus.cs` |
 | Party member sync | `Assets/_Scripts/Controller/Party/Services/PartyMemberService.cs` |
 | State machine | `Assets/_Scripts/Controller/Party/StateMachine/PartyStateMachine.cs` |
@@ -428,7 +428,8 @@ host's allocation alive with its own pings; do not re-land a recycle. Record: `B
 ## Presence in a game scene (2026-09-01)
 
 `HostConnectionService.Update` used to return outside Menu_Main. It now refreshes the
-presence lobby at `IN_GAME_REFRESH_INTERVAL_SECONDS` (10s) in a game scene and publishes
+presence lobby in a game scene too (10 s then; since Block 5 step 8 the same 20 s safety poll as the menu, under
+the pushes) and publishes
 presence again when a game scene becomes active, so the match name a peer reads is real
 (`BUGS.md` B15). Invite popups still only render in Menu_Main; an invite noticed mid-match
 surfaces on return, because `OnSceneLoaded(Menu_Main)` resets the fired-invite record.

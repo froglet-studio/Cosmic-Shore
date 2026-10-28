@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
 
         public float ArkHullLength = 110f;
 
+        /// <summary>The model the Ark is drawn as (sockets, domain, jets and wings). Null keeps the spindle hull.</summary>
+        public ArkModelDefinitionSO ArkModel;
+
+        /// <summary>The Ark's reactor (the omni crystal aboard regrows the hull at a fixed rate). Null: the hull never regrows.</summary>
+        public ArkReactorSO ArkReactor;
+
         /// <summary>Units of travel between wake prisms. 0 = no wake.</summary>
         public float ArkWakeSpacing = 45f;
 
@@ -195,6 +201,53 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a voyage is in progress (including the veiled first build).</summary>
         public bool IsRunning => _running || _beginning;
 
+        // ── A route (the voyage slice, Docs/Voyages/SLICE.md §4) ─────────────
+        //
+        // The Arkway toy sails the shuffle-bag forever. A VOYAGE sails a route: the cells of one leg, in order, and then
+        // HOLDS at the last one (the destination) until it is given the next leg. Everything else - the Ark, the leash,
+        // the trail recycling, the three ways a run ends - is the Arkway's own, unchanged. With no route set the run
+        // behaves exactly as it always has.
+
+        bool _holdingAtRouteEnd;
+
+        /// <summary>The Ark has reached the last cell of its route and holds there. Raised once per leg.</summary>
+        public event System.Action RouteEnded;
+
+        /// <summary>The voyage opened: the veil is down, the pilot is docked beside the Ark and it is under way.</summary>
+        public event System.Action Underway;
+
+        /// <summary>The Ark's last hull prism fell. Raised just before the run ends itself.</summary>
+        public event System.Action ArkFallen;
+
+        /// <summary>The live Ark, or null.</summary>
+        public Ark Ark => _ark;
+
+        /// <summary>True while the Ark holds at the end of its route, waiting for the next leg.</summary>
+        public bool IsHoldingAtRouteEnd => _holdingAtRouteEnd;
+
+        /// <summary>The first leg: call before <see cref="Begin"/>. Indices into <see cref="CellConveyor.TraversalWorlds"/>.</summary>
+        public void SetRoute(IReadOnlyList<int> worlds)
+        {
+            if (_conveyor) _conveyor.SetRoute(worlds);
+        }
+
+        /// <summary>Sail on from the route's end: the next leg. False when the Ark is not holding at a route's end.</summary>
+        public bool ContinueRoute(IReadOnlyList<int> worlds)
+        {
+            if (!_running || !_holdingAtRouteEnd || !_conveyor || worlds is not { Count: > 0 }) return false;
+            _conveyor.SetRoute(worlds);
+            _holdingAtRouteEnd = false;
+            return true;
+        }
+
+        /// <summary>Show a line on the run's banner (an empty line shows nothing).</summary>
+        public void ShowBanner(string line, float seconds)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, seconds);
+        }
+
         /// <summary>True while the corridor and hull are still building behind the veil —
         /// the window in which the player can see nothing and a toy pass must not toggle.</summary>
         public bool IsBuilding => _beginning;
@@ -296,6 +349,11 @@ namespace CosmicShore.Gameplay
                     var arkPos = origin + course * 150f;
                     _ark = Ark.Create(transform.parent, arkPos,
                         Quaternion.LookRotation(course, Vector3.up));
+                    // Drawn as the model when the settings name one: its prisms in the model's sockets, the model in
+                    // the same domain as the hull (the theme's ship material), its jets and wings flying the turns.
+                    _ark.UseModel(_cfg.ArkModel, ToyFactory.Theme(_context));
+                    // The omni crystal aboard regrows the hull at a fixed rate.
+                    _ark.UseReactor(_cfg.ArkReactor);
                     await _ark.LayHullAsync(_cfg.PrismPrefab, vessel.Domain,
                         _cfg.ArkHullLength, _cfg.ArkSpeed, ct);
 
@@ -383,6 +441,10 @@ namespace CosmicShore.Gameplay
                 EnsureObjectiveArrow();
                 _conveyor.CellRetired -= OnCellRetired;
                 _conveyor.CellRetired += OnCellRetired;
+                ArkHold.LocalNotice -= OnPayloadNotice;
+                ArkHold.LocalNotice += OnPayloadNotice;
+                ArkHold.LocalLine -= OnPayloadLine;
+                ArkHold.LocalLine += OnPayloadLine;
                 EnsureHud();
                 _hud.ShowBanner("STAY WITH THE ARK", BannerSeconds);
 
@@ -406,6 +468,7 @@ namespace CosmicShore.Gameplay
                 _conveyor.StandAhead();
 
                 LogVoyageStart();
+                Underway?.Invoke();
             }
             catch (System.OperationCanceledException)
             {
@@ -517,6 +580,7 @@ namespace CosmicShore.Gameplay
             // the whole leg.
             AimArk();
 
+            if (_holdingAtRouteEnd) return;
             if (!_ark.HasArrived(CellConveyor.ArriveDistance)) return;
 
             if (_conveyor.AdvancePastTarget())
@@ -524,6 +588,12 @@ namespace CosmicShore.Gameplay
                 MarkTrail();
                 AimArk();
                 LogCensus();
+            }
+            else if (_conveyor.RouteExhausted)
+            {
+                // A voyage leg ends here: hold at the destination for the next one.
+                _holdingAtRouteEnd = true;
+                RouteEnded?.Invoke();
             }
             else
             {
@@ -689,8 +759,36 @@ namespace CosmicShore.Gameplay
             if (pen) pen.SetSpawnerPaused(false);
         }
 
+        /// <summary>The local pilot's payload changed: show its authored line (an empty line shows nothing).</summary>
+        void OnPayloadNotice(PayloadNotice notice)
+        {
+            var cfg = ArkHold.Config;
+            string line = notice switch
+            {
+                PayloadNotice.Grabbed => cfg.GrabbedLine,
+                PayloadNotice.Released => cfg.ReleasedLine,
+                PayloadNotice.OutOfReach => cfg.OutOfReachLine,
+                PayloadNotice.HoldEmpty => cfg.HoldEmptyLine,
+                PayloadNotice.ArtifactTaken => cfg.ArtifactTakenLine,
+                PayloadNotice.ArtifactStowed => cfg.ArtifactStowedLine,
+                PayloadNotice.ArtifactDropped => cfg.ArtifactDroppedLine,
+                _ => null,
+            };
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, cfg.BannerSeconds);
+        }
+
+        void OnPayloadLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, ArkHold.Config.BannerSeconds);
+        }
+
         void OnArkHullDestroyed()
         {
+            ArkFallen?.Invoke();
             EnsureHud();
             _hud.ShowBanner("THE ARK HAS FALLEN", BannerSeconds);
             End(returnToCell: true, "the Ark's last hull prism was destroyed");
@@ -963,6 +1061,7 @@ namespace CosmicShore.Gameplay
 
             _generation++; // a Begin still in flight must not resurrect this voyage
             _running = false;
+            _holdingAtRouteEnd = false;
             _beginning = false;
             HoldCreationTier(false);
             _leashBreachedAt = -1f;
@@ -973,6 +1072,8 @@ namespace CosmicShore.Gameplay
             DestroyObjectiveArrow();
 
             if (_conveyor) _conveyor.CellRetired -= OnCellRetired;
+            ArkHold.LocalNotice -= OnPayloadNotice;
+            ArkHold.LocalLine -= OnPayloadLine;
             _trailMarks.Clear();
             _primaryRollTo = _secondaryRollTo = null;
             FlushWithering();
@@ -992,7 +1093,10 @@ namespace CosmicShore.Gameplay
             // microscene conveyor's gate exists to forbid. Each cell drains as it leaves view;
             // the next voyage's Begin force-clears any remainder behind its raised veil.
             if (_conveyor)
+            {
                 _conveyor.RetireAllWhenUnseen();
+                _conveyor.SetRoute(null);
+            }
 
             _onEnded?.Invoke();
         }

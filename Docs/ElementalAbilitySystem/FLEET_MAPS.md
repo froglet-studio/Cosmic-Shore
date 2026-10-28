@@ -7,7 +7,7 @@ remake; its superseded "Reaper Ray" table is kept below as history); their rows 
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
 them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
 re-cut; its Mass row and its Time L5 are still proposals). The **Rhino joined it on 2026-10-16**:
-all four rows — Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker
+all four rows — Sword Steal / Live Wire (was Sword Energy until 2026-10-26), Afterimage / Danger Afterimages, Blade Reach / Breaker
 (Breaker shipped first, 2026-10-13), Ramp Spool / Momentum — are **APPROVED + SHIPPED** (Garrett's
 design calls in the 2026-10-16 session; nothing on that branch has run in the Unity editor yet). Its
 old forcefield/slab proposals are kept below as superseded history. For any row still a proposal,
@@ -343,9 +343,9 @@ the Unity editor yet. Detail: `R_VesselActions/RHINO_ENERGY_SWORD.md`,
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | **Sword Energy** — energy banked per cut ×1 at rest → ×2 at level 10, floored ×0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, new 2026-10-16) on 0.04 per prism kill and 0.12 per super-shield pop. Energy lengthens the blade toward `MaxScale` 120 and pays for the energize (cost 0.1, hold the both-triggers chop stance 1 s, 5 s tail after release, 5 s cooldown) | **Live Wire** — once the stance is let go the energized tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it (`ShieldSkimmerScaleConfigSO.liveWireUpgradeElement`, gated on `IsUpgradeActive(Charge)` in `ShieldSkimmerScaleDriver`). Without the upgrade there is no longer any refresh: the ungated one that kept a blade lit forever was removed the same day |
+| Charge | **Energize** (2026-10-26; was *Sword Steal*, and *Sword Energy* before it) — the both-triggers energize, plus how many petals a sword hit takes from a rival vessel, ×1 at rest → ×2.5 at level 10, floored ×1 (`RhinoSwordStealBySkimmerEffect.stealScale`) | **Sword Steal** (2026-10-26, replaced *Live Wire*) — a sword hit on a rival vessel STEALS its petals; without the upgrade the same petals are ejected as crystals at the strike, so the hit still scores (`VesselOvertakeBySkimmerEffectSO.stealUpgradeElement` = Charge on the Rhino's asset, gated on `IsUpgradeActive`) |
 | Mass | **Afterimage** — for 5 s after the energized blade goes out the sword lays prisms in its own shape and pose (one per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window, the blade cut into ≤ 6 segments of ≤ 10 u covering 90% of it; `RhinoSwordAfterimageConfig.asset`, first pass, never played). Mass scales their VOLUME ×1 → ×2.5, floored ×0.25 (`massVolumeMultiplier`), read at the REPLICATED level so every peer lays the same mass. Since 2026-10-17 the Rhino's own blade cuts its own afterimages like any prism once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett: *"not immune to our destruction"*); the hull still ploughs them. Tuning watch: one energize (0.1) plus self-cuts (≤ 16 × ≤ 6 × 0.04) can refill the meter — if playtest finds the loop too strong the lever is energy-per-own-afterimage, not immunity | **Danger Afterimages** — the afterimages are laid as DANGER prisms (`RhinoSwordAfterimageConfigSO.dangerUpgradeElement`, gated on `IsUpgradeActive(Mass)`, snapshotted per afterimage). A pilot flying into them takes what any danger prism does — the slow, the burn (opposing domain) or 4 s debuff (own), the boost reset; the input mute this row once flagged was deleted 2026-10-17 (`BACKLOG.md`) |
-| Space | **Blade Reach** — the blade's resting length 24 at rest → 40 at level 10 (`Skimmer.Scale` ElementalFloat on the Rhino's own `ForceFieldSkimmer Variant` instance, read live by `ShieldSkimmerScaleDriver`); energy grows it on top toward 96 (30 → 50 → 120 until the 20 % shortening of 2026-10-26) | **Breaker** — APPROVED + SHIPPED 2026-10-13: the sword cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaced the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 |
+| Space | **Blade Reach** — Space ALONE grows the blade: 24 at rest → 40 at level 10 (`Skimmer.Scale` ElementalFloat on the Rhino's own `ForceFieldSkimmer Variant` instance, eased in by `ShieldSkimmerScaleDriver`); nothing else resizes it since 2026-10-26 (no energy length, no surge burst), and the local pilot's camera pulls back in proportion (`cameraFollowsBladeLength`) | **Shield Breaker** (2026-10-26, replaced *Breaker*, which cut a shielded prism in one slice) — the sword can pop super-shielded prisms at all, still with an energized blade; without it the blade binds (`ShieldSkimmerScaleConfigSO.superShieldUpgradeElement` = Space, gated on `IsUpgradeActive`) |
 | Time | **Ramp Spool** — ramp wind-up `accelerationPerSecond` 220 at rest → 550 at level 10, 110 at the −5 floor (`RampBoostActionSO.timeAccelerationMultiplier`, ×1 → ×2.5, floored ×0.5, read live since 2026-10-16 — it was snapshotted at first engage). Time does not raise the ceiling: cruise 50 × `maxBoostMultiplier` 16.8 = 840 u/s | **Momentum** — above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino's elements (`VesselElementalImmunity` on the root, `condition: WhileAboveTopSpeedFraction`, `upgradeGate: Time`, `wardedSources: DangerPrism`), so an opposing pilot's blast still lands. The Time card lights while the ramp is boosting and flashes once when Momentum takes hold (2026-10-17; it was lit only while the ward held) |
 
 **The bulldozer ignores mass — a design statement, not a gap.** The hull carries no
@@ -645,6 +645,18 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Mass L5 | **Shielded Corners** — the corner trails arrive shielded | **Webbing** — every fifth block bridges to the next corner |
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
+
+### Meerkat — the soliton maker — DIRECTION (Garrett, 2026-10-27), design gate Yash's
+
+Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's direction):
+- **Space · Soliton**: the wormhole makes a soliton, and the level sets its surface area.
+- **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
+- **Charge · Sentinel**: an afterimage perched at every tunnel entrance. It zaps enemy vessels (their elements knocked
+  out) and turns same-domain prisms shielded.
+- **Mass · passive**: the soliton makes prisms at its far end, sized by Mass. L5: they are danger prisms.
+
+Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are in the same doc. The two are to be judged
+in the artifact.
 
 ## 3. Implementation notes for approved rows
 

@@ -6,7 +6,8 @@ namespace CosmicShore.UI
     public class InputFieldUpdater : MonoBehaviour
     {
         public TMP_InputField inputField;
-        public TMP_Text displayText;
+        [SerializeField] TMP_Text displayText;
+        public TMP_Text DisplayText => displayText;
 
         void Start()
         {

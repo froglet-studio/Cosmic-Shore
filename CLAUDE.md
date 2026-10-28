@@ -50,10 +50,23 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
+- [`Docs/MENU_REDESIGN_B.md`](Docs/MENU_REDESIGN_B.md): **The UI redesign and its design board.** Every menu, HUD, start-flow and
+  loading screen, and every variation of one, is drawn, compared and picked on the ONE Design canvas "Menu Redesign B"
+  (https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2) before it is built; the **`/design-board`** skill brings the board into a
+  session, compares a new design against the board and the build, and adds it as a new round (never a second canvas); the copy of
+  every board is `Docs/MenuRedesignB/board/`; `/ui-redesign-tracker` verifies a build against the picked board. Read before touching
+  Menu_Main, GameCanvas's look or any `Tools/Build/author_menu_*.py`.
+  Sections: Status (the item table); one numbered section per round (what was asked, drawn, picked, built; numbers claimed at commit)
 - [`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`](Docs/claude/VESSEL_HUD_AND_ELEMENTS.md): Elemental bars, hull morphs, rigged-model swap, the LOCKED four-icon ability row.
   Sections: Elemental Bars (per-vessel buff/debuff display); Elemental Hull Morphs (the vessel model is an element display); The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
-- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
+- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino, and the Ark: `ArkReverse.md` is the Arkway's Ark, its rig table and its fixed-rate omni regrowth) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
   Sections: the table of dossiers; how to regenerate a number
+- [`Docs/Icons/ABILITY_ICON_SKILL_PLAN.md`](Docs/Icons/ABILITY_ICON_SKILL_PLAN.md): **The ability-row ICONS are made by `/ability-icon`**
+  (`Tools/Build/icon_kit/`: a hull's real mesh projected or skinned into its takes, parts a HUD tints / swaps / turns,
+  the plate gauge for any how-much, legibility gates, states sheets from the spec, a writer that keeps every guid).
+  Garrett's bar: "the icons are teaching the ability". Read before touching `Assets/_Graphics/Icons/AbilityIcons/**`,
+  a `<Hull>HUDVariant.prefab` ability card or a `*HUDView` card method. Elements have no colour (LOCKED).
+  Sections: the plan; the audit; round status (§8); decisions (§10)
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.
@@ -64,6 +77,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: What it adds; What each button runs; How it loads; Changing it
 - [`Docs/claude/PLUGINS_AND_CONNECTORS.md`](Docs/claude/PLUGINS_AND_CONNECTORS.md): Claude plugins and connectors that help build this game (unity-perf, Unity's official plugin, Sentry, Figma), the check-and-suggest rule a session follows before Unity perf, C# review, URP, UI, physics or package work, and the plugin-driven performance restart.
   Sections: The rule every session follows; Plugins; Connectors; The performance restart (planned 2026-10-08)
+- [`Docs/claude/VIDEOS_AND_PREVIEWS.md`](Docs/claude/VIDEOS_AND_PREVIEWS.md): **Show a change instead of handing over a "go and check" step** (Yash, 2026-10-27): a still by default, a clip (60 s max, 15 fps) for motion; measured cost (~8-10 min and ~10-15k tokens a clip once the recipe is known, against no tokens for the person at the editor); the Amoebius recipe (xvfb, `--frames`, `--render-from`, the control port, ffmpeg; the replay it records); what an Amoebius clip cannot show (the final look, feel, audio).
+  Sections: The rule; What it costs; How; What an Amoebius video does not show
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
 
@@ -166,7 +181,9 @@ when a prompt is about vessel work. Studio domain colours come from the game's p
 (`HumanFlightRecorder`, `BugHuntAutoSend`), and the hourly **AI learning sweep** relearns the AIs from it
 (`Tools/Build/ai_learn.py --run`), judges whether they now race like the person, fixes what numbers cannot, and pushes
 to `Ys-bleeding-edge`. **Never ask a person to run a learner, a report or a test command**: run it yourself or leave it
-to the sweep. A new learner joins `ai_learn.py`. Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
+to the sweep. A new learner joins `ai_learn.py`. **The AIs train in each vessel's OWN minigames (its Time minigame
+first), never in Regatta**; the arena games are rebuilt later from those skills (Yash, 2026-10-27,
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`). Details and what is not automatic yet: `Docs/AI_SYSTEM/AUTO_LEARNING.md`.
 
 ## Testing
 
@@ -298,6 +315,14 @@ shared across scenes.
   counts them) before deciding what a prefab should become, and take the shipped state from a
   DONOR SCENE, not the asset. Retire a fork with **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**
   (`Docs/GAMECANVAS.md §9`) — a guid swap by hand dangles every override and every scene reference.
+
+## Show the change, cheaply (read `Docs/claude/VIDEOS_AND_PREVIEWS.md`)
+
+A session that changed how something LOOKS or MOVES shows it when it can, instead of asking a person to go and check:
+a still by default, a short clip (60 s max, 15 fps, 1280x720) for motion or order of events, made in Amoebius in a cloud
+session or with Playwright for an artifact. The session reads at most 3-4 frames of its own clip (about 1.5k tokens
+each), sends the file with `SendUserFile`, never commits it, and says in the same message what only the Unity editor
+can judge (the final look, feel, audio). A clip never replaces `/verify-unity` or the checklist's hand test.
 
 ## Code Style
 

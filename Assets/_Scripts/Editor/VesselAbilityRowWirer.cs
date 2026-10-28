@@ -103,7 +103,7 @@ namespace CosmicShore.Editor
                     new SlotSpec("ProfileButton", "ProfileIcon"),                 // Charge — Echo Sight
                     new SlotSpec("CrystalButton", "CrystalIcon"),                 // Mass   — crystal seeding
                     new SlotSpec("JawButton",     "JawIcon"),                     // Space  — cone blast
-                    new SlotSpec("DriftButton",   null, "Boost Display"),         // Time   — the authored ring
+                    new SlotSpec("DriftButton",   null, "Boost Display"),         // Time   — the hull over the plate gauge (the old ring's Image, now a container)
                 };
 
             var order = VesselHUDView.AbilityDisplayOrder;
@@ -236,7 +236,8 @@ namespace CosmicShore.Editor
         /// <summary>
         /// The Dolphin's four gauges: a generated blast-profile capsule + two stacked living tallies
         /// (Charge), the seeding recharge wipe (Mass), the jaw pair + prism tally (Space), and the
-        /// adopted boost ring (Time, already bound by the generic pass).
+        /// Time card's two parts under its container: the hull the view turns and tints, and the
+        /// bare gauge Image the lockup adopts as the plate fill (bound on the Time entry's `gauge`).
         /// </summary>
         static void WireDolphinGauges(DolphinVesselHUDView view, Image[] icons)
         {
@@ -254,9 +255,24 @@ namespace CosmicShore.Editor
             var pilotText = EnsureTallyText(profile.transform, "PilotCount", -18f);
             var faunaText = EnsureTallyText(profile.transform, "FaunaCount", -44f);
 
-            // The recharge wipe. (The boost ring steps through authored sprites instead.)
+            // The recharge wipe.
             crystal.type = Image.Type.Filled;
             crystal.fillMethod = Image.FillMethod.Radial360;
+
+            // The Time card: a transparent container over the hull part and the bank. The bank is a
+            // bare Image with no sprite - AdoptGauge gives it the plain one and re-forms it - bound
+            // as the Time entry's gauge so the lockup takes it onto the plate.
+            Image hullPart = null, bankPart = null;
+            if (drift)
+            {
+                MakeTransparentContainer(drift);
+                hullPart = EnsurePart(drift.transform, DriftHullPartName, DriftHullSprite);
+                bankPart = EnsurePart(drift.transform, DriftBankPartName, null);
+                bankPart.type = Image.Type.Filled;
+                bankPart.fillMethod = Image.FillMethod.Vertical;
+                bankPart.fillOrigin = (int)Image.OriginVertical.Bottom;
+                bankPart.fillAmount = 0f;
+            }
 
             var jawUpper = EnsureJawHalf(jaw.transform, "JawUpper");
             var jawLower = EnsureJawHalf(jaw.transform, "JawLower");
@@ -267,7 +283,9 @@ namespace CosmicShore.Editor
             Bind(so, "pilotCountText", pilotText);
             Bind(so, "faunaCountText", faunaText);
             Bind(so, "crystalIcon", crystal);
-            Bind(so, "driftBoostIcon", drift);
+            Bind(so, "driftBoostIcon", bankPart);
+            Bind(so, "driftHullIcon", hullPart);
+            BindElementGauge(so, Element.Time, bankPart);
             Bind(so, "blastCountText", blastText);
             Bind(so, "jawUpper", jawUpper);
             Bind(so, "jawLower", jawLower);
@@ -276,6 +294,40 @@ namespace CosmicShore.Editor
             // ability lockup's card carries the upgrade for every vessel now (Docs/ABILITY_LOCKUP.md),
             // so there is no longer a per-vessel decision to make and no second signal to suppress.
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        const string DriftHullPartName = "ChargeFillHull";
+        const string DriftBankPartName = "ChargeFillGauge";
+        const string DriftHullSpritePath = "Assets/_Graphics/Icons/AbilityIcons/Dolphin/Dolphin_ChargeFill.png";
+        static Sprite DriftHullSprite => AssetDatabase.LoadAssetAtPath<Sprite>(DriftHullSpritePath);
+
+        /// <summary>A stretched child Image under a container, found by name or made; the sprite is set only when given.</summary>
+        static Image EnsurePart(Transform parent, string name, Sprite sprite)
+        {
+            var go = EnsureChild(parent, name);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = Vector2.zero;
+            if (!go.TryGetComponent<Image>(out var image)) image = go.AddComponent<Image>();
+            image.raycastTarget = false;
+            if (sprite) image.sprite = sprite;
+            return image;
+        }
+
+        /// <summary>Points the abilityIcons entry for <paramref name="element"/> at <paramref name="gauge"/>.</summary>
+        static void BindElementGauge(SerializedObject so, Element element, Image gauge)
+        {
+            var list = so.FindProperty("abilityIcons");
+            if (list == null) return;
+            for (int i = 0; i < list.arraySize; i++)
+            {
+                var entry = list.GetArrayElementAtIndex(i);
+                if (entry.FindPropertyRelative("element").intValue != (int)element) continue;
+                entry.FindPropertyRelative("gauge").objectReferenceValue = gauge;
+                return;
+            }
         }
 
         // ---------------------------------------------------------------

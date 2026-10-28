@@ -143,15 +143,16 @@ EXISTING = {
 # on 2026-09-06, when the switch went to ONE ring at a time on a 60-second recharge
 # (PlaceSwitchActionSO): a pilot now has at most one scoring surface standing, so a toll is
 # several times the work again and 8 of them is a grind rather than a race. Kept in sync with
-# EndConditionOverridesSO.DefaultTollwayTollTarget.
-TOLL_TARGET = 4
+# EndConditionOverridesSO.DefaultTollwayTollTarget. Cut to 3 on 2026-10-26 to bring a match
+# toward ~90 s (each toll is a plant, a forge and a drive on a 60 s ring recharge).
+TOLL_TARGET = 3
 
 # The comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`), which is
 # exactly why it has moved with the target every time. At the 8-toll race 0.75 bought 1.5 element
 # levels for a quarter-of-target deficit; halving the target to 4 halves that deficit, so the rate
-# doubles to hold the same felt comeback. The trap this guards has now bitten six modes; the
-# assert below is the gate.
-COMEBACK_RATE = 1.5
+# doubles to hold the same felt comeback. 4 -> 3 raises it by 4/3 for the same reason (1.5 -> 2.0).
+# The trap this guards has now bitten six modes; the assert below is the gate.
+COMEBACK_RATE = 2.0
 
 # ── The court, and the ANCHOR FLORA studding it ──────────────────────────────
 # A ring may only be grafted onto a LIVING PLANT'S HEART - a vessel rule now

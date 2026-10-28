@@ -26,6 +26,7 @@ import argparse, glob, json, math, os, statistics, sys
 ORBIT_RANGE = 250.0     # u from the ring centre: "near the ring it wants"
 STALL_SECONDS = 8.0     # one ring taking longer than this is a stall
 STUCK_SPEED = 20.0      # u/s: below this the AI is not moving
+CLOSING_SHARE = 0.5     # a step that brings it this share of its length nearer the ring is an approach, not an orbit
 ORBIT_GRACE = 2.0       # s near the ring before it counts as circling (a pass through the zone takes about one)
 
 
@@ -77,7 +78,10 @@ def analyse(track, rings, target):
         if k0 >= target:
             continue
         want = rings[k0 % n]
-        if dist(p1, want) <= ORBIT_RANGE and dist(p0, want) <= ORBIT_RANGE:
+        # near the ring and NOT closing on it: a slow hull flying straight in spends seconds inside ORBIT_RANGE too
+        # (Breakwater's Sparrows, 37 u/s on 350 u legs: about 5 s a station), and that is not an orbit
+        closing = dist(p0, want) - dist(p1, want) > CLOSING_SHARE * dist(p0, p1)
+        if dist(p1, want) <= ORBIT_RANGE and dist(p0, want) <= ORBIT_RANGE and not closing:
             near += dt
             if near > ORBIT_GRACE:
                 circling += dt
@@ -95,7 +99,8 @@ def analyse(track, rings, target):
 
 def rival_states(flight):
     """{rival index: summary} from `rivalState` (HumanFlightRecorder.RecordRivalState), or {} for an older flight: the share
-    of samples breaking off, restricted and boosted (BoostMultiplier > 1.01), and each boost-driver status's share."""
+    of samples breaking off, restricted and boosted (BoostMultiplier > 1.01 while the boosting or discharging bit is
+    set: the Sparrow's multiplier rests at x5 whether it boosts or not), and each boost-driver status's share."""
     rows = flight.get("rivalState") or []
     cols = flight.get("rivalStateColumns") or []
     if not rows or not cols:
@@ -113,7 +118,7 @@ def rival_states(flight):
             st = int(v[si])
             a["breakingOff"] += bool(st & bits.get("breakingOff", 128))
             a["restricted"] += bool(st & bits.get("restricted", 256))
-            a["boosted"] += v[bi] > 1.01
+            a["boosted"] += v[bi] > 1.01 and bool(st & (bits.get("boosting", 1) | bits.get("discharging", 2)))
             k = int(v[ti])
             label = names[k] if 0 <= k < len(names) else "(no AI boost driver)"
             a["statuses"][label] = a["statuses"].get(label, 0) + 1
@@ -232,11 +237,15 @@ def self_test():
     b = analyse(straight, [(x * 300.0, 0, 0) for x in range(10)], 9)
     if b["circling"] > 0 or b["stalls"]: bad.append("a clean straight run counted circling or a stall")
     if abs(b["speed"] - 300) > 1: bad.append(f"speed {b['speed']}")
-    # rivalState: one rival, 4 samples - 2 waiting (status 0), 1 ramping x3 (status 1), 1 breaking off with no driver status
+    # a slow hull (37 u/s) flying straight down 350 u legs: inside ORBIT_RANGE for about 7 s a ring, never circling
+    slow = [(i * 0.1, (i * 3.7, 0, 0), int(i * 3.7 // 350)) for i in range(1000)]
+    c = analyse(slow, [(350.0 * (x + 1), 0, 0) for x in range(12)], 12)
+    if c["circling"] > 0: bad.append(f"a slow straight approach counted {c['circling']} s circling")
+    # rivalState: one rival, 4 samples - 2 waiting (status 0; the first at a resting x5, not boosting), 1 ramping x3 (status 1), 1 breaking off with no driver status
     fl = {"rivalStateColumns": ["state", "boost", "boostStatus", "phase", "courseNose"],
           "rivalStateBits": {"ai": 64, "breakingOff": 128, "restricted": 256},
           "rivalBoostStatuses": ["Rhino: cruising", "Rhino: ramping (# u/s)"],
-          "rivalState": [[64, 1, 0, 1, 0], [64, 1, 0, 1, 0], [65, 3, 1, 1, 2], [192, 1, -1, 1, 40]]}
+          "rivalState": [[64, 5, 0, 1, 0], [64, 1, 0, 1, 0], [65, 3, 1, 1, 2], [192, 1, -1, 1, 40]]}
     rs = rival_states(fl).get(0)
     if not rs or rs["breakingOff"] != 0.25 or rs["boosted"] != 0.25 or rs["statuses"][0] != (0.5, "Rhino: cruising"):
         bad.append(f"rivalState summary {rs}")

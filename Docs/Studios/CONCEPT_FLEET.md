@@ -15,6 +15,47 @@ pages, the hub's cards and the catalog entries (`--check` is the drift gate). No
 a lab-only proposal, shown with its recipe value in each page's Vessel Config > Mechanic. The only shipped numbers are the
 game's own Skim Race courses, the course every concept is raced on.
 
+## 0. Building vessels together, asynchronously (the rule for every vessel and supervessel session)
+
+Several sessions build vessels at once, on different branches, for different people. They stay out of each other's
+way by reading and writing the SAME records, in this order, at the start and the end of every vessel session:
+
+1. **The id ledger below** (and `VesselClassType.cs` on `bleeding-edge` AND every in-flight branch: `git fetch origin`,
+   then `git grep -n "= <id>," origin/<branch> -- Assets/_Scripts/Data/Enums/VesselClassType.cs`). Claim an id by adding
+   the enum row AND the ledger row in the same commit, on your branch, before anything else is built on it. Never reuse
+   an id another branch claimed, merged or not (enum 14 was taken twice on 2026-10-13: 110 conflicts).
+2. **This file**: one section per vessel or crew (the design, what the lab measured, Found, Decisions needed, the Unity
+   clone). Add yours; update the status line of a vessel you touched. The report for people is built from it:
+   `python3 Tools/Build/team_report.py area concept-fleet --write` (`Docs/Reports/CONCEPT_FLEET.md`).
+3. **The Vessel Studio artifact** (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa): one page per vessel, published
+   into the ONE artifact from the repo copy (`/vessel-studio` §4); its Decisions tab is where a person records Keep /
+   Drop, and `/artifact-to-unity` reads them. Never a second artifact.
+4. **Unity**: a `Tools/Build/author_<vessel>_assets.py` generator that owns the prefab and every registration
+   (`--check`, `--self-test`), a design doc beside the code (`R_VesselActions/<VESSEL>.md` or `Crew/<CREW>.md`), the hand
+   test in `Docs/UNITY_VERIFICATION_CHECKLIST.md`, `studio_to_unity/clones.json`. Say in the commit who else works there
+   (`Affects:`; `python3 Tools/Build/who_works_where.py query <paths>`), and build on their pattern rather than a new one
+   (the Flea and the Omega crews are Stoat clones; the crews use the Orca's seat plumbing).
+5. **Hand-offs**: a test, a decision or content for someone else goes on Froglet Tasks through `/team-tasks suggest`
+   (it waits for the person's approval; never filed on its own, never assigned). One ticket per branch.
+
+### The vessel id ledger (VesselClassType; re-check the branches before claiming)
+
+| Id | Vessel | Where | Since |
+|---|---|---|---|
+| -1, 0 | Any, Random | meta | |
+| 1-17 | Manta, Dolphin, Rhino, Urchin, Grizzly, Squirrel, Serpent, Termite, Falcon, Shrike, Sparrow, Scarab (12), Butterfly, Thresher, Stoat, Brittle Star, Angler | `bleeding-edge` | `Docs/claude/ABOUT_PROJECT.md` |
+| 18 | Goby (Goby and Pistol) | `bleeding-edge` | 2026-10-15 |
+| 19 | Wrasse (Wrasse and Grouper) | `bleeding-edge` | 2026-10-17 |
+| 20 | Orca (4 seats) | `bleeding-edge` | 2026-10-20 |
+| 21 | Starling | `bleeding-edge` | 2026-10-21 |
+| 22 | Jacks | `bleeding-edge` | 2026-10-21 |
+| 23 | Honeyguide (Honeyguide and Ratel) | `bleeding-edge` | 2026-10-21 |
+| 24 | Flea | `claude/flea-vessel` (Garrett's branch, unmerged) | 2026-10-24 |
+| 25-27 | free again: the Omega crews (Warden, Bulwark, Tempest) claimed them on 2026-10-26 and were removed on 2026-10-27 (§10.5), before any merge to `bleeding-edge` | | |
+| **25** | **next free** (the Siphonophore, the Tether / Gibbon, the Dragonfly, the Marlin and the Albatross have none yet) | | |
+
+An id a branch claims and then abandons is released only when that branch is deleted; say so here.
+
 ## 1. How to playtest (the owner's round)
 
 1. Open the artifact (phone or PC). Each new vessel has a card in the hub under **New vessels - the concept fleet**.
@@ -369,3 +410,475 @@ restitution (L-STU-104). And a thrustless AI strands itself in several distinct 
 **Decisions needed (Yash, by flying it).** The feel knobs are all in Play Style Config: Springiness, Bounce damping, Latch
 slack, Pull, Landing bounce, Perch, Prefer far, Aim cone, Web speed, Space drag. And: should a web pass through what it hits
 (a prism between you and the anchor) or latch the first thing on its line? Today it latches what the crosshair picked.
+
+## 10. Round 3: the Omega crews, combiner crew vessels (Yash, 2026-10-26)
+
+**The ask** (Yash, 2026-10-26, after the Flea branch): *"now I wanna make a crew vessel, that stoat will be a part of. ...
+crew [vessels] contained around 2-3 pilots or we can swap between each seats and control the vessel in different way to
+make the actual vessel work. ... like Power Rangers SPD ... each vessel will have their own megaforms and then finally
+they will have their omegaforms. They can combine. ... Prototype me some artifacts. By combining all these now we have 21
+vessels inside game and here in my prototype somehow combine and make three crew vessels or the bigger versions."*
+
+**What was built:** one page in the Vessel Studio artifact, **Omega Crews** (`Docs/Studios/VesselStudio/omega.html`,
+engine `omega-studio.js`, hub card, catalog row), with the three crews as data so they can be compared by flying:
+
+| Crew | Members (Helm, Arms, Core) | Mega moves (RT, lab approximations of the shipped kit) | Omega weapon (Arms) | Core: shield / finisher |
+|---|---|---|---|---|
+| **Warden**, the field crew | **Stoat**, Thresher, Butterfly | dipole sling (boost arc), wrecking ball (sweep), fold gate (gate pair) | Ripple whip: a 60 u sweep, a wall in two hits | Fold ward / **Annihilation** (180 u cone) |
+| **Bulwark**, the heavy crew | Rhino, Grizzly, Scarab | plough (shove + ramp boost), charged cannon, cavitation dash | Siege cannon: a full charge breaks a wall | Switch wall / **Breaker** |
+| **Tempest**, the fast crew | Squirrel, Sparrow, Manta | skim boost, pulsefire, boost tunnel | Pulsefire battery: a wall under fire 2.5 s | Afterburner veil (tunnel rings behind) / **Kabloom** |
+
+**The rules the page tests (every number a proposal, Vessel Config > Crew numbers):**
+- **Mega forms.** The three members fly as themselves; you fly one, the AI the other two (the Orca's rule). Each has ONE
+  move on RT. A hull contact costs as the platform's does; the moves smash neutral mass.
+- **Combine.** Hold LT with every member inside the gather range (140 u) and the meter at or above 0.3: the two others
+  dock onto the caller in 1.6 s and the crew is the **omega form**, one body, the members' average flight x crew speed
+  (Warden 1.15, Bulwark 1.1, Tempest 1.3) and x crew turn (0.6 / 0.5 / 0.75). It ploughs mass it touches; a wall bounces it.
+- **Three seats.** Helm flies (hold LT 0.5 s to split). Arms aims a turret with the right stick and fires on RT. Core holds
+  the shield on LT (-0.06/s more meter) and fires the **finisher** on RT once the meter is at 0.9: a cone ahead,
+  everything in it including walls, costing 0.7 and splitting the crew (the Megazord's finishing move ends the fight).
+- **The omega meter.** +0.22 per crystal, +0.004 per skim, +0.02/s while apart; -0.035/s combined. Empty = forced split.
+- **One swap.** D-pad left / right, the arrow keys, a two-finger swipe: the arena's gesture (`Docs/CREW_STATIONS.md`) steps
+  you round the three seats; the AI takes the seat you leave, in both forms.
+- **The Omega Run (the mini-game, B6 of the vision).** The Skim Race course's crystals, three lit at a time from the
+  first untaken, so flying apart collects faster; **every third crystal is locked inside a shielded wall** across the
+  course that only the omega weapon (or the finisher) breaks, and the window does not pass a locked crystal. Apart for
+  the crystals, together for the walls: the meter couples the two.
+- **AI, input-only (D4).** Each member flies for the lit crystal nobody else claimed; when none is open it flies to the
+  wall's approach point. The crew calls a gather when a locked crystal is near (320 u) or is all that is lit, and the
+  meter allows; the caller holds back at half cruise while the others close. Omega Helm flies for the wall's approach
+  point (90 u out) then faces it; Arms turns the turret onto the nearest wall in range and fires; Core shields when mass
+  is about to hit and fires the finisher when a wall is in the cone. Easy / Medium = Hard plus `SkimRaceDifficulty.asset`'s
+  late notice and misjudged crystal, plus a lab-only late press.
+- **Elements, proposals:** Charge = weapon power (x1 to x1.6), Mass = ward cost (x1 to x0.4), Space = finisher reach
+  (x1 to x1.5), Time = combine speed (x1 to x0.5). L5 names: Overload, Bulwark, Horizon, Instant. Nothing signed off.
+
+**Scorecard columns (D5):** per intensity, the crew on AI at Easy / Medium / Hard, **Never combine** (cannot open a locked
+crystal: DNF is the expected answer) and **Always combined** (one body collects one crystal at a time). If the crew
+is not faster than both controls, combining and splitting are decoration. Measured below.
+
+### 10.1 Measured (round 1, 2026-10-26; headless, three seeds, median seconds; `omega_score.cjs` in the session's scratch, the page's own `runHeadless`)
+
+| Crew | Course | Easy | Medium | Hard | Never combine | Always combined | Hard combined % | Combines |
+|---|---|---|---|---|---|---|---|---|
+| Warden | I1 | 291 | 270 | 271 | DNF (0 walls) | **255** | 22% | 7 |
+| Warden | I2 | 371 | 363 | 361 | DNF | **339** | 30% | 9 |
+| Bulwark | I1 | 268 | 250 | 254 | DNF | **229** | 15% | 7 |
+| Bulwark | I2 | 319 | 350 | **328** | DNF | 353 | 21% | 9 |
+| Tempest | I1 | 230 | 220 | **212** | DNF | 262 | 29% | 5-6 |
+| Tempest | I2 | 286 | 306 | **297** | DNF | 385 | 38% | 6-8 |
+
+Every crew finishes every course with every wall broken (7 on I1, 9 on I2); **Never combine never opens a wall**: the
+control that proves the walls need the omega. Economy at the lab values: +0.22 per crystal apart (half combined),
++0.02/s apart, -0.05/s combined, finisher 0.7.
+
+**Found (the lab's honest answers):**
+- **The Tempest is the crew the design wants**: its crew beats both controls on both courses (212 vs 262 always; 297
+  vs 385). Fast members collect apart, the omega's battery opens walls, and it must split to refill.
+- **The Warden's omega has no reason to split**: always combined beats its crew on both courses (255 vs 271; 339 vs
+  361). Its whip opens a wall in one pass and the omega ploughs mass, so the only cost of staying combined is the meter,
+  which crystals half-refill. **Decision needed (designer):** either the omega pays more for staying combined (drain,
+  Combined crystal pay: both sliders in Vessel Config), or the Warden's members get a reason to be apart (the Butterfly's
+  gate pair and the Thresher's ball are worth little on this course).
+- **The Bulwark splits the difference**: always combined wins I1, the crew wins I2 (the longer, tilted course; the slow
+  omega loses more time lapping back for a crystal it skipped).
+- **The difficulty ladder barely separates a crew** (Medium is fastest in three of six rows, all within a few percent):
+  late notice and a misjudged crystal are one member's mistakes, and three members cover for each other. A crew's levels
+  need a crew mistake (a late or early combine call, a wasted finisher) before Hard can be shown fastest (D24).
+- **Fixed on the way** (the lab would have measured nothing without them): a gather that chases a moving leader at its own
+  speed never docks (members circled "gathering" for 500 s; the dock is kinematic now, 1.6 s); an objective window that
+  skips past a locked crystal lets the crew collect every open crystal first and leaves eight walls for one long omega
+  run (the window is anchored at the first untaken crystal: a wall gates the course); a cannon AI that waited for a turret
+  angle inside a cone it could not reach held its shot forever; a locked finale with an empty meter was a dead end (the
+  last crystal is never locked and the meter trickles back apart).
+
+**Next rounds (the owner flies it first):** Yash flies the three crews (Game Config > Crew) and records Keep / Drop per
+crew and the feel of the swap, the dock and the finisher on the Decisions tab. Then: a crew mistake for the levels, a
+body for each omega (today the three member bodies on struts), the Warden's reason to split, a second mini-game
+(a wall-breaking race against a rival crew), and the Unity port by `/artifact-to-unity` with the mini-game (`/arcadegame`)
+and the four abilities, per CLAUDE.md's artifact-to-Unity pipeline.
+
+### 10.2 The Unity clone (2026-10-26, `Ys-bleeding-edge`; Yash: "make this prototype in Ys-bleeding-edge, I wanna test there")
+
+Three hull classes, `Warden = 25`, `Bulwark = 26`, `Tempest = 27`, each a Stoat clone by `Tools/Build/author_omega_assets.py`
+carrying `OmegaCrew` (the forms, the seats, the meter, the members' moves, the crew weapon, the finisher, input-only AI
+seats), `OmegaVesselTransformer` (the page's cruise / turn / roll per form), `OmegaCrewView` (placeholder bodies and
+struts) and `OmegaCrystalEffectSO` (crystals fill the meter). `OmegaMath` is the page's part B line for line, held by
+`OmegaMathTests` to goldens from the page's own functions (`omegaFlight`, `slotOf`, the dock ease, the meter, `mults`,
+the `omegaCore` cone). In the Toybox's Vessel Changer, as every port must be (CLAUDE.md "Bring it to Unity"). What the
+clone folds (nine member moves into boost / smash / guns / cannon; a cannon that bursts at range instead of flying) and
+what is round 2 (the Omega Run mode via `/arcadegame`, member and omega bodies via `/vessel-model`, skims into the
+meter, rider seats, an omega camera) is written in `Assets/_Scripts/Controller/Vessel/Crew/OMEGA_CREW.md` §3 and §6;
+the hand test is `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not editor-verified: the Unity CLI was not available.
+
+### 10.3 Round 2 (2026-10-26, Yash's first Unity test): the march formation with three roles
+
+Yash flew the round-1 clone and saw the Stoat alone with a black cube moving beside it on the D-pad, and asked for a
+different shape: "an aligned flock of three, group of three ... when I swap, my camera should just go to that particular
+vessel, and the other two will be controlled by AI ... the relative distance between each vessel will be the same ...
+the manoeuvre will be done by the Stoat, the shooting and everything by the right vessel, and the left one will protect
+... every big vessel needs a defence, attack and agility ... defender, midfielder and attacker ... one controlled by the
+player and two by AI, where the player can swap; later also swappable in multiplayer. For now, just make this much."
+
+Done the same day on `Ys-bleeding-edge`: every crew is a MOBILITY vessel (member 0, it leads and the formation flies with
+its numbers), an ATTACKER (member 1, to its right) and a DEFENDER (member 2, to its left): Warden = Stoat / Sparrow /
+Rhino, Bulwark = Scarab / Grizzly / Butterfly, Tempest = Squirrel / Thresher / Manta (proposals from the fleet's
+strengths; rearranged in `OmegaMath.Crews` and the page's CREWS). The Unity crew is a rigid formation: the swap moves
+the hull (and the camera) to the chosen member's place, the AI holds the other seats; the attack seat aims a turret
+and fires, the defence seat shields on LT and fires the ward on RT; the black bodies were the view's colour not reaching
+the instanced material (fixed: the colour is set on the material). The page's CREWS were recomposed the same way and
+the artifact republished; the page keeps the round-1 combine (mega / omega forms), which the game does not have yet.
+`OMEGA_CREW.md` §1-2, §6 and the checklist's Omega section are the record.
+
+### 10.4 Decision (design principle, 2026-10-27): a Voltron vessel is designed from the ground up, never assembled
+
+"It's generally better to build a Voltron type character that is designed from the ground up to be both many separate
+vessels and one big vessel at alternating parts of its game loop than it is to build a mechanic for combining any
+characters that have been designed for a complete game loop as an autonomous entity."
+
+What it means for the Omega crews:
+- **Round 1 measured exactly this.** The Warden's omega never had a reason to split (§10.1): the Stoat, the Thresher
+  and the Butterfly each already have a complete loop of their own, so being apart buys the crew nothing, and being
+  combined costs only a meter. A combine mechanic bolted onto autonomous vessels has no loop of its own.
+- **The three crews as composed (§10.3) are a test bed, not the design.** The formation, the seat swap, the AI seats,
+  the attacker's turret and the defender's shield are plumbing that any combiner vessel uses; the Stoat / Sparrow /
+  Rhino compositions are placeholders standing in for parts that do not exist yet.
+- **The next round designs ONE supervessel from the ground up**, in the artifact first (`/vessel-studio`, then
+  `/artifact-to-unity`): three PARTS, none of which is a complete vessel on its own. Each part's solo loop is a piece
+  of the whole's (the scout that can only position, the gun that can only fire where the scout put it, the shield
+  that only holds while the gun works), and the game loop ALTERNATES on its own terms: an apart phase that only the
+  parts can do, a combined phase that only the whole can do, and a reason to go back (the Omega Run's walls were the
+  first sketch of that pressure). Its mini-game and its four abilities come with it, as every new vessel's do.
+- Until that design exists, nothing more is built on the assembled crews beyond what the test bed needs; no new crew
+  is composed from shipped vessels.
+
+### 10.5 The three Unity crews removed (2026-10-27, Yash: "remove the three mega vessels we just created")
+
+Warden, Bulwark and Tempest (25-27), their prefabs, configs, maps, cards, the Omega C# and the generator are gone from
+`Ys-bleeding-edge` (commit after 6350dfc87d); the enum, the roster and `EnumIntegrityTests` are back to 25 members and
+ids 25-27 are free again (the ledger in §0). The Omega Crews lab page stays as the superseded round-1 record (its hub
+card says so). Nothing of the Omega crews reaches `bleeding-edge`.
+
+## 11. The Siphonophore: a Voltron vessel designed from the ground up (round 1, 2026-10-27)
+
+**Page:** `Docs/Studios/VesselStudio/siphonophore.html` + `siphonophore-studio.js` (the "Siphonophore" bay of the one
+artifact). **Why this animal:** a siphonophore (the Portuguese man o' war is one) is one animal made of zooids that are
+not animals on their own, which is exactly the principle of §10.4: many separate vessels and one big vessel at
+alternating parts of one game loop, designed that way from the start.
+
+### 11.1 The parts (none a complete vessel)
+
+| Zooid | Role | Its ONE verb | Flight (proposal) | RT move | LT |
+|---|---|---|---|---|---|
+| **Bell** (the swimming bell) | Mobility | **lights** a DARK crystal within the lantern's 90 u (it stays lit) | cruise 78, turn 130, roll 150 | Pulse: x1.8 for 1 s and the lantern at twice its range, cool 3 s | hold = call the fuse |
+| **Sting** (the stinging tentacle) | Attack | **opens** a LIT crystal's husk (6 shielded prisms), one per venom shot (range 160, every 0.25 s); smashes mass | cruise 60, turn 85, roll 100 | Venom shot | hold = call the fuse |
+| **Bract** (the shield leaf) | Defence | **nets** a FREED crystal within 24 u into its hold (3), unscored | cruise 66, turn 100, roll 110 | Cast the net | ward (mass within 18 u is shed); with a hold, the call |
+
+No part scores. A dark crystal cannot be opened (the Sting cannot see it), an unopened one cannot be netted, and a
+crystal behind a wall is LOCKED (dark, unopenable, unnettable) until the colony opens the wall.
+
+### 11.2 The colony (the fused form) and the loop
+
+Hold LT with every zooid within 120 u of the caller (the person's zooid, else the Bract): they dock in 1.2 s into the
+colony (the zooids' average flight x1.25 speed, x0.55 turn), three seats on the same gesture: **Helm** (the Bell) flies
+and rams on RT, **Lance** (the Sting) aims the lance (right stick) and fires at walls (range 140, every 0.3 s; a wall
+takes 3 hits or rams), **Ward** (the Bract) holds the shield on LT. The colony **digests** the hold into the score, one
+crystal per 4 s, ploughs mass, and cannot light, open or catch anything. The hold empty and no wall to open, it
+**splits itself** (Helm holds LT 0.5 s to split early, the hold kept). So the loop is LIGHT, OPEN, NET, FUSE, DIGEST
+(and RAM), SPLIT, and neither phase can do the other's work: that is the design, not a meter.
+
+The Tide Run (the lab's mini-game): every crystal of the Skim Race course dark in a husk, every third behind a wall only
+the colony opens; finish = every crystal digested.
+
+Elements (proposals, one scaled parameter each): Charge = Venom (husk prisms per shot x1 to x3; L5 Venom opens a husk
+in one shot), Mass = Trawl (net radius x1 to x1.6; L5 the hold takes one more), Space = Lantern (range x1 to x1.8; L5
+Beacon: the pulse lights the whole window), Time = Digest (x1 to x0.5; L5 Surge: the zooids keep the colony's speed
+3 s after a split).
+
+### 11.3 Measured (round 1, 2026-10-27; headless, two seeds 11 / 22, seconds; `siph_score.cjs` in the session's scratch, the page's own `runHeadless`)
+
+| Course | Easy | Medium | Hard | Never fuse | Always fused | Colony share (Hard) | Fuses |
+|---|---|---|---|---|---|---|---|
+| I1 (24 crystals, 7 walls) | 439 / 380 | 357 / 380 | 384 / 419 | DNF (0 digested) | DNF (0 digested, 1 wall) | 25% | 8 |
+| I2 (30 crystals, 9 walls) | 443 / DNF | DNF (29) / DNF | 484 / 485 | DNF (0) | DNF (0, 9 walls) | 25% | 10 |
+| I3 | - | - | DNF (17 / 15 digested in 600 s) | DNF (0) | DNF (0, 14 walls) | 12% | 5-6 |
+
+**Found:**
+- **The two controls fail for the designed reason**: never fusing scores nothing (the hold is never digested); always
+  fused lights, opens and nets nothing (0 digested on every course, even with every wall rammed open). The alternation
+  is forced by what each form CAN do, which is what §10.4 asked for; the Omega lab could only force it with a meter.
+- **The levels do not separate yet** (Medium is fastest on I1; I2's Medium seeds hit the time limit): the belief
+  mistakes cost a three-step relay little, and the relay's own stalls (below) are bigger than a mistake. A crew mistake
+  (a late call, a net cast early) is the lever, as the Omega lab found (D24).
+- **I3 and I4 exceed the lab's 600 s limit** at the lab's digest time (4 s a crystal, 48 crystals on I3 = 192 s of
+  digesting alone). `digestSeconds` and `holdCap` are the pacing levers; a course meant for this vessel is shorter or
+  lights more than one crystal per anchor.
+- **Fixed on the way** (the lab would have measured nothing without them): the Sting circled its crystal inside its
+  own turn radius and never lined a shot up (it now stands off to 95 u and attacks straight); a colony that fused for a
+  wall and split at once because the wall was "not ahead" (it keeps the window's wall as its goal until it is open);
+  an idle zooid flew to the far wall instead of staying with the crew (each idles behind the zooid before it in the
+  loop); a lit crystal with no husk left could never be freed (walled crystals are now locked until their wall opens).
+
+**Decisions needed (designer):** the hold's size and the digest time (the rhythm: how long apart, how long fused);
+whether the Bell's lantern should reveal husks too (today a lit crystal shows its husk; a dark one is a dim shape);
+whether the Ward seat earns something in the colony phase beyond the shield (today it is the quiet seat); names.
+
+**Next rounds (the owner flies it first):** Yash flies the three zooids and the colony (Game Config > Seats) and
+records Keep / Drop and the feel of the relay, the fuse and the digest on the Decisions tab; then a crew mistake for
+the levels, a course of its own, bodies via `/vessel-model`, and only then the Unity clone by `/artifact-to-unity`
+with the Tide Run (`/arcadegame`) and the four abilities.
+
+
+### 11.4 The ability kit (round 2 proposal, 2026-10-27, Yash: "get inspired from our other 21 vessels in game, and my 10 prototypes")
+
+Read from the 21 shipped element maps (`Assets/Resources/ElementalAbilityMaps/*.asset`) and the ten concept prototypes
+(Gibbon, Flea, Albatross, Remora, Dragonfly, Mole, Marlin, Eel, Octopus, Gecko). **Each zooid owns one element**, so
+the vessel still has the fleet's four: the Bell Space, the Sting Charge, the Bract Mass, the colony Time. Each zooid has
+a passive and two triggers; B calls the colony from any zooid (round 2; LT called it in round 1). The page carries the same
+table as data (`KIT` in `siphonophore-studio.js`, Vessel Config > Ability kit), each row marked **in the sim**, **in
+part** or **proposal**.
+
+| Part | Input | Ability | What it does | From | State |
+|---|---|---|---|---|---|
+| Bell (Space) | passive | Lantern | Lights every dark crystal in reach; Space x1 to x1.8 | Dolphin Echo Sight, Angler Paint | in the sim |
+| | RT | Pulse Jet | Hold to inhale, release to jet; on the beat of the last two pulses the chain grows x1.1 a pulse to x1.8; a pulse doubles the lantern for 1 s | Octopus | in the sim (round 2) |
+| | LT | Slipstream | Hold to lead: the Sting and the Bract form up in its wake, one, two, three, drafting at its speed x1.3 | Remora, Jacks The Call | in the sim (round 2) |
+| | L5 | Beacon | A pulse lights the whole window | Dolphin Pilot Echo | in the sim |
+| Sting (Charge) | RT | Nematocyst Volley | Aimed venom to 160 u; breaks a lit crystal's husk (Charge x1 to x3 prisms a round), else smashes mass | Sparrow Pulsefire, Urchin Chain Spikes | in the sim |
+| | LT | Tentacle Lash | The Sting streams a tentacle of its trail; hold to coil (turn x2), let go to whip it straight, cutting mass; a rival hull struck loses a petal, which spills as a crystal | Eel, Thresher, Wrasse Kite Ram | in the sim (round 2) |
+| | passive | Reel | A hit on a target over 120 u away pulls the Sting to it like a bungee: the slowest zooid catches up by hitting things | Gibbon, Shrike Void Sling | proposal |
+| | L5 | Contagion | A husk the venom opens poisons the next husk in the window | Manta Contagion, Urchin Overcharge | proposal |
+| Bract (Mass) | RT | Net Cast | Catches freed crystals in reach into the hold (3); Mass x1 to x1.6 | Jacks netting, Angler Lure | in the sim |
+| | LT | Bract Shell | Super-shielded plates, open ahead, clear the mass they meet; let go and they drop as danger prisms behind the hold | Orca Danger Shield, Rhino afterimages | in part (clears mass) |
+| | passive | Anchor | Stopped on mass it digs in: net reach x2, the others dock in half the time; the colony forms where it sits | Grizzly Dig In, Shrike Nest, Gecko | in part (gather at the Bract) |
+| | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in the sim (round 2) |
+| Colony (Time) | passive | Digest | One held crystal into the score every 4 s; Time x1 to x0.5 | its own | in the sim |
+| | Helm RT | Ram Spool | Hold to wind up: up to x1.6 speed, down to half the turn; at full spool it runs red and one ram opens a wall (three otherwise) | Rhino Ramp Spool and Breaker, Thresher | in the sim (round 2) |
+| | Helm LT | Scatter | Hold to split; let go and the three are flung x1.4 along the stick, each to its own next crystal | Remora sling, Gecko hop, Butterfly Fold | in part (hold to split) |
+| | Lance RT | Siphon Lance | Aimed hitscan to 140 u, cuts mass and wall cells | Shrike Void Lance, Serpent Sniper | in the sim |
+| | Ward LT | Colony Shell | The hull ploughs the mass it meets | Grizzly Rush, Brittle Star Speed | in the sim |
+| | Ward RT | Chain Wake | The colony lays its body behind it as a short chain of shielded prisms | Eel body, Brittle Star corner trails | proposal |
+| | L5 | Surge | After a split the zooids keep the colony's speed for 3 s | Remora sling, Urchin Slipstream | in the sim |
+
+**Why it is one vessel (the combos no single zooid finishes):** light, venom, net, digest (each verb is the next one's
+condition); lash, Trawl, digest (the Sting knocks a rival's petals loose as crystals, the Bract nets them, the colony
+digests them); Slipstream carries the slow pair (the march is a Bell ability); Anchor sets the fuse point and the
+Shell's danger drop covers the docking; the Bell's pulse chain carries into the colony's spool; Scatter lands the three
+on the window's three crystals.
+
+**Rules it keeps:** PvP is petals only (the lash takes petals, and every scored hit silences per `SILENCE.md`); one
+scaled parameter per element; the AI writes inputs only. **Flown in round 2** (11.5): Slipstream, Tentacle Lash with Trawl, Pulse Jet and Ram Spool, in that order. Still
+proposals: Reel, Contagion, Bract Shell's danger drop, Anchor, Scatter, Chain Wake.
+
+### 11.5 Round 2: the kit flown, one ability at a time (2026-10-27, Yash: "do all recommended 1 by 1")
+
+Measured with the page's own `runHeadless` on seeds 11 / 22 / 33 (seconds to digest every crystal; DNF(n) = n digested
+when the 600 s limit hit). Every row's "off" column is the same build with that one ability switched off, so the
+difference is the ability. Both controls (never fuse, always fused) still digest nothing on every course and level.
+
+**1. Slipstream (the Bell's LT).** While the Bell holds LT it leads: a zooid in its wake (140 u long, 26 u wide), behind
+its place in the line (22 u x its number), may fly at the Bell's speed x1.3; at its place it holds the Bell's speed. A
+leading Bell turns at x0.7 (step 3 lets it jet while it leads). The AI: a zooid whose next job is over 220 u away takes its place in the
+line; the Bell leads while one does, and with nothing of its own to light it carries the line to the Sting's lit
+crystal (else the Bract's freed one). The fuse call moved from LT to **B** (keys H) for every zooid.
+
+| Course, level | Slipstream off | Slipstream on |
+|---|---|---|
+| I1 Hard | 398 / 433 / 430 | 389 / 378 / 385 |
+| I1 Medium | 405 / 440 / 415 | 450 / 469 / 438 |
+| I1 Easy | 445 / 448 / 443 | 499 / 455 / 492 |
+| I2 Hard | 484 / 485 / 481 | 484 / 402 / 476 |
+| I2 Medium | 498 / 470 / 485 | 448 / DNF(29) / 501 |
+| I2 Easy | 519 / 525 / 512 | 525 / DNF(27) / 505 |
+
+Found: Slipstream is a skill ability. It takes Hard about 35 s off I1, and it is the first thing that makes Hard clearly
+the fastest level (off, Hard and Medium tie on I1). Easy and Medium lose time with it: their late notice and misjudged
+crystals break the line. A rule where the Bell leads only with nothing of its own to light was tried and dropped (it
+sat inside the noise on every level). Also found and fixed: the AI Bract held RT down after a cast that missed, and the
+net only casts on a fresh press, so it never cast again (it stalled one Easy run at 6 crystals).
+
+**2. Tentacle Lash (the Sting's LT) and Trawl (Mass level 5).** The lab gained **rivals**: Game Config > Rivals (0 to 3,
+default 2), stand-ins in the Ruby, Gold and Blue domains that fly the course at 85 u/s carrying 8 petals each (a ring of
+small crystals round the hull, one per petal). They take no crystals, have no abilities and never strike back. The
+Sting streams a 60 u tentacle (its own path). Holding LT coils it: the turn doubles and the tentacle bunches to half.
+Letting go after at least 30% of a 0.6 s coil whips it straight from the hull toward its tip (60% to 100% of its length
+with the coil), cutting the neutral mass within 9 u and taking one petal from a rival within 13 u. The petal spills as
+a crystal that drifts for 25 s. With Trawl the Bract's net takes it too, and the colony digests it as a point toward the
+finish. The AI coils while a rival with petals is within 96 u, and lets go when the rival is on the tentacle's line.
+
+Also fixed in this step, because Slipstream made it four times worse: the AI flew straight at a crystal behind a closed
+wall and rammed the wall (244 wall contacts in the first 90 s of I1 Hard before this round, 1008 with Slipstream). A
+zooid whose path crosses a closed wall now aims just past the wall's nearest edge; a crystal lying in a wall's own
+plane (an earlier lap's crystal at the same anchor) is reached from its side. **These numbers supersede the Slipstream
+table above**, which was measured before the detour (8 seeds, mean and standard deviation):
+
+| Course, level | Old AI, no new abilities | Detour only | Slipstream + lash + detour |
+|---|---|---|---|
+| I1 Hard | 419 (sd 15) | 404 (2) | 344 (14) |
+| I1 Medium | 423 (17) | 412 (10) | 397 (16) |
+| I1 Easy | 458 (16) | 431 (14) | 430 (16) |
+| I2 Hard | 481 (7) | 479 (8) | 442 (34) |
+| I2 Medium | 492 (11) | 496 (11) | 491 (23), 1 run over the limit |
+| I2 Easy | 521 (15) | 521 (8) | 512 (31), 4 over the limit (24 to 29 of 30) |
+
+| Lash and Trawl (8 seeds) | I1 Hard | I1 Easy | I2 Hard |
+|---|---|---|---|
+| Mass 0, lash off | 336 | 436 | 443 |
+| Mass 0, lash on | 344 (0.5 hits a run) | 430 (1.1 hits) | 442 (0 hits) |
+| Mass 5, lash off | 350 | 418 | 473 |
+| Mass 5 (Trawl), lash on | 344 (0.6 stolen a run) | 421 (0.6 stolen) | 470 (0.1 stolen) |
+
+Found: the lash works, and costs nothing once the AI halves its stick while coiled (a coiled Sting turns twice as fast,
+and the AI's steering overshot: before that it cost about 50 s). But the AI lands about one lash in eight, so the
+Lash, Trawl, digest steal adds at most one crystal a run: rivals in a race rarely pass within the tentacle's reach.
+It is a person's ability for now, and a better AI rule (hunt a rival while in transit) is the next step if the steal is
+kept. **Mass level 5 is slower on I2** (473 against 443 for Hard, every Easy run over the limit): its extra hold slot lets
+the crew work past a walled crystal and fly back for it later. Fusing at a walled crystal whenever the hold carries
+anything was tried and was slower nearly everywhere, so it was dropped. **Decision needed (designer):** whether Trawl's
++1 hold stays, since it slows the loop it belongs to.
+
+**3. Pulse Jet (the Bell's RT).** The Octopus's breath on a zooid that has a cruise: RT held inhales (the Bell slows to
+x0.6 and charges over 0.7 s, the bell visibly swelling), letting go jets (boost 1 + 0.8 x charge x chain, held 1 s,
+then fading as every boost does) and flashes the lantern at twice its range for 1 s. A release within 15% of the last
+interval is on the beat: the chain grows x0.1 a pulse, to x1.8. The old tap pulse (x1.8 for 1 s every 3 s) is gone. The
+AI breathes while it travels (no crystal within 1.2 lantern ranges) on a 1.6 s tempo, inhaling for 72% of it; Easy and
+Medium let go up to their lab-only late press early or late (0.2 s and 0.1 s), which breaks the beat. **A leading Bell
+jets too**, so the line drafts on its beat: with the jet blocked while leading the AI Bell jetted 8 times a run and the
+jet changed nothing; allowed, it jets about 115 times and the whole line rides it.
+
+| 8 seeds | Tap pulse (step 2) | Pulse Jet, not while leading | Pulse Jet, leading too (shipped) |
+|---|---|---|---|
+| I1 Hard | 344 (sd 14) | 343 (11) | 333 (19); 42% of jets on the beat, chain up to 6 |
+| I1 Medium | 397 (16) | 408 (14) | 397 (11); 38% on the beat |
+| I1 Easy | 430 (16) | 441 (12) | 428 (16); 24% on the beat |
+| I2 Hard | 442 (34) | 445 (37) | 430 (31) |
+| I2 Medium | 491 (23), 1 over | 492 (19), 4 over | 479 (38), 1 over |
+| I2 Easy | 512 (31), 4 over | 488 (3), 6 over | 533, 6 over the limit |
+
+Found: the jet is worth about 10 s on I1 and I2 for Hard and is level with the tap pulse below that; its value is the
+skill it asks (the beat), not raw speed. The beat separates the levels as designed (Hard 42%, Easy 24% on the beat).
+I2 Easy sits on the 540 s limit with or without it.
+
+**4. Ram Spool (the colony's Helm RT).** The Rhino's ramp spool on the colony: Helm RT held winds it up over 2 s, its
+speed rising to x1.6 and its turn falling to half (a wound colony is stiff); let go and it unwinds at 1.5 a second. At
+full spool the float glows red, and the next ram opens the wall in one hit instead of three, spending the spool. The
+old ram pulse (x1.6 for 1 s every 2 s) is gone. The AI winds up whenever it is lined up within 10 degrees, and lets go
+to turn. A rule that wound up only on the run-in to a wall, and one lined up within 25 degrees, were tried; neither
+was better.
+
+Checked by hand (a scripted Helm flying straight at a wall from 200 u): RT held, the ram lands at full spool and the
+wall goes from 3 hits to open; RT off (the control), the ram leaves it at 2.
+
+| 8 seeds | Ram pulse (step 3) | Ram Spool (shipped) |
+|---|---|---|
+| I1 Hard | 333 (sd 19) | 338 (21) |
+| I1 Medium | 397 (11) | 405 (25) |
+| I1 Easy | 428 (16) | 423 (18) |
+| I2 Hard | 430 (31) | 423 (28) |
+| I2 Medium | 479 (38), 1 over | 494 (20), 1 over |
+| I2 Easy | 533, 6 over | 522 (10), 4 over |
+
+Found: the Ram Spool changes nothing measurable, and the AI never lands a red ram. The colony rams a wall about once a
+run, because the Lance opens a wall from 140 u in under a second (3 hits at 0.3 s), so the colony seldom touches one.
+**Decision needed (designer):** whether the ram should be the colony's way through a wall (a slower Lance, or walls the
+Lance cannot cut), or the Lance stays and the spool is only speed against steering.
+
+**Round 2 in one table** (8 seeds, the old AI with none of the four against the shipped build with all four):
+
+| | Old AI, none of the four | All four (shipped) |
+|---|---|---|
+| I1 Hard | 419 (sd 15) | 338 (21) |
+| I1 Medium | 423 (17) | 405 (25) |
+| I1 Easy | 458 (16) | 423 (18) |
+| I2 Hard | 481 (7) | 423 (28) |
+| I2 Medium | 492 (11) | 494 (20), 1 over the limit |
+| I2 Easy | 521 (15) | 522 (10), 4 over the limit |
+
+Most of the gain is Slipstream and the AI's wall detour (Hard on I1 is about 80 s faster). The levels now separate in
+order on I1 (Hard 338, Medium 405, Easy 423), which the old AI did not do. Never fusing and always fused still digest
+nothing on every course.
+
+## 12. The calm three (Level 1) and the Orca (2026-10-27)
+
+Yash, 2026-10-27: vessels for relaxed players, "a balance between how much brain effort they're gonna put versus how
+much relaxed they're gonna get", about 20 minutes a day; single vessels at Level 1, the Siphonophore at Level 2, "from
+simplicity to complexity", each with a story. Then, after hearing that Garrett is building the Orca: compare the three
+with the Orca and make them playable.
+
+**The ladder.** Level 1: one stick and one button (the Seahorse adds a second), one verb, learnt in a minute, mostly
+calm with one tense moment. Level 2: the Siphonophore, which asks for several Level 1 skills at once. Each calm vessel
+teaches one of them: the Moon Jelly the Bell's breath, the Sea Turtle riding a leader's wake, the Seahorse holding on
+and carrying (the Bract's job).
+
+### 12.1 The three, as built (pages `moonjelly.html`, `seaturtle.html`, `seahorse.html`; kinds `breath`, `tide`, `tend` in `studio-kinds.js`)
+
+| | Moon Jelly (the Breather) | Sea Turtle (the Wayfinder) | Seahorse (the Gardener) |
+|---|---|---|---|
+| Made from | Dolphin + Butterfly (breath from the Octopus prototype) | Urchin + Squirrel (riding from the Remora and Albatross prototypes) | Angler + Serpent |
+| Controls | one stick; hold LT to breathe in, let go to pulse | one stick; hold LT to tuck in | one stick; hold LT on a block to hold on; RT puffs |
+| Calm part | slow, steady breaths (3 s or more, each like the last) build a calm chain: longer glides, a wider glow (its reach for a crystal) | the course line is a tide: tuck in and it carries you | holding a plant: it grows a garden and calls your crystal in; a crystal it calls counts two |
+| Tense part | the Moonrise: with the moon full, one long breath (3.2 s) lights four times as wide for 3 s and the crystal swims to the light | the Rapids: by a block the tide runs faster and pulls you toward it; 30 u clean is a burst | a rival comes while you hold a plant: puff (slows it, shields the garden) and dart |
+| Element: Charge / Mass / Space / Time | Moonrise / push / glow / glide | Rapids burst / shell / tide sense / tuck | puff / growth / garden reach / dart |
+
+### 12.2 Measured (headless, the page's own `raceHeadless`, seeds 11 / 22 / 33, seconds to 24 crystals on I1, 30 on I2)
+
+| | I1 Hard / Medium / Easy | I2 Hard / Medium / Easy | Without its mechanic (I1, I2) | Tense share | Uses a run (I1) |
+|---|---|---|---|---|---|
+| Moon Jelly | 127 / 123 / 122 | 169 / 167 / 166 | does not finish (20 of 24; it only drifts) | 7-9% | 3 Moonrises |
+| Sea Turtle | 118 / 121 / 127 | 173 / 177 / 184 | 155, 218 | 4-5% | 11 clean Rapids bursts |
+| Seahorse | 155 / 161 / 164 | 185 / 190 / 194 | 179, 239 | 8-12% | 13 (darts and puffs) |
+
+For scale, the concept fleet on I1 Hard: the Remora 81, the Octopus 120, the Albatross 264, the Flea 279 (same tool).
+
+Found while building them (each fixed, each measured):
+- **The Moon Jelly's calm chain is worth about 45 s on I1** (164 s when every breath is rushed). **Its Moonrise costs
+  the AI about 9 s on I1** (118 s with the moon never filling). A stronger pull and a wider Moonrise were tried and were
+  slower still. Its levels sit inside the noise: a forgiving vessel. **Decision needed (designer):** keep the Moonrise
+  as the tense moment it is, or give it a reward a race can measure.
+- **The Sea Turtle scraped the course ribbon** while riding the tide on the line (90 bumps a run): the tide now runs
+  16 u above the ribbon. **Its clean run was a time** (0.8 s), which a tucked turtle crosses too fast to earn; it is a
+  distance now (30 u). The AI spreads its flippers near a rock: tucked it turns at half rate and cannot steer clear.
+- **The Seahorse's gardening was slower than swimming** (282 s against 179) until a called crystal counted two: the AI
+  spent 111 s flying to plants beside the course. The AI now grabs any block of a clump within its 30 u tail reach and
+  prefers plants near its path. It puffs only to defend a plant it holds (it had puffed at its rival 30% of the run).
+
+Not modelled: sound (the breath has no tone yet), the seeds the turtle carries, the creatures grazing a garden, a calm
+course of their own. The course is the Skim Race track, one crystal at a time.
+
+### 12.3 The Orca (Garrett's), side by side
+
+The Orca is Garrett's (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`; lab `Docs/Studios/CrewOfFourLab.html`,
+artifact https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb). One hull with four seats, always full (an AI takes every
+empty seat). It never splits; a gunner's missile is flown by wire, first person, which is the nearest it comes to a
+second body. Its numbers below are read from `OrcaCrewConfig.asset`, `Orca.prefab` and the lab's round 7 scorecard;
+nothing of it was changed here.
+
+| | Moon Jelly | Sea Turtle | Seahorse | Orca |
+|---|---|---|---|---|
+| Bodies | 1 | 1 | 1 | 1 hull, 4 seats (+ a flown missile per gunner) |
+| People | 1 | 1 | 1 | up to 4 (AI fills the rest) |
+| Level (this ladder) | 1 | 1 | 1 | 2 to 3 for the crew; each seat alone is about 1.5 |
+| Buttons per seat | 1 | 1 | 2 | helm 2 + two sticks; gunner 2 + aim |
+| Speed | 20 u/s drift, pulses to 220 | 25 u/s crawl, tide 60, tucked 90 | 48 u/s swim, darts x2.2 | the Sparrow x0.85 (throttle 21.25, minimum 8.5), turn x0.55 |
+| Main verb | breathe | ride a current | hold on and grow | fly and fight together |
+| Calm / tense | about 92 / 8 | about 95 / 5 | about 90 / 10 | combat throughout (not measured as calm) |
+| Elements | one ability each, all one pilot's | same | same | one seat each: helm Time, sniper Space, fast gun Mass, bomb Charge |
+| Measured | I1 122-127 s | I1 118-127 s | I1 155-164 s | lab round 7, I2 Hard, 12 seeds: Ring Race 219 pts, Breach 183, Anchorage 72, Broadside 50 |
+| State | a lab page | a lab page | a lab page | in Unity (Toybox Vessel Changer), a stub flown through round 7 |
+
+**What the Orca already gives the calm idea:**
+- Every empty seat is an AI, so a relaxed player can sit in one seat and still have a full ship.
+- Seats are elements (round 6): one person, one element, one job. That is the Level 1 shape inside a bigger vessel.
+- The fly-by-wire missile is a moment of focus that ends by itself (5 s, or a press).
+
+**What the calm three could offer the Orca** (proposals for Garrett; nothing here changes his vessel):
+1. **A rest phase.** The Seahorse's hold-on as the helm's: touch a block and the Orca docks (the Shrike already docks).
+   Docked, the gunners reload, and the pen's prisms grow into a garden round the hull. Undock to fight. That gives the
+   Orca the calm-then-tense rhythm the three are built on.
+2. **A breathing boost.** The Moon Jelly's breath as the helm's boost: slow, steady presses refill the tank faster, so
+   the calmest helm keeps the crew moving.
+3. **A current.** The Sea Turtle's tide, read by the helm: the hull rides a current and the gunners get a steady
+   platform (the lab already measures a gunner's view sway).
+
+**Decision needed (Yash and Garrett):** whether the calm ideas go into the Orca (Garrett's call), stay as three Level 1
+vessels, or both. The Orca is the vessel with an owner and a Unity build; the three are lab pages.

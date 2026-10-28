@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Charge Mode
-    AbilityDescription: 'RB. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh
+    AbilityDescription: 'Y. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh
       trail is spared) and striking rival hulls for petals. Released, RT leaves them WHIPS at 150%
       length: heavy, inextensible, slow - a turn, a ring flick or a sweep of the right stick sends a
       wave travelling down them that rings on for seconds. Pulled, RT shortens them to 100% and
@@ -30,7 +30,7 @@ MonoBehaviour:
       moved). The card shows the spare stock. Charge is threat - one dial: the cords'' cut width and
       the rounds'' size x1 -> x1.8 at level 10 (projectileScaleMultiplier), the disk''s thickness x1
       -> x4 on top of its x4 base, 4 to 16 times the ring''s (blastScale).'
-    Input: 3
+    Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

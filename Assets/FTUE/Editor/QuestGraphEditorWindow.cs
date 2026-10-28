@@ -308,7 +308,7 @@ namespace CosmicShore.Editor
             GUILayout.Space(6);
 
             string crumb = _quest != null && _graph != null
-                ? $"{_quest.name}  ▸  Phase {_quest.phases.IndexOf(_graph)} · {_graph.PhaseName}"
+                ? $"{_quest.name}  ▸  Phase {_quest.Phases.IndexOf(_graph)} · {_graph.PhaseName}"
                 : _graph != null ? _graph.PhaseName
                 : _quest != null ? _quest.name
                 : "Select or create a quest";
@@ -420,9 +420,9 @@ namespace CosmicShore.Editor
                 if (!isSel) continue;
 
                 // Phases of the selected quest
-                for (int i = 0; i < quest.phases.Count; i++)
+                for (int i = 0; i < quest.Phases.Count; i++)
                 {
-                    var phase = quest.phases[i];
+                    var phase = quest.Phases[i];
                     var prow = GUILayoutUtility.GetRect(1, 20, GUILayout.ExpandWidth(true));
                     bool phaseSel = phase != null && phase == _graph;
                     if (phaseSel) EditorGUI.DrawRect(prow, QuestGraphStyles.RowSelectedFaint);
@@ -456,7 +456,7 @@ namespace CosmicShore.Editor
                     var rmR = new Rect(prow.xMax - 22, prow.y + 1, 18, 18);
                     using (new EditorGUI.DisabledScope(i == 0))
                         if (GUI.Button(upR, "▲", QuestGraphStyles.MiniButton)) { MovePhase(quest, i, -1); GUIUtility.ExitGUI(); }
-                    using (new EditorGUI.DisabledScope(i == quest.phases.Count - 1))
+                    using (new EditorGUI.DisabledScope(i == quest.Phases.Count - 1))
                         if (GUI.Button(dnR, "▼", QuestGraphStyles.MiniButton)) { MovePhase(quest, i, +1); GUIUtility.ExitGUI(); }
                     if (GUI.Button(rmR, "✕", QuestGraphStyles.MiniButtonDanger)) { RemovePhase(quest, i); GUIUtility.ExitGUI(); }
                 }
@@ -678,7 +678,7 @@ namespace CosmicShore.Editor
         {
             // The resume marker only applies to the phase the player's cursor is in.
             bool cursorPhase = !_questCompletedLocal && _quest != null
-                               && _quest.phases.IndexOf(_graph) == _cursorPhaseIndex;
+                               && _quest.Phases.IndexOf(_graph) == _cursorPhaseIndex;
 
             foreach (var n in _graph.nodes)
             {
@@ -985,13 +985,13 @@ namespace CosmicShore.Editor
                 }
                 else
                 {
-                    string phaseLabel = _cursorPhaseIndex >= 0 && _cursorPhaseIndex < _quest.phases.Count
-                                        && _quest.phases[_cursorPhaseIndex] != null
-                        ? $"{_cursorPhaseIndex} · {_quest.phases[_cursorPhaseIndex].PhaseName}"
+                    string phaseLabel = _cursorPhaseIndex >= 0 && _cursorPhaseIndex < _quest.Phases.Count
+                                        && _quest.Phases[_cursorPhaseIndex] != null
+                        ? $"{_cursorPhaseIndex} · {_quest.Phases[_cursorPhaseIndex].PhaseName}"
                         : _cursorPhaseIndex.ToString();
-                    var cursorNode = _cursorPhaseIndex >= 0 && _cursorPhaseIndex < _quest.phases.Count
-                                     && _quest.phases[_cursorPhaseIndex] != null
-                        ? _quest.phases[_cursorPhaseIndex].FindNode(_cursorNodeId)
+                    var cursorNode = _cursorPhaseIndex >= 0 && _cursorPhaseIndex < _quest.Phases.Count
+                                     && _quest.Phases[_cursorPhaseIndex] != null
+                        ? _quest.Phases[_cursorPhaseIndex].FindNode(_cursorNodeId)
                         : null;
                     string nextLabel = cursorNode != null ? NodeLabel(cursorNode)
                         : string.IsNullOrEmpty(_cursorNodeId) ? "(phase entry)"
@@ -1221,24 +1221,24 @@ namespace CosmicShore.Editor
             {
                 foreach (var q in questList.Quests)
                 {
-                    if (q != null && q.GameMode == gate.mode) { quest = q; break; }
+                    if (q != null && q.GameMode == gate.Mode) { quest = q; break; }
                 }
             }
 
             var sb = new System.Text.StringBuilder();
-            sb.Append($"GATE — {gate.mode} must reach tier {gate.intensityTier}");
+            sb.Append($"GATE — {gate.Mode} must reach tier {gate.IntensityTier}");
             if (svc != null && Application.isPlaying)
-                sb.Append($" (currently ≤{svc.GetMaxUnlockedIntensity(gate.mode)})");
+                sb.Append($" (currently ≤{svc.GetMaxUnlockedIntensity(gate.Mode)})");
             sb.Append('.');
 
             if (quest == null) return sb.ToString();
 
-            int playIntensity = Mathf.Max(1, gate.intensityTier - 1);
+            int playIntensity = Mathf.Max(1, gate.IntensityTier - 1);
             bool statBased = quest.IntensityUnlockStatType !=
                              CosmicShore.ScriptableObjects.QuestTargetType.Placeholder;
             if (statBased)
             {
-                float target = gate.intensityTier >= 4 ? quest.Intensity4StatTarget : quest.Intensity3StatTarget;
+                float target = gate.IntensityTier >= 4 ? quest.Intensity4StatTarget : quest.Intensity3StatTarget;
                 string requirement = quest.IntensityUnlockStatType switch
                 {
                     CosmicShore.ScriptableObjects.QuestTargetType.RaceTimeUnder =>
@@ -1248,16 +1248,16 @@ namespace CosmicShore.Editor
                     _ => $"{quest.IntensityUnlockStatType} ≥ {target}",
                 };
                 sb.Append($"\nUnlocks by: {requirement} in ONE intensity-{playIntensity} game.");
-                string desc = gate.intensityTier >= 4 ? quest.Intensity4GoalDescription : quest.Intensity3GoalDescription;
+                string desc = gate.IntensityTier >= 4 ? quest.Intensity4GoalDescription : quest.Intensity3GoalDescription;
                 if (!string.IsNullOrEmpty(desc))
                     sb.Append($"\nGoal text: \"{desc}\"");
             }
             else
             {
-                int needed = gate.intensityTier >= 4 ? quest.PlaysToUnlockIntensity4 : quest.PlaysToUnlockIntensity3;
+                int needed = gate.IntensityTier >= 4 ? quest.PlaysToUnlockIntensity4 : quest.PlaysToUnlockIntensity3;
                 sb.Append($"\nUnlocks by: playing {needed} game(s) at intensity {playIntensity}");
                 if (svc != null && Application.isPlaying)
-                    sb.Append($" — {svc.ProgressionData.GetIntensityPlayCount(gate.mode.ToString(), playIntensity)}/{needed} so far");
+                    sb.Append($" — {svc.ProgressionData.GetIntensityPlayCount(gate.Mode.ToString(), playIntensity)}/{needed} so far");
                 sb.Append('.');
             }
 
@@ -1371,23 +1371,23 @@ namespace CosmicShore.Editor
         static void ValidateQuest(QuestSO quest, List<string> sink)
         {
             if (quest == null) return;
-            if (quest.phases.Count == 0)
+            if (quest.Phases.Count == 0)
                 sink.Add("Quest has no phases.");
-            for (int i = 0; i < quest.phases.Count; i++)
-                if (quest.phases[i] == null)
+            for (int i = 0; i < quest.Phases.Count; i++)
+                if (quest.Phases[i] == null)
                     sink.Add($"Quest phase slot {i} is empty.");
 
             // The arcade funnel PERSISTS (PlayerPrefs) — a quest that applies constraints but
             // never clears them leaves the arcade locked to the tutorial mode forever, so a
             // newly claimed mode shows its CTA but its card stays locked.
             bool applies = false, clears = false;
-            foreach (var phase in quest.phases)
+            foreach (var phase in quest.Phases)
             {
                 if (phase == null) continue;
                 foreach (var n in phase.nodes)
                     if (n is QuestSetArcadeConstraintsNode c && n.nodeEnabled)
                     {
-                        if (c.clearConstraints) clears = true;
+                        if (c.ClearConstraints) clears = true;
                         else applies = true;
                     }
             }
@@ -1510,8 +1510,8 @@ namespace CosmicShore.Editor
             _quest = quest;
             _questRename = quest != null ? quest.name : null;
             RefreshProgress();
-            if (quest.phases.Count > 0 && quest.phases[0] != null && (_graph == null || !quest.phases.Contains(_graph)))
-                SelectGraph(quest.phases[0], quest);
+            if (quest.Phases.Count > 0 && quest.Phases[0] != null && (_graph == null || !quest.Phases.Contains(_graph)))
+                SelectGraph(quest.Phases[0], quest);
             MarkValidationDirty();
             Repaint();
         }
@@ -1570,9 +1570,9 @@ namespace CosmicShore.Editor
 
         void AddPhase(QuestSO quest)
         {
-            var graph = CreateGraphAsset($"{quest.name}_Phase_{quest.phases.Count}");
+            var graph = CreateGraphAsset($"{quest.name}_Phase_{quest.Phases.Count}");
             Undo.RecordObject(quest, "Add Quest Phase");
-            quest.phases.Add(graph);
+            quest.Phases.Add(graph);
             EditorUtility.SetDirty(quest);
             AssetDatabase.SaveAssets();
             RefreshAssets();
@@ -1582,16 +1582,16 @@ namespace CosmicShore.Editor
         void MovePhase(QuestSO quest, int index, int dir)
         {
             int to = index + dir;
-            if (to < 0 || to >= quest.phases.Count) return;
+            if (to < 0 || to >= quest.Phases.Count) return;
             Undo.RecordObject(quest, "Reorder Quest Phases");
-            (quest.phases[index], quest.phases[to]) = (quest.phases[to], quest.phases[index]);
+            (quest.Phases[index], quest.Phases[to]) = (quest.Phases[to], quest.Phases[index]);
             EditorUtility.SetDirty(quest);
             MarkValidationDirty();
         }
 
         void RemovePhase(QuestSO quest, int index)
         {
-            var phase = quest.phases[index];
+            var phase = quest.Phases[index];
             string phaseName = phase != null ? phase.PhaseName : "(missing)";
             int choice = EditorUtility.DisplayDialogComplex("Remove Phase",
                 $"Remove phase {index} ('{phaseName}') from '{quest.name}'?",
@@ -1599,7 +1599,7 @@ namespace CosmicShore.Editor
             if (choice == 1) return;
 
             Undo.RecordObject(quest, "Remove Quest Phase");
-            quest.phases.RemoveAt(index);
+            quest.Phases.RemoveAt(index);
             EditorUtility.SetDirty(quest);
 
             if (choice == 2 && phase != null)

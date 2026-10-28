@@ -9,6 +9,11 @@ Maintains `Docs/UI_REDESIGN_TASKS.md` for the Cosmic Shore UI overhaul. Runs **b
 
 The point of this skill is not bookkeeping. It is to catch the gap between what a task specified and what actually landed, while that gap is still cheap to close.
 
+The BOARD side is `/design-board` (`.claude/skills/design-board/`): opening the Menu Redesign B canvas in a session,
+comparing a new design against the board and the build, planning and publishing a round, refreshing the repo copy, and
+the offline board check of T16 as a tool (`design_board.py check <root> --only R<N>`). This skill verifies the BUILD
+against the board the doc names as picked.
+
 ## Core rule
 
 **Never tick a criterion you have not verified against the working tree.** A commit message, a PR description, or a previous assistant turn claiming a task is done is not evidence. Open the file, read the value, run the check. If a criterion cannot be verified without the Unity editor or a play session, mark it `[~]` and say so — do not mark it `[x]` and do not mark it `[ ]`.
@@ -72,6 +77,101 @@ Summarise: task, status, criteria met vs total, deviations, new queue entries, w
 **T5** — Fonts must not be in `Assets/Unity Assests/TextMesh Pro/`. Confirm `OFL.txt` per family and the credits entry; the licence obligation is real and easy to skip.
 
 **T6** — The Aldrich migration is an estimate. If it was executed, that is a significant deviation — roughly 1,670 references moved without design sign-off.
+
+**T7 — a layout group with `childControl` OFF reads a child's CURRENT rect, so a self-sizing child lags one pass**
+(claude/new-session-76hnyc, 2026-10-26). A `KitButton` sizes itself with its own ContentSizeFitter. A wrapper whose
+layout group does not control the child's width reads the button's rect, which the fitter sets later in the same pass.
+So a JOIN that turns into SPECTATE keeps JOIN's slot and spills out of the drawer. Make the wrapper control the child's
+width (`author_menu_arcade.wrap_slot`). The same fitter is why a KitButton dropped into a fixed slot (the configure
+strip's `<` `>`) grows past the slot onto its neighbours: use a fixed-size plain button there.
+
+**T8 — the offline rect renderer models layout groups, but not ContentSizeFitters and not Button transitions.** A clean
+"0 overlaps" from it says nothing about a self-sizing button's real width, and nothing about a tile whose outline its
+component hides at runtime (`KitTile.borderAtRest`). When a fix turns on either of those, assert it in the generator
+(the configure strip asserts its arrows are plain fixed buttons) instead of trusting the render. It does not model a
+GridLayoutGroup or the preferred height a nested Vertical/Horizontal layout group passes up either (the Codex grid and
+page, section 88), so blocks inside a scrolling page render stacked on top of each other. Check those by their layout
+settings.
+
+**T9 — `gates.sh` runs only the `author_*_assets.py` generators; the menu generators are not in it**
+(claude/new-session-76hnyc, 2026-10-26, the Codex). Every `author_menu_*.py` reads and writes `Menu_Main`, so a change
+to the scene or to a shared emitter (`author_menu_arcade.emit_node`) can put any of the twenty in drift with GATES:
+ALL OK on screen. Sweep them yourself: `for f in Tools/Build/author_menu_*.py; do python3 "$f" --check >/dev/null 2>&1;
+echo "$? $f"; done`. Also, `check_generated_assets.py --base` audits COMMITS, not the working tree ("audited 0 added"
+before the commit), and it needs `DOTNET_ROOT=/root/.dotnet`.
+
+**T10 — the menu emitters do not share every RectTransform field.** `author_ui_kit_prefabs.emit_node` writes a node's
+`scale`; `author_menu_arcade.emit_node` (the configure / profile / credits chain) wrote `{x: 1, y: 1, z: 1}` whatever
+the node said, until section 88 made it read `node.scale`. A generator that sets `.scale` (or `.rot`) and is not on the
+Hangar's own emitter must assert the field in its validation. The Codex asserts its 0.88. Otherwise the setting
+silently does nothing.
+
+**T11 — lifting a lock (or retiring any optional part) must remove the documents the generator minted for it.**
+`author_menu_topnav.py` removed only the ids its CURRENT config mints, so taking CODEX out of `LOCKED` would have
+stranded the old lock view in the scene. It now removes `Ids.everything()` and allows those removals in its blast-radius
+check. Any generator whose output depends on a set (locked tabs, shown seats, offered modes) needs the same: remove
+everything it can ever mint, then write what it mints now.
+
+**T12 — two generators that insert under the same parent must not both take "first"** (claude/affectionate-bardeen-pzh99d,
+2026-10-27, the Port). `author_menu_codex.py` puts its CodexView first under `Screens` and writes its documents right after
+Screens'. A second screen generator doing the same makes each one's re-run move the other, so the other's `--check`
+drifts. Take a place relative to something only you own: the Port takes the old Port panel's place among the children
+and anchors its documents after that panel's transform. Run the whole `author_menu_*.py --check` sweep (T9) after adding
+a screen.
+
+**T13 — the Menu Redesign B canvas is shared, so a round's number is claimed when you publish, not when you plan it**
+(claude/affectionate-bardeen-pzh99d, 2026-10-27). Rev 28 was free at noon; by the time the Port's looks were drawn,
+another session had published Rev 28 to 31 (Ark tabs, Squads, the Codex rethought). Re-read `project/canvas.json`
+right before the publish, take the first free `rev<N>` page id AND board prefix (`R<N>*.dc.html`), and keep every
+page and board the other session added (send the index with only your keys changed).
+
+**T14 — the doc's section numbers are claimed the same way, and C# comments cite them** (claude/awesome-dirac-hssan7,
+2026-10-27). This branch wrote the Ark's sections as 90-94 of `Docs/MENU_REDESIGN_B.md`; the Port merged 90-91 into
+bleeding-edge first, and the merge conflicted on the doc alone. Renumbering is not a doc edit: the runtime classes'
+docstrings say `Docs/MENU_REDESIGN_B.md section 93`, so a renumber is a sweep over `Assets/_Scripts`, `Tools/Build` and
+`Docs/` for `MENU_REDESIGN_B.md section <N>` and `§<N>`, split by which branch's section each hit means (the other
+branch's comments cite the SAME numbers and must not move). Read the base's last section number right before the PR,
+not when the branch starts.
+
+**T15 — a menu generator's node key is its fileID, so a node named for its CONTENT collides with a sibling named for its
+ROLE** (claude/awesome-dirac-hssan7, 2026-10-27). A squad card had a `Pilot` value label (one of the four pick rows) and a
+`Pilot` full-figure image; both became `<card>/Pilot`, and `author_menu_arcade.check_file` failed with `duplicate fileID
+anchors`. It names three fileIDs and no node. Grep the generator for the shared key, and name the figure by what it is
+(`Figure`), not by what it shows.
+
+**T16 — check a canvas board's script offline before publishing it** (claude/awesome-dirac-hssan7, 2026-10-27). A
+`.dc.html` board's `class Component extends DCLogic` runs in node with a two-line stub (`class DCLogic { constructor(p)
+{ this.props = p; } setState(o) { Object.assign(this.state, o); } }`): build it with `new Function('DCLogic', js +
+'return Component;')`, call `renderVals()`, and check that every `{{hole}}` in the template is a key it returns (loop
+variables against one item of their list). Then press the handlers in order (make, pick, create). On the Rev 31 boards
+this caught a `create` that read the draft after clearing it, and it gives the layout numbers (which card overlaps the
+list) without rendering, which the canvas type asks sessions not to do.
+
+**T17 - a kit TMP auto-sizes, so a runtime `fontSize` write is a no-op and the role size is a CAP** (claude/new-session-76hnyc,
+2026-10-28). `K.tmp` / `H.text` emit `m_enableAutoSizing: 1` with `m_fontSizeMax` = the ROLE's size. A generator that then
+replaces only `m_fontSize` (the countdown's "260 px" beat on the Display role) ships text auto-sized up to 48, and code
+that sets `text.fontSize` per beat changes nothing. The countdown drew at 48 px from item 12b until Rev 33. When a text's
+size is custom or set in code, also write `m_enableAutoSizing: 0` and min = max = the size, and check that line in
+`validate()`.
+
+**T18 - restructuring a prefab in place: lift the kept objects out BEFORE removing the generated parents** (same
+branch). A `Patch` transform re-runs on its own output, so a kept object you reparented under a generated node (the
+Slider into the footer, PlayerIcons into the pilots panel) is inside that node on the second run, and
+`remove_subtree(generated)` deletes it with the node. Reparent every kept object back to a stable parent first, then
+remove and re-emit the generated nodes. Also: `remove_subtree` assumes a RectTransform (`rect_of` raises
+StopIteration on a plain `Transform`, e.g. a Camera object inside a UI prefab), so remove such an object by its GO and
+component ids. Prove both by transforming the output a second time and asserting it is unchanged.
+
+**T19 - after removing objects from a prefab nested in GameCanvas, check the SCENES' overrides by the derived id**
+(same branch). A scene that overrides an object in a prefab nested in GameCanvas targets
+`source fileID XOR GameCanvas's PrefabInstance id` with GameCanvas's guid, not the inner prefab's. So grepping the
+scenes for the inner guid finds nothing either way. Compute the derived ids of every removed object (and of every
+restyled kept one) and grep the 41 files that nest GameCanvas for them; 0 hits is the evidence.
+
+**T20 - a DOTween `Sequence.Insert` before the `Append`s delays every beat** (same branch). `Append` places a tween at
+the sequence's current END, so inserting a long tween first (a hex fill at 0, d, 2d) lengthens the sequence and every
+appended beat starts after it: 3-2-1 would have started about 3 s late. Append the timeline first, then `Insert` the
+overlays at absolute times.
 
 ## Cross-cutting checks
 

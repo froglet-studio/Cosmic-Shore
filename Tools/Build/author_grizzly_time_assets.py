@@ -92,7 +92,7 @@ EXISTING = {
 # to size the circuit and the turn monitor asks the controller for the target, so the finish line
 # and the course cannot be different lengths. Kept in sync with
 # EndConditionOverridesSO.DefaultGrizzlyTimeGateTarget.
-LAPS = 3
+LAPS = 2
 RINGS_PER_LAP = 8                 # GrizzlyTimeCourse.GatesPerLap (14 until the launch was tripled)
 GATE_TARGET = LAPS * RINGS_PER_LAP
 BASE_RADIUS = 800                 # GrizzlyTimeCourse.BaseRadius
@@ -109,11 +109,12 @@ AI_THROUGH_DISTANCE = 285
 # respawn's jump.
 MAX_PLAUSIBLE_SPEED = 1400
 
-# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.3 a
-# quarter-of-race deficit (6 gates) buys 1.8 element levels - the 1.75 it bought on the old
-# 28-gate race. The Grizzly's Time element scales Rush, its burst onto a straight, so the buff
+# The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.45 a
+# quarter-of-race deficit (4 gates) buys 1.8 element levels - the 1.8 that 0.3 bought on the
+# three-lap 24-gate race and the 1.75 of the old 28-gate one (two laps since 2026-10-26, to bring
+# the race toward ~90 s). The Grizzly's Time element scales Rush, its burst onto a straight, so the buff
 # lands on the mode's axis.
-COMEBACK_RATE = 0.3
+COMEBACK_RATE = 0.45
 
 # Fresh Netcode ids for the clone's in-scene NetworkObjects (rule 4 above).
 HASH_SALT = "MinigameGrizzlyTime"

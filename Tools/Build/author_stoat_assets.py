@@ -678,7 +678,10 @@ def dipole_config_asset() -> str:
             "  autopilotDrySeconds: 0.5\n"
             "  autopilotMinHoldSeconds: 0.8\n"
             "  autopilotMaxHoldSeconds: 15\n"
-            "  autopilotRelaySeconds: 0.25\n" +
+            "  autopilotRelaySeconds: 0.25\n"
+            # the code's own default (one lap round the sink), serialized so a mode's learned copy can carry its own
+            # (StoatDipoleConfig_Warpline: Yash's pairs turned him about 78 deg, 2026-10-26)
+            "  autopilotMaxOrbitDegrees: 360\n" +
             empty_event("openEvent") + empty_event("annihilateEvent") + empty_event("warpEvent"))
 
 
@@ -1433,9 +1436,25 @@ def mode_action_asset() -> str:
             "  massModeThickness:\n" + elemental(3, 3, 6, 2, 1) +
             "  blendSeconds: 0.8\n"
             "  massUpgradeShieldsInMassMode: 1\n"
+            "  gateAhead: 90\n"
+            "  gateLengthMin: 120\n"
+            "  gateLengthMax: 600\n"
+            "  gateMouthRadius: 5\n"
+            "  gateHoldMaxSeconds: 3\n"
+            "  gateCollapseSeconds: 0.8\n"
+            "  gateAimConeDegrees: 25\n"
+            "  gateWarpShare: 1.5\n"
+            "  gateBoostSeconds: 2.5\n"
+            "  gateKeyRampSeconds: 0.5\n"
+            "  gateFunnelRadius: 30\n"
+            "  gateFunnelRate: 4\n"
             "  autopilotTimeModeDegrees: 70\n"
-            "  autopilotModeIntervalSeconds: 3\n" +
-            empty_event("massModeEvent") + empty_event("timeModeEvent"))
+            "  autopilotModeIntervalSeconds: 3\n"
+            "  autopilotGateDistance: 400\n"
+            "  autopilotGateSwitchConeDegrees: 30\n"
+            "  autopilotGateMinDistance: 300\n"
+            "  autopilotGateConeDegrees: 12\n" +
+            empty_event("massModeEvent") + empty_event("timeModeEvent") + empty_event("gateModeEvent"))
 
 
 def ripple_config_asset() -> str:
@@ -1531,7 +1550,10 @@ def hud_variant_from_donor(donor: str) -> str:
                   "  timeGauge: {fileID: 7700000000000001233}\n"
                   f"  gaugeColor: {color(0.59, 0.65, 0.76)}\n"
                   f"  readyColor: {color(157 / 255, 1, 46 / 255)}\n"
-                  "  colorBlendRate: 15\n", view)
+                  "  colorBlendRate: 15\n" +
+                  "".join(f"  {field}: {{fileID: 21300000, guid: {stoat_icon_guid(name)}, type: 3}}\n" for field, name in
+                          (("massModeIcon", "Stoat_ModeMass.png"), ("timeModeIcon", "Stoat_ModeTime.png"),
+                           ("gateModeIcon", "Stoat_ModeGate.png"))), view)
     set_doc(docs, "5875684227236902712", view)
     # The gauges: Charge and Space reuse the Thresher's two (renamed); Mass and Time get their own.
     for fid, name in (("7700000000000001200", "RippleGauge"), ("7700000000000001210", "AccretionGauge")):

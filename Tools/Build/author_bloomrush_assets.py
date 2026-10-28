@@ -5,7 +5,7 @@ ONE-SHOT donor-clone migration in the author_salvo_assets.py family. It clones
 MinigameBends.unity (chosen for its ARENA: Bends already reuses Rampage's four
 cactus-forest cell configs verbatim, which are exactly Bloomrush's reef — dense
 forest, crystal-scarcity intensity ladder, wildlife climb) and swaps only the mode
-identity: the controller, the turn monitor (point-race → 120 s NetworkTimeBased),
+identity: the controller, the turn monitor (point-race → 90 s NetworkTimeBased),
 the scoring rule, and the crystal ladder. Then it registers the mode everywhere a
 mode must be registered (card, live game list, progression unlock, build settings).
 
@@ -16,7 +16,7 @@ the committed scene is ADOPTED as-is (arcade_mode_lib.committed_scene) and the d
 asserts STAND DOWN when Bends moves on - they print a note and every other check still
 runs (CLAUDE.md "a spent one-shot must STAND DOWN, not abort"). What the gate still
 enforces is that the blocks this script authors - the controller and monitor scripts,
-the controller's field block, the 120 s duration and the crystal ladder - appear
+the controller's field block, the 90 s duration and the crystal ladder - appear
 verbatim in the committed scene, so retuning one here without the scene fails --check
 by name. Do not "fix" the donor asserts to chase Bends; the committed scene is the record.
 
@@ -81,7 +81,7 @@ NEW_CONTROLLER_FIELDS = """  rule: {fileID: 11400000, guid: %s, type: 2}
   crystalScatterRadius: 850
   crystalScatterSeed: 45""" % RULE_GUID
 MONITOR_SCRIPT_LINE = "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % NETWORK_TIME_MONITOR_SCRIPT
-MONITOR_DURATION = "  _updateInterval: 1\n  duration: 120\n"
+MONITOR_DURATION = "  _updateInterval: 1\n  duration: 90\n"
 OLD_CRYSTAL_LADDER = """  - CrystalsPerPlayer: 2
     ExtraCrystals: 0
   - CrystalsPerPlayer: 1
@@ -107,7 +107,7 @@ def clone_scene() -> str:
         "controller script")
     t = sub(t, OLD_CONTROLLER_FIELDS, NEW_CONTROLLER_FIELDS, "controller fields")
 
-    # Turn monitor: the Bends point race becomes the 120-second clock. Same GameObject,
+    # Turn monitor: the Bends point race becomes the 90-second clock (120 until 2026-10-26). Same GameObject,
     # same fileID, new class + one new key — the change-type-in-place technique.
     t = sub(t,
         "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BENDS_MONITOR_SCRIPT,
@@ -116,7 +116,7 @@ def clone_scene() -> str:
     monitor = re.search(
         r"(--- !u!114 &1628508337\nMonoBehaviour:\n.*?_updateInterval: 1\n)", t, re.S)
     assert monitor, "DONOR DRIFT: monitor doc 1628508337 moved"
-    t = t[:monitor.end(1)] + "  duration: 120\n" + t[monitor.end(1):]
+    t = t[:monitor.end(1)] + "  duration: 90\n" + t[monitor.end(1):]
 
     # Crystal ladder: plentiful at intensity 1 (crystals close and constant), contested by
     # 4 — the Bloomrush spec's own axis, replacing Bends' inherited Rampage scarcity.
@@ -173,13 +173,14 @@ MonoBehaviour:
 # Comeback rate derivation. The comeback reads VolumeDestroyed because it reads what the mode
 # SCORES (ElementalComebackSystem -> ScoringRuleSO.DomainValue; a count deficit against a volume
 # score is uncalibratable). First-pass expected winning VOLUME over a 120 s round: ~300 cactus
-# prisms x 75 volume each (5x5x3 leaf, Rampage's arena) = 22,500. A quarter-of-expected
+# prisms x 75 volume each (5x5x3 leaf, Rampage's arena) = 22,500; the round is 90 s since
+# 2026-10-26, so three quarters of that, and the rate rises by 4/3 to keep the 2 levels it bought. A quarter-of-expected
 # deficit x rate must buy at least one whole element level (the trap recorded on Dog
 # Fight / Bends / Wildlife Liberation, where re-targeting silently killed the buff); the
 # assert below fails the build rather than trusting the number. Re-derive from the first
 # playtest's real volumes.
-EXPECTED_WINNING_VOLUME = 300 * 75
-COMEBACK_RATE = 0.00036
+EXPECTED_WINNING_VOLUME = 300 * 75 * 90 // 120
+COMEBACK_RATE = 0.00048
 assert EXPECTED_WINNING_VOLUME / 4 * COMEBACK_RATE >= 1.0, "a quarter-of-expected deficit must buy a whole element level"
 assert EXPECTED_WINNING_VOLUME / 4 * COMEBACK_RATE <= 3.0, "comeback rate overshoots the Dog Fight curve"
 
@@ -203,7 +204,7 @@ MonoBehaviour:
   Description: Mantas only, and nobody has to learn a button. Soar through the reef
     to arm your bombs, graze wildlife and rival rays to plant them - silently, one
     bomb per target, first tag takes it - then reach a crystal before the fuses burn
-    down and set the whole board off at once. Biggest bloomed volume in 120 seconds
+    down and set the whole board off at once. Biggest bloomed volume in 90 seconds
     wins it for your domain.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}

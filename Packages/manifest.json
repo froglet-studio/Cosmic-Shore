@@ -36,6 +36,7 @@
     "com.unity.services.leaderboards": "2.3.3",
     "com.unity.services.moderation": "1.1.0",
     "com.unity.services.multiplayer": "2.3.3",
+    "com.unity.services.vivox": "16.12.1",
     "com.unity.test-framework": "1.6.0",
     "com.unity.timeline": "1.8.9",
     "com.unity.toolchain.win-x86_64-linux-x86_64": "2.0.10",

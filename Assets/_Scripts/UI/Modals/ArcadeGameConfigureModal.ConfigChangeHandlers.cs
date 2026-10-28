@@ -93,23 +93,62 @@ namespace CosmicShore.UI
             (IsClientMode || !_weeklyChallengeLocked);
 
         /// <summary>
-        /// Show the AI difficulty row on a card that offers it, lit on the config's value, and take
-        /// it down on every other card - passed either way, because the panel is a shared scene
-        /// object and a row shown for Skim Race must not survive onto the next card.
+        /// The AI difficulty row on every card (Rev 7, approved 2026-10-17: "the AI difficulty row shows, unlocked, wherever
+        /// the mode supports it"; Shombith 2026-10-26: "you removed the easy medium hard difficulty UI please add that
+        /// too"): lit on the config's value and pickable where the card offers it, shown LOCKED on the default where the
+        /// mode's AI has one level. Passed every time, because the panel is a shared scene object and a row unlocked for
+        /// Skim Race must not stay unlocked on the next card.
         /// </summary>
         void ApplyAIDifficultyPresentation()
         {
             if (!_activePanel || config == null) return;
 
             bool offered = OffersAIDifficulty;
-            _activePanel.SetAIDifficultyAvailable(offered);
-            if (offered) _activePanel.ShowAIDifficulty(config.AIDifficulty);
+            bool shown = _selectedGame != null && _activePanel.HasAIDifficultyRow;
+            _activePanel.SetAIDifficultyAvailable(shown);
+            if (!shown) return;
+            _activePanel.ShowAIDifficulty(AIDifficultyRules.IsOfferedFor(_selectedGame.Mode)
+                ? ShownAIDifficulty : AIDifficultyRules.Default);
+            _activePanel.SetAIDifficultyOffered(offered);
+            RefreshSeatLineup();     // each AI pedestal names its own level
         }
 
         /// <summary>
-        /// The host pressed a button on the AI difficulty row. Host only, like intensity; the new
-        /// value is replicated so every guest's row lights the same button, and it is remembered
-        /// with the rest of the host terms when the card launches.
+        /// Whether each AI can carry a difficulty of its own on this card: every card that offers the AI row, Arena
+        /// and Arcade alike. Selecting an AI's pedestal points the row at that AI (Shombith, 2026-10-27: "if the UI
+        /// already lets you change the AI vessel there, it should let you change the other values tied to that AI
+        /// too"; Yash, 2026-10-27: "anywhere where there is AI ... This should also happen in arcade"). With no AI
+        /// selected the row sets every AI at once, as before.
+        /// </summary>
+        bool SeatDifficultyAvailable => OffersAIDifficulty && config != null;
+
+        /// <summary>The AI seat whose difficulty the row edits now, or -1 when it edits every AI (the card's).</summary>
+        int EditedAiSeatForDifficulty =>
+            SeatDifficultyAvailable && _vesselSeat != OwnVesselSeat && MaySelectAiSeat(_vesselSeat) ? _vesselSeat : -1;
+
+        /// <summary>The level the row lights: the selected AI's own (its pick, else the card's), or the card's.</summary>
+        AIDifficulty ShownAIDifficulty
+        {
+            get
+            {
+                int seat = EditedAiSeatForDifficulty;
+                return seat >= 0 ? config.AIDifficultyAt(seat) : AIDifficultyRules.Resolve(config.AIDifficulty);
+            }
+        }
+
+        /// <summary>Light the row on the level it edits now (the selection moved, or a value arrived).</summary>
+        void ShowAIDifficultyForEditedSeat()
+        {
+            if (!_activePanel || config == null || _selectedGame == null || !_activePanel.HasAIDifficultyRow) return;
+            if (!AIDifficultyRules.IsOfferedFor(_selectedGame.Mode)) return;
+            _activePanel.ShowAIDifficulty(ShownAIDifficulty);
+        }
+
+        /// <summary>
+        /// The host pressed a button on the AI difficulty row. Host only, like intensity. With an AI's pedestal
+        /// selected it sets THAT AI's difficulty (replicated with the roster, so every guest's pedestal shows it);
+        /// otherwise it sets every AI: the card's difficulty, replicated and remembered with the host terms, and
+        /// every seat's own level is cleared so the press means what it says.
         /// </summary>
         void HandleAIDifficultySelected(AIDifficulty difficulty)
         {
@@ -117,14 +156,32 @@ namespace CosmicShore.UI
             if (IsClientMode) return;           // Only the host decides how the AI flies
             if (!OffersAIDifficulty) return;    // Includes the weekly challenge, whose terms are pinned
 
-            difficulty           = AIDifficultyRules.Resolve(difficulty);
-            bool changed         = config.AIDifficulty != difficulty;
-            config.AIDifficulty  = difficulty;
+            difficulty = AIDifficultyRules.Resolve(difficulty);
+            config.SyncAIVesselSlots();
 
-            if (_activePanel) _activePanel.ShowAIDifficulty(difficulty);
+            int seat = EditedAiSeatForDifficulty;
+            if (seat >= 0)
+            {
+                bool seatChanged = config.AIDifficulties[seat] != difficulty;
+                config.AIDifficulties[seat] = difficulty;
+                ShowAIDifficultyForEditedSeat();
+                if (!seatChanged) return;
+                BroadcastRosterToClients();
+                RefreshSeatLineup();
+                return;
+            }
+
+            bool changed = config.AIDifficulty != difficulty;
+            bool hadSeatLevels = config.AnySeatDifficulty();
+            config.AIDifficulty = difficulty;
+            for (int i = 0; i < config.AIDifficulties.Count; i++) config.AIDifficulties[i] = 0;
+
+            ShowAIDifficultyForEditedSeat();
 
             if (changed && arcadeConfigSyncManager)
                 arcadeConfigSyncManager.NotifyAIDifficultyChanged((int)difficulty);
+            if (hadSeatLevels) BroadcastRosterToClients();
+            if (changed || hadSeatLevels) RefreshSeatLineup();
         }
 
         /// <summary>The host changed the AI difficulty while this guest's lobby is open: mirror it.</summary>
@@ -133,14 +190,16 @@ namespace CosmicShore.UI
             if (!IsClientMode || _selectedGame == null || config == null) return;
 
             config.AIDifficulty = AIDifficultyRules.Resolve(difficulty);
-            if (_activePanel) _activePanel.ShowAIDifficulty(config.AIDifficulty);
+            ShowAIDifficultyForEditedSeat();
+            RefreshSeatLineup();
         }
 
-        /// <summary>The gamepad's left/right on the difficulty row: one step easier or harder.</summary>
+        /// <summary>The gamepad's left/right on the difficulty row: one step easier or harder, from the level it
+        /// shows (the selected AI's, or every AI's).</summary>
         void CycleAIDifficulty(int direction)
         {
             if (config == null || !OffersAIDifficulty) return;
-            HandleAIDifficultySelected(AIDifficultyRules.Step(config.AIDifficulty, direction));
+            HandleAIDifficultySelected(AIDifficultyRules.Step(ShownAIDifficulty, direction));
         }
 
         void HandlePlayerCountSelected(int playerCount)

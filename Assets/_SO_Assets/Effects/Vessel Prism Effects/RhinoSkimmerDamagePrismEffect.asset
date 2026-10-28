@@ -14,16 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inertia: 70
   popRequiresEnergizedBlade: 1
-  energyPerPrism: 0.04
-  energyPerSuperShieldedPrism: 0.12
-  chargeEnergyGainMultiplier:
-    Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 2
-    element: 1
-    UseFloor: 1
-    Floor: 0.5
   bounceSpeedMultiplier: 0.85
   minBounceSpeed: 10
   bounceDurationSeconds: 0.35
@@ -35,4 +25,3 @@ MonoBehaviour:
   restitution: 0.3333333
   debrisSpeedLimit: 200
   sliceDestroyedPrisms: 1
-  breakerElement: 3

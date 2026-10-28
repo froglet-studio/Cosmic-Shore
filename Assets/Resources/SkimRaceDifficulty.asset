@@ -16,3 +16,5 @@ MonoBehaviour:
   EasyMistakeChance: 0.099
   MediumReactionSeconds: 0.25
   MediumMistakeChance: 0.045
+  HardReactionSeconds: 0.12
+  HardMistakeChance: 0.02

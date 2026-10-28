@@ -93,6 +93,8 @@ VESSELS = {
     # The Wrasse joined with Wrasse Run (2026-10-20): the Sparrow hull with the Kite Navigator seat
     # (KITE_NAVIGATOR.md); its AIPilot races the hull, and a ring is collected by the local kite.
     "Wrasse":   "db96e34a6c3b4cb1b498f0529f765db1",
+    # The Meerkat joined with Burrow Run (2026-10-27): the wormhole vessel (R_VesselActions/MEERKAT.md, author_meerkat_assets.py).
+    "Meerkat":  "8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
@@ -100,7 +102,7 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
-    "Butterfly": 13, "Thresher": 14, "Stoat": 15, "Wrasse": 19,
+    "Butterfly": 13, "Thresher": 14, "Stoat": 15, "Wrasse": 19, "Meerkat": 28,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──
@@ -657,7 +659,10 @@ def _self_test() -> int:
     with open(os.path.join(ROOT, "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs"),
               encoding="utf-8") as fh:
         redline = fh.read()
-    expect(cs_field_default(redline, "laps") == "3",
+    with open(os.path.join(ROOT, "Assets/_Scripts/Controller/Arcade/Redline/RedlineCourseSource.cs"),
+              encoding="utf-8") as fh:
+        _const = re.search(r"const int DefaultLaps = (\d+);", fh.read())
+    expect(_const is not None and cs_field_default(redline, "laps") == _const.group(1),
            "cs_field_default follows `laps = RedlineCourseSource.DefaultLaps` to its const")
     expect(cs_field_default("int laps = NoSuchClassEver.DefaultLaps;", "laps") is None,
            "cs_field_default: a constant of a class that does not exist is not a default")

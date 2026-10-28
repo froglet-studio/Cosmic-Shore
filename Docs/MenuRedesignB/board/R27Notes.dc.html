@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Port - notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.card{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0;background:none}
+.card:focus{outline:none}
+.card{transition:filter 120ms ease-out}
+.card:hover{filter:brightness(1.18)}
+.num{font-variant-numeric:tabular-nums}
+@keyframes r26Breath{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes r26Rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes r26Turn{0%,100%{transform:rotateY(-14deg) translateY(0)}50%{transform:rotateY(14deg) translateY(-8px)}}
+@keyframes r26Toast{0%{opacity:0;transform:translateX(40px)}10%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes r26Fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1000px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif"><div style="position:absolute;left:80px;top:60px;right:80px"><div style="font-size:30px;margin-bottom:30px">Rev 27 - the Port</div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Asked</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">Open the Port with one tab, Faction messages: a chat for the faction. Factions will be clans later; today every player is in one faction (Shombith, 2026-10-27). Then: the weekly leaderboard can go to the Port too, for now.</div></div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Where</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">PORT is the top bar&#x27;s last tab (CODEX, HANGAR, HOME, ARK, PORT). Its lock is lifted, so LT / RT reach it. Two tabs inside: FACTION MESSAGES and WEEKLY LEADERBOARD, stepped with LB / RB like the Codex chapters.</div></div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Faction messages</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">One faction, All Pilots, with its card, the three rules and the controls on the left; the feed (the last 50 messages, newest at the foot) and the message field on the right. Your own messages carry a blue bar and YOU. Enter or X sends; A on the field starts typing (the on-screen keyboard on a phone or pad).</div></div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">How it works</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">Unity Vivox text chat (decided 2026-10-27): one text-only Vivox channel per faction (faction_all today), joined while the Port is open and left when it closes. Opening reads the channel&#x27;s last 50 messages from Vivox&#x27;s history; new ones are pushed live. Vivox signs in with the UGS player id, so reports and mutes name the same pilot everywhere. The game holds the rules: 140 characters, one message every 3 s, control characters removed.</div></div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Safety</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">Y on a message (or a click) opens Report message and Mute. Report goes to UGS Moderation (verbal abuse), the queue the profile popup&#x27;s Report already uses, and carries the Vivox channel as context. Mute hides a pilot on this device only. An account whose recorded birth year says it may be under 13 can read but not send (proposed default; the age screen records the year). Colours: your own messages are marked in neutral, never the selection blue; problems are fire, never gold.</div></div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Weekly leaderboard</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">The same board as the weekly challenge&#x27;s LEADERBOARD window (World / Regional / Friends, podium, your best run, rewards), drawn as a Port tab with no BACK. The configure window keeps its own LEADERBOARD button.</div></div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Not in the game yet</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">Factions of your own (clans): everyone is in All Pilots, and the faction id is a field so a second faction is data, not code. No word filter: reports and mute are the tools for now. Messages are sample text; pilot names and avatars are the leaderboard board&#x27;s.</div></div><div style="display:flex;gap:28px;margin-bottom:16px"><div style="width:220px;flex:none"><span class="cap" style="font-size:13px;color:#E6E9FF">Decisions for you</span></div><div style="font-size:17px;color:#C9CDEA;line-height:1.45">1. The faction&#x27;s name (All Pilots is a placeholder). 2. Under-13 accounts: read-only (drawn), or no Port chat at all. 3. A standard Vivox text channel seats about 200 at once; past that, ask Vivox for large text channels or split the faction into rooms. 4. Vivox must be switched on for the project in the UGS dashboard before messages work; until then the feed shows Offline.</div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

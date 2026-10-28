@@ -74,6 +74,13 @@ namespace CosmicShore.UI
         [Tooltip("What the local pilot earned and the wallet counting up. Empty: no strip.")]
         [SerializeField] private ScoreboardRewardStrip rewardStrip;
 
+        [Header("Team Versus (Rev 23 D)")]
+        [Tooltip("Two teams face to face, shown instead of the ladder for a two-team match (ScoreboardLadder.BuildVersus). " +
+                 "Empty keeps the ladder for every match.")]
+        [SerializeField] private ScoreboardVersusView versusView;
+        [Tooltip("A team's row in the versus layout - half the ladder's width, the counts under the name.")]
+        [SerializeField] private PlayerScoreCard versusRowPrefab;
+
         [Header("Crystal Rewards")]
         [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
                  "Places past the end of the list earn 0, and LAST place always earns 0 regardless " +
@@ -786,6 +793,7 @@ namespace CosmicShore.UI
         void PopulatePlayerCards(List<IRoundStats> orderedStats)
         {
             ClearPlayerCards();
+            if (versusView) versusView.SetShown(false);
 
             if (orderedStats == null || orderedStats.Count == 0) return;
             if (!playerCardContainer || !playerCardPrefab)
@@ -844,6 +852,18 @@ namespace CosmicShore.UI
             }
 
             string winnerName = results[0].Name;
+
+            // Rev 23 D: a two-team match is drawn as the two teams facing each other; anything else stays the ladder.
+            var versus = versusView && versusRowPrefab && versusView.IsAvailable
+                ? ScoreboardLadder.BuildVersus(results, gameData.WinnerDomain) : null;
+            if (versusView) versusView.SetShown(versus != null);
+            if (versus != null)
+            {
+                PopulateVersus(results, versus, winnerName);
+                AwardCrystalsToLocalPlayer(winnerName);
+                return;
+            }
+
             var ladder = ScoreboardLadder.Build(results, gameData.WinnerDomain);
             int stagger = 0;
 
@@ -858,29 +878,49 @@ namespace CosmicShore.UI
                     continue;
                 }
 
-                var r = results[entry.ResultIndex];
-                var card = Instantiate(playerCardPrefab, playerCardContainer);
-
-                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger++);
-                card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
-                card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
-                card.SetOutcome(entry.Won);
-                DecorateCard(card, r.Name, r.Domain);
                 // A header carries the team's shared score once; with no header prefab every row keeps its own.
-                card.ShowScore(entry.ShowsScore || !teamHeaderPrefab);
-                card.SetShare(entry.Share);
-
-                if (!string.IsNullOrEmpty(r.Secondary))
-                    card.ShowSecondaryStat(r.Secondary);
-
-                int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
-                if (reward > 0)
-                    card.ShowCrystalReward(reward);
-
-                _spawnedCards.Add(card);
+                SpawnRow(playerCardPrefab, playerCardContainer, results[entry.ResultIndex], entry,
+                         entry.ShowsScore || !teamHeaderPrefab, stagger++, winnerName);
             }
 
             AwardCrystalsToLocalPlayer(winnerName);
+        }
+
+        void PopulateVersus(List<ScoreResult> results, ScoreboardLadder.Side[] sides, string winnerName)
+        {
+            int stagger = 0;
+            for (int s = 0; s < sides.Length; s++)
+            {
+                var side = sides[s];
+                versusView.BindSide(s, side.Domain.ToString(), GetDomainColor(side.Domain), side.Won, side.Score);
+                foreach (var entry in side.Rows)
+                    SpawnRow(versusRowPrefab, versusView.Rows(s), results[entry.ResultIndex], entry,
+                             entry.ShowsScore, stagger++, winnerName);
+            }
+            versusView.SetShare(sides[0].Share, sides[0].Domain.ToString(), sides[1].Domain.ToString());
+        }
+
+        void SpawnRow(PlayerScoreCard prefab, Transform parent, ScoreResult r, ScoreboardLadder.Entry entry, bool showScore,
+                      int stagger, string winnerName)
+        {
+            var card = Instantiate(prefab, parent);
+
+            card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger);
+            card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
+            card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+            card.SetOutcome(entry.Won);
+            DecorateCard(card, r.Name, r.Domain);
+            card.ShowScore(showScore);
+            card.SetShare(entry.Share);
+
+            if (!string.IsNullOrEmpty(r.Secondary))
+                card.ShowSecondaryStat(r.Secondary);
+
+            int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
+            if (reward > 0)
+                card.ShowCrystalReward(reward);
+
+            _spawnedCards.Add(card);
         }
 
         string TeamLine(ScoreboardLadder.Entry header)

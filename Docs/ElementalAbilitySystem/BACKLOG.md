@@ -69,7 +69,7 @@ isn't juicy enough.
 
 Petal flare on unlock via `OnUpgradeStateChanged` (juice in `ElementalBarsConfigSO`); ability-icon
 row only in the branch's final view-binding shape with authored sprites; unlocked-state icons;
-Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now the roll-charge pip, `SparrowHUDView.SetRollCharge`; still open: shielded turret, piercing, domain-safe). Clean up dead code
+Sparrow HUD indicators (~~roll armed~~ RETIRED 2026-10-26 — the roll-charge pip was unbound from the Time card, Garrett: "its cooldown is so low"; ~~shielded turret~~ SHIPPED 2026-10-26 — the Mass card's rounds become shielded octahedrons at Mass 5, `SparrowHUDView.SetAbilityUpgraded`; still open: piercing, domain-safe). Clean up dead code
 (`ElementPipsView`, `SparrowAnimationController` or adopt it properly, `AIGunner`,
 `ExplodableProjectile`, `StopGunsAction`, `SparrowExhaustProjectile.prefab`).
 
@@ -854,3 +854,13 @@ Rows only, from `/ship` §3.6. Each one names what was measured and what is stil
     - 2 of those 9 are gated further up the method than a 14-line window sees (Astro League ball, Rhino skimmer);
     - the rest act for nobody: flora, fauna, managers and spawners.
   - So a window rule cries wolf. The sound version tags the pilot-harm sites (an attribute or a `// silence-gated:` marker) and gates the TAGGED set.
+
+## From the Rhino L5 re-cut (`cece/exciting-noether-dx1n4z`, 2026-10-26)
+
+- **[made visible] `element_ability_table.py` lists a dead Space-5 gate on the Rhino as live.**
+  - `python3 Tools/Build/element_ability_table.py Rhino` prints `gated at VesselExplosionByCrystalEffectSO.cs:208 <- RhinoVesselExplosionByCrystalEffect.asset` under Space 5 with no `[OFF]` mark.
+  - The gate sits inside `if (_spaceUpgradeSparesAllies)`, and that bool is absent from `RhinoVesselExplosionByCrystalEffect.asset` (`grep -i spare` finds nothing), so Unity ships the C# default `false` and the gate never runs on the Rhino.
+  - The tool marks `[OFF]` only when the bool is in the same condition as `IsUpgradeActive`; here it is an enclosing `if`. Teach it to read the enclosing block, then re-run `--gaps` fleet-wide. That is a fix to the tool, not to the vessel.
+- **[debt this branch created] The bind drag ignores the `popRequiresEnergizedBlade` A/B switch.**
+  - `RhinoSkimmerDamagePrismEffectSO.popRequiresEnergizedBlade` off lets an upgraded blade pop super-shields without the energize. `ShieldSkimmerScaleDriver.UpdateBind` still binds any blade that is not energized, so in that A/B a non-energized, upgraded blade both pops on entry and drags while inside. This was already true before the re-cut, for any non-energized blade.
+  - The switch is off by default and is a designer A/B only. Fix it when someone flips it: move the switch onto the sword config beside `superShieldUpgradeElement` so the driver can read it.
