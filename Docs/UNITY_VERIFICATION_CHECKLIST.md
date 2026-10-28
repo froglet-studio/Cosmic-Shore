@@ -73,8 +73,8 @@ regeneration. please fix the stuff not hooked up yet.", then "the omnicrystal is
 never change size. regeneration should just be fixed rate."):
 - `ArkReactor.asset` (on `Wander_WithArk.asset`) regrows every emptied hull socket, grazed or taken for a payload.
   It runs at a fixed rate, one prism every 2 s, nearest the reactor well first.
-- The omni crystal is always one size. Nothing resizes it, and the Charge shape of both Ark models now lengthens only
-  the lance (both FBXs rebuilt in place).
+- The omni crystal is always one size. Nothing resizes it, and the Ark model's Charge shape now lengthens only the
+  lance (`ArkReverse.fbx` rebuilt in place; concept A, `Ark.fbx`, has since been retired).
 - The crystal's collar turns, faster while the hull regrows.
 - The hangar opens while a squadmate is within payload grab reach.
 - The lance slides out when a payload is granted.

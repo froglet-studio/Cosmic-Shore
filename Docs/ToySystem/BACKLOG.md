@@ -723,8 +723,8 @@ a fixed rate (`ArkReactorSO`, 2 s a prism). Record: `Docs/VesselModels/ArkRevers
   ends. Measure in the editor: count the Ark's children after ten minutes of grazing. If the count climbs, destroy a
   slot's dead prism when its regrowth is laid. Do that only once the prism's consume animation has finished, because a
   prism being suctioned into a mouth is still visible.
-- **Concept A (`Ark.fbx`, `specs/ark.py`, `Docs/VesselModels/Ark.md`, ~4 MB) is drawn by nothing.** Garrett chose
-  concept B. Keep it as the recorded alternative, or retire it? That is a decision for Garrett, not cleanup.
+- ~~Concept A (`Ark.fbx`) drawn by nothing~~: retired 2026-10-28 (Garrett: "retire concept A"), with its spec, dossier
+  and pictures, and the shared-kit builders only it used.
 - **The hangar's three launch pads (`hangar.slot.0..2`) launch nothing.** That is unfinished design, not debt: the
   brief's "a kaiju protected by three vessels" has no escort launch yet. The doors already open for a squadmate in
   reach.

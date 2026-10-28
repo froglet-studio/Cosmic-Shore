@@ -1,6 +1,6 @@
-# Ark, concept B (the valve facing aft): model dossier
+# The Ark (concept B, the valve facing aft): model dossier
 
-`ArkReverse.fbx` is built from `Tools/Build/vessel_model/specs/ark_reverse.py`. Its parts are shared with concept A ([Ark.md](Ark.md), `Ark.fbx`) through `specs/_ark_kit.py`. It's a new hull with no artist file. The Arkway's Ark is drawn with it (see [In the game](#in-the-game)).
+`ArkReverse.fbx` is built from `Tools/Build/vessel_model/specs/ark_reverse.py`. Its shared builders live in `specs/_ark_kit.py`. Concept A (`Ark.fbx`, the valve opening forward) was retired on 2026-10-28 (Garrett: "retire concept A"), so this is the Ark. It's a new hull with no artist file. The Arkway's Ark is drawn with it (see [In the game](#in-the-game)).
 
 ## The brief, round by round (Garrett, 2026-10-27)
 1. "Explore an alternative where the arc is facing the other way. Get re-inspired from the arc clam shell." So the hinge is the PROW and the fan opens AFT: a swept delta with the bridge at its point.

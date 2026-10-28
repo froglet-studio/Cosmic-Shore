@@ -1,8 +1,8 @@
 """
 ark_reverse - the Ark's SECOND CONCEPT: the clam valve facing the other way (Garrett, 2026-10-27: "this is one concept.
 now lets explore an alternative where the arc is facing the other way. get re-inspired from the arc clam shell. and have
-it face the opposite direction."). `ark.py` (Ark.fbx) is the first concept: hinge aft, fan opening forward to a lip at
-the nose. Here the HINGE IS THE PROW and the fan opens AFT, so the shell is a swept delta with the bridge at its point.
+it face the opposite direction."). The first concept (`ark.py`, `Ark.fbx`: hinge aft, fan opening forward to a lip at
+the nose) was retired on 2026-10-28; this one is the Ark. Here the HINGE IS THE PROW and the fan opens AFT, so the shell is a swept delta with the bridge at its point.
 
 Round 3 asked for jets with clearance to manoeuvre, the game's own shield shapes as the sockets the hull is designed
 around, danger prisms where the Ark wants to be dangerous, a hangar the escorts launch from, a body that plays like a

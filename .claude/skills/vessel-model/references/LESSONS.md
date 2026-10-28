@@ -641,4 +641,4 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       `--out <scratch>/X.fbx --no-render`, copy only the sidecar, and leave the committed FBX alone. Rebuild in place
       only when the mesh, shapes or takes change.
     - **The omni crystal is always one size** (Garrett, 2026-10-28). No shape key and no game code may scale it. The
-      Ark's Charge shape now lengthens only the lance, in both Ark specs.
+      Ark's Charge shape now lengthens only the lance. (Concept A, `specs/ark.py`, was retired the same day.)
