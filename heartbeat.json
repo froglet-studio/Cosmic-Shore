@@ -12,16 +12,13 @@
   "torch": false
  },
  "cores": 3,
- "current": {},
- "host": "cloud-session",
- "last": {
-  "best_start": null,
-  "epoch": "226b88592db9",
-  "evals": 120,
-  "job": "drive-manta-regatta",
-  "session_evals": 120,
-  "stopped": "max evals"
+ "current": {
+  "job": "drive-dolphin-regatta",
+  "max_evals": 600,
+  "minutes": 14.0,
+  "since": 1793188651
  },
+ "host": "cloud-session",
  "runs": [
   {
    "best_end": 4.279668468582069,
@@ -60,7 +57,7 @@
  "totals": {
   "sessions": 4
  },
- "updated": 1793188647,
+ "updated": 1793188651,
  "user": "shombith",
  "version": "1"
 }
