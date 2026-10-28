@@ -101,7 +101,7 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
   <aside class="rack">
     <header>
       <h1>Omnicrystal Network Lab</h1>
-      <p class="lede">The Meerkat's omnicrystal grows a tunnel network to every exit. You fly into the crystal and pick one of its six points; every later junction comes after a straight so you can choose, the turns come right after the fork, and the tube rolls you toward the way you chose. No path runs more than 20% longer than the straight line to its exit, and every path is scored for comfort.</p>
+      <p class="lede">The Meerkat's omnicrystal grows a tunnel network to every exit. Every path from the entrance to an exit passes three bifurcations: the crystal itself, then two more, so there are eight exits. Every junction comes after a straight so you can choose, the turns come right after the fork, and the tube rolls you toward the way you chose. No path runs more than 20% longer than the straight line to its exit, and every path is scored for comfort.</p>
     </header>
 
     <section>
@@ -133,7 +133,12 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
     <section>
       <h2>Exits</h2>
       <div id="g-exits"></div>
-      <p class="note">Exits sit anywhere, rolled any way. Their facing stays within a cone round straight out: an exit facing back toward the crystal cannot be reached without a detour, and past about 50° the 20% limit no longer holds.</p>
+      <div class="seg" id="layoutSeg" role="group" aria-label="Exit layout">
+        <button type="button" data-v="branching">Branching</button>
+        <button type="button" data-v="anywhere">Anywhere</button>
+      </div>
+      <p class="note"><b>Branching</b> lays the exits out the way the tree branches, so every path can stay within the detour limit. <b>Anywhere</b> scatters them over the sphere: with three bifurcations on every path, two exits sharing their last junction can lie 90° apart, and the paths run well over 20% unless the exits are about 1,100 u out.</p>
+      <p class="note">Exits are rolled any way. Their facing stays within a cone round straight out: an exit facing back toward the crystal cannot be reached without a detour, and past about 50° the 20% limit no longer holds.</p>
     </section>
 
     <section>
@@ -164,8 +169,8 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
     <details>
       <summary>How the network is built</summary>
       <div>
-        <p class="note">You fly into the crystal along a straight from the emptiest direction. The crystal is the first fork: its six points (ahead, behind, right, left, up, down, in the frame you fly in with) each take the exits nearest their direction. A point with one exit leaves on the single arc that meets the exit's facing; a point with several runs straight toward them to its first junction.</p>
-        <p class="note">At each later junction the exits still to reach are split by where they lie around the rider (right, up, left, down) into up to four ways. An exit too near for another junction on its way, or one whose path ran over the detour limit on the last build, gets a way of its own. Each way is a <b>split</b> that peels off toward where it is going, a <b>turn</b> that never bends tighter than the tightest-turn radius and eases in and out over the turn ramp, and a <b>straight</b> into the next junction or the exit. The next junction sits where the turn naturally ends, so no way bends off a line and back onto it.</p>
+        <p class="note">Every junction is a bifurcation, and every path passes the same number of them (the slider; three by default), so there are 2<sup>n</sup> exits. You fly into the crystal along a straight from the emptiest direction. The crystal is the first bifurcation: its exits split into the two halves that are each tightest in direction, and each half leaves by the crystal point nearest its middle (two of ahead, behind, right, left, up, down). Each half runs straight to its next junction.</p>
+        <p class="note">At each later junction the exits split in two the same way, the ways named by where the halves lie round the rider (two of right, up, left, down). Each way is a <b>split</b> that peels off toward where it is going, a <b>turn</b> that never bends tighter than the tightest-turn radius and eases in and out over the turn ramp, and a <b>straight</b> into the next junction or the exit. The next junction sits where the turn naturally ends, as soon as it can by default (spacing 0), so the forks come early and the long run is the last one: a shared leg that runs far before it parts is length wasted for one of its exits.</p>
         <p class="note">The rider's frame is carried along without spin (a rotation-minimising frame) and then rolled. <b>Banking</b> turns the rider so a bend is felt as pitch rather than a sideways shove. The <b>twist roll</b> rolls the rider toward the way they chose, during the turn after each fork: a helical feel that costs no length. An exit's own roll joins it. No straight before a junction ever rolls.</p>
       </div>
     </details>
@@ -186,8 +191,8 @@ textarea { width: 100%; min-height: 110px; font: 400 11px/1.4 var(--num); backgr
 const SHIPPED = { labyrinthDiameter: 12, labyrinthMouthDiameter: 22, labyrinthRadiusMin: 90, labyrinthRadiusMax: 420, labyrinthOpeningsMin: 5, labyrinthOpeningsMax: 30, labyrinthSpread: 360 };
 // ============ LAB: Garrett's network (2026-10-28) ============
 const DEFAULTS = {
-  seed: 7, exits: 12, reachMin: 160, reachMax: 420, exitCone: 35,
-  maxBranches: 4, splitAngle: 28, splitLength: 30, twistLength: 150, minRadius: 70, turnRamp: 30, straightLength: 80, exitStraight: 40, spacing: 0.45,
+  seed: 7, forks: 3, layout: 'branching', branchSpread: 35, reachMin: 450, reachMax: 700, exitCone: 35,
+  splitAngle: 28, splitLength: 30, twistLength: 150, minRadius: 70, turnRamp: 30, straightLength: 80, exitStraight: 40, spacing: 0,
   bank: 1, bankAmount: 1, twistRoll: 0.25, rollSmooth: 10, maxRollRate: 90,
   speed: 55, forkGain: 1.06, tubeRadius: SHIPPED.labyrinthDiameter / 2,
   maxDetour: 1.2, okTurn: 45, badTurn: 90, okRoll: 60, badRoll: 120, okSlip: 25, badSlip: 50, okDecide: 1.2, badDecide: 0.8,
@@ -196,23 +201,23 @@ const DEFAULTS = {
 // Every other slider is lab-only: the game has no asset for the network yet, so its "shipped" value is this lab's proposal.
 for (const k in DEFAULTS) if (!(k in SHIPPED) && typeof DEFAULTS[k] === 'number' && k !== 'sel') SHIPPED[k] = DEFAULTS[k];
 const P = Object.assign({}, DEFAULTS);
-try { const s = JSON.parse(localStorage.getItem('omniNetLab.v2') || 'null'); if (s) for (const k in s) if (k in P) P[k] = s[k]; } catch (e) {}
-function save() { try { const d = {}; for (const k in P) if (P[k] !== DEFAULTS[k]) d[k] = P[k]; localStorage.setItem('omniNetLab.v2', JSON.stringify(d)); } catch (e) {} }
+try { const s = JSON.parse(localStorage.getItem('omniNetLab.v3') || 'null'); if (s) for (const k in s) if (k in P) P[k] = s[k]; } catch (e) {}
+function save() { try { const d = {}; for (const k in P) if (P[k] !== DEFAULTS[k]) d[k] = P[k]; localStorage.setItem('omniNetLab.v3', JSON.stringify(d)); } catch (e) {} }
 
 const SPEC = [
-  ['exits', 'exits', 'Exits', 3, 30, 1, 'labyrinthOpenings 5..30'],
+  ['exits', 'forks', 'Bifurcations from the entrance to each exit (2^n exits)', 1, 4, 1, 'labyrinthOpenings 5..30'],
   ['exits', 'reachMin', 'Nearest exit (u from the crystal)', 40, 600, 10, 'labyrinthRadiusMin 90'],
   ['exits', 'reachMax', 'Farthest exit (u)', 80, 900, 10, 'labyrinthRadiusMax 420'],
+  ['exits', 'branchSpread', 'Branching layout: how far each half spreads at the first junction (°)', 10, 60, 1, null],
   ['exits', 'exitCone', 'Exit facing: most it turns from straight out (°)', 0, 90, 5, null],
   ['exits', 'seed', 'Layout seed', 1, 99, 1, null],
-  ['branch', 'maxBranches', 'Most ways out of a junction', 2, 4, 1, null],
   ['branch', 'straightLength', 'Straight before each junction (u)', 20, 200, 5, null],
   ['branch', 'splitAngle', 'Split: how hard each way peels off (°)', 10, 60, 1, null],
   ['branch', 'splitLength', 'Split length (u)', 10, 80, 2, null],
   ['branch', 'twistLength', 'Least room for a turn before the next straight (u)', 20, 300, 10, null],
   ['branch', 'minRadius', 'Tightest turn radius (u)', 20, 200, 5, null],
   ['branch', 'turnRamp', 'Turn ramp: how gently a turn begins and ends (u)', 5, 120, 5, null],
-  ['branch', 'spacing', 'Junction spacing (share of the way to the group\'s nearest exit)', 0.2, 0.8, 0.05, null],
+  ['branch', 'spacing', 'Junction spacing (0 = each fork as soon as it can, 1 = evenly along the way)', 0, 1, 0.05, null],
   ['branch', 'exitStraight', 'Straight into an exit (u)', 0, 150, 5, null],
   ['roll', 'bankAmount', 'Banking strength', 0, 1, 0.05, null],
   ['roll', 'twistRoll', 'Twist roll after each fork, toward the way you chose (turns)', 0, 1, 0.05, null],
@@ -242,7 +247,7 @@ for (const [g, key, label, mn, mx, st, gn] of SPEC) {
   inp.addEventListener('input', () => { P[key] = +inp.value; changedSoon(); });
 }
 function segBind(id, key, cast) { const el = document.getElementById(id); el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; P[key] = cast(b.dataset.v); changed(key !== 'mode'); if (key === 'mode') setMode(P.mode); }); return el; }
-const segs = { mode: segBind('modeSeg', 'mode', String), bank: segBind('bankSeg', 'bank', Number) };
+const segs = { mode: segBind('modeSeg', 'mode', String), layout: segBind('layoutSeg', 'layout', String), bank: segBind('bankSeg', 'bank', Number) };
 
 // ============ vector helpers (plain arrays) ============
 const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -263,13 +268,26 @@ function segDist(a, b, c, d) {
   return len(sub(add(w, mul(u, sc)), mul(v, tc)));
 }
 function makeExits() {
-  // any position; facing within exitCone of straight out (an exit facing back toward the crystal cannot be reached within
+  // 2^forks exits (every path passes `forks` bifurcations); any position; facing within exitCone of straight out (an exit facing back toward the crystal cannot be reached within
   // the detour limit), any roll; an exit whose run-in would pass through another's is drawn again
   const r = rng(P.seed * 7919 + 13), ex = [], clear = 4 * P.tubeRadius + 12, cone = P.exitCone * Math.PI / 180;
-  for (let i = 0; i < P.exits; i++) {
+  const randDir = () => { const z = 2 * r() - 1, a = 2 * Math.PI * r(), rr = Math.sqrt(1 - z * z); return [rr * Math.cos(a), z, rr * Math.sin(a)]; };
+  // 'branching': the exits fall the way the tree branches. The crystal's two halves lie at least 70° apart, each half
+  // splits branchSpread° either side of its middle, and every split after that splits at 0.6 of the one before; a little
+  // jitter on top. 'anywhere': uniform over the sphere.
+  let plan = null;
+  if (P.layout === 'branching') {
+    let a = randDir(), b; do { b = randDir(); } while (dot(a, b) > Math.cos(70 * Math.PI / 180));
+    let dirs = P.forks > 0 ? [a, b] : [a], spread = P.branchSpread * Math.PI / 180;
+    for (let lv = 1; lv < P.forks; lv++, spread *= 0.6) {
+      dirs = dirs.flatMap((d) => { const side = norm(cross(d, randDir())); return [rotAbout(d, side, spread), rotAbout(d, side, -spread)]; });
+    }
+    plan = dirs.map((d) => { const j = norm(cross(d, randDir())); return rotAbout(d, j, (r() - 0.5) * 0.12); });
+  }
+  for (let i = 0, n = 2 ** P.forks; i < n; i++) {
     let e;
     for (let tries = 0; tries < 40; tries++) {
-      const z = 2 * r() - 1, a = 2 * Math.PI * r(), rr = Math.sqrt(1 - z * z), dir = [rr * Math.cos(a), z, rr * Math.sin(a)];
+      const dir = plan ? plan[i] : randDir();
       const reach = P.reachMin + (Math.max(P.reachMin, P.reachMax) - P.reachMin) * Math.cbrt(r());
       const pos = mul(dir, reach);
       // a direction uniform on the cap round straight out
@@ -282,7 +300,6 @@ function makeExits() {
       e.runIn = sub(pos, mul(face, P.exitStraight + 2 * P.minRadius));
       if (ex.every((o) => segDist(e.runIn, pos, o.runIn, o.pos) > clear)) break;
     }
-    e.leafBy = Infinity;   // the most junctions its path may pass; lowered when the path runs over the detour limit
     ex.push(e);
   }
   return ex;
@@ -303,109 +320,39 @@ function entranceFrame(exits) {
 // A frame is { T (forward), U (up), R (right = T x U) }.
 const SLOTS = [['right', 0], ['up', Math.PI / 2], ['left', Math.PI], ['down', -Math.PI / 2]];
 const angDist = (a, b) => { let d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d; };
-function combos(arr, k) { const out = []; (function rec(s, cur) { if (cur.length === k) { out.push(cur.slice()); return; } for (let i = s; i < arr.length; i++) { cur.push(arr[i]); rec(i + 1, cur); cur.pop(); } })(0, []); return out; }
-function groupExits(pos, F, exits, isLeaf = () => false) {
-  // by where each exit lies round the rider (right, up, left, down); an exit that must be a leaf here gets a way to itself
-  const ang = new Map(exits.map((e) => { const v = sub(e.approach, pos); return [e, Math.atan2(dot(v, F.U), dot(v, F.R))]; }));
-  const leaves = exits.filter(isLeaf), groups = [], near = (e, fr) => Math.min(...fr.map((s) => angDist(ang.get(e), s[1])));
-  let rest = exits.filter((e) => !isLeaf(e)), free = SLOTS.slice();
-  leaves.sort((a, b) => near(a, free) - near(b, free));
-  for (const e of leaves) {
-    const keep = rest.length ? 1 : 0;
-    if (free.length - keep < 1 || groups.length >= P.maxBranches - keep) { rest.push(e); continue; }
-    const sl = free.reduce((a, s) => angDist(ang.get(e), s[1]) < angDist(ang.get(e), a[1]) ? s : a);
-    groups.push({ slot: sl[0], dir: sl[1], exits: [e] }); free = free.filter((s) => s !== sl);
-  }
-  if (!rest.length) return groups;
-  const most = Math.min(P.maxBranches - groups.length, rest.length, free.length), least = groups.length ? 1 : Math.min(2, most);
-  for (let k = most; k >= least; k--) {
-    let best = null;
-    for (const set of combos(free, k)) {
-      const gs = set.map(() => []); let cost = 0;
-      rest.forEach((e) => { let bi = 0, bd = 9; set.forEach((s, si) => { const d = angDist(ang.get(e), s[1]); if (d < bd) { bd = d; bi = si; } }); gs[bi].push(e); cost += bd; });
-      if (gs.every((g) => g.length) && (!best || cost < best.cost)) best = { cost, set, gs };
-    }
-    if (best) return groups.concat(best.set.map((s, i) => ({ slot: s[0], dir: s[1], exits: best.gs[i] })));
-  }
-  // every exit lies in one direction: split by angle order so the network still branches
-  const order = rest.map((e) => [ang.get(e), e]).sort((a, b) => a[0] - b[0]), half = Math.ceil(order.length / 2);
-  return [{ slot: 'right', dir: 0, exits: order.slice(0, half).map((x) => x[1]) }, { slot: 'left', dir: Math.PI, exits: order.slice(half).map((x) => x[1]) }];
-}
-// The crystal's fork: its six points in the frame you fly in with. The exits are grouped by direction (spherical k-means,
-// at most six groups, seeded by the farthest-apart directions so it is deterministic) and each group takes the point
-// nearest its middle, each point once.
-const CRYSTAL_WAYS = [['ahead', 'T', 1], ['behind', 'T', -1], ['right', 'R', 1], ['left', 'R', -1], ['up', 'U', 1], ['down', 'U', -1]];
-function crystalGroups(F, exits) {
-  // k-means over the directions of the exits not yet given a point of their own
-  const kmeans = (rest, k) => {
-    const dirs = rest.map((e) => norm(e.approach)), cs = k ? [dirs[0]] : [];
-    while (cs.length < k) { let bi = 0, bd = -1; dirs.forEach((d, i) => { const m = Math.min(...cs.map((c) => 1 - dot(c, d))); if (m > bd) { bd = m; bi = i; } }); cs.push(dirs[bi]); }
-    let lab = [];
-    for (let it = 0; it < 20; it++) {
-      lab = dirs.map((d) => cs.reduce((bi, c, i) => dot(c, d) > dot(cs[bi], d) ? i : bi, 0));
-      for (let i = 0; i < k; i++) { const m = dirs.filter((d, j) => lab[j] === i).reduce((a, d) => add(a, d), [0, 0, 0]); if (len(m) > 1e-6) cs[i] = norm(m); }
-    }
-    return cs.map((c, i) => ({ axis: c, exits: rest.filter((e, j) => lab[j] === i) })).filter((g) => g.exits.length);
-  };
-  // the path an exit would ride through its group's first junction, estimated before anything is built: the leg to the
-  // junction, the rest of the way, and what the two turns (after the junction, into the exit's facing) add; Infinity when
-  // there is no room to make those turns without looping
-  const splitL = Math.max(P.splitLength, 1.5 * P.splitAngle * Math.PI / 180 * P.minRadius), R = P.minRadius;
-  const firstLeg = (g) => Math.max(P.straightLength + 40, P.spacing * Math.min(...g.exits.map((x) => len(x.approach))));
-  const estimate = (g, e, axis = g.axis, r1 = firstLeg(g)) => {
-    const J = mul(axis, r1);
-    const v = sub(e.approach, J), d = len(v), u = norm(v);
-    const t1 = Math.acos(Math.max(-1, Math.min(1, dot(axis, u)))), t2 = Math.acos(Math.max(-1, Math.min(1, dot(u, e.face))));
-    if (dot(v, axis) < 0 || d < splitL + P.exitStraight + 0.6 * R * (t1 + t2)) return Infinity;
-    return (r1 + d + P.exitStraight + 0.25 * R * (t1 + t2)) / len(e.pos);
-  };
-  // add singles worst-first and keep the grouping with the fewest exits estimated over the limit (a group with more exits
-  // than a junction has ways counts its overflow as over: they would need another junction)
-  const judge = (groups) => {
-    let bad = 0, worst = 0;
-    for (const g of groups) {
-      if (g.exits.length === 1) continue;
-      if (g.exits.length > P.maxBranches) bad += g.exits.length - P.maxBranches;
-      for (const e of g.exits) { const r = e.leafBy <= 1 ? Infinity : estimate(g, e); worst = Math.max(worst, r); if (r > P.maxDetour) bad++; }   // a measured overrun outranks the estimate
-    }
-    return { bad, worst };
-  };
-  const singles = [];
-  let groups = kmeans(exits, Math.min(6, exits.length)), pick = { groups, singles: [], ...judge(groups) };
-  while (singles.length < 5) {
-    let worst = null;
-    for (const g of groups) if (g.exits.length > 1) for (const e of g.exits) { const r = e.leafBy <= 1 ? Infinity : estimate(g, e); if (r > P.maxDetour - 0.02 && (!worst || r > worst.r)) worst = { e, r }; }
-    if (!worst) break;
-    singles.push(worst.e);
-    const rest = exits.filter((e) => !singles.includes(e));
-    if (!rest.length) break;
-    groups = kmeans(rest, Math.min(6 - singles.length, rest.length));
-    const j = judge(groups);
-    if (j.bad < pick.bad || (j.bad === pick.bad && j.worst < pick.worst)) pick = { groups, singles: singles.slice(), ...j };
-  }
-  groups = pick.groups; singles.length = 0; singles.push(...pick.singles);
-  // each group's first junction: a few distances (from just past the crystal to the usual spacing) and directions (the
-  // middle, and leaning a third of the way toward each exit), the one with the lowest worst estimate
-  for (const g of groups) {
-    if (g.exits.length < 2) continue;
-    let bestJ = null;
-    const dirsJ = [g.axis].concat(g.exits.map((e) => norm(add(mul(g.axis, 2), norm(e.approach)))));
-    for (const r1 of [P.straightLength + 15, P.straightLength + 40, firstLeg(g)]) for (const ax of dirsJ) {
-      const w = Math.max(...g.exits.map((e) => estimate(g, e, ax, r1)));
-      if (!bestJ || w < bestJ.w - 1e-9) bestJ = { w, ax, r1 };
-    }
-    g.axis = bestJ.ax; g.r1 = bestJ.r1;
-  }
-  const all = groups.concat(singles.map((e) => ({ axis: norm(e.approach), exits: [e] })));
-  const axes = CRYSTAL_WAYS.map(([slot, ax, sg]) => ({ slot, axis: mul(F[ax], sg) }));
-  // the labelling that best matches the groups' middles (every assignment of six points tried)
+// Every junction is a bifurcation: its exits split into two equal halves, the split that keeps each half tightest in
+// direction (as seen from the junction). A junction's two ways are named by where the halves lie round the rider (two of
+// right, up, left, down); the crystal's by two of its six points.
+function halves(dirs, cands) {
   let best = null;
-  (function rec(i, used, sum, pick) {
-    if (i === all.length) { if (!best || sum > best.sum) best = { sum, pick: pick.slice() }; return; }
-    for (let a = 0; a < 6; a++) if (!used[a]) { used[a] = 1; pick.push(a); rec(i + 1, used, sum + dot(axes[a].axis, all[i].axis), pick); pick.pop(); used[a] = 0; }
-  })(0, [], 0, []);
-  return all.map((g, i) => Object.assign(g, { slot: axes[best.pick[i]].slot }));
+  for (const key of cands) {
+    const order = dirs.map((d, i) => [key(d), i]).sort((a, b) => a[0] - b[0]).map((x) => x[1]), h = dirs.length / 2;
+    const parts = [order.slice(0, h), order.slice(h)];
+    let cost = 0;
+    for (const part of parts) { const m = norm(part.reduce((a, i) => add(a, dirs[i]), [0, 0, 0])); for (const i of part) cost += 1 - dot(dirs[i], m); }
+    if (!best || cost < best.cost - 1e-9) best = { cost, parts };
+  }
+  return best.parts;
 }
+function bifurcate(pos, F, exits) {
+  const dirs = exits.map((e) => norm(sub(e.approach, pos))), az = (v) => Math.atan2(dot(v, F.U), dot(v, F.R));
+  const cands = []; for (let i = 0; i < 36; i++) { const psi = Math.PI * i / 36; cands.push((d) => Math.cos(az(d) - psi)); }
+  const parts = halves(dirs, cands), mid = parts.map((part) => az(part.reduce((a, i) => add(a, dirs[i]), [0, 0, 0])));
+  let best = null;
+  for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) if (a !== b) { const sc = Math.cos(mid[0] - SLOTS[a][1]) + Math.cos(mid[1] - SLOTS[b][1]); if (!best || sc > best.sc) best = { sc, a, b }; }
+  return [[parts[0], best.a], [parts[1], best.b]].map(([part, si]) => ({ slot: SLOTS[si][0], dir: SLOTS[si][1], exits: part.map((i) => exits[i]) }));
+}
+const CRYSTAL_WAYS = [['ahead', 'T', 1], ['behind', 'T', -1], ['right', 'R', 1], ['left', 'R', -1], ['up', 'U', 1], ['down', 'U', -1]];
+function crystalHalves(F, exits) {
+  const dirs = exits.map((e) => norm(e.approach)), cands = [];
+  for (let i = 0; i < 200; i++) { const z = 1 - 2 * (i + 0.5) / 200, a = i * 2.399963, q = Math.sqrt(1 - z * z), d = [q * Math.cos(a), z, q * Math.sin(a)]; cands.push((v) => dot(v, d)); }
+  const parts = exits.length > 1 ? halves(dirs, cands) : [[0]], axes = CRYSTAL_WAYS.map(([slot, ax, sg]) => ({ slot, axis: mul(F[ax], sg) }));
+  const mids = parts.map((part) => norm(part.reduce((a, i) => add(a, dirs[i]), [0, 0, 0])));
+  let best = null;
+  for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) if (a !== b) { const sc = dot(axes[a].axis, mids[0]) + (mids[1] ? dot(axes[b].axis, mids[1]) : 0); if (!best || sc > best.sc) best = { sc, a, b }; }
+  return parts.map((part, k) => ({ slot: axes[k ? best.b : best.a].slot, axis: mids[k], exits: part.map((i) => exits[i]) }));
+}
+
 const STEP = 2;   // u between samples
 function sampleSplit(p0, F, slotDir, out, toward) {
   // the split peels off over splitLength, its heading easing from T by up to splitAngle (zero curvature at both ends)
@@ -643,30 +590,15 @@ function applyRoll(edge) {
 const frameEnd = (edge) => { const p = edge.pts[edge.pts.length - 1]; return { T: p.T, U: p.UU, R: p.RR, p: p.p }; };
 
 let NET = null;
-// The network is built, every path measured against the straight line from the crystal to its exit, and an exit whose path
-// runs over the detour limit is given a way of its own one junction earlier; then it is built again (at most four times,
-// the best kept).
 function build() {
   PLAN_CACHE.clear();
-  const exits = makeExits(); let best = null;
-  for (let pass = 0; pass < 4; pass++) {
-    NET = buildOnce(exits); scorePaths();
-    const over = NET.paths.filter((p) => p.detour > P.maxDetour + 1e-9), excess = over.reduce((a, p) => a + p.detour - P.maxDetour, 0);
-    if (!best || excess < best.excess) best = { net: NET, excess };
-    const movable = over.filter((p) => p.junctions > 1 && p.exit.leafBy > p.junctions - 1);
-    if (!movable.length) break;
-    for (const p of movable) p.exit.leafBy = p.junctions - 1;
-  }
-  NET = best.net; scorePaths(); measureClearance();
+  NET = buildOnce(makeExits()); scorePaths(); measureClearance();
 }
 function buildOnce(exits) {
   const edges = [], junctions = [], F0 = entranceFrame(exits), O = [0, 0, 0];
   // the way in: a straight into the crystal, the decision before its fork
   const root = { id: 0, parent: null, start: mul(F0.T, -P.straightLength), raw: [], depth: 0, slot: 'entrance', children: [] };
   sampleStraight(root.start, F0.T, P.straightLength, root.raw); finishEdge(root, F0); edges.push(root);
-  const lenSplit = 1.5 * P.splitAngle * Math.PI / 180 * P.minRadius, splitL = Math.max(P.splitLength, lenSplit);
-  // an exit nearer than this to a junction has no room for another junction on its way, so it leaves here
-  const roomForJunction = 2 * splitL + P.straightLength + 0.5 * P.twistLength + P.exitStraight + P.minRadius;
   const towardOf = (g, from) => g.exits.length === 1 ? norm(sub(g.exits[0].approach, from)) : norm(g.exits.reduce((a, e) => add(a, norm(sub(e.approach, from))), [0, 0, 0]));
   function place(edge, g, depth, make) {
     // every way is built a few ways (variantsFor); none more than 8% longer than the shortest is kept (a way that dodges a
@@ -687,10 +619,12 @@ function buildOnce(exits) {
     child.id = edges.length; edge.children.push(child); edges.push(child); addToGrid(child);
     if (g.exits.length > 1) grow(child, g.exits, depth + 1);
   }
-  // the crystal's fork: each way leaves the crystal toward its exits; a single exit's way leaves along the one arc that
-  // meets the exit's facing, a group's runs straight to its first junction
+  // forks still to come, counting the junction a group's way leads to: a group of 2^k exits has k
+  const forksIn = (g) => Math.round(Math.log2(g.exits.length));
+  // the crystal is the first bifurcation: each way leaves it toward its half of the exits; a single exit's way leaves along
+  // the one arc that meets the exit's facing, a half's runs straight to its first junction (spacing as below)
   function crystalFork() {
-    const groups = crystalGroups(F0, exits);
+    const groups = crystalHalves(F0, exits);
     junctions.push({ p: O, F: F0, depth: 0, ways: groups.map((g) => g.slot) });
     for (const g of groups) {
       const t = g.exits.length > 1 ? g.axis : towardOf(g, O), gh = { id: -1, parent: root, start: O, raw: [], mouthMin: 40 };
@@ -705,7 +639,8 @@ function buildOnce(exits) {
         sampleSteer(O, t0, ex.approach, ex.face, child.raw, v); sampleStraight(ex.approach, ex.face, P.exitStraight, child.raw);
         finishEdge(child, frameAlong(F0, t0));
       } else {
-        const r1 = g.r1 * v.ch, ax = g.axis;
+        const soonest = P.straightLength + 15, even = Math.min(...g.exits.map((e) => len(e.approach))) / (forksIn(g) + 1);
+        const r1 = Math.max(soonest, (soonest + P.spacing * Math.max(0, even - soonest)) * v.ch), ax = g.axis;
         sampleStraight(O, ax, r1, child.raw); child.direct = r1; finishEdge(child, frameAlong(F0, ax));
       }
       return child;
@@ -713,8 +648,7 @@ function buildOnce(exits) {
   }
   function grow(edge, set, depth) {
     const F = frameEnd(edge);
-    const isLeaf = (e) => e.leafBy <= depth + 1 || len(sub(e.approach, F.p)) < roomForJunction;
-    const groups = groupExits(F.p, F, set, isLeaf);
+    const groups = bifurcate(F.p, F, set);
     junctions.push({ p: F.p, F, depth, ways: groups.map((g) => g.slot) });
     // every way's mouth and every decision straight is known before any way is built, so an early way cannot cross a later one's
     for (const g of groups) {
@@ -736,12 +670,13 @@ function buildOnce(exits) {
     });
   }
   // the next junction lies where the turn toward the group naturally ends (one arc, then the straight), so the way never
-  // bends off and back onto a line: no length is spent on anything but turning toward the exits
+  // bends off and back onto a line; spacing 0 puts it as soon as the turn and twistLength allow, 1 an even share of the way
   function nextJunction(g, sp, v) {
     const dq = towardOf(g, sp.p), R = P.minRadius * v.rs, c = Math.max(-1, Math.min(1, dot(sp.t, dq))), a = Math.acos(c);
     let e = sub(dq, mul(sp.t, c)); e = len(e) > 1e-6 ? norm(e) : [0, 0, 0];
     const arcEnd = add(sp.p, add(mul(sp.t, R * Math.sin(a)), mul(e, R * (1 - Math.cos(a)))));
-    const room = Math.max(20, (P.spacing * Math.min(...g.exits.map((x) => len(sub(x.approach, sp.p)))) - R * a) * v.ch, 0.5 * P.twistLength - R * a);
+    const soonest = Math.max(40, 0.6 * P.twistLength - 0.5 * R * a), even = Math.min(...g.exits.map((x) => len(sub(x.approach, sp.p)))) / (forksIn(g) + 1) - R * a - P.straightLength;
+    const room = Math.max(20, (soonest + P.spacing * Math.max(0, even - soonest)) * v.ch);
     return { Q: add(arcEnd, mul(dq, room)), dq };
   }
   // a straight known before its tube is built (an exit's run-in, a junction's decision straight) is an obstacle from the start
@@ -934,7 +869,7 @@ function buildMeshes() {
 }
 
 // ============ camera: orbit, or ride ============
-let orbit = { yaw: 0.8, pitch: 0.45, dist: 1100 };
+let orbit = { yaw: 0.8, pitch: 0.45, dist: 1750 };
 let ride = null;
 function setMode(m) {
   P.mode = m; syncUI();
