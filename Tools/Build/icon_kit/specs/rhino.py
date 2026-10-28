@@ -267,79 +267,104 @@ REBIND += [
 ]
 
 
-# ---- Space: Blade Reach options (2026-10-28) ------------------------------------------------------------------------
+# ---- Space: Blade Reach (2026-10-28) -------------------------------------------------------------------------------
 # Space alone sets the blade's length: 24 at rest -> 40 at Space 10 (ShieldSkimmerScaleDriver.UpdateLength, the
-# Skimmer's live Space scale); at Space 5 an energized blade pops super-shields (Breaker). The card lays the katana
-# FLAT, pointing out of the card the way the sword reaches, so it reads apart from the upright Charge card.
-REACH_HILT = (30.0, 44.0)
-REACH_MAX = 92.0                 # the blade at Space 10 (40 u)
+# Skimmer's live Space scale). Space 5 is SHIELD BREAKER: below it the blade BINDS on a super-shielded prism (it sticks,
+# the turn drops to a third, the prism survives), energized or not; from Space 5 an energized blade pops it.
+# Round 1 (N / O / P): Garrett asked what N's plate fill showed - the Space level, which the length already shows, and
+# every vessel has an L5, so a mark for it was inconsistent - then "show it hitting a supershielded prism and it breaking
+# above 5". So: the katana laid FLAT (apart from the upright Charge card) at the live length, its tip in a super-shielded
+# prism that stays whole below Space 5 and is shattered from Space 5. No plate meter.
+REACH_HILT = (22.0, 74.0)
+REACH_MAX = 66.0                  # the blade at Space 10 (40 u)
 REACH_REST = REACH_MAX * 24 / 40  # at rest (24 u)
+PRISM_R = 16.0                    # the prism's half-size (px)
+SHELL_GAP, SHELL_W = 3.0, 2.6     # the super-shield shell around it
+PRISM_BITE = 6.0                  # how far the tip sits inside the prism's near point
 
 
 def reach_len(space01):
     return REACH_REST + (REACH_MAX - REACH_REST) * space01
 
 
-def flat_katana(length, w=15.0, tsuba=True, tsuka=True):
-    return katana(90.0, hilt=REACH_HILT, length=length, w=w, sori=KATANA_SORI * length / KATANA_LEN, tsuba=tsuba,
-                  tsuka=tsuka, mirror=True)
+def flat_katana(length, w=15.0):
+    return katana(90.0, hilt=REACH_HILT, length=length, w=w, sori=KATANA_SORI * length / KATANA_LEN, mirror=True)
 
 
-def reach_ghost():
-    """The reach still to grow: the blade at Space 10, minus nothing - drawn faint under the live blade."""
-    return flat_katana(REACH_MAX, tsuba=False, tsuka=False)
+def prism_centre(length):
+    hx, hy = REACH_HILT
+    return hx + length - PRISM_BITE + PRISM_R + SHELL_GAP + SHELL_W, hy - KATANA_SORI * length / KATANA_LEN * 0.9
 
 
-def reach_ticks(n=2):
-    """O: two short posts across the blade's line, at the rest length and the full reach."""
+def _diamond(cx, cy, r):
+    return [(cx, cy - r), (cx + r * 0.8, cy), (cx, cy + r), (cx - r * 0.8, cy)]
+
+
+def shielded_prism(length):
+    """A super-shielded prism (an octahedron, its two lower facets cut by a seam) inside a shell, at the tip."""
+    cx, cy = prism_centre(length)
+    core = fill(_diamond(cx, cy, PRISM_R)) & ~fill([(cx - 0.9, cy - PRISM_R), (cx + 0.9, cy - PRISM_R), (cx + 0.9, cy + PRISM_R), (cx - 0.9, cy + PRISM_R)])
+    r1 = PRISM_R + SHELL_GAP
+    shell = fill(_diamond(cx, cy, r1 + SHELL_W)) & ~fill(_diamond(cx, cy, r1))
+    return core | shell
+
+
+def shattered_prism(length):
+    """The same prism popped: its four facets and the shell's corners flung out from the tip."""
+    cx, cy = prism_centre(length)
+    m = empty()
+    r = PRISM_R
+    shards = [  # (facet triangle around the centre, the direction it flies)
+        ([(cx, cy - r), (cx + r * 0.8, cy), (cx, cy)], (0.7, -1.0)),
+        ([(cx + r * 0.8, cy), (cx, cy + r), (cx, cy)], (0.8, 0.9)),
+        ([(cx, cy + r), (cx - r * 0.8, cy), (cx, cy)], (-0.5, 1.0)),
+        ([(cx - r * 0.8, cy), (cx, cy - r), (cx, cy)], (-0.4, -1.0)),
+    ]
+    for tri, (dx, dy) in shards:
+        k = 12.0
+        tri = [(x + dx * k, y + dy * k) for x, y in tri]
+        sx = sum(x for x, _ in tri) / 3
+        sy = sum(y for _, y in tri) / 3
+        m |= fill([(sx + (x - sx) * 0.85, sy + (y - sy) * 0.85) for x, y in tri])
+    r1 = PRISM_R + SHELL_GAP + 14
+    for ang in (0, 90, 180, 270):          # the shell's four corners, broken off and thrown wide
+        a = math.radians(ang)
+        px, py = cx + math.cos(a) * r1 * (0.8 if ang in (0, 180) else 1.0), cy + math.sin(a) * r1
+        m |= fill(rotate([(px - 5, py - 1.6), (px + 5, py - 1.6), (px + 5, py + 1.6), (px - 5, py + 1.6)], ang + 45, px, py))
+    return m
+
+
+def reach_posts():
+    """O (Garrett's pick of N / O / P): two posts over the blade's line, at its rest length and its full reach, so the
+    live tip reads against how far it can grow."""
     hx, hy = REACH_HILT
     m = empty()
-    for L in (REACH_REST, REACH_MAX)[:n]:
+    for L in (REACH_REST, REACH_MAX):
         x = hx + L
-        m |= fill([(x - 1.6, hy - 22), (x + 1.6, hy - 22), (x + 1.6, hy - 12), (x - 1.6, hy - 12)])
+        m |= fill([(x - 2.4, hy - 46), (x + 2.4, hy - 46), (x + 2.4, hy - 28), (x - 2.4, hy - 28)])
     return m
 
 
-def reach_chevrons():
-    """P: two chevrons beyond the tip, pointing on - 'it reaches further'."""
-    hx, hy = REACH_HILT
-    m = empty()
-    for x in (hx + REACH_REST + 12, hx + REACH_REST + 30):
-        m |= fill([(x, hy - 16), (x + 13, hy - 3), (x, hy + 10), (x - 6, hy + 10), (x + 7, hy - 3), (x - 6, hy - 16)])
-    return m
+# (name, Space 0..1, broken, lit)
+REACH_STATES = [("Space 0: short, bound in the shield", 0.0, False, False),
+                ("Space 4: longer, still bound", 0.4, False, False),
+                ("Space 4, energized: still bound", 0.4, False, True),
+                ("Space 5+: Shield Breaker - it pops", 0.5, True, False),
+                ("Space 10, energized", 1.0, True, True)]
 
 
-SPACE_LEVELS = [("Space 0: rest reach (24)", 0.0), ("Space 5", 0.5), ("Space 10: full reach (40)", 1.0)]
-# the plate fills with the Space level; one mark at Space 5, where Breaker (the level-5 upgrade) arrives
-SPACE_MARKS = [0.5]
+def reach_card():
+    parts, states = {}, []
+    for k, (n, s01, broken, lit) in enumerate(REACH_STATES):
+        L = reach_len(s01)
+        parts[f"b{k}"] = (lambda L=L: flat_katana(L))
+        parts[f"p{k}"] = (lambda L=L, broken=broken: shattered_prism(L) if broken else shielded_prism(L))
+        parts["posts"] = reach_posts
+        states.append((n, [("posts", "white", 0.6), (f"p{k}", "shielded"), (f"b{k}", "danger" if lit else "white")]))
+    return dict(name="bladereach_round2", group="bladereach2", lockup_state=3, element="Space",
+                before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png",
+                title="Blade Reach: the katana flat at its live length between posts at its rest and full reach (O), its tip in a super-shielded prism - bound below Space 5, shattered from Space 5; no plate meter",
+                parts=parts, states=states)
 
 
-def reach_card(name, title, extra=None, ghost=True, plate=True):
-    parts, states, gauge = {}, [], {}
-    for k, (n, s01) in enumerate(SPACE_LEVELS):
-        parts[f"b{k}"] = (lambda s01=s01: flat_katana(reach_len(s01)))
-        layers = []
-        if ghost:
-            parts["ghost"] = reach_ghost
-            layers.append(("ghost", "white", 0.3))
-        if extra:
-            parts["extra"] = extra
-            layers.append(("extra", "white", 0.6))
-        layers.append((f"b{k}", "white"))
-        states.append((n, layers))
-        gauge[n] = (s01 if plate else None, None)
-    # Space 5 and up, energized: the blade lit, popping super-shields (Breaker)
-    states.append(("Space 5+, energized: Breaker (lit)", ([("ghost", "white", 0.3)] if ghost else []) + [("b1", "danger")]))
-    gauge["Space 5+, energized: Breaker (lit)"] = (0.5 if plate else None, None)
-    d = dict(name=name, group="bladereach", lockup_state=1, element="Space",
-             before=ICON_DIR + "Rhino_BladeReach-PLACEHOLDER.png", title=title, parts=parts, states=states, gauge=gauge)
-    if plate:
-        d.update(gauge_marks=SPACE_MARKS, gauge_marks_style="lines")
-    return d
-
-
-CARDS += [
-    reach_card("space_option_n", "N - THE REACH: the katana laid flat, as long as the live blade (24 at rest -> 40 at Space 10), over a faint blade at full reach; the plate fills with the Space level, a mark at Space 5 (Breaker)"),
-    reach_card("space_option_o", "O - THE MEASURE: N with two posts marking the rest length and the full reach, no faint blade", extra=lambda: reach_ticks(), ghost=False),
-    reach_card("space_option_p", "P - REACHING ON: the katana at its live length with two chevrons pointing past its tip; no plate", extra=reach_chevrons, ghost=False, plate=False),
-]
+CARDS += [reach_card()]
