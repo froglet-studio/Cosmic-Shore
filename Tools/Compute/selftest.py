@@ -106,6 +106,36 @@ def end_to_end():
         runs = hb.get("runs") or []
         if len(runs) < 2 or int(runs[-1].get("evals") or 0) < 40:
             bad.append(f"end to end: a second session did not get its own budget or was not logged: {runs[-1:] or 'no runs log'}")
+        # Manual runs: a request filed on compute-queue is taken before the automatic queue, its result is recorded,
+        # and `request list` shows it done; a token from the console runs at once on this computer.
+        envr = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-req"), FROGLET_COMPUTE_USER="selftest",
+                    FROGLET_COMPUTE_HOST="box3")
+        p = subprocess.run([sys.executable, script, "request", "new", "toy-smoke", "--tries", "24", "--fix", "x0=0.5",
+                            "--range", "x1=0:3", "--note", "self-test", "--push"], cwd=work, env=envr,
+                           capture_output=True, text=True, timeout=300)
+        rid = (p.stdout.split("request ", 1)[1].split(":", 1)[0] if "request r" in p.stdout else None)
+        if p.returncode or not rid:
+            bad.append(f"manual runs: request new --push failed:\n{p.stdout[-800:]}{p.stderr[-800:]}")
+        else:
+            subprocess.run([sys.executable, script, "run", "--no-update", "--always", "--once", "--cores", "2",
+                            "--max-evals", "40", "--queue", "bleeding-edge", "compute-queue"], cwd=work, env=envr,
+                           capture_output=True, text=True, timeout=600)
+            got = _git("show", f"refs/heads/compute/selftest/box3:requests/{rid}.json", cwd=remote) if \
+                subprocess.run(["git", "cat-file", "-e", f"refs/heads/compute/selftest/box3:requests/{rid}.json"],
+                               cwd=remote).returncode == 0 else ""
+            res = json.loads(got) if got else {}
+            if int(res.get("tries", 0)) < 24:
+                bad.append(f"manual runs: the worker did not take the request before the automatic queue: {res or 'no result'}")
+            p = subprocess.run([sys.executable, script, "request", "list"], cwd=work, env=envr, capture_output=True,
+                               text=True, timeout=300)
+            if rid not in p.stdout or " done " not in p.stdout:
+                bad.append(f"manual runs: request list does not show it done:\n{p.stdout[-600:]}")
+        import manual_runs as R
+        tok = R.token(R.build("toy-smoke", 16, fix=["x2=1.0"], note="now"))
+        p = subprocess.run([sys.executable, script, "run", "--no-push", "--request", tok, "--cores", "2",
+                            "--queue", "bleeding-edge"], cwd=work, env=envr, capture_output=True, text=True, timeout=600)
+        if p.returncode or "manual run" not in p.stdout:
+            bad.append(f"manual runs: a token did not run at once:\n{p.stdout[-800:]}{p.stderr[-400:]}")
         env = dict(env0, FROGLET_COMPUTE_HOME=os.path.join(tmp, "cache-board"))
         p = subprocess.run([sys.executable, script, "board", "--queue", "bleeding-edge"], cwd=work, env=env,
                            capture_output=True, text=True, timeout=300)
@@ -225,6 +255,10 @@ def run(quick=False):
     con = _console.self_test()
     print("console: " + ("ok (approvals: core four only, same epoch, same best)" if not con else "FAILED"))
     failures += con
+    import manual_runs
+    mr = manual_runs.self_test()
+    print("manual runs: " + ("ok (refuses everything outside its search, narrows and fixes, tokens round-trip)" if not mr else "FAILED"))
+    failures += mr
     sched = schedule_window()
     print("schedule window: " + ("ok" if not sched else "FAILED"))
     failures += sched

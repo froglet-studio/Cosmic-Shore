@@ -96,7 +96,7 @@ def _home_worktree(ref):
 
 def cmd_run(args):
     import worker as W
-    if args.in_home or args.no_update or args.local:
+    if args.in_home or args.no_update or args.local or args.request:
         args.once = True if args.in_home else args.once
         return W.run(args)
     try:
@@ -139,6 +139,59 @@ def cmd_run(args):
 
 
 # ── doctor ───────────────────────────────────────────────────────────────────
+
+def cmd_request(args):
+    """Manual runs (manual_runs.py): make one, list them, cancel one."""
+    import manual_runs as R
+    queue = [r.replace("origin/", "") for r in L.QUEUE_REFS]
+    if args.rcmd == "new":
+        if args.token:
+            req = R.from_token(args.token)
+        elif args.job:
+            req = R.build(args.job, args.tries, args.fix, args.range, args.arg, args.machine, args.note)
+        else:
+            print("name a search (compute.py request new <job> ...) or pass --token from the console")
+            return 2
+        if not args.local:
+            L.fetch(queue, results=False, quiet=True)
+        jobs = L.load_jobs(local=True) if args.local else L.load_jobs()
+        bad = R.problems(req, jobs.get(req.get("job")))
+        if bad:
+            print("this request cannot run:\n  " + "\n  ".join(bad))
+            return 2
+        tok = R.token(req)
+        print(f"request {req['id']}: {req['job']}, {req['budget']['tries']} tries" + (f" - {req['note']}" if req.get("note") else ""))
+        print(f"run it now on this computer:   python3 Tools/Compute/compute.py run --request {tok}")
+        if args.push:
+            sha = R.file(req)
+            print(f"filed on {R.BRANCH} @ {(sha or '?')[:9]}: the team's computers take it when they are free" if sha
+                  else "could not push to " + R.BRANCH)
+            return 0 if sha else 1
+        print(f"for the team's computers:      python3 Tools/Compute/compute.py request new --token {tok} --push")
+        return 0
+    if args.rcmd == "list":
+        if not args.local and not args.no_fetch:
+            L.fetch(queue, results=True, quiet=True)
+        reqs = R.load(local=True) if args.local else R.load()
+        machines = L.gather()
+        if not reqs:
+            print("no manual runs")
+        for r in sorted(reqs.values(), key=lambda r: r.get("created", 0)):
+            st = R.progress(r, machines)
+            best = "-" if st["best"] is None else f"{st['best']:.5g}"
+            print(f"{r['id']}  {st['state']:<9} {st['tries']:>6}/{st['budget']:<6} best {best:<9} {r['job']}  "
+                  f"by {r.get('by')}" + (f" on {st['running_on']}" if st["running_on"] else "") + (f"  \"{r['note']}\"" if r.get("note") else ""))
+        return 0
+    if args.rcmd == "cancel":
+        L.fetch(queue, results=False, quiet=True)
+        r = R.load().get(args.id)
+        if not r:
+            print(f"no request {args.id} on the queue")
+            return 2
+        r["cancelled"] = True
+        return 0 if R.file(r) else 1
+    return 2
+
 
 def cmd_doctor(args):
     caps = L.capabilities(refresh=True)
@@ -276,6 +329,8 @@ def main(argv=None):
     p.add_argument("--session", type=float, default=60.0, help="minutes per job before re-ranking (default 60)")
     p.add_argument("--progress-minutes", type=float, default=5.0, help="publish progress this often while a session runs")
     p.add_argument("--repo", help="the Cosmic-Shore checkout, when running from a copy outside it")
+    p.add_argument("--request", help="a manual run: a request id, a token from the console, or a request file; runs now")
+    p.add_argument("--no-requests", action="store_true", help="skip other people's manual runs (the automatic queue only)")
     p.add_argument("--job", help="only this job")
     p.add_argument("--once", action="store_true", help="one session, then exit")
     p.add_argument("--max-evals", type=int, default=0)
@@ -310,6 +365,24 @@ def main(argv=None):
     p.add_argument("--standalone", action="store_true", help="write a full HTML document (GitHub Pages, Cloudflare, a local server)")
     p.add_argument("--approvals", help="check approvals exported from the page's store instead of building")
     p.add_argument("--profiles", help="with --approvals: the profiles the store's ids resolve to")
+    p = sub.add_parser("request", help="manual runs: new, list, cancel")
+    rs = p.add_subparsers(dest="rcmd", required=True)
+    q = rs.add_parser("new", help="a manual run of one search with your settings")
+    q.add_argument("job", nargs="?")
+    q.add_argument("--tries", type=int, default=500, help="how many tries in total (default 500)")
+    q.add_argument("--fix", action="append", default=[], metavar="NAME=VALUE", help="hold a setting at a value")
+    q.add_argument("--range", action="append", default=[], metavar="NAME=LOW:HIGH", help="search a setting in a narrower range")
+    q.add_argument("--arg", action="append", default=[], metavar="KEY=VALUE", help="set one of the evaluator's settings")
+    q.add_argument("--machine", default="any", help="any (default) or <person>/<computer>")
+    q.add_argument("--note", default="", help="what you want to learn, in your words")
+    q.add_argument("--token", help="a request made on the Compute Console (instead of the options above)")
+    q.add_argument("--push", action="store_true", help="file it on compute-queue for the team's computers")
+    q.add_argument("--local", action="store_true", help="check it against this checkout's job files")
+    q = rs.add_parser("list", help="every manual run and how far it has got")
+    q.add_argument("--local", action="store_true")
+    q.add_argument("--no-fetch", action="store_true")
+    q = rs.add_parser("cancel", help="stop a manual run (the computers drop it)")
+    q.add_argument("id")
     p = sub.add_parser("eval")
     p.add_argument("job")
     p.add_argument("--params")
@@ -332,6 +405,8 @@ def main(argv=None):
         return cmd_run(args)
     if args.cmd == "doctor":
         return cmd_doctor(args)
+    if args.cmd == "request":
+        return cmd_request(args)
     if args.cmd == "console":
         import console
         return console.run(args)

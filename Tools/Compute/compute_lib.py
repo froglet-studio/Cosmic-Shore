@@ -19,6 +19,7 @@ import shutil
 import socket
 import subprocess
 import tarfile
+import tempfile
 import sys
 import time
 
@@ -221,6 +222,44 @@ def export_tree(sha, paths, parent, name, cwd=None, keep=3):
     for d in old[:max(0, len(old) - (keep - 1))]:
         shutil.rmtree(os.path.join(parent, d), ignore_errors=True)     # a folder still in use stays; next time
     return path
+
+
+def commit_files(branch, files, message, push=True, cwd=None, quiet=False):
+    """Add or replace `files` ({path: text}) on origin/<branch> as one new commit, with git plumbing (a private index;
+    the checkout is never touched), and push it. The branch is created as a root commit holding only these files when
+    it does not exist yet. Returns the commit's sha, or None when the push failed."""
+    cwd = cwd or REPO
+    gitdir = git("rev-parse", "--absolute-git-dir", cwd=cwd).strip()
+    tmp = tempfile.mkdtemp(prefix="compute-commit-")
+    ident = dict(os.environ, GIT_AUTHOR_NAME=f"froglet-compute ({identity(cwd)[0]})", GIT_AUTHOR_EMAIL="compute@froglet.invalid",
+                 GIT_COMMITTER_NAME=f"froglet-compute ({identity(cwd)[0]})", GIT_COMMITTER_EMAIL="compute@froglet.invalid")
+    try:
+        for attempt in range(4):
+            fetch([branch], results=False, cwd=cwd, quiet=True)
+            parent = rev(f"origin/{branch}", cwd=cwd)
+            env = dict(ident, GIT_INDEX_FILE=os.path.join(tmp, "index"), GIT_DIR=gitdir)
+            if os.path.exists(env["GIT_INDEX_FILE"]):
+                os.remove(env["GIT_INDEX_FILE"])
+            if parent:
+                git("read-tree", parent, cwd=cwd, env=env)
+            for path, text in files.items():
+                blob = git("hash-object", "-w", "--stdin", cwd=cwd, env=env, input=text).strip()
+                git("update-index", "--add", "--cacheinfo", f"100644,{blob},{path}", cwd=cwd, env=env)
+            tree = git("write-tree", cwd=cwd, env=env).strip()
+            sha = git("commit-tree", tree, "-m", message, *(["-p", parent] if parent else []), cwd=cwd, env=env).strip()
+            if not push:
+                return sha
+            try:
+                git("push", "--quiet", "origin", f"{sha}:refs/heads/{branch}", cwd=cwd, timeout=600)
+                git("update-ref", f"refs/remotes/origin/{branch}", sha, cwd=cwd)
+                return sha
+            except Exception as e:
+                if attempt == 3:
+                    log(f"push to {branch} failed: {e}", quiet)
+                    return None
+                time.sleep(2 ** (attempt + 1))         # someone else pushed: rebuild on top of theirs
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 # ── jobs ─────────────────────────────────────────────────────────────────────
@@ -541,14 +580,22 @@ def result_branches(cwd=None):
 
 
 def read_branch_results(ref, cwd=None):
-    """{heartbeat, jobs: {job: {epoch: {best, state_summary, archive}}}} from one machine's results commit."""
-    out = {"heartbeat": None, "jobs": {}}
+    """{heartbeat, jobs: {job: {epoch: {best, state_summary, archive}}}, requests: {id: result}} from one machine's
+    results commit."""
+    out = {"heartbeat": None, "jobs": {}, "requests": {}}
     hb = git_ok("show", f"{ref}:heartbeat.json", cwd=cwd)
     if hb:
         try:
             out["heartbeat"] = json.loads(hb)
         except Exception:
             pass
+    for name in (git_ok("ls-tree", "--name-only", ref, "requests/", cwd=cwd) or "").split():
+        if name.endswith(".json"):
+            try:
+                r = json.loads(git("show", f"{ref}:{name}", cwd=cwd))
+                out["requests"][r.get("id") or os.path.basename(name)[:-5]] = r
+            except Exception:
+                pass
     listing = git_ok("ls-tree", "-r", "--name-only", ref, "jobs", cwd=cwd) or ""
     for path in listing.split("\n"):
         m = re.fullmatch(r"jobs/([^/]+)/([^/]+)/(best|summary|archive|unit-[^/]+)\.json", path.strip())

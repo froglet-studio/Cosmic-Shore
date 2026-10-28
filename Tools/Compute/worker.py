@@ -94,7 +94,8 @@ def _eval_one(params):
 
 class Pool:
     def __init__(self, cores, root, job):
-        ev_args = dict(job["evaluator"].get("args") or {}, _space=job.get("space") or [], _job=job["id"])
+        ev_args = dict(job["evaluator"].get("args") or {}, _space=job.get("space_full") or job.get("space") or [],
+                       _job=job["id"])
         self.args = (TOOLS, root, job["evaluator"]["module"], ev_args)
         self.cores = cores
         self.timeout = float(job["evaluator"].get("timeout", 900))
@@ -217,6 +218,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
     elif isinstance(opt, O.MapElites) and not saved and job.get("seeds"):
         opt.seeds = [space.encode(s) for s in job["seeds"]]
 
+    fixed = dict(job.get("fixed") or {})                  # a manual run's settings held at a value
     pool = Pool(cores, root, job)
     t_start = time.time()
     evals = int(summary.get("evals", 0))
@@ -232,6 +234,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
         base = module.baseline(ev_args) if hasattr(module, "baseline") else None
         if not base and any(d.get("init") is not None for d in job["space"]):
             base = space.decode(space.init_point())        # a job's `init` values ARE the shipped numbers
+            base = dict(job.get("fixed_init") or {}, **base)   # a manual run's fixed settings, at today's values
         if base:
             r = pool.map([base])[0]
             summary["baseline"] = {"loss": r["loss"], "metrics": r.get("metrics", {}), "params": base,
@@ -250,7 +253,7 @@ def search_session(job, root, sha, ident, machines, presence, minutes, cores, ma
                 stopped = "max evals"
                 break
             us = opt.ask()
-            params = [space.decode(u) for u in us]
+            params = [dict(fixed, **space.decode(u)) for u in us]
             results = pool.map(params)
             n_err = sum(1 for r in results if r.get("error"))
             for r in results:
@@ -479,12 +482,30 @@ def ranked(jobs, machines, caps):
     return rows
 
 
+def _resolve_request(text, queue, local):
+    """--request: a token from the console, a request file, or the id of a request on the queue refs."""
+    import manual_runs as R
+    if os.path.isfile(text):
+        return L.read_json(text)
+    if R.ID.fullmatch(text):
+        return (R.load(local=True) if local else R.load([f"origin/{q}" for q in queue])).get(text)
+    try:
+        return R.from_token(text)
+    except Exception:
+        return None
+
+
 def run(args):
+    import manual_runs as R
     quiet = args.quiet
     L.lower_priority()
     caps = L.capabilities()
     ident = L.identity()
+    me = f"{ident[0]}/{ident[1]}"
     cores = args.cores or max(1, (os.cpu_count() or 2) - 1)
+    manual = getattr(args, "request", None)
+    if manual:                      # a manual run is now, on this computer: it does not wait for idle
+        args.always, args.between, args.once = True, None, True
     try:
         presence = Presence(args.when_idle, always=args.always, on_battery=args.on_battery, quiet=quiet,
                             between=args.between)
@@ -511,8 +532,33 @@ def run(args):
             L.fetch(queue, results=True, quiet=quiet)
         jobs = L.load_jobs(local=args.local) if args.local else L.load_jobs([f"origin/{q}" for q in queue])
         machines = L.gather()
-        rows = ranked(jobs, machines, caps)
-        pick = None
+        # Manual runs first: the one asked for on the command line, else the oldest open request this computer may run.
+        req, job, max_evals = None, None, args.max_evals
+        if manual:
+            req = _resolve_request(manual, queue, args.local)
+            base = jobs.get((req or {}).get("job"))
+            why = "not a request id, token or file" if req is None else (R.problems(req, base) or
+                                                                          ([L.untrusted(base)] if L.untrusted(base) else []))
+            if why:
+                L.log("this request cannot run: " + "; ".join(why), False)
+                return 2
+            job = R.derive(base, req)
+        elif not args.job and not getattr(args, "no_requests", False):
+            reqs = R.load(local=True) if args.local else R.load([f"origin/{q}" for q in queue])
+            got = R.pick(reqs, jobs, machines, me, caps)
+            if got:
+                req, job = got
+        if req:
+            st = R.progress(req, machines)
+            left = st["budget"] - st["tries"]
+            if left <= 0:
+                L.log(f"request {req['id']} is already done ({st['tries']} of {st['budget']} tries)", quiet)
+                return 0
+            max_evals = min(left, args.max_evals) if args.max_evals else left
+            L.log(f"manual run {req['id']} by {req.get('by')}: {job['id']}, {left} tries left"
+                  + (f" - {req['note']}" if req.get("note") else ""), quiet)
+        rows = [] if req else ranked(jobs, machines, caps)
+        pick = {"job": job} if req else None
         for r in rows:
             if args.job and r["job"]["id"] != args.job:
                 continue
@@ -527,13 +573,15 @@ def run(args):
             time.sleep(1800)
             continue
         job = pick["job"]
+        if req is None:
+            max_evals = args.max_evals
         module = _evaluator(job)
         root, sha = prepare_target(job, module, quiet=quiet)
         prev_hb = L.read_json(os.path.join(folder, "heartbeat.json"), {}) or {}
         since = L.now()
         hb = {"user": ident[0], "host": ident[1], "caps": caps, "cores": cores, "version": VERSION,
               "updated": since, "current": {"job": job["id"], "since": since, "minutes": args.session,
-                                            "max_evals": args.max_evals or None},
+                                            "max_evals": max_evals or None, "request": (req or {}).get("id")},
               "runs": prev_hb.get("runs", []), "totals": prev_hb.get("totals", {"sessions": 0})}
         last_progress = [time.time()]
 
@@ -558,7 +606,18 @@ def run(args):
             if not args.no_push:
                 L.publish(folder, *ident, f"compute: {job['id']} started", quiet=quiet)
             out = search_session(job, root, sha, ident, machines, presence, args.session, cores,
-                                 max_evals=args.max_evals, quiet=quiet, on_progress=progress)
+                                 max_evals=max_evals, quiet=quiet, on_progress=progress)
+            if req:
+                # This computer's part of the request: its tries so far and its best, read by the console and by
+                # every worker deciding whether the request is done.
+                path = os.path.join(folder, "requests", req["id"] + ".json")
+                mine = L.read_json(path, {}) or {}
+                best = (out.get("best") or {}).get("loss")
+                if L.finite(mine.get("best")) and (best is None or mine["best"] < best):
+                    best = mine["best"]
+                L.write_json(path, {"id": req["id"], "job": req["job"], "derived": job["id"], "epoch": out.get("epoch"),
+                                    "tries": int(mine.get("tries", 0)) + int(out.get("session_evals") or 0),
+                                    "best": best, "updated": L.now(), "stopped": out.get("stopped")})
         hb["updated"] = L.now()
         totals = hb.get("totals") or {"sessions": 0}
         totals["sessions"] = int(totals.get("sessions", 0)) + 1
@@ -566,10 +625,11 @@ def run(args):
         hb["last"] = {k: v for k, v in out.items() if k != "best"}
         # The runs log the console shows: one row per session, newest last, the last 30 kept.
         hb["runs"] = (hb.get("runs") or [])[-29:] + [{
-            "job": job["id"], "epoch": out.get("epoch"), "unit": out.get("unit"), "start": since, "end": L.now(),
+            "job": job["id"], "request": (req or {}).get("id"), "epoch": out.get("epoch"), "unit": out.get("unit"),
+            "start": since, "end": L.now(),
             "evals": out.get("session_evals"), "stopped": out.get("stopped"), "best_start": out.get("best_start"),
             "best_end": (out.get("best") or {}).get("loss")}]
-        if out.get("stopped") != "budget":
+        if out.get("stopped") != "budget" or args.once:
             hb["current"] = {}
         L.write_json(os.path.join(folder, "heartbeat.json"), hb)
         L.log(f"{job['id']}: session over ({out.get('stopped')}, {out.get('evals', '-')} evals)", quiet)
