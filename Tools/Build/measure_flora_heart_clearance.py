@@ -86,8 +86,13 @@ def box_distance(p, c, R, size):
 
 
 def dotnet():
+    """A dotnet whose SDK can build the harness (it targets net10.0, as Amoebius's Port does) - DOTNET_ROOT may point at
+    the dotnet 8 SDK the other build gates (flora_form_harness, swarm_core_harness) compile with, so it is skipped then."""
     for root in (os.environ.get("DOTNET_ROOT"), "/opt/dotnet", str(pathlib.Path.home() / ".dotnet")):
-        if root and (pathlib.Path(root) / "dotnet").exists():
+        if not root or not (pathlib.Path(root) / "dotnet").exists():
+            continue
+        sdks = [d.name for d in (pathlib.Path(root) / "sdk").glob("*") if d.is_dir()]
+        if any(int(s.split(".")[0]) >= 10 for s in sdks if s.split(".")[0].isdigit()):
             return str(pathlib.Path(root) / "dotnet"), root
     exe = shutil.which("dotnet")
     if exe:
