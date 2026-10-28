@@ -112,7 +112,7 @@ MonoBehaviour:
       RingGirthFloor: 0.55
     ShellScale: 1
   - Element: 2
-    CrossSection: {x: 0.00944214, y: 0.00416565}
+    CrossSection: {x: 0.0167357, y: 0.00738341}
     Rules:
       Field: 0
       SwirlDegrees: 0
@@ -130,13 +130,13 @@ MonoBehaviour:
       RadiusMin: 0
       RadiusMax: 0
       MinRun: 0
-      LengthFactor: 0.3
+      LengthFactor: 0.511778
       GirthTaper: 1
       TwistDegreesPerStep: 0
       DiveCount: 6
       DiveStepFraction: 0.4
       DiveAngleDegrees: 60
-      DiveStopRadius: 0.0524265
+      DiveStopRadius: 0.155694
       DiveMaxSteps: 160
       DiveSwirlDegrees: 0
       DiveStrideCeiling: 0.45
@@ -158,7 +158,7 @@ MonoBehaviour:
       GasketOctave: 0.75
       DiscRelaxRate: 0
       RingGirthFloor: 0.55
-    ShellScale: 3.33333
+    ShellScale: 1.95397
   - Element: 3
     CrossSection: {x: 0.0384507, y: 0.00319209}
     Rules:

@@ -29,9 +29,9 @@ cannot have is worse than a bound you can measure.
 
 THE ARMOUR IS MASS'S (Docs/ECOSYSTEM.md §65; it was Charge's until 2026-10-28). Armouring multiplies a plant's own
 silhouette by exactly 0.5 * CIRCUMSCRIBING_SCALE^2 = 4.5, so an armoured Mass plant is the DENSEST of the four while
-shielded - and, because Mass has SIZE (its prisms are the Time prism x1.2786 and its shell is grown until its
-octahedra clear along every chain, mandelbulb_flora_model.armour_growth), it is no longer the sparsest stripped: that
-half of the old Charge ordering was a statement about a shrunk prism and is retired with it.
+shielded - its SHIELD carries its volume (its prisms are the Time prism x0.64, and its shell is spread past its reach
+as far as Space's span allows, mandelbulb_flora_model.armour_growth, so its chain's shields TOUCH: SPACE ALWAYS
+OUT-SPANS MASS, Garrett 2026-10-28). Its bare silhouette's place in the old Charge ordering is not gated.
 
 MASS IS THEREFORE MEASURED ARMOURED WHEREVER THE QUESTION IS "WHAT IS ON SCREEN" - its leaves are shielded by law, so
 the bare box is a body nobody sees. That is the gasket LADDER (`arena_octaves(shield=True)`) and it is NOT the
@@ -173,10 +173,12 @@ BULB_ORDER = {"Charge": 8, "Mass": 5, "Space": 3, "Time": 12}
 # why a species-shaped claim here would be wrong half the time.
 #
 # Charge's dash was 0.45 - fitted on the SURFACE (34.6% fused armoured against the siblings' 94.9% bare, the §50
-# result) - which is why two of the four species fused along their chain. Mass's dash is M.MASS_ARMOUR_DASH = 0.30 on
-# EVERY species (the shell carries the rest, M.armour_growth), so its chain closed form is 1/(3 x 0.30) = 1.11 on all
-# four. The chain is still MEASURED AND REPORTED beside the bound, with its closed form, and the bound states what the
-# gate's own prose always described: "the Fall's BUNDLE has fused into a rod".
+# result) - which is why two of the four species fused along their chain. Mass's dash FOLLOWS from its span cap
+# (Docs/ECOSYSTEM.md §65): 1 / M.armour_growth, ~0.51 on a walking species and 0.58 on Watershed, so its chain closed
+# form is 1/(3 x 0.51) = 0.65 - a chain whose shields TOUCH, by the same design as a growth-rule plant's joints (the
+# x3.33 spread that would clear it puts Mass past Space's span). The chain is MEASURED AND REPORTED beside the bound,
+# with its closed form, and the bound states what the gate's own prose always described: "the Fall's BUNDLE has fused
+# into a rod".
 CORE_RADIUS_FRACTION = 0.15
 CORE_ARMOURED_MAX = 0.15
 
@@ -862,9 +864,9 @@ def fall_report(species, element, report):
     out["surf_len_max"] = max(surf_len, default=0.0)
     out["surf_len_median"] = median(surf_len) if surf_len else float("nan")
     out["hole_bound"] = DIVE_HOLE_FACTOR * out["surf_len_median"]
-    # An ARMOURED ribbon is DASHED (M.MASS_ARMOUR_DASH, Docs/ECOSYSTEM.md §65): its prisms fill 0.30 of the stride that
-    # spaces them, so an intact chain already leaves 2.33 prism lengths of air between two neighbours. The bound is
-    # therefore stated in STRIDES there (median prism / its length factor) - "a refused prism" is a missing stride.
+    # An ARMOURED ribbon is DASHED (1 / M.armour_growth, Docs/ECOSYSTEM.md §65): its prisms fill ~0.51 of the stride
+    # that spaces them, so an intact chain already leaves air between two neighbours. The bound is therefore stated in
+    # STRIDES there (median prism / its length factor) - "a refused prism" is a missing stride.
     out["hole_unit"] = "prism"
     if element in M.ARMOURED and rules.length_factor > 0:
         out["hole_bound"] /= rules.length_factor
@@ -1525,7 +1527,7 @@ def watershed_gates(species, element, w):
     if any(v == 0 for v in w["lane_share"].values()):
         bad.append(f"{tag} LANES: only {sum(1 for v in w['lane_share'].values() if v)} of "
                    f"{w['lanes_authored']} authored lanes reached the plant at all")
-    if element not in M.ARMOURED:          # the armoured element is DASHED on purpose (M.MASS_ARMOUR_DASH)
+    if element not in M.ARMOURED:          # the armoured element is DASHED on purpose (1 / M.armour_growth)
         lo, hi = LENGTH_FACTOR_MIN, 1.0 / M.CLAIM_FACTOR
         if not (lo <= w["length_factor"] < hi):
             bad.append(f"{tag} LENGTH FACTOR {w['length_factor']:.4f} outside [{lo}, {hi:.4f}) "
@@ -1574,7 +1576,7 @@ OCTAVE_FRAME_MIN = 0.005         # share of the arena frame one octave must pain
 OCTAVE_PX_MIN = 2.0              # its median prism's projected LENGTH, pixels
 OCTAVE_LEGIBLE_MIN = 3           # octaves that must clear BOTH
 TANGENCY_MEDIAN_MAX = 0.05       # a child's worst gap to its three parents, over rho_child
-# N: Space < each of the other three. Mass shares Time's step from 2026-10-28 (Docs/ECOSYSTEM.md §65): its prism is the Time prism x1.2786,
+# N: Space < each of the other three. Mass shares Time's step from 2026-10-28 (Docs/ECOSYSTEM.md §65): its prism is the Time prism x0.64,
 # shape kept, so its rings sample like Time's and Mass shows itself by its SIZE and its dashed armour, not by a finer
 # ring. Space stays strictly the coarsest - that is its long axis.
 COARSENESS_ORDER = ("Space", "Charge", "Time", "Mass")
@@ -2090,7 +2092,7 @@ def armoured_census(boxes, chain=frozenset()):
     Both are returned because they answer different questions and only one of them is a
     tuning surface. See CORE_ARMOURED_MAX: the chain's touching scale is the closed form
     1/(3 x LengthFactor), which contains no dive parameter and no cross-section, so it is a
-    fact about the dash (M.MASS_ARMOUR_DASH) against the 1/3 cliff rather than a number this species can move."""
+    fact about the dash (1 / M.armour_growth) against the 1/3 cliff rather than a number this species can move."""
     out = {"pairs": 0, "inter": 0, "fraction": 0.0,
            "chain_pairs": 0, "chain_inter": 0, "chain_fraction": 0.0,
            "bundle_pairs": 0, "bundle_inter": 0, "bundle_fraction": 0.0}
@@ -2177,8 +2179,8 @@ def shield_report(reports, species="FractalFoliage"):
     # exactly the Skein rail's finding (a rail's armour meets its neighbour's and "which rail am
     # I on" loses its answer). Excluding the chain here would measure everything except the one
     # thing that goes wrong. What is done about it is that the armoured ribbon is DASHED
-    # (LengthFactor M.MASS_ARMOUR_DASH): its prisms are shorter than the stride that spaces them,
-    # so the armour has room to close and the dashes are what the octahedra fill in.
+    # (LengthFactor 1 / M.armour_growth): its prisms are shorter than the stride that spaces them,
+    # so the dashes are what the octahedra fill in - to touching, since Space's span caps the spread (§65).
     inter, n, frac = armoured_fraction(charge["boxes"])
     out["armoured_pairs"] = n
     out["armoured_interpenetrating"] = inter
@@ -2535,8 +2537,8 @@ def measure_species(species, args):
         if s["armoured_fraction"] > s["sibling_bare"]:
             bad.append(f"{ARMOURED} wearing its shields is MORE fused ({s['armoured_fraction']:.1%}) "
                        f"than a sibling is bare ({s['sibling_bare']:.1%})")
-        # Shielded, the armoured plant is the DENSEST of the four - the two-pass grazing cost made visible. (Its bare
-        # silhouette is no longer the sparsest: Mass has SIZE, Docs/ECOSYSTEM.md §65.)
+        # Shielded, the armoured plant is the DENSEST of the four - the two-pass grazing cost made visible, and its
+        # shield is what carries its volume (Docs/ECOSYSTEM.md §65).
         if not s["armoured_area"] > s["sibling_bare_area"]:
             bad.append(f"the {ARMOURED} ordering flipped: armoured must be the DENSEST of the four "
                        f"({s['armoured_area']:,.0f} against the siblings' bare {s['sibling_bare_area']:,.0f})")
@@ -2556,8 +2558,8 @@ def measure_species(species, args):
                        f"this bound: its touching scale is the closed form 1/(3 x "
                        f"LengthFactor {s['charge_length_factor']:.4f}) = "
                        f"{s['chain_touching_scale']:.4f}, which no dive dial and no "
-                       f"cross-section appears in — the lever there is M.MASS_ARMOUR_DASH, a §65 "
-                       f"decision)")
+                       f"cross-section appears in — the lever there is the span cap "
+                       f"M.MASS_SPAN_UNDER_SPACE, a §65 decision)")
 
         for element in M.ELEMENTS:
             bad += skeleton_gates(species, element, skeletons[element])
@@ -2580,9 +2582,13 @@ def measure_species(species, args):
             x, y, z, lf = M.elemental_prism(species, e)
             axes = (x, y, z * lf)
             asp[e] = max(axes) / min(axes)
-        if max(vol, key=vol.get) != "Mass":
-            bad.append(f"MASS must carry the most cumulative prism volume; "
-                       f"{max(vol, key=vol.get)} does ({vol})")
+        # MASS's volume is its SHIELD's (Docs/ECOSYSTEM.md §65: "the shielding should increase the volume of mass"):
+        # its octahedra are 4.5x its boxes, so it is the ARMOURED plant that must carry the most - its box is the
+        # lightest by design (0.64^3 of the neutral prism).
+        seen = dict(vol, Mass=4.5 * vol["Mass"])
+        if max(seen, key=seen.get) != "Mass":
+            bad.append(f"MASS, shielded, must carry the most cumulative volume; "
+                       f"{max(seen, key=seen.get)} does ({ {k: round(v) for k, v in seen.items()} }, Mass x4.5)")
         if vol["Space"] >= vol["Time"]:
             bad.append(f"SPACE ({vol['Space']:,.0f}) must carry LESS cumulative prism volume "
                        f"than TIME ({vol['Time']:,.0f}) - its long axis is what it trades")
@@ -2590,7 +2596,7 @@ def measure_species(species, args):
             bad.append(f"SPACE must have the highest prism aspect ratio; "
                        f"{max(asp, key=asp.get)} does ({ {k: round(v,2) for k,v in asp.items()} })")
         # MASS IN TIME'S SHAPE (Docs/ECOSYSTEM.md §65): the "most cubic" Mass prism is retired with the chunky plate.
-        # The authored prism (before its girth) is the Time prism x1.2786 on every axis, so the aspects agree to the
+        # The authored prism (before its girth) is the Time prism x0.64 on every axis, so the aspects agree to the
         # ratio the per-element girth compensation (VOLUME_GAIN, uniform on the cross-section) leaves between them.
         ratio = asp["Mass"] / asp["Time"]
         gain_ratio = (M.VOLUME_GAIN.get(species, {}).get("Mass", 1.0)
@@ -2598,14 +2604,16 @@ def measure_species(species, args):
         if not (min(1.0, gain_ratio, 1.0 / gain_ratio) - 1e-3 <= ratio <= max(1.0, gain_ratio, 1.0 / gain_ratio) + 1e-3):
             bad.append(f"MASS must keep TIME's prism shape (aspect {asp['Mass']:.3f} against {asp['Time']:.3f}, "
                        f"x{ratio:.3f}; the girth compensation alone accounts for x{gain_ratio:.3f})")
-        # SPACE trades that volume for the assembly's BOUNDING VOLUME - against the NEUTRAL plant. Against MASS it no
-        # longer can: Mass has SIZE and its armour grows its shell (M.armour_growth), so it out-spans every element.
+        # SPACE trades that volume for the assembly's BOUNDING VOLUME, and it ALWAYS out-spans MASS (Garrett,
+        # 2026-10-28: "space should always have greater span"): Mass's armour spreads its shell (M.armour_growth) only up
+        # to M.MASS_SPAN_UNDER_SPACE of Space's, so it out-spans the neutral plant and never Space.
         if reports["Space"]["radius"] <= reports["Time"]["radius"]:
             bad.append(f"SPACE's plant ({reports['Space']['radius']:.0f}) must reach further "
                        f"than TIME's ({reports['Time']['radius']:.0f}) - the bounding volume "
                        f"is what its lost prism volume buys")
-        if reports["Mass"]["radius"] <= max(reports[e]["radius"] for e in M.ELEMENTS if e != "Mass"):
-            bad.append(f"MASS has SIZE: its plant ({reports['Mass']['radius']:.0f}) must out-span every other element")
+        if reports["Space"]["radius"] <= max(reports[e]["radius"] for e in M.ELEMENTS if e != "Space"):
+            bad.append(f"SPACE must out-span every element, Mass included: Space {reports['Space']['radius']:.0f}, "
+                       f"Mass {reports['Mass']['radius']:.0f}, Time {reports['Time']['radius']:.0f}")
         if bad:
             print(f"\nFAIL ({len(bad)} bounds broken)")
             # The failures go to stderr and the report to stdout, so a redirect that merges

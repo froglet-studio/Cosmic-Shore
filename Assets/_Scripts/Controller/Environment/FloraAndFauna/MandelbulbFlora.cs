@@ -60,10 +60,11 @@ namespace CosmicShore.Gameplay
         /// <para>The cross-section is per-element for one geometric reason: <b>a MASS plant's
         /// leaves are shielded by law</b> (<c>ElementalArmour</c>, Docs/ECOSYSTEM.md §65 - Charge's
         /// until 2026-10-28), and a shield replaces the box with the octahedron CIRCUMSCRIBING it,
-        /// reaching 1.5 x the prism on every axis. A Mass prism is at LAW size (the Time prism x1.2786,
-        /// its shape kept), so the fit grows the PLANT instead of thinning the prism: its ribbon is laid
-        /// at a 0.30 dash of its stride and its shell is grown by <see cref="ShellScale"/>, which keeps the
-        /// world prism law-sized while a curve's consecutive octahedra clear (s* = 1/(3 x 0.30)).</para>
+        /// reaching 1.5 x the prism on every axis. A Mass prism is at LAW size (the Time prism x0.64,
+        /// its shape kept) and its SHIELD carries its volume: the ribbon is laid as a dash of its stride
+        /// and its shell is spread by <see cref="ShellScale"/>, which keeps the world prism law-sized,
+        /// only as far as Space's span allows (0.97 x Space's reach), so a curve's consecutive octahedra
+        /// TOUCH rather than clear - Space always out-spans Mass.</para>
         /// </summary>
         [Serializable]
         public struct ElementalForm
@@ -77,8 +78,8 @@ namespace CosmicShore.Gameplay
             public MandelbulbSurface.GrowthRules Rules;
 
             [Tooltip("How much further this element's shell is grown than its reach alone - the ARMOUR's growth " +
-                     "(Docs/ECOSYSTEM.md §65): 1 / the dash on an armoured (Mass) element, so its chain of " +
-                     "octahedra clears while its world prism stays law-sized; 1 on every other. 0 reads as 1. " +
+                     "(Docs/ECOSYSTEM.md §65): 1 / the dash on an armoured (Mass) element, capped so its plant stays " +
+                     "inside Space's span while its world prism stays law-sized; 1 on every other. 0 reads as 1. " +
                      "Written by Tools/Build/author_mandelbulb_flora_assets.py from mandelbulb_flora_model.armour_growth.")]
             public float ShellScale;
         }
@@ -97,9 +98,9 @@ namespace CosmicShore.Gameplay
         /// THE REACH — §51's assembly clause, and the one this family did not spend until
         /// <c>Docs/ECOSYSTEM.md §56</c>: <c>FloraElementalForm.ReachScale</c>, normalised on TIME so
         /// the species' AUTHORED shell is the neutral plant. A SPACE plant reaches x1.288 and a
-        /// MASS plant, which has SIZE (§65), is the neutral plant grown whole x1.2786 (it drew in to
-        /// x0.781 until 2026-10-28) — while CHARGE and TIME sit at exactly 1. A Mass plant's ARMOUR
-        /// grows its shell further still (<see cref="ElementalForm.ShellScale"/>).
+        /// MASS plant is the neutral plant drawn in to x0.64 (§65, its shield carries its volume) — while
+        /// CHARGE and TIME sit at exactly 1. A Mass plant's ARMOUR spreads its shell back out
+        /// (<see cref="ElementalForm.ShellScale"/>), never past Space's span.
         ///
         /// <para>On this family a prism's length IS the walk's step, so the shell is simultaneously
         /// the plant's extent and its prism size — which is why <c>Flora.ElementalReachScale</c>
