@@ -305,7 +305,7 @@ It is not implemented. Decision: audio was descoped for now; this section exists
 |---|---|---|
 | **P0** | Vessel ghost recorder. Free camera over ghost ships. | **shipped** |
 | **P1** | The world comes back: environment by reference + the four `Prism` hook sites. | **prisms shipped for match replays** (2026-10-26, `Docs/REPLAYS.md` §6.2): one observer on `PrismSpatialIndex` instead of four `Prism` hook sites; drawn as instanced boxes; backward seek replays the event log (no snapshots yet). `TheaterDirector`'s own key-7 recording does not record the world yet. |
-| **P2** | Everything else that moves: fauna, crystals, projectiles, blasts, balls. Per-subsystem toggles matter here. | |
+| **P2** | Everything else that moves: fauna, crystals, projectiles, blasts, balls. Per-subsystem toggles matter here. | **crystals, plants, creatures and cytoplasm shards shipped for match replays** (2026-10-29, `Docs/REPLAYS.md` §6.4): stream 4 (`TheaterRecording.StreamActors`, `TheaterActors`), recorded as outcomes and applied to the live scene's own actors. Projectiles, blasts and balls not yet. |
 | **P3** | Transport: snap to a timestamp via liveness snapshots; chapter markers off the annotation stream. | |
 | **P4** | Director: point the screenshot director's fifteen capture concepts at recorded time instead of live time. | the payoff |
 
@@ -335,7 +335,9 @@ because which subsystem costs what is the decision the config exists to expose:
   truncated bytes, forward compatibility (an unknown stream is skipped, not fatal), interpolation,
   absence outside a track's span, the backward-seek claim, and the 36 B/pose constant measured
   against the writer rather than believed.
-- `TheaterRecordingTests` covers the same ground in the edit-mode suite.
+- `TheaterRecordingTests` covers the same ground in the edit-mode suite. `TheaterActorsTests` (2026-10-29) covers stream
+  4: round trip, a recording without it, an older reader skipping it, the byte estimate, thinning, cuts, stays,
+  nearest-partner pairing, shard morph order, and the shift.
 - **Every theater file now type-checks with zero errors** against a faithful Roslyn stub of each
   Unity and project API it touches (`Vector3`/`Quaternion`/`Camera`/`GUI`/`Gamepad`, plus
   `CameraManager`, `IVesselStatus`, `IPlayer`, `VesselModelBuilder`, `VesselPrefabContainer`,
