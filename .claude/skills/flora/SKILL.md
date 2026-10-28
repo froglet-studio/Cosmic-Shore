@@ -239,42 +239,52 @@ plant" is one comparison rather than four independent fits:
 | element | says | how |
 |---|---|---|
 | **TIME** | the optimum | the plate tuned by rendering it. Everything else is measured against this. |
-| **MASS** | more VOLUME, and the CHUNKIEST plate | nearly square in plan and THICK. Borromean: **8.00×** the anchor's volume, axes **1 : 0.83 : 0.50** against the anchor's 1 : 0.59 : 0.15. |
+| **MASS** | more VOLUME, ARMOURED, with SIZE | the anchor's SHAPE at the law's Mass volume - every axis ×1.2786 (`FloraElementalForm.MassAxisScale`) - shielded, and the plant GROWN until its octahedra and then its heart's swing clear (`Docs/ECOSYSTEM.md §65`). Borromean: plate `5.97 × 3.53 × 0.90` at the anchor's 1 : 0.59 : 0.15, membrane ×3.836. It was the CHUNKIEST plate (8.00×, 1 : 0.83 : 0.50) until 2026-10-28. |
 | **SPACE** | more ASPECT, and more ROOM | longer and narrower **at the same volume**, so the element reads as SHAPE rather than as size — and, where the species can scale its own surface, a bigger surface too. Borromean: **2× the membrane**, 8.50:1 against the anchor's 1.69:1, volume 1.00×, span 222 against 111. |
-| **CHARGE** | armour | FITTED, not authored — see below. |
+| **CHARGE** | DANGER | the anchor's own plate; every prism it lays is a danger prism and it never shields (a shield clears danger). It was the armoured element until 2026-10-28. |
 
-**Chunky is a claim about SHAPE and only THICKNESS can pay for it.** With the footprint
-FITTED (§4c), the one axis left to move a plate toward a cube is the free one — and the free
-axis IS the volume, so "make Mass chunkier" and "make Mass heavier" are the same edit. Stop
-short of a cube: a cube is not a plate, and the check that says so is worth writing down
-(Borromean asserts `min/max < 0.9`).
+**There is no chunky plate any more** (Garrett, 2026-10-28: "we are going to loose the 'chunky' prisms now that we
+have these scaled up versions of mass"). Mass says HEAVY through size - the same shape, bigger, on a bigger plant -
+never through a cube-ward plate. If a fit hands you a squarer Mass plate than the anchor's, the fit is wrong.
 
-**A chunkiness rule is asserted over the plates worn AS PLATES, and the exclusion is the
-finding.** Borromean CHARGE's plate is `1 : 1.00 : 0.50` — squarer than Mass's — and that is
-not a counter-example: its plate is a square slab *because* the body it was fitted against is
-the octahedron three times it, so how cube-like the plate is says nothing about what a Charge
-plant looks like. *A check that has to be scoped is usually telling you something true about
-the thing you scoped out.*
+**MASS is a different geometry problem and must be FITTED, never scaled by eye.** Mass armours its mass by law
+(`ElementalArmour`, `Flora.ResolveShieldPeriod`), and a shield swaps the plate for its **CIRCUMSCRIBING octahedron**,
+which reaches **1.5 × leafSize** from the prism centre — 3× the plate's own reach, 4.5× its volume. So what has to
+clear on a Mass plant is the SHIELDED form. Because Mass has SIZE, the plate is NOT shrunk to make room (that was
+Charge's old fit, a uniform shrink to 0.5×): the plate stays the anchor's ×1.2786 and the PLANT grows - the lattice
+(`LatticeScale`), the membrane (a similarity, the one transform that maps a clearing arrangement onto a clearing one),
+or the shell - until the octahedra clear (10% for lattices, 3% on the Borromean). Then the heart: its full swing,
+**12.44 u** (`ElementalArmour.HeartSwingClearance`), must clear every octahedron - grow the plant whole again, or SEAT
+the heart (the quasicrystal's `HeartSeatInset` 36.5 u; Garrett chose the seat there). Fitters:
+`fit_shield_clearance.py` (gyroid, Schwarz P), `fit_quasicrystal_strut_sizes.py`, `measure_borromean_minimal_surface.py`,
+shared numbers in `Tools/Build/mass_armour_lib.py`.
 
-**CHARGE is a different geometry problem and must be fitted, never scaled by eye.** Charge
-armours its mass by law (`Flora.ResolveShieldPeriod`), and a shield swaps the plate for its
-**CIRCUMSCRIBING octahedron**, which reaches **1.5 × leafSize** from the prism centre —
-3× the plate's own reach, 4.5× its volume (`Docs/ECOSYSTEM.md §35`). So what has to look
-good on a Charge plant is the SHIELDED form; the plate is what shows between refreshes.
-Two measured decisions from the Borromean fit, both of which beat a uniform shrink:
+* **On a flush tiling the answer is a closed form.** A flush Time plate touches its neighbours at s = 1, its octahedra
+  at s = 1/3, so a law-size Mass plate on a lattice grown 3 × 1.2786 = **×3.836** has octahedra inscribed in the
+  anchor's own boxes - exactly the Borromean result. A non-flush tiling (the gyroid's, s_T > 1/3) fits smaller.
+* **A family whose prisms meet BY DESIGN cannot be fitted, and is not.** A phyllotactic stalk is overlapping segments,
+  a whorl is dense around its node: an octahedron 3× the box fuses wherever two boxes touch, and clearing it would cut
+  the stalk into beads. Those families never had a Charge fit either; they wear the armour unfitted and keep the
+  HEART clear by rule (§5.1 below).
 
-* **Fit the in-plane axes and spend the THICKNESS.** Thickness is spent along the surface
-  NORMAL, where the neighbours are not, so it costs almost nothing in clearance — and it is
-  the difference between a solid little jewel and a foil. This is the same free axis §4(c)
-  records for every element; Charge is simply where it was noticed first.
-* **Square the footprint.** The clearance is set by the tightest BOND, which runs along the
-  grain, so length bought along the grain is paid for twice. Sweeping the in-plane aspect at
-  the shield limit, a square footprint covered **22.5%** of the membrane with octahedra
-  against **15.6%** at the anchor's aspect.
+### 5.1 Every heart is seated clear of its own body
+
+The plant grows outward from its crystal, and the crystal must not be swallowed: an ARMOURED heart keeps its swing
+(12.44 u) clear of every octahedron, every other heart keeps the crystal's seat (2.55 u,
+`ElementalArmour.HeartSeatClearance`) clear of every box. A lattice states it in its fit; a GROWTH-RULE family holds
+it by rule:
+- **start the body off the heart** - the phyllotactic collar stands `Flora.HeartSeatDistance` up its axis, on a stalk
+  limb from the heart stretched to the seat (`Flora.StretchFreshLimb`, the collar's limb `AttachToParent`s to it);
+- **refuse a prism that curls back into it** where the family decides one (`Flora.IntrudesOnHeart`, measured to the box
+  of `ElementalArmour.PrismReach` half-extents, which contains the shield).
+
+Gate: `measure_flora_heart_clearance.py --check`, the shipped `TryPreviewGrowth` on every canonical config inside
+Amoebius's content runtime. Every phyllotactic collar sat ON its crystal (clear 0 on all 32 configs) for as long as the
+family existed and nothing looked, because no gate asked. **A new growth-rule family joins that gate's `GATED` list.**
 
 **THE REACH — §51's other clause, and the one most likely to be declined by mistake.** A
-Space plant reaches `volume^(-1/3)` = ×1.35 and a Mass plant draws in to ×0.82, on whatever
-field carries the species' EXTENT. `Flora.ElementalReachScale` returns 1 for a species exempt
+Space plant reaches `volume^(-1/3)` = ×1.35 and a Mass plant is the neutral plant grown WHOLE (×1.2786 against
+Time - it drew in to ×0.82 while Mass was the chunky element, §65), on whatever field carries the species' EXTENT. `Flora.ElementalReachScale` returns 1 for a species exempt
 from the leaf law on the stated grounds that *a family whose leaf IS its strut needs nothing,
 because the anisotropy already lengthened it* — **that is true of the STRUT and false of the
 PLANT.** The Mandelbulb family inherited the exemption and grew four plants of the same size
@@ -291,6 +301,8 @@ smallest while the pay grows the one that was already largest. What works is pay
 **THINNEST** cross axis, where the heavy element's growth pulls the axes together and the
 light one's shrink drives them apart: one rule, each element more itself, volume exact.
 **When a pay can land on any of several free axes, the axis is not a detail.**
+(Since §65 Mass pays nothing - it is the neutral plant grown whole, so its reach and its leaf agree and there is no
+volume to hand back - and the thinnest-axis pay is Space's alone.)
 
 **Where the per-element plate LIVES depends on whether it is a preference or a
 measurement.** Ordinarily it goes in each config's `FloraVariantTuning.LeafSize`, which

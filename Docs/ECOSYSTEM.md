@@ -12435,3 +12435,124 @@ and its body prisms' seats, and a variant that keeps the prefab gets them back (
 keep its last size, skin or needles). `LightFauna`'s body ratio is taken by GIRTH, times the eroded girth
 (`Fauna.BodyGirthFactor`), so the Space shark's body-relative dials read the Mass shark's girth.
 
+
+---
+
+## 65. MASS is armoured and has size; CHARGE makes every prism danger (Garrett, 2026-10-28)
+
+*"We are going to loose the 'chunky' prisms now that we have these scaled up versions of mass. Lets also shift the
+shielding affect from charge to mass so the prisms will need further adjustment to account for the mass prisms being
+shielded. Then the new charge affect will be to make all of its prisms danger prism, not just the select ones the other
+elements have."* Then: *"go with option B, mass has size, it needs to add volume and it needs the crystal clearance.
+lets keep it consistent"* - and the four calls: the quasicrystal's heart is SEATED (not the whole plant grown), the
+gyroid's octagon ring stays danger on a Mass plant, the fauna follow the same law, and every lifeform is updated and
+inspected for existing errors on the way.
+
+### 65.1 The law (`ElementalArmour`, `FloraElementalForm`)
+
+| element | its prisms | its form |
+|---|---|---|
+| **Mass** | **shielded**, re-armoured one per `ElementalArmour.ShieldPeriod` (1 s) for life | the anchor's (Time's) shape at the law's Mass volume - every axis x1.2786 (`MassAxisScale`), `MassLeafAnisotropy` 1 (was 0.45, the "chunky" plate) - and the plant is GROWN: `ReachScale(Mass)` = the neutral reach x1.2786 (it drew IN to x0.82) |
+| **Charge** | **every prism danger**, never shielded (a shield clears danger, `PrismStateManager.ApplyShieldState`) | the species' own form |
+| Space, Time | as authored | Space's aspect and reach (§51), Time's clock |
+
+Every element keeps its AUTHORED danger prisms (a gyroid's octagon ring, a shark's teeth). On a Mass lifeform they stay
+danger: `LifeForm.ShieldRegenCoroutine` skips them now. It used to shield every prism, so it stripped a Charge gyroid's
+ring within its first cycle - an existing error, fixed here.
+
+**Mass has SIZE, so an armoured body is fitted for its octahedra.** A shield is the octahedron circumscribing the box
+(semi-axis 1.5 x the prism, 4.5x its volume, `ElementalArmour.ShieldReach`). A Mass plant takes the anchor's plate at
+the law's volume and is grown until its octahedra clear, then grown or SEATED again until its heart's full swing clears
+them: `ElementalArmour.HeartSwingClearance` = 11.85 u (the Mass crystal's depth prisms at the top of their columns,
+§64.8) x1.05 = **12.44 u**. Every other heart keeps the crystal's seat, **2.55 u**, clear of its prisms' boxes
+(`HeartSeatClearance`, the figure the quasicrystal seat is proven against).
+
+### 65.2 Where each family stands
+
+| family | Mass | Charge | gate |
+|---|---|---|---|
+| Gyroid | 13.578 x 5.129 x 2.263 on a x3.166 lattice (plate x1.2786, lattice grown to 10% octahedra clearance, then whole x1.18 for the swing) | the Time plate | `fit_shield_clearance.py --check` |
+| Schwarz P | 6.034 x 3.733 x 1.278 on x3.199 | the Time plate 4.72 x 2.92 x 1 (flush) | `fit_shield_clearance.py`, `fit_schwarz_p_leaf_sizes.py` |
+| Quasicrystal | 28.128 x 1.278 x 1.278 strut on a x3.868 lattice; heart SEATED 36.5 u in (`FloraVariantTuning.HeartSeatInset`, `QuasicrystalAssembler.ConfigureHeartSeat`) | 22 x 1 x 1 | `fit_quasicrystal_strut_sizes.py --check` |
+| Borromean | 5.969 x 3.532 x 0.903 plates on a membrane grown x3.836 (radius 213 vs 56); heart clear 24.8 u | the anchor | `verify_borromean_surface_tables.py` |
+| Nested gyroid | quotes the gyroid's Mass; heart clear 23.3 u. 4 of 71 plates' shields fuse between nested sheets (~7%), the same 4 the old Charge armour shipped with | quotes the gyroid's | `author_nested_gyroid_flora_assets.py --check` |
+| Phyllotactic (8) | the Time plant grown whole (x1.2786); shields fuse at the stalk's joints and in its whorls exactly where its boxes meet by design, as Charge's did | the Time plant | `measure_flora_heart_clearance.py --check` |
+| Branching (4) | the Time plant grown whole; a leaf that curls into the heart's clearance is not laid | the Time plant | `measure_flora_heart_clearance.py --check` |
+| Mandelbulb (4) | see 65.5 | | `measure_mandelbulb_flora.py` |
+| Wall | **open**: one 4 x 4 x 1 plate for all four elements (no element expression at all), Mass shields fuse (s* 0.50), the heart sits inside the seed plate on every element. `LatticeScale` never reaches `WallAssembler`, so a fit needs assembler work. Toy-only (Spawn Matrix). | | none |
+
+**Families with a fit move it from Charge to Mass; families that shipped the armour unfitted stay unfitted.** The
+lattice, Borromean and Mandelbulb species fitted Charge for its shield, and those fits now belong to Mass. The
+growth-rule families never had one. Their prisms meet BY DESIGN (a stalk is overlapping segments "so successive
+segments overlap into one stalk instead of reading as beads", a whorl is dense around its node), and an octahedron
+three times a box fuses wherever two boxes touch. A fit there would cut the stalk into beads.
+
+### 65.3 The heart's clearance in a growth-rule plant (existing error)
+
+Every phyllotactic root collar was centred ON its crystal. The heart sat inside the collar on all 32 configs, every
+element, and on Arbor (a 4.6 u collar around a 3.55 u crystal) it was entirely hidden. The collar now stands up its
+growth axis by `Flora.HeartSeatDistance` (the clearance plus the collar's reach along the axis, so every root of a clump
+clears it whatever its offset across the axis), on a STALK limb grown from the heart and stretched to the seat
+(`Flora.StretchFreshLimb`, rule 3 of the limb contract; the collar's limb `AttachToParent`s to it, so every limb keeps
+its path to the crystal). A shoot, a whorl leaf (the Rosette's first whorl cupped back to 10.0 u) or a branching leaf
+(Cacti and Pine curl back onto their hearts) that would come inside the clearance is not grown (`Flora.IntrudesOnHeart`,
+measured to the box of `ElementalArmour.PrismReach` half-extents, which contains the shield). The phyllotactic preview's
+collar also lay sideways (identity rotation while the plant grows up its axis); it now wears the axis like the live one.
+
+Measured by `Tools/Build/measure_flora_heart_clearance.py` (the shipped `TryPreviewGrowth` run in Amoebius's content
+runtime on each canonical config, `Tools/Build/flora_heart_harness`): **52/52 hearts clear** - Mass 12.44-44.6 u to its
+octahedra, every other element 2.55-57.3 u to its boxes. It costs prisms where a plant curls into its own heart: the
+Mass Cacti 103 against Time's 136, the Mass Pine 313 against 374.
+
+**Also found while measuring, and NOT fixed** (both are the family's own growth rule, not the armour):
+- **Pine and Cacti leaves interpenetrate one another heavily** (Pine: 685 interpenetrating pairs among 374 leaves, the worst
+  at s* 0.004 - near-coincident). `BranchingFlora` foreshortens its step to `branchingScaleFactor / (depth - 1)` - 0.14 u at depth 100
+  - while every leaf stays ~4 u, so deep leaves pile on one another. Rule (c) of `/flora` says no prism may
+  interpenetrate another; this family predates it.
+- **`BranchingFlora` scales a child limb's ROOT** (`ScaleAndPositionBranch`: `spindle.localScale / depth`, parented
+  under its parent), against the limb contract's "scale the CHILDREN, never the root". The preview reports leaves at
+  `LeafSize` world size; what a deep leaf actually renders at under that chain was not measured here.
+
+### 65.4 Fauna (`Fauna.ArmourBody`)
+
+`LightFauna`, `Boid` and `WormSegmentFauna` call `Fauna.ArmourBody` once the body is initialised and the heart is in
+place:
+- **Mass**: every plain body prism is shielded, and `Fauna.RearmourBody` re-armours one per second. A creature's body
+  is not the cell's grazeable mass, so `LifeForm`'s plant regen never saw it.
+- **Charge**: every body prism is danger.
+
+Only what the ELEMENT changed is undone on a pooled body's next life. What the prefab authored (the worm head's shielded
+plate cage, the teeth) is never touched.
+
+Mouths, jaws and the Space erosion's "a tooth keeps its size" read `Fauna.IsAuthoredDanger`. On a Charge creature every
+prism is dangerous, and a mouth at the centroid of its whole body would be no mouth.
+
+At the §64.8 body scales the Mass shark, QuadFish, Clawfish and Brittlestar keep their 12.44 u swing clear of every
+shield (nearest 15.6 / 23.5 / 53.1 / 17.7 u), so no Mass creature is regrown. **The Mass tadpole's heart sits INSIDE
+its one body prism's shield.** Growing it cannot clear it (scaling about the heart keeps the heart inside), so it joins
+the tadpole size decision §64.8 left open.
+
+`SwarmTadpoleFauna` and `SubstrateAgentFauna` are not armoured: their body's danger and shield are their behaviour (the
+swarm tiers).
+
+### 65.5 The Mandelbulb family
+
+*(In progress on this branch: its Charge armour fit - `CHARGE_SHIELD_SHRINK`, `CHARGE_DASH`, the armoured ladder - moves to
+Mass, re-derived for a law-size prism on a shell grown until the chain clears, 3 x LengthFactor < 1 at 0.30.)*
+
+### 65.6 Assets and generators changed
+
+- `author_flora_armour.py` (was `author_charge_flora_shields.py`): 44 canonical flora configs, Mass >= 1 and Charge 0.
+- The Hesperides ladder (`Tools/ecosim/gen_hesperides_assets.py`) authored Mass x1.35 and Charge x0.85 cross-sections
+  ON TOP of the fleet law, so a Mass Hesperides plant was enlarged twice. Both rungs are now the species' own leaf: 16
+  canonical and 8 cell configs, leaf lines only, because the script rewrites its assets wholesale and other tools own
+  their populations.
+- The Hesperides Schwarz P topiary drops its chunky slab for the flush Time plate. It rolls its element with ONE leaf on
+  the base lattice, where that is the only legal plate (`fit_schwarz_p_leaf_sizes.py --write`); a Mass topiary is
+  armoured unfitted there, as a Charge one was.
+- `SubstrateCellHost.SenseFood` skips armoured (Mass) flora.
+
+**Still to do:** cells that grow lattice species carry 9-16x more Charge volume per prism now (gyroid 4.9 -> 45.9, Schwarz P
+0.85 -> 13.8: the Charge plate is the anchor's, not the shrunken armour fit), so their phase-ladder headroom needs re-measuring
+(`FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines`). The Lattice cell was regenerated (`FrenzyEnterVolume`
+3,295,000 → 2,720,000).

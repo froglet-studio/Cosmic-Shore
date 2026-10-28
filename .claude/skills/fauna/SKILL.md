@@ -226,6 +226,20 @@ not in a render that swaps a fresh crystal in afterwards (the offline renders di
 A stated prism size also needs admitting: `Prism.Initialize` clamps targets into the scale animator's [0.5, 10] window,
 so body prisms take `Fauna.SeatAuthoredSize` after Initialize.
 
+**A creature wears its element's ARMOUR on its body (Docs/ECOSYSTEM.md §65).** Mass is shielded (every plain body
+prism, re-armoured one a second), Charge is dangerous (every body prism), via `Fauna.ArmourBody` - call it from a new
+species' `Initialize` once its body prisms are initialised and its heart is in place, as `LightFauna`, `Boid` and
+`WormSegmentFauna` do. Two consequences to carry:
+- **"Danger" no longer means "teeth".** On a Charge creature every prism is dangerous, so anything that finds the
+  MOUTH, the jaws or a tooth reads `Fauna.IsAuthoredDanger`, never `IsDangerous` - a mouth at the centroid of the
+  whole body is no mouth. The authored set is captured before anything arms the body, and only what the element
+  armed is undone on a pooled body's next life (a prefab's own shielded cage keeps its shield).
+- **A Mass heart's swing is measured to its body's SHIELDS**, which reach 3x the box: 12.44 u
+  (`ElementalArmour.HeartSwingClearance`) to every plain prism's octahedron. A heart INSIDE a prism's shield (the
+  Mass tadpole) cannot be cleared by growth - scaling about the heart keeps it inside - only by moving the heart.
+A species whose body's danger or shield is its BEHAVIOUR (the swarm tiers: `SwarmTadpoleFauna`,
+`SubstrateAgentFauna`) does not call it; say so in its doc comment.
+
 ---
 
 ## 6. Units: the cliff that makes two measurements incomparable

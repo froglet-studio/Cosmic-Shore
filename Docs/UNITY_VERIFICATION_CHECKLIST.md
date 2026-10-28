@@ -16658,3 +16658,35 @@ No Unity editor in the session (`/verify-unity` could not run). `CosmicShore.Liv
 4. A Brittlestar: **Pass:** its spines are thinner than before (0.3, no longer pushed up to 0.5).
 5. Kill a Space shark and let a Charge one spawn: **Pass:** the Charge shark has the prefab body and prisms.
 6. Kill a Space shark and look at the crystal it drops. **Pass:** a round Space crystal, the same as any other.
+## 🔴 2026-10-28 — Mass is armoured and has size; Charge makes every prism danger (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `CosmicShore.Live` builds (0 errors); the law tests
+(`ElementalArmourTests`, `FloraElementalFormTests`, `FaunaElementalFormTests`) pass outside Unity, 32/32; the gates
+`measure_flora_heart_clearance.py --check` (52/52 hearts clear, on the plant the shipped `TryPreviewGrowth` grows in
+Amoebius), `fit_shield_clearance.py --check`, `fit_quasicrystal_strut_sizes.py --check`,
+`verify_borromean_surface_tables.py`, `measure_flora_elemental_form.py --check`, `author_flora_armour.py --check` and
+`author_nested_gyroid_flora_assets.py --check` pass. `Docs/ECOSYSTEM.md` §65.
+
+1. Let Unity compile. **Pass:** no errors from `ElementalArmour.cs`, `FloraElementalForm.cs`, `Flora.cs`, `LifeForm.cs`,
+   `PhyllotacticFlora.cs`, `BranchingFlora.cs`, `AssembledFlora.cs`, `QuasicrystalAssembler.cs`, `Fauna.cs`,
+   `LightFauna.cs`, `Boid.cs`, `WormSegmentFauna.cs`; the Test Runner's three suites above pass.
+2. Spawn Matrix, one plant per element of the Gyroid, Schwarz P, Quasicrystal and Borromean. **Pass:** every Mass plant
+   is shielded (octahedra) and visibly BIGGER than its Time sibling with plates of the same shape (no chunky slabs), and
+   its octahedra do not overlap one another; its crystal's depth segments swing without touching any octahedron (the
+   quasicrystal's heart sits in a clear pocket). Every Charge plant is unshielded and every one of its prisms is a
+   danger prism (danger material), with Time-sized plates. A Mass gyroid's octagon ring stays danger for as long as you
+   watch (it used to turn shielded within a second).
+3. Hesperides, or the Spawn Matrix phyllotactics (Arbor, Spire, Rosette, Lantern). **Pass:** every plant's crystal sits
+   just below its root collar on a short limb, not buried inside it; the Mass plant is the Time plant's shape about 1.28x
+   bigger, shielded, with no cube-ward stems; its crystal's swing clears every octahedron. The Rosette's lowest whorl no
+   longer cups over its crystal.
+4. A branching species (Cacti, Pine). **Pass:** no leaf sits on or around the crystal; the Mass plant is the Time plant
+   about 1.28x bigger, shielded.
+5. Release a Charge and a Mass shark, tadpole and QuadFish. **Pass:** every Charge body prism is a danger prism; a
+   Charge shark still devours from its JAWS (the mouth did not move to its belly). Every Mass body prism (not the teeth)
+   is shielded; a hit sheds the shield and a second hit destroys the prism, and within a few seconds a shed prism
+   is shielded again. Kill a Charge shark and let a Time one spawn from the pool: **Pass:** only its teeth are danger.
+6. A worm colony of Mass and of Charge. **Pass:** the head's plate cage is shielded on every element; Charge segments
+   are danger all over and the colony still feeds from the head's fangs.
+7. **Open, not a pass/fail:** the Mass tadpole's heart sits inside its body prism's octahedron (§65.4), and the Wall
+   flora is unfitted (§65.2).

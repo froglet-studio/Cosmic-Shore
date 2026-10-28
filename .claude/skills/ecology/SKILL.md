@@ -80,6 +80,12 @@ what the carve-out silently broke — see the traps below.
   restores the envelope exactly - §35's "fit the PRISM, never the pattern"). Full table + the
   clearance and hinge consequences: the `asset-surgery` skill, "Trap: a SHIELD's size is not the
   prism's size".
+- **A shield CLEARS danger, so anything that re-armours must skip danger prisms - and "dangerous" is no longer
+  "authored teeth".** `PrismStateManager.ApplyShieldState` sets `IsDangerous = false`, so a regen that shields every
+  prism of an armoured lifeform strips its authored danger within one cycle (a Charge gyroid's octagon ring was
+  danger for its first few seconds only, until `LifeForm.ShieldRegenCoroutine` learned to skip it). Since §65 the
+  armoured element is MASS and CHARGE arms EVERY prism, so code that finds a mouth, a jaw or a tooth by
+  `IsDangerous` finds the whole body on a Charge creature: read `Fauna.IsAuthoredDanger`. Docs/ECOSYSTEM.md §65.
 - **A positional Add/Remove pair is asymmetric for anything that MOVES.** `Cell.AddBlock` files
   the fauna density grids at the position read at add time; a `RemoveBlock` that re-reads
   `transform.position` decrements whichever bucket the prism has since wandered into, stranding
