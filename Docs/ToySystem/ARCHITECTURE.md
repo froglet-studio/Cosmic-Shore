@@ -426,13 +426,11 @@ emblem's miniature is the model's sockets (`ArkModel.SocketLays`). With `arkMode
 keeps the procedural spindle (`Ark.BuildHullLays`, `arkHullLength`). Record:
 `Docs/VesselModels/ArkReverse.md` § In the game.
 
-**The Ark's hull regrows on omni power** (Oct 2026: `ArkwaySettingsSO.arkReactor` →
-`ArkReactor.asset`, `Ark.UseReactor`, `ArkReactor`). The reactor sails with one omni crystal's power
-(36 prisms) and regrows every emptied hull slot, nearest the reactor first, one prism every 0.6 s.
-It refuels by harvesting the omni crystals it reaches under way (`OmniCrystalImpactor.HarvestInto`).
-Each traversal cell's core crystal (`CellConveyor.SpawnCoreCrystal`) lies on its course, so the core
-is the pilot's choice: take it for your vessel's omni effect, or leave it to power the Ark. The
-mass-law fence is the fourth sign-off in `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`.
+**The Ark's hull regrows at a fixed rate** (Oct 2026: `ArkwaySettingsSO.arkReactor` →
+`ArkReactor.asset`, `Ark.UseReactor`, `ArkReactor`). The omni crystal aboard powers it: every emptied
+hull slot (grazed, cracked or taken for a payload) regrows, one prism every 2 s, nearest the reactor
+first. The crystal is always one size. The mass-law fence is the fourth sign-off in
+`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`.
 
 **A traversal cell is an ORDINARY CELL** — a nucleus, a control zone, and a crystal at its core —
 and the fight is the shipped ecology, composed (full record: `Docs/ECOSYSTEM.md` §41). It keeps

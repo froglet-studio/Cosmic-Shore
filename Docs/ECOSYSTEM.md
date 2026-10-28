@@ -7515,14 +7515,13 @@ and the model's riders, since it is the carrier's to move. No CPU animation of a
 the fauna-body pattern.
 
 **The Ark's reactor (Oct 2026)** is the one place mass is MADE, by the designer's fourth sign-off
-(`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`): the omni crystal's power regrows the Ark's own hull.
-Every hull prism has a slot (where it was laid, on what), and `Ark.RegrowOne` grows one prism into
-the empty slot nearest the reactor, one prism of charge each, through `PrismTrailBuilder.LayOne`
-(`watchForReveal: false`, a continuous source like the wake). A slot the food web emptied keeps its
-place in the full-health count; a slot the hold emptied gets its plating back, so `TotalCount` rises
-with it. The Ark refuels under way from omni crystals within reach (`ArkReactorSO.harvestRadius`
-160, above `CellConveyor.ArriveDistance`), which is where each traversal cell's core lies, unless a
-pilot took the core first. A fallen Ark never regrows.
+(`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`): the omni crystal aboard regrows the Ark's own hull at a
+fixed rate. Every hull prism has a slot (where it was laid, on what), and on each beat of
+`ArkReactorSO.regrowSeconds` (2 s) `Ark.RegrowOne` grows one prism into the empty slot nearest the
+reactor, through `PrismTrailBuilder.LayOne` (`watchForReveal: false`, a continuous source like the
+wake). A beat with nothing to regrow is not saved up (`ArkReactor.Beat`). A slot the food web emptied
+keeps its place in the full-health count; a slot the hold emptied gets its plating back, so
+`TotalCount` rises with it. A fallen Ark never regrows, and the crystal is always one size.
 
 ### 41.3 Mass accounting, stated plainly
 

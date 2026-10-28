@@ -174,24 +174,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Reactor_TakesOnlyAWholeCrystal_AndSpendsOnePrismAtATime()
+        public void Reactor_RegrowsAtAFixedRate_AndNeverBanksAMissedBeat()
         {
-            var reactor = new ArkReactor(prismsPerCrystal: 36, capacityCrystals: 2f, startingCrystals: 1f);
-            Assert.AreEqual(36f, reactor.Charge, 1e-4f, "one crystal aboard at the start");
-            Assert.AreEqual(0.5f, reactor.Fill01, 1e-4f);
-            Assert.IsTrue(reactor.HasRoomForCrystal);
-            Assert.IsTrue(reactor.TryHarvest());
-            Assert.AreEqual(72f, reactor.Charge, 1e-4f);
-            Assert.IsFalse(reactor.TryHarvest(), "a full reactor leaves the crystal for the pilots");
+            float next = 0f;
+            Assert.IsTrue(ArkReactor.Beat(ref next, 0f, 2f), "the first beat is due at once");
+            Assert.AreEqual(2f, next, 1e-5f);
+            Assert.IsFalse(ArkReactor.Beat(ref next, 1.9f, 2f), "no beat before the period is up");
+            Assert.IsTrue(ArkReactor.Beat(ref next, 2.05f, 2f));
+            Assert.AreEqual(4f, next, 1e-5f, "the clock keeps its own phase: a late frame does not shift the rate");
 
-            Assert.IsTrue(reactor.TrySpend());
-            Assert.AreEqual(71f, reactor.Charge, 1e-4f);
-            Assert.IsFalse(reactor.HasRoomForCrystal, "35 of room is not a whole crystal: it would waste one");
-
-            var spent = new ArkReactor(36, 1f, 0f);
-            Assert.IsFalse(spent.CanRegrow);
-            Assert.IsFalse(spent.TrySpend(), "a spent reactor grows nothing");
-            Assert.AreEqual(0f, spent.Charge);
+            // A long stall (or a hull with nothing to regrow) is one beat, not a burst of the beats it missed.
+            Assert.IsTrue(ArkReactor.Beat(ref next, 30f, 2f));
+            Assert.AreEqual(32f, next, 1e-5f);
+            Assert.IsFalse(ArkReactor.Beat(ref next, 30.5f, 2f));
         }
 
         [Test]
@@ -208,10 +203,7 @@ namespace CosmicShore.Tests
         {
             var reactor = AssetDatabase.LoadAssetAtPath<ArkReactorSO>(ReactorPath);
             Assert.IsNotNull(reactor, ReactorPath);
-            Assert.Greater(reactor.StartingCrystals, 0f, "the Ark sails with the omni crystal aboard");
-            Assert.GreaterOrEqual(reactor.CapacityCrystals, reactor.StartingCrystals);
-            Assert.Greater(reactor.HarvestRadius, CellConveyor.ArriveDistance,
-                "a core crystal no pilot took must be within reach when the Ark arrives at the core");
+            Assert.Greater(reactor.RegrowSeconds, 0f, "the hull regrows at a fixed rate");
             foreach (var guid in AssetDatabase.FindAssets("t:ArkwaySettingsSO"))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);

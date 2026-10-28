@@ -23,3 +23,8 @@ MonoBehaviour:
   accelFull: 20
   response: 0.35
   amplitude: 1
+  releaseSeconds: 1.2
+  hangarReach: 0
+  actionResponse: 0.3
+  collarSpinIdle: 12
+  collarSpinRegrowing: 90

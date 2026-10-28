@@ -136,18 +136,19 @@ trio, and the traps).
   unravels around), so an interrupted wither can never destroy it with the husk and every later exit
   (`RemoveHusk`, `OnDestroy`) is a real recovery. The worm colony is deliberately excluded from the
   skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
-- **THE FOURTH SIGN-OFF (the designer, 2026-10-28): an omni crystal's power regrows an Ark's hull.** "the omnicrystal on
-  board the ark powers the prism creation. arks are the only vessel that can contain and harvest the power of an
-  omnicrystal instead of morphing it into something else". So mass may be MADE in one place: an Ark's reactor turns an
-  omni crystal's power into the Ark's own hull prisms (`ArkReactorSO`, `ArkReactor`, `Ark.RegrowOne`). It is fenced:
-  - one implementer (`Ark`), and only an Ark harvests an omni crystal's power (`OmniCrystalImpactor.HarvestInto`); every
-    vessel still morphs the crystal into its own effect;
+- **THE FOURTH SIGN-OFF (the designer, 2026-10-28): the omni crystal aboard an Ark regrows its hull, at a fixed rate.**
+  "the omnicrystal on board the ark powers the prism creation. arks are the only vessel that can contain and harvest the
+  power of an omnicrystal instead of morphing it into something else", "regeneration should just be fixed rate", and
+  "the omnicrystal is always just one size". So mass may be MADE in one place: an Ark's reactor grows the Ark's own hull
+  prisms back (`ArkReactorSO`, `ArkReactor`, `Ark.RegrowOne`). It is fenced:
+  - one implementer (`Ark`); every vessel still morphs an omni crystal it collects into its own effect;
   - only into the Ark's OWN empty hull slots (where a prism was laid, and the food web or the hold emptied it), never
     past its full hull;
-  - only while charge remains: one omni crystal is a fixed number of prisms (36 by default), spent one prism per regrowth;
+  - at a FIXED RATE: one prism a beat (`ArkReactorSO.regrowSeconds`), and a beat with nothing to regrow is not saved up;
   - each regrown prism grows in on the prism's own clock through the canonical lay (continuity of existence), in the
     Ark's domain, as ordinary grazeable mass;
-  - a fallen Ark (its last hull prism gone) never regrows.
+  - a fallen Ark (its last hull prism gone) never regrows;
+  - the omni crystal is always one size: nothing (the reactor, a shape key) resizes it.
 
   Nothing else changes: the hull is eaten, cracked and carried off exactly as before, and the payload still moves hull
   mass rather than making it. An exception, never a precedent (`Docs/VesselModels/ArkReverse.md` § In the game,

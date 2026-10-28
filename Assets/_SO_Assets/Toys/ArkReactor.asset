@@ -12,18 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e87ac5dfc63d4bce878014f57a923501, type: 3}
   m_Name: ArkReactor
   m_EditorClassIdentifier: 
-  prismsPerCrystal: 36
-  startingCrystals: 1
-  capacityCrystals: 2
-  regrowSeconds: 0.6
-  harvestRadius: 160
-  harvestSound:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+  regrowSeconds: 2
   regrowSound:
     Guid:
       Data1: 0

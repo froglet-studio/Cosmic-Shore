@@ -38,7 +38,7 @@ Each cradle is a U channel: a floor, domain side rails, end stops, two Engine-sl
 The payload regrows at the `payload` bone's rest position relative to `payload.dock`.
 
 ## Shapes and takes
-- **Charge:** the lance lengthens and the crystal swells.
+- **Charge:** the lance lengthens. The omni crystal is always one size (Garrett, 2026-10-28), so no shape resizes it.
 - **Mass:** the belly deepens (the keel rides it) and the nacelles fatten.
 - **Space:** the hangar wings slide outward and the masts telescope.
 - **Time:** the nacelles stretch back.

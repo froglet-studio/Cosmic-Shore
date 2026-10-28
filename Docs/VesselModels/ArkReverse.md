@@ -132,11 +132,11 @@ Every Ark is this model. `Wander_WithArk.asset` (the Arkway voyage's settings) n
   The takes compose like a gimbal (`ArkRigTable.PoseLocal`): a jet pitches about its ring's yawed axis. The numbers are on the definition.
 - **No bone travels further than one full take** (`ArkRigTable.Budget`). A jet's pitch and bank takes both turn it about its own x axis. Played in full together, they brought `engine.3.ring` to 0.37% of the diagonal from a neighbour, under the 0.4% gate, although each take alone is clear. So a bone that two inputs move gets weights scaled to sum to at most 1. `pose_clearance.py --combos ... --budget` proves the whole in-game input grid under that rule (see [Gates](#gates)).
 - **Without a model**, the Ark keeps the procedural spindle hull. That happens if `arkModel` is empty or the table cannot be read, and the warning names what is missing.
-- **The omni crystal powers the regrowth** (Garrett, 2026-10-28: "the omnicrystal on board the ark powers the prism creation. arks are the only vessel that can contain and harvest the power of an omnicrystal instead of morphing it into something else"). The Ark's reactor (`ArkReactorSO` on `Wander_WithArk.asset` → `ArkReactor.asset`, `Ark.UseReactor`) sails with one omni crystal's power aboard, counted in prisms (36 a crystal, room for two).
-  - Every empty socket, whether grazed, cracked or taken for a payload, grows a prism back. It goes one at a time, every 0.6 s, the empty socket nearest the reactor well first, and each regrowth spends one prism's worth. The prism is the socket's kind and size, in the Ark's domain, grown in through the canonical lay.
-  - Under way, the Ark harvests every omni crystal within 160 of its centre that fits in the reactor. Each traversal cell's core crystal lies on its course, so a core no pilot took is always reached. The crystal flies into the well on the project's capture feel (`CrystalCaptureConfigSO`) and dissolves there: no vessel effect, no husk. A pilot who takes the core first gets their vessel's omni effect, and the Ark goes without.
+- **The omni crystal aboard regrows the hull, at a fixed rate** (Garrett, 2026-10-28: "the omnicrystal on board the ark powers the prism creation. arks are the only vessel that can contain and harvest the power of an omnicrystal instead of morphing it into something else", and "regeneration should just be fixed rate"). The reactor is `ArkReactorSO` on `Wander_WithArk.asset` → `ArkReactor.asset`, set by `Ark.UseReactor`.
+  - Every empty socket, whether grazed, cracked or taken for a payload, grows a prism back: one every 2 s, the empty socket nearest the reactor well first. The prism is the socket's kind and size, in the Ark's domain, grown in through the canonical lay.
+  - A beat with nothing to regrow is not saved up (`ArkReactor.Beat`), so the rate never bursts.
   - A fallen Ark never regrows. The fence is the fourth sign-off in `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`.
-- **The crystal in the well shows the charge.** The `omni` bone is as big as the reactor is full: a seed (0.35 of its built size) when spent, never nothing. Its collar (`omni.ring`) turns at 12°/s while charged and 90°/s while the hull regrows. A harvested crystal flies to `omni` (`ArkModel.ReactorPivot`).
+- **The omni crystal is always one size** (Garrett, 2026-10-28). Nothing resizes it: not the reactor, and not the Charge shape, which now lengthens only the lance. Its collar (`omni.ring`) turns at 12°/s, and at 90°/s while the hull regrows, carrying the crystal with it. The regrowth spreads out from the crystal (`ArkModel.ReactorPivot`).
 - **The actions play on events.** The rig table carries the two action takes as well: `release` (the lance's 20 slide, `releaseMove`) and `hangarOpen` (the doors, 70° and 75°).
   - The hangar opens while a vessel of the Ark's domain is within the hold's grab reach (`PayloadConfig`'s 160). The open hangar says a payload can be taken here: a world fact shown in the world.
   - The lance slides out for 1.2 s when the hold hands a payload over (`ArkHold.ParcelGranted`).
@@ -144,7 +144,7 @@ Every Ark is this model. `Wander_WithArk.asset` (the Arkway voyage's settings) n
 - **The Wander toy's emblem is the model's hull:** one miniature prism per socket (`ArkModel.SocketLays`), in the player's domain. The spindle remains only for an Ark with no model.
 
 ## Shapes
-- **Charge:** the lance lengthens and the crystal swells.
+- **Charge:** the lance lengthens. The omni crystal is always one size (Garrett, 2026-10-28), so no shape resizes it.
 - **Mass:** the keel deepens and the jets fatten, staying inside their rings.
 - **Space:** the jaws' knuckles reach and the sensor masts rise.
 - **Time:** the jets stretch.

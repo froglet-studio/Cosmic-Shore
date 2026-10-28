@@ -71,7 +71,7 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW body):
   slots     0 Domain, 1 Body, 2 Window, 3 Engine
   sockets   `socket.<tier>.<nn>` (head at the prism's centre, tail along it, Z = its up; parent `hull`, or the jaw for a
             jaw's blade); `hangar.slot.0..2`, where the three escorts sit (head on the pad, +3 up, tail toward the door)
-  shapes    Charge: the lance lengthens aft and the omni crystal swells; Mass: the keel deepens and the jets fatten;
+  shapes    Charge: the lance lengthens aft (the omni crystal is always one size); Mass: the keel deepens and the jets fatten;
             Space: the jaws' knuckles reach and the sensor masts rise; Time: the jets stretch. None moves a plate, a
             cradle, a socket bone or a hole.
   takes     rest (first); pitchup, pitchdown, yawleft, yawright, rollleft, rollright, speedup, speeddown (the jets
@@ -1461,8 +1461,8 @@ def build(ctx):
         return Vector((0, 0, 0))
 
     shapes = {
-        "Charge": [morphs.stretch_along(tuple(pax), tuple(p_rear), 1.35, m["payload"]),
-                   morphs.scale_about(1.35, tuple(OMNI), m["omni"])],
+        # The omni crystal is always one size (Garrett, 2026-10-28): Charge lengthens the lance and leaves it alone.
+        "Charge": [morphs.stretch_along(tuple(pax), tuple(p_rear), 1.35, m["payload"])],
         "Mass": [keel_deepen, fatten],
         "Space": [reach],
         "Time": [morphs.stretch_along(tuple(axis), tuple(o), 1.5, m[e]) for e, (o, axis, ln_, piv) in eng.items()],

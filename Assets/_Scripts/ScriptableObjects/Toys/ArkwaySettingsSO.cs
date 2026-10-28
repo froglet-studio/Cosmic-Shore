@@ -59,8 +59,7 @@ namespace CosmicShore.ScriptableObjects
                                  "Empty keeps the procedural spindle hull.")]
         ArkModelDefinitionSO arkModel;
 
-        [SerializeField, Tooltip("The Ark's reactor: the omni crystal aboard powers its hull's regrowth, and it harvests the omni " +
-                                 "crystals it reaches that no pilot took first (each traversal cell's core lies on its course). " +
+        [SerializeField, Tooltip("The Ark's reactor: the omni crystal aboard regrows its emptied hull slots at a fixed rate. " +
                                  "Empty: the hull never regrows.")]
         ArkReactorSO arkReactor;
 

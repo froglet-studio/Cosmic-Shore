@@ -28,9 +28,8 @@ namespace CosmicShore.Gameplay
     ///   • <b>The actions</b> are the model's other takes, played on events: the hangar's clam-jaw doors open while a
     ///     squadmate is in the hold's grab reach (the hold is open to you: a world fact shown in the world), and the
     ///     lance slides out of its cradles when the hold hands a payload over (<see cref="ArkHold.ParcelGranted"/>).
-    ///   • <b>The reactor</b> (<see cref="Ark.Reactor"/>): the omni crystal in the well is as big as the charge aboard
-    ///     and its collar turns, faster while the hull regrows; a harvested crystal flies into it
-    ///     (<see cref="ReactorPivot"/>).
+    ///   • <b>The reactor</b> (<see cref="Ark.UseReactor"/>): the omni crystal in the well is always one size; its collar
+    ///     turns, faster while the hull regrows, and the regrowth spreads out from it (<see cref="ReactorPivot"/>).
     /// </summary>
     public sealed class ArkModel : MonoBehaviour
     {
@@ -88,12 +87,11 @@ namespace CosmicShore.Gameplay
         float _nextHangarScanAt;
         ArkHold _hold;
 
-        // Reactor: the omni crystal shows the charge, its collar turns.
+        // Reactor: the omni crystal (always one size) sits in its collar, and the collar turns.
         Transform _reactor, _collar;
-        Vector3 _reactorRestScale = Vector3.one;
         Quaternion _collarRestLocal, _collarRestInArk;
-        float _reactorFill = 1f, _shownFill = 1f, _collarAngle;
-        bool _regrowing, _reactorDriven;              // an Ark without a reactor leaves the crystal as built
+        float _collarAngle;
+        bool _regrowing, _reactorDriven;              // an Ark without a reactor leaves the collar as built
 
         /// <summary>The sockets the hull wears - its full-health count.</summary>
         public int SocketCount => _table?.sockets.Length ?? 0;
@@ -101,8 +99,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The live input blend (pitch, yaw, roll, speed), for the HUD or a test.</summary>
         public Vector4 Input => _input;
 
-        /// <summary>Where the omni crystal sits in the reactor well (a harvested crystal flies here); the Ark's root when
-        /// the model has no reactor bone.</summary>
+        /// <summary>Where the omni crystal sits in the reactor well (the regrowth spreads out from here); the Ark's root
+        /// when the model has no reactor bone.</summary>
         public Transform ReactorPivot => _reactor ? _reactor : (_ark ? _ark.transform : transform);
 
         /// <summary>The action takes now, 0..1: the lance out, the hangar open.</summary>
@@ -166,7 +164,7 @@ namespace CosmicShore.Gameplay
 
         void BindReactor()
         {
-            if (_bones.TryGetValue(ReactorBone, out _reactor)) _reactorRestScale = _reactor.localScale;
+            _bones.TryGetValue(ReactorBone, out _reactor);
             if (_bones.TryGetValue(ReactorCollarBone, out _collar))
             {
                 _collarRestLocal = _collar.localRotation;
@@ -174,10 +172,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The reactor's state, from the Ark: how full it is (0..1) and whether the hull is regrowing.</summary>
-        public void SetReactor(float fill01, bool regrowing)
+        /// <summary>The reactor's state, from the Ark: whether the hull is regrowing.</summary>
+        public void SetReactor(bool regrowing)
         {
-            _reactorFill = Mathf.Clamp01(fill01);
             _regrowing = regrowing;
             _reactorDriven = true;
         }
@@ -451,21 +448,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The omni crystal in the well is as big as the charge aboard (a spent reactor holds a small dark seed, never
-        /// nothing), easing so a harvest swells it and a regrowth draws it down; its collar turns about the well's axis,
-        /// faster while the hull regrows. Model bones, moved like the jets - never a prism.
+        /// The omni crystal's collar turns about the well's axis, faster while the hull regrows, carrying the crystal
+        /// with it. The crystal is always one size: nothing here scales it. Model bones, moved like the jets - never a
+        /// prism.
         /// </summary>
         void PoseReactor(float dt)
         {
             if (!_reactorDriven) return;
-            if (_reactor)
-            {
-                _shownFill += (_reactorFill - _shownFill) * (1f - Mathf.Exp(-dt / _def.ActionResponse));
-                _reactor.localScale = _reactorRestScale * Mathf.Lerp(_def.EmptyCrystalScale, 1f, _shownFill);
-            }
             if (_collar)
             {
-                float spin = _reactorFill <= 0f ? 0f : _regrowing ? _def.CollarSpinRegrowing : _def.CollarSpinIdle;
+                float spin = _regrowing ? _def.CollarSpinRegrowing : _def.CollarSpinIdle;
                 _collarAngle = Mathf.Repeat(_collarAngle + spin * dt, 360f);
                 _collar.localRotation = ArkRigTable.PoseLocal(_collarRestLocal, _collarRestInArk,
                     Quaternion.AngleAxis(_collarAngle, Vector3.up));

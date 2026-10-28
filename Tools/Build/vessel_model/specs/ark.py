@@ -62,7 +62,7 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW body):
             The hinge sits at Blender (0, HY, 0): the origin is on the centre line, HY ahead of it.
   nodes     mesh `mesh` (identity, metres), armature `rig`; root bone `hull`
   slots     0 Domain, 1 Body, 2 Window, 3 Engine
-  shapes    Charge (weapon): the lance lengthens and the omni crystal swells;
+  shapes    Charge (weapon): the lance lengthens (the omni crystal is always one size);
             Mass (volume):   the belly deepens (the keel rides it) and the nacelles fatten;
             Space (reach):   the hangar wings slide outward and the masts telescope;
             Time (rate):     the nacelles stretch back
@@ -554,8 +554,8 @@ def build(ctx):
         return Vector((0, 0, 0))
 
     shapes = {
-        "Charge": [morphs.stretch_along(tuple(pax), tuple(p_rear), 1.38, m["payload"]),
-                   morphs.scale_about(1.35, tuple(OMNI), m["omni"])],
+        # The omni crystal is always one size (Garrett, 2026-10-28): Charge lengthens the lance and leaves it alone.
+        "Charge": [morphs.stretch_along(tuple(pax), tuple(p_rear), 1.38, m["payload"])],
         "Mass": [belly, keel_ride, fatten],
         "Space": [slide(m["auricle.L"], (11.0, 0, 0)), slide(m["auricle.R"], (-11.0, 0, 0)), telescope],
         "Time": [morphs.stretch_along((0, 1, 0), tuple(o), 1.55, m[e]) for e, (o, ln, rr) in eng.items()],

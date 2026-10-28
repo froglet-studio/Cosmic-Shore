@@ -44,14 +44,12 @@ namespace CosmicShore.Gameplay
     ///     wings fly its turns. The hull is still the same conserved mass in the same domain; the model only says
     ///     where each prism sits. Without a model it is the procedural spindle below.
     ///
-    ///   • Its REACTOR (<see cref="UseReactor"/>, <see cref="ArkReactor"/>; Garrett, 2026-10-28) holds an omni crystal's
-    ///     power, which powers the Ark's prism creation: a destroyed or taken hull prism grows back into its own slot,
-    ///     one at a time, nearest the reactor first, each spending one prism's worth. An Ark is the one body that can
-    ///     contain an omni crystal and harvest its power instead of morphing it into something else, so under way it
-    ///     harvests any omni crystal it reaches that no pilot took first (each traversal cell's core lies on its
-    ///     course). The mass law's fourth sign-off fences it (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): only an
-    ///     Ark, only into its own empty slots, only while charge remains, each prism growing in. A fallen Ark (no hull
-    ///     left) never regrows.
+    ///   • Its REACTOR (<see cref="UseReactor"/>; Garrett, 2026-10-28): the omni crystal aboard powers the Ark's prism
+    ///     creation. An Ark is the one body that can contain an omni crystal and harvest its power instead of morphing it
+    ///     into something else, so a destroyed or taken hull prism grows back into its own slot at a FIXED RATE, one
+    ///     prism a beat, nearest the reactor first (<see cref="ArkReactor"/>). The mass law's fourth sign-off fences it
+    ///     (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): only an Ark, only into its own empty slots, at the fixed rate,
+    ///     each prism growing in. A fallen Ark (no hull left) never regrows.
     ///
     /// The Ark itself never removes mass and never runs a timer over anyone else's - the one
     /// clock it owns is its own unhurried course.
@@ -136,16 +134,13 @@ namespace CosmicShore.Gameplay
             public Prism Prism;
         }
 
-        const float HarvestScanSeconds = 0.25f;           // how often the Ark looks for an omni crystal in reach
         const string RegrowOwnerId = "Ark::regrow";
 
         readonly List<HullSlot> _slots = new();
         readonly List<Vector3> _slotPositions = new();
         readonly List<bool> _slotEmpty = new();
         CosmicShore.ScriptableObjects.ArkReactorSO _reactorDefinition;
-        ArkReactor _reactor;
         Prism _hullPrefab;
-        float _nextHarvestScanAt;
         float _nextRegrowAt;
         float _lastRegrowAt = float.NegativeInfinity;
 
@@ -211,16 +206,13 @@ namespace CosmicShore.Gameplay
         public ArkModel Model => _model;
 
         /// <summary>
-        /// Give this Ark a reactor (call before <see cref="LayHullAsync"/>): the omni power aboard regrows its hull, and
-        /// it harvests omni crystals it reaches. A null definition leaves the hull as laid: no regrowth, no harvest.
+        /// Give this Ark a reactor (call before <see cref="LayHullAsync"/>): the omni crystal aboard regrows its hull at
+        /// a fixed rate. A null definition leaves the hull as laid: no regrowth.
         /// </summary>
         public void UseReactor(CosmicShore.ScriptableObjects.ArkReactorSO definition) => _reactorDefinition = definition;
 
-        /// <summary>The reactor's charge, or null (no reactor).</summary>
-        public ArkReactor Reactor => _reactor;
-
-        /// <summary>Raised when the Ark takes an omni crystal into its reactor.</summary>
-        public event Action OmniHarvested;
+        /// <summary>True when this Ark's hull regrows (it was given a reactor).</summary>
+        public bool Regrows => _reactorDefinition;
 
         /// <summary>Raised when one hull prism grows back into its slot.</summary>
         public event Action<Prism> HullPrismRegrown;
@@ -249,10 +241,6 @@ namespace CosmicShore.Gameplay
             _speed = _approachSpeed = _cruiseSpeed = Mathf.Max(1f, speed);
             _trail = new Trail();
             _hullPrefab = prismPrefab;
-            _reactor = _reactorDefinition
-                ? new ArkReactor(_reactorDefinition.PrismsPerCrystal, _reactorDefinition.CapacityCrystals,
-                                 _reactorDefinition.StartingCrystals)
-                : null;
 
             // The lay runs on the Ark's OWN linked token so RetireAsync can stop it: a retire
             // taken mid-lay (the voyage ended during the veiled build) must not leave the lay
@@ -482,59 +470,26 @@ namespace CosmicShore.Gameplay
 
         Transform ReactorTransform => _model ? _model.ReactorPivot : transform;
 
+        /// <summary>
+        /// The fixed rate: one beat every <see cref="CosmicShore.ScriptableObjects.ArkReactorSO.RegrowSeconds"/>, and a
+        /// beat regrows one prism when a slot is empty. A beat with nothing to regrow is not saved up.
+        /// </summary>
         void TickReactor()
         {
-            if (_reactor == null || _retiring) return;
-            bool live = _layComplete && !_hullLost;
+            if (!_reactorDefinition || _retiring) return;
             float now = Time.time;
+            float period = _reactorDefinition.RegrowSeconds;
+            if (_layComplete && !_hullLost && ArkReactor.Beat(ref _nextRegrowAt, now, period) && RegrowOne())
+                _lastRegrowAt = now;
 
-            if (live && _underWay && now >= _nextHarvestScanAt)
-            {
-                _nextHarvestScanAt = now + HarvestScanSeconds;
-                HarvestInReach();
-            }
-            if (live && now >= _nextRegrowAt && _reactor.CanRegrow)
-            {
-                _nextRegrowAt = now + _reactorDefinition.RegrowSeconds;
-                if (RegrowOne()) _lastRegrowAt = now;
-            }
-
-            if (_model)
-                _model.SetReactor(_reactor.Fill01, now - _lastRegrowAt < 2f * _reactorDefinition.RegrowSeconds);
-        }
-
-        /// <summary>
-        /// Take into the reactor every omni crystal in reach that fits (a pilot who got there first has already morphed
-        /// it into their vessel's effect, and a full reactor leaves it for the pilots).
-        /// </summary>
-        void HarvestInReach()
-        {
-            if (!_reactor.HasRoomForCrystal) return;
-            float r = _reactorDefinition.HarvestRadius;
-            float rSqr = r * r;
-            Vector3 centre = transform.position;
-            var active = Crystal.Active;
-            for (int i = active.Count - 1; i >= 0; i--)
-            {
-                var crystal = active[i];
-                if (!crystal || crystal.crystalProperties.Element != Element.Omni) continue;
-                if ((crystal.transform.position - centre).sqrMagnitude > rSqr) continue;
-                if (!crystal.TryGetComponent(out OmniCrystalImpactor impactor)) continue;
-                var reactor = ReactorTransform;
-                if (!impactor.HarvestInto(Domain, reactor)) continue;
-
-                _reactor.TryHarvest();
-                FMODOneShotVolumeHelper.PlaySFXOneShot(_reactorDefinition.HarvestSound, reactor.position, 1f);
-                OmniHarvested?.Invoke();
-                if (!_reactor.HasRoomForCrystal) return;
-            }
+            if (_model) _model.SetReactor(now - _lastRegrowAt < 2f * period);
         }
 
         /// <summary>
         /// Grow one prism back into the empty slot nearest the reactor, through the canonical lay (it grows in on the
-        /// prism's own clock: nothing pops), and spend one prism's worth of charge. A slot the food web emptied keeps
-        /// its place in the hull list (the full-health count already holds it); a slot the hold emptied gets its
-        /// plating back, so the full-health count rises with it.
+        /// prism's own clock: nothing pops). A slot the food web emptied keeps its place in the hull list (the
+        /// full-health count already holds it); a slot the hold emptied gets its plating back, so the full-health count
+        /// rises with it.
         /// </summary>
         bool RegrowOne()
         {
@@ -559,7 +514,6 @@ namespace CosmicShore.Gameplay
             var prism = PrismTrailBuilder.LayOne(_hullPrefab, target.Lay, target.Parent, _trail, RegrowOwnerId,
                 admitAuthoredScale: _model != null, watchForReveal: false);
             if (!prism) return false;
-            _reactor.TrySpend();
             // A hull prism is a mover's: it must not queue behind a growing corridor for its creation completion.
             prism.CompletesAsLiveRibbon = true;
 

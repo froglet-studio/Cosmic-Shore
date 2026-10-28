@@ -4,50 +4,22 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Ark's reactor charge (<see cref="CosmicShore.ScriptableObjects.ArkReactorSO"/>): the omni power aboard, counted
-    /// in hull prisms it can still regrow. Pure bookkeeping, so the rules are testable without a scene: a harvest adds one
-    /// crystal's worth only when all of it fits, a regrowth spends one prism's worth, and the slot that regrows next is
-    /// the empty one nearest the reactor.
+    /// The Ark's reactor rules (<see cref="CosmicShore.ScriptableObjects.ArkReactorSO"/>): the omni crystal aboard powers
+    /// the hull's regrowth at a FIXED RATE, one prism a beat, into the empty slot nearest the reactor. Pure functions, so
+    /// the rules are testable without a scene.
     /// </summary>
-    public sealed class ArkReactor
+    public static class ArkReactor
     {
-        public ArkReactor(int prismsPerCrystal, float capacityCrystals, float startingCrystals)
+        /// <summary>
+        /// The fixed-rate clock: true when a beat is due at <paramref name="now"/>, advancing <paramref name="next"/> by one
+        /// period. A clock more than a period behind (a stall, a hitch, a hull that had nothing to regrow) snaps forward
+        /// instead of paying the missed beats back in a burst: the rate is fixed, never banked.
+        /// </summary>
+        public static bool Beat(ref float next, float now, float period)
         {
-            PrismsPerCrystal = Mathf.Max(1, prismsPerCrystal);
-            Capacity = Mathf.Max(1f, capacityCrystals) * PrismsPerCrystal;
-            Charge = Mathf.Clamp(startingCrystals * PrismsPerCrystal, 0f, Capacity);
-        }
-
-        /// <summary>Prisms' worth of power aboard.</summary>
-        public float Charge { get; private set; }
-
-        /// <summary>Prisms' worth the reactor holds.</summary>
-        public float Capacity { get; }
-
-        public int PrismsPerCrystal { get; }
-
-        /// <summary>How full the reactor is, 0..1: what the crystal in the well shows.</summary>
-        public float Fill01 => Capacity > 0f ? Mathf.Clamp01(Charge / Capacity) : 0f;
-
-        /// <summary>A whole crystal fits. The Ark never harvests a crystal it would waste part of.</summary>
-        public bool HasRoomForCrystal => Charge + PrismsPerCrystal <= Capacity + 1e-3f;
-
-        /// <summary>At least one prism's worth aboard.</summary>
-        public bool CanRegrow => Charge >= 1f - 1e-4f;
-
-        /// <summary>Take in one omni crystal's power. False (nothing changes) when it does not fit.</summary>
-        public bool TryHarvest()
-        {
-            if (!HasRoomForCrystal) return false;
-            Charge = Mathf.Min(Capacity, Charge + PrismsPerCrystal);
-            return true;
-        }
-
-        /// <summary>Spend one prism's worth on a regrowth. False when the reactor is spent.</summary>
-        public bool TrySpend()
-        {
-            if (!CanRegrow) return false;
-            Charge = Mathf.Max(0f, Charge - 1f);
+            if (now < next) return false;
+            period = Mathf.Max(0.01f, period);
+            next = now - next >= period ? now + period : next + period;
             return true;
         }
 
