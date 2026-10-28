@@ -233,7 +233,15 @@ is unbound - the rockets are the meter. The Sparrow is done. **The Grizzly
 `Docs/Icons/sheets/grizzly.png`): Dig In (the real hull side-on in its `dig` take, the anchor sunk into a ground plate),
 Weapon Systems (a three-chamber drum), Charged Cannon (a shell leaving its blast), Rush (the hull leaning into two
 exhaust bars). Single white sprites: `GrizzlyHUDView` is in flight on `grizzly-v3` (jtgjones), so tinted parts wait. Next: the
-eleven placeholders.
+eleven placeholders. **The Rhino's Charge card** (2026-10-28, three option rounds, Garrett picked F): the KATANA that
+follows the real sword (`specs/rhino.py`, `Docs/Icons/sheets/rhino_energize.png`). Round 1 (a lozenge in the domain
+colour) and round 2 (a straight sword) drew "make it look more sword like and not team colored. when lit make it the
+danger color. the idea is to follow the actual sword" and "more like a katana."; on F: "it should flip the sword as
+well as rotate it so it is swiping with the sharp part" and "the both triggers chop should remove the curve so it looks
+like it is from behind". `RhinoVesselHUDView` generates the blade under the card on a pivot at the hilt; every frame it
+turns with the swipe (half the real angle), mirrors so the edge leads, shortens with the chop, swaps to the straight
+blade at the energize stance's summed pull, and is white dark / danger lit. The plate keeps the energize gauge. Next:
+the Rhino's Mass, Space and Time placeholders.
 
 | Round | What | Why first |
 |---|---|---|

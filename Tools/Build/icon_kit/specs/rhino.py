@@ -9,8 +9,15 @@
 
 Before: four white-square PLACEHOLDER sprites. One card at a time with Garrett, options in the hull's whole lockup.
 
-The blade: in the game it is the ForceFieldSkimmer's capsule standing off the nose. A capsule is round, and the icon
-language is angular, so the blade is drawn as a long chamfered lozenge - the capsule's outline cut flat.
+Charge is THE KATANA (Garrett 2026-10-28, round 3 option F). The blade follows the real sword: in the game it is the
+ForceFieldSkimmer's capsule (mesh 10208, local scale (1.5, 24, 4.8)) standing off the nose (mount (0, -1, 20.7), raised
+20 deg); the triggers swipe it (yaw + roll, up to 90 deg each way, RT - LT) and chop it down (pitch, up to 65 deg,
+RT + LT). Rounds 1-2 drew it as a lozenge and a straight sword in the domain colour - "make it look more sword like and
+not team colored. when lit make it the danger color. the idea is to follow the actual sword", then "more like a
+katana." The HUD turns the card's katana with the live swipe (half the real angle), MIRRORS it so the edge leads the
+swing ("it should flip the sword as well as rotate it so it is swiping with the sharp part"), and cross-fades it to
+the straight blade seen from behind as both triggers chop ("the both triggers chop should remove the curve so it
+looks like it is from behind"). White while dark, danger while lit.
 """
 import math
 
@@ -35,51 +42,28 @@ def placeholder(name):
     return lambda: _png_mask(ICON_DIR + f"Rhino_{name}-PLACEHOLDER.png")
 
 
-_BEFORE = dict(before=ICON_DIR + "Rhino_SwordEnergy-PLACEHOLDER.png", before_gauge_value=0.55)
+_BEFORE = dict(before=ICON_DIR + "Rhino_SwordEnergy-PLACEHOLDER.png", before_rev="90a5b7cf5", before_gauge_value=0.55)
 
 
-# ---- the sword, as the game draws it (Garrett 2026-10-28: "make it look more sword like and not team colored. when lit
-# make it the danger color. the idea is to follow the actual sword"). Measured on Rhino.prefab: the ForceFieldSkimmer
-# instance draws Unity's built-in CAPSULE (mesh 10208) at local scale (1.5, 24, 4.8) - a 48-unit blade, 4.8 deep, its
-# two hemispherical caps stretched into 12-unit points - standing up off the nose (mount (0, -1, 20.7), raised 20 deg).
-# From the chase camera it stands upright; the triggers swipe it (yaw + roll, up to 90 deg each way, RT - LT) and chop
-# it down (pitch, up to 65 deg, RT + LT). So the card is that blade in its real profile (10 : 1, the caps faceted:
-# the language is angular), upright at rest and TURNED with the live swipe - neutral while dark, danger while lit.
-HILT = (64.0, 118.0)      # where the blade leaves the nose: the card's pivot, as the mount is the sword's
-SWORD_LEN = 102           # the blade's length on the card at rest (px), hilt to tip
-SWORD_W = 17             # its width: the capsule's 10 : 1 drawn a little fuller, so it reads at 60 px
-CARD_SWIPE = 45.0 / 90.0 # the card turns half the sword's real swipe (90 deg real -> 45 on the card), so it stays in
-
-
-def sword(angle=0.0, chop=0.0, guard=True, length=SWORD_LEN, w=SWORD_W):
-    """The blade standing off the hilt, turned `angle` degrees clockwise from upright (the swipe, already scaled to the
-    card) and foreshortened by cos(`chop`) (the chop tips it toward the camera): straight sides, a long faceted point
-    (the capsule's stretched cap), the root square at the hilt; `guard` adds the crossbar where it meets the nose."""
-    hx, hy = HILT
-    L = length * math.cos(math.radians(chop))
-    tip = min(L * 0.3, w * 1.6)
-    pts = [(-w / 2, 0), (-w / 2, -(L - tip)), (-w * 0.3, -(L - tip * 0.35)), (0, -L), (w * 0.3, -(L - tip * 0.35)),
-           (w / 2, -(L - tip)), (w / 2, 0)]
-    m = fill(rotate([(hx + x, hy + y) for x, y in pts], angle, hx, hy))
-    if guard:
-        g = [(-w * 1.25, 1), (w * 1.25, 1), (w * 1.25, 9), (-w * 1.25, 9)]
-        grip = [(-w * 0.28, 9), (w * 0.28, 9), (w * 0.28, 15), (-w * 0.28, 15)]
-        m |= fill(rotate([(hx + x, hy + y) for x, y in g], angle, hx, hy))
-        m |= fill(rotate([(hx + x, hy + y) for x, y in grip], angle, hx, hy))
-    return m
-
-
-# Round 3 (Garrett 2026-10-28: "more like a katana."): the same blade on the same pivot, drawn as a katana - a long
-# shallow curve (sori) bending back toward the spine, one cutting edge on the convex side, the angled kissaki point
-# (the edge turns up at the yokote and meets the spine), a small tsuba where the blade leaves the nose and a long tsuka.
-KATANA_HILT = (60.0, 100.0)  # the pivot sits higher than the straight sword's so the long grip fits under it
+# ---- the katana -------------------------------------------------------------------------------------------------
+# A long shallow curve (sori) bending back toward the spine, one cutting edge on the convex side (the LEFT, in the
+# sprite), the angled kissaki point (the edge turns up at the yokote and meets the spine), a small tsuba where the
+# blade leaves the nose and a long tsuka. The pivot is the hilt: the view rotates, mirrors and foreshortens about it.
+KATANA_HILT = (60.0, 100.0)  # the pivot, in card px (the view's katanaHilt): high enough for the long grip below it
 KATANA_LEN = 92              # habaki to point (px)
-KATANA_W = 12                # the blade's depth: a katana is slimmer than the capsule's 10 : 1
+KATANA_W = 12                # the blade's depth
 KATANA_SORI = 14             # how far the point sits off the hilt's straight line (px): the curve
+CARD_SWIPE = 0.5             # the card turns half the sword's real swipe (90 deg real -> 45), so it stays in the card
+REAL_SWIPE = 90.0            # RhinoShieldSwipeConfig.swipeYawDegrees: a full single-trigger pull
+REAL_CHOP = 65.0             # RhinoShieldSwipeConfig.chopPitchDegrees: both triggers fully pulled
 
 
-def katana(angle=0.0, chop=0.0, tsuba=True, tsuka=True, length=KATANA_LEN, w=KATANA_W, sori=KATANA_SORI, hilt=KATANA_HILT):
+def katana(angle=0.0, chop=0.0, tsuba=True, tsuka=True, length=KATANA_LEN, w=KATANA_W, sori=KATANA_SORI, hilt=KATANA_HILT, mirror=False):
+    """The katana standing off the hilt: turned `angle` deg clockwise (the swipe, already scaled to the card),
+    foreshortened by cos(`chop`), and `mirror`ed about the hilt so its edge (drawn on the left) leads a swipe right.
+    `sori=0` is the blade seen from behind, as the chop shows it."""
     hx, hy = hilt
+    fx = -1.0 if mirror else 1.0
     L = length * math.cos(math.radians(chop))
     k = min(0.17, 15.0 / max(L, 1.0))          # the kissaki's share of the blade
     steps = 24
@@ -109,52 +93,99 @@ def katana(angle=0.0, chop=0.0, tsuba=True, tsuka=True, length=KATANA_LEN, w=KAT
     snx, sny = normal(1 - k * 0.45)
     spine.append((sx + snx * hw, sy + sny * hw))
     pts = spine + [point] + edge[::-1]
-    m = fill(rotate([(hx + x, hy + y) for x, y in pts], angle, hx, hy))
+    m = fill(rotate([(hx + fx * x, hy + y) for x, y in pts], angle, hx, hy))
     if tsuba:                                   # the guard: a flat octagon across the blade's root
         g = [(-w * 0.95, 1), (-w * 0.7, -1.5), (w * 0.7, -1.5), (w * 0.95, 1), (w * 0.95, 5), (w * 0.7, 7.5),
              (-w * 0.7, 7.5), (-w * 0.95, 5)]
         m |= fill(rotate([(hx + x, hy + y) for x, y in g], angle, hx, hy))
     if tsuka:                                   # the grip: long, a touch narrower than the blade, its end cut square
-        grip = [(-w * 0.42, 9), (w * 0.42, 9), (w * 0.38, 25), (-w * 0.38, 25)]
+        grip = [(-w * 0.42, 7), (w * 0.42, 7), (w * 0.38, 25), (-w * 0.38, 25)]
         m |= fill(rotate([(hx + x, hy + y) for x, y in grip], angle, hx, hy))
     return m
 
 
-# The states the sheet shows: (name, swipe deg, chop deg, lit, plate = EnergizeGauge01).
-SWORD_STATES = [("at rest: upright", 0.0, 0.0, False, 0.0),
-                ("swiped right (RT)", 70.0, 0.0, False, 0.0),
-                ("swiped left (LT)", -70.0, 0.0, False, 0.0),
-                ("both triggers: the chop, charging", 0.0, 50.0, False, 0.55),
-                ("lit", 0.0, 0.0, True, 1.0),
-                ("lit, swiped right", 70.0, 0.0, True, 0.7),
-                ("cooling down", 0.0, 0.0, False, 0.0)]
+def katana_curved():
+    return katana()
 
 
-def sword_card(name, title, guard, draw=None):
-    draw = draw or (lambda ang, chop: sword(ang, chop, guard=guard))
+def katana_chop():
+    return katana(sori=0.0)
+
+
+CHOP_STRAIGHT01 = 0.75       # the view's katanaChopStraight01: the chop at which the blade shows from behind (sum 1.5 of
+                             # 2, RhinoShieldSwipeConfig.stanceSumThreshold - the both-triggers energize stance)
+CHOP_LENGTH01 = 0.8          # the view's katanaChopLength01: the blade's length on the card at a full chop (it tips away)
+
+
+def katana_pose(swipe, chop01, facing=1.0):
+    """What the HUD draws for a swipe (-1..1, RT - LT) and a chop (0..1): turned, mirrored when the swipe is to the
+    right (at rest it keeps the side it last faced), shortened as it chops, and the straight blade from behind once
+    both triggers are in. Mirrors RhinoVesselHUDView.KatanaPose so the sheet shows the HUD's states."""
+    mirror = swipe > 0 or (swipe == 0 and facing < 0)
+    ang = swipe * REAL_SWIPE * CARD_SWIPE
+    length01 = 1.0 + (CHOP_LENGTH01 - 1.0) * chop01
+    chop = math.degrees(math.acos(length01))
+    straight = chop01 >= CHOP_STRAIGHT01
+    return katana(ang, chop, mirror=mirror, sori=0.0 if straight else KATANA_SORI)
+
+
+# (name, swipe -1..1, chop 0..1, lit, plate = EnergizeGauge01)
+KATANA_STATES = [("at rest", 0.0, 0.0, False, 0.0),
+                 ("RT: swiped right, edge leading", 1.0, 0.5, False, 0.0),
+                 ("LT: swiped left, edge leading", -1.0, 0.5, False, 0.0),
+                 ("half pull, right", 0.5, 0.25, False, 0.0),
+                 ("both triggers: the chop, from behind", 0.0, 1.0, False, 0.55),
+                 ("lit (still chopping)", 0.0, 1.0, True, 1.0),
+                 ("lit, swiped right", 1.0, 0.5, True, 0.7),
+                 ("cooling down", 0.0, 0.0, False, 0.0)]
+
+
+def _katana_states():
     parts, states, gauge = {}, [], {}
-    for k, (n, ang, chop, lit, g) in enumerate(SWORD_STATES):
-        parts[f"s{k}"] = (lambda ang=ang, chop=chop: draw(ang * CARD_SWIPE, chop))
-        states.append((n, [(f"s{k}", "danger" if lit else "white")]))
+    for k, (n, swipe, chop01, lit, g) in enumerate(KATANA_STATES):
+        parts[f"k{k}"] = (lambda swipe=swipe, chop01=chop01: katana_pose(swipe, chop01))
+        states.append((n, [(f"k{k}", "danger" if lit else "white")]))
         gauge[n] = (g, None)
-    return dict(name=name, group="energize", lockup_state=4, element="Charge", **_BEFORE, title=title,
-                parts=parts, states=states, gauge=gauge)
+    return parts, states, gauge
 
 
-ICONS = []
+_KP, _KS, _KG = _katana_states()
+
+PART_EXEMPT = {"coverage": "a part: the katana, slim by design", "box_fill": "a part", "in_box": "a part",
+               "thin": "the katana is slim: Garrett 2026-10-28 'more like a katana'"}
+
+ICONS = [
+    dict(name="Rhino_Katana", element="Charge", act="Energize: the sword the Rhino swings, a katana at rest (composite; the HUD turns it live)",
+         draw=katana_curved, exempt={"coverage": "a katana is slim (Garrett 2026-10-28)", "thin": "the katana is slim",
+                                     "box_fill": "the blade stands on its hilt, off-centre by its curve",
+                                     "in_box": "the blade runs the card's height, as the sword stands off the nose"}),
+    dict(name="Rhino_KatanaCurved", element="Charge", act="Energize: the curved katana, the part the view turns and mirrors about the hilt",
+         draw=katana_curved, subdir="Parts", family=False, exempt=PART_EXEMPT),
+    dict(name="Rhino_KatanaChop", element="Charge", act="Energize: the katana seen from behind (no curve), the part the chop fades to",
+         draw=katana_chop, subdir="Parts", family=False, exempt=PART_EXEMPT),
+]
 
 # The hull's other cards as the HUD draws them today (states.py options sheets show a candidate beside them).
 LOCKUP = dict(
+    Charge=dict(parts=dict(k=katana_curved), state=[("k", "white")]),
     Mass=dict(parts=dict(i=placeholder("Afterimage")), state=[("i", "white")]),
     Space=dict(parts=dict(i=placeholder("BladeReach")), state=[("i", "white")]),
     Time=dict(parts=dict(i=placeholder("RampSpool")), state=[("i", "white")], gauge=0.55),
 )
 
 CARDS = [
-    sword_card("energize_option_f", "F - THE KATANA: curved, one edge, the angled point, a small tsuba and the long grip; turned with the live swipe; white dark, danger lit", None,
-               lambda a, c: katana(a, c)),
-    sword_card("energize_option_g", "G - THE KATANA, BLADE AND TSUBA: F without the grip, so the blade runs the card's full height", None,
-               lambda a, c: katana(a, c, tsuka=False, length=100, hilt=(60.0, 114.0))),
-    sword_card("energize_option_d", "D - THE SWORD: the blade on its hilt, turned about the hilt with the live swipe and shortened by the chop; white dark, danger lit", True),
-    sword_card("energize_option_e", "E - THE BLADE ALONE: D without the guard - only what the game draws, the blade off the nose", False),
+    dict(name="energize", element="Charge", **_BEFORE,
+         title="Energize: the katana turns with the live swipe (half the real angle), flips so the edge leads, shows the straight blade seen from behind once both triggers chop; white dark, danger lit",
+         parts=_KP, states=_KS, gauge=_KG),
+]
+
+VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/RhinoHUDVariant.prefab"
+VIEW = "5161366343835098938"   # RhinoVesselHUDView on the variant
+
+REBIND = [
+    # The Charge card: the icon Image becomes a transparent container; the view GENERATES the katana under it (a pivot
+    # at the hilt holding the curved blade and the straight one) from the two parts. The plate keeps its energize gauge.
+    dict(file=VARIANT, pair=dict(container="7720000000000003015", view=VIEW, after="highlights", children=[],
+                                 fields={"katanaCurvedSprite": ("icon", "Rhino_KatanaCurved"),
+                                         "katanaChopSprite": ("icon", "Rhino_KatanaChop")})),
 ]

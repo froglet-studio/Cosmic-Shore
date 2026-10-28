@@ -279,3 +279,17 @@ consider how they distinguish themselves too."
     repeats N times along a live layout, generate the N Images in the view from ONE part sprite** and serialize the
     layout (the kit's SPRAY_RANKS = the view's `gunSprayRounds`); the prefab gets only the sprites and the
     container step - ten prefab children would be ten things to keep in step.
+
+## 2026-10-28 - the Rhino's Charge card: a part that FOLLOWS the real thing
+
+44. **When the card follows a live object, follow its SHAPE and its FACING, not only its angle.** Three rounds: a
+    domain-coloured lozenge ("make it look more sword like and not team colored... the idea is to follow the actual
+    sword"), a straight sword ("more like a katana."), then the katana turned with the swipe - and Garrett's two notes
+    on it were both about facing: "flip the sword as well as rotate it so it is swiping with the sharp part" and "the
+    both triggers chop should remove the curve so it looks like it is from behind". An asymmetric part (one edge, a
+    curve) that only ROTATES shows its spine leading half the time. Draw it once with the edge on a known side, let the
+    view MIRROR it about the pivot so the edge leads the motion (and keep the last side at rest, so letting go does not
+    flip it), and give each view the object really has (from the side, from behind) its own sprite, switched at a
+    threshold the game already uses (here the energize stance's summed pull) rather than cross-faded: a cross-fade of
+    two silhouettes reads as a double image. Pin the facing in a pure function with a test, since a sign slip draws a
+    plausible wrong card. A tool that is the Vessel's own (a sword, a weapon) wears white / danger, not the domain.
