@@ -65,6 +65,10 @@ namespace CosmicShore.UI
                  "the depleting veil below carries the whole answer to \"can I plant one\".")]
         [SerializeField, Min(1)] int switchChargesPerFullMeter = 1;
 
+        [Tooltip("The Scarab's place-switch action (PlaceSwitchAction.asset): its switchScale is the live Mass " +
+                 "ring scale the Switch card's ball shrinks by. Unwired, the ball stays at its Mass 1 size.")]
+        [SerializeField] PlaceSwitchActionSO placeSwitch;
+
         [Inject] GameDataSO _gameData;
 
         ResourceSystem _resources;
@@ -100,8 +104,11 @@ namespace CosmicShore.UI
 
             if (_resources)
             {
+                view?.SetSwitchRingColor(ResolveDomainSignalColor());
                 _resources.OnResourceChanged += HandleResourceChanged;
+                _resources.OnElementLevelChange += HandleElementLevelChange;
                 SeedFromResources();
+                PushSwitchScale();
             }
 
             if (_boundBlast)
@@ -157,8 +164,22 @@ namespace CosmicShore.UI
 
                 if (charges == _lastSwitchCharges) return;
                 _lastSwitchCharges = charges;
+                view.SetSwitchRingColor(ResolveDomainSignalColor());
                 view.SetSwitchCharges(charges);
             }
+        }
+
+        void HandleElementLevelChange(Element element, int level)
+        {
+            if (element == Element.Mass) PushSwitchScale();
+        }
+
+        /// <summary>The Switch card's ball shrinks as Mass grows the ring (switchScale, read live at the
+        /// level change - the same value the executor sizes the ring with).</summary>
+        void PushSwitchScale()
+        {
+            if (!view || !placeSwitch || _status == null) return;
+            view.SetSwitchScale(placeSwitch.SwitchScale.EvaluateLive(_status));
         }
 
         void HandleBlastReadyChanged(bool ready, float cooldownSeconds)
@@ -181,7 +202,11 @@ namespace CosmicShore.UI
         {
             // A re-init must re-push the count, so forget what was last shown.
             _lastSwitchCharges = -1;
-            if (_resources) _resources.OnResourceChanged -= HandleResourceChanged;
+            if (_resources)
+            {
+                _resources.OnResourceChanged -= HandleResourceChanged;
+                _resources.OnElementLevelChange -= HandleElementLevelChange;
+            }
             if (_boundBlast) _boundBlast.OnBlastReadyChanged -= HandleBlastReadyChanged;
             _resources = null;
             _boundBlast = null;
