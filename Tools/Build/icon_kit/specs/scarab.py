@@ -116,6 +116,15 @@ class Scale:
         h = self.half()
         return _clear_of(bar(x0, x1, CY - h, CY - h + EDGE_W) | bar(x0, x1, CY + h - EDGE_W, CY + h), self.hull())
 
+    def field(self, holes=empty):
+        """The swept volume as ONE flat shape (Garrett: no box, flat): from the mirror end (or the card's edge) to a
+        gap short of the plate, the hull knocked out of it with a margin, and what it claims cut out as NEGATIVE
+        space - the prisms are holes in the punch."""
+        x0 = self.x(-REACH) if self.behind else 0.0
+        x1 = self.x(REACH) - PLATE_W - 2.5
+        h = self.half()
+        return _clear_of(bar(x0, x1, CY - h, CY + h), self.hull(), px=2.5) & ~holes()
+
 
 A = Scale(k=96 / (2 * REACH), ox=62.0)                       # the whole volume, true scale, a margin outside it
 B = Scale(k=84 / (2 * PLATE_R), ox=18.0, behind=False)      # the front half, true scale (hull ~10 px)
@@ -127,35 +136,35 @@ def whole(cx, cy, s=7.0):
     return prism(cx, cy, s)
 
 
-def shards(cx, cy, s=8.0):
+def shards(cx, cy, s=10.0):
     """A prism the punch claimed, broken and flung the way the punch travels (+x): three slivers, each a wedge
     pointing forward, fanned in a chevron with the middle one furthest ahead - the break reads as a direction,
     where a burst of four quarters reads as an explosion in place."""
     m = empty()
-    for dx, dy in ((-3.0, -5.5), (3.0, 0.0), (-3.0, 5.5)):
+    for dx, dy in ((-3.5, -7.0), (3.5, 0.0), (-3.5, 7.0)):
         x, y = cx + dx, cy + dy
-        m |= fill([(x - s * 0.6, y - 2.2), (x + s * 0.7, y), (x - s * 0.6, y + 2.2)])
+        m |= fill([(x - s * 0.6, y - 2.8), (x + s * 0.7, y), (x - s * 0.6, y + 2.8)])
     return m
 
 
 def _parts(L, outside, inside, lone):
-    """outside: whole prisms beyond the volume; inside: the prisms it shatters; lone: the shielded one inside."""
-    return dict(hull=L.hull, plate=L.plate, mirror=L.mirror, edges=L.edges,
-                whole=lambda: _clear_of(outside(), L.plate(), L.edges()),
-                prisms=lambda: _clear_of(inside(), L.plate(), L.hull()),
-                shielded=lambda: prism(*lone, 8.0), shatter=lambda: shards(*lone))
+    """outside: whole prisms beyond the volume (drawn); inside: the prisms it shatters and lone: the shielded one,
+    both cut out of the field as negative space."""
+    return dict(hull=L.hull, plate=L.plate, whole=lambda: _clear_of(outside(), L.plate()),
+                field=L.field,
+                field_shatter=lambda: L.field(inside),
+                field_shed=lambda: L.field(lambda: prism(*lone, 8.0)),
+                field_shear=lambda: L.field(lambda: shards(*lone)))
 
 
 def _card(name, title, parts):
-    vol = [("edges", "white", 0.35), ("mirror", "white", 0.45)]
-    top = [("hull", "domain"), ("plate", "white")]
+    top = [("whole", "blue"), ("hull", "domain"), ("plate", "white")]
     states = [
-        ("ready", vol + [("whole", "blue")] + top),
-        ("punching (lit): what it holds shatters", vol + [("whole", "blue"), ("prisms", "blue")] + top),
-        ("recharging", [("edges", "white", 0.2), ("mirror", "white", 0.2), ("whole", "blue"), ("hull", "domain"),
-                        ("plate", "white", 0.3)]),
-        ("below Charge 5: a shielded prism only sheds", vol + [("whole", "blue"), ("shielded", "blue")] + top),
-        ("Charge 5, Cavitation Shear: it shatters", vol + [("whole", "blue"), ("shatter", "shielded")] + top),
+        ("ready", [("field", "white", 0.4)] + top),
+        ("punching (lit): what it holds shatters", [("field_shatter", "white", 0.4)] + top),
+        ("recharging", [("field", "white", 0.15), ("whole", "blue"), ("hull", "domain"), ("plate", "white", 0.3)]),
+        ("below Charge 5: a shielded prism only sheds", [("field_shed", "white", 0.4)] + top),
+        ("Charge 5, Cavitation Shear: it shatters", [("field_shear", "white", 0.4)] + top),
     ]
     return dict(name=name, group="cavitation", lockup_state=1, element="Charge",
                 before=ICON_DIR + "Scarab_CavitationBlast-PLACEHOLDER.png", title=title, parts=parts, states=states)
@@ -164,12 +173,12 @@ def _card(name, title, parts):
 _OUT = lambda: whole(121, 64) | whole(30, 11) | whole(96, 117)      # beyond the plate, above and below the volume
 CARDS += [
     _card("charge_option_a",
-          "A - TRUE SCALE, WHOLE VOLUME: whole prisms outside the punch's reach, shattered ones inside flung forward; "
-          "the Scarab true size (54 ahead, mirrored 54 behind, 90 across)",
+          "A - TRUE SCALE, FLAT: the punch's whole volume one flat shape, the prisms it shatters cut out of it, whole "
+          "prisms outside; the Scarab true size (54 ahead, mirrored 54 behind, 90 across)",
           _parts(A, _OUT, lambda: shards(80, 42) | shards(80, 86) | shards(28, 64), (82, 64))),
     _card("charge_option_b",
-          "B - TRUE SCALE, FRONT HALF: the Scarab at the left, the plate 54 ahead; shattered prisms inside, whole ones "
-          "past the plate and outside its edges",
+          "B - TRUE SCALE, FRONT HALF, FLAT: the Scarab at the left, the plate 54 ahead; shattered prisms cut out, whole "
+          "ones past the plate and outside it",
           _parts(B, lambda: whole(110, 40) | whole(116, 88) | whole(56, 12),
                  lambda: shards(48, 42) | shards(56, 86), (52, 64))),
     _card("charge_option_c",
