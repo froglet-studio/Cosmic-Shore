@@ -656,20 +656,16 @@ def _ramp_option(name, title, ward, prism_ahead, prism_glance):
         L = [("glance", "danger"), ("ward", "white")] if warded else [("ahead", "danger")]
         states.append((n, L + [("hull", "domain")]))
         gauge[n] = (s, None if straight else _GAUGE_DIM)
-    return dict(name=name, group="rampspool2", lockup_state=3, element="Time",
+    return dict(name=name, group="rampspool3", lockup_state=3, element="Time",
                 before=ICON_DIR + "Rhino_RampSpool-PLACEHOLDER.png", before_rev="899c25973", before_gauge_value=0.55,
-                gauge_marks=TIME_MARKS, gauge_marks_style="lines", title=title, parts=parts, states=states, gauge=gauge)
+                gauge_marks=TIME_MARKS, gauge_marks_style="segments", title=title, parts=parts, states=states, gauge=gauge)
 
 
+# Round 2 (V / W / X): "not the bar across. updated sparrow has a better solution. w is good otherwise" - so W, with the
+# 70% mark drawn the Sparrow's way (card.py "segments": a dim tick at the plate's edges while it is ahead, a gap through
+# the fill once passed; SparrowHUDView.PaintGunHeatMarks).
 CARDS += [
-    _ramp_option("time_option_v",
-                 "V - THE BOW: the Rhino from above in your colour; past the 70% tick at Time 5 a white bow stands off the nose and the danger prism glances away",
-                 barrier_arc, lambda: danger_prism(64, 14), lambda: danger_prism(100, 16, angle=-35)),
     _ramp_option("time_option_w",
-                 "W - THE PLOUGH: V with the ward drawn as a chevron blade ahead of the nose (the bulldozer that ignores mass)",
+                 "W - THE PLOUGH: the Rhino from above; past the 70% mark (the Sparrow's edge ticks) at Time 5 a chevron ward stands ahead of the nose and the danger prism glances away",
                  barrier_wedge, lambda: danger_prism(64, 14), lambda: danger_prism(100, 16, angle=-35)),
-    _ramp_option("time_option_x",
-                 "X - THE SPLIT: the bow, the danger prism broken in two halves thrown to either side (it cannot drain you)",
-                 barrier_arc, lambda: danger_prism(64, 14),
-                 lambda: danger_prism(30, 18, angle=30, l=15) | danger_prism(98, 18, angle=-30, l=15)),
 ]
