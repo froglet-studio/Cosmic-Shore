@@ -663,7 +663,8 @@ mismatch the first pass had: the triangles were on `ShepardGraph`, whose colour 
 `lerp(dull, bright, (1−N·V)⁴)` and which `Crystal.ApplyColorSetTint` repaints with the CTA pair at
 runtime, while the body showed its authored Fresnel lime — two formulas, two limes. Neither Fresnel
 shader is reached by the CTA tint (they name the pair `_BrightColor`/`_DarkColor`), so the omni shows
-exactly its authored lime, like the Space and Time crystals.
+exactly its authored lime, like the Space and Time crystals. (Since 2026-10-28 that authored lime is
+four: each element's shapes in its own shade, §2.12.)
 
 **Team crystals are the same crystal in domain colours.** A domain-owned crystal (Skim Race track
 crystals through `CrystalManager.ChangeDomain`, the Dolphin's `TeamCrystal`) swaps every model to
@@ -793,15 +794,15 @@ channel, `Color.WithHueOf`):
   shades from the palette and also fails if the Mass crystal wears the omni's colour again.
 - The Fresnel materials move only their bright colour: their dark end is near-black.
 
-**Unchanged:** the omni keeps the palette's lime, embedded hearts keep the blue-white neutral, and
-team crystals keep their domain pair. Lime still means anyone collects. **The omni converter**
-(`OmniCombinePlayer`, the Elemental Converter's conversion animation) shows the shades too: its config
-references the palette, and each crystal flies in its own shade at the omni body's brightness and eases
-to the omni's lime as its plates morph (`FlightBright`, written through the property block). A landed
-plate is already the omni's colour, so the omni still dithers in over plates that match it. The Omni
-Combine Lab does not model the colours; its parity harness holds the motion only. **To retune a shade**, rerun `kite_mote_colors.py`, then
-`author_elemental_crystal_colors.py` and `author_mass_crystal_look.py`. The Fresnel family still sits
-outside the live tint (§2.10, "Not reached by §2.2's tint"), so those three are generated from the
+**Unchanged:** embedded hearts keep the blue-white neutral, and team crystals keep their domain pair.
+Lime still means anyone collects. **Superseded for the omni on 2026-10-28 (§2.12):** it no longer wears
+one lime but all four shades, each on its element's shapes, and **the omni converter**
+(`OmniCombinePlayer`, the Elemental Converter's conversion animation) no longer eases each crystal to the
+omni's lime: each keeps its own shade all the way in and lands as the omni's plates in that same shade. The
+Omni Combine Lab does not model the colours; its parity harness holds the motion only. **To retune a shade**,
+rerun `kite_mote_colors.py`, then `author_elemental_crystal_colors.py`, `author_mass_crystal_look.py` and
+`author_omni_crystal_triangles.py` (the omni's four shades). The Fresnel family still sits
+outside the live tint (§2.10, "Not reached by §2.2's tint"), so those materials are generated from the
 palette rather than painted by it.
 
 **Through the bloom (measured 2026-10-27, `Tools/Build/crystal_bloom_preview.py`).** Garrett's bar: each crystal
@@ -824,6 +825,50 @@ boundary, at most 5% off-lime after bloom at both sizes, Mass darkest, Space coo
 `#5fd200`, Mass `#89bf00`, Space `#52df00`, Time `#a4df00`: closest pair 0.050 after bloom. It is NOT applied; the
 shades are the Wrasse's too. Charge's lightness is a separate decision: undimmed it collides with Mass (0.030),
 because its shader paints mostly the dull end of its pair.
+
+### 2.12 The omni crystal wears all four shades, each on its element's shapes (Garrett, 2026-10-28)
+
+"When the elemental crystals combine have them retain their separate colors. Change the omnicrystal to retain
+all four elemental colors of lime in all instances." Until then (§2.11) the free omni wore ONE lime, and the
+converter eased each crystal from its shade to that lime as it landed.
+
+**The rule.** An element's shapes wear that element's shade wherever they are: on the free elemental crystal
+(§2.11), in flight in the converter, and on the omni. The omni is an exploded polyhedron whose plate
+families ARE the elements (§2.10), so it reads as the four crystals combined:
+
+| plates | element | shade (at the body's brightness) | drawn by |
+|---|---|---|---|
+| 12 pentagonal prisms (10 corners) | Charge | `_ChargeColor` | the body, and the flux arcs' lit pentagons (`OmniChargeArcs`, `CrystalAccentTint`) |
+| 20 triangular prisms (6 corners) | Mass | `_MassColor` = `OmniDepthPrisms._BrightColor` | the depth prisms (the body's own triangles are cut) |
+| 60 square slabs (8 corners, one distance) | Space | `_SpaceColor` | the body |
+| 30 rhombic slabs (8 corners, two distances) | Time | `_TimeColor` | the body |
+
+**How the body knows which plate is which.** It is one mesh, so the element rides per vertex:
+`CrystalElementPlates` splits the mesh into plates exactly as `RhombusSkinBaker` does (weld, connected
+components, corner count, the rhombus distance test) and writes `(int)Element` into **TEXCOORD4.x**
+(channels 2 and 3 are the crystal morph's). `OmniCrystalFresnelShader` reads it: with `_ElementShades` on, a
+plate's bright colour is its element's, else `_BrightColor`. Every mesh the body draws carries the channel:
+the skin twin (`RhombusSkinBaker.Bake`) writes it and the cut and Space-squares twins are copies of it;
+`CrystalSpaceSquaresBaker` writes it for a body that never went through the skin bake; the vessel morphs
+(the Scarab forge, the Squirrel ring) build from `CrystalElementPlates.WithElements` and
+`CrystalMorphMeshBuilder` carries it per corner, and the shades fade into the target's colour on the morph
+weight; the converter's pieces write it from the combine data (a crystal's every plate is its own element,
+an omni plate its `plateOwner`'s). Measured on the shipped FBX: 12 / 20 / 60 / 30 plates, none left over
+(`CrystalElementPlatesTests`).
+
+**Where each colour is authored.** `author_omni_crystal_triangles.py` (`--check`) writes the four shades into
+`OmniCrystalBody.mat` from the palette's `ElementalCrystalColors` by §2.11's rule (`ELEMENT_COLORS.recolor`:
+the element's shade at the body's bright colour's brightest channel), the Mass shade onto `OmniDepthPrisms`
+and the Charge shade onto `OmniChargeArcs`. `_BrightColor` stays the omni's lime: the fallback for a plate
+or mesh that names no element.
+
+**What stays one colour.** The embedded omni (`OmniCrystalBodyInactive`, `_ElementShades` 0) stays the
+blue-white neutral, and a TEAM omni stays its domain pair: `ThemeManager` paints every team crystal clone and
+turns its `_ElementShades` off. Colour FAMILY still says who collects; the shade says which element.
+
+**Not modelled:** the Omni Shepard Lab and the Omni Combine Lab draw the omni body in one lime (their parity
+harnesses hold shape and motion, not colour), and `crystal_bloom_preview.py`'s "Omni" row measures the body's
+`_BrightColor` alone.
 
 ## 3. The colour-space rule (this is the trap)
 

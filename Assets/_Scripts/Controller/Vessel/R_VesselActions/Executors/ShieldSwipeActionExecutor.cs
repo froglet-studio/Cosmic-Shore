@@ -104,6 +104,9 @@ namespace CosmicShore.Gameplay
         /// channel space; zero at rest. <see cref="RhinoAnimation"/> leans the wings with it.</summary>
         public SwordPoseChannels CurrentPose => _lastApplied;
 
+        /// <summary>The swipe/chop tuning, so a reader can normalise <see cref="CurrentPose"/> (the HUD's katana).</summary>
+        public RhinoShieldSwipeConfigSO Config => config;
+
         /// <summary>The frame <see cref="CurrentPose"/>'s sweep is expressed in: the blade's parent,
         /// whose origin it pivots about. Null until the blade resolves.</summary>
         public Transform PoseFrame => shieldRoot ? shieldRoot.parent : null;

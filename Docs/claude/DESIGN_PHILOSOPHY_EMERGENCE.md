@@ -317,7 +317,7 @@ ones.
   `Docs/LIT.md`.
 - **Ark** — *a mothership: a prism-bodied home that travels the hypersea, wears a domain, and
   lives or dies by the food web.* Added at the prompter's explicit request as the anchor of the
-  highest-level gameplay arc — faction missions, where players venture into the hypersea for
+  highest-level gameplay arc — faction missions (now **Voyages**, `Docs/Voyages/VOYAGES.md`), where players venture into the hypersea for
   story-driven reasons with galactic consequences — and derisked first through the **Arkway**
   toy (the cellular Wanderway: a corridor of three satellite **Cells**, previous/current/next,
   that an `Ark` sails at its own unhurried pace while players are leashed to its side). Its

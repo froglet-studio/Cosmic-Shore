@@ -50,6 +50,7 @@ MonoBehaviour:
     baseCost: 2
     costStep: 1
     twistLine: A cracked plate re-raises at once.
+  foundOnVoyages: 0
   loadSound:
     Guid:
       Data1: 0

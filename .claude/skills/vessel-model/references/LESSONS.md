@@ -621,3 +621,24 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       lower front rim. Raising its base made that worse, because the brow rises ahead of it, and `assembly_report`
       measured a 0.08 % gap. Measure the clearance in the spec (a KD-tree of the neighbour's vertices; `lift_clear`)
       and lift until it holds, instead of guessing an offset.
+
+54. **The Ark (2026-10-27/28, `cece/upbeat-johnson-j7izg7`, `specs/ark_reverse.py`): a model the game BINDS to, not just
+    draws.** Seven rounds took the mothership from a "bubbly pokemon" to a hull in five levels of scale (the boolean
+    lessons are in `Docs/VesselModels/ArkReverse.md` § What round 5 taught). Then the game started reading it:
+    - **Write a RIG TABLE beside the FBX when the game needs the model's numbers.** The Ark's hull prisms sit in the
+      model's 108 sockets and its jets and wings play its takes, so the build writes `ArkReverse.rig.json` (sockets:
+      pose, size, kind, bone; takes: per-bone quaternions per input, in Unity model space, `M R Mᵀ` with
+      `M` = Blender to Unity) and Unity reads it (`ArkRigTable`, `ArkModel`). One source, so no number is retyped in C#.
+      A take that SLIDES (the lance's `release`) carries its translation as `<take>Move`.
+    - **A take proved alone can collide when the game blends it.** `pose_clearance --takes all` was green, but the
+      game plays pitch, yaw, the bank it derives from yaw and speed at once. A jet's pitch and bank takes both turn it
+      about its own x axis, so together they swung `engine.3.ring` to 0.37 % (gate 0.4 %). The fix was a rule in the
+      game, not a smaller take: a bone two inputs move shares ONE take's worth (`ArkRigTable.Budget`), and
+      `pose_clearance --combos <grid> --budget` proves the game's whole input grid under that rule. Prove the action
+      takes (doors, lance) during the worst turns too.
+    - **The FBX export is not byte-stable; `build.py --check` compares STRUCTURE.** Two builds of the same spec
+      differed in 11 million bytes and passed `--check`. To refresh a sidecar (the rig table), build with
+      `--out <scratch>/X.fbx --no-render`, copy only the sidecar, and leave the committed FBX alone. Rebuild in place
+      only when the mesh, shapes or takes change.
+    - **The omni crystal is always one size** (Garrett, 2026-10-28). No shape key and no game code may scale it. The
+      Ark's Charge shape now lengthens only the lance. (Concept A, `specs/ark.py`, was retired the same day.)

@@ -132,9 +132,9 @@ MASS_PRISM_META = OMNI.TRI_MESH_META.replace(OMNI.TRI_MESH_GUID, MASS_PRISM_GUID
 
 
 def depth_material_texts():
-    omni = OMNI.material_texts()
-    body = omni[f"{MAT_DIR}/OmniCrystalBody.mat"]
-    body_inactive = omni[f"{MAT_DIR}/OmniCrystalBodyInactive.mat"]
+    omni = OMNI.body_texts()   # the plain bodies: the omni's own carries the element shades, which no prism reads
+    body = omni["OmniCrystalBody"]
+    body_inactive = omni["OmniCrystalBodyInactive"]
     top_h, split = OMNI.prism_shape(mass_prism_mesh()[0])
     # The free (lime) Mass crystal wears the Mass shade, not the omni's lime (Garrett, 2026-10-27: the two were "the
     # hardest to distinguish"); the embedded one keeps the blue-white neutral. author_elemental_crystal_colors.py.

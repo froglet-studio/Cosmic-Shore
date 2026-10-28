@@ -7,7 +7,7 @@ rewrites the same bytes), --check compares against disk and exits nonzero on dri
 
   * Assets/_SO_Assets/Pilots/                                   folder
   * Assets/_SO_Assets/Pilots/Roster/Pilot_<Callsign>.asset       one pilot per callsign (17)
-  * Assets/_SO_Assets/Pilots/Artifacts/Artifact_<Name>.asset     the artifacts (Javelin, Aegis)
+  * Assets/_SO_Assets/Pilots/Artifacts/Artifact_<Name>.asset     the artifacts (Javelin, Aegis, Hydra, Aftershock)
   * Assets/_SO_Assets/Pilots/Transforms/<Name>Transform.asset    each artifact's payload transformation
   * Assets/Resources/Pilots/PilotArtifactCatalog.asset          every pilot and artifact, in order (Resources: the
                                                                 match loads it, PilotArtifactCatalogSO.Load)
@@ -54,6 +54,8 @@ ARTIFACT_SO_CS = "Assets/_Scripts/ScriptableObjects/PilotsAndArtifacts/ArtifactS
 TRANSFORM_CS = {
     "Javelin": "Assets/_Scripts/Controller/Payload/Transforms/JavelinTransformSO.cs",
     "Aegis": "Assets/_Scripts/Controller/Payload/Transforms/AegisTransformSO.cs",
+    "Hydra": "Assets/_Scripts/Controller/Payload/Transforms/HydraTransformSO.cs",
+    "Aftershock": "Assets/_Scripts/Controller/Payload/Transforms/AftershockTransformSO.cs",
 }
 CRACK_EFFECT_META = "Assets/_SO_Assets/Effects/Payload Prism Effects/PayloadCrackPrismEffect.asset.meta"
 VESSEL_CLASS_CS = "Assets/_Scripts/Data/Enums/VesselClassType.cs"
@@ -222,6 +224,11 @@ def transform_asset(a, script, crack_guid):
                 f"  burstEffects:\n  - {{fileID: 11400000, guid: {crack_guid}, type: 2}}\n")
     elif a["transform"] == "Aegis":
         out += f"  reraiseDelay: {fnum(t['reraiseDelay'])}\n  notHomeLine: {yaml_any(t['notHomeLine'])}\n"
+    elif a["transform"] == "Hydra":
+        out += (f"  speed: {fnum(t['speed'])}\n  fanDegrees: {fnum(t['fanDegrees'])}\n"
+                f"  seekDegrees: {fnum(t['seekDegrees'])}\n  lingerPulseSeconds: {fnum(t['lingerPulseSeconds'])}\n")
+    elif a["transform"] == "Aftershock":
+        out += f"  ringShare: {fnum(t['ringShare'])}\n"
     return name, out
 
 
@@ -244,6 +251,7 @@ def artifact_asset(a, any_vessel, element_values, script, transform_guid):
         f"    Keywords: []\n"
         f"  payloadTransform: {{fileID: 11400000, guid: {transform_guid}, type: 2}}\n"
         f"  tracks:\n{tracks}"
+        f"  foundOnVoyages: {1 if a.get('foundOnVoyages') else 0}\n"
     ) + empty_event("loadSound") + empty_event("releaseSound")
 
 
@@ -462,7 +470,7 @@ def self_test():
         "a pilot with an unknown sight": lambda s: s["pilots"][1].update(vision=99),
         "two artifacts share an id": lambda s: s["artifacts"][1].update(id=s["artifacts"][0]["id"]),
         "an artifact bound to a vessel": lambda s: s["artifacts"][0].update(vessel="Rhino"),
-        "an unknown transform": lambda s: s["artifacts"][0].update(transform="Hydra"),
+        "an unknown transform": lambda s: s["artifacts"][0].update(transform="Gorgon"),
         "a missing track": lambda s: s["artifacts"][0]["tracks"].pop(),
         "two Mass tracks": lambda s: s["artifacts"][0]["tracks"][1].update(element="Mass"),
         "an empty twist": lambda s: s["artifacts"][1]["tracks"][0].update(twist=" "),
