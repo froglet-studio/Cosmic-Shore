@@ -428,7 +428,7 @@ flat in vec2 vPhase;
 uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3;
 uniform vec4 uSliceHot;       // _CutHotColor
 uniform int uPrismGraph;
-uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal, 7 crackle, 8 slice, 9 built-in, 10 cloak ghost
+uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal, 7 crackle, 8 slice, 9 built-in, 10 cloak ghost, 11 soft spark
 uniform vec4 uParam;          // family-specific
 uniform vec4 uParam2;         // family-specific (9: camera fade near, inverse fade distance, alpha clip, fade flags)
 uniform vec3 uCamFwd;
@@ -823,6 +823,15 @@ void main(){
   } else if (uFamily == 7) {
     vec3 nOS = gl_FrontFacing ? vObjNormal : -vObjNormal;
     col = crackle(vObj, nOS, uCamPosOS - vObj);
+  } else if (uFamily == 11) {
+    // SoftSpark: a radial glow in the quad's own uv (0..1 -> -1..1), a white-ish core, the vertex colour's tint and alpha.
+    vec2 suv = vUv * 2.0 - 1.0;
+    float d = clamp(length(suv), 0.0, 1.0);
+    float glow = pow(clamp(1.0 - d, 0.0, 1.0), max(uParam.z, 0.01));
+    float tcore = d / max(uParam.y, 1e-3);
+    float core = exp(-tcore * tcore);
+    vec3 tint = vColor.rgb;
+    col = vec4((tint * glow + mix(tint, vec3(1.0), 0.8) * core) * vColor.a * max(uParam.x, 0.0), 1.0);
   } else if (uFamily == 10) {
     float rim = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), uGhostP0.x);
     float along = dot(vWorld - vOrigin, uGhostForward);
@@ -1734,6 +1743,11 @@ void main(){
             {
                 st.Family = 10; // hand-written: Blend One One, ZWrite Off, Cull Back; an additive fresnel rim with a shimmer (see the fix-up below)
             }
+            else if (family == MaterialFamilies.Kind.SoftSpark)
+            {
+                st.Family = 11; // hand-written: Blend One One, ZWrite Off, Cull Off; a radial glow in the quad's uv, tinted by the vertex colour
+                st.Param = new Vector4(m.HasStoredProperty("_Intensity") ? m.GetFloat("_Intensity") : 1.4f, m.HasStoredProperty("_CoreSize") ? m.GetFloat("_CoreSize") : 0.14f, m.HasStoredProperty("_Falloff") ? m.GetFloat("_Falloff") : 2.2f, 0f);
+            }
             else if (TryCompiledGraph(m, st, out why)) { }
             else if (family == MaterialFamilies.Kind.Snow)
             {
@@ -1797,7 +1811,7 @@ void main(){
                 MaterialFamilies.WarnUntranslated(m.shader, st.Family == 1 ? "Lit (base colour x texture, N.L)" : "Unlit (base colour x texture)", why);
             }
             if (st.Graph == null && family is not (MaterialFamilies.Kind.None or MaterialFamilies.Kind.BlockGraph or MaterialFamilies.Kind.ExplodingBlockGraph
-                    or MaterialFamilies.Kind.PrismSlice or MaterialFamilies.Kind.Forcefield or MaterialFamilies.Kind.CloakGhost))
+                    or MaterialFamilies.Kind.PrismSlice or MaterialFamilies.Kind.Forcefield or MaterialFamilies.Kind.CloakGhost or MaterialFamilies.Kind.SoftSpark))
                 st.Route = "family-fallback";
 
             // The GPU's values: a plain colour property linearised, an HDR one as stored (ColorSpaceRules).
@@ -1845,6 +1859,11 @@ void main(){
             {
                 st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
                 st.ZWrite = false; st.Cull = 2; st.Cutoff = -1f;
+            }
+            if (st.Family == 11)
+            {
+                st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
+                st.ZWrite = false; st.Cull = 0; st.Cutoff = -1f;
             }
             if (st.Builtin != BuiltinShader.None) ApplyBuiltinState(m, st);
             if (st.Graph != null) ApplyGraphState(m, st);
