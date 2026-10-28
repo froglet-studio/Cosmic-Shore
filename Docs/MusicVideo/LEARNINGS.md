@@ -358,6 +358,9 @@ What the faults were, measured (2026-10-28):
   incidence filling the frame for the one frame the shell passes through the camera. The rule for a clip: no
   blast, bomb or ability explosion inside ~250 u of the camera, and the camera never inside an explosion.
   (`StoatRipple` and the cell's `HalfNucleus` are large by design.)
+  Measured on the first full-quality clips (2026-10-28, four 5 s clips at 1080p / 2x / 8x MSAA): the flicker
+  scan's worst frame scores 0.04, where cut 6's flashes scored 0.45-0.68 - with no explosion staged near the
+  camera there are no flashes.
 
 The next milestone is therefore **M1 again, as short clips**: fix the spindle graphs and the depth artifacts in
 the engine first, make the featured hull the local vessel (`mv vessel CLASS`, the Vessel Changer's own swap), and
