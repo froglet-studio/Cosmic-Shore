@@ -365,7 +365,50 @@ int main()
                blockOk ? "DANGER ON BLOCKERS" : "FAIL");
     }
 
-    return (mismatch == 0 && gateOk && blockOk) ? 0 : 1;
+    // ---- 6. PILOT VISION (Docs/Pilots/CALLSIGNS.md): LB keeps one sight lit, suppresses the rest,
+    //      and with LB released it is inert (test 4 already ran with every vision global at zero).
+    bool visionOk = true;
+    {
+        _PrismLitPeerCount = 0.0f;
+        const float3 base(0.20f, 0.55f, 0.80f);
+        const float3 noParams(0, 0, 0);
+        g_objectToWorld = M4{};
+        auto run = [&](float domain, float superShielded) {
+            float3 c; PrismDestructionSight_float(float3(0,0,0), float3(0,0,0), float3(0,0,1), float3(1,0,0),
+                                                  noParams, 0.0f, base, domain, superShielded, c);
+            return c;
+        };
+        auto lit = [&](float3 c) { return c.x > base.x && c.y > base.y && c.z > base.z; };
+        auto quiet = [&](float3 c) { return dot(c, float3(1,1,1)) < dot(base, float3(1,1,1)) * 0.5f; };
+
+        _PilotVisionStrength = 1.0f;
+        _PilotVisionSight = 1.0f; _PilotVisionDomain = 2.0f;   // ENSIGN, Ruby's mass
+        bool ensign = lit(run(2.0f, 0.0f)) && quiet(run(1.0f, 0.0f)) && quiet(run(0.0f, 0.0f));
+        _PilotVisionSight = 9.0f;                               // CITADEL
+        bool citadel = lit(run(1.0f, 1.0f)) && quiet(run(1.0f, 0.0f));
+        _PilotVisionSight = 2.0f;                               // MANGER, a sphere at (0,0,50) r 10
+        _PilotVisionVolume = float4(0, 0, 50, 10);
+        g_objectToWorld._m23 = 45.0f; bool mangerIn = lit(run(1.0f, 0.0f));
+        g_objectToWorld._m23 = 0.0f;  bool mangerOut = quiet(run(1.0f, 0.0f));
+        _PilotVisionSight = 15.0f;                              // BANDIT: a sight of vessels, no prism is its
+        bool targetSet = quiet(run(2.0f, 1.0f)) && quiet(run(1.0f, 0.0f));
+        _PilotVisionSight = 9.0f; _PilotVisionStrength = 0.5f;  // half-way through the LB fade
+        float3 half = run(1.0f, 0.0f);
+        _PilotVisionStrength = 1.0f; float3 full = run(1.0f, 0.0f);
+        bool fades = dot(half, float3(1,1,1)) < dot(base, float3(1,1,1)) && dot(half, float3(1,1,1)) > dot(full, float3(1,1,1));
+        _PilotVisionStrength = 0.0f; _PilotVisionSight = 0.0f; _PilotVisionDomain = 0.0f;
+        _PilotVisionVolume = float4(0,0,0,0);
+        float3 off = run(2.0f, 1.0f);
+        bool inert = off.x == base.x && off.y == base.y && off.z == base.z;
+
+        visionOk = ensign && citadel && mangerIn && mangerOut && targetSet && fades && inert;
+        printf("6. pilot vision        : ensign %s, citadel %s, manger %s/%s, target-set %s, fade %s, off %s -> %s\n",
+               ensign ? "ok" : "WRONG", citadel ? "ok" : "WRONG", mangerIn ? "in" : "WRONG", mangerOut ? "out" : "WRONG",
+               targetSet ? "all quiet" : "WRONG", fades ? "eases" : "POPS", inert ? "untouched" : "CHANGED",
+               visionOk ? "SIGHT KEEPS ONE THING" : "FAIL");
+    }
+
+    return (mismatch == 0 && gateOk && blockOk && visionOk) ? 0 : 1;
 }
 """
 
@@ -382,7 +425,8 @@ def translate(src):
     assert "out float3 Color)" in out, "entry point signature changed"
     out = out.replace("out float3 Color)", "float3 &Color)")
     for name in ("_PrismLitPeerApex", "_PrismLitPeerAxis", "_PrismLitPeerGape",
-                 "_PrismLitPeerTint", "_PrismLitPeerShape", "_PrismLitPeerCount"):
+                 "_PrismLitPeerTint", "_PrismLitPeerShape", "_PrismLitPeerCount",
+                 "_PilotVisionStrength", "_PilotVisionSight", "_PilotVisionDomain", "_PilotVisionVolume"):
         assert name in out, f"{name} missing from the shipped HLSL"
     return out
 

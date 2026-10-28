@@ -1,5 +1,9 @@
 # Pilots and Artifacts (rev 2, 2026-10-26; implementation started)
 
+> **SUPERSEDED 2026-10-27 (Garrett).** Pilots are callsigns, one per callsign on any vessel ([`CALLSIGNS.md`](CALLSIGNS.md));
+> artifacts are payload transformations on any vessel ([`ARTIFACTS.md`](ARTIFACTS.md)). The 40 named pilots, the 45
+> numeric artifacts, the ranks and the default pilots below were removed when this branch was merged. Kept for the record.
+
 Design draft from Shombith's requests of 2026-10-26, built from the Notion pilot table. Not approved, nothing implemented.
 Page with portraits and the Hangar loadout mockup: https://claude.ai/artifact/KQgwvDGzKwPnYum5xW6NX7
 

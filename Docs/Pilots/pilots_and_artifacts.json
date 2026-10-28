@@ -1,1215 +1,158 @@
 {
- "about": "Pilots and artifacts: the ONE spec. Tools/Build/author_pilot_assets.py writes the Unity assets from it (--check is the drift gate). Design: Docs/Pilots/PILOTS_AND_ARTIFACTS.md (2026-10-26 draft) building on Docs/PILOTS_AND_ARTIFACTS.md (2026-10-12). id and statId values are saved by players or serialized: never rename an id, never renumber or reuse a statId. Text is printable ASCII (the UI font has no other glyphs). A rank label's 'kind' defaults to what the label reads as (+N Add, +N% Percent, xN Multiply); 'Set' is given where the value replaces the base. awaitingDesign names Hangar vessels whose pilots and artifacts are not designed yet: each has none until a designer writes its two and two, then leaves this list (Meerkat joined the Hangar 2026-10-27 before its roster).",
- "slotsPerVessel": 3,
- "awaitingDesign": [
-  "Meerkat"
- ],
+ "about": "Pilots and artifacts: the ONE spec. Tools/Build/author_pilot_assets.py writes the Unity assets from it (--check is the drift gate). Design: Docs/Pilots/CALLSIGNS.md (one pilot per callsign, any vessel; Garrett 2026-10-27) and Docs/Pilots/ARTIFACTS.md (an artifact is a payload transformation with four element tracks, 0-10, a twist at 5; no vessel class appears in an artifact). Ids are saved by players: never rename one. Text is printable ASCII (the UI font has no other glyphs).",
+ "slotsPerVessel": 1,
  "pilots": [
   {
-   "name": "Shrapnel",
-   "vessel": "Sparrow",
-   "vesselId": 11,
-   "ability": "Skyburst",
-   "rule": "Skyburst blasts throw a ring of small prisms in your domain outward, so every missile breaks rival mass and builds yours.",
-   "ai": "Fires into the densest rival mass.",
-   "kind": "kept",
-   "source": "Destruction effects also create mini-prisms in all directions.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Shrapnel_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.sparrow.shrapnel"
+   "vision": 1
   },
   {
-   "name": "Flux",
-   "vessel": "Sparrow",
-   "vesselId": 11,
-   "ability": "Pulsefire",
-   "rule": "Pulsefire rounds are waves: a widening arc that shoves prisms aside instead of popping them. Clear a lane, or push rival mass into a pile.",
-   "ai": "Opens a lane ahead when boxed in.",
-   "kind": "kept",
-   "source": "Projectiles become waves of energy that push blocks.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Flux_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.sparrow.flux"
+   "vision": 2
   },
   {
-   "name": "Reaper",
-   "vessel": "Manta",
-   "vesselId": 1,
-   "ability": "Sting skim",
-   "rule": "Rival prisms you skim rot: they wither into danger prisms over a few seconds, and the rot spreads once to the prisms they touch.",
-   "ai": "Skims rival walls along their length.",
-   "kind": "kept",
-   "source": "Skimming corrupts enemy prisms.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Reaper_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.manta.reaper"
+   "vision": 3
   },
   {
-   "name": "Astrofoil",
-   "vessel": "Manta",
-   "vesselId": 1,
-   "ability": "Soar",
-   "rule": "While soaring, a blast that hits your prisms reflects: the wave runs back along the shot and breaks the attacker's prisms at the source.",
-   "ai": "Soars when it is under fire.",
-   "kind": "kept",
-   "source": "Reflects destruction effects back at attackers. Aimed at their prisms, not their vessel.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Astrofoil_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.manta.astrofoil"
+   "vision": 4
   },
   {
-   "name": "Scales",
-   "vessel": "Serpent",
-   "vesselId": 7,
-   "ability": "Seed Wall",
-   "rule": "The Seed Wall grows as overlapping scales. A brick that is hit hands its shield to the brick behind it instead of falling, so the wall wears down from the front.",
-   "ai": "Plants walls across lanes rivals use.",
-   "kind": "reshaped",
-   "source": "Was: all grown volume is shielded, which repeats the Mass level-5 shape.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Scales_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.serpent.scales"
+   "vision": 5
   },
   {
-   "name": "Siphon",
-   "vessel": "Serpent",
-   "vesselId": 7,
-   "ability": "Sniper Shot + Seed Wall",
-   "rule": "Prisms your round destroys are stolen: they fly back and lock into your Seed Wall.",
-   "ai": "Snipes rival mass close to its own wall.",
-   "kind": "reshaped",
-   "source": "Was: stolen volume grants temporary Mass (an element). Now the stolen volume builds the wall.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Siphon_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.serpent.siphon"
+   "vision": 6
   },
   {
-   "name": "Tomahawk",
-   "vessel": "Rhino",
-   "vesselId": 3,
-   "ability": "Sword - special move",
-   "rule": "Throw the sword: tap one trigger twice (RR or LL) and the energy blade spins out to that side on a loop that swings with your turn, cuts everything on its way, and comes back. The two-tap flourishes on that trigger are given up.",
-   "ai": "Throws at walls it cannot reach.",
-   "kind": "reshaped",
-   "source": "Was: speed while turning. The arc follows your turn. A thrown blade that hits a rival scores through the Sword Steal hit.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Tomahawk_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.rhino.tomahawk",
-   "tuning": "Assets/_SO_Assets/Pilots/Tuning/Tomahawk.asset",
-   "built": "2026-10-26: ShieldSwipeActionExecutor.TryThrow / AdvanceThrow, tuning TomahawkThrowConfigSO"
+   "vision": 7
   },
   {
-   "name": "Dozer",
-   "vessel": "Rhino",
-   "vesselId": 3,
-   "ability": "Plough",
-   "rule": "The plough shovels instead of breaking: prisms pile up ahead of the nose and drop where you stop, as your own wall.",
-   "ai": "Pushes rival mass into a pile in front of its lane.",
-   "kind": "reshaped",
-   "source": "Was: destruction ignores shields, which is the Rhino's Breaker level-5 upgrade.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Dozer_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.rhino.dozer"
+   "vision": 8
   },
   {
-   "name": "Tenacious",
-   "vessel": "Squirrel",
-   "vesselId": 6,
-   "ability": "Drift trail",
-   "rule": "Your drift lays danger prisms instead of plain ones. The line you carve through a corner is a hazard for whoever follows.",
-   "ai": "Drifts on the racing line when a rival is close behind.",
-   "kind": "kept",
-   "source": "Produce dangerous prisms instead of shielded ones. Tag: Shielded producer.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Tenacious_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.squirrel.tenacious"
+   "vision": 9
   },
   {
-   "name": "Trace",
-   "vessel": "Squirrel",
-   "vesselId": 6,
-   "ability": "Skimming",
-   "rule": "Chase a rival's trail and you overwrite it: the trail you lay on top of theirs turns into your domain.",
-   "ai": "Tails the leader.",
-   "kind": "reshaped",
-   "source": "Was: double charge from following. The chase is kept; the charge number is dropped.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Trace_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.squirrel.trace"
+   "vision": 10
   },
   {
-   "name": "Slingshot",
-   "vessel": "Dolphin",
-   "vesselId": 2,
-   "ability": "Charge and release",
-   "rule": "Pull both sticks together to wind up, throw them apart to fire: the release launches you at twice top speed for a few seconds.",
-   "ai": "Winds up on straights before a crystal.",
-   "kind": "kept",
-   "source": "Slow (sticks together) to fast (sticks apart) boosts to x2 max speed. Tag: Double-Joystick.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Slingshot_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.dolphin.slingshot"
+   "vision": 11
   },
   {
-   "name": "Riptide",
-   "vessel": "Dolphin",
-   "vesselId": 2,
-   "ability": "Trail",
-   "rule": "Your prisms are mines: when a rival breaks one, it bursts and takes their nearby prisms with it.",
-   "ai": "Lays trail where rivals fight.",
-   "kind": "kept",
-   "source": "Blocks that, when destroyed, explode and destroy opposing blocks.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Riptide_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.dolphin.riptide"
+   "vision": 12
   },
   {
-   "name": "Bushy",
-   "vessel": "Urchin",
-   "vesselId": 4,
-   "ability": "Track Projector",
-   "rule": "The projected rail is three rails in a Y, the flux-capacitor shape: three lanes to ride, and the chain spikes cascade along all three.",
-   "ai": "Projects the rail toward rival mass, then rides it.",
-   "kind": "kept",
-   "source": "Trail has a third segment, arranged like a flux capacitor. Tag: split trail. Moved from the Squirrel.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Bushy_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.urchin.bushy"
+   "vision": 13
   },
   {
-   "name": "Heist",
-   "vessel": "Urchin",
-   "vesselId": 4,
-   "ability": "Chain Spikes",
-   "rule": "Chain spikes steal: a cascade turns rival prisms into your domain instead of breaking them, so every chain grows the prismscape you ride.",
-   "ai": "Fires into rival mass that joins its own.",
-   "kind": "kept",
-   "source": "Your destructive abilities steal. Tags: Destructive, Cultivator.",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_Placeholder02.png",
-   "portraitIsStandIn": true,
-   "id": "pilot.urchin.heist"
+   "vision": 14
   },
   {
-   "name": "Maestro",
-   "vessel": "Butterfly",
-   "vesselId": 13,
-   "ability": "Piano keys",
-   "rule": "Play on the beat: a press in time with the music makes the keys you lay ring out a wave of extra volume.",
-   "ai": "Presses on the beat; the AI reads the music clock.",
-   "kind": "kept",
-   "source": "Press on beat to produce extra rings of volume. Tag: Single-Joystick.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Maestro_Placeholder.png",
-   "portraitIsStandIn": false,
-   "check": "Notion tags Maestro Single-Joystick; the Butterfly is two-thumb, so the press would be a trigger tap. Moved from the Dolphin.",
-   "id": "pilot.butterfly.maestro"
+   "vision": 15
   },
   {
-   "name": "Damsel",
-   "vessel": "Butterfly",
-   "vesselId": 13,
-   "ability": "Dust mode",
-   "rule": "The dust settles: leave Dust mode and the dust capsule stays where it was, drifting down for 6 s and still working the mass below it.",
-   "ai": "Leaves dust over its own mass before it switches mode.",
-   "kind": "new",
-   "source": "Game asset only (old line: biggest blocks in open space). Moved from the Manta.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Damsel_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.butterfly.damsel"
+   "vision": 16
   },
   {
-   "name": "Krush",
-   "vessel": "Thresher",
-   "vesselId": 14,
-   "ability": "Wrecking ball",
-   "rule": "Every rival prism the ball smashes kicks it faster, so a run of smashes keeps the ball red without spinning up again.",
-   "ai": "Chains smashes along rival walls.",
-   "kind": "kept",
-   "source": "Destruction effects give you a speed boost. Moved from the Rhino.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Krush_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.thresher.krush"
+   "vision": 17
   },
   {
-   "name": "Trapper",
-   "vessel": "Thresher",
-   "vesselId": 14,
-   "ability": "Plant",
-   "rule": "Planting the ball lays a ring of tar prisms around the anchor: sticky prisms that slow whoever flies through them, you included.",
-   "ai": "Plants across a chaser's line.",
-   "kind": "reshaped",
-   "source": "Was: prisms pull and slow opposing ships. Pulling a vessel breaks the PvP rule; a prism that slows anyone who touches it is an arena effect.",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_Placeholder01.png",
-   "portraitIsStandIn": true,
-   "id": "pilot.thresher.trapper"
-  },
-  {
-   "name": "Mason",
-   "vessel": "Scarab",
-   "vesselId": 12,
-   "ability": "Switch - the wall",
-   "rule": "Your switches are mortared. The bricks are bonded, a broken brick regrows from its neighbours after a few seconds, and a ball that hits the frame bounces off instead of breaking it.",
-   "ai": "Places switches across the ball's lanes.",
-   "kind": "reshaped",
-   "source": "Was: skimming shields friendly prisms. Rebuilt around your Scarab example.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Mason_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.scarab.mason"
-  },
-  {
-   "name": "Echo",
-   "vessel": "Scarab",
-   "vesselId": 12,
-   "ability": "Ball forge",
-   "rule": "Every ball you forge has an echo: a smaller twin, about 60% of its size, forged beside it, that follows the first ball's path a beat behind.",
-   "ai": "Forges near switches.",
-   "kind": "kept",
-   "source": "For each volume produced, produce another slightly smaller (40-80%). Moved from the Dolphin.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Echo_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.scarab.echo"
-  },
-  {
-   "name": "Strider",
-   "vessel": "Stoat",
-   "vesselId": 15,
-   "ability": "Pathfinder",
-   "rule": "The paths you boost down stay behind as a lane: for 10 s anyone in your domain rides it at Pathfinder speed.",
-   "ai": "Boosts down paths toward its team's objective.",
-   "kind": "reshaped",
-   "source": "The 20% / 50% numbers moved to the Tailwind artifact. Moved from the Squirrel.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Strider_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.stoat.strider"
-  },
-  {
-   "name": "Comet",
-   "vessel": "Stoat",
-   "vesselId": 15,
-   "ability": "Time mode",
-   "rule": "The orbit slingshot makes you a comet: for the length of the kick you pass through prisms and break them instead of hitting them.",
-   "ai": "Slings through rival walls.",
-   "kind": "reshaped",
-   "source": "Crystal effects doubled moved to the Comet Shard artifact. Moved from the Serpent.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Comet_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.stoat.comet"
-  },
-  {
-   "name": "Tender",
-   "vessel": "Goby",
-   "vesselId": 18,
-   "ability": "Dens",
-   "rule": "Dens tend themselves: while the Pistol is within reach, a den regrows any prism taken from it.",
-   "ai": "Keeps the Pistol near its best den.",
-   "kind": "new",
-   "source": "Game asset only (old line: longest debuff from crystal decoy). Moved from the Manta.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Tender_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.goby.tender"
-  },
-  {
-   "name": "Snap",
-   "vessel": "Goby",
-   "vesselId": 18,
-   "ability": "Vortex rings",
-   "rule": "Hold to charge the Pistol's snap: the vortex ring grows while held, and on release carves a tunnel through prisms on its way to the locked rival.",
-   "ai": "Charges a ring when the lock sits behind a wall.",
-   "kind": "new",
-   "source": "New name (a pistol shrimp's snap).",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "id": "pilot.goby.snap"
-  },
-  {
-   "name": "Jugger",
-   "vessel": "BrittleStar",
-   "vesselId": 16,
-   "ability": "Ring throw - special move",
-   "rule": "Catch the thrown ring: fly through it before it fuses and it is back on the hull with the fuse reset, and your spare is kept.",
-   "ai": "Throws, then catches when no target is in reach.",
-   "kind": "new",
-   "source": "Game asset only (old line: biggest max shield size). Moved from the Rhino.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Jugger_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.brittlestar.jugger"
-  },
-  {
-   "name": "Nul",
-   "vessel": "BrittleStar",
-   "vesselId": 16,
-   "ability": "Speed mode",
-   "rule": "In Speed mode the arena cannot touch you: danger and slow prisms in your path are cut by the ring before you feel them.",
-   "ai": "Switches to Speed before crossing danger fields.",
-   "kind": "reshaped",
-   "source": "Was: ignore all negative effects. Narrowed to arena effects, because ignoring rival hits would break the petals-only rule.",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_01.png",
-   "portraitIsStandIn": true,
-   "id": "pilot.brittlestar.nul"
-  },
-  {
-   "name": "Timebomb",
-   "vessel": "Shrike",
-   "vesselId": 10,
-   "ability": "Void Lance",
-   "rule": "The Void Lance grows the longer it flies. A close shot pins one block; a long shot hollows out a whole wall.",
-   "ai": "Takes the longest clear line it can find.",
-   "kind": "kept",
-   "source": "Projectiles grow larger the longer they are alive. Tag: Projectile user.",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_Placeholder04.png",
-   "portraitIsStandIn": true,
-   "id": "pilot.shrike.timebomb"
-  },
-  {
-   "name": "Ironclad",
-   "vessel": "Shrike",
-   "vesselId": 10,
-   "ability": "Nests",
-   "rule": "Your nests are forts: while a nest's flora lives, the nest regrows its super-shielded blocks.",
-   "ai": "Nests beside contested crystals.",
-   "kind": "reshaped",
-   "source": "Was: auto-shield your trail, which repeats several Mass level-5 upgrades.",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_Placeholder07.png",
-   "portraitIsStandIn": true,
-   "id": "pilot.shrike.ironclad"
-  },
-  {
-   "name": "Glimmer",
-   "vessel": "Angler",
-   "vesselId": 17,
-   "ability": "Paint",
-   "rule": "Paint sweeps: holding RT paints a wide fan instead of one point, so the half-school spreads across a whole wall instead of piling onto one prism.",
-   "ai": "Sweeps long rival walls.",
-   "kind": "new",
-   "source": "New name.",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "id": "pilot.angler.glimmer"
-  },
-  {
-   "name": "Pack",
-   "vessel": "Angler",
-   "vesselId": 17,
-   "ability": "Lock-on",
-   "rule": "A lock-on sends a pack of three that share the target and come back to the school after it falls, instead of one creature that is spent.",
-   "ai": "Locks the rival with the most petals.",
-   "kind": "new",
-   "source": "New name.",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_Placeholder06.png",
-   "portraitIsStandIn": true,
-   "check": "Changes what happens to creatures the school spends: check it against the locked ecosystem principles.",
-   "id": "pilot.angler.pack"
-  },
-  {
-   "name": "Feist",
-   "vessel": "Wrasse",
-   "vesselId": 19,
-   "ability": "Afterburner",
-   "rule": "Lighting the afterburner leaves a decoy: a ghost hull and kite fly on your old heading for 2 s, and AI pilots and homing missiles chase it.",
-   "ai": "Burns when a rival sits on its tail.",
-   "kind": "reshaped",
-   "source": "Notion line was empty; the name now means a feint. Moved from the Sparrow (the Wrasse is its hull).",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Fiest_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.wrasse.feist"
-  },
-  {
-   "name": "Lariat",
-   "vessel": "Wrasse",
-   "vesselId": 19,
-   "ability": "Kite tail",
-   "rule": "The tail lassos prisms too: close a loop around a cluster of rival prisms and the whole cluster is stolen.",
-   "ai": "Loops clusters the pilot flies past.",
-   "kind": "new",
-   "source": "New name.",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_Placeholder05.png",
-   "portraitIsStandIn": true,
-   "id": "pilot.wrasse.lariat"
-  },
-  {
-   "name": "Longshift",
-   "vessel": "Orca",
-   "vesselId": 20,
-   "ability": "Gunner outrigger",
-   "rule": "Drop an outrigger: one gunner turret detaches and keeps firing at rival prisms for 8 s, and re-docks when the hull flies back through it.",
-   "ai": "Drops a turret by a rival wall, then leaves.",
-   "kind": "reshaped",
-   "source": "Range and velocity moved to the Long Barrel artifact. Moved from the Sparrow.",
-   "portrait": "Assets/_Graphics/Pilots/Portrait_Longshift_Placeholder.png",
-   "portraitIsStandIn": false,
-   "id": "pilot.orca.longshift"
-  },
-  {
-   "name": "Pod",
-   "vessel": "Orca",
-   "vesselId": 20,
-   "ability": "Gunner missiles",
-   "rule": "The gunners' missiles fly as a pod: if all three fire within a second they merge into one large missile that any gunner steers.",
-   "ai": "AI gunners fire together when a human gunner fires.",
-   "kind": "new",
-   "source": "New name (an orca pod).",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "id": "pilot.orca.pod"
-  },
-  {
-   "name": "Murmur",
-   "vessel": "Starling",
-   "vesselId": 21,
-   "ability": "The swarm",
-   "rule": "Two murmurations: the swarm splits into two flocks that chase different objectives at once, and the next card you pick goes to the flock you are looking at.",
-   "ai": "Looks at the flock nearer the objective.",
-   "kind": "new",
-   "source": "New name.",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "id": "pilot.starling.murmur"
-  },
-  {
-   "name": "Roost",
-   "vessel": "Starling",
-   "vesselId": 21,
-   "ability": "Between objectives",
-   "rule": "Between objectives the flock roosts on your mass: the prisms it lands on are shielded until it takes off again.",
-   "ai": "Turns the view toward its own mass between phases.",
-   "kind": "new",
-   "source": "New name.",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "id": "pilot.starling.roost"
-  },
-  {
-   "name": "Pincer",
-   "vessel": "Jacks",
-   "vesselId": 22,
-   "ability": "Herding",
-   "rule": "Pull the thumbs apart while herding and the jacks fan out to the herd's flanks, driving it through a gap from both sides.",
-   "ai": "Flanks herds aimed at a gap.",
-   "kind": "new",
-   "source": "New name.",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "id": "pilot.jacks.pincer"
-  },
-  {
-   "name": "Shoal",
-   "vessel": "Jacks",
-   "vesselId": 22,
-   "ability": "Herding",
-   "rule": "A herd you drive packs into a bait ball: a tight ball that rolls through rival prisms and breaks them.",
-   "ai": "Drives the ball through rival walls.",
-   "kind": "new",
-   "source": "New name.",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "check": "Changes how real fauna moves: check it against the locked ecosystem principles.",
-   "id": "pilot.jacks.shoal"
-  },
-  {
-   "name": "Comb",
-   "vessel": "Honeyguide",
-   "vesselId": 23,
-   "ability": "The Dynamo",
-   "rule": "Patterns lock in: a pattern made three times is no longer replaced; it stays on the Dynamo and pays a slip charge every spin.",
-   "ai": "The AI Ratel repeats its best pattern.",
-   "kind": "new",
-   "source": "New name (a honeycomb).",
-   "portrait": null,
-   "portraitIsStandIn": false,
-   "id": "pilot.honeyguide.comb"
-  },
-  {
-   "name": "Raid",
-   "vessel": "Honeyguide",
-   "vesselId": 23,
-   "ability": "The Slip",
-   "rule": "Zips steal: slip down a rival trail and it turns to your domain behind you as you pass.",
-   "ai": "Slips along rival trails.",
-   "kind": "new",
-   "source": "New name (the ratel raids the hive).",
-   "portrait": "Assets/_Graphics/Pilots/PilotPortrait_Placeholder03.png",
-   "portraitIsStandIn": true,
-   "id": "pilot.honeyguide.raid"
+   "vision": 18
   }
  ],
  "artifacts": [
   {
-   "name": "Tailwind",
-   "stat": "Tailwind",
-   "statId": 1,
-   "fits": "Fleet",
-   "fitsId": -1,
-   "changes": "Speed bonuses: strength / duration",
-   "ranks": [
-    "+10% / +20%",
-    "+15% / +35%",
-    "+20% / +50%"
-   ],
-   "from": "Strider",
-   "id": "artifact.fleet.tailwind"
+   "id": "artifact.javelin",
+   "name": "Javelin",
+   "transform": "Javelin",
+   "description": "Throws the payload down your heading. It cracks every rival super-shield along its line and bursts where it stops.",
+   "transformTuning": {
+    "speed": 260,
+    "lingerPulseSeconds": 0.5
+   },
+   "tracks": [
+    {
+     "element": "Mass",
+     "label": "line width",
+     "atZero": 4,
+     "atTen": 16,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "Its final burst reaches twice as far."
+    },
+    {
+     "element": "Space",
+     "label": "range",
+     "atZero": 150,
+     "atTen": 500,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It pierces: it never stops for what it cracks."
+    },
+    {
+     "element": "Time",
+     "label": "linger seconds",
+     "atZero": 0,
+     "atTen": 4,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "The whole line lingers, cracking what is rebuilt along it."
+    },
+    {
+     "element": "Charge",
+     "label": "cracks before it stops",
+     "atZero": 1,
+     "atTen": 6,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It cracks ordinary shields too."
+    }
+   ]
   },
   {
-   "name": "Comet Shard",
-   "stat": "CometShard",
-   "statId": 2,
-   "fits": "Fleet",
-   "fitsId": -1,
-   "changes": "Crystal effect strength",
-   "ranks": [
-    "x1.25",
-    "x1.5",
-    "x2"
-   ],
-   "from": "Comet",
-   "id": "artifact.fleet.comet-shard"
-  },
-  {
-   "name": "Ballast",
-   "stat": "Ballast",
-   "statId": 3,
-   "fits": "Fleet",
-   "fitsId": -1,
-   "changes": "Trail prism size",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.fleet.ballast"
-  },
-  {
-   "name": "Long Reach",
-   "stat": "LongReach",
-   "statId": 4,
-   "fits": "Fleet",
-   "fitsId": -1,
-   "changes": "Skimmer reach",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.fleet.long-reach"
-  },
-  {
-   "name": "Quick Hands",
-   "stat": "QuickHands",
-   "statId": 5,
-   "fits": "Fleet",
-   "fitsId": -1,
-   "changes": "Ability cooldowns",
-   "ranks": [
-    "-5%",
-    "-10%",
-    "-15%"
-   ],
-   "from": "new",
-   "id": "artifact.fleet.quick-hands"
-  },
-  {
-   "name": "Extra Bay",
-   "stat": "ExtraBay",
-   "statId": 6,
-   "fits": "Sparrow",
-   "fitsId": 11,
-   "changes": "Skyburst missiles the bay holds",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "your example",
-   "id": "artifact.sparrow.extra-bay"
-  },
-  {
-   "name": "Long Barrel",
-   "stat": "LongBarrel",
-   "statId": 7,
-   "fits": "Sparrow",
-   "fitsId": 11,
-   "changes": "Pulsefire range and velocity",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "Longshift",
-   "id": "artifact.sparrow.long-barrel"
-  },
-  {
-   "name": "Bomb Rack",
-   "stat": "BombRack",
-   "statId": 8,
-   "fits": "Manta",
-   "fitsId": 1,
-   "changes": "Bombs the bay holds (3 at rest)",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.manta.bomb-rack"
-  },
-  {
-   "name": "Wide Bloom",
-   "stat": "WideBloom",
-   "statId": 9,
-   "fits": "Manta",
-   "fitsId": 1,
-   "changes": "Bloom size",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.manta.wide-bloom"
-  },
-  {
-   "name": "Fifth Pellet",
-   "stat": "FifthPellet",
-   "statId": 10,
-   "fits": "Serpent",
-   "fitsId": 7,
-   "changes": "Fuel pellets in the tank (holds 4)",
-   "ranks": [
-    "5 pellets",
-    "5 pellets",
-    "6 pellets"
-   ],
-   "from": "new",
-   "kind": "Set",
-   "id": "artifact.serpent.fifth-pellet"
-  },
-  {
-   "name": "Steady Bolt",
-   "stat": "SteadyBolt",
-   "statId": 11,
-   "fits": "Serpent",
-   "fitsId": 7,
-   "changes": "Sniper Shot recovery time",
-   "ranks": [
-    "-10%",
-    "-20%",
-    "-30%"
-   ],
-   "from": "new",
-   "id": "artifact.serpent.steady-bolt"
-  },
-  {
-   "name": "Long Edge",
-   "stat": "LongEdge",
-   "statId": 12,
-   "fits": "Rhino",
-   "fitsId": 3,
-   "changes": "Blade length (24 u at rest)",
-   "ranks": [
-    "+2 u",
-    "+4 u",
-    "+6 u"
-   ],
-   "from": "new",
-   "id": "artifact.rhino.long-edge"
-  },
-  {
-   "name": "Lingering Image",
-   "stat": "LingeringImage",
-   "statId": 13,
-   "fits": "Rhino",
-   "fitsId": 3,
-   "changes": "Afterimage window (5 s)",
-   "ranks": [
-    "+1 s",
-    "+2 s",
-    "+3 s"
-   ],
-   "from": "new",
-   "id": "artifact.rhino.lingering-image"
-  },
-  {
-   "name": "Ring Stock",
-   "stat": "RingStock",
-   "statId": 14,
-   "fits": "Squirrel",
-   "fitsId": 6,
-   "changes": "Boost ring charges",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.squirrel.ring-stock"
-  },
-  {
-   "name": "Hot Rings",
-   "stat": "HotRings",
-   "statId": 15,
-   "fits": "Squirrel",
-   "fitsId": 6,
-   "changes": "Boost ring speed",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.squirrel.hot-rings"
-  },
-  {
-   "name": "Seed Pod",
-   "stat": "SeedPod",
-   "statId": 16,
-   "fits": "Dolphin",
-   "fitsId": 2,
-   "changes": "Crystals seeded per cycle",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.dolphin.seed-pod"
-  },
-  {
-   "name": "Deep Lungs",
-   "stat": "DeepLungs",
-   "statId": 17,
-   "fits": "Dolphin",
-   "fitsId": 2,
-   "changes": "Drift charge rate",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.dolphin.deep-lungs"
-  },
-  {
-   "name": "Long Rail",
-   "stat": "LongRail",
-   "statId": 18,
-   "fits": "Urchin",
-   "fitsId": 4,
-   "changes": "Projected track length (100 u)",
-   "ranks": [
-    "+15 u",
-    "+30 u",
-    "+45 u"
-   ],
-   "from": "new",
-   "id": "artifact.urchin.long-rail"
-  },
-  {
-   "name": "Deep Chain",
-   "stat": "DeepChain",
-   "statId": 19,
-   "fits": "Urchin",
-   "fitsId": 4,
-   "changes": "Spike cascade generations",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.urchin.deep-chain"
-  },
-  {
-   "name": "Wide Keys",
-   "stat": "WideKeys",
-   "statId": 20,
-   "fits": "Butterfly",
-   "fitsId": 13,
-   "changes": "Mass-mode key width",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.butterfly.wide-keys"
-  },
-  {
-   "name": "Long Dust",
-   "stat": "LongDust",
-   "statId": 21,
-   "fits": "Butterfly",
-   "fitsId": 13,
-   "changes": "Dust capsule length",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.butterfly.long-dust"
-  },
-  {
-   "name": "Long Chain",
-   "stat": "LongChain",
-   "statId": 22,
-   "fits": "Thresher",
-   "fitsId": 14,
-   "changes": "Chain length",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.thresher.long-chain"
-  },
-  {
-   "name": "Heavy Ball",
-   "stat": "HeavyBall",
-   "statId": 23,
-   "fits": "Thresher",
-   "fitsId": 14,
-   "changes": "Wrecking ball size",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.thresher.heavy-ball"
-  },
-  {
-   "name": "Fourth Switch",
-   "stat": "FourthSwitch",
-   "statId": 24,
-   "fits": "Scarab",
-   "fitsId": 12,
-   "changes": "Standing switches (3)",
-   "ranks": [
-    "4 switches",
-    "4 switches",
-    "5 switches"
-   ],
-   "from": "new",
-   "kind": "Set",
-   "id": "artifact.scarab.fourth-switch"
-  },
-  {
-   "name": "Heavy Forge",
-   "stat": "HeavyForge",
-   "statId": 25,
-   "fits": "Scarab",
-   "fitsId": 12,
-   "changes": "Forged ball size",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.scarab.heavy-forge"
-  },
-  {
-   "name": "Wide Poles",
-   "stat": "WidePoles",
-   "statId": 26,
-   "fits": "Stoat",
-   "fitsId": 15,
-   "changes": "Dipole pole size",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.stoat.wide-poles"
-  },
-  {
-   "name": "Long Ripple",
-   "stat": "LongRipple",
-   "statId": 27,
-   "fits": "Stoat",
-   "fitsId": 15,
-   "changes": "Ripple reach",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.stoat.long-ripple"
-  },
-  {
-   "name": "Deep Den",
-   "stat": "DeepDen",
-   "statId": 28,
-   "fits": "Goby",
-   "fitsId": 18,
-   "changes": "Prisms a den holds",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.goby.deep-den"
-  },
-  {
-   "name": "Quick Dart",
-   "stat": "QuickDart",
-   "statId": 29,
-   "fits": "Goby",
-   "fitsId": 18,
-   "changes": "Dart cooldown",
-   "ranks": [
-    "-10%",
-    "-20%",
-    "-30%"
-   ],
-   "from": "new",
-   "id": "artifact.goby.quick-dart"
-  },
-  {
-   "name": "Spare Ring",
-   "stat": "SpareRing",
-   "statId": 30,
-   "fits": "BrittleStar",
-   "fitsId": 16,
-   "changes": "Spare rings held (2)",
-   "ranks": [
-    "3 spares",
-    "3 spares",
-    "4 spares"
-   ],
-   "from": "new",
-   "kind": "Set",
-   "id": "artifact.brittlestar.spare-ring"
-  },
-  {
-   "name": "Cool Guns",
-   "stat": "CoolGuns",
-   "statId": 31,
-   "fits": "BrittleStar",
-   "fitsId": 16,
-   "changes": "Heat per round",
-   "ranks": [
-    "-10%",
-    "-20%",
-    "-30%"
-   ],
-   "from": "new",
-   "id": "artifact.brittlestar.cool-guns"
-  },
-  {
-   "name": "Missile Nest",
-   "stat": "MissileNest",
-   "statId": 32,
-   "fits": "Shrike",
-   "fitsId": 10,
-   "changes": "Missiles per nest flora",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.shrike.missile-nest"
-  },
-  {
-   "name": "Quick Dock",
-   "stat": "QuickDock",
-   "statId": 33,
-   "fits": "Shrike",
-   "fitsId": 10,
-   "changes": "Docked cooldown penalty (x1.6)",
-   "ranks": [
-    "x1.5",
-    "x1.4",
-    "x1.25"
-   ],
-   "from": "new",
-   "kind": "Set",
-   "id": "artifact.shrike.quick-dock"
-  },
-  {
-   "name": "Big School",
-   "stat": "BigSchool",
-   "statId": 34,
-   "fits": "Angler",
-   "fitsId": 17,
-   "changes": "Creatures in the school",
-   "ranks": [
-    "+2",
-    "+4",
-    "+6"
-   ],
-   "from": "new",
-   "id": "artifact.angler.big-school"
-  },
-  {
-   "name": "Long Beam",
-   "stat": "LongBeam",
-   "statId": 35,
-   "fits": "Angler",
-   "fitsId": 17,
-   "changes": "Paint reach (3200 u)",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.angler.long-beam"
-  },
-  {
-   "name": "Long Tail",
-   "stat": "LongTail",
-   "statId": 36,
-   "fits": "Wrasse",
-   "fitsId": 19,
-   "changes": "Kite tail length",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.wrasse.long-tail"
-  },
-  {
-   "name": "Wide Head",
-   "stat": "WideHead",
-   "statId": 37,
-   "fits": "Wrasse",
-   "fitsId": 19,
-   "changes": "Kite head size",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.wrasse.wide-head"
-  },
-  {
-   "name": "Boost Tank",
-   "stat": "BoostTank",
-   "statId": 38,
-   "fits": "Orca",
-   "fitsId": 20,
-   "changes": "Helm boost tank",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.orca.boost-tank"
-  },
-  {
-   "name": "Gunner Rack",
-   "stat": "GunnerRack",
-   "statId": 39,
-   "fits": "Orca",
-   "fitsId": 20,
-   "changes": "Missiles per gunner",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.orca.gunner-rack"
-  },
-  {
-   "name": "Big Flock",
-   "stat": "BigFlock",
-   "statId": 40,
-   "fits": "Starling",
-   "fitsId": 21,
-   "changes": "Flock cap (200)",
-   "ranks": [
-    "+10",
-    "+20",
-    "+30"
-   ],
-   "from": "new",
-   "id": "artifact.starling.big-flock"
-  },
-  {
-   "name": "Card Hand",
-   "stat": "CardHand",
-   "statId": 41,
-   "fits": "Starling",
-   "fitsId": 21,
-   "changes": "Cards offered per pick",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.starling.card-hand"
-  },
-  {
-   "name": "Wide Herd",
-   "stat": "WideHerd",
-   "statId": 42,
-   "fits": "Jacks",
-   "fitsId": 22,
-   "changes": "Herding reach",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.jacks.wide-herd"
-  },
-  {
-   "name": "Fast Jacks",
-   "stat": "FastJacks",
-   "statId": 43,
-   "fits": "Jacks",
-   "fitsId": 22,
-   "changes": "Jack speed",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.jacks.fast-jacks"
-  },
-  {
-   "name": "Battery Cell",
-   "stat": "BatteryCell",
-   "statId": 44,
-   "fits": "Honeyguide",
-   "fitsId": 23,
-   "changes": "Slip charges the battery holds",
-   "ranks": [
-    "+1",
-    "+1",
-    "+2"
-   ],
-   "from": "new",
-   "id": "artifact.honeyguide.battery-cell"
-  },
-  {
-   "name": "Long Zip",
-   "stat": "LongZip",
-   "statId": 45,
-   "fits": "Honeyguide",
-   "fitsId": 23,
-   "changes": "Slip reach",
-   "ranks": [
-    "+10%",
-    "+20%",
-    "+30%"
-   ],
-   "from": "new",
-   "id": "artifact.honeyguide.long-zip"
+   "id": "artifact.aegis",
+   "name": "Aegis",
+   "transform": "Aegis",
+   "description": "Release the payload beside your Ark and it super-shields the Ark's hull for a while, guarding everything aboard.",
+   "transformTuning": {
+    "reraiseDelay": 3,
+    "notHomeLine": "AEGIS - RELEASE IT BESIDE YOUR ARK"
+   },
+   "tracks": [
+    {
+     "element": "Mass",
+     "label": "hull covered",
+     "atZero": 0.3,
+     "atTen": 0.8,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It covers the whole hull."
+    },
+    {
+     "element": "Space",
+     "label": "release reach",
+     "atZero": 120,
+     "atTen": 320,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It reaches home from anywhere."
+    },
+    {
+     "element": "Time",
+     "label": "seconds",
+     "atZero": 8,
+     "atTen": 40,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "When it ends it leaves an ordinary shield behind."
+    },
+    {
+     "element": "Charge",
+     "label": "re-raises",
+     "atZero": 0,
+     "atTen": 3,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "A cracked plate re-raises at once."
+    }
+   ]
   }
  ]
 }

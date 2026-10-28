@@ -343,13 +343,14 @@ RETIRED_FILES = ("Assets/_SO_Assets/Hangar/HangarTryPreview.asset", "Assets/_SO_
                  "Assets/_SO_Assets/Hangar.meta", "Assets/_Scripts/UI/Elements/Hangar/HangarAbilityPreview.cs",
                  "Assets/_Scripts/UI/Elements/Hangar/HangarAbilityPreview.cs.meta")
 KIT_TEXT_TAB = K.kit_script("KitTextTab")
+KIT_SCROLL_INTO_VIEW = K.kit_script("KitScrollIntoView")
 MENU_AUDIO = K.meta_guid("Assets/_Scripts/UI/MenuAudio.cs")
 VESSEL_PREFABS = K.meta_guid("Assets/_SO_Assets/Vessel Prefab Container.asset")
 GLYPH_SET = K.meta_guid("Assets/Resources/ControlGlyphSet.asset")
 PILOT_CATALOG = K.meta_guid("Assets/Resources/Pilots/PilotArtifactCatalog.asset")   # written by author_pilot_assets.py (run it first)
 ARTIFACTS_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarArtifactsPage.cs")
 ARTIFACT_SLOTS = 4                          # slot frames drawn; PilotCatalogSO.slotsPerVessel shows the first N
-ARTIFACT_ROWS = 8                           # a vessel's two artifacts and the fleet's five, and one spare
+ARTIFACT_ROWS = 4                           # Javelin and Aegis, and room for two more (Docs/Pilots/ARTIFACTS.md)
 GAME_LISTS = [K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"),
               K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArenaGames.asset")]
 ELEMENTS = [("Charge", 1), ("Mass", 2), ("Space", 3), ("Time", 4)]
@@ -387,6 +388,8 @@ RAIL_LEAN, RAIL_KNEE, RAIL_STUB = 56, 0.46, 0.62
 RAIL_Y, RAIL_CHAMFER, RAIL_START = 64, 34, 0.70
 LINE_W = 1.5
 GAME_TILES = 6
+PILOT_CARDS = 18                            # one per callsign (author_callsign_assets.CALLSIGNS); the page hides unused cards
+assert PILOT_CARDS == len(_load("author_callsign_assets").CALLSIGNS), "PILOT_CARDS must be one card per callsign"
 EMPTY_CALLS = "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"
 
 
@@ -773,34 +776,59 @@ def games_page(panel):
     return page
 
 
+def scroll_list(page, key, top):
+    """A vertical ScrollRect under `top` px of the page: Scroll / Viewport (a RectMask2D) / Content (a fitted column).
+    Returns the Content node (the games page's pattern)."""
+    scroll = page.child(N(f"{key}/Scroll", "Scroll", R((0, 0), (1, 1), (0, -top / 2), (0, -top))))
+    vp = scroll.child(N(f"{key}/Scroll/Viewport", "Viewport", STRETCH))
+    vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("mask", 114, lambda ctx, go: K.mono(go, KIT_RECT_MASK_2D, "  m_Padding: {x: 0, y: 0, z: 0, w: 0}\n  m_Softness: {x: 0, y: 0}\n"))
+    content = vp.child(N(f"{key}/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
+    content.add("vlg", 114, K.hv_layout(True, (5, 5, 5, 5), 8, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    scroll.add("scroll", 114, lambda ctx, go: K.mono(go, SCROLL_RECT,
+               f"  m_Content: {ref(ctx.rt(f'{key}/Scroll/Viewport/Content'))}\n  m_Horizontal: 0\n  m_Vertical: 1\n"
+               "  m_MovementType: 2\n  m_Elasticity: 0.1\n  m_Inertia: 1\n  m_DecelerationRate: 0.135\n"
+               f"  m_ScrollSensitivity: 20\n  m_Viewport: {ref(ctx.rt(f'{key}/Scroll/Viewport'))}\n"
+               "  m_HorizontalScrollbar: {fileID: 0}\n  m_VerticalScrollbar: {fileID: 0}\n"
+               "  m_HorizontalScrollbarVisibility: 2\n  m_VerticalScrollbarVisibility: 2\n"
+               "  m_HorizontalScrollbarSpacing: -3\n  m_VerticalScrollbarSpacing: -3\n"
+               "  m_OnValueChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"))
+    return content
+
+
+PILOT_CARD_H = 76
+
+
 def pilots_page(panel):
-    """Docs/Pilots/PILOTS_AND_ARTIFACTS.md: the vessel's pilots (two each, up to four rows) - portrait, name, the ability it
-    rewrites and how, and its state (in the seat, stand-in art, art to come). A pilot is not tied to an element, so a row
-    carries no element flower (the rev-24 rows read the per-element captains). A press seats the pilot; the header above
-    the vessel names the focused one (HangarPilotsPage is an IHangarHeader)."""
+    """Docs/Pilots/CALLSIGNS.md (Garrett, 2026-10-27: one pilot per callsign, any vessel): a scrolled list of PILOT_CARDS
+    compact cards, one per callsign - portrait, name, the callsign's line (what holding LB lights) and its state (in the
+    seat, stand-in art). A press seats the pilot, pressing the seated one empties the seat; the header above the vessel
+    names the focused one (HangarPilotsPage is an IHangarHeader)."""
     page = page_node(panel, "Pilots", False, top=PAGE_TOP)
     label(page.child(N("Tabs/Pilots/Line", "Line", R((0, 1), (1, 1), (0, 0), (0, 36), (0.5, 1)))),
-          "Seat one pilot. Each one rewrites one ability. Press the seated pilot again to fly the base kit.", "BodySmall",
-          "NeutralLightest", valign="top", wrap=True)
-    lst = list_node(page, "Tabs/Pilots/List", 48, spacing=10)
-    for i in range(4):
+          "Seat one pilot: hold LB in flight to see what they see. Press the seated pilot again to empty the seat.",
+          "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    content = scroll_list(page, "Tabs/Pilots", 44)
+    for i in range(PILOT_CARDS):
         k = f"Tabs/Pilots/Card{i}"
-        c = kit_row(lst, k, f"Card{i}", R((0, 1), (1, 1), (0, 0), (0, 124), (0.5, 1)), 124)
+        c = kit_row(content, k, f"Card{i}", R((0, 1), (1, 1), (0, 0), (0, PILOT_CARD_H), (0.5, 1)), PILOT_CARD_H)
         c.add("cg", 225, canvas_group(True))
+        # The pad walks the column: a focused card scrolls itself into view.
+        c.add("reveal", 114, lambda ctx, go: K.mono(go, KIT_SCROLL_INTO_VIEW, "  target: {fileID: 0}\n  margin: 12\n"))
         c.child(N(f"{k}/Underline", "Selected", R((0, 0), (1, 1), (0, 0), (6, 6)))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), K.kit_sprite("kit_sliver10_line2"), True))
-        c.child(N(f"{k}/Portrait", "Portrait", TLr(12, 14, 76, 96))).add("cr", 222, K.canvas_renderer()) \
+        c.child(N(f"{k}/Portrait", "Portrait", TLr(10, 10, 44, 56))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True))
-        ellipsize(label(c.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (104, -18), (-(104 + 180), 30), (0, 1)))), "", "H3", "TextLight"))
-        label(c.child(N(f"{k}/State", "State", TRr(18, 22, 170, 18))), "", "Label", "ControlActive", align="right")
-        ellipsize(label(c.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (104, -54), (-(104 + 24), 56), (0, 1)))), "", "BodySmall",
-                        "NeutralLightest", valign="top", wrap=True))
+        ellipsize(label(c.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (66, -10), (-(66 + 150), 26), (0, 1)))), "", "H3", "TextLight"))
+        label(c.child(N(f"{k}/State", "State", TRr(16, 14, 140, 18))), "", "Label", "ControlActive", align="right")
+        ellipsize(label(c.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (66, -40), (-(66 + 16), 24), (0, 1)))), "", "BodySmall",
+                        "NeutralLightest"))
     label(page.child(N("Tabs/Pilots/Empty", "Empty", R((0, 1), (1, 1), (0, -60), (0, 40), (0.5, 1)))),
-          "No pilots fly this vessel yet.", "BodySmall", "NeutralLightest").add("cg", 225, canvas_group(False))
+          "No pilots yet.", "BodySmall", "NeutralLightest").add("cg", 225, canvas_group(False))
 
     def body(ctx, go):
         cards_ = ""
-        for i in range(4):
+        for i in range(PILOT_CARDS):
             k = f"Tabs/Pilots/Card{i}"
             cards_ += (f"  - group: {ref(ctx.c(k, 'cg'))}\n    button: {ref(ctx.c(k, 'button'))}\n    portrait: {ref(ctx.c(f'{k}/Portrait', 'img'))}\n"
                        f"    nameText: {ref(ctx.c(f'{k}/Name', 'tmp'))}\n    lineText: {ref(ctx.c(f'{k}/Line', 'tmp'))}\n"
@@ -808,18 +836,18 @@ def pilots_page(panel):
         return K.mono(go, PILOTS_SCRIPT,
                       f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n"
                       f"  emptyGroup: {ref(ctx.c('Tabs/Pilots/Empty', 'cg'))}\n  cards:\n{cards_}"
-                      "  lineTemplate: '{ability}: {rule}'\n  seatedWord: IN THE SEAT\n  standInWord: STAND-IN ART\n"
-                      "  noArtWord: ART TO COME\n  baseKitWord: Base kit\n"
-                      "  headerKickerTemplate: \"PILOT \\xB7 {vessel} \\xB7 {ability}\"\n  headerLineTemplate: '{rule}'\n")
+                      "  lineTemplate: '{sight}'\n  seatedWord: IN THE SEAT\n  standInWord: STAND-IN ART\n"
+                      "  noArtWord: \n"
+                      "  headerKickerTemplate: \"PILOT \\xB7 {vessel}\"\n"
+                      "  headerLineTemplate: 'Hold LB: {sight}'\n")
     page.add("logic", 114, body)
     return page
 
 
 def artifacts_page(panel):
-    """Docs/Pilots/PILOTS_AND_ARTIFACTS.md: the vessel's artifact slots across the top (ARTIFACT_SLOTS frames; the catalog's
-    slot count shows the first N) and every artifact that fits it below (its own, then the fleet's). A found artifact shows
-    its rank and value and a press slots it; one not found yet reads Undiscovered. The header above the vessel names the
-    slots (HangarArtifactsPage is an IHangarHeader)."""
+    """Docs/Pilots/ARTIFACTS.md: the vessel's artifact slot across the top (ARTIFACT_SLOTS frames; the catalog's slot count
+    shows the first N) and every artifact below. A held artifact shows the player's four track levels and a press slots
+    it; one not held reads Not held. The header above the vessel names the slot (HangarArtifactsPage is an IHangarHeader)."""
     page = page_node(panel, "Artifacts", False, top=PAGE_TOP)
     slots = page.child(N("Tabs/Artifacts/Slots", "Slots", R((0, 1), (1, 1), (0, 0), (0, 96), (0.5, 1))))
     slots.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 0, (1, 1), (1, 1)))
@@ -865,11 +893,10 @@ def artifacts_page(panel):
         return K.mono(go, ARTIFACTS_SCRIPT,
                       f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n  slots:\n{slots_}  rows:\n{rows_}"
                       f"  emptyGroup: {ref(ctx.c('Tabs/Artifacts/Empty', 'cg'))}\n"
-                      "  emptySlotWord: Empty\n  emptySlotLine: Press a found artifact\n  undiscoveredWord: Undiscovered\n"
-                      "  hullTagTemplate: HULL {rank}\n  fleetTagTemplate: FLEET {rank}\n"
-                      "  rankWords:\n  - \n  - RANK I\n  - RANK II\n  - RANK III\n"
-                      "  headerKickerTemplate: \"{vessel} \\xB7 {slots} SLOTS\"\n  headerTitle: ARTIFACTS\n"
-                      "  headerLineTemplate: '{slotted} of {slots} slotted. {found} found. Each one moves one number of the kit.'\n")
+                      "  emptySlotWord: Empty\n  emptySlotLine: Press an artifact\n  heldWord: HELD\n  notHeldWord: Not held\n"
+                      "  levelsTemplate: M{mass} S{space} T{time} C{charge}\n"
+                      "  headerKickerTemplate: \"{vessel} \\xB7 {slots} SLOT\"\n  headerTitle: ARTIFACTS\n"
+                      "  headerLineTemplate: '{slotted} of {slots} slotted. {held} held. The slotted artifact reshapes every payload you grab.'\n")
     page.add("logic", 114, body)
     return page
 
@@ -933,7 +960,7 @@ def build_tabs(panel):
             if name == "Artifacts":
                 # The page names its own slots (HangarArtifactsPage.TryGetHeader); these words show only without a catalog.
                 words = ("    kickerTemplate: '{vessel}'\n    titleTemplate: ARTIFACTS\n"
-                         "    lineTemplate: Each artifact moves one number of the kit.\n")
+                         "    lineTemplate: The slotted artifact reshapes every payload you grab.\n")
             else:
                 words = "    kickerTemplate: \n    titleTemplate: \n    lineTemplate: \n"
             groups += (f"  - button: {ref(ctx.c(f'Tabs/Header/{name}', 'tab'))}\n    firstPage: {first}\n    pageCount: {count}\n"
