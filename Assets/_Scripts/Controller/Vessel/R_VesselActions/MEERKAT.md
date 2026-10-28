@@ -25,9 +25,17 @@ the prefab:
 | RT (`RightStickAction`) | Forms the tunnel once the reticle is 60% grown, and dives in. The last tunnel collapses at once |
 | X (`Button1Action`) | The stance (`StoatHoldAction`), kept from the Stoat; forming a tunnel ends it |
 
-- **The shape** (round 7, the umbrella handle): a straight shaft of S, then one bend of radius `bendRadius` through the
-  stick's angle θ, so the tunnel is S + `bendRadius` × θ long (`MeerkatWormholeMath.ShapeFor` / `At` / `BendAngle`). The
-  throat (`throatDiameter`, 8 u) and the entry and exit (`mouthDiameter`, 26 u since round 10) are fixed: set on the
+- **The shape** (round 22, Yash: *"it should always bend from the center rather than bending from one of the ends to a
+  small knot"*): the tunnel is still S (LT's shaft) + `bendRadius` × θ (the stick's turn) long, but its centreline is ONE
+  conic arc, symmetric about its middle, the conic's vertex where it turns sharpest (`MeerkatWormholeMath.Conic`,
+  `OvalOf`, `At`, `BendAngle`).
+  - How oval it is grows with its length: `ovalShortest` (0.2, nearly a circle) at the shortest tunnel to `ovalLongest`
+    (1.1, a little hyperbola) at the longest.
+  - Its middle never turns more than `ovalMaxSharpness` (8) × as sharply as its ends, so a long, sharply turning tunnel
+    stays a smooth oval and never a knot at its centre; gentle long turns are hyperbolas, with nearly straight arms.
+  - Round 7's straight shaft, then a hook at the far end, is gone. The reticle, the bridge, the tree, the warp tube, the
+    ride, the AI's plan and the water pipe's lens all follow the same arc.
+  - The throat (`throatDiameter`, 8 u) and the entry and exit (`mouthDiameter`, 26 u since round 10) are fixed: set on the
   config at edit time, never by the sticks.
 - **The reticle** is always on the nose, `reticleAhead` ahead. Only its pilot sees it.
   - It eases toward what the right stick and LT ask for over `reticleSmoothSeconds`, so it glides rather than snaps.
@@ -89,7 +97,8 @@ the prefab:
 **One-click swap** (Yash, 2026-10-27): the config's Inspector has **YASH'S LOOK** (`formedLook` Bridge: the spindle
 bridge after RT) and **GARRETT'S LOOK** (ContourField), from `Editor/Studios/MeerkatWormholeConfigSOEditor.cs`. They set
 that one switch. Round 9 retired `reticleLook`: the reticle is always the wormhole's wireframe. The contour field
-measures round 7's tunnel: a straight shaft, then the bend (`MeerkatWormholeLens.shader` `MWTube`).
+measures the tunnel's centreline (`MeerkatWormholeLens.shader` `MWTube`; round 22: 25 points along the oval arc, with circle
+arcs between them, within 0.07 u of the exact arc).
 
 Garrett flew the Tube Lens Lab (https://claude.ai/artifact/PEScFn528pACfFq2KVNJRF, source
 `Docs/Studios/StoatTubeLensLab.html`) and picked a look: *"this looks so good it doesn't need the grid or anything else,

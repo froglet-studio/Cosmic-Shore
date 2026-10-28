@@ -133,6 +133,34 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 22 (Yash, 2026-10-28: "Make sure the reticle or the path of this trunk or simple watery effect always follows the
+circumference of a oval. With a specified epicenter. So it should always turn from center ... The longer the length of the
+tube, the more ovalish it will bend. We can make it circular but a little bit of hyperbola will be good ... It should
+always bend from the center rather than bending from one of the ends to a small knot"). Artifact and Unity.**
+- **One conic arc, round its middle.** The tunnel's centreline is no longer a straight shaft and then a hook. It is one
+  conic arc turning theta in all, symmetric about its middle: the conic's vertex, its epicentre, where it turns sharpest.
+  Its length is unchanged (LT's shaft + `bendRadius` × theta), so rides and the AI's timing scale as before.
+- **More oval with length:** the eccentricity runs from `ovalShortest` (0.2, nearly a circle) at the shortest tunnel to
+  `ovalLongest` (1.1, a little hyperbola) at the longest.
+- **Never a knot:** the middle turns at most `ovalMaxSharpness` (8) × as sharply as the ends. Without it, a long tunnel
+  turning 150 degrees went near-parabolic: about 700 × sharper in the middle, a 10 u turn at its centre. Now it stays an
+  oval: a 114 u turn at the middle, against 822 u at the ends. Gentle long turns keep their hyperbola.
+  - The cap is exact: a conic's sharpness at its ends against its vertex is ((1 + k m²) / (1 + m²))^1.5, with
+    k = 1 - e² and m the ends' slope.
+- **In the conic's own frame**, the point heading psi is (m / q, m² / (q (1 + q))) × rho, with m = tan psi and
+  q = sqrt(1 + k m²). A table of 96 headings and lengths turns s into the heading there.
+- **Everything follows it:** the reticle, the bridge, the tree, the warp tube, the ride, the AI's plan, the plan diagram
+  and the tube's nearest-point search (`tubeLocal`).
+- **Measured (the page's own functions):**
+  - half the turn is done exactly at the middle, and the way out heads along theta;
+  - AI scorecard (seed 11), every level finishing every ladder: Hard 70.0 / 63.0 / 71.7 / 68.2 s (round 21:
+    77.8 / 78.9 / 81.2 / 82.7 s). Tunnels that turn round their middle reach the rings sooner.
+- **Unity**:
+  - `MeerkatWormholeMath.Conic` is the same arc, used by the view, the ride, the AI's plan and the tree.
+  - The water pipe's lens shader measures 25 points along it, joined by circle arcs: within 0.07 u of the exact arc,
+    checked against brute force over 400 random tubes. Plain chords between 17 points were 1.4 u out.
+  - 3 new keys mapped (94 in all), 0 drift. 48/48 math tests pass against the page's numbers.
+
 **Round 21 (Yash, 2026-10-28: "it need to be easily navigable. Our controls inside the root will be controlled by left
 thumbstick"), and the clone to Unity.**
 - **Inside the roots, the left stick:**

@@ -13,7 +13,7 @@ for line to URP HLSL.
 
 | Shader | What it draws | The look, in one line | Blend |
 |---|---|---|---|
-| `MeerkatWormholeLens.shader` (+ `MeerkatWormholeLensPass.cs`) | **The water pipe** (Garrett's Tube Lens Lab, Yash's round-11 numbers): every tunnel as bent space only | Each pixel's ray is marched through a thin shell on the tube's wall and turned by a field along the tube's contours; the pixel shows where the turned ray lands | Full-screen pass, after transparents |
+| `MeerkatWormholeLens.shader` (+ `MeerkatWormholeLensPass.cs`) | **The water pipe** (Garrett's Tube Lens Lab, Yash's round-11 numbers): every tunnel as bent space only | Each pixel's ray is marched through a thin shell on the tube's wall and turned by a field along the tube's contours; the pixel shows where the turned ray lands. The tube is measured along its centreline: 25 points uploaded per tube, joined by circle arcs from each point's heading to the next (straight chords cut inside a curve: 1.4 u out against 0.07 u) | Full-screen pass, after transparents |
 | `MeerkatWormholeWarp.shader` | The tube's wall as a screen-space offset, for the same lens pass | `normal.xy * sin(pi * rim)`: zero at the centre line AND at the silhouette, so there is no seam | Additive, into a half-float target |
 | `MeerkatWormholeGlass.shader` | The bridge's glass (with `formedLook` Bridge) | Fresnel only: `0.05 + 0.55 * rim^3` | Additive |
 | `MeerkatTree.shader` | **The tree** round every tunnel, and the **roots'** bark | Fresnel glass + bark fissures (fading within 15-90 u of the camera) + tree rings on the cut faces + a slow flow; the bore (the tube you ride) a smooth sheen with no lines; shows only the tunnel's live window; branches grow out of their roots in the vertex shader | Additive |

@@ -17,6 +17,9 @@ MonoBehaviour:
   shaftMin: 60
   shaftMax: 600
   bendRadius: 60
+  ovalShortest: 0.2
+  ovalLongest: 1.1
+  ovalMaxSharpness: 8
   throatDiameter: 8
   mouthDiameter: 26
   keyRampSeconds: 0.5

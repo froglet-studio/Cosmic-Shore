@@ -457,6 +457,21 @@
       "key": "tubeInner",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "tubeInner"
+    },
+    {
+      "key": "ovalShortest",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "ovalShortest"
+    },
+    {
+      "key": "ovalLongest",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "ovalLongest"
+    },
+    {
+      "key": "ovalMaxSharpness",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "ovalMaxSharpness"
     }
   ]
 }

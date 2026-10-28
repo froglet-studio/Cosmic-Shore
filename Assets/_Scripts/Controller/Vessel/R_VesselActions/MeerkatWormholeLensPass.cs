@@ -40,6 +40,8 @@ namespace CosmicShore.Gameplay
         public const int MaxWells = 8;
         /// <summary>The most tunnels one pass marches the contour field through (the nearest to the camera).</summary>
         public const int MaxTubes = 4;
+        /// <summary>Points along each tube's centreline the shader measures it by (round 22: the arc, at even steps of s).</summary>
+        public const int PathPoints = 25;
 
         static readonly int SceneColorId = Shader.PropertyToID("_MeerkatSceneColor");
         static readonly int WarpTexId = Shader.PropertyToID("_MeerkatWarpTex");
@@ -51,6 +53,7 @@ namespace CosmicShore.Gameplay
         static readonly int TubeShapeId = Shader.PropertyToID("_MWTubeShape");
         static readonly int TubeWinId = Shader.PropertyToID("_MWTubeWin");
         static readonly int TubeBoundId = Shader.PropertyToID("_MWTubeBound");
+        static readonly int TubePathId = Shader.PropertyToID("_MWTubePath");
         static readonly int Field0Id = Shader.PropertyToID("_MWField0");
         static readonly int Field1Id = Shader.PropertyToID("_MWField1");
         static readonly int Field2Id = Shader.PropertyToID("_MWField2");
@@ -75,7 +78,8 @@ namespace CosmicShore.Gameplay
         public sealed class ContourTubes
         {
             public readonly Matrix4x4[] W2L = new Matrix4x4[MaxTubes];
-            public readonly Vector4[] Shape = new Vector4[MaxTubes];   // shaft S, bend radius R, theta, throat (round 7)
+            public readonly Vector4[] Shape = new Vector4[MaxTubes];   // L, 0, theta, throat (round 22)
+            public readonly Vector4[] Path = new Vector4[MaxTubes * PathPoints];   // per point: across, ahead (its own frame), s, turned
             public readonly Vector4[] Win = new Vector4[MaxTubes];     // s0, s1, fade, mouth
             public readonly Vector4[] Bound = new Vector4[MaxTubes];   // world centre, radius
             public Vector4 F0, F1, F2, F3, CamPos, CamR, CamU, CamF;
@@ -87,6 +91,7 @@ namespace CosmicShore.Gameplay
                 System.Array.Copy(Shape, o.Shape, MaxTubes);
                 System.Array.Copy(Win, o.Win, MaxTubes);
                 System.Array.Copy(Bound, o.Bound, MaxTubes);
+                System.Array.Copy(Path, o.Path, MaxTubes * PathPoints);
                 o.F0 = F0; o.F1 = F1; o.F2 = F2; o.F3 = F3;
                 o.CamPos = CamPos; o.CamR = CamR; o.CamU = CamU; o.CamF = CamF;
                 o.Count = Count;
@@ -232,6 +237,7 @@ namespace CosmicShore.Gameplay
                     d.block.SetVectorArray(TubeShapeId, t.Shape);
                     d.block.SetVectorArray(TubeWinId, t.Win);
                     d.block.SetVectorArray(TubeBoundId, t.Bound);
+                    d.block.SetVectorArray(TubePathId, t.Path);
                     d.block.SetVector(Field0Id, t.F0);
                     d.block.SetVector(Field1Id, t.F1);
                     d.block.SetVector(Field2Id, t.F2);
@@ -309,12 +315,23 @@ namespace CosmicShore.Gameplay
             bank.Count = n;
             for (int i = 0; i < MaxTubes; i++)
             {
-                if (i >= n) { bank.W2L[i] = Matrix4x4.identity; bank.Shape[i] = bank.Win[i] = bank.Bound[i] = Vector4.zero; continue; }
+                if (i >= n)
+                {
+                    bank.W2L[i] = Matrix4x4.identity; bank.Shape[i] = bank.Win[i] = bank.Bound[i] = Vector4.zero;
+                    for (int j = 0; j < PathPoints; j++) bank.Path[i * PathPoints + j] = Vector4.zero;
+                    continue;
+                }
                 var t = s_near[i];
                 float outer = Mathf.Max(0f, t.Config.FieldOuter);
                 var mid = t.At(0.5f * (t.W.S0 + t.W.S1), out _);
                 bank.W2L[i] = MeerkatWormholeMath.TubeWorldToLocal(t.A, t.T0, t.Side);
-                bank.Shape[i] = new Vector4(t.S, t.R, t.Theta, t.B);
+                bank.Shape[i] = new Vector4(t.L, 0f, t.Theta, t.B);
+                for (int j = 0; j < PathPoints; j++)   // round 22: the arc in the tube's own frame (x across, z ahead)
+                {
+                    float sj = t.L * j / (PathPoints - 1);
+                    t.Path.At(sj, out float ahead, out float across, out float turned);
+                    bank.Path[i * PathPoints + j] = new Vector4(across, ahead, sj, turned);
+                }
                 bank.Win[i] = new Vector4(t.W.S0, t.W.S1, t.Fade, t.M);
                 bank.Bound[i] = new Vector4(mid.x, mid.y, mid.z, 0.5f * (t.W.S1 - t.W.S0) + Mathf.Max(t.B, t.M) * (1f + outer) + 4f);
             }

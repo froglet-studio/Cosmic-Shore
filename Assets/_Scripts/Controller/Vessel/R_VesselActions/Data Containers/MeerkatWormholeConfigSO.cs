@@ -47,6 +47,12 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(20f, 1500f)] float shaftMax = 600f;
         [Tooltip("The bend's radius (u)")]
         [SerializeField, Range(10f, 300f)] float bendRadius = 60f;
+        [Tooltip("The bend round the middle: how oval at the shortest tunnel (0 = a circle, 1 = a parabola)")]
+        [SerializeField, Range(0f, 1.5f)] float ovalShortest = 0.2f;
+        [Tooltip("...at the longest (over 1 = a hyperbola: straighter arms)")]
+        [SerializeField, Range(0f, 1.5f)] float ovalLongest = 1.1f;
+        [Tooltip("...but its middle turns at most this many times as sharply as its ends")]
+        [SerializeField, Range(1f, 40f)] float ovalMaxSharpness = 8f;
         [Tooltip("Throat diameter, fixed (u)")]
         [SerializeField, Range(2f, 60f)] float throatDiameter = 8f;
         [Tooltip("Entry and exit diameter, fixed (u)")]
@@ -414,6 +420,7 @@ namespace CosmicShore.ScriptableObjects
         {
             ShaftMin = shaftMin, ShaftMax = shaftMax, BendRadius = bendRadius, BendMaxDegrees = bendMaxDegrees,
             ThroatRadius = 0.5f * throatDiameter, MouthRadius = 0.5f * mouthDiameter,   // round 10: authored as diameters
+            OvalShortest = ovalShortest, OvalLongest = ovalLongest, OvalMaxSharpness = ovalMaxSharpness,   // round 22: the oval arc
         };
 
         /// <summary>The AI's plan rows; <paramref name="turnRateDegrees"/> is the hull's own turn (its transformer's YawScaler,

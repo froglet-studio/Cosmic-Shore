@@ -19,6 +19,7 @@ namespace CosmicShore.Tests
         static readonly MeerkatWormholeMath.ShapeSettings Shipped = new()
         {
             ShaftMin = 60f, ShaftMax = 600f, BendRadius = 60f, BendMaxDegrees = 150f, ThroatRadius = 4f, MouthRadius = 10f,
+            OvalShortest = 0.2f, OvalLongest = 1.1f, OvalMaxSharpness = 8f,
         };
 
         // round 7 (the umbrella handle): lq, sx, sy -> L, S, R, b, M, theta, fat, dx, dy
@@ -43,25 +44,39 @@ namespace CosmicShore.Tests
             Assert.AreEqual(dy, s.Dy, 1e-5f, "dy");
         }
 
-        // s -> point, tangent, normal, turned (A (1,2,3), t0 +z, side +x, shaft 100, bend radius 80, theta 1.2): straight
-        // along the shaft, then an arc of radius 80
+        // round 22: one conic arc round its middle. s -> point, tangent, normal, turned (A (1,2,3), t0 +z, side +x, L 196,
+        // theta 1.2, its eccentricity 0.37559 from the shipped oval rows): half the turn is done at the middle (s 98)
+        [TestCase(-10f, 1f, 2f, -7f, 0f, 0f, 1f, 1f, 0f, 0f, 0f)]
         [TestCase(0f, 1f, 2f, 3f, 0f, 0f, 1f, 1f, 0f, 0f, 0f)]
-        [TestCase(50f, 1f, 2f, 53f, 0f, 0f, 1f, 1f, 0f, 0f, 0f)]
-        [TestCase(100f, 1f, 2f, 103f, 0f, 0f, 1f, 1f, 0f, 0f, 0f)]
-        [TestCase(140f, 10.793395f, 2f, 141.354043f, 0.479426f, 0f, 0.877583f, 0.877583f, 0f, -0.479426f, 0.5f)]
-        [TestCase(195f, 51.08163f, 2f, 177.194953f, 0.927437f, 0f, 0.37398f, 0.37398f, 0f, -0.927437f, 1.1875f)]
+        [TestCase(50f, 8.400751f, 2f, 52.259136f, 0.296288f, 0f, 0.955099f, 0.955099f, 0f, -0.296288f, 0.300804f)]
+        [TestCase(98f, 29.198617f, 2f, 95.320873f, 0.564642f, 0f, 0.825336f, 0.825336f, 0f, -0.564642f, 0.6f)]
+        [TestCase(140f, 57.170751f, 2f, 126.489599f, 0.759258f, 0f, 0.650789f, 0.650789f, 0f, -0.759258f, 0.862173f)]
+        [TestCase(195f, 104.095679f, 2f, 154.690932f, 0.929899f, 0f, 0.367815f, 0.367815f, 0f, -0.929899f, 1.194139f)]
+        [TestCase(196f, 105.027291f, 2f, 155.05627f, 0.932039f, 0f, 0.362358f, 0.362358f, 0f, -0.932039f, 1.2f)]
         public void AtAndFrame_MatchThePage(float s, float px, float py, float pz, float tx, float ty, float tz,
             float nx, float ny, float nz, float turned)
         {
-            var p = MeerkatWormholeMath.At(new Vector3(1f, 2f, 3f), Vector3.forward, Vector3.right, 100f, 80f, 1.2f, s, out var t);
-            MeerkatWormholeMath.Frame(Vector3.forward, Vector3.right, 100f, 80f, 1.2f, s, out var n, out var bn);
+            var path = new MeerkatWormholeMath.Conic(196f, 1.2f, MeerkatWormholeMath.OvalOf(Shipped, 196f, 1.2f));
+            var p = MeerkatWormholeMath.At(new Vector3(1f, 2f, 3f), Vector3.forward, Vector3.right, path, s, out var t);
+            MeerkatWormholeMath.Frame(Vector3.forward, Vector3.right, path, s, out var n, out var bn);
             Assert.AreEqual(px, p.x, Tol); Assert.AreEqual(py, p.y, Tol); Assert.AreEqual(pz, p.z, Tol);
-            Assert.AreEqual(tx, t.x, 1e-5f); Assert.AreEqual(ty, t.y, 1e-5f); Assert.AreEqual(tz, t.z, 1e-5f);
-            Assert.AreEqual(nx, n.x, 1e-5f); Assert.AreEqual(ny, n.y, 1e-5f); Assert.AreEqual(nz, n.z, 1e-5f);
+            Assert.AreEqual(tx, t.x, 1e-4f); Assert.AreEqual(ty, t.y, 1e-4f); Assert.AreEqual(tz, t.z, 1e-4f);
+            Assert.AreEqual(nx, n.x, 1e-4f); Assert.AreEqual(ny, n.y, 1e-4f); Assert.AreEqual(nz, n.z, 1e-4f);
             // the page's binormal is (0, 1, 0) at every s: t0 x side
             Assert.AreEqual(0f, bn.x, 1e-6f); Assert.AreEqual(1f, bn.y, 1e-6f); Assert.AreEqual(0f, bn.z, 1e-6f);
-            Assert.AreEqual(turned, MeerkatWormholeMath.BendAngle(100f, 80f, 1.2f, s), 1e-5f, "bendAngle");
+            if (s >= 0f) Assert.AreEqual(turned, MeerkatWormholeMath.BendAngle(path, s), 1e-4f, "bendAngle");
         }
+
+        // round 22: L, theta -> the eccentricity (a short tunnel nearly a circle; a long sharp turn held to an oval; a long
+        // gentle one a hyperbola)
+        [TestCase(60f, 0f, 0.2f)]
+        [TestCase(217.08f, 2.618f, 0.402806f)]
+        [TestCase(400f, 1.2f, 0.638974f)]
+        [TestCase(757.08f, 2.618f, 0.896575f)]
+        [TestCase(757.08f, 1f, 1.1f)]
+        [TestCase(300f, 0.5f, 0.509864f)]
+        public void OvalOf_MatchesThePage(float L, float theta, float e) =>
+            Assert.AreEqual(e, MeerkatWormholeMath.OvalOf(Shipped, L, theta), 1e-4f);
 
         [TestCase(0f, 300f, 0f, 26f)]
         [TestCase(0f, 300f, 150f, 10f)]
@@ -130,12 +145,13 @@ namespace CosmicShore.Tests
         };
 
         // the target in the hull's frame (Unity: z forward), the judge noise and its roll, turn-only -> LT, stick
-        // (round 7: the plan that reaches the ring soonest, at pitchYaw 120 and the ride's mean speed)
+        // (round 7: the plan that reaches the ring soonest, at pitchYaw 120 and the ride's mean speed; round 22: out of the
+        // oval arc's way out)
         [TestCase(0f, 0f, 900f, 0f, 0.5f, false, 1f, 0f)]
-        [TestCase(300f, 0f, 400f, 0f, 0.5f, false, 0.25f, 0.525f)]
-        [TestCase(0f, -200f, 250f, 0f, 0.5f, true, 0f, 0.4775f)]
-        [TestCase(500f, 100f, 100f, 0f, 0.5f, false, 0f, 0.715f)]
-        [TestCase(-120f, 40f, 300f, 0.4f, 0.9f, false, 0.25f, 0.7192f)]
+        [TestCase(300f, 0f, 400f, 0f, 0.5f, false, 0.5f, 0.4775f)]
+        [TestCase(0f, -200f, 250f, 0f, 0.5f, true, 0.125f, 0.4775f)]
+        [TestCase(500f, 100f, 100f, 0f, 0.5f, false, 0.5f, 0.8575f)]
+        [TestCase(-120f, 40f, 300f, 0.4f, 0.9f, false, 0.125f, 0.3335f)]
         public void TryPlan_MatchesThePage(float x, float y, float z, float noise, float rand, bool turnOnly, float lq, float m)
         {
             Assert.IsTrue(MeerkatWormholeMath.TryPlan(PlanShipped, new Vector3(x, y, z), 60f, noise, rand, turnOnly, out float gotLq, out float gotM));
@@ -190,10 +206,11 @@ namespace CosmicShore.Tests
         [Test]
         public void Ride_ComesOutOnTheTunnelsLastHeading()
         {
-            // a 100 u shaft, then 1.2 rad round an 80 u bend: the hull turns only on the bend
-            float turned = MeerkatWormholeMath.BendAngle(100f, 80f, 1.2f, 196f) - MeerkatWormholeMath.BendAngle(100f, 80f, 1.2f, 0f);
+            // 196 u turning 1.2 rad round its middle (round 22): the hull comes out on the arc's last heading
+            var path = new MeerkatWormholeMath.Conic(196f, 1.2f, MeerkatWormholeMath.OvalOf(Shipped, 196f, 1.2f));
+            float turned = MeerkatWormholeMath.BendAngle(path, 196f) - MeerkatWormholeMath.BendAngle(path, 0f);
             var q = MeerkatWormholeMath.RideRotation(Vector3.up, turned, Quaternion.identity);
-            MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, 100f, 80f, 1.2f, 196f, out var tangent);
+            MeerkatWormholeMath.At(Vector3.zero, Vector3.forward, Vector3.right, path, 196f, out var tangent);
             Assert.Less(Vector3.Angle(q * Vector3.forward, tangent), 0.01f);
         }
 
@@ -211,8 +228,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(Vector2.zero, centre);
         }
 
-        // The lens shader measures the wall in the tunnel's own frame: the arc centred on (R, 0, 0), leaving the origin along +z.
-        // round 7: a straight shaft of S along +z, then a bend of radius R round (R, 0, S) - where MWTube looks
+        // The lens shader measures the wall in the tunnel's own frame: leaving the origin along +z, bending toward +x in the
+        // x-z plane (round 22: the conic arc, its points (across, ahead) - where MWTube looks)
         [TestCase(0f, 600f, 60f)]
         [TestCase(1.2f, 100f, 80f)]
         [TestCase(2.617994f, 60f, 60f)]
@@ -223,13 +240,14 @@ namespace CosmicShore.Tests
             var side = Vector3.Cross(t0, new Vector3(0.1f, 1f, -0.2f)).normalized;
             var m = MeerkatWormholeMath.TubeWorldToLocal(a, t0, side);
             float L = S + R * theta;
+            var path = new MeerkatWormholeMath.Conic(L, theta, MeerkatWormholeMath.OvalOf(Shipped, L, theta));
             foreach (float s in new[] { 0f, 0.5f * S, S, S + 0.37f * (L - S), L })
             {
-                var local = m.MultiplyPoint3x4(MeerkatWormholeMath.At(a, t0, side, S, R, theta, s, out var tangent));
+                var local = m.MultiplyPoint3x4(MeerkatWormholeMath.At(a, t0, side, path, s, out var tangent));
                 var localT = m.MultiplyVector(tangent);
-                MeerkatWormholeMath.Frame(t0, side, S, R, theta, s, out var normal, out var binormal);
-                float ang = theta < 1e-4f ? 0f : Mathf.Clamp((s - S) / R, 0f, theta);
-                var want = s <= S || theta < 1e-4f ? new Vector3(0f, 0f, s) : new Vector3(R - R * Mathf.Cos(ang), 0f, S + R * Mathf.Sin(ang));
+                MeerkatWormholeMath.Frame(t0, side, path, s, out var normal, out var binormal);
+                path.At(s, out float ahead, out float across, out float ang);
+                var want = new Vector3(across, 0f, ahead);
                 Assert.AreEqual(0f, Vector3.Distance(want, local), 1e-3f, $"point at s {s}");
                 Assert.AreEqual(0f, Vector3.Distance(new Vector3(Mathf.Sin(ang), 0f, Mathf.Cos(ang)), localT), 1e-4f, "tangent");
                 Assert.AreEqual(0f, Vector3.Distance(new Vector3(Mathf.Cos(ang), 0f, -Mathf.Sin(ang)), m.MultiplyVector(normal)), 1e-4f, "normal");

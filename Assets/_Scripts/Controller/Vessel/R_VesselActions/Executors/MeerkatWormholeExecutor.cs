@@ -63,6 +63,7 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 A, T0, Side;
             public float L, S, R, B, M, Theta, FormT;   // round 7: L = S (the shaft) + R (the bend's radius) x Theta
+            public MeerkatWormholeMath.Conic Path;       // round 22: its centreline, one conic arc round its middle
             public MeerkatWormholeMath.Window W;
             public bool Dying;
             public float DieT;
@@ -71,10 +72,10 @@ namespace CosmicShore.Gameplay
             public int Seq;
             public float Born;   // when it formed here (its tree's branches grow from then, MeerkatTreeView)
 
-            public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, S, R, Theta, s, out tangent);
+            public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, Path, s, out tangent);
             public void Frame(float s, out Vector3 normal, out Vector3 binormal) =>
-                MeerkatWormholeMath.Frame(T0, Side, S, R, Theta, s, out normal, out binormal);
-            public float BendAngle(float s) => MeerkatWormholeMath.BendAngle(S, R, Theta, s);
+                MeerkatWormholeMath.Frame(T0, Side, Path, s, out normal, out binormal);
+            public float BendAngle(float s) => MeerkatWormholeMath.BendAngle(Path, s);
             /// <summary>The page's <c>whAtX</c>: the centreline at s, carried on straight before the way in and after the way out.</summary>
             public Vector3 AtExtended(float s)
             {
@@ -92,6 +93,7 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 A, T0, Side;
             public MeerkatWormholeMath.Shape Shape;
+            public MeerkatWormholeMath.Conic Path;   // its centreline (round 22)
             public float S0, S1, Alpha;
             public bool Ghost;
         }
@@ -125,6 +127,7 @@ namespace CosmicShore.Gameplay
         float _retEmerge;
         Vector3 _retA, _retT0, _retSide = Vector3.right;
         MeerkatWormholeMath.Shape _retShape;
+        readonly MeerkatWormholeMath.Conic _retPath = new(), _ghostPath = new();   // the reticle's centreline, and the fading one's
         Vector2 _stick;   // the right stick the reticle reads (the page's r.sx / r.sy, from the frame before)
         Vector2 _eased;   // ...the reticle easing toward it over reticleSmoothSeconds (the page's r.fx / r.fy, round 3)
         float _easedLq;   // ...and toward LT's squeeze (r.flq)
@@ -309,6 +312,7 @@ namespace CosmicShore.Gameplay
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
             _retShape = sh;
+            _retPath.Set(sh.L, sh.Theta, sh.Oval);
             // the right stick bends the reticle from the next frame (the page sets r.sx / r.sy after gateHold)
             _stick = _status.AutoPilotEnabled ? _aiStick
                 : _status.InputStatus != null ? _status.InputStatus.EasedRightJoystickPosition : Vector2.zero;
@@ -324,7 +328,8 @@ namespace CosmicShore.Gameplay
             var shape = config.Shape();
             _lastTrunk = MeerkatWormholeMath.Clamp01((_retShape.S - shape.ShaftMin) / Mathf.Max(1f, shape.ShaftMax - shape.ShaftMin));
             var t = AddTunnel(_retA, _retT0, _retSide, _retShape, MeerkatWormholeMath.FormTime(config.FormSeconds, dive), ++_seq);
-            _ghost = new Reticle { A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, S0 = 0f, S1 = _retShape.L, Ghost = true };
+            _ghostPath.Set(_retShape.L, _retShape.Theta, _retShape.Oval);
+            _ghost = new Reticle { A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, Path = _ghostPath, S0 = 0f, S1 = _retShape.L, Ghost = true };
             _ghostAlpha = 1f;
             _ghostFormT = t.FormT;
             // the ride starts at the hull: it dives straight down to the mouth the reticle showed (s < 0), then into the throat
@@ -346,6 +351,7 @@ namespace CosmicShore.Gameplay
             var t = new Tunnel
             {
                 A = a, T0 = t0, Side = side, L = sh.L, S = sh.S, R = sh.R, B = sh.B, M = sh.M, Theta = sh.Theta, FormT = formT,
+                Path = new MeerkatWormholeMath.Conic(sh.L, sh.Theta, sh.Oval),
                 W = MeerkatWormholeMath.NewWindow(sh.L), Colour = DomainColour(), Maker = this, Seq = seq, Born = Time.time,
             };
             _mine = t;
@@ -359,7 +365,8 @@ namespace CosmicShore.Gameplay
         {
             if (!config || IsAuthority) return;
             if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
-            AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, S = shaft, R = bendRadius, B = b, M = m, Theta = theta },
+            AddTunnel(a, t0, side, new MeerkatWormholeMath.Shape { L = L, S = shaft, R = bendRadius, B = b, M = m, Theta = theta,
+                    Oval = MeerkatWormholeMath.OvalOf(config.Shape(), L, theta) },   // the same config, so the same arc as its owner's
                 formT, seq);
         }
 
@@ -472,7 +479,7 @@ namespace CosmicShore.Gameplay
                           (0.35f + 0.65f * e);
             reticle = new Reticle
             {
-                A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, Alpha = alpha,
+                A = _retA, T0 = _retT0, Side = _retSide, Shape = _retShape, Path = _retPath, Alpha = alpha,
                 S0 = e >= 1f ? 0f : 0.5f * _retShape.L * (1f - e), S1 = e >= 1f ? _retShape.L : 0.5f * _retShape.L * (1f + e),
             };
             return true;

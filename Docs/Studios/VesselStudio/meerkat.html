@@ -553,7 +553,7 @@
     // sets how much of the LT range you can dig (massLengthAtZero of it at Mass 0, all of it at 10) and how wide the trunk
     // is (massDiameterAtZero x at Mass 0, full at 10)
     massPerCrystal: 0.5, massLengthAtZero: 0.3, massDiameterAtZero: 0.6,
-    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
+    reticleAhead: 30, shaftMin: 60, shaftMax: 600, bendRadius: 60, bendMaxDegrees: 150, ovalShortest: 0.2, ovalLongest: 1.1, ovalMaxSharpness: 8, throatDiameter: 8, mouthDiameter: 26, keyRampSeconds: 0.5,
     // round 12: the size at the LONGEST tunnel (the two above are the shortest's); lengths between grow in between
     throatDiameterMax: 18, mouthDiameterMax: 56,
     // ride and life (round 6, Yash: "it should enter the wormhole with v and then it will speed up to v plus dv, and then while
@@ -692,6 +692,9 @@
     ['shape', 'shaftMin', 'The straight shaft before the bend, LT released (u)', 0, 600, 10],
     ['shape', 'shaftMax', '...LT fully squeezed (u)', 20, 1500, 10],
     ['shape', 'bendRadius', 'The bend\'s radius (u)', 10, 300, 5],
+    ['shape', 'ovalShortest', 'The bend round the middle: how oval at the shortest tunnel (0 = a circle, 1 = a parabola)', 0, 1.5, 0.01],
+    ['shape', 'ovalLongest', '...at the longest (over 1 = a hyperbola: straighter arms)', 0, 1.5, 0.01],
+    ['shape', 'ovalMaxSharpness', '...but its middle turns at most this many times as sharply as its ends', 1, 40, 0.5],
     ['shape', 'throatDiameter', 'Throat diameter, shortest tunnel (u)', 2, 60, 1],
     ['shape', 'mouthDiameter', 'Entry and exit diameter, shortest tunnel (u)', 4, 120, 1],
     ['shape', 'throatDiameterMax', 'Throat diameter, longest tunnel (u)', 2, 120, 1],
@@ -1504,14 +1507,67 @@
   }
   const whShape = (lq, sx, sy) => shapeFor(P, lq, sx, sy, massK(curPilot));
 
-  // How far the centreline has turned at s (round 7): nothing along the shaft, then (s - S) / R round the bend.
-  function bendAngle(wh, s) { return wh.theta < 1e-4 ? 0 : Math.max(0, Math.min(wh.theta, (s - wh.S) / wh.R)); }
-  // s u along the centreline: straight along t0 for the shaft S, then an arc of radius R bending toward side by theta.
+  // Round 22 (Yash, 2026-10-28: "the reticle or the path of this trunk ... always follows the circumference of a oval. With a
+  // specified epicenter. So it should always turn from center ... The longer the length of the tube, the more ovalish it
+  // will bend. We can make it circular but a little bit of hyperbola will be good ... It should always bend from the center
+  // rather than bending from one of the ends to a small knot"): the centreline is ONE conic arc, symmetric about its middle -
+  // the conic's vertex, its epicentre, where it turns sharpest - turning theta in all over its length L (still LT's shaft +
+  // bendRadius x theta). How oval grows with the length: ovalShortest at the shortest tunnel to ovalLongest at the longest
+  // (the eccentricity: 0 a circle's arc, turning evenly; 1 a parabola; over 1 a hyperbola, its arms running nearly
+  // straight), never gathered so much that its middle turns more than ovalMaxSharpness x as sharply as its ends (a long,
+  // sharply turning tunnel stays an oval, not a knot at its centre). In the conic's own frame (its vertex at the origin, x along the
+  // heading there, y toward the bend): x^2 = 2 rho y - (1 - e^2) y^2; the point heading psi (m = tan psi) is
+  // (m / q, m^2 / (q (1 + q))) x rho, q = sqrt(1 + (1 - e^2) m^2); rho scales the arc to L. The way in heads along t0.
+  const CONIC_N = 96;
+  function ovalOf(Pv, L, theta) {
+    const Lmin = Math.max(10, Pv.shaftMin), Lmax = Math.max(Lmin + 1, Math.max(Pv.shaftMin, Pv.shaftMax) + Math.max(1, Pv.bendRadius) * Math.max(0, Pv.bendMaxDegrees) * Math.PI / 180);
+    const g = clamp01((L - Lmin) / (Lmax - Lmin));
+    let e = Math.max(0, Pv.ovalShortest + (Pv.ovalLongest - Pv.ovalShortest) * g);
+    const m = Math.tan(Math.min(1.55, theta / 2)), m2 = m * m;
+    if (m2 < 1e-12) return e;
+    // the turn's sharpness at the ends against the middle is ((1 + k m^2) / (1 + m^2))^1.5 (k = 1 - e^2, m the ends' slope):
+    // at most ovalMaxSharpness to one; and a hyperbola opens no wider than the turn allows (1 + k m^2 > 0)
+    const kMin = Math.max((Math.pow(Math.max(1, Pv.ovalMaxSharpness), -2 / 3) * (1 + m2) - 1) / m2, -0.9 / m2);
+    return Math.min(e, Math.sqrt(Math.max(0, 1 - kMin)));
+  }
+  function conicXY(k, psi, out) { const m = Math.tan(psi), q = Math.sqrt(Math.max(1e-9, 1 + k * m * m)); out[0] = m / q; out[1] = m * m / (q * (1 + q)); return out; }
+  // The arc's table (cached on the tunnel): headings psi from -theta/2 to theta/2 and the length along it to each.
+  function conicOf(wh, Pv) {
+    const e = ovalOf(Pv || P, wh.L, wh.theta), key = wh.L + '|' + wh.theta + '|' + e;
+    if (wh._cn && wh._cn.key === key) return wh._cn;
+    const k = 1 - e * e, h = wh.theta / 2, psi = new Float64Array(CONIC_N + 1), cum = new Float64Array(CONIC_N + 1), xy = [0, 0];
+    let px = 0, py = 0;
+    for (let i = 0; i <= CONIC_N; i++) {
+      psi[i] = -h + wh.theta * i / CONIC_N; conicXY(k, psi[i], xy);
+      if (i) cum[i] = cum[i - 1] + Math.hypot(xy[0] - px, xy[1] - py);
+      px = xy[0]; py = xy[1];
+    }
+    const rho = wh.L / Math.max(1e-9, cum[CONIC_N]);
+    for (let i = 0; i <= CONIC_N; i++) cum[i] *= rho;
+    conicXY(k, -h, xy);
+    return (wh._cn = { key, e, k, rho, psi, cum, x0: xy[0], y0: xy[1], c: Math.cos(h), sn: Math.sin(h), theta: wh.theta });
+  }
+  // s along the arc: the heading psi there (the table, interpolated), and the point (ahead along t0, across toward side) and
+  // the turn so far (out[2], 0 at the way in, theta at the way out)
+  const cnXY = [0, 0];
+  function conicAt(cn, s, out) {
+    const n = CONIC_N, sc = Math.max(0, Math.min(cn.cum[n], s));
+    let lo = 0, hi = n; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cn.cum[mid] <= sc) lo = mid; else hi = mid; }
+    const psi = cn.psi[lo] + (cn.psi[hi] - cn.psi[lo]) * (sc - cn.cum[lo]) / Math.max(1e-12, cn.cum[hi] - cn.cum[lo]);
+    conicXY(cn.k, psi, cnXY);
+    const lx = cn.rho * (cnXY[0] - cn.x0), ly = cn.rho * (cnXY[1] - cn.y0);
+    out[0] = lx * cn.c - ly * cn.sn; out[1] = lx * cn.sn + ly * cn.c; out[2] = psi + 0.5 * cn.theta;
+    return out;
+  }
+  const cnOut = [0, 0, 0];
+  // How far the centreline has turned at s (round 22: along the whole arc, fastest at its middle).
+  function bendAngle(wh, s) { return wh.theta < 1e-4 ? 0 : conicAt(conicOf(wh), s, cnOut)[2]; }
+  // s u along the centreline: straight along t0 before the way in (s < 0); the conic arc, bending toward side by theta.
   function whAt(wh, s, outP, outT) {
     if (wh.poly) return polyAt(wh, s, outP, outT);
-    if (wh.theta < 1e-4 || s <= wh.S) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
-    const a = bendAngle(wh, s), R = wh.R;
-    outP.copy(wh.A).addScaledVector(wh.t0, wh.S + R * Math.sin(a)).addScaledVector(wh.side, R * (1 - Math.cos(a)));
+    if (wh.theta < 1e-4 || s <= 0) { outP.copy(wh.A).addScaledVector(wh.t0, s); if (outT) outT.copy(wh.t0); return outP; }
+    const o = conicAt(conicOf(wh), s, cnOut), a = o[2];
+    outP.copy(wh.A).addScaledVector(wh.t0, o[0]).addScaledVector(wh.side, o[1]);
     if (outT) outT.copy(wh.t0).multiplyScalar(Math.cos(a)).addScaledVector(wh.side, Math.sin(a));
     return outP;
   }
@@ -1707,17 +1763,18 @@
   const pilotIds = () => [0].concat(rivals.map((r) => r.id));
   function pilotPos(id) { return id === curPilot ? hull.position : id === 0 ? youSlot.pos : seatState[id - 1].pos; }
   // A point's place round a tube (its frozen full shape): s along the centreline (clamped to 0..L), d from it, and the
-  // unit radial direction (n). Round 7's umbrella handle: a straight shaft S along t0 from A, then an arc of radius R in
-  // the plane of t0 and side, centred at A + t0 x S + side x R; the nearer of the two answers wins.
+  // unit radial direction (n). Round 22: the nearest point on the conic arc.
   const tlC = new V3(), tlQ = new V3(), tlP = new V3(), tl = { s: 0, d: 0, n: new V3(), inside: false };
   function tubeLocal(wh, p) {
-    let s = tlQ.subVectors(p, wh.A).dot(wh.t0);   // along the shaft (the whole tube when it does not bend)
-    if (wh.theta >= 1e-4) {
-      const sS = Math.max(0, Math.min(wh.S, s)), dS = tlP.copy(wh.A).addScaledVector(wh.t0, sS).distanceTo(p);
-      tlC.copy(wh.A).addScaledVector(wh.t0, wh.S).addScaledVector(wh.side, wh.R); tlQ.subVectors(p, tlC);
-      const a = Math.atan2(tlQ.dot(wh.t0), -tlQ.dot(wh.side)), sA = wh.S + Math.max(0, Math.min(wh.theta, a)) * wh.R;
-      const dA = whAt(wh, sA, tlP).distanceTo(p);
-      s = dS <= dA ? (s < wh.S ? s : sS) : wh.S + a * wh.R;
+    let s = tlQ.subVectors(p, wh.A).dot(wh.t0);   // along it (the whole tube when it does not bend)
+    if (wh.theta >= 1e-4) {   // round 22: the nearest of 48 points along the arc, refined
+      const n = 48; let bs = 0, bd = Infinity;
+      for (let i = 0; i <= n; i++) { const si = wh.L * i / n, d = whAt(wh, si, tlP).distanceToSquared(p); if (d < bd) { bd = d; bs = si; } }
+      let lo = Math.max(0, bs - wh.L / n), hi = Math.min(wh.L, bs + wh.L / n);
+      for (let it = 0; it < 18; it++) { const m1 = lo + (hi - lo) * 0.382, m2 = lo + (hi - lo) * 0.618; if (whAt(wh, m1, tlP).distanceToSquared(p) < whAt(wh, m2, tlP).distanceToSquared(p)) hi = m2; else lo = m1; }
+      s = 0.5 * (lo + hi);
+      if (bs === 0 && tlQ.subVectors(p, wh.A).dot(wh.t0) < 0) s = tlQ.dot(wh.t0);   // before the way in
+      else if (bs === wh.L) { whAt(wh, wh.L, tlP, tlC); const a = tlQ.subVectors(p, tlP).dot(tlC); if (a > 0) s = wh.L + a; }   // past the way out
     }
     tl.inside = s > 0 && s < wh.L; s = Math.max(0, Math.min(wh.L, s));
     whAt(wh, s, tlP); tl.n.subVectors(p, tlP); tl.d = tl.n.length(); if (tl.d > 1e-6) tl.n.divideScalar(tl.d); tl.s = s;
@@ -3986,7 +4043,7 @@
       const t = j / 20, sq = i / 8;   // the bend (the right stick), and LT's squeeze (harder: a longer shaft before it)
       const sh = shapeFor(P, sq, 0.05 + 0.95 * t, 0, massK(curPilot)), th = sh.theta;
       if (turnOnly && th < 0.35) continue;
-      const x = ahead + sh.S + sh.R * Math.sin(th), y = sh.R * (1 - Math.cos(th));
+      const end = th < 1e-4 ? [sh.L, 0] : conicAt(conicOf({ L: sh.L, theta: th }), sh.L, cnOut), x = ahead + end[0], y = end[1];   // round 22: the arc's way out
       const hx = Math.cos(th), hy = Math.sin(th), dx = tx - x, dy = ty - y, along = dx * hx + dy * hy;
       if (along < 60) continue;
       // round 7: the plan that reaches the ring SOONEST - the ride at its mean speed, then the flight from the way out to the
@@ -4874,8 +4931,8 @@
   function tunnelPlan(Pv, lq, m) {   // the 2D twin of whShape + whAt + whRadius: x right (the bend's way), y ahead
     const sh = shapeFor(Pv, lq, m, 0), A = Math.max(0, Pv.reticleAhead), n = 64, pts = [], L2 = [], R2 = [];
     for (let i = 0; i <= n; i++) {
-      const sA = sh.L * i / n, a = sh.theta < 1e-4 ? 0 : Math.max(0, Math.min(sh.theta, (sA - sh.S) / sh.R));
-      const x = sh.theta < 1e-4 || sA <= sh.S ? 0 : sh.R * (1 - Math.cos(a)), y = A + (sh.theta < 1e-4 || sA <= sh.S ? sA : sh.S + sh.R * Math.sin(a));
+      const sA = sh.L * i / n, o = sh.theta < 1e-4 ? [sA, 0, 0] : conicAt(conicOf({ L: sh.L, theta: sh.theta }, Pv), sA, [0, 0, 0]), a = o[2];   // round 22: the oval arc
+      const x = o[1], y = A + o[0];
       const u = i / n, r = Math.sqrt(sh.b * sh.b + (sh.M * sh.M - sh.b * sh.b) * (2 * u - 1) ** 2), nx = Math.cos(a), ny = -Math.sin(a);
       pts.push([x, y]); L2.push([x - nx * r, y - ny * r]); R2.push([x + nx * r, y + ny * r]);
     }
@@ -5258,7 +5315,10 @@
     bendMaxDegrees: { scene: 'tunnel', d: 'The right stick pushed fully over bends the tunnel this far at the end of its shaft, any way; half over, half as far: 90, 120, 150 degrees.', lo: 'Gentle bends only.', hi: 'Turns you right round.' },
     shaftMin: { scene: 'tunnel', cfg: { sticks: [0.6, 1] }, d: 'The tunnel is a straight shaft, then a bend. With LT released the shaft runs this far before it bends (the right stick centred: the whole tunnel is this straight shaft).', lo: 'Bends at once.', hi: 'A long run first.' },
     shaftMax: { scene: 'tunnel', cfg: { sticks: [0.6, 1], lt: 1 }, d: 'With LT fully squeezed the shaft runs this far before it bends: a long umbrella handle. Half squeezed, half way between.', lo: 'Short handles only.', hi: 'Very long handles.' },
-    bendRadius: { scene: 'tunnel', d: 'The bend at the shaft\'s end turns round this radius: small for a tight hook, large for a sweeping one. A 150-degree bend is this x 2.6 long.', lo: 'A tight hook.', hi: 'A wide sweep.' },
+    bendRadius: { scene: 'tunnel', d: 'With LT\'s shaft it sets how long a tunnel is: a turn of theta adds this x theta to its length (a 150-degree turn, this x 2.6). Round 22: the turn itself is spread over the whole tunnel, round its middle.', lo: 'Short turns.', hi: 'Long sweeps.' },
+    ovalShortest: { scene: 'tunnel', d: 'Round 22: a tunnel bends round its MIDDLE, along one oval arc whose sharpest point is half way. This is how oval it is for the shortest tunnel: 0 bends as an even circle\'s arc, 1 as a parabola.', lo: 'A circle.', hi: 'An oval.' },
+    ovalMaxSharpness: { scene: 'tunnel', d: 'How much an oval may gather its turn into its middle: the middle turns at most this many times as sharply as the two ends. It keeps a long, sharply turning tunnel a smooth oval instead of a knot at its centre; gentle turns can still be hyperbolas.', lo: 'Nearly a circle.', hi: 'A sharp middle.' },
+    ovalLongest: { scene: 'tunnel', d: 'How oval the longest tunnel bends; tunnels in between take their share. Over 1 is a hyperbola: the turn gathers at the middle and the two ends run nearly straight (never wider than the turn allows).', lo: 'A circle.', hi: 'A hyperbola.' },
     throatDiameter: { scene: 'tunnel', d: 'How wide the tube is at its middle at the SHORTEST tunnel; a longer one grows toward throatDiameterMax. Set here; the sticks only choose the length.', lo: 'A needle.', hi: 'A wide tube.' },
     mouthDiameter: { scene: 'tunnel', d: 'How wide the entry and the exit are at the SHORTEST tunnel; a longer one grows toward mouthDiameterMax. The tube narrows from its mouths to its throat.', lo: 'Small mouths.', hi: 'Wide funnels.' },
     keyRampSeconds: { scene: 'tunnel', cfg: { lt: 1 }, d: 'On keys and touch, LT reaches a full squeeze after this long (a gamepad trigger is read live). LT lengthens the straight shaft before the bend.', lo: 'Snaps to full.', hi: 'Ramps slowly.' },
@@ -5723,6 +5783,9 @@
     rootLamp: ['MeerkatWormholeConfig.rootLamp', 'linked'],
     rootFog: ['MeerkatWormholeConfig.rootFog', 'linked'],
     rootCruise: ['MeerkatWormholeConfig.rootCruise', 'linked'],
+    ovalShortest: ['MeerkatWormholeConfig.ovalShortest', 'linked'],
+    ovalLongest: ['MeerkatWormholeConfig.ovalLongest', 'linked'],
+    ovalMaxSharpness: ['MeerkatWormholeConfig.ovalMaxSharpness', 'linked'],
   };
   // round 8: the proposed kit. Lab-only until Yash decides (no MeerkatWormholeConfig field, no studio_to_unity map row).
   for (const [grp, key] of SPEC) if (/^ab/.test(grp) || key === 'aiNewAbilities') GAME_NAMES[key] = ['lab: round 8 proposal, not in the game (Yash judges it here first)', 'lab'];
