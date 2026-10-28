@@ -502,5 +502,75 @@
     "ArkLost": "THE ARK IS LOST",
     "BroughtBy": "brought by {pilot}",
     "NoWork": "No pilot has work here. Seat other pilots, or sail on."
+  },
+  "toy": {
+    "id": "voyage",
+    "displayName": "Voyage",
+    "description": "Deploy your squad and sail the HyperSea from job to job. Dock at home to keep what you find.",
+    "placementAngleDegrees": 90,
+    "accent": [
+      0.95,
+      0.75,
+      0.25,
+      1
+    ],
+    "boardDistance": 260,
+    "beaconSpacing": 110,
+    "beaconBodyRadius": 9,
+    "beaconTriggerRadius": 26,
+    "jobColor": [
+      0.7,
+      1,
+      0.35,
+      1
+    ],
+    "homeColor": [
+      1,
+      0.78,
+      0.25,
+      1
+    ],
+    "seedElementLevel": 0.5,
+    "wingmateLeash": 1600,
+    "findDistance": 520,
+    "vaultRadius": 26,
+    "vaultPrisms": 40,
+    "vaultPrismScale": [
+      5,
+      5,
+      8
+    ],
+    "vaultOpenShare": 0.5,
+    "holdRadius": 700,
+    "chartSize": 90,
+    "chartOffset": [
+      -160,
+      70,
+      0
+    ],
+    "portColor": [
+      0.96,
+      0.94,
+      0.86,
+      1
+    ],
+    "vaultColor": [
+      0.55,
+      0.75,
+      1,
+      1
+    ],
+    "coreColor": [
+      1,
+      0.45,
+      0.35,
+      1
+    ],
+    "laneColor": [
+      1,
+      1,
+      1,
+      0.35
+    ]
   }
 }

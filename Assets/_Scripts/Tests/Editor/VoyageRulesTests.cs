@@ -276,6 +276,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void GivingUpAwayFromHomeLosesWhatWasFound_ButHomeHasNothingToGiveUp()
+        {
+            var c = Map();
+            var s = VoyageRules.NewGalaxy(c, Domains.Jade);
+            Assert.IsNull(VoyageRules.Abandon(s, c), "home between jobs: nothing to give up");
+
+            VoyageRules.Take(s, c, Find(VoyageRules.Board(s, c, new[] { Hunter }), "hunt"));
+            VoyageRules.Arrive(s, c);
+            VoyageRules.Stowed(s, "artifact.a");
+            var r = VoyageRules.Abandon(s, c);
+            Assert.AreEqual(JobOutcome.Failed, r.Outcome);
+            CollectionAssert.IsEmpty(s.Aboard, "only docking at home extracts");
+            Assert.IsTrue(s.IsHome());
+            Assert.IsNull(VoyageRules.Extract(s).Artifacts.FirstOrDefault());
+        }
+
+        [Test]
         public void ARecordFromAPartialSaveIsRepaired()
         {
             var s = new VoyageState { Aboard = null, Ledgers = null, Wrecks = new List<WreckRecord> { null }, Current = new VoyageJob(), AtSea = true };

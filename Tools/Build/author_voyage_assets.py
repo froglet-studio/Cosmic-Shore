@@ -7,6 +7,8 @@ nothing, --self-test proves the checks fire. It owns:
   * Assets/Resources/Voyages/                       folder (VoyageContentSO.ResourcePath: the voyage loads it at runtime)
   * Assets/Resources/Voyages/VoyageContent.asset    the map, crew, jobs, events, seed news and lines, from
                                                     Docs/Voyages/voyage_slice.json
+  * Assets/_SO_Assets/Toys/Toy_Voyage.asset         the Voyage toy (the spec's "toy" block)
+  * Assets/Resources/Toybox.asset                   one line: the Voyage toy on the toybox's list (nothing else touched)
 
 The asset's `cellPool` (which worlds the locations and lanes are) is the one hand-authored field: the generator
 keeps whatever the asset already holds there, so a designer can drag worlds in without the next run undoing it.
@@ -34,6 +36,10 @@ PILOT_SPEC = "Docs/Pilots/pilots_and_artifacts.json"
 OUT_DIR = "Assets/Resources/Voyages"
 OUT = OUT_DIR + "/VoyageContent.asset"
 SO_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageContentSO.cs"
+TOY_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs"
+TOY = "Assets/_SO_Assets/Toys/Toy_Voyage.asset"
+TOYBOX = "Assets/Resources/Toybox.asset"
+ARKWAY_SETTINGS_META = "Assets/_SO_Assets/Toys/Wander_WithArk.asset.meta"
 ENUMS_CS = "Assets/_Scripts/Data/Voyages/VoyageEnums.cs"
 DOMAINS_CS = "Assets/_Scripts/Data/Enums/Domains.cs"
 ELEMENT_CS = "Assets/_Scripts/Data/Enums/Element.cs"
@@ -266,6 +272,49 @@ def emit(spec, cell_pool_block):
 CELL_POOL = re.compile(r"^  cellPool:(?: \[\]\n|\n(?:  - .*\n(?:    .*\n)*)*)", re.M)
 
 
+def color(c):
+    return "{" + f"r: {fnum(c[0])}, g: {fnum(c[1])}, b: {fnum(c[2])}, a: {fnum(c[3])}" + "}"
+
+
+def vec3(v):
+    return "{" + f"x: {fnum(v[0])}, y: {fnum(v[1])}, z: {fnum(v[2])}" + "}"
+
+
+def meta_guid(rel):
+    return re.search(r"^guid: ([0-9a-f]{32})", read(rel), re.M).group(1)
+
+
+def emit_toy(spec):
+    t = spec["toy"]
+    out = SO_HEADER.format(script=script_guid(TOY_CS), name="Toy_Voyage")
+    out += (f"  id: {t['id']}\n  displayName: {yaml_any(t['displayName'])}\n  description: {yaml_any(t['description'])}\n"
+            f"  unlockedByDefault: 1\n  placementAngleDegrees: {fnum(t['placementAngleDegrees'])}\n"
+            f"  accentColor: {color(t['accent'])}\n"
+            f"  withArk: {{fileID: 11400000, guid: {meta_guid(ARKWAY_SETTINGS_META)}, type: 2}}\n"
+            f"  content: {{fileID: 11400000, guid: {guid_for('VoyageContent.asset')}, type: 2}}\n")
+    for k in ("boardDistance", "beaconSpacing", "beaconBodyRadius", "beaconTriggerRadius"):
+        out += f"  {k}: {fnum(t[k])}\n"
+    out += f"  jobColor: {color(t['jobColor'])}\n  homeColor: {color(t['homeColor'])}\n"
+    out += f"  seedElementLevel: {fnum(t['seedElementLevel'])}\n  wingmateLeash: {fnum(t['wingmateLeash'])}\n"
+    out += f"  findDistance: {fnum(t['findDistance'])}\n  vaultRadius: {fnum(t['vaultRadius'])}\n"
+    out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
+    out += f"  vaultOpenShare: {fnum(t['vaultOpenShare'])}\n  holdRadius: {fnum(t['holdRadius'])}\n"
+    out += f"  chartSize: {fnum(t['chartSize'])}\n  chartOffset: {vec3(t['chartOffset'])}\n"
+    for k in ("portColor", "vaultColor", "coreColor", "laneColor"):
+        out += f"  {k}: {color(t[k])}\n"
+    return out
+
+
+def with_toy(toybox_text):
+    """The toybox asset with the Voyage toy on its list (appended once); everything else unchanged."""
+    entry = f"  - {{fileID: 11400000, guid: {guid_for('Toy_Voyage.asset')}, type: 2}}\n"
+    if entry in toybox_text:
+        return toybox_text
+    m = re.search(r"^  toys:\n(?:  - .*\n)*", toybox_text, re.M)
+    assert m, "Toybox.asset has no toys list"
+    return toybox_text[:m.end()] + entry + toybox_text[m.end():]
+
+
 def current_cell_pool():
     full = os.path.join(ROOT, OUT)
     if os.path.exists(full):
@@ -281,6 +330,9 @@ def build(spec=None):
         OUT_DIR + ".meta": FOLDER_META.format(guid=guid_for("folder")),
         OUT: emit(spec, current_cell_pool()),
         OUT + ".meta": ASSET_META.format(guid=guid_for("VoyageContent.asset")),
+        TOY: emit_toy(spec),
+        TOY + ".meta": ASSET_META.format(guid=guid_for("Toy_Voyage.asset")),
+        TOYBOX: with_toy(read(TOYBOX)),
     }
 
 
@@ -324,6 +376,10 @@ def self_test():
     m = CELL_POOL.search(text)
     if not m or m.group(0) != pool:
         failures.append("the cell pool block is not kept as authored")
+    if with_toy(with_toy(read(TOYBOX))) != with_toy(read(TOYBOX)):
+        failures.append("the toybox line is not idempotent")
+    if with_toy(read(TOYBOX)).count(guid_for("Toy_Voyage.asset")) != 1:
+        failures.append("the Voyage toy is not on the toybox list exactly once")
     if emit(spec, current_cell_pool()) != emit(spec, current_cell_pool()):
         failures.append("emit is not deterministic")
     for f in failures:

@@ -565,6 +565,25 @@ namespace CosmicShore.Data
             return result;
         }
 
+        /// <summary>
+        /// The squad gave the voyage up away from home (flew the harbour station, left freestyle). The job under way
+        /// fails, and what was found and owed is lost: only docking at home extracts (VOYAGES.md §11's default). The
+        /// galaxy keeps what happened. Null when there was nothing to give up (the squad was home between jobs).
+        /// </summary>
+        public static Resolution Abandon(VoyageState state, VoyageContent content)
+        {
+            if (state == null || state.IsHome() && state.Current == null) return null;
+            var result = state.Current != null
+                ? Resolve(state, content, JobOutcome.Failed)
+                : new Resolution { Outcome = JobOutcome.Failed };
+            state.Aboard.Clear();
+            state.Owed.Clear();
+            state.AtSea = false;
+            state.At = state.Home;
+            state.LastPort = state.Home;
+            return result;
+        }
+
         /// <summary>What docking at home hands over.</summary>
         public sealed class Extraction
         {

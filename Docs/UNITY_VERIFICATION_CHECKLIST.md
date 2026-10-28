@@ -17830,3 +17830,37 @@ Unity CLI in the session: nothing here was compiled.
 5. Energize. **Pass:** the katana turns danger orange while lit.
 6. If the star sits off the tip, tune `reachPrismAlong` / `reachPrismSidePerLength`; if the blade grows from the wrong
    point, check `reachPartHilt` against the sprite (64, 100).
+
+## 🔴 2026-10-28 — The voyage slice: squad, job board, legs, vaults, wrecks, cores, the chart, docking home (unverified: no Unity editor in the session)
+
+**Plan:** `Docs/Voyages/SLICE.md`. **Files:** `Data/Voyages/*` (the rules, tested headless), `Controller/Voyages/*`
+(`VoyageRun`, `VoyageToy`, `VoyageJobBeacon`, `VoyageVault`, `VoyageChart`), `System/Voyages/VoyageStore.cs`,
+`System/Squads/SquadDeployment.cs`, `VesselPilotLoadout.cs` (a seated vessel flies its slot), `PilotSightProviders.cs`
+(11 more sights), `Payload/Transforms/{Hydra,Aftershock}TransformSO.cs`, the Arkway route hooks (`ArkwayRun`:
+`SetRoute`, `ContinueRoute`, `RouteEnded`, `Underway`, `ArkFallen`; `CellConveyor`: `SetRoute`, `TraversalWorlds`),
+`MenuServerPlayerVesselInitializer` (`RequestSpawnAiCompanion`'s spawn callback, `DespawnAiCompanion`). Assets from
+`author_voyage_assets.py` (`Toy_Voyage.asset`, one line in `Resources/Toybox.asset`) and `author_pilot_assets.py`.
+Affects: Garrett's Arkway and squad layer, Shombith's pilots and artifacts, the menu AI companions. The reference
+compile has no errors in the changed files (player and editor).
+
+1. Run `VoyageRulesTests`, `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`. **Pass:** green.
+2. Ark > SQUADS: a squad of three different vessels, three elements, three pilots of different faction types (CITADEL a
+   hunter, VOLT a merchant, BANDIT a pirate), Hydra on one card. Freestyle, fly the **Voyage** toy (at 90 degrees round
+   the membrane). **Pass:** you are swapped to your seat's vessel; two AI wingmates appear on your flanks in the other two
+   hulls; each vessel's element bar starts at level 5 in its slot's element; LB shows each seat's own pilot sight; up
+   to three job beacons stand around you with a title and "brought by <name>" over each, plus a chart of the map.
+3. Fly a hunt beacon (Lantern Reach or the Hollow). **Pass:** the veil, then the Ark beside you under way, "BOUND FOR
+   ..."; the wingmates are docked with it; the Ark sails 2-4 cells and holds in the last one; "ARRIVED AT ...".
+4. At the vault field. **Pass:** vault shells stand round the Ark (super-shielded; CITADEL's sight finds them); RB at
+   the Ark loads a payload; released on a shell it cracks it; at half cracked an artifact floats out; RB grabs it, and
+   bringing it to the Ark stows it ("STOWED ABOARD", then "JOB DONE" and the job's story line). The next board stands
+   round the Ark, the way home on it.
+5. Fly a courier or defence job to a port or core. **Pass:** a courier is done on arrival; a core counts down while you
+   stay with the Ark ("HOLDING ...: N") and is done at 0.
+6. Take the way home. **Pass:** the Ark sails to your harbour's world and the voyage ends at the dock: "DOCKED AT ...: N
+   FOUND ARTIFACTS ARE YOURS"; the wingmates are gone; crystals owed are paid; the Hangar shows the find held.
+7. Voyage again. **Pass:** the board reflects last voyage's news (a delivered dispatch opens new work at that port).
+8. Let fauna eat the Ark with a find aboard. **Pass:** "THE ARK IS LOST"; home with nothing; next voyage, the nearest port's
+   board offers a salvage job to the wreck, and the wreck's artifacts float where it fell.
+9. Mid-voyage, fly the Voyage toy again (or the harbour station). **Pass:** home, "JOB LEFT UNDONE", nothing kept.
+10. The plain Wander toy's Arkway. **Pass:** unchanged: it sails the shuffle-bag forever and never holds.

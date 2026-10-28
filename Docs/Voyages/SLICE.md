@@ -51,10 +51,10 @@ eat the hull). ENSIGN, VOLT and FLUME were already built.
 
 ## 3. The slice's content (authored data, never C# literals)
 
-- **The map**: one harbour per domain and five locations (the Lantern Reach vault field, the Gallows wreck, the Verdigris
-  core, the Tollmoor port, the Hollow vault field), joined by lanes of 2 to 4 cells.
-- **Pilot people**: one person per callsign (name, faction type, a line of story), layered on the 17 callsign pilots.
-- **Job kinds**: courier (merchant), hunt (hunter), salvage (hunter), defence (aristocrat), tip (pirate).
+- **The map**: one harbour per domain (Celadon, Carmine, Aurum), the Tollmoor port, two vault fields (Lantern Reach,
+  the Hollow) and two cores (Verdigris, Saltmarch, where a wreck lies at the start), joined by lanes of 2 to 4 cells.
+- **Pilot people**: one person per callsign (name, faction type, a line of story), layered on the 18 callsign pilots.
+- **Job kinds**: courier (merchant), hunt (hunter), salvage (pirate), defence (aristocrat), and the way home.
 - **Events**: what each outcome writes to which port's news, and which job seed each piece of news makes.
 
 All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/VoyageContent.asset` by
@@ -62,16 +62,19 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 
 ## 4. Build order (each a pushed increment)
 
-1. **The voyage core, pure C#**: map, crew people, news ledgers, the board, outcomes and chaining, the voyage record and
-   extraction, with edit-mode tests. No engine dependency, so it runs headless.
-2. **The squad drives the seats**: each seat's pilot, artifact and element come from the deployed squad's slot, AI seats
-   included (an AI wingmate flies its slot's pilot); the new sights.
-3. **Two more artifacts**: Hydra and Aftershock, so three artifact slots and an empty one are a real choice.
-4. **The voyage in the world**: `VoyageRun` in freestyle beside the Arkway, reusing `CellConveyor`, `Ark`, `ArkHold`,
-   `ArkFall` and `ArtifactPickup` without changing what the Arkway toy does; the beacons, the chart, the arrival
-   experiences (vaults are new), extraction.
+1. **Built.** The voyage core, pure C# (`Assets/_Scripts/Data/Voyages`): map, crew people, news ledgers, the board,
+   outcomes and chaining, the voyage record, extraction and giving up, with edit-mode tests (`VoyageRulesTests`, run
+   headless too).
+2. **Built.** The squad drives the seats (`SquadDeployment`): each seat's pilot, artifact and element come from the
+   deployed squad's slot, AI seats included; 15 of the 18 sights (RAMPART, HORNET and NEEDLE are still to build).
+3. **Built.** Hydra and Aftershock (`Payload/Transforms`), the artifacts the vault fields and the seed wreck hold.
+4. **Built.** The voyage in the world (`Controller/Voyages`): the **Voyage** toy, `VoyageRun` sailing the Arkway with a
+   route (additive hooks in `ArkwayRun` and `CellConveyor`; with no route the Arkway is unchanged), the job beacons,
+   the 3D chart beside the Ark, vault shells, wreck spills, the core hold, docking home, the fallen Ark, giving up.
+   Saved on the device by `VoyageStore`.
 5. **Friends**: the host's voyage (job, leg, route seed) is sent to the party so every member sails the same course.
-6. **Hand tests and a ticket** (suggested, approved by a person).
+6. **Hand tests** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The voyage slice") and a ticket (suggested, approved by a
+   person).
 
 ## 5. Choices made for the slice (reversible, say if any is wrong)
 
@@ -84,6 +87,16 @@ All of it is `Docs/Voyages/voyage_slice.json`, written into `Resources/Voyages/V
 - **No fixed 4-person cap is built in.** Garrett, 2026-10-28: squad vs squad needs at least 6 people, three squads at
   least 9, more with multi-seat vessels; peer-to-peer limits constrain it for now. Nothing in the slice counts people.
 - **Found artifacts**: see the decision asked in the thread (whether voyage-only artifacts are locked until found).
+  Until it is answered, every artifact stays free (Shombith's rule) and a find is recorded with
+  `PilotLoadoutStore.Grant`, so locking is one switch.
+- **Each seat's artifact rides in the Ark** from the moment it sails, so it is at stake with the finds: a raided or
+  wrecked Ark takes it too. The player's collection keeps it (artifacts are free), the wreck carries a copy.
+- **Job beacons carry words** (title, and who brought it), the painting-choice exception (`ToyChoiceLabel`): three
+  identical rings that send the Ark three different places. Story lines and outcomes are the voyage banner.
+- **A job left undone fails when the next is taken**, and the next board stands as soon as the Ark arrives, so the
+  squad decides when to move on. Giving the voyage up away from home loses what was found (VOYAGES.md §11's default).
+- **AI wingmates escort the Ark**: one that ranges past the leash is brought back to its flank, and they are taken back
+  when the voyage ends. Taking the helm of another seat is not built yet.
 
 ## 6. Hand tests in the Unity editor
 
