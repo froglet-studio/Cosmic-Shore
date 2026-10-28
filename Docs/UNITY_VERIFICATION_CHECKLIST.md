@@ -17968,3 +17968,27 @@ compile has no errors in the changed files (player and editor).
     the friend is swapped to their seat's hull and sees "SAILING WITH YOUR HOST"; when the host takes a job the friend's
     own Ark sails the same worlds to the same stop; the friend can crack a vault and stow a find; when the host takes the
     way home both dock, and the friend keeps what the friend stowed. The host giving up ends the friend's voyage too.
+
+## Switchback fun types: CLASSIC / LEVEL SHAPES / PAR & MEDALS / LIVE FEATURES / COMBINED (2026-10-28) - NOT EDITOR-VERIFIED
+
+Branch `switchback-fun-types`. See `Assets/_Scripts/Controller/Arcade/SWITCHBACK.md`, "Fun types". Watch the console for
+`[Switchback] RUN ...` after every finish.
+
+1. Test Runner, EditMode: `SwitchbackFunTypeTests`, `SwitchbackCourseTests`, `SwitchbackFeaturesTests`. **Pass:** all green.
+2. Arcade -> Switchback card. **Pass:** above the intensity row, `FUN: CLASSIC >` and `SEED: RANDOM`. Tap FUN five
+   times: LEVEL SHAPES, PAR & MEDALS, LIVE FEATURES, COMBINED, CLASSIC. Close and reopen the card: the choice is kept.
+   Another mode's card: no strip. A weekly-challenge Switchback: no strip (Classic).
+3. CLASSIC, I1-I4. **Pass:** exactly today's courses and features; one RUN line per finish with `funType=Baseline`.
+4. LEVEL SHAPES, SEED: FIXED, I1 then I4. **Pass:** I1 is sweeping same-way arcs with no hairpins; I4 is short legs
+   with back-to-back hairpins and visibly smaller needle rings every other ordinary corner; the same course twice
+   in a row (`seed=45101` / `seed=45104` in the log).
+5. PAR & MEDALS, any intensity. **Pass:** a `PAR m:ss.s` toast at the start; a `GATE 5 - +x.xs vs par` split every 5th gate;
+   a GOLD/SILVER/BRONZE (or no medal) toast at the finish; a `NEW BEST` toast the first time; the RUN line has `par=`
+   and `medal=`.
+6. LIVE FEATURES, I1. **Pass:** walls beside some long legs; skim one end to end -> `CLEAN SKIM - BURST!` and a
+   speed burst; brushing only part of it gives nothing. I2: a small ring beside each hairpin; thread it while the
+   hairpin is next -> the hairpin is credited and the next gate lights. I4: danger clusters sweeping across the line.
+7. COMBINED, I3. **Pass:** Plan 1's course with Plan 2's features and Plan 3's toasts.
+8. Two machines, host on LIVE FEATURES I4 or LEVEL SHAPES I4, guest on CLASSIC. **Pass:** the guest flies the host's
+   course (same needles, same moving prisms in sync), and the guest's RUN line says the host's fun type.
+
