@@ -18157,10 +18157,10 @@ compiled.
 6. If the star sits off the tip, tune `reachPrismAlong` / `reachPrismSidePerLength`; if the blade grows from the wrong
    point, check `reachPartHilt` against the sprite (64, 100).
 
-## 🔴 2026-10-28 — The voyage slice: squad, job board, legs, vaults, wrecks, cores, the chart, docking home (unverified: no Unity editor in the session)
+## 🔴 2026-10-28 — The voyage slice: squad, jobs as voyage cards over the galaxy map, legs, vaults, wrecks, cores, docking home (unverified: no Unity editor in the session)
 
 **Plan:** `Docs/Voyages/SLICE.md`. **Files:** `Data/Voyages/*` (the rules, tested headless), `Controller/Voyages/*`
-(`VoyageRun`, `VoyageToy`, `VoyageJobBeacon`, `VoyageVault`, `VoyageChart`), `System/Voyages/VoyageStore.cs`,
+(`VoyageRun`, `VoyageHarbour`, `VoyageVault`; the board and chart retired 2026-10-28), `System/Voyages/VoyageStore.cs`,
 `System/Squads/SquadDeployment.cs`, `VesselPilotLoadout.cs` (a seated vessel flies its slot), `PilotSightProviders.cs`
 (11 more sights), `Payload/Transforms/{Hydra,Aftershock}TransformSO.cs`, the Arkway route hooks (`ArkwayRun`:
 `SetRoute`, `ContinueRoute`, `RouteEnded`, `Underway`, `ArkFallen`; `CellConveyor`: `SetRoute`, `TraversalWorlds`),
@@ -18172,32 +18172,38 @@ compile has no errors in the changed files (player and editor).
 1. Run `VoyageRulesTests`, `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`. **Pass:** green.
 2. Ark > SQUADS: a squad of three different vessels, three elements, three pilots of different faction types (CITADEL a
    hunter, VOLT a merchant, BANDIT a pirate), Javelin on one card (Hydra and Aftershock show
-   locked in the Hangar until found). Freestyle, fly the **Voyage** toy (at 90 degrees round
-   the membrane). **Pass:** you are swapped to your seat's vessel; two AI wingmates appear on your flanks in the other two
-   hulls; each vessel's element bar starts at level 5 in its slot's element; LB shows each seat's own pilot sight; up
-   to three job beacons stand around you with a title and "brought by <name>" over each, plus a chart of the map.
-3. Fly a hunt beacon (Lantern Reach or the Hollow). **Pass:** the veil, then the Ark beside you under way, "BOUND FOR
+   locked in the Hangar until found). Open the Voyage window and press Set sail on a hunt card (Lantern Reach or the
+   Hollow). **Pass:** into freestyle; you are swapped to your seat's vessel; two AI wingmates appear on your flanks in
+   the other two hulls; each vessel's element bar starts at level 5 in its slot's element; LB shows each seat's own
+   pilot sight. (2026-10-28 rework: no job beacons or chart stand in the world; steps 12-15 cover the window.)
+3. The leg. **Pass:** the veil, then the Ark beside you under way, "BOUND FOR
    ..."; the wingmates are docked with it; the Ark sails 2-4 cells and holds in the last one; "ARRIVED AT ...".
 4. At the vault field. **Pass:** vault shells stand round the Ark (super-shielded; CITADEL's sight finds them); RB at
    the Ark loads a payload; released on a shell it cracks it; at half cracked an artifact floats out; RB grabs it, and
-   bringing it to the Ark stows it ("STOWED ABOARD", then "JOB DONE" and the job's story line). The next board stands
-   round the Ark, the way home on it.
-5. Fly a courier or defence job to a port or core. **Pass:** a courier is done on arrival; a core counts down while you
+   bringing it to the Ark stows it ("STOWED ABOARD", then "JOB DONE", the job's story line and "LEAVE FREESTYLE TO
+   CHOOSE YOUR NEXT VOYAGE").
+5. Set sail on a courier or defence job to a port or core. **Pass:** a courier is done on arrival; a core counts down while you
    stay with the Ark ("HOLDING ...: N") and is done at 0.
-6. Take the way home. **Pass:** the Ark sails to your harbour's world and the voyage ends at the dock: "DOCKED AT ...: N
+6. Set sail on the way home card. **Pass:** the Ark sails to your harbour's world and the voyage ends at the dock: "DOCKED AT ...: N
    FOUND ARTIFACTS ARE YOURS"; the wingmates are gone; crystals owed are paid; the found Hydra or Aftershock is
    now held in the Hangar and can go on a squad card.
-7. Voyage again. **Pass:** the board reflects last voyage's news (a delivered dispatch opens new work at that port).
+7. Voyage again. **Pass:** the cards reflect last voyage's news (a delivered dispatch opens new work at that port).
 8. Let fauna eat the Ark with a find aboard. **Pass:** "THE ARK IS LOST"; home with nothing; next voyage, the nearest port's
-   board offers a salvage job to the wreck, and the wreck's artifacts float where it fell.
-9. Mid-voyage, fly the Voyage toy again (or the harbour station). **Pass:** home, "JOB LEFT UNDONE", nothing kept.
+   cards offer a salvage job to the wreck, and the wreck's artifacts float where it fell.
+9. Mid-leg, leave freestyle. **Pass:** "JOB LEFT UNDONE"; the next window's cards set out from home; nothing kept.
 10. The plain Wander toy's Arkway. **Pass:** unchanged: it sails the shuffle-bag forever and never holds.
-11. Two machines in one freestyle party (a joined squad on the friend's side). The host flies the Voyage toy. **Pass:**
+11. Two machines in one freestyle party (a joined squad on the friend's side). The host sets sail from the Voyage window. **Pass:**
     the friend is swapped to their seat's hull and sees "SAILING WITH YOUR HOST"; when the host takes a job the friend's
     own Ark sails the same worlds to the same stop; the friend can crack a vault and stow a find; when the host takes the
     way home both dock, and the friend keeps what the friend stowed. The host giving up ends the friend's voyage too.
-12. Menu_Main, open the Toy Box. **Pass:** a Voyage card is in the grid; opening it shows one row, "Set sail", and
-    pressing Set sail enters freestyle and stands the job board around you. Open it again while under way: the row reads
-    "Under way" and Give up ends the voyage.
-13. Menu_Main, open the Voyage window. **Pass:** the third voyage is a full card titled "Voyage" (no art yet, the
-    toy's `cardArt` is empty), not the locked slot; Set sail opens the same Voyage toy window as step 12.
+12. Menu_Main, open the Toy Box and fly round the ring. **Pass:** there is no Voyage card and no Voyage station.
+13. Menu_Main, open the Voyage window. **Pass:** after Tandava and Tandava Severing there is one voyage card per job
+    the active squad's pilots bring (plus the way home when away), each showing the galaxy map with the squad's
+    spot and that job's course drawn, its eyebrow "<from> TO <to> - <pilot>" and the job's title. Change the squad's
+    pilots in the Ark and reopen the window: the jobs change.
+14. Press Set sail on one. **Pass:** the menu closes into freestyle, the squad deploys and the Ark sails ("BOUND FOR
+    ..."); nothing stands in the world to fly through. Reopen the Voyage window mid-leg is not possible (menus close
+    in freestyle); leaving freestyle mid-leg ends it with "JOB LEFT UNDONE".
+15. Do a job's work (crack a vault and stow its artifact). **Pass:** "JOB DONE ... LEAVE FREESTYLE TO CHOOSE YOUR NEXT
+    VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
+    is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
