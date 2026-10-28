@@ -1,5 +1,5 @@
 {
-  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Edit this file, never the assets by hand.",
+  "comment": "The Meerkat (the wormhole vessel, 2026-10-27): where each artifact parameter lives in the game. key = the studio's own key, which IS the field's name on MeerkatWormholeConfig (the page's GAME_NAMES); asset + field = the Unity config field it becomes. Lab-only (never in the game): aiTau (the sim's steering response - the game's AI flies with AIPilot), the stand-in hull's lope*. cruise / pitchYaw / roll / bankShare are the prefab's MeerkatVesselTransformer (bankShare x roll = RollScaler, set by author_meerkat_assets.py), not plain fields. Rounds 13-21 (the tree round the wormhole and the Omnicrystal's roots, MEERKAT.md section 7) map to the same config by the same names; trunkWarp, omniAtOnce, soil*, labyrinthRing*, labyrinthRibs, labyrinthRoughness and forkHintSeconds are not ported yet. Edit this file, never the assets by hand. Garrett's kit (approved by Yash 2026-10-28, MEERKAT.md section 8): its plain keys (swallowShare, carrySpeed, fireSpeed, fireGlideSeconds, boostOut, sentinelPool, sentinelPoolL5, guardShare, aiZapRate, portalShare) map here by the same names; its L0/L10 pairs (areaL0/L10, rushL0/L10, zapPetalsL0/L10, portalSizeL0/L10) are the ElementalFloat blocks solitonArea, rush, zapPetals and portalSize (Min / Max, authored by author_meerkat_assets.py; this script refuses an elemental field). Lab-only: kit (the page picks a kit; the game flies Garrett's), kChargeLevel/kMassLevel/kSpaceLevel/kTimeLevel (the game reads the real element levels), bounceRestitution (the fundamental's own PrismMotionConfig.shieldBounceRestitution, also 0.6), dangerPetals (a danger prism costs what the platform's danger effects take), the Mix keys (throatFloorDiameter, throatCeilingDiameter, mix*), world* (the studio's seeded prisms), aiKit and aiHopGain (the hop is not built).",
   "vessel": "Meerkat",
   "page": "Docs/Studios/VesselStudio/meerkat.html",
   "rows": [
@@ -472,6 +472,56 @@
       "key": "ovalMaxSharpness",
       "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
       "field": "ovalMaxSharpness"
+    },
+    {
+      "key": "swallowShare",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "swallowShare"
+    },
+    {
+      "key": "carrySpeed",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "carrySpeed"
+    },
+    {
+      "key": "fireSpeed",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "fireSpeed"
+    },
+    {
+      "key": "fireGlideSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "fireGlideSeconds"
+    },
+    {
+      "key": "boostOut",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "boostOut"
+    },
+    {
+      "key": "sentinelPool",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "sentinelPool"
+    },
+    {
+      "key": "sentinelPoolL5",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "sentinelPoolL5"
+    },
+    {
+      "key": "guardShare",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "guardShare"
+    },
+    {
+      "key": "aiZapRate",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "aiZapRate"
+    },
+    {
+      "key": "portalShare",
+      "asset": "Assets/_SO_Assets/VesselActions/Meerkat/MeerkatWormholeConfig.asset",
+      "field": "portalShare"
     }
   ]
 }
