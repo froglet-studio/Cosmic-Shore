@@ -183,18 +183,58 @@ for k, v in DONOR.items():
 # ═════════════════════════════════════════════════════════════════════════════
 # THE NUMBERS (the harness's - TandavaHarness.cs; every one is read back below)
 # ═════════════════════════════════════════════════════════════════════════════
+# The one heart size (Garrett, 2026-10-26; Docs/ECOSYSTEM.md 64.4-64.6): the Swarm cell's sort config grew every member
+# xK round its heart (UnitScale 2 -> 4.088) and its eggs by the body's volume. Tandava inherits that body, so its WORLD
+# grows xK round it - the cell, the band, the hatch, the pilots' line, every creature-centred distance in the director -
+# and its FOOD grows by the eggs' mass ratio M (the stomach is eggs): the meal, MinFood, and the reef, each plant grown
+# WHOLE by s = M^(1/3) (Borromean's LatticeScale, the phyllotactic PlantScale - no new plant, no new collider). Speeds
+# stay world (Cruise and SortVMaxScale are 3/K voxels a step); what a VESSEL meets stays its size (a ring mouth, the
+# pilots' spacing, the director's SnapReach); the nucleus is the HalfNucleus prefab's.
+SORT_CFG = g.read(SORT_CONFIG)
+
+
+def sort_value(key):
+    m = re.search(rf"(?m)^  {key}: (.*)$", SORT_CFG)
+    assert m, f"the sort config has no '{key}'"
+    return m.group(1)
+
+
+RESEARCH_UNIT_SCALE = 2.0                       # the body this mode was designed round (an 800 u cell)
+UNIT_SCALE = float(sort_value("UnitScale"))     # the sort config's, grown to the one heart size
+K = UNIT_SCALE / RESEARCH_UNIT_SCALE            # 2.044: the world's growth
+RESEARCH_EGG = [20.45, 40.31, 22.18, 12.8]      # Charge, Mass, Space, Time at the research body
+EGG = [float(x) for x in re.findall(r"[\d.]+", sort_value("EggVolume"))]   # the sort config's grown eggs
+MASS = sum(EGG) / sum(RESEARCH_EGG)             # 6.38: the stomach's growth, so the food's
+# REEF_GROWTH (Garrett, 2026-10-28: "grow the reef, keep meals"): since Docs/ECOSYSTEM.md 65 a Mass plant's volume is its
+# SHIELD's and its box is light food, so the reef is grown a further x1.4 whole - its biggest plant back over a meal of
+# ~25,500 (90% of it), the volume the serpent's tested pacing was built on.
+REEF_GROWTH = 1.4
+PLANT_SCALE = round(MASS ** (1.0 / 3.0) * REEF_GROWTH, 3)     # 2.597: every reef plant grown whole by this
+# The bite reach: the forms' coils and strike poses grew xK, a reef plant only xs (its MASS grew, not its length), so a
+# member K x further out on a coil would sit past a plant it used to touch. Tandava's bite reaches the difference -
+# the research touch (the harness's 28 u plant + 10 u bite) x K, less the plant's grown radius (the sort config's 20.4
+# is 10 x K, which left a coil eating at about half its rate, harness T7)
+RESEARCH_PLANT_RADIUS, RESEARCH_BITE = 28.0, 10.0
+BITE_RADIUS = round((RESEARCH_PLANT_RADIUS + RESEARCH_BITE) * K - RESEARCH_PLANT_RADIUS * PLANT_SCALE, 2)
+
+
+def world(x):
+    return round(x * K, 2)
+
+
 # The prompter's third pass (2026-10-06): "make the cell smaller, its too big; more types of floras, cramped up; an
-# environment, from Scurry intensity 4". So: the CapsuleMembrane at two thirds, the Scurry cell's half-size core and a reef of
-# seven flora forks packed through the band. (The environment it asked for - Atlantis, thinned - came out again at its next
-# word, "remove the environment": the cell holds only the reef, the creature and the pilots.)
-MEMBRANE_RADIUS = 800.0          # TandavaMembrane (CapsuleMembrane, radius 800): CLOSED - the membrane is the creature's wall
+# environment, from Scurry intensity 4". So: the CapsuleMembrane at two thirds (of the research body's world), the Scurry
+# cell's half-size core and a reef of seven flora forks packed through the band. (The environment it asked for - Atlantis,
+# thinned - came out again at its next word, "remove the environment": the cell holds only the reef, the creature and the
+# pilots.)
+MEMBRANE_RADIUS = world(800.0)   # TandavaMembrane (CapsuleMembrane): CLOSED - the membrane is the creature's wall
 NUCLEUS_RADIUS = 196.0           # HalfNucleus, the Scurry cell's core: fauna eat nothing inside it
-BODY_REACH = 160.0               # the longest body's half-length: its centre roams the membrane less this
+BODY_REACH = world(160.0)        # the longest body's half-length: its centre roams the membrane less this
 ROAM_RADIUS = MEMBRANE_RADIUS * 0.97 - BODY_REACH   # the swarm's own member clamp is 0.97 of the membrane
-HATCH = (-430.0, 0.0, 0.0)       # it hatches whole, facing +x, across the cell from the pilots
-PLANT_INNER, PLANT_OUTER = 240.0, 720.0    # the flora band: clear of the nucleus, inside the wall
+HATCH = (world(-430.0), 0.0, 0.0)   # it hatches whole, facing +x, across the cell from the pilots
+PLANT_INNER, PLANT_OUTER = world(240.0), world(720.0)    # the flora band: clear of the nucleus, inside the wall
 # the reef: (species, element as a research index, how many, prisms a plant may grow). The Mass species carry the food
-# (each plant 2,000-4,400 volume - about half a meal or most of one); the Space ones are colour and a snack. Every row is
+# (each plant 2,000-4,400 volume at the research body, x M now - about half a meal or most of one); the Space ones are colour and a snack. Every row is
 # the harness's TandavaArena.Flora (read back below), its leaf volume read off the canonical config
 FLORA_TABLE = [("Borromean", 1, 5, 60), ("Coral", 1, 5, 110), ("Lantern", 1, 4, 70), ("Reed", 1, 4, 130),
                ("Frond", 1, 3, 120), ("Tendril", 2, 3, 84), ("Coral", 2, 3, 140)]
@@ -203,22 +243,22 @@ FLORA_TABLE = [("Borromean", 1, 5, 60), ("Coral", 1, 5, 110), ("Lantern", 1, 4, 
 DENSITY = 3                      # PlanDensity: every plan unit is three tadpoles in game
 SEED_MEMBERS = 180               # x DENSITY, capped at the seeded form's plan: it hatches WHOLE (no young serpent)
 BITERS_PER_STEP = 8              # the harness's 2026-10-06 sweep: 2 left a feeding head unasked for whole meals
-CRUISE = 3.0                     # voxels/step: 3 x UnitScale 2 x 10 Hz = 60 u/s calm; x the director's mood levers
+CRUISE = round(3.0 / K, 4)       # voxels/step: x UnitScale 4.088 x 10 Hz = 60 u/s calm (the world speed); x the mood levers
 TURN_PER_STEP = 0.03
 SORT_TURN_CARRY = 1.0            # the body turns as one piece (harness T3: 93% of its shape round a fleeing turn, 18% without)
 # a form change READS in about a second (harness T16: 1.0 s to 60% coverage, 3.5 s at the research's member speeds)
-SORT_VMAX_SCALE, SORT_WELL_CLIP = 3.0, 1.0
+SORT_VMAX_SCALE, SORT_WELL_CLIP = round(3.0 / K, 4), 1.0   # 3 at the research body: world speed kept
 SORT_LAY_RATE, SORT_LAY_MAX = 0.084, 8
 KILL_LAY_HOLD_SECONDS = 0.0      # a cut never stops it regrowing - only feeding does (the director's hold)
 SORT_LAY_RAMP_SECONDS = 1.5      # a cut limb is back in about a second (harness T4)
-UNIT_SCALE, PRISM_SCALE = 2.0, 1.0
-EGG = [20.45, 40.31, 22.18, 12.8]  # Charge, Mass, Space, Time (the Swarm cell's measured egg volumes)
+PRISM_SCALE = 1.0
 STOMACH_EGGS = 500
 BODY_FILL = 0.939                # SortBodyFill (the sort core's grown body)
 MAX_PROXIES = 160
 # the metabolism: starvation is the swarm's OWN (SwarmFauna.Starving: unfed this long while hungry, it sheds one member
-# per interval). The sort config's 90 s / 1 s is a reef's pace; a hunt is decided in minutes
-STARVATION_SECONDS, SHED_INTERVAL_SECONDS, FORAGE_BELOW = 30, 0.25, 0.5
+# per interval). The sort config's 90 s / 1 s is a reef's pace; a hunt is decided in minutes. 30 s at the research body:
+# the way to food is K x longer at the same world speed
+STARVATION_SECONDS, SHED_INTERVAL_SECONDS, FORAGE_BELOW = world(30), 0.25, 0.5
 # SortWellsPerType 24 / SortWellDead 0: the dance is a STROKE figure - 12 Gaussian wells a type blur a stroke into a blob
 SORT_WELLS_PER_TYPE, SORT_WELL_DEAD = 24, 0
 # MultiDomain OFF: a lineage swarm gives its slots the OTHER playable domains, and with every pilot on one domain one of
@@ -230,17 +270,17 @@ MACRO_LOD = 0
 # The economy (TandavaHarness.BuildForms)
 FILL_TO_EVOLVE = 0.9
 BANK_SHARE = [0.15, 0.28, 0.0, 0.4]   # of the stomach, RISING: a carried-over stomach never skips a form; low: the forms come fast
-MEAL_VOLUME = 4000.0
+# MEAL_VOLUME: derived from the reef below, after FLORA (Docs/ECOSYSTEM.md 65).
 
 # The halo and the end conditions
 HALO_COUNT, HALO_TO_BREAK = 12, 9      # EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak (asserted)
 HALO_MOUTH = 24.0                      # world: rings sit ~87 u apart on the halo
-GUARD_RADIUS, GUARD_MEMBERS = 40.0, 6  # a pack is 7 Time units x density 3; a lobby that culls most of it unguards it
+GUARD_RADIUS, GUARD_MEMBERS = world(40.0), 6  # a pack is 7 Time units x density 3; a lobby that culls most of it unguards it
 HALO_POINTS = 25                       # TandavaScoringRuleSO.haloPoints: a ring is worth a pack of culls
 BREAK_PERCENT = 35                     # EndConditionOverridesSO.DefaultTandavaBreakPercent (asserted): the shatter
 
 # Pilots line up across the cell from the hatch, facing it (Y -90 deg)
-SPAWN_X = 600.0
+SPAWN_X = world(600.0)
 SPAWN_Z = [-90.0, -30.0, 30.0, 90.0]
 SPAWN_ROT = (0.0, -0.7071068, 0.0, 0.7071068)
 
@@ -279,8 +319,9 @@ WORLD = DENSITY ** (1.0 / 3.0) * UNIT_SCALE
 
 
 def leaf_volume(path):
+    """One prism's volume in THIS reef: the canonical LeafSize, grown whole by PLANT_SCALE."""
     lx, ly, lz = map(float, re.search(r"LeafSize: \{x: ([\d.]+), y: ([\d.]+), z: ([\d.]+)\}", g.read(path)).groups())
-    return lx * ly * lz
+    return lx * ly * lz * PLANT_SCALE ** 3
 
 
 def canon_flora(species, element):
@@ -295,6 +336,11 @@ for f in FLORA:
     EXISTING[f"Canon{f['key']}"] = lib.existing_guid(f["path"])
     G_ASSET.setdefault(f["key"], guid(f"asset/Tandava{f['key']}"))
 MASS_LEAF = leaf_volume(canon_flora("Borromean", 1))   # the food survey's fallback when a plant reports no leaf
+# A MEAL IS MOST OF THE BIGGEST PLANT (Garrett, 2026-10-28: "meals shrink to the reef"). It was 4,000 x MASS (25,521),
+# which only the chunky Mass Borromean could hold (60 x 465). Since Docs/ECOSYSTEM.md 65 a Mass plant's volume is its
+# SHIELD's and its box is light food, so the meal is stated in the reef's own terms: 90% of its biggest plant.
+PLANT_VOLUME = max(f["prisms"] * f["leaf"] for f in FLORA)    # the biggest plant: a meal is most of one
+MEAL_VOLUME = float(round(0.9 * PLANT_VOLUME))
 
 
 def variants_of(form):
@@ -344,16 +390,19 @@ HALO_RADIUS, GUARD_POST_RADIUS = _ring["radius"] * WORLD, _ring["guardOrbit"] * 
 HALO_OFFSET = max(math.sqrt(sum(x * x for x in v["halo"])) for v in FORM_ROWS[2]["variants"])
 DANCE_REACH_NEEDED = GUARD_POST_RADIUS + GUARD_RADIUS + HALO_OFFSET
 
-PLANT_VOLUME = max(f["prisms"] * f["leaf"] for f in FLORA)    # the biggest plant: a meal is most of one
 PLANTS = sum(f["count"] for f in FLORA)
 FOREST_PRISMS = sum(f["count"] * f["prisms"] for f in FLORA)
 FOREST_VOLUME = sum(f["count"] * f["prisms"] * f["leaf"] for f in FLORA)
 
 
+ELEMENT_BODY = [float(x) for x in re.findall(r"[\d.]+", sort_value("ElementBodyScale"))]   # inherited
+
+
 def body_volume(plan):
-    m3 = (2.0 * UNIT_SCALE * PRISM_SCALE) ** 3          # SwarmTickJob: scale = 2 x unit x prismScale x half
-    h = plan["half"]
-    return DENSITY * BODY_FILL * sum(m3 * abs(h[3 * k] * h[3 * k + 1] * h[3 * k + 2]) for k in range(plan["n"]))
+    m3 = (2.0 * UNIT_SCALE * PRISM_SCALE) ** 3          # SwarmTickJob: scale = 2 x unit x prismScale x half x element body
+    h, e = plan["half"], plan["elem"]
+    return DENSITY * BODY_FILL * sum(m3 * ELEMENT_BODY[e[k]] ** 3 * abs(h[3 * k] * h[3 * k + 1] * h[3 * k + 2])
+                                     for k in range(plan["n"]))
 
 
 BIGGEST_BODY = max(body_volume(PLANS[k]) for k in PLAN_KEYS)
@@ -463,9 +512,13 @@ for key, value in (("Model", 2), ("MultiDomain", MULTI_DOMAIN), ("PlanDensity", 
                    ("SortBodyFill", num(BODY_FILL)), ("SortWellClip", num(SORT_WELL_CLIP)),
                    ("EggVolume", "{x: %s, y: %s, z: %s, w: %s}" % tuple(num(e) for e in EGG))):
     cfg = set_key(cfg, key, value)
+# the body itself - UnitScale, the per-element body, the heart gap - is the sort config's, inherited (the world above grows
+# round it); the re-sort speed is Tandava's, kept at its world speed, and so is the bite reach (BITE_RADIUS)
+cfg = set_key(cfg, "SortVMaxScale", num(SORT_VMAX_SCALE))
+cfg = set_key(cfg, "BiteRadius", num(BITE_RADIUS))
 # keys the shipped sort config predates (Unity has been reading their C# defaults): written explicitly here, in
 # declaration order, because each is a Tandava decision
-for key in ("ScriptedPlans", "ScriptedPlanPeriods", "ScriptedPlanWellClip", "SortTurnCarry", "SortVMaxScale", "MaxHitMaterialisationsPerFrame",
+for key in ("ScriptedPlans", "ScriptedPlanPeriods", "ScriptedPlanWellClip", "SortTurnCarry", "MaxHitMaterialisationsPerFrame",
             "UnifiedPrismBodies", "MacroLod", "Bestiary", "HuntEnter", "LurkCalm", "LocustPhaseSeconds"):
     assert not re.search(rf"(?m)^  {key}:", cfg), f"the shipped sort config now carries '{key}' - set it, do not insert it"
 cfg = insert_after(cfg, "TimePlan",
@@ -475,7 +528,7 @@ cfg = insert_after(cfg, "TimePlan",
                    "".join(f"  - {PLANS[k]['frameSteps']}\n" for k in PLAN_KEYS) +
                    "  ScriptedPlanWellClip:\n" +
                    "".join(f"  - {num(PLANS[k].get('wellClip', 1.0))}\n" for k in PLAN_KEYS))
-cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n  SortVMaxScale: {num(SORT_VMAX_SCALE)}\n")
+cfg = insert_after(cfg, "TurnPerStep", f"  SortTurnCarry: {num(SORT_TURN_CARRY)}\n")
 cfg = insert_after(cfg, "ProxyLingerSeconds",
                    f"  MaxHitMaterialisationsPerFrame: 48\n  UnifiedPrismBodies: 1\n  MacroLod: {MACRO_LOD}\n")
 cfg = insert_after(cfg, "DangerExit", "  Bestiary: 1\n  HuntEnter: 0.2\n  LurkCalm: 0.05\n  LocustPhaseSeconds: 2\n")
@@ -534,6 +587,22 @@ def flora_fork(f):
             t = insert_after(t, after, f"  {key}: {f['count']}\n", label=f["name"])
     t = re.sub(r"(?m)^  (PlantRadiusCellFraction(Max|Min)Override|MaxTotalSpawnedObjectsOverride|SpreadPlanting): .*\n", "", t)
     t = re.sub(r"(?m)^  PlantingPens:.*\n(?:  - .*\n|    .*\n)*", "", t)
+    # every plant grown whole by PLANT_SCALE (the header): Borromean through its lattice, a phyllotactic species
+    # through PlantScale, written at the end of its Variant block
+    assert re.search(r"(?m)^  Variant:\n    Enabled: 1$", t), f"{f['name']}: the canonical Variant tuning is not enabled"
+    if f["species"] == "Borromean":
+        t, n = re.subn(r"(?m)^    LatticeScale: .*$", f"    LatticeScale: {num(PLANT_SCALE)}", t, count=1)
+        assert n == 1, f"{f['name']}: LatticeScale not found"
+    else:
+        # A canonical config may carry the -1 sentinel (author_flora_armour.py emits a block's whole field set,
+        # Docs/ECOSYSTEM.md 65); only a REAL PlantScale on it would be a second owner of this fork's number.
+        own = re.search(r"(?m)^    PlantScale: (.+)$", t)
+        assert not own or float(own.group(1)) < 0, f"{f['name']}: the canonical config now sets PlantScale - set it"
+        if own:
+            t = t[:own.start()] + f"    PlantScale: {num(PLANT_SCALE)}" + t[own.end():]
+        else:
+            m = re.search(r"(?m)^  Variant:\n(?:    .*\n)*", t)
+            t = t[:m.end()] + f"    PlantScale: {num(PLANT_SCALE)}\n" + t[m.end():]
     if not t.endswith("\n"):
         t += "\n"
     t += (f"  PlantRadiusCellFractionMaxOverride: {g5(PLANT_OUTER / MEMBRANE_RADIUS)}\n"
@@ -581,9 +650,9 @@ LADDER = ladder()
 g.emit_asset(f"{CELL_DIR}/Tandava Cell Config.asset", G_ASSET["CellConfig"],
              so(lib.SCRIPT_GUIDS["CellConfigDataSO"], "Tandava Cell Config") +
              f"""  CellName: Tandava
-  Description: A small closed cell for one creature's hunt - a membrane two thirds the standard, the Scurry
-    cell's half-size core and a cramped reef of seven flora forks; no environment. Authored by
-    Tools/Build/author_tandava_assets.py
+  Description: A closed cell for one creature's hunt - its world grown round the one heart size, the Scurry
+    cell's half-size core and a cramped reef of seven flora forks, each plant grown whole; no environment.
+    Authored by Tools/Build/author_tandava_assets.py
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
@@ -598,7 +667,7 @@ g.emit_asset(f"{CELL_DIR}/Tandava Cell Config.asset", G_ASSET["CellConfig"],
   EnvironmentPrefab: {{fileID: 0}}
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
-  PetalBurnRule: 0
+  PetalBurnRule: 1
   initialControllingDomain: 1
   conservedFaunaStomach: 0
   PhaseThresholds:
@@ -641,7 +710,7 @@ g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              f"  GuardMembers: {GUARD_MEMBERS}\n  GuardElement: 4\n  HaloGuardScale: 0.35\n"
              "  HaloBloomSeconds: 1.2\n  HaloBreakSeconds: 0.6\n  MaxPlausibleSpeed: 1500\n"
              "  FormBurstShards: 64\n  HaloBurstShards: 18\n  BurstSpeed: 70\n  BurstScale: 3\n"
-             "  FlashSeconds: 0.6\n  FlashRadius: 260\n  FlashStrength: 0.8\n"
+             f"  FlashSeconds: 0.6\n  FlashRadius: {num(world(260))}\n  FlashStrength: 0.8\n"
              "  AscensionPalette:\n" + palette_yaml(ASCENSION_PALETTE, "    ") +
              "  TransitionSeconds: 3\n  TransitionFlash: 1.2\n  RestoreSeconds: 5\n"
              "  StartLine: Something in the reef remembers the old shapes.\n"
@@ -662,7 +731,8 @@ g.emit_asset(SETTINGS_REL, G_ASSET["TandavaSettings"],
              f"  DancingLabel: {yaml_str('Dancing - break the halo')}\n  FeastLabel: the last feast\n"
              "  HaloLabel: Halo rings broken\n  DrumLabel: Drum\n  TimeLabel: Time left\n"
              f"  BodyFormat: {yaml_str('Body {0}%')}\n"
-             "  NudgeThreshold: 25\n  NudgeFraction: 0.2\n  MaxNudge: 8\n  AiFlankBack: 70\n")
+             # the bots strike this far behind the body's centre - a body length's share, so x K (70 at the research body)
+             f"  NudgeThreshold: 25\n  NudgeFraction: 0.2\n  MaxNudge: 8\n  AiFlankBack: {num(world(70))}\n")
 
 g.emit_asset("Assets/_SO_Assets/Scoring Rules/TandavaScoringRule.asset", G_ASSET["TandavaScoringRule"],
              so(G_SCRIPT["TandavaScoringRuleSO"], "TandavaScoringRule") +
@@ -976,6 +1046,9 @@ for label, pattern, ours in (
         ("Density", r"const int Density = (\d+);", DENSITY),
         ("SeedMembers", r"const int SeedMembers = (\d+);", SEED_MEMBERS),
         ("StomachEggs", r"const int StomachEggs = (\d+);", STOMACH_EGGS),
+        ("UnitScale", r"const float UnitScale = ([\d.]+)f", UNIT_SCALE),
+        ("BiteRadius", r"BiteRadius = ([\d.]+)f;", BITE_RADIUS),
+        ("PlantScale", r"const float PlantScale = ([\d.]+)f;", PLANT_SCALE),
         ("Cruise", r"const float Cruise = ([\d.]+)f;", CRUISE),
         ("TurnPerStep", r"const float TurnPerStep = ([\d.]+)f;", TURN_PER_STEP),
         ("SortTurnCarry", r"const float SortTurnCarry = ([\d.]+)f;", SORT_TURN_CARRY),

@@ -430,12 +430,9 @@ namespace CosmicShore.Gameplay
             model.transform.SetParent(parent, false);
             if (model.TryGetComponent(out ToyIdleSpin spin)) Destroy(spin);
 
+            // Every heart is one size, so the crystal is drawn at its model's own scale.
             if (element.HasValue)
-            {
-                var faunaCfg = FindByElement(fauna, element.Value);
-                var floraCfg = FindByElement(flora, element.Value);
-                AddElementCrystalVisual(model.transform, element.Value, HeartVisualScale(faunaCfg, floraCfg));
-            }
+                AddElementCrystalVisual(model.transform, element.Value, 1f);
             return model;
         }
 
@@ -805,41 +802,21 @@ namespace CosmicShore.Gameplay
                 Vector3 pos = origin + right * (spacing * (col - (Elements.Length - 1) * 0.5f));
 
                 // The station SHOWS the variant it releases: the element is the crystal's
-                // SHAPE, and the crystal is drawn at that variant's own authored heart size, so
-                // the four stations differ by exactly what the four lifeforms differ by. The
-                // station sphere holds the shared radius — it is a switch, and every switch in
-                // the toybox is drawn at its own trigger radius (Docs/ToySystem § "The switch").
-                float heartScale = HeartVisualScale(faunaCfg, floraCfg);
+                // SHAPE. Every heart is one size (ElementalCrystalSetSO.CrystalWorldScale), so
+                // the four crystals are drawn alike and differ by exactly what the four hearts
+                // differ by. The station sphere holds the shared radius — it is a switch, and
+                // every switch in the toybox is drawn at its own trigger radius
+                // (Docs/ToySystem § "The switch").
                 var station = CreateStation(_variantGrid.transform, pos,
                     $"{speciesName} · {element}", _def.StationRadius, Definition.AccentColor,
                     bodySphere: false);
-                AddElementCrystalVisual(station.transform, element, heartScale);
+                AddElementCrystalVisual(station.transform, element, 1f);
 
                 if (faunaCfg)
                     station.OnVesselPassed = () => SpawnFaunaVariant(faunaCfg);
                 else
                     station.OnVesselPassed = () => SpawnFloraVariant(floraCfg);
             }
-        }
-
-        /// <summary>
-        /// How big to draw this variant's crystal on its station, as a RATIO of the platform
-        /// default heart — so a station shows the real relative size of the heart it releases
-        /// (a piranha's reads small, a shark's reads large) and the default reads as 1.
-        ///
-        /// <para>Read off whichever config the station is for, through the same resolution a
-        /// live lifeform does, so the bench cannot show a size the world will not. The 0.35
-        /// floor is legibility only: the smallest authored heart would otherwise draw at ~0.27
-        /// of the icon and read as a dot rather than as a small crystal.</para>
-        /// </summary>
-        static float HeartVisualScale(FaunaConfigurationSO faunaCfg, FloraConfigurationSO floraCfg)
-        {
-            float authored = 0f;
-            if (faunaCfg && faunaCfg.Variant != null) authored = faunaCfg.Variant.HeartWorldScale;
-            else if (floraCfg && floraCfg.Variant != null) authored = floraCfg.Variant.HeartWorldScale;
-
-            float reference = Mathf.Max(0.01f, LifeFormCrystal.DefaultHeartWorldScale);
-            return Mathf.Max(0.35f, LifeFormCrystal.ResolveHeartWorldScale(authored) / reference);
         }
 
         static T FindByElement<T>(T[] configs, Element element) where T : ScriptableObject

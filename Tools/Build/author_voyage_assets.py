@@ -302,6 +302,10 @@ def emit_toy(spec):
     out += f"  chartSize: {fnum(t['chartSize'])}\n  chartOffset: {vec3(t['chartOffset'])}\n"
     for k in ("portColor", "vaultColor", "coreColor", "laneColor"):
         out += f"  {k}: {color(t[k])}\n"
+    out += "  cardArt: {fileID: 0}\n"
+    for k in ("shellLabel", "shellDetail", "shellSetSailVerb", "shellUnderwayLabel", "shellUnderwayDetail",
+              "shellGiveUpVerb"):
+        out += f"  {k}: {yaml_any(t['menu'][k])}\n"
     return out
 
 

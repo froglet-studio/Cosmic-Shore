@@ -351,6 +351,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The size this prism's prefab AUTHORED (its local scale before Awake zeroed it), unclamped: the
+        /// scale window trims <see cref="TargetScale"/>, never this. See PrismScaleAnimator.AuthoredTargetScale.</summary>
+        public Vector3 AuthoredScale =>
+            scaleAnimator && scaleAnimator.AuthoredTargetScale != Vector3.zero ? scaleAnimator.AuthoredTargetScale : transform.localScale;
+
         /// <summary>Widens this prism's scale-constraint window so an AUTHORED size survives
         /// <see cref="TargetScale"/>'s per-axis clamp. See PrismScaleAnimator.AdmitTargetScale.</summary>
         public void AdmitTargetScale(Vector3 target)

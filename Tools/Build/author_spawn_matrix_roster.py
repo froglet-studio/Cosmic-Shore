@@ -148,8 +148,9 @@ FAUNA = [
 FLORA = [
     *[(n, lifeform_set(n)) for n in
       ("Arbor", "Coral", "Frond", "Lantern", "Reed", "Rosette", "Spire", "Tendril")],
+    # the Swarm cell grows no Mass forest since the element law armoured Mass (Docs/ECOSYSTEM.md 65.7: its whale band
+    # grazes Time), so the cell's row is its Space and Time forks; the canonical Borromean row still offers Mass
     ("Swarm Borromean", [
-        "Cell Configs/Swarm Cell/Swarm Inner Borromean Flora Mass Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Outer Borromean Flora Space Config Data.asset",
         "Cell Configs/Swarm Cell/Swarm Middle Borromean Flora Time Config Data.asset",
     ]),
@@ -221,8 +222,6 @@ DESCRIPTIONS = {
                 "of pipes. Space tiles are five times wider.",
     "Quasicrystal": "A colony of 110-strut stars of a lattice that never repeats, budding outward. Space "
                     "struts run long, Mass beams short.",
-    "Wall": "A flat strip of square plates laid side by side out of its crystal: a living barrier. All "
-            "four elements share one form.",
     "Branching": "A tree that grows toward the cell's crystal, forking two or three ways at up to 60 "
                  "degrees, with up to 5,000 leaves.",
     "Cacti": "An upright trunk throwing five to nine right-angle arms per node, slowly crusted with "

@@ -37,7 +37,7 @@ its own copy of the ladder: ask before doing it.
 
 A boss you cannot kill the same way twice starts with a body you can cut. Fly cleanly through the body - kill every
 member across a band of it - and for the moment before the wound buds shut, the members beyond the cut are a separate
-cloud. `TandavaSeveringSever.FindPiece` finds that moment: live members linked to every neighbour within `SeverLink` (13 u -
+cloud. `TandavaSeveringSever.FindPiece` finds that moment: live members linked to every neighbour within `SeverLink` (32.7 u since 2026-10-27, 8 plan voxels: the research 13 u tore the Ten-Headed Serpent's coils, `Docs/ECOSYSTEM.md` §64.5; was 13 u -
 a whole body's loosest knot of a dozen members sits inside it in every pose but the dance and the lunges, harness T20)
 fall into pieces; the largest is the body, and the second, if it holds 12-40% of the form (and at least 45 members), is
 **the Severed**. `TandavaSeveringDirectorCore.MaySever` allows it only for an eater roaming or feeding, never mid-lunge, never in
@@ -127,7 +127,7 @@ T1-T19 are Tandava's rows as #1046 had them, run against the fork's director; th
 |---|---|
 | T2 | every Great Serpent variant hatches whole (450-507 tadpoles) and holds 93-98% of its shape 15 s later |
 | T3 | calm 61 u/s against the config's 60; x2.1 = 127 u/s; the turn carry keeps the body's shape round a hard fleeing turn |
-| T20 | the sever finder: no false pieces in any pose but the dance and the lunges (link 13 u); a slice parts the tail |
+| T20 | the sever finder: no false pieces in any pose but the dance and the lunges (link 32.7 u, 8 voxels); a slice parts the tail |
 | T21 | the Severed: every member accounted for, the stomach conserved, the body bolts, the piece crawls off in its own plan and regrows |
 | T22 | home: unopposed, the piece feeds, turns for home and rejoins within its clock and the swim |
 | T23 | the hydra: a fed creature cut in two outgrows the body that was cut (+121); a starved one stays cut (-27) |

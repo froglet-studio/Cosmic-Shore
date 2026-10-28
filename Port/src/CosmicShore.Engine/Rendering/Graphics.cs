@@ -168,6 +168,18 @@ namespace CosmicShore.Engine
             RenderMeshInstanced(rparams, mesh, submeshIndex, instanceData.ToArray(), instanceCount, startInstance);
         }
 
+        /// <summary>Unity's <c>NativeArray&lt;Matrix4x4&gt;</c> overload, reached through the compat NativeArray's implicit
+        /// span (CrystalHeartDraw's hearts, Docs/ECOSYSTEM.md §65.7). The slice drawn is copied into the array form.</summary>
+        public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
+            ReadOnlySpan<CosmicShore.Engine.Matrix4x4> instanceData, int instanceCount = -1, int startInstance = 0)
+        {
+            int start = Math.Max(0, startInstance);
+            int available = Math.Max(0, instanceData.Length - start);
+            int count = instanceCount < 0 ? available : Math.Min(instanceCount, available);
+            if (count <= 0) return;
+            RenderMeshInstanced(rparams, mesh, submeshIndex, instanceData.Slice(start, count).ToArray(), count);
+        }
+
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
             CosmicShore.Engine.Matrix4x4[] instanceData, int instanceCount = -1, int startInstance = 0)
         {

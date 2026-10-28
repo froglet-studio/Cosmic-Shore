@@ -76,8 +76,8 @@ namespace CosmicShore.Gameplay
         /// family's leaf DOES carry a length, so the leaf transform already lengthens a Space
         /// needle - but the branch STEP is a separate authored distance, and leaving it alone
         /// would stretch the prisms past the gaps they are meant to span. Scaling the step with
-        /// them keeps a Space plant a wider skeleton and a Mass plant a compact block, rather
-        /// than either one changing how densely its own branches are packed.
+        /// them keeps a Space plant a wider skeleton and a Mass plant the neutral plant grown whole
+        /// (Docs/ECOSYSTEM.md §65), rather than either one changing how densely its own branches are packed.
         /// </summary>
         protected override void OnElementResolved()
         {
@@ -195,6 +195,15 @@ namespace CosmicShore.Gameplay
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
+                        // THE HEART'S CLEARANCE (Docs/ECOSYSTEM.md §65): a branch that curls back onto its own
+                        // crystal ends there without a leaf, so no leaf - and no Mass leaf's shield - sits in the
+                        // heart's swing. The branch still terminates, exactly as a leaf would have ended it.
+                        if (IntrudesOnHeart(HeartTransform.position, ChildPosition(branch),
+                                branch.gameObject.transform.rotation, LeafSize))
+                        {
+                            branchesToRemove.Add(branch);
+                            continue;
+                        }
                         newBranch.gameObject = EnvironmentPrismPool.Get(healthPrism, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthPrism>();
@@ -265,6 +274,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Where <see cref="ScaleAndPositionBranch"/> puts a child of <paramref name="branch"/> - one step
+        /// forward, foreshortened past depth 1.</summary>
+        Vector3 ChildPosition(Branch branch)
+        {
+            Transform t = branch.gameObject.transform;
+            return branch.depth <= 1 ? t.position + branchingScaleFactor * t.forward
+                                     : t.position + branchingScaleFactor / (branch.depth - 1) * t.forward;
+        }
+
         void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)
         {
             newBranch.gameObject.transform.position = branch.depth <= 1 ? branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward) :
@@ -320,7 +338,9 @@ namespace CosmicShore.Gameplay
 
                     if (rng.NextDouble() < leaf)
                     {
-                        into.Add(new SpawnPoint(childPos, rot, leafScale));
+                        // Grow()'s heart clearance: the plant's origin is its heart here.
+                        if (!IntrudesOnHeart(Vector3.zero, childPos, rot, leafScale))
+                            into.Add(new SpawnPoint(childPos, rot, leafScale));
                         continue; // a leaf terminates the branch, as in Grow()
                     }
 

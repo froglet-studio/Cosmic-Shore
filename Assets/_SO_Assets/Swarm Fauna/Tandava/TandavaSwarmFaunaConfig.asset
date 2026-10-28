@@ -176,7 +176,7 @@ MonoBehaviour:
   - 5
   - 5
   TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
-  UnitScale: 2
+  UnitScale: 4.088
   TickHz: 10
   MaxStepsPerFrame: 3
   SimBudgetMsPerFrame: 3
@@ -192,9 +192,9 @@ MonoBehaviour:
   UnifiedPrismBodies: 1
   MacroLod: 0
   SeedMembers: 180
-  BiteRadius: 10
+  BiteRadius: 4.96
   BitersPerStep: 8
-  EggVolume: {x: 20.45, y: 40.31, z: 22.18, w: 12.8}
+  EggVolume: {x: 75.45, y: 344.25, z: 81.84, w: 109.31}
   CrossElementCost: 2
   StomachEggs: 500
   ForageBelow: 0.5
@@ -205,13 +205,13 @@ MonoBehaviour:
   LayMax: 16
   MaxSpawnsPerFrame: 24
   KillLayHoldSeconds: 0
-  StarvationSeconds: 30
+  StarvationSeconds: 61.32
   ShedIntervalSeconds: 0.25
   ExtinctLingerSeconds: 10
-  Cruise: 3
+  Cruise: 1.4677
   TurnPerStep: 0.03
   SortTurnCarry: 1
-  SortVMaxScale: 3
+  SortVMaxScale: 1.4677
   WanderReach: 300
   VesselRadius: 9
   SenseMargin: 400
@@ -223,7 +223,8 @@ MonoBehaviour:
   LocustPhaseSeconds: 2
   HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
   PrismScale: 1
-  HeartPrismGap: 0.6
+  ElementBodyScale: {x: 0.756, y: 1, z: 0.756, w: 1}
+  HeartPrismGap: 1.226
   BirthBloomSeconds: 0.8
   MoltHeartSeconds: 0.5
   GridSize: 8
