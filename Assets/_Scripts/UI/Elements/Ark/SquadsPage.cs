@@ -82,7 +82,10 @@ namespace CosmicShore.UI
         [SerializeField] private SquadPickChip[] vesselTiles = new SquadPickChip[7];
         [SerializeField] private KitButton vesselPrevButton;
         [SerializeField] private KitButton vesselNextButton;
-        [SerializeField] private SquadPickChip[] pilotChips = new SquadPickChip[4];
+        [Tooltip("Chip 0 is the empty seat; the rest page through the callsign pilots.")]
+        [SerializeField] private SquadPickChip[] pilotChips = new SquadPickChip[5];
+        [SerializeField] private KitButton pilotPrevButton;
+        [SerializeField] private KitButton pilotNextButton;
         [Tooltip("AI wingmate / Open for a friend; shown for a rogue card.")]
         [SerializeField] private CanvasGroup seatModeGroup;
         [SerializeField] private SquadPickChip[] seatModeChips = new SquadPickChip[2];
@@ -159,10 +162,10 @@ namespace CosmicShore.UI
         [SerializeField] private string[] elementNames = { "", "Charge", "Mass", "Space", "Time", "Omni" };
         [Tooltip("Domain names, by Domains value (-, Jade, Ruby, Blue, Gold).")]
         [SerializeField] private string[] domainNames = { "", "Jade", "Ruby", "Blue", "Gold" };
-        [SerializeField] private string basePilotLine = "Base kit";
-        [SerializeField] private string basePilotDetail = "The vessel's own kit";
-        [Tooltip("A pilot's line in the picker; {ability} is the ability it rewrites.")]
-        [SerializeField] private string pilotDetail = "Rewrites {ability}";
+        [Tooltip("A squad card's pilot word when the catalog offers its vessel no pilot at all.")]
+        [SerializeField] private string basePilotLine = "No pilot";
+        [Tooltip("A pilot's line in the picker; {sight} is what its callsign lights on LB (CallsignSetSO).")]
+        [SerializeField] private string pilotDetail = "{sight}";
         [SerializeField] private string noArtifactLine = "No artifact";
         [SerializeField] private string noArtifactChip = "None";
         [SerializeField] private string createWord = "Create squad";
@@ -207,7 +210,7 @@ namespace CosmicShore.UI
 
         Mode _mode = Mode.None;
         SavedSquad _draft;
-        int _editIndex = -1, _selected, _seat, _vesselPage;
+        int _editIndex = -1, _selected, _seat, _vesselPage, _pilotPage;
         bool _shown, _refreshing, _joinOpen, _loadingOffers;
         float _lastRefresh = float.NegativeInfinity, _publishAt = -1f, _confirmUntil = -1f;
 
@@ -246,6 +249,8 @@ namespace CosmicShore.UI
             Listen(joinCloseButton, CloseJoin);
             Listen(vesselPrevButton, () => PageVessels(-1));
             Listen(vesselNextButton, () => PageVessels(1));
+            Listen(pilotPrevButton, () => PagePilots(-1));
+            Listen(pilotNextButton, () => PagePilots(1));
             Listen(cancelButton, Cancel);
             Listen(createButton, Create);
             Listen(removeButton, Remove);
@@ -359,7 +364,9 @@ namespace CosmicShore.UI
         {
             _mode = Mode.Make;
             _seat = 0;
+            FillPilots(_draft);
             ShowVesselPageOf(_draft.Leader.Vessel);
+            ShowPilotPageOf(_draft.Leader);
             Draw(snapDomain: true);
         }
 
@@ -423,13 +430,18 @@ namespace CosmicShore.UI
             if (_mode != Mode.Make || !CanEdit(_draft, seat)) return;
             _seat = seat;
             ShowVesselPageOf(_draft.GetSlot(seat).Vessel);
+            ShowPilotPageOf(_draft.GetSlot(seat));
             Draw();
         }
 
         void EditSlot(System.Func<SquadSlot, SquadSlot> change)
         {
             if (_mode != Mode.Make || _draft == null) return;
+            string previousPilot = _draft.GetSlot(_seat).PilotId;
             _draft.SetSlot(_seat, change(_draft.GetSlot(_seat)));
+            // Each vessel has its own pilot and artifact: one moved onto this vessel leaves the others (the pilot swaps).
+            _draft.KeepCardsOwn(_seat, previousPilot);
+            FillPilots(_draft);
             Draw();
         }
 
@@ -462,15 +474,46 @@ namespace CosmicShore.UI
             _vesselPage = at < 0 ? 0 : at / Mathf.Max(1, vesselTiles.Length);
         }
 
+        int PilotsPerPage => Mathf.Max(1, pilotChips.Length);
+
+        readonly List<string> _pilotIds = new();
+
+        /// <summary>Every vessel needs a pilot: a slot with none (or one another slot flies) takes the next free one.</summary>
+        void FillPilots(SavedSquad squad)
+        {
+            if (squad == null || !catalog) return;
+            _pilotIds.Clear();
+            foreach (var p in catalog.Pilots)
+                if (p) _pilotIds.Add(p.Id);
+            squad.FillPilots(_pilotIds);
+        }
+
         void PickPilot(int chip)
         {
             PilotsFor(_draft.GetSlot(_seat).Vessel);
-            // Chip 0 is the vessel's base kit (an empty id), then the roster.
+            // The chips are one page of the callsign pilots; there is no empty seat (every vessel needs a pilot).
+            int index = _pilotPage * PilotsPerPage + chip;
+            if (index < 0 || index >= _pilots.Count) return;
             EditSlot(s =>
             {
-                s.PilotId = chip == 0 || chip > _pilots.Count ? null : _pilots[chip - 1].Id;
+                s.PilotId = _pilots[index].Id;
                 return s;
             });
+        }
+
+        void PagePilots(int step)
+        {
+            PilotsFor(_draft.GetSlot(_seat).Vessel);
+            int pages = Mathf.Max(1, Mathf.CeilToInt(_pilots.Count / (float)PilotsPerPage));
+            _pilotPage = (_pilotPage + step + pages) % pages;
+            DrawPicker();
+        }
+
+        void ShowPilotPageOf(SquadSlot slot)
+        {
+            PilotsFor(slot.Vessel);
+            int at = _pilots.FindIndex(p => p.Id == slot.PilotId);
+            _pilotPage = at < 0 ? 0 : at / PilotsPerPage;
         }
 
         void PickElement(int chip)
@@ -613,6 +656,8 @@ namespace CosmicShore.UI
             // The configure window opens on the hull last selected this session (unless the card remembers its own).
             if (_gameData && _gameData.selectedVesselClass) _gameData.selectedVesselClass.Value = mine.Vessel;
             if (!mine.UsesDefaultPilot()) PilotLoadoutStore.SetPilot(mine.Vessel, mine.PilotId);
+            // The card's artifact is what that vessel carries into the match (VesselPilotLoadout reads the slot).
+            PilotLoadoutStore.SetSlottedArtifact(mine.Vessel, mine.ArtifactId);
             InviteSquadMates(squad);
             // The launch panel opens the player on the squad's domain while this trip lasts (SquadLaunchIntent).
             SquadLaunchIntent.Set(squad);
@@ -907,7 +952,7 @@ namespace CosmicShore.UI
             var artifact = catalog && vessel ? catalog.ResolveArtifact(slot, keywords) : null;
             card.Draw(SeatName(seat), TemplateText.Fill(numberLine, "n", (seat + 1).ToString()), who, HullArt(vessel),
                 vessel ? vessel.CardName : string.Empty, ElementName(slot.Element),
-                pilot ? pilot.Portrait : null, pilot && !pilot.IsDefault ? pilot.DisplayName : basePilotLine,
+                pilot ? pilot.Portrait : null, pilot ? pilot.DisplayName : basePilotLine,
                 artifact ? artifact.DisplayName : noArtifactLine, artifact, slot.IsOpen());
             bool making = _mode == Mode.Make;
             card.SetEditing(making && seat == _seat, domain);
@@ -936,15 +981,14 @@ namespace CosmicShore.UI
             for (int i = 0; i < pilotChips.Length; i++)
             {
                 if (!pilotChips[i]) continue;
-                if (i == 0)
-                {
-                    pilotChips[i].Draw(true, basePilotLine, basePilotDetail, null, slot.UsesDefaultPilot());
-                    continue;
-                }
-                var p = i - 1 < _pilots.Count ? _pilots[i - 1] : null;
-                pilotChips[i].Draw(p, p ? p.DisplayName : null, p ? TemplateText.Fill(pilotDetail, "ability", p.Ability) : null,
+                int index = _pilotPage * PilotsPerPage + i;
+                var p = index < _pilots.Count ? _pilots[index] : null;
+                pilotChips[i].Draw(p, p ? p.DisplayName : null, p ? TemplateText.Fill(pilotDetail, "sight", SightOf(p)) : null,
                     p ? p.Portrait : null, p && p.Id == slot.PilotId);
             }
+            bool pilotsPaged = _pilots.Count > PilotsPerPage;
+            if (pilotPrevButton) pilotPrevButton.interactable = pilotsPaged;
+            if (pilotNextButton) pilotNextButton.interactable = pilotsPaged;
 
             bool rogue = _seat > 0;
             if (seatModeGroup) KitVisibility.SetShown(seatModeGroup, rogue);
@@ -1077,16 +1121,18 @@ namespace CosmicShore.UI
             _pilots.Clear();
             var vessel = Vessel(cls);
             if (catalog && vessel) catalog.GetPilotsFor(vessel, _pilots);
-            _pilots.RemoveAll(p => !p || p.IsDefault);
+            _pilots.RemoveAll(p => !p);
         }
+
+        static string SightOf(PilotSO p) => PilotSight.Set ? PilotSight.Set.For(p.Vision)?.meaning ?? string.Empty : string.Empty;
 
         void ArtifactsFor(VesselClassType cls, bool mine)
         {
             _artifacts.Clear();
             var vessel = Vessel(cls);
             if (catalog && vessel) catalog.GetArtifactsFor(vessel, _artifacts);
-            // The player carries only what they have found; an AI wingmate may carry anything its vessel takes.
-            if (mine) _artifacts.RemoveAll(a => !a || PilotLoadoutStore.FoundRank(a.Id) <= 0);
+            // The player carries only what they hold; an AI wingmate may carry anything.
+            if (mine) _artifacts.RemoveAll(a => !a || !PilotLoadoutStore.Holds(a.Id));
         }
 
         static Element ElementOf(SO_Vessel v, Element fallback) =>

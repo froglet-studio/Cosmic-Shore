@@ -5,7 +5,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Meerkat's Charge ability, <b>Sentinel mode</b>'s sentinels (Garrett's design, approved by Yash 2026-10-28;
-    /// <c>R_VesselActions/MEERKAT.md</c> §9.3), ported from the page's <c>kitAddSentinel</c>, <c>kitRemoveSentinel</c>,
+    /// <c>R_VesselActions/MEERKAT.md</c> §10.3), ported from the page's <c>kitAddSentinel</c>, <c>kitRemoveSentinel</c>,
     /// <c>kitSentinelsSweep</c>, <c>kitPickTarget</c>, <c>kitZap</c> and <c>kitZaps</c>.
     /// <list type="bullet">
     /// <item>Each soliton formed with Sentinel mode on leaves a sentinel just back from its way in: an AFTERIMAGE of the hull,

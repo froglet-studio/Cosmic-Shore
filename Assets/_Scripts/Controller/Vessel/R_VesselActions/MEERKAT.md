@@ -306,9 +306,9 @@ Mass sizing was never ported here, so in the game "revert" is only the area.
 
 | Stage | What happens | Keys |
 |---|---|---|
-| Pull | Every prism (shielded too, never super-shielded) and every crystal (an omni crystal, or an elemental one not yet collected) within `suckRadius` of a standing tunnel's way in is drawn to it: `suckSpeed` × `suckRadius` / distance, up to `carrySpeed`, swirling round the axis at a third of that. Four looks a second. A plant's prism is plucked first (`HealthPrism.LeaveAsSkeleton`); a creature's body, a prism still growing in and our own fresh trail are left alone | `suckRadius` 90, `suckSpeed` 30 |
+| Pull | Every prism (shielded too, never super-shielded) and every crystal (an omni crystal, or an elemental one not yet collected) within `suckRadius` of a standing tunnel's way in is drawn to it: `suckSpeed` × `suckRadius` / distance, up to `rootMaxSpeed`, swirling round the axis at a third of that. Four looks a second. A plant's prism is plucked first (`HealthPrism.LeaveAsSkeleton`); a creature's body, a prism still growing in and our own fresh trail are left alone | `suckRadius` 90, `suckSpeed` 30 |
 | Swallow | Within `swallowShare` × the opening radius it enters, its place across the mouth kept as a share of the radius | `swallowShare` 1.5 |
-| Carry | Along the centreline at `carrySpeed`, held to the wall's narrowing, stretched along the tube to 1 + `carryStretch` at the middle (none at the mouths), squeezed across by 1 / √ of that so its volume is kept, and twisted `carryTwist` turns mouth to mouth (`CarryDistortion`) | `carrySpeed` 150, `carryStretch` 2, `carryTwist` 0.5 |
+| Carry | Along the centreline at the slide's top speed (`rootMaxSpeed`; round 25 retired `carrySpeed`), never nearer than 6 u behind the rider ahead of it (`TubeAdvance`: first in, first out), held to the wall's narrowing, stretched along the tube to 1 + `carryStretch` at the middle (none at the mouths), squeezed across by 1 / √ of that so its volume is kept, and twisted `carryTwist` turns mouth to mouth (`CarryDistortion`) | `rootMaxSpeed` 90, `carryStretch` 2, `carryTwist` 0.5 |
 | Fire | Out of the way out along its last heading at `fireSpeed` (a crystal at half), its own scale back, gliding to rest over `fireGlideSeconds`. A tunnel that collapses fires out all it holds at once | `fireSpeed` 120, `fireGlideSeconds` 3 |
 
 - **A moving prism** (`Docs/PRISM_MOTION.md`): a pulled or gliding prism that runs into a plain prism destroys both,
@@ -324,7 +324,32 @@ Mass sizing was never ported here, so in the game "revert" is only the area.
 - **Not modelled:** the Meerkat's own omnicrystals (`MeerkatOmnicrystalField`) are not swallowed; a carried prism is not
   hit by a rider in the same tube.
 
-## 9. Garrett's kit: the four abilities (2026-10-28)
+## 9. Inside a tube is another dimension; the game's omni crystal grows the roots (round 25, 2026-10-28)
+
+Yash, 2026-10-28: *"anything that passes through the tunnel doesn't interact with the outer world ... It's like going
+through another dimension, without interacting with real objects. When it comes out of the hole, then it interactable
+again"*; *"the prisms that get sucked in that same wormhole ... hits my vessel inside the hole ... Make sure the prisms
+and the vessels both travel in the same speed variations. So that anything that enters the wormhole at first will get out
+of the wormhole also without clashing"*; *"I am collecting omnicrystals in lava lamp, yet I don't see the network
+wormholes getting created"*.
+
+- **Phased.** While a tunnel or the roots fly the hull, `MeerkatVesselTransformer` (the hull's `IHullContactGate`) says
+  its touch takes no prism and no crystal. That is read by both halves of every contact: the hull's
+  (`VesselImpactor`), the prism's (`PrismImpactor`), the crystals' (`ElementalCrystalImpactor`, `OmniCrystalImpactor`)
+  and now the skimmer's prism skim too (`SkimmerImpactor.HullTakesPrisms`). Out of the mouth, it is solid again.
+  - A race ring threaded inside still counts: rings are a sweep (`CrystalRaceRing`), not a touch.
+- **First in, first out.** A carried prism or crystal moves at the slide's top speed, never nearer than
+  `MeerkatWormholeMath.TubeGap` (6 u) behind this Meerkat's rider ahead of it (`TubeAdvance`). So a stream that went in
+  after you stays behind you, and nothing inside overtakes anything. Carried prisms are posed, not contact-tested
+  (§8), and the phased hull ignores them anyway.
+- **The game's omni crystal.** Any omni crystal this hull collects arms the roots, as a Meerkat omnicrystal does: the cell's,
+  the freestyle conveyor's, Lava Lamp's, any mode's. It comes through `OmniCrystalImpactor.CollectedByVessel`, raised where
+  the crystal's vessel effects run: on the machine that resolves the collect, and on the pilot's machine when it replays
+  them. The executor acts on it only on its hull's simulating machine, so the player's machine for a player and the
+  server for the AI. Before this, only the Meerkat's own gold omnicrystals did it, and those are laid for the local human
+  pilot only, so in Lava Lamp nothing grew.
+
+## 10. Garrett's kit: the four abilities (2026-10-28)
 
 **Garrett's design, approved by Yash 2026-10-28.** The design is Garrett's (`Docs/Studios/MEERKAT.md` § "Garrett's
 direction: the Meerkats and the soliton", on `cece/lucid-brown-ykcmhu`); the artifact models it under the Kit dropdown's
@@ -344,7 +369,7 @@ marked `[Garrett's kit hook]`.
 Every number is the page's shipped value, by the page's own key (`MeerkatWormholeConfig`, its "Garrett's kit" headers):
 the plain keys are mapped in `studio_to_unity/meerkat.json`; each ElementalFloat is the page's L0 / L10 pair.
 
-### 9.1 Space: the Soliton (RT)
+### 10.1 Space: the Soliton (RT)
 
 - **The wormhole IS the soliton**: a standing tunnel in space that anyone may ride.
 - **Its surface area (the Space level) and its swallow and fire are §8** (round 23: `MeerkatWormholeMath.SurfaceAreaThroat`,
@@ -361,16 +386,16 @@ the plain keys are mapped in `studio_to_unity/meerkat.json`; each ElementalFloat
   another's soliton untouched (only the maker's ride starts its stay). Not re-entered within 1.5 s. **Only Meerkat hulls
   can ride**: the ride is flown by `MeerkatVesselTransformer`, and giving every other hull a ride needs a hook in the
   fleet's `VesselTransformer`, which is not contained (a follow-up for the transformer's owners).
-- A fired prism plays `prismFiredEvent` (§9.6), hooked on `MeerkatSwallow`'s fire.
+- A fired prism plays `prismFiredEvent` (§10.6), hooked on `MeerkatSwallow`'s fire.
 
-### 9.2 Time: Faster Ride (passive)
+### 10.2 Time: Faster Ride (passive)
 
 - **The ride through every soliton** (its own or anyone's) rushes faster: the throat's multiplier `rideMidMultiplier`
   (2.5) × `rush` (1 at Time 0, 1.2 at 5, 1.4 at 10), the page's `kitOverrides`.
 - **L5 Boost Out**: every soliton is left at `boostOut` (1.5) × the exit multiplier (1.2 → 1.8 × the speed before the
   tunnel), and the hull eases back to cruise from there.
 
-### 9.3 Charge: Sentinel Mode (Y)
+### 10.3 Charge: Sentinel Mode (Y)
 
 - **Y toggles it** (`MeerkatSentinelModeActionSO`, a press-and-forget toggle: release does nothing, vessel rule 37).
   Off, no new sentinels; the standing ones stay.
@@ -401,7 +426,7 @@ the plain keys are mapped in `studio_to_unity/meerkat.json`; each ElementalFloat
   too. A sentinel zapping another Meerkat's sentinel (the page's "sentinels zap sentinels") and danger prisms killing
   sentinels are not ported either: sentinels end only by retiring or with their soliton.
 
-### 9.4 Mass: Exit Portal (passive)
+### 10.4 Mass: Exit Portal (passive)
 
 - **Once per soliton, when it forms**, it sets down six prisms on a regular hexagon square to the exit heading, its
   corners `portalShare` (1.5) × the exit radius out, each at its edge's midpoint and laid along the edge, so the six close
@@ -412,7 +437,7 @@ the plain keys are mapped in `studio_to_unity/meerkat.json`; each ElementalFloat
   platform's danger-prism effects take (the page's `dangerPetals` is lab-only).
 - Mass is conserved: a portal is never taken back.
 
-### 9.5 The network
+### 10.5 The network
 
 - The owner decides each soliton's kit when it forms it (`MeerkatSolitonKit.Stamp`: a sentinel or not, the Charge / Mass /
   Space L5 bits, the portal's size) and publishes it with the tunnel: `MeerkatWormholeNetworkRelay.TunnelState.Kit` and
@@ -425,21 +450,21 @@ the plain keys are mapped in `studio_to_unity/meerkat.json`; each ElementalFloat
 - The ride (anyone's) and Time's two numbers run on the rider's simulating machine; the hull's pose replicates as every
   vessel's does.
 
-### 9.6 Sound
+### 10.6 Sound
 
 Five empty `EventReference` slots on `MeerkatWormholeConfig` (the FMOD rule: shipped EMPTY until sound design wires
 them): `zapEvent` (a zap on a rival, about five a second at most), `sentinelPlacedEvent`, `sentinelLostEvent` (lost or
 retired), `portalEvent` (at the way out) and `prismFiredEvent` (one per tube fired at once). The artifact's synthesized
 sounds are their brief.
 
-### 9.7 Testing
+### 10.7 Testing
 
 - `Tests/Editor/MeerkatSolitonMathTests.cs` (6 tests): the ride's rush and Boost Out, the way in, the sentinel pool retiring the oldest, the zap's petals per Charge and its clock, the hexagon (three
   page goldens, the edges closing). The surface area's goldens are §8's (`MeerkatWormholeMathTests`). `Tools/Build/meerkat_kit_harness/run.sh --self-test` runs them under
   dotnet and proves three wrong ports fail.
 - Hand tests: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Meerkat: Garrett's kit".
 
-### 9.8 Follow-ups
+### 10.8 Follow-ups
 
 - The sentinel seats and the hop (dynamic crew seats), and the element-holder rule that rides on them.
 - A non-Meerkat hull riding a soliton (a ride hook in `VesselTransformer`).

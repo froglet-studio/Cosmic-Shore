@@ -119,6 +119,16 @@ namespace CosmicShore.Gameplay
 
         public Vector3 Position => transform.position;
         public Vector3 Forward => transform.forward;
+
+        /// <summary>The domain the hull was laid in - the squad whose home this is.</summary>
+        public Domains Domain { get; private set; }
+
+        /// <summary>Test seam: wear <paramref name="domain"/> without laying a hull.</summary>
+        internal void SetDomainForTests(Domains domain) => Domain = domain;
+
+        /// <summary>The Ark's hold: where its payloads come from (<see cref="ArkHold"/>,
+        /// Docs/Pilots/ARTIFACTS.md §2). Every Ark has one.</summary>
+        public ArkHold Hold { get; private set; }
         /// <summary>The Ark's speed THIS frame — a live reading of the arrival profile, not a
         /// setting (see <see cref="SetSpeedProfile"/>).</summary>
         public float Speed => _speed;
@@ -129,7 +139,10 @@ namespace CosmicShore.Gameplay
             var go = new GameObject("Ark");
             go.transform.SetParent(parent, false);
             go.transform.SetPositionAndRotation(position, rotation);
-            return go.AddComponent<Ark>();
+            var ark = go.AddComponent<Ark>();
+            ark.Hold = go.AddComponent<ArkHold>();
+            ark.Hold.Bind(ark);
+            return ark;
         }
 
         // ── Hull ─────────────────────────────────────────────────────────────
@@ -149,6 +162,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            Domain = domain;
             _speed = _approachSpeed = _cruiseSpeed = Mathf.Max(1f, speed);
             _trail = new Trail();
 
@@ -218,6 +232,85 @@ namespace CosmicShore.Gameplay
             lays.Add(new PrismLay(new SpawnPoint(Vector3.back * (length * 0.5f + 5f),
                 Quaternion.identity, CapScale), domain));
             return lays;
+        }
+
+        // ── Hold ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Hand <paramref name="count"/> live hull prisms to the hold, the ones nearest
+        /// <paramref name="near"/> first, so a payload comes off the flank the pilot is at.
+        /// The prisms LEAVE the hull: they are no longer the Ark's to move, scan or retire, so
+        /// every payload taken is plating the Ark no longer has (its health falls with it). Mass
+        /// is moved, never minted (Docs/Pilots/ARTIFACTS.md §2).
+        ///
+        /// Never takes the last <paramref name="keep"/> plates: an Ark whose hold emptied its own
+        /// hull would fall to its own crew, and an Ark's only deaths are active forces from
+        /// outside (fauna, rival abilities). Returns how many were moved into
+        /// <paramref name="into"/> (which is not cleared).
+        /// </summary>
+        public int TakeHullPrisms(int count, Vector3 near, int keep, List<Prism> into)
+        {
+            if (!_layComplete || _hullLost || _retiring || count <= 0) return 0;
+
+            int alive = 0;
+            for (int i = 0; i < _prisms.Count; i++)
+                if (IsLive(_prisms[i])) alive++;
+            int give = Mathf.Min(count, alive - Mathf.Max(1, keep));
+            if (give <= 0) return 0;
+
+            for (int n = 0; n < give; n++)
+            {
+                int best = -1;
+                float bestSqr = float.PositiveInfinity;
+                for (int i = 0; i < _prisms.Count; i++)
+                {
+                    if (!IsLive(_prisms[i])) continue;
+                    float d = (_prisms[i].transform.position - near).sqrMagnitude;
+                    if (d < bestSqr) { bestSqr = d; best = i; }
+                }
+                if (best < 0) return n;
+                into.Add(_prisms[best]);
+                _prisms.RemoveAt(best);
+            }
+
+            // The full-health denominator falls with the hull: the plating is gone from the
+            // ship, not damaged on it, and a carried parcel must not read as a wound the hold
+            // could heal.
+            TotalCount = Mathf.Max(0, TotalCount - give);
+            _aliveCount = Mathf.Max(0, _aliveCount - give);
+            return give;
+        }
+
+        static bool IsLive(Prism prism) => prism && !prism.destroyed && prism.gameObject.activeInHierarchy;
+
+        /// <summary>Every live hull prism, nearest to <paramref name="near"/> first, into <paramref name="into"/>
+        /// (cleared first). Menu-rate: a sort over the hull.</summary>
+        public void GetLiveHullPrisms(Vector3 near, List<Prism> into)
+        {
+            into.Clear();
+            for (int i = 0; i < _prisms.Count; i++)
+                if (IsLive(_prisms[i])) into.Add(_prisms[i]);
+            into.Sort((a, b) => (a.transform.position - near).sqrMagnitude
+                .CompareTo((b.transform.position - near).sqrMagnitude));
+        }
+
+        /// <summary>
+        /// The hull prism destroyed LAST, or null: the one whose force the fall is credited to
+        /// (<see cref="ArkFall"/>). Read when the hull is lost; a prism the pool has already
+        /// re-issued (no longer destroyed) is not a candidate.
+        /// </summary>
+        public Prism LastFallenHullPrism()
+        {
+            Prism last = null;
+            float at = float.NegativeInfinity;
+            for (int i = 0; i < _prisms.Count; i++)
+            {
+                var prism = _prisms[i];
+                if (!prism || !prism.destroyed || prism.DestroyedAt < at) continue;
+                at = prism.DestroyedAt;
+                last = prism;
+            }
+            return last;
         }
 
         // ── Wake ─────────────────────────────────────────────────────────────
@@ -586,6 +679,10 @@ namespace CosmicShore.Gameplay
             _retiring = true;
 
             _underWay = false;
+
+            // Every parcel still riding a carrier is hull the Ark no longer holds, so the
+            // retire below would never reach it: the hold spends them first.
+            if (Hold) Hold.StrikeParcels();
 
             // Disarm the wake FIRST, before any await. A retire is followed by the next voyage's
             // veiled build, and this method waits out a lay and then a 0.8s wither - so a wake

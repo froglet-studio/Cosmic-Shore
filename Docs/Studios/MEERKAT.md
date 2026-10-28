@@ -133,6 +133,23 @@ before round 8 on Circuit and Hairpins. Every course finished at every level, ki
   first pilot finished): 6-8 hardened tubes a race each, a pilot stopped by a wall for up to 1 s at a time, and Burial
   hit 2-19 times a race (the pack races one line, so a rival is often inside your tunnel): likely too strong as proposed.
 
+**Round 25 (Yash, 2026-10-28: "anything that passes through the tunnel doesn't interact with the outer world ... like going
+through another dimension"; "the prisms that get sucked in ... hits my vessel inside the hole ... Make sure the prisms and
+the vessels both travel in the same speed variations"). Artifact and Unity.**
+- **Phased.** A pilot inside any tube (a tunnel or the roots) is out of reach:
+  - no danger prism, sentinel zap or Cave-in burial reaches it;
+  - it collects no crystal, omnicrystal or ejected crystal until it is out;
+  - a crystal or prism carried in a tube cannot be taken from outside.
+  The Mix's Space L5 Burial (a rival riding your soliton when you cave it in) no longer lands, since a rider is
+  phased; it is left in place for Yash to judge.
+- **First in, first out.** A carried prism or crystal moves at the slide's top speed (`rootMaxSpeed` × the Time rush) and
+  never nearer than 6 u behind a rider ahead of it (`tubeAdvance`). `carrySpeed` is retired.
+- **Measured** (seed 11, Hard I1-I4; all four kits finish, mass conserved): Garrett's kit 79.6 / 77.3 / 90.7 / 78.1 s,
+  about 3,970 prisms swallowed a field race; the Mix 85.8 / 83.2 / 92.4 / 89.8 s.
+- **In Unity:** the hull's `IHullContactGate` (`MeerkatVesselTransformer.Phased`), which the skimmer's prism skim now
+  honours too; `MeerkatWormholeMath.TubeAdvance`; and any omni crystal the Meerkat collects grows its roots
+  (`OmniCrystalImpactor.CollectedByVessel`). `MEERKAT.md` §9.
+
 **Round 24 (Yash, 2026-10-28: "make the main tube as same as the roots ... we can slide through the main tube rather than
 making it an automated special move ... once we create the tube, main tube, we can also slide through it using our left
 thumbstick, just like how we do that in the root ... Both are same things. One single, one a network"). Artifact and Unity.**

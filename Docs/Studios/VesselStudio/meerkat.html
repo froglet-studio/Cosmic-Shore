@@ -284,7 +284,7 @@
   <header>
     <a href="index.html" style="font:600 13px/1.2 'Chakra Petch',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:inherit;opacity:.75;text-decoration:none;white-space:nowrap">&larr; Vessel Studio</a>
     <h1>Meerkat Flight Studio</h1>
-    <span class="round">Round 24 · slide the tunnel as you slide the roots</span>
+    <span class="round">Round 25 · inside a tube is another dimension</span>
     <p class="platchip" id="platChip"><span>Running on <b id="platName">PC</b></span><label>Layout <select id="platLayout"><option value="auto">Auto (detected)</option><option value="pc">PC: gamepad / keyboard</option><option value="phone">Phone: touch sticks</option></select></label></p>
     <p id="introP"><span class="phone-only"><b>On this phone</b> the stage opens in the touch layout: hold it sideways; your left thumb flies, your right thumb bends the tunnel, the RT handle forms it; ✕ comes back to the settings. </span><span class="pc-only"><b>On this PC</b> fly with a gamepad or the keyboard (Input tab); a phone opening this page gets touch sticks instead. </span><b>The Meerkat is the wormhole vessel</b> (Yash, 2026-10-27: the Stoat's Gate mode, rounds 19-26, became its own vessel; the Stoat keeps Mass and Time). One ability, flown on <b>one thumb</b>: the left stick flies at full throttle, so the right thumb is always free. The cyan grid on your nose is the tunnel RT would form now: the <b>right stick bends it</b> any way (further = shorter and fatter), <b>LT shortens it</b>, <b>RT forms it</b> and you ride it, coming out with the speed you went in with. Only you see the grid; everyone sees the tube as bent space-time. A ridden tunnel stays a while, then collapses to its centre with a subtle ripple at the screen's edges. Every parameter shows the game's name for it under its slider (<code>MeerkatWormholeConfig</code>); save any section as a profile. Every setting has an ⓘ. <b>Round 18 (Yash, 2026-10-27: "two variants, one with his kit only, one with a mix of his kit with the ones you recommend"):</b> the <b>Kit</b> dropdown at the top of <b>Play Style Config</b> picks what every Meerkat in the race flies. <b>Garrett's kit</b> is his design as written (his branch <code>origin/cece/lucid-brown-ykcmhu</code>, <code>Docs/Studios/MEERKAT.md</code>): Space is the <b>soliton</b> (the wormhole sized by its surface area, which <b>anyone rides</b>, swallowing prisms at its way in and firing them out of its way out as moving prisms), Charge is <b>Sentinel mode</b> on <kbd>Y</kbd> / <kbd>F</kbd> (a sentinel at each new tunnel's way in that zaps rivals in sub-petal ticks and shields your prisms), Mass a passive <b>exit portal</b>, Time a passive <b>rush</b> (L5 Boost out), and the <b>crew</b>: <kbd>[</kbd> <kbd>]</kbd> / D-pad take a sentinel seat (its perched view: click a prism to shield it, a rival to zap it), <kbd>Y</kbd> there <b>hops</b> you out as the flyer; the meerkat you sit in holds the elements and any other dies of an element hit. <b>The Mix</b> is Garrett's with one change per decision: Time L5 Chain Dig, sentinels without seats plus an alarm, Space L5 Cave-in on <kbd>B</kbd>, the throat held 3 to 25 u. In both, <kbd>LB</kbd> / <kbd>Q</kbd> held is the pilot sight, <b>FLUME</b>; the kit's Mass level is the Mass round 17 sizes the trunk with, and the Omnicrystal's roots are the fifth card (anyone may slide into yours in Garrett's kit, your team only in the Mix). Every kit event has its sound (<b>Vessel Config</b> &gt; Sound): swallow, fire, shatter, bounce, Boost out, Chain Dig, the sentinel's stand-up, zap, shield, loss and alarm, the hop and the seat swap, the portal, Cave-in, and FLUME's loop while LB is held. <b>Score the kits</b> (AI Config) races all four. Prototypes for Yash to judge: nothing reaches Unity without his say-so, and Garrett's design is his to change. <b>Round 8 (archived, the Kit dropdown's "Round 8"; LB now conflicts with the pilot sight):</b> the full four-ability kit, one per element, in <b>Vessel Config</b> (its Section dropdown): <b>Charge · Lookout</b> (<kbd>Y</kbd>: marks crystals, shows every rival's reticle and next ring; L5 Alarm Call draws the crystals to you), <b>Mass · Hardened Bridge</b> (<kbd>LB</kbd> arms the next tunnel: its bridge becomes a lasting prism tube others cannot cross; L5 Shielded Bridge), <b>Space · Cave-in</b> (<kbd>B</kbd>: your standing tunnel collapses now, destroying every prism near it; L5 Burial costs a rival inside it a petal and silences it, never pushes it) and <b>Time · the wormhole</b> (L5 Chain Dig: <kbd>RT</kbd> late in a ride digs the next tunnel from the far mouth). Their numbers are lab-only. The race is now <b>Warpline</b>, the Meerkat's Time race: 5 rings a lap, 2 laps.</p>
   </header>
@@ -485,7 +485,7 @@
         <p class="src"><b>Y</b> toggles Sentinel mode. On, each tunnel you make leaves a <b>sentinel</b> at its way in: an afterimage of the Meerkat standing up on watch. Its soliton stands as long as it does. With the pool used up the oldest retires, and its soliton with it. In its <b>guard</b> (<i>guardShare</i> x the opening radius) it <b>zaps</b> rival vessels, knocking out <i>zapPetalsL0</i> to <i>zapPetalsL10</i> of a petal a zap by Charge (sub-petal ticks: whole petals leave as ejected crystals, and the hit silences its victim for what it is worth), and zaps your own domain's plain prisms <b>shielded</b>. An empty sentinel's AI zaps <i>aiZapRate</i> a second; in Garrett's kit you can sit in one and tap.</p>
         <div class="btns"><button class="pick" type="button" data-reset="kSentinel">Reset</button></div></details>
       <details class="card" id="grp-kSoliton" open><summary>Kit · Space · the soliton <small>RT · surface area, swallow and fire · lab</small></summary><div class="rows"></div>
-        <p class="src">The wormhole is a <b>soliton</b>: a standing tunnel <b>anyone rides</b>. Space sets its <b>surface area</b> (<i>areaL0</i> to <i>areaL10</i>), so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat (the mouth stays 3.25 x the throat). <b>Round 23:</b> it <b>pulls</b> every prism and crystal within <i>suckRadius</i> of its way in (at <i>suckSpeed</i>, faster as they near), <b>swallows</b> them within <i>swallowShare</i> x the opening radius (shielded too, never super-shielded), carries them at <i>carrySpeed</i>, <b>stretched</b> along the tube (up to 1 + <i>carryStretch</i> at its middle, squeezed across, twisted <i>carryTwist</i> turns), and fires them out of its way out at <i>fireSpeed</i>, gliding to rest over <i>fireGlideSeconds</i>. Mass no longer sizes the tunnel here: only the surface area does (Garrett).</p>
+        <p class="src">The wormhole is a <b>soliton</b>: a standing tunnel <b>anyone rides</b>. Space sets its <b>surface area</b> (<i>areaL0</i> to <i>areaL10</i>), so the throat is b = A / (2 pi L g(k)): a long tunnel thin, a short one fat (the mouth stays 3.25 x the throat). <b>Round 23:</b> it <b>pulls</b> every prism and crystal within <i>suckRadius</i> of its way in (at <i>suckSpeed</i>, faster as they near), <b>swallows</b> them within <i>swallowShare</i> x the opening radius (shielded too, never super-shielded), carries them at the slide's top speed (<i>rootMaxSpeed</i>; round 25: the same speed as a rider, and never past one ahead of them), <b>stretched</b> along the tube (up to 1 + <i>carryStretch</i> at its middle, squeezed across, twisted <i>carryTwist</i> turns), and fires them out of its way out at <i>fireSpeed</i>, gliding to rest over <i>fireGlideSeconds</i>. Mass no longer sizes the tunnel here: only the surface area does (Garrett).</p>
         <div class="btns"><button class="pick" type="button" data-reset="kSoliton">Reset</button></div></details>
       <details class="card" id="grp-kPortal" open><summary>Kit · Mass · exit portal <small>passive · lab</small></summary><div class="rows"></div>
         <p class="src">Once per soliton, as it forms: six small prisms of its maker's domain on a regular hexagon square to the way out, <i>portalShare</i> x the exit radius out, each laid along its edge. Mass sets their size; at Mass L5 they are <b>danger prisms</b> (a rival touching one loses <i>dangerPetals</i>). Mass is conserved, so the count is kept small.</p>
@@ -666,13 +666,13 @@
     // zapPetalsL0 -> zapPetalsL10 of a petal by the Charge level (Garrett's starting point: 0.1 -> 0.25)
     sentinelPool: 3, sentinelPoolL5: 6, guardShare: 1.5, aiZapRate: 5, zapPetalsL0: 0.1, zapPetalsL10: 0.25,
     // Space, the soliton: its surface area, areaL0 -> areaL10 by the Space level (b = A / (2 pi L g(k))); it swallows prisms
-    // within swallowShare x the opening radius of its way in, carries them at carrySpeed, fires them out at fireSpeed; they
+    // within swallowShare x the opening radius of its way in, carries them at the slide's top speed (round 25), fires them out at fireSpeed; they
     // glide to rest over fireGlideSeconds; a shielded one bounces keeping bounceRestitution of the closing speed
-    areaL0: 6000, areaL10: 18000, swallowShare: 1.5, carrySpeed: 150, fireSpeed: 120, fireGlideSeconds: 3, bounceRestitution: 0.6,
+    areaL0: 6000, areaL10: 18000, swallowShare: 1.5, fireSpeed: 120, fireGlideSeconds: 3, bounceRestitution: 0.6,
     // round 23 (Yash, 2026-10-28: "the prism gets sucked in from this one side and gets sucked out on the other ... the prisms
     // will be distorted while traveling through this wormhole ... From a certain radius"): prisms and crystals within
     // suckRadius of a standing soliton's way in are PULLED to it, at suckSpeed at the edge of that reach, faster as they near
-    // (up to carrySpeed), swirling round its axis; inside the tube each is stretched along it up to 1 + carryStretch at the
+    // (up to the slide's top speed), swirling round its axis; inside the tube each is stretched along it up to 1 + carryStretch at the
     // middle (squeezed across to keep its volume) and turned carryTwist turns, and held to the wall's narrowing
     suckRadius: 90, suckSpeed: 30, carryStretch: 2, carryTwist: 0.5,
     // Mass, the exit portal: six prisms on a hexagon portalShare x the exit radius out, sized portalSizeL0 -> portalSizeL10;
@@ -850,7 +850,6 @@
     ['kSoliton', 'suckRadius', 'Pulls prisms and crystals in from (u round the way in)', 0, 400, 5],
     ['kSoliton', 'suckSpeed', '...at (u/s at that reach; faster as they near)', 0, 300, 5],
     ['kSoliton', 'swallowShare', 'Swallows prisms within (× the opening radius)', 0, 4, 0.1],
-    ['kSoliton', 'carrySpeed', 'Carries them through at (u/s)', 20, 600, 10],
     ['kSoliton', 'carryStretch', 'Inside, stretched along the tube by (+ × its length, at the middle)', 0, 6, 0.1],
     ['kSoliton', 'carryTwist', '...and twisted (turns, mouth to mouth)', 0, 4, 0.05],
     ['kSoliton', 'fireSpeed', 'Fires them out at (u/s)', 0, 400, 5],
@@ -1217,7 +1216,7 @@
     // round 21: an omnicrystal taken inside a tunnel grows its roots the moment you are out (the game does the same)
     if (ftLive.ab.omni && P.omniOn > 0.5 && P.omniAtOnce > 0.5 && !(ftLive.gate && ftLive.gate.state === 'tube') && race === 'running' && !stopped) rootsHere(ftLive.ab.omniSeed);
     for (let i = 0; i < omni.n; i++) {
-      if (!omni.alive[i] || omni.home[i].distanceTo(hull.position) > OMNI_PICK) continue;
+      if (!omni.alive[i] || phased(curPilot) || omni.home[i].distanceTo(hull.position) > OMNI_PICK) continue;   // round 25: nothing is taken from inside a tube
       omni.alive[i] = 0;
       if (P.omniOn > 0.5) {
         ftLive.ab.omniSeed = (seed * 977 + i * 131 + Math.floor(simT * 10)) >>> 0;
@@ -1258,7 +1257,7 @@
       if (!crys.alive[i]) continue;
       const c = crys.pos[i], d = c.distanceTo(hull.position);
       if (pull && d < Math.max(0, P.lookoutReach)) c.lerp(hull.position, Math.min(1, Math.max(0, P.alarmPullSpeed) * dt / Math.max(1e-3, d)));
-      if (c.distanceTo(hull.position) < CRYSTAL_PICK) { crys.alive[i] = 0; pil(curPilot).crystals++; if (raceStats) raceStats.crystals = (raceStats.crystals || 0) + 1; }
+      if (!phased(curPilot) && !crys.tube[i] && c.distanceTo(hull.position) < CRYSTAL_PICK) { crys.alive[i] = 0; pil(curPilot).crystals++; if (raceStats) raceStats.crystals = (raceStats.crystals || 0) + 1; }
     }
   }
   function drawCrystals() {
@@ -1756,6 +1755,26 @@
   const silenced = (id) => simT < pil(id).silenceUntil;
   const teamOf = (id) => (id ? seatDomain[id - 1] : domainKey);
   const pilotIds = () => [0].concat(rivals.map((r) => r.id));
+  // Round 25 (Yash, 2026-10-28: "anything that passes through the tunnel doesn't interact with the outer world ... It's like
+  // going through another dimension, without interacting with real objects. When it comes out of the hole, then it
+  // interactable again"): a pilot inside any tube (a tunnel or the roots) is PHASED - no prism, crystal, sentinel, danger
+  // prism or Cave-in reaches it, and it collects nothing - until it is out. Things carried in a tube are the same (kitTube).
+  function gateOf(id) { const L = id === curPilot ? ftLive : id === 0 ? youSlot.ftLive : (rivals.find((x) => x.id === id) || {}).ftLive; return L && L.gate; }
+  const phased = (id) => { const g = gateOf(id); return !!(g && g.state === 'tube'); };
+  // Round 25 (Yash: "make sure the prisms and the vessels both travel in the same speed variations. So that anything that
+  // enters the wormhole at first will get out of the wormhole also without clashing"): everything in a tube moves by the
+  // slide's speed - a carried prism or crystal at the slide's top speed (what a rider holding RT reaches), never past a rider
+  // ahead of it (it keeps tubeGap behind), so first in is first out.
+  const TUBE_GAP = 6;
+  const slideTop = () => Math.max(5, P.rootMaxSpeed) * (P.slideRush || 1);
+  function tubeAdvance(pr, s, dt) {
+    let to = s + slideTop() * dt;
+    for (const id of pilotIds()) {
+      const g = gateOf(id); if (!g || g.state !== 'tube' || g.pair !== pr) continue;
+      const rs = g.s || 0; if (rs > s) to = Math.min(to, Math.max(s, rs - TUBE_GAP));   // a rider ahead: held behind it
+    }
+    return to;
+  }
   function pilotPos(id) { return id === curPilot ? hull.position : id === 0 ? youSlot.pos : seatState[id - 1].pos; }
   // A point's place round a tube (its frozen full shape): s along the centreline (clamped to 0..L), d from it, and the
   // unit radial direction (n). Round 22: the nearest point on the conic arc.
@@ -1829,7 +1848,7 @@
       }
       // L5 Burial: a rival inside or touching the tunnel takes a scored hit - a petal and a silence, never a push
       if (abUp('space')) for (const id of pilotIds()) {
-        if (id === curPilot || teamOf(id) === teamOf(curPilot)) continue;
+        if (id === curPilot || teamOf(id) === teamOf(curPilot) || phased(id)) continue;   // round 25: a rider in a tube is untouchable
         const l = tubeLocal(F, pilotPos(id)); if (l.d > tubeR(F, l.s) + 4) continue;
         const v = pil(id); v.petals++; v.silenceUntil = simT + Math.max(0, P.burialSilenceSeconds) - 1e-6; v.hitAt = simT; buried++;
       }
@@ -2169,7 +2188,7 @@
     const wh = pr.wh; wh.phase = 'cavein'; wh.cave = 1; wh.held = false;
     if (pr.sentinel && pr.sentinel.alive) { pr.sentinel.alive = false; if (KIT.seat === pr.sentinel) { KIT.seat = null; applySeatClass(); } }
     for (const kp of KIT.kp) if (kp.alive && kp.tube === pr) kitFire(kp, pr);
-    if (!silenced(curPilot)) for (const id of kitRidersOf(pr)) { if (teamOf(id) === teamOf(curPilot)) continue; kitHitPilot(id, Math.max(0, P.mixBurialPetals), curPilot); KS.buried++; }
+    if (!silenced(curPilot)) for (const id of kitRidersOf(pr)) { if (teamOf(id) === teamOf(curPilot) || phased(id)) continue; kitHitPilot(id, Math.max(0, P.mixBurialPetals), curPilot); KS.buried++; }
     KS.caveIns++; kitSnd('caveIn', whAt(wh, 0.5 * wh.L, kpE));
     return true;
   }
@@ -2211,7 +2230,7 @@
   function kitPickTarget(s, R) {
     const A = s.pair.wh.A; let best = null, bd = R;
     for (const id of pilotIds()) {
-      if (teamOf(id) === s.team || (id === 0 && KIT.flyerDead)) continue;
+      if (teamOf(id) === s.team || (id === 0 && KIT.flyerDead) || phased(id)) continue;   // round 25: a rider in a tube is out of reach
       const d = pilotPos(id).distanceTo(A); if (d <= bd) { bd = d; best = { kind: 'pilot', id, pos: pilotPos(id) }; }
     }
     for (const o of KIT.sentinels) { if (!o.alive || o.team === s.team) continue; const d = o.pos.distanceTo(A); if (d <= bd) { bd = d; best = { kind: 'sentinel', s: o, pos: o.pos }; } }
@@ -2251,7 +2270,7 @@
   const movers = [];   // the kit's prisms moving this step (kitMovers fills it)
   // Round 23: the PULL. A standing soliton draws every prism within suckRadius of its way in (a field prism is lifted into
   // the kit's prisms to move: moved, never deleted) and every crystal, at suckSpeed at that reach and faster as it nears
-  // (suckSpeed x suckRadius / d, at most carrySpeed), swirling a little round its axis; inside swallowShare x the opening
+  // (suckSpeed x suckRadius / d, at most the slide's top speed), swirling a little round its axis; inside swallowShare x the opening
   // radius it is swallowed. A pulled prism is a moving prism (it breaks what it runs into), but the prisms one soliton pulls
   // never break each other: they travel together, as the Jacks' net's do.
   function kitSwallow() {
@@ -2281,7 +2300,7 @@
   const puD = new V3(), puS = new V3();
   function pullVel(pr, p, out) {
     const wh = pr.wh, d = Math.max(1e-3, puD.subVectors(wh.A, p).length());
-    const sp = Math.min(Math.max(1, P.carrySpeed), Math.max(0, P.suckSpeed) * Math.max(1, P.suckRadius) / Math.max(d, 1));
+    const sp = Math.min(slideTop(), Math.max(0, P.suckSpeed) * Math.max(1, P.suckRadius) / Math.max(d, 1));
     puD.multiplyScalar(1 / d); puS.crossVectors(wh.t0, puD);   // a swirl round its axis, a third of the pull, fading at the mouth
     return out.copy(puD).multiplyScalar(sp).addScaledVector(puS, sp * 0.33 * clamp01(d / Math.max(1, P.suckRadius)));
   }
@@ -2304,7 +2323,7 @@
       const pr = crys.tube[i] || crys.pull[i];
       if (crys.tube[i]) {
         const wh = pr.wh;
-        if (!pr.alive || pr.dying || !wh || wh.phase === 'collapse' || wh.phase === 'cavein' || (crys.ts[i] += Math.max(1, P.carrySpeed) * dt) >= wh.L) {
+        if (!pr.alive || pr.dying || !wh || wh.phase === 'collapse' || wh.phase === 'cavein' || (crys.ts[i] = tubeAdvance(pr, crys.ts[i], dt)) >= wh.L) {
           whAt(wh, wh.L, crE, crT); crys.pos[i].copy(crE).addScaledVector(crys.off[i], tubeR(wh, wh.L)); crys.vel[i].copy(crT).multiplyScalar(0.5 * Math.max(0, P.fireSpeed)); crys.tube[i] = null; KS.crystalsFired++; continue;
         }
         whAt(wh, crys.ts[i], crys.pos[i]).addScaledVector(crys.off[i], tubeR(wh, crys.ts[i]));
@@ -2336,7 +2355,7 @@
       if (!k.alive || !k.tube) continue;
       const pr = k.tube;
       if (!pr.alive || pr.dying || !pr.wh || pr.wh.phase === 'collapse' || pr.wh.phase === 'cavein') { kitFire(k, pr); continue; }   // it collapses: all of it out at once
-      k.ts += Math.max(1, P.carrySpeed) * dt;
+      k.ts = tubeAdvance(pr, k.ts, dt);   // round 25: the slide's speed, never past a rider ahead of it
       if (k.ts >= pr.wh.L) kitFire(k, pr); else whAt(pr.wh, k.ts, k.p).addScaledVector(k.off, tubeR(pr.wh, k.ts));   // held to the wall's narrowing (round 23)
     }
   }
@@ -2394,7 +2413,7 @@
       if (!k.alive || !k.danger || k.tube) continue;
       const r = KP_R * k.size + 2;
       for (const id of pilotIds()) {
-        if (teamOf(id) === k.team || (id === 0 && KIT.flyerDead) || (k.hit && k.hit[id])) continue;
+        if (teamOf(id) === k.team || (id === 0 && KIT.flyerDead) || (k.hit && k.hit[id]) || phased(id)) continue;   // round 25: phased
         if (pilotPos(id).distanceTo(k.p) < r) { (k.hit || (k.hit = {}))[id] = 1; KS.dangerHits++; kitHitPilot(id, Math.max(0, P.dangerPetals), -1); }
       }
       for (const s of KIT.sentinels) if (s.alive && s.team !== k.team && !(k.hit && k.hit['s' + s.id]) && s.pos.distanceTo(k.p) < r + 2) { (k.hit || (k.hit = {}))['s' + s.id] = 1; KS.dangerHits++; kitHitSentinel(s, Math.max(0, P.dangerPetals), -1); }   // a sentinel is a meerkat too
@@ -2403,7 +2422,7 @@
   function kitPickups() {
     for (const c of KIT.ejected) {
       if (!c.alive) continue;
-      for (const id of pilotIds()) { if (id === 0 && KIT.flyerDead) continue; if (pilotPos(id).distanceTo(c.p) < CRYSTAL_PICK) { c.alive = false; pil(id).crystals++; break; } }
+      for (const id of pilotIds()) { if ((id === 0 && KIT.flyerDead) || phased(id)) continue; if (pilotPos(id).distanceTo(c.p) < CRYSTAL_PICK) { c.alive = false; pil(id).crystals++; break; } }
     }
   }
   // the dead flyer (Garrett): the Meerkats are only their sentinels until the next hop, which makes its hopper the flyer
@@ -5329,7 +5348,7 @@
         c.strokeStyle = cyn; c.beginPath(); c.moveTo(xi, cy - M); c.quadraticCurveTo((xi + xo) / 2, cy - 5, xo, cy - M); c.moveTo(xi, cy + M); c.quadraticCurveTo((xi + xo) / 2, cy + 5, xo, cy + M); c.stroke();
         c.strokeStyle = 'rgba(255,255,255,0.25)'; c.setLineDash([3, 4]); c.beginPath(); c.arc(xi, cy, rz, 0, TAU); c.stroke(); c.setLineDash([]);
         const rsu = Math.min(xi + 30, rz + Math.max(0, Pv.suckRadius) * sc); c.strokeStyle = 'rgba(120,220,255,0.18)'; c.setLineDash([2, 6]); c.beginPath(); c.arc(xi, cy, rsu, 0, TAU); c.stroke(); c.setLineDash([]);   // round 23: the pull's reach
-        const carryT = (xo - xi) / Math.max(1, Pv.carrySpeed * sc), glide = Math.max(0.1, Pv.fireGlideSeconds), vOut = Math.max(0, Pv.fireSpeed) * sc;
+        const carryT = (xo - xi) / Math.max(1, Math.max(5, Pv.rootMaxSpeed) * sc), glide = Math.max(0.1, Pv.fireGlideSeconds), vOut = Math.max(0, Pv.fireSpeed) * sc;
         for (let i = 0; i < 5; i++) {
           const t0 = i * 0.35, t = tt - t0; let x = xi - rz * 0.9, y = cy + (i - 2) * rz * 0.25;
           let st = 1;
@@ -5337,7 +5356,7 @@
           else if (t >= carryT) { const u = t - carryT; x = xo + vOut * glide * (1 - Math.exp(-u / glide)); y = cy + (i - 2) * 4 * (1 + u); }
           const shielded = i === 2; c.fillStyle = shielded ? '#eaf2ff' : '#4a6bd8'; c.fillRect(x - 4 * st, y - 1.5 / Math.sqrt(st), 8 * st, 3 / Math.sqrt(st));
         }
-        txt(c, 'pulls from ' + Pv.suckRadius + ' u · swallows within ' + Pv.swallowShare + ' x the opening · carried ' + Pv.carrySpeed + ' u/s, stretched x' + (1 + Pv.carryStretch) + ' · out ' + Pv.fireSpeed + ' u/s', 6, 13, ink, 10);
+        txt(c, 'pulls from ' + Pv.suckRadius + ' u · swallows within ' + Pv.swallowShare + ' x the opening · carried at ' + Pv.rootMaxSpeed + ' u/s (the slide), stretched x' + (1 + Pv.carryStretch) + ' · out ' + Pv.fireSpeed + ' u/s', 6, 13, ink, 10);
         foot('a fired prism glides to rest over ' + Pv.fireGlideSeconds + ' s; a shielded one bounces keeping ' + Pv.bounceRestitution + ' of its speed');
         return;
       }
@@ -5551,7 +5570,6 @@
     carryStretch: { scene: 'kit', cfg: { k: 'swallow' }, d: 'Round 23 (Yash: "the prisms will be distorted while traveling through this wormhole"): inside the tube a prism or crystal is stretched along it, to 1 + this times its length at the middle and none at the mouths, and squeezed across so its volume is kept. It is also held to the wall\'s narrowing.', lo: 'Rigid.', hi: 'Spaghetti.' },
     carryTwist: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How many turns a carried prism or crystal twists round the tube\'s heading from the way in to the way out.', lo: 'No twist.', hi: 'A corkscrew.' },
     swallowShare: { scene: 'kit', cfg: { k: 'swallow' }, d: 'A standing soliton swallows prisms within this many times its opening radius of its way in, shielded ones included, never super-shielded. Open in Garrett\'s design: the simplest reading is the sentinel\'s guard, 1.5 x the opening.', lo: 'Only at the mouth.', hi: 'A wide intake.' },
-    carrySpeed: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How fast a swallowed prism runs the tube to the way out (open in Garrett\'s design).', lo: 'A slow pipe.', hi: 'A fast pipe.' },
     fireSpeed: { scene: 'kit', cfg: { k: 'swallow' }, d: 'How fast a prism leaves the way out, along its last heading: a MOVING prism. One that runs into a plain prism destroys both (scored to the soliton\'s maker); a shielded one bounces. Open in Garrett\'s design.', lo: 'Dribbled out.', hi: 'Shot out.' },
     fireGlideSeconds: { scene: 'kit', cfg: { k: 'swallow' }, d: 'A fired prism slows over about this long and comes to rest where it stops: moved, never deleted (open in Garrett\'s design).', lo: 'Stops short.', hi: 'Flies far.' },
     bounceRestitution: { scene: 'kit', cfg: { k: 'swallow' }, d: 'A collision a shielded prism is part of destroys neither: the mover rebounds keeping this share of the closing speed (Docs/PRISM_MOTION.md 1a: shieldBounceRestitution 0.6).', lo: 'A dead stop.', hi: 'A lively bounce.' },
@@ -5772,7 +5790,6 @@
     suckRadius: ['MeerkatWormholeConfig.suckRadius', 'linked'],
     suckSpeed: ['MeerkatWormholeConfig.suckSpeed', 'linked'],
     swallowShare: ['MeerkatWormholeConfig.swallowShare', 'linked'],
-    carrySpeed: ['MeerkatWormholeConfig.carrySpeed', 'linked'],
     carryStretch: ['MeerkatWormholeConfig.carryStretch', 'linked'],
     carryTwist: ['MeerkatWormholeConfig.carryTwist', 'linked'],
     fireSpeed: ['MeerkatWormholeConfig.fireSpeed', 'linked'],

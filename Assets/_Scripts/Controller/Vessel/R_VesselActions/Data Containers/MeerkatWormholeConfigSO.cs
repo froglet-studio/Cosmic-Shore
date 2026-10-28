@@ -233,8 +233,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 300f)] float suckSpeed = 30f;
         [Tooltip("Swallows prisms within (× the opening radius)")]
         [SerializeField, Range(0f, 4f)] float swallowShare = 1.5f;
-        [Tooltip("Carries them through at (u/s)")]
-        [SerializeField, Range(20f, 600f)] float carrySpeed = 150f;
         [Tooltip("Inside, stretched along the tube by (+ × its length, at the middle)")]
         [SerializeField, Range(0f, 6f)] float carryStretch = 2f;
         [Tooltip("...and twisted (turns, mouth to mouth)")]
@@ -389,7 +387,6 @@ namespace CosmicShore.ScriptableObjects
         public float SuckRadius => suckRadius;
         public float SuckSpeed => suckSpeed;
         public float SwallowShare => swallowShare;
-        public float CarrySpeed => carrySpeed;
         public float CarryStretch => carryStretch;
         public float CarryTwist => carryTwist;
         public float FireSpeed => fireSpeed;

@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Meerkat's Mass ability, the passive <b>exit portal</b> (Garrett's design, approved by Yash 2026-10-28;
-    /// <c>R_VesselActions/MEERKAT.md</c> §9.4), ported from the page's <c>kitPortal</c>. Garrett: <i>"go minimal. we want some
+    /// <c>R_VesselActions/MEERKAT.md</c> §10.4), ported from the page's <c>kitPortal</c>. Garrett: <i>"go minimal. we want some
     /// low mass prisms that make a cool looking exit ... a neat geometric signature."</i>
     /// <list type="bullet">
     /// <item>Once per soliton, when it forms: six prisms on a regular hexagon square to the exit heading, its corners

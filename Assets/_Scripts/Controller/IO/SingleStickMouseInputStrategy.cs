@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
     /// <item><term>Space</term><description><c>Button1Action</c> (pad A)</description></item>
     /// <item><term>T</term><description><c>Button2Action</c> (pad B; R until 2026-10-14, now the studio's reset)</description></item>
     /// <item><term>Q <i>or</i> MMB</term><description><c>Button3Action</c> (pad X)</description></item>
-    /// <item><term>E</term><description><c>FlipAction</c> + the manual-throttle channel</description></item>
+    /// <item><term>E</term><description><c>PayloadAction</c> (pad RB) + the manual-throttle channel</description></item>
     /// </list>
     /// The keys sit in the <b>QWERT + Space</b> cluster so one resting left hand reaches every one
     /// of them without leaving the mouse, and they are assigned in REVERSE priority order: the two
@@ -117,6 +117,7 @@ namespace CosmicShore.Gameplay
         bool prevButton2;
         bool prevButton3;
         bool prevButton4;
+        bool prevPayload;
 
         bool fullSpeedStraightEffectsStarted;
         bool minimumSpeedStraightEffectsStarted;
@@ -421,15 +422,10 @@ namespace CosmicShore.Gameplay
             EdgeFire(qKey || mouse.middleButton.isPressed, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(fKey, ref prevButton4, InputEvents.Button4Action);   // the pad's Y, as in KeyboardInputStrategy
 
-            // FlipAction has no held state to track beyond the key itself, and the manual-throttle
-            // channel rides the same key, exactly as KeyboardInputStrategy wires it.
-            if (keyboard != null)
-            {
-                if (keyboard.eKey.wasPressedThisFrame)
-                    inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
-                if (keyboard.eKey.wasReleasedThisFrame)
-                    inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
-            }
+            // E is the payload (the pad's RB), edge-detected like every other key so a release lost
+            // to a device switch or pause is still sent; the manual-throttle channel rides the same
+            // key, exactly as KeyboardInputStrategy wires it.
+            EdgeFire(eKey, ref prevPayload, InputEvents.PayloadAction);
             inputStatus.Throttle = eKey ? 1f : 0f;
 
             // ONE boolean per side from BOTH sources — see the class doc on why two edge
@@ -621,6 +617,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
+            EdgeFire(false, ref prevPayload, InputEvents.PayloadAction);
 
             if (fullSpeedStraightEffectsStarted)
             {

@@ -21,8 +21,27 @@ namespace CosmicShore.Gameplay
     /// <para><b>The AI shaping its reticle</b> holds its line (the page's left stick at rest while the right one bends):
     /// <see cref="MeerkatWormholeExecutor.AIHoldsLine"/> skips the turn for those frames.</para>
     /// </summary>
-    public class MeerkatVesselTransformer : SingleStickVesselTransformer
+    public class MeerkatVesselTransformer : SingleStickVesselTransformer, IHullContactGate
     {
+        /// <summary>
+        /// Round 25 (Yash, 2026-10-28: "anything that passes through the tunnel doesn't interact with the outer world ... It's
+        /// like going through another dimension ... When it comes out of the hole, then it interactable again"): while a tunnel
+        /// or the roots fly this hull it is PHASED - its touch meets no prism and takes no crystal, and no prism or crystal
+        /// touches it (<see cref="IHullContactGate"/>, read by both halves of every contact, the skimmer's too). A race ring
+        /// threaded inside still counts (it is a sweep, not a touch).
+        /// </summary>
+        public bool Phased
+        {
+            get
+            {
+                var wormhole = Wormhole;
+                return wormhole && (wormhole.IsRiding || wormhole.IsInRoots);
+            }
+        }
+
+        public bool TakesCrystalsByContact => !Phased;
+        public bool TakesPrismsByContact => !Phased;
+
         MeerkatWormholeExecutor _wormhole;
         bool _resolved;
         bool _rodeLastFrame;

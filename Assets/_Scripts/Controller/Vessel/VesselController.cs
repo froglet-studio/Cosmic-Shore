@@ -180,6 +180,15 @@ namespace CosmicShore.Gameplay
                 VesselPlacementView.SetTarget(transform);
             }
 
+            // THE PAYLOAD (Docs/Pilots/ARTIFACTS.md §2) is a platform law too: any vessel takes a
+            // parcel of its squad's Ark hull with RB and releases it with RB, so every hull carries
+            // the carrier and none can fail to author it. It listens only for the local human pilot.
+            PayloadCarrier.EnsureOn(this);
+
+            // THE PILOT'S SIGHT on LB (Docs/Pilots/CALLSIGNS.md) is the same kind of law: any hull,
+            // live only while it is the local pilot's. Photons only.
+            PilotSight.EnsureOn(this, gameData);
+
             // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
             // omission. The family (.claude/skills/prism-morph, Docs/PRISM_ANIMATION.md §4.7.2)
             // deforms the surface of a handful of prisms out of a SHARED residency budget, so a

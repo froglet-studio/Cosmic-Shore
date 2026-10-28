@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Meerkat's four abilities beyond the bare wormhole: <b>Garrett's kit</b> (Garrett's design, approved by Yash
-    /// 2026-10-28; <c>R_VesselActions/MEERKAT.md</c> §9), ported from the Vessel Studio's Meerkat page, Kit "Garrett's kit"
+    /// 2026-10-28; <c>R_VesselActions/MEERKAT.md</c> §10), ported from the Vessel Studio's Meerkat page, Kit "Garrett's kit"
     /// (<c>Docs/Studios/VesselStudio/meerkat.html</c>; the arithmetic is <see cref="MeerkatSolitonMath"/>). The wormhole IS the
     /// soliton: a standing tunnel anyone may ride (any Meerkat: <c>MeerkatWormholeExecutor.TryRideAnySoliton</c>).
     /// <list type="bullet">
