@@ -12,10 +12,10 @@ namespace CosmicShore.Utility
     /// <see cref="FaunaVariantTuning.BaseBodyScale"/>, because each body's cavity is its own measurement.</item>
     /// <item><b>SPACE takes ROOM.</b> Its school keeps the widest spacing (<see cref="Spread"/>) and it senses and
     /// strikes from furthest (<see cref="Reach"/>) - the plants' own Space reach (<see cref="FloraElementalForm.ReachScale"/>,
-    /// x1.35), so "Space reaches further" is one law in the cell. Its body is the LONGEST: stretched along its spine
-    /// (<see cref="FaunaVariantTuning.BodyAspect"/>) until it is <see cref="SpaceLengthOverMass"/> the length of the
-    /// same species' Mass body, at the prefab's girth, its prisms the leaf law's needles fitted to their stretched
-    /// sockets.</item>
+    /// x1.35), so "Space reaches further" is one law in the cell. Its body is the LONGEST and the most SPINDLY: scaled
+    /// whole to <see cref="SpaceLengthOverMass"/> the same species' Mass body, then its spindles ERODED
+    /// (<see cref="FaunaVariantTuning.ErodeSpindle"/>, <see cref="ErodedGirth"/>) so its thickest section is no thicker
+    /// than the Mass body's, its prisms the leaf law's needles fitted to their eroded sockets.</item>
     /// </list>
     ///
     /// <para>Pure and Unity-free apart from the element enum and Mathf, like <see cref="FloraElementalForm"/>. A dial is
@@ -39,5 +39,25 @@ namespace CosmicShore.Utility
 
         /// <summary>The lattice flora's fitting margin: a fitted plate is the largest that clears, less 3%.</summary>
         public const float FitClearance = 0.97f;
+
+        /// <summary>The exponent a Space spindle's section widths are drawn in by: the inverse of the lattice's Space
+        /// leaf anisotropy (1/2.11). Where a Space leaf drives the ratio of its long axis out by that power, its body draws
+        /// the ratio of a thick section to a thin one IN by the same power - the thick parts lose the most.</summary>
+        public static float SpindleGirthExponent => 1f / FloraElementalForm.SpaceLeafAnisotropy;
+
+        /// <summary>The girth factor of an eroded body's THICKEST section: 1/<see cref="SpaceLengthOverMass"/>. A Space
+        /// body is scaled whole to 1.647x the Mass body, so its thickest section comes back to the Mass body's thickness:
+        /// what Space spends on length it takes from girth.</summary>
+        public static float ThickestGirth => 1f / SpaceLengthOverMass;
+
+        /// <summary>The section half-width below which a spindle is not eroded: the width from which
+        /// <see cref="ErodedGirth"/> reaches <see cref="ThickestGirth"/> at the body's <paramref name="thickest"/>.</summary>
+        public static float ErosionReference(float thickest) =>
+            thickest * Mathf.Pow(ThickestGirth, 1f / (1f - SpindleGirthExponent));
+
+        /// <summary>The girth factor of a section <paramref name="width"/> wide: (width / reference)^(exponent - 1)
+        /// above the reference, 1 at or below it (a thin tail or fin keeps its whole size).</summary>
+        public static float ErodedGirth(float width, float reference) =>
+            reference > 0f && width > reference ? Mathf.Pow(width / reference, SpindleGirthExponent - 1f) : 1f;
     }
 }

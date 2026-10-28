@@ -467,9 +467,14 @@ namespace CosmicShore.Gameplay
         /// <summary>The element this individual rolled (None before <see cref="AssignLineage"/>).</summary>
         protected Element RolledElement { get; private set; } = Element.None;
 
-        // The body prisms' authored targets, read before the first variant reshaped them, so a pooled body that comes
-        // back as a variant that keeps the prefab's prisms gets them back.
-        Dictionary<HealthPrism, Vector3> _authoredPrismTargets;
+        // What an eroded Space spindle changed (the skins' prefab meshes and the body prisms' prefab seats), so a pooled
+        // body that comes back as another element gets the prefab's body back. Null until a body is first eroded.
+        Dictionary<SkinnedMeshRenderer, Mesh> _authoredSpindleMeshes;
+        Dictionary<HealthPrism, Vector3> _authoredPrismSeats;
+
+        /// <summary>How thick this body's thickest section is against its root scale: 1, or the Space spindle's eroded
+        /// girth (<see cref="FaunaElementalForm.ThickestGirth"/>). A body-relative dial taken by GIRTH multiplies it in.</summary>
+        protected float BodyGirthFactor { get; private set; } = 1f;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -762,18 +767,10 @@ namespace CosmicShore.Gameplay
             if (_authoredRootScale.x < 0f) _authoredRootScale = transform.localScale;
             var scaleBefore = transform.localScale;
             transform.localScale = tuning.BaseBodyScale > 0f ? Vector3.one * tuning.BaseBodyScale : _authoredRootScale;
-            // Space's body: stretched along its spine, its girth unchanged (scaled at the ROOT, so the posed body is
-            // stretched whole and nothing below it shears; the heart divides it out per axis).
-            bool stretched = tuning.BodyAspect > 0f && !Mathf.Approximately(tuning.BodyAspect, 1f);
-            if (stretched)
-            {
-                var s = transform.localScale;
-                transform.localScale = new Vector3(s.x, s.y, s.z * tuning.BodyAspect);
-            }
             // A resized body REBINDS its rig: Animation Rigging records every constraint's offset (the spine's
-            // DampedTransforms, the jaws' aims) in WORLD units when the rig is built at spawn, so a body grown or
-            // stretched after it would be pulled back to the prefab's bone spacing - the skin bunched up round the
-            // prisms the bones still carry at their own scale (the Mass shark's clipping, 2026-10-27).
+            // DampedTransforms, the jaws' aims) in WORLD units when the rig is built at spawn, so a body grown after it
+            // would be pulled back to the prefab's bone spacing - the skin bunched up round the prisms the bones still
+            // carry at their own scale (the Mass shark's clipping, 2026-10-27).
             if (transform.localScale != scaleBefore) RebuildRig();
 
             if (tuning.StarvationSeconds >= 0f)
@@ -793,14 +790,23 @@ namespace CosmicShore.Gameplay
             if (tuning.BodyPrismScale != Vector3.zero)
             {
                 foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
-                    if (hp) hp.TargetScale = tuning.BodyPrismScale;
+                {
+                    if (!hp) continue;
+                    hp.AdmitTargetScale(tuning.BodyPrismScale);   // a stated size, not one grown into a bound
+                    hp.TargetScale = tuning.BodyPrismScale;
+                }
             }
 
-            // ...and a stretched body spends its element's leaf law on those prisms (or a pooled one gets them back).
-            if (stretched) ShapeBodyPrisms(tuning.BodyAspect, RolledElement);
-            else if (_authoredPrismTargets != null && tuning.BodyPrismScale == Vector3.zero)
-                foreach (var kv in _authoredPrismTargets)
-                    if (kv.Key) kv.Key.TargetScale = kv.Value;
+            // ...and a Space spindle is eroded, its prisms re-seated in it and given its element's leaf law (or a pooled
+            // body gets the prefab's skin, seats and prisms back).
+            if (tuning.ErodeSpindle) ErodeSpindle(RolledElement);
+            else if (_authoredPrismSeats != null)
+            {
+                RestoreSpindle();
+                if (tuning.BodyPrismScale == Vector3.zero)
+                    foreach (var hp in _authoredPrismSeats.Keys)
+                        if (hp) SeatAuthoredSize(hp);
+            }
 
             // Per-element body look: swap the spindle renderers' shared material (never
             // renderer.material - that clones). Crystal models keep their own materials.
@@ -946,14 +952,6 @@ namespace CosmicShore.Gameplay
 
         HealthPrism[] _bodyPrisms;
 
-        /// <summary>
-        /// Caches this fauna's body HealthPrisms for the per-frame movement
-        /// notification, and stamps each with its owner so fauna senses resolve
-        /// "whose body is this prism" with a field read (HealthPrism.OwnerFauna)
-        /// instead of a GetComponentInParent walk per neighbor per behavior tick.
-        /// Call from Initialize, after the body hierarchy exists.
-        /// Returns the cached array so subclasses can reuse it for body setup.
-        /// </summary>
         /// <summary>The body's rig, re-bound at its current scale: the Animator back to its default pose, then every
         /// RigBuilder rebuilt so its constraints record their offsets at this size.</summary>
         void RebuildRig()
@@ -965,61 +963,201 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// THE LATTICE FLORA'S PROPORTIONAL RULES ON A CREATURE'S PRISMS (Docs/ECOSYSTEM.md 64.9): "an element authors
-        /// the SHAPE of its plate, and the size is FITTED to the largest that clears". The SHAPE is the element's leaf
-        /// law (<see cref="FloraElementalForm.ShapeLeaf"/> - Space's anisotropy 2.11, a needle along the axis that was
-        /// already the prism's longest); the SIZE is FITTED to the prism's own SOCKET - the authored prism box,
-        /// stretched with the body: it spans the socket's length less the lattice's 3%
-        /// (<see cref="FaunaElementalForm.FitClearance"/>), is as thin against that length as the law says, and is never
-        /// thicker than the socket. So a prism stays seated in its cavity at any stretch.
-        /// Measured in WORLD space through the bones down from the root and solved back through the spine stretch,
-        /// axis by axis, so it holds however the bones turn the prism. Danger prisms keep their WORLD shape
-        /// (counter-scaled against the stretch, at their stretched seats): a needle law on an already needle-like
-        /// tooth runs away with it.
+        /// A body prism takes the size its prefab AUTHORED. <see cref="Prism.Initialize"/> re-reads the target through the
+        /// scale animator's [0.5, 10] window, which suits a trail prism grown into a bound and silently trims a stated
+        /// size: the shark's dorsal (19 long) came out 10, its wings 12 → 10, its teeth 15 → 10, the Brittlestar's 0.3
+        /// spines 0.5 - on every element, so no prism filled its socket (the Mass shark showed it). Call after
+        /// Initialize.
         /// </summary>
-        void ShapeBodyPrisms(float stretch, Element element)
+        protected static void SeatAuthoredSize(HealthPrism hp)
         {
-            _authoredPrismTargets ??= new Dictionary<HealthPrism, Vector3>();
-            var toRoot = transform.worldToLocalMatrix;
-            var spine = new Vector3(1f, 1f, stretch);
+            var authored = hp.AuthoredScale;
+            if (authored.x <= 0f || authored.y <= 0f || authored.z <= 0f) return;
+            hp.AdmitTargetScale(authored);
+            hp.TargetScale = authored;
+        }
+
+        // One eroded copy of each prefab spindle mesh, shared by every Space instance (never mutated once built).
+        sealed class ErodedSpindle
+        {
+            public SpindleErosion Map;
+            public Mesh Mesh;
+            public Vector3 Shift;          // mesh space: how far the spindle's root moved with the body it hangs from
+            public Vector3[] Vertices;     // the prefab mesh's, for finding which spindle a prism sits in
+        }
+        static readonly Dictionary<Mesh, ErodedSpindle> s_erodedSpindles = new();
+        static readonly HashSet<Mesh> s_unreadableSpindles = new();
+
+        /// <summary>
+        /// THE SPACE SPINDLE (Docs/ECOSYSTEM.md 64.9, Garrett 2026-10-28: "the space spindle needs to be universally
+        /// scaled to bigger than mass, but we must erode and thin its thickest sections so the whole spindle gets more
+        /// spindly"). The root is already scaled whole; this erodes every spindle of the body by
+        /// <see cref="SpindleErosion"/> - the BODY (the skin with the most vertices) along its spine through the heart,
+        /// every other skin (the wings) along its own spine and then moved with the body where it is rooted, so it stays
+        /// attached. Each body prism moves with the skin it sits in, and takes THE LATTICE FLORA'S PROPORTIONAL RULES:
+        /// "an element authors the SHAPE of its plate, and the size is FITTED to the largest that clears" - the leaf law's
+        /// shape (<see cref="FloraElementalForm.ShapeLeaf"/>, Space's needle), spanning its eroded socket's length less
+        /// 3% (<see cref="FaunaElementalForm.FitClearance"/>), never thicker than the socket. Teeth keep their size.
+        /// Runs at spawn, in the bind pose.
+        /// </summary>
+        void ErodeSpindle(Element element)
+        {
+            RestoreSpindle();   // a pooled body is measured from the prefab's seats, never its last life's
+
+            SkinnedMeshRenderer body = null;
+            var skins = GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            _authoredSpindleMeshes ??= new Dictionary<SkinnedMeshRenderer, Mesh>();
+            foreach (var skin in skins)
+            {
+                if (!skin || !skin.sharedMesh) continue;
+                if (!_authoredSpindleMeshes.ContainsKey(skin)) _authoredSpindleMeshes[skin] = skin.sharedMesh;
+                if (!body || _authoredSpindleMeshes[skin].vertexCount > _authoredSpindleMeshes[body].vertexCount) body = skin;
+            }
+            if (!body) return;
+
+            var bodyMesh = _authoredSpindleMeshes[body];
+            var bodyToWorld = RestMeshToWorld(body, bodyMesh);
+            var worldToBody = bodyToWorld.inverse;
+            var heart = crystal ? crystal.transform.position : transform.position;
+            var bodySpindle = Eroded(bodyMesh, () => SpindleErosion.Measure(bodyMesh.vertices, worldToBody.MultiplyPoint3x4(heart)), null);
+            if (bodySpindle == null) return;
+
+            var hosts = new List<(SkinnedMeshRenderer skin, ErodedSpindle spindle, Matrix4x4 toWorld)>();
+            foreach (var skin in skins)
+            {
+                if (!skin || !_authoredSpindleMeshes.TryGetValue(skin, out var mesh)) continue;
+                var toWorld = RestMeshToWorld(skin, mesh);
+                var spindle = skin == body ? bodySpindle : Eroded(mesh, () =>
+                {
+                    var v = mesh.vertices;
+                    return SpindleErosion.Measure(v, SpindleErosion.Centroid(v));
+                }, map =>
+                {
+                    // rooted where it comes nearest the body's spine; it moves as the body's skin there moves
+                    var meshToBody = worldToBody * toWorld;
+                    var v = mesh.vertices;
+                    Vector3 root = default; float best = float.MaxValue;
+                    for (int i = 0; i < v.Length; i++)
+                    {
+                        var p = meshToBody.MultiplyPoint3x4(v[i]);
+                        float r = bodySpindle.Map.OffSpine(p);
+                        if (r < best) { best = r; root = p; }
+                    }
+                    return meshToBody.inverse.MultiplyVector(bodySpindle.Map.Map(root) - root);
+                });
+                if (spindle == null) continue;
+                skin.sharedMesh = spindle.Mesh;
+                hosts.Add((skin, spindle, toWorld));
+            }
+            BodyGirthFactor = bodySpindle.Map.Thickest;
+
+            _authoredPrismSeats ??= new Dictionary<HealthPrism, Vector3>();
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
             {
                 if (!hp || !hp.transform.parent) continue;
-                bool tooth = hp.prismProperties is { IsDangerous: true };
-                if (!_authoredPrismTargets.TryGetValue(hp, out var authored))
-                    _authoredPrismTargets[hp] = authored = hp.TargetScale;
+                if (!_authoredPrismSeats.ContainsKey(hp)) _authoredPrismSeats[hp] = hp.transform.localPosition;
 
-                var chain = toRoot * hp.transform.parent.localToWorldMatrix;
-                Vector3 size = default, perLocal = default;
-                for (int i = 0; i < 3; i++)
+                // the spindle it sits in: the one with a vertex nearest its centre
+                var centre = hp.transform.position;
+                int host = -1; float nearest = float.MaxValue;
+                for (int h = 0; h < hosts.Count; h++)
                 {
-                    var axis = chain.MultiplyVector(hp.transform.localRotation * (i == 0 ? Vector3.right : i == 1 ? Vector3.up : Vector3.forward));
-                    size[i] = authored[i] * axis.magnitude;                   // root units, before the stretch
-                    perLocal[i] = Vector3.Scale(axis, spine).magnitude;       // root units per local unit, after it
-                }
-                if (perLocal.x <= 1e-6f || perLocal.y <= 1e-6f || perLocal.z <= 1e-6f) continue;
-                Vector3 shaped = size;
-                if (!tooth)
-                {
-                    var shape = FloraElementalForm.ShapeLeaf(size, element);                 // the element's shape
-                    var socket = Vector3.Scale(authored, perLocal);                          // its seat, stretched
-                    if (shape.x > 0f && shape.y > 0f && shape.z > 0f)
+                    var toMesh = hosts[h].toWorld.inverse;
+                    var p = toMesh.MultiplyPoint3x4(centre);
+                    float unit = ((Vector3)hosts[h].toWorld.GetColumn(0)).magnitude;
+                    var verts = hosts[h].spindle.Vertices;
+                    for (int i = 0; i < verts.Length; i++)
                     {
-                        // it spans its socket's LENGTH (less the lattice's 3%), the law sets how THIN it is
-                        // against that length, and it is never thicker than the socket
-                        int lng = shape.x >= shape.y && shape.x >= shape.z ? 0 : shape.y >= shape.z ? 1 : 2;
-                        float length = socket[lng] * FaunaElementalForm.FitClearance;
-                        for (int i = 0; i < 3; i++)
-                            shaped[i] = i == lng ? length
-                                : Mathf.Min(length * shape[i] / shape[lng], socket[i] * FaunaElementalForm.FitClearance);
+                        float d = (verts[i] - p).sqrMagnitude * unit * unit;
+                        if (d < nearest) { nearest = d; host = h; }
                     }
                 }
-                var local = new Vector3(shaped.x / perLocal.x, shaped.y / perLocal.y, shaped.z / perLocal.z);
-                hp.AdmitTargetScale(local);   // a needle may be longer than the animator's default window
-                hp.TargetScale = local;
+                if (host < 0) continue;
+                var (_, seat, meshToWorld) = hosts[host];
+                var worldToMesh = meshToWorld.inverse;
+                var local = worldToMesh.MultiplyPoint3x4(centre);
+                hp.transform.position = meshToWorld.MultiplyPoint3x4(seat.Map.Map(local) + seat.Shift);
+
+                if (hp.prismProperties is { IsDangerous: true }) continue;   // a tooth keeps its size, at its new seat
+
+                var authored = hp.AuthoredScale;
+                var parent = hp.transform.parent.localToWorldMatrix;
+                Vector3 size = default, perLocal = default, socket = default;
+                for (int i = 0; i < 3; i++)
+                {
+                    var axis = parent.MultiplyVector(hp.transform.localRotation * (i == 0 ? Vector3.right : i == 1 ? Vector3.up : Vector3.forward));
+                    perLocal[i] = axis.magnitude;                                        // world units per local unit
+                    size[i] = authored[i] * perLocal[i];                                 // the prefab's prism, in world
+                    var inMesh = worldToMesh.MultiplyVector(axis).normalized;
+                    socket[i] = size[i] * seat.Map.MapDirection(local, inMesh).magnitude; // its seat, eroded
+                }
+                if (perLocal.x <= 1e-6f || perLocal.y <= 1e-6f || perLocal.z <= 1e-6f) continue;
+                var shape = FloraElementalForm.ShapeLeaf(size, element);
+                if (shape.x <= 0f || shape.y <= 0f || shape.z <= 0f) continue;
+                // it spans its socket's LENGTH (less the lattice's 3%), the law sets how THIN it is against that length,
+                // and it is never thicker than the socket
+                int lng = shape.x >= shape.y && shape.x >= shape.z ? 0 : shape.y >= shape.z ? 1 : 2;
+                float length = socket[lng] * FaunaElementalForm.FitClearance;
+                Vector3 target = default;
+                for (int i = 0; i < 3; i++)
+                    target[i] = (i == lng ? length
+                        : Mathf.Min(length * shape[i] / shape[lng], socket[i] * FaunaElementalForm.FitClearance)) / perLocal[i];
+                hp.AdmitTargetScale(target);   // a needle may be longer than the animator's default window
+                hp.TargetScale = target;
             }
         }
 
+        /// <summary>The cached eroded copy of <paramref name="source"/>, built on first use (null when the mesh is not
+        /// readable - its import needs Read/Write - which is said once).</summary>
+        static ErodedSpindle Eroded(Mesh source, System.Func<SpindleErosion> measure, System.Func<SpindleErosion, Vector3> shift)
+        {
+            if (s_erodedSpindles.TryGetValue(source, out var cached)) return cached;
+            if (!source.isReadable)
+            {
+                if (s_unreadableSpindles.Add(source))
+                    CSDebug.LogWarning($"[Fauna] {source.name} cannot be eroded into a Space spindle: enable Read/Write on its model import.");
+                return null;
+            }
+            var map = measure();
+            if (map == null) return null;
+            var spindle = new ErodedSpindle { Map = map, Vertices = source.vertices };
+            spindle.Shift = shift?.Invoke(map) ?? Vector3.zero;
+            spindle.Mesh = map.Erode(source, spindle.Shift);
+            if (!spindle.Mesh) return null;
+            s_erodedSpindles[source] = spindle;
+            return spindle;
+        }
+
+        /// <summary>A skin's mesh-to-world matrix in the bind pose: through its first bone (the bone's world matrix
+        /// times its bind pose is the same for every bone at rest), or the renderer's own transform without bones.</summary>
+        static Matrix4x4 RestMeshToWorld(SkinnedMeshRenderer skin, Mesh mesh)
+        {
+            var bones = skin.bones;
+            if (bones is { Length: > 0 } && bones[0] && mesh.bindposeCount > 0)
+                return bones[0].localToWorldMatrix * mesh.bindposes[0];
+            return skin.transform.localToWorldMatrix;
+        }
+
+        /// <summary>Puts back what <see cref="ErodeSpindle"/> changed: the prefab skins and the prisms' prefab seats.</summary>
+        void RestoreSpindle()
+        {
+            BodyGirthFactor = 1f;
+            if (_authoredSpindleMeshes != null)
+                foreach (var kv in _authoredSpindleMeshes)
+                    if (kv.Key) kv.Key.sharedMesh = kv.Value;
+            if (_authoredPrismSeats != null)
+                foreach (var kv in _authoredPrismSeats)
+                    if (kv.Key) kv.Key.transform.localPosition = kv.Value;
+        }
+
+        /// <summary>
+        /// Caches this fauna's body HealthPrisms for the per-frame movement
+        /// notification, and stamps each with its owner so fauna senses resolve
+        /// "whose body is this prism" with a field read (HealthPrism.OwnerFauna)
+        /// instead of a GetComponentInParent walk per neighbor per behavior tick.
+        /// Call from Initialize, after the body hierarchy exists.
+        /// Returns the cached array so subclasses can reuse it for body setup.
+        /// </summary>
         protected HealthPrism[] CacheBodyPrisms()
         {
             _bodyPrisms = GetComponentsInChildren<HealthPrism>(true);

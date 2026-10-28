@@ -117,7 +117,7 @@ namespace CosmicShore.Gameplay
         {
             base.ApplyVariantTuning(tuning);
             float authored = Girth(AuthoredRootScale);
-            _bodyRatio = authored > 1e-9f ? Girth(transform.localScale) / authored : 1f;
+            _bodyRatio = authored > 1e-9f ? Girth(transform.localScale) / authored * BodyGirthFactor : 1f;
         }
 
         protected override void OnTeamChanged()
@@ -156,6 +156,7 @@ namespace CosmicShore.Gameplay
                 if (!hp) continue;
                 hp.ChangeTeam(domain);
                 hp.Initialize("FaunaPrefab");
+                SeatAuthoredSize(hp);
             }
 
             // Locked invariant: every lifeform carries one elemental crystal it drops as

@@ -192,13 +192,14 @@ namespace CosmicShore.Utility
                  "Mass/Time tadpoles author 0.8 x 0.8 x 7 long tail prisms; Space keeps the " +
                  "spindle default). Zero = keep the prefab's authored prism scale.")]
         public Vector3 BodyPrismScale = Vector3.zero;
-        [Tooltip("SPACE's body: stretch the creature along its spine (its forward axis) by this, its girth unchanged so " +
-                 "its heart's cavity keeps its size. Space's is FaunaElementalForm.SpaceLengthOverMass (1.647) x the " +
-                 "species' Mass body scale over its prefab's, so Space is the longest. A stretched body's prisms take " +
-                 "the lattice rule - the element's SHAPE (FloraElementalForm.ShapeLeaf: Space's long thin needle), " +
-                 "the largest that fits the prism's stretched socket, less 3% (Docs/ECOSYSTEM.md 64.9); danger prisms " +
-                 "keep their shape. 0 or 1 = the prefab's body and prisms.")]
-        [Min(0f)] public float BodyAspect = 0f;
+        [Tooltip("SPACE's spindle: erode the body's thickest sections toward its spine by the lattice's Space exponent " +
+                 "(1/2.11), thin sections left whole, so the thickest comes back to 1/1.647 of its girth " +
+                 "(FaunaElementalForm.ErodedGirth). Pair it with a BaseBodyScale of FaunaElementalForm.SpaceLengthOverMass " +
+                 "(1.647) x the species' Mass scale: the Space body is the Mass body's length x1.647 and its girth. Wings " +
+                 "erode along their own spines and stay attached; body prisms move with the skin and take the leaf law, " +
+                 "the largest that fits their eroded socket less 3% (Docs/ECOSYSTEM.md 64.9); danger prisms keep their " +
+                 "shape. Needs the body mesh's Read/Write import flag.")]
+        public bool ErodeSpindle = false;
         [Tooltip("Material applied to the body's Spindle renderers (the per-element body look). " +
                  "None = keep the prefab's authored material.")]
         public Material BodyMaterial;

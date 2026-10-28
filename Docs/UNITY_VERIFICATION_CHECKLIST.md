@@ -16636,3 +16636,24 @@ crystals, boids and lifeforms pass (14). `Docs/ECOSYSTEM.md` §64.9; `Docs/Ecolo
    (only the bind pose was measured headless).
 3. A Blob or Wildlife cell with tadpoles: **Pass:** the Space school spreads wider than the others and still feeds.
 4. Any crystal elsewhere (a mode's arena scatter, a race ring, a toy): **Pass:** the same size and shape as before.
+
+## 🔴 2026-10-28 — Body prisms at their authored size; the Space shark scaled whole and eroded (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `CosmicShore.Live` builds (0 errors); the new
+`FaunaElementalFormTests` and the existing `FloraElementalFormTests` pass outside Unity (13/13); the game's own
+`Fauna.ApplyVariantTuning` was run on the shark prefab in Amoebius (bind pose only). `Docs/ECOSYSTEM.md` §64.9;
+`Docs/Ecology/FaunaScale/sharks_four_elements.png`. Supersedes item 2 of the 2026-10-27 Space entry above.
+
+1. Let Unity compile and reimport `Shark_model.fbx` (Read/Write is now on). **Pass:** no errors from `Fauna.cs`,
+   `SpindleErosion.cs`, `Prism.cs`, `LightFauna.cs`, `Boid.cs`, `FaunaElementalForm.cs`, `FaunaConfigurationSO.cs`;
+   the Test Runner's `FaunaElementalFormTests` pass.
+2. Spawn Matrix: release a Charge and a Mass shark. **Pass:** the dorsal prism spans its fin's cavity end to end (it
+   used to stop at about half), the wing prisms fill the wings, the teeth are half again as long as before; on the Mass
+   shark every prism sits in its cavity as it swims.
+3. Release a Space shark. **Pass:** it is the Mass shark's shape scaled up to about 1.65x its length (~335 u) but no
+   thicker than the Mass shark through the head and barrel, its tail and fin tips full size, its wings still attached;
+   its body prisms are thin needles inside the skin, its teeth inside its jaws, its heart the same round size and clear
+   of the skin. Watch it swim and turn: **Pass:** no prism clips its spindle and the skin does not tear or crease. The
+   console shows no `cannot be eroded into a Space spindle` warning.
+4. A Brittlestar: **Pass:** its spines are thinner than before (0.3, no longer pushed up to 0.5).
+5. Kill a Space shark and let a Charge one spawn: **Pass:** the Charge shark has the prefab body and prisms.

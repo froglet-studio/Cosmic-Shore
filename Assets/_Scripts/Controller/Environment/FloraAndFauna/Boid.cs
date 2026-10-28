@@ -181,6 +181,7 @@ namespace CosmicShore.Gameplay
                 if (!hp) continue;
                 hp.ChangeTeam(domain);
                 hp.Initialize("tadpole");
+                SeatAuthoredSize(hp);
             }
 
             _consumerName = embeddedHealthPrism.PlayerName + " tadpole";
