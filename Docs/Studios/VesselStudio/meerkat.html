@@ -4179,11 +4179,31 @@
     // it, an RT press forms it. The AI holds its line while it shapes (aiShapeSeconds), then presses RT.
     const gate = ftLive.gate, riding = !!(gate && gate.state === 'tube'); let lt = 0, rt = 0, bend = false;
     if (riding) {   // round 24: every tube is slid (round 20, the roots: it holds RT and steers across the root for the one that leads nearest its ring (a rookie sometimes picks wrong)
-      // it holds RT; for the Mix's Chain Dig (an RT PRESS from chainShare of the way) it lets go just before that point
-      const relS = chainShareOf(P) * gate.pair.wh.L, relW = Math.max(2, (gate.vel ? gate.vel.length() : speed) * 0.05);
-      const chainNext = !gate.net && aiChainOn() && !gate.next && !gate.aiChainTried && (ai.chainAt !== threaded || (ai.chainRun || 0) < 2);
-      ai.gHold = 0; ai.gShaping = false; rt = chainNext && gate.s >= relS - relW && gate.s < relS ? 0 : 1;
+      // it holds RT. Chain Dig (the Mix's / Round 8's Time L5, an RT PRESS from chainShare of the way): a little before that
+      // point it plans the next tunnel from the far mouth once; with a plan it lets go of RT and presses it again (bending the
+      // right stick for it) once it is past that point; with none it keeps holding RT, so no straight chain is dug by
+      // accident. Round 24: at most two chains in a row between rings.
+      ai.gHold = 0; ai.gShaping = false; rt = 1;
       const kids = gate.pair.kids || [], wh = gate.pair.wh;
+      const relS = chainShareOf(P) * wh.L, relW = Math.max(2, (gate.vel ? gate.vel.length() : speed) * 0.05);
+      if (!gate.net && aiChainOn() && !blind && !gate.next && !gate.aiChainTried && gate.s >= relS - relW
+        && (ai.chainAt !== threaded || (ai.chainRun || 0) < 2)) {
+        gate.aiChainTried = true;
+        whAt(wh, wh.L, cdE, cdT); cdQ.setFromUnitVectors(fwd, cdT);
+        const eR = tv.copy(right).applyQuaternion(cdQ), eU = tv2.copy(up).applyQuaternion(cdQ), dE = aiTo.subVectors(tgt, cdE), dist = dE.length();
+        const locE = aiLoc2.set(dE.dot(eR), dE.dot(eU), -dE.dot(cdT));
+        const plan = dist > Math.min(P.aiStraightMinDistance, P.aiBentMinDistance) ? aiGatePlan(locE, clamp01(P.aiNoise), dist <= P.aiStraightMinDistance, 0) : null;
+        if (plan) { const lh = Math.hypot(locE.x, locE.y); gate.aiChainPlan = { x: lh > 1e-6 ? locE.x / lh * plan.m : 0, y: lh > 1e-6 ? locE.y / lh * plan.m : 0, lq: plan.lq }; ai.chainHeld = true; }
+      }
+      if (gate.aiChainPlan && !gate.next) {
+        if (gate.s < relS || ai.chainHeld) { rt = 0; if (gate.s >= relS) ai.chainHeld = false; }   // let go (a frame at least), then press past the point
+        else {
+          const cp = gate.aiChainPlan; gate.aiChainPlan = null;
+          inp.R.x = easeInv(cp.x) / 2; inp.R.y = easeInv(cp.y) / 2; lt = cp.lq; rt = 1; ai.chains = (ai.chains || 0) + 1;
+          if (ai.chainAt !== threaded) { ai.chainAt = threaded; ai.chainRun = 0; }
+          ai.chainRun++;
+        }
+      }
       aiTo.set(0, 0, 0);   // where across the root it wants to be: the middle, or the fork's side
       if (kids.length > 1 && !blind) {
         if (!gate.aiPick || !kids.includes(gate.aiPick)) {
@@ -4200,24 +4220,6 @@
         aiTo.sub(gate.dr).multiplyScalar(2.25).addScaledVector(aiLoc2, -2.1);
         const sx = Math.max(-1, Math.min(1, aiTo.dot(gate.side) / mv)), sy = Math.max(-1, Math.min(1, aiTo.dot(gate.upv) / mv));
         inp.L.x = easeInv(0.98 * sx) / 2; let pb = easeInv(0.98 * sy) / 2; if (invertY) pb = -pb; inp.L.y = pb;
-      }
-      // round 8, Chain Dig (Time L5): past chainShare of the ride, if a tunnel from the far mouth fits the next leg, bend
-      // the right stick for it and press RT. One try a tunnel; round 24: at most two in a row between rings (sliding, a
-      // run of the shortest tunnels round a near ring could chain forever)
-      if (!gate.net && aiChainOn() && !blind && !gate.next && !gate.aiChainTried && gate.s >= chainShareOf(P) * gate.pair.wh.L
-        && (ai.chainAt !== threaded || (ai.chainRun || 0) < 2)) {
-        gate.aiChainTried = true;
-        const w1 = gate.pair.wh; whAt(w1, w1.L, cdE, cdT); cdQ.setFromUnitVectors(fwd, cdT);
-        const eR = tv.copy(right).applyQuaternion(cdQ), eU = tv2.copy(up).applyQuaternion(cdQ), dE = aiTo.subVectors(tgt, cdE), dist = dE.length();
-        const locE = aiLoc2.set(dE.dot(eR), dE.dot(eU), -dE.dot(cdT));
-        const plan = dist > Math.min(P.aiStraightMinDistance, P.aiBentMinDistance) ? aiGatePlan(locE, clamp01(P.aiNoise), dist <= P.aiStraightMinDistance, 0) : null;
-        if (plan) {
-          const lh = Math.hypot(locE.x, locE.y);
-          inp.R.x = easeInv(lh > 1e-6 ? locE.x / lh * plan.m : 0) / 2; inp.R.y = easeInv(lh > 1e-6 ? locE.y / lh * plan.m : 0) / 2;
-          lt = plan.lq; rt = 1; ai.chains = (ai.chains || 0) + 1;
-          if (ai.chainAt !== threaded) { ai.chainAt = threaded; ai.chainRun = 0; }
-          ai.chainRun++;
-        }
       }
     }
     else if (!blind && P.aiWormhole > 0.5 && ftLive.ab.omni && ftLive.ret && ftLive.ret.net && ftLive.ret.emerge >= 0.6 && loc.z < 0 && d > 0.5 * Math.max(40, P.labyrinthRadiusMax)) {
