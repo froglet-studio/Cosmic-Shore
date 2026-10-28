@@ -1,0 +1,307 @@
+{
+ "_about": "The clip library clips.py composes from: one vessel doing its thing, staged on its path and framed so it reads (Garrett, cut 6). `stage` runs after the cell swap and the vessel swap, `camera` after the settle, `events` at seconds from the clip's start (any mv verb). `stills` names the probe stills a clip was composed from and `learned` what each attempt taught.",
+ "clips": {
+  "gyroid-run": {
+   "vessel": "Manta",
+   "cell": "Lattice",
+   "what": "The Manta flies through a lattice of nested-gyroid and gyroid flora, the limbs swaying as it passes (the spindle graphs, fixed 2026-10-28).",
+   "stage": [
+    "mv cell Lattice",
+    "mv vessel Manta",
+    "mv spawn flora Nested Gyroid 3",
+    "mv spawn flora Gyroid 3",
+    "mv in {3s} teleport local name:GyroidFlora -170 6 0",
+    "mv in {3.2s} aim local name:GyroidFlora"
+   ],
+   "camera": [
+    "mv orbit name:GyroidFlora 95 26 3"
+   ],
+   "settle_seconds": 4,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim local name:GyroidFlora"
+    },
+    {
+     "at": 1.5,
+     "cmd": "action local FullSpeedStraightAction 150"
+    },
+    {
+     "at": 2.5,
+     "cmd": "aim local fleet"
+    }
+   ],
+   "stills": [],
+   "learned": [
+    "probe 1 (2026-10-28): the flora were planted at the cell's own sites hundreds of units from the pilot; 5 s of flying toward them showed empty membrane. The pilot is now teleported 160 u before the nearest flora (SetPose) once the plants are in.",
+    "probe 2: `flora` resolved the nearest flora, a quasicrystal, and the mount on the hull showed membrane. The gyroid is now named (name:GyroidFlora), the camera orbits the plant slowly and the hull flies through it.",
+    "probe 3: the gyroid is in frame at last (the braided limbs render since the port) but an orbit at 55 u sat inside the plant's own prisms; 95 u shows the whole lattice with the Manta flying through.",
+    "probe 4: the 95 u orbit showed the plant (a braided arch over a floor of slab prisms) but the Manta was lost in it; the clip is the hull flying THROUGH the arch, so the camera rides the hull at back 24 from 140 u out.",
+    "final 1 (1080p): empty membrane again - the name matched one of the three gyroid SEEDLINGS planted two seconds earlier, not the Lattice cell's own grown colony the probe had found. No more planting: the cell's own gyroids, 200 u out, boost through.",
+    "final 2: without the plantings the named colony resolved to something with no mass in sight; the hull-mounted run showed membrane twice at 1080p where the plant-orbit of probe 4 showed the arch and its slab floor every time. The final is probe 4's staging: the camera orbits the plant, the Manta is sent through it."
+   ]
+  },
+  "serpent-wall": {
+   "vessel": "Serpent",
+   "cell": "Garland",
+   "what": "The Serpent stops in the turret stance beside a rival fleet's trails; its seed prism pulls the loose prisms into a self-assembling herringbone wall, stealing them as they land.",
+   "stage": [
+    "mv cell Garland",
+    "mv vessel Serpent",
+    "mv spawn vessel Manta,Dolphin,Rhino,Sparrow 8 Ruby 30",
+    "mv aim all local",
+    "mv herd off",
+    "mv in {2.5s} action local Button2Action 10",
+    "mv in {2.5s} aim all local"
+   ],
+   "camera": [
+    "mv orbit local 28 10 3"
+   ],
+   "settle_seconds": 10,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim all local"
+    },
+    {
+     "at": 2.5,
+     "cmd": "aim all local"
+    }
+   ],
+   "stills": [],
+   "learned": [
+    "probe 1: the stance worked (the Serpent stopped, the rival fleet circled it laying trails) but 5 s from the toggle showed no wall yet, and the hull drew as a solid white blob: the stance's cloak ghost (CosmicShore/CloakGhost, a hand-written additive shader) had no translation in the engine. The stance now happens 7.5 s before the recording so the wall is growing on frame one.",
+    "probe 2: the stance 7.5 s before the recording gave a dense violet prism field round the Serpent (the wall?); the hull was the untranslated cloak ghost, ported since. Orbit closer: 22.",
+    "probe 3: the cloak ghost renders (a translucent rimmed hull) and the herringbone wall stands around it; 28 u shows a little more of the wall."
+   ]
+  },
+  "dolphin-echo": {
+   "vessel": "Dolphin",
+   "cell": "Arboretum",
+   "what": "The Dolphin, right trigger held, lights every prism in its echo cone, flies into a crystal and the crystal blast obliterates the mass ahead.",
+   "stage": [
+    "mv cell Arboretum",
+    "mv vessel Dolphin",
+    "mv spawn vessel Rhino,Manta,Serpent,Sparrow 6 Ruby 40",
+    "mv in {1s} circle ai0 45 5 local",
+    "mv in {1s} circle ai1 55 6 local",
+    "mv in {1s} circle ai2 40 4 local",
+    "mv in {1s} circle ai3 60 7 local",
+    "mv in {1s} circle ai4 50 5 local",
+    "mv in {1s} circle ai5 35 4 local"
+   ],
+   "camera": [
+    "mv mount local 14 5 4 12 1.6"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "place crystal local 100 0 0"
+    },
+    {
+     "at": 0.0,
+     "cmd": "aim local crystal"
+    },
+    {
+     "at": 0.1,
+     "cmd": "action local RightStickAction 300",
+     "why": "echo sight held"
+    },
+    {
+     "at": 2.6,
+     "cmd": "aim local fleet"
+    }
+   ],
+   "stills": [],
+   "learned": [
+    "probe 1: the Dolphin was a speck at back 40 and the rival trails were far off its path; nothing of the cone or the blast read. The fleet now circles the pilot (trails wrap its path), the mount sits at back 24, the crystal is placed 100 u ahead at the first frame.",
+    "probe 2: at back 24 the Dolphin was still a speck - the hull is a few units long; back 14.",
+    "probe 3: the echo cone reads - cyan beams fanning from the hull over the mass ahead; the hull is visible at back 14.",
+    "probe 4: setup and payoff read - the Dolphin runs at the ringed omni crystal and the blast bursts the mass beyond it in purple shards."
+   ]
+  },
+  "thresher-slice": {
+   "vessel": "Thresher",
+   "cell": "Tandava",
+   "what": "The Thresher whips its wrecking ball round on a rigid chain through a rival fleet's trails: the chain slices every rival prism it crosses, the ball at smash speed bursts them.",
+   "stage": [
+    "mv cell Tandava",
+    "mv vessel Thresher",
+    "mv spawn vessel Manta,Dolphin,Rhino,Squirrel 8 Ruby 35",
+    "mv in {1s} circle ai0 40 5 local",
+    "mv in {1s} circle ai1 50 6 local",
+    "mv in {1s} circle ai2 35 4 local",
+    "mv in {1s} circle ai3 55 7 local",
+    "mv in {1s} circle ai4 45 5 local",
+    "mv in {1s} circle ai5 60 6 local"
+   ],
+   "camera": [
+    "mv orbit local 40 12 3"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "action local Button1Action 10",
+     "why": "mass mode off: the ball breaks"
+    },
+    {
+     "at": 0.0,
+     "cmd": "action local RightStickAction 300",
+     "why": "winch: the chain rigid"
+    },
+    {
+     "at": 0.2,
+     "cmd": "circle local 26 3.0"
+    }
+   ],
+   "stills": [],
+   "learned": [
+    "probe 1: the ball went red and the chain whipped - the clip's subject works - but the hull was small and the rival trails were elsewhere. The fleet now circles the Thresher so the chain crosses their trails; the mount is a tighter three-quarter view.",
+    "probe 2: the fleet's trails now wrap the Thresher (a pink wall in the last frames, the ball red through it) but the hull was tiny at back 26; back 16.",
+    "probe 3: at back 16 the hull filled the frame and the ball on its 25 u chain was out of it; a 40 u orbit holds hull, chain and ball with the trails around.",
+    "probe 4: the 40 u orbit keeps hull, chain and the red ball in frame; the slicing of the rivals' trails is still not evident in the stills."
+   ]
+  },
+  "sparrow-guns": {
+   "vessel": "Sparrow",
+   "cell": "Zephyr",
+   "what": "The Sparrow, right trigger held, pours its gun into a rival fleet's trails ahead; the rounds (the glowing spheres Garrett liked in cut 3) burst the prisms they hit.",
+   "stage": [
+    "mv cell Zephyr",
+    "mv vessel Sparrow",
+    "mv spawn vessel Manta,Dolphin,Rhino,Squirrel,Serpent,Scarab 6 Ruby 40",
+    "mv in {1s} circle ai0 40 5 local",
+    "mv in {1s} circle ai1 50 6 local",
+    "mv in {1s} circle ai2 35 4 local",
+    "mv in {1s} circle ai3 55 7 local",
+    "mv in {1s} circle ai4 45 5 local",
+    "mv in {1s} circle ai5 60 6 local"
+   ],
+   "camera": [
+    "mv mount local 18 7 7 14 1.6"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim local fleet"
+    },
+    {
+     "at": 0.2,
+     "cmd": "action local RightStickAction 280",
+     "why": "the gun, held"
+    },
+    {
+     "at": 2.5,
+     "cmd": "aim local ai2"
+    }
+   ],
+   "stills": [],
+   "learned": [
+    "probe 5: the Sparrow reads; its rounds' sparks use CosmicShore/SoftSpark, untranslated in the engine (drawn unlit), so the gun's look waits on that port.",
+    "probe 6 (sparks ported): the Sparrow's white rounds pour into the orange prism field ahead - the clip reads as shooting."
+   ]
+  },
+  "rhino-sword": {
+   "vessel": "Rhino",
+   "cell": "Boneyard",
+   "what": "The Rhino drives through a rival fleet's trails swinging its energy sword: every prism the blade sweeps is CUT along the plane, the halves parting and dissolving from the cut face.",
+   "stage": [
+    "mv cell Boneyard",
+    "mv vessel Rhino",
+    "mv spawn vessel Manta,Dolphin,Squirrel,Serpent,Scarab,Sparrow 6 Ruby 35",
+    "mv in {1s} circle ai0 30 4 local",
+    "mv in {1s} circle ai1 40 5 local",
+    "mv in {1s} circle ai2 28 4 local",
+    "mv in {1s} circle ai3 45 6 local",
+    "mv in {1s} circle ai4 35 5 local",
+    "mv in {1s} circle ai5 50 6 local"
+   ],
+   "camera": [
+    "mv mount local 46 16 18 30 1.6"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim local fleet"
+    },
+    {
+     "at": 0.3,
+     "cmd": "action local RightStickAction 70",
+     "why": "swipe right"
+    },
+    {
+     "at": 1.6,
+     "cmd": "action local LeftStickAction 70",
+     "why": "swipe left"
+    },
+    {
+     "at": 2.9,
+     "cmd": "action local RightStickAction 70"
+    },
+    {
+     "at": 4.0,
+     "cmd": "action local LeftStickAction 60"
+    }
+   ],
+   "stills": [],
+   "learned": [
+    "probe 5: the Rhino is a big hull - at back 20 it filled the frame and hid the blade; back 46.",
+    "probe 6: the Rhino reads at back 46 among the rivals' ribbons; the swipes are hard to see in stills - judge on the video."
+   ]
+  },
+  "brittlestar-ring": {
+   "vessel": "BrittleStar",
+   "cell": "Geode",
+   "what": "The Brittle Star in Space mode fires its five turret guns into the mass around it, then throws its ring: a flat disk explosion as wide as the nucleus that clears every prism in its plane.",
+   "stage": [
+    "mv cell Geode",
+    "mv vessel BrittleStar",
+    "mv spawn vessel Manta,Dolphin,Squirrel,Serpent,Scarab,Sparrow 6 Ruby 35",
+    "mv in {1s} circle ai0 30 4 local",
+    "mv in {1s} circle ai1 40 5 local",
+    "mv in {1s} circle ai2 28 4 local",
+    "mv in {1s} circle ai3 45 6 local",
+    "mv in {1s} circle ai4 35 5 local",
+    "mv in {1s} circle ai5 50 6 local",
+    "mv in {2s} action local Button3Action 10"
+   ],
+   "camera": [
+    "mv orbit local 34 12 3"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "place crystal local 70 0 0"
+    },
+    {
+     "at": 0.0,
+     "cmd": "aim local crystal"
+    },
+    {
+     "at": 0.2,
+     "cmd": "action local RightStickAction 150",
+     "why": "the five guns"
+    },
+    {
+     "at": 2.2,
+     "cmd": "aim local fleet"
+    },
+    {
+     "at": 3.4,
+     "cmd": "action local LeftStickAction 20",
+     "why": "the ring thrown and detonated (a spare ring comes from the crystal)"
+    }
+   ],
+   "stills": [],
+   "learned": [
+    "probe 5: the ring (a pentagon) and the trails read but no disk explosion came: a throw needs a SPARE ring, one per crystal collected, so a crystal is now placed on the path first.",
+    "probe 6: the guns and the ring read; whether the ring detonated is not visible in the stills (the crystal was placed; a spare ring needs it collected)."
+   ]
+  }
+ }
+}
