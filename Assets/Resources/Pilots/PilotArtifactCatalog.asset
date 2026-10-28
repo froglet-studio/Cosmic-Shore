@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 846d36b797f14c90987103291b242356, type: 3}
+  m_Name: PilotArtifactCatalog
+  m_EditorClassIdentifier:
+  pilots:
+  - {fileID: 11400000, guid: e64a0c74e80403ec4dac490f7ea3930f, type: 2}
+  - {fileID: 11400000, guid: 4adc81e2db7a204113b36dfd5f448fe4, type: 2}
+  - {fileID: 11400000, guid: 06df38da9e19d54937d79d2a6abd21e5, type: 2}
+  - {fileID: 11400000, guid: 1fe8b2317543aeb0b8e0139fa378e308, type: 2}
+  - {fileID: 11400000, guid: f7f39ab0a91406facfa1bceb0797468d, type: 2}
+  - {fileID: 11400000, guid: 51790a8cf7fa4d29712caaad27d8841f, type: 2}
+  - {fileID: 11400000, guid: e18dd471f426b3ea7705785c8456ba0e, type: 2}
+  - {fileID: 11400000, guid: b4bca4a8471cafcca4f5f4aaaf33d091, type: 2}
+  - {fileID: 11400000, guid: e60f32ca02dabf4c8679ff14fc675103, type: 2}
+  - {fileID: 11400000, guid: d5d8d4407eea9e28be4367b555115ed3, type: 2}
+  - {fileID: 11400000, guid: c984e7aca676917749cde775be0d98d8, type: 2}
+  - {fileID: 11400000, guid: 5d9f281263930e97ce420be85f615b8a, type: 2}
+  - {fileID: 11400000, guid: a68d3a20f5ef931ff6309e77a810a8b8, type: 2}
+  - {fileID: 11400000, guid: 7348cb3f3a317b8e8c3fd795e6dbadce, type: 2}
+  - {fileID: 11400000, guid: 258d72f9f6e0552d29fe78a8eec036ce, type: 2}
+  - {fileID: 11400000, guid: 6e55fba3ce31fb02731d4dba54e21bb9, type: 2}
+  - {fileID: 11400000, guid: a4521fbac892264f5b42b9c12dbda8f4, type: 2}
+  - {fileID: 11400000, guid: e3624c4ec9e5d6a7cc39c53bfeedd135, type: 2}
+  artifacts:
+  - {fileID: 11400000, guid: 83345c39733ef628eeeff1a45544f05e, type: 2}
+  - {fileID: 11400000, guid: e0ade64a49c0dbdef08f9f2bdd0bd4af, type: 2}
+  slotsPerVessel: 1

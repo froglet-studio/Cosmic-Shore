@@ -4518,7 +4518,7 @@ reaches the shared `CrystalCollect` category it always should have.
 **The flare composes with the omni/elemental brightness split** (the CTA-lime pass that landed
 alongside this branch): `ApplyCaptureVisual` scales whatever the crystal currently *wears*, and an
 elemental's resting colour is now the CTA dimmed by `EnvironmentColors.ElementalCrystalDimming`
-(0.45). So a captured elemental flares 3× **relative to itself** — which is the ratio the eye reads
+(0.45), in that element's own shade of lime since 2026-10-27 (`Docs/PALETTE.md` §2.11). So a captured elemental flares 3× **relative to itself** — which is the ratio the eye reads
 over a 0.44 s beat — peaking at ~1.35× the CTA, i.e. just above the omni's resting brightness rather
 than the 3× absolute the gain was first chosen against. That is the intended relationship (a crystal
 being taken briefly outshines the hero pickup), but it means `flareGain` and

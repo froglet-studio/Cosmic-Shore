@@ -179,8 +179,7 @@
      "studio": "stoat",
      "games": [
       "Regatta",
-      "Slingshot",
-      "Warpline"
+      "Slingshot"
      ]
     },
     {
@@ -196,6 +195,60 @@
      "hasClass": true,
      "studio": null,
      "games": []
+    },
+    {
+     "name": "Goby",
+     "value": 18,
+     "hasClass": true,
+     "studio": null,
+     "games": []
+    },
+    {
+     "name": "Wrasse",
+     "value": 19,
+     "hasClass": true,
+     "studio": null,
+     "games": [
+      "Wrasse Run"
+     ]
+    },
+    {
+     "name": "Orca",
+     "value": 20,
+     "hasClass": true,
+     "studio": "orca",
+     "games": []
+    },
+    {
+     "name": "Starling",
+     "value": 21,
+     "hasClass": true,
+     "studio": null,
+     "games": []
+    },
+    {
+     "name": "Jacks",
+     "value": 22,
+     "hasClass": true,
+     "studio": null,
+     "games": []
+    },
+    {
+     "name": "Honeyguide",
+     "value": 23,
+     "hasClass": true,
+     "studio": null,
+     "games": []
+    },
+    {
+     "name": "Meerkat",
+     "value": 28,
+     "hasClass": true,
+     "studio": "meerkat",
+     "games": [
+      "Burrow Run",
+      "Warpline"
+     ]
     }
    ],
    "games": [
@@ -266,6 +319,17 @@
       "Sparrow"
      ],
      "menu": "arena"
+    },
+    {
+     "name": "Burrow Run",
+     "mode": "BurrowRun",
+     "modeValue": 71,
+     "card": "ArcadeGameBurrowRun.asset",
+     "scene": "MinigameBurrowRun",
+     "vessels": [
+      "Meerkat"
+     ],
+     "menu": "arcade"
     },
     {
      "name": "Cleave",
@@ -561,7 +625,7 @@
      "card": "ArcadeGameWarpline.asset",
      "scene": "MinigameWarpline",
      "vessels": [
-      "Stoat"
+      "Meerkat"
      ],
      "menu": "arcade"
     },
@@ -584,6 +648,17 @@
      "scene": "MinigameWildlifeLiberation",
      "vessels": [
       "Sparrow"
+     ],
+     "menu": "arcade"
+    },
+    {
+     "name": "Wrasse Run",
+     "mode": "WrasseRun",
+     "modeValue": 68,
+     "card": "ArcadeGameWrasseRun.asset",
+     "scene": "MinigameWrasseRun",
+     "vessels": [
+      "Wrasse"
      ],
      "menu": "arcade"
     },

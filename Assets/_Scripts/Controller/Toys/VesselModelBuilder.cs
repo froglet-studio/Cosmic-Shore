@@ -135,8 +135,9 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>Whether this renderer is part of the ship hull we want to display.</summary>
-        static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
+        /// <summary>Whether this renderer is part of the ship hull we want to display. Public so every picture of a
+        /// ship - the Codex baker's included - drops the same skimmer sphere, trails and VFX.</summary>
+        public static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
         {
             if (mesh && PrimitiveMeshNames.Contains(mesh.name)) return false;
             return !ToyModelBuilder.AnyAncestorNameContains(node, prefabRoot, NonHullNameHints);

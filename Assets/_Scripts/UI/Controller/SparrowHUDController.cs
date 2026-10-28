@@ -22,8 +22,8 @@ namespace CosmicShore.UI
         // get GameObjectInjector.InjectRecursive at spawn (the Dolphin's HUD controller is the pattern).
         [Inject] GameDataSO _gameData;
 
-        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge and " +
-                 "its phase-transition marks. Resolved off the vessel if left empty.")]
+        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge, " +
+                 "its phase-transition marks and the spray's live cone. Resolved off the vessel if left empty.")]
         [SerializeField] private GunSprayAccuracy gunSprayAccuracy;
 
         [Header("Events")]
@@ -135,6 +135,18 @@ namespace CosmicShore.UI
             }
 
             view.SetGunHeat(gunSprayAccuracy.Heat01);
+
+            // The Space card's spray: the REAL half-angle and the profile's three caps (0 for a stage it does
+            // not author); the view maps them onto the card's readable angles.
+            if (profile == null)
+            {
+                view.SetGunSpread(0f, 0f, 0f, 0f);
+                return;
+            }
+            var stages = profile.Stages;
+            view.SetGunSpread(gunSprayAccuracy.HalfAngleDegrees, stages.MaxHalfAngleDegrees,
+                              stages.BlowsOut ? stages.BlowoutMaxHalfAngleDegrees : 0f,
+                              stages.Collapses ? stages.CollapseMaxHalfAngleDegrees : 0f);
         }
 
         private IEnumerator InitialAmmoPaintRoutine()
@@ -142,11 +154,11 @@ namespace CosmicShore.UI
             yield return null;
             view?.InitializeMissileIcon();
 
-            // Seed the charge gauge from the LIVE tank, not from a resting value: the pilot may
-            // arrive mid-match (a vessel swap, a replay) with a part-charged bay, and a gauge
-            // that starts at zero and then jumps on the next destroyed prism reads as a bug.
+            // Seed the bay from the LIVE tank, not from a resting value: the pilot may arrive
+            // mid-match (a vessel swap, a replay) with a part-charged bay, and a bay that starts
+            // empty and then jumps on the next destroyed prism reads as a bug.
             if (fireGunExecutor != null)
-                view?.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
+                HandleAmmoChanged(fireGunExecutor.Ammo01);
 
             _initialAmmoRoutine = null;
         }
@@ -176,6 +188,8 @@ namespace CosmicShore.UI
             var domain = ResolveDomainSignalColor();
             view.SetAfterburnerHullColor(domain);
             view.SetStanceColors(domain, ResolveShieldedColor());
+            view.SetGunSprayColor(domain);
+            view.SetBayColor(domain);
             view.SetBoosting(_vesselStatus.IsBoosting);
         }
 
@@ -196,9 +210,9 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// One ammo change, two readouts: the icon ladder says how many rockets the bay HOLDS,
-        /// the Charge card's gauge says how close the next one is. They are driven from the same
-        /// event so they can never disagree, and the gauge is asked of the executor rather than
+        /// One ammo change, two readouts on the Charge card's bay: how many rockets it HOLDS (solid),
+        /// and how close the next one is (the rocket after them, filling tail to nose). They are driven from the same
+        /// event so they can never disagree, and the charge is asked of the executor rather than
         /// derived here — the shot's cost is the weapon's business, and re-deriving it in the HUD
         /// is how a UI number drifts from the one the gun spends.
         /// </summary>
@@ -206,7 +220,7 @@ namespace CosmicShore.UI
         {
             if (!view) return;
 
-            // The COST comes from the executor, never from the HUD: the icon ladder counts
+            // The COST comes from the executor, never from the HUD: the bay counts
             // rockets, and a count re-derived here would drift from the number the gun spends
             // the moment the weapon's price changes (it just did - a base rocket is half what
             // it was, so the bay holds four).

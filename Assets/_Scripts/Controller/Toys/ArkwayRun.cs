@@ -389,6 +389,10 @@ namespace CosmicShore.Gameplay
                 EnsureObjectiveArrow();
                 _conveyor.CellRetired -= OnCellRetired;
                 _conveyor.CellRetired += OnCellRetired;
+                ArkHold.LocalNotice -= OnPayloadNotice;
+                ArkHold.LocalNotice += OnPayloadNotice;
+                ArkHold.LocalLine -= OnPayloadLine;
+                ArkHold.LocalLine += OnPayloadLine;
                 EnsureHud();
                 _hud.ShowBanner("STAY WITH THE ARK", BannerSeconds);
 
@@ -695,6 +699,33 @@ namespace CosmicShore.Gameplay
             if (pen) pen.SetSpawnerPaused(false);
         }
 
+        /// <summary>The local pilot's payload changed: show its authored line (an empty line shows nothing).</summary>
+        void OnPayloadNotice(PayloadNotice notice)
+        {
+            var cfg = ArkHold.Config;
+            string line = notice switch
+            {
+                PayloadNotice.Grabbed => cfg.GrabbedLine,
+                PayloadNotice.Released => cfg.ReleasedLine,
+                PayloadNotice.OutOfReach => cfg.OutOfReachLine,
+                PayloadNotice.HoldEmpty => cfg.HoldEmptyLine,
+                PayloadNotice.ArtifactTaken => cfg.ArtifactTakenLine,
+                PayloadNotice.ArtifactStowed => cfg.ArtifactStowedLine,
+                PayloadNotice.ArtifactDropped => cfg.ArtifactDroppedLine,
+                _ => null,
+            };
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, cfg.BannerSeconds);
+        }
+
+        void OnPayloadLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return;
+            EnsureHud();
+            _hud.ShowBanner(line, ArkHold.Config.BannerSeconds);
+        }
+
         void OnArkHullDestroyed()
         {
             EnsureHud();
@@ -979,6 +1010,8 @@ namespace CosmicShore.Gameplay
             DestroyObjectiveArrow();
 
             if (_conveyor) _conveyor.CellRetired -= OnCellRetired;
+            ArkHold.LocalNotice -= OnPayloadNotice;
+            ArkHold.LocalLine -= OnPayloadLine;
             _trailMarks.Clear();
             _primaryRollTo = _secondaryRollTo = null;
             FlushWithering();

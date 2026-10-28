@@ -976,6 +976,7 @@ MonoBehaviour:
     - 63
     - 64
     - 65
+    - 71
     - 66
     - 68
     - 56
@@ -8100,9 +8101,14 @@ MonoBehaviour:
     pilots: Stoat
   - mode: 65
     title: Warpline
-    tagline: Lay the poles. Warp the line. Fly it faster.
+    tagline: Bend the tunnel. Dig the line. Ride it out.
     objective: Time is everything
-    pilots: Stoat
+    pilots: Meerkat
+  - mode: 71
+    title: Burrow Run
+    tagline: Eight rings. Dig to every one.
+    objective: Lead runner home wins
+    pilots: Meerkat
   - mode: 66
     title: Thresher Time
     tagline: Plant the ball. Orbit it. Let go.

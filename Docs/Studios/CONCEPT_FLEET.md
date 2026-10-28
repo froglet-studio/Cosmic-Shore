@@ -634,26 +634,26 @@ with the Tide Run (`/arcadegame`) and the four abilities.
 Read from the 21 shipped element maps (`Assets/Resources/ElementalAbilityMaps/*.asset`) and the ten concept prototypes
 (Gibbon, Flea, Albatross, Remora, Dragonfly, Mole, Marlin, Eel, Octopus, Gecko). **Each zooid owns one element**, so
 the vessel still has the fleet's four: the Bell Space, the Sting Charge, the Bract Mass, the colony Time. Each zooid has
-a passive and two triggers; B calls the colony from any zooid (proposal; today LT calls it). The page carries the same
+a passive and two triggers; B calls the colony from any zooid (round 2; LT called it in round 1). The page carries the same
 table as data (`KIT` in `siphonophore-studio.js`, Vessel Config > Ability kit), each row marked **in the sim**, **in
 part** or **proposal**.
 
 | Part | Input | Ability | What it does | From | State |
 |---|---|---|---|---|---|
 | Bell (Space) | passive | Lantern | Lights every dark crystal in reach; Space x1 to x1.8 | Dolphin Echo Sight, Angler Paint | in the sim |
-| | RT | Pulse Jet | Hold to inhale, release to jet; on the beat of the last two pulses the chain grows x1.1 a pulse to x1.8; a pulse doubles the lantern for 1 s | Octopus | in part (tap pulse) |
+| | RT | Pulse Jet | Hold to inhale, release to jet; on the beat of the last two pulses the chain grows x1.1 a pulse to x1.8; a pulse doubles the lantern for 1 s | Octopus | in the sim (round 2) |
 | | LT | Slipstream | Hold to lead: the Sting and the Bract form up in its wake, one, two, three, drafting at its speed x1.3 | Remora, Jacks The Call | in the sim (round 2) |
 | | L5 | Beacon | A pulse lights the whole window | Dolphin Pilot Echo | in the sim |
 | Sting (Charge) | RT | Nematocyst Volley | Aimed venom to 160 u; breaks a lit crystal's husk (Charge x1 to x3 prisms a round), else smashes mass | Sparrow Pulsefire, Urchin Chain Spikes | in the sim |
-| | LT | Tentacle Lash | The Sting streams a tentacle of its trail; hold to coil (turn x2), let go to whip it straight, cutting mass; a rival hull struck loses petals, which spill as crystals | Eel, Thresher, Wrasse Kite Ram | proposal |
+| | LT | Tentacle Lash | The Sting streams a tentacle of its trail; hold to coil (turn x2), let go to whip it straight, cutting mass; a rival hull struck loses a petal, which spills as a crystal | Eel, Thresher, Wrasse Kite Ram | in the sim (round 2) |
 | | passive | Reel | A hit on a target over 120 u away pulls the Sting to it like a bungee: the slowest zooid catches up by hitting things | Gibbon, Shrike Void Sling | proposal |
 | | L5 | Contagion | A husk the venom opens poisons the next husk in the window | Manta Contagion, Urchin Overcharge | proposal |
 | Bract (Mass) | RT | Net Cast | Catches freed crystals in reach into the hold (3); Mass x1 to x1.6 | Jacks netting, Angler Lure | in the sim |
 | | LT | Bract Shell | Super-shielded plates, open ahead, clear the mass they meet; let go and they drop as danger prisms behind the hold | Orca Danger Shield, Rhino afterimages | in part (clears mass) |
 | | passive | Anchor | Stopped on mass it digs in: net reach x2, the others dock in half the time; the colony forms where it sits | Grizzly Dig In, Shrike Nest, Gecko | in part (gather at the Bract) |
-| | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in part (hold +1) |
+| | L5 | Trawl | The hold takes one more, and the net catches crystals a lashed rival sheds | Wrasse Crystal Steal, Squirrel Steal | in the sim (round 2) |
 | Colony (Time) | passive | Digest | One held crystal into the score every 4 s; Time x1 to x0.5 | its own | in the sim |
-| | Helm RT | Ram Spool | Hold to wind up; at full spool it runs red and a ram opens a wall cell and breaks shielded mass in one hit | Rhino Ramp Spool and Breaker, Thresher | in part (tap pulse) |
+| | Helm RT | Ram Spool | Hold to wind up: up to x1.6 speed, down to half the turn; at full spool it runs red and one ram opens a wall (three otherwise) | Rhino Ramp Spool and Breaker, Thresher | in the sim (round 2) |
 | | Helm LT | Scatter | Hold to split; let go and the three are flung x1.4 along the stick, each to its own next crystal | Remora sling, Gecko hop, Butterfly Fold | in part (hold to split) |
 | | Lance RT | Siphon Lance | Aimed hitscan to 140 u, cuts mass and wall cells | Shrike Void Lance, Serpent Sniper | in the sim |
 | | Ward LT | Colony Shell | The hull ploughs the mass it meets | Grizzly Rush, Brittle Star Speed | in the sim |
@@ -667,9 +667,8 @@ Shell's danger drop covers the docking; the Bell's pulse chain carries into the 
 on the window's three crystals.
 
 **Rules it keeps:** PvP is petals only (the lash takes petals, and every scored hit silences per `SILENCE.md`); one
-scaled parameter per element; the AI writes inputs only. **Decision needed (designer):** which proposals to fly next
-(suggested order: Slipstream, Tentacle Lash with Trawl, Pulse Jet's beat, Ram Spool), and whether B as the shared
-fuse call frees LT well enough on a phone.
+scaled parameter per element; the AI writes inputs only. **Flown in round 2** (11.5): Slipstream, Tentacle Lash with Trawl, Pulse Jet and Ram Spool, in that order. Still
+proposals: Reel, Contagion, Bract Shell's danger drop, Anchor, Scatter, Chain Wake.
 
 ### 11.5 Round 2: the kit flown, one ability at a time (2026-10-27, Yash: "do all recommended 1 by 1")
 
@@ -679,7 +678,7 @@ difference is the ability. Both controls (never fuse, always fused) still digest
 
 **1. Slipstream (the Bell's LT).** While the Bell holds LT it leads: a zooid in its wake (140 u long, 26 u wide), behind
 its place in the line (22 u x its number), may fly at the Bell's speed x1.3; at its place it holds the Bell's speed. A
-leading Bell turns at x0.7 and cannot pulse. The AI: a zooid whose next job is over 220 u away takes its place in the
+leading Bell turns at x0.7 (step 3 lets it jet while it leads). The AI: a zooid whose next job is over 220 u away takes its place in the
 line; the Bell leads while one does, and with nothing of its own to light it carries the line to the Sting's lit
 crystal (else the Bract's freed one). The fuse call moved from LT to **B** (keys H) for every zooid.
 
@@ -697,3 +696,189 @@ the fastest level (off, Hard and Medium tie on I1). Easy and Medium lose time wi
 crystals break the line. A rule where the Bell leads only with nothing of its own to light was tried and dropped (it
 sat inside the noise on every level). Also found and fixed: the AI Bract held RT down after a cast that missed, and the
 net only casts on a fresh press, so it never cast again (it stalled one Easy run at 6 crystals).
+
+**2. Tentacle Lash (the Sting's LT) and Trawl (Mass level 5).** The lab gained **rivals**: Game Config > Rivals (0 to 3,
+default 2), stand-ins in the Ruby, Gold and Blue domains that fly the course at 85 u/s carrying 8 petals each (a ring of
+small crystals round the hull, one per petal). They take no crystals, have no abilities and never strike back. The
+Sting streams a 60 u tentacle (its own path). Holding LT coils it: the turn doubles and the tentacle bunches to half.
+Letting go after at least 30% of a 0.6 s coil whips it straight from the hull toward its tip (60% to 100% of its length
+with the coil), cutting the neutral mass within 9 u and taking one petal from a rival within 13 u. The petal spills as
+a crystal that drifts for 25 s. With Trawl the Bract's net takes it too, and the colony digests it as a point toward the
+finish. The AI coils while a rival with petals is within 96 u, and lets go when the rival is on the tentacle's line.
+
+Also fixed in this step, because Slipstream made it four times worse: the AI flew straight at a crystal behind a closed
+wall and rammed the wall (244 wall contacts in the first 90 s of I1 Hard before this round, 1008 with Slipstream). A
+zooid whose path crosses a closed wall now aims just past the wall's nearest edge; a crystal lying in a wall's own
+plane (an earlier lap's crystal at the same anchor) is reached from its side. **These numbers supersede the Slipstream
+table above**, which was measured before the detour (8 seeds, mean and standard deviation):
+
+| Course, level | Old AI, no new abilities | Detour only | Slipstream + lash + detour |
+|---|---|---|---|
+| I1 Hard | 419 (sd 15) | 404 (2) | 344 (14) |
+| I1 Medium | 423 (17) | 412 (10) | 397 (16) |
+| I1 Easy | 458 (16) | 431 (14) | 430 (16) |
+| I2 Hard | 481 (7) | 479 (8) | 442 (34) |
+| I2 Medium | 492 (11) | 496 (11) | 491 (23), 1 run over the limit |
+| I2 Easy | 521 (15) | 521 (8) | 512 (31), 4 over the limit (24 to 29 of 30) |
+
+| Lash and Trawl (8 seeds) | I1 Hard | I1 Easy | I2 Hard |
+|---|---|---|---|
+| Mass 0, lash off | 336 | 436 | 443 |
+| Mass 0, lash on | 344 (0.5 hits a run) | 430 (1.1 hits) | 442 (0 hits) |
+| Mass 5, lash off | 350 | 418 | 473 |
+| Mass 5 (Trawl), lash on | 344 (0.6 stolen a run) | 421 (0.6 stolen) | 470 (0.1 stolen) |
+
+Found: the lash works, and costs nothing once the AI halves its stick while coiled (a coiled Sting turns twice as fast,
+and the AI's steering overshot: before that it cost about 50 s). But the AI lands about one lash in eight, so the
+Lash, Trawl, digest steal adds at most one crystal a run: rivals in a race rarely pass within the tentacle's reach.
+It is a person's ability for now, and a better AI rule (hunt a rival while in transit) is the next step if the steal is
+kept. **Mass level 5 is slower on I2** (473 against 443 for Hard, every Easy run over the limit): its extra hold slot lets
+the crew work past a walled crystal and fly back for it later. Fusing at a walled crystal whenever the hold carries
+anything was tried and was slower nearly everywhere, so it was dropped. **Decision needed (designer):** whether Trawl's
++1 hold stays, since it slows the loop it belongs to.
+
+**3. Pulse Jet (the Bell's RT).** The Octopus's breath on a zooid that has a cruise: RT held inhales (the Bell slows to
+x0.6 and charges over 0.7 s, the bell visibly swelling), letting go jets (boost 1 + 0.8 x charge x chain, held 1 s,
+then fading as every boost does) and flashes the lantern at twice its range for 1 s. A release within 15% of the last
+interval is on the beat: the chain grows x0.1 a pulse, to x1.8. The old tap pulse (x1.8 for 1 s every 3 s) is gone. The
+AI breathes while it travels (no crystal within 1.2 lantern ranges) on a 1.6 s tempo, inhaling for 72% of it; Easy and
+Medium let go up to their lab-only late press early or late (0.2 s and 0.1 s), which breaks the beat. **A leading Bell
+jets too**, so the line drafts on its beat: with the jet blocked while leading the AI Bell jetted 8 times a run and the
+jet changed nothing; allowed, it jets about 115 times and the whole line rides it.
+
+| 8 seeds | Tap pulse (step 2) | Pulse Jet, not while leading | Pulse Jet, leading too (shipped) |
+|---|---|---|---|
+| I1 Hard | 344 (sd 14) | 343 (11) | 333 (19); 42% of jets on the beat, chain up to 6 |
+| I1 Medium | 397 (16) | 408 (14) | 397 (11); 38% on the beat |
+| I1 Easy | 430 (16) | 441 (12) | 428 (16); 24% on the beat |
+| I2 Hard | 442 (34) | 445 (37) | 430 (31) |
+| I2 Medium | 491 (23), 1 over | 492 (19), 4 over | 479 (38), 1 over |
+| I2 Easy | 512 (31), 4 over | 488 (3), 6 over | 533, 6 over the limit |
+
+Found: the jet is worth about 10 s on I1 and I2 for Hard and is level with the tap pulse below that; its value is the
+skill it asks (the beat), not raw speed. The beat separates the levels as designed (Hard 42%, Easy 24% on the beat).
+I2 Easy sits on the 540 s limit with or without it.
+
+**4. Ram Spool (the colony's Helm RT).** The Rhino's ramp spool on the colony: Helm RT held winds it up over 2 s, its
+speed rising to x1.6 and its turn falling to half (a wound colony is stiff); let go and it unwinds at 1.5 a second. At
+full spool the float glows red, and the next ram opens the wall in one hit instead of three, spending the spool. The
+old ram pulse (x1.6 for 1 s every 2 s) is gone. The AI winds up whenever it is lined up within 10 degrees, and lets go
+to turn. A rule that wound up only on the run-in to a wall, and one lined up within 25 degrees, were tried; neither
+was better.
+
+Checked by hand (a scripted Helm flying straight at a wall from 200 u): RT held, the ram lands at full spool and the
+wall goes from 3 hits to open; RT off (the control), the ram leaves it at 2.
+
+| 8 seeds | Ram pulse (step 3) | Ram Spool (shipped) |
+|---|---|---|
+| I1 Hard | 333 (sd 19) | 338 (21) |
+| I1 Medium | 397 (11) | 405 (25) |
+| I1 Easy | 428 (16) | 423 (18) |
+| I2 Hard | 430 (31) | 423 (28) |
+| I2 Medium | 479 (38), 1 over | 494 (20), 1 over |
+| I2 Easy | 533, 6 over | 522 (10), 4 over |
+
+Found: the Ram Spool changes nothing measurable, and the AI never lands a red ram. The colony rams a wall about once a
+run, because the Lance opens a wall from 140 u in under a second (3 hits at 0.3 s), so the colony seldom touches one.
+**Decision needed (designer):** whether the ram should be the colony's way through a wall (a slower Lance, or walls the
+Lance cannot cut), or the Lance stays and the spool is only speed against steering.
+
+**Round 2 in one table** (8 seeds, the old AI with none of the four against the shipped build with all four):
+
+| | Old AI, none of the four | All four (shipped) |
+|---|---|---|
+| I1 Hard | 419 (sd 15) | 338 (21) |
+| I1 Medium | 423 (17) | 405 (25) |
+| I1 Easy | 458 (16) | 423 (18) |
+| I2 Hard | 481 (7) | 423 (28) |
+| I2 Medium | 492 (11) | 494 (20), 1 over the limit |
+| I2 Easy | 521 (15) | 522 (10), 4 over the limit |
+
+Most of the gain is Slipstream and the AI's wall detour (Hard on I1 is about 80 s faster). The levels now separate in
+order on I1 (Hard 338, Medium 405, Easy 423), which the old AI did not do. Never fusing and always fused still digest
+nothing on every course.
+
+## 12. The calm three (Level 1) and the Orca (2026-10-27)
+
+Yash, 2026-10-27: vessels for relaxed players, "a balance between how much brain effort they're gonna put versus how
+much relaxed they're gonna get", about 20 minutes a day; single vessels at Level 1, the Siphonophore at Level 2, "from
+simplicity to complexity", each with a story. Then, after hearing that Garrett is building the Orca: compare the three
+with the Orca and make them playable.
+
+**The ladder.** Level 1: one stick and one button (the Seahorse adds a second), one verb, learnt in a minute, mostly
+calm with one tense moment. Level 2: the Siphonophore, which asks for several Level 1 skills at once. Each calm vessel
+teaches one of them: the Moon Jelly the Bell's breath, the Sea Turtle riding a leader's wake, the Seahorse holding on
+and carrying (the Bract's job).
+
+### 12.1 The three, as built (pages `moonjelly.html`, `seaturtle.html`, `seahorse.html`; kinds `breath`, `tide`, `tend` in `studio-kinds.js`)
+
+| | Moon Jelly (the Breather) | Sea Turtle (the Wayfinder) | Seahorse (the Gardener) |
+|---|---|---|---|
+| Made from | Dolphin + Butterfly (breath from the Octopus prototype) | Urchin + Squirrel (riding from the Remora and Albatross prototypes) | Angler + Serpent |
+| Controls | one stick; hold LT to breathe in, let go to pulse | one stick; hold LT to tuck in | one stick; hold LT on a block to hold on; RT puffs |
+| Calm part | slow, steady breaths (3 s or more, each like the last) build a calm chain: longer glides, a wider glow (its reach for a crystal) | the course line is a tide: tuck in and it carries you | holding a plant: it grows a garden and calls your crystal in; a crystal it calls counts two |
+| Tense part | the Moonrise: with the moon full, one long breath (3.2 s) lights four times as wide for 3 s and the crystal swims to the light | the Rapids: by a block the tide runs faster and pulls you toward it; 30 u clean is a burst | a rival comes while you hold a plant: puff (slows it, shields the garden) and dart |
+| Element: Charge / Mass / Space / Time | Moonrise / push / glow / glide | Rapids burst / shell / tide sense / tuck | puff / growth / garden reach / dart |
+
+### 12.2 Measured (headless, the page's own `raceHeadless`, seeds 11 / 22 / 33, seconds to 24 crystals on I1, 30 on I2)
+
+| | I1 Hard / Medium / Easy | I2 Hard / Medium / Easy | Without its mechanic (I1, I2) | Tense share | Uses a run (I1) |
+|---|---|---|---|---|---|
+| Moon Jelly | 127 / 123 / 122 | 169 / 167 / 166 | does not finish (20 of 24; it only drifts) | 7-9% | 3 Moonrises |
+| Sea Turtle | 118 / 121 / 127 | 173 / 177 / 184 | 155, 218 | 4-5% | 11 clean Rapids bursts |
+| Seahorse | 155 / 161 / 164 | 185 / 190 / 194 | 179, 239 | 8-12% | 13 (darts and puffs) |
+
+For scale, the concept fleet on I1 Hard: the Remora 81, the Octopus 120, the Albatross 264, the Flea 279 (same tool).
+
+Found while building them (each fixed, each measured):
+- **The Moon Jelly's calm chain is worth about 45 s on I1** (164 s when every breath is rushed). **Its Moonrise costs
+  the AI about 9 s on I1** (118 s with the moon never filling). A stronger pull and a wider Moonrise were tried and were
+  slower still. Its levels sit inside the noise: a forgiving vessel. **Decision needed (designer):** keep the Moonrise
+  as the tense moment it is, or give it a reward a race can measure.
+- **The Sea Turtle scraped the course ribbon** while riding the tide on the line (90 bumps a run): the tide now runs
+  16 u above the ribbon. **Its clean run was a time** (0.8 s), which a tucked turtle crosses too fast to earn; it is a
+  distance now (30 u). The AI spreads its flippers near a rock: tucked it turns at half rate and cannot steer clear.
+- **The Seahorse's gardening was slower than swimming** (282 s against 179) until a called crystal counted two: the AI
+  spent 111 s flying to plants beside the course. The AI now grabs any block of a clump within its 30 u tail reach and
+  prefers plants near its path. It puffs only to defend a plant it holds (it had puffed at its rival 30% of the run).
+
+Not modelled: sound (the breath has no tone yet), the seeds the turtle carries, the creatures grazing a garden, a calm
+course of their own. The course is the Skim Race track, one crystal at a time.
+
+### 12.3 The Orca (Garrett's), side by side
+
+The Orca is Garrett's (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`; lab `Docs/Studios/CrewOfFourLab.html`,
+artifact https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb). One hull with four seats, always full (an AI takes every
+empty seat). It never splits; a gunner's missile is flown by wire, first person, which is the nearest it comes to a
+second body. Its numbers below are read from `OrcaCrewConfig.asset`, `Orca.prefab` and the lab's round 7 scorecard;
+nothing of it was changed here.
+
+| | Moon Jelly | Sea Turtle | Seahorse | Orca |
+|---|---|---|---|---|
+| Bodies | 1 | 1 | 1 | 1 hull, 4 seats (+ a flown missile per gunner) |
+| People | 1 | 1 | 1 | up to 4 (AI fills the rest) |
+| Level (this ladder) | 1 | 1 | 1 | 2 to 3 for the crew; each seat alone is about 1.5 |
+| Buttons per seat | 1 | 1 | 2 | helm 2 + two sticks; gunner 2 + aim |
+| Speed | 20 u/s drift, pulses to 220 | 25 u/s crawl, tide 60, tucked 90 | 48 u/s swim, darts x2.2 | the Sparrow x0.85 (throttle 21.25, minimum 8.5), turn x0.55 |
+| Main verb | breathe | ride a current | hold on and grow | fly and fight together |
+| Calm / tense | about 92 / 8 | about 95 / 5 | about 90 / 10 | combat throughout (not measured as calm) |
+| Elements | one ability each, all one pilot's | same | same | one seat each: helm Time, sniper Space, fast gun Mass, bomb Charge |
+| Measured | I1 122-127 s | I1 118-127 s | I1 155-164 s | lab round 7, I2 Hard, 12 seeds: Ring Race 219 pts, Breach 183, Anchorage 72, Broadside 50 |
+| State | a lab page | a lab page | a lab page | in Unity (Toybox Vessel Changer), a stub flown through round 7 |
+
+**What the Orca already gives the calm idea:**
+- Every empty seat is an AI, so a relaxed player can sit in one seat and still have a full ship.
+- Seats are elements (round 6): one person, one element, one job. That is the Level 1 shape inside a bigger vessel.
+- The fly-by-wire missile is a moment of focus that ends by itself (5 s, or a press).
+
+**What the calm three could offer the Orca** (proposals for Garrett; nothing here changes his vessel):
+1. **A rest phase.** The Seahorse's hold-on as the helm's: touch a block and the Orca docks (the Shrike already docks).
+   Docked, the gunners reload, and the pen's prisms grow into a garden round the hull. Undock to fight. That gives the
+   Orca the calm-then-tense rhythm the three are built on.
+2. **A breathing boost.** The Moon Jelly's breath as the helm's boost: slow, steady presses refill the tank faster, so
+   the calmest helm keeps the crew moving.
+3. **A current.** The Sea Turtle's tide, read by the helm: the hull rides a current and the gunners get a steady
+   platform (the lab already measures a gunner's view sway).
+
+**Decision needed (Yash and Garrett):** whether the calm ideas go into the Orca (Garrett's call), stay as three Level 1
+vessels, or both. The Orca is the vessel with an owner and a Unity build; the three are lab pages.

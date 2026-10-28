@@ -10,21 +10,32 @@ using CosmicShore.UI;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Arcade grid's SORT and FILTER (<see cref="ArcadeGridOrder"/>, Docs/MENU_REDESIGN_B.md section 85). The view
-    /// asks three questions about a game; these tests answer them by hand, so the rules are pinned without a scene.
+    /// The Arcade grid's order and its ELEMENT and VESSEL dropdowns (<see cref="ArcadeGridOrder"/>, Docs/MENU_REDESIGN_B.md
+    /// sections 85 and 97). The view asks two questions about a game; these tests answer them by hand, so the rules are
+    /// pinned without a scene.
     /// </summary>
     [TestFixture]
     public class ArcadeGridOrderTests
     {
         readonly List<SO_ArcadeGame> _made = new();
-        HashSet<string> _favourites, _unlocked;
+        HashSet<string> _favourites;
         Dictionary<string, Element> _genre;
 
-        SO_ArcadeGame Game(string name, int maxPlayers = 2)
+        readonly List<ScriptableObject> _vessels = new();
+
+        SO_ArcadeGame Game(string name, int maxPlayers = 2, params VesselClassType[] seats)
         {
             var g = ScriptableObject.CreateInstance<SO_ArcadeGame>();
             g.DisplayName = name;
             g.MaxPlayersAllowed = maxPlayers;
+            g.Vessels = new List<SO_Vessel>();
+            foreach (var cls in seats)
+            {
+                var v = ScriptableObject.CreateInstance<SO_Vessel>();
+                v.Class = cls;
+                _vessels.Add(v);
+                g.Vessels.Add(v);
+            }
             _made.Add(g);
             return g;
         }
@@ -33,7 +44,6 @@ namespace CosmicShore.Tests
         public void SetUp()
         {
             _favourites = new HashSet<string> { "Zeta" };
-            _unlocked = new HashSet<string> { "Alpha", "Zeta" };
             _genre = new Dictionary<string, Element> { ["Alpha"] = Element.Mass, ["Mid"] = Element.Time, ["Zeta"] = Element.Mass };
         }
 
@@ -41,58 +51,40 @@ namespace CosmicShore.Tests
         public void TearDown()
         {
             foreach (var g in _made) Object.DestroyImmediate(g);
+            foreach (var v in _vessels) Object.DestroyImmediate(v);
             _made.Clear();
+            _vessels.Clear();
         }
 
-        List<string> Names(ArcadeGridSort sort, ArcadeGridFilter filter, System.Func<SO_ArcadeGame, bool> always = null) =>
-            ArcadeGridOrder.Apply(new[] { Game("Mid", 1), Game("Zeta"), Game("Alpha") }, sort, filter,
-                    g => _favourites.Contains(g.DisplayName), g => _unlocked.Contains(g.DisplayName),
+        List<string> Names(Element element, VesselClassType vessel = VesselClassType.Any, System.Func<SO_ArcadeGame, bool> always = null) =>
+            ArcadeGridOrder.Apply(new[] { Game("Mid", 1, VesselClassType.Sparrow), Game("Zeta"), Game("Alpha", 2, VesselClassType.Dolphin, VesselClassType.Sparrow) },
+                    element, vessel, g => _favourites.Contains(g.DisplayName),
                     (g, e) => _genre.TryGetValue(g.DisplayName, out var x) && x == e, always)
                 .Select(g => g.DisplayName).ToList();
 
         [Test]
-        public void TheDefaultIsTheOldOrder_FavouritesThenAToZ() =>
-            Assert.AreEqual(new[] { "Zeta", "Alpha", "Mid" }, Names(ArcadeGridSort.FavouritesFirst, ArcadeGridFilter.All));
+        public void FavouritesComeFirst_ThenAToZ() =>
+            Assert.AreEqual(new[] { "Zeta", "Alpha", "Mid" }, Names(Element.None));
 
         [Test]
-        public void AToZ_IgnoresFavourites() =>
-            Assert.AreEqual(new[] { "Alpha", "Mid", "Zeta" }, Names(ArcadeGridSort.AToZ, ArcadeGridFilter.All));
-
-        [Test]
-        public void UnlockedFirst_PutsLockedGamesLast() =>
-            Assert.AreEqual(new[] { "Alpha", "Zeta", "Mid" }, Names(ArcadeGridSort.UnlockedFirst, ArcadeGridFilter.All));
-
-        [Test]
-        public void Filters_KeepOnlyTheirGames()
+        public void TheElementDropdown_KeepsItsGenre()
         {
-            Assert.AreEqual(new[] { "Zeta" }, Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Favourites));
-            Assert.AreEqual(new[] { "Alpha", "Zeta" }, Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Unlocked));
-            Assert.AreEqual(new[] { "Mid" }, Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Solo));
-            Assert.AreEqual(new[] { "Alpha", "Zeta" }, Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Multiplayer));
-            Assert.AreEqual(new[] { "Alpha", "Zeta" }, Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Mass));
-            Assert.AreEqual(new[] { "Mid" }, Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Time));
-            Assert.IsEmpty(Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Charge));
+            Assert.AreEqual(new[] { "Zeta", "Alpha" }, Names(Element.Mass));
+            Assert.AreEqual(new[] { "Mid" }, Names(Element.Time));
+            Assert.IsEmpty(Names(Element.Charge));
         }
 
         [Test]
-        public void EveryElementFilterAsksForItsOwnElement()
+        public void TheVesselDropdown_KeepsTheGamesThatSeatIt()
         {
-            // Charge..Time map onto Element by offset; a reordered enum would send a filter to the wrong element.
-            Assert.AreEqual((int)Element.Time - (int)Element.Charge, ArcadeGridFilter.Time - ArcadeGridFilter.Charge);
-            foreach (var e in new[] { Element.Charge, Element.Mass, Element.Space, Element.Time })
-            {
-                var asked = new List<Element>();
-                ArcadeGridOrder.Apply(new[] { Game("Any") }, ArcadeGridSort.AToZ,
-                    ArcadeGridFilter.Charge + ((int)e - (int)Element.Charge),
-                    _ => false, _ => true, (_, x) => { asked.Add(x); return true; });
-                Assert.AreEqual(new[] { e }, asked);
-            }
+            Assert.AreEqual(new[] { "Alpha", "Mid" }, Names(Element.None, VesselClassType.Sparrow));
+            Assert.AreEqual(new[] { "Alpha" }, Names(Element.None, VesselClassType.Dolphin));
+            Assert.AreEqual(new[] { "Alpha" }, Names(Element.Mass, VesselClassType.Sparrow));   // both at once
         }
 
         [Test]
-        public void AGuidedCardIsNeverFilteredOut() =>
-            Assert.AreEqual(new[] { "Mid", "Zeta" },
-                Names(ArcadeGridSort.AToZ, ArcadeGridFilter.Favourites, g => g.DisplayName == "Mid"));
+        public void AGuidedGame_IsNeverFilteredOut() =>
+            Assert.AreEqual(new[] { "Mid" }, Names(Element.Charge, VesselClassType.Any, g => g.DisplayName == "Mid"));
     }
 }
 #endif

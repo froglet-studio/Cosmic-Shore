@@ -25,6 +25,14 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Store_TopsOutAtFive_AndReadsAnOldHigherLevelAsFive()
+        {
+            // Section 90 (Shombith 2026-10-27: "Max level 5"): five white petals is the top.
+            Assert.AreEqual(5, HangarUpgradeStore.MaxLevel);
+            Assert.AreEqual(5, HangarUpgradeStore.Shown(8), "a level bought before the cap reads 5");
+        }
+
+        [Test]
         public void Store_FirstUpgradeCostsTheSecondLevel()
         {
             // The owner's price: 100 x the level being bought. From the start level that is level 2.

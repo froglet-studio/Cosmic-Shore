@@ -8,7 +8,8 @@ What it writes (each idempotent; `--check` fails if any is stale):
 
   1. Assets/_SO_Assets/Environment/OmniCombine/OmniCombineConfig.asset - the OmniCombineConfigSO the converter
      plays: the combine data (OmniCombineData.json, from author_omni_combine_asset.py), the crystals' shipped
-     materials, and the per-play ranges ("separate and slow": the next crystal sets off as the last lands).
+     materials, the palette (each crystal flies in its own shade of lime, ElementalCrystalColors, and lands in the
+     omni's), and the per-play ranges ("separate and slow": the next crystal sets off as the last lands).
   2. The .meta of each new script (deterministic guids, so a re-run never re-mints one).
   3. Assets/_Scenes/Menu_Main.unity:
        - ScreenSwitcher.disabledScreens [ARK, PORT] -> [PORT]: the Ark screen opens.
@@ -45,6 +46,7 @@ TRI_MESH = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalTriangles.asset")
 DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
 CADENCE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniCrystalCadence.asset")
 CHARGE_ARCS_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalChargeArcsProfile.asset")
+PALETTE = os.path.join(ROOT, "Assets", "_SO_Assets", "Color Palettes", "OriginalColorSetSO.asset")
 SCRIPTS = {
     "OmniCombineCore": "Assets/_Scripts/Utility/OmniCombineCore.cs",
     "OmniCombineMotion": "Assets/_Scripts/Utility/OmniCombineMotion.cs",
@@ -65,12 +67,12 @@ DISABLED_BEFORE, DISABLED_AFTER = "0100000003000000", "03000000"   # [ARK=1, POR
 
 
 def ark_open(switcher_doc):
-    """ARK out of disabledScreens and PORT still in it. Other screens may be locked beside PORT (CODEX, section 84 of
-    Docs/MENU_REDESIGN_B.md), so the list is read, not matched whole."""
+    """ARK out of disabledScreens. Other screens may be locked or open beside it (CODEX, section 84 of
+    Docs/MENU_REDESIGN_B.md; PORT opened in section 90), so the list is read, not matched whole."""
     import re as _re
     m = _re.search(r"^  disabledScreens: ([0-9a-f]*)$", switcher_doc, _re.M)
     ids = [int.from_bytes(bytes.fromhex(m.group(1)[i:i + 8]), "little") for i in range(0, len(m.group(1)), 8)] if m else []
-    return 1 not in ids and 3 in ids
+    return 1 not in ids
 # The converter's own documents: a readable family, unique in the file, inside a signed int64.
 NEW_GO, NEW_RT, NEW_VIEW = "7700130000000000001", "7700130000000000002", "7700130000000000003"
 INT64_MAX = 9223372036854775807
@@ -160,7 +162,10 @@ def config_asset(guids):
              # Omni Motion Lab round 5 (2026-10-13): the woken omni and the Charge light are the game's.
              f"  cadence: {{fileID: 11400000, guid: {meta_guid(CADENCE)}, type: 2}}",
              f"  chargeArcs: {{fileID: 11400000, guid: {meta_guid(CHARGE_ARCS_PROFILE)}, type: 2}}",
-             f"  omniArcsMaterial: {mat('OmniChargeArcs')}"]
+             f"  omniArcsMaterial: {mat('OmniChargeArcs')}",
+             # 2026-10-27: each crystal flies in its own shade of lime (the palette's ElementalCrystalColors) and lands in
+             # the omni's.
+             f"  palette: {{fileID: 11400000, guid: {meta_guid(PALETTE)}, type: 2}}"]
     lines += [f"  {k}: {v}" for k, v in CONFIG_VALUES]
     return "\n".join(lines) + "\n"
 
@@ -297,7 +302,7 @@ def planned():
     fields = set(serialized_fields(os.path.join(ROOT, SCRIPTS["OmniCombineConfigSO"])))
     keys = {"combineData", "shellMaterial", "omniMaterial", "massMaterial",
             "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile", "cadence", "chargeArcs",
-            "omniArcsMaterial"} | {k for k, _ in CONFIG_VALUES}
+            "omniArcsMaterial", "palette"} | {k for k, _ in CONFIG_VALUES}
     if fields != keys:
         raise SystemExit(f"OmniCombineConfig keys and OmniCombineConfigSO's fields disagree: "
                          f"asset-only {sorted(keys - fields)}, script-only {sorted(fields - keys)}")
@@ -378,7 +383,7 @@ def self_test():
     validate_scene(base, after, g)
     check("the base scene edits and validates", True)
     check("editing an edited scene changes nothing", edit_scene(after, g) == after)
-    check("ARK is open and PORT still closed", f"disabledScreens: {DISABLED_AFTER}\n" in after and DISABLED_AFTER == "03000000")
+    check("ARK is open", ark_open(docs(after)[SWITCHER][1]))
     check("the new fileIDs fit a signed int64", all(int(f) <= INT64_MAX for f in (NEW_GO, NEW_RT, NEW_VIEW)))
     extra = after + "--- !u!1 &424243\nGameObject:\n  m_Name: Stray\n"
     check("a document added beside the converter's three is refused", refused(lambda: validate_scene(base, extra, g)))

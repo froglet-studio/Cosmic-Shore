@@ -1,0 +1,158 @@
+{
+ "about": "Pilots and artifacts: the ONE spec. Tools/Build/author_pilot_assets.py writes the Unity assets from it (--check is the drift gate). Design: Docs/Pilots/CALLSIGNS.md (one pilot per callsign, any vessel; Garrett 2026-10-27) and Docs/Pilots/ARTIFACTS.md (an artifact is a payload transformation with four element tracks, 0-10, a twist at 5; no vessel class appears in an artifact). Ids are saved by players: never rename one. Text is printable ASCII (the UI font has no other glyphs).",
+ "slotsPerVessel": 1,
+ "pilots": [
+  {
+   "vision": 1
+  },
+  {
+   "vision": 2
+  },
+  {
+   "vision": 3
+  },
+  {
+   "vision": 4
+  },
+  {
+   "vision": 5
+  },
+  {
+   "vision": 6
+  },
+  {
+   "vision": 7
+  },
+  {
+   "vision": 8
+  },
+  {
+   "vision": 9
+  },
+  {
+   "vision": 10
+  },
+  {
+   "vision": 11
+  },
+  {
+   "vision": 12
+  },
+  {
+   "vision": 13
+  },
+  {
+   "vision": 14
+  },
+  {
+   "vision": 15
+  },
+  {
+   "vision": 16
+  },
+  {
+   "vision": 17
+  },
+  {
+   "vision": 18
+  }
+ ],
+ "artifacts": [
+  {
+   "id": "artifact.javelin",
+   "name": "Javelin",
+   "transform": "Javelin",
+   "description": "Throws the payload down your heading. It cracks every rival super-shield along its line and bursts where it stops.",
+   "transformTuning": {
+    "speed": 260,
+    "lingerPulseSeconds": 0.5
+   },
+   "tracks": [
+    {
+     "element": "Mass",
+     "label": "line width",
+     "atZero": 4,
+     "atTen": 16,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "Its final burst reaches twice as far."
+    },
+    {
+     "element": "Space",
+     "label": "range",
+     "atZero": 150,
+     "atTen": 500,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It pierces: it never stops for what it cracks."
+    },
+    {
+     "element": "Time",
+     "label": "linger seconds",
+     "atZero": 0,
+     "atTen": 4,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "The whole line lingers, cracking what is rebuilt along it."
+    },
+    {
+     "element": "Charge",
+     "label": "cracks before it stops",
+     "atZero": 1,
+     "atTen": 6,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It cracks ordinary shields too."
+    }
+   ]
+  },
+  {
+   "id": "artifact.aegis",
+   "name": "Aegis",
+   "transform": "Aegis",
+   "description": "Release the payload beside your Ark and it super-shields the Ark's hull for a while, guarding everything aboard.",
+   "transformTuning": {
+    "reraiseDelay": 3,
+    "notHomeLine": "AEGIS - RELEASE IT BESIDE YOUR ARK"
+   },
+   "tracks": [
+    {
+     "element": "Mass",
+     "label": "hull covered",
+     "atZero": 0.3,
+     "atTen": 0.8,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It covers the whole hull."
+    },
+    {
+     "element": "Space",
+     "label": "release reach",
+     "atZero": 120,
+     "atTen": 320,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "It reaches home from anywhere."
+    },
+    {
+     "element": "Time",
+     "label": "seconds",
+     "atZero": 8,
+     "atTen": 40,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "When it ends it leaves an ordinary shield behind."
+    },
+    {
+     "element": "Charge",
+     "label": "re-raises",
+     "atZero": 0,
+     "atTen": 3,
+     "baseCost": 2,
+     "costStep": 1,
+     "twist": "A cracked plate re-raises at once."
+    }
+   ]
+  }
+ ]
+}

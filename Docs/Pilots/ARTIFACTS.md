@@ -1,7 +1,51 @@
 # Artifacts and the payload: what a squad fights over
 
-**Status: THE ARTIFACT CONCEPT** (Garrett, 2026-10-27, rev 2). Design only: no payload or artifact code exists on
-`bleeding-edge`. It is the partner of the pilot concept, [`CALLSIGNS.md`](CALLSIGNS.md).
+**Status: THE ARTIFACT CONCEPT** (Garrett, 2026-10-27, rev 2). It is the partner of the pilot concept,
+[`CALLSIGNS.md`](CALLSIGNS.md).
+
+**Built so far (`claude/squad-payload-pilots-artifacts`, 2026-10-27, unverified in the editor):** the plain payload
+(§9 step 1) in the Wander toy's "With Ark". `ArkHold` (`Assets/_Scripts/Controller/Payload/`) hands out six real hull
+prisms per payload (`Ark.TakeHullPrisms`, never the last dozen); `PayloadCarrier`, ensured on every vessel by
+`VesselController.Initialize`, takes and releases it on `InputEvents.PayloadAction` (RB / E); the burst runs
+`PayloadPrismEffectSO`s from `Resources/PayloadConfig` (written by `Tools/Build/author_payload_assets.py`), and the
+plain one, `PayloadCrackPrismEffectSO`, shares `SuperShieldCrack` with the Grizzly sniper. Hand tests:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The plain payload on RB". **Squad = domain** for now: a vessel takes payloads
+only from its own domain's Ark. The Ark is the local toy's, so the hold arbitrates on the machine that holds it; a
+networked Ark (Voyages, §8.5) makes the hold a server object.
+
+**The fall (§8.4), also built 2026-10-27, unverified in the editor.** The hold carries artifacts by id (the id
+`SquadSlot.ArtifactId` names on Shombith's branch; no second artifact type). When the last hull prism goes,
+`ArkFall` credits whoever destroyed THAT prism (`Prism.DestroyerName`) and moves everything aboard to that squad's
+standing Ark in one step. A creature kill, an unknown force, the Ark's own squad, or a raider with no Ark here earns
+nothing, and the artifacts spill as `ArtifactPickup`s (not mass: fauna cannot eat them) that anyone takes with RB,
+carries, and stows with RB beside their own Ark. A pickup is a scene root, so uncollected ones die with the instance;
+`ArtifactPickup.StrikeAll` is there for a mode whose scene outlives it. Until squad slots load artifacts (§8.2), a
+tester puts ids aboard with `PayloadConfig`'s Test Cargo (ships empty). Hand tests: "The Ark's fall" in the checklist.
+
+**Javelin and Aegis (§9 step 2), built 2026-10-27, unverified in the editor.** `ArtifactSO` is now a payload
+transformation (`PayloadTransformSO`: `JavelinTransformSO`, `AegisTransformSO`, `Assets/_Scripts/Controller/Payload/Transforms/`)
+with four element tracks (`ArtifactTrack`: a value at 0 and at 10, a cost, a twist line at 5) and two empty sounds. No
+artifact carries a vessel class (the catalog's `Validate` and `author_pilot_assets.py` both refuse one). A vessel's slotted
+artifact (`PilotLoadoutStore`, one slot, read in a match through `VesselPilotLoadout`) loads every payload that player
+grabs; RB then releases it through the transformation instead of the plain burst. A refused release (an Aegis away
+from home) keeps the parcel on the hull and shows its authored line. The track levels and crystal balances live on the
+device for now (`PilotLoadoutStore`, the stand-in for the profile, §10). Numbers: `Docs/Pilots/pilots_and_artifacts.json`.
+Hand tests: "Javelin and Aegis" in the checklist.
+
+**Upgrades (§9 step 4), built 2026-10-27, unverified in the editor.** The Ark has an ARTIFACTS tab beside the
+Converter and Squads (`ArkArtifactsPage`, written by `author_menu_ark.py`): the player's artifacts, the picked one's four
+tracks (value now and next, the twist, dim until level 5), RAISE in the track's own crystals and OMNI to pay in omni
+crystals instead (always the player's pick). The crystals are the profile's own balances (`PlayerDataService`'s
+elemental crystals and the omni balance, Shombith's section 97), so nothing new goes to the backend; **the track
+levels are still on the device** (`PilotLoadoutStore`, PlayerPrefs) until the profile carries them, which is
+Shombith's call. Dev: FrogletTools > Pilots > Grant 20 Crystals / Reset Every Artifact Track. Hand tests: "The Ark's
+ARTIFACTS tab" in the checklist.
+
+**Shombith's branch merged (Garrett, 2026-10-27: "it should merge and build but throw anything out that conflicts
+with what we have decided here").** Kept: the saved squads, `SquadSlot`, the cloud repository, `VesselKeyword` /
+`VesselRequirement`, the Hangar PILOTS and ARTIFACTS tabs, `NetPilot` / `NetArtifacts`. Thrown out: the 45 numeric
+artifacts and their ranks and stats, the 40 named pilots and the ability each rewrote (the Tomahawk throw), the
+default "base kit" pilots and `ElementalBoost`. `Docs/Pilots/PILOTS_AND_ARTIFACTS.md` is superseded.
 
 **Decided since (Garrett, 2026-10-27):** one Ark per squad of three vessels; an Ark felled by fauna spills its
 artifacts for anyone, and uncollected ones are lost when the instance expires; the RB abilities moved to Y, so RB is
@@ -15,9 +59,8 @@ free for the payload.
 
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §3 (2026-10-12): an artifact as a quantitative "fifth knob" on the vessel.
-- The 45 quantitative artifacts on Shombith's in-flight branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26). **That
-  branch is not touched.** Its `ArtifactSO`, catalog and the saved squads' artifact id are what this is built on.
-  What becomes of its roster is for Garrett and Shombith (§10).
+- The 45 quantitative artifacts on Shombith's branch `claude/pensive-dijkstra-qxoxo0` (2026-10-26). Its `ArtifactSO`,
+  catalog and the saved squads' artifact id are what this is built on; the roster itself is gone (above).
 
 **Garrett's brief (2026-10-27):**
 
@@ -196,6 +239,10 @@ super-shielded, and GALLEON shows Arks.
    shipped empty.
 9. Ownership is server-authoritative: grabs, an Ark's fall, the transfer and extraction are arbitrated by the server,
    like the arena's lobby hull claim.
+10. Each vessel has its own pilot and its own artifact (Garrett, 2026-10-27): no two vessels in a squad share either.
+    Every vessel needs a pilot (an unset seat flies the hull's first offered pilot); an empty artifact slot is fine.
+11. Arena modes do not support artifacts; voyages support them but do not require one (Garrett, 2026-10-27). A vessel
+    in an arena match (`SO_ArcadeGame.ArenaRules`) loads no artifact, so its payloads are plain.
 
 ## 8. How to build it
 
@@ -216,8 +263,13 @@ Built on the types from `claude/pensive-dijkstra-qxoxo0` once they land, never b
    backend, so it goes through Shombith. The Ark screen gets an artifact panel beside the Converter.
 4. **The fall.** When `Ark` dies, the hold's contents move to the credited squad's Ark, server-side, in one step. With
    no squad to credit (fauna), they spawn as `ArtifactPickup`s that the instance deletes, uncollected, when it ends.
-5. **The voyage.** Vaults, the hold and extraction belong to the voyage mode built on the Arkway (`ECOSYSTEM.md` §41),
-   through `/arcadegame`'s recipe.
+5. **Voyages.** Vaults, hunting and extraction belong to Voyages, not to the Arkway. Garrett (2026-10-28): voyages
+   replace missions as the fourth game location after Toybox, Arcade and Arena, and they are the game's culminating
+   experience. Squads travel between specific locations on a shared galactic map (the HyperSea) and have unique
+   experiences there. "Galactic traffic control" puts squads that meet into managed peer-to-peer instances that make
+   sense for both sides' missions. The Arkway (`ECOSYSTEM.md` §41, `Docs/ToySystem/ARKWAY_PLAN.md`) is a toy that also
+   uses the Ark: the most voyage-like toy, a taste of a freestyle voyage, not the voyage itself. Voyages need their own
+   plan: the map, the locations, traffic control and the server-owned Ark. Nothing for Voyages is built yet.
 6. **`/verify-unity`** before any C# commit (LOCKED).
 
 ## 9. Order
@@ -228,14 +280,13 @@ The session that builds it starts from `Docs/prompts/PILOTS_ARTIFACTS_PAYLOAD_BU
 2. Two artifacts on any vessel: Javelin (offence) and Aegis (defence).
 3. An Ark's fall transferring its hold.
 4. Element tracks and crystal spending, once per-element balances exist.
-5. Vaults and extraction in a voyage.
+5. Vaults and extraction in Voyages (the fourth location, §8.5), once Voyages have a plan.
 
 ## 10. Open decisions
 
 | Decision | Who decides |
 |---|---|
 | Singularity moving super-shielded mass, an exception to *Prism movement* | Garrett, through the fundamentals-curation process |
-| What becomes of the 45 quantitative artifacts and the Hangar ARTIFACTS tab on `claude/pensive-dijkstra-qxoxo0` | Garrett and Shombith, together |
-| Per-element crystal balances and artifacts on the player profile | Shombith (backend) |
+| Artifact track levels on the player profile (on the device until then: `PilotLoadoutStore`; the crystals already are) | Shombith (backend) |
 | Thieves hoarding artifacts | the ecology owner (ecology is LOCKED: `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`) |
 | An artifact sight among the pilot callsigns | Garrett, through the fundamentals-curation process |

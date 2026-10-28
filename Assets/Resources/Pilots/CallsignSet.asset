@@ -1,0 +1,242 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 247433c0ac6347419a308e8980804cc6, type: 3}
+  m_Name: CallsignSet
+  m_EditorClassIdentifier: 
+  callsigns:
+  - sight: 1
+    word: ENSIGN
+    meaning: 'Your domain''s mass: what is yours to defend, and the gaps in it.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 2
+    word: MANGER
+    meaning: The mass cluster the fauna are heading for.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 3
+    word: ANVIL
+    meaning: Every Mass crystal.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 4
+    word: VOLT
+    meaning: Every Charge crystal.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 5
+    word: ZODIAC
+    meaning: Every Space crystal.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 6
+    word: SUNDIAL
+    meaning: Every Time crystal.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 7
+    word: OPAL
+    meaning: Every Omni crystal.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 8
+    word: RAMPART
+    meaning: Every shielded prism.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 9
+    word: CITADEL
+    meaning: 'Every super-shielded prism: what a payload is for.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 10
+    word: HORNET
+    meaning: 'Every danger prism: the mass that burns your petals.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 11
+    word: IVY
+    meaning: Every plant.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 12
+    word: TALON
+    meaning: Every predator.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 13
+    word: DOE
+    meaning: Every herbivore.
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 14
+    word: WINGMAN
+    meaning: 'Every vessel on your side, through mass.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 15
+    word: BANDIT
+    meaning: 'Every opposing vessel, through mass.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 16
+    word: NEEDLE
+    meaning: 'Every ring that activates something: gates, Scarab switches, goals.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 17
+    word: GALLEON
+    meaning: 'The Arks, and the payload aboard.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sight: 18
+    word: FLUME
+    meaning: 'Every soliton, whoever made it: where it is and where it leads.'
+    glyph: {fileID: 0}
+    plateGlyph: {fileID: 0}
+    openSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  fadeInSeconds: 0.25
+  fadeOutSeconds: 0.35
+  suppressSaturation: -70
+  suppressExposure: -1
+  volumePriority: 50
+  crystalMarkRadius: 6
+  vesselMarkRadius: 12
+  crystalMarkColor: {r: 1, g: 1, b: 1, a: 1}
+  markIntensity: 1.2
+  markMinScreenRadius: 0.02
+  unassignedSight: 0

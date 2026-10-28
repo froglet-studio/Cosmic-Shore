@@ -29,6 +29,11 @@ namespace CosmicShore.UI
     /// CONVERT) is an authored prefab (<c>Tools/Build/author_menu_ark.py</c>) this view drives through the
     /// fields under "Style-B overlay"; with no CONVERT button wired it falls back to the first cut's
     /// code-built title and button (<c>Tools/Build/author_elemental_converter.py</c>).</para>
+    ///
+    /// <para><b>The converter is one of the Ark's tabs</b> (CONVERTER, SQUADS, DECOR: <see cref="ArkTabsView"/>, in the
+    /// overlay). This view is still the screen's one <see cref="IScreen"/>, so it forwards enter and exit to the tabs, and
+    /// while another tab is up it hides the picture and stops rendering it, as it does when the player leaves the
+    /// screen.</para>
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public sealed class ElementalConverterView : MonoBehaviour, IScreen
@@ -124,6 +129,12 @@ namespace CosmicShore.UI
         [Tooltip("Pops the omni in as it forms (ceremony). Optional.")]
         [SerializeField] KitEntrance omniPop;
 
+        [Header("Ark tabs (optional)")]
+        [Tooltip("The Ark's tab row. Empty finds the one in the overlay; with none, the converter is the whole screen.")]
+        [SerializeField] ArkTabsView arkTabs;
+        [Tooltip("The converter's own tab in that row.")]
+        [SerializeField, Min(0)] int converterTab;
+
         const float OmniDimAlpha = 0.35f;
         const int Elements = 4;
 
@@ -140,16 +151,26 @@ namespace CosmicShore.UI
         RenderTexture _target;
         OmniCombinePlayer _player;
         bool _active;
+        bool _pageShown = true;
         float _orbit, _frame;
 
         void Awake()
         {
+            // The tabs first: the picture BuildUi makes starts hidden when another tab is already up.
+            if (!arkTabs) arkTabs = GetComponentInChildren<ArkTabsView>(true);
+            if (arkTabs)
+            {
+                arkTabs.Changed += HandleTabChanged;
+                _pageShown = arkTabs.Current < 0 || arkTabs.IsShown(converterTab);
+            }
             BuildUi();
         }
 
         public void OnScreenEnter()
         {
             _active = true;
+            if (arkTabs) arkTabs.OnScreenEnter();
+            if (!_pageShown) return;
             if (!EnsureStage()) return;
             // Arriving shows the four idling, waiting to be converted; a finished combine plays again.
             _player.Begin(convert: false);
@@ -165,7 +186,28 @@ namespace CosmicShore.UI
         public void OnScreenExit()
         {
             _active = false;
+            if (arkTabs) arkTabs.OnScreenExit();
             ReleaseTarget();
+        }
+
+        // Another tab is up: the picture goes with the converter's overlay, and its target is let go as on exit.
+        void HandleTabChanged(int tab)
+        {
+            bool shown = tab == converterTab;
+            if (shown == _pageShown) return;
+            _pageShown = shown;
+            if (_surface) _surface.enabled = shown;
+            if (!shown)
+            {
+                ReleaseTarget();
+                return;
+            }
+            if (_active && EnsureStage())
+            {
+                _frame = 0f;
+                _phase = Phase.None;
+                DrawOverlay();
+            }
         }
 
         void OnDisable()
@@ -174,7 +216,11 @@ namespace CosmicShore.UI
             ReleaseTarget();
         }
 
-        void OnDestroy() => ReleaseStage();
+        void OnDestroy()
+        {
+            if (arkTabs) arkTabs.Changed -= HandleTabChanged;
+            ReleaseStage();
+        }
 
         /// <summary>The CONVERT button: sends the four idling crystals in, or plays the whole combine again.</summary>
         public void Convert()
@@ -189,7 +235,7 @@ namespace CosmicShore.UI
 
         void LateUpdate()
         {
-            if (!_active || !_player) return;
+            if (!_active || !_pageShown || !_player) return;
             float dt = Time.unscaledDeltaTime;
             // Pose first (the Mass depth effect reads last frame's camera, which nothing can see), then frame it.
             _player.Tick(dt, _camera.transform.position);
@@ -379,6 +425,7 @@ namespace CosmicShore.UI
             _surface = picture.gameObject.AddComponent<RawImage>();
             _surface.raycastTarget = false;
             _surface.color = Color.white;
+            _surface.enabled = _pageShown;
 
             if (convertButton)
             {

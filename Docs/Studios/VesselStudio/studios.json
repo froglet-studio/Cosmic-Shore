@@ -58,9 +58,9 @@
       "id": "stoat",
       "name": "Stoat",
       "file": "stoat.html",
-      "kind": "design studio - round 25",
-      "chip": "design studio · round 25",
-      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and three modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it), Time (the catch sling, timed at 90°) and Gate (a one-thumb wormhole slingshot: the left stick flies, the grid on your nose is the tunnel the right trigger would form, the right stick bends it and LT shortens it; pull RT and ride it - up to 120° round - and come out with the speed you went in with; no black or white hole, and everyone else sees the tube only as warped space). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
+      "kind": "design studio - round 28",
+      "chip": "design studio · round 28",
+      "summary": "The slinger. Squeeze a trigger to lay a black-white hole pair and sling round it. Five play styles, momentum carry, a four-level course ladder, an AI sim lab that races every style and scores it, and two modes on T, the game's B: Mass (the field trajectory, a predicted path that boosts you when the poles bend it) and Time (the catch sling, timed at 90°). Its wormhole mode became the Meerkat (2026-10-27). Editor layout with tabs and pop-out windows; touch sticks on a phone.",
       "spec": [
         {
           "k": "Sling",
@@ -76,7 +76,7 @@
         },
         {
           "k": "Status",
-          "v": "all three modes in the game on B (Ys-bleeding-edge)"
+          "v": "Mass and Time in the game on B; the game still has the Gate too (Ys-bleeding-edge)"
         }
       ],
       "preview": "previews/stoat.png",
@@ -84,6 +84,35 @@
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
+    },
+    {
+      "id": "meerkat",
+      "name": "Meerkat",
+      "file": "meerkat.html",
+      "kind": "design studio - round 2",
+      "chip": "design studio · round 2",
+      "summary": "The wormhole vessel (the Stoat's Gate mode, made its own vessel). One thumb flies; the grid on your nose is the tunnel RT would form: the right stick bends it up to 120°, shorter and fatter the more it bends, LT shortens it, RT forms it and you ride it, out with the speed you went in with. Only you see the grid, and only while you shape it; everyone sees the formed tunnel as a bridge of spindles over glass and the space round it bent, and its collapse ripples the screen's edges. Every parameter carries its game name (MeerkatWormholeConfig); AI rivals at Easy, Medium or Hard and a level scorecard.",
+      "spec": [
+        {
+          "k": "Ability",
+          "v": "the wormhole, on one thumb"
+        },
+        {
+          "k": "Tunnel",
+          "v": "bends to 120° · 120–600 u"
+        },
+        {
+          "k": "Ride",
+          "v": "out at your entry speed"
+        },
+        {
+          "k": "Status",
+          "v": "design only: no Meerkat in the game yet"
+        }
+      ],
+      "preview": "previews/meerkat.png",
+      "accent": "#4fd8ff",
+      "docs": "Docs/Studios/MEERKAT.md"
     },
     {
       "id": "brittlestar",
@@ -173,11 +202,40 @@
       "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
     },
     {
+      "id": "orca",
+      "name": "Orca",
+      "file": "orca.html",
+      "kind": "crew lab - round 9 (Garrett's Crew of Four Lab)",
+      "chip": "4-seat vessel · round 9",
+      "summary": "Garrett's 4-seat vessel, in the game as the Orca: a Helm (Time) and three Gunner seats, the sniper (Space), the fast gun (Mass) and the bomb (Charge), each with its own missiles. Take the seats you want; the AI flies the rest. Round 9 adds play styles to choose between while you test: the helm's boost is the Tank, a Breath or the Tide; its shield is the Shield or a Dock; the missiles are flown by wire or are Seekers. Every default is the Orca as it ships.",
+      "spec": [
+        {
+          "k": "Seats",
+          "v": "Helm · Sniper · Fast gun · Bomb"
+        },
+        {
+          "k": "Play styles",
+          "v": "Tank / Breath / Tide · Shield / Dock · Fly-by-wire / Seeker"
+        },
+        {
+          "k": "Games",
+          "v": "Ring Race · Breach · Anchorage · Broadside"
+        },
+        {
+          "k": "Status",
+          "v": "in the Toybox Vessel Changer as the Orca; the round 9 styles are lab-only"
+        }
+      ],
+      "preview": "previews/orca.png",
+      "accent": "#13fff2",
+      "docs": "Docs/Studios/CREW_OF_FOUR_LAB.md"
+    },
+    {
       "id": "siphonophore",
       "name": "Siphonophore",
       "file": "siphonophore.html",
-      "kind": "voltron vessel designed from the ground up - design lab round 1",
-      "chip": "voltron vessel · round 1",
+      "kind": "voltron vessel designed from the ground up - design lab round 2",
+      "chip": "voltron vessel · round 2",
       "summary": "One vessel that is three zooids and one colony, taking turns. Apart, the Bell lights the dark crystals, the Sting opens their husks and the Bract nets them into its hold; none of them can score. Fused, the colony digests the hold into the score and rams the walls open, and cannot light, open or catch; the hold empty, it splits itself. Designed from the ground up to alternate, never assembled from vessels that already have a loop.",
       "spec": [
         {
@@ -528,6 +586,96 @@
       ],
       "preview": "previews/gecko.png",
       "accent": "#ff9ec6",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "moonjelly",
+      "name": "Moon Jelly",
+      "file": "moonjelly.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind breath)",
+      "chip": "calm · level 1 · round 1",
+      "summary": "The breather. One stick steers; one button breathes. Hold it to breathe in: the jelly slows and its bell swells with light. Let go and it pulses forward. Slow, steady breaths (three seconds or more, each like the last) build a calm chain: every pulse glides further and the glow, which is its reach for a crystal, grows wider. Rush and the calm breaks. Calm breaths fill the moon; with the moon full, one long breath lets go into a Moonrise, a glow four times as wide.",
+      "spec": [
+        {
+          "k": "Level",
+          "v": "1: one stick, one button"
+        },
+        {
+          "k": "Mechanic",
+          "v": "hold to breathe in, let go to pulse; slow and steady builds the calm"
+        },
+        {
+          "k": "Calm / intense",
+          "v": "drifting and breathing / the Moonrise"
+        },
+        {
+          "k": "Made from",
+          "v": "the Dolphin (charge, then release) + the Butterfly (slow, wide, quiet)"
+        }
+      ],
+      "preview": "previews/moonjelly.png",
+      "accent": "#cfe8ff",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "seaturtle",
+      "name": "Sea Turtle",
+      "file": "seaturtle.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind tide)",
+      "chip": "calm · level 1 · round 1",
+      "summary": "The wayfinder. It has no throttle: the course line is a tide, a current you can see, and steering into it carries you. Hold the one button to tuck in your flippers and ride the tide fast; let go to spread them, slow down and turn. Out of the tide it only crawls. Where blocks crowd the tide it runs faster: the Rapids. Get through without touching a block and you shoot out with a burst; a bump only slows you a little, because the shell takes it.",
+      "spec": [
+        {
+          "k": "Level",
+          "v": "1: one stick, one button"
+        },
+        {
+          "k": "Mechanic",
+          "v": "the course is a current; hold to tuck in and ride it, let go to turn"
+        },
+        {
+          "k": "Calm / intense",
+          "v": "gliding the tide / threading the Rapids"
+        },
+        {
+          "k": "Made from",
+          "v": "the Urchin (latch onto a trail and ride it) + the Squirrel (flow, no hard decisions)"
+        }
+      ],
+      "preview": "previews/seaturtle.png",
+      "accent": "#7fd6a8",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "seahorse",
+      "name": "Seahorse",
+      "file": "seahorse.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind tend)",
+      "chip": "calm · level 1 · round 1",
+      "summary": "The gardener. Slow and upright. Swim to a plant (any block) and hold the button to curl your tail round it: you stay still, the plant grows a garden round you, and your crystal is called in towards you. Let go and you dart off. A rival coming close is the tense moment: the second button puffs you up, slowing the rival and shielding your garden.",
+      "spec": [
+        {
+          "k": "Level",
+          "v": "1: one stick, two buttons"
+        },
+        {
+          "k": "Mechanic",
+          "v": "hold on to a plant: it grows and calls your crystal in; let go to dart"
+        },
+        {
+          "k": "Calm / intense",
+          "v": "tending / a rival comes, puff and dart"
+        },
+        {
+          "k": "Made from",
+          "v": "the Angler (grows plants, leads creatures) + the Serpent (a seed that gathers blocks)"
+        }
+      ],
+      "preview": "previews/seahorse.png",
+      "accent": "#ffb36b",
       "docs": "Docs/Studios/CONCEPT_FLEET.md"
     }
   ],

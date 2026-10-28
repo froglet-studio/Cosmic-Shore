@@ -44,6 +44,39 @@ namespace CosmicShore.Tests
         static readonly D3 Camera = new D3(0.35, 0.42, 0.837).Unit;
 
         [Test]
+        public void EachCrystalSlotIsTheElementTheCombineOrdersThere()
+        {
+            // The slot's element picks its shade of lime; a slot out of step would fly one crystal in another's colour.
+            Assert.AreEqual(OmniCombineCore.Order.Length, OmniCombinePlayer.SlotElements.Length);
+            for (int k = 0; k < OmniCombineCore.Order.Length; k++)
+                Assert.AreEqual(OmniCombineCore.Order[k], OmniCombinePlayer.SlotElements[k].ToString(), $"slot {k}");
+        }
+
+        [Test]
+        public void ACrystalFliesInItsOwnShadeAndLandsInTheOmnis()
+        {
+            var own = new Color(0.36f, 0.77f, 0f, 1f);
+            var omni = new Color(0.49f, 0.99f, 0f, 1f);
+            Assert.AreEqual(own, OmniCombinePlayer.FlightBright(own, omni, 0f), "unmorphed: its own shade");
+            Assert.AreEqual(omni, OmniCombinePlayer.FlightBright(own, omni, 1f), "landed: the omni's, so the hand-off matches");
+            Assert.AreEqual(omni, OmniCombinePlayer.FlightBright(own, omni, 1.5f), "clamped past the end");
+            var half = OmniCombinePlayer.FlightBright(own, omni, 0.5f);
+            Assert.Greater(half.g, own.g);
+            Assert.Less(half.g, omni.g);
+        }
+
+        [Test]
+        public void TheShippedConverterReadsThePalettesCrystalShades()
+        {
+            var config = AssetDatabase.LoadAssetAtPath<OmniCombineConfigSO>(ConfigPath);
+            Assert.IsNotNull(config, ConfigPath);
+            Assert.IsNotNull(config.Palette, "no palette: every crystal would fly in the omni's lime (author_elemental_converter.py)");
+            foreach (var element in OmniCombinePlayer.SlotElements)
+                Assert.IsTrue(config.Palette.EnvironmentColors.TryGetElementalCrystalColor(element, out _),
+                    $"{element} has no shade in the palette (kite_mote_colors.py)");
+        }
+
+        [Test]
         public void TheShippedDataLoadsThroughJsonUtility()
         {
             var data = LoadData();

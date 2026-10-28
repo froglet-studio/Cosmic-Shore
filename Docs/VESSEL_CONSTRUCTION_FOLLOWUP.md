@@ -263,7 +263,9 @@ Two weaker discriminators were tried first and both mis-reported, which is why t
 nearest-bone-**centroid** and nearest-**skinned-vertex** both collapse onto the body bone `fuse` on
 a radially symmetric hull, and both flagged correct mappings as wrong.
 
-Grizzly is not in this phase: no `grizzly_shapekey_*` rig exists. It is blocked on art.
+Grizzly is not in this phase: no `grizzly_shapekey_*` rig exists. It was blocked on art until 2026-10-27, when
+`/vessel-model` built it a new hull (`Grizzly.fbx`, `Docs/VesselModels/Grizzly.md`) whose bones follow the wedge's
+part transforms, the Rhino's pattern.
 
 ---
 

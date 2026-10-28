@@ -294,10 +294,16 @@ namespace CosmicShore.Gameplay
             float moved = Mathf.Max(Mathf.Abs(a.x - _riderInputAtNotify.x), Mathf.Abs(a.z - _riderInputAtNotify.z));
             if (moved < RiderNotifyInput) return;
             _riderInputAtNotify = a;
-            for (int i = 0; i < _riders.Count; i++)
+            for (int i = _riders.Count - 1; i >= 0; i--)
             {
                 var prism = _riders[i];
-                if (prism && !prism.destroyed && prism.gameObject.activeInHierarchy)
+                // A blade the hold handed to a payload carrier (Ark.TakeHullPrisms) is the carrier's to move now.
+                if (!prism || !prism.transform.IsChildOf(_root))
+                {
+                    _riders.RemoveAt(i);
+                    continue;
+                }
+                if (!prism.destroyed && prism.gameObject.activeInHierarchy)
                     prism.NotifyPositionChanged();
             }
         }

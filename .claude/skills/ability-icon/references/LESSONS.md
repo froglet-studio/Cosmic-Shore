@@ -234,3 +234,48 @@ vessel silhouette."
     portrait is exempted from `components`/`gap` BY NAME with the reason, never by loosening `verify.py`. The
     generator that made the old art (`ToolPortraitBuilder`) was retired and the baker stands down on Tool pages, so
     a re-bake cannot put the spheres back.
+
+41. **When the act is hard to SEE on the mesh, change the pose in the model, not the drawing (2026-10-27, the
+    Grizzly).** Dig In wanted the anchor sunk into the ground, but in the model's first `dig` take the anchor only
+    raked, and its tines reached 3-6 px below the engine pods in the side view. A ground plate low enough to catch
+    them also caught the pods, and one high enough to clear the pods caught nothing. Extending the tines in the icon
+    would have been a drawing of the hull. The fix went in the model's spec (`vessel_model/specs/grizzly.py`): the
+    `dig` take now PLUNGES the anchor 1.3 units as it rakes, and the tines reach 20 px below the pods. The icon renders
+    that take (`mesh_silhouette(..., take="rig|dig")`), the plate sits 7 px under the pods, and the plate is cut 6 px
+    round the tines so they read as sunk into it. Two more:
+    - **A rolled hull's rear edge is not its engines' rows.** Rolled nose-down, the side view's leftmost column caught
+      only the upper engine row. Measure the rows on the UNROLLED silhouette, then turn the bars with the hull about
+      the same centre: `canvas.rotate` and the silhouette's `roll` share one convention.
+    - **A hull with an embedded HUD rebinds in the vessel prefab.** The Grizzly has no `<Hull>HUDVariant`: its
+      GrizzlyHUD lives in `Grizzly.prefab`, so `REBIND` names that file. A placeholder another screen also shows
+      (`CannonIcon-PLACEHOLDER.png` in `ModeControlsLibrary.asset`) is left to that screen's owner.
+
+## 2026-10-27 - the Sparrow's Space card: options are judged in the LOCKUP
+
+Garrett: "going forward when showing vessel icons lets show the before and the other icons of the vessel so we can
+consider how they distinguish themselves too."
+
+42. **A candidate is judged beside its siblings, never alone.** The first Space options sheet showed each candidate on
+    its own card; one of them (the Sparrow firing from both pods) only looks wrong next to the Mass and Time cards,
+    where it is the third spiky hull in a row of four. The options sheet is now the hull's whole lockup per
+    candidate, with the BEFORE row first: `CARDS` entries share a `group=`, the spec declares `LOCKUP` (its other
+    cards as the HUD draws them today, parts and colours), and `author.py` writes `<hull>_<group>_options.png`
+    (`states.options_sheet`). The family gate (IoU at 24 px) measures the same thing; the sheet lets the owner see it.
+
+43. **A live QUALITY is drawn as the thing doing it; its LEVELS are segments in the plate.** The Sparrow's Space card
+    (2026-10-27). Garrett: "the icon we had before the current had a way to show that there were different heat
+    buckets that had different spread. if you could convey the realtime spread value and which level they are on
+    that would be best." Then: "i like what option E is trying to do, but the clarity of F is good. lets try to get E
+    using more shots and the whole space to define the angle"; "i like the ease of reading the lines as the
+    boundaries between levels but i don't like how it visually dominates the whole space"; "option E2 looks great".
+    What landed: the icon is ten rounds on their rays inside the gun's live cone (one stream cold, the card's full
+    height in the collapse; every rank puts one round on a cone EDGE so the angle is drawn, not guessed); the heat
+    gauge's phase joins are a GAP through the fill once passed and a short dim edge tick while ahead
+    (`card.py gauge_marks_style="segments"`, `SparrowHUDView.PaintGunHeatMarks`). Three things it taught:
+    (a) **measure the mechanic before drawing the ability text** - the description said Space extends the guns'
+    range, but Round 7 of SPARROW_SPRAY_ACCURACY.md fixed the range; the first options round drew "reach" and was
+    wrong for that reason. (b) **A real value too small to see gets a readable value per level**, interpolated
+    between knots (`SprayCardAngle`), never a fake constant: the card still moves every frame. (c) **When a part
+    repeats N times along a live layout, generate the N Images in the view from ONE part sprite** and serialize the
+    layout (the kit's SPRAY_RANKS = the view's `gunSprayRounds`); the prefab gets only the sprites and the
+    container step - ten prefab children would be ten things to keep in step.
