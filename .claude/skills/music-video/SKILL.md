@@ -56,7 +56,8 @@ python3 Tools/Build/music_video/shoot.py Tools/Build/music_video/out/<plan dir>/
 
 Two players at once on 4 cores. Each shot's `shoot.log` is the record: the engine answers every command
 (`[mv] took Camera.main (3 rig behaviours stood down)`, `[mv] planted 3/3 Borromean flora`, `[mv] released
-Manta (Jade)`, `[mv] recording ... frames A-B every 4`). A shot with 0 frames failed; a `failed:` or
+Manta (Jade)`, `[mv] recording ... frames A-B every 4`). Each shot lands as `shot.mp4` (encoded as it records; the PNGs are deleted, a minute of them is 20 GB) with
+`frames.csv`. A shot with 0 frames failed; a `failed:` or
 `unknown command` answer in the log means a stage command or a cue did nothing (read it before
 re-running with `--only NAME`). A populated 12 s shot at 1080p / 1.5x is about 40-60 min of wall time;
 budget a 60 s cut at two to three hours. Never run `pkill -f` with the player's path in the pattern (it

@@ -305,6 +305,13 @@ Mapping v3 answers each line:
 - **Render**: a cut over 20 s renders at 1.5x supersampling (`render_scale_long`) instead of 2x, still on
   8x MSAA; a populated 12 s shot at 1080p is about an hour, so a minute is 2-3 hours per song and the two
   songs shoot side by side (four players on four cores, ~2 GB each).
+- **A minute of frames does not fit on the disk: shoot.py encodes as it records.** A 1080p PNG of a populated
+  cell is 5-6 MB, a 60 s cut is 3600 of them, and the first cut-6 shoot filled the machine's volume at 1300
+  frames: every player died on its next write ("Remote end closed connection without response" on the control
+  port), and six shots had to be re-shot from the start. Each shot's frames now go, as they land, into one
+  ffmpeg (`shot.mp4`, H.264 4:4:4 crf 8, near-lossless; ~0.4 MB a frame) and the PNG is deleted, so a shot
+  holds two frames on disk; `frames.csv` still carries every frame's game time, and assemble.py / score.py
+  read `shot.mp4` (the sheet's stills are extracted from it).
 - **The different vibe picks itself**: SPACE GLIDING (108 bpm, mean energy 0.18, the quietest song in the
   project) opens on the shoal and the loop (yggdra-shoal, hesperides-loop) and only reaches a siege in its drop;
   SKY FIRE (123 bpm) runs wormhole-run → the kit combo on the drop → joust → rally → swarm siege.

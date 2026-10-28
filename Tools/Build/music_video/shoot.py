@@ -7,9 +7,10 @@ Each shot in the plan boots the real game (scripted run: every frame is exactly 
 time), opens the mode's arcade card the way a player does, seats AI pilots, starts the match,
 presses Ready, waits for the action to settle, then hands the camera to the engine-side
 director (`mv` verb, Port/src/CosmicShore.Player/MusicVideoDirector.cs) and records the shot's
-frames at the plan's fps. Frames land in OUT/<shot>/fNNNNN.png with frames.csv (game time per
-frame) and shoot.log (every command and the engine's answers), so assemble.py can lay them on the
-song at true game speed and a failed shot can be read back.
+frames at the plan's fps. Frames are encoded as they land into OUT/<shot>/shot.mp4 (near-lossless
+H.264) next to frames.csv (game time per frame) and shoot.log (every command and the engine's
+answers), so assemble.py can lay them on the song at true game speed and a failed shot can be read
+back. The PNGs themselves are deleted as they are encoded: a minute of 1080p frames is 20 GB.
 
 Needs: the player built (`dotnet build Port/src/CosmicShore.Player`), xvfb-run, and a profile
 that has answered the first-run prompts (the runner answers them itself on a fresh profile:
@@ -104,6 +105,68 @@ class Player:
         self.log.close()
 
 
+FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
+
+
+class ShotEncoder:
+    """Rolling encode: every finished PNG is pushed into one ffmpeg (near-lossless H.264, 4:4:4, crf 8)
+    and deleted, so a shot holds at most two frames on disk. A 1080p frame of a populated cell is
+    5-6 MB as a PNG; a 60 s cut is 3600 of them, and the first cut-6 shoot (2026-10-28) filled the
+    machine's disk at 1300 frames and took all four players down with it. assemble.py and score.py
+    read shot.mp4 (with frames.csv for the game time of every frame)."""
+
+    def __init__(self, d, fps):
+        self.d, self.next, self.fps = d, 0, fps
+        self.out = os.path.join(d, "shot.mp4")
+        self.err = open(os.path.join(d, "encode.log"), "w")
+        self.proc = subprocess.Popen(
+            [FFMPEG, "-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", str(fps), "-i", "-",
+             "-c:v", "libx264", "-preset", "medium", "-crf", "8", "-pix_fmt", "yuv444p", self.out],
+            stdin=subprocess.PIPE, stdout=self.err, stderr=self.err)
+
+    def pending(self):
+        return len([f for f in os.listdir(self.d) if f.startswith("f") and f.endswith(".png")])
+
+    def feed(self, final=False):
+        """Push every frame that a later frame proves complete (the recorder writes them in order)."""
+        while True:
+            f = os.path.join(self.d, f"f{self.next:05d}.png")
+            nxt = os.path.join(self.d, f"f{self.next + 1:05d}.png")
+            if not os.path.exists(f) or (not final and not os.path.exists(nxt)):
+                return self.next
+            with open(f, "rb") as fh:
+                self.proc.stdin.write(fh.read())
+            os.remove(f)
+            self.next += 1
+
+    def finish(self):
+        n = self.feed(final=True)
+        self.proc.stdin.close()
+        self.proc.wait()
+        self.err.close()
+        return n
+
+
+def record_and_wait(p, d, frames, every, accum, log):
+    """Start the recording, then wait in chunks (one control-port request must not outlive its socket
+    timeout: a 1080p sub-frame is about a second in the software renderer), encoding as frames land."""
+    log(p.do(f"mv record {d} {frames} {every} {accum}").strip())
+    want = frames // every
+    enc = ShotEncoder(d, STEP_HZ_OF[0] // every)
+    chunk = max(every * 8, 32)
+    done_frames = 0
+    while done_frames < frames + 3:
+        step_n = min(chunk, frames + 3 - done_frames)
+        p.wait(step_n)
+        done_frames += step_n
+        n_now = enc.feed()
+        if n_now % 30 == 0 or n_now >= want:
+            log(f"  {n_now}/{want} frames")
+    n = enc.finish()
+    log(f"{n} frames recorded -> shot.mp4")
+    return n, want
+
+
 def write_prefs(profile, prefs, log):
     """Merge the plan's graphics prefs into the profile's prefs.json (what the game's Settings screen writes)."""
     if not prefs:
@@ -174,19 +237,7 @@ def stage_menu(p, shot, d, frames, every, accum, k, log, name):
         if 0 <= at < frames:
             p.do(f"mv cue {at} {a['cmd']}")
     log(f"{len(shot.get('events', []))} events cued")
-    log(p.do(f"mv record {d} {frames} {every} {accum}").strip())
-    want = frames // every
-    chunk = max(every * 8, 32)
-    done_frames = 0
-    while done_frames < frames + 3:
-        step_n = min(chunk, frames + 3 - done_frames)
-        p.wait(step_n)
-        done_frames += step_n
-        n_now = len([f for f in os.listdir(d) if f.endswith(".png")])
-        if n_now % 30 == 0 or n_now >= want:
-            log(f"  {n_now}/{want} frames")
-    n = len([f for f in os.listdir(d) if f.endswith(".png")])
-    log(f"{n} frames recorded")
+    n, want = record_and_wait(p, d, frames, every, accum, log)
     return {"name": name, "frames": n, "dir": d, "ok": n >= want - 2}
 
 
@@ -265,23 +316,9 @@ def shoot_one(shot, plan, out_dir, port, profile, dll):
             if 0 <= at < frames:
                 p.do(f"mv cue {at} {a['cmd']}")
         log(f"{len(shot.get('events', []))} events cued")
-        log(p.do(f"mv record {d} {frames} {every} {accum}").strip())
-        # wait in chunks: one control-port request must not outlive its socket timeout (a 1080p 2x
-        # sub-frame is about a second in the software renderer, so a 5 s shot is 20+ minutes)
-        want = frames // every
-        chunk = max(every * 8, 32)
-        done_frames = 0
-        while done_frames < frames + 3:
-            step_n = min(chunk, frames + 3 - done_frames)
-            p.wait(step_n)
-            done_frames += step_n
-            n_now = len([f for f in os.listdir(d) if f.endswith(".png")])
-            if n_now % 30 == 0 or n_now >= want:
-                log(f"  {n_now}/{want} frames")
-        n = len([f for f in os.listdir(d) if f.endswith(".png")])
-        log(f"{n} frames recorded")
+        n, want = record_and_wait(p, d, frames, every, accum, log)
         logf.close()
-        return {"name": name, "frames": n, "dir": d, "ok": n >= frames // every - 2}
+        return {"name": name, "frames": n, "dir": d, "ok": n >= want - 2}
     except Exception as e:
         log(f"FAILED: {e}")
         logf.close()

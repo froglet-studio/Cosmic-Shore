@@ -61,6 +61,18 @@ def frame_series(frames_dir):
         return []
     rows = list(csv.DictReader(open(p)))
     out, prev = [], None
+    video = os.path.join(frames_dir, "shot.mp4")
+    if rows and not os.path.exists(os.path.join(frames_dir, rows[0]["file"])) and os.path.exists(video):
+        # the PNGs were encoded and deleted as they landed (shoot.py): decode the shot small and grey
+        import shutil, subprocess
+        raw = subprocess.run([shutil.which("ffmpeg") or "ffmpeg", "-loglevel", "error", "-i", video, "-vf", "scale=160:90", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+                             capture_output=True, check=True).stdout
+        ims = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 90, 160).astype(np.float32) / 255.0
+        for r, im in zip(rows, ims):
+            motion = float(np.abs(im - prev).mean()) if prev is not None else 0.0
+            out.append((float(r["time"]), float(im.mean()), float(im.std()), motion))
+            prev = im
+        return out
     for r in rows:
         f = os.path.join(frames_dir, r["file"])
         if not os.path.exists(f):

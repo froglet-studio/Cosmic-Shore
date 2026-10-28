@@ -22,11 +22,24 @@ FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
 
 
 def shot_frames(d):
+    """(file, game time) per recorded frame: the PNGs when they are still on disk, else the rows of
+    frames.csv that shot.mp4 holds (shoot.py encodes and deletes the PNGs as they land)."""
     p = os.path.join(d, "frames.csv")
     if not os.path.exists(p):
         return []
     rows = list(csv.DictReader(open(p)))
-    return [(os.path.join(d, r["file"]), float(r["time"])) for r in rows if os.path.exists(os.path.join(d, r["file"]))]
+    on_disk = [(os.path.join(d, r["file"]), float(r["time"])) for r in rows if os.path.exists(os.path.join(d, r["file"]))]
+    if on_disk:
+        return on_disk
+    if os.path.exists(os.path.join(d, "shot.mp4")):
+        return [(os.path.join(d, "shot.mp4"), float(r["time"])) for r in rows]
+    return []
+
+
+def still(video, index, fps, out):
+    """One frame of shot.mp4 as a PNG (for the contact sheet)."""
+    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{index / fps:.4f}", "-i", video, "-frames:v", "1", out], check=True)
+    return out
 
 
 def main(argv=None):
@@ -54,15 +67,23 @@ def main(argv=None):
         steps.append(sorted(steps)[len(steps) // 2] if steps else 1.0 / fps)
         got = sum(steps)
         pad = max(0.0, want - got)
-        for i, ((f, _), dt) in enumerate(zip(frames, steps)):
-            if i == len(frames) - 1:
-                dt += pad
-            lines.append(f"file '{f}'")
-            lines.append(f"duration {dt:.6f}")
-        sheet.append((shot, [frames[0][0], frames[len(frames) // 2][0], frames[-1][0]]))
+        if frames[0][0].endswith(".mp4"):
+            lines.append(f"file '{frames[0][0]}'")          # one encoded shot: its frames are exactly 1/fps apart
+            if pad > 0.05:
+                report.append(f"{shot['name']}: {pad:.2f} s short (the next shot starts early by that much)")
+            sd = os.path.join(pdir, "stills"); os.makedirs(sd, exist_ok=True)
+            sheet.append((shot, [still(frames[0][0], k, fps, os.path.join(sd, f"{shot['name']}-{j}.png")) for j, k in enumerate([0, len(frames) // 2, len(frames) - 1])]))
+        else:
+            for i, ((f, _), dt) in enumerate(zip(frames, steps)):
+                if i == len(frames) - 1:
+                    dt += pad
+                lines.append(f"file '{f}'")
+                lines.append(f"duration {dt:.6f}")
+            sheet.append((shot, [frames[0][0], frames[len(frames) // 2][0], frames[-1][0]]))
         t += want
         report.append(f"{shot['name']}: {len(frames)} frames, {got:.2f} s of {want:.2f} s{' (padded %.2f s on the last frame)' % pad if pad > 0.05 else ''}")
-    lines.append(lines[-2])
+    if lines[-1].startswith("duration"):
+        lines.append(lines[-2])                 # the concat demuxer needs the last image repeated
     lst = os.path.join(pdir, "concat.txt")
     open(lst, "w").write("\n".join(lines) + "\n")
     t0 = plan["shots"][0]["t0"]
