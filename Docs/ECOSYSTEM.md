@@ -7159,6 +7159,10 @@ have grown a leaf mid-life. Leaving the flag is leaving the guard standing for t
 
 ### 40.2 A heart is sized to its lifeform, by measurement
 
+> **SUPERSEDED 2026-10-26 (§64).** Every elemental crystal, a heart included, is now ONE size
+> (`ElementalCrystalSetSO.CrystalWorldScale`, 3.55) and worth exactly ONE petal. The law below is
+> kept as the record of the band that was; nothing in the game reads `HeartWorldScale` any more.
+
 **The law.** A heart's linear size scales as the SQUARE ROOT of its lifeform's linear size:
 
 ```
@@ -7218,12 +7222,12 @@ scale twice, which made the Shark read 195.1 across when it is 133.8:
 | Clawfish | fauna | 2.16 | 2.16 | 2.16 | 2.16 |
 | Coral | flora | 2.09 | 2.87 | 1.52 | 2.36 |
 | Frond | flora | 2.09 | 2.87 | 1.52 | 2.36 |
-| Gyroid | flora | 1.48 | 2.16 | 2.29 | 2.14 |
+| Gyroid | 5.759 x 2.175 x 0.959 on a x2.099 lattice (plate x0.64; lattice x1.343 clears its shields by 10%, spread to x2.099 for the swing; Space x3.19) | the Time plate | `fit_shield_clearance.py --check` |
 | Lantern | flora | 2.00 | 2.73 | 1.46 | 2.25 |
 | Nerve | flora | **4.60** | **4.60** | **4.60** | **4.60** |
 | Pine | flora | 3.48 | 3.48 | 3.48 | 3.48 |
 | QuadFish | fauna | 1.75 | 1.75 | 1.75 | 1.75 |
-| Quasicrystal | flora | 2.05 | 3.26 | 2.97 | 2.73 |
+| Quasicrystal | 14.08 x 0.64 x 0.64 strut on a x1.936 lattice (Space x2); heart SEATED 22 u in (`FloraVariantTuning.HeartSeatInset`, `QuasicrystalAssembler.ConfigureHeartSeat`), swing clear 13.7 u | 22 x 1 x 1 | `fit_quasicrystal_strut_sizes.py --check` |
 | Reed | flora | 1.73 | 2.37 | 1.26 | 1.95 |
 | Rosette | flora | 2.50 | 3.45 | 1.83 | 2.83 |
 | SchwarzP | flora | **1.16** | 1.80 | 1.87 | 1.83 |
@@ -11783,7 +11787,7 @@ cells. In the order a player would meet them:
 | Helicoid | Scurry | 57,840 | 9,427 | 0 | 0 |
 | Wildlife cage 1–4 | Wildlife Liberation | 9,206–13,956 | 2,598–7,788 | 104–884 | 0 |
 | Zephyr | freestyle cell | 52,917 | 6,611 | 2,294 | 0 |
-| Gyroid | Joust I4, Crystal Capture | 40,851 | 6,487 | 1,771 | 2 |
+| Gyroid | 5.759 x 2.175 x 0.959 on a x2.099 lattice (plate x0.64; lattice x1.343 clears its shields by 10%, spread to x2.099 for the swing; Space x3.19) | the Time plate | `fit_shield_clearance.py --check` |
 | Breakwater | Breakwater | 4,575 | 6,015 | 15 | 0 |
 | Hesperides | freestyle garden cell | 12,060 | 5,744 | 2,879 | 101 |
 | TorusKnot | Joust | 1,500 | **6,020** | 1,497 | 0 |
@@ -12140,3 +12144,566 @@ one new shard in its cell's cytoplasm, the `SnowChanger` field whose shards poin
   not changed here.
 - The shard condenses by scale and turn, not by shape: it does not start as the limb's silhouette. A
   silhouette morph would need the snow graph to fade per instance.
+
+## 64. Every elemental crystal is one size and one petal (Oct 2026)
+
+Garrett, 2026-10-26: *"the scale of the elemental crystals in the conversion animation found in
+the ark is the perfect size for elemental crystals. lets fix all elemental crystals to that one
+size and have them grant exactly one petal."* The omni crystal's size was already fixed.
+
+### 64.1 The size, taken from the converter
+
+The Elemental Converter (the omni combine on the Ark screen, `OmniCombinePlayer`) draws the four
+elemental crystals as shares of the omni they combine into. Its data
+(`Assets/_SO_Assets/Environment/OmniCombine/OmniCombineData.json`) gives, as largest axis
+half-extents: omni 1.606; Charge 0.808, Space 0.759, Mass 0.721, Time 0.712. The Charge crystal is
+the reference the game's four models are equalized to (each prefab's model child carries the
+per-element correction), so the ratio is Charge / omni = **0.503**.
+
+In play the omni is `Crystal.prefab` at root scale 10 (37 of the 39 crystal managers spawn it),
+whose body is 0.72 u of half-extent per unit of root scale, against the Charge body's 1.02
+(measured by `SkimRaceRingCrystalTests`). So an elemental crystal at the converter's ratio is
+
+```
+0.503 × (10 × 0.72) / 1.02 = 3.55 world scale      (7.2 u across, against the omni's 14.4 u)
+```
+
+`ElementalCrystalSetSO.CrystalWorldScale = 3.55`. `ElementalCrystalSizeTests` measures the two
+meshes and the combine data and fails, naming the value to move to, if the three drift apart.
+
+### 64.2 What reads it
+
+| Where an elemental crystal comes from | Before | Now |
+|---|---|---|
+| A lifeform's heart (`Crystal.SetEmbeddedIn` → `LifeFormCrystal.ApplyHeartSize`; `LifeForm`/`Fauna.ApplyHeartSize()`) | the species' authored `HeartWorldScale`, 1.04–4.60 | 3.55 |
+| Swarm, substrate and builder colonies (GPU-drawn hearts; the body prism laid behind the heart) | per-element `HeartWorldScale` vectors on the config | 3.55 in all four elements |
+| A petal knocked out of a hull (`ElementalCrystalEjector`) | world scale 1 | 3.55 |
+| Arena scatters: Dog Fight, Bloomrush, Salvo, Tapestry, and the Wanderway's microscenes | prefab root 1.5 × a random 0.5–1.2 (0.75–1.8) | 3.55 |
+| The four elemental prefabs' own root scale | 1.5 | 3.55, so an instance left alone is already right |
+
+The reward is `SkimmerAdjustElementLevelByCrystalEffectSO.LevelGainPerCrystal` =
+`ResourceSystem.PetalNormalized` (0.1, one petal), read off nothing about the crystal. Its
+`levelPerUnitScale` and `maxLevelGainPerCrystal` were deleted from the class and the asset. Before,
+a heart paid 0.10–0.46 of an element level by its size and an arena scatter paid 0.075–0.18 — a
+fraction of a petal no flower can show. `Tools/Build/check_elemental_economy.py` §2 holds the flat
+petal, the ejector's size and the absent keys, and its self-test fires on each.
+
+What did NOT change: every omni crystal (the Skim Race ring's omni keeps its 1.70 scale; its
+`levelOneCrystalScale` is now described as "an elemental crystal at root scale 1"), and the
+elemental crystals a vessel wears as hull ornament (`CrystalHullFusion`, which reads meshes, not
+the root).
+
+### 64.3 What it costs, and what is left
+
+- **One size does not fit every body.** That was the band's reason to exist (§40.2: a uniform 3.5
+  is 3.6× a Mass tadpole's width). A heart's pickup radius is its root world scale (the prefabs'
+  root `SphereCollider` is radius 1), so every heart is now as easy to take as the old largest
+  ones. **Answered for fauna in §64.4**: every creature's body was scaled to keep its old heart:body
+  proportion, so in its own local units each heart is exactly the size it used to be. The Clawfish's
+  heart poked 1.09 u out of its mouth at 3.55 on unscaled bodies; at its root scale 1.641 it sits at
+  z −2.4, 0.004 u behind the mouth (`verify_fauna_heart_seat.py` measures the heart in local units,
+  3.55 / root scale). The quasicrystal alcove clears a 4.25 heart (`fit_quasicrystal_strut_sizes.py`),
+  so 3.55 fits. Flora are unchanged: a plant's heart is 3.55 whatever its size.
+- **The retired field is still on 206 assets.** `FaunaVariantTuning.HeartWorldScale`,
+  `FloraVariantTuning.HeartWorldScale`, and the heart vectors on `SwarmFaunaConfigSO`,
+  `SubstrateSpeciesSO`, `BuilderColonyConfigSO` and `NcaCreatureConfigSO` are tooltipped RETIRED,
+  are still written by their generators (`author_lifeform_heart_sizes.py`, whose `--check` and
+  `--write` now stand down because §64.4 moved the bodies it measures, `author_swarm_fauna.py`, `author_substrate_fauna.py`, `author_nca_creatures.py`
+  and the flora authors), and nothing in the game reads them. Stripping them means changing those
+  generators and the assets in one pass.
+- **Amoebius's hand port** (`Port/src/CosmicShore.Game`) still carries the old scaled reward. The
+  engine's player build compiles the real scripts (`CosmicShore.Live`), which have the new one.
+
+### 64.4 The fauna were scaled to the heart (Garrett, 2026-10-26)
+
+*"Change the scale of the fauna to match the size of crystal. You will also need to crawl swarm behavior etc. for
+length scales and adjust accordingly."* Every creature's body is scaled by **k = 3.55 / its retired heart size**, so it
+keeps exactly the heart:body proportion it was designed with. **Lengths measured from the body** (spacing, separation,
+reach, bite and contact radii, heart gaps) scale by k. **Speeds stay in world units** (Garrett chose this over
+scaling them: a ×2.76 piranha would swim at 124-193 u/s, past the vessels that joust it). Senses of vessels, territory
+and arena distances stay in world units. A body's volume is its mass, so it grows by k³.
+
+| Creature | k | Body: before → after | Body-relative lengths: before → after | Body prism volume |
+|---|---|---|---|---|
+| Tadpole Mass / Time (4 species + 7 cell configs) | 2.044 | `BaseBodyScale` 0.4 → 0.8175 | cohesion 50/20 → 102.2/40.88, feed reach 45/20/15 → 91.97/40.88/30.66, separation 15 → 30.66, feed cluster 10 → 20.44 (both new per-variant fields) | ×8.54 |
+| Tadpole Charge / Space | 1.545 | 0.7 → 1.081 | cohesion 20 → 30.9, feed reach 15 → 23.17, separation 15 → 23.17, feed cluster 10 → 15.45 | ×3.69 |
+| Piranha (Astro League, Scarab Scramble) | 2.756 | 0.22 → 0.6064 | cohesion 35 → 96.47, feed reach 60 → 165.4, separation 15 → 41.34, feed cluster 10 → 27.56 | ×20.9 |
+| QuadFish | 2.029 | prefab root 1 → 2.0286 | separation 30 → 60.86, consume 40 → 81.14, feed cluster 12 → 24.34, attack 15 → 30.43, detection 70 → 82.14 (must cover consume) | ×8.35 |
+| Clawfish | 1.641 | root 1 → 1.6412; heart seat z −3.755 → −2.4 | separation 24 → 39.39, consume 36 → 59.08, feed cluster 12 → 19.69, attack 15 → 24.62, detection 60 → 60.08 | ×4.42 |
+| Brittlestar | 1.382 | root 1 → 1.3824 | separation 70 → 96.77, consume 40 → 55.3, feed cluster 12 → 16.59, attack 15 → 20.74, detection 70 → 96.77 | ×2.64 |
+| Shark | 0.839 | root 1 → 0.8385 (smaller: its heart was 4.234) | separation 100 → 83.85, consume 40 → 33.54, feed cluster 12 → 10.06, attack 15 → 12.58 (detection 100 kept) | ×0.59 |
+| Worm colony | 1.657 | `KaijuScale` 3 → 4.97 (segment spacing and whip follow it) | colony separation 160 → 265, mouth 28 → 46.38, bite 34 → 56.32, lunge arrive 10 → 16.57, tail whip 45 → 74.55 | ×4.55 |
+| Swarm members (Swarm cell, Sort/Field/Grid/EvoFate configs) | 2.044 Mass/Time, 1.545 Charge/Space | `UnitScale` 2 → 4.088 (the whole sim: spacing, wells, the creature's extent); new `ElementBodyScale` (0.756, 1, 0.756, 1) | heart gap 0.6 → 1.226, bite 10 → 20.44; eggs 20.45/40.31/22.18/12.8 → 75.45/344.25/81.84/109.31; world speeds held: `Cruise` 0.35 → 0.171, `SortVMaxScale` 1 → 0.489 | ×8.54 / ×3.69 |
+| Swarm cell forest (Borromean, per band) | | `LatticeScale` −1 → 1.942 Inner, 1.593 Middle, 1.63 Outer (site offsets and leaves together: same prisms, same colliders, no interpenetration) | each band's forest grows by its bill, keeping its designed margin | ×7.32 / ×4.04 / ×4.33 |
+| Substrate (10 species) | 2.044 Time/Mass, 1.545 Space/Charge | new `SubstrateSpeciesSO.bodyScale`, applied by `SubstrateSpeciesParams.WithBodyScale` | stocks (`Stock0`, `BirthStock`) ×k³, `HungerPerVol` ÷k³, NbrR, EatR, BiteR, JinkR, regime Size, leviathan BodyScale/BodyWell, siege SepR/ContactPad, arms PreyR0/PredR0/PreySize/PredSize/CatchR/ConfR ×k; heart gap 0.6 → 0.6k | ×k³ |
+| Builder colonies | 2.044 Fortress, 1.545 Thief Nest / Wearer | `BodyScale` (1.4, 0.9, 2.6) → (2.861, 1.839, 5.314) / (2.163, 1.39, 4.017) | heart gap 0.6 → 1.226 / 0.927; Fortress worker radius 3 → 6.13, ram 1 → 2.04, sting 4 → 8.18, pickup 6 → 12.26, carry drop 4 → 8.18; Thief snatch 5 → 7.72, separation 8 → 12.36, size 2.2 → 3.4, knock 4 → 6.18; Wearer heart contact 2 → 3.09 | ×8.54 / ×3.69 |
+| NCA lizard | 1.228 (its heart was 2.89) | `VoxelSize` 1.2 → 1.474 (the body is 52.8 → 64.9 u) | hit prism 4 → 4.913, mouth reach 2 → 2.457, mouth radius 9 → 11.06; `BodyVolume` 1975.1 → 3660.5 | ×1.85 |
+
+Before / after, panel for panel at one scale per row (original authored heart · every heart 3.55 on the old body · this
+change): `Docs/Ecology/FaunaScale/creatures_before_after.png` and `colonies_before_after.png`. The creatures are the
+shipped prefabs loaded through Amoebius's content library (`CosmicShore.Content`) and drawn in three.js; the colony
+members are their body prism from config beside the shipped crystal model.
+
+**What it costs.** No collider is added anywhere: every count is unchanged (the Swarm cell stays 1,169 of 1,200 at full
+engagement). What grows is **volume**. The Swarm cell's phase ladder is re-derived by `author_swarm_fauna.py`
+(`FrenzyEnterVolume` 557,000 → 3,114,000; the count ladder is unchanged), because its swarm, substrate, builder and NCA
+bodies all ride `LiveVolume`. The other cells' ladders are flora-derived and in the millions; the largest fauna addition
+is Wildlife Liberation's worms at their cap (about 213,000 against an 8.3 million Frenzy). A bigger body makes more
+food when it dies (its skeleton is its prisms) and, for the swarm and substrate, costs more food to grow (eggs and
+stocks are its volume, mass conserved).
+
+**What changed in code.** `FaunaVariantTuning.SeparationRadius` / `FeedingClusterRadius` (a tadpole variant now states
+its own; they were one value on the shared prefab), `SwarmFaunaConfigSO.ElementBodyScale` (UnitScale is one number per
+swarm, so a Charge/Space member scales its prism back), `SubstrateSpeciesSO.bodyScale` + `WithBodyScale` (the research
+numbers the harness asserts are untouched), the builder cores' body constants, and the worm's heart drift
+(`WormSegmentFauna.KeepHeartSize`: a segment blooms from scale 0, and its heart, sized in world units against it, grew
+to ~9.6 as it did; the colony now re-applies the one size while a segment's scale moves).
+
+### 64.5 Tandava is scaled to its creature (Garrett, 2026-10-27: "go ahead and fix tandava etc.")
+
+Tandava's swarm (and its Severing fork) forks the Swarm cell's sort config, so it now **inherits §64.4's body**
+(`UnitScale` 4.088, `ElementBodyScale`, heart gap 1.226, the grown eggs) instead of pinning the research body back.
+Scaled alone that body did not fit the mode (the dance needed 461-511 u of an 800 u cell that let it roam 449; a 67,000
+reef fed a 229,000 stomach), so the **mode's world was scaled round it** by one rule, `author_tandava_assets.py`'s
+header:
+
+- **Lengths x K = 2.044** (the body's growth): the membrane 800 → 1,635.2, the flora band 240-720 → 490.6-1,471.7, the
+  body reach 160 → 327, the hatch −430 → −878.9, the pilots' line x 600 → 1,226.4, the halo's guard radius 40 → 81.8,
+  the flash 260 → 531, the bots' flank 70 → 143; and every creature-centred dial of `TandavaDirectorSettings` (sense,
+  flee reach, lunge radius and reach, the strike's `SnapReach` - the weapon's own reach - safe radius, distance bias,
+  wander, arrive margin, dance reach). The halo's radius and posts follow the plans (x K through `WORLD`).
+- **Travel and morph times x K**, because the creature keeps its world speed over K x the distance: `LungeSeconds`,
+  `LungeCooldownSeconds` (its way to food between charges), `FleeMinSeconds`, `FeedSettleSeconds`, `RiseSeconds`,
+  `DrumSeconds` (the pilots' rings are twice as far apart), `SnapLeadSeconds` / `SnapHoldSeconds` (the strike swings twice
+  as far), `StarvationSeconds` 30 → 61.3. Reaction times to pilots (threat rise and fall), the meal length and every
+  fraction are unchanged.
+- **Volumes x M = 6.38** (the eggs' mass ratio, 610.85 / 95.74 - the stomach IS eggs): the meal 4,000 → 25,521,
+  `MinFood` 200 → 1,276, and the **reef, every plant grown whole by s = M^(1/3) = 1.855** (Borromean through
+  `LatticeScale`, the five phyllotactic species through the new `PlantScale`, §64.6): no new plant, no new collider (the
+  cell is 347 colliders worst case, as before), the forest 67,000 → 427,000.
+- **Speeds stay world** (Garrett's §64.4 decision): `Cruise` and `SortVMaxScale` 3 → 1.4677 voxels a step, 60 u/s calm
+  as before. **What a vessel meets stays its size**: a ring's mouth (24), the pilots' spacing, the ring plausibility reach.
+- **The bite reach** is Tandava's own, 25.73 (the inherited 20.44 is 10 x K): the coils grew x K round a plant that grew
+  only x s (its mass, not its length), so the outer members of a coil sat just past a plant they used to touch and a
+  coil ate at about half its rate. 25.73 = (28 + 10) x K − 28 x s: the research touch, x K, less the grown plant.
+- Both cells moved to the **Tuned** petal burn (`PetalBurnRule` 1), Garrett's 2026-10-08 rule that
+  `check_elemental_economy.py` holds (they were the gate's two failures).
+
+**What the harness says** (`TandavaHarness.cs` 108 checks, `TandavaSeveringHarness.cs` 164 - both the same counts as
+before, all passing; their test geometry scaled the same way, `TandavaArena.K`):
+
+| | Research body (800 u cell) | One heart size (1,635 u cell) |
+|---|---|---|
+| Unopposed, to the cycle's end (3 seeds) | 116 / 131 / 148 s (Severing 154 / 167 / 174) | 226 / 254 / 237 s (Severing 334 / 335 / 336) |
+| Its first form change | 17-21 s | 22-34 s |
+| A Great Serpent meal, coiled | 2.5 s at 724 volume/s | 4.2 s at 3,220 volume/s |
+| A form change reads (60% coverage) | 1.0 s | 1.5 s |
+| Calm / fleeing (config) / lunging (measured) | 60 / 126 / 139 u/s | 60 / 126 / 130 u/s |
+| The live strike's swing (Many-Headed / Antlion) | 28-36 u / 28-38 u | 75-88 u / 67-81 u |
+| A Rhino culling 20 members a second shatters it in | 17.9 s | 15.5 s |
+
+**The decision this leaves for the mode's owner (Yash):** an unopposed hunt now runs about **twice as long** (the pacing
+check is 200 x K = 409 s). That is the price of world speeds in a world twice as wide. To get the old pace back, raise
+the mood levers' cruise (`CruiseCalm` and the rest, x K) - but then the creature outruns the vessels, the reason §64.4
+kept world speeds.
+
+**Two defects this found, fixed:**
+- **A creature parked short of a plant waited for ever.** When a plant lies past the roam, the goal is clamped; the body
+  arrives on it and stops, and a body at rest does not turn, so its mouth never reached the plant - the Severing Antlion
+  sat 171 u off one for 270 s and starved. Both directors now rest a plant they have sat parked short of for
+  `GiveUpSeconds` (6 s) and choose again. The geometry is the same at the research scale (x 1/K); the new timing only
+  happened to pick that plant.
+- **Severing's `SeverLink` tore the Ten-Headed Serpent in two.** At 6.5 plan voxels (the research 13 u) its coils read as
+  two pieces at most moments - harness T20 passed only at its 6 s snapshot, and failed at 9, 12 and 25 s even at the
+  research body (`TANDAVA_DIAG=knots`). At 8 voxels (32.7 u) no whole body leaves a knot over 17 members, and a 30% slice
+  still parts every form tested.
+
+Before / after (one scale per row): `Docs/Ecology/FaunaScale/tandava_before_after.png` - the arena, and the Great
+Serpent's head with its 3.55 hearts beside a halo ring's 24 u mouth.
+
+### 64.6 `PlantScale`: a phyllotactic plant grown whole
+
+`FloraVariantTuning.PlantScale` (−1 = keep the prefab) is the phyllotactic family's `LatticeScale`: `PhyllotacticFlora`
+multiplies its segment length, whorl radius and every stem and leaf prism's cross-section by it, so the plant's shape,
+its prism count and its collider count are unchanged and its volume (its food) is x `PlantScale`^3. A scaled plant's
+heart prism admits its new size (`HealthPrism.AdmitTargetScale`); an unscaled species keeps the shipped trim exactly.
+It is how a cell grows more food without more plants. Tandava is its first user (1.855 on five species, §64.5).
+
+### 64.7 The substrate harness and the arms-race policies
+
+`Tools/Build/substrate_harness/run.sh` had not compiled since `SwarmTickJob` began running the sort and grid cores (its
+netstandard2.1 profile build listed neither); both are in its core list now and **every substrate test passes** (197).
+The shoal's and the harriers' trained networks were **not retrained, and need not be**: every input they read is
+divided by the pond's radius, a perception radius or a speed, and those stayed in world units. What grew (body,
+spacing, catch and confusion radii, §64.4) feeds the steering spring and the catch rule, not the networks, and the
+harness's arms parity and behaviour checks (A1-A4) pass.
+
+### 64.8 A Mass creature has SIZE: its body holds its heart's swing (Garrett, 2026-10-27)
+
+*"The sharks have a mass crystal that would be fine, but with the effect on mass crystals where the triangular segments
+socket in and out of the crystal, the segments end up clipping with the shark's spindle body ... let mass have size."*
+The Mass crystal's depth prisms (`CrystalDepthPrisms`, `MassDepthPrisms.mat`: `_Reach` 2.5, `_PlateScaleStart` 0.6,
+`_FaceSplit` 0.25 x `_SplitUnit`) ride columns out from the crystal: at the one crystal size the crystal is **5.0 u** in
+radius seated and its segments reach **11.85 u** at the tops of their columns (2.37x), the far side of the crystal open
+whichever way the camera looks. A creature whose heart sits in a cavity of its own translucent spindle body (the shader
+is transparent) sees every segment that crosses the skin. So **a Mass creature is grown until the whole swing clears its
+body**: its Mass variant sets `FaunaVariantTuning.BaseBodyScale`, and `LightFauna` carries the body-relative dials
+(separation, consume, feeding cluster, attack; detection never less than consume) by the variant's body against the
+prefab's. Speeds, senses and territory stay world. Charge, Space and Time variants keep the prefab body.
+
+| Mass variant | body clears the swing at | shipped (x 1.05) | root | body length |
+|---|---|---|---|---|
+| Shark | x 3.44 | x 3.61 | 0.8385 → 3.03 | ~56 → 203 u |
+| QuadFish | x 2.50 | x 2.63 | 2.0286 → 5.33 | ~46 → 122 u |
+| Clawfish | x 4.00 | x 4.20 | 1.6412 → 6.89 | ~28 → 120 u |
+
+Measured by posing every depth prism at its column top against the body's triangles and body prisms (a ray from the
+heart to each crystal vertex that crosses one is a clip): before, 39% / 13% / 30% of the crystal crossed the body at full
+reach (14% / 3% / 16% already at rest); at the shipped scales, 0% at rest, half and full reach. The measurement ran on a
+scratch dump of the shipped prefabs through Amoebius's content library - **no gate holds these numbers yet**; the gate
+to add is `verify_fauna_heart_seat.py` measuring the swing rather than the seated sphere. Before / after:
+`Docs/Ecology/FaunaScale/mass_before_after.png`.
+
+**Where size cannot help, and what is left open:**
+- **The Brittlestar and the tadpole** each hold their heart in a quasi-spherical cavity (Garrett, 2026-10-27). The first
+  measurement said otherwise only because the dump placed skinned vertices by the renderer and not through their bones;
+  skinned properly (the shark, QuadFish and Clawfish numbers above do not move), the cavities are small against the
+  crystal: the Brittlestar's disc wall 1.8 u from its heart (with a knob and ~10 small pieces INSIDE the crystal's rest
+  hull), the tadpole's three-pronged head basket 1.1 u. To hold the crystal at rest / its whole swing they need
+  **x 2.5 / x 4.5** (the Brittlestar, the inner pieces aside) and **x 4.9 / x 10.5** (the tadpole - a schooling species
+  ~120 u long). Not applied yet: a decision for Garrett. Slices: `Docs/Ecology/FaunaScale/heart_cavities_slices.png`.
+- **The shark's teeth** (its danger prisms) sit 0.5-1.7 u from its heart - the heart is in its jaws - so they pass
+  through the crystal at any size, as they did at rest before this change.
+- **Space for fauna**: §64.9.
+
+**What it costs.** No collider is added. A Mass shark's body prisms are x 47 the volume of its siblings' (about 2,000 a
+body), against cell Frenzy volumes in the millions; it is food when it dies.
+
+### 64.9 SPACE takes ROOM: spread, reach and aspect (Garrett, 2026-10-27)
+
+With size Mass's, Space's fauna identity is three things, one number - the plants' own Space reach,
+`FloraElementalForm.ReachScale(Space)` = **x 1.346**, so "Space reaches 1.35x further" is one law in the cell
+(`FaunaElementalForm`):
+
+- **SPREAD** - a Space school keeps x 1.35 the spacing (`LightFauna` separation; `Boid` separation and cohesion). It is
+  seen only in a population of two or more.
+- **REACH** - a Space creature senses and strikes from x 1.35 further (`LightFauna` detection and attack; `Boid`'s feeding
+  reach). Felt more than seen.
+- **A SPINDLY BODY** - the body itself, by the LATTICE FLORA'S PROPORTIONAL RULES (Garrett, 2026-10-27: "exaggerate
+  space more while maintaining fidelity ... elongating its prisms and modifying the spindles to better contain them ...
+  it should use the proportional rules used in the lattice flora"; seen in the editor: "it should be more exaggerated so
+  it is significantly longer than the mass shark"; then, 2026-10-28: "the space spindle needs to be universally scaled to
+  bigger than mass, but we must erode and thin its thickest sections so the whole spindle gets more spindly"):
+  - **scaled whole, by the lattice's own Space:Mass reach.** In a plant Space reaches x 1.35 and Mass draws in to
+    x 0.82, a ratio of (Mass leaf volume / Space leaf volume)^(1/3) = **1.647** (`FaunaElementalForm.SpaceLengthOverMass`).
+    The Space shark's root is that times the Mass shark's, uniformly: **x 4.994** (`BaseBodyScale`), **335 u** long against
+    the Mass shark's 203 and the Charge and Time sharks' 56. A uniform root keeps the rig, the bones and every prism
+    square (the first pass stretched the root along the spine instead, which a turning bone under a non-uniform parent
+    shears);
+  - **then its spindles are ERODED** (`FaunaVariantTuning.ErodeSpindle`, `SpindleErosion`): each skin is cut into 24
+    slices along its principal axis and a slice's half-width across its narrowest axis sets its girth factor,
+    `(width / reference)^(1/2.11 - 1)` above the reference and 1 below it (`FaunaElementalForm.ErodedGirth`). The
+    exponent is the lattice's Space leaf anisotropy inverted: where a Space leaf drives the ratio of its long axis out
+    by 2.11, its body draws a thick section's ratio to a thin one IN by the same power, so the thick parts lose most.
+    The reference is set so the **thickest section comes back to 1/1.647 - the Mass shark's girth** (what Space spends
+    on length it takes from girth); the tail stalk and fin tips keep their whole size. On the shark the head and
+    barrel (half-width 4.2-4.6 at the prefab) come to x 0.61-0.63, the snout tapers 0.67 → 0.78, and from the tail stalk
+    back nothing is eroded. The body erodes about a spine through the HEART, so its cavity closes concentrically; each
+    wing erodes along its own spine and is then moved with the body where it is rooted, so it stays attached. A vertex
+    keeps its place along the spine; normals take the map's inverse-transpose; skin weights and bones are untouched, so
+    the rig drives the eroded skin as it drove the prefab's. One eroded mesh per prefab mesh, shared by every Space shark
+    (the shark model's import now has Read/Write on - `Shark_model.fbx.meta`). **Only the body's own skins are eroded,
+    never the heart** (`Fauna.IsSpindlePart`; Garrett, 2026-10-28: "you stretched it such that the crystal inside is also
+    getting stretched, always be careful about stretching hierarchically"): the Space heart is itself a skinned mesh under
+    the root, and the first pass took it with the wings and squashed it from 1.46 to 0.98 across two axes (a dead shark
+    dropped the squashed crystal too). The offline renders swapped a fresh crystal in after the erosion, so they could
+    not show it; the check now runs the game's `ApplyVariantTuning` with the Space heart provisioned first, as spawning
+    does, and the heart comes out 6.95 u on all three axes;
+  - **an element authors the SHAPE, the size is FITTED to the largest that clears, less 3%** (the lattice's §49.10
+    rule): each body prism moves with the skin it sits in and spans its own eroded SOCKET - the authored prism box, carried
+    by the erosion - less 3%; the leaf law (`FloraElementalForm.ShapeLeaf`, anisotropy 2.11) says how thin it is against
+    that length; it is never thicker than its socket (`Fauna.ErodeSpindle`). The dorsal is 45 u long and 1.7 thick, the
+    bellies 21-22, the wings 27; teeth keep their size at their new seats;
+  - **measured** (headless, on the shipped prefab through Amoebius's content library, the game's own
+    `Fauna.ApplyVariantTuning` run on it): every prism corner inside the skin, no prism interpenetrating another (a
+    separating-axis test over every pair), 0% of the Space crystal crossing the body or a prism. The game's C# and the
+    offline prototype agree to 0.02 u on every skin vertex. `FaunaElementalFormTests` pins the law.
+
+  **The rig is rebound at the new size.** The editor showed the first pass clipping everywhere, on the Mass shark too:
+  the shark's armature bones are driven by Animation Rigging (DampedTransform chains down the spine, tail and wings;
+  aim constraints on the jaws), which records every constraint's offset in WORLD units when the RigBuilder builds the
+  rig at spawn - before the variant resizes the body. `Fauna.ApplyVariantTuning` rebinds the Animator to its default
+  pose and rebuilds every RigBuilder whenever it changes the root scale (`Fauna.RebuildRig`).
+
+  **The Mass prisms did not fill their sockets on ANY shark - the scale animator trimmed them** (seen on the Mass shark,
+  2026-10-28: "the mass prisms are still not positioned correctly"). `Prism.Initialize` re-reads a prism's target
+  through `PrismScaleAnimator`'s [0.5, 10] per-axis window, which suits a trail prism grown into a bound and silently
+  trims a STATED size: the shark's dorsal (authored 18.96 long) came out 10, its wings 12 → 10, its teeth 15 → 10, and the
+  Brittlestar's 0.3-thick spines were pushed up to 0.5 - on every element, with nothing logged. The offline renders
+  read the prefab's own scales, so they showed prisms the game never drew. `Fauna.SeatAuthoredSize` (LightFauna and
+  Boid, right after `Initialize`) admits each body prism's authored size (`Prism.AuthoredScale`) into the window and
+  retargets it. Reproduced in Amoebius: without it, the shark's teeth target 10 against an authored 15.
+
+  Authored on the Space SHARK only (`Docs/Ecology/FaunaScale/sharks_four_elements.png`). Another species takes it with
+  `BaseBodyScale` = 1.647 x its Mass scale, `ErodeSpindle` on, and Read/Write on its model's import.
+
+Spread and reach are a code law keyed on the creature's ELEMENT (set at `AssignLineage` from the rolled variant), so
+every Space LightFauna and Boid has them with no config changed; both multiply where a radius is READ, so a pooled
+body that comes back as another element cannot compound them. The heart divides its world size out of its parent PER AXIS
+(`LifeFormCrystal.SetWorldScale`; identical for a uniform parent). `Fauna` remembers the prefab's root scale, its skins
+and its body prisms' seats, and a variant that keeps the prefab gets them back (a pooled Mass or Space body does not
+keep its last size, skin or needles). `LightFauna`'s body ratio is taken by GIRTH, times the eroded girth
+(`Fauna.BodyGirthFactor`), so the Space shark's body-relative dials read the Mass shark's girth.
+
+
+---
+
+## 65. MASS is armoured and its shield carries its volume; CHARGE makes every prism danger; SPACE always out-spans Mass (Garrett, 2026-10-28)
+
+*"We are going to loose the 'chunky' prisms now that we have these scaled up versions of mass. Lets also shift the
+shielding affect from charge to mass so the prisms will need further adjustment to account for the mass prisms being
+shielded. Then the new charge affect will be to make all of its prisms danger prism, not just the select ones the other
+elements have."* Then: *"go with option B, mass has size, it needs to add volume and it needs the crystal clearance.
+lets keep it consistent"* - and the four calls: the quasicrystal's heart is SEATED (not the whole plant grown), the
+gyroid's octagon ring stays danger on a Mass plant, the fauna follow the same law, and every lifeform is updated and
+inspected for existing errors on the way. Then, seeing Mass grown to out-span Space (the Borromean's Mass membrane 427 u
+across against Space's 222): *"no space should always have greater span but significantly less volume, more spindly,
+and thinner where it is thickest. the shielding should increase the volume of mass"* - and, asked whether Mass keeps
+the law's x2.09 by widening Space or fits under Space's spans, *"fit Mass under Space"*. Option B's growth is therefore
+bounded: a Mass plant spreads until its shields and its heart's swing clear, and never as far as Space.
+
+### 65.1 The law (`ElementalArmour`, `FloraElementalForm`)
+
+| element | its prisms | its form |
+|---|---|---|
+| **Mass** | **shielded**, re-armoured one per `ElementalArmour.ShieldPeriod` (1 s) for life; the shield, 4.5x the box, **is its volume** | the anchor's (Time's) shape at **x0.64 on every axis** (`MassAxisScale`, `MassLeafVolume` 0.2301 - box 0.26x, shielded **1.18x** the neutral), `MassLeafAnisotropy` 1 (was 0.45, the "chunky" plate); a growth-rule Mass plant is the Time plant x0.64 (`ReachScale`), a fitted one spreads only until its shields and its heart clear, inside Space's span |
+| **Charge** | **every prism danger**, never shielded (a shield clears danger, `PrismStateManager.ApplyShieldState`) | the species' own form |
+| Space, Time | as authored | Space's aspect and reach (§51), Time's clock |
+
+Every element keeps its AUTHORED danger prisms (a gyroid's octagon ring, a shark's teeth). On a Mass lifeform they stay
+danger: `LifeForm.ShieldRegenCoroutine` skips them now. It used to shield every prism, so it stripped a Charge gyroid's
+ring within its first cycle - an existing error, fixed here.
+
+**An armoured body is fitted for its octahedra, inside Space's span.** A shield is the octahedron circumscribing the box
+(semi-axis 1.5 x the prism, 4.5x its volume, `ElementalArmour.ShieldReach`), so on a flush tiling a plate k x the
+anchor's needs the plant spread 3k for its shields to clear, and shows 4.5k^3 the anchor's volume. Space's narrowest
+span is 2x the anchor's (the Borromean membrane, the quasicrystal lattice), so the largest plate whose shields clear
+inside it, with the 3% margin, is k = 2 / (3 x 1.03) = 0.647 - taken to **0.64** so the spread stays strictly inside.
+That one number is the Mass law: plate x0.64, shielded x1.18, the plant spread only as far as its shields and then its
+heart's full swing need - `ElementalArmour.HeartSwingClearance` = 11.85 u (the Mass crystal's depth prisms at the top of
+their columns, §64.8) x1.05 = **12.44 u** - or the heart SEATED where spreading cannot reach it (the quasicrystal).
+Every other heart keeps the crystal's seat, **2.55 u**, clear of its prisms' boxes (`HeartSeatClearance`, the figure the
+quasicrystal seat is proven against).
+
+**What fitting Mass under Space costs, stated.** Charge, Time and Space keep their volumes exactly (§51's normalisation,
+with §51's Mass in it, so nothing else re-sizes). MASS leaves that average: its box is 0.26x the neutral one, so a Mass
+plant is LIGHT food (a second pass eats only the box) and a cell's prism-volume ladder reads less of it than it did -
+cells growing Mass flora reach their thresholds later. For a few hours of 2026-10-28 Mass was the Time plate x1.2786
+grown x3.2-4.3 for its shields ("mass has size"); that is what this replaced.
+
+### 65.2 Where each family stands
+
+| family | Mass | Charge | gate |
+|---|---|---|---|
+| Gyroid | 5.759 x 2.175 x 0.959 on a x2.099 lattice (plate x0.64; lattice x1.343 clears its shields by 10%, spread to x2.099 for the swing; Space x3.19) | the Time plate | `fit_shield_clearance.py --check` |
+| Schwarz P | 3.02 x 1.868 x 0.639 on x2.702 (shields clear at x1.601, the swing at x2.702; Space x5) | the Time plate 4.72 x 2.92 x 1 (flush) | `fit_shield_clearance.py`, `fit_schwarz_p_leaf_sizes.py` |
+| Quasicrystal | 14.08 x 0.64 x 0.64 strut on a x1.936 lattice (Space x2); heart SEATED 22 u in (`FloraVariantTuning.HeartSeatInset`, `QuasicrystalAssembler.ConfigureHeartSeat`), swing clear 13.7 u | 22 x 1 x 1 | `fit_quasicrystal_strut_sizes.py --check` |
+| Borromean | 2.996 x 1.773 x 0.453 plates on a membrane x1.925 (radius 107 against Space's 111 and Time's 56); heart clear 12.45 u | the anchor | `verify_borromean_surface_tables.py` |
+| Nested gyroid | quotes the gyroid's Mass: radius 135 against Space's 205, heart clear 24.8 u; its only touching shields are 5 pairs of the authored octagon ring, which never shields (the 4 sheet-to-sheet fusions the old Charge armour had are gone) | quotes the gyroid's | `author_nested_gyroid_flora_assets.py --check` |
+| Phyllotactic (8) | the Time plant scaled x0.64 (Space reaches x1.29 the Time plant's); shields fuse at the stalk's joints and in its whorls exactly where its boxes meet by design, as Charge's did | the Time plant | `measure_flora_heart_clearance.py --check` |
+| Branching (4) | the Time plant scaled x0.64; a leaf that curls into the heart's clearance is not laid | the Time plant | `measure_flora_heart_clearance.py --check` |
+| Mandelbulb (4) | see 65.5 | | `measure_mandelbulb_flora.py` |
+| Wall | **retired** (Garrett, 2026-10-28: "the wall flora can retire so the serpent wall feels less synthetic"): its leaf WAS the Serpent's own `WallBlock Variant`, so the vessel's wall read as a plant. Prefab, four configs, the Spawn Matrix row, the Codex entry and `AssembledFlora.PreviewWall` deleted; `WallAssembler` stays (the Serpent's). | | |
+
+**Families with a fit move it from Charge to Mass; families that shipped the armour unfitted stay unfitted.** The
+lattice, Borromean and Mandelbulb species fitted Charge for its shield, and those fits now belong to Mass. The
+growth-rule families never had one. Their prisms meet BY DESIGN (a stalk is overlapping segments "so successive
+segments overlap into one stalk instead of reading as beads", a whorl is dense around its node), and an octahedron
+three times a box fuses wherever two boxes touch. A fit there would cut the stalk into beads.
+
+### 65.3 The heart's clearance in a growth-rule plant (existing error)
+
+Every phyllotactic root collar was centred ON its crystal. The heart sat inside the collar on all 32 configs, every
+element, and on Arbor (a 4.6 u collar around a 3.55 u crystal) it was entirely hidden. The collar now stands up its
+growth axis by `Flora.HeartSeatDistance` (the clearance plus the collar's reach along the axis, so every root of a clump
+clears it whatever its offset across the axis), on a STALK limb grown from the heart and stretched to the seat
+(`Flora.StretchFreshLimb`, rule 3 of the limb contract; the collar's limb `AttachToParent`s to it, so every limb keeps
+its path to the crystal). A shoot, a whorl leaf (the Rosette's first whorl cupped back to 10.0 u) or a branching leaf
+(Cacti and Pine curl back onto their hearts) that would come inside the clearance is not grown (`Flora.IntrudesOnHeart`,
+measured to the box of `ElementalArmour.PrismReach` half-extents, which contains the shield). The phyllotactic preview's
+collar also lay sideways (identity rotation while the plant grows up its axis); it now wears the axis like the live one.
+
+Measured by `Tools/Build/measure_flora_heart_clearance.py` (the shipped `TryPreviewGrowth` run in Amoebius's content
+runtime on each canonical config, `Tools/Build/flora_heart_harness`): **52/52 hearts clear** - Mass 12.44-44.6 u to its
+octahedra, every other element 2.55-57.3 u to its boxes. It costs prisms where a plant curls into its own heart, and a x0.64
+Mass plant curls into it most: the Mass Cacti grows 55 leaves against Time's 136, the Mass Pine 201 against 374, the
+Mass Rosette 54 against 73.
+
+**Also found while measuring, and NOT fixed** (both are the family's own growth rule, not the armour):
+- **Pine and Cacti leaves interpenetrate one another heavily** (Pine: 685 interpenetrating pairs among 374 leaves, the worst
+  at s* 0.004 - near-coincident). `BranchingFlora` foreshortens its step to `branchingScaleFactor / (depth - 1)` - 0.14 u at depth 100
+  - while every leaf stays ~4 u, so deep leaves pile on one another. Rule (c) of `/flora` says no prism may
+  interpenetrate another; this family predates it.
+- **`BranchingFlora` scales a child limb's ROOT** (`ScaleAndPositionBranch`: `spindle.localScale / depth`, parented
+  under its parent), against the limb contract's "scale the CHILDREN, never the root". The preview reports leaves at
+  `LeafSize` world size; what a deep leaf actually renders at under that chain was not measured here.
+
+### 65.4 Fauna (`Fauna.ArmourBody`)
+
+`LightFauna`, `Boid` and `WormSegmentFauna` call `Fauna.ArmourBody` once the body is initialised and the heart is in
+place:
+- **Mass**: every plain body prism is shielded, and `Fauna.RearmourBody` re-armours one per second. A creature's body
+  is not the cell's grazeable mass, so `LifeForm`'s plant regen never saw it.
+- **Charge**: every body prism is danger.
+
+Only what the ELEMENT changed is undone on a pooled body's next life. What the prefab authored (the worm head's shielded
+plate cage, the teeth) is never touched.
+
+Mouths, jaws and the Space erosion's "a tooth keeps its size" read `Fauna.IsAuthoredDanger`. On a Charge creature every
+prism is dangerous, and a mouth at the centroid of its whole body would be no mouth.
+
+At the §64.8 body scales the Mass shark, QuadFish, Clawfish and Brittlestar keep their 12.44 u swing clear of every
+shield (nearest 15.6 / 23.5 / 53.1 / 17.7 u), so no Mass creature is regrown. **The Mass tadpole's heart sat INSIDE
+its one body prism's shield** (a 0.65 x 0.65 x 5.7 needle trailing 4.75 u behind it: its octahedron reached 3.8 u past
+the heart). Growing it alone cannot clear that, so (Garrett, 2026-10-28: "increase the mass tadpole prism in the other
+dimensions and decrease in the problematic one. with a scale up it should still have a large prism") its prism is
+SHORT along its swim axis and wide across it - `BodyPrismScale` 0.8 x 0.8 x 7 -> 2.117 x 2.117 x 1, the same local
+volume - on a body grown x3.67 (`BaseBodyScale` 0.8175 -> 3, the Mass shark's own ratio over its siblings): a
+6.35 x 6.35 x 3.0 u prism 17.4 u behind the heart, its shield 12.93 u clear, 49x the Time tadpole's volume. Its school
+spacing follows its body (`SeparationRadius` 30.66 -> 112.5, `FeedingClusterRadius` 20.44 -> 75, `CohesionRadius`
+102.2 -> 150 so it stays above separation); its senses stay world. Its SKIN's head basket is still the §64.8 cavity
+question.
+
+`SwarmTadpoleFauna` and `SubstrateAgentFauna` are not armoured: their body's danger and shield are their behaviour (the
+swarm tiers).
+
+**Space always out-spans Mass among the creatures too** (Garrett: "space should always have greater span but
+significantly less volume, more spindly, and thinner where it is thickest"). Only the shark had §64.9's Space body; the
+other four Space variants sat at their prefab size, SMALLER than their grown Mass siblings. Each now authors
+`BaseBodyScale` = `FaunaElementalForm.SpaceLengthOverMass` (1.6477) x its Mass sibling's and `ErodeSpindle` 1:
+
+| Space variant | root | length (Mass sibling) | thickest section after erosion | heart / nearest body prism |
+|---|---|---|---|---|
+| QuadFish | 2.029 -> 8.782 | 200.8 (121.9) | 0.607 of its girth | 6.95 / 27.8 |
+| Clawfish | 1.641 -> 11.353 | 197.2 (119.6) | 0.607 | 6.95 / 111-139 |
+| Brittlestar | 1.382 -> 2.277 | 132.2 across (80.3) | disc whole; arms eroded | 9.6 / 35.6 |
+| Tadpole | 1.081 -> 4.943 | 37.4 (22.7) | 0.607; its prism refit to 1.89 x 1.89 x 24.0, thinner than the Mass one | 9.6 / 16.7 |
+
+`Fauna.ErodeSpindle` now erodes a static `MeshFilter` spindle as well as a skin (the QuadFish, Clawfish and tadpole
+bodies are MeshFilters, so the erosion did nothing to them), and `SpindleErosion.HasSpine` leaves a body with no spine
+whole: the Brittlestar disc's second principal spread is ~0.85 of its first (a fish's ~0.5), and slicing it along an
+arbitrary in-plane axis squashed it into an ellipse. The four models import readable (`bonita.fbx` is shared with the
+flora branch spindles, which never erode: memory only). The Space tadpole's school spacing follows its body (x4.573,
+on top of the Space spread); its senses stay world. The Space shark is unchanged (334.8 long); its teeth still sit
+in its crystal, as §64.8 records. Measured through the game's own `AssignLineage` in Amoebius at bind pose.
+
+### 65.5 The Mandelbulb family
+
+Its Charge armour fit (a 0.60 cross-section shrink and a 0.45 dash) moved to Mass, re-derived for the law
+(`mandelbulb_flora_model.py`, `measure_mandelbulb_flora.py`, `author_mandelbulb_flora_assets.py`). A Mass prism is the
+Time prism x0.64 on every axis, and the Mass shell is spread only as far as Space's span allows. The cap is 0.97x Space,
+measured at 0.92-0.93 on all four species. It is a per-element `MandelbulbFlora.ElementalForm.ShellScale` (1.954 on
+Mass, 1 on every other element), the one C# addition. The dash follows from that cap: `LengthFactor` 0.512, or 0.58 on
+the Watershed, which strides at its own walk step.
+
+Clearing a ribbon's own chain would need 3 x LengthFactor < 1, a shell of 2.13x, which is past Space's 1.29. So **Mass
+shields touch along each ribbon's chain by design**, as the growth-rule families' do; the tool reports this and does not
+gate it. Shielded, Mass is 1.18-1.19x Time's volume. The Mass heart's Fall stop is derived rather than authored: the
+12.44 u swing plus the species' neutral stop x0.64. Heart to nearest shield: 13.33 / 13.68 / 14.66 / 13.63 u
+(FractalFoliage / CoralBloom / Watershed / Apollonia). CoralBloom/Mass lays 7 dives, not 8: an eighth left a 20.7 u
+hole in its Fall.
+
+Gates: `author_mandelbulb_flora_assets.py --check` and `verify_mandelbulb_flora_tables.py` pass (the latter needs
+`DOTNET_ROOT=/opt/dotnet8`). `measure_mandelbulb_flora.py --check` fails 4 bounds, all CoralBloom Space/Time Fall bounds
+that already failed on bleeding-edge. The Apollonia/Mass ladder, red before, now passes.
+
+**Downstream:** the Arboretum cell regenerated. Tollway's intensity ladder needs its anchor plants to grow with the
+court, and the Borromean's lighter Mass element took its mean plant (2,512) under the Cacti's (3,000), so intensities 3
+and 4 swap: intensity 3 is now the Borromean, intensity 4 the Cacti. Intensity 2, which the card art renders, is
+unchanged.
+
+### 65.6 Assets and generators changed
+
+- `author_flora_armour.py` (was `author_charge_flora_shields.py`): 44 canonical flora configs, Mass >= 1 and Charge 0.
+- The Hesperides ladder (`Tools/ecosim/gen_hesperides_assets.py`) authored Mass x1.35 and Charge x0.85 cross-sections
+  ON TOP of the fleet law, so a Mass Hesperides plant was enlarged twice. Both rungs are now the species' own leaf: 16
+  canonical and 8 cell configs, leaf lines only, because the script rewrites its assets wholesale and other tools own
+  their populations.
+- The Hesperides Schwarz P topiary drops its chunky slab for the flush Time plate. It rolls its element with ONE leaf on
+  the base lattice, where that is the only legal plate (`fit_schwarz_p_leaf_sizes.py --write`); a Mass topiary is
+  armoured unfitted there, as a Charge one was.
+- `SubstrateCellHost.SenseFood` skips armoured (Mass) flora.
+
+**Still to do:** cells that grow lattice species carry 9-16x more Charge volume per prism now (gyroid 4.9 -> 45.9, Schwarz P
+0.85 -> 13.8: the Charge plate is the anchor's, not the shrunken armour fit), so their phase-ladder headroom needs re-measuring
+(`FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines`). The Lattice cell was regenerated (`FrenzyEnterVolume`
+3,295,000 → 2,720,000).
+A rough offline estimate (cap x plant budget x the configs' raw leaf, averaged over each palette - the runtime law
+is not applied, so treat it as a direction): Blob's mature flora +23%, Wildlife Blitz cell 4's +44%, Tollway's -15%.
+**Tandava** (Garrett: "meals shrink to the reef", then, shown the pacing cost, "grow the reef, keep meals"): a meal
+was 4,000 x the eggs' mass ratio (25,521), which only the chunky Mass Borromean could hold. It is now stated in the
+reef's own terms - 90% of its biggest plant - and the reef is grown a further x1.4 whole (`REEF_GROWTH`, PLANT_SCALE
+1.855 -> 2.597) so that plant holds a meal of 26,483 again: the serpent's tested pacing (free runs 191-234 s against
+the 409 s ceiling) is unchanged. The harness's "it rose where it stood" bound now allows the coils' roam that the cell
+check above it already allows.
+
+Before / after, the growth-rule families: `Docs/Ecology/Armour/growth_flora_before_after.png`.
+
+### 65.7 Populations drawn as data: their hearts and their elements (Garrett, 2026-10-28)
+
+Garrett, after flying the Swarm cell in freestyle: *"a bunch of the swarm fauna are still using outdated versions of the
+inactive crystals, etc. lets finish this job. make the elements complete and consistent and polished for all life
+forms"*. Two existing errors, both on the lifeforms that are DATA rather than GameObjects (a swarm, a builder colony, a
+substrate), which every earlier pass of this law missed because they have no prisms of their own to arm.
+
+**The hearts (`CrystalHeartDraw`).** A swarm, builder or substrate member's heart was drawn by the MEMBER shader
+(`SwarmMemberInstanced`) with a look of its own: every renderer mesh of the elemental crystal - the Charge crystal's arc
+overlay drawn as solid geometry, the skinned crystals in their bind pose - under one rim-lit pair (pow 4) in the neutral
+domain colours. A living heart on every other lifeform is the crystal itself, on its INACTIVE materials: the Mass depth
+prisms on `MassDepthPrismsInactive`, Space and Time on `BlueCrystalFresnelMateriall` (a half-lit Fresnel with its facets
+spread apart), the Charge shell on `ChargeCrystalMaterial` tinted the neutral pair. Those hearts now are that crystal:
+`CrystalHeartDraw` draws each element's crystal MODELS (`Crystal.CrystalModels`, the renderers the Crystal tints - not an
+overlay its own driver rebuilds each frame) with the materials the prefab authors on them, painted with the living pair
+exactly where `Crystal.FindColorPropertyNames` paints it, the Charge shell's crawl held silent as its seam walk holds it
+(`CrystalChargeArcs.SilenceCrawl`). One `RenderMeshInstanced` per model submesh; the poses come from a Burst job
+(`SwarmHeartPoseJob`) over `SwarmHeartPose`, the proxy chain term for term (root at the interpolated member, turned
+`LookRotation(face, up)`, the one crystal size x the molt's shrink x the newborn's bloom). The member shader draws the
+BODY only. What is not drawn is each crystal's per-crystal motion (the Mass depth ratchet, the Space spin, the Time
+flip, the Charge seam walk): those are drivers on one crystal each, and every crystal shader is written to read at rest
+without its driver. `OmniDepthPrismShader` and `SpreadFresnelShader` gained GPU instancing for this (`#pragma
+multi_compile_instancing`), and their two heart materials switched it on (the flag also keeps the variant in a build;
+`ElementalArmourTests.EveryHeartModelMaterial_IsInstanced`). In Amoebius the hearts of these populations are now drawn
+at all (it has no backend for the bodies' procedural draw).
+
+**Their elements (`SwarmInstance.ElementLaw`).** The swarm still ran the OLD law: a census plan's Charge members wore the
+SHIELD and its Mass members were bare; builder colonies and substrates ignored the element altogether. Now every one of
+them takes the law: a Charge member's prisms are all danger (tier 1, never shielded) and a Mass member is armoured
+(shielded, the shield look while it shows no danger). A strike still shows danger on any element, and a striking Mass
+member keeps its shield - the swarm's round 11d-2 rule. The frame carries it, so the look, the spatial index's shield bit
+(every weapon) and a proxy's real body prism (every contact, `SwarmTadpoleFauna.SetTier`, the substrate's new
+`SubstrateAgentFauna.SetTier`, the builder's `Tier`) all agree. A Charge substrate burns at a danger prism's full
+weight even where the species' strike is lighter or never burns (the leech). Proven by the swarm harness (R11c-2: the
+rule over every element x look x strike, and live: 1,600 Mass member-ticks all shielded, 18,880 Charge member-ticks all
+danger; R65a-c: the heart pose is the proxy chain, a molt swaps the crystal at its midpoint with no pop, every heart is
+drawn exactly once across the four element lists, and a pose that ignores the molt draws every molting heart twice).
+
+**Not changed: a director's scripted forms.** Tandava's plans author their own tiers (Shombith's designed body: its
+Mass armoured but bare while it eats; 167 of its Charge members still wear the old Charge shield, against 681 danger).
+`SwarmTickJob.MemberTier` leaves a scripted plan to its author; whether Tandava's Charge members drop the shield is
+Shombith's call.
+
+**The NCA creature.** A creature whose body is a network rather than prisms (the Swarm cell's lizard, Time - which the
+law leaves as it was) now takes the law when it is Mass or Charge: its body is drawn in the shielded or danger block
+material, its segments' index entries are shielded, its hit prism is shielded or danger, a vessel's pass through a Mass
+body sheds that segment's shield before it can bite (one shed segment re-armed every `ElementalArmour.ShieldPeriod`),
+and a pass through a Charge body lands the danger contact (`NcaCreatureConfigSO.ContactEffect`).
+
+**The Swarm cell's whale band lost its food, and grazes Time now.** An armoured plant is no food outside a Frenzy
+(`Fauna.IsInedibleShield`), so once Mass carried the armour, the Inner whale's Mass Borromean forest became inedible:
+the old law's pufferfish problem, with the elements swapped. Its band now grazes Borromean Time, as the pufferfish's
+always has (Garrett, 2026-10-28: "graze Time, stay small"). Its 3 plants pay about a sixth of a full whale at the
+cross-element price, so the whale stays small. More plants break the collider ceiling, and big enough plants would
+outgrow the band (`Docs/SWARM_FAUNA.md` §14.2). The Spawn Matrix's "Swarm Borromean" row offers the cell's Space and
+Time forks; the canonical Borromean row still offers Mass. Found by sweeping every `author_*.py --check` at ship
+time, not only the ones the gates run. The Wrecking Ball's Borromean forks (Rampage's, re-armoured on this branch) and
+the Clawfish anatomy generator (whose seat predated the body scale) had drifted the same silent way.

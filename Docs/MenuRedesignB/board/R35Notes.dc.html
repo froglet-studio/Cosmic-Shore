@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 35 notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#8C93C7}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.disp{font-family:'Aldrich',sans-serif;letter-spacing:.06em}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;border:1px solid #434C89;font-family:'Chakra Petch';font-weight:600;font-size:12px;color:#C9CDEA;box-sizing:border-box}
+.flip{background-size:400% 400%;background-repeat:no-repeat;animation:fx var(--q) steps(4) infinite,fy var(--t) steps(4) infinite}
+@keyframes fx{from{background-position-x:0%}to{background-position-x:133.333%}}
+@keyframes fy{from{background-position-y:0%}to{background-position-y:133.333%}}
+@keyframes r33Sea{from{transform:translateX(0)}to{transform:translateX(-480px)}}
+</style>
+</helmet>
+<div style="width:1920px;height:900px;position:relative;overflow:hidden;background:#00041F;color:#E6E9FF;font-family:'Aldrich','Chakra Petch',sans-serif"><div class="disp" style="position:absolute;left:80px;top:60px;font-size:34px">Rev 35 notes - hover</div><div style="position:absolute;left:80px;top:140px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Asked.</b> "Then we need some new hover animations."</div><div style="position:absolute;left:80px;top:230px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Today.</b> KitButton lightens its fill 8 % and its border 10 % on hover; KitHoverTint lifts a word to TextLight (nav tabs, keycaps); tiles and cards have no hover of their own. There is no motion, so the pointer gets almost no answer.</div><div style="position:absolute;left:80px;top:320px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>The rules every option keeps.</b> Hover is white (it is not a choice yet, so it is never the Selection blue, and elements carry no colour). It plays once on enter and rests; nothing idles. It is pointer-only: the pad and keys get the sky-blue focus ring, unchanged, and a control under both shows focus. Touch gets none. Locked controls (PORT) answer nothing.</div><div style="position:absolute;left:80px;top:450px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>Recommended: A (Lift).</b> It is the plainest 'this one': the rise and the rule say it without a second colour, and it is cheap (one transform, one width). B and D are the quiet choices when the control must not move (dense lists, the HUD); C looks richest but tells the player least.</div><div style="position:absolute;left:80px;top:580px;width:1760px;font-family:'Chakra Petch';font-size:19px;line-height:30px;color:#C9CDEA"><b style='color:#E6E9FF'>For the build.</b> One kit component, KitHover (replacing KitHoverTint), on KitButton, KitTile, the card and the nav tab: the look and its timings live on the theme asset (UIThemeSO), so a pick changes every control at once, and the animation runs only on enter/exit (no per-frame cost while resting). Numbers per option are on its board.</div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

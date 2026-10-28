@@ -912,6 +912,9 @@ ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay 
 HULL_ICON = 60                         # the hull, lit (Hull_Lit.mat) - no plate behind it (section 73)
 HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
 FLOWER = 34                            # the petals reach 0.42 of the sprite from its centre: the flower reads about 29 across
+GENRE_SHAPE = 24                       # the genre's element shape (ElementShapes/*_label.png), inside the 34 px slot
+GENRE_SHAPES = [K.meta_guid(f"Assets/_Graphics/ElementShapes/{e}_label.png")        # GameCard.GenreShapes: Charge..Time
+                for e in ("charge_pentagon", "mass_triangle", "space_kite", "time_diamond")]
 
 
 def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
@@ -978,7 +981,7 @@ def build_card(placeholder_art):
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
     # Section 90 (Shombith 2026-10-27: "Arcade shows a single petal, not per-vessel upgrade numbers"): the genre's ONE
-    # petal (GameCard.GenrePetal, the fleet's petal sprite in white), not the flower filled to a hull's bought level. On
+    # element icon (GameCard.GenrePetal, in white), not the flower filled to a hull's bought level. On
     # the body's right edge, small: a column centred in the body, so one petal sits in the middle and a two-genre mode's
     # second stacks under it (GameCard hides an empty petal by disabling its image).
     col = root.child(N("Flowers", "Flowers", R((1, 0), None, (-12, BODY_H / 2), (FLOWER, BODY_H - 8), (1, 0.5))))
@@ -986,9 +989,10 @@ def build_card(placeholder_art):
     for key in ("Petal", "PetalSecondary"):
         slot = col.child(N(key, key, R(size=(FLOWER, FLOWER))))
         slot.add("le", 114, le(mw=FLOWER, mh=FLOWER, pw=FLOWER, ph=FLOWER))
-        # The petal sprite reaches up from its centre (a flower's petal), so it is drawn 1.5x and lowered to centre it.
-        image_node(slot, f"{key}/Image", "Image", R(size=(FLOWER * 1.5, FLOWER * 1.5), pos=(0, -FLOWER * 0.32)),
-                   "TextLight", None, preserve=True)
+        # 2026-10-28 (Shombith: "the arcade cards again are using the old elelmental icons"): the image draws the
+        # element's SHAPE (GameCard.GenreShapes, the Codex's and the ability rows' icon), centred; the shape fills 0.95
+        # of its sprite, so it is drawn at 0.7 of the slot.
+        image_node(slot, f"{key}/Image", "Image", R(size=(GENRE_SHAPE, GENRE_SHAPE)), "TextLight", None, preserve=True)
 
     # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
     picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
@@ -1036,6 +1040,7 @@ def build_card(placeholder_art):
              f"  VesselList: {K.ref(11400000, VESSEL_LIST, 2)}\n"
              f"  GenrePetal: {ref(ctx.c('Petal/Image', 'img'))}\n"
              f"  GenrePetalSecondary: {ref(ctx.c('PetalSecondary/Image', 'img'))}\n"
+             "  GenreShapes:\n" + "".join(f"  - {K.ref(21300000, g, 3)}\n" for g in GENRE_SHAPES) +
              "  GenreFlower: {fileID: 0}\n"
              "  GenreFlowerSecondary: {fileID: 0}\n"
              f"  AvatarSpace: {ref(ctx.rt('Picks'))}\n"
@@ -1663,6 +1668,11 @@ def validate_prefabs(files, guids):
 
     check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
                  ART_BAND_H)
+    # 2026-10-28: the genre icon is the element's shape (Charge, Mass, Space, Time), never the lone HUD petal.
+    _, card = doc_of(files[prefab_path("ArcadeGameCard")], K.FileIds("ArcadeGameCard")("root#card"))
+    shapes = re.search(r"^  GenreShapes:\n((?:  - .*\n)*)", card, re.M)
+    assert shapes and re.findall(r"guid: (\w+)", shapes.group(1)) == GENRE_SHAPES, \
+        "GameCard.GenreShapes must name the four ElementShapes icons, Charge to Time"
 
     view = files[prefab_path("ArcadeView")]
     V = K.FileIds("ArcadeView")
@@ -1847,6 +1857,7 @@ def self_test(current, files, guids):
             r"(m_CorrespondingSourceObject: \{fileID: )\d+(, guid: " + K.prefab_guid("KitButtonSmall") + ")",
             r"\g<1>4242\2", t, count=1)),
         "the card art standing still": prefab_plant(card, lambda t: t.replace(ART_DRIFT_MAT, "0" * 32)),
+        "the genre icon back to the petal": prefab_plant(card, lambda t: t.replace(GENRE_SHAPES[0], GENRE_SHAPES[1], 1)),
         "the hull back to a dark render": prefab_plant(card, lambda t: t.replace(HULL_LIT_MAT, ART_DRIFT_MAT)),
         "the art band with no overscan": prefab_plant(card, lambda t: re.sub(r"  overscan: [\d.]+\n", "  overscan: 1\n", t)),
         "lists not embedded": prefab_plant(panel, lambda t: t.replace("  embedded: 1\n", "  embedded: 0\n", 1)),

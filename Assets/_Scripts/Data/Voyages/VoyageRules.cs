@@ -584,6 +584,46 @@ namespace CosmicShore.Data
             return result;
         }
 
+        /// <summary>
+        /// A new voyage sets out from wherever the last one left the Ark (Garrett, 2026-10-28: "the jobs should be the
+        /// different voyages"): each job is sailed as a voyage of its own, and a squad that finished one is anchored at
+        /// its destination with what it found still aboard and still at stake. A leg cut off at sea (the game closed
+        /// mid-voyage) is a voyage given up: <see cref="Abandon"/>. A first voyage is <see cref="NewGalaxy"/>'s.
+        /// </summary>
+        public static void Resume(VoyageState state, VoyageContent content, Domains home)
+        {
+            state.Normalize();
+            if (string.IsNullOrEmpty(state.Home) || content.Location(state.Home) == null)
+            {
+                Embark(state, content, home);
+                return;
+            }
+            if (state.AtSea)
+            {
+                Abandon(state, content);
+                return;
+            }
+            if (state.Current != null) Resolve(state, content, JobOutcome.Failed);
+            if (content.Location(state.At) == null)
+            {
+                state.At = state.Home;
+                state.LastPort = state.Home;
+            }
+        }
+
+        /// <summary>
+        /// The run ends at a stop (the pilot left freestyle, the voyage over): a job still open there is done if its
+        /// work is done and left undone otherwise, and the squad is anchored where it is. Ending at sea is
+        /// <see cref="Abandon"/>. Null when nothing was open.
+        /// </summary>
+        public static Resolution Anchor(VoyageState state, VoyageContent content, bool workDone)
+        {
+            if (state == null) return null;
+            if (state.AtSea) return Abandon(state, content);
+            if (state.Current == null) return null;
+            return Resolve(state, content, workDone ? JobOutcome.Succeeded : JobOutcome.Failed);
+        }
+
         /// <summary>What docking at home hands over.</summary>
         public sealed class Extraction
         {

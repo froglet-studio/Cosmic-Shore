@@ -338,7 +338,10 @@ namespace CosmicShore.Gameplay
                         mimic = P.MimicBody + (1f - P.MimicBody) * wake;
                     }
                     var draw = body * (puff * mimic);
-                    int tier = c.Danger[i] ? 1 : 0;
+                    // the element law (Mass armoured, Charge all danger), then the strike shows danger whatever the element
+                    int tier = 0; bool shielded = false;
+                    SwarmInstance.ElementLaw(elem, ref tier, ref shielded);
+                    if (c.Danger[i]) tier = 1;
 
                     inst.PrevPos = S.Centre + _lastPos[i];
                     inst.CurPos = S.Centre + cur;
@@ -347,7 +350,7 @@ namespace CosmicShore.Gameplay
                     inst.Scale = draw;
                     inst.PrismZ = -(S.HeartWorldScale[elem] + S.HeartPrismGap + 0.5f * draw.Z);
                     inst.BirthTick = _born[i];
-                    inst.Flags = SwarmInstance.Pack(true, tier, elem, elem, 0);
+                    inst.Flags = SwarmInstance.Pack(true, tier, elem, elem, 0, shielded);
                     _bSpeed[i] = vs;
                     _bPopVol[q] += c.Stock[i];
                     _bPopAlive[q]++;

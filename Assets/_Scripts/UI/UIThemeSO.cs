@@ -84,6 +84,17 @@ namespace CosmicShore.UI
         [Tooltip("The same light for a line (SelectionBar.mat): the sweep runs along an underline.")]
         public Material selectionBarMaterial;
 
+        [Header("Hover (Rev 35 C)")]
+        [Tooltip("The hover sheen (kit_sheen): one soft band sweeps across a control when the pointer enters it, then " +
+                 "the control rests (Docs/MENU_REDESIGN_B.md section 101; Shombith picked C). Empty turns the sheen off.")]
+        public Sprite hoverSheenSprite;
+        [Tooltip("Seconds the sheen takes to cross the control (eased out, unscaled time).")]
+        [Min(0.05f)] public float hoverSheenSeconds = 0.52f;
+        [Tooltip("How bright the band is at its centre: white at this alpha.")]
+        [Range(0f, 1f)] public float hoverSheenAlpha = 0.16f;
+        [Tooltip("The band's width as a fraction of the control's width.")]
+        [Range(0.1f, 1f)] public float hoverSheenWidth = 0.45f;
+
         // ── Spacing ───────────────────────────────────────────────────────────────────
 
         [Header("Spacing")]

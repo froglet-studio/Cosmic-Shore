@@ -168,6 +168,24 @@ abstract-member gates pass. `/verify-unity` was not available (no editor in the 
 
 ---
 
+### 🔴 Hover C: the kit's sheen (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor). Not opened in the editor.
+- [ ] Menu_Main with a mouse: pointing at a hub button, an arcade card, a nav tab and a Settings tab sweeps one soft band across it (about half a second) and nothing loops.
+- [ ] Moving across a row of buttons quickly: each sweep starts fresh and never sticks on.
+- [ ] Locked PORT: no sheen. Touch (Device Simulator): no sheen. Pad focus: only the blue ring.
+- [ ] Layout groups (button labels, card rows) do not move when a control is first hovered (`HoverSheen` ignores layout).
+- [ ] UITheme.asset: clearing `hoverSheenSprite` turns it off everywhere.
+
+### 🔴 Connection-lost popup in style B + arcade card element shapes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (`unity_refcompile`, player and editor); `gates.sh` all OK. Not opened in the editor.
+- [ ] Menu_Main, Arcade: each card's genre icon is the element SHAPE (pentagon / triangle / kite / diamond), white, centred, not the lone petal; Brood Rush shows two.
+- [ ] Turn the network off in the menu: the Connection Lost window appears (slivered, brackets, lime RECONNECT selected). A reconnects; B and CONTINUE OFFLINE dismiss.
+- [ ] The same in a game scene (in a mode, not freestyle flight): the window draws above the HUD.
+- [ ] Network back on: "Back Online" shows with no buttons and hides after 2.5 s.
+- [ ] `DisconnectNoticeTests` pass (TheConfig_NamesTheStyleBWindow is new).
+
 ### 🔴 Rev 33 A: the Cell gate loading screen, the hex countdown, the intro's new layout and the mode-entry lag fixes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed** (Docs/MENU_REDESIGN_B.md section 99.4):
@@ -17663,6 +17681,216 @@ configure view (compact AI row, `author_menu_configure.py`). EditMode: `AIDiffic
 3. Joust or Dog Fight on Easy vs Legendary: the Easy AI reacts late and sometimes flies off to one side of its target.
 4. Maelstrom: the compact AI row sits under the domain columns, clear of Format; the pick holds across rounds.
 
+## 🔴 2026-10-26 — Every elemental crystal is one size and one petal (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor or `unity` CLI in the session. The runtime scripts were compiled for real through Amoebius's
+`CosmicShore.Live` build (`dotnet build Port/src/CosmicShore.Live`: succeeded, every edited runtime file in the
+synced sources); the Editor and test files were not compiled. Offline gates: `check_elemental_economy.py` §2 and
+`--self-test`, `verify_fauna_heart_seat.py`, `audit_lifeform_crystals.py --self-test`,
+`author_lifeform_heart_sizes.py --check`, `check_console_logging.py`, `check_conditional_compilation.py`.
+What changed and why: `Docs/ECOSYSTEM.md` §64.
+
+1. Let Unity compile. **Pass:** no errors, in particular from `LifeFormCrystalValidator.cs`, `CodexHarvester.cs`,
+   `ElementalCrystalSizeTests.cs`, `LifeformHeartSizeTests.cs`, `SkimmerAdjustElementLevelByCrystalEffectTests.cs`,
+   `SkimRaceRingCrystalTests.cs`.
+2. Run the edit-mode tests `ElementalCrystalSizeTests`, `LifeformHeartSizeTests`,
+   `SkimmerAdjustElementLevelByCrystalEffectTests`, `SkimRaceRingCrystalTests`. **Pass:** green. If
+   `CrystalWorldScale_IsTheConvertersElementalToOmniRatio` fails, its message names the value to move
+   `ElementalCrystalSetSO.CrystalWorldScale` to.
+3. Open the Ark screen's Elemental Converter, then fly a mode that spawns the standard omni (`Crystal.prefab`; not
+   Skim Race, whose ring omni is smaller) with elemental crystals near it. **Pass:** an elemental crystal next to the
+   omni reads at the converter's proportion (about half the omni's size).
+4. Freestyle: kill a tadpole, a shark and a gyroid plant. **Pass:** the three hearts are the same size, and each
+   pickup lights exactly one petal of its element.
+5. Dog Fight, Bloomrush, Salvo, Tapestry: collect a scattered crystal. **Pass:** all scattered crystals are one size,
+   and each fills one whole petal (it used to fill a fraction of one).
+6. Any vessel fight that ejects petals: collect one. **Pass:** one petal back; the ejected crystals are the same size
+   as every other elemental crystal.
+7. Look at the small creatures (Mass tadpole, piranha, swarm and substrate members, the Clawfish). **Pass:** the
+   heart reads as a heart and not as something swallowed; the Clawfish's heart sits inside its mouth (z -2.4 at
+   root scale 1.641, see the next entry). Anything that reads wrong is a seat to move, not a size to change.
+
+## 🔴 2026-10-26 — Fauna bodies scaled to the one heart size (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. Compiled for real: the runtime scripts through Amoebius's `CosmicShore.Live` build
+(succeeded), the swarm core harness (211 checks, exit 0) and the substrate harness (197 checks, all passed; it runs the
+research body, so `WithBodyScale` at k != 1 is untested there; a scratch copy added `SwarmSortCore.cs` and
+`SwarmGridCore.cs` to its file list, whose absence fails the shipped `run.sh` on bleeding-edge too). Every generator
+`--check` (swarm, substrate, builders, NCA, Tandava, Tandava Severing, Arboretum, Lattice, Wildlife Liberation) and
+`verify_fauna_heart_seat.py` pass. The table and the reasons: `Docs/ECOSYSTEM.md` §64.4.
+
+1. Let Unity compile. **Pass:** no errors from `Boid.cs`, `FaunaConfigurationSO.cs`, `WormFauna.cs`,
+   `WormSegmentFauna.cs`, `SwarmFaunaConfigSO.cs`, `SwarmTickJob.cs`, `SwarmFauna.cs`, `SubstrateSpecies.cs`,
+   `SubstrateSpeciesSO.cs`, the three builder cores.
+2. Spawn Matrix toy: release each species. **Pass:** each creature's heart sits where it always did on its body
+   (the body grew around it); the shark is a little smaller than before.
+3. Freestyle or Blob cell: watch a tadpole school. **Pass:** tadpoles keep apart (no clumping into one blob) and still
+   eat trail prisms; they swim at their old speed.
+4. Wildlife Liberation: a worm colony. **Pass:** the worm is ~1.66x bigger; a freshly grown segment's heart grows in
+   with the segment and stays the size of the others (it used to balloon).
+5. Swarm cell: **Pass:** the three swarms keep their creature shapes (whale, pufferfish, jellyfish) with no members
+   overlapping; the forests are visibly larger plants; the cell does not reach Frenzy in the first minutes.
+6. Swarm cell substrate populations (pack, lurker, leviathan...) and builder colonies: **Pass:** bodies sit behind their
+   hearts with a gap, a pack still rings a pilot and strikes, a thief still snatches.
+7. Tandava: superseded by the 2026-10-27 entry below (it now inherits the grown body).
+
+## 🔴 2026-10-27 — Tandava and Tandava Severing scaled to their creature (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). Compiled for real: the runtime scripts through
+Amoebius's `CosmicShore.Live` build (0 errors); the Tandava harness (108 checks) and the Severing harness (164 checks)
+pass, the same counts as before; the swarm core harness passes; the substrate harness now compiles as shipped (its
+`run.sh` lists the sort and grid cores) and passes all 197. `author_tandava_assets.py`, `author_tandava_severing_assets.py`,
+the swarm, substrate, builder, NCA, Borromean, lattice and menu generators `--check`; `check_elemental_economy.py` passes
+(both Tandava cells are on the Tuned burn now). `author_flora_populations.py --check` reports the Tandava phyllotactic
+forks as drift, as it already did before this change (two generators write those files). The rule and the numbers:
+`Docs/ECOSYSTEM.md` §64.5-64.6; before / after: `Docs/Ecology/FaunaScale/tandava_before_after.png`.
+
+1. Let Unity compile. **Pass:** no errors from `TandavaDirectorCore.cs`, `TandavaSeveringDirectorCore.cs`,
+   `PhyllotacticFlora.cs`, `FloraConfigurationSO.cs`.
+2. Open the Voyage window and set sail for Tandava (or open `MinigameTandava` and Play). **Pass:** the cell is about twice
+   as wide as before; the creature hatches whole across the cell from the pilots; the reef's Coral, Lantern, Reed, Frond
+   and Tendril plants are visibly bigger than in any other cell, with the same shape, and the Borromean plants likewise.
+3. Fly at it. **Pass:** it swims at its old speed (a Squirrel keeps up), lunges at a pilot who comes close and strikes,
+   bolts when it is hurt; rolled up at a plant it eats (its stomach bar rises) and changes form in about half a minute.
+4. Leave it alone. **Pass:** it completes its cycle in about four minutes (it took about two before); it never parks
+   beside a plant for more than a few seconds without eating (the 2026-10-27 parked fix).
+5. The dance: **Pass:** the halo's rings stand round it inside the cell, a vessel fits through a ring's mouth as before,
+   and the drum gives about a minute to break nine.
+6. A plant in any other cell that uses a phyllotactic species (Coral, Lantern, Reed, Frond, Tendril): **Pass:** unchanged
+   (`PlantScale` −1 keeps the prefab; the heart's admitted size is only touched for a scaled plant).
+7. Tandava Severing: cut the Great Serpent through its middle. **Pass:** the piece crawls off as the Severed; the
+   Ten-Headed Serpent rolled up at a plant is never parted without a cut (`SeverLink` 32.7).
+
+
+
+## 🔴 2026-10-27 — Mass creatures grown to hold their crystal's swing (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `LightFauna.cs` compiles in Amoebius's `CosmicShore.Live`
+build (0 errors); `verify_fauna_heart_seat.py` and `check_console_logging.py` pass. The clearance was measured on the
+shipped prefabs headless, not in the editor (`Docs/ECOSYSTEM.md` §64.8; `Docs/Ecology/FaunaScale/mass_before_after.png`).
+
+1. Let Unity compile. **Pass:** no errors from `LightFauna.cs`.
+2. Spawn Matrix (or a Blob / Wildlife cell): release a Mass shark, QuadFish and Clawfish beside a Charge one of each.
+   **Pass:** each Mass creature is about 3.6x / 2.6x / 4.2x its siblings; its heart is the same size as theirs; as the
+   crystal's triangular segments rise and sink, none passes through the creature's body (the shark's teeth still cross
+   it - its heart sits in its jaws).
+3. Watch a Mass shark hunt and a Mass QuadFish graze. **Pass:** they swim at their siblings' speed, keep apart from
+   their own kind, and eat (the mouth reach grew with the body).
+4. Kill a Charge shark, then a Mass shark, reusing the pool. **Pass:** the next Charge shark is its normal size (a pooled
+   body returns to the prefab size when its variant keeps it).
+
+## 🔴 2026-10-27 — Space fauna: spread, reach, and the Space shark's aspect (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session. `CosmicShore.Live` builds (0 errors); the ported EditMode tests touching fauna,
+crystals, boids and lifeforms pass (14). `Docs/ECOSYSTEM.md` §64.9; `Docs/Ecology/FaunaScale/sharks_four_elements.png`.
+
+1. Let Unity compile. **Pass:** no errors from `FaunaElementalForm.cs`, `Fauna.cs`, `LightFauna.cs`, `Boid.cs`,
+   `LifeFormCrystal.cs`, `FaunaConfigurationSO.cs`.
+2. Spawn Matrix: release a shark of each element. **Pass:** Charge and Time are the size they were; Mass is about 3.6x
+   and every body prism sits in its socket as it swims (the rig is rebound at the new size - the 2026-10-27 clipping);
+   Space is about 1.65x the Mass shark's LENGTH at the prefab's girth (~335 u), each body prism a needle filling its
+   stretched socket, its teeth the size of the others'; all four hearts are the same round size. Watch the Mass and the
+   Space shark swim and turn: **Pass:** no prism clips its spindle; the Space body bends without skewing or tearing
+   (only the bind pose was measured headless).
+3. A Blob or Wildlife cell with tadpoles: **Pass:** the Space school spreads wider than the others and still feeds.
+4. Any crystal elsewhere (a mode's arena scatter, a race ring, a toy): **Pass:** the same size and shape as before.
+
+## 🔴 2026-10-28 — Body prisms at their authored size; the Space shark scaled whole and eroded (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `CosmicShore.Live` builds (0 errors); the new
+`FaunaElementalFormTests` and the existing `FloraElementalFormTests` pass outside Unity (13/13); the game's own
+`Fauna.ApplyVariantTuning` was run on the shark prefab in Amoebius (bind pose only). `Docs/ECOSYSTEM.md` §64.9;
+`Docs/Ecology/FaunaScale/sharks_four_elements.png`. Supersedes item 2 of the 2026-10-27 Space entry above.
+
+1. Let Unity compile and reimport `Shark_model.fbx` (Read/Write is now on). **Pass:** no errors from `Fauna.cs`,
+   `SpindleErosion.cs`, `Prism.cs`, `LightFauna.cs`, `Boid.cs`, `FaunaElementalForm.cs`, `FaunaConfigurationSO.cs`;
+   the Test Runner's `FaunaElementalFormTests` pass.
+2. Spawn Matrix: release a Charge and a Mass shark. **Pass:** the dorsal prism spans its fin's cavity end to end (it
+   used to stop at about half), the wing prisms fill the wings, the teeth are half again as long as before; on the Mass
+   shark every prism sits in its cavity as it swims.
+3. Release a Space shark. **Pass:** it is the Mass shark's shape scaled up to about 1.65x its length (~335 u) but no
+   thicker than the Mass shark through the head and barrel, its tail and fin tips full size, its wings still attached;
+   its body prisms are thin needles inside the skin, its teeth inside its jaws, its heart the same round size and clear
+   of the skin - **round, not flattened** (the first push eroded the heart with the body; fixed). Watch it swim and turn: **Pass:** no prism clips its spindle and the skin does not tear or crease. The
+   console shows no `cannot be eroded into a Space spindle` warning.
+4. A Brittlestar: **Pass:** its spines are thinner than before (0.3, no longer pushed up to 0.5).
+5. Kill a Space shark and let a Charge one spawn: **Pass:** the Charge shark has the prefab body and prisms.
+6. Kill a Space shark and look at the crystal it drops. **Pass:** a round Space crystal, the same as any other.
+## 🔴 2026-10-28 — Mass is armoured and has size; Charge makes every prism danger (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `CosmicShore.Live` builds (0 errors); the law tests
+(`ElementalArmourTests`, `FloraElementalFormTests`, `FaunaElementalFormTests`) pass outside Unity, 32/32; the gates
+`measure_flora_heart_clearance.py --check` (52/52 hearts clear, on the plant the shipped `TryPreviewGrowth` grows in
+Amoebius), `fit_shield_clearance.py --check`, `fit_quasicrystal_strut_sizes.py --check`,
+`verify_borromean_surface_tables.py`, `measure_flora_elemental_form.py --check`, `author_flora_armour.py --check` and
+`author_nested_gyroid_flora_assets.py --check` pass. `Docs/ECOSYSTEM.md` §65.
+
+1. Let Unity compile. **Pass:** no errors from `ElementalArmour.cs`, `FloraElementalForm.cs`, `Flora.cs`, `LifeForm.cs`,
+   `PhyllotacticFlora.cs`, `BranchingFlora.cs`, `AssembledFlora.cs`, `QuasicrystalAssembler.cs`, `Fauna.cs`,
+   `LightFauna.cs`, `Boid.cs`, `WormSegmentFauna.cs`; the Test Runner's three suites above pass.
+2. Spawn Matrix, one plant per element of the Gyroid, Schwarz P, Quasicrystal and Borromean. **Pass:** every Mass plant
+   is shielded (octahedra) on plates SMALLER than its Time sibling's (x0.64, the same shape, no chunky slabs), spread
+   a little wider than Time but never as wide as its Space sibling, and its octahedra do not overlap one another; its crystal's depth segments swing without touching any octahedron (the
+   quasicrystal's heart sits in a clear pocket). Every Charge plant is unshielded and every one of its prisms is a
+   danger prism (danger material), with Time-sized plates. A Mass gyroid's octagon ring stays danger for as long as you
+   watch (it used to turn shielded within a second).
+3. Hesperides, or the Spawn Matrix phyllotactics (Arbor, Spire, Rosette, Lantern). **Pass:** every plant's crystal sits
+   just below its root collar on a short limb, not buried inside it; the Mass plant is the Time plant's shape at about
+   0.64x, shielded (its octahedra make it read bigger), with no cube-ward stems, and smaller than the Space plant; its crystal's swing clears every octahedron. The Rosette's lowest whorl no
+   longer cups over its crystal.
+4. A branching species (Cacti, Pine). **Pass:** no leaf sits on or around the crystal; the Mass plant is the Time plant
+   at about 0.64x, shielded.
+5. Release a Charge and a Mass shark, tadpole and QuadFish. **Pass:** every Charge body prism is a danger prism; a
+   Charge shark still devours from its JAWS (the mouth did not move to its belly). Every Mass body prism (not the teeth)
+   is shielded; a hit sheds the shield and a second hit destroys the prism, and within a few seconds a shed prism
+   is shielded again. Kill a Charge shark and let a Time one spawn from the pool: **Pass:** only its teeth are danger.
+6. A worm colony of Mass and of Charge. **Pass:** the head's plate cage is shielded on every element; Charge segments
+   are danger all over and the colony still feeds from the head's fangs.
+7. A Mass tadpole school. **Pass:** each tadpole is about 3.7x the Time tadpole with one wide, short shielded prism
+   trailing its crystal, the crystal's swing clear of that shield; the school keeps its spacing (no bodies overlapping).
+8. The Spawn Matrix lists no Wall flora; a Serpent's wall still builds as before.
+9. Tandava: the reef plants are about 1.4x wider than before and the serpent still changes form within its first
+   minute and completes its cycle in about 3-4 minutes if nobody stops it.
+
+## 🔴 2026-10-28 — Swarm, builder and substrate hearts are the current crystal; their elements follow the law (`cece/keen-feynman-unrdda`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the session (`/verify-unity` could not run). `unity_refcompile` is clean in the player-dev and
+editor configs (the new tests included); `CosmicShore.Live` builds (0 errors); the swarm harness (`run.sh` all cores,
+`tickjob` with the new R11c-2 law proofs and R65a-c heart-pose proofs, `lod`), the substrate harness, `verify_swarm_member_pose.py`
+(the body-only shader, its negative controls firing), `omni_depth_prism_shader_parity.py` and `author_nca_creatures.py
+--check` pass. The builders harness's two timing gates (`alarm + gap knits a wound shut fast`, `defence competes with
+repair`) fail in its builder cores, which this change does not touch. The crystal shaders' new instancing variants were
+not compiled by a Unity shader compiler here. `Docs/ECOSYSTEM.md` §65.7.
+
+1. Let Unity compile and import. **Pass:** no errors from `CrystalHeartDraw.cs`, `SwarmPoseJob.cs` (the Burst job
+   `SwarmHeartPoseJob` compiles under Burst - no "managed fallback" warning for it), `SwarmMemberRenderer.cs`,
+   `SubstrateMemberRenderer.cs`, `SwarmMemberFallbackDraw.cs`, `SwarmTickJob.cs`, `BuilderColonyFauna.cs`,
+   `SubstrateFauna.cs`, `SubstrateAgentFauna.cs`, `NcaCreatureFauna.cs`; `SwarmMemberInstanced.shader`,
+   `SwarmMemberInstancedFallback.shader`, `OmniDepthPrismShader.shader` and `SpreadFresnelShader.shader` compile;
+   `ElementalArmourTests` passes (including `EveryHeartModelMaterial_IsInstanced` and
+   `PopulationsDrawnAsData_TakeTheSameLaw`).
+2. Freestyle, the Swarm cell. Fly up to a Mass, a Charge and a Space swarm. **Pass:** every member's heart looks like
+   the heart of a released shark or tadpole of the same element - the Mass heart is the ring of blue depth prisms, the
+   Space and Time hearts the pale blue spread-facet crystal, the Charge heart the blue-white faceted shell - not a dark
+   rim-lit solid; no bolt or arc geometry hangs off a Charge heart. Hearts follow their members smoothly, a newborn's
+   heart grows in, and a molting member's crystal shrinks away and re-forms as the new element (no pop).
+3. Same cell. **Pass:** every Mass swarm member's body is shielded (shield look) and survives one hit (the shield
+   sheds), dying to the second; every Charge member's body is a danger prism all the time, and touching one with a
+   vessel of another domain burns petals. A Mass lurker that bristles shows danger and still takes two hits.
+4. The Fortress, Thief Nest and Wearer builder colonies in the Swarm cell. **Pass:** their hearts are the current
+   crystals, as in 2; a Mass colony's members are shielded, a Charge colony's members are danger.
+5. A substrate cell (Harrier, Leech, Lurker...). **Pass:** hearts as in 2; a Charge population's agents are danger all
+   the time (a Charge leech burns too); a Mass population's agents are shielded.
+6. WebGL or a device without compute (or the `memberdraw` console command to force the SM 3.5 path). **Pass:** the
+   bodies draw as before and the hearts are still the current crystals.
+7. The profiler on the Swarm cell. **Pass:** `CrystalHeartDraw` adds a few draws per swarm per element model and its
+   Burst pose (`SwarmHeartPoseJob`) costs well under 0.1 ms a frame for the whole cell.
+8. The Swarm cell's Inner band (470-620 u). **Pass:** its forest is Time Borromean (3 plants at most) and the Inner
+   whale grazes it and grows, staying well short of a full whale (expected, by decision); no Mass Borromean grows in
+   the cell. The Spawn Matrix's "Swarm Borromean" row shows Space and Time stations.
+9. Wrecking Ball. **Pass:** its Charge Borromean plants are danger and unshielded, its Mass ones shielded, matching
+   Rampage's.
+
 ## 🔴 2026-10-26 — Per-mode intro cameras, shuffled within families (unverified: no Unity editor in the session)
 
 **Files:** `PreGameCinematicController.cs` (new `Play(center, pilot, mode, vessels, accent)`), `IntroCamera*.cs`
@@ -18231,10 +18459,10 @@ compiled.
 6. If the star sits off the tip, tune `reachPrismAlong` / `reachPrismSidePerLength`; if the blade grows from the wrong
    point, check `reachPartHilt` against the sprite (64, 100).
 
-## 🔴 2026-10-28 — The voyage slice: squad, job board, legs, vaults, wrecks, cores, the chart, docking home (unverified: no Unity editor in the session)
+## 🔴 2026-10-28 — The voyage slice: squad, jobs as voyage cards over the galaxy map, legs, vaults, wrecks, cores, docking home (unverified: no Unity editor in the session)
 
 **Plan:** `Docs/Voyages/SLICE.md`. **Files:** `Data/Voyages/*` (the rules, tested headless), `Controller/Voyages/*`
-(`VoyageRun`, `VoyageToy`, `VoyageJobBeacon`, `VoyageVault`, `VoyageChart`), `System/Voyages/VoyageStore.cs`,
+(`VoyageRun`, `VoyageHarbour`, `VoyageVault`; the board and chart retired 2026-10-28), `System/Voyages/VoyageStore.cs`,
 `System/Squads/SquadDeployment.cs`, `VesselPilotLoadout.cs` (a seated vessel flies its slot), `PilotSightProviders.cs`
 (11 more sights), `Payload/Transforms/{Hydra,Aftershock}TransformSO.cs`, the Arkway route hooks (`ArkwayRun`:
 `SetRoute`, `ContinueRoute`, `RouteEnded`, `Underway`, `ArkFallen`; `CellConveyor`: `SetRoute`, `TraversalWorlds`),
@@ -18246,30 +18474,41 @@ compile has no errors in the changed files (player and editor).
 1. Run `VoyageRulesTests`, `PilotsAndArtifactsTests`, `PilotArtifactCatalogTests`. **Pass:** green.
 2. Ark > SQUADS: a squad of three different vessels, three elements, three pilots of different faction types (CITADEL a
    hunter, VOLT a merchant, BANDIT a pirate), Javelin on one card (Hydra and Aftershock show
-   locked in the Hangar until found). Freestyle, fly the **Voyage** toy (at 90 degrees round
-   the membrane). **Pass:** you are swapped to your seat's vessel; two AI wingmates appear on your flanks in the other two
-   hulls; each vessel's element bar starts at level 5 in its slot's element; LB shows each seat's own pilot sight; up
-   to three job beacons stand around you with a title and "brought by <name>" over each, plus a chart of the map.
-3. Fly a hunt beacon (Lantern Reach or the Hollow). **Pass:** the veil, then the Ark beside you under way, "BOUND FOR
+   locked in the Hangar until found). Open the Voyage window and press Set sail on a hunt card (Lantern Reach or the
+   Hollow). **Pass:** into freestyle; you are swapped to your seat's vessel; two AI wingmates appear on your flanks in
+   the other two hulls; each vessel's element bar starts at level 5 in its slot's element; LB shows each seat's own
+   pilot sight. (2026-10-28 rework: no job beacons or chart stand in the world; steps 12-15 cover the window.)
+3. The leg. **Pass:** the veil, then the Ark beside you under way, "BOUND FOR
    ..."; the wingmates are docked with it; the Ark sails 2-4 cells and holds in the last one; "ARRIVED AT ...".
 4. At the vault field. **Pass:** vault shells stand round the Ark (super-shielded; CITADEL's sight finds them); RB at
    the Ark loads a payload; released on a shell it cracks it; at half cracked an artifact floats out; RB grabs it, and
-   bringing it to the Ark stows it ("STOWED ABOARD", then "JOB DONE" and the job's story line). The next board stands
-   round the Ark, the way home on it.
-5. Fly a courier or defence job to a port or core. **Pass:** a courier is done on arrival; a core counts down while you
+   bringing it to the Ark stows it ("STOWED ABOARD", then "JOB DONE", the job's story line and "LEAVE FREESTYLE TO
+   CHOOSE YOUR NEXT VOYAGE").
+5. Set sail on a courier or defence job to a port or core. **Pass:** a courier is done on arrival; a core counts down while you
    stay with the Ark ("HOLDING ...: N") and is done at 0.
-6. Take the way home. **Pass:** the Ark sails to your harbour's world and the voyage ends at the dock: "DOCKED AT ...: N
+6. Set sail on the way home card. **Pass:** the Ark sails to your harbour's world and the voyage ends at the dock: "DOCKED AT ...: N
    FOUND ARTIFACTS ARE YOURS"; the wingmates are gone; crystals owed are paid; the found Hydra or Aftershock is
    now held in the Hangar and can go on a squad card.
-7. Voyage again. **Pass:** the board reflects last voyage's news (a delivered dispatch opens new work at that port).
+7. Voyage again. **Pass:** the cards reflect last voyage's news (a delivered dispatch opens new work at that port).
 8. Let fauna eat the Ark with a find aboard. **Pass:** "THE ARK IS LOST"; home with nothing; next voyage, the nearest port's
-   board offers a salvage job to the wreck, and the wreck's artifacts float where it fell.
-9. Mid-voyage, fly the Voyage toy again (or the harbour station). **Pass:** home, "JOB LEFT UNDONE", nothing kept.
+   cards offer a salvage job to the wreck, and the wreck's artifacts float where it fell.
+9. Mid-leg, leave freestyle. **Pass:** "JOB LEFT UNDONE"; the next window's cards set out from home; nothing kept.
 10. The plain Wander toy's Arkway. **Pass:** unchanged: it sails the shuffle-bag forever and never holds.
-11. Two machines in one freestyle party (a joined squad on the friend's side). The host flies the Voyage toy. **Pass:**
+11. Two machines in one freestyle party (a joined squad on the friend's side). The host sets sail from the Voyage window. **Pass:**
     the friend is swapped to their seat's hull and sees "SAILING WITH YOUR HOST"; when the host takes a job the friend's
     own Ark sails the same worlds to the same stop; the friend can crack a vault and stow a find; when the host takes the
     way home both dock, and the friend keeps what the friend stowed. The host giving up ends the friend's voyage too.
+12. Menu_Main, open the Toy Box and fly round the ring. **Pass:** there is no Voyage card and no Voyage station.
+13. Menu_Main, open the Voyage window. **Pass:** after Tandava and Tandava Severing there is one voyage card per job
+    the active squad's pilots bring (plus the way home when away), each showing the galaxy map with the squad's
+    spot and that job's course drawn, its eyebrow "<from> TO <to> - <pilot>" and the job's title. Change the squad's
+    pilots in the Ark and reopen the window: the jobs change.
+14. Press Set sail on one. **Pass:** the menu closes into freestyle, the squad deploys and the Ark sails ("BOUND FOR
+    ..."); nothing stands in the world to fly through. Reopen the Voyage window mid-leg is not possible (menus close
+    in freestyle); leaving freestyle mid-leg ends it with "JOB LEFT UNDONE".
+15. Do a job's work (crack a vault and stow its artifact). **Pass:** "JOB DONE ... LEAVE FREESTYLE TO CHOOSE YOUR NEXT
+    VOYAGE". Leave freestyle and open the Voyage window: the cards now set out from the job's destination, the way home
+    is one of them, and the news the job wrote shows as new work. Take the way home: docking keeps what was found.
 
 ## Lavalamp wormhole lab: original lens + wall vs the new mobile water pipe, side by side (2026-10-28) - NOT EDITOR-VERIFIED
 

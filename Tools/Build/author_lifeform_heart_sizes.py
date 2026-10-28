@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """Author every lifeform's HEART SIZE, from its own measured body.
 
+RETIRED IN THE GAME, 2026-10-26 (Garrett): every elemental crystal, a lifeform's heart
+included, is ONE size - ElementalCrystalSetSO.CrystalWorldScale (3.55), the size of the
+elemental crystals in the Elemental Converter - and worth exactly one petal. Nothing in the
+game reads the HeartWorldScale this script writes any more (LifeFormCrystal.ApplyHeartSize
+takes no size). It still writes and --checks the serialized field so the shipped assets and
+CI stay in step until the field is stripped from the assets and this script is deleted;
+the measurement and the law below are kept as the record of the band that was.
+
 Docs/ECOSYSTEM.md §40.2.  Run with --check in CI; --write to author.
 
     python3 Tools/Build/author_lifeform_heart_sizes.py            # report only
@@ -178,7 +186,6 @@ FLORA_PREFABS = {
     "SchwarzP":     "Assets/_Prefabs/FloraAndFauna/SchwarzPFlora.prefab",
     "Spire":        "Assets/_Prefabs/FloraAndFauna/SpireFlora.prefab",
     "Tendril":      "Assets/_Prefabs/FloraAndFauna/TendrilFlora.prefab",
-    "Wall":         "Assets/_Prefabs/FloraAndFauna/WallFlora.prefab",
     "Watershed":    "Assets/_Prefabs/FloraAndFauna/WatershedFlora.prefab",
 }
 
@@ -875,7 +882,7 @@ def report(variants, k, deployments=()):
 # spread. This gate uses the SHIPPED fitter's convention, because that is the number the
 # repo's own CI is calibrated against and a second convention here would just be a third
 # opinion. Whichever is right, the band this script authors is well under both.
-LATTICE_SPECIES = ("Gyroid", "SchwarzP", "Quasicrystal", "Wall")
+LATTICE_SPECIES = ("Gyroid", "SchwarzP", "Quasicrystal")   # the Wall flora retired 2026-10-28
 LATTICE_SEAT_APPARENT_RADIUS_PER_UNIT = 0.6   # fit_quasicrystal_strut_sizes.py's convention
 LATTICE_SEAT_CLEARANCE = 2.55                 # its CRYSTAL_NEED, in world units
 
@@ -923,6 +930,15 @@ def main():
     ap.add_argument("--check", action="store_true",
                     help="fail if any asset differs from what this script would author")
     args = ap.parse_args()
+
+    # STANDS DOWN (Docs/ECOSYSTEM.md 64): nothing in the game reads HeartWorldScale, and since the fauna bodies were
+    # scaled to the one heart size (64.4) the band this script solves no longer describes the shipped bodies at all -
+    # re-authoring it would rewrite dead data, and checking it would fail on every body change. CI still runs it, so it
+    # passes, says why, and writes nothing. Its functions stay importable for the generators that call them.
+    if args.check or args.write:
+        print("RETIRED: lifeform hearts are one size (ElementalCrystalSetSO.CrystalWorldScale) and the authored "
+              "HeartWorldScale band is read by nothing (Docs/ECOSYSTEM.md 64) - standing down, nothing checked or written.")
+        return 0
 
     canonical = read_canonical_variants()
     deployments = read_deployment_variants()

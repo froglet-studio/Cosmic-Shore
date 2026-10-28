@@ -259,13 +259,24 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>The renderer whose edge crawl this light replaces (the Charge crystal's shell), or null.</summary>
+        public Renderer SilencedRenderer => silenceCrawlOn;
+
+        /// <summary>Holds the edge crawl at zero in <paramref name="block"/> - what this light does to its shell while it
+        /// runs, and what <see cref="CrystalHeartDraw"/> does to a population's Charge hearts, which have no light of their
+        /// own and so show the shell exactly as a sleeping one does.</summary>
+        public static void SilenceCrawl(MaterialPropertyBlock block)
+        {
+            block.SetFloat(ArcIntensityId, 0f);
+            block.SetFloat(NodeIntensityId, 0f);
+        }
+
         void SilenceCrawl()
         {
             if (!silenceCrawlOn) return;
             s_block ??= new MaterialPropertyBlock();
             silenceCrawlOn.GetPropertyBlock(s_block);
-            s_block.SetFloat(ArcIntensityId, 0f);
-            s_block.SetFloat(NodeIntensityId, 0f);
+            SilenceCrawl(s_block);
             silenceCrawlOn.SetPropertyBlock(s_block);
         }
 

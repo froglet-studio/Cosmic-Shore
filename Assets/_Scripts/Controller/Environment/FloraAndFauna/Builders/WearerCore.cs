@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
         public float HurtWindow = 2f;           // GAME: the hurt moult's memory (s)
         public float HurtFraction = 1f / 6f;    // GAME: losing this share of the body inside the window ...
         public float HurtShed = 0.3f;           // ... sheds this share of what is left back to its owners
-        public float HeartSize = 2f;
+        public float HeartSize = 3.09f;         // the heart's contact radius: research 2 against a 2.298 heart, now 3.55
         public float Containment = 1140f;
         public Vector3 CellCentre;
         /// <summary>GAME: the platform diet (<see cref="BuilderColonyParams.Diet"/>) - loose mass outside the nucleus and

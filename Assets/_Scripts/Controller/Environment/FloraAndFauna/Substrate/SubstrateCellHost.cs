@@ -275,8 +275,8 @@ namespace CosmicShore.Gameplay
         /// (round 11-11: a contact the core decides without a collision - a leech's sip - is applied to it).</summary>
         public IVesselStatus VesselById(int id) => _vesselById.TryGetValue(id, out var v) && v is Component c && c ? v : null;
 
-        /// <summary>The cell's living FLORA, one unit of food per plant heart - the food field is a READ of mass. A Charge
-        /// plant is no food at all (its leaves are armoured: shielded mass is never food).</summary>
+        /// <summary>The cell's living FLORA, one unit of food per plant heart - the food field is a READ of mass. An
+        /// armoured plant (Mass, <see cref="ElementalArmour.Shields"/>) is no food at all: shielded mass is never food.</summary>
         void SenseFood()
         {
             var live = FloraHeartRegistry.Live;
@@ -285,7 +285,7 @@ namespace CosmicShore.Gameplay
             for (int k = 0; k < live.Count; k++)
             {
                 var f = live[k];
-                if (!f || f.IsDying || f.Element == Element.Charge) continue;
+                if (!f || f.IsDying || ElementalArmour.Shields(f.Element)) continue;
                 var ht = f.HeartTransform;
                 if (!ht) continue;
                 var p = ht.position - Centre;

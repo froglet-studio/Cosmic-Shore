@@ -106,14 +106,14 @@ namespace CosmicShore.Gameplay
         /// after LifeFormCrystal.EnsureElementalCrystal.
         ///
         /// This is also where a heart gets its SIZE: every lifeform heart in the game passes
-        /// through here, so sizing it from the owner's level here is what makes the size a
-        /// function of level alone rather than of whatever scale each species' prefab happened
-        /// to author (Docs/ECOSYSTEM.md §33). Later level changes re-apply the same curve.
+        /// through here, so this is what makes every heart the one elemental crystal size
+        /// (<see cref="ElementalCrystalSetSO.CrystalWorldScale"/>) rather than whatever scale
+        /// each species' prefab happened to author (Docs/ECOSYSTEM.md §40.2).
         /// </summary>
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
-            if (owner != null) LifeFormCrystal.ApplyHeartSize(this, owner.HeartWorldScale);
+            if (owner != null) LifeFormCrystal.ApplyHeartSize(this);
             var col = GetComponent<SphereCollider>();
             if (!col) return;
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
@@ -934,7 +934,10 @@ namespace CosmicShore.Gameplay
             ApplyColorSetTint();
         }
 
-        private static (string bright, string dull) FindColorPropertyNames(Material mat)
+        /// <summary>The (bright, dull) colour pair a crystal material is tinted through, or (null, null) for a material
+        /// that keeps its own colours. Shared with <see cref="CrystalHeartDraw"/>, which paints a population's hearts by
+        /// exactly this rule.</summary>
+        internal static (string bright, string dull) FindColorPropertyNames(Material mat)
         {
             if (mat.HasProperty("_BrightCrystalColor") && mat.HasProperty("_DullCrystalColor"))
                 return ("_BrightCrystalColor", "_DullCrystalColor");

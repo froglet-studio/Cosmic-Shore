@@ -141,6 +141,16 @@ for that board changed ("make D brighter") and say so in the doc.
 
 ## 5. Traps this board paid for
 
+- **Draw the real screen, never a placeholder backdrop** (Rev 34, rejected outright: "I do not like them one bit").
+  An option board over an empty sea with a "THE CELL" label reads as a wireframe, however good the overlay. Use the
+  canvas's own art: the menu cell (`/_blob/423125b7...`), the nav icons, the card and hull renders. Render the board
+  locally before publishing (`r33/shot.cjs`-style Playwright with a blob map) and look for an overlay covering the
+  very control it points at. Rev 36's `clear_of()` moves a panel off its target.
+- **A "frozen moment" with a negative `animation-delay` overrides each element's OWN delay.** Pausing a sequence at
+  t = 0.45 s with `animation-delay:-0.45s!important` shows every element 0.45 s into its own animation, so a panel
+  meant to open at 1.25 s shows half open. Either put the timing in keyframe percentages on one shared loop (the
+  `phased()` scrubber in Rev 33's kit), or compare options at rest.
+
 - **Rounds collide** (T13): Rev 28 was free at noon and gone by the time the boards were drawn. Plan late, publish once,
   re-read the index right before, keep the other session's pages and boards (send the index with only your keys added).
 - **Section numbers collide** (T14) and C# docstrings cite them; renumbering is a sweep, so take the number at commit.
