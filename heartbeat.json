@@ -1,0 +1,23 @@
+{
+ "caps": {
+  "bash": true,
+  "cores": 4,
+  "cuda": false,
+  "dotnet8": false,
+  "node": true,
+  "numpy": true,
+  "os": "linux",
+  "python": "3.13.17",
+  "python3": true,
+  "torch": false
+ },
+ "cores": 3,
+ "current": {
+  "job": "drive-rhino-headlong",
+  "since": 1793187226
+ },
+ "host": "cloud-session",
+ "updated": 1793187226,
+ "user": "shombith",
+ "version": "1"
+}
