@@ -1,5 +1,11 @@
 {
- "phase": "opening Unity (importing on the first run)",
+ "best_fitness": -120.0042724609375,
+ "episodes": 32,
+ "episodes_total": 32,
+ "generation": 1,
+ "loss": 120.0042724609375,
+ "phase": "done",
+ "scenario": "Dolphin_Switchback_I2",
  "unit_episodes": 30,
- "updated": 1793201026.3926516
+ "updated": 1793202581.0918038
 }

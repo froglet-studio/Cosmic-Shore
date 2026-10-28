@@ -14,20 +14,16 @@
   "unity": true
  },
  "cores": 11,
- "current": {
-  "best": null,
+ "current": {},
+ "host": "dragonsweapon",
+ "last": {
+  "count": 32,
   "epoch": "a7bc0307f194",
-  "evals": 0,
   "job": "unity-train~r20261028-205229-b55f",
-  "max_evals": 30,
-  "minutes": 60.0,
-  "phase": "opening Unity (importing on the first run)",
-  "progress": null,
-  "request": "r20261028-205229-b55f",
-  "since": 1793200973,
+  "rc": 0,
+  "stopped": "finished",
   "unit": "switchback-dolphin-i2"
  },
- "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -64,12 +60,24 @@
    "start": 1793195343,
    "stopped": "the person came back",
    "unit": null
+  },
+  {
+   "best_end": 120.0042724609375,
+   "best_start": null,
+   "end": 1793202589,
+   "epoch": "a7bc0307f194",
+   "evals": 32,
+   "job": "unity-train~r20261028-205229-b55f",
+   "request": "r20261028-205229-b55f",
+   "start": 1793200973,
+   "stopped": "finished",
+   "unit": "switchback-dolphin-i2"
   }
  ],
  "totals": {
-  "sessions": 3
+  "sessions": 4
  },
- "updated": 1793202190,
+ "updated": 1793202589,
  "user": "shombithofficial",
  "version": "1"
 }
