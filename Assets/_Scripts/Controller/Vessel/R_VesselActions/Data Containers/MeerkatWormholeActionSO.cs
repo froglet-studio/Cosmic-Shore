@@ -33,7 +33,9 @@ namespace CosmicShore.ScriptableObjects
         public override void StopAction(ActionExecutorRegistry executors, IVesselStatus status)
         {
             var exec = executors ? executors.Get<MeerkatWormholeExecutor>() : null;
-            if (exec && trigger == Trigger.Shorten) exec.EndShorten();
+            if (!exec) return;
+            if (trigger == Trigger.Shorten) exec.EndShorten();
+            else exec.EndForm();   // inside the roots RT pushes you faster while held
         }
     }
 }

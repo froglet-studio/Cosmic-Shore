@@ -409,7 +409,7 @@ namespace CosmicShore.Gameplay
             // spindle, so evaporating spindles first would destroy the mass this conserves.
             Transform skeletonParent = cell ? cell.transform : null;
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
-                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
+                if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent, recycleWhenDestroyed: true);
 
             // Can't animate while inactive (scene teardown) - the skeleton above already
             // conserved the mass, so collapse what's left in one step rather than throwing.
