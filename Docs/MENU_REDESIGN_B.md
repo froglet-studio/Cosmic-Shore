@@ -4695,3 +4695,43 @@ re-derived each run):
 - the gate opens into the intro;
 - the hex countdown runs;
 - the freeze after the screen appears.
+
+## 100. Rev 34 mockups: FTUE, the captain guides from the side (2026-10-28, awaiting a pick)
+
+**Asked (Shombith, 2026-10-28):** "Create FTUE mpckups - look at the old desing the captain/pilot shouldcome from the
+side and guidethe players".
+
+**The old design (Rev 21, `Docs/MenuRedesignB/board/R21*.dc.html`).** The same six steps (Home, Arcade, Configure, the Lesson, the first race, the first
+finish) were guided by a caption strip under the lit control. No one spoke: the guide, the Lesson and the Mentor were text.
+
+**On the canvas:** page "Rev 34 - FTUE: the captain guides from the side"; the copies are `Docs/MenuRedesignB/board/R34*.dc.html`.
+Each option board steps through all six steps (CSS-only, radio tabs). In every option the captain of the first hull (Trace,
+the Squirrel's pilot) enters from the side AWAY from the lit control. That is left for Home, Arcade, the race and the finish,
+and right for Configure and the Lesson. She says one line and leaves when the player presses. The LOCKED guided-path rule
+holds: one control lit in lime, everything else dimmed and dead except Settings, and the player presses it.
+- **R34A, Wingmate (recommended):** her portrait and a line plate slide in from the side. A dashed lime leader runs from
+  the plate to the lit control, and the plate moves off the control when they would overlap.
+- **R34B, Comm link:** a compact transmission card docks mid-height on the far side. It has the smallest footprint and
+  reads like a radio call, so it also works in the match.
+- **R34C, Briefing:** bars come in, a bust rises in the lower corner, and her line runs wide along the bottom. The most
+  cinematic; the bottom bar is a gradient so the hub buttons show through.
+- **R34Compare:** the three entrances side by side on one step. **R34Notes:** the asks, the side rule and the build notes.
+
+**Why A:** it says most clearly that a pilot is here with you, and the leader line ties her words to the control without a
+second spotlight. B is the fallback for in-match steps, which could use B even if A is picked for the menu.
+
+**Differs from the build:**
+- The words move into the guide asset (MainQuest / the Lesson seed), one line per step.
+- The captain comes from the hull's pilot roster, using a portrait the roster already has.
+- The dialogue system (`DialogueSpeaker`, `MainMenuDialogueView`) already carries the speaker and the line; the side and
+  the entrance are new view work.
+- Open (Shombith, Caleb): the captain's name and voice, and whether the Mentor's preview tips become hers.
+
+### 100.1 The arcade cards draw the element shapes (2026-10-28)
+
+Shombith: "the arcade cards again are using the old elelmental icons again". The card's genre image drew the lone HUD
+petal (`ElementPetals/*_petal.png`, one of the flower's five), which reads as the old diamond icon set. It now draws the
+element's SHAPE (pentagon, triangle, kite, diamond from `Assets/_Graphics/ElementShapes`), the icon the Codex and the ability
+rows use (section 89). It stays white, 24 px, centred in its 34 px slot. `GameCard.GenreShapes` holds the four (Charge to
+Time; an empty slot falls back to the petal), `author_menu_arcade.py` writes them, and the validation fails when they are
+not the four shapes ("the genre icon back to the petal" plant).

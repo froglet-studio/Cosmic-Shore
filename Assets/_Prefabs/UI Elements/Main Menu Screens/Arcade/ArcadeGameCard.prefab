@@ -151,6 +151,11 @@ MonoBehaviour:
   VesselList: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
   GenrePetal: {fileID: 176164464492264591}
   GenrePetalSecondary: {fileID: 305081162054081429}
+  GenreShapes:
+  - {fileID: 21300000, guid: cbac2ac9cd6900044b197490af5727f1, type: 3}
+  - {fileID: 21300000, guid: 1eb2c03794f55824d8e01e96c4fe7a3e, type: 3}
+  - {fileID: 21300000, guid: 4e788082740141a45b47f1c51a5c15b0, type: 3}
+  - {fileID: 21300000, guid: 809450069823742448227b7dceef6fcc, type: 3}
   GenreFlower: {fileID: 0}
   GenreFlowerSecondary: {fileID: 0}
   AvatarSpace: {fileID: 303940953988036761}
@@ -1273,8 +1278,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -10.88}
-  m_SizeDelta: {x: 51, y: 51}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 24, y: 24}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &323325043913240467
 CanvasRenderer:
@@ -1421,8 +1426,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -10.88}
-  m_SizeDelta: {x: 51, y: 51}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 24, y: 24}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &566993505400777757
 CanvasRenderer:

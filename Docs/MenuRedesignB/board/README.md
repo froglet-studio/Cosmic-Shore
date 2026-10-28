@@ -16,9 +16,17 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- design_board.py readme: generated below, edit the text above -->
 
-Copied on 2026-10-28 from canvas version `1793183789-3522`: Rev 3 to Rev 33, 293 boards on 34 pages. The canvas's launch page is `rev33`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-10-28 from canvas version `1793214758-ba2b`: Rev 3 to Rev 34, 298 boards on 35 pages. The canvas's launch page is `rev34`. Refresh with `python3 .claude/skills/design-board/design_board.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Rounds and boards (newest first)
+
+### Rev 34 - FTUE: the captain guides from the side  (page `rev34`)
+
+- [`R34Compare.dc.html`](R34Compare.dc.html) - Rev 34 - the three captains at the same step, and which side they enter from
+- [`R34A.dc.html`](R34A.dc.html) - Rev 34 A - Wingmate: the captain full-length at the screen edge, a speech plate pointing at the one control (recommended) - interactive
+- [`R34B.dc.html`](R34B.dc.html) - Rev 34 B - Comm link: a compact incoming-transmission card that docks on the far side - interactive
+- [`R34C.dc.html`](R34C.dc.html) - Rev 34 C - Briefing: a lower-third bust and a wide line, letterbox-style - interactive
+- [`R34Notes.dc.html`](R34Notes.dc.html) - Rev 34 - notes: the old FTUE (Rev 21), what the captain changes, who speaks, the side rule
 
 ### Rev 33 - Into a game mode (loading, intro, countdown) and why it lags  (page `rev33`)
 
