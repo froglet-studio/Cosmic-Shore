@@ -195,18 +195,37 @@ namespace CosmicShore.Gameplay
             // Past this point the basis is orthonormal by construction, so every LookRotation
             // below is handed two perpendicular unit vectors and cannot fail; guarding each of
             // them individually would only hide that fact.
-            Vector3 axis = station.Axis.sqrMagnitude > 1e-6f
-                ? station.Axis.normalized
-                : Vector3.forward;
-
-            Vector3 u = Vector3.ProjectOnPlane(Vector3.up, axis);
-            if (u.sqrMagnitude < 1e-4f) u = Vector3.ProjectOnPlane(Vector3.right, axis);
-            u.Normalize();
-            Vector3 v = Vector3.Cross(axis, u);   // unit: axis and u are perpendicular unit vectors
+            Basis(station.Axis, out Vector3 axis, out Vector3 u, out Vector3 v);
 
             EmitDish(station.Position, axis, u, v, station.PortRadius, emit);
             EmitCollar(station.Position, axis, u, v, emit);
             EmitPlug(station.Position, axis, u, v, station.PortRadius, emit);
+        }
+
+        /// <summary>
+        /// Lay one station's DOOR only - the keystone collar and the plug, no dish. Switchback's Blast Run
+        /// (SWITCHBACK.md "Blast Run") hangs this in front of a blocked race ring: the dish is a 2.5 x port deep horn
+        /// that would swallow the leg into the ring, while the door alone is 9 u deep and seals everything but the
+        /// <see cref="BreakwaterCourseSettings.EyeRadius"/> eye. Same basis, same closed form, so the door is
+        /// exactly a Breakwater station's door and <c>Tools/Build/breakwater_arena.py</c>'s collar and plug
+        /// counts hold for it.
+        /// </summary>
+        public static void BuildDoor(in BreakwaterStation station,
+                                     Action<Vector3, Quaternion, Vector3, PrismKind> emit)
+        {
+            Basis(station.Axis, out Vector3 axis, out Vector3 u, out Vector3 v);
+            EmitCollar(station.Position, axis, u, v, emit);
+            EmitPlug(station.Position, axis, u, v, station.PortRadius, emit);
+        }
+
+        /// <summary>The station's orthonormal frame - the one degeneracy guard (see <see cref="Build"/>).</summary>
+        static void Basis(Vector3 stationAxis, out Vector3 axis, out Vector3 u, out Vector3 v)
+        {
+            axis = stationAxis.sqrMagnitude > 1e-6f ? stationAxis.normalized : Vector3.forward;
+            u = Vector3.ProjectOnPlane(Vector3.up, axis);
+            if (u.sqrMagnitude < 1e-4f) u = Vector3.ProjectOnPlane(Vector3.right, axis);
+            u.Normalize();
+            v = Vector3.Cross(axis, u);   // unit: axis and u are perpendicular unit vectors
         }
 
         /// <summary>The dish's rim radius for a port. One expression, two readers (here and the
