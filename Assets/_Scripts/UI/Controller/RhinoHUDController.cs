@@ -12,7 +12,10 @@ namespace CosmicShore.UI
     /// BothSticksAction: hold both to energize, swing to cut; the afterimages follow the energize).
     /// Time wears the sticks-apart glyph, set here because a gesture has no map input.</para>
     ///
-    /// <para><b>CHARGE card</b> - the sword's ENERGIZE, which the card is bound to (the both-triggers
+    /// <para><b>CHARGE card</b> - the katana follows the real sword: every frame the blade's pose
+    /// (<see cref="ShieldSwipeActionExecutor.CurrentPose"/>, the swipe, the chop and any flourish,
+    /// normalised by its config) goes to <see cref="RhinoVesselHUDView.SetKatanaPose"/>, and the lit
+    /// state tints it danger (<see cref="RhinoVesselHUDView.SetKatanaLit"/>). The card shows the sword's ENERGIZE, which the card is bound to (the both-triggers
     /// stance), and how many petals a sword hit takes (Charge scales it; its level-5, Sword Steal,
     /// lands them on the Rhino instead of ejecting them; 2026-10-26). The card is lit while the blade is
     /// energized, the recharge veil sweeps over it through the energize cooldown, and an authored
@@ -47,6 +50,10 @@ namespace CosmicShore.UI
         [Tooltip("The sword's brain (energize phase, surge). On the Rhino root's ScaleSkimmerObject.")]
         [FormerlySerializedAs("growSkimmerExecutor")]
         [SerializeField] private ShieldSkimmerScaleDriver swordDriver;
+
+        [Tooltip("The sword's swipe (ShieldSwipeActionExecutor on the vessel), whose pose the Charge card's katana " +
+                 "follows. Found on the vessel when empty.")]
+        [SerializeField] private ShieldSwipeActionExecutor swipe;
 
         [Tooltip("The Mass ability (afterimages), beside the sword driver. Found under the vessel when empty.")]
         [SerializeField] private RhinoSwordAfterimage afterimage;
@@ -93,6 +100,7 @@ namespace CosmicShore.UI
             if (!speedWard && root) speedWard = root.GetComponentInChildren<VesselElementalImmunity>(true);
             _topSpeed = root ? root.GetComponentInChildren<ITopSpeedSource>(true) : null;
             if (!ramp && root) ramp = root.GetComponentInChildren<RampBoostActionExecutor>(true);
+            if (!swipe && root) swipe = root.GetComponentInChildren<ShieldSwipeActionExecutor>(true);
 
             // A re-initialise (menu vessel swap, pilot swap) starts the cards from a known state so
             // the change detection below pushes everything once.
@@ -113,6 +121,8 @@ namespace CosmicShore.UI
                 InputDeviceIconSetSwitcher.HintBinding.KeySticksOutward);
 
             view.SetAbilityPressed(Element.Charge, false);
+            view.SetKatanaLit(false);
+            view.SetKatanaPose(0f, 0f);
             view.SetAbilityPressed(Element.Mass, false);
             view.SetAbilityPressed(Element.Time, false);
         }
@@ -148,6 +158,7 @@ namespace CosmicShore.UI
             }
             PushLineToTimeGauge();
 
+            PushSwordToKatana();
             if (!swordDriver) return;
 
             // Re-asserted every frame while lit, not change-detected: the card is bound to the
@@ -156,6 +167,7 @@ namespace CosmicShore.UI
             bool lit = swordDriver.IsEnergized;
             if (lit || lit != _chargeLit)
             {
+                if (lit != _chargeLit) view.SetKatanaLit(lit);
                 _chargeLit = lit;
                 view.SetAbilityPressed(Element.Charge, lit);
             }
@@ -173,6 +185,18 @@ namespace CosmicShore.UI
                 _chargeGauge = energize;
                 gauge.fillAmount = energize;
             }
+        }
+
+        // The real sword's pose on the Charge card's katana: the swipe (-1..1) and the chop (0..1), each a fraction of
+        // its full single-axis travel, so a flourish past it clamps at the card's limit.
+        void PushSwordToKatana()
+        {
+            var config = swipe ? swipe.Config : null;
+            if (!config) return;
+            var pose = swipe.CurrentPose;
+            float s = config.SwipeYawDegrees != 0f ? pose.yaw / config.SwipeYawDegrees : 0f;
+            float c = config.ChopPitchDegrees != 0f ? pose.pitch / config.ChopPitchDegrees : 0f;
+            view.SetKatanaPose(s, c);
         }
 
         // The ramp's line on the Time gauge: its authored colour on a straight line (or with no ramp
