@@ -1047,6 +1047,9 @@ MonoBehaviour:
   weaponModeIcon: {fileID: 4990196459091587280}
   afterburnerJetsBoostSprite: {fileID: 21300000, guid: 6e141b57c25bf551e68fcf8016f0c974, type: 3}
   stanceRoundsShieldedSprite: {fileID: 21300000, guid: 31013a53a3facbfba55fdc2c99da3ea8, type: 3}
+  gunSprayPierceSprite: {fileID: 21300000, guid: 1ceb75e5aaf9fa7daebd4fda110db66d, type: 3}
+  gunSprayPrismRoundSprite: {fileID: 21300000, guid: 1ee7d81ef12e6742fa8c57ff53e15ce6, type: 3}
+  gunSprayRoundSprite: {fileID: 21300000, guid: 37cf2b7afcf49ac5bf9a6f17b30f2fcd, type: 3}
   stanceRoundsSprite: {fileID: 21300000, guid: 9969f70a2a50cbfc6f16afbc9077332b, type: 3}
   stanceHullIcon: {fileID: 170124652342621202}
   stanceRoundsIcon: {fileID: 394653550371895843}
@@ -2982,14 +2985,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c71ffb50b4b84c0ad6695f8c640f326e, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1

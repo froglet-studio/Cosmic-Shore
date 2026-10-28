@@ -26,6 +26,7 @@
 Ladder and weapon-mode sprites live in Ladder/ and Modes/; the ladder is family=False (rungs are variants).
 """
 import mesh_silhouette
+import numpy as np
 from canvas import empty, fill, rect, rotate
 from motifs import block, hull, prism
 
@@ -153,22 +154,95 @@ def rockets(n, total=4):
     return [(solid, 1.0), (ghost, 0.6)]   # a ghost at exactly 0.5 sits on the gates' threshold and vanishes at 40 px
 
 
-def _diagonal(shape_at):
-    m = rect(0, 0, 0, 0)
-    for x, y, s in ((30, 98, 0.8), (64, 64, 1.0), (98, 30, 1.2)):
-        m |= shape_at(x, y, s)
+# ---- Pulsefire Cannons (Space): THE SPRAY over the segmented heat gauge (Garrett 2026-10-27: "option E2 looks great").
+# Measured first: the guns' RANGE is fixed (Space no longer reaches them, SPARROW_SPRAY_ACCURACY.md Round 7) and the
+# live quantity is HEAT, 0..30 s in six even phases - the cone holds at 0 deg, opens to 1.5, holds, blows out to 7.5,
+# holds, collapses to 37.5. Garrett: "the icon we had before the current had a way to show that there were different
+# heat buckets that had different spread. if you could convey the realtime spread value and which level they are on
+# that would be best"; then "lets try to get E using more shots and the whole space to define the angle"; and of the
+# marks across the plate "i like the ease of reading the lines as the boundaries between levels but i don't like how
+# it visually dominates the whole space". So: the PLATE is the heat, its fill cut into one bar per level reached and
+# the levels still ahead as dim ticks at the plate's edges (card.py gauge_marks_style="segments";
+# SparrowHUDView.PaintGunHeatMarks); the ICON is ten rounds in five ranks from a muzzle at the card's left edge, each
+# on its own ray inside the LIVE cone - one stream when cold, fanned to the card's whole height in the collapse. Every
+# rank puts one round on a cone edge, so the angle is drawn, not guessed. The real angles are tiny until the
+# blow-out, so the view maps each phase's real cap onto a readable card angle (SparrowHUDView.SprayCardAngle, the
+# knots below); the controller pushes the real half-angle every frame. The view GENERATES the ten round Images under
+# the card's icon (a transparent container) from one round sprite and lays them out on their rays - the layout below
+# is serialized on the view (gunSprayMuzzle, gunSprayRounds) and must match.
+import math
+
+# (label, heat fill 0..1, real half-angle deg) - each phase's representative point, for the states sheet
+HEAT_STATES = [("cold: pin-accurate", 0.10, 0.0),
+               ("fightable plateau: 1.5 deg", 0.42, 1.5),
+               ("area denial: 7.5 deg", 0.75, 7.5),
+               ("collapse: 37.5 deg", 1.00, 37.5)]
+GUN_MARKS = [1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6]   # CollectPhaseJoins on the shipped profile: six even phases
+SPRAY_MUZZLE = (2.0, 64.0)                        # icon px; SparrowHUDView.gunSprayMuzzle
+SPRAY_RANKS = [(20, (1.0, -0.4)), (42, (-1.0, 0.3)), (64, (1.0, -0.55)), (86, (-1.0, 0.6)), (110, (1.0, -1.0))]
+SPRAY_CAPS_REAL = (1.5, 7.5, 37.5)                # the shipped profile's three caps (the view reads them live)
+SPRAY_CAPS_CARD = (8.0, 19.0, 30.0)               # SparrowHUDView.gunSprayCardAngles
+
+
+def spray_card_angle(real):
+    """The C# SprayCardAngle: piecewise-linear from (0, cap1, cap2, cap3) to (0, card1, card2, card3), clamped."""
+    xs, ys = (0.0,) + SPRAY_CAPS_REAL, (0.0,) + SPRAY_CAPS_CARD
+    if real >= xs[-1]:
+        return ys[-1]
+    for i in range(1, len(xs)):
+        if real <= xs[i]:
+            t = (real - xs[i - 1]) / (xs[i] - xs[i - 1])
+            return ys[i - 1] + t * (ys[i] - ys[i - 1])
+    return 0.0
+
+
+def bullet_round(cx, cy, a=0.0):
+    return fill(rotate([(cx - 7.5, cy - 4.5), (cx + 2.5, cy - 4.5), (cx + 7.5, cy), (cx + 2.5, cy + 4.5), (cx - 7.5, cy + 4.5)], -a, cx, cy))
+
+
+def prism_round(cx, cy, a=0.0):
+    """A stance round: a bare prism, front-above, centred on (cx, cy) like the bullet it replaces."""
+    return block(cx - 2.5, cy + 2.5, w=11, h=8, dp=4)   # a prism flies square-on: the view never turns it
+
+
+def spray(half, shape=bullet_round):
+    x0, y0 = SPRAY_MUZZLE
+    m = empty()
+    for d, ks in SPRAY_RANKS:
+        for k in ks:
+            a = half * k
+            r = math.radians(a)
+            m |= shape(x0 + d * math.cos(r), y0 - d * math.sin(r), a)
     return m
 
 
 def cannons():
-    def bullet(x, y, s):
-        pts = [(x + px * s, y + py * s) for px, py in ((0, -22), (10, -11), (10, 20), (-10, 20), (-10, -11))]
-        return fill(rotate(pts, 45, x, y))
-    return _diagonal(bullet)
+    """The card's sprite (sheets, any single-image surface): the cold spray, one stream."""
+    return spray(0.0)
 
 
 def prism_rounds():
-    return _diagonal(lambda x, y, s: prism(x, y, 20 * s))
+    """weaponModeIcons[1]: the cold spray in the stance, prism rounds."""
+    return spray(0.0, prism_round)
+
+
+def gun_spray_round():
+    """The part the view clones ten times: one bullet round at the sprite's centre."""
+    return bullet_round(64, 64)
+
+
+def gun_spray_prism_round():
+    """The stance's round part: one bare prism at the sprite's centre."""
+    return prism_round(64, 64)
+
+
+# The L5 state (Piercing Bullets): a hostile prism on the centre line, the rounds through it and out the far side.
+PIERCE_PRISM = dict(cx=58, cy=70, w=10, h=36, dp=6)
+
+
+def pierce_prism():
+    """The Space 5 part: a hostile prism on the centre line the rounds fly through (the view tints it danger, 0.6)."""
+    return block(**PIERCE_PRISM)
 
 
 ICONS = [
@@ -180,7 +254,14 @@ ICONS = [
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds", "specks": "seam slivers", "gap": "seams", "thin": "seams", "at40": "the seams close at 40 px, the blocks stay"}),
     dict(name="Sparrow_TurretStanceRoundsShielded", element="Mass", act="Turret Stance: the rounds part at Mass 5 (octahedrons, the shielded colour)", draw=turret_stance_rounds_shielded, subdir="Parts", family=False,
          exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "four rounds"}),
-    dict(name="Sparrow_Cannons", element="Space", act="Pulsefire Cannons", draw=cannons, before=ART + "New_Sparrow/bullet icon.png"),
+    dict(name="Sparrow_Cannons", element="Space", act="Pulsefire Cannons: the cold spray, one stream (composite; the HUD lays the rounds out live)", draw=cannons,
+         exempt={"coverage": "a line of rounds: the cold spray", "components": "five rounds", "at40": "the rounds hold at 40 px"}),
+    dict(name="Sparrow_GunSprayRound", element="Space", act="Pulsefire Cannons: one round, the part the view clones onto the live cone", draw=gun_spray_round, subdir="Parts", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "at40": "a part"}),
+    dict(name="Sparrow_GunSprayPrismRound", element="Space", act="Pulsefire Cannons: one prism round, the stance's part", draw=gun_spray_prism_round, subdir="Parts", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "at40": "a part", "specks": "seam slivers", "thin": "seams", "gap": "seams", "components": "the seams cut it"}),
+    dict(name="Sparrow_GunSprayPierce", element="Space", act="Pulsefire Cannons at Space 5: the prism the rounds pierce", draw=pierce_prism, subdir="Parts", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "specks": "seam slivers", "thin": "seams", "gap": "seams", "components": "the seams cut it"}),
     dict(name="Sparrow_Afterburner", element="Time", act="Afterburner: the Sparrow folded at full burn (composite: the boost hull + jets)", draw=afterburner,
          exempt={"components": "a hull and two plumes", "gap": "the real mesh"}),
     dict(name="Sparrow_AfterburnerRest", element="Time", act="Afterburner at rest (composite: fans spread, idling jets)", draw=afterburner_rest, subdir="Parts", family=False,
@@ -198,7 +279,8 @@ ICONS = [
     dict(name="Sparrow_Rockets_2", element="Charge", act="rack: 2 of 4", draw=lambda: rockets(2), subdir="Ladder", family=False, before=ART + "Missiles/missileGauge_1.png"),
     dict(name="Sparrow_Rockets_1", element="Charge", act="rack: 1 of 4", draw=lambda: rockets(1), subdir="Ladder", family=False),
     dict(name="Sparrow_Rockets_0", element="Charge", act="rack: 0 of 4", draw=lambda: rockets(0), subdir="Ladder", family=False, before=ART + "Missiles/missileGauge_0.png"),
-    dict(name="Sparrow_PrismRounds", element="Space", act="stance: prism rounds", draw=prism_rounds, subdir="Modes", family=False, before=ART + "New_Sparrow/fire icon.png"),
+    dict(name="Sparrow_PrismRounds", element="Space", act="stance: the cold spray in prism rounds", draw=prism_rounds, subdir="Modes", family=False,
+         exempt={"coverage": "a line of rounds", "components": "five rounds", "specks": "seam slivers", "thin": "seams", "gap": "seams", "at40": "seams"}),
 ]
 
 REBIND = [
@@ -230,8 +312,23 @@ REBIND = [
                                            ("StanceHull", "Sparrow_TurretStanceHull", "stanceHullIcon")],
                                  fields={"stanceRoundsSprite": ("icon", "Sparrow_TurretStanceRounds"),
                                          "stanceRoundsShieldedSprite": ("icon", "Sparrow_TurretStanceRoundsShielded")})),
+    # The Space card: the icon Image becomes a transparent container; the view GENERATES the ten rounds and the
+    # Space 5 prism under it from these sprites (no prefab children: the layout is the view's serialized numbers).
+    dict(file=VARIANT, pair=dict(container="4990196459091587280", view="7983934951929746178", after="stanceRoundsShieldedSprite",
+                                 children=[],
+                                 fields={"gunSprayRoundSprite": ("icon", "Sparrow_GunSprayRound"),
+                                         "gunSprayPrismRoundSprite": ("icon", "Sparrow_GunSprayPrismRound"),
+                                         "gunSprayPierceSprite": ("icon", "Sparrow_GunSprayPierce")})),
 ]
 
+
+# The hull's other cards as the HUD draws them today (states.py options sheets show a candidate beside them).
+LOCKUP = dict(
+    Charge=dict(parts=dict(rack=lambda: rockets(4)), state=[("rack", "white")]),
+    Mass=dict(parts=dict(hull=turret_stance_hull, rounds=turret_stance_rounds), state=[("rounds", "domain", 0.6), ("hull", "domain")]),
+    Space=dict(parts=dict(guns=cannons), state=[("guns", "domain")], gauge=0.10, gauge_marks=GUN_MARKS),
+    Time=dict(parts=dict(hull=afterburner_hull_rest, jets=afterburner_jets_rest), state=[("jets", "blue"), ("hull", "domain")]),
+)
 
 # The cards' STATES sheets (states.py): Docs/Icons/sheets/sparrow_<name>.png, drawn on every author.py run.
 CARDS = [
@@ -246,4 +343,15 @@ CARDS = [
          states=[("flying: stance off (ghost)", [("rounds", "domain", 0.6), ("hull", "domain")]),
                  ("in the stance", [("rounds", "domain"), ("hull", "domain")]),
                  ("in the stance at Mass 5", [("rounds_shielded", "shielded"), ("hull", "domain")])]),
+
+    dict(name="cannons", element="Space", before="Sparrow_Cannons", before_rev="9f748f9ae", before_gauge=True, before_gauge_marks_style="lines",
+         gauge_marks=GUN_MARKS, gauge_marks_style="segments",
+         title="Pulsefire Cannons: ten rounds on their rays inside the LIVE cone; the heat fill is one bar per level reached, the levels ahead dim edge ticks",
+         parts={**{f"s{i}": (lambda r=r: spray(spray_card_angle(r))) for i, (_n, _g, r) in enumerate(HEAT_STATES)},
+                "stance": lambda: spray(spray_card_angle(7.5), prism_round), "prism": pierce_prism, "pierce": cannons},
+         states=[(n, [(f"s{i}", "domain")]) for i, (n, _g, _r) in enumerate(HEAT_STATES)]
+                + [("turret stance at 7.5 deg: prism rounds", [("stance", "domain")]),
+                   ("Space 5: rounds pierce prisms", [("prism", "danger", 0.6), ("pierce", "domain")])],
+         gauge={**{n: (g, None) for n, g, _r in HEAT_STATES}, "turret stance at 7.5 deg: prism rounds": (0.75, None),
+                "Space 5: rounds pierce prisms": (0.10, None)}),
 ]

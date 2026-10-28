@@ -119,12 +119,13 @@ def sheet(spec, c, out):
     d = ImageDraw.Draw(im)
     d.text((10, 6), f"{spec.HULL} {element.upper()} card - {c.get('title', c['name'])}", fill=(230, 230, 230, 255), font=font)
 
-    def row(y, label, imgs, with_gauge=True):
+    def row(y, label, imgs, with_gauge=True, marks_style=None):
         d.text((10, y), label, fill=(230, 230, 230, 255), font=font)
         x, yy = 10, y + 26
         for (name, icon) in imgs:
             g = gauges.get(name) if with_gauge else None
-            cd = card.card(icon, element, gauge=g[0] if g else None, gauge_color=g[1] if g else None)
+            cd = card.card(icon, element, gauge=g[0] if g else None, gauge_color=g[1] if g else None, gauge_marks=c.get("gauge_marks"),
+                           gauge_marks_style=marks_style or c.get("gauge_marks_style", "lines"))
             im.alpha_composite(cd, (x, yy))
             d.text((x, yy + cd.height + 2), name[:30], fill=(170, 170, 190, 255), font=font)
             x += cd.width + 8
@@ -134,10 +135,84 @@ def sheet(spec, c, out):
     old = before_image(spec.HULL, c["before"], c.get("before_rev", "HEAD")) if c.get("before") else None
     if old is not None:
         # the old card is drawn WITHOUT this round's gauge: a meter the card did not have is not part of its before
-        row(y, f"BEFORE  {c['before']} as committed ({c.get('before_rev', 'HEAD')})", [(n, old) for n, _p in states], with_gauge=c.get("before_gauge", False))
+        row(y, f"BEFORE  {c['before']} as committed ({c.get('before_rev', 'HEAD')})", [(n, old) for n, _p in states], with_gauge=c.get("before_gauge", False),
+            marks_style=c.get("before_gauge_marks_style"))
         y += chh + 70
     for key in sample:
         row(y, f"AFTER  {key.capitalize()} pilot", [(n, compose(parts, c["parts"], key, domains)) for n, parts in states])
         y += chh + 70
+    im.save(out)
+    return out
+
+
+ORDER = ("Charge", "Mass", "Space", "Time")   # the lockup, left to right (VesselHUDView.AbilityDisplayOrder)
+
+
+def _lockup(spec, slot_element, slot_icon, slot_gauge, domain_key, domains, slot_marks=None, slot_style="lines"):
+    """The hull's whole ability row as the HUD draws it, with `slot_icon` in `slot_element`'s card and every other card
+    as the spec's LOCKUP has it today - so a candidate is judged next to its siblings, not alone."""
+    cards = []
+    for el in ORDER:
+        if el == slot_element:
+            cards.append(card.card(slot_icon, el, gauge=slot_gauge, gauge_marks=slot_marks, gauge_marks_style=slot_style))
+            continue
+        sib = spec.LOCKUP.get(el)
+        if sib is None:
+            cards.append(card.card(None, el, locked=True))
+        else:
+            cards.append(card.card(compose(sib["state"], sib["parts"], domain_key, domains), el, gauge=sib.get("gauge"), gauge_marks_style=sib.get("gauge_marks_style", "segments"),
+                                   gauge_marks=sib.get("gauge_marks")))
+    w = sum(c.width for c in cards) + 4 * (len(cards) - 1)
+    row = Image.new("RGBA", (w, max(c.height for c in cards)), NAVY)
+    x = 0
+    for c in cards:
+        row.alpha_composite(c, (x, 0))
+        x += c.width + 4
+    return row
+
+
+def options_sheet(spec, group, entries, out, domain_key="jade"):
+    """One OPTIONS sheet for a card (Garrett 2026-10-27: "going forward when showing vessel icons lets show the before
+    and the other icons of the vessel so we can consider how they distinguish themselves too"): the BEFORE row, then
+    one row per candidate - each the hull's full lockup with the candidate in its slot, beside the candidate's states.
+    Built from the CARDS entries that share `group`; needs the spec's LOCKUP (its other cards today)."""
+    domains = domain_colours()
+    font = ImageFont.load_default()
+    first = entries[0]
+    element = first["element"]
+    rows = []
+    old = before_image(spec.HULL, first["before"], first.get("before_rev", "HEAD")) if first.get("before") else None
+    if old is not None:
+        rows.append((f"BEFORE  the {element} card as committed ({first['before']}), in the lockup", _lockup(spec, element, old, first.get("before_gauge_value"), domain_key, domains, first.get("gauge_marks")), []))
+    for c in entries:
+        states = c["states"]
+        gauges = c.get("gauge", {})
+        shown = states[c.get("lockup_state", 0)]
+        g = gauges.get(shown[0])
+        icon = compose(shown[1], c["parts"], domain_key, domains)
+        others = []
+        for name, parts in states:
+            gg = gauges.get(name)
+            others.append((name, card.card(compose(parts, c["parts"], domain_key, domains), element, gauge=gg[0] if gg else None,
+                                           gauge_color=gg[1] if gg else None, gauge_marks=c.get("gauge_marks"), gauge_marks_style=c.get("gauge_marks_style", "lines"))))
+        rows.append((c.get("title", c["name"]), _lockup(spec, element, icon, g[0] if g else None, domain_key, domains, c.get("gauge_marks"), c.get("gauge_marks_style", "lines")), others))
+    lock_w = max(r[1].width for r in rows)
+    cw = card.card(None, element).width
+    width = 20 + lock_w + 40 + max(len(r[2]) for r in rows) * (cw + 8) + 20
+    row_h = max(r[1].height for r in rows) + 60
+    im = Image.new("RGBA", (max(width, 900), 30 + len(rows) * row_h), NAVY)
+    d = ImageDraw.Draw(im)
+    d.text((10, 8), f"{spec.HULL} {element.upper()} card - options in the lockup ({domain_key.capitalize()} pilot); the states of each candidate to the right",
+           fill=(230, 230, 230, 255), font=font)
+    y = 30
+    for label, lock, others in rows:
+        d.text((10, y), label[:150], fill=(255, 230, 120, 255), font=font)
+        im.alpha_composite(lock, (10, y + 16))
+        x = 10 + lock_w + 40
+        for name, cd in others:
+            im.alpha_composite(cd, (x, y + 16))
+            d.text((x, y + 16 + cd.height + 2), name[:28], fill=(170, 170, 190, 255), font=font)
+            x += cw + 8
+        y += row_h
     im.save(out)
     return out
