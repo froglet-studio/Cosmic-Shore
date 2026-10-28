@@ -3,7 +3,7 @@
 **Status: DESIGN DRAFT** (Garrett, 2026-10-28; first draft written the same day). Nothing in this document is built.
 It is the plan that `Docs/Pilots/ARTIFACTS.md` §8.5 asks for before vaults, hunting and extraction can be built.
 Every default marked **(default)** is a guess waiting for Garrett's answer; §11 lists them.
-Sources beyond the repo: the Figma file *Cosmic Shore for Alpha* (page *UI for vLater*: the old Port faction boards), the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and
+Sources beyond the repo, and what in them is out of date: [`SOURCES.md`](SOURCES.md). In short: the FigJam board *How players get, do, and learn things*, the Figma file *Cosmic Shore for Alpha* (page *UI for vLater*: the old Port faction boards), the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and
 *Pilot Design Document* (faction types, notoriety, the Ark's bunks). 
 
 > "voyages are what we have instead of missions as the fourth game location after toybox, arcade, arena, come
@@ -108,11 +108,26 @@ The map is **data**, written by a generator (the repo's pattern: one `author_*.p
 
 ### 3.4 What the player sees
 
-The Voyage window gains the **chart**: the galaxy, your squad's position, where you can sail from here, and, faintly,
-the other squads that are out (how many, roughly where; never exactly who until you meet). Choosing a destination
-also chooses a **job** that one of your pilots found at port (§6.2). The chart is shown in 3D in the world, not as flat text where it describes a world
-fact (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, the LOCKED "show a world fact in the world" rule): the natural home
-for it is the Ark itself, a star chart aboard the Ark screen.
+The screens follow the full-release information architecture on the FigJam board *How players get, do, and learn
+things* (section *Information Architecture for Full Release*), brought up to date with the decisions here.
+
+- **Voyages (the hub's fourth location).** A mission select that offers **three jobs** at a time from your crew's
+  board (§6.2), each with its estimated time, intensity (1 to 4, the game's one difficulty scale), reward range, a
+  summary and, expanded, the lore that led to it. Beside it: the squad picker (one of four saved squads, each slot's
+  vessel, element, pilot and artifact), the main story track ("the next leg of the journey") and the episodes.
+- **The chart.** Choosing a job puts its destination on the chart: the galaxy, your squad's position, where you can
+  sail from here, and, faintly, the other squads that are out (how many and roughly where, never who until you
+  meet). The chart is a world fact, so it is shown in 3D in the world, not as flat text (the LOCKED "show a world fact
+  in the world" rule, `Docs/claude/SHADERS_AND_PERFORMANCE.md`). Its natural home is a star chart aboard the Ark.
+- **The Ark.** Crew (every pilot's callsign, name, faction, faction type and a backstory that grows with key
+  events; **promote to captain**, which changes your faction; discontinue a pilot), the four saved squads, the
+  converter, decor, bunks bought with omnicrystals, and **pilot search**: spend omnicrystals to search by vessel or
+  by faction type, then recruit one pilot from a choice of three.
+- **The Port.** Friends, and the faction: chat, clout, the daily faction leaderboard, promotions (below), and
+  invitations (squad, party, an Ark link). **Emissaries** arrive on Home as a toast to accept or reject.
+- **Out of date on the board** (do not build): pilots and artifacts "compatible with this class of vessel" (any
+  vessel seats any pilot, and no artifact names a vessel class, `ARTIFACTS.md` rule 3), "Missions" as the hub name,
+  and the Hangar's per-class artifact picker.
 
 ## 4. Travel
 
@@ -262,6 +277,12 @@ prey on them:
   friend. If the friend accepts the emissary into their crew, both players can take that faction's jobs, and once the
   friend promotes the emissary to captain they are in the same faction. The Notion *Ark Design Document* adds that an
   emissary opens a bunk of its own, and that factions grant free emissaries by rank.
+- **Allies.** Your captain's faction is your **primary** faction: you are a member, with its chat, rank and clout.
+  Every other pilot's faction is an **ally**: you take its jobs through that pilot, but you are not a member (Garrett,
+  2026-10-28, confirming the old Port boards' primary and ally slots).
+- **Ranks inside a faction** (from the FigJam board, to confirm): members join a team, team leaders form teams,
+  generals receive special jobs that affect several teams, and faction leaders receive jobs that affect the whole
+  faction. A promotion can be accepted, rejected or resigned.
 - **What GTC gets out of it.** Faction membership is a meeting preference: squads of the same faction are matched
   as co-op where their jobs allow it, and a faction's own rival factions (a pirate faction and the bounty hunters
   hunting it) are what the hostile pairings feed on.
@@ -441,6 +462,30 @@ Each phase is playable on its own and proves the riskiest thing left.
 
 V1 can start as soon as the questions in §11 are answered. It needs nothing from the backend.
 
+### 9.1 V1, ready to build
+
+What V1 needs, in build order. Each step is one branch with its own proof, and each reuses what §1-§8 name rather
+than adding beside it. Claim every shared number (`GameModes` id, enum values) only after checking `bleeding-edge`
+and the in-flight branches (`CLAUDE.md` § Team).
+
+1. **The map as data.** `HyperSeaMapSO` (locations, lanes, regions; each location a `CellConfigDataSO` plus an
+   experience) written by `Tools/Build/author_hypersea_map.py` (`--check`, `--self-test`), which also writes the
+   server JSON. Start with one harbour per domain and the four V1 locations.
+2. **The crew and the job board.** A crew pilot record (name, story, race, faction, callsign id) over the shipped
+   callsign `PilotSO`s, one per callsign per crew, stored on the device beside `PilotLoadoutStore` until the backend
+   holds it. A job seed table (faction type to job, §6.2) and a port news ledger fed from authored events (§6.3).
+   The Voyage window shows three jobs. Every word on it is an authored field (the LOCKED text rule).
+3. **The voyage mode and a flown leg.** One voyage `GameModes` id and controller that loads a location from the map,
+   and a leg flown with the Ark through the lane's cells (`CellConveyor`, `ArkwayRun`'s corridor, drawn from the
+   lane, not a shuffle bag). `GameDataSO.IsArenaMatch` stays off so artifacts load.
+4. **Location experiences.** Harbour, vault field (vaults are new: super-shielded shells with an `ArtifactPickup`
+   inside), Tandava's lair (Tandava's director inside a lair cell, after Shombith's yes on the Voyage window) and a
+   wreck (an `ArkFall` spill placed on arrival).
+5. **The voyage record and extraction.** Legs flown, what is aboard, the hull count, on the device. Docking at home
+   moves what is aboard into the collection. A delivered dispatch writes the destination port's ledger.
+6. **Hand tests and a ticket.** One Froglet Tasks ticket for the branch (suggested, approved by a person), with the
+   editor hand tests as its checklist (`/verify-unity` gates every C# commit).
+
 ## 10. Who works where (ask before changing)
 
 | Area | Whose | What this design needs from it |
@@ -469,9 +514,8 @@ Each has a default the draft is written to; a different answer changes the secti
    (§4.3)
 7. **The first five jobs** (courier, hunt, defence, pirate, bounty; escort dropped, haul is the courier contract).
    Right set, and is Notion's faction-type table still current? (§6.2)
-8. **Primary and ally factions.** Your captain's faction is the one you belong to. Are the other pilots' factions
-   "allies" (you take their jobs, you are not a member), as the old Port boards' primary and ally slots suggest? And
-   is 50 the optimal faction size? (§6.2.1)
+8. **Faction size and ranks.** Is 50 the optimal faction size, and do the FigJam board's ranks (member, team leader,
+   general, faction leader) still hold? (§6.2.1)
 9. **Does the galactic war belong in voyages** (which domain holds each location, summed across all players), and is
    a domain the right side to fight for, or should squads belong to factions of their own? (§9, V4)
 10. **Tandava** becomes the first lair location instead of "Voyage 1". That changes Shombith's Voyage window, so it

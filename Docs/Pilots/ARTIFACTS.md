@@ -268,8 +268,9 @@ Built on the types from `claude/pensive-dijkstra-qxoxo0` once they land, never b
    experience. Squads travel between specific locations on a shared galactic map (the HyperSea) and have unique
    experiences there. "Galactic traffic control" puts squads that meet into managed peer-to-peer instances that make
    sense for both sides' missions. The Arkway (`ECOSYSTEM.md` §41, `Docs/ToySystem/ARKWAY_PLAN.md`) is a toy that also
-   uses the Ark: the most voyage-like toy, a taste of a freestyle voyage, not the voyage itself. Voyages need their own
-   plan: the map, the locations, traffic control and the server-owned Ark. Nothing for Voyages is built yet.
+   uses the Ark: the most voyage-like toy, a taste of a freestyle voyage, not the voyage itself. **The plan is
+   [`Docs/Voyages/VOYAGES.md`](../Voyages/VOYAGES.md)**: the map, the locations, the jobs, traffic control, the
+   host-owned Ark (§8) and V1's build order (§9.1). Nothing for Voyages is built yet.
 6. **`/verify-unity`** before any C# commit (LOCKED).
 
 ## 9. Order
