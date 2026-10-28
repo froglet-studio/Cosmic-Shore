@@ -237,6 +237,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The holds standing now (diagnostics).</summary>
         public static int Count => s_holds.Count;
 
+        /// <summary>Every hold standing now (GALLEON reads them; nothing may change one through this list).</summary>
+        public static IReadOnlyList<ArkHold> All => s_holds;
+
         /// <summary>Raised on this machine whenever a local pilot's payload changes, for a HUD.</summary>
         public static event Action<PayloadNotice> LocalNotice;
 
