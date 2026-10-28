@@ -12,13 +12,16 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "drive-manta-regatta",
-  "max_evals": 120,
-  "minutes": 10.0,
-  "since": 1793188635
- },
+ "current": {},
  "host": "cloud-session",
+ "last": {
+  "best_start": null,
+  "epoch": "226b88592db9",
+  "evals": 120,
+  "job": "drive-manta-regatta",
+  "session_evals": 120,
+  "stopped": "max evals"
+ },
  "runs": [
   {
    "best_end": 4.279668468582069,
@@ -41,12 +44,23 @@
    "start": 1793188621,
    "stopped": "max evals",
    "unit": null
+  },
+  {
+   "best_end": 3.4376208417760385,
+   "best_start": null,
+   "end": 1793188647,
+   "epoch": "226b88592db9",
+   "evals": 120,
+   "job": "drive-manta-regatta",
+   "start": 1793188635,
+   "stopped": "max evals",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 3
+  "sessions": 4
  },
- "updated": 1793188635,
+ "updated": 1793188647,
  "user": "shombith",
  "version": "1"
 }

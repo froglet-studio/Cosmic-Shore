@@ -1,0 +1,23 @@
+{
+ "descriptors": null,
+ "evals_at": 120,
+ "loss": 3.4376208417760385,
+ "metrics": {
+  "dnf": 0,
+  "limits": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
+  "model": "manta_drive",
+  "races": 4,
+  "seconds_by_intensity": {
+   "1": 24.7,
+   "2": 30.7,
+   "3": 35.3,
+   "4": 35.0
+  }
+ },
+ "params": {
+  "BoostStickBand": 0.9949664752709679,
+  "YastriStickBand": 0.9295303926868699
+ },
+ "sha": "168c3e3d3240ae0ea2ce1f5516a4ba5387d3b0ba",
+ "time": 1793188647
+}
