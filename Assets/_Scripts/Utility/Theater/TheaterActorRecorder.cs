@@ -21,6 +21,7 @@ namespace CosmicShore.Utility
         readonly List<GameObject> _lifeForms = new();
         readonly HashSet<GameObject> _notActors = new();
         bool _attached;
+        readonly Dictionary<SnowChanger, TheaterShardField> _fields = new();
 
         public TheaterActorRecorder() : this(TheaterActorThinning.Default) { }
         public TheaterActorRecorder(TheaterActorThinning thin) { _thin = thin; }
@@ -30,6 +31,51 @@ namespace CosmicShore.Utility
         {
             if (_attached) return;
             _attached = true;
+            RecordShardFields();
+            SnowChanger.MorphedShardAdded += HandleMorphedShard;
+        }
+
+        /// <summary>
+        /// Every cell's cytoplasm as it stands now (Go): each shard's position. Fields are named by their cell's config
+        /// and its order among the enabled cells of that config, as playback matches them.
+        /// </summary>
+        void RecordShardFields()
+        {
+            _fields.Clear();
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int c = 0; c < cells.Count; c++)
+            {
+                var cell = cells[c];
+                var cytoplasm = cell ? cell.Cytoplasm : null;
+                if (!cytoplasm || _fields.ContainsKey(cytoplasm)) continue;
+                var field = new TheaterShardField { Cell = FieldCellName(cell), Index = FieldIndex(cells, c) };
+                cytoplasm.CopyShardPositions(field.Positions);
+                _fields[cytoplasm] = field;
+                Actors.Shards.Add(field);
+            }
+        }
+
+        void HandleMorphedShard(SnowChanger field, Vector3 position, Quaternion rotation, float startTime, float duration)
+        {
+            if (!field || !_fields.TryGetValue(field, out var record)) return;
+            float now = Time.time;
+            record.Morphs.Add(new TheaterShardMorph
+            {
+                Time = now, Position = position, Rotation = rotation, StartOffset = startTime - now, Duration = duration
+            });
+        }
+
+        /// <summary>The name a cell's shard field is recorded under: its config's name.</summary>
+        public static string FieldCellName(Cell cell) => cell && cell.Config ? cell.Config.name : string.Empty;
+
+        /// <summary>How many enabled cells before <paramref name="at"/> share its config: the field's index within that name.</summary>
+        public static int FieldIndex(IReadOnlyList<Cell> cells, int at)
+        {
+            string name = FieldCellName(cells[at]);
+            int index = 0;
+            for (int i = 0; i < at; i++)
+                if (cells[i] && cells[i].Cytoplasm && FieldCellName(cells[i]) == name) index++;
+            return index;
         }
 
         /// <summary>Stop listening and close every open track, so each span ends at its last look.</summary>
@@ -38,6 +84,8 @@ namespace CosmicShore.Utility
             foreach (var track in _live.Values) track.Close();
             _live.Clear();
             _notActors.Clear();
+            if (_attached) SnowChanger.MorphedShardAdded -= HandleMorphedShard;
+            _fields.Clear();
             _attached = false;
         }
 

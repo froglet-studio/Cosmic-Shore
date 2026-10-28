@@ -261,6 +261,27 @@ namespace CosmicShore.Utility
         public int Index;
         public readonly List<Vector3> Positions = new();
         public readonly List<TheaterShardMorph> Morphs = new();
+
+        /// <summary>Put <see cref="Morphs"/> in time order (a recording already is; a stable insertion sort keeps ties).</summary>
+        public void SortMorphs()
+        {
+            for (int i = 1; i < Morphs.Count; i++)
+            {
+                var m = Morphs[i];
+                int j = i - 1;
+                while (j >= 0 && Morphs[j].Time > m.Time) { Morphs[j + 1] = Morphs[j]; j--; }
+                Morphs[j + 1] = m;
+            }
+        }
+
+        /// <summary>The index one past the last morph due by <paramref name="t"/>, walking from <paramref name="from"/>
+        /// (time-ordered morphs): those in [from, result) are the ones to add now.</summary>
+        public int MorphsDue(int from, float t)
+        {
+            int i = System.Math.Max(0, from);
+            while (i < Morphs.Count && Morphs[i].Time <= t) i++;
+            return i;
+        }
     }
 
     /// <summary>

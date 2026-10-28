@@ -289,6 +289,41 @@ namespace CosmicShore.Tests
             Assert.IsNull(TheaterActorTrack.PickNearest(species, taken, Vector3.zero, 1f), "no counterpart: hide it");
             Assert.AreSame(unborn, TheaterActorTrack.PickNearest(species, taken, Vector3.zero, 6f));
         }
+        [Test]
+        public void ShardMorphs_SortByTime_AndComeDueOnce()
+        {
+            var field = new TheaterShardField { Cell = "C", Index = 0 };
+            foreach (float time in new[] { 4f, 1f, 2.5f, 2.5f })
+                field.Morphs.Add(new TheaterShardMorph { Time = time, Duration = time });
+            field.SortMorphs();
+            Assert.AreEqual(1f, field.Morphs[0].Time);
+            Assert.AreEqual(4f, field.Morphs[3].Time);
+
+            Assert.AreEqual(0, field.MorphsDue(0, 0.5f), "none due before the first");
+            int next = field.MorphsDue(0, 2.5f);
+            Assert.AreEqual(3, next, "a morph exactly at t is due");
+            Assert.AreEqual(3, field.MorphsDue(next, 3f), "nothing new until the next one");
+            Assert.AreEqual(4, field.MorphsDue(next, 100f));
+        }
+
+        [Test]
+        public void SnowChanger_ReplayHooks_AreAdditive()
+        {
+            const string path = "Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChanger.cs";
+            if (!File.Exists(path)) Assert.Ignore("run from the Unity project root");
+            string src = File.ReadAllText(path);
+            foreach (string member in new[]
+                     {
+                         "public static event System.Action<SnowChanger, Vector3, Quaternion, float, float> MorphedShardAdded",
+                         "public static bool ReplayHoldsMorphs",
+                         "public void CopyShardPositions(",
+                         "public bool ApplyShardPositions(",
+                         "public bool AddRecordedMorphedShard(",
+                     })
+                StringAssert.Contains(member, src, "the replay's hook into the cytoplasm is missing");
+            StringAssert.Contains("if (ReplayHoldsMorphs) return false;", src,
+                                  "live dying limbs must not add shards over a replay's recorded ones");
+        }
     }
 }
 #endif

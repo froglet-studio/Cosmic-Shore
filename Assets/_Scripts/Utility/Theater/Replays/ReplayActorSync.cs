@@ -18,6 +18,10 @@ namespace CosmicShore.Utility
     /// from then on its root stands where that one stood. A live one with no partner (this run grew more, or the
     /// recorded one has not been born yet or is gone) is hidden until one is free; its renderers come back when the
     /// replay ends.</item>
+    /// <item><b>Cytoplasm shards</b> pair by field (cell config name and order). Each field is stood at its recorded
+    /// positions once, then the shards the match's dying limbs left are added at the moments they were; this run's
+    /// own limbs leave none while the replay plays (<c>SnowChanger.ReplayHoldsMorphs</c>). Where a shard points and how
+    /// long it is follow from the (replayed) crystal by the shard law.</item>
     /// </list>
     /// </summary>
     public sealed class ReplayActorSync
@@ -37,6 +41,16 @@ namespace CosmicShore.Utility
         readonly List<Renderer> _renderers = new();
         int _nextDiscovery;
         float _jumpSqr = 8f * 8f;
+
+        sealed class ShardPlayback
+        {
+            public TheaterShardField Field;
+            public SnowChanger Live;
+            public bool Placed;
+            public int Next;
+        }
+        readonly List<ShardPlayback> _shards = new();
+        readonly List<Cell> _cells = new();
 
         public bool IsActive { get; private set; }
 
@@ -62,6 +76,14 @@ namespace CosmicShore.Utility
                 list.Add(track);
             }
             foreach (var list in _crystals.Values) list.Sort((a, b) => a.StartTime.CompareTo(b.StartTime));
+            for (int i = 0; i < actors.Shards.Count; i++)
+            {
+                var field = actors.Shards[i];
+                if (field.Positions.Count == 0 && field.Morphs.Count == 0) continue;
+                field.SortMorphs();
+                _shards.Add(new ShardPlayback { Field = field });
+            }
+            if (_shards.Count > 0) SnowChanger.ReplayHoldsMorphs = true;
             IsActive = true;
             return true;
         }
@@ -72,6 +94,7 @@ namespace CosmicShore.Utility
             if (!IsActive) return;
             ApplyCrystals(t);
             ApplyLifeForms(t);
+            ApplyShards(t);
         }
 
         /// <summary>Stop placing and give every hidden plant and creature its renderers back.</summary>
@@ -89,6 +112,51 @@ namespace CosmicShore.Utility
                     if (pair.Value[i]) pair.Value[i].enabled = true;
             _hidden.Clear();
             _nextDiscovery = 0;
+            if (_shards.Count > 0) SnowChanger.ReplayHoldsMorphs = false;
+            _shards.Clear();
+        }
+
+        void ApplyShards(float t)
+        {
+            for (int s = 0; s < _shards.Count; s++)
+            {
+                var play = _shards[s];
+                if (!play.Live && !Find(play)) continue;
+                if (!play.Placed)
+                {
+                    // Positions first; a field not built yet (Initialize) is tried again next frame.
+                    if (play.Field.Positions.Count > 0 && !play.Live.ApplyShardPositions(play.Field.Positions)) continue;
+                    play.Placed = true;
+                }
+
+                var morphs = play.Field.Morphs;
+                int due = play.Field.MorphsDue(play.Next, t);
+                for (; play.Next < due; play.Next++)
+                {
+                    var m = morphs[play.Next];
+                    // On the live clock: recording time m.Time is (t - m.Time) seconds ago here.
+                    float start = PrismClock.Now - (t - m.Time) + m.StartOffset;
+                    play.Live.AddRecordedMorphedShard(m.Position, m.Rotation, start, m.Duration);
+                }
+            }
+        }
+
+        /// <summary>The live cytoplasm recorded as <paramref name="play"/>'s field: same cell config, same order.</summary>
+        bool Find(ShardPlayback play)
+        {
+            _cells.Clear();
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int i = 0; i < cells.Count; i++) _cells.Add(cells[i]);
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var cell = _cells[i];
+                if (!cell || !cell.Cytoplasm) continue;
+                if (TheaterActorRecorder.FieldCellName(cell) != play.Field.Cell) continue;
+                if (TheaterActorRecorder.FieldIndex(_cells, i) != play.Field.Index) continue;
+                play.Live = cell.Cytoplasm;
+                return true;
+            }
+            return false;
         }
 
         static string SpeciesKey(TheaterActorKind kind, string name) => $"{(byte)kind}:{name}";
