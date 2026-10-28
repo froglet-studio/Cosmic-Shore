@@ -106,6 +106,9 @@ from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
    `assembly_report.py <fbx> --floating <parts>` (exit 1 on a welded or a drifting part). Build the parts
    so the colour follows the anatomy (radial grids from a wing root, rings keyed to where a pattern band
    sits), with relief IN each part's surface (a vein, a panel line) rather than a loose sliver on it.
+   **A part that ANIMATES is gated in every pose too**: `pose_clearance.py <fbx> --parts <globs> --takes all`
+   plays each take, and `--combos "a+b@0.5+..." [--budget]` plays takes TOGETHER the way the game blends them
+   (LESSONS 54). A take proved alone can collide when it is blended.
 4. **Measure the look against the fleet**: `style_metrics.py --fleet <ours.fbx>` prints the artist
    hulls' band (smooth / hard edges, slot shares, domain regions and width, density). It is
    INFORMATIVE: the withdrawn from-scratch hulls sat inside the band too, so it cannot pass a hull;

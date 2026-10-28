@@ -42,7 +42,7 @@ options are given, and Garrett decides as vessel owner unless another owner is n
   - Nothing enables the accelerometer that `DeviceOrientationHandler` reads, and Input System sensors start disabled.
     I checked this by grepping for `EnableDevice`.
   - The screen is locked to LandscapeLeft anyway, so the "flip" would mean holding the phone upside down.
-  - On a phone, RB abilities (Brittle Star Charge Mode, Grizzly Weapon Systems, Shrike Charge mode) are reachable only
+  - On a phone, the Y abilities (RB until 2026-10-27: Brittle Star Charge Mode, Grizzly Weapon Systems, Shrike Charge mode) are reachable only
     through their card.
 - **No phone has ever been measured** (`Docs/PERFORMANCE_OPTIMIZATION.md`). Six vessels render the world a second time
   or add a full-screen pass, and only one of them (the Shrike eyepiece) has a handheld tier. The Brittle Star can keep

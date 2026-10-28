@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -24,6 +25,7 @@ namespace CosmicShore.UI
             lineup.OnAddAiRequested += AddAiToLeastFilledTeam;
             lineup.OnTeamStepRequested += HandleSeatTeamStep;
             lineup.OnKickRequested += HandleKickAIRequested;
+            lineup.OnSeatPicked += HandleSeatPicked;
         }
 
         void UnwireSeatLineup(ConfigureSeatLineup lineup)
@@ -32,6 +34,7 @@ namespace CosmicShore.UI
             lineup.OnAddAiRequested -= AddAiToLeastFilledTeam;
             lineup.OnTeamStepRequested -= HandleSeatTeamStep;
             lineup.OnKickRequested -= HandleKickAIRequested;
+            lineup.OnSeatPicked -= HandleSeatPicked;
         }
 
         /// <summary>Hand the active panel's lineup the roster as it stands. Cheap; a no-op without a lineup.</summary>
@@ -44,6 +47,13 @@ namespace CosmicShore.UI
             ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
             var dataService = PlayerDataService.Instance;
             bool editable = !_weeklyChallengeLocked && !_localPlayerReady;
+            // Rev 25 (section 79): every pilot stands on the hull they fly, and where the card's hulls are picked a
+            // press on a seat points the shared vessel strip at it - the seat rows' hull taps, drawn on the lineup.
+            bool picker = AllyHullPickerAvailable && _activePanel is ArenaLaunchPanel;
+            // Wherever the AI row is offered, the host's press on an AI's pedestal also selects that AI for its own
+            // difficulty - Arcade cards, whose hull is pinned, included. The host's own pedestal takes it back.
+            bool levels = SeatDifficultyAvailable && !IsClientMode;
+            var humanDomains = HumanDomains();
 
             foreach (var ip in gameData.Players)
             {
@@ -59,6 +69,9 @@ namespace CosmicShore.UI
                     IsHost = p.OwnerClientId == NetworkManager.ServerClientId,
                     AiOrdinal = -1,
                     CanChangeTeam = isLocal && editable,
+                    Hull = HullIcon(isLocal ? LocalSeatVessel() : CardVessel(PilotHull(p))),
+                    CanPickVessel = isLocal && (picker || levels),
+                    EditingVessel = isLocal && picker && _vesselSeat == OwnVesselSeat,
                 });
             }
 
@@ -66,6 +79,8 @@ namespace CosmicShore.UI
             {
                 bool placed = config.AIDomains != null && i < config.AIDomains.Count && config.AIDomains[i] != Domains.Blue;
                 bool host = !IsClientMode && placed;
+                var pick = AllyHullPickerAvailable ? config.AIVesselAt(i) : VesselClassType.Random;
+                bool pickable = (picker || levels) && MaySelectAiSeat(i);
                 _lineupSeats.Add(new ConfigureSeatLineup.Seat
                 {
                     Kind = ConfigureSeatLineup.SeatKind.Ai,
@@ -73,13 +88,41 @@ namespace CosmicShore.UI
                     AiOrdinal = i,
                     CanChangeTeam = host && editable,
                     CanKick = host && CanKickAi,
+                    Hull = HullIcon(CardVessel(AIHullSeating.SeatHull(OpponentHull, _aiSeatDomains[i], humanDomains, pick))),
+                    CanPickVessel = pickable,
+                    EditingVessel = pickable && _vesselSeat == i,
+                    Difficulty = SeatDifficultyAvailable && i < config.AIDifficulties.Count ? config.AIDifficulties[i] : 0,
                 });
             }
 
             int ceiling = MatchSeatCeiling;
             int seats = _weeklyChallengeLocked ? _lineupSeats.Count : Mathf.Max(ceiling, _lineupSeats.Count);
             bool canAdd = !IsClientMode && editable && _lineupSeats.Count < ceiling;
-            lineup.Show(_lineupSeats, seats, canAdd);
+            lineup.Show(_lineupSeats, seats, canAdd, showTeams: TeamsOnCard > 1);
+        }
+
+        /// <summary>A seat was pressed: the shared vessel strip picks that seat's hull (your own, or an AI's).</summary>
+        void HandleSeatPicked(int seatIndex)
+        {
+            if (seatIndex < 0 || seatIndex >= _lineupSeats.Count) return;
+            var seat = _lineupSeats[seatIndex];
+            if (!seat.CanPickVessel) return;
+            SelectVesselSeat(seat.Kind == ConfigureSeatLineup.SeatKind.Ai ? seat.AiOrdinal : OwnVesselSeat);
+        }
+
+        /// <summary>The hull the local pilot has on the strip now (picked, claimed or not).</summary>
+        SO_Vessel LocalSeatVessel() =>
+            _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count ? _availableShips[_availableShipIndex] : null;
+
+        /// <summary>Another pilot's hull as this machine knows it: their arena claim, else the hull they last flew.</summary>
+        static VesselClassType PilotHull(Player p) =>
+            AIHullSeating.IsConcrete(p.ArenaHullClaim) ? p.ArenaHullClaim : p.NetDefaultVesselType.Value;
+
+        /// <summary>A seat's hull icon; a card with one hull shows that hull on every seat whose own is not decided.</summary>
+        Sprite HullIcon(SO_Vessel vessel)
+        {
+            if (!vessel && _availableShips.Count == 1) vessel = _availableShips[0];
+            return vessel ? vessel.IconActive : null;
         }
 
         /// <summary>

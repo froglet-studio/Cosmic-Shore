@@ -44,6 +44,9 @@ namespace CosmicShore.UI
         [Tooltip("What the border wears while selected: the sky-blue Selection (rev 7) everywhere the kit's generators " +
                  "author a tile.")]
         [SerializeField] private UIColorToken selectedBorderToken = UIColorToken.Selection;
+        [Tooltip("Draw the border while the tile is neither selected nor pointed at. Off for a quiet row of tiles (the " +
+                 "configure card's hull strip): only the pick, and the tile under the pointer, are outlined.")]
+        [SerializeField] private bool borderAtRest = true;
 
         private const float SelectedFillTint = 0.22f;
 
@@ -106,7 +109,7 @@ namespace CosmicShore.UI
                 var border = isSelected ? selectedBorderToken
                     : hover ? UIColorToken.SurfaceLight
                     : UIColorToken.SurfaceDark;
-                into.Add((borderImage, Token(border)));
+                into.Add((borderImage, Token(border, isSelected || hover || borderAtRest ? 1f : 0f)));
                 SetSelectionLight(borderImage, isSelected);
             }
 

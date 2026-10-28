@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a73f58064992501eabb0e2fef61c3d4f, type: 3}
+  m_Name: HangarCardArt
+  m_EditorClassIdentifier: 
+  entries:
+  - vessel: {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
+    art: {fileID: 21300000, guid: 080287d110f82e1ccb08d71ab509c934, type: 3}
+  - vessel: {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
+    art: {fileID: 21300000, guid: 0851313b4a33a977c0fe1a98a6416ef4, type: 3}
+  - vessel: {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
+    art: {fileID: 21300000, guid: 80b2c8ab543be1f8d159b6413ac0503c, type: 3}
+  - vessel: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
+    art: {fileID: 21300000, guid: 270194f01886ab8e3f3406e1da1cf0b1, type: 3}
+  - vessel: {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
+    art: {fileID: 21300000, guid: a6dd691960303e27ec710a2a93f46dd4, type: 3}
+  - vessel: {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
+    art: {fileID: 21300000, guid: 8d66282d97cfdea5101c4ec25ad913ff, type: 3}
+  - vessel: {fileID: 11400000, guid: bde48fa4833b6364b93111a55ba90958, type: 2}
+    art: {fileID: 21300000, guid: c819fba7db4cd08b526fa4ad775795f9, type: 3}
+  - vessel: {fileID: 11400000, guid: fe4abf38579d7f84baf16a532ed4a015, type: 2}
+    art: {fileID: 21300000, guid: d2d25a09f48946f99191156c4ef73ba0, type: 3}
+  - vessel: {fileID: 11400000, guid: 8e4f2a9c1b3d4e6f7a8b9c0d1e2f3a4b, type: 2}
+    art: {fileID: 21300000, guid: 0ec32c5a7cb131b33c5aee7071776886, type: 3}
+  - vessel: {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
+    art: {fileID: 21300000, guid: 8aa32c1534e7e0c9b9d1399e9ce18a13, type: 3}
+  - vessel: {fileID: 11400000, guid: cc163188820f4e7a985561bc609da2e0, type: 2}
+    art: {fileID: 21300000, guid: d20e18c0f0fdeae29ca508abb5cb7755, type: 3}
+  - vessel: {fileID: 11400000, guid: b569f215d5ca452d9e4ab28af3ee55ab, type: 2}
+    art: {fileID: 21300000, guid: 8993b03fdaa0e524a2d5a87d2c0c0eae, type: 3}
+  - vessel: {fileID: 11400000, guid: d8ebb29f2d63ad7eb488fdcb97145cfe, type: 2}
+    art: {fileID: 21300000, guid: 726b199563d3cdee30a006983d8354e7, type: 3}
+  - vessel: {fileID: 11400000, guid: bbb0b0e8c8f85ba69d31e63fe9e05d77, type: 2}
+    art: {fileID: 21300000, guid: 86bc33c048c5ef8b6f614a2ab0312955, type: 3}
+  - vessel: {fileID: 11400000, guid: ea422bbe0d1aef61993692999cee50ea, type: 2}
+    art: {fileID: 21300000, guid: 0ac6f39ae3cf184126b1be5bf019ad9f, type: 3}
+  - vessel: {fileID: 11400000, guid: db96e34a6c3b4cb1b498f0529f765db1, type: 2}
+    art: {fileID: 21300000, guid: 8955619000baa26ffc7e075d48c2a209, type: 3}
+  - vessel: {fileID: 11400000, guid: 6984d323ceb54c5ab6944d3de86793d3, type: 2}
+    art: {fileID: 21300000, guid: c359a598d64902ce05ab226135b62acc, type: 3}
+  - vessel: {fileID: 11400000, guid: 35c8c86490eefdb90b1fb666c9e2ee01, type: 2}
+    art: {fileID: 21300000, guid: 79ecd9c5184e71db7e514de27e01f012, type: 3}
+  - vessel: {fileID: 11400000, guid: 8a41c6e2f0d94b7c9e35a1d7c4b8e2f6, type: 2}
+    art: {fileID: 21300000, guid: ea594727c45a3a601fe4bdc62df6b0ad, type: 3}
+  - vessel: {fileID: 11400000, guid: 7fcf1c753fc8440198a6dc26e5d5d63a, type: 2}
+    art: {fileID: 21300000, guid: 18afbcfc4b9ce711c9794c9dc647c4e8, type: 3}

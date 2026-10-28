@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.slf{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.oct{clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.btn{appearance:none;border:0;padding:1px;cursor:pointer;background:var(--bc);font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn>span{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bf);color:var(--bt);padding:9px 16px;font-size:14px;white-space:nowrap;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.big>span{padding:14px 28px;font-size:18px}
+.btn:focus,.card:focus,.tile:focus{outline:none}
+.btn:disabled{cursor:default}
+.card,.tile{appearance:none;cursor:pointer;font:inherit;color:inherit;border:0;text-align:left;padding:0}
+.tab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.08em}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#434C89 transparent}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csDrop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+@keyframes csGrowX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes csGrowY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes csSparkX{from{left:-48px}to{left:100%}}
+@keyframes csSparkY{from{top:-36px}to{top:100%}}
+@keyframes csFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes csSweep{0%{left:-80px}55%,100%{left:110%}}
+@keyframes csPan{from{transform:scale(1.04) translate(-1%,0)}to{transform:scale(1.09) translate(1.2%,-1%)}}
+@keyframes csBlink{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes csGlow{0%,100%{box-shadow:0 0 18px rgba(153,255,128,.22)}50%{box-shadow:0 0 34px rgba(153,255,128,.5)}}
+@keyframes csShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes csSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes csSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes csDrain{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes csCeremony{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile,.card{transition:filter 120ms ease-out}
+.tile:hover,.card:hover{filter:brightness(1.18)}
+.grid{background-color:#00041F;background-image:linear-gradient(#0A0F33 1px,transparent 1px),linear-gradient(90deg,#0A0F33 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00010A; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+  <img src="/_blob/c480f7802bf9e34b00948517f6c3b602" alt="" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover">
+
+  <img src="{{stage}}" alt="The converter stage" style="position: absolute; left: 0; top: -14px; width: 1920px; height: 1094px; object-fit: cover; object-position: center bottom">
+  <nav aria-label="Menu screens" style="position: absolute; left: 0; top: 0; width: 1920px; height: 84px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 56px; background: rgba(0, 4, 31, 0.6); border-bottom: 1px solid rgba(67, 76, 137, 0.7)">
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">LT</span></span>
+    <span class="tab" style="color: #747BAD">HANGAR</span>
+    <span class="tab" style="color: #00D4FF; padding: 8px 0 6px; border-bottom: 2px solid #00D4FF">ARK</span>
+    <span class="tab" style="color: #747BAD">HOME</span>
+    <span class="tab" style="color: #5C5F70; display: flex; align-items: center; gap: 8px"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg>PORT</span>
+    <span class="tab" style="color: #747BAD">PROFILE</span>
+    <span class="sls" style="display: inline-flex; background: #434C89; padding: 1px"><span class="sls lab" style="background: #00041F; padding: 4px 12px">RT</span></span>
+  </nav>
+
+  <header class="sl" style="position: absolute; left: 40px; top: 108px; display: flex; flex-direction: column; gap: 6px; padding: 16px 22px; background: rgba(0, 1, 10, 0.72); animation: csRise 320ms cubic-bezier(.22,1,.36,1) 0ms both">
+    <span class="lab">Ark</span>
+    <h1 style="margin: 0; font-weight: 400; font-size: 36px; line-height: 1.1">Elemental converter</h1>
+    <span style="font-size: 15px; color: #747BAD">Space, Charge, Mass and Time combine into one omni crystal.</span>
+  </header>
+
+  <aside aria-label="Recipe" style="position: absolute; left: 1440px; top: 108px; width: 440px; height: 760px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 80ms both">
+    <div class="sl" style="background: #222645; padding: 1px; box-sizing: border-box; width: 440px; height: 760px"><div class="sl" style="position: relative; height: 100%; box-sizing: border-box; background: rgba(0, 4, 31, 0.88); padding: 26px 26px; display: flex; flex-direction: column; gap: 12px"><span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+      <div style="display: flex; justify-content: space-between"><span class="lab" style="color: #E6E9FF">Recipe</span><span class="lab num">{{mergedCount}} of 4 merged</span></div>
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+        <div class="sls" style="position: relative; display: flex; align-items: center; gap: 14px; height: 92px; padding: 0 14px; background: {{s.fill}}; outline: 1px solid {{s.border}}; outline-offset: -1px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) {{s.d}}ms both">
+          <span class="num" style="font-size: 28px; color: #434C89; width: 32px">{{s.n}}</span>
+          <img src="{{s.art}}" alt="" style="width: 64px; height: 64px; object-fit: contain; opacity: {{s.alpha}}; animation: {{s.float}}">
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+            <span style="display: flex; justify-content: space-between"><span style="font-size: 18px">{{s.name}}</span><span class="lab" style="font-size: 12px; color: {{s.stateColor}}">{{s.state}}</span></span>
+            <span style="position: relative; display: block; height: 4px; background: #003648; overflow: hidden">
+              <span style="position: absolute; left: 0; top: 0; height: 4px; width: 100%; background: {{s.barColor}}; transform-origin: left; transform: scaleX({{s.fillScale}}); animation: {{s.barAnim}}"></span>
+            </span>
+          </span>
+        </div>
+      </sc-for>
+      <div style="display: flex; align-items: center; gap: 10px; margin: 6px 0"><span style="flex: 1; height: 1px; background: #222645"></span><span class="lab">Makes</span><span style="flex: 1; height: 1px; background: #222645"></span></div>
+      <div class="sls" style="flex: 1; display: flex; align-items: center; gap: 18px; padding: 0 18px; background: {{omniFill}}; outline: 1px solid {{omniBorder}}; outline-offset: -1px">
+        <img src="/_blob/7850440a6efe08dd09a6f63c7810dd29" alt="" style="width: 120px; height: 120px; object-fit: contain; opacity: {{omniAlpha}}; animation: {{omniAnim}}">
+        <span style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 22px">Omni crystal</span>
+          <span style="font-size: 15px; line-height: 1.4; color: #747BAD">{{omniLine}}</span>
+        </span>
+      </div>
+    </div></div>
+  </aside>
+
+  <section aria-label="Converter" style="position: absolute; left: 400px; top: 900px; width: 1120px; height: 112px; animation: csRise 320ms cubic-bezier(.22,1,.36,1) 160ms both">
+    <div class="sl" style="background: #222645; padding: 1px; box-sizing: border-box; width: 1120px; height: 112px"><div class="sl" style="position: relative; height: 100%; box-sizing: border-box; background: rgba(0, 4, 31, 0.9); padding: 0 28px; display: flex; align-items: center; gap: 26px"><span aria-hidden="true" style="position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-top: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; left: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-left: 1px solid #434C89; pointer-events: none"></span><span aria-hidden="true" style="position: absolute; bottom: 10px; right: 10px; width: 22px; height: 22px; border-bottom: 1px solid #434C89; border-right: 1px solid #434C89; pointer-events: none"></span>
+      <span style="display: flex; flex-direction: column; gap: 6px; width: 200px; white-space: nowrap">
+        <span class="lab" style="font-size: 12px">{{phaseLabel}}</span>
+        <span class="num" style="font-size: 22px; line-height: 1">{{clock}}</span>
+      </span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+        <span style="display: flex; gap: 6px">
+          <sc-for list="{{segs}}" as="g" hint-placeholder-count="4">
+            <span style="position: relative; flex: 1; height: 6px; background: #003648; overflow: hidden">
+              <span style="position: absolute; left: 0; top: 0; height: 6px; width: 100%; background: {{g.c}}; transform-origin: left; transform: scaleX({{g.scale}}); animation: {{g.anim}}"></span>
+              <sc-if value="{{g.spark}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 0; left: -48px; width: 48px; height: 100%; background: linear-gradient(90deg, rgba(128, 234, 255, 0), #FFFFFF, rgba(128, 234, 255, 0)); animation: csSparkX 1.2s linear infinite"></span></sc-if>
+            </span>
+          </sc-for>
+        </span>
+        <span style="display: flex; justify-content: space-between"><sc-for list="{{segs}}" as="g" hint-placeholder-count="4"><span class="lab" style="font-size: 12px; color: {{g.lc}}">{{g.name}}</span></sc-for></span>
+      </span>
+      <sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><button class="btn big" type="button" onClick="{{convert}}" style="--bc: #99FF80; --bf: #99FF80; --bt: #00010A"><span style="position: relative; overflow: hidden; padding: 16px 34px; font-size: 18px">{{cta}}<span aria-hidden="true" style="position: absolute; top: 0; left: -80px; width: 70px; height: 100%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)); animation: csSweep 2.8s ease-in-out infinite"></span></span></button></sc-if>
+      <sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><button class="btn big" type="button" disabled="disabled" style="--bc: #5C5F70; --bf: #5C5F70; --bt: #25262D"><span style="padding: 16px 34px">Converting...</span></button></sc-if>
+    </div></div>
+  </section>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: absolute; left: 0; right: 0; top: 112px; display: flex; justify-content: center; z-index: 5; animation: csDrop 320ms cubic-bezier(.22,1,.36,1) both"><div class="sl" style="background: #434C89; padding: 1px">
+      <div class="sl" style="background: #00041F; padding: 12px 22px; font-size: 17px">{{toastText}}</div>
+    </div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 1080}, "start": {"editor": null}}'>
+const STAGE = {"idle": "/_blob/c9999edfbb9e5342b0a84eb6eb05fc39", "mid": "/_blob/eeb01a5c8caf5faed492d8154a6a12d3", "done": "/_blob/039878603522653c303fae6e474a529b"};
+const ORDER = ["Space", "Charge", "Mass", "Time"];
+const ART = {"Space": "/_blob/552b1a2acbcb63737e1174c398089c9c", "Charge": "/_blob/9b5b9502defc2ffb3ddfc86af8f2b581", "Mass": "/_blob/f1c37884ec4eaede9f7a20f81af70273", "Time": "/_blob/5f2b5586aa94e21d23984dedc2c4f93a"};
+const STEP = 1300;
+const pad = (n) => (n < 10 ? '0' : '') + n;
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ phase: 'idle', step: 0 }, props.start || {});
+    this.state = { phase: s.phase, step: s.step, toast: '', secs: s.phase === 'done' ? 22 : (s.phase === 'busy' ? 11 : 0) };
+    this.tick = null; this.clock = null;
+  }
+  componentWillUnmount() { if (this.tick) clearInterval(this.tick); if (this.clock) clearInterval(this.clock); }
+  run() {
+    if (this.tick) clearInterval(this.tick);
+    if (this.clock) clearInterval(this.clock);
+    this.setState({ phase: 'busy', step: 0, secs: 0 });
+    this.clock = setInterval(() => this.setState({ secs: this.state.secs + 1 }), 240);
+    this.tick = setInterval(() => {
+      const n = this.state.step + 1;
+      if (n >= ORDER.length) {
+        clearInterval(this.tick); clearInterval(this.clock); this.tick = null; this.clock = null;
+        this.setState({ phase: 'done', step: ORDER.length, secs: 22 });
+      } else this.setState({ step: n });
+    }, STEP);
+  }
+  renderVals() {
+    const st = this.state;
+    const merged = (i) => st.phase === 'done' || (st.phase === 'busy' && i < st.step);
+    const active = (i) => st.phase === 'busy' && i === st.step;
+    const steps = ORDER.map((name, i) => ({
+      n: '0' + (i + 1), name, art: ART[name], d: 160 + i * 40,
+      alpha: st.phase === 'idle' || merged(i) || active(i) ? 1 : 0.5,
+      float: active(i) ? 'csFloat 1.6s ease-in-out infinite' : 'none',
+      fill: active(i) ? 'rgba(18, 34, 43, 0.95)' : '#00041F', border: active(i) ? '#99FF80' : (merged(i) ? '#E6E9FF' : '#222645'),
+      state: merged(i) ? 'Merged' : (active(i) ? 'Merging' : 'Ready'), stateColor: active(i) ? '#99FF80' : (merged(i) ? '#E6E9FF' : '#747BAD'),
+      barColor: active(i) ? '#99FF80' : '#00D4FF', fillScale: merged(i) ? 1 : 0,
+      barAnim: active(i) ? 'csGrowX ' + STEP + 'ms linear both' : 'none' }));
+    const segs = ORDER.map((name, i) => ({ name, c: active(i) ? '#99FF80' : '#00D4FF', scale: merged(i) ? 1 : 0, spark: merged(i),
+      anim: active(i) ? 'csGrowX ' + STEP + 'ms linear both' : 'none', lc: merged(i) || active(i) ? '#E6E9FF' : '#5C5F70' }));
+    const done = st.phase === 'done';
+    return {
+      stage: st.phase === 'idle' ? STAGE.idle : (done ? STAGE.done : STAGE.mid),
+      steps, segs, mergedCount: String(ORDER.filter((_, i) => merged(i)).length),
+      omniFill: done ? 'rgba(18, 34, 43, 0.95)' : '#00041F', omniBorder: done ? '#99FF80' : '#222645', omniAlpha: done ? 1 : 0.4,
+      omniAnim: done ? 'csPop 500ms cubic-bezier(.34,1.56,.64,1) both, csFloat 3.2s ease-in-out 500ms infinite' : 'none',
+      omniLine: done ? 'Formed. Convert again to replay the combine.' : 'Forms when all four elements have merged.',
+      phaseLabel: done ? 'Converted in' : (st.phase === 'busy' ? 'Converting' : 'Ready'),
+      clock: '00:' + pad(Math.min(st.secs, 59)) + ' / 00:22',
+      idle: st.phase !== 'busy', busy: st.phase === 'busy', cta: done ? 'Convert again' : 'Convert',
+      convert: () => this.run(),
+      toast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

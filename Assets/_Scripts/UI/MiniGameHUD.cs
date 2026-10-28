@@ -490,6 +490,9 @@ namespace CosmicShore.UI
                     // The same answer on the Wrasse and Grouper's circuit: the arrow names the ring the
                     // Grouper must carry the kite's plane through.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_WrasseRun");
+                case GameModes.BurrowRun:
+                    // The same answer on the Meerkat's wormhole circuit: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_BurrowRun");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which
@@ -661,7 +664,19 @@ namespace CosmicShore.UI
                     PrismTrailBuilder.SetLoadGateHolding(true);
                     try
                     {
-                        await connectingPanel.ShowAsync(ct, PrismTrailBuilder.PollArenaReady);
+                        // The intro is made ready the moment the arena is, while the panel still covers
+                        // it: its arena read and caption UI used to land on the reveal frame.
+                        bool introPrepared = false;
+                        await connectingPanel.ShowAsync(ct, () =>
+                        {
+                            if (!PrismTrailBuilder.PollArenaReady()) return false;
+                            if (!introPrepared)
+                            {
+                                introPrepared = true;
+                                PrepareIntro();
+                            }
+                            return true;
+                        });
                     }
                     finally
                     {
@@ -703,11 +718,24 @@ namespace CosmicShore.UI
                     if (playerTarget != null)
                     {
                         bool cinematicDone = false;
-                        preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
-                        preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
+                        void OnDone() => cinematicDone = true;
+                        // Unsubscribed below: an anonymous handler stacked one per match on a controller
+                        // that outlives none of them, each still flipping a finished match's flag.
+                        preGameCinematic.OnCinematicFinished += OnDone;
+                        try
+                        {
+                            // The mode's own intro (a random one from its arena family); the orbit
+                            // when the mode has none. Docs/IntroCameras/README.md.
+                            preGameCinematic.Play(cinematicLookAtCenter, playerTarget, gameData.GameMode,
+                                                  gameData.Vessels, LocalAccent());
 
-                        while (!cinematicDone)
-                            await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
+                            while (!cinematicDone)
+                                await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
+                        }
+                        finally
+                        {
+                            preGameCinematic.OnCinematicFinished -= OnDone;
+                        }
                     }
                 }
 
@@ -718,6 +746,25 @@ namespace CosmicShore.UI
             {
                 // cancelled - nothing to do
             }
+        }
+
+        // The local pilot's domain colour, for the intro's lower third.
+        private Color LocalAccent()
+        {
+            var player = gameData != null ? gameData.LocalPlayer : null;
+            return player != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIAccentColor(player.Domain)
+                : Color.white;
+        }
+
+        // The intro's library, pick, arena read and caption UI, made ready behind the connecting panel.
+        private void PrepareIntro()
+        {
+            if (!enablePreGameCinematic || preGameCinematic == null) return;
+            Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
+            if (playerTarget == null) return;
+            preGameCinematic.Prepare(cinematicLookAtCenter, playerTarget, gameData.GameMode, gameData.Vessels,
+                                     LocalAccent());
         }
 
         private void ResetForReplay()

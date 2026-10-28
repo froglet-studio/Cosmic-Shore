@@ -190,7 +190,7 @@ namespace CosmicShore.Gameplay
             await UniTask.Delay(1500, DelayType.UnscaledDeltaTime);
             if (!IsServer || _trackSpawned) return;
 
-            int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+            int generatedSeed = CourseSeedOverride.Pick(seed);
             _netTrackSeed.Value = generatedSeed;
             SpawnTrack_ClientRpc(generatedSeed);
         }
@@ -208,7 +208,7 @@ namespace CosmicShore.Gameplay
             // Ensure track seed is set for any edge case where early spawn was missed
             if (_netTrackSeed.Value == 0)
             {
-                int generatedSeed = (seed != 0) ? seed : Random.Range(int.MinValue, int.MaxValue);
+                int generatedSeed = CourseSeedOverride.Pick(seed);
                 _netTrackSeed.Value = generatedSeed;
             }
 

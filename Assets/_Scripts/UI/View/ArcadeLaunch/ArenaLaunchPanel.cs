@@ -12,7 +12,8 @@ namespace CosmicShore.UI
     ///
     /// <para>An arcade card locks to one vessel, so its panel has nothing to ask. An arena card
     /// can be flown in several, so this panel carries a vessel picker (the style-B hull strip, or
-    /// the older carousel: one icon, prev / next) and a claim button, and Start stays dead until that button has been pressed. The
+    /// the older carousel: one icon, prev / next) and a claim button, and Start stays dead until that button has been
+    /// pressed; CHANGE takes the claim back until the pilot is ready. The
     /// choice is per session: it is re-armed every time the card opens, on the host and on every
     /// client alike, because each pilot picks their own hull.</para>
     ///
@@ -47,6 +48,10 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Confirms the shown vessel. Hidden once pressed; Start is dead " +
                                  "until it has been.")]
         Button selectVesselButton;
+
+        [SerializeField, Tooltip("Takes the claim back so the pilot can pick another hull: shown in the claim " +
+                                 "button's place once the pick is confirmed, until the pilot is ready. Optional.")]
+        Button changeVesselButton;
 
         [Header("Hull strip (optional)")]
         [SerializeField, Tooltip("The tiles of the hull strip, left to right (the style-B configure tree). " +
@@ -90,6 +95,9 @@ namespace CosmicShore.UI
         /// <summary>The pilot confirmed the vessel currently shown.</summary>
         public event Action OnVesselConfirmRequested;
 
+        /// <summary>The pilot wants to pick again after confirming (CHANGE).</summary>
+        public event Action OnVesselChangeRequested;
+
         // An ArenaRules card is an arena card wherever it is listed: a voyage (Tandava) is on no grid, so the roster
         // alone sent it to the arcade's one-hull panel and its pilots could not pick a vessel (Shombith, 2026-10-26).
         public override bool Handles(SO_ArcadeGame game)
@@ -108,6 +116,7 @@ namespace CosmicShore.UI
             if (prevButton)         prevButton.onClick.AddListener(RequestPrev);
             if (nextButton)         nextButton.onClick.AddListener(RequestNext);
             if (selectVesselButton) selectVesselButton.onClick.AddListener(RequestConfirm);
+            if (changeVesselButton) changeVesselButton.onClick.AddListener(RequestChange);
             for (int i = 0; i < hullTiles.Count; i++)
                 if (hullTiles[i]) hullTiles[i].Bind(i, RequestTile);
         }
@@ -117,6 +126,7 @@ namespace CosmicShore.UI
             if (prevButton)         prevButton.onClick.RemoveListener(RequestPrev);
             if (nextButton)         nextButton.onClick.RemoveListener(RequestNext);
             if (selectVesselButton) selectVesselButton.onClick.RemoveListener(RequestConfirm);
+            if (changeVesselButton) changeVesselButton.onClick.RemoveListener(RequestChange);
             foreach (var tile in hullTiles)
                 if (tile) tile.Bind(-1, null);
             base.OnDisable();
@@ -124,10 +134,10 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Draw the picker. <paramref name="canCycle"/> is false when there is nothing to step
-        /// through (one hull, or none); <paramref name="confirmed"/> hides the Select button and
-        /// freezes the arrows for the rest of the session.
+        /// through (one hull, or none); <paramref name="confirmed"/> hides the Select button and the
+        /// arrows, and <paramref name="canChange"/> then offers CHANGE in its place (until the pilot is ready).
         /// </summary>
-        public void ShowVessel(SO_Vessel vessel, bool canCycle, bool confirmed)
+        public void ShowVessel(SO_Vessel vessel, bool canCycle, bool confirmed, bool canChange = false)
         {
             if (vesselIcon)
             {
@@ -138,12 +148,14 @@ namespace CosmicShore.UI
             bool arrows = vessel && canCycle && !confirmed;
             if (prevButton) prevButton.interactable = arrows;
             if (nextButton) nextButton.interactable = arrows;
+            ShowArrows(!confirmed);
 
             if (selectVesselButton)
             {
                 SetPartShown(selectVesselButton.gameObject, vessel && !confirmed);
                 selectVesselButton.interactable = vessel && !confirmed;
             }
+            ShowChange(vessel && confirmed && canChange);
 
             DrawVessel(vessel);
             if (seatCaptionText) seatCaptionText.text = TemplateText.Fill(ownSeatCaption);
@@ -176,12 +188,14 @@ namespace CosmicShore.UI
 
             if (prevButton) prevButton.interactable = canCycle;
             if (nextButton) nextButton.interactable = canCycle;
+            ShowArrows(true);
 
             if (selectVesselButton)
             {
                 SetPartShown(selectVesselButton.gameObject, false);
                 selectVesselButton.interactable = false;
             }
+            ShowChange(false);
 
             string name = vessel ? vessel.Name : TemplateText.Fill(autoVesselLine);
             foreach (var label in seatVesselNameTexts)
@@ -227,9 +241,24 @@ namespace CosmicShore.UI
             return Mathf.Clamp(offset, 0, count - tiles);
         }
 
+        // A confirmed pick has nothing to step: the arrows leave rather than sit there greyed.
+        void ShowArrows(bool shown)
+        {
+            if (prevButton) SetPartShown(prevButton.gameObject, shown);
+            if (nextButton) SetPartShown(nextButton.gameObject, shown);
+        }
+
+        void ShowChange(bool shown)
+        {
+            if (!changeVesselButton) return;
+            SetPartShown(changeVesselButton.gameObject, shown);
+            changeVesselButton.interactable = shown;
+        }
+
         void RequestPrev()    => OnVesselCycleRequested?.Invoke(-1);
         void RequestNext()    => OnVesselCycleRequested?.Invoke(+1);
         void RequestConfirm() => OnVesselConfirmRequested?.Invoke();
+        void RequestChange()  => OnVesselChangeRequested?.Invoke();
         void RequestTile(int tile) => OnVesselPickRequested?.Invoke(_stripOffset + tile);
     }
 }

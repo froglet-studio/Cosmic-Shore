@@ -130,7 +130,7 @@ orbit near 90 degree orbit rotation."*
 | **Mass 5** | every prism arrives SHIELDED (Armoured Wake) | — |
 
 **B** (`InputEvents.Button2Action`; T on a keyboard, the Vessel Studio's key too — R until 2026-10-14) steps the mode,
-**Mass → Time → Drive → Mass** since 2026-10-26 (`StoatModeActionSO` → `StoatModeExecutor.Toggle`; Drive is §1f).
+**Mass → Time → Gate → Mass** since 2026-10-26 (`StoatModeActionSO` → `StoatModeExecutor.Toggle`; Gate is §1f).
 It is a press with no release semantics (vessel rule 37). Both trigger assets ride each trigger (`StoatDipoleLeft/
 RightAction` AND `StoatSlingLeft/RightAction`); each executor stands aside outside its own mode, so the binding never
 changes and the peer-press harness sees one ordinary binding. **A switch lets go of whatever the triggers held** — the
@@ -202,6 +202,17 @@ artifact's batch race (the AI at Hard, best of three squeezes; the field ×3 boo
 
 The circuit is now level; the hairpins are still the field's (the catch's circles cost time there — tuning, not pace).
 
+**A controlled orbit (2026-10-27).** Playtest: *"going near the black hole I get shifted right or left toward the side
+of the white hole; I cannot go in the middle."* Measured in the studio: a deep squeeze was caught ~120 u out and held on a
+126 u circle round a black hole only 90 u from its white hole, so the orbit reached round the white hole and swung the
+hull past its side, and the catch snapped the hull onto the squeeze's circle wherever it was (Unity's shape: a light
+squeeze = a 150 u circle round the 90 u pair). Two knobs, studio and Unity alike: **held where it caught you**
+(`holdAtCatch`, on; the held circle eases to the squeeze's at `orbitEaseRate` 0.8 /s) and **the circle clear of the white
+hole** (`whiteClear` 0.8: at most 0.8 × the poles' distance, 72 u; `StoatSlingMath.ClearOfRepulsor`). A pilot aiming
+beside the black hole is now caught at ~68 u (was 120), 9/9 passes caught, no dives; the AI's Time races 56.1 → 53.8 s
+(circuit I2), 80.4 → 76.5 s (hairpins I2). Measured and left off in the studio: `dpCatchInside 0` (catch only as you pass)
+dives you into the hole when aimed straight at it.
+
 **The autopilot** presses the trigger on its target's side (target ≥ 30° off the nose, ≥ 120 u away, every 3 s), flies
 toward its target past the pole and is caught; once caught it lets go when the target is within `aiReleaseConeDegrees`
 (20°) of the nose, or within 60° inside the timing window; a pair that has not caught it in `aiCatchGiveUpSeconds` (4 s)
@@ -264,20 +275,20 @@ executors, serialized on the prefab — rule 14):
 | Charge | Ripple | the ripple a let-go would throw NOW, as a share of the largest |
 | Mass | Mass / Time Mode | the switch: full in Mass mode, empty in Time mode, eased between |
 | Space | Field Dipole | Space-5 Accretion: how far the open pair has grown |
-| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Drive: the warp pair's warp as a share of its top, ready past half |
+| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both); Gate: a jump's warp as a share of its top, ready past half |
 
-The Mass card reads the mode: full in Mass, **half in Drive**, empty in Time, and its **icon follows the mode**
+The Mass card reads the mode: full in Mass, **half in Gate**, empty in Time, and its **icon follows the mode**
 (2026-10-26, `StoatHUDView.SetModeIcon`): `Stoat_ModeMass` (the thick trail and its path), `Stoat_ModeTime` (an orbit
-round a solid attractor), `Stoat_ModeDrive` (the warp pair: a black hole ahead, a white hole behind, the hull between), placeholders from
+round a solid attractor), `Stoat_ModeGate` (an arrow into a black hole, its white hole far along the line), placeholders from
 `author_stoat_icon_placeholders.py` (`--check`) wired on `StoatHUDVariant.prefab`; an empty slot shows the card's own icon.
 
 **On a phone** (Android, iOS: `KitInputDevice.IsTouchPrimary`, and only while no pad is connected; never on PC or
 Steam) the Stoat flies the TotemButtons profile (`author_touch_profiles.py`): the cards round the right thumb are its
 buttons. **The Mass card is B** (its ability's Input 7, `Button2Action`, routed to `StoatModeAction` by the prefab's
-`_touchActionOverrides`), so a tap steps Mass → Time → Drive and the icon shows where you are; the **Space card is LT**
-(the left dipole, the left catch in Time, the left half of the warp pair in Drive), the **Dipole disc is RT** and the **Hold disc is A**.
+`_touchActionOverrides`), so a tap steps Mass → Time → Gate and the icon shows where you are; the **Space card is LT**
+(the left dipole, the left catch in Time, the gate in Gate mode), the **Dipole disc is RT** and the **Hold disc is A**.
 `StoatSlingTests.Touch_TheModeCardIsTheModeSwitch_OnAPhoneToo` pins the binding. Open: the Dipole disc and the Space
-card keep their dipole icons in Time and Drive mode.
+card keep their dipole icons in Time and Gate mode.
 
 The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
 `SO_Class_Stoat` are renders of the Stoat's own hull (since 2026-10-18 its model: `Tools/Build/vessel_model/render_cards.py Stoat`, `--check`).
@@ -295,68 +306,305 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
 - **Overclock (the omni crystal, proposal O1).** `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
   `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.
 
-## 1f. Drive mode — the warp pair (2026-10-26)
+## 1f. Gate mode — the warp gate (2026-10-27)
 
-The design call (Yash), after a first cut (Hybrid: the orbit with a half-length path and a carried boost) was removed:
-*"we will use the field trajectory as more precise movement and the orbit as more fast agile movement, but less accuracy
-... can you make [a third mode] so that we can also have a bigger control of long distance travel with agile movement and
-precision? ... determine this precision level or agility level with how much the black holes are differing from each
-other, or the position of the black hole and the white hole pair, or the size of them ... it cannot be just the blend. It
-needs to be recreated by inspiring the other two."* B's third press: **Mass → Time → Drive → Mass**.
+**History.** B's third press was first Hybrid (2026-10-26: the orbit with a half-length path and a carried boost), then
+Drive (the same day: a phantom pair riding with the hull, its stretch a warp and its tilt a turn). Played in the
+artifact, Drive was *"just a plain boost with pressing both triggers ... it doesn't even need the black hole"*. The
+design call (Yash, 2026-10-27): *"keep the black hole pair ... a little bit of realism, a little bit of sci-fi ... if we
+can aim a little bit well and place them in a good distance, then we get the max speed boost ... we can't keep spamming
+them ... they fall back together in a limited time, maybe 0.5 to 1.5 seconds."* Both earlier cuts are removed.
 
-**The idea: a warp drive.** In general relativity the Alcubierre drive contracts space ahead of a ship and expands it
-behind. The Stoat already owns a black hole (a sink) and a white hole (a source); in Drive mode they ride WITH the hull,
-the black hole ahead of the nose and the white hole behind it, mirrored through the hull, and the triggers shape the pair
-the way they shape Mass mode's dipole (`StoatDriveMath`, ported line for line from the studio's `driveShape`):
+**Gate mode** (`StoatGateMath`, the gate in `StoatSlingExecutor`, the warp in `StoatPathfinderExecutor`; the studio's
+`layGate` / `gateHold` / `gateJumped` / `stepGateBoost`, line for line):
 
-| The triggers | The pair | What it does |
-|---|---|---|
-| **Sum** (both squeezed) | its LENGTH: `driveLengthMin` 60 u → `driveLengthMax` 320 u ahead and behind | the WARP: the flight clock to `1 + (Boost − 1) × driveWarpShare × span^driveWarpExponent` (×3 at rest at full stretch, Time scales it) — the long legs |
-| **Difference** (one deeper) | the black hole slides to the deeper trigger's side, up to `driveLateralMax` 140 u, the white hole the other way | the pair TILTS (`atan2(sideways, length)`) and the tilt TURNS the hull toward the black hole: `driveTurnGain` 2.2 °/s per degree, up to `driveTurnMax` 140 °/s, on the warped clock |
-| **The sticks** | — | turn on the REAL clock (`ExternalTurnRateMultiplier` = 1 / the warp): a long fast leg turns wide |
+| | |
+|---|---|
+| **Press** LT or RT | a REAL pair opens along the nose: the black hole `gateAhead` 90 u ahead, its white hole further along the same line — held, no pull on its owner, the Time-mode poles' light strength, a `gateMouthRadius` 5 u horizon. One gate at a time: none until the last has gone (no spam) |
+| **Squeeze** | the deeper trigger stretches it: the white hole slides out, `gateLengthMin` 120 → `gateLengthMax` 600 u through the squeeze curve (`BlackHoleRegistry.Reshape`) |
+| **Fly into the black hole** | the platform carries the hull through (`BlackHoleVesselPull.TryCarryThrough`, heading kept): out of the white hole, the gate's length skipped. Within `gateFunnelRadius` 30 u, still ahead, the black hole draws its owner sideways onto the line into its mouth at `gateFunnelRate` 4 /s — aim near it and it takes you in |
+| **The jump's warp** | quality = aim × length: all of it for an entry straight down the gate's line, none at `gateAimConeDegrees` 25° off; × 0.4 for the shortest gate → 1 for the longest. The flight clock warps to `1 + (Boost − 1) × gateWarpShare 1.5 × quality` (×4 at rest for a perfect jump) for `gateBoostSeconds` 2.5 s, then fades |
+| **Held / let go** | held, it lasts at most `gateHoldMaxSeconds` 3 s; let go (or flown through) it falls together in about `gateCollapseSeconds` 0.8 s (`BlackHoleRegistry.LetGo(pair, speed)`) and annihilates — throwing the Charge ripple |
 
-**So the pair's shape is the dial between agility and precision** — the user's "how much the holes differ, where they sit":
-a short pair pulled sideways tilts a long way and **carves** (the orbit's agility); a long straight pair barely tilts and
-**travels** fast and steady (the long legs); a light squeeze with a small difference **trims** (the field's precision —
-the warp curve keeps a light squeeze near the hull's own speed). The same difference turns a short pair more than twice
-as hard as a long one (`StoatSlingTests.Drive_TheSamePull_TiltsAShortPairMore_ThanALongOne`).
+**What is drawn:** the lensed holes themselves; a lime ring round the open gate's mouth (where to fly in); the path ahead
+(lime while the warp is past half). The HUD's Time card is the warp's share; the Mass card half full with the Gate icon.
+Keys and touch ramp a held trigger to a full squeeze (the longest gate) over `gateKeyRampSeconds` 0.5 s.
 
-**What is drawn:** the pathfinder's line, flown with the drive's turn and on its warp (the field's precision tool: the
-arc you see is the arc you fly), easing toward lime with the warp and lime past half of it; and a ring where each pole
-rides (black hole violet, white hole white). The HUD's Time card is the warp's share of its top; the Mass card sits half
-full and shows the Drive icon. Keys and touch ramp a held trigger to a full squeeze over `driveKeyRampSeconds` 0.5 s.
+**Studio scorecard** (the AI at Hard, seed 1, race seconds; Mass / Time / Gate): circuit I1 54.0 / 60.4 / **53.5**,
+I2 59.6 / 53.8 / **53.0**, I3 **51.5** / 77.2 / 54.8, I4 **49.2** / 79.5 / 57.7; hairpins I1-I4 **31-39** / 66-95 / 61-71.
+The gate is a long-leg tool: the AI opens one only on a leg of `autopilotGateMinDistance` 300 u+ within
+`autopilotGateConeDegrees` 12° of its nose, so the hairpins (no such legs) fly it unassisted. An AI that steers at the
+mouth itself did 44.8 s on circuit I2, but the game's AI cannot be pointed at a mouth without overriding its mode's race
+line, so both run the same rule and the funnel takes them in. A person who aims does better than the AI.
 
-**It takes nothing and pulls nobody.** The pair is the hull's drive, not a pair in the world: no horizon, no prism taken,
-no vessel pulled (PvP stays petals only), no lens pass (no frame cost). The trail is laid as authored.
+**The autopilot** switches into Gate for a long leg (`autopilotGateDistance` 400 u, within 30°) and out under half or past
+twice the cone, presses RT with the squeeze that ends the gate 80 u short of its target (`StoatGateMath.AutopilotLength`),
+holds while the gate is open and lets go once through or once it closes.
 
-**Why the sticks run on the real clock** (measured in the studio before porting). With the sticks on the warped clock —
-the field's rule, where the warp is pure speed — Drive won every course by 30–40% and made both other modes pointless.
-On the real clock, stretching for speed costs turning radius, and the trade-off appears (the AI at Hard, seed 1, race
-seconds):
+**Known limits.** The squeeze is not replicated: a peer's copy of the gate keeps a length of its own. The jump is the
+platform's point-in-horizon test each frame: a very fast, off-centre pass (×4 warp past 100 u/s) can step over a 5 u
+mouth; the funnel centres the approach. **Not done:** `gateModeEvent` ships empty; the icon is a placeholder; not yet
+flown in the Unity Editor. The studio's line is 600 u and Unity's 1200 u (the existing `pathLength` drift).
 
-| Course | Mass (field) | Time (catch) | **Drive** |
+## 1g. Round 19 (studio only) — the wormhole slingshot (2026-10-27)
+
+**The team's call** (relayed by Yash, 2026-10-27): the pair should not teleport the vessel, it should **slingshot** it —
+extra boost and a trajectory. Between the two holes is a wormhole: space bends **inward** at the black hole and
+**outward** at the white hole. **LT** sets the distance between the two mouths, **RT** the throat's width. A thick
+wormhole swings you in and out: a turn (70–90° and more); a thin one is a long straight boost for distance. *"Create a
+wireframe to show me this geometry ... pressing the left trigger, it's making it more shorter and wider."*
+
+**Built in the Vessel Studio first** (the artifact leads; Unity still runs §1f's straight gate until this is decided and
+cloned with `/artifact-to-unity`). The studio's `whShape` / `whAt` / `gateHold` / `gateEnter` / `gateTransit` /
+`gateOut` / `updateWormholes`:
+
+| | |
+|---|---|
+| **Press** LT or RT | the black hole opens `gtAheadSeconds` 1.2 s of flight ahead (at most `gtAhead` 90 u); a wormhole runs from it to its white hole. The other trigger shapes the same one. One at a time |
+| **LT** | mouths apart: untouched `gtLenMax` 600 u → fully squeezed `gtLenMin` 120 u, and the throat widens by `gtLtWiden` 0.5 of RT's range — LT alone makes it short and wide |
+| **RT** | the throat's radius: `gtThroatMin` 3 → `gtThroatMax` 40 u. The mouths are `gtMouthFlare` 2 × the throat + 6 u (a hyperboloid: wide at the mouths, narrowest mid-way) |
+| **Stick** | while shaping, the stick picks which way it bends (the hull holds its line into the mouth; a quarter of the stick's travel bends it fully). How far: `gtTurnMax` 120° × fatness, fatness = `gtTurnLenShare` 0.5 × LT's shortness + 0.5 × the throat. **LT alone: 90°; RT alone: 60° over a long arc; both: 120°**; neutral stick: straight |
+| **Fly into the black hole** | crossing its mouth starts the ride: the throat carries you round its curve at `gtTubeSpeed` 2.5 × your speed, `gtThroatRush` +100 % at the throat; where you crossed the mouth is kept, scaled with the throat (you dive in toward it and swing back out) |
+| **Out of the white hole** | your heading is the curve's last; the flight clock warps at once to `1 + (Boost − 1) × gtWarpShare 1.5 × q`, q = 1 − `gtFatCut` 0.65 × fatness (thin and long ×4, LT alone ×2.5, the fattest ×2), held `gtBoostSeconds` 2.5 s |
+| **Held / let go** | held it lasts `gtHoldMax` 3 s; let go (or ridden through) both mouths fall together along the curve to its middle in `gtCollapse` 0.8 s and annihilate (measured: gone 1.5 s after a release, the annihilation included) |
+
+**The wireframe:** rings round the throat and lines along it, violet at the black hole shading to white at the white
+hole; at each mouth the sheet of space it opens from, bending in round the black hole and out round the white hole; in
+lime the line you will fly, on along the white hole's heading. The mouths lens as if never nearer than 80 u, so the
+mouth you fly at stays readable. The HUD reads the shape live: length, throat, the turn and the most this shape can turn.
+
+**Measured** (headless, touch at half throttle): LT full + stick: in at 0.35 s, out at 0.87 s, **turned 90°**, ×2.5;
+RT full + stick: 60°, ×3.0, 722 u covered; both full + stick: **120°**, ×2.0; LT and RT half, stick left: 53°, ×3.1.
+
+**The AI** (input only): with its ring past `gtAiMinTurn` 120 u it tries 9 lengths × 13 bends, keeps the one whose white
+hole leaves heading within 15° of the ring with 60 u to spare (thinner preferred: they warp harder), and squeezes the
+triggers and holds the stick that make it; a straight one only for rings past `gtAiMin` 300 u. A rookie squeezes the
+throat off the mark. **Scorecard** (Hard, seed 1; Mass / Time / Gate round 19, s): circuit I1 54.0 / 60.4 / **50.0**,
+I2 59.6 / 53.8 / **49.6**, I3 51.5 / 77.2 / **49.1**, I4 **49.2** / 79.5 / 62.4; hairpins I1–I4 **31–39** / 66–95 /
+44–53. Round 18's gate did 53.0 on circuit I2 and 61–71 on the hairpins: the bend made Gate the turning tool the team
+asked for, and Mass keeps the tight hairpins.
+
+**To decide before Unity:** the shape (these numbers), and whether the stick bending the wormhole (rather than turning the
+hull) feels right while shaping. **Not modelled:** the network (the shape would have to replicate: two triggers and a
+stick direction); a sound.
+
+## 1h. Round 20 (studio only) — the tunnel reticle (2026-10-27)
+
+**The team's call** (relayed by Yash, 2026-10-27, after round 19 *"was a hit, everybody liked it"*): the wireframe should
+be a **reticle**. Holding a trigger shows the tunnel without making it; the player shapes it with LT and the sticks; letting
+go of the triggers makes it in front of the hull and the hull goes in. *"This way I will have more control and time to
+create my tunnel more precisely, even in such fast movement."*
+
+| | |
+|---|---|
+| **Hold LT or RT** | the reticle: the tunnel as a cyan wireframe riding `gtReticleAhead` 30 u ahead of the nose, re-shaped every frame. Nothing is laid, no timer runs out. The shape rules are round 19's (§1g): LT shortens (and widens a little), RT widens the throat, the stick bends it while the hull holds its line |
+| **Let go of both** | `gateCommit`: a real black hole and white hole at the reticle's mouths and the hull in it at once (it dives the 30 u straight to the mouth, then the throat carries it round). A tunnel still falling together behind you is ended by the new one |
+| **Out of the white hole** | as round 19: the warp at once, most for a thin one; ridden through, it falls together in `gtCollapse` 0.8 s |
+
+Gone with round 19's flow: the mouth opening ahead of you to fly into (`gtAheadSeconds`, `gtAhead`), its funnel
+(`gtFunnel`, `gtFunnelRate`), the smallest mouth (`gtMouth`) and the hold limit (`gtHoldMax`). Their sliders are
+removed; the values stay in the studio's numbers because the game's round-18 gate still reads them.
+
+**The AI** plans as in round 19 from where the tunnel will start (`gtReticleAhead` + its speed × `gtAiAim`), holds the
+reticle with the plan's triggers and stick for `gtAiAim` 0.3 s, and lets go. **Scorecard** (Hard, seed 1; Mass / Time /
+Gate round 20, s): circuit I1 54.0 / 60.4 / **49.5**, I2 59.6 / 53.8 / **48.2**, I3 51.5 / 77.2 / **49.0**, I4 **49.2** /
+79.5 / 53.0; hairpins I1–I4 **31–39** / 66–95 / 43–50 (round 19: circuit I4 62.4, hairpins 44–53).
+
+## 1i. Round 21 (studio only) — the team's reticle controls and a confirm (2026-10-27)
+
+**The problem Yash hit playing round 20:** letting go of both triggers made a straight 600 u tunnel, never the bent one
+shaped in the reticle. Analog triggers pass back through zero over a few frames on the way out, and round 20 made the
+tunnel from the last of them: no squeeze, no bend. *"We need a mechanic to confirm the tunnel ... with the right trigger we
+control the right turn, with the left trigger the left turn, and like a double thumb the average vector ... in 4
+directions."*
+
+| | |
+|---|---|
+| **Hold the triggers** | the reticle, as round 20 (30 u ahead, nothing made, no time limit) |
+| **RT / LT** | bend right / left: the bend's sideways part is RT − LT |
+| **Both sticks** | their average bends it any of four ways (added to the triggers' part), while the hull holds its line |
+| **How far** | `gtTurnMax` 120° at full; the further it bends, the shorter (`gtLenMax` 600 → `gtLenMin` 120 u) and fatter (throat 3 → 40 u). Squeezing **both** triggers harder also shortens it (both full: a 120 u straight hop) |
+| **Make it** | **A** (Enter; **A · Go** on a phone) makes exactly what the reticle shows; the triggers must come up before the next reticle. **Letting go of both triggers** also makes it, from the shape held `gtReleaseGrace` 0.15 s before, so the triggers and sticks springing back never straighten it |
+
+Round 19/20's LT-shortens / RT-widens shape rules (`gtLtWiden`, `gtTurnLenShare`) are gone.
+
+**Measured** (headless, a 0.1 s release with the triggers and sticks springing back): RT full → 120° right, LT full →
+120° left, RT 0.6 + LT 0.2 → 44° right over 408 u, both half + sticks up → 120° up, both full → a 120 u straight hop;
+A with RT half → 57°, and still holding the triggers after A opens no second reticle. The made tunnel matched the
+reticle every time.
+
+**The AI** tries 21 bends × 9 squeezes, holds both triggers evenly and pushes both sticks toward the ring.
+**Scorecard** (Hard, seed 1; Mass / Time / Gate, s): circuit I1 54.0 / 60.4 / **38.6**, I2 59.6 / 53.8 / **40.6**, I3
+51.5 / 77.2 / **43.0**, I4 49.2 / 79.5 / **42.5**; hairpins I1–I4 **31–39** / 66–95 / 42–48. Gate is now the AI's
+fastest mode on every circuit, by 10+ s: **a balance question** for the team (the warp after a thin tunnel, `gtWarpShare`
+and `gtFatCut`, and the ride speed `gtTubeSpeed` are the levers).
+
+## 1j. Round 22 (studio) — the config is the game's blueprint; the wormhole's look (2026-10-27)
+
+**The team's call** (relayed by Yash): the right-side panel had duplicates (Field trajectory in Scene Config AND a "field
+trajectory" Mode card in Play Style Config; the Time mode's "Dipole sling" section showing in Mass mode). Clean it into
+one organized config whose parameters and names ARE what the game gets: *"this is just the blueprint of what's gonna be
+made in the actual game ... we won't make a parameter name here something different in the game."* And the wormhole:
+the grid is the player's own UI only; it must run exactly mouth to mouth, its mouths as wide as the holes; everyone else
+sees only bent space-time, and how much concentrated black/white hole shows must be a setting.
+
+**The six tabs now** (each section in exactly one; flight unchanged, the scorecard identical):
+
+| Tab | Sections |
+|---|---|
+| Scene Config | Scene · Flight & course · **Black hole · look** · **White hole · look** · **Wormhole · look** · Birth & annihilation |
+| Game Config | Intensity · Players |
+| AI Config | Sim lab (now with the Gate AI rows) |
+| Play Style Config | **Mode** (a dropdown: Mass / Time / Gate) · Play styles · Squeeze · **Pull & momentum** (Mass and Time) · then ONLY the mode in use: **Mass mode · the field trajectory**, **Time mode · the catch sling** or **Gate mode · the wormhole** |
+| Input | Controls |
+| Vessel Config | (one section at a time) Black hole · physics · White hole · physics · Pair life · Lope · Archive |
+
+The hole presets (Pinpoint, Cinematic, Supernova, ...) moved onto the look cards; their Shipped button resets every row
+a preset touches.
+
+**The game's names.** Every slider shows its game name under it, from the page's `GAME_NAMES` (151 rows):
+*linked* (green; `studio_to_unity.py` writes it: 73), *field* (the field exists in the game, not linked yet: check its
+units when porting, e.g. `StoatSlingConfig.catchAhead` for the studio's Laid ahead), *new* (violet; the field the game
+will get, by exactly this name, e.g. `StoatModeAction.gateTurnMaxDegrees`), *lab* (the studio's own, never in the game:
+the play-style levels, the AI's sloppiness). The round-22 wormhole-look keys ARE their game names
+(`gateDentStrength` ...). `studio_to_unity.py --check` now fails when a `linked` name disagrees with the map
+(`--self-test` plants both failures).
+
+**The wormhole's look** (`Wormhole · look`, StoatModeAction):
+
+| | |
+|---|---|
+| The grid | yours only: your reticle, and your own tunnel while you ride it (`gateGridOnRide` 1). Rivals and AIs draw no grid. It runs mouth to mouth: the space sheets beyond the mouths are off (`gateGridSheets` 0) |
+| The dent (everyone sees it) | each mouth of a made tunnel is a graded lens, `gateDentStrength` 0.6, as wide as the grid's mouth × `gateDentWidth` 1: space pulled in at the black hole's mouth, pushed out at the white hole's |
+| The concentrated hole | `gateHoleCore` 0.12 × the mouth: a black shadow with its photon ring, and a white core; **0 = a pure warp of space-time**. The 3D hole spheres are no longer drawn on tunnels (the lens draws the core) |
+
+## 1k. Round 23 (studio) — one thumb, all wormhole (Garrett, with Yash, 2026-10-27)
+
+**Garrett's notes** (relayed by Yash, who asked that both designs converge): *"remove both the white hole and black hole.
+lean completely into the wormhole. make this a one thumb flyer so the right stick is always free to shape the tunnel ...
+continue to use the gridlines so the player can see the wormhole that will form when they pull the right trigger. once
+the wormhole forms keep the gridlines but use the warping effects to convey the same tube to other players. only the
+wormhole creating player should see the gridlines. everyone should see the visual warping that corresponds to the grid
+lines."*
+
+**How the two designs met** (Gate mode):
+
+| | Yash (rounds 19–22) | Garrett (round 23) | Built |
 |---|---|---|---|
-| Circuit I1 / I2 / I3 / I4 | 54.0 / 59.7 / 51.5 / 49.2 | 60.7 / 56.1 / 75.8 / 81.7 | **45.8 / 45.4 / 43.8 / 41.8** |
-| Hairpins I1 / I2 / I3 / I4 | 38.8 / 33.2 / 32.0 / **31.0** | 90.6 / 80.4 / 65.2 / 66.2 | **35.2** / **32.6** / 33.3 / 37.1 |
+| Flight | the dual-stick mix; the hull held its line while shaping | a one-thumb flyer | **the left stick flies** as the game's one-thumb hulls do (`SingleStickVesselTransformer`: Ease(2 × stick) yaw/pitch, a bank into the turn `gateBankShare` 0.12 × roll, full throttle); keys WASD |
+| The bend | RT − LT plus both sticks, up to 120°, more bend = shorter and fatter | the right stick shapes the tunnel | **the right stick** bends it any way, up to `gtTurnMax` 120° (the arrows on keys); Yash's coupling kept |
+| Length | both triggers harder = shorter | (not said) | **LT** shortens it (Yash's earlier "LT shortens"); LT full + stick centred = a 120 u straight hop |
+| Seeing it | the reticle while the triggers are held | the grid always shows what RT would form | **the reticle is always on your nose** in Gate mode, faint at rest (`gateGridRestAlpha` 0.4), full while you shape |
+| Making it | A, or letting go (with a 0.15 s grace) | pull the right trigger | **an RT press forms it** and you are in it (A, the release grace and the touch A · Go button are gone) |
+| The holes | a concentrated core setting (round 22) | no black hole, no white hole | **gone**: no hole spheres, no cores, no light shells or gravitational wave when a tunnel forms or fades, no hole markers; the hole look cards hide in Gate mode |
+| Others see | the mouths' dents | the warping that matches the grid | **the tube's warp** (`updateTubeWarp`): every live tunnel draws its tube, ring for ring the grid's surface, into a half-float buffer of screen offsets (the wall's view normal × sin(π·rim), in near the entry, out near the exit), which the lens pass adds to its bend; `gateTubeWarp` 0.8. The mouths keep their dents |
+| Grid | yours only | only the creator | yours only: the reticle and your own tunnel while you ride it |
 
-Drive wins every open circuit (the long legs), is level with Mass on the medium hairpins, and Mass wins the tightest
-(the small manoeuvres) — the split the design asked for. The warp share was 1.5 in the first cut (Drive too strong); 1.
+**Measured** (headless): the left stick full right turns right and banks right at full speed (58 u/s at cruise 60) with
+the reticle up; the right stick full right → 120° right over 120 u, half right → 19° over 523 u (the ease makes the
+middle of the stick fine), full up → 120° up, LT full → a 120 u straight hop, centred → 600 u straight; the formed
+tunnel matched the reticle every time; RT again while riding does nothing; the reticle is back on exit.
 
-**The autopilot.** In Drive mode it squeezes its own triggers (`StoatDriveMath.AutopilotSqueeze`, the studio's AI):
-stretch with the distance still to go (full from `autopilotDriveFar` 150 u), none while its target is more than
-`autopilotDriveConeDegrees` 120° off the nose (turn first, then travel), and the difference toward the target, full at
-`autopilotDriveLeanDegrees` 15° of yaw. It switches INTO Drive for a long leg — its target at least
-`autopilotDriveDistance` 400 u away and within `autopilotDriveSwitchConeDegrees` 30° of the nose (0 = never) — and out
-under half that distance or past twice the cone, two B presses round the cycle in one go when it must.
+**Scorecard** (the AI flies one-thumb too: the left stick for the ring, then holds its line `gtAiAim` 0.3 s while its
+right stick and LT shape the plan, then pulls RT. Hard, seed 1, s): circuit I1–I4 **36.4 / 38.2 / 39.1 / 40.2**
+(round 22: 38.6–43.0), hairpins 44.3 / 41.9 / 39.6 / 38.4 (42–48); Mass 31–39 on the hairpins. Full throttle made Gate
+faster still: **the balance question for the team grows** (`gtWarpShare`, `gtFatCut`, `gtTubeSpeed` are the levers).
 
-**Where it runs.** The mode replicates (B is a replicated press); the squeezes, the pair, the turn and the warp run on
-the simulating machine (the pathfinder's own rule), and peers see the flight. The flight recorder writes `timeMode` 2.
+**Open, for Yash and Garrett together:** does "lean completely into the wormhole" also retire Mass and Time (both are
+black-hole/white-hole modes, and the Stoat would become a wormhole-only, one-thumb vessel)? Round 23 changed only Gate
+mode; Mass and Time are untouched. In the game this is also a control-scheme question: the Stoat's prefab runs the
+two-stick `VesselTransformer`; a one-thumb Gate needs either a per-mode scheme or the Stoat moving to a one-thumb
+transformer.
 
-**The studio** (`Docs/Studios/StoatFlightStudio.html`, round 17): `slingMode 'drive'`, the Drive mode card (`grp-V`, the
-`dr*` rows, mapped to `StoatModeAction` by `studio_to_unity/stoat.json`, all twelve matching), T and the phone's B button
-step the three modes. **Known difference:** the line's length is 600 u in the studio and 1200 u in Unity (the existing
-`pathLength` drift `studio_to_unity.py --check` reports). **Not done:** the FMOD slot `driveModeEvent` ships empty; the
-pole rings are dots, not lensed holes; the icon is a placeholder; not yet flown in the Unity Editor.
+## 1l. Round 24 (studio) — inside a real wormhole: a smooth ride, a 3D grid, no false visuals (2026-10-27)
+
+**Yash, playing round 23:** riding a tunnel, the camera "flipped 180 or 360" and jerked instead of going smoothly
+through the tube; the centre of the tunnel should bend nothing and everything around it should be bent, like the
+inside of a real wormhole; no black-hole or white-hole looks; make the grid 3D; save the hole looks for later.
+
+| Problem | Cause (measured) | Fix |
+|---|---|---|
+| The view flipping on entry | a mouth's dent is a screen-space lens; as the camera reached the mouth its radius grew past the screen and the image inverted, then vanished when the mouth went behind the camera | the dent fades as the camera comes within `gateDentNear` 3 × the mouth radius of it; inside, the tube's own warp takes over |
+| The camera jerking round the bend | the chase camera lerps its POSITION (k 7/s) and fell far behind a hull riding at 2.5 × speed, then swung round the curve | while you ride, the camera runs down the tube's **centreline** 18 u behind you (45 u in Follow) and looks 40 u ahead along it (`whAtX`: the straight run in and out included), eased in and out over ~0.1 s; through a 120° tunnel the view turns at most 5° a frame, its up at most 0.34° |
+| A flat-looking grid | lines of one brightness read as a drawing | **3D grid**: a wall facing the eye is bright, the far wall 0.28 (`whFace`); a faint glass surface under your grid, lit at its silhouette (`gateGridGlass` 0.6) |
+| Hole words on screen | the HUD still said "black hole + white hole · portal ON" in Gate mode | "one thumb · space-time bent into a tunnel" |
+
+**Parked for later:** every black-hole / white-hole piece the tunnel used (the round-22 core, its shader lines, the hole
+spheres, the light shells and gravitational wave, the markers) is listed with its commit in
+`Docs/Studios/STOAT_PARKED_HOLE_LOOK.md`. Mass and Time keep their holes.
+
+## 1m. Round 25 (studio) — out of a tunnel with the speed you went in with (2026-10-27)
+
+**Yash:** *"you should come out ... with the same momentum and speed as you went inside the tunnel."*
+
+- **`gateKeepMomentum` 1 (the default):** the speed you go in with (`vIn` = your engine, gravity and momentum speed × the
+  warp you had) is the speed you come out with, on the tunnel's last heading. The warp you had going in is held,
+  untouched, while you ride, and carries on after; nothing is added. 0 brings back rounds 19–24's slingshot boost
+  (`gtWarpShare`, `gtFatCut`, `gtBoostSeconds`).
+- **The ride:** it starts and ends at `vIn` and rushes to `gtTubeSpeed` 2.5 × it at the throat (sin along the tube), so
+  there is no jolt at either mouth. `gtThroatRush` is folded into it and gone.
+
+**Measured** (headless, a 120° tunnel at cruise): in at 59 u/s, 149 u/s at the throat, out at 60 u/s and steady 0.25–1 s
+after; with `gateKeepMomentum` 0, out at 123 u/s (the old warp).
+
+**What it does to the race** (the AI, Hard, seed 1, s): circuits I1–I4 103.0 / 100.6 / 98.8 / 97.6 and hairpins
+85.9 / 79.5 / 75.0 / 71.7 - **Gate is now the slowest mode** (round 24: 36–40 and 38–44; Mass 49–60 and 31–39). A tunnel
+now buys a turn at full speed and the rush through its throat, no speed after it. **For Yash and Garrett:** if Gate
+should race, the levers that keep "out as you went in" are a faster ride (`gtTubeSpeed`), longer tunnels (`gtLenMax`), or
+a faster one-thumb cruise; `gateKeepMomentum` 0 is the old boost.
+
+## 1n. Round 26 (studio) — a tunnel's life: rippling in, staying, rippling out (2026-10-27)
+
+**Yash:** the reticle should come back about 0.5 s after the exit and fade in like a wave emerging into the tunnel's
+shape, reshapeable; on RT the tunnel forms the same way out of the centre of its geometry while the reticle fades; it
+stays 10 s, then collapses the reverse way back to its centre, a ripple spreading out to infinity; every step smooth,
+no camera jitter, real space-time warp visuals.
+
+| Step | Built (`stepTunnel`, `gateHold`, `gateCommit`) |
+|---|---|
+| The reticle comes back | `gateReticleDelay` 0.5 s after you are out (and at the start of a race), then ripples out of its centre into the full tube over `gateReticleGrow` 0.8 s (ease-out; the window grows from the tube's middle to both mouths, its radius with it). You can reshape it as it grows; RT works once it is 60% there |
+| RT: the tunnel forms | the warp - its mouths' dents, the tube's warp, your grid - ripples out of the same centre to both mouths over `gateFormSeconds` 0.4 s (never longer than 90% of your dive to its mouth, so the mouth is there when you are); the reticle fades out over the same time |
+| The ride | unchanged (round 25): in and out at your entry speed, the camera on the centreline |
+| It stays | `gateStaySeconds` 10 s after you are out (making another tunnel sends the last one back at once) |
+| It collapses | back to its centre over `gtCollapse` 0.8 s, then fades, and a space-time ripple (the gravitational wave, `gateCollapseRipple` 0.4) spreads from its centre out to infinity |
+
+**Measured** (headless): the reticle at 0 / 0.68 / 1 of its shape at 0.25 / 0.75 / 1.25 s; a 460 u tunnel growing
+106 → 297 → 403 → 449 → 460 u over 0.4 s; the reticle absent for 0.5 s after the exit, then back over ~0.5 s; the tunnel
+stayed 10.0 s, collapsed in 0.8 s, sent one ripple; the camera through the ride turned at most 2.4° a frame. The AI waits
+for its reticle too: circuits 98.2-100.8 s, hairpins 72.5-88.2 s (round 25: 97.6-103.0, 71.7-85.9).
+
+## 1o. Round 27 (studio) — save a section as a profile (2026-10-27)
+
+Yash: *"I didnt find a way to save them in artifact to a new Wormhole Look settings, ... save my tweak settings to new
+profiles of those areas like Wormhole Look, etc, for future re-play and design decisions."* Every settings card with a
+Reset button (18 of them: Wormhole · look, Gate mode, Pull & momentum, the AI, the play styles, ...) now has a
+**Profiles** row under its sliders: name the card's current values and **Save as profile**; pick one and **Load** it
+(only that card's keys change; a key the profile lacks goes to its shipped value); **Record** writes it to the decision
+log (topic *Profile*, with what it changes from shipped); **Delete** removes your own. "Now: <name>" shows which
+profile the card matches. Profiles live in the studio's shared db (`profiles`, readable by Claude, everyone sees
+everyone's) or, where the viewer has no db, in that browser. Nothing in the game changes: a profile is a set of studio
+values; the one the team picks reaches Unity through `/artifact-to-unity` as usual.
+
+## 1p. Round 28 (studio) — the wormhole becomes the Meerkat (2026-10-27)
+
+Yash: *"a big change is this new wormhole ability ... This will be Meerkat, a new vessel. The Stoat will have that field
+and orbit for now untouched. Just take away all this wormhole kind of ability of the Stoat and create a Meerkat ... keep
+only one ability of the wormhole."* The studio's Gate mode (§1g-§1n) left the Stoat page and is now the Meerkat studio,
+`Docs/Studios/VesselStudio/meerkat.html` (design: `Docs/Studios/MEERKAT.md`).
+
+| What | Where it is now |
+|---|---|
+| Gate mode: the reticle, the tunnel, its ride and life, the tube's warp, the mouths' dents, the gate AI | The Meerkat studio only, with its parameters renamed to their future `MeerkatWormholeConfig` fields |
+| B / T on the Stoat | Mass -> Time -> Mass (round 18-27 stepped through Gate too) |
+| The Stoat's `gt*` / `gate*` keys, their sliders, tips and game names | Removed from the Stoat page |
+| `studio_to_unity/stoat.json`'s 14 round-18 gate rows (`StoatModeAction` gate* fields) | Removed: the page no longer has those keys. The game's Stoat still has round 18's straight warp gate on B, unlinked from the studio until `/artifact-to-unity` ports the Meerkat and takes the gate off the Stoat |
+
+Mass and Time are untouched: on seed 7, the AI at Hard raced them in 59.6 s (18 slings) and 53.8 s (17), the same as
+before the split. Two small fixes came with it:
+- `setStyle` had a `grp-P` visibility statement swallowed by a round-23 comment. It is a statement again, so Pull &
+  momentum shows in Mass and Time only.
+- The decision log tags new entries `studio: 'stoat'` and shows only the Stoat's, the older untagged ones included,
+  because the Meerkat writes to the same shared collection.
 
 ## 2. What the sink takes
 

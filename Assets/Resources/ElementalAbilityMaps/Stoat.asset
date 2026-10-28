@@ -84,16 +84,16 @@ MonoBehaviour:
   - Element: 2
     AbilityLabel: Mass / Time Mode
     AbilityDescription: 'B (on a phone, this card) steps the Stoat through its three modes, Mass -> Time ->
-      Drive -> Mass, and a switch lets go of whatever the triggers held; the card''s icon
+      Gate -> Mass, and a switch lets go of whatever the triggers held; the card''s icon
       shows the mode. MASS MODE (the default): the triggers lay the Field Dipole and the
       trail is laid THICK - the prism''s height x3 at Mass 0 -> x6 at level 10
       (StoatModeActionSO.massModeThickness, read at the replicated level so every peer
       lays the same trail). TIME MODE: the triggers fly the orbit slingshot (see Time) and
-      the trail is laid at its own thickness. DRIVE MODE: a warp pair rides with you, a
-      black hole ahead and a white hole behind. Squeeze both triggers to stretch it - the
-      longer the pair, the faster you travel; squeeze one deeper and the pair tilts and
-      turns you that way. Short and tilted carves, long and straight travels, light and
-      level trims; the line shows where you will fly.'
+      the trail is laid at its own thickness. GATE MODE: a warp gate. Squeeze a trigger
+      and a black hole opens ahead of your nose, its white hole further along the same
+      line; squeeze deeper to stretch it. Fly into the black hole and you come out of the
+      white hole warped - most for a long gate entered straight down its line. Let go and
+      it falls together in under a second. One gate at a time.'
     Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -102,3 +102,4 @@ MonoBehaviour:
     UpgradeDescription: 'Every prism laid in MASS MODE arrives SHIELDED. Gated on IsUpgradeActive(Mass),
       replicated, per lay - so every peer lays the same tier
       (StoatModeActionSO.massUpgradeShieldsInMassMode).'
+  omniAbilityLabel: Overclock

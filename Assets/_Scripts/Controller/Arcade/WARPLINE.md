@@ -1,5 +1,14 @@
 # Warpline (`GameModes.Warpline = 65`)
 
+> **The MEERKAT's TIME race since 2026-10-27** (Yash: "Stoat will use Slingshot and Meerkat will use Warpline"). The card
+> seats the Meerkat only (`author_warpline_assets.py`); the Stoat's time race is Slingshot (`SLINGSHOT.md`). The circuit,
+> the scene and the steering are unchanged: five long legs a lap (~750 u, longer than one 600 u straight tunnel), two
+> laps, the Regatta steering. Everything below about the Stoat is the record of its races here (2026-10-09..27); the
+> Stoat's learned variants (`StoatDipoleConfig_Warpline`, `StoatSlingConfig_Warpline`) are no longer flown here and seed
+> its Slingshot ones. Burrow Run (`BURROWRUN.md`) is the Meerkat's other race on the same circuit, eight rings a lap.
+> The course and its intensities can be prototyped and saved in **FrogletTools > Game Modes > Time Race Prototyper**
+> (`Docs/TIME_RACE_PROTOTYPER.md`).
+
 The **Stoat's time race**. A closed loop of **five** switch rings is cut through the barren race cell;
 every pilot flies **two laps** of it in order, and the first **DOMAIN** whose **LEAD RUNNER** threads
 the last ring of the last lap wins (golf: finish time).

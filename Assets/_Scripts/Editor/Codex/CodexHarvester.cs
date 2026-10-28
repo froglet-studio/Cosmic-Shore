@@ -88,7 +88,7 @@ namespace CosmicShore.Editor.Codex
             if (!set)
             {
                 report.Warnings.Add(
-                    "No ElementalCrystalSetSO found - the four elemental ethirions were skipped. " +
+                    "No ElementalCrystalSetSO found - the four elemental Etherions were skipped. " +
                     "Expected Assets/Resources/ElementalCrystalSet.asset.");
             }
 
@@ -151,7 +151,7 @@ namespace CosmicShore.Editor.Codex
             else
             {
                 report.Warnings.Add("No omni crystal prefab found (a Crystal carrying exactly an " +
-                                    "OmniCrystalImpactor). The Omni ethirion was skipped.");
+                                    "OmniCrystalImpactor). The Omni Etherion was skipped.");
             }
 
             return entries;
@@ -193,14 +193,13 @@ namespace CosmicShore.Editor.Codex
 
             var floraConfigs = LoadAll<FloraConfigurationSO>();
             var faunaConfigs = LoadAll<FaunaConfigurationSO>();
+            var roster = RosterNames();
 
-            foreach (var group in floraConfigs.Where(c => c.FloraPrefab)
-                                              .GroupBy(c => c.FloraPrefab.gameObject))
-                entries.Add(BuildFloraEntry(group.Key, group.ToList(), usage));
+            foreach (var group in GroupSpecies(floraConfigs.Where(c => c.FloraPrefab), c => c.FloraPrefab.gameObject, roster))
+                entries.Add(BuildFloraEntry(group.Prefab, group.Configs, usage, group.Name));
 
-            foreach (var group in faunaConfigs.Where(c => c.FaunaPrefab)
-                                              .GroupBy(c => c.FaunaPrefab.gameObject))
-                entries.Add(BuildFaunaEntry(group.Key, group.ToList(), usage));
+            foreach (var group in GroupSpecies(faunaConfigs.Where(c => c.FaunaPrefab), c => c.FaunaPrefab.gameObject, roster))
+                entries.Add(BuildFaunaEntry(group.Prefab, group.Configs, usage, group.Name));
 
             foreach (var c in floraConfigs.Where(c => !c.FloraPrefab))
                 report.Warnings.Add($"Flora config '{c.name}' has no prefab — no codex entry.");
@@ -211,10 +210,87 @@ namespace CosmicShore.Editor.Codex
             return entries;
         }
 
-        static CodexEntry BuildFloraEntry(GameObject prefab, List<FloraConfigurationSO> configs,
-            Dictionary<Object, List<string>> usage)
+        /// <summary>
+        /// The Toy Box's Spawn Matrix names every species a player can release and lists that species' configs
+        /// (Docs/MENU_REDESIGN_B.md section 98.3). Config -> the roster's name for its species.
+        /// </summary>
+        static Dictionary<Object, string> RosterNames()
         {
-            var entry = NewEntry(CodexKingdom.Flora, SpeciesName(configs.Select(c => c.name), prefab));
+            var names = new Dictionary<Object, string>();
+            foreach (var roster in LoadAll<SpawnMatrixToyDefinitionSO>())
+            {
+                foreach (var species in roster.Fauna ?? Array.Empty<SpawnMatrixToyDefinitionSO.FaunaSpecies>())
+                    Name(names, species?.Name, species?.ElementConfigs);
+                foreach (var species in roster.Flora ?? Array.Empty<SpawnMatrixToyDefinitionSO.FloraSpecies>())
+                    Name(names, species?.Name, species?.ElementConfigs);
+            }
+            return names;
+
+            static void Name(Dictionary<Object, string> names, string name, IEnumerable<Object> configs)
+            {
+                if (string.IsNullOrWhiteSpace(name) || configs == null) return;
+                foreach (var config in configs)
+                    if (config && !names.ContainsKey(config)) names[config] = name.Trim();
+            }
+        }
+
+        sealed class SpeciesGroup<T>
+        {
+            public GameObject Prefab;
+            public List<T> Configs;
+            public string Name;
+        }
+
+        /// <summary>
+        /// One codex species per Toy Box species, under the Toy Box's name: the Codex screen lists the roster and finds
+        /// each one's page by that name, so a page named after its config asset ("Substrate Harrier Fauna Config
+        /// Data") is a page nobody reaches (Shombith 2026-10-27, after a bake: "None of the fauna got their images").
+        /// It also splits species that share one prefab (the bench swarms are four Toy Box species on SwarmFauna).
+        /// A config the roster does not list joins the roster species that uses its prefab - the odd
+        /// WormColonyFaunaConfig stays with the Worm Colony - and otherwise groups by prefab, named by majority vote
+        /// as before.
+        /// </summary>
+        static List<SpeciesGroup<T>> GroupSpecies<T>(IEnumerable<T> configs, Func<T, GameObject> prefabOf,
+            Dictionary<Object, string> roster) where T : Object
+        {
+            var list = configs.ToList();
+            var byPrefab = new Dictionary<GameObject, HashSet<string>>();
+            foreach (var c in list)
+                if (roster.TryGetValue(c, out var name))
+                {
+                    var prefab = prefabOf(c);
+                    if (!byPrefab.TryGetValue(prefab, out var set)) byPrefab[prefab] = set = new HashSet<string>();
+                    set.Add(name);
+                }
+
+            var groups = new List<SpeciesGroup<T>>();
+            foreach (var group in list.GroupBy(c =>
+                     {
+                         if (roster.TryGetValue(c, out var name)) return "roster:" + name;
+                         return byPrefab.TryGetValue(prefabOf(c), out var names) && names.Count == 1
+                             ? "roster:" + names.First()
+                             : "prefab:" + AssetDatabase.GetAssetPath(prefabOf(c));
+                     }))
+            {
+                var members = group.ToList();
+                // The prefab most of the species' configs spawn.
+                var prefab = members.GroupBy(prefabOf).OrderByDescending(g => g.Count()).First().Key;
+                groups.Add(new SpeciesGroup<T>
+                {
+                    Prefab = prefab,
+                    Configs = members,
+                    Name = group.Key.StartsWith("roster:", StringComparison.Ordinal)
+                        ? group.Key.Substring("roster:".Length)
+                        : SpeciesName(members.Select(c => c.name), prefab),
+                });
+            }
+            return groups;
+        }
+
+        static CodexEntry BuildFloraEntry(GameObject prefab, List<FloraConfigurationSO> configs,
+            Dictionary<Object, List<string>> usage, string name)
+        {
+            var entry = NewEntry(CodexKingdom.Flora, name);
             entry.SourcePrefab = prefab;
             entry.DiscoveryKey = $"see.{Slug(entry.DisplayName)}";
 
@@ -264,9 +340,9 @@ namespace CosmicShore.Editor.Codex
         }
 
         static CodexEntry BuildFaunaEntry(GameObject prefab, List<FaunaConfigurationSO> configs,
-            Dictionary<Object, List<string>> usage)
+            Dictionary<Object, List<string>> usage, string name)
         {
-            var entry = NewEntry(CodexKingdom.Fauna, SpeciesName(configs.Select(c => c.name), prefab));
+            var entry = NewEntry(CodexKingdom.Fauna, name);
             entry.SourcePrefab = prefab;
             entry.DiscoveryKey = $"see.{Slug(entry.DisplayName)}";
 
@@ -545,12 +621,20 @@ namespace CosmicShore.Editor.Codex
         {
             if (string.IsNullOrWhiteSpace(name)) return name;
             var s = name.Trim();
-            foreach (var element in new[] { " Charge", " Mass", " Space", " Time" })
-                if (s.EndsWith(element, StringComparison.Ordinal))
-                { s = s[..^element.Length]; break; }
-            foreach (var kingdom in new[] { " Flora", " Fauna" })
-                if (s.EndsWith(kingdom, StringComparison.Ordinal))
-                { s = s[..^kingdom.Length]; break; }
+            // Most configs are named "<Species> <Element> <Kingdom> Config Data".
+            foreach (var asset in new[] { " Config Data", " Config" })
+                if (s.EndsWith(asset, StringComparison.Ordinal))
+                { s = s[..^asset.Length]; break; }
+            // The element and the kingdom come in either order ("Tadpole Fauna Charge", "Leech Charge Fauna").
+            for (int pass = 0; pass < 2; pass++)
+            {
+                foreach (var element in new[] { " Charge", " Mass", " Space", " Time" })
+                    if (s.EndsWith(element, StringComparison.Ordinal))
+                    { s = s[..^element.Length]; break; }
+                foreach (var kingdom in new[] { " Flora", " Fauna" })
+                    if (s.EndsWith(kingdom, StringComparison.Ordinal))
+                    { s = s[..^kingdom.Length]; break; }
+            }
             return s.Trim();
         }
 

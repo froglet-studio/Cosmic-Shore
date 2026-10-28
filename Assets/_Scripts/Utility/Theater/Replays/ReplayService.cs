@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
@@ -54,9 +55,11 @@ namespace CosmicShore.Utility
         Task _indexLoad;
         bool _disposed;
 
-        public ReplayService(GameDataSO gameData, ReplayIndexRepository index, SceneNameListSO sceneNames = null)
+        public ReplayService(GameDataSO gameData, ReplayIndexRepository index, SceneNameListSO sceneNames = null,
+                             SO_GameList gameList = null)
         {
             _sceneNames = sceneNames;
+            _gameList = gameList;
             _gameData = gameData;
             _index = index;
 
@@ -65,6 +68,74 @@ namespace CosmicShore.Utility
             _gameData.OnShowGameEndScreen.OnRaised += HandleEndScreen;
             _gameData.OnSessionEnded.OnRaised += HandleSessionEnded;
             Application.quitting += HandleQuitting;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
+            CosmicShore.Utility.PerformanceBenchmark.DiagnosticsHUD.RegisterCommand(ReplayCommand, HandleReplayCommand);
+        }
+
+        const string ReplayCommand = "replay";
+
+        /// <summary>Every arcade card (AppManager's master list), so a replay finds its mode's card from any scene.</summary>
+        readonly SO_GameList _gameList;
+
+        /// <summary>
+        /// A watched replay lives across scene loads (<see cref="ReplayMatch"/>): its match scene gets a director,
+        /// and coming back to the menu ends it, whatever way the player left.
+        /// </summary>
+        void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (_disposed || !ReplayMatch.IsActive || mode != UnityEngine.SceneManagement.LoadSceneMode.Single) return;
+            if (_sceneNames && scene.name == _sceneNames.MainMenuScene)
+            {
+                ReplayMatch.Clear();
+                return;
+            }
+            ReplayMatchDirector.Create(_gameData);
+        }
+
+        /// <summary>
+        /// Watch a replay as the match (<see cref="ReplayMatch"/>). False when it cannot be read or its mode has
+        /// no arcade card; <paramref name="error"/> says why.
+        /// </summary>
+        public bool TryWatchMatch(ReplaySummary summary, IEnumerable<SO_ArcadeGame> cards, out string error)
+        {
+            if (!TryLoad(summary, out var recording, out error)) return false;
+            var card = FindCard((GameModes)recording.GameMode, cards);
+            if (!card)
+            {
+                error = $"no arcade card for {(GameModes)recording.GameMode}";
+                return false;
+            }
+            if (!ReplayMatch.TryLaunch(recording, summary, card, _gameData))
+            {
+                error = "the recording has no vessels";
+                return false;
+            }
+            return true;
+        }
+
+        SO_ArcadeGame FindCard(GameModes mode, IEnumerable<SO_ArcadeGame> cards)
+        {
+            if (cards != null)
+                foreach (var card in cards)
+                    if (card && card.Mode == mode) return card;
+            if (_gameList && _gameList.Games != null)
+                foreach (var card in _gameList.Games)
+                    if (card && card.Mode == mode) return card;
+            // The menu has every card loaded; a card list that misses one still finds it here.
+            foreach (var card in Resources.FindObjectsOfTypeAll<SO_ArcadeGame>())
+                if (card && card.Mode == mode) return card;
+            return null;
+        }
+
+        /// <summary>Dev console (F7): "replay latest" watches the newest replay as the match; "replay list" lists them.</summary>
+        string HandleReplayCommand(string[] args)
+        {
+            var all = ListOnDevice();
+            if (all.Count == 0) return "no replays on this device";
+            if (args.Length > 0 && args[0] == "list")
+                return string.Join(" | ", all.ConvertAll(r => $"{r.GameModeName} {r.RecordingFile}"));
+            if (ReplayMatch.IsActive) return "a replay is already playing";
+            return TryWatchMatch(all[0], null, out string error) ? $"watching {all[0].RecordingFile}" : $"cannot watch: {error}";
         }
 
         /// <summary>True while a match is being recorded.</summary>
@@ -140,6 +211,8 @@ namespace CosmicShore.Utility
         void HandleTurnStarted()
         {
             if (_disposed) return;
+            // A replay being watched is never recorded again.
+            if (ReplayMatch.IsActive) return;
             // Every mode records itself; the menu's freestyle (the lava lamp) never does - it is not a match.
             string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             if (!ReplayConfigSO.Resolve().ShouldAutoRecord(_gameData.GameMode, activeScene,
@@ -150,7 +223,11 @@ namespace CosmicShore.Utility
 
             // Two turns of one match have no end screen between them, so the earlier turn's
             // results are not coming: keep what there is rather than drop it.
-            if (_pending != null) SavePending(withResults: false);
+            if (_pending != null)
+            {
+                StopRecorder();
+                SavePending(withResults: false);
+            }
 
             // The arena the match is flown in: its config names the exact cell to stand when the
             // replay is watched, and its position is the origin the poses are recorded around.
@@ -159,6 +236,10 @@ namespace CosmicShore.Utility
 
             _recorder = new TheaterRecorder();
             _recorder.Begin(theater, ResolveSceneName(), (int)_gameData.GameMode, configName);
+            var replayConfig = ReplayConfigSO.Resolve();
+            if (replayConfig.RecordWorld) _recorder.RecordWorld(replayConfig.NewWorldRecorder());
+            // Every vessel's actions too, so the replay re-runs them on the real vessels (Docs/REPLAYS.md §6.3).
+            _recorder.RecordActions();
             _pending = NewSummary();
             _pending.ArenaOrigin = cell ? cell.transform.position : Vector3.zero;
 
@@ -196,8 +277,14 @@ namespace CosmicShore.Utility
             const int Attempts = 8;
             try
             {
-                for (int attempt = 0; attempt < Attempts && summary.Gates.Count == 0; attempt++)
+                for (int attempt = 0; attempt < Attempts && (summary.Gates.Count == 0 || summary.CourseSeed == 0); attempt++)
                 {
+                    if (summary.CourseSeed == 0) summary.CourseSeed = CourseSeedNow();
+                    if (summary.Gates.Count > 0)
+                    {
+                        if (summary.CourseSeed == 0) await UniTask.Delay(1000, ignoreTimeScale: true, cancellationToken: ct);
+                        continue;
+                    }
                     var rings = UnityEngine.Object.FindObjectsByType<RaceGateRing>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
                     for (int i = 0; i < rings.Length; i++)
                     {
@@ -215,6 +302,15 @@ namespace CosmicShore.Utility
                 }
             }
             catch (OperationCanceledException) { /* the recording stopped first */ }
+        }
+
+        /// <summary>The seed the running match's course was built from: Skim Race's track or a gate race's rings, else 0.</summary>
+        static int CourseSeedNow()
+        {
+            var skim = UnityEngine.Object.FindAnyObjectByType<SkimRaceController>();
+            if (skim && skim.TrackSeed != 0) return skim.TrackSeed;
+            var gates = UnityEngine.Object.FindAnyObjectByType<GateRaceController>();
+            return gates ? gates.CourseSeed : 0;
         }
 
         void HandleTurnEnded()
@@ -418,6 +514,7 @@ namespace CosmicShore.Utility
             _gameData.OnShowGameEndScreen.OnRaised -= HandleEndScreen;
             _gameData.OnSessionEnded.OnRaised -= HandleSessionEnded;
             Application.quitting -= HandleQuitting;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
 
             StopRecorder();
             _resultsCts?.Cancel();

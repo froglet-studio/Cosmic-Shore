@@ -46,6 +46,10 @@ end screen (OnShowGameEndScreen) -> results copied, files written, oldest pruned
 events. It is a lazy DI singleton registered in `AppManager.InstallBindings` and resolved at boot by an `[Inject]` field
 on `AppManager`, the same way `AnalyticsServiceFacade` is, because nothing else asks for it until the browser does.
 
+**The world is recorded too (2026-10-26, Theater P1).** Beside the vessel poses, `TheaterWorldRecorder` records every
+prism's birth, death, restoration and movement (section 6.2). It watches `PrismSpatialIndex`, the one place every real
+prism registers, so nothing is hooked into `Prism`.
+
 **Every peer records its own replay.** Poses already replicate, so nothing extra crosses the network. A guest's remote
 hulls are the interpolated poses it saw.
 
@@ -97,6 +101,12 @@ returns the summaries that are not on this device.
 | Arena Prism Stride | 1 | Every Nth prism of the arena's rails laid (1 = as the match laid them; the preview flies at 4) |
 | Arena Build Timeout Seconds | 45 | Real-time wait for the arena; after it the replay plays on the dark stage |
 | Arena Drain Prisms Per Frame | 150 | Prisms destroyed per frame while the arena comes down after watching |
+| Record World | on | Record the prism world beside the vessels (section 6.2) |
+| Record Moving Prisms | on | Also record prisms that move (swarm creatures, drifting walls); off keeps births and deaths only |
+| Move Min Seconds / Move Min Distance | 0.2 / 1 | A moving prism is recorded again only after both |
+| Move Jump Distance | 8 | A prism that jumps this far is recorded at once |
+| Max World Events | 250000 | Prism events one replay keeps (about 50 bytes each); past it new prisms stop being recorded, and the log says so once |
+| World Prism Material | empty | Material the recorded prisms are drawn with, tinted per domain (GPU instancing on); empty builds a lit URP material at runtime |
 
 Sample rate, length cap, ghosts and cameras stay on `TheaterConfigSO`.
 
@@ -185,8 +195,35 @@ If no arena can be stood (a mode with no preview definition, no scene cell to cl
 preview's pool-safe strike (`ModePreviewArena.BeginStrike`, a frame-sliced drain, `FinishStrike`).
 
 **What the arena is not**: the match's world as it was at each moment. It is the arena at its start - rails whole,
-ecology freshly grown - because the Theater records vessels only (P0). Prisms a Rhino popped, fauna that moved and
-crystals that were taken are the Theater's P1 / P2.
+ecology freshly grown. That is why a replay recorded from 2026-10-26 on does not use it (section 6.2); it stays the
+stage for older replays.
+
+### 6.2 The recorded world (Theater P1, 2026-10-26)
+
+A replay recorded with **Record World** on carries its prism world as the recording's second stream
+(`TheaterRecording.StreamWorld`, `TheaterWorld`). Such a replay **builds no arena**: it plays among exactly the prisms the
+match had, at each moment - the trails the pilots laid, the walls they popped, the rails, the flora and the fauna's body
+prisms - plus the recorded race rings, at the stage origin. Nothing waits, so it opens at once.
+
+- **Recording.** `TheaterWorldRecorder` is `PrismSpatialIndex.LifeObserver` while a match records. At Go it takes every
+  prism standing as a birth (`PrismSpatialIndex.VisitLive`), then logs births (`Register`), deaths (`MarkDestroyed`,
+  `Unregister`; a double report is dropped), restorations (`MarkRestored`) and moves (`UpdatePosition`,
+  `UpdatePositionsBatch`) on the vessels' `Time.time` clock. Creatures' body members are VIRTUAL entries (`RegisterVirtual`: swarm,
+  substrate, NCA and builder-colony fauna, no GameObject) and are recorded too (2026-10-27), as boxes sized from their
+  bounding radius; a member suspended while its proxy prism stands is a death, and its return a restoration where it
+  last was. Each birth takes a new id, because the index reuses a slot
+  once its prism is gone. Moves are thinned (Move Min Seconds and Distance, Move Jump Distance) and the whole log is
+  capped (Max World Events). With no observer the index pays one null check per call.
+- **On disk.** A birth or restoration is 51 bytes (time, id, position, rotation, size, domain, shield/danger flags),
+  a move 37, a death 9. An older build skips the stream by its length; a recording without it reads as before.
+- **Playback.** `TheaterWorldPlayback` keeps one list of matrices per (domain, shielded) and draws each with
+  `Graphics.RenderMeshInstanced` (a unit cube scaled to the prism's recorded box, slices of 1023): no GameObjects, no
+  colliders, nothing the game can touch. It follows the replay clock every frame; a backward seek or a loop replays the
+  log from the start in one pass. Shielded prisms are drawn lighter.
+- **What it shows and what it does not.** Prisms only, as domain-coloured boxes: not the prism shader's look, not the
+  cell's membrane and nucleus, not crystals, projectiles or the vessels' own effects (P2). Prisms that are not in the
+  spatial index (the menu's preview arenas, pictures) are not recorded, which is right: they were never in the match.
+
 
 **Every word is authored**: the row lines (`whenTemplate`, `dateFormat`, `winnerTemplate`, `noResultLine`,
 `detailTemplate`, `openFailedLine`) are fields on `ReplayBrowserModal`; the HUD's (`timeTemplate`, `speedTemplate`,
@@ -194,13 +231,62 @@ crystals that were taken are the Theater's P1 / P2.
 panel's texts; Delete's confirm word on `ReplayRowView`. The generator
 authors them and fails on an empty or non-ASCII one.
 
+### 6.3 The match itself, in its real scene (2026-10-27)
+
+Yash, after testing 6.1-6.2: "I want it exactly like Overwatch 2 ... the entire scene need to be the actual scene ...
+every single prism, every single game object". Decided with him the same day: **the recorded path plus the recorded
+actions**, in **the real scene**, skip back by **reload and fast-forward**.
+
+**WATCH now plays the match in its own scene.** `ReplayService.TryWatchMatch` -> `ReplayMatch.TryLaunch` writes what
+the Arcade's Start writes (the mode's card, the recorded intensity, the human seat's hull and domain on the host's
+Player, the AI seats' hulls and domains from the recorded tracks, the seat count) and forces the recorded course seed
+(`CourseSeedOverride`: Skim Race's track and the gate races' rings; `ReplaySummary.CourseSeed`, captured at Go). The
+scene loads as a match does: the cell and its ecology, the course, crystals, every seat spawned. Then
+`ReplayMatchDirector`:
+
+1. presses the HUD's own Ready once the intro shows it (the controller's Ready after 20 s if it never does);
+2. at Go turns the turn monitors off, so no score ends the replay; the recording's end does, then it returns to the
+   menu;
+3. pairs each recorded track with a live seat (the local player takes the recorded human, AI seats by hull and domain,
+   renamed to the recorded pilot) and stands every pilot down (autopilots off, input paused, flight model off with
+   `VesselTransformer.ToggleActive(false)`);
+4. every frame sets each vessel's pose, speed and course from its track, so its trail lays real prisms where the match
+   laid them, its jets and skims are its own, and it takes the crystals it took;
+5. re-runs every recorded action at its moment: a press or release through `R_VesselActionHandler.ReplayInput`
+   (resolved against the device it was recorded with), an autopilot's own action by name. So guns fire real
+   projectiles that break real prisms with their real effects, and boosts burn.
+
+**Actions are recorded beside the path** (`VesselActionTape`, `TheaterRecording.Actions`, stream 3): every input press
+and release that ran an action (humans, and the autopilots that press inputs) and every action an autopilot starts
+itself (the AI ability coroutine, the boost policies, a crew's triggers). An action another action dispatches (the
+Sparrow's and Grizzly's mode-switching fire) is not recorded: re-running the outer one re-runs it.
+
+**Controls** (none clash with the free camera): the replay opens on a chase camera behind the recorded pilot; **Y /
+Tab** cycles the other pilots and the free camera (sticks / WASD, mouse, shoulders for speed, triggers or Q/E to rise);
+**A / Space** pause; **D-pad left / right** or **J / L** skip 5 s (forward fast-forwards at 8x; back reloads the scene and
+fast-forwards to the moment); **D-pad up / down** or **= / -** speed (0.25x to 4x); **B / Escape** leaves.
+
+**Console**: `replay latest` (F7 console, development builds and Amoebius) watches the newest replay as the match;
+`replay list` lists them. A replay being watched is never recorded again.
+
+**What it is not, yet:**
+- **The ecology rolls its own dice.** Flora and fauna spawn and wander from the global `UnityEngine.Random` on each run
+  (`CellNetworkSync` says so), so creatures are the scene's own but not the match's exact ones. Making them match is
+  either seeding every life spawner or applying the recorded world (6.2) to the live scene, its own task.
+- **Crystal positions** are drawn per run from the same RNG; vessels on recorded paths still take the crystals they
+  reach. Recording the crystal slots and relocating them (`NetworkCrystalManager.RelocateCrystal`) is the next step.
+- **Analog inputs** (stick and trigger values) are not recorded: the pose is, and an action reads its vessel's pose.
+- **No on-screen replay bar yet** in the scene (the menu's playback HUD is the in-menu picture's); the game's own HUD
+  shows, with the live crystal counter.
+- Verified end to end in Amoebius (`Docs/claude/VIDEOS_AND_PREVIEWS.md`); not yet in the Unity editor.
+
 ## 7. Try it now
 
 1. Play Regatta to the end screen.
 2. Look in `<repo>/Recordings/` for the `.cstheater` and its `.replay.json`.
-3. Back on the menu: Home -> the pilot avatar (or Y) -> **MY REPLAYS** (or Arcade -> **REPLAYS**). The race is the first row; **WATCH** shows "Building the arena", then plays
-   the race inside Regatta's own rails and rings with the HUD over it; **B** or **EXIT** comes back to the list. (Still in the Regatta scene, the Theater's own key **8** plays
-   the newest replay too.)
+3. Back on the menu: Home -> the pilot avatar (or Y) -> **MY REPLAYS** (or Arcade -> **REPLAYS**). The race is the first
+   row; **WATCH** loads the race's own scene and plays the match in it (6.3), opening behind your pilot; **B** or
+   **Escape** returns to the menu. (In a development build, the F7 console's `replay latest` does the same.)
 
 The full pass/fail list is in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Match replays on Will's Theater" and "Replay
 browser", and "Replays inside the arena").
@@ -209,7 +295,8 @@ browser", and "Replays inside the arena").
 
 | Next | What | Notes |
 |---|---|---|
-| The world in a replay | Prisms, fauna, crystals, projectiles | The Theater's P1 and P2 (`Docs/THEATER.md` §6). Until then the arena in shot is the one at the race's start (section 6.1). |
+| The rest of the world | Crystals, projectiles, blasts, the cell's membrane and nucleus | The Theater's P2 (`Docs/THEATER.md` §6). Prisms are recorded (section 6.2). |
+| Prisms in their own look | The prism shader on recorded prisms | Recorded prisms are lit, domain-coloured boxes; assign **World Prism Material** for another look. |
 | Rings that move | Skim Race's crystal rings | Captured once, at Go; a ring that moves with its crystal later in the match stays at its first place. |
 | A mode with no preview definition | Maelstrom (and any mode the preview library lacks) | Recorded and watchable, on the dark stage. |
 | A controller-built arena | Astro League's goals, Scarab's hoops | Their structures are built by the match controller, which the preview does not model either (`Docs/ModePreview/ARCHITECTURE.md` §7); such a replay shows the cell around the ghosts. |
@@ -223,6 +310,10 @@ brought onto this branch unchanged apart from three things recorded in its landi
 `Docs/claude/DOCUMENTATION_INDEX.md`, and `TheaterDirector` gained `PlayFile(path)`. Check with Will before changing
 anything else in it. The replay player reads `TheaterPlayback`'s public API and configures its stage through a runtime
 copy of `TheaterConfigSO`; it changes nothing in the Theater.
+
+The world recording adds one hook to the prism spatial index (`PrismSpatialIndex.LifeObserver`, `VisitLive`, and the
+observer calls in `Register`, `Unregister`, `MarkDestroyed`, `MarkRestored`, `UpdatePosition` and
+`UpdatePositionsBatch`; the area Garrett and Yash work in). It changes nothing the index does.
 
 The arena is **Caleb's** mode preview (`ModePreviewArena`, `ModePreviewGateCourse`, `Docs/ModePreview/ARCHITECTURE.md`),
 used through its public API. The one change in it is an optional `prismStride` parameter on `ModePreviewArena.Stand`

@@ -49,6 +49,17 @@ namespace CosmicShore.Gameplay
         // SFX can tell a creature (fauna) kill from a generic block destroy. Reset on pool reuse.
         bool _destroyedByCreature;
 
+        /// <summary>The force that destroyed this prism (the destroyed channel's attacker name), or
+        /// null while it stands. An Ark's fall is credited to whoever took its LAST hull prism
+        /// (Docs/Pilots/ARTIFACTS.md §5). Reset on pool reuse.</summary>
+        public string DestroyerName { get; private set; }
+
+        /// <summary>Game time this prism was destroyed (meaningless while it stands).</summary>
+        public float DestroyedAt { get; private set; }
+
+        /// <summary>True when fauna took this prism (a creature kill credits nobody).</summary>
+        public bool DestroyedByCreature => _destroyedByCreature;
+
         // Set transiently by Damage the same way, so the destroyed-channel payload can say
         // whether DIRECT GUNFIRE killed this prism. It exists for the weapon that reloads by
         // destroying mass (VesselRearmOnPrismDestruction): a Sparrow's tank is filled by its
@@ -989,6 +1000,7 @@ namespace CosmicShore.Gameplay
             _ownerHidden = false;
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            DestroyerName = null;         // pool reuse: the next life has no destroyer yet
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
             // (AdmitTargetScale) must not carry that ceiling into its next life.
@@ -1020,6 +1032,7 @@ namespace CosmicShore.Gameplay
             // resetting here is what stops it resetting THIS life's culling envelope.
             _lastSuperShieldJiggleTime = float.NegativeInfinity;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
+            _carried = false;   // (and no parcel holds a pooled prism)
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
             IsLargest = false;
@@ -1465,12 +1478,40 @@ namespace CosmicShore.Gameplay
                 _colliderBeforeLodCull = blockCollider.enabled;
                 blockCollider.enabled = false;
             }
-            else if (!destroyed && _colliderBeforeLodCull)
+            else if (!destroyed && !_carried && _colliderBeforeLodCull)
             {
                 blockCollider.enabled = true;
             }
             _lodCulled = culled;
         }
+
+        bool _carried;
+        bool _colliderBeforeCarry;
+
+        /// <summary>
+        /// A payload parcel is riding a vessel (<see cref="PayloadCarrier"/>,
+        /// Docs/Pilots/ARTIFACTS.md §2): the prism keeps its mass, its domain and its place in the
+        /// spatial index, but its collider is held off so the hull carrying it never strikes its own
+        /// cargo. The LOD manager's restore respects the hold. Clear it before the prism goes back to
+        /// a pool.
+        /// </summary>
+        public void SetCarried(bool carried)
+        {
+            if (_carried == carried || !blockCollider) { _carried = carried; return; }
+            if (carried)
+            {
+                _colliderBeforeCarry = blockCollider.enabled;
+                blockCollider.enabled = false;
+            }
+            else if (!destroyed && !_lodCulled && _colliderBeforeCarry)
+            {
+                blockCollider.enabled = true;
+            }
+            _carried = carried;
+        }
+
+        /// <summary>True while a payload parcel holds this prism (<see cref="SetCarried"/>).</summary>
+        public bool IsCarried => _carried;
 
         /// <summary>True while this prism's collider is enabled (LOD telemetry).</summary>
         public bool ColliderEnabled => blockCollider && blockCollider.enabled;
@@ -1631,6 +1672,8 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = volumeAtDeath;
 
             destroyed = true;
+            DestroyerName = attackerPlayerName;
+            DestroyedAt = Time.time;
             _creationQueued = false;   // as the waiting coroutine did: killed while waiting never completes (a Restore registers itself)
             devastated = devastate;
 

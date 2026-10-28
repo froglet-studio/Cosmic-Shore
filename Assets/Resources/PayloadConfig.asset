@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b2c71456a7a491fb2c464e56ccb827b, type: 3}
+  m_Name: PayloadConfig
+  m_EditorClassIdentifier: 
+  grabReach: 160
+  parcelPrisms: 6
+  hullReserve: 12
+  carryOffset: {x: 0, y: 4.5, z: -3}
+  carrySpacing: 1.6
+  carryScale: 0.4
+  seatSpeed: 120
+  burstRadius: 60
+  burstEffects:
+  - {fileID: 11400000, guid: 21b48b5625e24e20b6d2edca3495fcc3, type: 2}
+  witherSeconds: 0.8
+  spillRadius: 40
+  pickupReach: 30
+  pickupSize: 3
+  pickupMaterial: {fileID: 2100000, guid: 15b92e56815b4aa19c8047de1bc2d75d, type: 2}
+  testCargo: []
+  grabbedLine: PAYLOAD ABOARD - RB TO RELEASE
+  releasedLine: 
+  outOfReachLine: BRING IT ALONGSIDE THE ARK FOR A PAYLOAD
+  holdEmptyLine: THE ARK HAS NO HULL TO SPARE
+  artifactTakenLine: ARTIFACT ABOARD - RB BESIDE YOUR ARK TO STOW IT
+  artifactStowedLine: ARTIFACT STOWED IN THE HOLD
+  artifactDroppedLine: ARTIFACT LET GO
+  bannerSeconds: 3
+  grabSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  releaseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  refusedSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  artifactTakenSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  artifactStowedSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

@@ -175,7 +175,7 @@ namespace CosmicShore.Gameplay
                     if (TraceFrames && _pilots.Count == 0) WriteProbe(p, pilot);
                     _pilots[p.Name] = pilot;
                     seat.policy = pilot.Config != null ? pilot.Config.PolicyVersion : "";
-                    seat.difficulty = AIDifficultyRules.Resolve(_gameData.RequestedAIDifficulty).ToString();
+                    seat.difficulty = _gameData.AIDifficultyFor(p).ToString();
                     if (string.IsNullOrEmpty(_race.aiDomain)) _race.aiDomain = p.Domain.ToString();
                 }
             }

@@ -189,7 +189,8 @@ namespace CosmicShore.Gameplay
         // Crystal COLOR signals WHO can collect it (element identity is shape, never color):
         //   • domain crystal (Jade/Ruby/Gold)  → that domain's crystal colors - only it collects
         //   • embedded lifeform heart          → blue-white neutral (BlueColors) - nobody collects
-        //   • free pickup (drop / omni / cell) → lime CTA (EnvironmentColors) - anyone collects
+        //   • free pickup (drop / omni / cell) → lime CTA (EnvironmentColors) - anyone collects;
+        //     each elemental in its own shade of that lime (EnvironmentColors.ElementalCrystalColors)
         // Applies to omni and all four elemental crystals. Colors come LIVE from the theme's
         // ColorSet, per-renderer via MaterialPropertyBlock - never renderer.material clones.
 
@@ -230,13 +231,20 @@ namespace CosmicShore.Gameplay
             bright = colors.EnvironmentColors.BrightCTA;
             dull = colors.EnvironmentColors.DarkCTA;
 
-            // The OMNI is the hero pickup and wears the CTA at full strength; the four
-            // elementals ride the same lime, dimmed, so the omni is the brightest crystal
-            // on screen. Brightness is the ONLY difference - a scalar cannot move the hue,
-            // so all five stay in one lime family by construction.
+            // The OMNI is the hero pickup and wears the CTA at full strength. Each of the four
+            // elementals wears its OWN lime (the Wrasse's four lasso shades, ElementalCrystalColors:
+            // distinct hue, saturation and value, all inside lime's boundary, so the Mass crystal
+            // no longer reads as the omni) at the CTA's brightness, then dimmed, so the omni stays
+            // the brightest crystal on screen.
             if (crystalProperties.IsElemental)
             {
-                float dim = colors.EnvironmentColors.ElementalCrystalDimming;
+                var env = colors.EnvironmentColors;
+                if (env.TryGetElementalCrystalColor(crystalProperties.Element, out var hue))
+                {
+                    bright = bright.WithHueOf(hue);
+                    dull = dull.WithHueOf(hue);
+                }
+                float dim = env.ElementalCrystalDimming;
                 bright = bright.ScaleRGB(dim);
                 dull = dull.ScaleRGB(dim);
             }

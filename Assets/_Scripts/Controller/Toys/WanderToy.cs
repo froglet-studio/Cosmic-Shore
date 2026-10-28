@@ -170,7 +170,9 @@ namespace CosmicShore.Gameplay
 
         static CellMiniatureBuilder.Miniature BuildArkMiniature(ArkwayConfig cfg, Domains domain, float radius)
         {
-            var lays = Ark.BuildHullLays(Mathf.Max(30f, cfg?.ArkHullLength ?? 110f), domain);
+            // The voyage's Ark in miniature: its model's sockets when it is drawn as one, the spindle otherwise.
+            var lays = ArkModel.SocketLays(cfg?.ArkModel, domain)
+                       ?? Ark.BuildHullLays(Mathf.Max(30f, cfg?.ArkHullLength ?? 110f), domain);
             return CellMiniatureBuilder.BuildFromLays(lays, radius, StationPointBudget, 1f, "MiniArk");
         }
 

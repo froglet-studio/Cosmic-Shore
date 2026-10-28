@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using System.Collections.Generic;
 using System.IO;
 using CosmicShore.Gameplay;
@@ -25,7 +26,7 @@ namespace CosmicShore.Utility
     /// <para>Costs one <c>List</c> walk per SAMPLE — not per frame — over at most eight vessels,
     /// and appends to lists that grow amortised. Nothing here allocates per frame.</para>
     /// </summary>
-    public class TheaterRecorder
+    public class TheaterRecorder : IVesselActionObserver
     {
         readonly TheaterRecording _recording = new();
         readonly Dictionary<Transform, TheaterTrack> _tracks = new();
@@ -35,6 +36,9 @@ namespace CosmicShore.Utility
         float _accumulator;
         float _recordedSeconds;
         float _limitSeconds = float.MaxValue;
+        TheaterWorldRecorder _world;
+        bool _watchingActions;
+        readonly Dictionary<TheaterTrack, int> _trackIndex = new();
 
         public bool IsRecording { get; private set; }
 
@@ -58,8 +62,14 @@ namespace CosmicShore.Utility
             _interval = 1f / hz;
             _limitSeconds = config != null ? Mathf.Max(1f, config.maxRecordMinutes) * 60f : 1800f;
 
+            _world?.Detach();
+            _world = null;
+            _recording.World = null;
+            StopWatchingActions();
             _recording.Tracks.Clear();
+            _recording.Actions.Clear();
             _tracks.Clear();
+            _trackIndex.Clear();
             _recording.SampleHz = hz;
             _recording.SceneName = sceneName ?? string.Empty;
             _recording.CellConfigName = cellConfigName ?? string.Empty;
@@ -114,19 +124,7 @@ namespace CosmicShore.Utility
                 if (vessel == null) continue;
                 if (!vessel.TryGetComponent(out IVesselStatus status)) continue;
 
-                if (!_tracks.TryGetValue(vessel, out var track))
-                {
-                    track = new TheaterTrack
-                    {
-                        PlayerName = string.IsNullOrEmpty(status.PlayerName) ? vessel.name : status.PlayerName,
-                        VesselType = (int)status.VesselType,
-                        Domain = (int)status.Domain,
-                        IsAI = status.Player != null && status.Player.IsInitializedAsAI
-                    };
-                    _tracks[vessel] = track;
-                    _recording.Tracks.Add(track);
-                }
-
+                var track = TrackFor(vessel, status);
                 track.Poses.Add(new TheaterPose
                 {
                     Time = now,
@@ -137,7 +135,85 @@ namespace CosmicShore.Utility
             }
         }
 
-        public void Stop() => IsRecording = false;
+        /// <summary>
+        /// Record the prism world beside the vessels (Theater P1), through <paramref name="world"/>,
+        /// until <see cref="Stop"/>. Call right after <see cref="Begin"/> so both streams start
+        /// together. False, and no world stream, when the scene has no prism index or another
+        /// recorder already watches it.
+        /// </summary>
+        public bool RecordWorld(TheaterWorldRecorder world)
+        {
+            if (!IsRecording || world == null || !world.Attach()) return false;
+            _world = world;
+            _recording.World = world.World;
+            return true;
+        }
+
+        TheaterTrack TrackFor(Transform vessel, IVesselStatus status)
+        {
+            if (_tracks.TryGetValue(vessel, out var track)) return track;
+            track = new TheaterTrack
+            {
+                PlayerName = string.IsNullOrEmpty(status.PlayerName) ? vessel.name : status.PlayerName,
+                VesselType = (int)status.VesselType,
+                Domain = (int)status.Domain,
+                IsAI = status.Player != null && status.Player.IsInitializedAsAI
+            };
+            _tracks[vessel] = track;
+            _trackIndex[track] = _recording.Tracks.Count;
+            _recording.Tracks.Add(track);
+            return track;
+        }
+
+        /// <summary>
+        /// Record every vessel's actions beside its poses (<see cref="VesselActionTape"/>), until <see cref="Stop"/>,
+        /// so the match replay re-runs them on the real vessels. False when another recorder already watches.
+        /// </summary>
+        public bool RecordActions()
+        {
+            if (!IsRecording) return false;
+            if (_watchingActions) return true;
+            if (VesselActionTape.Observer != null) return false;
+            VesselActionTape.Observer = this;
+            _watchingActions = true;
+            return true;
+        }
+
+        void StopWatchingActions()
+        {
+            if (_watchingActions && VesselActionTape.Observer == this) VesselActionTape.Observer = null;
+            _watchingActions = false;
+        }
+
+        void IVesselActionObserver.OnInputAction(IVesselStatus vessel, InputEvents input, byte device, bool down) =>
+            AddAction(vessel, new TheaterActionEvent
+            {
+                Kind = TheaterActionEvent.KindInput, Down = down, Input = (int)input, Device = device
+            });
+
+        void IVesselActionObserver.OnDirectAction(IVesselStatus vessel, ShipActionSO action, bool start) =>
+            AddAction(vessel, new TheaterActionEvent
+            {
+                Kind = TheaterActionEvent.KindDirect, Down = start, Action = R_VesselActionHandler.ReplayActionName(action)
+            });
+
+        void AddAction(IVesselStatus vessel, TheaterActionEvent e)
+        {
+            if (!IsRecording || vessel == null) return;
+            var root = vessel.Transform;
+            if (!root) return;
+            e.Time = Time.time;
+            e.Track = _trackIndex[TrackFor(root, vessel)];
+            _recording.Actions.Add(e);
+        }
+
+        public void Stop()
+        {
+            IsRecording = false;
+            _world?.Detach();
+            _world = null;
+            StopWatchingActions();
+        }
 
         /// <summary>
         /// Write the recording and return the path, or null with a reason. Never throws: a dev tool

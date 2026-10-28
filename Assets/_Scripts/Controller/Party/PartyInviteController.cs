@@ -157,7 +157,7 @@ namespace CosmicShore.Gameplay
             var ct = _cts.Token;
 
             // TODO(NetworkMonitor.BoostPolling): if a NetworkMonitor.BoostPolling(int s)
-            // hook is added (mirroring LobbyRefreshScheduler.Boost()), call it here
+            // hook is added, call it here
             // to tighten reachability polling for the duration of the accept flow.
             // Improves the `sinceChange=...` resolution in any NetDiag log emitted
             // by a catch in this flow. Exception classification works without it.

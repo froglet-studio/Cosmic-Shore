@@ -4518,7 +4518,7 @@ reaches the shared `CrystalCollect` category it always should have.
 **The flare composes with the omni/elemental brightness split** (the CTA-lime pass that landed
 alongside this branch): `ApplyCaptureVisual` scales whatever the crystal currently *wears*, and an
 elemental's resting colour is now the CTA dimmed by `EnvironmentColors.ElementalCrystalDimming`
-(0.45). So a captured elemental flares 3× **relative to itself** — which is the ratio the eye reads
+(0.45), in that element's own shade of lime since 2026-10-27 (`Docs/PALETTE.md` §2.11). So a captured elemental flares 3× **relative to itself** — which is the ratio the eye reads
 over a 0.44 s beat — peaking at ~1.35× the CTA, i.e. just above the omni's resting brightness rather
 than the 3× absolute the gain was first chosen against. That is the intended relationship (a crystal
 being taken briefly outshines the hero pickup), but it means `flareGain` and
@@ -7506,6 +7506,26 @@ the toy).
 The Ark MOVES the way fauna move: hull prisms ride one container transform and honour the
 mover contract per frame (`Prism.NotifyPositionChanged` — spatial index + shell + render
 entity), plus the cell re-bind on a 2.5 s cadence.
+
+**The Ark's model (Oct 2026)** lays the hull as 108 socket prisms (67 plain, 18 danger, 16
+shielded, 7 super-shielded; `ArkModel`, `Docs/VesselModels/ArkReverse.md` § In the game). They
+are the same conserved mass in the Ark's domain, through the same lay path, counted by the same
+integrity scan. The jaws' four blades are the first hull prisms that ride a moving BONE rather
+than the root. They sit in the hull list like the rest, so the Ark's own per-frame notify and
+re-bind reach them. When the puppetry moves the jaws while the Ark holds still, `ArkModel` honours
+the mover contract for those four itself, gated so a sub-0.005 change of input does not re-file
+them. A blade the hold hands to a payload carrier (`Ark.TakeHullPrisms`) leaves both the hull list
+and the model's riders, since it is the carrier's to move. No CPU animation of a prism is introduced: the riders move because their parent bone does,
+the fauna-body pattern.
+
+**The Ark's reactor (Oct 2026)** is the one place mass is MADE, by the designer's fourth sign-off
+(`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`): the omni crystal aboard regrows the Ark's own hull at a
+fixed rate. Every hull prism has a slot (where it was laid, on what), and on each beat of
+`ArkReactorSO.regrowSeconds` (2 s) `Ark.RegrowOne` grows one prism into the empty slot nearest the
+reactor, through `PrismTrailBuilder.LayOne` (`watchForReveal: false`, a continuous source like the
+wake). A beat with nothing to regrow is not saved up (`ArkReactor.Beat`). A slot the food web emptied
+keeps its place in the full-health count; a slot the hold emptied gets its plating back, so
+`TotalCount` rises with it. A fallen Ark never regrows, and the crystal is always one size.
 
 ### 41.3 Mass accounting, stated plainly
 

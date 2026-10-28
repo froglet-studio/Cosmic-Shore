@@ -213,6 +213,12 @@ def host_blocks(ids, element, parent_rt, host_frame, guid, gauge=False):
     ] + (gauge_blocks(ids, element) if gauge else [])
 
 
+def kit_container(img):
+    """An icon Image the icon kit turned into a container (rebind.py `pair`): no sprite, alpha 0."""
+    return img.replace(f"  m_Sprite: {{fileID: 21300000, guid: {'0' * 32}, type: 3}}", "  m_Sprite: {fileID: 0}").replace(
+        "  m_Color: {r: 1, g: 1, b: 1, a: 1}", "  m_Color: {r: 1, g: 1, b: 1, a: 0}")
+
+
 def bindings(icon_ids, gauge_ids=None):
     """Four entries in AbilityDisplayOrder; an open slot is bound with no icon (LOCKED card)."""
     gauge_ids = gauge_ids or {}
@@ -244,8 +250,10 @@ RHINO_PREFAB = f"{HUD_DIR}/RhinoHUDVariant.prefab"
 RHINO_ROOT_RT = "1335802071243411841"
 RHINO_VIEW = "5161366343835098938"
 RHINO_BASE = 7720000000000003000
-RHINO_ICONS = {CHARGE: "Rhino_SwordEnergy-PLACEHOLDER.png", MASS: "Rhino_Afterimage-PLACEHOLDER.png",
-               SPACE: "Rhino_BladeReach-PLACEHOLDER.png", TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
+# None: the icon kit owns that card (Tools/Build/icon_kit/specs/rhino.py) - its icon Image is a transparent, sprite-less
+# CONTAINER the view draws the art under (Charge: the katana; Mass: the afterimage trail; Space: Blade Reach; 2026-10-28), so this script
+# expects exactly that.
+RHINO_ICONS = {CHARGE: None, MASS: None, SPACE: None, TIME: None}
 # The Mass and Time hosts were the first pass (2026-10-06); Charge and Space were open design slots.
 RHINO_FIRST_PASS = (MASS, TIME)
 # Cards with a meter (2026-10-17): Charge fills with the sword's energy, Time with speed as a
@@ -266,8 +274,11 @@ def rhino(src):
     blocks, icon_ids, hosts = [], {}, []
     for element, png in RHINO_ICONS.items():
         ids = slot_ids(RHINO_BASE, element)
-        blocks += host_blocks(ids, element, RHINO_ROOT_RT, rhino_frame(element),
-                              sprite_guid("Rhino", png), gauge=element in RHINO_GAUGES)
+        slot = host_blocks(ids, element, RHINO_ROOT_RT, rhino_frame(element),
+                           sprite_guid("Rhino", png) if png else "0" * 32, gauge=element in RHINO_GAUGES)
+        if png is None:
+            slot[5] = kit_container(slot[5])
+        blocks += slot
         icon_ids[element] = ids["icon_img"]
         hosts.append(ids["host_rt"])
 
@@ -516,8 +527,13 @@ def main() -> int:
         ids = {el: slot_ids(RHINO_BASE, el)["icon_img"] for el in RHINO_ICONS}
         needles = [bindings(ids, rhino_gauge_ids())]
         for el, png in RHINO_ICONS.items():
-            needles += host_blocks(slot_ids(RHINO_BASE, el), el, RHINO_ROOT_RT, rhino_frame(el),
-                                   sprite_guid("Rhino", png), gauge=el in RHINO_GAUGES)
+            blocks = host_blocks(slot_ids(RHINO_BASE, el), el, RHINO_ROOT_RT, rhino_frame(el),
+                                 sprite_guid("Rhino", png) if png else "0" * 32, gauge=el in RHINO_GAUGES)
+            if png is None:
+                # the kit's container: no sprite, and its RectTransform holds the kit's parts, so it is not checked
+                blocks[5] = kit_container(blocks[5])
+                del blocks[3]
+            needles += blocks
         late = [el for el in RHINO_ICONS if el not in RHINO_FIRST_PASS and f"&{ids[el]}\n" not in have]
         stale = any(n not in have for n in needles)
         if stale and not CHECK:

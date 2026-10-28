@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     /// The energize ritual's phases, driven by <see cref="ShieldSkimmerScaleDriver"/> and
     /// read by <see cref="RhinoSwordFXController"/> for the blade's look:
     /// Idle → (hold the both-triggers chop stance) Charging → (hold met) Energized —
-    /// danger red, pops super-shielded prisms, stays lit for a tail after leaving the
+    /// danger red, pops super-shielded prisms (with the Space L5), stays lit for a tail after leaving the
     /// stance → Cooldown → Idle.
     /// </summary>
     public enum RhinoSwordEnergizePhase
@@ -26,7 +26,8 @@ namespace CosmicShore.Gameplay
     ///
     /// The sword's ORDINARY cutting has NO gate: it always damages prisms on contact
     /// (normal prisms explode, shielded prisms lose their shield). The one gated act is
-    /// popping a SUPER-shielded prism, which requires the blade to be ENERGIZED: hold the
+    /// popping a SUPER-shielded prism, which requires the Space level-5 upgrade
+    /// (<see cref="SuperShieldUpgradeActive"/>) and the blade to be ENERGIZED: hold the
     /// both-triggers lower/chop stance (<see cref="SetInStance"/>) to charge; the blade
     /// ignites, stays lit for a tail after leaving the stance, then cools. There is no energy
     /// meter (discarded 2026-10-26): the cooldown is the only limit. An OMNI crystal SURGES the
@@ -39,14 +40,18 @@ namespace CosmicShore.Gameplay
         /// key is live (contact pops super-shielded prisms instead of binding in them).</summary>
         bool IsEnergized { get; }
 
+        /// <summary>True when this vessel has the super-shield upgrade (the Rhino's Space level-5,
+        /// Shield Breaker, 2026-10-26). Without it the blade binds in super-shielded prisms,
+        /// energized or not; with it an energized blade pops them.</summary>
+        bool SuperShieldUpgradeActive { get; }
+
         /// <summary>Called the instant the sword destroys a prism, for impact feedback:
         /// a blade flash + a crackle spark at the blade point nearest the prism, plus a
         /// local camera shake when a super-shield popped.</summary>
         void NotifyPrismDestroyed(bool superShielded, Vector3 prismWorldPosition);
 
-        /// <summary>Called when a NON-energized blade touches a super-shielded prism (the
-        /// BounceBack recoil): a dim spark at the contact, teaching that the blade needs
-        /// the energize stance to pop this.</summary>
+        /// <summary>Called when a blade that cannot pop it (not energized, or no Space L5) touches a
+        /// super-shielded prism: a dim spark at the contact, the entry beat of a bind.</summary>
         void NotifyPopDenied(Vector3 prismWorldPosition);
 
         /// <summary>True while an omni-crystal SURGE holds the blade energized (<see cref="Surge"/>).
