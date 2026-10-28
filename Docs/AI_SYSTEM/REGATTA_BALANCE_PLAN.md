@@ -52,7 +52,7 @@ Regatta's own variants (`<policy>_Regatta`, the drive each hull flies IN Regatta
 
 **Promotion** (Yash decides): `compute.py promote <job>` shows the team's best; if Yash agrees, the fields are written
 into `Assets/Resources/AIBoostPolicies/<policy>_<Mode>.asset` with the learner's writer (`learn_drives_from_flights.py`),
-never by hand, on `Ys-bleeding-edge`; the hourly AI learning sweep keeps imitating people on top of it wherever they
+never by hand, on the `ai` branch (`Docs/Compute/README.md` section 7.1); the hourly AI learning sweep keeps imitating people on top of it wherever they
 play. Each promotion adds an editor race to `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## Stage 2: the course

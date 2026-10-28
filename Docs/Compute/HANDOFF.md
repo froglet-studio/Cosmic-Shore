@@ -63,6 +63,18 @@ code ref, so it is now refused, and `Tools/NCA` is not on `bleeding-edge`), and 
 `torch.load` on checkpoints relayed from other machines' `compute/*` branches (unsafe on torch < 2.6 unless
 `weights_only=True`). Fix both NCA points before that job goes `ready`.
 
+### Foundations (Shombith leads Froglet Compute, 2026-10-28)
+
+- **`origin/ai`, the AI's own branch**, created from `bleeding-edge` (measured: `Ys-bleeding-edge` had no AI change
+  `bleeding-edge` lacked; its 74 extra commits were the Meerkat, the Vessel Studio, shaders and pilot swap).
+  `Tools/Compute/ai_branch.py` keeps it current (README section 7.1); its self-test proves an AI change comes over, a
+  non-AI change does not (a negative control that fails when every path counts as AI), a second sync is a no-op and a
+  both-sides edit is refused.
+- Every AI job now reads `origin/ai`; `Ys-bleeding-edge` is no longer a queue ref or a code ref. `drive-rhino-headlong`
+  ran on `ai` with the same epoch and shipped score (4.6172) as on `Ys-bleeding-edge`.
+- Waiting on Yash: moving the hourly AI learning sweep and his AI sessions to `ai`. Until then the sync carries their
+  AI work across.
+
 ## 4. Decisions that are yours
 
 - **Merge or not**, and onto what (`bleeding-edge` directly, or through your own branch).

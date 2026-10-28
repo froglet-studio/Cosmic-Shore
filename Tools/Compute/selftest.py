@@ -10,6 +10,7 @@
        added, no extension written to its config). The second machine runs through the self-updating supervisor, so the
        export of Tools/Compute from bleeding-edge is exercised too.
     6. the trust rules (compute_lib.untrusted): what a queue ref may make a worker execute, with negative controls
+    7. the ai branch sync (ai_branch.self_test): AI changes come over from Ys-bleeding-edge, non-AI changes do not
 """
 import json
 import os
@@ -113,7 +114,7 @@ def end_to_end():
 def trust_rules():
     """What a queue ref may make a worker execute. Each case is (job, why it must or must not run)."""
     bad = []
-    search = {"kind": "search", "ref": "origin/Ys-bleeding-edge"}
+    search = {"kind": "search", "ref": L.AI_REF}
     command = {"kind": "command"}
     cases = [
         (dict(search, _ref="origin/compute-queue"), True, "a search job from compute-queue on a code ref"),
@@ -121,7 +122,8 @@ def trust_rules():
         (dict(search, _ref="origin/compute-queue", ref="origin/compute/x/y"), False, "a job whose code ref is a results branch"),
         (dict(command, _ref="origin/bleeding-edge"), True, "a command job from bleeding-edge"),
         (dict(command, _ref="origin/compute-queue"), False, "a command job from compute-queue"),
-        (dict(command, _ref="origin/Ys-bleeding-edge"), False, "a command job from Ys-bleeding-edge"),
+        (dict(command, _ref=L.AI_REF), False, "a command job from the ai branch"),
+        (dict(search, _ref="origin/bleeding-edge", ref="origin/Ys-bleeding-edge"), False, "a job whose code is a person's own branch"),
         (dict(command, ref="origin/cece/some-branch"), True, "a job from the person's own working tree (--local)"),
     ]
     for job, runs, what in cases:
@@ -161,6 +163,14 @@ def run(quick=False):
     trust = trust_rules()
     print("trust rules: " + ("ok" if not trust else "FAILED"))
     failures += trust
+    if not quick:
+        import contextlib
+        import io
+        import ai_branch
+        with contextlib.redirect_stdout(io.StringIO()):
+            ai = ai_branch.self_test()
+        print("ai branch sync: " + ("ok (AI changes come over, others do not, conflicts stop it)" if not ai else "FAILED"))
+        failures += ai
     if not quick:
         e2e = end_to_end()
         print("end to end: " + ("ok (two machines, one remote, the board merged them, the checkout untouched)" if not e2e else "FAILED"))

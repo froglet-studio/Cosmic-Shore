@@ -39,7 +39,7 @@ a job yet: write it as a `proposed` job and say whose call it is.
   the field by making the race trivially short (keep the length), by removing the hairpins (keep the character), by
   breaking the rails (keep them legal). Think adversarially: the searcher WILL find the loophole.
 - **Prefer the shipped model to a new one.** Import the sim from `<ctx.root>/Tools/Build` (so a job pinned to
-  `Ys-bleeding-edge` scores that branch's code); never copy it. If the sim reads a fixed input (a course file),
+  `ai` scores that branch's code); never copy it. If the sim reads a fixed input (a course file),
   swap the reader for the call (`race_models.use_course`) rather than editing it.
 - **Deterministic**: the same params give the same loss (fixed seeds inside). Noise makes CMA-ES chase luck.
 - **A model's limits travel with its numbers**: put them in `metrics.limits` (copy `race_models.MODEL_LIMITS` or
@@ -80,9 +80,9 @@ python3 Tools/Compute/compute.py validate && python3 Tools/Compute/compute.py se
 
 Set `status: ready` when the evaluator is on the job's queue ref and the short session improved on the baseline (or
 proved the baseline is already the optimum: that is a finding too). Set `ref` to the branch whose game code it must
-score (`origin/Ys-bleeding-edge` for AI, `origin/bleeding-edge` otherwise), `requires` to what it imports, `paths` to
+score (`origin/ai` for AI, `origin/bleeding-edge` otherwise), `requires` to what it imports, `paths` to
 what it reads, `value` honestly (0-10), and write `promote`: what changes, with which tool, and who must agree.
-The job file merges like any change (README section 7); an AI job rides `Ys-bleeding-edge`.
+The job file merges like any change (README section 7); an AI job rides `ai` (README section 7.1).
 
 ## 7. Patterns worth stealing
 

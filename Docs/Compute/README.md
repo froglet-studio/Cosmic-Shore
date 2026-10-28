@@ -45,8 +45,8 @@ needs; numpy unlocks the Regatta jobs, torch the NCA trainings, Node.js the lab 
   (Until 2026-10-26 this path never ran: its existence check read `git cat-file -e`'s empty output as "missing". The
   self-test's second machine now runs through it.)
 - **Runs only code the team already runs** (section 7, `compute_lib.untrusted`): a job's code comes from
-  `bleeding-edge` or `Ys-bleeding-edge`, and a command job (an argv run as you) only from a job file on
-  `bleeding-edge`.
+  `bleeding-edge` or `ai` (no person's own branch), and a command job (an argv run as you) only from a job file
+  on `bleeding-edge`.
 - **Stops cleanly**: `compute.py uninstall`, then delete `~/.froglet-compute`. (A machine that ran the first version
   also has `extensions.worktreeConfig = true` in its `.git/config` and worktrees under `~/.froglet-compute/wt/`:
   `git worktree prune` after deleting the folder; the extension is harmless on any git from 2.20 on.)
@@ -62,6 +62,7 @@ needs; numpy unlocks the Regatta jobs, torch the NCA trainings, Node.js the lab 
 | `Tools/Compute/board.py` | every machine's results merged: `Docs/Compute/BOARD.md` + `board.json` (generated) |
 | `Tools/Compute/scout.py` | the opportunity lenses: `Docs/Compute/OPPORTUNITIES.md` + `opportunities.json` (generated) |
 | `Tools/Compute/install.py` | the OS registration for set-and-forget |
+| `Tools/Compute/ai_branch.py` | keeps `origin/ai`, the AI's own branch, current (section 7.1) |
 | `Tools/Compute/selftest.py` | every piece, then two simulated machines against a throwaway remote |
 | `Tools/Compute/evaluators/` | the loss functions, one module each (section 6) |
 | `Docs/Compute/jobs/*.json` | the queue (section 4) |
@@ -79,7 +80,7 @@ One JSON file per job in `Docs/Compute/jobs/<id>.json` (`compute.py new <id> --e
 | `kind` | `search` (an evaluator scores points the searcher proposes) or `command` (a long training run in exclusive units) |
 | `status` | `ready` (runnable), `proposed` (needs a person's or session's yes), `blocked` (waits; `blocked_reason` says on what), `paused`, `converged`, `promoted`, `retired` |
 | `value` | 0-10: what a converged answer is worth to the game |
-| `ref` | the git ref the job's GAME code is read at (`origin/Ys-bleeding-edge` for AI jobs, so they race the newest AI) |
+| `ref` | the git ref the job's GAME code is read at (`origin/ai` for AI jobs, so they race the newest AI; `origin/bleeding-edge` otherwise) |
 | `paths` | the folders the job needs from `ref`, exported (the evaluator's own `PATHS` are added) |
 | `requires` | capabilities: `python3`, `numpy`, `torch`, `cuda`, `node`, `dotnet8`, `bash` |
 | `after` | jobs that must converge first (a plan's stages) |
@@ -97,7 +98,7 @@ their reason shown.
 
 **Epochs.** Results are comparable only when the space, the evaluator (its `VERSION`) and its input files (`inputs()`,
 hashed from the job's checkout) are the same. Change any of them and a new epoch starts; the old one stays on the
-board as history. So a sim edited on `Ys-bleeding-edge` never mixes its numbers with the old sim's.
+board as history. So a sim edited on `ai` never mixes its numbers with the old sim's.
 
 ## 5. How the search is shared
 
@@ -128,7 +129,7 @@ A module in `Tools/Compute/evaluators/`. The worker imports it in each pool proc
 | `self_test() -> [failures]` | yes | it reproduces something known, and a negative control fails (`compute.py self-test` runs it) |
 
 `ctx = {root: the job's checkout, args: evaluator.args + _space + _job, tools: Tools/Compute}`. Evaluators import the
-sims from `<root>/Tools/Build`, so a job pinned to `Ys-bleeding-edge` scores that branch's sims. **A model's limits
+sims from `<root>/Tools/Build`, so a job pinned to `ai` scores that branch's sims. **A model's limits
 travel with its numbers**: every evaluator puts them in `metrics.limits`, and nothing promotes a number without them.
 
 The evaluators today:
@@ -145,21 +146,39 @@ The evaluators today:
 
 ## 7. The queue refs, and who writes them
 
-Workers read jobs from `origin/bleeding-edge`, `origin/Ys-bleeding-edge` and `origin/compute-queue` (a job on two refs:
-the later `updated` wins). A job is added like any other change: on a branch that merges into one of those. AI jobs
-ride `Ys-bleeding-edge` (Yash's AI branch, `Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`). `compute-queue` is the scout sweep's
+Workers read jobs from `origin/bleeding-edge`, `origin/ai` and `origin/compute-queue` (a job on two refs: the later
+`updated` wins). A job is added like any other change: on a branch that merges into one of those. AI jobs ride `ai`
+(section 7.1). `compute-queue` is the scout sweep's
 own branch (section 9): it carries only `Docs/Compute/**` - job files, the board, the opportunities - never game code,
 so it needs no pull request. Before this system is on `bleeding-edge`, test a queue with `--queue <your branch>`.
 
 **What a worker will execute** is narrower than what it reads (`compute_lib.CODE_REFS`, `COMMAND_REFS`,
 `untrusted`), because every idle machine runs it with its person's credentials:
 
-- a job's `ref` (where its sims and command come from) must be `origin/bleeding-edge` or `origin/Ys-bleeding-edge`,
-  the branches the team already runs; a job pointing anywhere else shows `not run:` in `top` with the reason;
-- a `command` job runs only when its job file came from `bleeding-edge` (reviewed pull requests). From
-  `Ys-bleeding-edge`, `compute-queue` or a `--queue` test branch it is refused, since those are pushed without review
-  and an argv is arbitrary code;
+- a job's `ref` (where its sims and command come from) must be `origin/bleeding-edge` or `origin/ai`, the branches
+  the team shares; a job pointing anywhere else, a person's own branch included, shows `not run:` in `top` with the
+  reason;
+- a `command` job runs only when its job file came from `bleeding-edge` (reviewed pull requests). From `ai`,
+  `compute-queue` or a `--queue` test branch it is refused, since those are pushed without review and an argv is
+  arbitrary code;
 - jobs read from the working tree (`--local`, the self-test) are the person's own and are not restricted.
+
+### 7.1 The `ai` branch (Shombith, 2026-10-28)
+
+AI work used to live on `Ys-bleeding-edge`, Yash's own integration branch, which also carries his unpromoted
+features (on 2026-10-28: 74 commits ahead of `bleeding-edge`, the Meerkat, the Vessel Studio, shaders, pilot swap, and
+no AI change `bleeding-edge` lacked). `origin/ai` is the AI's own branch: `bleeding-edge` plus AI work, owned by no
+person. Every compute AI job reads it.
+
+- `python3 Tools/Compute/ai_branch.py status` shows how far `ai` is behind and what AI work is waiting;
+  `sync --push` brings it in: it merges `bleeding-edge` into `ai`, then replays ONLY the AI paths (`AI_PATHS` in the
+  tool) that changed on `Ys-bleeding-edge` since the last sync (the `AI-Sync-Ys:` trailer). Plumbing only: nobody's
+  checkout is touched. A file edited differently on both sides stops it; that one is resolved by a pull request into
+  `ai`.
+- The hourly AI learning sweep (`Docs/AI_SYSTEM/AUTO_LEARNING.md`, Yash's) still pushes to `Ys-bleeding-edge`, so the
+  sync is the bridge until the sweep pushes to `ai`. Moving the sweep is the next step and needs Yash.
+- `ai` reaches `bleeding-edge` by an ordinary pull request.
+- Compute promotions (section 8) are written on `ai`.
 
 ## 8. Promotion: a converged answer reaches the game only through its owner
 

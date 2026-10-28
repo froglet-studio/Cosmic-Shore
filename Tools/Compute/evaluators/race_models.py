@@ -1,7 +1,7 @@
 """Race any hull on any circuit with the models the AI team already trusts, for the compute evaluators.
 
 The models are NOT copied here: every one is the shipped offline model in Tools/Build, imported from the job's own
-checkout (so a job pinned to Ys-bleeding-edge races Ys-bleeding-edge's AI):
+checkout (so a job pinned to the ai branch races its AI):
 
     rhino_drive    Tools/Build/rhino_drive_sim.py    RampBoostAIPolicySO's ramp / brake drive (Policy fields)
     manta_drive    Tools/Build/manta_drive_sim.py    the Soar drive's stick bands (and Tuning when `aware`)

@@ -43,7 +43,7 @@
  ],
  "plan": "regatta-balance",
  "promote": "A PROPOSAL for the AI owner (Yash): if they agree, write the best fields into Assets/Resources/AIBoostPolicies/<the Manta's policy>_Regatta.asset with the learner's writer (learn_drives_from_flights.py), never by hand; the AI learning sweep keeps imitating people on top of it.",
- "ref": "origin/Ys-bleeding-edge",
+ "ref": "origin/ai",
  "requires": [
   "python3",
   "numpy"
@@ -66,6 +66,6 @@
  "stage": 1,
  "status": "ready",
  "title": "Manta AI drive for Regatta, I1-I4 (the Regatta variant stage 2 races)",
- "updated": "2026-10-26",
+ "updated": "2026-10-28",
  "value": 7
 }

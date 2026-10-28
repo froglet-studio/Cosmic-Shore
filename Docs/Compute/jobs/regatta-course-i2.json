@@ -63,7 +63,7 @@
  ],
  "plan": "regatta-balance",
  "promote": "A PROPOSAL for Yash (Regatta's course and AI): the best settings become RegattaCourse.ForIntensity's row for this intensity (and its seed); then regatta_course_harness/run.sh and export_course.sh regenerate the measurements, author_regatta_assets.py --check, and the Regatta AIs are re-raced in the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md).",
- "ref": "origin/Ys-bleeding-edge",
+ "ref": "origin/ai",
  "requires": [
   "python3",
   "numpy"
@@ -171,6 +171,6 @@
  "stage": 2,
  "status": "blocked",
  "title": "The Regatta I2 circuit that levels the field",
- "updated": "2026-10-26",
+ "updated": "2026-10-28",
  "value": 9
 }

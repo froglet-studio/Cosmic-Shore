@@ -241,7 +241,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     def common(p):
-        p.add_argument("--queue", nargs="*", help="queue refs (default: bleeding-edge, Ys-bleeding-edge, compute-queue)")
+        p.add_argument("--queue", nargs="*", help="queue refs (default: bleeding-edge, ai, compute-queue)")
         p.add_argument("--local", action="store_true", help="read jobs from this checkout's Docs/Compute/jobs")
         p.add_argument("--no-fetch", action="store_true")
 

@@ -423,7 +423,7 @@ def propose_drive_job(o):
            f"races the {s['hull']}'s own Time game well at every intensity, learned where people do not play.",
            "asked_by": "the scout (coverage lens)", "area_owner": "Yash (vessel AI)", "plan": "regatta-balance", "stage": 1,
            "kind": "search", "status": "ready", "value": o["value"], "updated": time.strftime("%Y-%m-%d"),
-           "ref": "origin/Ys-bleeding-edge", "requires": ["python3", "numpy"], "after": [],
+           "ref": L.AI_REF, "requires": ["python3", "numpy"], "after": [],
            "evaluator": {"module": "drive_fit", "args": {"hull": s["hull"], "model": s["model"], "mode": s["steering"],
                                                          "intensities": [1, 2, 3, 4], "seeds": [1, 2, 3],
                                                          "shipped": s.get("shipped", ""), "limit": 400}},

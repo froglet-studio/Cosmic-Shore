@@ -47,7 +47,7 @@
  ],
  "plan": "regatta-balance",
  "promote": "A PROPOSAL for the hulls' owners (who_works_where.py names them): the levels become each vessel's elemental baseline (its Time starting level), through author_regatta_assets.py's StartingElements and the vessel's own assets, never by hand; then regatta_balance.py and the editor confirm the spread.",
- "ref": "origin/Ys-bleeding-edge",
+ "ref": "origin/ai",
  "requires": [
   "python3",
   "numpy"
@@ -100,6 +100,6 @@
  "stage": 3,
  "status": "blocked",
  "title": "The smallest elemental baseline that closes Regatta's last gap",
- "updated": "2026-10-26",
+ "updated": "2026-10-28",
  "value": 8
 }

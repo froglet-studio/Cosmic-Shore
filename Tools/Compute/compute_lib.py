@@ -28,13 +28,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.environ.get("FROGLET_COMPUTE_REPO") or os.path.dirname(os.path.dirname(HERE))
 JOBS_DIR = "Docs/Compute/jobs"
 RESULTS_PREFIX = "compute"              # refs/heads/compute/<user>/<host>
-QUEUE_REFS = ("origin/bleeding-edge", "origin/Ys-bleeding-edge", "origin/compute-queue")
+# The AI's own branch: bleeding-edge plus AI work, owned by no person (Tools/Compute/ai_branch.py keeps it current).
+AI_REF = "origin/ai"
+QUEUE_REFS = ("origin/bleeding-edge", AI_REF, "origin/compute-queue")
 # What a worker EXECUTES, as opposed to what it reads. A job file may sit on any queue ref, but the code it runs comes
-# only from refs the team already runs: bleeding-edge (every change a reviewed pull request) and Ys-bleeding-edge (the
-# AI branch everyone plays). compute-queue is pushed by the scout sweep without a pull request, so a job from it can
-# only point a shipped evaluator at one of those refs; a command job (an argv run as the person) only comes from
-# bleeding-edge.
-CODE_REFS = ("origin/bleeding-edge", "origin/Ys-bleeding-edge")
+# only from refs the team shares: bleeding-edge (every change a reviewed pull request) and ai (bleeding-edge plus AI
+# work). No person's own branch is one of them. compute-queue is pushed by the scout sweep without a pull request, so
+# a job from it can only point a shipped evaluator at one of those refs; a command job (an argv run as the person)
+# only comes from bleeding-edge.
+CODE_REFS = ("origin/bleeding-edge", AI_REF)
 COMMAND_REFS = ("origin/bleeding-edge",)
 STATUSES = ("ready", "proposed", "blocked", "converged", "promoted", "retired", "paused")
 RUNNABLE = ("ready",)

@@ -14,7 +14,7 @@ next step it can, and leaves the decisions to them.
 ## 1. Where does it stand? (start of every session)
 
 ```
-git fetch origin && python3 Tools/Compute/compute.py board --queue Ys-bleeding-edge bleeding-edge compute-queue
+git fetch origin && python3 Tools/Compute/compute.py board --queue ai bleeding-edge compute-queue
 python3 Tools/Compute/compute.py scout | sed -n '/The Regatta balance plan/,/^## /p'
 ```
 
@@ -33,7 +33,7 @@ whether it converged; what blocks the next stage; the ONE next step and who take
 - **People's play stays the primary teacher** where they play (`AUTO_LEARNING.md`). Compute fills the intensities
   nobody plays and checks the person-learned drives; when the two disagree, show Yash both numbers and the races.
 - **Promotion (Yash's call)**: `compute.py promote drive-<hull>-<mode>`; with his yes, write the fields into
-  `<policy>_<Mode>` with the learner's writer on `Ys-bleeding-edge`, run the gates, add an editor race to
+  `<policy>_<Mode>` with the learner's writer on `ai` (`Tools/Compute/ai_branch.py sync --push` first), run the gates, add an editor race to
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`, set the job `promoted`.
 - **Done when** every Regatta hull (but the held Stoat) has a promoted drive that finishes all four intensities of its
   own game in the model AND an editor race agrees.
@@ -42,7 +42,7 @@ whether it converged; what blocks the next stage; the ONE next step and who take
 
 - **Jobs** `regatta-course-i1..i4` (`regatta_course`: ln(slowest/fastest) with rail, length and character penalties).
 - **Unblock** (a session, once stage 1 is done): set each job's `evaluator.args.roster` to the promoted drive assets,
-  set `status: ready`, push on `Ys-bleeding-edge`. Tell Yash the stage moved.
+  set `status: ready`, push on `ai`. Tell Yash the stage moved.
 - **Promotion (Yash's call)**: the settings become `RegattaCourse.ForIntensity`'s row and seed (Yash's code; the
   generator is shared with Headlong and Redline through `HeadlongCircuit`, so change only Regatta's settings); then
   `regatta_course_harness/run.sh` -> `regatta_course_measurements.json`, `export_course.sh` -> `course.js`,
