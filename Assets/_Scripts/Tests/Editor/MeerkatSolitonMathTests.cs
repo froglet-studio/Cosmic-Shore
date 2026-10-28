@@ -8,68 +8,16 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The Meerkat's kit arithmetic (<see cref="MeerkatSolitonMath"/>; Garrett's design, approved by Yash 2026-10-28) held to
     /// the Vessel Studio page it was ported from (<c>Docs/Studios/VesselStudio/meerkat.html</c>, "Garrett's kit"). Every golden
-    /// number came from running the page's OWN <c>kitThroat</c>, <c>lerpLv</c>, <c>perpBasis</c> and <c>kitPortal</c>
-    /// arithmetic in node on the same inputs, at the page's shipped numbers (2026-10-28: throat 8, mouth 26, area 6,000 to
-    /// 18,000 u² by Space, zap 0.1 to 0.25 of a petal by Charge, portal 1.5 × the exit radius). A page change that moves one of
-    /// these is a port to redo, not a test to loosen. Runs outside Unity too: <c>Tools/Build/meerkat_kit_harness/run.sh</c>.
+    /// number came from running the page's OWN <c>lerpLv</c>, <c>perpBasis</c> and <c>kitPortal</c> arithmetic in node on
+    /// the same inputs, at the page's shipped numbers (2026-10-28: zap 0.1 to 0.25 of a petal by Charge, portal 1.5 × the exit
+    /// radius). A page change that moves one of these is a port to redo, not a test to loosen. The surface area's goldens are
+    /// round 23's, in <c>MeerkatWormholeMathTests.SurfaceAreaThroat_MatchesThePage</c>. Runs outside Unity too:
+    /// <c>Tools/Build/meerkat_kit_harness/run.sh</c>.
     /// </summary>
     [TestFixture]
     public class MeerkatSolitonMathTests
     {
         const float Tol = 1e-3f;
-        const float K = 26f / 8f;   // the page's k: mouthDiameter / throatDiameter
-
-        static float AreaAt(int level) => 6000f + (18000f - 6000f) * level / 10f;
-
-        // ------------------------------------------------------------------ Space: surface area to throat
-
-        [Test]
-        public void AreaFactor_IsThePages()
-        {
-            Assert.AreEqual(3.25f, MeerkatSolitonMath.MouthRatio(8f, 26f), 1e-6f, "k");
-            Assert.AreEqual(1.9236820f, MeerkatSolitonMath.AreaFactor(K), 1e-5f, "g(k)");
-        }
-
-        [Test]
-        public void Throat_FromSurfaceArea_MatchesThePage()
-        {
-            // (Space level, tunnel length) -> the page's kitThroat b (radius); its mouth is k x b
-            var cases = new (int lv, float L, float b, float m)[]
-            {
-                (0, 60f, 8.273454f, 26.888725f), (0, 200f, 2.482036f, 8.066618f), (0, 400f, 1.241018f, 4.033309f),
-                (0, 757f, 0.655756f, 2.131207f), (5, 60f, 16.546908f, 53.777451f), (5, 200f, 4.964072f, 16.133235f),
-                (5, 400f, 2.482036f, 8.066618f), (5, 757f, 1.311512f, 4.262414f), (10, 60f, 24.820362f, 80.666176f),
-                (10, 200f, 7.446109f, 24.199853f), (10, 400f, 3.723054f, 12.099926f), (10, 757f, 1.967268f, 6.393620f),
-            };
-            foreach (var c in cases)
-            {
-                float b = MeerkatSolitonMath.ThroatRadius(AreaAt(c.lv), c.L, K);
-                Assert.AreEqual(c.b, b, Tol, $"throat at Space {c.lv}, L {c.L}");
-                Assert.AreEqual(c.m, K * b, Tol, $"mouth at Space {c.lv}, L {c.L}");
-            }
-        }
-
-        [Test]
-        public void Throat_KeepsTheAreaWhateverTheLength()
-        {
-            foreach (float L in new[] { 60f, 137f, 400f, 757f })
-            {
-                float b = MeerkatSolitonMath.ThroatRadius(12000f, L, K);
-                Assert.AreEqual(12000f, MeerkatSolitonMath.SurfaceArea(b, L, K), 0.5f, $"area at L {L}");
-            }
-            Assert.Greater(MeerkatSolitonMath.ThroatRadius(12000f, 60f, K), MeerkatSolitonMath.ThroatRadius(12000f, 600f, K),
-                "a longer tunnel is thinner");
-            Assert.Greater(MeerkatSolitonMath.ThroatRadius(18000f, 200f, K), MeerkatSolitonMath.ThroatRadius(6000f, 200f, K),
-                "more Space, more area, a fatter tunnel");
-        }
-
-        [Test]
-        public void Throat_HasTheSafetyFloor_AndTheShortestLength()
-        {
-            // the page: Math.max(10, L) and b >= 0.25 (a 0.5 u diameter)
-            Assert.AreEqual(49.640724f, MeerkatSolitonMath.ThroatRadius(6000f, 5f, K), Tol, "a 5 u tunnel is spread over 10 u");
-            Assert.AreEqual(0.25f, MeerkatSolitonMath.ThroatRadius(1f, 5000f, K), 1e-6f, "the floor");
-        }
 
         // ------------------------------------------------------------------ Time: the ride
 
@@ -190,24 +138,6 @@ namespace CosmicShore.Tests
                 var p1 = MeerkatSolitonMath.PortalPoint(exit, tangent, exitRadius, 1.5f, (k + 1) % 6, out var a1, out _);
                 Assert.AreEqual(0f, ((p0 + a0 * (0.5f * side)) - (p1 - a1 * (0.5f * side))).magnitude, 2e-3f, $"edge {k} meets edge {k + 1}");
             }
-        }
-
-        // ------------------------------------------------------------------ Space: swallow and fire
-
-        [Test]
-        public void Carry_And_Fire_AreThePages()
-        {
-            var off = MeerkatSolitonMath.CarryOffset(new Vector3(10f, 0f, 3f), Vector3.zero, Vector3.forward, 4f);
-            Assert.AreEqual(0f, off.z, 1e-6f, "square to the axis");
-            Assert.AreEqual(2f, off.magnitude, 1e-5f, "held inside half the throat");
-            var v = MeerkatSolitonMath.FireVelocity(Vector3.forward, off, 120f);
-            Assert.AreEqual(120f, v.z, 1e-4f, "out along the exit heading at fireSpeed");
-            Assert.AreEqual(7.2f, v.x, 1e-4f, "spread 6% along its offset");
-            var slowed = MeerkatSolitonMath.Glide(new Vector3(0f, 0f, 120f), 3f, 3f);
-            Assert.AreEqual(120f * Mathf.Exp(-1f), slowed.z, 1e-3f, "glides to rest over fireGlideSeconds");
-            Assert.IsTrue(MeerkatSolitonMath.AtRest(new Vector3(2.9f, 0f, 0f), 1f), "under 3 u/s it rests");
-            Assert.IsFalse(MeerkatSolitonMath.AtRest(new Vector3(3.1f, 0f, 0f), 1f));
-            Assert.IsTrue(MeerkatSolitonMath.AtRest(new Vector3(50f, 0f, 0f), 26f), "after 25 s it rests");
         }
     }
 }

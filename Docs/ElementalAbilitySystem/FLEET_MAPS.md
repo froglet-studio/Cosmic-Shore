@@ -647,15 +647,45 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
 
-### Meerkat — the soliton maker — APPROVED + SHIPPED (Garrett's design, Yash 2026-10-28)
+### Meerkat ("Meerkats") — the soliton maker, a dynamic-seat crew vessel — element definition LOCKED (Garrett, 2026-10-28); building it is Yash's
+
+Garrett, 2026-10-28: *"lock in the elemental definition so yash builds upon them."* The element → ability → level →
+L5 rows below are decided (`Docs/Studios/MEERKAT.md` § Garrett's direction). How each is built, tuned and drawn, every
+number, and the seat machinery stay Yash's. **Shipped 2026-10-28** (below, "approved + shipped"): the map
+(`ElementalAbilityMaps/Meerkat.asset`) carries the four rows; the surface area and the swallow are Yash's round 23; the
+seats, the hop and the element-holder rule are not built yet.
+- **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
+  included, and fires them out. L5 **Steal**: what passes through is stolen, the steal starting as each prism starts
+  its run.
+- **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
+- **Charge · Sentinel mode** (Y / F, an active toggle): new tunnels leave a sentinel at their entrance, from a pool of
+  3; with the pool used up, the oldest retires with its soliton.
+  - A sentinel guards 1.5 × the opening radius, zaps enemy vessels' elements (Charge sets the petals per zap) and
+    shields same-domain prisms.
+  - It is a seat any teammate can take: tap or click, with no cooldown, to shield any prism or attack. The empty seat's
+    AI zaps a little slower than an average person taps.
+  - The button hops: the sentinel rides through its soliton and takes the flyer, and the old flyer becomes a sentinel
+    at a new soliton where it was.
+  - A zap is a sub-petal tick (0.1 → 0.25 of a petal by Charge, through `AccrueElementalLoss`).
+  - One element meter, held by the person seated longest aboard the Meerkats. Only that person's meerkat takes element
+    damage; any other dies instead. A dead flyer is replaced by the next hop's hopper.
+  - A soliton lasts as long as its sentinel. The vessel enters with one seat and never adds players.
+  - L5 **Six sentinels**.
+- **Mass · passive**: a minimal exit portal, a few low-mass prisms in a hexagon round the outside of the exit, once
+  per soliton, sized by Mass. L5 **Danger prisms**.
+
+Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are archived in the same doc, and the round-18
+Mix's L5 swaps (Chain Dig on Time, Cave-in on Space) give way to these rows.
+
+#### Meerkat — APPROVED + SHIPPED (Garrett's design, Yash 2026-10-28)
 
 Yash, 2026-10-28: *"Garrett has already defined all the elemental abilities, so we're gonna implement those, and it also
 has the Space ability, which pulls prisms inside the tube."* Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's
-direction, on `cece/lucid-brown-ykcmhu`), ported from the artifact's Kit "Garrett's kit" (`R_VesselActions/MEERKAT.md` §8):
+direction, on `cece/lucid-brown-ykcmhu`), ported from the artifact's Kit "Garrett's kit" (`R_VesselActions/MEERKAT.md` §8-§9):
 
 | Element | Ability (input) | What the level scales | L5 (gate) |
 |---|---|---|---|
-| **Space** | **Soliton** (RT): the wormhole is a standing tunnel anyone may ride; it swallows prisms at its way in and fires them out of its way out as moving prisms (`MeerkatSolitonPrisms`) | `solitonArea` 6,000 → 18,000 u²: throat b = A / (2π L g(k)), floor 0.25 u | **Steal**: what it swallows is stolen into the Meerkat's domain as its run starts (`MeerkatSolitonKit.StealUnlocked`) |
+| **Space** | **Soliton** (RT): the wormhole is a standing tunnel any Meerkat may ride; it swallows prisms (and crystals) at its way in and fires them out of its way out as moving prisms (`MeerkatSwallow`, round 23) | `areaL0` / `areaL10` 6,000 → 18,000 u²: throat b = A / (2π L g(k)), floor 0.25 u (`MeerkatWormholeMath.SurfaceAreaThroat`, round 23) | **Steal**: what it swallows is stolen into the Meerkat's domain as its run starts (`MeerkatSolitonKit.StealUnlocked`, stolen in `MeerkatSwallow.Swallow`) |
 | **Time** | **Faster Ride** (passive): the ride through every soliton, its own or anyone's | `rush` 1 → 1.4 × the throat's multiplier | **Boost Out**: every soliton is left at `boostOut` 1.5 × the exit (`BoostOutUnlocked`) |
 | **Mass** | **Exit Portal** (passive): six prisms on a hexagon at 1.5 × the exit radius, once per soliton (`MeerkatExitPortal`) | `portalSize` 0.4 → 0.9 × the hull's trail prism | **Danger Portal**: danger prisms (`DangerPortalUnlocked`) |
 | **Charge** | **Sentinel Mode** (Y, `Button4Action`): each new soliton leaves a sentinel that holds it, zaps rivals in its guard (1.5 × the opening) at 5 a second and shields its own prisms there (`MeerkatSentinels`); pool 3 | `zapPetals` 0.1 → 0.25 of a petal a zap, each element, ejected, a scored hit that silences | **Six Sentinels**: the pool is 6 (`SixSentinelsUnlocked`) |

@@ -5,7 +5,7 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// The Meerkat's Charge ability, <b>Sentinel mode</b> (Garrett's design, approved by Yash 2026-10-28;
-    /// <c>R_VesselActions/MEERKAT.md</c> §8), on Y (<c>InputEvents.Button4Action</c>): each press toggles it. While it is on,
+    /// <c>R_VesselActions/MEERKAT.md</c> §9), on Y (<c>InputEvents.Button4Action</c>): each press toggles it. While it is on,
     /// each new soliton leaves a sentinel at its way in (<see cref="MeerkatSolitonKit"/>). Shared and stateless: the mode
     /// lives on the executor.
     ///

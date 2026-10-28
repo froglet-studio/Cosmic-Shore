@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED MeerkatSolitonMath (the Meerkat's kit: Garrett's design, approved by Yash 2026-10-28) and its SHIPPED
-# edit-mode tests (Assets/_Scripts/Tests/Editor/MeerkatSolitonMathTests.cs) against the brittlestar harness's UnityEngine
-# math stub and NUnit shim with Roslyn, and RUN every [Test]. Exit 0 = every test passed. `--self-test` also plants three
-# wrong ports (the area spread over the mouth instead of the throat, a pool that retires the NEWEST, a portal on the
-# corners instead of the edges) and proves the tests catch each (negative controls).
+# edit-mode tests (Assets/_Scripts/Tests/Editor/MeerkatSolitonMathTests.cs), with MeerkatWormholeMath and its
+# MeerkatWormholeMathTests ([TestCase] rows, NUnitTestCase.cs), against a UnityEngine
+# math stub (Stubs.cs, the brittlestar harness's plus a matrix) and NUnit shim with Roslyn, and RUN every [Test]. Exit 0 = every test passed. `--self-test` also plants three
+# wrong ports (a Time L5 Boost Out that boosts nothing, a pool that retires the NEWEST, a portal on the corners instead of
+# the edges) and proves the tests catch each (negative controls).
 # Needs a .NET SDK (8+), found through DOTNET_ROOT (default ~/.dotnet).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -16,11 +17,14 @@ OUT="${TMPDIR:-/tmp}/meerkat_kit_harness"
 mkdir -p "$OUT"
 MATH="$ROOT/Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatSolitonMath.cs"
 TESTS="$ROOT/Assets/_Scripts/Tests/Editor/MeerkatSolitonMathTests.cs"
+# ...and the wormhole's own arithmetic and tests (round 23's surface area and swallow goldens live there)
+WMATH="$ROOT/Assets/_Scripts/Controller/Vessel/R_VesselActions/MeerkatWormholeMath.cs"
+WTESTS="$ROOT/Assets/_Scripts/Tests/Editor/MeerkatWormholeMathTests.cs"
 
 build_and_run() {   # $1 = math source, $2 = expected (pass|fail), $3 = what
   ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
-  printf '%s\n' "$HERE/../brittlestar_harness/Stubs.cs" "$HERE/../brittlestar_harness/NUnitShim.cs" "$HERE/Runner.cs" \
-    "$1" "$TESTS" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
+  printf '%s\n' "$HERE/Stubs.cs" "$HERE/NUnitShim.cs" "$HERE/NUnitTestCase.cs" \
+    "$HERE/Runner.cs" "$1" "$TESTS" "$WMATH" "$WTESTS" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632 \
     -target:exe -main:Runner -out:"$OUT/mk.exe" "@$OUT/files.rsp" 1>&2
@@ -35,9 +39,9 @@ build_and_run() {   # $1 = math source, $2 = expected (pass|fail), $3 = what
 
 build_and_run "$MATH" pass
 if [ "${1:-}" = "--self-test" ]; then
-  sed 's/AreaFactor(k));$/AreaFactor(k)) \/ k;/' "$MATH" > "$OUT/AreaOnMouth.cs"
-  grep -q 'AreaFactor(k)) / k;' "$OUT/AreaOnMouth.cs"
-  build_and_run "$OUT/AreaOnMouth.cs" fail "the area spread over the mouth"
+  sed 's/rideExitMultiplier \* Mathf.Max(1f, boostOut)/rideExitMultiplier/' "$MATH" > "$OUT/NoBoostOut.cs"
+  grep -q 'boostOutUnlocked ? rideExitMultiplier :' "$OUT/NoBoostOut.cs"
+  build_and_run "$OUT/NoBoostOut.cs" fail "Boost Out that boosts nothing"
   sed 's/retired.Add(placed\[0\]);/retired.Add(placed[placed.Count - 1]);/; s/placed.RemoveAt(0);/placed.RemoveAt(placed.Count - 1);/' "$MATH" > "$OUT/PoolNewest.cs"
   grep -q 'placed.RemoveAt(placed.Count - 1);' "$OUT/PoolNewest.cs"
   build_and_run "$OUT/PoolNewest.cs" fail "the pool retires the newest"

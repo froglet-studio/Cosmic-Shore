@@ -10,14 +10,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Meerkat's four abilities beyond the bare wormhole: <b>Garrett's kit</b> (Garrett's design, approved by Yash
-    /// 2026-10-28; <c>R_VesselActions/MEERKAT.md</c> §8), ported from the Vessel Studio's Meerkat page, Kit "Garrett's kit"
+    /// 2026-10-28; <c>R_VesselActions/MEERKAT.md</c> §9), ported from the Vessel Studio's Meerkat page, Kit "Garrett's kit"
     /// (<c>Docs/Studios/VesselStudio/meerkat.html</c>; the arithmetic is <see cref="MeerkatSolitonMath"/>). The wormhole IS the
-    /// soliton: a standing tunnel anyone may ride.
+    /// soliton: a standing tunnel anyone may ride (any Meerkat: <c>MeerkatWormholeExecutor.TryRideAnySoliton</c>).
     /// <list type="bullet">
-    /// <item><b>Space, the soliton</b> (RT, the wormhole's own press): its surface area is Space's <c>solitonArea</c>
-    /// (<see cref="ApplyArea"/>), so a long tunnel is thin and a short one fat. It swallows prisms at its way in and fires them
-    /// out of its way out as MOVING prisms (<see cref="MeerkatSolitonPrisms"/>). <b>L5 Steal</b>: what it swallows becomes the
-    /// Meerkat's domain the moment its run starts.</item>
+    /// <item><b>Space, the soliton</b> (RT, the wormhole's own press): its surface area (round 23's <c>areaL0</c> /
+    /// <c>areaL10</c>, <see cref="MeerkatWormholeMath.SurfaceAreaThroat"/>) and its swallow and fire (<see cref="MeerkatSwallow"/>)
+    /// are the artifact's round-23 port, not this kit's. The kit adds <b>L5 Steal</b> (<see cref="Stamp"/> sets the bit,
+    /// <c>MeerkatSwallow.Swallow</c> steals): what it swallows becomes the Meerkat's domain the moment its run starts.</item>
     /// <item><b>Time, passive</b>: the ride through EVERY soliton (its own or anyone's) rushes faster, the throat's multiplier
     /// × Time's <c>rush</c> (<see cref="RideMid"/>). <b>L5 Boost out</b>: every soliton is left at <c>boostOut</c> × the exit
     /// (<see cref="RideExit"/>).</item>
@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>Where it runs.</b> The owner (the simulating machine, <see cref="MantaStingActionExecutor.IsSimAuthority"/>)
     /// decides each soliton's kit when it forms it (<see cref="Stamp"/>: a sentinel or not, the L5 bits, the portal's size)
     /// and publishes it with the tunnel (<see cref="MeerkatWormholeNetworkRelay"/>, protocol 23). Every peer then lays the same
-    /// portal, stands the same sentinels and runs the same swallow-and-fire from the same tunnels, on its own prisms (prisms
+    /// portal, stands the same sentinels and steals the same swallowed prisms from the same tunnels, on its own prisms (prisms
     /// are per-peer, as every mover of the prism-motion fundamental is: <c>Docs/PRISM_MOTION.md</c> §4). A zap's petals are
     /// decided on the Meerkat's owner and settled on the victim's (<see cref="ElementalTransfer.ApplyAllAuthoritative"/>),
     /// as every scored hit is.</para>
@@ -55,7 +55,6 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         MeerkatWormholeExecutor _wormhole;
         readonly MeerkatSentinels _sentinels = new();
-        readonly MeerkatSolitonPrisms _prisms = new();
         readonly MeerkatExitPortal _portal = new();
         readonly List<ShipActionSO> _bindScratch = new();
         InputEvents? _sentinelInput;
@@ -73,8 +72,6 @@ namespace CosmicShore.Gameplay
         public int SentinelCount => _sentinels.Count;
         public int SentinelPoolNow => MeerkatSolitonMath.PoolSize(SixSentinelsUnlocked, config ? config.SentinelPool : 3,
             config ? config.SentinelPoolL5 : 6);
-        /// <summary>Prisms in a tube or moving now (the HUD's Space card), and the cap.</summary>
-        public int PrismsInFlight => _prisms.Count;
         /// <summary>How many of the last exit portal's six prisms still stand (the HUD's Mass card).</summary>
         public int PortalStanding => _portal.Standing;
 
@@ -100,7 +97,6 @@ namespace CosmicShore.Gameplay
             _sentinelInput = null;
             _aiPressAt = -10f;
             _sentinels.Clear(this, false);
-            _prisms.Release();
             _portal.Clear();
             if (config == null)
                 CSDebug.LogError($"[Meerkat] {name}: MeerkatSolitonKit has no MeerkatWormholeConfig - the kit does nothing. " +
@@ -108,16 +104,6 @@ namespace CosmicShore.Gameplay
         }
 
         // ------------------------------------------------------------------ hooks MeerkatWormholeExecutor calls
-
-        /// <summary>Space: the soliton's throat and mouth from its surface area (the page's <c>kitThroat</c>).</summary>
-        public MeerkatWormholeMath.Shape ApplyArea(MeerkatWormholeMath.Shape sh)
-        {
-            if (!config || _status == null) return sh;
-            float k = config.MouthRatio;
-            sh.B = MeerkatSolitonMath.ThroatRadius(config.SolitonArea.EvaluateLive(_status), sh.L, k);
-            sh.M = k * sh.B;
-            return sh;
-        }
 
         /// <summary>Time: the ride's throat multiplier with the rush (every soliton, its own or anyone's).</summary>
         public float RideMid(float rideMidMultiplier) =>
@@ -156,12 +142,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>True while a soliton stands open end to end (the page's <c>standing</c>): it can be ridden, it swallows,
-        /// and its sentinel guards it.</summary>
-        public static bool IsStanding(MeerkatWormholeExecutor.Tunnel t) =>
-            t != null && !t.Dying && t.W.Phase is MeerkatWormholeMath.Phase.Open or MeerkatWormholeMath.Phase.Stay &&
-            t.W.S0 <= 0.5f && t.W.S1 >= t.L - 0.5f;
-
         // ------------------------------------------------------------------ Charge: the toggle
 
         /// <summary>Y: Sentinel mode on or off. Off, no new sentinels are placed; the standing ones stay.</summary>
@@ -175,7 +155,6 @@ namespace CosmicShore.Gameplay
             float dt = Time.deltaTime;
             _sentinels.Sweep(this);
             _sentinels.Zap(this, dt);
-            _prisms.Step(this, dt);
             _portal.Prune();
             if (IsAuthority && _status.AutoPilotEnabled) AutopilotSentinelMode();
         }
@@ -277,15 +256,10 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             _sentinels.Clear(this, false);
-            _prisms.Release();
             _portal.Clear();
             SentinelMode = false;
         }
 
-        void OnDestroy()
-        {
-            _prisms.Dispose();
-            _sentinels.DisposeGhost();
-        }
+        void OnDestroy() => _sentinels.DisposeGhost();
     }
 }

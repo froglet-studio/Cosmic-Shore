@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
             public MeerkatWormholeExecutor Maker;
             public int Seq;
             public float Born;   // when it formed here (its tree's branches grow from then, MeerkatTreeView)
+            public float SwallowLook;   // its swallow's next look round its way in (MeerkatSwallow, round 23)
             // [Garrett's kit hook] the kit its owner stamped on it (MeerkatSolitonKit.Kit* bits) and its exit portal's size,
             // replicated with it; Held while a sentinel guards it (it stands as long as its sentinel)
             public byte Kit;
@@ -125,7 +126,7 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         MeerkatWormholeNetworkRelay _relay;
         ToggleTranslationModeActionExecutor _stance;
-        MeerkatSolitonKit _kit;   // [Garrett's kit hook] the soliton kit beside this executor (R_VesselActions/MEERKAT.md section 8)
+        MeerkatSolitonKit _kit;   // [Garrett's kit hook] the soliton kit beside this executor (R_VesselActions/MEERKAT.md section 9)
         Tunnel _lastRide;         // [Garrett's kit hook] the soliton last ridden, and when (not re-entered for RideAgainSeconds)
         float _lastRideAt = -10f;
 
@@ -175,9 +176,19 @@ namespace CosmicShore.Gameplay
         static MeerkatRootNetwork s_localRoots;
         static Vector3 s_localHull;
         InputEvents? _formInput;
+        // the soliton's swallow (round 23): the prisms and crystals its tunnels pull in, carry through and fire out
+        readonly MeerkatSwallow _swallow = new();
         readonly List<ShipActionSO> _bindScratch = new();
 
         public MeerkatWormholeConfigSO Config => config;
+        /// <summary>The hull this Meerkat flies.</summary>
+        public IVesselStatus Status => _status;
+        /// <summary>[Garrett's kit hook] the soliton kit beside this executor, or null.</summary>
+        internal MeerkatSolitonKit Kit => _kit;
+        /// <summary>The prisms this Meerkat's tunnels are moving now (pulled, carried or fired; round 23).</summary>
+        public int SwallowedPrisms => _swallow.PrismCount;
+        /// <summary>...and the crystals.</summary>
+        public int SwallowedCrystals => _swallow.CrystalCount;
         /// <summary>True while a tunnel flies this hull (from the press to its way out).</summary>
         public bool IsRiding => _ride != null;
         /// <summary>The reticle's growth, 0..1 (RT forms from <see cref="MeerkatWormholeMath.FormableEmerge"/>); 0 riding.</summary>
@@ -278,6 +289,7 @@ namespace CosmicShore.Gameplay
             if (!config || _status == null) return;
             float dt = Time.deltaTime;
             StepTunnels(dt);
+            _swallow.Step(this, dt);
             StepRootNetworks(dt);
             StepRipples();
             TrackLocalPilot();
@@ -318,8 +330,7 @@ namespace CosmicShore.Gameplay
             float ke = MeerkatWormholeMath.ReticleEase(dt, config.ReticleSmoothSeconds);
             _eased += (_stick - _eased) * ke;
             _easedLq += (LtLive() - _easedLq) * ke;
-            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(), _easedLq, _eased.x, _eased.y);
-            if (_kit) sh = _kit.ApplyArea(sh);   // [Garrett's kit hook] Space: the soliton's surface area sets its throat
+            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(SpaceLevel()), _easedLq, _eased.x, _eased.y);   // round 23: Space sets its area
             Vector3 c = sh.Stick >= 0.05f ? right * sh.Dx + up * sh.Dy : _retSide;
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
@@ -328,6 +339,17 @@ namespace CosmicShore.Gameplay
             // the right stick bends the reticle from the next frame (the page sets r.sx / r.sy after gateHold)
             _stick = _status.AutoPilotEnabled ? _aiStick
                 : _status.InputStatus != null ? _status.InputStatus.EasedRightJoystickPosition : Vector2.zero;
+        }
+
+        /// <summary>
+        /// The hull's Space level, 0-10 (round 23, Garrett: "at a given Space level a soliton keeps one surface area"): read at
+        /// use time, every frame the reticle is shaped, so a crystal taken mid-flight resizes the next tunnel. -1 (the
+        /// authored fixed size) when the hull has no element levels.
+        /// </summary>
+        float SpaceLevel()
+        {
+            var resources = _status?.ResourceSystem;
+            return resources ? Mathf.Clamp(resources.GetLevel(Element.Space), 0, 10) : -1f;
         }
 
         /// <summary>The page's <c>gateCommit</c>.</summary>
@@ -406,7 +428,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < s_tunnels.Count; i++)
             {
                 var t = s_tunnels[i];
-                if (!MeerkatSolitonKit.IsStanding(t)) continue;
+                if (!MeerkatSwallow.Standing(t)) continue;
                 if (t == _lastRide && Time.time - _lastRideAt < MeerkatSolitonMath.RideAgainSeconds) continue;
                 if (!MeerkatSolitonMath.CanEnter(hull.position, hull.forward, t.A, t.T0, t.M, out float along)) continue;
                 _ride = t;
@@ -658,7 +680,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             else if (d > Mathf.Min(config.AiStraightMinDistance, config.AiBentMinDistance) && CanForm &&
-                     MeerkatWormholeMath.TryPlan(config.Plan(TurnRateDegrees()), local, Mathf.Max(1f, _status.Speed),
+                     MeerkatWormholeMath.TryPlan(config.Plan(TurnRateDegrees(), SpaceLevel()), local, Mathf.Max(1f, _status.Speed),
                          MeerkatWormholeMath.Clamp01(config.AiNoise), (float)_aiRand.NextDouble(),
                          d <= config.AiStraightMinDistance, out float lq, out float m))
             {
@@ -989,6 +1011,7 @@ namespace CosmicShore.Gameplay
             ReleaseSpeedTunnelScale();
             ReleaseRideCamera();
             ReleaseRootCamera();
+            _swallow.Release(this);
             var nets = MeerkatRootNetwork.Live;
             for (int i = nets.Count - 1; i >= 0; i--)
                 if (nets[i].Maker == this) nets[i].Remove();

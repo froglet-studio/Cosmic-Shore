@@ -5,19 +5,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The pure arithmetic of the Meerkat's kit (Garrett's design, approved by Yash 2026-10-28; <c>R_VesselActions/MEERKAT.md</c>
-    /// §8), ported line for line from the Vessel Studio's Meerkat page (<c>Docs/Studios/VesselStudio/meerkat.html</c>, the
-    /// "Garrett's kit" functions <c>kitThroat</c>, <c>kitOverrides</c>, <c>perpBasis</c>, <c>kitPortal</c>,
-    /// <c>kitAddSentinel</c>, <c>kitZaps</c>, <c>kitSwallow</c>, <c>kitFire</c>, <c>kitMovers</c>, <c>kitTryRide</c>).
-    /// No scene state: <c>MeerkatSolitonMathTests</c> holds it to the page's own numbers.
+    /// §9), ported line for line from the Vessel Studio's Meerkat page (<c>Docs/Studios/VesselStudio/meerkat.html</c>, the
+    /// "Garrett's kit" functions <c>kitOverrides</c>, <c>perpBasis</c>, <c>kitPortal</c>, <c>kitAddSentinel</c>,
+    /// <c>kitZaps</c>, <c>kitTryRide</c>). No scene state: <c>MeerkatSolitonMathTests</c> holds it to the page's own numbers.
+    /// The soliton's surface area and its swallow and fire are round 23's (<see cref="MeerkatWormholeMath.SurfaceAreaThroat"/>,
+    /// <see cref="MeerkatWormholeMath.PullVelocity"/>, <see cref="MeerkatSwallow"/>), not this class's.
     /// </summary>
     public static class MeerkatSolitonMath
     {
-        /// <summary>The page's <c>Math.max(10, L)</c>: the shortest length the surface area is spread over.</summary>
-        public const float MinLength = 10f;
-
-        /// <summary>The page's safety floor on the throat RADIUS (a 0.5 u diameter, Garrett's kit "unclamped but for").</summary>
-        public const float ThroatFloorRadius = 0.25f;
-
         /// <summary>How many prisms an exit portal sets down (Garrett: a regular hexagon).</summary>
         public const int PortalCount = 6;
 
@@ -27,48 +22,8 @@ namespace CosmicShore.Gameplay
         /// <summary>An empty sentinel that found nothing in its guard looks again after this long (the page's 0.2 s idle).</summary>
         public const float ZapIdleSeconds = 0.2f;
 
-        /// <summary>A moving prism is at rest below this speed squared (the page's <c>v² &lt; 9</c>).</summary>
-        public const float RestSpeedSqr = 9f;
-
-        /// <summary>...or once it has glided this long (the page's 25 s).</summary>
-        public const float MaxGlideSeconds = 25f;
-
         /// <summary>A ridden soliton is not re-entered by the same rider for this long (the page's 1.5 s).</summary>
         public const float RideAgainSeconds = 1.5f;
-
-        // ------------------------------------------------------------------ Space: the surface area
-
-        /// <summary>The mouth as a multiple of the throat, k = mouth / throat (the page: 26 / 8 = 3.25, at least 1.05).</summary>
-        public static float MouthRatio(float throatDiameter, float mouthDiameter) =>
-            Mathf.Max(1.05f, mouthDiameter / Mathf.Max(0.5f, throatDiameter));
-
-        /// <summary>asinh, which netstandard's MathF does not carry everywhere Unity compiles.</summary>
-        public static float Asinh(float x) => (float)System.Math.Log(x + System.Math.Sqrt((double)x * x + 1.0));
-
-        /// <summary>
-        /// The hyperboloid's area factor g(k) = ½ (k + asinh(√(k²−1)) / √(k²−1)): a wall whose mouth is k × its throat b,
-        /// L long, has the surface area A = 2π L b g(k).
-        /// </summary>
-        public static float AreaFactor(float k)
-        {
-            float q = Mathf.Sqrt(Mathf.Max(1e-6f, k * k - 1f));
-            return 0.5f * (k + Asinh(q) / q);
-        }
-
-        /// <summary>
-        /// The page's <c>kitThroat</c> (Garrett's kit): the throat RADIUS b = A / (2π L g(k)) that gives a tunnel
-        /// <paramref name="length"/> long the surface area <paramref name="area"/>, so a long tunnel is thin and a short one
-        /// fat; unclamped but for <see cref="ThroatFloorRadius"/>. The mouth radius is k × b.
-        /// </summary>
-        public static float ThroatRadius(float area, float length, float k)
-        {
-            float b = Mathf.Max(1f, area) / (2f * Mathf.PI * Mathf.Max(MinLength, length) * AreaFactor(k));
-            return Mathf.Max(ThroatFloorRadius, b);
-        }
-
-        /// <summary>The inverse: the surface area of a wall of throat <paramref name="b"/> (for the tests).</summary>
-        public static float SurfaceArea(float b, float length, float k) =>
-            2f * Mathf.PI * Mathf.Max(MinLength, length) * b * AreaFactor(k);
 
         // ------------------------------------------------------------------ Time: the ride
 
@@ -160,35 +115,5 @@ namespace CosmicShore.Gameplay
             along = u * -sa + w * ca;
             return exit + u * (ca * apothem) + w * (sa * apothem);
         }
-
-        // ------------------------------------------------------------------ Space: what the soliton swallows and fires
-
-        /// <summary>
-        /// The page's <c>kitSwallow</c> <c>take</c>: a prism swallowed at the way in keeps its offset from the tube's axis,
-        /// square to it and held inside half the throat.
-        /// </summary>
-        public static Vector3 CarryOffset(Vector3 prism, Vector3 a, Vector3 t0, float throatRadius)
-        {
-            var off = prism - a;
-            off -= t0 * Vector3.Dot(off, t0);
-            float m = off.magnitude, lim = 0.5f * throatRadius;
-            return m > lim && m > 1e-6f ? off * (lim / m) : off;
-        }
-
-        /// <summary>The page's <c>kitFire</c>: out of the way out along its heading at <paramref name="fireSpeed"/>, spread a
-        /// little (6%) along its offset.</summary>
-        public static Vector3 FireVelocity(Vector3 tangent, Vector3 offset, float fireSpeed)
-        {
-            var v = tangent * Mathf.Max(0f, fireSpeed);
-            if (offset.sqrMagnitude > 1e-6f) v += offset.normalized * (0.06f * Mathf.Max(0f, fireSpeed));
-            return v;
-        }
-
-        /// <summary>The page's <c>kitMovers</c> glide: a fired prism slows to rest over <paramref name="glideSeconds"/>.</summary>
-        public static Vector3 Glide(Vector3 v, float dt, float glideSeconds) =>
-            v * Mathf.Exp(-dt / Mathf.Max(0.1f, glideSeconds));
-
-        /// <summary>...and is at rest where it stopped: moved, never deleted.</summary>
-        public static bool AtRest(Vector3 v, float age) => v.sqrMagnitude < RestSpeedSqr || age > MaxGlideSeconds;
     }
 }

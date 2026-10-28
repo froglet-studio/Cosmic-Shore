@@ -33,13 +33,14 @@ WHAT IT MAKES (R_VesselActions/MEERKAT.md)
     the other three abilities, are not designed - /vessel section 3); four CrystalHullFusionConfig entries (the Stoat's:
     the Meerkat draws the Stoat's mesh).
 
-GARRETT'S KIT (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 8), retrofitted onto the
+GARRETT'S KIT (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 9), retrofitted onto the
 committed prefab and assets, idempotently:
     - MeerkatSolitonKit beside the wormhole executor (listed by the ActionExecutorRegistry, wired to the config and the
       Runtime GameData), and the HUD's `kit` reference to it
     - Y (InputEvents 14, Button4Action) -> MeerkatSentinelModeAction (Charge, Sentinel mode), a new action asset
     - the config's kit section: the page's plain kit keys at their SHIPPED values (then studio_to_unity.py's), four
-      ElementalFloat blocks from the page's L0/L10 pairs (solitonArea Space, rush Time, zapPetals Charge, portalSize Mass),
+      ElementalFloat blocks from the page's L0/L10 pairs (rush Time, zapPetals Charge, portalSize Mass; Space's area is
+      round 23's areaL0 / areaL10),
       the combat-hit channel and five empty FMOD slots
     - the element map's four designed rows (Space Soliton on RT, Time passive, Mass passive, Charge Sentinel mode on Y),
       replacing the open slots
@@ -148,15 +149,18 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax", "bendRa
                "labyrinthOpeningsMax", "labyrinthRadiusMin", "labyrinthRadiusMax", "labyrinthSpread", "labyrinthRandomness",
                "labyrinthDiameter", "labyrinthMouthDiameter", "rootTip", "rootGnarl", "rootGlass", "rootRim", "rootGrain",
                "labyrinthFormSeconds", "rootCruise", "rootThrust", "rootMove", "rootDrag", "rootMaxSpeed", "rootBounce",
-               "rootGravity", "rootOpacity", "tubeInner", "rootLamp", "rootFog"]
+               "rootGravity", "rootOpacity", "tubeInner", "rootLamp", "rootFog",
+               # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
+               "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carrySpeed", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
 
 
-# Garrett's kit (MEERKAT.md section 8): the page's plain kit keys, by the same names (studio_to_unity.py writes them once
+# Garrett's kit (MEERKAT.md section 9): the page's plain kit keys, by the same names (studio_to_unity.py writes them once
 # they exist); Unity-only budget fields; the four ElementalFloats as (field, L0 key, L10 key, element, floor).
-KIT_KEYS = ["swallowShare", "carrySpeed", "fireSpeed", "fireGlideSeconds", "boostOut", "sentinelPool", "sentinelPoolL5",
-            "guardShare", "aiZapRate", "portalShare"]
-KIT_UNITY = {"solitonPrismCap": "64", "zapCooldownSeconds": "0"}
-KIT_FLOATS = [("solitonArea", "areaL0", "areaL10", 3, "1"), ("rush", "rushL0", "rushL10", 4, "0.05"),
+# Space (areaL0/L10, suck*, swallowShare, carrySpeed, carryStretch/Twist, fireSpeed, fireGlideSeconds) is round 23's, in
+# CONFIG_KEYS: its swallow is MeerkatSwallow.
+KIT_KEYS = ["boostOut", "sentinelPool", "sentinelPoolL5", "guardShare", "aiZapRate", "portalShare"]
+KIT_UNITY = {"zapCooldownSeconds": "0"}
+KIT_FLOATS = [("rush", "rushL0", "rushL10", 4, "0.05"),
               ("zapPetals", "zapPetalsL0", "zapPetalsL10", 1, "0"), ("portalSize", "portalSizeL0", "portalSizeL10", 2, "0.05")]
 KIT_EVENTS = ["zapEvent", "sentinelPlacedEvent", "sentinelLostEvent", "portalEvent", "prismFiredEvent"]
 
@@ -485,7 +489,7 @@ OPEN_SLOT_YAML = OPEN_SLOT.replace("'", "''")   # inside a single-quoted YAML sc
 
 
 # Garrett's design, approved by Yash 2026-10-28 (Docs/Studios/MEERKAT.md, Garrett's direction; R_VesselActions/MEERKAT.md
-# section 8): element, ability, description, input, L5 label, L5 description. Order: Space, Time, Mass, Charge (the slots').
+# section 9): element, ability, description, input, L5 label, L5 description. Order: Space, Time, Mass, Charge (the slots').
 DESIGNED = [
     (3, "Soliton", "RT forms the wormhole the reticle shows, and it is a soliton: a standing tunnel anyone may ride. Its "
      "surface area is your Space level, so a long one is thin and a short one fat. It swallows prisms at its way in "

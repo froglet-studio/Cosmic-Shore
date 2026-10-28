@@ -222,6 +222,35 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...far walls fade to clear this far off (u)")]
         [SerializeField, Range(20f, 600f)] float rootFog = 240f;
 
+        // Round 23 (Yash, 2026-10-28: "revert the mass ability as Garrett has said ... the prism gets sucked in from this one
+        // side and gets sucked out on the other ... distorted while traveling through this wormhole ... From a certain
+        // radius"): Garrett's soliton. Space sets its surface area, so a longer tunnel is thinner; it pulls the prisms and
+        // crystals round its way in, carries them through stretched and twisted, and fires them out of its way out.
+        [Header("Kit · Space · the soliton (the artifact's Play Style Config > Kit · Space · the soliton, round 23)")]
+        [Tooltip("Surface area, Space L0 (u²)")]
+        [SerializeField, Range(1000f, 60000f)] float areaL0 = 6000f;
+        [Tooltip("...at Space L10 (u²)")]
+        [SerializeField, Range(1000f, 60000f)] float areaL10 = 18000f;
+        [Tooltip("Pulls prisms and crystals in from (u round the way in)")]
+        [SerializeField, Range(0f, 400f)] float suckRadius = 90f;
+        [Tooltip("...at (u/s at that reach; faster as they near)")]
+        [SerializeField, Range(0f, 300f)] float suckSpeed = 30f;
+        [Tooltip("Swallows prisms within (× the opening radius)")]
+        [SerializeField, Range(0f, 4f)] float swallowShare = 1.5f;
+        [Tooltip("Carries them through at (u/s)")]
+        [SerializeField, Range(20f, 600f)] float carrySpeed = 150f;
+        [Tooltip("Inside, stretched along the tube by (+ × its length, at the middle)")]
+        [SerializeField, Range(0f, 6f)] float carryStretch = 2f;
+        [Tooltip("...and twisted (turns, mouth to mouth)")]
+        [SerializeField, Range(0f, 4f)] float carryTwist = 0.5f;
+        [Tooltip("Fires them out at (u/s)")]
+        [SerializeField, Range(0f, 400f)] float fireSpeed = 120f;
+        [Tooltip("...gliding to rest over (s)")]
+        [SerializeField, Range(0.2f, 10f)] float fireGlideSeconds = 3f;
+        [Tooltip("At most this many prisms in one Meerkat's pull, tube and glide at once (a performance cap, not in the " +
+                 "artifact: the prism-motion ladder, Docs/PRISM_MOTION.md §3, drops to spheres past 256 movers)")]
+        [SerializeField, Range(16, 1024)] int swallowPrismCap = 256;
+
         [Header("After RT (Garrett, 2026-10-27: the Tube Lens Lab)")]
         [Tooltip("After RT, a formed tunnel shows as: ContourField = nothing drawn, only space bent in a thin shell on its " +
                  "wall (Garrett: \"lets the lensing alone sell the effect\"); Bridge = round 3's spindle bridge and glass.")]
@@ -273,25 +302,12 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("AI sloppiness (0 = perfect, 1 = rookie)")]
         [SerializeField, Range(0f, 1f)] float aiNoise;
 
-        // ---- Garrett's kit (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 8): the
+        // ---- Garrett's kit (Garrett's design, approved by Yash 2026-10-28; R_VesselActions/MEERKAT.md section 9): the
         // artifact's Play Style Config > Kit, "Garrett's kit", by the page's own keys. Plain numbers are written by
         // studio_to_unity.py (Tools/Build/studio_to_unity/meerkat.json); each ElementalFloat is the page's L0 -> L10 pair
-        // (areaL0/areaL10, rushL0/rushL10, zapPetalsL0/zapPetalsL10, portalSizeL0/portalSizeL10), authored once by
-        // author_meerkat_assets.py. Read through MeerkatSolitonKit.
-        [Header("Garrett's kit · Space, the soliton (the artifact's Kit > Soliton)")]
-        [Tooltip("Surface area, Space L0 (u²) -> ...at Space L10 (u²): b = A / (2 pi L g(k)), so a long tunnel is thin and a short one fat")]
-        [SerializeField] ElementalFloat solitonArea = ElementalFloat.Multiplier(6000f, 18000f, Element.Space, 1f);
-        [Tooltip("Swallows prisms within (× the opening radius)")]
-        [SerializeField, Range(0f, 4f)] float swallowShare = 1.5f;
-        [Tooltip("Carries them through at (u/s)")]
-        [SerializeField, Range(20f, 600f)] float carrySpeed = 150f;
-        [Tooltip("Fires them out at (u/s)")]
-        [SerializeField, Range(0f, 400f)] float fireSpeed = 120f;
-        [Tooltip("...gliding to rest over (s)")]
-        [SerializeField, Range(0.2f, 10f)] float fireGlideSeconds = 3f;
-        [Tooltip("Unity only (a frame budget, not in the artifact): at most this many prisms carried or moving per Meerkat at once; the rest stay where they are")]
-        [SerializeField, Range(1, 256)] int solitonPrismCap = 64;
-
+        // (rushL0/rushL10, zapPetalsL0/zapPetalsL10, portalSizeL0/portalSizeL10), authored once by author_meerkat_assets.py.
+        // Read through MeerkatSolitonKit. Space (the surface area, the swallow and fire) is round 23's section above
+        // (areaL0 / areaL10, suck*, swallowShare, carrySpeed, fireSpeed, fireGlideSeconds; MeerkatSwallow).
         [Header("Garrett's kit · Time, the ride (the artifact's Kit > Time)")]
         [Tooltip("The rush: the throat's speed ×, Time L0 -> ...at Time L10 (every soliton's ride, its own or anyone's)")]
         [SerializeField] ElementalFloat rush = ElementalFloat.Multiplier(1f, 1.4f, Element.Time, 0.05f);
@@ -341,12 +357,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] EventReference rootsEvent;
 
         // Garrett's kit (MeerkatSolitonKit reads these)
-        public ElementalFloat SolitonArea => solitonArea;
-        public float SwallowShare => swallowShare;
-        public float CarrySpeed => carrySpeed;
-        public float FireSpeed => fireSpeed;
-        public float FireGlideSeconds => fireGlideSeconds;
-        public int SolitonPrismCap => solitonPrismCap;
         public ElementalFloat Rush => rush;
         public float BoostOut => boostOut;
         public int SentinelPool => sentinelPool;
@@ -363,8 +373,6 @@ namespace CosmicShore.ScriptableObjects
         public EventReference SentinelLostEvent => sentinelLostEvent;
         public EventReference PortalEvent => portalEvent;
         public EventReference PrismFiredEvent => prismFiredEvent;
-        /// <summary>The mouth as a multiple of the throat (the page's k).</summary>
-        public float MouthRatio => MeerkatSolitonMath.MouthRatio(throatDiameter, mouthDiameter);
 
         public float ReticleAhead => reticleAhead;
         public float KeyRampSeconds => keyRampSeconds;
@@ -382,6 +390,17 @@ namespace CosmicShore.ScriptableObjects
         public float RippleStrength => rippleStrength;
         public float RippleEdge => rippleEdge;
         public float RippleSeconds => rippleSeconds;
+        public float AreaL0 => areaL0;
+        public float AreaL10 => areaL10;
+        public float SuckRadius => suckRadius;
+        public float SuckSpeed => suckSpeed;
+        public float SwallowShare => swallowShare;
+        public float CarrySpeed => carrySpeed;
+        public float CarryStretch => carryStretch;
+        public float CarryTwist => carryTwist;
+        public float FireSpeed => fireSpeed;
+        public float FireGlideSeconds => fireGlideSeconds;
+        public int SwallowPrismCap => swallowPrismCap;
         public float ReticleSmoothSeconds => reticleSmoothSeconds;
         public float ReticleIdleAlpha => reticleIdleAlpha;
         public float ReticleWhite => reticleWhite;
@@ -502,18 +521,21 @@ namespace CosmicShore.ScriptableObjects
             BranchSymmetry = branchSymmetry, BranchForks = branchForks,
         };
 
-        public MeerkatWormholeMath.ShapeSettings Shape() => new()
+        /// <summary>The shape rows. <paramref name="spaceLevel"/> (0-10, the hull's Space level) sets the soliton's surface
+        /// area (round 23); without it the size is the authored throat and mouth.</summary>
+        public MeerkatWormholeMath.ShapeSettings Shape(float spaceLevel = -1f) => new()
         {
             ShaftMin = shaftMin, ShaftMax = shaftMax, BendRadius = bendRadius, BendMaxDegrees = bendMaxDegrees,
             ThroatRadius = 0.5f * throatDiameter, MouthRadius = 0.5f * mouthDiameter,   // round 10: authored as diameters
             OvalShortest = ovalShortest, OvalLongest = ovalLongest, OvalMaxSharpness = ovalMaxSharpness,   // round 22: the oval arc
+            Area = spaceLevel < 0f ? 0f : MeerkatWormholeMath.ByLevel(areaL0, areaL10, spaceLevel),     // round 23: Garrett's area
         };
 
         /// <summary>The AI's plan rows; <paramref name="turnRateDegrees"/> is the hull's own turn (its transformer's YawScaler,
         /// the studio's pitchYaw).</summary>
-        public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees) => new()
+        public MeerkatWormholeMath.PlanSettings Plan(float turnRateDegrees, float spaceLevel = -1f) => new()
         {
-            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(),
+            ReticleAhead = reticleAhead, ShapeSeconds = aiShapeSeconds, Shape = Shape(spaceLevel),
             MeanRideMultiplier = MeerkatWormholeMath.MeanRideMultiplier(rideEntryMultiplier, rideMidMultiplier, rideExitMultiplier),
             TurnRateRadians = turnRateDegrees * Mathf.Deg2Rad,
         };

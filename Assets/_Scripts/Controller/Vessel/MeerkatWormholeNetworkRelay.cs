@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// took (<see cref="PublishRoots"/>) - and its rider's way out (<see cref="PublishRootsOut"/>). Every peer grows the same
     /// roots from those (<see cref="MeerkatRootMath"/> is double precision for exactly this).</para>
     ///
-    /// <para><b>Garrett's kit</b> (<c>MEERKAT.md</c> §8, protocol version 23): each tunnel also carries what its owner
+    /// <para><b>Garrett's kit</b> (<c>MEERKAT.md</c> §9, protocol version 23): each tunnel also carries what its owner
     /// decided for it (<see cref="TunnelState.Kit"/>: a sentinel or not, the Charge / Mass / Space L5 bits, and
     /// <see cref="TunnelState.PortalSize"/>), so every peer stands the same sentinel, lays the same exit portal and
     /// steals the same prisms (<see cref="MeerkatSolitonKit"/>).</para>
