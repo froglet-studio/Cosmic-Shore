@@ -12,18 +12,12 @@
   "torch": false
  },
  "cores": 3,
- "current": {},
+ "current": {
+  "job": "drive-rhino-regatta",
+  "since": 1793187503
+ },
  "host": "cloud-session",
- "last": {
-  "epoch": "82b7ac4e3ba1",
-  "evals": 1512,
-  "job": "bioform-forge",
-  "stopped": "max evals"
- },
- "totals": {
-  "sessions": 1
- },
- "updated": 1793187498,
+ "updated": 1793187503,
  "user": "shombith",
  "version": "1"
 }
