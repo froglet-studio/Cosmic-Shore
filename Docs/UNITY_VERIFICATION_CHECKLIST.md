@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Tiger Moth: the Butterfly's airframe with the Drop as its Time ability (`cece/keen-lovelace-cyci91`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor configs, 0 project errors). No editor in the session, so
+`/verify-unity` did not run. Design and steps: `Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md` §5.
+- [ ] Toybox freestyle, Vessel Changer: **Tiger Moth** is offered and flies like the Butterfly.
+- [ ] Hold LT: wings shut, the hull falls along its own down without turning; within ~0.35 s the camera is above it looking down the fall, nose at the top of the screen.
+- [ ] Let go: over 0.25 s the hull pitches nose-down into the fall line and flies on; the camera does not move and never swings back.
+- [ ] Hold past 2 s: lands on its own at 1800 u. Press again at once: refused, the Time card's veil sweeps 30 s.
+- [ ] Esc to the menu mid-drop and back: the camera follows the hull normally.
+- [ ] Phone: lift the right thumb to drop, put it back to land. MPPM: the second client sees the fall and the landing turn; its camera is untouched.
+- [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
+
+First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+
 ### 🔴 Hover C: the kit's sheen (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 Compiled against the Unity reference assemblies (player and editor). Not opened in the editor.

@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
             VesselClassType.Goby,
             VesselClassType.BrittleStar, VesselClassType.Shrike, VesselClassType.Angler,
             VesselClassType.Wrasse, VesselClassType.Orca, VesselClassType.Starling, VesselClassType.Jacks,
-            VesselClassType.Honeyguide, VesselClassType.Meerkat,
+            VesselClassType.Honeyguide, VesselClassType.Meerkat, VesselClassType.TigerMoth,
         };
 
         /// <summary>

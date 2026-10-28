@@ -104,5 +104,9 @@ after landing, and the camera's own rotation smoothing (5/s) brings the view ful
 camera far more than the fold (peak 193 deg/s against 63 on the bot lap, 1053 deg against 444 in total): the cost of
 making down feel like forward, and the first thing to watch in the votes for motion comfort.
 
-**Decision needed (Garrett).** Whether the drop replaces the Fold (and the Butterfly becomes the Tiger Moth); if it does,
-whether it keeps the Fold's wormhole pair, whether it lays a wake, and whether it keeps the Fold's 30 s recharge.
+**Decided (Garrett, 2026-10-28): the drop wins.** "Bring it to unity as the tigermoth, but don't level the camera back out
+at the end because we make a 90 degree downward rotation of the vessel as a result of using the ability, so it just keeps
+flying in the new direction afterward." It ships as its own hull class, the Tiger Moth (29), in the Vessel Changer, with
+that change: the landing turns the hull into the camera's frame instead of the camera swinging back
+(`Assets/_Scripts/Controller/Vessel/R_VesselActions/TIGER_MOTH.md`). Still open there: the Butterfly's future, the recharge
+(it ships with the Fold's 30 s), the wake, and whether a drop leaves anything standing as the Fold's wormholes did.

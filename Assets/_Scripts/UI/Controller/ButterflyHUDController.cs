@@ -34,6 +34,11 @@ namespace CosmicShore.UI
                  "unwired HUD is visible in the inspector.")]
         [SerializeField] FoldActionExecutor foldExecutor;
 
+        [Tooltip("The Tiger Moth's Drop executor, on the Tiger Moth (the Butterfly's airframe with the Drop as its Time " +
+                 "ability, R_VesselActions/TIGER_MOTH.md). A hull wires one of the two; the Time card's veil reads " +
+                 "whichever it has.")]
+        [SerializeField] TigerMothDropExecutor dropExecutor;
+
         [Tooltip("This vessel's mode executor (Mass mode / Dust mode on the right trigger).")]
         [SerializeField] SpreadWingsActionExecutor spreadExecutor;
 
@@ -64,6 +69,8 @@ namespace CosmicShore.UI
             // a vessel with no authored icon art still report its recharge.
             if (foldExecutor)
                 View?.SetAbilityCooldown(Element.Time, foldExecutor.CooldownRemaining01);
+            else if (dropExecutor)
+                View?.SetAbilityCooldown(Element.Time, dropExecutor.CooldownRemaining01);
         }
     }
 }

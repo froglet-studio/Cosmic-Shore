@@ -24,7 +24,8 @@ ASSET = "Assets/Resources/TouchControlProfiles.asset"
 SCRIPT_META = "Assets/_Scripts/Controller/IO/TouchControls/TouchControlProfileLibrarySO.cs.meta"
 
 VESSEL = dict(Manta=1, Dolphin=2, Rhino=3, Urchin=4, Grizzly=5, Squirrel=6, Serpent=7, Shrike=10, Sparrow=11,
-              Scarab=12, Butterfly=13, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Goby=18, Wrasse=19, Orca=20, Honeyguide=23)
+              Scarab=12, Butterfly=13, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Goby=18, Wrasse=19, Orca=20, Honeyguide=23,
+              TigerMoth=29)
 INPUT = dict(RightStick=1, LeftStick=2, Flip=3, Idle=4, A=6, B=7, X=8, Y=14)
 ELEMENT = dict(none=0, Charge=1, Mass=2, Space=3, Time=4)
 SCHEME = dict(ThumbLifts=0, TotemButtons=1)
@@ -75,6 +76,10 @@ PROFILES = [
             glyphs=[("Charge", "LiftBothThumbs"), ("Mass", "LiftEitherThumb"), ("Space", "LiftEitherThumb"),
                     ("Time", "ThumbsApart")]),
     profile("Butterfly", "ThumbLifts",
+            glyphs=[("Mass", "LiftLeftThumb"), ("Time", "LiftRightThumb")]),
+    # The Tiger Moth is the Butterfly's airframe with the Drop on the same LT binding: lift the right thumb to drop, put it
+    # back to land (R_VesselActions/TIGER_MOTH.md).
+    profile("TigerMoth", "ThumbLifts",
             glyphs=[("Mass", "LiftLeftThumb"), ("Time", "LiftRightThumb")]),
     # Plant on the right lift, Winch on the left; both off aims the launch by tilt. The Mass Mode card
     # is a button, so a lift waits 0.12 s and is dropped if the finger lands on it.
