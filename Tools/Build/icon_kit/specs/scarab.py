@@ -64,41 +64,69 @@ CARDS = []
 REBIND = []
 
 
-# ---- Charge: Cavitation Blast options (2026-10-28) -----------------------------------------------------------------
-# The plate seen from above is EDGE-ON: a bar across the dash. Prisms are the fleet's corner-on diamond (VOCABULARY).
-# Colours: the hull is yours (domain), the plate white (the punch itself), the prisms it throws the HUD blue
-# (untouched mass), a shielded prism the shielded colour; at Charge 5 that prism is shattered, below it only shed.
+# ---- Charge: Cavitation Blast options, TO SCALE (2026-10-28) ------------------------------------------------------
+# Garrett: "show the relative size of the volume affected relative to the scarab". Measured from the prefabs:
+#   hull radius r = 4.5 (ScarabHull's SphereCollider - MeasureHullRadius takes the largest hull collider; scale 1),
+#   plate radius R = radiusPerVesselRadius 10 x r = 45 (Scarab.prefab), length = lengthPerRadius 1.2 x R = 54 ahead,
+#   mirrored (mirrorAboutStartPlane 1, AOEScarabCavitation.prefab) = 54 behind: the swept volume seen from above is a
+#   rectangle 2.4R = 108 long by 2R = 90 wide, centred on the hull. The mesh (hull_view, file frame) is 10.6 long by
+#   9.7 wide - the punch is ~10 Scarabs long. The plate is edge-on from above: a bar across the dash.
+# Colours: the hull is yours (domain), the plate white (the punch), the volume's edges white and faint, the prisms it
+# throws the HUD blue; a shielded prism the shielded colour, shattered at Charge 5, only shed below it.
 CY = 64.0
-PLATE_H = 104.0          # the disc's diameter on the card (it is ~10 hull radii across in the game - drawn as a bar
-                        # that dwarfs the hull)
-PLATE_W = 9.0
+HULL_R = 4.5
+PLATE_R = 10 * HULL_R                 # 45
+REACH = 1.2 * PLATE_R                 # 54 each way
+HULL_EXTENT = 10.58                   # the mesh's longest side (nose axis), what silhouette() fits to `box`
+HULL_NOSE_OFFSET = 0.47               # the mesh bbox centre sits this far ahead of the hull's origin
+EDGE_W = 2.0                          # the volume's edge lines
+PLATE_W = 4.0
 
 
-def plate_bar(x, h=PLATE_H, w=PLATE_W, cy=CY):
-    return fill([(x - w / 2, cy - h / 2), (x + w / 2, cy - h / 2), (x + w / 2, cy + h / 2), (x - w / 2, cy + h / 2)])
+def bar(x0, x1, y0, y1):
+    return fill([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
 
 
-def plate_lens(x, h=PLATE_H, depth=12.0, w=7.0, cy=CY):
-    """B: the plate's front bowed forward - the cavitation bubble's face, still a bar of one weight."""
-    out, inn = [], []
-    for k in range(17):
-        t = -1 + 2 * k / 16
-        y = cy + t * h / 2
-        out.append((x + depth * (1 - t * t), y))
-        inn.append((x + depth * (1 - t * t) - w, y))
-    return fill(out + inn[::-1])
+class Scale:
+    """One to-scale layout: k icon px per metre, the hull's origin at (ox, CY)."""
+
+    def __init__(self, k, ox, hull_boost=1.0, behind=True):
+        self.k, self.ox, self.boost, self.behind = k, ox, hull_boost, behind
+
+    def x(self, m):
+        return self.ox + m * self.k
+
+    def hull(self):
+        return scarab(box=HULL_EXTENT * self.k * self.boost, cx=self.x(HULL_NOSE_OFFSET * self.boost), cy=CY)
+
+    def half(self):
+        return PLATE_R * self.k
+
+    def plate(self):
+        x = self.x(REACH)
+        return bar(x - PLATE_W, x, CY - self.half(), CY + self.half())
+
+    def mirror(self):
+        x = self.x(-REACH)
+        return bar(x, x + PLATE_W, CY - self.half(), CY + self.half()) if self.behind else empty()
+
+    def edges(self):
+        x0 = self.x(-REACH) + (PLATE_W if self.behind else -self.k * 8)
+        x1 = self.x(REACH) - PLATE_W - 1.5
+        h = self.half()
+        return _clear_of(bar(x0, x1, CY - h, CY - h + EDGE_W) | bar(x0, x1, CY + h - EDGE_W, CY + h), self.hull())
 
 
-def sweep_band(x0, x1, h=PLATE_H, cy=CY):
-    """The volume the plate sweeps (a ghost): from x0 to x1, the plate's height."""
-    return fill([(x0, cy - h / 2), (x1, cy - h / 2), (x1, cy + h / 2), (x0, cy + h / 2)])
+A = Scale(k=116 / (2 * REACH), ox=64.0)                      # the whole volume, true scale (hull ~11 px)
+B = Scale(k=116 / (2 * PLATE_R), ox=22.0, behind=False)      # the front half, true scale (hull ~14 px)
+C = Scale(k=116 / (2 * REACH), ox=64.0, hull_boost=2.0)      # A with the hull drawn 2x so it survives on the HUD
 
 
-def thrown(cx, cy, s=11.0, lean=0.0):
-    return prism(cx, cy, s) if not lean else fill(rotate([(cx, cy - s), (cx + s * 0.8, cy), (cx, cy + s), (cx - s * 0.8, cy)], lean, cx, cy))
+def thrown(cx, cy, s=9.0):
+    return prism(cx, cy, s)
 
 
-def shatter(cx, cy, s=11.0, spread=4.0):
+def shatter(cx, cy, s=9.0, spread=3.5):
     """A prism broken into its four quarters, each pushed out from the centre."""
     m = empty()
     for qx, qy in ((1, -1), (1, 1), (-1, 1), (-1, -1)):
@@ -107,103 +135,38 @@ def shatter(cx, cy, s=11.0, spread=4.0):
     return m
 
 
-# A: THE SLAP - the hull centred; the plate at the front of its sweep, the sweep a ghost through the hull and as far
-# behind (the mirror); two prisms, one ahead and one BEHIND, both thrown right.
-A_HULL = dict(box=66, cx=50.0, cy=CY)
-A_PLATE_X = 94.0
+def _parts(L, prisms, lone):
+    """prisms: where the claimed prisms land (inside the volume, near its front); lone: the shielded one."""
+    return dict(hull=L.hull, plate=L.plate, mirror=L.mirror, edges=L.edges,
+                prisms=lambda: _clear_of(prisms(), L.plate()),
+                shielded=lambda: thrown(*lone), shatter=lambda: shatter(*lone))
 
 
-def a_hull():
-    return scarab(**A_HULL)
-
-
-def a_plate():
-    return _clear_of(plate_bar(A_PLATE_X), a_hull())
-
-
-def a_sweep():
-    return _clear_of(sweep_band(16.0, A_PLATE_X - PLATE_W / 2), a_hull(), plate_bar(A_PLATE_X))
-
-
-def a_prisms():
-    return thrown(112, 30) | thrown(112, 98)
-
-
-def a_shielded():
-    return thrown(112, 30)
-
-
-def a_shatter():
-    return shatter(112, 30)
-
-
-# B: THE PUNCH - the hull at the left, the bowed plate ahead of its nose, three prisms flung on past it.
-B_HULL = dict(box=62, cx=36.0, cy=CY)
-B_PLATE_X = 72.0
-
-
-def b_hull():
-    return scarab(**B_HULL)
-
-
-def b_plate():
-    return _clear_of(plate_lens(B_PLATE_X), b_hull())
-
-
-def b_prisms():
-    return thrown(104, 28) | thrown(110, 64) | thrown(104, 100)
-
-
-def b_shielded():
-    return thrown(110, 64)
-
-
-def b_shatter():
-    return shatter(110, 64)
-
-
-# C: THE DRAG - A without the prism ahead: one prism behind the hull pulled THROUGH it to the front, its old place a
-# ghost - the mirror half is what makes this punch the Scarab's.
-def c_ghost_behind():
-    return _clear_of(thrown(12, 64), a_hull())
-
-
-def c_prism_front():
-    return thrown(112, 64)
-
-
-def c_shatter():
-    return shatter(112, 64)
-
-
-def _card(name, title, parts, prisms_key, shielded_key, shatter_key, extra=()):
-    base = [(k, c, *a) for k, c, *a in extra]
+def _card(name, title, parts):
     states = [
-        ("ready", base + [("hull", "domain"), ("plate", "white")]),
-        ("punching (lit): prisms thrown", base + [("sweep", "white", 0.3), (prisms_key, "blue"), ("hull", "domain"), ("plate", "white")]),
-        ("recharging", base + [("hull", "domain"), ("plate", "white", 0.3)]),
-        ("below Charge 5: a shielded prism only sheds", base + [("sweep", "white", 0.3), (shielded_key, "blue"), ("hull", "domain"), ("plate", "white")]),
-        ("Charge 5, Cavitation Shear: it shatters", base + [("sweep", "white", 0.3), (shatter_key, "shielded"), ("hull", "domain"), ("plate", "white")]),
+        ("ready", [("edges", "white", 0.35), ("mirror", "white", 0.45), ("hull", "domain"), ("plate", "white")]),
+        ("punching (lit): prisms thrown", [("edges", "white", 0.35), ("mirror", "white", 0.45), ("prisms", "blue"),
+                                           ("hull", "domain"), ("plate", "white")]),
+        ("recharging", [("edges", "white", 0.2), ("mirror", "white", 0.2), ("hull", "domain"), ("plate", "white", 0.3)]),
+        ("below Charge 5: a shielded prism only sheds", [("edges", "white", 0.35), ("mirror", "white", 0.45),
+                                                         ("shielded", "blue"), ("hull", "domain"), ("plate", "white")]),
+        ("Charge 5, Cavitation Shear: it shatters", [("edges", "white", 0.35), ("mirror", "white", 0.45),
+                                                     ("shatter", "shielded"), ("hull", "domain"), ("plate", "white")]),
     ]
-    if "sweep" not in parts:
-        states = [(n, [l for l in L if l[0] != "sweep"]) for n, L in states]
     return dict(name=name, group="cavitation", lockup_state=1, element="Charge",
                 before=ICON_DIR + "Scarab_CavitationBlast-PLACEHOLDER.png", title=title, parts=parts, states=states)
 
 
 CARDS += [
     _card("charge_option_a",
-          "A - THE SLAP: the Scarab from above, the plate edge-on ahead of the nose, as tall as the punch is wide; the prisms it throws on past it",
-          dict(hull=a_hull, plate=a_plate, prisms=a_prisms, shielded=a_shielded, shatter=a_shatter),
-          "prisms", "shielded", "shatter"),
+          "A - TRUE SCALE, WHOLE VOLUME: the punch's real reach (54 ahead, mirrored 54 behind, 90 across) around a "
+          "true-size Scarab; the front plate solid, its mirror faint",
+          _parts(A, lambda: thrown(104, 34) | thrown(104, 94) | thrown(88, 64), (104, 64))),
     _card("charge_option_b",
-          "B - THE PUNCH: the Scarab at the left, the plate bowed forward off its nose, three prisms flung on past it",
-          dict(hull=b_hull, plate=b_plate, prisms=b_prisms, shielded=b_shielded, shatter=b_shatter),
-          "prisms", "shielded", "shatter"),
+          "B - TRUE SCALE, FRONT HALF: the Scarab at the left, the plate 54 ahead and 90 across - a bigger Scarab, "
+          "the mirror half off the card",
+          _parts(B, lambda: thrown(98, 30) | thrown(98, 98) | thrown(76, 64), (98, 64))),
     _card("charge_option_c",
-          "C - THE DRAG: A with one prism, pulled from BEHIND the hull through it to the front (its old place a ghost) - the mirror half is this punch's own",
-          dict(hull=a_hull, plate=a_plate, prisms=c_prism_front, ghost=c_ghost_behind,
-               shielded=c_prism_front, shatter=c_shatter),
-          "prisms", "shielded", "shatter"),
+          "C - A WITH THE HULL 2x: the volume true, the Scarab drawn twice its size so it still reads on the HUD",
+          _parts(C, lambda: thrown(104, 34) | thrown(104, 94) | thrown(92, 64), (104, 64))),
 ]
-CARDS[-1]["states"][1][1].insert(0, ("ghost", "blue", 0.4))
