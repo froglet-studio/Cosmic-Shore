@@ -1,0 +1,54 @@
+{
+ "baseline": {
+  "error": null,
+  "loss": 4.617154322825912,
+  "metrics": {
+   "dnf": 3,
+   "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+   "model": "rhino_drive",
+   "races": 12,
+   "seconds_by_intensity": {
+    "1": 51.3,
+    "2": 49.47,
+    "3": 66.2,
+    "4": 630.0
+   }
+  },
+  "params": {
+   "alignDegrees": 12.0,
+   "brakeLeadSeconds": 0.25,
+   "brakeMarginUnits": 120.0,
+   "brakeSteerFloor": 0.3,
+   "cornerReleaseDegrees": 30.0,
+   "cornerSpeed": 600.0,
+   "engageRunwaySeconds": 1.5,
+   "minCornerSpeed": 160.0,
+   "minSpeedGain": 50.0,
+   "releaseAlignDegrees": 25.0,
+   "releaseRunwaySeconds": 0.5,
+   "releaseStickBand": 0.6,
+   "stickBand": 0.35,
+   "throttleSlewPerSecond": 4.0
+  }
+ },
+ "errors": {},
+ "evals": 638,
+ "history": [
+  [
+   11,
+   4.476020419635534,
+   1793193911,
+   "shombithofficial/dragonsweapon"
+  ],
+  [
+   22,
+   4.132607875603729,
+   1793193919,
+   "shombithofficial/dragonsweapon"
+  ]
+ ],
+ "restarts": 1,
+ "seconds": 375.4,
+ "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+ "updated": 1793194274
+}
