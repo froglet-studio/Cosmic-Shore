@@ -1,0 +1,10 @@
+{
+ "best": 3.4161073106858404,
+ "derived": "drive-rhino-regatta~r20261028-125904-5357",
+ "epoch": "3a9b291800af",
+ "id": "r20261028-125904-5357",
+ "job": "drive-rhino-regatta",
+ "stopped": "max evals",
+ "tries": 308,
+ "updated": 1793192374
+}

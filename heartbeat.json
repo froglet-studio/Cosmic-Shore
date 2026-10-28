@@ -12,14 +12,16 @@
   "torch": false
  },
  "cores": 3,
- "current": {
-  "job": "drive-rhino-regatta~r20261028-125904-5357",
-  "max_evals": 300,
-  "minutes": 60.0,
-  "request": "r20261028-125904-5357",
-  "since": 1793192363
- },
+ "current": {},
  "host": "cloud-session",
+ "last": {
+  "best_start": null,
+  "epoch": "3a9b291800af",
+  "evals": 308,
+  "job": "drive-rhino-regatta~r20261028-125904-5357",
+  "session_evals": 308,
+  "stopped": "max evals"
+ },
  "runs": [
   {
    "best_end": 4.279668468582069,
@@ -75,12 +77,24 @@
    "start": 1793188893,
    "stopped": "max evals",
    "unit": null
+  },
+  {
+   "best_end": 3.4161073106858404,
+   "best_start": null,
+   "end": 1793192374,
+   "epoch": "3a9b291800af",
+   "evals": 308,
+   "job": "drive-rhino-regatta~r20261028-125904-5357",
+   "request": "r20261028-125904-5357",
+   "start": 1793192363,
+   "stopped": "max evals",
+   "unit": null
   }
  ],
  "totals": {
-  "sessions": 6
+  "sessions": 7
  },
- "updated": 1793192363,
+ "updated": 1793192374,
  "user": "shombith",
  "version": "1"
 }

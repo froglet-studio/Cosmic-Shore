@@ -1,0 +1,117 @@
+{
+ "baseline": {
+  "error": null,
+  "loss": 4.11251186617755,
+  "metrics": {
+   "dnf": 0,
+   "limits": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+   "model": "rhino_drive",
+   "races": 1,
+   "seconds_by_intensity": {
+    "4": 61.1
+   }
+  },
+  "params": {
+   "alignDegrees": 12.0,
+   "brakeLeadSeconds": 0.25,
+   "brakeMarginUnits": 120.0,
+   "brakeSteerFloor": 0.3,
+   "cornerReleaseDegrees": 30.0,
+   "cornerSpeed": 333.0,
+   "engageRunwaySeconds": 1.5,
+   "minCornerSpeed": 160.0,
+   "minSpeedGain": 50.0,
+   "releaseAlignDegrees": 25.0,
+   "releaseRunwaySeconds": 0.5,
+   "releaseStickBand": 0.6,
+   "stickBand": 0.35,
+   "throttleSlewPerSecond": 4.0
+  }
+ },
+ "errors": {},
+ "evals": 308,
+ "history": [
+  [
+   11,
+   3.8116127816530327,
+   1793192367,
+   "shombith/cloud-session"
+  ],
+  [
+   22,
+   3.7989054353157066,
+   1793192368,
+   "shombith/cloud-session"
+  ],
+  [
+   33,
+   3.6311344742674745,
+   1793192368,
+   "shombith/cloud-session"
+  ],
+  [
+   44,
+   3.568355535602146,
+   1793192369,
+   "shombith/cloud-session"
+  ],
+  [
+   55,
+   3.5012754483131276,
+   1793192369,
+   "shombith/cloud-session"
+  ],
+  [
+   66,
+   3.4480740853374723,
+   1793192369,
+   "shombith/cloud-session"
+  ],
+  [
+   88,
+   3.4289669170187413,
+   1793192370,
+   "shombith/cloud-session"
+  ],
+  [
+   110,
+   3.4232164431226835,
+   1793192370,
+   "shombith/cloud-session"
+  ],
+  [
+   187,
+   3.4227551423304856,
+   1793192372,
+   "shombith/cloud-session"
+  ],
+  [
+   220,
+   3.422636437742639,
+   1793192372,
+   "shombith/cloud-session"
+  ],
+  [
+   253,
+   3.422564262894253,
+   1793192373,
+   "shombith/cloud-session"
+  ],
+  [
+   275,
+   3.419228684556866,
+   1793192373,
+   "shombith/cloud-session"
+  ],
+  [
+   286,
+   3.4161073106858404,
+   1793192373,
+   "shombith/cloud-session"
+  ]
+ ],
+ "restarts": 0,
+ "seconds": 7.0,
+ "sha": "19a7da13dfcb5c41e71f76616fc8027213a2943c",
+ "updated": 1793192374
+}
