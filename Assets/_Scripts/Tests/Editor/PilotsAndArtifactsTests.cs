@@ -60,6 +60,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1, catalog.SlotsPerVessel, "one artifact slot per squad slot (ARTIFACTS.md §2)");
             Assert.IsInstanceOf<JavelinTransformSO>(Artifact("artifact.javelin").Transform);
             Assert.IsInstanceOf<AegisTransformSO>(Artifact("artifact.aegis").Transform);
+            Assert.IsInstanceOf<HydraTransformSO>(Artifact("artifact.hydra").Transform);
+            Assert.IsInstanceOf<AftershockTransformSO>(Artifact("artifact.aftershock").Transform);
             foreach (var a in catalog.Artifacts)
             {
                 Assert.AreEqual(VesselClassType.Any, a.Requirement.Vessel, $"{a.name}: no vessel class appears in an artifact");
@@ -128,6 +130,55 @@ namespace CosmicShore.Tests
             Assert.AreEqual(40f, top.Seconds, 1e-3f);
             Assert.AreEqual(3, top.Reraises);
             Assert.IsTrue(top.LeavesShield && top.ReraisesAtOnce);
+        }
+
+        [Test]
+        public void Hydra_ReadsItsTracks_FansItsHeads_AndTwistsAtFive()
+        {
+            var hydra = Artifact("artifact.hydra");
+            var so = (HydraTransformSO)hydra.Transform;
+
+            var plain = so.Shot(hydra, new ArtifactLevels(0, 0, 0, 0));
+            Assert.AreEqual(3, plain.Heads, "three heads at level 0");
+            Assert.AreEqual(14f, plain.Radius, 1e-3f);
+            Assert.AreEqual(120f, plain.Range, 1e-3f);
+            Assert.AreEqual(0f, plain.Linger, 1e-3f);
+            Assert.IsFalse(plain.CracksInFlight || plain.Seeks || plain.LingerGrows || plain.SplitsAgain, "no twist at level 0");
+            Assert.AreEqual(plain.Radius, plain.LingerRadius(1f), 1e-3f);
+
+            var top = so.Shot(hydra, new ArtifactLevels(10, 10, 10, 10));
+            Assert.AreEqual(6, top.Heads);
+            Assert.IsTrue(top.CracksInFlight && top.Seeks && top.LingerGrows && top.SplitsAgain);
+            Assert.AreEqual(top.Radius * 2f, top.LingerRadius(1f), 1e-3f, "the Time twist ends twice as wide");
+
+            var left = HydraTransformSO.HeadDirection(Vector3.forward, Vector3.up, 0, 3, 50f);
+            var mid = HydraTransformSO.HeadDirection(Vector3.forward, Vector3.up, 1, 3, 50f);
+            var right = HydraTransformSO.HeadDirection(Vector3.forward, Vector3.up, 2, 3, 50f);
+            Assert.AreEqual(0f, Vector3.Angle(Vector3.forward, mid), 1e-2f, "the middle head flies straight on");
+            Assert.AreEqual(50f, Vector3.Angle(left, right), 1e-2f, "the outer heads span the fan");
+            Assert.AreEqual(0f, left.y, 1e-4f, "the fan lies across the heading, level");
+        }
+
+        [Test]
+        public void Aftershock_ReadsItsTracks_AndTwistsAtFive()
+        {
+            var aftershock = Artifact("artifact.aftershock");
+            var so = (AftershockTransformSO)aftershock.Transform;
+
+            var plain = so.Shot(aftershock, new ArtifactLevels(0, 0, 0, 0));
+            Assert.AreEqual(2, plain.Shocks, "it cracks twice at level 0");
+            Assert.AreEqual(5f, plain.Interval, 1e-3f);
+            Assert.AreEqual(0f, plain.Throw, 1e-3f, "lands where it is released at level 0");
+            Assert.AreEqual(plain.Radius, plain.RadiusOf(1), 1e-3f);
+            Assert.IsFalse(plain.LastReachesFar || plain.Rings || plain.Shatters);
+
+            var top = so.Shot(aftershock, new ArtifactLevels(10, 10, 10, 10));
+            Assert.AreEqual(5, top.Shocks, "four shocks, and the Time twist adds one more");
+            Assert.AreEqual(2f, top.Interval, 1e-3f, "Time shortens the wait between shocks");
+            Assert.AreEqual(240f, top.Throw, 1e-3f);
+            Assert.AreEqual(top.Radius * 2f, top.RadiusOf(top.Shocks - 1), 1e-3f, "the Mass twist: the last reaches twice as far");
+            Assert.AreEqual(top.Radius, top.RadiusOf(0), 1e-3f);
+            Assert.IsTrue(top.Rings && top.Shatters);
         }
 
         [Test]

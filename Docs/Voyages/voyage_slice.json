@@ -64,8 +64,8 @@
       "cell": 4,
       "vaults": 3,
       "finds": [
-        "artifact.javelin",
-        "artifact.aegis"
+        "artifact.hydra",
+        "artifact.aftershock"
       ],
       "blurb": "Vault shells drift here, lit from inside. Something sealed them, and something wants them back."
     },
@@ -81,8 +81,8 @@
       "cell": 5,
       "vaults": 2,
       "finds": [
-        "artifact.aegis",
-        "artifact.javelin"
+        "artifact.aftershock",
+        "artifact.hydra"
       ],
       "blurb": "A quiet cell with deep vaults. Quiet cells are quiet for a reason."
     },
@@ -477,7 +477,7 @@
     {
       "at": "loc.saltmarch",
       "artifacts": [
-        "artifact.javelin"
+        "artifact.hydra"
       ],
       "line": "A broken Ark at Saltmarch, its hold open to the sea."
     }

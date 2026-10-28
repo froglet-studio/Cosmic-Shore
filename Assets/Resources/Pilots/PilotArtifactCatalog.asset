@@ -34,4 +34,6 @@ MonoBehaviour:
   artifacts:
   - {fileID: 11400000, guid: 83345c39733ef628eeeff1a45544f05e, type: 2}
   - {fileID: 11400000, guid: e0ade64a49c0dbdef08f9f2bdd0bd4af, type: 2}
+  - {fileID: 11400000, guid: e7214487e17b893787e1ecbc226b252d, type: 2}
+  - {fileID: 11400000, guid: 44faff0295ae145ee272ed829e6919f1, type: 2}
   slotsPerVessel: 1

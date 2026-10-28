@@ -73,8 +73,8 @@ MonoBehaviour:
       Cell: 4
       Vaults: 3
       Finds:
-      - artifact.javelin
-      - artifact.aegis
+      - artifact.hydra
+      - artifact.aftershock
       HoldSeconds: 60
     - Id: loc.hollow
       Name: The Hollow
@@ -87,8 +87,8 @@ MonoBehaviour:
       Cell: 5
       Vaults: 2
       Finds:
-      - artifact.aegis
-      - artifact.javelin
+      - artifact.aftershock
+      - artifact.hydra
       HoldSeconds: 60
     - Id: loc.verdigris
       Name: Verdigris
@@ -368,7 +368,7 @@ MonoBehaviour:
     SeedWrecks:
     - At: loc.saltmarch
       Artifacts:
-      - artifact.javelin
+      - artifact.hydra
       Line: A broken Ark at Saltmarch, its hold open to the sea.
     WreckLine: 'An Ark fell at {about}. What it carried lies there now.'
     WreckNewsLine: 'An Ark went down at {about} and its hold spilled. Nobody has claimed it yet.'
