@@ -41,13 +41,13 @@ remembered:
 | Borromean | `BorromeanFlora` | `Branch` |
 | NestedGyroid | `NestedGyroidFlora` — a 3D STACK of gyroid sheets + fibers whose every sheet is the GYROID flora's own tiling (`NestedGyroidTemplate`, measured) carried along ∇G. A plant is ONE octagon tile through the stack, every prism on a limb off its crystal; the species is a COLONY of tiles in one periodic frame (`NestedGyroidColony`, the gyroid's §32.7 model). The only flora that is a `Volume` prismscape and an `ILayeredPrismscape` (`Docs/ECOSYSTEM.md` §58) | `Branch` |
 | MandelbulbFlora, CoralBloomFlora, WatershedFlora, ApolloniaFlora | `MandelbulbFlora` — **all four**, measured; there is no `CoralBloomFlora` class, the species differ only in their authored `GrowthRules` (`Docs/ECOSYSTEM.md` §50, §52, §53, §54, §55, §56) | `Branch` |
-| Wall | `AssembledFlora` | `AssemblyBranch` |
 | **Seaweed** | **`SegmentSpawner` — NOT a `Flora` at all** | (n/a) |
 
 The last row is the reason a roster is MEASURED: it sits in the flora folder with a `*Flora` name
 and carries a component that is not a `Flora` at all, so "every prefab named `*Flora`" is not the
 species list. (`oldWallFlora`, a `GyroidAssembler` prefab, was the second such row until it was
-deleted as unreferenced on 2026-10-14.) Resolve `m_Script`'s guid to a `.cs.meta` instead.
+deleted as unreferenced on 2026-10-14; the `Wall` species, whose leaf was the Serpent's own
+`WallBlock Variant`, retired on 2026-10-28 so the Serpent's wall stays a vessel's.) Resolve `m_Script`'s guid to a `.cs.meta` instead.
 
 ---
 
