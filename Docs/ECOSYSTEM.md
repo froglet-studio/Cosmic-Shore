@@ -7510,7 +7510,8 @@ integrity scan. The jaws' four blades are the first hull prisms that ride a movi
 than the root. They sit in the hull list like the rest, so the Ark's own per-frame notify and
 re-bind reach them. When the puppetry moves the jaws while the Ark holds still, `ArkModel` honours
 the mover contract for those four itself, gated so a sub-0.005 change of input does not re-file
-them. No CPU animation of a prism is introduced: the riders move because their parent bone does,
+them. A blade the hold hands to a payload carrier (`Ark.TakeHullPrisms`) leaves both the hull list
+and the model's riders, since it is the carrier's to move. No CPU animation of a prism is introduced: the riders move because their parent bone does,
 the fauna-body pattern.
 
 ### 41.3 Mass accounting, stated plainly
