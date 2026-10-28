@@ -455,6 +455,40 @@ compiled clean headless (`unity_refcompile --config editor`: 0 errors in project
    git) but still bakes a painting's and a hull's variant icons.
 3. Run Scan & Merge once: no Tool page loses its Image (the field is fill-when-empty).
 
+### 🔴 The omni crystal wears all four elemental shades; the converter keeps each crystal's shade (`cece/serene-cannon-93olp5`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "when the elemental crystals combine have them retain their separate colors. change the
+omnicrystal to retain all four elemental colors of lime in all instances"): the free omni body paints each plate
+family in its element's shade (pentagons Charge, squares Space, rhombi Time; its triangle prisms `OmniDepthPrisms`
+Mass; the flux arcs' lit pentagons Charge). New `CrystalElementPlates` names each plate's element per vertex
+(TEXCOORD4); `OmniCrystalFresnelShader` reads it under `_ElementShades`; the skin, cut, Space-squares and vessel
+morph meshes keep it; `ThemeManager` turns the shades off on team clones; the Elemental Converter no longer eases
+each crystal to the omni's lime, and its config's `palette` field is gone. Why: `Docs/PALETTE.md` §2.12.
+
+**Verified without the editor:** reference compile player OK and editor OK (0 errors in project code; the new
+`CrystalElementPlatesTests` and the changed `OmniCombineTests` compile); the plate rule run in Python on the shipped
+`OmniCrystalExport1_8-21-25.fbx` gives 12 Charge / 20 Mass / 60 Space / 30 Time plates, none left over; the shader's
+`ElementBright` compiled with clang from the shipped file (off, element 0 and out of range are `_BrightColor` bit for bit);
+`author_omni_crystal_triangles.py`, `author_mass_crystal_look.py`, `author_elemental_crystal_colors.py` (and
+`--self-test`), `author_elemental_converter.py`, `omni_shepard_lab_assets.py` and `check_console_logging.py` all OK.
+NOT run: any edit-mode test, any shader compile in Unity.
+
+**Verify in editor:**
+1. Let the shader and materials import (no shader error on `Custom/OmniCrystalFresnelShader`). Run
+   `CrystalElementPlatesTests`, `OmniCombineTests`, `CrystalFlipWaveTests`, `CrystalSpaceSquaresTests`,
+   `CrystalMorphMeshBuilderTests` and `CrystalMorphPanelCensusTests` (EditMode): all pass.
+2. Play any mode with a free omni crystal: its pentagons, squares, rhombi and triangle prisms are four distinct
+   limes (Charge yellow-green, Space cooler, Time warmest, Mass darkest), from the first frame it shows, and they
+   stay so while the rhombi flip, the squares turn and the triangles ride their columns. The Charge arcs light the
+   pentagons in the pentagons' own shade.
+3. An embedded omni (a lifeform heart) is still blue-white; a team omni (Skim Race track crystal, the Dolphin's
+   TeamCrystal) is still wholly its domain colour.
+4. Collect a free omni with the Scarab and the Squirrel: the crystal folds starting in its four shades (no snap to
+   one lime at the start) and lands in the ball's / ring's colours as before.
+5. The Elemental Converter (Ark screen, CONVERT): each crystal waits, flies and lands in its own shade (no easing to
+   one lime) and the omni dithers in over plates of the same four shades with no colour jump.
+6. The Console shows nothing new.
+
 ### 🔴 Each free elemental crystal wears its own shade of lime (`cece/charming-bell-m70ac8`, 2026-10-27) — NOT EDITOR-VERIFIED
 
 **What landed:** the Mass and omni crystals wore one identical lime. Now each free elemental wears the Wrasse's lasso
@@ -476,6 +510,7 @@ New palette field `EnvironmentColors.ElementalCrystalColors` (written by `kite_m
 4. Embedded hearts are still blue-white, and team crystals still wear their domain colour.
 5. The Elemental Converter (Ark screen, CONVERT): each of the four crystals waits and flies in its own shade, eases
    to the omni's lime as its plates turn into the omni's, and the omni dithers in with no colour jump.
+   *(Superseded 2026-10-28, the entry above: each crystal now keeps its shade and the omni wears all four.)*
 6. The Console shows nothing new.
 
 ### 🔴 The AI Stoat retrained for Warpline (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
