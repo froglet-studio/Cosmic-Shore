@@ -1,6 +1,7 @@
 {
  "caps": {
   "bash": true,
+  "caps_version": 2,
   "cores": 12,
   "cuda": false,
   "dotnet8": true,
@@ -9,19 +10,19 @@
   "os": "windows",
   "python": "3.11.9",
   "python3": true,
-  "torch": false
+  "torch": false,
+  "unity": true
  },
  "cores": 11,
- "current": {},
- "host": "dragonsweapon",
- "last": {
-  "best_start": 3.4612172126313028,
-  "epoch": "c5c7f8e4ef2d",
-  "evals": 34070,
-  "job": "drive-manta-redline",
-  "session_evals": 34010,
-  "stopped": "the person came back"
+ "current": {
+  "job": "unity-train~r20261028-205229-b55f",
+  "max_evals": 30,
+  "minutes": 60.0,
+  "request": "r20261028-205229-b55f",
+  "since": 1793200973,
+  "unit": "switchback-dolphin-i2"
  },
+ "host": "dragonsweapon",
  "runs": [
   {
    "best_end": 3.4612172126313028,
@@ -63,7 +64,7 @@
  "totals": {
   "sessions": 3
  },
- "updated": 1793198934,
+ "updated": 1793200973,
  "user": "shombithofficial",
  "version": "1"
 }
