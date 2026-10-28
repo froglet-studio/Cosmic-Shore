@@ -80,6 +80,7 @@ static class Program
         if (args.Length > 0 && args[0] == "jolt") return SortFeelHarness.Jolt(args, LoadPlans);
         if (args.Length > 0 && args[0] == "benchsort") return SortFeelHarness.Bench(args, LoadPlans);
         if (args.Length > 0 && args[0] == "evofate") return EvoHarness.Fixture(args[1], args[2]) == 0 ? 0 : 1;
+        if (args.Length > 1 && args[1] == "shiva") return ShivaHarness.Run(args.Length > 2 ? args[2] : null);   // Tandava redesigned: Shiva's Cell
         bool gridOnly = args.Length > 1 && args[1] == "grid", sortOnly = args.Length > 1 && args[1] == "sort";
         var plans = LoadPlans(args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans");
         if (gridOnly) return GridHarness.Run(plans) == 0 ? 0 : 1;

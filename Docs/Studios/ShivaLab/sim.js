@@ -222,6 +222,11 @@
     orientRings(rings);
     return rings;
   }
+  // Nataraja: the whole circuit wheels round him; each ring bobs and sways (ShivaDirectorCore.DanceAt is the C# twin)
+  function danceAt(P, g, t) {
+    const r = g.base.r + P.danceSway * Math.sin(0.23 * t + g.bobPh * 1.7) * (g.base.r / P.ringOuter), th = g.base.th + P.danceSpeed * t;
+    return [r * Math.cos(th), g.base.y + P.danceBob * Math.sin(0.3 * t + g.bobPh), r * Math.sin(th)];
+  }
   function orientRings(rings) {
     const n = rings.length;
     for (let i = 0; i < n; i++) {
@@ -394,13 +399,7 @@
 
     // the rings dance in the second form
     if (this.phase === 1 && this.state === 'play') {
-      const wheel = P.danceSpeed * this.phaseT;
-      for (const g of this.rings) {
-        const prev = g.c, k = 0.3 * this.phaseT + g.bobPh;
-        const r = g.base.r + P.danceSway * Math.sin(0.23 * this.phaseT + g.bobPh * 1.7) * (g.base.r / P.ringOuter), th = g.base.th + wheel;
-        g.c = [r * Math.cos(th), g.base.y + P.danceBob * Math.sin(k), r * Math.sin(th)];
-        g.vel = V.mul(V.sub(g.c, prev), 1 / dt);
-      }
+      for (const g of this.rings) { const prev = g.c; g.c = danceAt(P, g, this.phaseT); g.vel = V.mul(V.sub(g.c, prev), 1 / dt); }
       orientRings(this.rings);
     }
     // the mouth opens in the third
@@ -786,5 +785,5 @@
     return w.score();
   }
 
-  G.ShivaSim = { SHIPPED, SPEC, HULLS, HULL_NAMES, PHASES, ELEMENTS, RULES, UNIT, DT, V, World, buildBank, figure, run, mulberry32, shellR, ringCount, growCA, planetPos };
+  G.ShivaSim = { SHIPPED, SPEC, HULLS, HULL_NAMES, PHASES, ELEMENTS, RULES, UNIT, DT, V, World, buildBank, figure, run, mulberry32, shellR, ringCount, growCA, planetPos, layRings, orientRings, danceAt };
 })(typeof window !== 'undefined' ? window : globalThis);
