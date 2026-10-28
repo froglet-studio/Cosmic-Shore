@@ -1,0 +1,293 @@
+{
+ "_about": "The music -> gameplay mapping the composer reads. Every number here is a decision somebody can change after watching a cut; LEARNINGS.md says why each one is what it is. Features are normalised against the SONG (0..1), not the segment, so a quiet song's loudest bar still reads as its drop. Since cut 3 the music is answered by ORCHESTRATED GAMEPLAY (events), never by the camera: cameras are steady mounts or slow orbits, and there are no pulses or shakes.",
+ "render": {
+  "fps": 60,
+  "step_hz": 240,
+  "accum": 2,
+  "size": "1920x1080",
+  "msaa": 8,
+  "render_scale": 2.0,
+  "aniso": 16,
+  "_why": "Nothing is real time: every sub-frame is drawn at 2x supersampling with 8x MSAA, and four 240 Hz sub-frames are averaged in linear light into each 60 fps output frame (a 180-degree shutter), so motion is smooth and blurred the way a camera sees it.",
+  "_shutter": "accum 2 of every 4 sub-frames = a 90-degree shutter: smooth, but a Sparrow round stays a glowing sphere instead of smearing into a white dash (Garrett, cut 3).",
+  "prefs": {
+   "gfx.Preset": 5,
+   "gfx.BasePreset": 5,
+   "gfx.Adaptive": 0,
+   "gfx.Ecosystem": 2,
+   "gfx.AA": 5,
+   "gfx.Vfx": 100,
+   "gfx.Physics": 1,
+   "gfx.RenderScale": 100,
+   "gfx.Upscale": 0,
+   "gfx.Texture": 0,
+   "gfx.Initialized": 1
+  },
+  "_prefs_why": "The game's own graphics settings for the shoot's profile (prefs.json): Ultra preset (presets 0-2 replace the HyperSea skybox with a baked panorama the engine cannot draw, cut cytoplasm to a quarter and cap the membrane), adaptive performance OFF (it had dropped the preset to Low at the software renderer's frame rate), Lush ecosystem, 8x MSAA, full VFX."
+ },
+ "feature_weights": {
+  "energy": 1.0,
+  "onset_density": 0.8,
+  "bass": 0.6,
+  "brightness": 0.5,
+  "flatness": 0.3
+ },
+ "diversity_penalty": 0.9,
+ "same_mode_penalty": 0.0,
+ "intensity_by_energy": [
+  0.3,
+  0.55,
+  0.8
+ ],
+ "fov": {
+  "min": 56,
+  "max": 68
+ },
+ "accents": {
+  "_why": "Camera accents (FOV pulses, shakes) made cuts 1-2 jitter; they are off. The beat lands through events.",
+  "downbeat_pulse": {
+   "min_energy": 2.0,
+   "amount_per_strength": 0.0,
+   "frames": 1
+  },
+  "beat_pulse": {
+   "min_energy": 2.0,
+   "amount_per_strength": 0.0,
+   "frames": 1
+  },
+  "onset_shake": {
+   "min_energy": 2.0,
+   "min_onset": 2.0,
+   "amount": 0.0,
+   "frames": 1
+  }
+ },
+ "events": {
+  "_about": "Orchestration templates. `on`: start (the shot's first frame), bar (every downbeat), beat (every beat), strong (beats in the top half of beat strength), onset (hard onsets, top quartile), half (half way through the shot). `min_energy` gates a template by the beat's energy. {i} cycles 0,1,2,3 per firing; {dir} cycles the four herd directions per firing.",
+  "defaults": {
+   "max_per_second": 6
+  }
+ },
+ "archetypes": [
+  {
+   "name": "arboretum-fleet",
+   "stage": "menu",
+   "what": "The Arboretum cell: Borromean and coral-bloom flora, sharks and a brittlestar swarm, a fleet of ten hull classes laying their wakes around the pilot. The pilot's mount rides through it; abilities fire on the bars, the swarm turns every bar. A build, a verse.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.45,
+    "onset_density": 0.5,
+    "bass": 0.45,
+    "brightness": 0.6,
+    "flatness": 0.45
+   },
+   "stage_commands": [
+    "mv cell Arboretum",
+    "mv spawn flora Borromean 3",
+    "mv spawn flora Coral Bloom 2",
+    "mv spawn fauna Shark 3",
+    "mv spawn fauna Brittlestar 24",
+    "mv spawn vessel all 10 Jade 50",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 44 15 16 30 1.5"
+   ],
+   "events": [
+    {
+     "on": "bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "strong",
+     "min_energy": 0.4,
+     "cmd": "action local FullSpeedStraightAction 40"
+    },
+    {
+     "on": "onset",
+     "min_energy": 0.6,
+     "cmd": "blast local 5 25"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "lattice-rally",
+   "stage": "menu",
+   "what": "The Lattice cell: lattice, gyroid and quasicrystal flora in their four elements, quadfish shoals, tadpoles, and all twenty-one hull classes released around the pilot, boosting on the strong beats, their abilities cycling on the bars; the pilot's domain shifts every bar (the mass effect in four colours). Bright, fast.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.7,
+    "onset_density": 0.75,
+    "bass": 0.5,
+    "brightness": 0.75,
+    "flatness": 0.3
+   },
+   "stage_commands": [
+    "mv cell Lattice",
+    "mv spawn flora Quasicrystal 2",
+    "mv spawn flora Nested Gyroid 2",
+    "mv spawn fauna QuadFish 12",
+    "mv spawn fauna Tadpole 10",
+    "mv spawn vessel all 21 Blue 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 44 15 16 30 1.5"
+   ],
+   "events": [
+    {
+     "on": "bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "bar",
+     "cmd": "domain {dom}"
+    },
+    {
+     "on": "strong",
+     "min_energy": 0.5,
+     "cmd": "action ai{j} FullSpeedStraightAction 30"
+    },
+    {
+     "on": "onset",
+     "min_energy": 0.65,
+     "cmd": "blast ai{i} 5 30"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "kaiju-siege",
+   "stage": "menu",
+   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot and twelve hulls sent at its head: the pilot and the squads converge on it, prisms burst around its head on every downbeat, every hull's abilities cycle on the strong beats. The drop.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.85,
+    "onset_density": 0.8,
+    "bass": 0.8,
+    "brightness": 0.5,
+    "flatness": 0.3
+   },
+   "stage_commands": [
+    "mv cell Garland",
+    "mv spawn fauna Worm 1",
+    "mv spawn fauna Shark 4",
+    "mv spawn fauna Brittlestar 16",
+    "mv spawn vessel all 12 Ruby 50",
+    "mv aim local name:WormHead",
+    "mv aim all name:WormHead",
+    "mv herd follow local 50"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv mount local 44 15 16 40 1.5"
+   ],
+   "events": [
+    {
+     "on": "bar",
+     "cmd": "blast name:WormHead 10 40"
+    },
+    {
+     "on": "strong",
+     "min_energy": 0.5,
+     "cmd": "action ai{j} Button{b}Action 40"
+    },
+    {
+     "on": "beat",
+     "min_energy": 0.6,
+     "cmd": "action ai{j} FullSpeedStraightAction 25"
+    },
+    {
+     "on": "onset",
+     "min_energy": 0.7,
+     "cmd": "blast local 6 30"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all name:WormHead"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim local name:WormHead"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  },
+  {
+   "name": "garland-shoal",
+   "stage": "menu",
+   "what": "The Garland cell in a slow orbit: sharks and a brittlestar shoal herded through the pilot's wake, six hulls circling, flora blooming. A breakdown, a held bar.",
+   "mode": "Menu_Main",
+   "players": 0,
+   "target": {
+    "energy": 0.3,
+    "onset_density": 0.3,
+    "bass": 0.4,
+    "brightness": 0.5,
+    "flatness": 0.55
+   },
+   "stage_commands": [
+    "mv cell Garland",
+    "mv spawn flora Coral 2",
+    "mv spawn flora Lantern 2",
+    "mv spawn fauna Shark 4",
+    "mv spawn fauna Brittlestar 30",
+    "mv spawn vessel all 6 Gold 50",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv orbit local 48 14 5"
+   ],
+   "events": [
+    {
+     "on": "bar",
+     "cmd": "action ai{j} Button{b}Action 45"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
+    }
+   ],
+   "settle_seconds": 8,
+   "luminance": 0.2
+  }
+ ],
+ "_luminance_note": "Measured mean luminance of the first cut's shots (0..1): Skim Race I2 0.03, Joust I3 0.11, Wildlife cage I3 0.19. The brightness targets follow that order so a bright bar lands in a bright arena.",
+ "_stage_note": "Since cut 5 every archetype is STAGED in Menu_Main's lava-lamp cell (stage: menu): the cell selector's cells (any CellConfigDataSO by name), the Toy Box's spawn pipelines (the roster's 21 vessel classes as AI pilots, every catalogue species of fauna and flora) and the director's events compose each scene like an orchestra. The arcade-mode archetypes of cuts 1-4 are kept in milestones/ for the record."
+}

@@ -84,17 +84,18 @@
    },
    "stage_commands": [
     "mv cell Arboretum",
-    "mv spawn vessel all 10 Jade 50",
-    "mv spawn fauna Shark 3",
-    "mv spawn fauna Brittlestar 24",
     "mv spawn flora Borromean 3",
     "mv spawn flora Coral Bloom 2",
+    "mv spawn fauna Shark 3",
+    "mv spawn fauna Brittlestar 24",
+    "mv spawn vessel all 10 Jade 50",
+    "mv aim local flora",
     "mv aim all local",
-    "mv herd follow local 45"
+    "mv herd follow local 40"
    ],
    "camera": [
     "mv camera main",
-    "mv mount local 34 11 12 50 1.5"
+    "mv mount local 44 15 16 30 1.5"
    ],
    "events": [
     {
@@ -114,9 +115,13 @@
     {
      "on": "bar",
      "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
     }
    ],
-   "settle_seconds": 3,
+   "settle_seconds": 8,
    "luminance": 0.2
   },
   {
@@ -134,17 +139,18 @@
    },
    "stage_commands": [
     "mv cell Lattice",
-    "mv spawn vessel all 21 Blue 55",
-    "mv spawn fauna QuadFish 12",
-    "mv spawn fauna Tadpole 10",
     "mv spawn flora Quasicrystal 2",
     "mv spawn flora Nested Gyroid 2",
+    "mv spawn fauna QuadFish 12",
+    "mv spawn fauna Tadpole 10",
+    "mv spawn vessel all 21 Blue 55",
+    "mv aim local flora",
     "mv aim all local",
-    "mv herd follow local 45"
+    "mv herd follow local 40"
    ],
    "camera": [
     "mv camera main",
-    "mv mount local 36 12 12 55 1.5"
+    "mv mount local 44 15 16 30 1.5"
    ],
    "events": [
     {
@@ -168,15 +174,19 @@
     {
      "on": "bar",
      "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
     }
    ],
-   "settle_seconds": 3,
+   "settle_seconds": 8,
    "luminance": 0.2
   },
   {
    "name": "kaiju-siege",
    "stage": "menu",
-   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot and twelve hulls sent at its head: the pilot and the squads converge on it, prisms burst around its head on every downbeat, every hull's abilities cycle on the strong beats. The drop.",
+   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot: the camera orbits the worm's head while twelve hulls and the pilot are sent at it, prisms burst around the head on every downbeat, every hull's abilities cycle on the strong beats. The drop. (A pilot aimed at the head reaches it and stops - cut 5's first shoot sat on it for four seconds - so the pilot chases the fleet and the camera owns the kaiju.)",
    "mode": "Menu_Main",
    "players": 0,
    "target": {
@@ -189,16 +199,16 @@
    "stage_commands": [
     "mv cell Garland",
     "mv spawn fauna Worm 1",
-    "mv spawn vessel all 12 Ruby 50",
     "mv spawn fauna Shark 4",
     "mv spawn fauna Brittlestar 16",
-    "mv aim local name:WormHead",
+    "mv spawn vessel all 12 Ruby 50",
     "mv aim all name:WormHead",
-    "mv herd follow local 50"
+    "mv herd follow local 50",
+    "mv aim local fleet"
    ],
    "camera": [
     "mv camera main",
-    "mv mount local 36 12 14 60 1.5"
+    "mv orbit name:WormHead 80 22 9"
    ],
    "events": [
     {
@@ -223,9 +233,13 @@
     {
      "on": "bar",
      "cmd": "aim all name:WormHead"
+    },
+    {
+     "on": "bar",
+     "cmd": "aim local fleet"
     }
    ],
-   "settle_seconds": 3,
+   "settle_seconds": 6,
    "luminance": 0.2
   },
   {
@@ -243,13 +257,14 @@
    },
    "stage_commands": [
     "mv cell Garland",
-    "mv spawn vessel all 6 Gold 50",
-    "mv spawn fauna Shark 4",
-    "mv spawn fauna Brittlestar 30",
     "mv spawn flora Coral 2",
     "mv spawn flora Lantern 2",
+    "mv spawn fauna Shark 4",
+    "mv spawn fauna Brittlestar 30",
+    "mv spawn vessel all 6 Gold 50",
+    "mv aim local flora",
     "mv aim all local",
-    "mv herd follow local 45"
+    "mv herd follow local 40"
    ],
    "camera": [
     "mv camera main",
@@ -263,9 +278,13 @@
     {
      "on": "bar",
      "cmd": "aim all local"
+    },
+    {
+     "on": "half",
+     "cmd": "aim local fleet"
     }
    ],
-   "settle_seconds": 3,
+   "settle_seconds": 8,
    "luminance": 0.2
   }
  ],

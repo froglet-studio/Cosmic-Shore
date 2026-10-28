@@ -1,0 +1,64 @@
+{
+ "plan": "/home/user/Cosmic-Shore/Tools/Build/music_video/out/SKY-FIRE_41-56-cut5/plan.json",
+ "criteria": {
+  "motion_vs_energy": -0.236,
+  "motion_vs_onsets": 0.0922,
+  "cut_alignment": 0.0007,
+  "luminance_vs_brightness": -0.5,
+  "dead_frames": 0.0,
+  "stuck_frames": 0.3333,
+  "diversity": 0.3333
+ },
+ "penalties": {
+  "motion_vs_energy": 2.144,
+  "motion_vs_onsets": 0.1388,
+  "cut_alignment": -0.0149,
+  "luminance_vs_brightness": 0.8,
+  "dead_frames": -0.004,
+  "stuck_frames": 0.7467,
+  "diversity": 1.8133
+ },
+ "loss": 5.6239,
+ "below_floor": [
+  "motion_vs_energy",
+  "motion_vs_onsets",
+  "luminance_vs_brightness",
+  "stuck_frames",
+  "diversity"
+ ],
+ "shots": [
+  {
+   "name": "01-arboretum-fleet",
+   "frames": 322,
+   "mean_luminance": 0.2226,
+   "mean_detail": 0.1824,
+   "mean_motion": 0.0708,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.772,
+   "energy": 0.36
+  },
+  {
+   "name": "02-kaiju-siege",
+   "frames": 230,
+   "mean_luminance": 0.1302,
+   "mean_detail": 0.1292,
+   "mean_motion": 0.0005,
+   "dead_frames": 0.0,
+   "stuck_frames": 1.0,
+   "brightness": 0.705,
+   "energy": 0.643
+  },
+  {
+   "name": "03-lattice-rally",
+   "frames": 348,
+   "mean_luminance": 0.2348,
+   "mean_detail": 0.162,
+   "mean_motion": 0.0614,
+   "dead_frames": 0.0,
+   "stuck_frames": 0.0,
+   "brightness": 0.589,
+   "energy": 0.639
+  }
+ ]
+}

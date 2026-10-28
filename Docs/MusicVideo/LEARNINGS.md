@@ -243,6 +243,20 @@ The arcade archetypes of cuts 1-4 are retired from the mapping (kept in `milesto
 scenes replace them: arboretum-fleet (build), lattice-rally (bright, all 21 hulls), kaiju-siege (the
 drop: a Worm Colony with twelve hulls converging), garland-shoal (breakdown).
 
+What staging a populated scene taught (the first cut-5 shoot was as empty as cut 4):
+- **The pilot must fly INTO the life, not away from it.** The lava-lamp autopilot wanders a cell a
+  thousand units across at 50 u/s; everything released at the pilot's position is behind it in two
+  seconds. The scene holds together only when the pilot is aimed at the life (`aim local flora`, or at the
+  kaiju's head), the fleet is aimed at the pilot (`aim all local`, re-issued every bar), and the swarm's
+  goal rides the pilot (`herd follow local 40`). Flora plants at its own sites, not at the pilot, so it is
+  released first and the pilot is sent to it; the settle is the flight there (8 s).
+- **The menu's camera controller poses in LateUpdate, which the engine flushes after the director's
+  post-tick pose**, so in Menu_Main the mount had to stand down every `*CameraController` in the scene
+  (not only the camera's own parents) and re-acquire `Camera.main` when a cell swap or a spawn switches
+  it. Mounts sit wider in a populated cell (back 44, up 15, side 16, lead 30).
+- **A species name matches exactly before it matches by substring** (`Borromean` was finding "Swarm
+  Borromean" first).
+
 ## Log
 
 | Date | Cut | Score said | Person said | Changed |

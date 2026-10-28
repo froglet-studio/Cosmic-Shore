@@ -129,7 +129,7 @@ def main(argv=None):
         crit["luminance_vs_brightness"] = 0.0
     crit["dead_frames"] = float(np.mean([x["dead_frames"] for x in rows])) if rows else 1.0
     crit["stuck_frames"] = float(np.mean([x["stuck_frames"] for x in rows])) if rows else 1.0
-    crit["diversity"] = len({s["mode"] for s in plan["shots"]}) / max(len(plan["shots"]), 1)
+    crit["diversity"] = len({s.get("archetype", s["mode"]) for s in plan["shots"]}) / max(len(plan["shots"]), 1)
     penalties = {k: round(leaky(v, loss_cfg["floors"][k], loss_cfg["higher_is_better"][k], loss_cfg["leak"], loss_cfg["steep"]) * loss_cfg["weights"][k], 4)
                  for k, v in crit.items()}
     total = round(sum(penalties.values()), 4)

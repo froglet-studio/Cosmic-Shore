@@ -351,6 +351,29 @@ namespace CosmicShore.Player
                 if (status?.Player != null && status.Player.IsLocalPilot) local = v.transform; else others.Add(v.transform);
             }
             if (spec == "local") return local ?? others.FirstOrDefault();
+            if (spec == "fleet")
+            {
+                // The centre of the AI fleet, as a transform the camera and the pilots can aim at.
+                if (others.Count == 0) return local;
+                var c = Vector3.zero; foreach (var o in others) c += o.position; c /= others.Count;
+                if (s_fleetAnchor == null) s_fleetAnchor = new GameObject("MvFleetAnchor").transform;
+                s_fleetAnchor.position = c;
+                s_fleetAnchor.rotation = others[0].rotation;
+                return s_fleetAnchor;
+            }
+            if (spec == "flora" || spec == "fauna")
+            {
+                // The nearest planted flora / released creature to the local pilot: where the life is.
+                var from = local != null ? local.position : Vector3.zero;
+                Transform best = null; float bestD = float.MaxValue;
+                if (spec == "flora")
+                    foreach (var f in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Flora>(FindObjectsSortMode.None))
+                    { if (f == null || !f.gameObject.activeInHierarchy) continue; float d = (f.transform.position - from).sqrMagnitude; if (d < bestD) { bestD = d; best = f.transform; } }
+                else
+                    foreach (var f in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Fauna>(FindObjectsSortMode.None))
+                    { if (f == null || !f.gameObject.activeInHierarchy) continue; float d = (f.transform.position - from).sqrMagnitude; if (d < bestD) { bestD = d; best = f.transform; } }
+                return best;
+            }
             if (spec == "fastest")
             {
                 Transform best = null; float bestSpeed = -1f;
@@ -596,6 +619,7 @@ namespace CosmicShore.Player
             }
         }
 
+        static Transform s_fleetAnchor;
         static readonly System.Random s_rng = new(11);
         static Vector3 UnityRandomInsideSphere()
         {

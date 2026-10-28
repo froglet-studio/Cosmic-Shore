@@ -1,0 +1,408 @@
+{
+ "song": "/home/user/Cosmic-Shore/Assets/_Audio/Music/SKY FIRE.ogg",
+ "song_name": "SKY FIRE.ogg",
+ "tempo": 123.05,
+ "segment": {
+  "start": 41.0,
+  "end": 56.0
+ },
+ "fps": 60,
+ "render": {
+  "fps": 60,
+  "step_hz": 240,
+  "accum": 2,
+  "size": "1920x1080",
+  "msaa": 8,
+  "render_scale": 2.0,
+  "aniso": 16,
+  "_why": "Nothing is real time: every sub-frame is drawn at 2x supersampling with 8x MSAA, and four 240 Hz sub-frames are averaged in linear light into each 60 fps output frame (a 180-degree shutter), so motion is smooth and blurred the way a camera sees it.",
+  "_shutter": "accum 2 of every 4 sub-frames = a 90-degree shutter: smooth, but a Sparrow round stays a glowing sphere instead of smearing into a white dash (Garrett, cut 3).",
+  "prefs": {
+   "gfx.Preset": 5,
+   "gfx.BasePreset": 5,
+   "gfx.Adaptive": 0,
+   "gfx.Ecosystem": 2,
+   "gfx.AA": 5,
+   "gfx.Vfx": 100,
+   "gfx.Physics": 1,
+   "gfx.RenderScale": 100,
+   "gfx.Upscale": 0,
+   "gfx.Texture": 0,
+   "gfx.Initialized": 1
+  },
+  "_prefs_why": "The game's own graphics settings for the shoot's profile (prefs.json): Ultra preset (presets 0-2 replace the HyperSea skybox with a baked panorama the engine cannot draw, cut cytoplasm to a quarter and cap the membrane), adaptive performance OFF (it had dropped the preset to Low at the software renderer's frame rate), Lush ecosystem, 8x MSAA, full VFX."
+ },
+ "mapping": "Tools/Build/music_video/mapping.json",
+ "shots": [
+  {
+   "name": "01-arboretum-fleet",
+   "t0": 41.0,
+   "t1": 46.37,
+   "frames": 1289,
+   "every": 4,
+   "accum": 2,
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 2,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Arboretum",
+    "mv spawn flora Borromean 3",
+    "mv spawn flora Coral Bloom 2",
+    "mv spawn fauna Shark 3",
+    "mv spawn fauna Brittlestar 24",
+    "mv spawn vessel all 10 Jade 50",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 65",
+    "mv mount local 44 15 16 30 1.5"
+   ],
+   "events": [
+    {
+     "t": 42.516,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "bar"
+    },
+    {
+     "t": 42.516,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 43.685,
+     "cmd": "aim local fleet",
+     "why": "half"
+    },
+    {
+     "t": 44.466,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "bar"
+    },
+    {
+     "t": 44.466,
+     "cmd": "aim all local",
+     "why": "bar"
+    }
+   ],
+   "features": {
+    "energy": 0.36,
+    "peak": 0.995,
+    "brightness": 0.772,
+    "flatness": 0.616,
+    "bass": 0.493,
+    "onset_density": 0.552,
+    "trend": -0.372,
+    "section": "build",
+    "position": 0.146
+   },
+   "archetype": "arboretum-fleet",
+   "what": "The Arboretum cell: Borromean and coral-bloom flora, sharks and a brittlestar swarm, a fleet of ten hull classes laying their wakes around the pilot. The pilot's mount rides through it; abilities fire on the bars, the swarm turns every bar. A build, a verse.",
+   "why": "closest target (distance 0.19); led by energy=0.36, brightness=0.772, flatness=0.616"
+  },
+  {
+   "name": "02-kaiju-siege",
+   "t0": 46.37,
+   "t1": 50.202,
+   "frames": 920,
+   "every": 4,
+   "accum": 2,
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 3,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Garland",
+    "mv spawn fauna Worm 1",
+    "mv spawn fauna Shark 4",
+    "mv spawn fauna Brittlestar 16",
+    "mv spawn vessel all 12 Ruby 50",
+    "mv aim local name:WormHead",
+    "mv aim all name:WormHead",
+    "mv herd follow local 50"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 64",
+    "mv mount local 44 15 16 40 1.5"
+   ],
+   "events": [
+    {
+     "t": 46.37,
+     "cmd": "blast name:WormHead 10 40",
+     "why": "bar"
+    },
+    {
+     "t": 46.37,
+     "cmd": "action ai0 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 46.37,
+     "cmd": "aim all name:WormHead",
+     "why": "bar"
+    },
+    {
+     "t": 46.37,
+     "cmd": "aim local name:WormHead",
+     "why": "bar"
+    },
+    {
+     "t": 46.858,
+     "cmd": "action ai1 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 47.322,
+     "cmd": "action ai2 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 47.81,
+     "cmd": "action ai0 Button1Action 40",
+     "why": "strong"
+    },
+    {
+     "t": 47.81,
+     "cmd": "action ai3 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 48.274,
+     "cmd": "blast name:WormHead 10 40",
+     "why": "bar"
+    },
+    {
+     "t": 48.274,
+     "cmd": "action ai1 Button2Action 40",
+     "why": "strong"
+    },
+    {
+     "t": 48.274,
+     "cmd": "action ai4 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 48.274,
+     "cmd": "aim all name:WormHead",
+     "why": "bar"
+    },
+    {
+     "t": 48.274,
+     "cmd": "aim local name:WormHead",
+     "why": "bar"
+    },
+    {
+     "t": 48.762,
+     "cmd": "action ai2 Button3Action 40",
+     "why": "strong"
+    },
+    {
+     "t": 48.762,
+     "cmd": "action ai5 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 49.249,
+     "cmd": "action ai3 Button4Action 40",
+     "why": "strong"
+    },
+    {
+     "t": 49.249,
+     "cmd": "action ai6 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 49.737,
+     "cmd": "action ai7 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 50.202,
+     "cmd": "blast name:WormHead 10 40",
+     "why": "bar"
+    },
+    {
+     "t": 50.202,
+     "cmd": "action ai4 Button1Action 40",
+     "why": "strong"
+    },
+    {
+     "t": 50.202,
+     "cmd": "action ai8 FullSpeedStraightAction 25",
+     "why": "beat"
+    },
+    {
+     "t": 50.202,
+     "cmd": "aim all name:WormHead",
+     "why": "bar"
+    },
+    {
+     "t": 50.202,
+     "cmd": "aim local name:WormHead",
+     "why": "bar"
+    }
+   ],
+   "features": {
+    "energy": 0.643,
+    "peak": 1.0,
+    "brightness": 0.705,
+    "flatness": 0.284,
+    "bass": 0.919,
+    "onset_density": 0.829,
+    "trend": 0.003,
+    "section": "drop",
+    "position": 0.161
+   },
+   "archetype": "kaiju-siege",
+   "what": "The Garland cell with a Worm Colony kaiju released ahead of the pilot and twelve hulls sent at its head: the pilot and the squads converge on it, prisms burst around its head on every downbeat, every hull's abilities cycle on the strong beats. The drop.",
+   "why": "closest target (distance 0.27); led by energy=0.643, brightness=0.705, bass=0.919"
+  },
+  {
+   "name": "03-lattice-rally",
+   "t0": 50.202,
+   "t1": 56.0,
+   "frames": 1392,
+   "every": 4,
+   "accum": 2,
+   "mode": "Menu_Main",
+   "players": 0,
+   "intensity": 3,
+   "settle_frames": 1920,
+   "stage": "menu",
+   "setup": [
+    "mv hud off",
+    "mv autopilot on",
+    "mv cell Lattice",
+    "mv spawn flora Quasicrystal 2",
+    "mv spawn flora Nested Gyroid 2",
+    "mv spawn fauna QuadFish 12",
+    "mv spawn fauna Tadpole 10",
+    "mv spawn vessel all 21 Blue 55",
+    "mv aim local flora",
+    "mv aim all local",
+    "mv herd follow local 40"
+   ],
+   "camera": [
+    "mv camera main",
+    "mv fov 63",
+    "mv mount local 44 15 16 30 1.5"
+   ],
+   "events": [
+    {
+     "t": 50.689,
+     "cmd": "action ai0 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 51.641,
+     "cmd": "action ai1 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 52.129,
+     "cmd": "action ai0 Button1Action 45",
+     "why": "bar"
+    },
+    {
+     "t": 52.129,
+     "cmd": "domain Ruby",
+     "why": "bar"
+    },
+    {
+     "t": 52.129,
+     "cmd": "action ai2 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 52.129,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 52.616,
+     "cmd": "action ai3 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 53.101,
+     "cmd": "aim local fleet",
+     "why": "half"
+    },
+    {
+     "t": 54.033,
+     "cmd": "action ai1 Button2Action 45",
+     "why": "bar"
+    },
+    {
+     "t": 54.033,
+     "cmd": "domain Jade",
+     "why": "bar"
+    },
+    {
+     "t": 54.033,
+     "cmd": "action ai4 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 54.033,
+     "cmd": "aim all local",
+     "why": "bar"
+    },
+    {
+     "t": 54.52,
+     "cmd": "action ai5 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 55.472,
+     "cmd": "action ai6 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 55.96,
+     "cmd": "action ai2 Button3Action 45",
+     "why": "bar"
+    },
+    {
+     "t": 55.96,
+     "cmd": "domain Gold",
+     "why": "bar"
+    },
+    {
+     "t": 55.96,
+     "cmd": "action ai7 FullSpeedStraightAction 30",
+     "why": "strong"
+    },
+    {
+     "t": 55.96,
+     "cmd": "aim all local",
+     "why": "bar"
+    }
+   ],
+   "features": {
+    "energy": 0.639,
+    "peak": 1.0,
+    "brightness": 0.589,
+    "flatness": 0.303,
+    "bass": 0.824,
+    "onset_density": 0.877,
+    "trend": 0.271,
+    "section": "drop",
+    "position": 0.177
+   },
+   "archetype": "lattice-rally",
+   "what": "The Lattice cell: lattice, gyroid and quasicrystal flora in their four elements, quadfish shoals, tadpoles, and all twenty-one hull classes released around the pilot, boosting on the strong beats, their abilities cycling on the bars; the pilot's domain shifts every bar (the mass effect in four colours). Bright, fast.",
+   "why": "closest target (distance 0.30); led by bass=0.824, onset_density=0.877, brightness=0.589"
+  }
+ ]
+}
