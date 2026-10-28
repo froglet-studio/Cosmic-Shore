@@ -377,11 +377,23 @@ people play them. What an AI squad needs from the AI work (a voyage policy for e
 
 ### 6.7 Rules GTC never breaks
 
-1. **No more than 4 people in one instance.** "A party is 4. Never 6, anywhere" (`Docs/MULTIPLAYER_START_HERE.md`
-   §2). Two squads of two people meet; a squad of three meets a squad of one, or an AI squad. Vessels are not capped
-   by this: two squads are six vessels and two Arks, the rest flown by AI.
+1. **Instance sizes are targets to push, set by what one peer-to-peer host carries.** Garrett, 2026-10-28: "we need
+   to get up to at least 6 people if we are going to have squad vs. squad. if there are multi seat vessels in the
+   squads it gets higher. if we have a third domain enter the fray in a squad v squad v squad battle we need to
+   support at least 9 not including multi seaters. the limits of peer to peer will constrain for now, but we will be
+   pushing those limits as soon as we can". So:
+   - **Squad vs squad: at least 6 people** (two squads of three), plus one more for every extra seat a multi-seat
+     vessel brings (`Docs/CREW_STATIONS.md`).
+   - **Squad vs squad vs squad: at least 9 people** (a squad from each domain), plus the multi-seat seats.
+   - **Until a host is measured to carry that,** GTC holds every instance to a **people cap** read from one setting
+     (**(default)** `VoyageInstanceLimitsSO`, the number a measured host carries), never a constant in code, and
+     fills the rest with AI seats. Vessels are not limited by the people cap: every seat no person holds is the
+     AI's, so two squads are always six vessels and two Arks, three squads nine vessels and three Arks.
+   - Raising the cap is a measured step, not a guess: the host's upload, its frame time with N people and three
+     Arks, and Relay's per-session connection limit (§7.5). Arena modes already ship at 6 and 12 players
+     (`MaxPlayersAllowed` in the `SO_ArcadeGame` assets), so 6 has a starting point.
 2. **No rival squad in a harbour.**
-3. **Friends who asked to meet are matched first**, and never with a third squad that would push past the cap.
+3. **Friends who asked to meet are matched first**, and never with another squad that would push past the cap.
 4. **A squad that just lost its Ark to another squad is not matched with that squad again on the same voyage.**
 5. **A meeting must make sense for both sides.** A pairing whose job weight is zero is never made, however long
    anyone has been out.
@@ -390,14 +402,16 @@ people play them. What an AI squad needs from the AI work (a voyage policy for e
 
 ### 7.1 What an instance is
 
-An instance is **one location (or one lane) with one or two squads in it**, run peer to peer the way every match
+An instance is **one location (or one lane) with one, two or three squads in it** (three when a third domain enters
+the fray, §6.7), run peer to peer the way every match
 already runs: a UGS Multiplayer session over Relay, Netcode for GameObjects, **one player's machine as the host**
 (`MultiplayerSetup`, `HostConnectionService`). No dedicated servers, in keeping with "as free as possible"
 (`Docs/MULTIPLAYER_START_HERE.md` §1).
 
 ### 7.2 The squad's own session
 
-A squad's party session (Relay, up to 4) is already its network: under the eager-Relay design it persists across
+A squad's party session (Relay, up to 4) is already its network. A squad of three vessels fits in it; a squad whose
+multi-seat vessels seat more than 4 people does not, and needs a squad session larger than a party (§7.5): under the eager-Relay design it persists across
 scene changes and is torn down only by leaving the party (`ServerPlayerVesselInitializer`'s notes). **A squad sails
 in its own session.** A lane flown alone is an instance of one squad, hosted by the party leader. A solo player is a
 host of one, exactly as in the menu today.
@@ -423,7 +437,28 @@ move a party invite already makes (`PartyInviteController`: host to client, loca
 A guest squad of AI only (an AI squad) needs no hand-off: the host spawns it, as the arena spawns AI backfill
 (`ServerPlayerVesselInitializerWithAI`).
 
-### 7.4 One voyage mode, many locations
+### 7.4 Three squads meeting
+
+The same hand-off, twice: GTC names one host squad and both other squads join its session (§7.3 steps 2 to 4). If
+the host drops, all three squads go back to their own sessions. Three Arks and their payload are the heaviest thing
+a host carries in this design, so a three-squad instance is the first thing to measure (§7.5).
+
+### 7.5 Pushing the peer-to-peer limits
+
+The people cap (§6.7 rule 1) starts at whatever one host is measured to carry and rises as the limits are pushed.
+What decides it, in the order to measure:
+
+1. **The host's upload and frame time** with 6, then 9, people, three Arks and their payload in one cell. This is the
+   real limit of peer to peer; Relay only forwards.
+2. **Relay's connections per session** and the session's `maxPlayers` (`MultiplayerSetup` sets it from the selected
+   player count, no hardcoded cap, `Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
+3. **The party rule.** "A party is 4. Never 6, anywhere" (`Docs/MULTIPLAYER_START_HERE.md` §2) is about the party,
+   the friends who travel together, and it still holds for a squad of three single-seat vessels. A voyage instance is
+   not a party: it is the host squad's session with other squads joined to it. A squad that seats more than 4 people
+   in multi-seat vessels does break the party rule, so that case needs the multiplayer owner's yes (Yash, §10)
+   before it is built.
+
+### 7.6 One voyage mode, many locations
 
 **(default)** Voyages are **one game mode** (one new `GameModes` id, claimed only after checking `bleeding-edge` and
 every in-flight branch, `CLAUDE.md` § Team) whose controller loads a location's cell config and experience from the
@@ -508,7 +543,7 @@ and the in-flight branches (`CLAUDE.md` § Team).
 |---|---|---|
 | The Voyage window, the menus (`Docs/MENU_REDESIGN_B.md`) | Shombith's menu redesign | the chart in the Voyage window; Tandava moving from "Voyage 1" to a location |
 | UGS, Cloud Code, the backend, fair play | Shombith (Yash does the Cloud Code work for now) | GTC, the voyage record, escrow, two-witness transfers (V3) |
-| Multiplayer, party, Relay (`Ys-bleeding-edge`) | Yash's multiplayer programme | the squad-to-squad hand-off (§7.3), reconnection grace |
+| Multiplayer, party, Relay (`Ys-bleeding-edge`) | Yash's multiplayer programme | the squad-to-squad hand-off (§7.3), three-squad instances and the people cap (§7.4, §7.5), a squad of more than 4 people, reconnection grace |
 | AI | Yash | AI squads' voyage policy (§6.6) |
 | The Ark, the Arkway, the ecology (`ECOSYSTEM.md` §41) | the Arkway's owner (check `who_works_where.py` before touching it) | the corridor drawn from a lane; the networked Ark |
 | Pilots, artifacts, the payload (`claude/squad-payload-pilots-artifacts`) | Garrett's squad-layer build, in flight | vaults and extraction land here once V1 exists |
@@ -519,9 +554,9 @@ Each has a default the draft is written to; a different answer changes the secti
 
 1. **People per squad.** Is a squad 1 to 3 people with AI in the other seats (default), or always one person flying
    three vessels? (§2, §6.7)
-2. **The 4-person cap.** Two squads of three people would be 6, and the multiplayer rules say never more than 4.
-   Keep the cap, so a full squad of three only ever meets a solo squad or an AI squad (default)? Or should voyages be
-   the one place that raises it? (§6.7)
+2. **Settled 2026-10-28 (Garrett):** at least 6 people for squad vs squad and 9 for three squads, more with
+   multi-seat vessels; peer to peer limits it for now and the limit gets pushed (§6.7, §7.5). Still open: a squad
+   with more than 4 people (multi-seat vessels) needs Yash's yes on the party rule.
 3. **One fixed galaxy** that everyone shares (default), or a fresh map per season? (§3.1)
 4. **Flown lanes, Arkway style** (default), or jumps on a map with the fights only at locations? (§4)
 5. **Can a squad refuse a meeting?** The default is no: you see who arrived and what they came for, and you decide
