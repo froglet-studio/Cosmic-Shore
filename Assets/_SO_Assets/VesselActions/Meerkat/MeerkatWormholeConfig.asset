@@ -92,13 +92,21 @@ MonoBehaviour:
   branchForks: 2
   branchGrowSeconds: 0.5
   omniOn: 1
+  networkReach:
+    Enabled: 1
+    Value: 0.5
+    Min: 0.5
+    Max: 1
+    element: 2
+    UseFloor: 1
+    Floor: 0.05
   omniCount: 3
-  labyrinthBranchPointsMin: 3
-  labyrinthBranchPointsMax: 12
-  labyrinthOpeningsMin: 5
-  labyrinthOpeningsMax: 30
-  labyrinthRadiusMin: 90
-  labyrinthRadiusMax: 420
+  labyrinthBranchPointsMin: 6
+  labyrinthBranchPointsMax: 22
+  labyrinthOpeningsMin: 12
+  labyrinthOpeningsMax: 56
+  labyrinthRadiusMin: 240
+  labyrinthRadiusMax: 1080
   labyrinthSpread: 360
   labyrinthRandomness: 0.45
   labyrinthDiameter: 40
@@ -121,6 +129,16 @@ MonoBehaviour:
   tubeInner: 0.1
   rootLamp: 1
   rootFog: 240
+  areaL0: 6000
+  areaL10: 18000
+  suckRadius: 90
+  suckSpeed: 30
+  swallowShare: 1.5
+  carrySpeed: 150
+  carryStretch: 2
+  carryTwist: 0.5
+  fireSpeed: 120
+  fireGlideSeconds: 3
   formEvent:
     Guid:
       Data1: 0

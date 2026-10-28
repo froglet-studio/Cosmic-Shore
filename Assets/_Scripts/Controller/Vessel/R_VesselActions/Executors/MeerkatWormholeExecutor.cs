@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
             public MeerkatWormholeExecutor Maker;
             public int Seq;
             public float Born;   // when it formed here (its tree's branches grow from then, MeerkatTreeView)
+            public float SwallowLook;   // its swallow's next look round its way in (MeerkatSwallow, round 23)
 
             public Vector3 At(float s, out Vector3 tangent) => MeerkatWormholeMath.At(A, T0, Side, Path, s, out tangent);
             public void Frame(float s, out Vector3 normal, out Vector3 binormal) =>
@@ -167,9 +168,17 @@ namespace CosmicShore.Gameplay
         static MeerkatRootNetwork s_localRoots;
         static Vector3 s_localHull;
         InputEvents? _formInput;
+        // the soliton's swallow (round 23): the prisms and crystals its tunnels pull in, carry through and fire out
+        readonly MeerkatSwallow _swallow = new();
         readonly List<ShipActionSO> _bindScratch = new();
 
         public MeerkatWormholeConfigSO Config => config;
+        /// <summary>The hull this Meerkat flies.</summary>
+        public IVesselStatus Status => _status;
+        /// <summary>The prisms this Meerkat's tunnels are moving now (pulled, carried or fired; round 23).</summary>
+        public int SwallowedPrisms => _swallow.PrismCount;
+        /// <summary>...and the crystals.</summary>
+        public int SwallowedCrystals => _swallow.CrystalCount;
         /// <summary>True while a tunnel flies this hull (from the press to its way out).</summary>
         public bool IsRiding => _ride != null;
         /// <summary>The reticle's growth, 0..1 (RT forms from <see cref="MeerkatWormholeMath.FormableEmerge"/>); 0 riding.</summary>
@@ -268,6 +277,7 @@ namespace CosmicShore.Gameplay
             if (!config || _status == null) return;
             float dt = Time.deltaTime;
             StepTunnels(dt);
+            _swallow.Step(this, dt);
             StepRootNetworks(dt);
             StepRipples();
             TrackLocalPilot();
@@ -307,7 +317,7 @@ namespace CosmicShore.Gameplay
             float ke = MeerkatWormholeMath.ReticleEase(dt, config.ReticleSmoothSeconds);
             _eased += (_stick - _eased) * ke;
             _easedLq += (LtLive() - _easedLq) * ke;
-            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(), _easedLq, _eased.x, _eased.y);
+            var sh = MeerkatWormholeMath.ShapeFor(config.Shape(SpaceLevel()), _easedLq, _eased.x, _eased.y);   // round 23: Space sets its area
             Vector3 c = sh.Stick >= 0.05f ? right * sh.Dx + up * sh.Dy : _retSide;
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
@@ -316,6 +326,17 @@ namespace CosmicShore.Gameplay
             // the right stick bends the reticle from the next frame (the page sets r.sx / r.sy after gateHold)
             _stick = _status.AutoPilotEnabled ? _aiStick
                 : _status.InputStatus != null ? _status.InputStatus.EasedRightJoystickPosition : Vector2.zero;
+        }
+
+        /// <summary>
+        /// The hull's Space level, 0-10 (round 23, Garrett: "at a given Space level a soliton keeps one surface area"): read at
+        /// use time, every frame the reticle is shaped, so a crystal taken mid-flight resizes the next tunnel. -1 (the
+        /// authored fixed size) when the hull has no element levels.
+        /// </summary>
+        float SpaceLevel()
+        {
+            var resources = _status?.ResourceSystem;
+            return resources ? Mathf.Clamp(resources.GetLevel(Element.Space), 0, 10) : -1f;
         }
 
         /// <summary>The page's <c>gateCommit</c>.</summary>
@@ -595,7 +616,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             else if (d > Mathf.Min(config.AiStraightMinDistance, config.AiBentMinDistance) && CanForm &&
-                     MeerkatWormholeMath.TryPlan(config.Plan(TurnRateDegrees()), local, Mathf.Max(1f, _status.Speed),
+                     MeerkatWormholeMath.TryPlan(config.Plan(TurnRateDegrees(), SpaceLevel()), local, Mathf.Max(1f, _status.Speed),
                          MeerkatWormholeMath.Clamp01(config.AiNoise), (float)_aiRand.NextDouble(),
                          d <= config.AiStraightMinDistance, out float lq, out float m))
             {
@@ -679,22 +700,24 @@ namespace CosmicShore.Gameplay
             if (_omniArmed && _ride == null && _flight == null) GrowRootsHere();
         }
 
-        /// <summary>The page's <c>rootsHere</c> + <c>labCommit</c>: the roots grow from the hull, every way, sized by the last
-        /// trunk; the hull is in their source. The last tunnel and the last roots collapse now.</summary>
+        /// <summary>The page's <c>rootsHere</c> + <c>labCommit</c>: the network grows from the hull, every way, sized by this
+        /// hull's Mass (round 24: <c>networkReach</c>, read now and published, never the last tunnel); the hull is in its
+        /// source. The last tunnel and the last network collapse now.</summary>
         void GrowRootsHere()
         {
             _omniArmed = false;
             var hull = _status.Transform;
             if (_mine != null && !_mine.Dying) MeerkatWormholeMath.CollapseNow(ref _mine.W);
             if (_roots != null) _roots.CollapseNow();
-            _roots = MeerkatRootNetwork.Grow(config, this, ++_rootSeq, _omniSeed, _lastTrunk, hull.position, hull.forward, hull.right, hull.up);
+            float share = config.NetworkShare(_status);   // round 24: Mass sizes the network
+            _roots = MeerkatRootNetwork.Grow(config, this, ++_rootSeq, _omniSeed, share, hull.position, hull.forward, hull.right, hull.up);
             _flight = MeerkatRootMath.Enter(_roots.Channels, 0, MeerkatRootNetwork.D(hull.position), Mathf.Max(1f, _status.Speed), _roots.Up);
             _rootAiPick = _rootAiChan = -1;
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
-            if (_relay) _relay.PublishRoots(_rootSeq, _omniSeed, _lastTrunk, hull.position, hull.forward, hull.right, hull.up, _omniCrystal);
+            if (_relay) _relay.PublishRoots(_rootSeq, _omniSeed, share, hull.position, hull.forward, hull.right, hull.up, _omniCrystal);
             PlayOneShot(config.RootsEvent, hull.position);
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[Meerkat] roots {_rootSeq}: {_roots.Channels.Count} channels from trunk {_lastTrunk:F2}");
+                $"[Meerkat] roots {_rootSeq}: {_roots.Channels.Count} channels, reach {share:F2} of the cell");
         }
 
         /// <summary>A remote peer's copy of the roots its owner grew (<see cref="MeerkatWormholeNetworkRelay"/>).</summary>
@@ -926,6 +949,7 @@ namespace CosmicShore.Gameplay
             ReleaseSpeedTunnelScale();
             ReleaseRideCamera();
             ReleaseRootCamera();
+            _swallow.Release(this);
             var nets = MeerkatRootNetwork.Live;
             for (int i = nets.Count - 1; i >= 0; i--)
                 if (nets[i].Maker == this) nets[i].Remove();

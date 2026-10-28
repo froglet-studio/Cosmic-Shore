@@ -259,13 +259,17 @@ namespace CosmicShore.Gameplay
             return g.ToMesh("MeerkatRoot");
         }
 
-        // ------------------------------------------------------------------ round 23: every tube's calm wall (buildBore)
+        // ------------------------------------------------------------------ round 24: every tube's calm wall (buildBore)
 
         /// <summary>The sides round a tube's calm wall (the page's <c>BORE_SIDES</c>).</summary>
         public const int WallSides = 24;
 
+        /// <summary>Round 24: the most rings along one wormhole's calm wall (a ring every 4 u up to this many): at most
+        /// (MaxWallRings + 1) x (WallSides + 1) = 1,625 vertices and 3,072 triangles a wormhole, the page's BORE_MAX_RINGS.</summary>
+        public const int MaxWallRings = 64;
+
         /// <summary>
-        /// The page's round-23 <c>buildBore</c> on a tunnel: its calm inner wall, the tunnel's whole hyperboloid
+        /// The page's round-24 <c>buildBore</c> on a tunnel: its calm inner wall, the tunnel's whole hyperboloid
         /// (<see cref="FullR"/>) in <see cref="TrunkRings"/> rings; uv0.x the share of the way along (aR 2, the bore). Drawn by
         /// <see cref="MeerkatTubeWallView"/> through <c>MeerkatTubeWall.shader</c>.
         /// </summary>
@@ -283,12 +287,12 @@ namespace CosmicShore.Gameplay
             return g.ToMesh("MeerkatTubeWall");
         }
 
-        /// <summary>The page's round-23 <c>buildBore</c> on a channel of the wormhole network: its calm inner wall at the
+        /// <summary>The page's round-24 <c>buildBore</c> on a channel of the wormhole network: its calm inner wall at the
         /// channel's own radius (<see cref="MeerkatRootMath.Radius"/>), a ring every 4 u.</summary>
         public static Mesh BuildTubeWall(MeerkatRootMath.Channel c, double rootTip)
         {
             var g = new Builder();
-            int nA = Mathf.Max(4, Mathf.RoundToInt((float)c.L / 4f));
+            int nA = Mathf.Clamp(Mathf.RoundToInt((float)c.L / 4f), 4, MaxWallRings);   // round 24: a whole-cell network has long wormholes; the cost per one is capped
             for (int r = 0; r <= nA; r++)
             for (int j = 0; j <= WallSides; j++)
             {

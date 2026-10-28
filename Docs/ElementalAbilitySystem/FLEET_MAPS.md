@@ -646,17 +646,34 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
 
-### Meerkat — the soliton maker — DIRECTION (Garrett, 2026-10-27), design gate Yash's
+### Meerkat ("Meerkats") — the soliton maker, a dynamic-seat crew vessel — element definition LOCKED (Garrett, 2026-10-28); building it is Yash's
 
-Not implemented; the map has four open slots. Garrett's direction (`Docs/Studios/MEERKAT.md` § Garrett's direction):
-- **Space · Soliton**: the wormhole makes a soliton, and the level sets its surface area.
+Garrett, 2026-10-28: *"lock in the elemental definition so yash builds upon them."* The element → ability → level →
+L5 rows below are decided (`Docs/Studios/MEERKAT.md` § Garrett's direction). How each is built, tuned and drawn, every
+number, and the seat machinery stay Yash's. Not implemented yet: the map (`ElementalAbilityMaps/Meerkat.asset`) has
+four open slots; the surface area and the swallow are in Unity (Yash's round 23).
+- **Space · Soliton**: the wormhole makes a soliton; the level sets its surface area. It swallows prisms, shielded ones
+  included, and fires them out. L5 **Steal**: what passes through is stolen, the steal starting as each prism starts
+  its run.
 - **Time · passive**: faster through every soliton. L5 **Boost out** of every soliton.
-- **Charge · Sentinel**: an afterimage perched at every tunnel entrance. It zaps enemy vessels (their elements knocked
-  out) and turns same-domain prisms shielded.
-- **Mass · passive**: the soliton makes prisms at its far end, sized by Mass. L5: they are danger prisms.
+- **Charge · Sentinel mode** (Y / F, an active toggle): new tunnels leave a sentinel at their entrance, from a pool of
+  3; with the pool used up, the oldest retires with its soliton.
+  - A sentinel guards 1.5 × the opening radius, zaps enemy vessels' elements (Charge sets the petals per zap) and
+    shields same-domain prisms.
+  - It is a seat any teammate can take: tap or click, with no cooldown, to shield any prism or attack. The empty seat's
+    AI zaps a little slower than an average person taps.
+  - The button hops: the sentinel rides through its soliton and takes the flyer, and the old flyer becomes a sentinel
+    at a new soliton where it was.
+  - A zap is a sub-petal tick (0.1 → 0.25 of a petal by Charge, through `AccrueElementalLoss`).
+  - One element meter, held by the person seated longest aboard the Meerkats. Only that person's meerkat takes element
+    damage; any other dies instead. A dead flyer is replaced by the next hop's hopper.
+  - A soliton lasts as long as its sentinel. The vessel enters with one seat and never adds players.
+  - L5 **Six sentinels**.
+- **Mass · passive**: a minimal exit portal, a few low-mass prisms in a hexagon round the outside of the exit, once
+  per soliton, sized by Mass. L5 **Danger prisms**.
 
-Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are in the same doc. The two are to be judged
-in the artifact.
+Yash's round-8 proposals (Lookout, Hardened Bridge, Cave-in, Chain Dig) are archived in the same doc, and the round-18
+Mix's L5 swaps (Chain Dig on Time, Cave-in on Space) give way to these rows.
 
 ## 3. Implementation notes for approved rows
 

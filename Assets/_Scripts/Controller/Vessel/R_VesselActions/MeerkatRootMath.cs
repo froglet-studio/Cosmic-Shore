@@ -115,12 +115,71 @@ namespace CosmicShore.Gameplay
         /// The page's <c>labLayout</c>: the roots in the hull's own frame, from a seed. <paramref name="size"/> is the last
         /// trunk's share of the biggest (0..1); <paramref name="atOnce"/> grows them every way from the hull (round 17).
         /// </summary>
-        public static Layout BuildLayout(in LayoutSettings p, uint seed, double size, bool atOnce)
+        public static Layout BuildLayout(in LayoutSettings p, uint seed, double size, bool atOnce) =>
+            Lay(p, seed, Clamp01(size), atOnce, false, 0, D3.Zero);
+
+        /// <summary>
+        /// Round 24, the page's <c>labLayout</c> with <c>net</c> (<c>networkSize</c>): the NETWORK in the hull's frame, its
+        /// reach <paramref name="rad"/> (u), its centre <paramref name="centre"/> (the hull's frame, from the source), its
+        /// forks and openings at <paramref name="counts"/> of the way from the Min to the Max numbers, its forks placed for
+        /// transport (<see cref="NetPlace"/>).
+        /// </summary>
+        public static Layout BuildNetwork(in LayoutSettings p, uint seed, double rad, D3 centre, double counts) =>
+            Lay(p, seed, Clamp01(counts), true, true, rad, centre);
+
+        /// <summary>
+        /// The page's <c>networkSize</c> without its Mass and cell lookups: a network of <paramref name="share"/> × the cell's
+        /// radius <paramref name="cellR"/> (never under <c>RadiusMin</c>), centred <paramref name="share"/> of the way from
+        /// its source <paramref name="a"/> to the cell's centre <paramref name="o"/>; <paramref name="counts"/> is where its
+        /// reach lies between <c>RadiusMin</c> and <c>RadiusMax</c>. The centre is returned in the world.
+        /// </summary>
+        public static void NetworkSize(in LayoutSettings p, double share, double cellR, D3 a, D3 o, out double rad, out D3 centre,
+            out double counts)
         {
-            double k = Clamp01(size);
+            rad = Math.Max(p.RadiusMin, share * cellR);
+            centre = a + (o - a) * Clamp01(share);
+            counts = Clamp01((rad - p.RadiusMin) / Math.Max(1, p.RadiusMax - p.RadiusMin));
+        }
+
+        /// <summary>
+        /// The page's round-24 <c>netPlace</c> (after Garrett's Omnicrystal Network Lab: every path near the straight line,
+        /// the forks early): every opening on the network's sphere, every fork on the line from the fork before it (the
+        /// source, for the first) toward the middle of its openings, a short step while they spread wide, a long one once they
+        /// lie together. No randomness, so every peer lays the same forks.
+        /// </summary>
+        static void NetPlace(List<Node> nodes, D3 C, double Rad)
+        {
+            foreach (var n in nodes) if (n.Kids.Count == 0) n.P = C + n.Dir * Rad;
+            void Ends(int i, List<D3> o) { var n = nodes[i]; if (n.Kids.Count == 0) o.Add(n.P); else foreach (int kid in n.Kids) Ends(kid, o); }
+            void Place(int i, D3 from)
+            {
+                var n = nodes[i];
+                if (n.Kids.Count == 0) return;
+                var E = new List<D3>();
+                Ends(i, E);
+                var g = D3.Zero;
+                foreach (var e in E) g += e;
+                g = g * (1.0 / E.Count) - from;
+                var dir = g.LengthSq > 1e-6 ? g.Normalized : new D3(0, 0, 1);
+                double near = double.PositiveInfinity, cosMin = 1;
+                foreach (var e in E)
+                {
+                    var v = e - from;
+                    double l = v.Length;
+                    near = Math.Min(near, l);
+                    if (l > 1e-6) cosMin = Math.Min(cosMin, v.Dot(dir) / l);
+                }
+                n.P = from + dir * (near * (0.1 + 0.45 * Clamp01(cosMin)));
+                foreach (int kid in n.Kids) Place(kid, n.P);
+            }
+            Place(0, D3.Zero);
+        }
+
+        static Layout Lay(in LayoutSettings p, uint seed, double k, bool atOnce, bool net, double netRad, D3 netC)
+        {
             double LerpK(double a, double z) => a + (z - a) * k;
             var R = new Rng(seed);
-            double Rad = Math.Max(20, LerpK(p.RadiusMin, p.RadiusMax));
+            double Rad = Math.Max(20, net ? netRad : LerpK(p.RadiusMin, p.RadiusMax));
             int B = IClamp(LerpK(p.BranchPointsMin, p.BranchPointsMax), 1, 24);
             int M = Math.Max(B + 1, IClamp(LerpK(p.OpeningsMin, p.OpeningsMax), 2, 72));
             double half = Math.Min(180, Math.Max(10, p.Spread / 2)) * Math.PI / 180, rnd = Clamp01(p.Randomness);
@@ -180,8 +239,9 @@ namespace CosmicShore.Gameplay
             }
             Assign(0, dirs);
             int maxD = nodes.Max(n => n.Depth);
-            var C = new D3(0, 0, Rad * (atOnce ? 0.2 : 0.8));   // at once: spreading every way from where you are
-            foreach (var n in nodes)
+            var C = net ? netC : new D3(0, 0, Rad * (atOnce ? 0.2 : 0.8));   // at once: spreading every way from where you are
+            if (net) NetPlace(nodes, C, Rad);
+            else foreach (var n in nodes)
             {
                 var mean = D3.Zero;
                 foreach (var q in n.Dirs) mean += q;

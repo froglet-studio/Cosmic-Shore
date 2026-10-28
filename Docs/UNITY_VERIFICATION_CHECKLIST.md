@@ -65,6 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Meerkat's soliton: Garrett's surface area, and prisms sucked through it (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+**What landed:** the tunnel's throat follows Garrett's surface area, set by the hull's Space level, so a longer tunnel is
+thinner (`MeerkatWormholeMath.SurfaceAreaThroat`). `MeerkatSwallow` (run by `MeerkatWormholeExecutor`) pulls the prisms and
+crystals within `suckRadius` 90 u of a standing tunnel's way in, carries them through stretched (up to 3 × at the middle)
+and twisted half a turn, and fires them out of the way out at `fireSpeed` 120, gliding to rest. Pulled and fired prisms are
+moving prisms (`Docs/PRISM_MOTION.md`). `MEERKAT.md` §8.
+
+**Verified without the editor:**
+- 58/58 `MeerkatWormholeMathTests` + `MeerkatRootMathTests` (dotnet, Unity stubs), with 11 new goldens from the page's own
+  `kitThroat` and `pullVel`.
+- Reference compile clean, player and editor.
+- `studio_to_unity --check`: 104 mapped, 0 drift.
+- The artifact's headless kit races: about 4,280 prisms swallowed a field race, mass conserved, no DNF.
+
+**Verify in editor:**
+1. Toybox, Meerkat, in the Garland (dense owner-less prisms): hold LT fully and RT. The tunnel is long and thin. Release LT
+   and RT a short one: it is fat (33 u throat at Space 5). Collect a few crystals and the next tunnels are fatter.
+2. Form a tunnel with its way in next to prisms. Prisms within about 90 u drift into the mouth, faster as they near,
+   swirling a little. Inside the tunnel they are stretched long and twisted. They shoot out of the far mouth along its
+   heading and slow to a stop.
+3. A fired plain prism that hits another plain prism destroys both; a shielded one bounces. The prisms pulled in together
+   do not destroy each other.
+4. Fly through a crystal near a mouth: it is pulled in, comes out the other side and can still be collected there.
+5. Plants near the mouth lose prisms to it (plucked, not destroyed); creatures' bodies are left alone.
+6. Watch the profiler with a tunnel in a dense field: `MeerkatSwallow` stays under 256 prisms (`swallowPrismCap`).
+7. Multiplayer: both players see the same tunnel size.
+
+---
+
 ### 🔴 The Meerkat's tunnel bends round its middle, as one oval arc (`claude/adoring-cerf-m94x1o`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatWormholeMath.Conic`: the centreline is one conic arc symmetric about its middle, more oval as it
@@ -242,6 +272,34 @@ lens compiles in glslang HLSL mode against the black-hole lens's URP mock (a pla
    and then the bend, with no seam where they meet and none at either mouth.
 5. Change any Meerkat look field in Play mode: it shows at once. After Play mode the asset keeps it, and
    `studio_to_unity.py --check` lists a mapped one as drift.
+
+---
+
+### 🔴 A hull's element levels travel with it when it changes machines (`cece/lucid-brown-ykcmhu`, 2026-10-27) — NOT EDITOR-VERIFIED
+
+**What landed** (Garrett: "that issue is true for any vessel swapping situation ... it should be resolved";
+`Docs/ELEMENTAL_ECONOMY.md` §2.0):
+- `R_VesselActionHandler.NetElementBase` / `NetElementBasePublished`: the owner's base levels.
+- `OwnershipHandedOver`: raised on a gain of ownership after spawn.
+- `R_VesselElementalAbilityHandler.AdoptHandover`: the new owner adopts the base levels and the latched unlocks.
+- `ResourceSystem.BaseLevel`; `ElementHandover`.
+- **Protocol version 21.**
+
+**Verified without the editor:** `ElementHandoverTests` 6/6 under dotnet with Unity stubs, and adopting at spawn fails
+one. Reference compile: see the commit.
+
+**Verify in editor (MPPM, host + one client, an arena match with an AI teammate):**
+1. EditMode `ElementHandoverTests` passes.
+2. On the client, collect crystals until a flower shows, say, Space 6. Swap (D-pad right) into the AI teammate's hull,
+   then swap back.
+   - The hull you left is now flown by the server's AI. Look at it on the host's HUD or with the verbose Elemental log:
+     it still holds Space 6.
+   - Before this change it dropped back to its starting elements.
+3. Take a hull to level 5 in an element with a relock below 4. Let it drop to 4, then swap away and back: the level-5
+   upgrade is still on.
+4. A temporary buff (an overcharge above 10) does NOT survive the swap: it ends, and the base drains as before.
+5. The host's own swaps (both hulls already the server's) change nothing.
+6. A client on protocol 20 is refused by a host on 21 (`NetworkConfig mismatch` in the host's console).
 
 ---
 

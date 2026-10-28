@@ -52,6 +52,17 @@ namespace CosmicShore.Gameplay
             return f;
         }
 
+        /// <summary>Round 24: the field was laid on a race course (Burrow Run), so its network fills the race shell.</summary>
+        public bool HasCourse => !_freestyle && _legs.Count > 0;
+
+        /// <summary>Round 24: the farthest of the course's rings from <paramref name="centre"/> (0 with no course).</summary>
+        public float FarthestRingFrom(Vector3 centre)
+        {
+            float far = 0f;
+            for (int i = 0; i < _legs.Count; i++) far = Mathf.Max(far, Vector3.Distance(_legs[i], centre));
+            return far;
+        }
+
         /// <summary>A scene with no course: omnicrystals laid ahead of <paramref name="anchor"/> (a local Meerkat).</summary>
         public static MeerkatOmnicrystalField EnsureFreestyle(Transform anchor)
         {
