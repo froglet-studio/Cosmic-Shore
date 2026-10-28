@@ -210,11 +210,19 @@ def selection_material(bar):
     return shader_material("SelectionBar" if bar else "SelectionRim", RIM_SHADER_GUID, floats, colors)
 
 
+SHEEN_GUID = re.search(r"^guid: (\w+)$", open(os.path.join(REPO, "Assets/_Graphics/UI/Kit/kit_sheen.png.meta"),
+                                                 encoding="utf-8").read(), re.M).group(1)   # author_ui_kit_sprites.py
+HOVER_SHEEN = (0.52, 0.16, 0.45)             # Rev 35 C: seconds to cross, centre alpha, band width (fraction)
+
+
 def theme_asset():
     """UITheme.asset with the selection colour and its two materials (the rest of the asset is untouched)."""
     text = open(os.path.join(REPO, THEME), encoding="utf-8").read()
     fields = dict(selection=col(SELECTION), selectionMaterial=f"{{fileID: 2100000, guid: {SELECTION_GUID}, type: 2}}",
                   selectionBarMaterial=f"{{fileID: 2100000, guid: {SELECTION_BAR_GUID}, type: 2}}")
+    # Rev 35 C (section 101): the hover sheen, written after selectionBarMaterial in UIThemeSO's field order.
+    hover = dict(hoverSheenSprite=f"{{fileID: 21300000, guid: {SHEEN_GUID}, type: 3}}", hoverSheenSeconds=HOVER_SHEEN[0],
+                 hoverSheenAlpha=HOVER_SHEEN[1], hoverSheenWidth=HOVER_SHEEN[2])
     missing = ""
     for name, value in fields.items():               # field order: selection, selectionMaterial, selectionBarMaterial
         line = f"  {name}: {value}\n"
@@ -226,6 +234,9 @@ def theme_asset():
         anchor = re.search(r"^  elementTime: .*\n", text, re.M)
         assert anchor, "UITheme.asset has no elementTime to follow"
         text = text[:anchor.end()] + missing + text[anchor.end():]
+    text = re.sub(r"^  hoverSheen\w+: .*\n", "", text, flags=re.M)
+    anchor = re.search(r"^  selectionBarMaterial: .*\n", text, re.M)
+    text = text[:anchor.end()] + "".join(f"  {k}: {v}\n" for k, v in hover.items()) + text[anchor.end():]
     return text
 
 
@@ -435,6 +446,10 @@ def validate(files):
     assert f"  selection: {col(SELECTION)}\n" in theme, "UITheme.asset's selection is not the sky blue (#3DB2FF)"
     for field, g in (("selectionMaterial", SELECTION_GUID), ("selectionBarMaterial", SELECTION_BAR_GUID)):
         assert f"  {field}: {{fileID: 2100000, guid: {g}, type: 2}}" in theme, f"UITheme.asset does not name its {field}"
+    assert f"  hoverSheenSprite: {{fileID: 21300000, guid: {SHEEN_GUID}, type: 3}}\n" in theme, \
+        "UITheme.asset does not name the hover sheen (kit_sheen, Rev 35 C)"
+    assert f"  hoverSheenSeconds: {HOVER_SHEEN[0]}\n" in theme and f"  hoverSheenAlpha: {HOVER_SHEEN[1]}\n" in theme, \
+        "UITheme.asset's hover sheen timing drifted from Rev 35 C (0.52 s, 16 %)"
     validate_screens(files.get("__screens__") or shipped_prefabs())
 
 

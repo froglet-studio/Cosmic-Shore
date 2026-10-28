@@ -118,6 +118,25 @@ fails it.
 5. Your own project is unchanged (`git status` clean) and your open Unity was never disturbed.
 If Play never reaches a match (sign-in, the menu), the run stops after 15 minutes with exit 3 and the reason in
 `result.json`: send `unity.log`.
+
+### 🔴 Hover C: the kit's sheen (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (player and editor). Not opened in the editor.
+- [ ] Menu_Main with a mouse: pointing at a hub button, an arcade card, a nav tab and a Settings tab sweeps one soft band across it (about half a second) and nothing loops.
+- [ ] Moving across a row of buttons quickly: each sweep starts fresh and never sticks on.
+- [ ] Locked PORT: no sheen. Touch (Device Simulator): no sheen. Pad focus: only the blue ring.
+- [ ] Layout groups (button labels, card rows) do not move when a control is first hovered (`HoverSheen` ignores layout).
+- [ ] UITheme.asset: clearing `hoverSheenSprite` turns it off everywhere.
+
+### 🔴 Connection-lost popup in style B + arcade card element shapes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
+
+Compiled against the Unity reference assemblies (`unity_refcompile`, player and editor); `gates.sh` all OK. Not opened in the editor.
+- [ ] Menu_Main, Arcade: each card's genre icon is the element SHAPE (pentagon / triangle / kite / diamond), white, centred, not the lone petal; Brood Rush shows two.
+- [ ] Turn the network off in the menu: the Connection Lost window appears (slivered, brackets, lime RECONNECT selected). A reconnects; B and CONTINUE OFFLINE dismiss.
+- [ ] The same in a game scene (in a mode, not freestyle flight): the window draws above the HUD.
+- [ ] Network back on: "Back Online" shows with no buttons and hides after 2.5 s.
+- [ ] `DisconnectNoticeTests` pass (TheConfig_NamesTheStyleBWindow is new).
+
 ### 🔴 Rev 33 A: the Cell gate loading screen, the hex countdown, the intro's new layout and the mode-entry lag fixes (`claude/new-session-76hnyc`, 2026-10-28) — NOT EDITOR-VERIFIED
 
 **What landed** (Docs/MENU_REDESIGN_B.md section 99.4):
