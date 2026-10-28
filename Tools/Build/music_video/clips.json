@@ -161,6 +161,128 @@
     "probe 3: at back 16 the hull filled the frame and the ball on its 25 u chain was out of it; a 40 u orbit holds hull, chain and ball with the trails around.",
     "probe 4: the 40 u orbit keeps hull, chain and the red ball in frame; the slicing of the rivals' trails is still not evident in the stills."
    ]
+  },
+  "sparrow-guns": {
+   "vessel": "Sparrow",
+   "cell": "Zephyr",
+   "what": "The Sparrow, right trigger held, pours its gun into a rival fleet's trails ahead; the rounds (the glowing spheres Garrett liked in cut 3) burst the prisms they hit.",
+   "stage": [
+    "mv cell Zephyr",
+    "mv vessel Sparrow",
+    "mv spawn vessel Manta,Dolphin,Rhino,Squirrel,Serpent,Scarab 6 Ruby 40",
+    "mv in {1s} circle ai0 40 5 local",
+    "mv in {1s} circle ai1 50 6 local",
+    "mv in {1s} circle ai2 35 4 local",
+    "mv in {1s} circle ai3 55 7 local",
+    "mv in {1s} circle ai4 45 5 local",
+    "mv in {1s} circle ai5 60 6 local"
+   ],
+   "camera": [
+    "mv mount local 18 7 7 14 1.6"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim local fleet"
+    },
+    {
+     "at": 0.2,
+     "cmd": "action local RightStickAction 280",
+     "why": "the gun, held"
+    },
+    {
+     "at": 2.5,
+     "cmd": "aim local ai2"
+    }
+   ],
+   "stills": [],
+   "learned": []
+  },
+  "rhino-sword": {
+   "vessel": "Rhino",
+   "cell": "Boneyard",
+   "what": "The Rhino drives through a rival fleet's trails swinging its energy sword: every prism the blade sweeps is CUT along the plane, the halves parting and dissolving from the cut face.",
+   "stage": [
+    "mv cell Boneyard",
+    "mv vessel Rhino",
+    "mv spawn vessel Manta,Dolphin,Squirrel,Serpent,Scarab,Sparrow 6 Ruby 35",
+    "mv in {1s} circle ai0 30 4 local",
+    "mv in {1s} circle ai1 40 5 local",
+    "mv in {1s} circle ai2 28 4 local",
+    "mv in {1s} circle ai3 45 6 local",
+    "mv in {1s} circle ai4 35 5 local",
+    "mv in {1s} circle ai5 50 6 local"
+   ],
+   "camera": [
+    "mv mount local 20 8 9 14 1.6"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim local fleet"
+    },
+    {
+     "at": 0.3,
+     "cmd": "action local RightStickAction 70",
+     "why": "swipe right"
+    },
+    {
+     "at": 1.6,
+     "cmd": "action local LeftStickAction 70",
+     "why": "swipe left"
+    },
+    {
+     "at": 2.9,
+     "cmd": "action local RightStickAction 70"
+    },
+    {
+     "at": 4.0,
+     "cmd": "action local LeftStickAction 60"
+    }
+   ],
+   "stills": [],
+   "learned": []
+  },
+  "brittlestar-ring": {
+   "vessel": "BrittleStar",
+   "cell": "Geode",
+   "what": "The Brittle Star in Space mode fires its five turret guns into the mass around it, then throws its ring: a flat disk explosion as wide as the nucleus that clears every prism in its plane.",
+   "stage": [
+    "mv cell Geode",
+    "mv vessel BrittleStar",
+    "mv spawn vessel Manta,Dolphin,Squirrel,Serpent,Scarab,Sparrow 6 Ruby 35",
+    "mv in {1s} circle ai0 30 4 local",
+    "mv in {1s} circle ai1 40 5 local",
+    "mv in {1s} circle ai2 28 4 local",
+    "mv in {1s} circle ai3 45 6 local",
+    "mv in {1s} circle ai4 35 5 local",
+    "mv in {1s} circle ai5 50 6 local",
+    "mv in {2s} action local Button3Action 10"
+   ],
+   "camera": [
+    "mv orbit local 34 12 3"
+   ],
+   "settle_seconds": 8,
+   "events": [
+    {
+     "at": 0.0,
+     "cmd": "aim local fleet"
+    },
+    {
+     "at": 0.2,
+     "cmd": "action local RightStickAction 150",
+     "why": "the five guns"
+    },
+    {
+     "at": 3.2,
+     "cmd": "action local LeftStickAction 20",
+     "why": "the ring thrown and detonated"
+    }
+   ],
+   "stills": [],
+   "learned": []
   }
  }
 }
