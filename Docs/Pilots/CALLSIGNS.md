@@ -24,6 +24,14 @@ the set's Unassigned Sight is now only a tester's override for an empty seat. Th
 in a scrolled column. FLUME (18) has its sight too: `FlumeSight` traces every live Meerkat tunnel mouth to mouth
 (`MeerkatWormholeExecutor.Live`, read only). Hand tests: "The callsign pilots" in the checklist.
 
+**Decided since (Garrett, 2026-10-28): a pilot is a person layered on a callsign.** The eighteen `PilotSO`s above are
+the **callsigns**: the ability and the sight, shared by every crew. A pilot in your Ark crew is a unique person (name,
+story, race, faction) who carries one callsign, so two crews can each have a VOLT who are different people. A crew
+holds **at most one pilot of each callsign**. Recruiting a pilot adds their faction's jobs to what your crew finds at
+port, seating them in a squad brings their sight, and promoting one to **captain** is how you join a faction. Full
+rules: [`Docs/Voyages/VOYAGES.md`](../Voyages/VOYAGES.md) §6.2.1. Not built yet: the person record, factions and
+captains. Today a squad seat still holds a callsign `PilotSO` directly.
+
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §2 (2026-10-12), where a pilot swaps part of a vessel's kit. That section now points
   here.
@@ -161,7 +169,8 @@ never as 2D text or a ring on the screen.
      compete with the lights that carry information for everyone. The sight gets its own uniforms.
    - **Its names are new.** Any new global shader array gets a name Unity has never been asked to bind (`Docs/LIT.md`,
      the bank-rename lesson).
-3. **One callsign per pilot.** A pilot is one pair of eyes.
+3. **One callsign per pilot, one pilot per callsign in a crew.** A pilot is one pair of eyes, and a crew never holds
+   two pilots with the same callsign (Garrett, 2026-10-28).
 4. **AI.** An AI pilot does not need eyes, since it reads the world's data directly. Optionally, its doctrine leans on
    its sight: a TALON pilot's AI steers clear of predators, a MANGER pilot's AI goes where the fauna go. That gives the
    pilot an identity when you are not in the seat.
